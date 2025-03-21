@@ -1,6 +1,9 @@
 package images
 
-import "database/sql"
+import (
+	"database/sql"
+	"nas-go/api/pkg/database/queries"
+)
 
 type Repository struct {
 	dbContext *sql.DB
@@ -11,7 +14,7 @@ func NewRepository(database *sql.DB) *Repository {
 }
 
 func (r *Repository) GetAllImages() ([]Image, error) {
-	rows, err := r.dbContext.Query("SELECT id, name, path FROM images")
+	rows, err := r.dbContext.Query(queries.GetFilesQuery)
 	if err != nil {
 		return nil, err
 	}
