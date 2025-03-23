@@ -11,4 +11,6 @@ SELECT
 FROM
     home_file hf
 ORDER BY
-    - id;
+    - id
+LIMIT
+    $1 OFFSET $2;

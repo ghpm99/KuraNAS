@@ -1,19 +1,5 @@
 package utils
 
-type User struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	Username    string `json:"username"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Email       string `json:"email"`
-	IsStaff     bool   `json:"is_staff"`
-	IsActive    bool   `json:"is_active"`
-	IsSuperuser bool   `json:"is_superuser"`
-	LastLogin   string `json:"last_login"`
-	DateJoined  string `json:"date_joined"`
-}
-
 type Pagination struct {
 	Page     int  `json:"page"`
 	PageSize int  `json:"page_size"`
@@ -21,7 +7,20 @@ type Pagination struct {
 	HasPrev  bool `json:"has_prev"`
 }
 
+func (p *Pagination) Offset() int {
+	return (p.Page - 1) * p.PageSize
+}
+
+func (p *Pagination) GetHasPrev() bool {
+	return p.Page > 1
+}
+
 type Optional[T any] struct {
 	Value    T
 	HasValue bool
+}
+
+type PaginationResponse[T any] struct {
+	Items      []T        `json:"items"`
+	Pagination Pagination `json:"pagination"`
 }

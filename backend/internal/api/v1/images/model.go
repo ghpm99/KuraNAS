@@ -1,7 +1,13 @@
 package images
 
-type Image struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
+type ImageModel struct {
+	ID              int
+	Name            string
+	Path            string
+	Format          string
+	Size            int
+	UpdatedAt       string
+	CreatedAt       string
+	LastInteraction string
+	LastBackup      string
 }
