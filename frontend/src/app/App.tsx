@@ -1,46 +1,48 @@
 
-import { Play, Info, ChevronRight } from "lucide-react"
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ChevronRight, Info, Play } from "lucide-react"
 import MediaRow from "../components/mediaRow"
 import "./App.css"
 
-export default function NetflixStyleGallery() {
-  // Sample categories and media items
-  const categories = [
-    {
-      name: "Popular Now",
-      items: [
-        { id: 1, title: "Movie Title 1", type: "Movie", year: 2023 },
-        { id: 2, title: "Series Title 1", type: "Series", year: 2022 },
-        { id: 3, title: "Movie Title 2", type: "Movie", year: 2023 },
-        { id: 4, title: "Series Title 2", type: "Series", year: 2021 },
-        { id: 5, title: "Movie Title 3", type: "Movie", year: 2022 },
-        { id: 6, title: "Series Title 3", type: "Series", year: 2023 },
-      ],
-    },
-    {
-      name: "Trending",
-      items: [
-        { id: 7, title: "Trending Movie 1", type: "Movie", year: 2023 },
-        { id: 8, title: "Trending Series 1", type: "Series", year: 2022 },
-        { id: 9, title: "Trending Movie 2", type: "Movie", year: 2023 },
-        { id: 10, title: "Trending Series 2", type: "Series", year: 2021 },
-        { id: 11, title: "Trending Movie 3", type: "Movie", year: 2022 },
-        { id: 12, title: "Trending Series 3", type: "Series", year: 2023 },
-      ],
-    },
-    {
-      name: "New Releases",
-      items: [
-        { id: 13, title: "New Movie 1", type: "Movie", year: 2023 },
-        { id: 14, title: "New Series 1", type: "Series", year: 2023 },
-        { id: 15, title: "New Movie 2", type: "Movie", year: 2023 },
-        { id: 16, title: "New Series 2", type: "Series", year: 2023 },
-        { id: 17, title: "New Movie 3", type: "Movie", year: 2023 },
-        { id: 18, title: "New Series 3", type: "Series", year: 2023 },
-      ],
-    },
-  ]
 
+export type FileData = {
+  id: number
+  name: string
+  format: string
+  size: number
+  updateAt: string
+  createdAt: string
+  lastInteraction: string
+  lastBackup: string
+}
+
+export type Pagination = {
+  hasNext: boolean
+  hasPrevious: boolean
+  page: number
+  pageSize: number
+}
+
+export type PaginationResponse = {
+  items: FileData[]
+  pagination: Pagination
+}
+
+function usePosts() {
+  return useQuery({
+    queryKey: ['files'],
+    queryFn: async (): Promise<PaginationResponse> => {
+      const response = await fetch('http://localhost:8080/api/v1/files/')
+      return await response.json()
+    },
+  })
+}
+
+export default function NetflixStyleGallery() {
+  const queryClient = useQueryClient()
+  const {status, data,error,isFetching} = usePosts()
+  // Sample categories and media items
+  console.log(data)
   return (
     <div className="netflix-container">
       {/* Hero Section */}
@@ -72,18 +74,23 @@ export default function NetflixStyleGallery() {
 
       {/* Content Rows */}
       <div className="content-rows">
-        {categories.map((category) => (
-          <div key={category.name} className="category-container">
+
+          <div className="category-container">
             <div className="category-header">
-              <h2 className="category-title">{category.name}</h2>
+              <h2 className="category-title">Imagens</h2>
               <button className="category-see-all">
                 <span>See all</span>
                 <ChevronRight size={16} />
               </button>
             </div>
-            <MediaRow items={category.items} />
+            {
+              status === "success" && (
+
+                <MediaRow items={data.items} />
+              )
+            }
           </div>
-        ))}
+
       </div>
     </div>
   )

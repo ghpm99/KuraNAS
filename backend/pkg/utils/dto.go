@@ -7,10 +7,6 @@ type Pagination struct {
 	HasPrev  bool `json:"has_prev"`
 }
 
-func (p *Pagination) Offset() int {
-	return (p.Page - 1) * p.PageSize
-}
-
 func (p *Pagination) GetHasPrev() bool {
 	return p.Page > 1
 }

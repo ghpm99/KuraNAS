@@ -4,16 +4,11 @@ import { useState, useRef } from "react"
 
 import { ChevronLeft, ChevronRight, Play, Plus, ThumbsUp } from "lucide-react"
 import "./mediaRow.css"
+import { FileData } from '@/app/App'
 
-interface MediaItem {
-  id: number
-  title: string
-  type: string
-  year: number
-}
 
 interface MediaRowProps {
-  items: MediaItem[]
+  items: FileData[]
 }
 
 export default function MediaRow({ items }: MediaRowProps) {
@@ -60,20 +55,20 @@ export default function MediaRow({ items }: MediaRowProps) {
           >
             <div className={`media-item ${hoveredItemId === item.id ? "media-item-hovered" : ""}`}>
               <image
-                href={`/placeholder.svg?height=160&width=280&text=${item.title}`}
+                href={`/placeholder.svg?height=160&width=280&text=${item.name}`}
 
                 className="media-item-image"
               />
 
               {hoveredItemId === item.id && (
                 <div className="media-item-overlay">
-                  <div className="media-item-title">{item.title}</div>
+                  <div className="media-item-title">{item.name}</div>
 
                   <div className="media-item-details">
                     <div className="media-item-info">
-                      <span className="media-item-match">98% Match</span>
-                      <span className="media-item-type">{item.type}</span>
-                      <span className="media-item-year">{item.year}</span>
+                      <span className="media-item-match">{item.createdAt}</span>
+                      <span className="media-item-type">{item.updateAt}</span>
+                      <span className="media-item-year">{item.createdAt}</span>
                     </div>
 
                     <div className="media-item-actions">

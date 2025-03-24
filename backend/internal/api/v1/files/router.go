@@ -1,4 +1,4 @@
-package images
+package files
 
 import (
 	"database/sql"
@@ -6,14 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterImagesRoutes(router *gin.RouterGroup, database *sql.DB) {
+func RegisterFilesRoutes(router *gin.RouterGroup, database *sql.DB) {
 
 	repository := NewRepository(database)
 	service := NewService(repository)
 	handler := NewHandler(service)
 
-	images := router.Group("/images")
+	files := router.Group("/files")
 
-	images.GET("/", handler.GetAllImagesHandler)
+	files.GET("/", handler.GetFilesHandler)
 
 }

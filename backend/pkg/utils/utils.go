@@ -203,3 +203,22 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 func NewOptional[T any](value T) Optional[T] {
 	return Optional[T]{Value: value, HasValue: true}
 }
+
+func (p *PaginationResponse[T]) SetHasNext() {
+	if len(p.Items) <= p.Pagination.PageSize {
+		p.Pagination.HasNext = false
+		return
+	}
+
+	p.Items = p.Items[:len(p.Items)-1]
+	p.Pagination.HasNext = true
+}
+
+func (p *PaginationResponse[T]) SetHasPrev() {
+	p.Pagination.HasPrev = p.Pagination.Page > 1
+}
+
+func (p *PaginationResponse[T]) UpdatePagination() {
+	p.SetHasNext()
+	p.SetHasPrev()
+}

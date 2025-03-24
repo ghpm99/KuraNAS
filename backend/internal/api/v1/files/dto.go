@@ -1,6 +1,6 @@
-package images
+package files
 
-type ImageDto struct {
+type FileDto struct {
 	ID              int    `json:"id"`
 	Name            string `json:"name"`
 	Path            string `json:"path"`

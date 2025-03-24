@@ -1,6 +1,6 @@
-package images
+package files
 
-type ImageModel struct {
+type FileModel struct {
 	ID              int
 	Name            string
 	Path            string
