@@ -29,9 +29,11 @@ func InitializeApp() (*Application, error) {
 		return nil, err
 	}
 
+	appContext := NewContext(database)
+
 	router := gin.Default()
 
-	RegisterRoutes(router, database)
+	RegisterRoutes(router, appContext)
 
 	return &Application{Router: router}, nil
 }
