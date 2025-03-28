@@ -2,7 +2,6 @@ package main
 
 import (
 	"nas-go/api/internal/app"
-	"nas-go/api/internal/worker"
 )
 
 func main() {
@@ -10,8 +9,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	worker.StartWorkers(2)
 
 	application.Run(":8080", false)
 }

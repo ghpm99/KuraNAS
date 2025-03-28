@@ -20,3 +20,14 @@ type PaginationResponse[T any] struct {
 	Items      []T        `json:"items"`
 	Pagination Pagination `json:"pagination"`
 }
+
+type TaskType int
+
+const (
+	ScanFiles TaskType = 1
+)
+
+type Task struct {
+	Type TaskType
+	Data string
+}

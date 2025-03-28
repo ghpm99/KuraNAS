@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"fmt"
 	"nas-go/api/pkg/database/queries"
 	"nas-go/api/pkg/utils"
 )
@@ -52,4 +53,43 @@ func (r *Repository) GetFiles(pagination utils.Pagination) (utils.PaginationResp
 	paginationResponse.UpdatePagination()
 
 	return paginationResponse, nil
+}
+
+func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error) {
+
+	fail := func(err error) (FileModel, error) {
+		return file, fmt.Errorf("CreatePayment: %v", err)
+	}
+
+	args := []interface{}{
+		file.Name,
+		file.Path,
+		file.Format,
+		file.Size,
+		file.UpdatedAt,
+		file.CreatedAt,
+		file.LastInteraction,
+		file.LastBackup,
+	}
+
+	query := queries.InsertFileQuery
+
+	data, err := transaction.Exec(
+		query,
+		args...,
+	)
+
+	if err != nil {
+		return fail(err)
+	}
+
+	fileId, err := data.LastInsertId()
+
+	if err != nil {
+		return fail(err)
+	}
+
+	file.ID = int(fileId)
+
+	return file, nil
 }

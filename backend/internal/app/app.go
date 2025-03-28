@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
 
 	"log"
@@ -16,7 +17,8 @@ import (
 )
 
 type Application struct {
-	Router *gin.Engine
+	Router  *gin.Engine
+	Context *AppContext
 }
 
 func InitializeApp() (*Application, error) {
@@ -35,7 +37,18 @@ func InitializeApp() (*Application, error) {
 
 	RegisterRoutes(router, appContext)
 
-	return &Application{Router: router}, nil
+	workerFileContext := &worker.WorkerContext{
+		Service:    appContext.Files.Service,
+		Repository: appContext.Files.Repository,
+		Tasks:      *appContext.Tasks,
+	}
+
+	worker.StartWorkers(workerFileContext, 2)
+
+	return &Application{
+		Router:  router,
+		Context: appContext,
+	}, nil
 }
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
