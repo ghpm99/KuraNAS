@@ -29,6 +29,16 @@ func (s *Service) GetFiles(fileDtoList *utils.PaginationResponse[FileDto]) error
 
 }
 
+func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
+	fileModel, err := s.repository.GetFileByNameAndPath(name, path)
+
+	if err != nil {
+		return FileDto{}, err
+	}
+
+	return fileModel.ToDto(), nil
+}
+
 func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
 	ctx := context.Background()
 

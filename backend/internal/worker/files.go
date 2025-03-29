@@ -29,6 +29,13 @@ func ScanFilesHandler(service *files.Service) {
 		size := info.Size()
 
 		fmt.Printf("📄 Arquivo: %s, Extensão: %s, Tamanho: %d bytes\n", name, ext, size)
+		fileDto, err := service.GetFileByNameAndPath(name, path)
+
+		if err == nil {
+			fmt.Printf("❌ Arquivo ja cadastrado %s: %v\n", path, fileDto.ID)
+			return nil
+		}
+
 		file := files.FileDto{
 			Name:            name,
 			Path:            path,
