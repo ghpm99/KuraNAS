@@ -27,3 +27,7 @@ func (i *FileModel) ToDto() FileDto {
 		LastBackup:      i.LastBackup,
 	}
 }
+
+type FileFilter struct {
+	Path string `json:"path"`
+}

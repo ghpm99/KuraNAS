@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,9 +13,7 @@ import (
 func ScanFilesHandler(service *files.Service) {
 	fmt.Println("🔍 Escaneando arquivos...")
 
-	basePath := "/mnt/d/"
-
-	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("❌ Erro ao escanear arquivo %s: %v\n", path, err)
 			return nil

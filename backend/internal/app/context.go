@@ -32,8 +32,8 @@ func NewContext(db *sql.DB) *AppContext {
 
 func newFileContext(db *sql.DB) *FileContext {
 	repository := files.NewRepository(db)
-	service := files.NewService(repository)
-	handler := files.NewHandler(service, tasks)
+	service := files.NewService(repository, tasks)
+	handler := files.NewHandler(service)
 	return &FileContext{
 		Handler:    handler,
 		Service:    service,

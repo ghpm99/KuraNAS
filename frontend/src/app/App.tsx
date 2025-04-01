@@ -1,9 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Info, Play } from 'lucide-react';
-import MediaRow from '../components/mediaRow';
-import './App.css';
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import './App.css'
 
-import backgroundImage from "../assets/background.jpg?url"
+import ActionBar from '@/components/actionbar'
+import FileCard from '@/components/filecard'
+import Header from '@/components/header'
+import Sidebar from '@/components/sidebar'
+import Tabs from '@/components/tabs'
 
 export type FileData = {
 	id: number;
@@ -45,41 +47,18 @@ export default function NetflixStyleGallery() {
 	console.log(data);
 
 	return (
-		<div className='netflix-container'>
-			{/* Hero Section */}
-			<div className='hero-section'>
-				<div className='hero-image' />
-				<div className='hero-gradient'></div>
-				<div className='hero-content'>
-					<h1 className='hero-title'>Featured Title</h1>
-					<p className='hero-description'>
-						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
-						dolore magna aliqua.
-					</p>
-					<div className='hero-buttons'>
-						<button className='btn btn-play'>
-							<Play size={20} />
-							<span>Play</span>
-						</button>
-						<button className='btn btn-info'>
-							<Info size={20} />
-							<span>More Info</span>
-						</button>
+		<div className='file-manager'>
+			<Sidebar />
+			<div className='main-content'>
+				<Header />
+				<div className='content'>
+					<ActionBar />
+					<Tabs />
+					<div className='file-grid'>
+						<FileCard title='Q4 Sales Deck' metadata='Shared folder • 8 presentations' thumbnail='/placeholder.svg' />
+						<FileCard title='Product Videos' metadata='Shared folder • 5 videos' thumbnail='/placeholder.svg' />
+						<FileCard title='ROI Calculator' metadata='Shared file • 1 Excel' thumbnail='/placeholder.svg' />
 					</div>
-				</div>
-			</div>
-
-			{/* Content Rows */}
-			<div className='content-rows'>
-				<div className='category-container'>
-					<div className='category-header'>
-						<h2 className='category-title'>Imagens</h2>
-						<button className='category-see-all'>
-							<span>See all</span>
-							<ChevronRight size={16} />
-						</button>
-					</div>
-					{status === 'success' && <MediaRow items={data.items} />}
 				</div>
 			</div>
 		</div>

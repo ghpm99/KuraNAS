@@ -8,5 +8,6 @@ CREATE TABLE
         "updated_at" datetime NOT NULL,
         "created_at" datetime NOT NULL,
         "last_interaction" datetime NOT NULL,
-        "last_backup" datetime NULL
+        "last_backup" datetime NULL,
+        "checksum" varchar(64) NULL
     );

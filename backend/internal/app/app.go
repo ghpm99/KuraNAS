@@ -25,6 +25,7 @@ func InitializeApp() (*Application, error) {
 	if err := config.LoadConfig(); err != nil {
 		return nil, err
 	}
+	config.InitializeConfig()
 
 	database, err := database.ConfigDatabase()
 	if err != nil {
