@@ -3,6 +3,7 @@ package files
 import (
 	"fmt"
 
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 	"net/http"
 
@@ -11,13 +12,11 @@ import (
 
 type Handler struct {
 	service *Service
-	tasks   chan utils.Task
 }
 
-func NewHandler(financialService *Service, tasksChannel chan utils.Task) *Handler {
+func NewHandler(financialService *Service) *Handler {
 	return &Handler{
 		service: financialService,
-		tasks:   tasksChannel,
 	}
 }
 
@@ -38,7 +37,13 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 		Pagination: pagination,
 	}
 
-	err := handler.service.GetFiles(&paginationResponse)
+	path := c.DefaultQuery("path", config.AppConfig.EntryPoint)
+	fmt.Println("entrypoint", config.AppConfig.EntryPoint)
+	filter := FileFilter{
+		Path: path,
+	}
+
+	err := handler.service.GetFiles(filter, &paginationResponse)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -54,9 +59,5 @@ func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
 		return
 	}
-	task := utils.Task{
-		Type: utils.ScanFiles,
-		Data: "Escaneamento de arquivos",
-	}
-	handler.tasks <- task
+	handler.service.ScanFilesTask(data)
 }

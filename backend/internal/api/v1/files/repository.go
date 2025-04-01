@@ -88,7 +88,7 @@ func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel,
 		return file, fmt.Errorf("CreateFile: %v", err)
 	}
 
-	args := []interface{}{
+	args := []any{
 		file.Name,
 		file.Path,
 		file.Format,
