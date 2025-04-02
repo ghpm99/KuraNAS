@@ -25,6 +25,7 @@ type TaskType int
 
 const (
 	ScanFiles TaskType = 1
+	ScanDir   TaskType = 2
 )
 
 type Task struct {
