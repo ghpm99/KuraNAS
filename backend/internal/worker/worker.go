@@ -41,6 +41,8 @@ func worker(id int, context *WorkerContext) {
 
 		if task.Type == utils.ScanFiles {
 			ScanFilesHandler(context.Service)
+		} else if task.Type == utils.ScanDir {
+			ScanDirHandler(context.Service, task.Data)
 		}
 		fmt.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}

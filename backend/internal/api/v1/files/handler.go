@@ -38,12 +38,13 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	}
 
 	path := c.DefaultQuery("path", config.AppConfig.EntryPoint)
-	fmt.Println("entrypoint", config.AppConfig.EntryPoint)
+
 	filter := FileFilter{
 		Path: path,
 	}
 
 	err := handler.service.GetFiles(filter, &paginationResponse)
+	handler.service.ScanDirTask(path)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
