@@ -21,3 +21,6 @@ var GetFilesQuery string
 
 //go:embed file/create_table.sql
 var UpdateFileQuery string
+
+//go:embed file/get_files_by_path.sql
+var GetFilesByPathQuery string

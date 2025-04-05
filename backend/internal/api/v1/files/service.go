@@ -17,7 +17,7 @@ func NewService(repository *Repository, tasksChannel chan utils.Task) *Service {
 
 func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error {
 
-	filesModel, err := s.repository.GetFiles(fileDtoList.Pagination)
+	filesModel, err := s.repository.GetFiles(filter, fileDtoList.Pagination)
 	if err != nil {
 		return err
 	}
@@ -29,6 +29,21 @@ func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationRespo
 
 	return nil
 
+}
+
+func (s *Service) GetFilesByPath(path string) ([]FileDto, error) {
+
+	filesModel, err := s.repository.GetFilesByPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileDtoList []FileDto
+	for _, fileModel := range filesModel {
+		fileDtoList = append(fileDtoList, fileModel.ToDto())
+	}
+
+	return fileDtoList, nil
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {

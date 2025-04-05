@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func ScanFilesHandler(service *files.Service) {
+func ScanFilesWorker(service *files.Service) {
 	fmt.Println("🔍 Escaneando arquivos...")
 
 	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {

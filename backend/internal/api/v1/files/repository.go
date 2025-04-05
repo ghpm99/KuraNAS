@@ -16,7 +16,7 @@ func NewRepository(database *sql.DB) *Repository {
 	return &Repository{database}
 }
 
-func (r *Repository) GetFiles(pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
+func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
 
 	paginationResponse := utils.PaginationResponse[FileModel]{
 		Items:      nil,
@@ -27,6 +27,8 @@ func (r *Repository) GetFiles(pagination utils.Pagination) (utils.PaginationResp
 		queries.GetFilesQuery,
 		pagination.PageSize+1,
 		pagination.Page,
+		filter.Name,
+		filter.Path,
 	)
 	if err != nil {
 		return paginationResponse, err
@@ -54,6 +56,37 @@ func (r *Repository) GetFiles(pagination utils.Pagination) (utils.PaginationResp
 	paginationResponse.UpdatePagination()
 
 	return paginationResponse, nil
+}
+
+func (r *Repository) GetFilesByPath(path string) ([]FileModel, error) {
+	rows, err := r.dbContext.Query(
+		queries.GetFilesByPathQuery,
+		path,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var files []FileModel
+	for rows.Next() {
+		var file FileModel
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.Path,
+			&file.Format,
+			&file.Size,
+			&file.UpdatedAt,
+			&file.CreatedAt,
+			&file.LastInteraction,
+			&file.LastBackup,
+		); err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
 }
 
 func (r *Repository) GetFileByNameAndPath(name string, path string) (FileModel, error) {
