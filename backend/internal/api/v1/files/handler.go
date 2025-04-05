@@ -44,12 +44,12 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	}
 
 	err := handler.service.GetFiles(filter, &paginationResponse)
-	handler.service.ScanDirTask(path)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	handler.service.ScanDirTask(path)
 	c.JSON(http.StatusOK, paginationResponse)
 }
 

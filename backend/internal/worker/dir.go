@@ -3,11 +3,11 @@ package worker
 import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/pkg/utils"
 	"os"
+	"time"
 )
 
-func ScanDirHandler(service *files.Service, data string) {
+func ScanDirWorker(service *files.Service, data string) {
 	fmt.Println("🔍 Escaneando diretorio...")
 
 	entries, err := os.ReadDir(data)
@@ -16,11 +16,7 @@ func ScanDirHandler(service *files.Service, data string) {
 		return
 	}
 
-	//Array de arquivos para adicionar
-	var dirFileArray []files.FileDto
-	//Array de arquivos para deletar
-	var dirFileToDeleteArray []files.FileDto
-
+	// Map de arquivos do diretório
 	dirFileMap := make(map[string]files.FileDto)
 	for _, entry := range entries {
 		var fileDto = files.FileDto{}
@@ -29,30 +25,46 @@ func ScanDirHandler(service *files.Service, data string) {
 			continue
 		}
 		fileDto.Path = data
-		dirFileArray = append(dirFileArray, fileDto)
 		dirFileMap[fileDto.Name] = fileDto
 	}
 
-	var cacheFileArray []files.FileDto
-	var fileDtoPagination = utils.PaginationResponse[files.FileDto]{
-		Items: cacheFileArray,
-		Pagination: utils.Pagination{
-			Page:     1,
-			PageSize: 100,
-		},
-	}
+	//Array de arquivos do cache
+	cacheFileArray, err := service.GetFilesByPath(data)
 
-	if err := service.GetFiles(files.FileFilter{Path: data}, &fileDtoPagination); err != nil {
+	if err != nil {
 		fmt.Printf("Erro ao obter arquivos: %v\n", err)
 		return
 	}
 
-	for _, cacheEntry := range fileDtoPagination.Items {
+	for _, file := range cacheFileArray {
+		file.DeletedAt = time.Now()
+	}
+
+	for _, cacheEntry := range cacheFileArray {
 		if _, ok := dirFileMap[cacheEntry.Name]; ok {
 			delete(dirFileMap, cacheEntry.Name)
-		} else {
-			dirFileToDeleteArray = append(dirFileToDeleteArray, cacheEntry)
+			cacheEntry.DeletedAt = time.Time{}
 		}
+	}
+
+	fmt.Println("🔍 Arquivos encontrados no cache:")
+	for _, file := range cacheFileArray {
+		fmt.Printf(" - %s\n", file.Name)
+	}
+
+	fmt.Println("🔍 Arquivos para deletar do cache:")
+	for _, file := range cacheFileArray {
+		if file.DeletedAt.IsZero() {
+			continue
+		}
+		fmt.Printf(" - %s\n", file.Name)
+		service.UpdateFile(file)
+	}
+
+	fmt.Println("🔍 Arquivos novos encontrados no diretório:")
+	for _, file := range dirFileMap {
+		fmt.Printf(" - %s\n", file.Name)
+		service.CreateFile(file)
 	}
 
 }

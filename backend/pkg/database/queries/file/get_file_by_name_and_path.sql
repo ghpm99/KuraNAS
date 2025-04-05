@@ -10,7 +10,7 @@ SELECT
     hf.last_backup
 FROM
     home_file hf
-where
+WHERE
     1 = 1
     AND hf.name = $1
     AND hf."path" = $2
