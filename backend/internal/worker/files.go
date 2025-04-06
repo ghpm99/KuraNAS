@@ -26,18 +26,18 @@ func ScanFilesWorker(service *files.Service) {
 		name := info.Name()
 		ext := filepath.Ext(name)
 		size := info.Size()
-
+		pathDir := filepath.Dir(path)
 		fmt.Printf("📄 Arquivo: %s, Extensão: %s, Tamanho: %d bytes\n", name, ext, size)
-		fileDto, err := service.GetFileByNameAndPath(name, path)
+		fileDto, err := service.GetFileByNameAndPath(name, pathDir)
 
 		if err == nil {
-			fmt.Printf("❌ Arquivo ja cadastrado %s: %v\n", path, fileDto.ID)
+			fmt.Printf("❌ Arquivo ja cadastrado %s: %v\n", pathDir, fileDto.ID)
 			return nil
 		}
 
 		file := files.FileDto{
 			Name:            name,
-			Path:            path,
+			Path:            pathDir,
 			Format:          ext,
 			Size:            size,
 			CreatedAt:       time.Now(),
