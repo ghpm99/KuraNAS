@@ -1,6 +1,6 @@
 import { LayoutGrid } from 'lucide-react'
 import NavItem from './components/navitem'
-import FolderItem from './components/folderitem'
+import FolderTree from './components/foldertree'
 
 const Sidebar = () => {
     return (
@@ -41,15 +41,7 @@ const Sidebar = () => {
 					>
 						Analytics
 					</NavItem>
-					<div className='nav-section'>
-						<div className='nav-section-title'>Collections</div>
-						<div className='folder-list'>
-							<FolderItem href='#'>Product Demos</FolderItem>
-							<FolderItem href='#'>Case Studies</FolderItem>
-							<FolderItem href='#'>Sales Collateral</FolderItem>
-							<FolderItem href='#'>Training Materials</FolderItem>
-						</div>
-					</div>
+					<FolderTree />
 				</nav>
 			</div>
     )

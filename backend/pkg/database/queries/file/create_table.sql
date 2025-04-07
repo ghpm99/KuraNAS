@@ -9,5 +9,10 @@ CREATE TABLE
         "created_at" datetime NOT NULL,
         "last_interaction" datetime NOT NULL,
         "last_backup" datetime NULL,
-        "checksum" varchar(64) NULL
+        "type" INTEGER,
+        "checksum" VARCHAR(64),
+        "deleted_at" DATETIME
     );
+CREATE INDEX IF NOT EXISTS "home_file_path" ON "home_file" ("path");
+CREATE INDEX IF NOT EXISTS "home_file_name" ON "home_file" ("name");
+CREATE INDEX IF NOT EXISTS "home_file_path_name" ON "home_file" ("path", "name");

@@ -7,14 +7,18 @@ SELECT
     hf.updated_at,
     hf.created_at,
     hf.last_interaction,
-    hf.last_backup
+    hf.last_backup,
+    hf."type",
+    hf.checksum,
+    hf.deleted_at
 FROM
     home_file hf
 WHERE
     1 = 1
-    AND ($3 IS '' OR hf.name LIKE '%' || $3 || '%')
-    AND ($4 IS '' OR hf."path" LIKE '%' || $4 || '%')
+    AND hf."path" = $1
 ORDER BY
+    type,
+    name,
     - id
 LIMIT
-    $1 OFFSET $2;
+    $2 OFFSET $3;

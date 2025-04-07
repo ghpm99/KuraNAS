@@ -13,12 +13,15 @@ type FileModel struct {
 	ID              int
 	Name            string
 	Path            string
+	Type            FileType
 	Format          string
 	Size            int64
 	UpdatedAt       time.Time
 	CreatedAt       time.Time
+	DeletedAt       time.Time
 	LastInteraction time.Time
 	LastBackup      time.Time
+	CheckSum        string
 }
 
 func (i *FileDto) ToModel() FileModel {
@@ -26,12 +29,15 @@ func (i *FileDto) ToModel() FileModel {
 		ID:              i.ID,
 		Name:            i.Name,
 		Path:            i.Path,
+		Type:            i.Type,
 		Format:          i.Format,
 		Size:            i.Size,
 		UpdatedAt:       i.UpdatedAt,
 		CreatedAt:       i.CreatedAt,
+		DeletedAt:       i.DeletedAt,
 		LastInteraction: i.LastInteraction,
 		LastBackup:      i.LastBackup,
+		CheckSum:        i.CheckSum,
 	}
 }
 
