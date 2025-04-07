@@ -33,7 +33,7 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	}
 
 	paginationResponse := utils.PaginationResponse[FileDto]{
-		Items:      nil,
+		Items:      []FileDto{},
 		Pagination: pagination,
 	}
 

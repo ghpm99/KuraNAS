@@ -24,6 +24,7 @@ type FileDto struct {
 	DeletedAt       time.Time `json:"deleted_at"`
 	LastInteraction time.Time `json:"last_interaction"`
 	LastBackup      time.Time `json:"last_backup"`
+	CheckSum        string    `json:"check_sum"`
 }
 
 func (i *FileModel) ToDto() FileDto {
@@ -31,12 +32,15 @@ func (i *FileModel) ToDto() FileDto {
 		ID:              i.ID,
 		Name:            i.Name,
 		Path:            i.Path,
+		Type:            i.Type,
 		Format:          i.Format,
 		Size:            i.Size,
 		UpdatedAt:       i.UpdatedAt,
 		CreatedAt:       i.CreatedAt,
+		DeletedAt:       i.DeletedAt,
 		LastInteraction: i.LastInteraction,
 		LastBackup:      i.LastBackup,
+		CheckSum:        i.CheckSum,
 	}
 }
 

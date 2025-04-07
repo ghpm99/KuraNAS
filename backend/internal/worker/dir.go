@@ -47,10 +47,7 @@ func ScanDirWorker(service *files.Service, data string) {
 		}
 	}
 
-	fmt.Println("🔍 Arquivos encontrados no cache:")
-	for _, file := range cacheFileArray {
-		fmt.Printf(" - %s\n", file.Name)
-	}
+	fmt.Println("🔍 Arquivos encontrados no cache:", len(cacheFileArray))
 
 	fmt.Println("🔍 Arquivos para deletar do cache:")
 	for _, file := range cacheFileArray {
@@ -61,9 +58,8 @@ func ScanDirWorker(service *files.Service, data string) {
 		service.UpdateFile(file)
 	}
 
-	fmt.Println("🔍 Arquivos novos encontrados no diretório:")
+	fmt.Println("🔍 Arquivos novos encontrados no diretório:", len(dirFileMap))
 	for _, file := range dirFileMap {
-		fmt.Printf(" - %s\n", file.Name)
 		service.CreateFile(file)
 	}
 

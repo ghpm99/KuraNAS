@@ -5,6 +5,7 @@ import App from './app/App.tsx';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { QueryClient } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import FileProvider from './components/providers/fileprovider/index.tsx';
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -21,8 +22,9 @@ const persister = createSyncStoragePersister({
 createRoot(document.getElementById('root')!).render(
 	<PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
 		<StrictMode>
-			<App />
+			<FileProvider>
+				<App />
+			</FileProvider>
 		</StrictMode>
-		,
 	</PersistQueryClientProvider>
 );

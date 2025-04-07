@@ -19,16 +19,15 @@ func NewRepository(database *sql.DB) *Repository {
 func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
 
 	paginationResponse := utils.PaginationResponse[FileModel]{
-		Items:      nil,
+		Items:      []FileModel{},
 		Pagination: pagination,
 	}
 
 	rows, err := r.dbContext.Query(
 		queries.GetFilesQuery,
+		filter.Path,
 		pagination.PageSize+1,
 		pagination.Page,
-		filter.Name,
-		filter.Path,
 	)
 	if err != nil {
 		return paginationResponse, err
@@ -47,9 +46,13 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 			&file.CreatedAt,
 			&file.LastInteraction,
 			&file.LastBackup,
+			&file.Type,
+			&file.CheckSum,
+			&file.DeletedAt,
 		); err != nil {
 			return paginationResponse, err
 		}
+
 		paginationResponse.Items = append(paginationResponse.Items, file)
 	}
 
@@ -130,6 +133,9 @@ func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel,
 		file.CreatedAt,
 		file.LastInteraction,
 		file.LastBackup,
+		file.DeletedAt,
+		file.Type,
+		file.CheckSum,
 	}
 
 	query := queries.InsertFileQuery
@@ -170,6 +176,9 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		&file.CreatedAt,
 		&file.LastInteraction,
 		&file.LastBackup,
+		&file.Type,
+		&file.CheckSum,
+		&file.DeletedAt,
 	)
 
 	if err != nil {
