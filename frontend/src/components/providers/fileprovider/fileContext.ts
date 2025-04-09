@@ -20,9 +20,7 @@ export type FileContextType = {
 	files: FileData[];
 	status: string;
   selectedItem: FileData | null;
-  selectedIndex: number | null;
-  setSelectedItem: (item: FileData | null) => void;
-  setSelectedIndex: (index: number | null) => void;
+  handleSelectItem: (item: FileData | null) => void;
 };
 
 const FileContext = createContext<FileContextType | undefined>(undefined);
