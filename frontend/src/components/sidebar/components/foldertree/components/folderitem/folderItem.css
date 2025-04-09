@@ -1,0 +1,20 @@
+.folder-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	text-decoration: none;
+	color: #F2F5F8;
+	font-size: 0.875rem;
+	cursor: pointer;
+}
+
+.folder-item:hover {
+	background-color: #2E2D33;
+}
+
+.icon {
+	width: 16px;
+	height: 16px;
+	color: #9ca3af;
+}

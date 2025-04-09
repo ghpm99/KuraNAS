@@ -1,3 +1,6 @@
+import React from 'react';
+import './folderItem.css';
+
 const FolderSvg = () => {
 	return (
 		<svg className='icon' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -23,10 +26,20 @@ const FilerSvg = () => {
 		</svg>
 	);
 };
-const FolderItem = ({ children, label, type }: { children: React.ReactNode; label: string; type: number }) => {
+const FolderItem = ({
+	children,
+	label,
+	type,
+	onClick,
+}: {
+	children: React.ReactNode;
+	label: string;
+	type: number;
+	onClick: () => void;
+}) => {
 	return (
 		<>
-			<a className='folder-item'>
+			<a className='folder-item' onClick={onClick}>
 				{type === 1 ? <FolderSvg /> : <FilerSvg />}
 				<span>{label}</span>
 			</a>

@@ -1,7 +1,7 @@
-import { apiFile } from '@/service'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { FileContextProvider, FileContextType, FileData } from './fileContext'
+import { apiFile } from '@/service';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FileContextProvider, FileContextType, FileData } from './fileContext';
 
 export type Pagination = {
 	hasNext: boolean;
@@ -18,32 +18,75 @@ export type PaginationResponse = {
 const pageSize = 200;
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
-	const [page, setPage] = useState<number>(1);
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
-	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+	const [fileTree, setFileTree] = useState<FileData[]>([]);
 
-	const { status, data } = useQuery({
-		queryKey: ['files'],
-		queryFn: async (): Promise<PaginationResponse> => {
-            const response = await apiFile.get<PaginationResponse>(`/`, {
-                params: {
-                    page: page,
-                    page_size: pageSize,
-                }
-            });
+	console.log('selectedItem', selectedItem);
 
+	const queryParams = useMemo(
+		() => ({
+			page_size: pageSize,
+			path: selectedItem ? `${selectedItem?.path || ''}${selectedItem?.name || ''}` : undefined,
+		}),
+		[selectedItem]
+	);
+
+	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ['files', queryParams],
+		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
+			const response = await apiFile.get<PaginationResponse>(`/`, {
+				params: { ...queryParams, page: pageParam },
+			});
 			return response.data;
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			if (lastPage.pagination.hasNext) {
+				return lastPage.pagination.page + 1;
+			}
+			return undefined;
 		},
 	});
 
-	const contextValue: FileContextType = {
-		files: data?.items || [],
-		status: status,
-		selectedItem,
-		selectedIndex,
-		setSelectedItem,
-		setSelectedIndex,
-	};
+	const findAndAddChildren = useCallback((tree: FileData[], parent: FileData, children: FileData[]): FileData[] => {
+		return tree.map((node) => {
+			if (node.id === parent.id) {
+				return { ...node, file_children: children };
+			}
+			if (node.file_children) {
+				return { ...node, file_children: findAndAddChildren(node.file_children, parent, children) };
+			}
+			return node;
+		});
+	}, []);
+
+	useEffect(() => {
+		if (!data) return;
+
+		if (selectedItem) {
+			setFileTree((currentTree) => {
+				// Encontre o item pai na árvore e adicione os filhos
+				const updatedTree = findAndAddChildren(currentTree, selectedItem, data.pages[0].items);
+				return updatedTree;
+			});
+		} else {
+			setFileTree(data.pages[0].items);
+		}
+	}, [data, selectedItem, findAndAddChildren]);
+
+	const handleSelectItem = useCallback((item: FileData | null) => {
+		setSelectedItem(item);
+	}, []);
+
+	const contextValue: FileContextType = useMemo(
+		() => ({
+			files: fileTree || [],
+			status: status,
+			selectedItem,
+			handleSelectItem,
+		}),
+		[fileTree, status, selectedItem, handleSelectItem]
+	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };
 
