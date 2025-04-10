@@ -2,7 +2,8 @@ import { apiFile } from '@/service';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileContextProvider, FileContextType, FileData } from './fileContext';
-import { useInfiniteQuery } from 'react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
+
 
 export type Pagination = {
 	hasNext: boolean;
@@ -40,6 +41,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			});
 			return response.data;
 		},
+		initialPageParam: 1,
 		getNextPageParam: (lastPage) => {
 			if (lastPage.pagination.hasNext) {
 				return lastPage.pagination.page + 1;

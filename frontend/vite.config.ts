@@ -8,7 +8,8 @@ export default defineConfig({
 	plugins: [
 		react(),
 		legacy({
-			targets: ['defaults', 'not IE 11'],
+			targets: ['defaults', '> 0.2%', 'not dead', 'Opera >= 50'],
+      modernPolyfills: true,
 		}),
 	],
 	resolve: {
