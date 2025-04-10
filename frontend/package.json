@@ -5,23 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && mv dist ../backend/",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.72.2",
     "axios": "^1.8.4",
     "lucide-react": "^0.483.0",
-    "react": "^16",
-    "react-dom": "^16",
-    "react-query": "^3"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@tanstack/eslint-plugin-query": "^5.68.0",
     "@types/node": "^22.13.14",
-    "@types/react": "^16",
-    "@types/react-dom": "^16",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-legacy": "^6.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.21.0",
@@ -37,6 +37,6 @@
     ">0.2%",
     "not dead",
     "not op_mini all",
-    "Opera 50"
+    "Opera >= 50"
   ]
 }
