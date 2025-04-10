@@ -62,7 +62,7 @@ func (app *Application) Run(addr string, enableGraceFul bool) error {
 
 func configGracefulStop(router *gin.Engine) error {
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8000",
 		Handler: router.Handler(),
 	}
 

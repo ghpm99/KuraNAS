@@ -10,5 +10,5 @@ func main() {
 		panic(err)
 	}
 
-	application.Run(":8080", false)
+	application.Run(":8000", false)
 }
