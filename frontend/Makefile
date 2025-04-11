@@ -4,5 +4,6 @@
 
 build:
 	@echo "Building frontend..."
+	@yarn install
 	@yarn build
 	@echo "Frontend build complete."
