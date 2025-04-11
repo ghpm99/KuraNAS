@@ -3,25 +3,32 @@ import FolderItem from './components/folderitem';
 import './folderTree.css';
 
 const FolderTree = () => {
-	const fileContext = useFile();
+	const { status, handleSelectItem, files, expandedItems, selectedItem } = useFile();
 
-	if (fileContext.status === 'loading') {
+	if (status === 'loading') {
 		return <div>Loading...</div>;
 	}
-	if (fileContext.status === 'error') {
+	if (status === 'error') {
 		return <div>Error loading files</div>;
 	}
 
 	const handleClick = (file: FileData) => {
-		fileContext.handleSelectItem(file);
-	}
+		handleSelectItem(file);
+	};
 
 	const renderFiles = (fileArray: FileData[]) => {
 		if (!fileArray || fileArray.length === 0) {
 			return <div>No files found</div>;
 		}
 		const fileComponent = fileArray.map((file) => (
-			<FolderItem key={file.id} type={file.type} label={file.name} onClick={() => handleClick(file)}>
+			<FolderItem
+				key={file.id}
+				type={file.type}
+				label={file.name}
+				onClick={() => handleClick(file)}
+				expanded={expandedItems.includes(file.id)}
+				selected={selectedItem?.id === file.id}
+			>
 				{file.file_children?.length > 0 && <div className='folder-children'>{renderFiles(file.file_children)}</div>}
 			</FolderItem>
 		));
@@ -32,7 +39,7 @@ const FolderTree = () => {
 	return (
 		<div className='nav-section'>
 			<div className='nav-section-title'>Arquivos</div>
-			<div className='folder-list'>{renderFiles(fileContext.files)}</div>
+			<div className='folder-list'>{renderFiles(files)}</div>
 		</div>
 	);
 };

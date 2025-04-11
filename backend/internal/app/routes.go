@@ -36,7 +36,7 @@ func registerReactRoutes(router *gin.Engine) {
 
 func registerCorsRoutes(router *gin.Engine) {
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "PUT", "PATCH"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},

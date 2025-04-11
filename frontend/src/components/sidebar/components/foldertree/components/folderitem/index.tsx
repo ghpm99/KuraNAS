@@ -31,19 +31,23 @@ const FolderItem = ({
 	label,
 	type,
 	onClick,
+	expanded,
+	selected,
 }: {
 	children: React.ReactNode;
 	label: string;
 	type: number;
 	onClick: () => void;
+	expanded: boolean;
+	selected: boolean;
 }) => {
 	return (
 		<>
-			<a className='folder-item' onClick={onClick}>
+			<a className={`folder-item ${selected ? 'active' : ''}`} onClick={onClick}>
 				{type === 1 ? <FolderSvg /> : <FilerSvg />}
 				<span>{label}</span>
 			</a>
-			{children && <div className='folder-children'>{children}</div>}
+			{children && expanded && <div className='folder-children'>{children}</div>}
 		</>
 	);
 };
