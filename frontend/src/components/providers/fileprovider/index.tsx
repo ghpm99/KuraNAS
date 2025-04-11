@@ -2,8 +2,7 @@ import { apiFile } from '@/service';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileContextProvider, FileContextType, FileData } from './fileContext';
-import { useInfiniteQuery } from '@tanstack/react-query'
-
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 export type Pagination = {
 	hasNext: boolean;
@@ -22,6 +21,7 @@ const pageSize = 200;
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
+	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 
 	console.log('selectedItem', selectedItem);
 
@@ -76,9 +76,18 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 	}, [data, selectedItem, findAndAddChildren]);
 
-	const handleSelectItem = useCallback((item: FileData | null) => {
-		setSelectedItem(item);
-	}, []);
+	const handleSelectItem = useCallback(
+		(item: FileData | null) => {
+			setSelectedItem(item);
+			if (!item) return;
+			if (expandedItems.includes(item.id)) {
+				setExpandedItems((prev) => prev.filter((id) => id !== item.id));
+			} else {
+				setExpandedItems((prev) => [...prev, item.id]);
+			}
+		},
+		[expandedItems]
+	);
 
 	const contextValue: FileContextType = useMemo(
 		() => ({
@@ -86,8 +95,9 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			status: status,
 			selectedItem,
 			handleSelectItem,
+			expandedItems,
 		}),
-		[fileTree, status, selectedItem, handleSelectItem]
+		[fileTree, status, selectedItem, handleSelectItem, expandedItems]
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };

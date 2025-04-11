@@ -9,7 +9,7 @@ export default defineConfig({
 		react(),
 		legacy({
 			targets: ['defaults', '> 0.2%', 'not dead', 'Opera >= 50'],
-      modernPolyfills: true,
+			modernPolyfills: true,
 		}),
 	],
 	resolve: {

@@ -4,17 +4,25 @@
 	gap: 8px;
 	padding: 8px 12px;
 	text-decoration: none;
-	color: #F2F5F8;
+	color: #f2f5f8;
 	font-size: 0.875rem;
 	cursor: pointer;
 }
 
 .folder-item:hover {
-	background-color: #2E2D33;
+	background-color: #2e2d33;
+}
+
+.folder-item.active {
+	background-color: #3b3a40;
 }
 
 .icon {
 	width: 16px;
 	height: 16px;
 	color: #9ca3af;
+}
+
+.folder-children {
+	margin-left: 16px;
 }
