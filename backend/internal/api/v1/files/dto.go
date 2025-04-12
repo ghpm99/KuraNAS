@@ -64,6 +64,7 @@ func (fileDto *FileDto) ParseDirEntryToFileDto(entry os.DirEntry) error {
 }
 
 type FileFilter struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name       string `json:"name"`
+	Path       string `json:"path"`
+	FileParent int    `json:"file_parent"`
 }
