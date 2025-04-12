@@ -23,6 +23,8 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 		Pagination: pagination,
 	}
 
+	fmt.Println("GetFiles: ", filter.Path, pagination.PageSize, pagination.Page)
+
 	rows, err := r.dbContext.Query(
 		queries.GetFilesQuery,
 		filter.Path,
@@ -197,4 +199,21 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 	}
 
 	return rowsAffected == 1, nil
+}
+
+func (r *Repository) GetPathByFileId(fileId int) (string, error) {
+	row := r.dbContext.QueryRow(
+		queries.GetPathByFileIdQuery,
+		fileId,
+	)
+
+	var path string
+
+	if err := row.Scan(
+		&path,
+	); err != nil {
+		return "", err
+	}
+
+	return path, nil
 }

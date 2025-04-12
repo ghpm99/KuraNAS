@@ -3,6 +3,7 @@ package files
 import (
 	"context"
 	"fmt"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 )
 
@@ -16,6 +17,16 @@ func NewService(repository *Repository, tasksChannel chan utils.Task) *Service {
 }
 
 func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error {
+
+	if filter.FileParent == 0 {
+		filter.Path = config.AppConfig.EntryPoint
+	} else {
+		path, error := s.repository.GetPathByFileId(filter.FileParent)
+		if error != nil {
+			return error
+		}
+		filter.Path = path
+	}
 
 	filesModel, err := s.repository.GetFiles(filter, fileDtoList.Pagination)
 	if err != nil {
