@@ -9,11 +9,15 @@ import (
 )
 
 type Repository struct {
-	dbContext *sql.DB
+	DbContext *sql.DB
 }
 
 func NewRepository(database *sql.DB) *Repository {
 	return &Repository{database}
+}
+
+func (r *Repository) GetDbContext() *sql.DB {
+	return r.DbContext
 }
 
 func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
@@ -25,7 +29,7 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 
 	fmt.Println("GetFiles: ", filter.Path, pagination.PageSize, pagination.Page)
 
-	rows, err := r.dbContext.Query(
+	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,
 		filter.Path,
 		pagination.PageSize+1,
@@ -64,7 +68,7 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 }
 
 func (r *Repository) GetFilesByPath(path string) ([]FileModel, error) {
-	rows, err := r.dbContext.Query(
+	rows, err := r.DbContext.Query(
 		queries.GetFilesByPathQuery,
 		path,
 	)
@@ -95,7 +99,7 @@ func (r *Repository) GetFilesByPath(path string) ([]FileModel, error) {
 }
 
 func (r *Repository) GetFileByNameAndPath(name string, path string) (FileModel, error) {
-	row := r.dbContext.QueryRow(
+	row := r.DbContext.QueryRow(
 		queries.GetFileByNameAndPathQuery,
 		name,
 		path,
@@ -202,7 +206,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 }
 
 func (r *Repository) GetPathByFileId(fileId int) (string, error) {
-	row := r.dbContext.QueryRow(
+	row := r.DbContext.QueryRow(
 		queries.GetPathByFileIdQuery,
 		fileId,
 	)
