@@ -24,11 +24,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 
 	console.log('selectedItem', selectedItem);
+	console.log('fileTree', fileTree);
 
 	const queryParams = useMemo(
 		() => ({
 			page_size: pageSize,
-			path: selectedItem ? `${selectedItem?.path || ''}${selectedItem?.name || ''}` : undefined,
+			file_parent: selectedItem ? selectedItem.id : undefined,
 		}),
 		[selectedItem]
 	);

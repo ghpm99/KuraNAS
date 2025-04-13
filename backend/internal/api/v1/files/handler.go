@@ -3,7 +3,6 @@ package files
 import (
 	"fmt"
 
-	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 	"net/http"
 
@@ -37,10 +36,10 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 		Pagination: pagination,
 	}
 
-	path := c.DefaultQuery("path", config.AppConfig.EntryPoint)
+	fileParent := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
 	filter := FileFilter{
-		Path: path,
+		FileParent: fileParent,
 	}
 
 	err := handler.service.GetFiles(filter, &paginationResponse)
@@ -49,7 +48,7 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	handler.service.ScanDirTask(path)
+
 	c.JSON(http.StatusOK, paginationResponse)
 }
 

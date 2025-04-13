@@ -2,22 +2,44 @@ package files
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 )
 
-type Service struct {
-	repository *Repository
-	tasks      chan utils.Task
+type RepositoryInterface interface {
+	GetDbContext() *sql.DB
+	GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error)
+	GetFilesByPath(path string) ([]FileModel, error)
+	GetFileByNameAndPath(name string, path string) (FileModel, error)
+	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
+	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
+	GetPathByFileId(fileId int) (string, error)
 }
 
-func NewService(repository *Repository, tasksChannel chan utils.Task) *Service {
-	return &Service{repository: repository, tasks: tasksChannel}
+type Service struct {
+	Repository RepositoryInterface
+	Tasks      chan utils.Task
+}
+
+func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) *Service {
+	return &Service{Repository: repository, Tasks: tasksChannel}
 }
 
 func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error {
 
-	filesModel, err := s.repository.GetFiles(filter, fileDtoList.Pagination)
+	if filter.FileParent == 0 {
+		filter.Path = config.AppConfig.EntryPoint
+	} else {
+		path, error := s.Repository.GetPathByFileId(filter.FileParent)
+		if error != nil {
+			return error
+		}
+		filter.Path = path
+	}
+
+	filesModel, err := s.Repository.GetFiles(filter, fileDtoList.Pagination)
 	if err != nil {
 		return err
 	}
@@ -33,7 +55,7 @@ func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationRespo
 
 func (s *Service) GetFilesByPath(path string) ([]FileDto, error) {
 
-	filesModel, err := s.repository.GetFilesByPath(path)
+	filesModel, err := s.Repository.GetFilesByPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +69,7 @@ func (s *Service) GetFilesByPath(path string) ([]FileDto, error) {
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
-	fileModel, err := s.repository.GetFileByNameAndPath(name, path)
+	fileModel, err := s.Repository.GetFileByNameAndPath(name, path)
 
 	if err != nil {
 		return FileDto{}, err
@@ -64,14 +86,14 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
 	ctx := context.Background()
 
-	transaction, err := s.repository.dbContext.BeginTx(ctx, nil)
+	transaction, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
 
 	defer transaction.Rollback()
 
 	if err != nil {
 		return fileDto, err
 	}
-	result, err := s.repository.CreateFile(transaction, fileDto.ToModel())
+	result, err := s.Repository.CreateFile(transaction, fileDto.ToModel())
 
 	if err == nil {
 		err = transaction.Commit()
@@ -82,14 +104,14 @@ func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
 
 func (service *Service) UpdateFile(file FileDto) (bool, error) {
 	ctx := context.Background()
-	transaction, err := service.repository.dbContext.BeginTx(ctx, nil)
+	transaction, err := service.Repository.GetDbContext().BeginTx(ctx, nil)
 
 	defer transaction.Rollback()
 
 	if err != nil {
 		return false, err
 	}
-	result, err := service.repository.UpdateFile(transaction, file.ToModel())
+	result, err := service.Repository.UpdateFile(transaction, file.ToModel())
 
 	if result {
 		err = transaction.Commit()
@@ -103,7 +125,7 @@ func (s *Service) ScanFilesTask(data string) {
 		Type: utils.ScanFiles,
 		Data: "Escaneamento de arquivos",
 	}
-	s.tasks <- task
+	s.Tasks <- task
 }
 
 func (s *Service) ScanDirTask(data string) {
@@ -111,5 +133,5 @@ func (s *Service) ScanDirTask(data string) {
 		Type: utils.ScanDir,
 		Data: data,
 	}
-	s.tasks <- task
+	s.Tasks <- task
 }
