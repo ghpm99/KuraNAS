@@ -8,7 +8,7 @@ const FolderTree = () => {
 	if (status === 'loading') {
 		return <div>Loading...</div>;
 	}
-	if (status === 'error') {
+	if (status === 'error' && files.length === 0) {
 		return <div>Error loading files</div>;
 	}
 

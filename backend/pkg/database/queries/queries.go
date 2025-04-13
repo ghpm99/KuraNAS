@@ -24,3 +24,6 @@ var UpdateFileQuery string
 
 //go:embed file/get_files_by_path.sql
 var GetFilesByPathQuery string
+
+//go:embed file/get_path_by_file_id.sql
+var GetPathByFileIdQuery string
