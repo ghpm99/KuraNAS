@@ -2,21 +2,10 @@ package files
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 )
-
-type RepositoryInterface interface {
-	GetDbContext() *sql.DB
-	GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error)
-	GetFilesByPath(path string) ([]FileModel, error)
-	GetFileByNameAndPath(name string, path string) (FileModel, error)
-	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
-	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
-	GetPathByFileId(fileId int) (string, error)
-}
 
 type Service struct {
 	Repository RepositoryInterface

@@ -8,3 +8,8 @@ build:
 	@echo "Building backend..."
 	@go build -o main $(MAIN_GO)
 	@echo "Backend build complete."
+
+test:
+	@echo "Running tests..."
+	@go test ./tests/files_test/...
+	@echo "Tests completed."
