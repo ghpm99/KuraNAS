@@ -1,6 +1,7 @@
 package files
 
 import (
+	"nas-go/api/pkg/utils"
 	"os"
 	"time"
 )
@@ -13,18 +14,18 @@ const (
 )
 
 type FileDto struct {
-	ID              int       `json:"id"`
-	Name            string    `json:"name"`
-	Path            string    `json:"path"`
-	Type            FileType  `json:"type"`
-	Format          string    `json:"format"`
-	Size            int64     `json:"size"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	CreatedAt       time.Time `json:"created_at"`
-	DeletedAt       time.Time `json:"deleted_at"`
-	LastInteraction time.Time `json:"last_interaction"`
-	LastBackup      time.Time `json:"last_backup"`
-	CheckSum        string    `json:"check_sum"`
+	ID              int                       `json:"id"`
+	Name            string                    `json:"name"`
+	Path            string                    `json:"path"`
+	Type            FileType                  `json:"type"`
+	Format          string                    `json:"format"`
+	Size            int64                     `json:"size"`
+	UpdatedAt       time.Time                 `json:"updated_at"`
+	CreatedAt       time.Time                 `json:"created_at"`
+	DeletedAt       utils.Optional[time.Time] `json:"deleted_at"`
+	LastInteraction utils.Optional[time.Time] `json:"last_interaction"`
+	LastBackup      utils.Optional[time.Time] `json:"last_backup"`
+	CheckSum        string                    `json:"check_sum"`
 }
 
 func (i *FileModel) ToDto() FileDto {

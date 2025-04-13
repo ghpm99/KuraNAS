@@ -15,3 +15,8 @@ func ConfigInMemoryDatabase() *sql.DB {
 
 	return db
 }
+
+type Optional[T any] struct {
+	Value    T
+	HasValue bool
+}
