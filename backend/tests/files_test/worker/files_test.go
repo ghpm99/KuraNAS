@@ -22,6 +22,13 @@ func TestScanFilesWorker(t *testing.T) {
 
 	config.AppConfig.EntryPoint = path_dir_test()
 
+	var expectedFiles = []files.FileDto{
+		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: nil},
+		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
+		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
+		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
+	}
+
 	var filesCreated = []files.FileDto{}
 
 	mockService := &mocks.MockService{

@@ -11,7 +11,7 @@ import (
 )
 
 func ScanFilesWorker(service files.ServiceInterface) {
-	fmt.Println("🔍 Escaneando arquivos em:", config.AppConfig.EntryPoint)
+	fmt.Println("🔍 Escaneando arquivos...")
 
 	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

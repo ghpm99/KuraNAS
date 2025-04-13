@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"nas-go/api/pkg/utils"
 	"os"
 	"time"
 )
@@ -18,9 +19,9 @@ type FileModel struct {
 	Size            int64
 	UpdatedAt       time.Time
 	CreatedAt       time.Time
-	DeletedAt       time.Time
-	LastInteraction time.Time
-	LastBackup      time.Time
+	DeletedAt       utils.Optional[time.Time]
+	LastInteraction utils.Optional[time.Time]
+	LastBackup      utils.Optional[time.Time]
 	CheckSum        string
 }
 

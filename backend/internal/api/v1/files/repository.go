@@ -210,6 +210,7 @@ func (r *Repository) GetPathByFileId(fileId int) (string, error) {
 		queries.GetPathByFileIdQuery,
 		fileId,
 	)
+	fmt.Println("GetPathByFileId: ", fileId)
 
 	var path string
 
