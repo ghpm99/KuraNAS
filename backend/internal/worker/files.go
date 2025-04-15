@@ -5,6 +5,7 @@ import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
 	"time"
@@ -36,14 +37,24 @@ func ScanFilesWorker(service files.ServiceInterface) {
 		}
 
 		file := files.FileDto{
-			Name:            name,
-			Path:            pathDir,
-			Format:          ext,
-			Size:            size,
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
-			LastInteraction: time.Now(),
-			LastBackup:      time.Now(),
+			Name:      name,
+			Path:      pathDir,
+			Format:    ext,
+			Size:      size,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			LastInteraction: utils.Optional[time.Time]{
+				Value:    time.Time{},
+				HasValue: false,
+			},
+			LastBackup: utils.Optional[time.Time]{
+				Value:    time.Time{},
+				HasValue: false,
+			},
+			DeletedAt: utils.Optional[time.Time]{
+				Value:    time.Time{},
+				HasValue: false,
+			},
 		}
 		fileCreated, err := service.CreateFile(file)
 

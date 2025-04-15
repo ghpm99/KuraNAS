@@ -28,21 +28,36 @@ type FileDto struct {
 	CheckSum        string                    `json:"check_sum"`
 }
 
-func (i *FileModel) ToDto() FileDto {
-	return FileDto{
-		ID:              i.ID,
-		Name:            i.Name,
-		Path:            i.Path,
-		Type:            i.Type,
-		Format:          i.Format,
-		Size:            i.Size,
-		UpdatedAt:       i.UpdatedAt,
-		CreatedAt:       i.CreatedAt,
-		DeletedAt:       i.DeletedAt,
-		LastInteraction: i.LastInteraction,
-		LastBackup:      i.LastBackup,
-		CheckSum:        i.CheckSum,
+func (i *FileModel) ToDto() (FileDto, error) {
+
+	fileDto := FileDto{
+		ID:        i.ID,
+		Name:      i.Name,
+		Path:      i.Path,
+		Type:      i.Type,
+		Format:    i.Format,
+		Size:      i.Size,
+		UpdatedAt: i.UpdatedAt,
+		CreatedAt: i.CreatedAt,
+		CheckSum:  i.CheckSum,
 	}
+
+	err := fileDto.DeletedAt.ParseFromNullTime(i.DeletedAt)
+	if err != nil {
+		return fileDto, err
+	}
+
+	err = fileDto.LastInteraction.ParseFromNullTime(i.LastInteraction)
+	if err != nil {
+		return fileDto, err
+	}
+
+	err = fileDto.LastBackup.ParseFromNullTime(i.LastBackup)
+	if err != nil {
+		return fileDto, err
+	}
+
+	return fileDto, nil
 }
 
 func (fileDto *FileDto) ParseDirEntryToFileDto(entry os.DirEntry) error {

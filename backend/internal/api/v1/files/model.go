@@ -2,10 +2,10 @@ package files
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
-	"nas-go/api/pkg/utils"
 	"os"
 	"time"
 )
@@ -19,27 +19,46 @@ type FileModel struct {
 	Size            int64
 	UpdatedAt       time.Time
 	CreatedAt       time.Time
-	DeletedAt       utils.Optional[time.Time]
-	LastInteraction utils.Optional[time.Time]
-	LastBackup      utils.Optional[time.Time]
+	DeletedAt       sql.NullTime
+	LastInteraction sql.NullTime
+	LastBackup      sql.NullTime
 	CheckSum        string
 }
 
-func (i *FileDto) ToModel() FileModel {
-	return FileModel{
-		ID:              i.ID,
-		Name:            i.Name,
-		Path:            i.Path,
-		Type:            i.Type,
-		Format:          i.Format,
-		Size:            i.Size,
-		UpdatedAt:       i.UpdatedAt,
-		CreatedAt:       i.CreatedAt,
-		DeletedAt:       i.DeletedAt,
-		LastInteraction: i.LastInteraction,
-		LastBackup:      i.LastBackup,
-		CheckSum:        i.CheckSum,
+func (i *FileDto) ToModel() (FileModel, error) {
+
+	fileModel := FileModel{
+		ID:        i.ID,
+		Name:      i.Name,
+		Path:      i.Path,
+		Type:      i.Type,
+		Format:    i.Format,
+		Size:      i.Size,
+		UpdatedAt: i.UpdatedAt,
+		CreatedAt: i.CreatedAt,
+		CheckSum:  i.CheckSum,
 	}
+
+	deletedAt, err := i.DeletedAt.ParseToNullTime()
+	if err != nil {
+		return fileModel, err
+	}
+	fileModel.DeletedAt = deletedAt
+
+	lastInteraction, err := i.LastInteraction.ParseToNullTime()
+	if err != nil {
+		return fileModel, err
+	}
+	fileModel.LastInteraction = lastInteraction
+
+	lastBackup, err := i.LastBackup.ParseToNullTime()
+
+	if err != nil {
+		return fileModel, err
+	}
+	fileModel.LastBackup = lastBackup
+
+	return fileModel, nil
 }
 
 func (fileModel *FileModel) getCheckSumFromFile() error {

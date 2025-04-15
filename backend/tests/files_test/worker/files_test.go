@@ -4,10 +4,12 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
+	"nas-go/api/pkg/utils"
 	"nas-go/api/tests/mocks"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +25,10 @@ func TestScanFilesWorker(t *testing.T) {
 	config.AppConfig.EntryPoint = path_dir_test()
 
 	var expectedFiles = []files.FileDto{
-		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: nil},
+		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: utils.Optional[time.Time]{
+			Value:    time.Time{},
+			HasValue: false,
+		}},
 		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
 		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
 		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
