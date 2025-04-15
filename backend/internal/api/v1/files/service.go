@@ -34,7 +34,12 @@ func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationRespo
 	}
 
 	for _, imageModel := range filesModel.Items {
-		fileDtoList.Items = append(fileDtoList.Items, imageModel.ToDto())
+		fileDtoResult, err := imageModel.ToDto()
+
+		if err != nil {
+			continue
+		}
+		fileDtoList.Items = append(fileDtoList.Items, fileDtoResult)
 	}
 	fileDtoList.Pagination = filesModel.Pagination
 
@@ -51,7 +56,13 @@ func (s *Service) GetFilesByPath(path string) ([]FileDto, error) {
 
 	var fileDtoList []FileDto
 	for _, fileModel := range filesModel {
-		fileDtoList = append(fileDtoList, fileModel.ToDto())
+		fileDtoResult, err := fileModel.ToDto()
+
+		if err != nil {
+			continue
+		}
+
+		fileDtoList = append(fileDtoList, fileDtoResult)
 	}
 
 	return fileDtoList, nil
@@ -69,7 +80,13 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 		fmt.Println(error)
 	}
 
-	return fileModel.ToDto(), nil
+	fileDtoResult, err := fileModel.ToDto()
+
+	if err != nil {
+		return fileDtoResult, err
+	}
+
+	return fileDtoResult, nil
 }
 
 func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
@@ -82,16 +99,29 @@ func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
 	if err != nil {
 		return fileDto, err
 	}
-	result, err := s.Repository.CreateFile(transaction, fileDto.ToModel())
+
+	fileModel, err := fileDto.ToModel()
+
+	if err != nil {
+		return fileDto, err
+	}
+
+	result, err := s.Repository.CreateFile(transaction, fileModel)
 
 	if err == nil {
 		err = transaction.Commit()
 	}
 
-	return result.ToDto(), err
+	fileDtoResult, err := result.ToDto()
+
+	if err != nil {
+		return fileDtoResult, err
+	}
+
+	return fileDtoResult, nil
 }
 
-func (service *Service) UpdateFile(file FileDto) (bool, error) {
+func (service *Service) UpdateFile(fileDto FileDto) (bool, error) {
 	ctx := context.Background()
 	transaction, err := service.Repository.GetDbContext().BeginTx(ctx, nil)
 
@@ -100,7 +130,14 @@ func (service *Service) UpdateFile(file FileDto) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	result, err := service.Repository.UpdateFile(transaction, file.ToModel())
+
+	fileModel, err := fileDto.ToModel()
+
+	if err != nil {
+		return false, err
+	}
+
+	result, err := service.Repository.UpdateFile(transaction, fileModel)
 
 	if result {
 		err = transaction.Commit()

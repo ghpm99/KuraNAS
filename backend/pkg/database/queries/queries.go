@@ -19,7 +19,7 @@ var InsertFileQuery string
 //go:embed file/get_files.sql
 var GetFilesQuery string
 
-//go:embed file/create_table.sql
+//go:embed file/update_file.sql
 var UpdateFileQuery string
 
 //go:embed file/get_files_by_path.sql

@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/utils"
 	"os"
 	"time"
 )
@@ -37,13 +38,19 @@ func ScanDirWorker(service *files.Service, data string) {
 	}
 
 	for _, file := range cacheFileArray {
-		file.DeletedAt = time.Now()
+		file.DeletedAt = utils.Optional[time.Time]{
+			Value:    time.Now(),
+			HasValue: true,
+		}
 	}
 
 	for _, cacheEntry := range cacheFileArray {
 		if _, ok := dirFileMap[cacheEntry.Name]; ok {
 			delete(dirFileMap, cacheEntry.Name)
-			cacheEntry.DeletedAt = time.Time{}
+			cacheEntry.DeletedAt = utils.Optional[time.Time]{
+				Value:    time.Time{},
+				HasValue: false,
+			}
 		}
 	}
 
@@ -51,7 +58,7 @@ func ScanDirWorker(service *files.Service, data string) {
 
 	fmt.Println("🔍 Arquivos para deletar do cache:")
 	for _, file := range cacheFileArray {
-		if file.DeletedAt.IsZero() {
+		if !file.DeletedAt.HasValue {
 			continue
 		}
 		fmt.Printf(" - %s\n", file.Name)

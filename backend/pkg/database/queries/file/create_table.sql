@@ -7,12 +7,15 @@ CREATE TABLE
         "size" integer NOT NULL,
         "updated_at" datetime NOT NULL,
         "created_at" datetime NOT NULL,
-        "last_interaction" datetime NOT NULL,
+        "last_interaction" datetime NULL,
         "last_backup" datetime NULL,
         "type" INTEGER,
         "checksum" VARCHAR(64),
-        "deleted_at" DATETIME
+        "deleted_at" DATETIME NULL
     );
+
 CREATE INDEX IF NOT EXISTS "home_file_path" ON "home_file" ("path");
+
 CREATE INDEX IF NOT EXISTS "home_file_name" ON "home_file" ("name");
+
 CREATE INDEX IF NOT EXISTS "home_file_path_name" ON "home_file" ("path", "name");
