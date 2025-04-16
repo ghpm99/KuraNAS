@@ -5,10 +5,8 @@ import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
-	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 func ScanFilesWorker(service files.ServiceInterface) {
@@ -19,44 +17,26 @@ func ScanFilesWorker(service files.ServiceInterface) {
 			fmt.Printf("❌ Erro ao escanear arquivo %s: %v\n", path, err)
 			return nil
 		}
-
-		if info.IsDir() {
-			return nil
-		}
-
 		name := info.Name()
-		ext := filepath.Ext(name)
-		size := info.Size()
 		pathDir := filepath.Dir(path)
-		fmt.Printf("📄 Arquivo: %s, Extensão: %s, Tamanho: %d bytes\n", name, ext, size)
 		fileDto, err := service.GetFileByNameAndPath(name, pathDir)
 
-		if err == nil {
-			fmt.Printf("❌ Arquivo ja cadastrado %s: %v\n", pathDir, fileDto.ID)
+		if err := fileDto.ParseFileInfoToFileDto(info); err != nil {
+			fmt.Printf("Erro ao obter informações: %v\n", err)
 			return nil
 		}
 
-		file := files.FileDto{
-			Name:      name,
-			Path:      pathDir,
-			Format:    ext,
-			Size:      size,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			LastInteraction: utils.Optional[time.Time]{
-				Value:    time.Time{},
-				HasValue: false,
-			},
-			LastBackup: utils.Optional[time.Time]{
-				Value:    time.Time{},
-				HasValue: false,
-			},
-			DeletedAt: utils.Optional[time.Time]{
-				Value:    time.Time{},
-				HasValue: false,
-			},
+		if fileDto.ID != 0 {
+			updated, err := service.UpdateFile(fileDto)
+			if err != nil || !updated {
+				fmt.Printf("❌ Erro ao atualizar arquivo %s: %v\n", path, err)
+				return nil
+			}
+			fmt.Printf("✅ Arquivo atualizado ID: %d\n", fileDto.ID)
+			return nil
 		}
-		fileCreated, err := service.CreateFile(file)
+
+		fileCreated, err := service.CreateFile(fileDto)
 
 		if err != nil {
 			fmt.Printf("❌ Erro ao escanear arquivo %s: %v\n", path, err)
@@ -71,4 +51,12 @@ func ScanFilesWorker(service files.ServiceInterface) {
 	} else {
 		fmt.Println("✅ Escaneamento concluído!")
 	}
+}
+
+func scanDir(path string, info os.FileInfo) {
+
+}
+
+func scanFile(path string, info os.FileInfo) {
+
 }

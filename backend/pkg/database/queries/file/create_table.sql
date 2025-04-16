@@ -11,6 +11,7 @@ CREATE TABLE
         "last_backup" datetime NULL,
         "type" INTEGER,
         "checksum" VARCHAR(64),
+        "id_deleted" BOOLEAN NOT NULL DEFAULT 0,
         "deleted_at" DATETIME NULL
     );
 

@@ -32,6 +32,8 @@ func TestScanFilesWorker(t *testing.T) {
 		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
 		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
 		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
+		{Name: "testscan", Path: path.Join(path_dir_test(), "testscan"), Type: files.Directory, Format: ""},
+		{Name: "testepasta", Path: path.Join(path_dir_test(), "testscan/testepasta"), Type: files.Directory, Format: ""},
 	}
 
 	var filesCreated = []files.FileDto{}
@@ -49,7 +51,7 @@ func TestScanFilesWorker(t *testing.T) {
 
 	worker.ScanFilesWorker(mockService)
 
-	assert.Len(t, filesCreated, 4)
+	assert.Len(t, filesCreated, len(expectedFiles))
 
 }
 
@@ -58,6 +60,18 @@ func TestScanFilesWorker_FileAlreadyExists(t *testing.T) {
 	config.AppConfig.EntryPoint = path_dir_test()
 
 	var filesCreated = []files.FileDto{}
+	var filesUpdated = []files.FileDto{}
+	var expectedFiles = []files.FileDto{
+		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: utils.Optional[time.Time]{
+			Value:    time.Time{},
+			HasValue: false,
+		}},
+		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
+		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
+		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
+		{Name: "testscan", Path: path.Join(path_dir_test(), "testscan"), Type: files.Directory, Format: ""},
+		{Name: "testepasta", Path: path.Join(path_dir_test(), "testscan/testepasta"), Type: files.Directory, Format: ""},
+	}
 
 	mockService := &mocks.MockService{
 		GetFileByNameAndPathFunc: func(name string, path string) (files.FileDto, error) {
@@ -68,9 +82,14 @@ func TestScanFilesWorker_FileAlreadyExists(t *testing.T) {
 			filesCreated = append(filesCreated, file)
 			return file, nil
 		},
+		UpdateFileFunc: func(fileDto files.FileDto) (bool, error) {
+			filesUpdated = append(filesUpdated, fileDto)
+			return true, nil
+		},
 	}
 
 	worker.ScanFilesWorker(mockService)
 
 	assert.Len(t, filesCreated, 0)
+	assert.Len(t, filesUpdated, len(expectedFiles))
 }

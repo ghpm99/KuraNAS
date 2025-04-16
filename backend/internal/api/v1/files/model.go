@@ -19,6 +19,7 @@ type FileModel struct {
 	Size            int64
 	UpdatedAt       time.Time
 	CreatedAt       time.Time
+	IsDeleted       bool
 	DeletedAt       sql.NullTime
 	LastInteraction sql.NullTime
 	LastBackup      sql.NullTime

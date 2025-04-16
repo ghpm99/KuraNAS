@@ -3,6 +3,7 @@ package files
 import (
 	"nas-go/api/pkg/utils"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -75,6 +76,26 @@ func (fileDto *FileDto) ParseDirEntryToFileDto(entry os.DirEntry) error {
 	fileDto.Name = entry.Name()
 	fileDto.Size = fileInfo.Size()
 	fileDto.UpdatedAt = fileInfo.ModTime()
+
+	return nil
+}
+
+func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
+	fileDto.Name = info.Name()
+	fileDto.Size = info.Size()
+	fileDto.UpdatedAt = info.ModTime()
+	fileDto.CreatedAt = info.ModTime()
+	fileDto.LastInteraction = utils.Optional[time.Time]{
+		Value:    time.Now(),
+		HasValue: true,
+	}
+
+	if info.IsDir() {
+		fileDto.Type = Directory
+	} else {
+		fileDto.Type = File
+		fileDto.Format = filepath.Ext(fileDto.Name)
+	}
 
 	return nil
 }

@@ -391,13 +391,13 @@ func TestRepository_UpdateFile(t *testing.T) {
 						"/test/path",
 						"txt",
 						1024,
-						sqlmock.AnyArg(),
-						sqlmock.AnyArg(),
-						sqlmock.AnyArg(),
-						sqlmock.AnyArg(),
+						getTime(),
+						getTime(),
+						getTime(),
+						getTime(),
 						files.File,
 						"checksum123",
-						time.Time{},
+						getTime(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
@@ -410,8 +410,8 @@ func TestRepository_UpdateFile(t *testing.T) {
 				Size:      1024,
 				Type:      files.File,
 				CheckSum:  "checksum123",
-				UpdatedAt: time.Now(),
-				CreatedAt: time.Now(),
+				UpdatedAt: getTime(),
+				CreatedAt: getTime(),
 				LastInteraction: sql.NullTime{
 					Time:  getTime(),
 					Valid: true,
@@ -419,6 +419,53 @@ func TestRepository_UpdateFile(t *testing.T) {
 				LastBackup: sql.NullTime{
 					Time:  getTime(),
 					Valid: true,
+				},
+				DeletedAt: sql.NullTime{
+					Time:  getTime(),
+					Valid: true,
+				},
+			},
+			expected:    true,
+			expectedErr: nil,
+		},
+		{
+			name: "UpdateFile success nil time",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.UpdateFileQuery)
+				mock.ExpectBegin()
+				mock.ExpectExec(expectedQuery).
+					WithArgs(
+						1,
+						"test_file.txt",
+						"/test/path",
+						"txt",
+						1024,
+						getTime(),
+						getTime(),
+						nil,
+						nil,
+						files.File,
+						"checksum123",
+						nil,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			file: files.FileModel{
+				ID:        1,
+				Name:      "test_file.txt",
+				Path:      "/test/path",
+				Format:    "txt",
+				Size:      1024,
+				Type:      files.File,
+				CheckSum:  "checksum123",
+				UpdatedAt: getTime(),
+				CreatedAt: getTime(),
+				LastInteraction: sql.NullTime{
+					Valid: false,
+				},
+				LastBackup: sql.NullTime{
+					Valid: false,
 				},
 				DeletedAt: sql.NullTime{
 					Valid: false,
@@ -445,7 +492,7 @@ func TestRepository_UpdateFile(t *testing.T) {
 						sqlmock.AnyArg(),
 						files.File,
 						"checksum123",
-						time.Time{},
+						nil,
 					).
 					WillReturnError(fmt.Errorf("database error"))
 				mock.ExpectRollback()
@@ -493,7 +540,7 @@ func TestRepository_UpdateFile(t *testing.T) {
 						sqlmock.AnyArg(),
 						files.File,
 						"checksum123",
-						time.Time{},
+						nil,
 					).
 					WillReturnResult(sqlmock.NewResult(2, 2))
 				mock.ExpectRollback()
