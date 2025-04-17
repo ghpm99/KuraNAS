@@ -24,32 +24,20 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
-	pagination := utils.Pagination{
-		Page:     page,
-		PageSize: pageSize,
-		HasNext:  false,
-		HasPrev:  false,
-	}
-
-	paginationResponse := utils.PaginationResponse[FileDto]{
-		Items:      []FileDto{},
-		Pagination: pagination,
-	}
-
 	fileParent := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
 	filter := FileFilter{
 		FileParent: fileParent,
 	}
 
-	err := handler.service.GetFiles(filter, &paginationResponse)
+	pagination, err := handler.service.GetFiles(filter, page, pageSize)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, paginationResponse)
+	c.JSON(http.StatusOK, pagination)
 }
 
 func (handler *Handler) UpdateFilesHandler(c *gin.Context) {

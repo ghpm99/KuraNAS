@@ -6,7 +6,7 @@ import (
 )
 
 type MockService struct {
-	GetFilesFunc             func(filter files.FileFilter, fileDtoList *utils.PaginationResponse[files.FileDto]) error
+	GetFilesFunc             func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetFilesByPathFunc       func(path string) ([]files.FileDto, error)
 	GetFileByNameAndPathFunc func(name string, path string) (files.FileDto, error)
 	CreateFileFunc           func(fileDto files.FileDto) (files.FileDto, error)
@@ -15,8 +15,8 @@ type MockService struct {
 	ScanDirTaskFunc          func(data string)
 }
 
-func (m *MockService) GetFiles(filter files.FileFilter, fileDtoList *utils.PaginationResponse[files.FileDto]) error {
-	return m.GetFilesFunc(filter, fileDtoList)
+func (m *MockService) GetFiles(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return m.GetFilesFunc(filter, page, pageSize)
 }
 
 func (m *MockService) GetFilesByPath(path string) ([]files.FileDto, error) {

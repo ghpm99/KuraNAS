@@ -16,21 +16,31 @@ func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) *S
 	return &Service{Repository: repository, Tasks: tasksChannel}
 }
 
-func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error {
+func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+
+	paginationResponse := utils.PaginationResponse[FileDto]{
+		Items: []FileDto{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
 
 	if filter.FileParent == 0 {
 		filter.Path = config.AppConfig.EntryPoint
 	} else {
 		path, error := s.Repository.GetPathByFileId(filter.FileParent)
 		if error != nil {
-			return error
+			return paginationResponse, error
 		}
 		filter.Path = path
 	}
 
-	filesModel, err := s.Repository.GetFiles(filter, fileDtoList.Pagination)
+	filesModel, err := s.Repository.GetFiles(filter, page, pageSize)
 	if err != nil {
-		return err
+		return paginationResponse, err
 	}
 
 	for _, imageModel := range filesModel.Items {
@@ -39,11 +49,11 @@ func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationRespo
 		if err != nil {
 			continue
 		}
-		fileDtoList.Items = append(fileDtoList.Items, fileDtoResult)
+		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
 	}
-	fileDtoList.Pagination = filesModel.Pagination
+	paginationResponse.Pagination = filesModel.Pagination
 
-	return nil
+	return paginationResponse, nil
 
 }
 

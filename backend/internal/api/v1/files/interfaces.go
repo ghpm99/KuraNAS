@@ -7,7 +7,7 @@ import (
 
 type RepositoryInterface interface {
 	GetDbContext() *sql.DB
-	GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error)
+	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetFilesByPath(path string) ([]FileModel, error)
 	GetFileByNameAndPath(name string, path string) (FileModel, error)
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
@@ -16,7 +16,7 @@ type RepositoryInterface interface {
 }
 
 type ServiceInterface interface {
-	GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error
+	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetFilesByPath(path string) ([]FileDto, error)
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	CreateFile(fileDto FileDto) (FileDto, error)

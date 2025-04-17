@@ -20,20 +20,25 @@ func (r *Repository) GetDbContext() *sql.DB {
 	return r.DbContext
 }
 
-func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
+func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 
 	paginationResponse := utils.PaginationResponse[FileModel]{
-		Items:      []FileModel{},
-		Pagination: pagination,
+		Items: []FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
 	}
 
-	fmt.Println("GetFiles: ", filter.Path, pagination.PageSize, pagination.Page)
+	fmt.Println("GetFiles: ", filter.Path, pageSize, page)
 
 	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,
 		filter.Path,
-		pagination.PageSize+1,
-		pagination.Page,
+		pageSize+1,
+		page,
 	)
 	if err != nil {
 		return paginationResponse, err
