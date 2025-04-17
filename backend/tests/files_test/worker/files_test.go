@@ -1,6 +1,7 @@
 package worker_test
 
 import (
+	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
@@ -25,15 +26,24 @@ func TestScanFilesWorker(t *testing.T) {
 	config.AppConfig.EntryPoint = path_dir_test()
 
 	var expectedFiles = []files.FileDto{
-		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: utils.Optional[time.Time]{
-			Value:    time.Time{},
+		{Name: "testscan", Path: path.Join(path_dir_test(), ""), Type: files.Directory, Format: "", DeletedAt: utils.Optional[time.Time]{
 			HasValue: false,
 		}},
-		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
-		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
-		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
-		{Name: "testscan", Path: path.Join(path_dir_test(), "testscan"), Type: files.Directory, Format: ""},
-		{Name: "testepasta", Path: path.Join(path_dir_test(), "testscan/testepasta"), Type: files.Directory, Format: ""},
+		{Name: "teste1.txt", Path: path.Join(path_dir_test(), "teste1.txt"), Type: files.File, Format: ".txt", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste2.pdf", Path: path.Join(path_dir_test(), "teste2.pdf"), Type: files.File, Format: ".pdf", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste3.xml", Path: path.Join(path_dir_test(), "teste3.xml"), Type: files.File, Format: ".xml", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "testepasta", Path: path.Join(path_dir_test(), "testepasta"), Type: files.Directory, Format: "", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste4.mp3", Path: path.Join(path_dir_test(), "testepasta/teste4.mp3"), Type: files.File, Format: ".mp3", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
 	}
 
 	var filesCreated = []files.FileDto{}
@@ -47,12 +57,40 @@ func TestScanFilesWorker(t *testing.T) {
 			filesCreated = append(filesCreated, file)
 			return file, nil
 		},
+		GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			var pageIndex = page - 1
+			if page >= len(expectedFiles) {
+				return utils.PaginationResponse[files.FileDto]{}, fmt.Errorf("page index out of range")
+			}
+			var pagination = utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					expectedFiles[pageIndex],
+				},
+				Pagination: utils.Pagination{
+					Page:     page,
+					PageSize: pageSize,
+					HasNext:  page < len(expectedFiles),
+				},
+			}
+			fmt.Println("GetFilesFunc Page:", pagination.Pagination.Page)
+			fmt.Println("GetFilesFunc HasNext:", pagination.Pagination.HasNext)
+			fmt.Println("GetFilesFunc Items:", pagination.Items)
+			return pagination, nil
+		},
 	}
 
 	worker.ScanFilesWorker(mockService)
 
 	assert.Len(t, filesCreated, len(expectedFiles))
 
+	for index, file := range filesCreated {
+		var expectedFile = expectedFiles[index]
+		assert.Equal(t, expectedFile.Name, file.Name)
+		assert.Equal(t, expectedFile.Path, file.Path)
+		assert.Equal(t, expectedFile.Type, file.Type)
+		assert.Equal(t, expectedFile.Format, file.Format)
+
+	}
 }
 
 func TestScanFilesWorker_FileAlreadyExists(t *testing.T) {
@@ -62,15 +100,24 @@ func TestScanFilesWorker_FileAlreadyExists(t *testing.T) {
 	var filesCreated = []files.FileDto{}
 	var filesUpdated = []files.FileDto{}
 	var expectedFiles = []files.FileDto{
-		{Name: "test1.txt", Path: path.Join(path_dir_test(), "test1.txt"), Type: files.File, Format: "txt", DeletedAt: utils.Optional[time.Time]{
-			Value:    time.Time{},
+		{Name: "testscan", Path: path.Join(path_dir_test(), "testscan"), Type: files.Directory, Format: "", DeletedAt: utils.Optional[time.Time]{
 			HasValue: false,
 		}},
-		{Name: "test2.txt", Path: path.Join(path_dir_test(), "test2.pdf"), Type: files.File, Format: "pdf"},
-		{Name: "test3.txt", Path: path.Join(path_dir_test(), "test3.xml"), Type: files.File, Format: "xml"},
-		{Name: "test4.txt", Path: path.Join(path_dir_test(), "testescan/test4.mp3"), Type: files.File, Format: "mp3"},
-		{Name: "testscan", Path: path.Join(path_dir_test(), "testscan"), Type: files.Directory, Format: ""},
-		{Name: "testepasta", Path: path.Join(path_dir_test(), "testscan/testepasta"), Type: files.Directory, Format: ""},
+		{Name: "teste1.txt", Path: path.Join(path_dir_test(), "teste1.txt"), Type: files.File, Format: ".txt", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste2.pdf", Path: path.Join(path_dir_test(), "teste2.pdf"), Type: files.File, Format: ".pdf", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste3.xml", Path: path.Join(path_dir_test(), "teste3.xml"), Type: files.File, Format: ".xml", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "testepasta", Path: path.Join(path_dir_test(), "testscan/testepasta"), Type: files.Directory, Format: "", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
+		{Name: "teste4.mp3", Path: path.Join(path_dir_test(), "testescan/teste4.mp3"), Type: files.File, Format: ".mp3", DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		}},
 	}
 
 	mockService := &mocks.MockService{
@@ -85,6 +132,26 @@ func TestScanFilesWorker_FileAlreadyExists(t *testing.T) {
 		UpdateFileFunc: func(fileDto files.FileDto) (bool, error) {
 			filesUpdated = append(filesUpdated, fileDto)
 			return true, nil
+		},
+		GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			var pageIndex = page - 1
+			if page >= len(expectedFiles) {
+				return utils.PaginationResponse[files.FileDto]{}, fmt.Errorf("page index out of range")
+			}
+			var pagination = utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					expectedFiles[pageIndex],
+				},
+				Pagination: utils.Pagination{
+					Page:     page,
+					PageSize: pageSize,
+					HasNext:  page < len(expectedFiles),
+				},
+			}
+			fmt.Println("GetFilesFunc Page:", pagination.Pagination.Page)
+			fmt.Println("GetFilesFunc HasNext:", pagination.Pagination.HasNext)
+			fmt.Println("GetFilesFunc Items:", pagination.Items)
+			return pagination, nil
 		},
 	}
 
