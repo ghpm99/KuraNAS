@@ -5,8 +5,10 @@ import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func ScanFilesWorker(service files.ServiceInterface) {
@@ -56,30 +58,47 @@ func ScanFilesWorker(service files.ServiceInterface) {
 	findFilesDeleted(service)
 }
 
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil
+}
+
 func findFilesDeleted(service files.ServiceInterface) {
 	var currentPage = 1
 	var pagination, error = service.GetFiles(files.FileFilter{}, currentPage, 20)
 	if error != nil {
 		log.Printf("❌ Erro ao buscar arquivos: %v", error)
+		return
 	}
-
-	var filesArray []files.FileDto = pagination.Items
 	for {
-		for _, file := range filesArray {
-			fmt.Printf("✅ Arquivo deletado ID: %d, %v\n", file.ID, file.Name)
+		for _, file := range pagination.Items {
+			if !fileExists(file.Path) {
+				file.DeletedAt = utils.Optional[time.Time]{
+					HasValue: true,
+					Value:    time.Now(),
+				}
+				_, error := service.UpdateFile(file)
+				if error != nil {
+					log.Printf("❌ Erro ao deletar arquivo %s: %v\n", file.Path, error)
+					continue
+				}
+			} else {
+				fmt.Printf("Arquivo ainda existe ID: %d, %v\n", file.ID, file.Name)
+				continue
+			}
 		}
 		if !pagination.Pagination.HasNext {
 			break
 		}
 		currentPage++
-		var pagination, err = service.GetFiles(files.FileFilter{}, currentPage, 20)
-		if err != nil {
-			log.Printf("❌ Erro ao buscar arquivos: %v", err)
+		pagination, error = service.GetFiles(files.FileFilter{}, currentPage, 20)
+		if error != nil {
+			log.Printf("❌ Erro ao buscar arquivos: %v", error)
 			break
 		}
-		fmt.Println("findFilesDeleted", len(pagination.Items))
-		fmt.Println("findFilesDeleted Items:", pagination.Items)
-		filesArray = pagination.Items
 	}
 
 }
