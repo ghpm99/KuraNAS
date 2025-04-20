@@ -1,6 +1,7 @@
 package worker_test
 
 import (
+	"database/sql"
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
@@ -178,7 +179,7 @@ func TestScanFilesWorker_FindFileToDelete(t *testing.T) {
 
 	mockService := &mocks.MockService{
 		GetFileByNameAndPathFunc: func(name string, path string) (files.FileDto, error) {
-			return files.FileDto{}, os.ErrNotExist
+			return files.FileDto{}, sql.ErrNoRows
 		},
 		CreateFileFunc: func(file files.FileDto) (files.FileDto, error) {
 			file.ID = 1

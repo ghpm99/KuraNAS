@@ -20,7 +20,19 @@ func ScanFilesWorker(service files.ServiceInterface) {
 			return nil
 		}
 		name := info.Name()
-		fileDto, err := service.GetFileByNameAndPath(name, path)
+		fileDtoPagination, err := service.GetFiles(files.FileFilter{
+			Name: utils.Optional[string]{
+				HasValue: true,
+				Value:    name,
+			},
+			Path: utils.Optional[string]{
+				HasValue: true,
+				Value:    path,
+			},
+		}, 1, 1)
+		fmt.Println("erro", err)
+
+		var fileDto = fileDtoPagination.Items[0]
 
 		if err := fileDto.ParseFileInfoToFileDto(info); err != nil {
 			fmt.Printf("Erro ao obter informações: %v\n", err)
@@ -76,6 +88,7 @@ func findFilesDeleted(service files.ServiceInterface) {
 	for {
 		for _, file := range pagination.Items {
 			if !fileExists(file.Path) {
+				fmt.Printf("Arquivo não existe ID: %d, %v\n", file.ID, file.Name)
 				file.DeletedAt = utils.Optional[time.Time]{
 					HasValue: true,
 					Value:    time.Now(),

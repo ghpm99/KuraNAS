@@ -30,21 +30,26 @@ func ScanDirWorker(service *files.Service, data string) {
 	}
 
 	//Array de arquivos do cache
-	cacheFileArray, err := service.GetFilesByPath(data)
+	cacheFileArray, err := service.GetFiles(files.FileFilter{
+		Path: utils.Optional[string]{
+			Value:    data,
+			HasValue: true,
+		},
+	}, 1, 1000)
 
 	if err != nil {
 		fmt.Printf("Erro ao obter arquivos: %v\n", err)
 		return
 	}
 
-	for _, file := range cacheFileArray {
+	for _, file := range cacheFileArray.Items {
 		file.DeletedAt = utils.Optional[time.Time]{
 			Value:    time.Now(),
 			HasValue: true,
 		}
 	}
 
-	for _, cacheEntry := range cacheFileArray {
+	for _, cacheEntry := range cacheFileArray.Items {
 		if _, ok := dirFileMap[cacheEntry.Name]; ok {
 			delete(dirFileMap, cacheEntry.Name)
 			cacheEntry.DeletedAt = utils.Optional[time.Time]{
@@ -54,10 +59,10 @@ func ScanDirWorker(service *files.Service, data string) {
 		}
 	}
 
-	fmt.Println("🔍 Arquivos encontrados no cache:", len(cacheFileArray))
+	fmt.Println("🔍 Arquivos encontrados no cache:", len(cacheFileArray.Items))
 
 	fmt.Println("🔍 Arquivos para deletar do cache:")
-	for _, file := range cacheFileArray {
+	for _, file := range cacheFileArray.Items {
 		if !file.DeletedAt.HasValue {
 			continue
 		}

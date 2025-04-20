@@ -20,6 +20,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files := router.Group("/files")
 
 	files.GET("/", context.Files.Handler.GetFilesHandler)
+	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
+	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 
 }

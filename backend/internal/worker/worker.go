@@ -25,13 +25,13 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 func startWorkersScheduler(context *WorkerContext) {
 	for {
-		time.Sleep(10 * time.Hour) // ⏳ Roda a cada 10 horas
 		fmt.Println("Escaneamento de arquivos")
 		context.Tasks <- utils.Task{
 			Type: utils.ScanFiles,
 			Data: "Escaneamento de arquivos",
 		}
 		fmt.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+		time.Sleep(12 * time.Hour) // ⏳ Roda a cada 10 horas
 	}
 }
 

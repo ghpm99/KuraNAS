@@ -61,6 +61,30 @@ func (i *FileModel) ToDto() (FileDto, error) {
 	return fileDto, nil
 }
 
+func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (utils.PaginationResponse[FileDto], error) {
+	paginationResponse := utils.PaginationResponse[FileDto]{
+		Items: []FileDto{},
+		Pagination: utils.Pagination{
+			Page:     pagination.Pagination.Page,
+			PageSize: pagination.Pagination.PageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	for _, fileModel := range pagination.Items {
+		fileDtoResult, err := fileModel.ToDto()
+
+		if err != nil {
+			return paginationResponse, err
+		}
+		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
+	}
+	paginationResponse.Pagination = pagination.Pagination
+
+	return paginationResponse, nil
+}
+
 func (fileDto *FileDto) ParseDirEntryToFileDto(entry os.DirEntry) error {
 	fileInfo, err := entry.Info()
 	if err != nil {
@@ -101,7 +125,11 @@ func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
 }
 
 type FileFilter struct {
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	FileParent int    `json:"file_parent"`
+	ID         utils.Optional[int]
+	Name       utils.Optional[string]
+	Path       utils.Optional[string]
+	Format     utils.Optional[string]
+	Type       utils.Optional[FileType]
+	FileParent utils.Optional[int]
+	DeletedAt  utils.Optional[time.Time]
 }

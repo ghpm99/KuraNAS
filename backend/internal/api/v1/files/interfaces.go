@@ -7,19 +7,14 @@ import (
 
 type RepositoryInterface interface {
 	GetDbContext() *sql.DB
-	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	GetFilesByPath(path string) ([]FileModel, error)
-	GetFileByNameAndPath(name string, path string) (FileModel, error)
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
+	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
-	GetPathByFileId(fileId int) (string, error)
 }
 
 type ServiceInterface interface {
-	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	GetFilesByPath(path string) ([]FileDto, error)
-	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	CreateFile(fileDto FileDto) (FileDto, error)
+	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	UpdateFile(file FileDto) (bool, error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
