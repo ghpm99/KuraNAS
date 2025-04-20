@@ -57,8 +57,67 @@ func TestRepository_GetFiles(t *testing.T) {
 						0,
 						true,
 						"",
+						true,
+						"",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args:          files.FileFilter{},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles database error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						true,
+						"",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnError(fmt.Errorf("database error"))
+			},
+			args:          files.FileFilter{},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 0,
+			expectedErr:   fmt.Errorf("database error"),
+		},
+		{
+			name: "GetFiles ID filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
 						false,
-						"/test/path",
+						1,
+						true,
+						"",
+						true,
+						"",
 						true,
 						"",
 						true,
@@ -71,19 +130,52 @@ func TestRepository_GetFiles(t *testing.T) {
 					WillReturnRows(rows)
 			},
 			args: files.FileFilter{
-				Path: utils.Optional[string]{
-					Value:    "/test/path",
-					HasValue: true,
-				},
+				ID: utils.Optional[int]{Value: 1, HasValue: true},
 			},
 			pagination:    utils.Pagination{Page: 1, PageSize: 10},
 			expectedItems: 2,
 			expectedErr:   nil,
 		},
 		{
-			name: "GetFiles database error",
+			name: "GetFiles Name filter",
 			setupMock: func(mock sqlmock.Sqlmock) {
 				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						false,
+						"teste.txt",
+						true,
+						"",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args: files.FileFilter{
+				Name: utils.Optional[string]{Value: "teste.txt", HasValue: true},
+			},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles Path filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
 				mock.ExpectQuery(expectedQuery).
 					WithArgs(
 						true,
@@ -101,17 +193,146 @@ func TestRepository_GetFiles(t *testing.T) {
 						11,
 						1,
 					).
-					WillReturnError(fmt.Errorf("database error"))
+					WillReturnRows(rows)
 			},
 			args: files.FileFilter{
-				Path: utils.Optional[string]{
-					Value:    "/test/path",
-					HasValue: true,
-				},
+				Path: utils.Optional[string]{Value: "/test/path", HasValue: true},
 			},
 			pagination:    utils.Pagination{Page: 1, PageSize: 10},
-			expectedItems: 0,
-			expectedErr:   fmt.Errorf("database error"),
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles Format filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						true,
+						"",
+						false,
+						".txt",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args: files.FileFilter{
+				Format: utils.Optional[string]{Value: ".txt", HasValue: true},
+			},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles Type filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						true,
+						"",
+						true,
+						"",
+						false,
+						files.File,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args: files.FileFilter{
+				Type: utils.Optional[files.FileType]{Value: files.File, HasValue: true},
+			},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles FileParent filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						true,
+						"",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args: files.FileFilter{
+				FileParent: utils.Optional[int]{Value: 1, HasValue: true},
+			},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
+		},
+		{
+			name: "GetFiles DeletedAt filter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
+				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup", "type", "checksum", "deleted_at"}).
+					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
+					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
+				mock.ExpectQuery(expectedQuery).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						true,
+						"",
+						true,
+						"",
+						true,
+						0,
+						false,
+						getTime(),
+						11,
+						1,
+					).
+					WillReturnRows(rows)
+			},
+			args: files.FileFilter{
+				DeletedAt: utils.Optional[time.Time]{Value: getTime(), HasValue: true},
+			},
+			pagination:    utils.Pagination{Page: 1, PageSize: 10},
+			expectedItems: 2,
+			expectedErr:   nil,
 		},
 	}
 
