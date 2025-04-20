@@ -36,7 +36,18 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 
 	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,
-		filter.Path,
+		!filter.ID.HasValue,
+		filter.ID.Value,
+		!filter.Name.HasValue,
+		filter.Name.Value,
+		!filter.Path.HasValue,
+		filter.Path.Value,
+		!filter.Format.HasValue,
+		filter.Format.Value,
+		!filter.Type.HasValue,
+		filter.Type.Value,
+		!filter.DeletedAt.HasValue,
+		filter.DeletedAt.Value,
 		pageSize+1,
 		page,
 	)
@@ -70,63 +81,6 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	paginationResponse.UpdatePagination()
 
 	return paginationResponse, nil
-}
-
-func (r *Repository) GetFilesByPath(path string) ([]FileModel, error) {
-	rows, err := r.DbContext.Query(
-		queries.GetFilesByPathQuery,
-		path,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var files []FileModel
-	for rows.Next() {
-		var file FileModel
-		if err := rows.Scan(
-			&file.ID,
-			&file.Name,
-			&file.Path,
-			&file.Format,
-			&file.Size,
-			&file.UpdatedAt,
-			&file.CreatedAt,
-			&file.LastInteraction,
-			&file.LastBackup,
-		); err != nil {
-			return nil, err
-		}
-		files = append(files, file)
-	}
-
-	return files, nil
-}
-
-func (r *Repository) GetFileByNameAndPath(name string, path string) (FileModel, error) {
-	row := r.DbContext.QueryRow(
-		queries.GetFileByNameAndPathQuery,
-		name,
-		path,
-	)
-
-	var file FileModel
-
-	if err := row.Scan(
-		&file.ID,
-		&file.Name,
-		&file.Path,
-		&file.Format,
-		&file.Size,
-		&file.UpdatedAt,
-		&file.CreatedAt,
-		&file.LastInteraction,
-		&file.LastBackup,
-	); err != nil {
-		return file, err
-	}
-
-	return file, nil
 }
 
 func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error) {
@@ -208,22 +162,4 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 	}
 
 	return rowsAffected == 1, nil
-}
-
-func (r *Repository) GetPathByFileId(fileId int) (string, error) {
-	row := r.DbContext.QueryRow(
-		queries.GetPathByFileIdQuery,
-		fileId,
-	)
-	fmt.Println("GetPathByFileId: ", fileId)
-
-	var path string
-
-	if err := row.Scan(
-		&path,
-	); err != nil {
-		return "", err
-	}
-
-	return path, nil
 }

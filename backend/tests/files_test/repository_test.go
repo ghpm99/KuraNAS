@@ -52,11 +52,29 @@ func TestRepository_GetFiles(t *testing.T) {
 					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum123", time.Time{}).
 					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now(), files.File, "checksum456", time.Time{})
 				mock.ExpectQuery(expectedQuery).
-					WithArgs("/test/path", 11, 1).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						false,
+						"/test/path",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
 					WillReturnRows(rows)
 			},
 			args: files.FileFilter{
-				Path: "/test/path",
+				Path: utils.Optional[string]{
+					Value:    "/test/path",
+					HasValue: true,
+				},
 			},
 			pagination:    utils.Pagination{Page: 1, PageSize: 10},
 			expectedItems: 2,
@@ -67,11 +85,29 @@ func TestRepository_GetFiles(t *testing.T) {
 			setupMock: func(mock sqlmock.Sqlmock) {
 				expectedQuery := regexp.QuoteMeta(queries.GetFilesQuery)
 				mock.ExpectQuery(expectedQuery).
-					WithArgs("/test/path", 11, 1).
+					WithArgs(
+						true,
+						0,
+						true,
+						"",
+						false,
+						"/test/path",
+						true,
+						"",
+						true,
+						0,
+						true,
+						time.Time{},
+						11,
+						1,
+					).
 					WillReturnError(fmt.Errorf("database error"))
 			},
 			args: files.FileFilter{
-				Path: "/test/path",
+				Path: utils.Optional[string]{
+					Value:    "/test/path",
+					HasValue: true,
+				},
 			},
 			pagination:    utils.Pagination{Page: 1, PageSize: 10},
 			expectedItems: 0,
@@ -87,7 +123,7 @@ func TestRepository_GetFiles(t *testing.T) {
 			repo := files.NewRepository(mockDB.db)
 			tt.setupMock(mockDB.mock)
 
-			paginationResponse, err := repo.GetFiles(tt.args, tt.pagination)
+			paginationResponse, err := repo.GetFiles(tt.args, tt.pagination.Page, tt.pagination.PageSize)
 
 			if tt.expectedErr != nil {
 				assert.Error(t, err)
@@ -95,171 +131,6 @@ func TestRepository_GetFiles(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, paginationResponse.Items, tt.expectedItems)
-			}
-
-			if err := mockDB.mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestRepository_GetFilesByPath(t *testing.T) {
-	tests := []struct {
-		name          string
-		setupMock     func(mock sqlmock.Sqlmock)
-		path          string
-		expectedItems int
-		expectedErr   error
-	}{
-		{
-			name: "GetFilesByPath success",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetFilesByPathQuery)
-
-				rows := sqlmock.NewRows([]string{"id", "name", "path", "format", "size", "updated_at", "created_at", "last_interaction", "last_backup"}).
-					AddRow(1, "test_file.txt", "/test/path", "txt", 1024, time.Now(), time.Now(), time.Now(), time.Now()).
-					AddRow(2, "another_file.txt", "/test/path", "txt", 2048, time.Now(), time.Now(), time.Now(), time.Now())
-
-				mock.ExpectQuery(expectedQuery).
-					WithArgs("/test/path").
-					WillReturnRows(rows)
-			},
-			path:          "/test/path",
-			expectedItems: 2,
-			expectedErr:   nil,
-		},
-		{
-			name: "GetFilesByPath database error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetFilesByPathQuery)
-				mock.ExpectQuery(expectedQuery).
-					WithArgs("/test/path").
-					WillReturnError(fmt.Errorf("database error"))
-			},
-			path:          "/test/path",
-			expectedItems: 0,
-			expectedErr:   fmt.Errorf("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockDB := setupMockDB(t)
-			defer mockDB.db.Close()
-
-			repo := files.NewRepository(mockDB.db)
-			tt.setupMock(mockDB.mock)
-
-			files, err := repo.GetFilesByPath(tt.path)
-
-			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedErr.Error(), err.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Len(t, files, tt.expectedItems)
-			}
-
-			if err := mockDB.mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestRepository_GetFileByNameAndPath(t *testing.T) {
-	tests := []struct {
-		name        string
-		setupMock   func(mock sqlmock.Sqlmock)
-		fileName    string
-		path        string
-		expected    files.FileModel
-		expectedErr error
-	}{
-		{
-			name: "GetFileByNameAndPath success",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetFileByNameAndPathQuery)
-				rows := sqlmock.NewRows(
-					[]string{
-						"id",
-						"name",
-						"path",
-						"format",
-						"size",
-						"updated_at",
-						"created_at",
-						"last_interaction",
-						"last_backup",
-					}).
-					AddRow(
-						1,
-						"test_file.txt",
-						"/test/path",
-						".txt",
-						1024,
-						getTime(),
-						getTime(),
-						getTime(),
-						getTime(),
-					)
-				mock.ExpectQuery(expectedQuery).
-					WithArgs("test_file.txt", "/test/path").
-					WillReturnRows(rows)
-			},
-			fileName: "test_file.txt",
-			path:     "/test/path",
-			expected: files.FileModel{
-				ID:        1,
-				Name:      "test_file.txt",
-				Path:      "/test/path",
-				Format:    ".txt",
-				Size:      1024,
-				UpdatedAt: getTime(),
-				CreatedAt: getTime(),
-				LastInteraction: sql.NullTime{
-					Time:  getTime(),
-					Valid: true,
-				},
-				LastBackup: sql.NullTime{
-					Time:  getTime(),
-					Valid: true,
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "GetFileByNameAndPath database error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetFileByNameAndPathQuery)
-				mock.ExpectQuery(expectedQuery).
-					WithArgs("test_file.txt", "/test/path").
-					WillReturnError(fmt.Errorf("database error"))
-			},
-			fileName:    "test_file.txt",
-			path:        "/test/path",
-			expected:    files.FileModel{},
-			expectedErr: fmt.Errorf("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockDB := setupMockDB(t)
-			defer mockDB.db.Close()
-
-			repo := files.NewRepository(mockDB.db)
-			tt.setupMock(mockDB.mock)
-
-			file, err := repo.GetFileByNameAndPath(tt.fileName, tt.path)
-
-			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedErr.Error(), err.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, file)
 			}
 
 			if err := mockDB.mock.ExpectationsWereMet(); err != nil {
@@ -594,67 +465,6 @@ func TestRepository_UpdateFile(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, updated)
 				tx.Commit()
-			}
-
-			if err := mockDB.mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
-		})
-	}
-}
-
-func TestRepository_GetPathByFileId(t *testing.T) {
-	tests := []struct {
-		name        string
-		setupMock   func(mock sqlmock.Sqlmock)
-		fileId      int
-		expected    string
-		expectedErr error
-	}{
-		{
-			name: "GetPathByFileId success",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetPathByFileIdQuery)
-				rows := sqlmock.NewRows([]string{"path"}).
-					AddRow("/test/path")
-				mock.ExpectQuery(expectedQuery).
-					WithArgs(1).
-					WillReturnRows(rows)
-			},
-			fileId:      1,
-			expected:    "/test/path",
-			expectedErr: nil,
-		},
-		{
-			name: "GetPathByFileId database error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				expectedQuery := regexp.QuoteMeta(queries.GetPathByFileIdQuery)
-				mock.ExpectQuery(expectedQuery).
-					WithArgs(1).
-					WillReturnError(fmt.Errorf("database error"))
-			},
-			fileId:      1,
-			expected:    "",
-			expectedErr: fmt.Errorf("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockDB := setupMockDB(t)
-			defer mockDB.db.Close()
-
-			repo := files.NewRepository(mockDB.db)
-			tt.setupMock(mockDB.mock)
-
-			path, err := repo.GetPathByFileId(tt.fileId)
-
-			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedErr.Error(), err.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, path)
 			}
 
 			if err := mockDB.mock.ExpectationsWereMet(); err != nil {

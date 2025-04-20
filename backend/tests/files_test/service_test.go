@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"errors"
+	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/utils"
 	"nas-go/api/tests/mocks"
@@ -23,12 +24,14 @@ func TestService_GetFiles(t *testing.T) {
 		{
 			name: "GetFiles with FileParent equals 0",
 			mock: &mocks.MockRepository{
-				GetFilesFunc: func(filter files.FileFilter, pagination utils.Pagination) (utils.PaginationResponse[files.FileModel], error) {
+				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 					return utils.PaginationResponse[files.FileModel]{}, nil
 				},
 			},
 			args: files.FileFilter{
-				FileParent: 0,
+				FileParent: utils.Optional[int]{
+					HasValue: false,
+				},
 			},
 			wantErr: false,
 		},
@@ -40,7 +43,10 @@ func TestService_GetFiles(t *testing.T) {
 				},
 			},
 			args: files.FileFilter{
-				FileParent: 1,
+				FileParent: utils.Optional[int]{
+					HasValue: true,
+					Value:    1,
+				},
 			},
 			wantErr: true,
 		},
@@ -50,12 +56,15 @@ func TestService_GetFiles(t *testing.T) {
 				GetPathByFileIdFunc: func(fileParent int) (string, error) {
 					return "/path", nil
 				},
-				GetFilesFunc: func(filter files.FileFilter, pagination utils.Pagination) (utils.PaginationResponse[files.FileModel], error) {
+				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 					return utils.PaginationResponse[files.FileModel]{}, errors.New("GetFiles error")
 				},
 			},
 			args: files.FileFilter{
-				FileParent: 1,
+				FileParent: utils.Optional[int]{
+					HasValue: true,
+					Value:    1,
+				},
 			},
 			wantErr: true,
 		},
@@ -65,7 +74,7 @@ func TestService_GetFiles(t *testing.T) {
 				GetPathByFileIdFunc: func(fileParent int) (string, error) {
 					return "/path", nil
 				},
-				GetFilesFunc: func(filter files.FileFilter, pagination utils.Pagination) (utils.PaginationResponse[files.FileModel], error) {
+				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 					return utils.PaginationResponse[files.FileModel]{
 						Items: []files.FileModel{
 							{ID: 1, Name: "test_file.txt", Path: "/path"},
@@ -74,7 +83,10 @@ func TestService_GetFiles(t *testing.T) {
 				},
 			},
 			args: files.FileFilter{
-				FileParent: 1,
+				FileParent: utils.Optional[int]{
+					HasValue: true,
+					Value:    1,
+				},
 			},
 			wantErr: false,
 		},
@@ -87,10 +99,12 @@ func TestService_GetFiles(t *testing.T) {
 				Tasks:      make(chan utils.Task, 1),
 			}
 
-			fileDtoList := &utils.PaginationResponse[files.FileDto]{}
-			err := service.GetFiles(tt.args, fileDtoList)
+			pagination, err := service.GetFiles(tt.args, 1, 10)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Service.GetFiles() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			for _, file := range pagination.Items {
+				fmt.Println(file)
 			}
 		})
 	}
