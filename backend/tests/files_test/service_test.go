@@ -38,8 +38,8 @@ func TestService_GetFiles(t *testing.T) {
 		{
 			name: "GetFiles with FileParent not equals 0 and GetPathByFileId returns error",
 			mock: &mocks.MockRepository{
-				GetPathByFileIdFunc: func(fileParent int) (string, error) {
-					return "", errors.New("GetPathByFileId error")
+				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+					return utils.PaginationResponse[files.FileModel]{}, errors.New("GetPathByFileId error")
 				},
 			},
 			args: files.FileFilter{
@@ -53,9 +53,6 @@ func TestService_GetFiles(t *testing.T) {
 		{
 			name: "GetFiles with FileParent not equals 0 and GetFiles returns error",
 			mock: &mocks.MockRepository{
-				GetPathByFileIdFunc: func(fileParent int) (string, error) {
-					return "/path", nil
-				},
 				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 					return utils.PaginationResponse[files.FileModel]{}, errors.New("GetFiles error")
 				},
@@ -71,9 +68,6 @@ func TestService_GetFiles(t *testing.T) {
 		{
 			name: "GetFiles success",
 			mock: &mocks.MockRepository{
-				GetPathByFileIdFunc: func(fileParent int) (string, error) {
-					return "/path", nil
-				},
 				GetFilesFunc: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 					return utils.PaginationResponse[files.FileModel]{
 						Items: []files.FileModel{
