@@ -14,6 +14,7 @@ type RepositoryInterface interface {
 
 type ServiceInterface interface {
 	CreateFile(fileDto FileDto) (FileDto, error)
+	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	UpdateFile(file FileDto) (bool, error)
 	ScanFilesTask(data string)

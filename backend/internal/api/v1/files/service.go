@@ -2,6 +2,8 @@ package files
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"nas-go/api/pkg/utils"
 )
 
@@ -29,6 +31,31 @@ func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.Pag
 
 	return paginationResponse, nil
 
+}
+
+func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
+	pagination, error := s.GetFiles(FileFilter{
+		Name: utils.Optional[string]{
+			HasValue: true,
+			Value:    name,
+		},
+		Path: utils.Optional[string]{
+			HasValue: true,
+			Value:    path,
+		},
+	}, 1, 5)
+
+	if error != nil {
+		return FileDto{}, error
+	}
+	if len(pagination.Items) == 0 {
+		return FileDto{}, sql.ErrNoRows
+	}
+	if len(pagination.Items) > 1 {
+		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
+	}
+
+	return pagination.Items[0], nil
 }
 
 func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
