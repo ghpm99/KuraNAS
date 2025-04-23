@@ -32,7 +32,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		},
 	}
 
-	fmt.Println("GetFiles: ", filter.Path, pageSize, page)
+	fmt.Println("GetFiles: ", filter, pageSize, page)
 
 	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,

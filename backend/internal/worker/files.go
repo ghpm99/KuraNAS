@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
@@ -14,36 +15,29 @@ import (
 func ScanFilesWorker(service files.ServiceInterface) {
 	fmt.Println("🔍 Escaneando arquivos...")
 
+	fail := func(path string, err error) error {
+		return fmt.Errorf("❌ Erro ao buscar arquivo %s: %v", path, err)
+	}
+
 	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Printf("❌ Erro ao escanear arquivo %s: %v\n", path, err)
-			return nil
+			return fail(path, err)
 		}
 		name := info.Name()
-		fileDtoPagination, err := service.GetFiles(files.FileFilter{
-			Name: utils.Optional[string]{
-				HasValue: true,
-				Value:    name,
-			},
-			Path: utils.Optional[string]{
-				HasValue: true,
-				Value:    path,
-			},
-		}, 1, 1)
-		fmt.Println("erro", err)
-
-		var fileDto = fileDtoPagination.Items[0]
-
-		if err := fileDto.ParseFileInfoToFileDto(info); err != nil {
-			fmt.Printf("Erro ao obter informações: %v\n", err)
-			return nil
+		fileDto, fileDtoError := service.GetFileByNameAndPath(name, path)
+		fmt.Println("error", fileDtoError)
+		if fileDtoError != sql.ErrNoRows {
+			return fail(path, err)
 		}
 
-		if fileDto.ID != 0 {
+		if err := fileDto.ParseFileInfoToFileDto(info); err != nil {
+			return fail(path, err)
+		}
+
+		if fileDtoError == nil {
 			updated, err := service.UpdateFile(fileDto)
 			if err != nil || !updated {
-				fmt.Printf("❌ Erro ao atualizar arquivo %s: %v\n", path, err)
-				return nil
+				return fail(path, err)
 			}
 			fmt.Printf("✅ Arquivo atualizado ID: %d\n", fileDto.ID)
 			return nil
@@ -54,8 +48,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 		fileCreated, err := service.CreateFile(fileDto)
 
 		if err != nil {
-			fmt.Printf("❌ Erro ao escanear arquivo %s: %v\n", path, err)
-			return nil
+			return fail(path, err)
 		}
 		fmt.Printf("✅ Arquivo criado ID: %d\n", fileCreated.ID)
 		return nil
