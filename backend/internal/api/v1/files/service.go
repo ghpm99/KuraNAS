@@ -34,85 +34,73 @@ func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.Pag
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
-	pagination, error := s.GetFiles(FileFilter{
-		Name: utils.Optional[string]{
-			HasValue: true,
-			Value:    name,
-		},
-		Path: utils.Optional[string]{
-			HasValue: true,
-			Value:    path,
-		},
-	}, 1, 5)
+	filter := FileFilter{
+		Name: utils.Optional[string]{HasValue: true, Value: name},
+		Path: utils.Optional[string]{HasValue: true, Value: path},
+	}
+	pagination, err := s.GetFiles(filter, 1, 5)
 
-	if error != nil {
-		return FileDto{}, error
+	if err != nil {
+		return FileDto{}, fmt.Errorf("erro ao buscar arquivos: %w", err)
 	}
-	if len(pagination.Items) == 0 {
+	switch len(pagination.Items) {
+	case 0:
 		return FileDto{}, sql.ErrNoRows
-	}
-	if len(pagination.Items) > 1 {
+	case 1:
+		return pagination.Items[0], nil
+	default:
 		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
 	}
 
-	return pagination.Items[0], nil
 }
 
-func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
-	ctx := context.Background()
-
-	transaction, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
-
-	defer transaction.Rollback()
-
+func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
+	tx, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
 	if err != nil {
-		return fileDto, err
+		return
+	}
+	defer tx.Rollback()
+
+	if err = fn(tx); err != nil {
+		return
 	}
 
-	fileModel, err := fileDto.ToModel()
-
-	if err != nil {
-		return fileDto, err
-	}
-
-	result, err := s.Repository.CreateFile(transaction, fileModel)
-
-	if err == nil {
-		err = transaction.Commit()
-	}
-
-	fileDtoResult, err := result.ToDto()
-
-	if err != nil {
-		return fileDtoResult, err
-	}
-
-	return fileDtoResult, nil
+	return tx.Commit()
 }
 
-func (service *Service) UpdateFile(fileDto FileDto) (bool, error) {
-	ctx := context.Background()
-	transaction, err := service.Repository.GetDbContext().BeginTx(ctx, nil)
+func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
 
-	defer transaction.Rollback()
+	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+		fileModel, err := fileDto.ToModel()
+		if err != nil {
+			return
+		}
 
-	if err != nil {
-		return false, err
-	}
+		result, err := s.Repository.CreateFile(tx, fileModel)
+		if err != nil {
+			return
+		}
 
-	fileModel, err := fileDto.ToModel()
+		fileDtoResult, err = result.ToDto()
+		return
+	})
 
-	if err != nil {
-		return false, err
-	}
+	return
+}
 
-	result, err := service.Repository.UpdateFile(transaction, fileModel)
+func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
+	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+		fileModel, err := fileDto.ToModel()
+		if err != nil {
+			return
+		}
+		result, err = service.Repository.UpdateFile(tx, fileModel)
 
-	if result {
-		err = transaction.Commit()
-	}
+		return
 
-	return result, err
+	})
+
+	return
 }
 
 func (s *Service) ScanFilesTask(data string) {

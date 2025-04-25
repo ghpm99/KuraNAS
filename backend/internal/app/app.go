@@ -5,6 +5,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/i18n"
 
 	"log"
 	"net/http"
@@ -26,6 +27,10 @@ func InitializeApp() (*Application, error) {
 		return nil, err
 	}
 	config.InitializeConfig()
+	i18n.LoadTranslations()
+	if err := config.LoadConfig(); err != nil {
+		return nil, err
+	}
 
 	database, err := database.ConfigDatabase()
 	if err != nil {

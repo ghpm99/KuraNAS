@@ -1,0 +1,6 @@
+{
+	"FILE_NOT_FOUND_IN_DATABASE": "⚠️ Arquivo não encontrado no banco de dados: %s",
+	"ERROR_PERMISSION_DENIED": "⚠️ Permissão negada ao acessar: %s",
+	"FILE_UPDATE_SUCCESS": "✅ Arquivo atualizado com sucesso ID: %d",
+	"FILE_CREATE_SUCCESS": "✅ Arquivo criado com sucesso ID: %d"
+}

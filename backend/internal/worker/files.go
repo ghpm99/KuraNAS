@@ -2,10 +2,12 @@ package worker
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
@@ -21,13 +23,20 @@ func ScanFilesWorker(service files.ServiceInterface) {
 
 	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			if errors.Is(err, os.ErrPermission) {
+				i18n.PrintTranslate("ERROR_PERMISSION_DENIED", path)
+				return nil
+			}
 			return fail(path, err)
 		}
 		name := info.Name()
 		fileDto, fileDtoError := service.GetFileByNameAndPath(name, path)
-		fmt.Println("error", fileDtoError)
-		if fileDtoError != sql.ErrNoRows {
-			return fail(path, err)
+
+		if fileDtoError != nil {
+			if !errors.Is(fileDtoError, sql.ErrNoRows) {
+				return fail(path, err)
+			}
+			i18n.PrintTranslate("FILE_NOT_FOUND_IN_DATABASE", path)
 		}
 
 		if err := fileDto.ParseFileInfoToFileDto(info); err != nil {
@@ -39,7 +48,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 			if err != nil || !updated {
 				return fail(path, err)
 			}
-			fmt.Printf("✅ Arquivo atualizado ID: %d\n", fileDto.ID)
+			i18n.PrintTranslate("FILE_UPDATE_SUCCESS", fileDto.ID)
 			return nil
 		} else {
 			fileDto.Path = path
@@ -50,7 +59,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 		if err != nil {
 			return fail(path, err)
 		}
-		fmt.Printf("✅ Arquivo criado ID: %d\n", fileCreated.ID)
+		i18n.PrintTranslate("FILE_CREATE_SUCCESS", fileCreated.ID)
 		return nil
 	})
 
@@ -60,7 +69,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 		fmt.Println("✅ Escaneamento concluído!")
 	}
 
-	findFilesDeleted(service)
+	// findFilesDeleted(service)
 }
 
 func fileExists(path string) bool {
