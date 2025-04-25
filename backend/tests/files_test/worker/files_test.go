@@ -51,7 +51,7 @@ func TestScanFilesWorker(t *testing.T) {
 
 	mockService := &mocks.MockService{
 		GetFileByNameAndPathFunc: func(name string, path string) (files.FileDto, error) {
-			return files.FileDto{}, os.ErrNotExist
+			return files.FileDto{}, sql.ErrNoRows
 		},
 		CreateFileFunc: func(file files.FileDto) (files.FileDto, error) {
 			file.ID = 1

@@ -32,8 +32,6 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		},
 	}
 
-	fmt.Println("GetFiles: ", filter, pageSize, page)
-
 	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,
 		!filter.ID.HasValue,
@@ -132,7 +130,6 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 
 	result, err := transaction.Exec(
 		queries.UpdateFileQuery,
-		&file.ID,
 		&file.Name,
 		&file.Path,
 		&file.Format,
@@ -144,6 +141,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		&file.Type,
 		&file.CheckSum,
 		&file.DeletedAt,
+		&file.ID,
 	)
 
 	if err != nil {
@@ -160,6 +158,8 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		transaction.Rollback()
 		return fail(errors.New("multiple rows affected"))
 	}
+
+	fmt.Println("Rows affected: ", rowsAffected)
 
 	return rowsAffected == 1, nil
 }
