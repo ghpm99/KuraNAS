@@ -159,7 +159,5 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		return fail(errors.New("multiple rows affected"))
 	}
 
-	fmt.Println("Rows affected: ", rowsAffected)
-
 	return rowsAffected == 1, nil
 }

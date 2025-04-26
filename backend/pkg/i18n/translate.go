@@ -3,26 +3,36 @@ package i18n
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"nas-go/api/internal/config"
 	"os"
 )
 
 var translations map[string]string
 
-func LoadTranslations() error {
+func GetPathFileTranslate() (string, error) {
 	var lang = config.AppConfig.Lang
+
 	if lang == "" {
 		lang = "en-US"
 	}
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	filePath := fmt.Sprintf("%s/translations/%s.json", currentDir, lang)
+	return filePath, nil
+}
+
+func LoadTranslations() error {
+	filePath, err := GetPathFileTranslate()
+	if err != nil {
+		log.Println("Error getting translation file path: " + err.Error())
+	}
 
 	file, err := os.Open(filePath)
-	fmt.Println("Loading translations from: " + filePath)
+	log.Println("Loading translations from: " + filePath)
 	if err != nil {
 		return err
 	}
@@ -32,15 +42,28 @@ func LoadTranslations() error {
 	return decoder.Decode(&translations)
 }
 
-func Translate(key string, args ...any) string {
+func GetMessage(key string) (string, bool) {
 	if msg, ok := translations[key]; ok {
+		return msg, ok
+	}
+
+	return key, false
+}
+
+func Translate(key string, args ...any) string {
+	msg, ok := GetMessage(key)
+	if ok {
 		return fmt.Sprintf(msg, args...)
 	}
 
-	return key
+	return msg
 
 }
 
 func PrintTranslate(key string, args ...any) {
 	fmt.Println(Translate(key, args...))
+}
+
+func LogTranslate(key string, args ...any) {
+	log.Println(Translate(key, args...))
 }

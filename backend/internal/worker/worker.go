@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 
 	"time"
@@ -15,7 +16,9 @@ type WorkerContext struct {
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
-
+	if !config.AppConfig.EnableWorkers {
+		return
+	}
 	for i := range numWorkers {
 		go worker(i, context)
 	}
