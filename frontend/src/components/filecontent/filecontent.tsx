@@ -1,9 +1,11 @@
 import FileCard from '../filecard';
+import useI18n from '../i18n/provider/i18nContext';
 import useFile from '../providers/fileprovider/fileContext';
 import './filecontent.css';
 
 const FileContent = () => {
 	const { status, selectedItem } = useFile();
+	const { t } = useI18n();
 
 	if (status === 'loading') {
 		return <div>Carregando...</div>;
@@ -13,7 +15,7 @@ const FileContent = () => {
 	}
 
 	if (!selectedItem) {
-		return <div>No file selected</div>;
+		return <div>{t('NO_FILE_SELECTED')}</div>;
 	}
 
 	return (
