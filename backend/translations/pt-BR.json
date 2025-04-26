@@ -1,6 +1,14 @@
 {
+	"SCAN_FILES_START": "🔍 Iniciando escaneamento de arquivos",
 	"FILE_NOT_FOUND_IN_DATABASE": "⚠️ Arquivo não encontrado no banco de dados: %s",
-	"ERROR_PERMISSION_DENIED": "⚠️ Permissão negada ao acessar: %s",
 	"FILE_UPDATE_SUCCESS": "✅ Arquivo atualizado com sucesso ID: %d",
-	"FILE_CREATE_SUCCESS": "✅ Arquivo criado com sucesso ID: %d"
+	"FILE_CREATE_SUCCESS": "✅ Arquivo criado com sucesso ID: %d",
+	"FILE_DONT_EXIST": "⚠️ Arquivo não existe ID: %d, %v",
+	"ERROR_PERMISSION_DENIED": "⚠️ Permissão negada ao acessar: %s",
+	"ERROR_GET_FILES": "❌ Erro ao buscar arquivos: %v",
+	"ERROR_GET_FILE": "❌ Erro ao buscar arquivo %s: %v",
+	"ERROR_DELETING_FILE": "❌ Erro ao deletar arquivo %s: %v",
+	"ERROR_SCAN_FILES": "❌ Erro ao escanear arquivos: %v",
+	"SCAN_FILES_SUCCESS": "✅ Escaneamento de arquivos concluído com sucesso",
+	"NO_FILE_SELECTED": "⚠️ Nenhum arquivo selecionado"
 }

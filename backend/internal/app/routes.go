@@ -1,6 +1,7 @@
 package app
 
 import (
+	"nas-go/api/internal/api/v1/configuration"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -12,6 +13,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	registerCorsRoutes(router)
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
+	RegisterConfigRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -24,6 +26,12 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 
+}
+
+func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
+	configurations := router.Group("/configuration")
+
+	configurations.GET("/translation", configuration.GetTranslationJson)
 }
 
 func registerReactRoutes(router *gin.Engine) {
