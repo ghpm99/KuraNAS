@@ -1,4 +1,4 @@
-import { apiFile } from '@/service';
+import { apiBase } from '@/service';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileContextProvider, FileContextType, FileData } from './fileContext';
@@ -37,7 +37,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const { status, data } = useInfiniteQuery({
 		queryKey: ['files', queryParams],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
-			const response = await apiFile.get<PaginationResponse>(`/`, {
+			const response = await apiBase.get<PaginationResponse>(`/files/`, {
 				params: { ...queryParams, page: pageParam },
 			});
 			return response.data;
