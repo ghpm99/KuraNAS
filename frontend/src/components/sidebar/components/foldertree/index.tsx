@@ -1,15 +1,17 @@
 import useFile, { FileData } from '@/components/providers/fileprovider/fileContext';
 import FolderItem from './components/folderitem';
 import './folderTree.css';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const FolderTree = () => {
 	const { status, handleSelectItem, files, expandedItems, selectedItem } = useFile();
+	const { t } = useI18n();
 
 	if (status === 'loading') {
-		return <div>Loading...</div>;
+		return <div>{t('LOADING')}</div>;
 	}
 	if (status === 'error' && files.length === 0) {
-		return <div>Error loading files</div>;
+		return <div>{t('ERROR_LOADING_FILES')}</div>;
 	}
 
 	const handleClick = (file: FileData) => {
@@ -18,7 +20,7 @@ const FolderTree = () => {
 
 	const renderFiles = (fileArray: FileData[]) => {
 		if (!fileArray || fileArray.length === 0) {
-			return <div>No files found</div>;
+			return <div>{t('EMPTY_FILE_LIST')}</div>;
 		}
 		const fileComponent = fileArray.map((file) => (
 			<FolderItem
@@ -38,7 +40,7 @@ const FolderTree = () => {
 
 	return (
 		<div className='nav-section'>
-			<div className='nav-section-title'>Arquivos</div>
+			<div className='nav-section-title'>{t('FILES')}</div>
 			<div className='folder-list'>{renderFiles(files)}</div>
 		</div>
 	);

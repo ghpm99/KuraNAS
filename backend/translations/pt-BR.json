@@ -10,5 +10,15 @@
 	"ERROR_DELETING_FILE": "❌ Erro ao deletar arquivo %s: %v",
 	"ERROR_SCAN_FILES": "❌ Erro ao escanear arquivos: %v",
 	"SCAN_FILES_SUCCESS": "✅ Escaneamento de arquivos concluído com sucesso",
-	"NO_FILE_SELECTED": "⚠️ Nenhum arquivo selecionado"
+	"NO_FILE_SELECTED": "⚠️ Nenhum arquivo selecionado",
+	"ALL_FILES": "Todos os arquivos",
+	"LOADING": "Carregando...",
+	"ERROR_LOADING_FILES": "❌ Erro ao carregar arquivos",
+	"EMPTY_FILE_LIST": "⚠️ Nenhum arquivo encontrado",
+	"FILES": "Arquivos",
+	"NEW_FILE": "Criar",
+	"NEW_FOLDER": "Criar pasta",
+	"UPLOAD_FILE": "Enviar",
+	"RECENT_FILES": "Recentes",
+	"STARRED_FILES": "Favoritos"
 }

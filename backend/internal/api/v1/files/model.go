@@ -14,6 +14,7 @@ type FileModel struct {
 	ID              int
 	Name            string
 	Path            string
+	ParentPath      string
 	Type            FileType
 	Format          string
 	Size            int64
@@ -28,15 +29,16 @@ type FileModel struct {
 func (i *FileDto) ToModel() (FileModel, error) {
 
 	fileModel := FileModel{
-		ID:        i.ID,
-		Name:      i.Name,
-		Path:      i.Path,
-		Type:      i.Type,
-		Format:    i.Format,
-		Size:      i.Size,
-		UpdatedAt: i.UpdatedAt,
-		CreatedAt: i.CreatedAt,
-		CheckSum:  i.CheckSum,
+		ID:         i.ID,
+		Name:       i.Name,
+		Path:       i.Path,
+		ParentPath: i.ParentPath,
+		Type:       i.Type,
+		Format:     i.Format,
+		Size:       i.Size,
+		UpdatedAt:  i.UpdatedAt,
+		CreatedAt:  i.CreatedAt,
+		CheckSum:   i.CheckSum,
 	}
 
 	deletedAt, err := i.DeletedAt.ParseToNullTime()

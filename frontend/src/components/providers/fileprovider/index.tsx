@@ -37,7 +37,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const { status, data } = useInfiniteQuery({
 		queryKey: ['files', queryParams],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
-			const response = await apiBase.get<PaginationResponse>(`/files/`, {
+			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
 				params: { ...queryParams, page: pageParam },
 			});
 			return response.data;

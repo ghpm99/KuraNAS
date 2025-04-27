@@ -13,10 +13,11 @@ type RepositoryInterface interface {
 }
 
 type ServiceInterface interface {
-	CreateFile(fileDto FileDto) (FileDto, error)
+	CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
+	GetFileById(id int) (FileDto, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	UpdateFile(file FileDto) (bool, error)
+	UpdateFile(file FileDto) (result bool, err error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
 }

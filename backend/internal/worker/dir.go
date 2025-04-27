@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func ScanDirWorker(service *files.Service, data string) {
+func ScanDirWorker(service files.ServiceInterface, data string) {
 	fmt.Println("🔍 Escaneando diretorio...")
 
 	entries, err := os.ReadDir(data)

@@ -2,14 +2,15 @@ UPDATE home_file
 SET
     name = $1,
     "path" = $2,
-    format = $3,
-    "size" = $4,
-    updated_at = $5,
-    created_at = $6,
-    last_interaction = $7,
-    last_backup = $8,
-    "type"=$9,
-    checksum=$10,
-    deleted_at=$11
+    parent_path = $3,
+    format = $4,
+    "size" = $5,
+    updated_at = $6,
+    created_at = $7,
+    last_interaction = $8,
+    last_backup = $9,
+    "type"=$10,
+    checksum=$11,
+    deleted_at=$12
 WHERE
-    id = $12;
+    id = $13;

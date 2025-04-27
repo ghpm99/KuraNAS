@@ -55,6 +55,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 			return nil
 		} else {
 			fileDto.Path = path
+			fileDto.ParentPath = filepath.Dir(path)
 		}
 
 		fileCreated, err := service.CreateFile(fileDto)

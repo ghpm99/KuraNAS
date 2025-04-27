@@ -18,6 +18,7 @@ type FileDto struct {
 	ID              int                       `json:"id"`
 	Name            string                    `json:"name"`
 	Path            string                    `json:"path"`
+	ParentPath      string                    `json:"parent_path"`
 	Type            FileType                  `json:"type"`
 	Format          string                    `json:"format"`
 	Size            int64                     `json:"size"`
@@ -32,15 +33,16 @@ type FileDto struct {
 func (i *FileModel) ToDto() (FileDto, error) {
 
 	fileDto := FileDto{
-		ID:        i.ID,
-		Name:      i.Name,
-		Path:      i.Path,
-		Type:      i.Type,
-		Format:    i.Format,
-		Size:      i.Size,
-		UpdatedAt: i.UpdatedAt,
-		CreatedAt: i.CreatedAt,
-		CheckSum:  i.CheckSum,
+		ID:         i.ID,
+		Name:       i.Name,
+		Path:       i.Path,
+		ParentPath: i.ParentPath,
+		Type:       i.Type,
+		Format:     i.Format,
+		Size:       i.Size,
+		UpdatedAt:  i.UpdatedAt,
+		CreatedAt:  i.CreatedAt,
+		CheckSum:   i.CheckSum,
 	}
 
 	err := fileDto.DeletedAt.ParseFromNullTime(i.DeletedAt)
@@ -128,6 +130,7 @@ type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]
 	Path       utils.Optional[string]
+	ParentPath utils.Optional[string]
 	Format     utils.Optional[string]
 	Type       utils.Optional[FileType]
 	FileParent utils.Optional[int]

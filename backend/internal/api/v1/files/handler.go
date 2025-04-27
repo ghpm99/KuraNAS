@@ -11,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service ServiceInterface
 }
 
-func NewHandler(financialService *Service) *Handler {
+func NewHandler(financialService ServiceInterface) *Handler {
 	return &Handler{
 		service: financialService,
 	}
@@ -105,4 +105,42 @@ func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
 		return
 	}
 	handler.service.ScanFilesTask(data)
+}
+
+func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
+
+	fileFilter := FileFilter{}
+
+	if fileParentId != 0 {
+		fileParent, err := handler.service.GetFileById(fileParentId)
+		if err != nil {
+			fmt.Println("Error getting file by ID:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if fileParent.ID != 0 {
+			fileFilter.ParentPath = utils.Optional[string]{
+				HasValue: true,
+				Value:    fileParent.Path,
+			}
+		}
+	} else {
+		fileFilter.ParentPath = utils.Optional[string]{
+			HasValue: true,
+			Value:    config.AppConfig.EntryPoint,
+		}
+	}
+
+	pagination, err := handler.service.GetFiles(fileFilter, page, pageSize)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, pagination)
 }
