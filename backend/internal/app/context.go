@@ -16,8 +16,8 @@ type AppContext struct {
 
 type FileContext struct {
 	Handler    *files.Handler
-	Service    *files.Service
-	Repository *files.Repository
+	Service    files.ServiceInterface
+	Repository files.RepositoryInterface
 }
 
 func NewContext(db *sql.DB) *AppContext {

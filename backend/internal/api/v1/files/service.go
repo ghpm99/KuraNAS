@@ -12,8 +12,28 @@ type Service struct {
 	Tasks      chan utils.Task
 }
 
-func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) *Service {
+func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
 	return &Service{Repository: repository, Tasks: tasksChannel}
+}
+
+func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
+
+	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+		fileModel, err := fileDto.ToModel()
+		if err != nil {
+			return
+		}
+
+		result, err := s.Repository.CreateFile(tx, fileModel)
+		if err != nil {
+			return
+		}
+
+		fileDtoResult, err = result.ToDto()
+		return
+	})
+
+	return
 }
 
 func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
@@ -54,6 +74,27 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 
 }
 
+func (s *Service) GetFileById(id int) (FileDto, error) {
+	filter := FileFilter{
+		ID: utils.Optional[int]{HasValue: true, Value: id},
+	}
+	pagination, err := s.GetFiles(filter, 1, 5)
+
+	if err != nil {
+		return FileDto{}, fmt.Errorf("erro ao buscar arquivo: %w", err)
+	}
+	fmt.Println(pagination)
+	switch len(pagination.Items) {
+	case 0:
+		return FileDto{}, sql.ErrNoRows
+	case 1:
+		return pagination.Items[0], nil
+	default:
+		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
+	}
+
+}
+
 func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
 	tx, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
 	if err != nil {
@@ -66,26 +107,6 @@ func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error
 	}
 
 	return tx.Commit()
-}
-
-func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
-
-	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
-		fileModel, err := fileDto.ToModel()
-		if err != nil {
-			return
-		}
-
-		result, err := s.Repository.CreateFile(tx, fileModel)
-		if err != nil {
-			return
-		}
-
-		fileDtoResult, err = result.ToDto()
-		return
-	})
-
-	return
 }
 
 func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {

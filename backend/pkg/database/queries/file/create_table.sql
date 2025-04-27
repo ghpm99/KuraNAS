@@ -2,7 +2,8 @@ CREATE TABLE
     IF NOT EXISTS "home_file" (
         "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
         "name" varchar(256) NOT NULL,
-        "path" varchar(512) NOT NULL,
+        "path" varchar(1024) NOT NULL,
+        "parent_path" varchar(1024) NOT NULL,
         "format" varchar(256) NOT NULL,
         "size" integer NOT NULL,
         "updated_at" datetime NOT NULL,
@@ -15,6 +16,8 @@ CREATE TABLE
     );
 
 CREATE INDEX IF NOT EXISTS "home_file_path" ON "home_file" ("path");
+
+CREATE INDEX IF NOT EXISTS "home_file_parent_path" ON "home_file" ("parent_path");
 
 CREATE INDEX IF NOT EXISTS "home_file_name" ON "home_file" ("name");
 

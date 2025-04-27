@@ -8,10 +8,10 @@ const FileContent = () => {
 	const { t } = useI18n();
 
 	if (status === 'loading') {
-		return <div>Carregando...</div>;
+		return <div>{t('LOADING')}</div>;
 	}
 	if (status === 'error') {
-		return <div>Error loading files</div>;
+		return <div>{t('ERROR_LOADING_FILES')}</div>;
 	}
 
 	if (!selectedItem) {

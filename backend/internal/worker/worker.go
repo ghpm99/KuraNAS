@@ -11,8 +11,8 @@ import (
 
 type WorkerContext struct {
 	Tasks      chan utils.Task
-	Service    *files.Service
-	Repository *files.Repository
+	Service    files.ServiceInterface
+	Repository files.RepositoryInterface
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {

@@ -32,22 +32,28 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		},
 	}
 
-	rows, err := r.DbContext.Query(
-		queries.GetFilesQuery,
+	args := []any{
 		!filter.ID.HasValue,
 		filter.ID.Value,
 		!filter.Name.HasValue,
 		filter.Name.Value,
 		!filter.Path.HasValue,
 		filter.Path.Value,
+		!filter.ParentPath.HasValue,
+		filter.ParentPath.Value,
 		!filter.Format.HasValue,
 		filter.Format.Value,
 		!filter.Type.HasValue,
 		filter.Type.Value,
 		!filter.DeletedAt.HasValue,
 		filter.DeletedAt.Value,
-		pageSize+1,
-		page,
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
+
+	rows, err := r.DbContext.Query(
+		queries.GetFilesQuery,
+		args...,
 	)
 	if err != nil {
 		return paginationResponse, err
@@ -60,6 +66,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 			&file.ID,
 			&file.Name,
 			&file.Path,
+			&file.ParentPath,
 			&file.Format,
 			&file.Size,
 			&file.UpdatedAt,
@@ -77,7 +84,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	}
 
 	paginationResponse.UpdatePagination()
-
+	fmt.Println("paginationResponse", paginationResponse, filter, args)
 	return paginationResponse, nil
 }
 
@@ -90,6 +97,7 @@ func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel,
 	args := []any{
 		file.Name,
 		file.Path,
+		file.ParentPath,
 		file.Format,
 		file.Size,
 		file.UpdatedAt,
@@ -132,6 +140,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		queries.UpdateFileQuery,
 		&file.Name,
 		&file.Path,
+		&file.ParentPath,
 		&file.Format,
 		&file.Size,
 		&file.UpdatedAt,
