@@ -4,7 +4,7 @@ import useFile from '../providers/fileprovider/fileContext';
 import './filecontent.css';
 
 const FileContent = () => {
-	const { status, selectedItem } = useFile();
+	const { status, selectedItem, files } = useFile();
 	const { t } = useI18n();
 
 	if (status === 'loading') {
@@ -15,7 +15,20 @@ const FileContent = () => {
 	}
 
 	if (!selectedItem) {
-		return <div>{t('NO_FILE_SELECTED')}</div>;
+		return (
+			<>
+				<h1>{t('FILES')}</h1>
+				<div className='file-grid'>
+					{files?.map((file) => (
+						<FileCard
+							title={file.name}
+							metadata='Shared folder • 8 presentations'
+							thumbnail={`${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${file.id}`}
+						/>
+					))}
+				</div>
+			</>
+		);
 	}
 
 	return (

@@ -153,21 +153,21 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	file, err := handler.service.GetFileById(id)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
 		return
 	}
 
 	thumbnail, err := handler.service.GetFileThumbnail(file, 320)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
 		return
 	}
 
 	var buf bytes.Buffer
 	err = jpeg.Encode(&buf, thumbnail, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error3": err.Error()})
 		return
 	}
 
