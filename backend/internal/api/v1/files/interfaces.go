@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"image"
 	"nas-go/api/pkg/utils"
 )
 
@@ -20,4 +21,5 @@ type ServiceInterface interface {
 	UpdateFile(file FileDto) (result bool, err error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
+	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 }

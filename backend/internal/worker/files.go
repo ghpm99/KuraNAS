@@ -86,7 +86,11 @@ func fileExists(path string) bool {
 
 func findFilesDeleted(service files.ServiceInterface) {
 	var currentPage = 1
-	var pagination, error = service.GetFiles(files.FileFilter{}, currentPage, 20)
+	var pagination, error = service.GetFiles(files.FileFilter{
+		DeletedAt: utils.Optional[time.Time]{
+			HasValue: true,
+		},
+	}, currentPage, 20)
 	if error != nil {
 		i18n.PrintTranslate("ERROR_GET_FILES", error)
 		return

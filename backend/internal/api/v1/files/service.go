@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"image"
+	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 )
 
@@ -138,4 +140,17 @@ func (s *Service) ScanDirTask(data string) {
 		Data: data,
 	}
 	s.Tasks <- task
+}
+
+func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
+
+	switch fileDto.Format {
+	case ".jpg":
+		return img.ResizeFromFile(fileDto.Path, fileDto.Format)
+	case ".png":
+		return img.ResizeFromFile(fileDto.Path, fileDto.Format)
+	default:
+		return nil, fmt.Errorf("nao encontrado")
+	}
+
 }
