@@ -72,6 +72,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 				const updatedTree = findAndAddChildren(currentTree, selectedItem, data.pages[0].items);
 				return updatedTree;
 			});
+			// setSelectedItem((currentItem) => {
+			// 	if (!currentItem) return null;
+
+			// 	return { ...currentItem, file_children: data.pages[0].items };
+			// });
 		} else {
 			setFileTree(data.pages[0].items);
 		}

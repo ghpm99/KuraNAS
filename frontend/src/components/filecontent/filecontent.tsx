@@ -23,7 +23,11 @@ const FileContent = () => {
 			<h1>{selectedItem.name}</h1>
 			<div className='file-grid'>
 				{selectedItem?.file_children?.map((file) => (
-					<FileCard title={file.name} metadata='Shared folder • 8 presentations' thumbnail='/placeholder.svg' />
+					<FileCard
+						title={file.name}
+						metadata='Shared folder • 8 presentations'
+						thumbnail={`${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${file.id}`}
+					/>
 				))}
 			</div>
 		</>
