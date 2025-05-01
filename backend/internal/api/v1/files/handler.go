@@ -1,7 +1,9 @@
 package files
 
 import (
+	"bytes"
 	"fmt"
+	"image/jpeg"
 
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
@@ -143,4 +145,31 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+
+	file, err := handler.service.GetFileById(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	thumbnail, err := handler.service.GetFileThumbnail(file, 320)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var buf bytes.Buffer
+	err = jpeg.Encode(&buf, thumbnail, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "image/jpeg", buf.Bytes())
 }

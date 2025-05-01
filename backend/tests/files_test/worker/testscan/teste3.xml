@@ -1,2 +1,26 @@
-<teste>
-</teste>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploradores do Vale Perdido</title>
+</head>
+<body>
+    <header>
+        <h1>Jornada pelo Vale Perdido</h1>
+    </header>
+
+    <main>
+        <section>
+            <p>Era uma vez um grupo de viajantes que se aventurava por terras desconhecidas. Carregavam consigo apenas coragem, mapas antigos e histórias contadas à beira da fogueira.</p>
+            <p>As árvores sussurravam segredos enquanto os viajantes passavam, e animais curiosos observavam de longe. Riachos de águas cristalinas mostravam que a natureza seguia suas próprias regras.</p>
+            <p>No décimo dia, uma pedra lisa com símbolos misteriosos indicou que estavam perto do lendário Vale Perdido. Unidos pela coragem, continuaram a jornada, guiados pela esperança.</p>
+            <p>Ninguém sabe ao certo o que encontraram no final da trilha, mas suas histórias vivem nas lendas, inspirando gerações a explorar o desconhecido.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>Histórias para testes de HTML &copy; 2025</p>
+    </footer>
+</body>
+</html>

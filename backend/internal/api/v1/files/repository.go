@@ -84,7 +84,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	}
 
 	paginationResponse.UpdatePagination()
-	fmt.Println("paginationResponse", paginationResponse, filter, args)
+
 	return paginationResponse, nil
 }
 
