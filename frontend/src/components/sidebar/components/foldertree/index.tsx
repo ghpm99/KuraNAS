@@ -15,7 +15,7 @@ const FolderTree = () => {
 	}
 
 	const handleClick = (file: FileData) => {
-		handleSelectItem(file);
+		handleSelectItem(file.id);
 	};
 
 	const renderFiles = (fileArray: FileData[]) => {

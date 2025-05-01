@@ -2,7 +2,7 @@ const FileCard = ({ title, metadata, thumbnail }: { title: string; metadata: str
 	return (
 		<div className='file-card'>
 			<div className='file-thumbnail'>
-				<img src={thumbnail || '/placeholder.svg'} width={400} height={300} className='thumbnail-image' />
+				<img src={thumbnail || '/placeholder.svg'} width={652} height={489} className='thumbnail-image' />
 			</div>
 			<div className='file-info'>
 				<h3 className='file-title'>{title}</h3>
@@ -10,6 +10,6 @@ const FileCard = ({ title, metadata, thumbnail }: { title: string; metadata: str
 			</div>
 		</div>
 	);
-}
+};
 
-export default FileCard
+export default FileCard;

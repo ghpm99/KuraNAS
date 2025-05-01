@@ -20,7 +20,7 @@ export type FileContextType = {
 	files: FileData[];
 	status: string;
 	selectedItem: FileData | null;
-	handleSelectItem: (item: FileData | null) => void;
+	handleSelectItem: (itemId: number | null) => void;
 	expandedItems: number[];
 };
 

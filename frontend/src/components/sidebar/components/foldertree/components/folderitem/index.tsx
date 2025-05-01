@@ -41,11 +41,24 @@ const FolderItem = ({
 	expanded: boolean;
 	selected: boolean;
 }) => {
+	const formatLabel = () => {
+		if (label?.length <= 12) {
+			return label;
+		}
+		const formatSplit = label.split('.');
+		const formatFile = formatSplit[formatSplit.length - 1];
+		console.log(label.split('.'));
+		const formatLength = formatFile?.length;
+
+		const nameLenght = 12 - formatLength - 3;
+		const labelElipsed = label.substring(0, nameLenght);
+		return `${labelElipsed}...${formatFile}`;
+	};
 	return (
 		<>
 			<a className={`folder-item ${selected ? 'active' : ''}`} onClick={onClick}>
 				{type === 1 ? <FolderSvg /> : <FilerSvg />}
-				<span>{label}</span>
+				<span>{formatLabel()}</span>
 			</a>
 			{children && expanded && <div className='folder-children'>{children}</div>}
 		</>

@@ -19,19 +19,19 @@ export type PaginationResponse = {
 const pageSize = 200;
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
-	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
+	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 
-	console.log('selectedItem', selectedItem);
+	console.log('selectedItem', selectedItemId);
 	console.log('fileTree', fileTree);
 
 	const queryParams = useMemo(
 		() => ({
 			page_size: pageSize,
-			file_parent: selectedItem ? selectedItem.id : undefined,
+			file_parent: selectedItemId ?? undefined,
 		}),
-		[selectedItem]
+		[selectedItemId]
 	);
 
 	const { status, data } = useInfiniteQuery({
@@ -51,13 +51,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
-	const findAndAddChildren = useCallback((tree: FileData[], parent: FileData, children: FileData[]): FileData[] => {
+	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children: FileData[]): FileData[] => {
 		return tree.map((node) => {
-			if (node.id === parent.id) {
+			if (node.id === parentId) {
 				return { ...node, file_children: children };
 			}
 			if (node.file_children) {
-				return { ...node, file_children: findAndAddChildren(node.file_children, parent, children) };
+				return { ...node, file_children: findAndAddChildren(node.file_children, parentId, children) };
 			}
 			return node;
 		});
@@ -66,34 +66,47 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	useEffect(() => {
 		if (!data) return;
 
-		if (selectedItem) {
+		if (selectedItemId) {
 			setFileTree((currentTree) => {
-				// Encontre o item pai na árvore e adicione os filhos
-				const updatedTree = findAndAddChildren(currentTree, selectedItem, data.pages[0].items);
+				const updatedTree = findAndAddChildren(currentTree, selectedItemId, data.pages[0].items);
 				return updatedTree;
 			});
-			// setSelectedItem((currentItem) => {
-			// 	if (!currentItem) return null;
-
-			// 	return { ...currentItem, file_children: data.pages[0].items };
-			// });
 		} else {
 			setFileTree(data.pages[0].items);
 		}
-	}, [data, selectedItem, findAndAddChildren]);
+	}, [data, selectedItemId, findAndAddChildren]);
 
 	const handleSelectItem = useCallback(
-		(item: FileData | null) => {
-			setSelectedItem(item);
-			if (!item) return;
-			if (expandedItems.includes(item.id)) {
-				setExpandedItems((prev) => prev.filter((id) => id !== item.id));
+		(itemId: number | null) => {
+			setSelectedItemId(itemId);
+			if (!itemId) return;
+			if (expandedItems.includes(itemId)) {
+				setExpandedItems((prev) => prev.filter((id) => id !== itemId));
 			} else {
-				setExpandedItems((prev) => [...prev, item.id]);
+				setExpandedItems((prev) => [...prev, itemId]);
 			}
 		},
 		[expandedItems]
 	);
+
+	const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
+		if (!itemId) return null;
+		for (const item of data) {
+			if (item.id === itemId) {
+				return item;
+			}
+			if (item?.file_children?.length > 0) {
+				const itemChildren = findItemInTree(item?.file_children, itemId);
+				if (itemChildren) {
+					return itemChildren;
+				}
+			}
+		}
+
+		return null;
+	};
+
+	const selectedItem = findItemInTree(fileTree, selectedItemId);
 
 	const contextValue: FileContextType = useMemo(
 		() => ({

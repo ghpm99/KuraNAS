@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"image"
+	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 )
@@ -85,7 +86,6 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 	if err != nil {
 		return FileDto{}, fmt.Errorf("erro ao buscar arquivo: %w", err)
 	}
-	fmt.Println(pagination)
 	switch len(pagination.Items) {
 	case 0:
 		return FileDto{}, sql.ErrNoRows
@@ -144,13 +144,31 @@ func (s *Service) ScanDirTask(data string) {
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
 
+	if fileDto.Format == "" {
+		return icons.FolderIcon()
+	}
+
 	switch fileDto.Format {
 	case ".jpg":
-		return img.ResizeFromFile(fileDto.Path, fileDto.Format)
+		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		if err != nil {
+			return nil, err
+		}
+		return img.Thumbnail(image)
 	case ".png":
-		return img.ResizeFromFile(fileDto.Path, fileDto.Format)
+		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		if err != nil {
+			return nil, err
+		}
+		return img.Thumbnail(image)
+	case ".pdf":
+		return icons.PdfIcon()
+	case ".mp3":
+		return icons.Mp3Icon()
+	case ".mp4":
+		return icons.Mp4Icon()
 	default:
-		return nil, fmt.Errorf("nao encontrado")
+		return icons.Icon()
 	}
 
 }
