@@ -5,6 +5,7 @@ import (
 	"image"
 	"nas-go/api/pkg/img"
 	"os"
+	"strings"
 )
 
 func getIconPath(iconName string) (string, error) {
@@ -13,16 +14,17 @@ func getIconPath(iconName string) (string, error) {
 		return "", err
 	}
 
-	filePath := fmt.Sprintf("%s/icons/%s.jpg", currentDir, iconName)
+	filePath := fmt.Sprintf("%s/icons/%s.png", currentDir, iconName)
 	return filePath, nil
 }
 
 func getIcon(format string) (image.Image, error) {
-	path, err := getIconPath(format)
+
+	path, err := getIconPath(strings.ToLower(format))
 	if err != nil {
 		return nil, err
 	}
-	return img.OpenImageFromFile(path, ".jpg")
+	return img.OpenImageFromFile(path, ".png")
 }
 
 func PdfIcon() (image.Image, error) {

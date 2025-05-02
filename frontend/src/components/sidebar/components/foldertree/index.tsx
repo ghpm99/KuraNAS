@@ -38,9 +38,15 @@ const FolderTree = () => {
 		return fileComponent;
 	};
 
+	const handleUnselectItem = () => {
+		handleSelectItem(null);
+	};
+
 	return (
 		<div className='nav-section'>
-			<div className='nav-section-title'>{t('FILES')}</div>
+			<div className='nav-section-title' onClick={() => handleUnselectItem()}>
+				{t('FILES')}
+			</div>
 			<div className='folder-list'>{renderFiles(files)}</div>
 		</div>
 	);
