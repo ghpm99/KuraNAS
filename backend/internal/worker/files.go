@@ -47,6 +47,9 @@ func ScanFilesWorker(service files.ServiceInterface) {
 		}
 
 		if fileDtoError == nil {
+			fileDto.DeletedAt = utils.Optional[time.Time]{
+				HasValue: false,
+			}
 			updated, err := service.UpdateFile(fileDto)
 			if err != nil || !updated {
 				return fail(path, err)

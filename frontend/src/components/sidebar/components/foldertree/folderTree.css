@@ -7,7 +7,8 @@
 	font-size: 0.75rem;
 	font-weight: 500;
 	text-transform: uppercase;
-	color: #F2F5F8;
+	color: #f2f5f8;
+	cursor: pointer;
 }
 
 .folder-list {

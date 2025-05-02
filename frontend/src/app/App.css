@@ -2,12 +2,12 @@
 .file-manager {
 	display: flex;
 	height: 100vh;
-	background-color: #2A282E;
+	background-color: #2a282e;
 }
 
 .sidebar {
 	width: 256px;
-	background-color: #1C1A1F;
+	background-color: #1c1a1f;
 }
 
 .sidebar-header {
@@ -17,7 +17,7 @@
 .app-title {
 	font-size: 1.25rem;
 	font-weight: 700;
-  margin: 0;
+	margin: 0;
 }
 
 .nav {
@@ -32,17 +32,17 @@
 	gap: 8px;
 	padding: 8px 12px;
 	text-decoration: none;
-	color: #F2F5F8;
+	color: #f2f5f8;
 	border-radius: 8px;
 	font-size: 0.875rem;
 }
 
 .nav-item:hover {
-	background-color: #2E2D33;
+	background-color: #2e2d33;
 }
 
 .nav-item.active {
-	background-color: #2A282E;
+	background-color: #2a282e;
 }
 
 /* Main content */
@@ -55,7 +55,7 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 16px 24px 16px 0;
-  background-color: #1C1A1F;
+	background-color: #1c1a1f;
 }
 
 .search-container {
@@ -78,7 +78,7 @@
 	border: none;
 	border-radius: 6px;
 	font-size: 0.875rem;
-  background-color: #2A282E;
+	background-color: #2a282e;
 }
 
 .search-input:focus {
@@ -102,7 +102,7 @@
 }
 
 .icon-button:hover {
-	background-color: #2E2D33;
+	background-color: #2e2d33;
 }
 
 .avatar {
@@ -152,13 +152,13 @@
 }
 
 .secondary-button {
-	background-color: #1C1A1F;
-	color: #F2F5F8;
-  border: none;
+	background-color: #1c1a1f;
+	color: #f2f5f8;
+	border: none;
 }
 
 .secondary-button:hover {
-	background-color: #2E2D33;
+	background-color: #2e2d33;
 }
 
 /* Tabs */
@@ -176,7 +176,7 @@
 	border: none;
 	background: none;
 	cursor: pointer;
-	color: #F2F5F8;
+	color: #f2f5f8;
 }
 
 .tab.active {
@@ -188,8 +188,7 @@
 	position: relative;
 	overflow: hidden;
 	border-radius: 8px;
-	border: 1px solid #e5e7eb;
-	background-color: white;
+	background-color: #1c1a1f;
 }
 
 .file-thumbnail {
@@ -214,7 +213,7 @@
 
 .file-title {
 	font-weight: 500;
-	color: #111827;
+	color: white;
 	margin: 0 0 4px 0;
 }
 

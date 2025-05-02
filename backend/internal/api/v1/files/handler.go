@@ -3,7 +3,7 @@ package files
 import (
 	"bytes"
 	"fmt"
-	"image/jpeg"
+	"image/png"
 
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
@@ -165,11 +165,11 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}
 
 	var buf bytes.Buffer
-	err = jpeg.Encode(&buf, thumbnail, nil)
+	err = png.Encode(&buf, thumbnail)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error3": err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "image/jpeg", buf.Bytes())
+	c.Data(http.StatusOK, "image/png", buf.Bytes())
 }
