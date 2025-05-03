@@ -42,12 +42,12 @@ const FolderItem = ({
 	selected: boolean;
 }) => {
 	const formatLabel = () => {
-		if (label?.length <= 12) {
+		if (label?.length <= 12 || type === 1) {
 			return label;
 		}
 		const formatSplit = label.split('.');
 		const formatFile = formatSplit[formatSplit.length - 1];
-		console.log(label.split('.'));
+
 		const formatLength = formatFile?.length;
 
 		const nameLenght = 12 - formatLength - 3;

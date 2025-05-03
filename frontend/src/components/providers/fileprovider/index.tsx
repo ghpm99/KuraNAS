@@ -23,9 +23,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 
-	console.log('selectedItem', selectedItemId);
-	console.log('fileTree', fileTree);
-
 	const queryParams = useMemo(
 		() => ({
 			page_size: pageSize,

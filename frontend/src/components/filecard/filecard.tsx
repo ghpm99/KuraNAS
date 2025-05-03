@@ -1,6 +1,16 @@
-const FileCard = ({ title, metadata, thumbnail }: { title: string; metadata: string; thumbnail: string }) => {
+const FileCard = ({
+	title,
+	metadata,
+	thumbnail,
+	onClick,
+}: {
+	title: string;
+	metadata: string;
+	thumbnail: string;
+	onClick: () => void;
+}) => {
 	return (
-		<div className='file-card'>
+		<div className='file-card' onClick={onClick}>
 			<div className='file-thumbnail'>
 				<img
 					loading='lazy'

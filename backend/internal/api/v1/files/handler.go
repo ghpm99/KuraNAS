@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
+	"mime"
+	"os"
+	"strings"
 
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
@@ -172,4 +175,24 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}
 
 	c.Data(http.StatusOK, "image/png", buf.Bytes())
+}
+
+func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+
+	file, err := handler.service.GetFileById(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		return
+	}
+
+	data, err := os.ReadFile(file.Path)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(file.Format)), data)
 }
