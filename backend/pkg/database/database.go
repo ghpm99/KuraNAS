@@ -19,7 +19,7 @@ func ConfigDatabase() (*sql.DB, error) {
 	if dbPath == "" {
 		dbPath = "./" + dbName
 	}
-
+	fmt.Println("Database path", dbPath)
 	localDatabase, errSql := sql.Open("sqlite3", dbPath)
 
 	if errSql != nil {

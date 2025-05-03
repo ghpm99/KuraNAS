@@ -5,6 +5,7 @@ BACKEND_DIR := backend
 DIST_DIR := $(FRONTEND_DIR)/dist
 OUTPUT_DIR := build
 
+
 .PHONY: all frontend backend move clean deploy
 
 all: frontend backend move deploy
@@ -19,7 +20,9 @@ move:
 	@echo "Moving files..."
 	@mkdir -p $(OUTPUT_DIR)/dist
 	@mv $(DIST_DIR) $(OUTPUT_DIR)
-	@mv $(BACKEND_DIR)/main $(OUTPUT_DIR)
+	@mv $(BACKEND_DIR)/kuranas $(OUTPUT_DIR)
+	@cp -r $(BACKEND_DIR)/icons $(OUTPUT_DIR)
+	@cp -r $(BACKEND_DIR)/translations $(OUTPUT_DIR)
 	@echo "Files moved."
 
 clean:
