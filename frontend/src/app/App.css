@@ -188,7 +188,6 @@
 	position: relative;
 	overflow: hidden;
 	border-radius: 8px;
-	background-color: #1c1a1f;
 }
 
 .file-thumbnail {
@@ -215,6 +214,10 @@
 	font-weight: 500;
 	color: white;
 	margin: 0 0 4px 0;
+	width: 200px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .file-metadata {

@@ -53,3 +53,8 @@
 		grid-template-columns: repeat(9, 1fr);
 	}
 }
+
+.embed {
+	width: 100%;
+	height: 961px;
+}

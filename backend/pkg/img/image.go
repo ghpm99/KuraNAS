@@ -45,7 +45,6 @@ func OpenImageFromFile(path string, format string) (image.Image, error) {
 	}
 
 	defer file.Close()
-
 	var img image.Image
 	switch format {
 	case ".jpg":

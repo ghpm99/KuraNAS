@@ -23,8 +23,6 @@ const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
 		return key;
 	};
-	console.log('status', status);
-	console.log('data', data);
 
 	const contextValue: I18nContextType = {
 		t,

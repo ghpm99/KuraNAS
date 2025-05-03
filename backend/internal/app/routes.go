@@ -27,6 +27,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
+	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 
 }
