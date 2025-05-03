@@ -6,7 +6,7 @@ MAIN_GO := cmd/nas/main.go
 
 build:
 	@echo "Building backend..."
-	@go build -o main $(MAIN_GO)
+	@go build -o kuranas $(MAIN_GO)
 	@echo "Backend build complete."
 
 test:
