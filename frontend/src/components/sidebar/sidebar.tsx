@@ -1,15 +1,13 @@
 import { LayoutGrid } from 'lucide-react';
-import NavItem from './components/navitem';
-import FolderTree from './components/foldertree';
+import NavItem from './components/navItem';
+import FolderTree from './components/folderTree';
 import useI18n from '../i18n/provider/i18nContext';
+import './sidebar.css';
 
 const Sidebar = () => {
 	const { t } = useI18n();
 	return (
 		<div className='sidebar'>
-			<div className='sidebar-header'>
-				<h1 className='app-title'>KuraNAS</h1>
-			</div>
 			<nav className='nav'>
 				<NavItem href='#' icon={<LayoutGrid className='icon' />} active>
 					{t('ALL_FILES')}

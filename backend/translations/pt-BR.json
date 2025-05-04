@@ -20,5 +20,8 @@
 	"NEW_FOLDER": "Criar pasta",
 	"UPLOAD_FILE": "Enviar",
 	"RECENT_FILES": "Recentes",
-	"STARRED_FILES": "Favoritos"
+	"STARRED_FILES": "Favoritos",
+	"FOLDER": "Pasta",
+	"ITEM": "Item",
+	"ITENS": "Itens"
 }

@@ -11,6 +11,7 @@ type RepositoryInterface interface {
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
+	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
 }
 
 type ServiceInterface interface {

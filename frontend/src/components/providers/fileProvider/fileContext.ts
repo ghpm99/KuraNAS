@@ -13,6 +13,7 @@ export type FileData = {
 	last_interaction: string;
 	last_backup: string;
 	check_sum: string;
+	directory_content_count: number;
 	file_children: FileData[];
 };
 

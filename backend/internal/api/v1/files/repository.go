@@ -170,3 +170,22 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 
 	return rowsAffected == 1, nil
 }
+
+func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetDirectoryContentCount: %v", err)
+	}
+	row := r.DbContext.QueryRow(
+		queries.GetChildrenCountQuery,
+		parentPath,
+		fileId,
+	)
+	var childrenCount int
+
+	if err := row.Scan(&childrenCount); err != nil {
+		return fail(err)
+	}
+
+	return childrenCount, nil
+
+}
