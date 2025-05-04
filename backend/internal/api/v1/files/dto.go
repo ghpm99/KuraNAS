@@ -15,19 +15,20 @@ const (
 )
 
 type FileDto struct {
-	ID              int                       `json:"id"`
-	Name            string                    `json:"name"`
-	Path            string                    `json:"path"`
-	ParentPath      string                    `json:"parent_path"`
-	Type            FileType                  `json:"type"`
-	Format          string                    `json:"format"`
-	Size            int64                     `json:"size"`
-	UpdatedAt       time.Time                 `json:"updated_at"`
-	CreatedAt       time.Time                 `json:"created_at"`
-	DeletedAt       utils.Optional[time.Time] `json:"deleted_at"`
-	LastInteraction utils.Optional[time.Time] `json:"last_interaction"`
-	LastBackup      utils.Optional[time.Time] `json:"last_backup"`
-	CheckSum        string                    `json:"check_sum"`
+	ID                    int                       `json:"id"`
+	Name                  string                    `json:"name"`
+	Path                  string                    `json:"path"`
+	ParentPath            string                    `json:"parent_path"`
+	Type                  FileType                  `json:"type"`
+	Format                string                    `json:"format"`
+	Size                  int64                     `json:"size"`
+	UpdatedAt             time.Time                 `json:"updated_at"`
+	CreatedAt             time.Time                 `json:"created_at"`
+	DeletedAt             utils.Optional[time.Time] `json:"deleted_at"`
+	LastInteraction       utils.Optional[time.Time] `json:"last_interaction"`
+	LastBackup            utils.Optional[time.Time] `json:"last_backup"`
+	CheckSum              string                    `json:"check_sum"`
+	DirectoryContentCount int                       `json:"directory_content_count"`
 }
 
 func (i *FileModel) ToDto() (FileDto, error) {

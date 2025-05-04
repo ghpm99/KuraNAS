@@ -1,23 +1,24 @@
 import './App.css';
 
-import ActionBar from '@/components/actionbar';
-import FileContent from '@/components/filecontent';
+import ActionBar from '@/components/actionBar';
+import FileContent from '@/components/fileContent';
+import FileDetails from '@/components/fileDetails';
 import Header from '@/components/header';
 import Sidebar from '@/components/sidebar';
 import Tabs from '@/components/tabs';
 
 export default function App() {
 	return (
-		<div className='file-manager'>
-			<Sidebar />
-			<div className='main-content'>
-				<Header />
-				<div className='content'>
-					<ActionBar />
-					<Tabs />
-					<FileContent />
-				</div>
+		<>
+			<div className='sidebar-header'>
+				<h1 className='app-title'>KuraNAS</h1>
 			</div>
-		</div>
+			<Sidebar />
+			<Header />
+			<ActionBar />
+			<Tabs />
+			<FileContent />
+			<FileDetails />
+		</>
 	);
 }

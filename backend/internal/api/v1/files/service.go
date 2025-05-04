@@ -52,8 +52,24 @@ func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.Pag
 		return utils.PaginationResponse[FileDto]{}, err
 	}
 
+	for index := range paginationResponse.Items {
+		if paginationResponse.Items[index].Type == Directory {
+			paginationResponse.Items[index].DirectoryContentCount = s.getDirectoryContentCount(paginationResponse.Items[index])
+		}
+	}
+
 	return paginationResponse, nil
 
+}
+
+func (s *Service) getDirectoryContentCount(file FileDto) int {
+	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	return contentCount
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
@@ -144,7 +160,7 @@ func (s *Service) ScanDirTask(data string) {
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
 
-	if fileDto.Format == "" {
+	if fileDto.Type == Directory {
 		return icons.FolderIcon()
 	}
 

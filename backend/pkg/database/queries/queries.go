@@ -15,3 +15,6 @@ var GetFilesQuery string
 
 //go:embed file/update_file.sql
 var UpdateFileQuery string
+
+//go:embed file/get_children_count.sql
+var GetChildrenCountQuery string

@@ -1,0 +1,116 @@
+.file-details {
+	flex: 1;
+	padding: 8px;
+	overflow-y: auto;
+	background-color: #1c1a1f;
+	grid-area: sidebar;
+}
+
+/* File details panel */
+.details-header {
+	padding-bottom: 24px;
+	border-bottom: 1px solid #2e2d33;
+}
+
+.details-title {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin: 0 0 4px 0;
+}
+
+.details-subtitle {
+	font-size: 0.875rem;
+	color: #bdc2c7;
+	margin: 0;
+}
+
+.details-section {
+	padding-bottom: 16px;
+	border-bottom: 1px solid #2e2d33;
+}
+
+.section-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: #bdc2c7;
+	margin: 0 0 12px 0;
+}
+
+.detail-item {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	gap: 8px;
+}
+
+.detail-label {
+	font-size: 0.875rem;
+}
+
+.detail-value {
+	font-size: 0.875rem;
+	font-weight: 500;
+	text-wrap-mode: nowrap;
+}
+
+.activity-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.activity-item {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.activity-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.activity-content {
+	flex: 1;
+}
+
+.activity-user {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #111827;
+	margin: 0 0 2px 0;
+}
+
+.activity-action {
+	font-size: 0.875rem;
+	color: #4b5563;
+	margin: 0 0 2px 0;
+}
+
+.activity-time {
+	font-size: 0.75rem;
+	color: #6b7280;
+	margin: 0;
+}
+
+.tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.tag {
+	display: inline-block;
+	padding: 2px 8px;
+	background-color: #f3f4f6;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	color: #4b5563;
+}
+
+/* Buttons */

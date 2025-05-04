@@ -1,4 +1,4 @@
-
+import './navItem.css';
 interface NavItemProps {
 	href: string;
 	icon: React.ReactNode;
@@ -13,6 +13,6 @@ const NavItem = ({ href, icon, children, active }: NavItemProps) => {
 			<span>{children}</span>
 		</a>
 	);
-}
+};
 
-export default NavItem
+export default NavItem;

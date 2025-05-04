@@ -1,3 +1,4 @@
+import './fileCard.css';
 const FileCard = ({
 	title,
 	metadata,

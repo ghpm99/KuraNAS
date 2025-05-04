@@ -1,5 +1,5 @@
-import useFile, { FileData } from '@/components/providers/fileprovider/fileContext';
-import FolderItem from './components/folderitem';
+import useFile, { FileData } from '@/components/providers/fileProvider/fileContext';
+import FolderItem from './components/folderItem';
 import './folderTree.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
 

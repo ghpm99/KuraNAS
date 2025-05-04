@@ -1,0 +1,6 @@
+.download-file {
+	cursor: pointer;
+}
+.download-file:hover {
+	color: #3b82f6;
+}
