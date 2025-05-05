@@ -1,4 +1,3 @@
-/* Layout */
 .file-manager {
 	display: grid;
 	grid-template-columns: 300px 1fr min-content;

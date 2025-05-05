@@ -37,6 +37,7 @@ const FileContent = () => {
 				<div className='file-grid'>
 					{files?.map((file) => (
 						<FileCard
+							key={file.id}
 							title={file.name}
 							metadata={fileMetadata(file)}
 							thumbnail={thumbnailUrl(file.id)}
@@ -55,6 +56,7 @@ const FileContent = () => {
 				<div className='file-grid'>
 					{selectedItem?.file_children?.map((file) => (
 						<FileCard
+							key={file.id}
 							title={file.name}
 							metadata={fileMetadata(file)}
 							thumbnail={thumbnailUrl(file.id)}

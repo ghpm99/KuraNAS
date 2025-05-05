@@ -7,6 +7,7 @@ import (
 	"mime"
 	"os"
 	"strings"
+	"time"
 
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
@@ -118,7 +119,11 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 
 	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
-	fileFilter := FileFilter{}
+	fileFilter := FileFilter{
+		DeletedAt: utils.Optional[time.Time]{
+			HasValue: false,
+		},
+	}
 
 	if fileParentId != 0 {
 		fileParent, err := handler.service.GetFileById(fileParentId)
