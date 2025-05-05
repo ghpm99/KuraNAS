@@ -24,7 +24,7 @@ const Sidebar = () => {
 						</svg>
 					}
 				>
-					Presentations
+					{t('ACTIVITY_DIARY')}
 				</NavItem>
 				<NavItem
 					href='#'

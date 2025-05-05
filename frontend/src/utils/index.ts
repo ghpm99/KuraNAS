@@ -20,10 +20,10 @@ export const formatSize = (size: number): string => {
 export const formatDate = (dateString: string): string => {
 	try {
 		const date = new Date(dateString);
-		return date.toLocaleString(); // Formata a data e hora no padrão local do sistema
+		return date.toLocaleString();
 	} catch (error) {
 		console.error('Erro ao formatar a data:', error);
-		return dateString; // Retorna a string original em caso de erro
+		return dateString;
 	}
 };
 
