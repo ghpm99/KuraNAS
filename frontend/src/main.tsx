@@ -1,8 +1,7 @@
-import './index.css';
 import { StrictMode } from 'react';
 import App from './app/App.tsx';
+import './index.css';
 
-import FileProvider from './components/providers/fileProvider/index.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRoot } from 'react-dom/client';
 import I18nProvider from './components/i18n/provider/index.tsx';
@@ -21,9 +20,7 @@ createRoot(document.getElementById('root')!).render(
 	<QueryClientProvider client={queryClient}>
 		<StrictMode>
 			<I18nProvider>
-				<FileProvider>
-					<App />
-				</FileProvider>
+				<App />
 			</I18nProvider>
 		</StrictMode>
 	</QueryClientProvider>

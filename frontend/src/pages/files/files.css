@@ -1,0 +1,10 @@
+.content {
+	display: grid;
+	grid-template-columns: 1fr min-content;
+	grid-template-rows: 80px 40px auto;
+	grid-template-areas:
+		'item-header sidebar'
+		'tabs sidebar'
+		'content  sidebar';
+	grid-area: content-container;
+}

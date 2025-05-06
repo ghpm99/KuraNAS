@@ -1,12 +1,10 @@
 .file-manager {
 	display: grid;
-	grid-template-columns: 300px 1fr min-content;
-	grid-template-rows: 80px 80px 40px auto;
+	grid-template-columns: 300px 1fr;
+	grid-template-rows: 80px auto;
 	grid-template-areas:
-		'logo gh gh'
-		'left-nav item-header sidebar'
-		'left-nav tabs sidebar'
-		'left-nav content  sidebar';
+		'logo gh'
+		'left-nav content-container';
 	height: 100vh;
 	background-color: #2a282e;
 }

@@ -1,19 +1,20 @@
 import { LayoutGrid } from 'lucide-react';
-import NavItem from './components/navItem';
-import FolderTree from './components/folderTree';
+import React from 'react';
 import useI18n from '../i18n/provider/i18nContext';
+import NavItem from './components/navItem';
 import './sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ children }: { children: React.ReactNode }) => {
 	const { t } = useI18n();
+
 	return (
 		<div className='sidebar'>
 			<nav className='nav'>
-				<NavItem href='#' icon={<LayoutGrid className='icon' />} active>
+				<NavItem href='/' icon={<LayoutGrid className='icon' />}>
 					{t('ALL_FILES')}
 				</NavItem>
 				<NavItem
-					href='#'
+					href='/activity-diary'
 					icon={
 						<svg className='icon' viewBox='0 0 24 24' fill='none' stroke='currentColor'>
 							<path
@@ -27,7 +28,7 @@ const Sidebar = () => {
 					{t('ACTIVITY_DIARY')}
 				</NavItem>
 				<NavItem
-					href='#'
+					href='/analytics'
 					icon={
 						<svg className='icon' viewBox='0 0 24 24' fill='none' stroke='currentColor'>
 							<path
@@ -41,7 +42,7 @@ const Sidebar = () => {
 				>
 					Analytics
 				</NavItem>
-				<FolderTree />
+				{children}
 			</nav>
 		</div>
 	);
