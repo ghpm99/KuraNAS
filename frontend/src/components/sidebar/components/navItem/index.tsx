@@ -1,17 +1,18 @@
+import { Link, useLocation } from 'react-router-dom';
 import './navItem.css';
 interface NavItemProps {
 	href: string;
 	icon: React.ReactNode;
 	children: React.ReactNode;
-	active?: boolean;
 }
 
-const NavItem = ({ href, icon, children, active }: NavItemProps) => {
+const NavItem = ({ href, icon, children }: NavItemProps) => {
+	const { pathname } = useLocation();
 	return (
-		<a href={href} className={`nav-item ${active ? 'active' : ''}`}>
+		<Link to={href} className={`nav-item ${href === pathname ? 'active' : ''}`}>
 			{icon}
 			<span>{children}</span>
-		</a>
+		</Link>
 	);
 };
 
