@@ -1,0 +1,47 @@
+.activity-form-card {
+	background-color: white;
+	border-radius: 8px;
+	border: 1px solid #e5e7eb;
+	overflow: hidden;
+}
+
+.card-title {
+	font-size: 1rem;
+	font-weight: 600;
+	color: #111827;
+	margin: 0;
+	padding: 16px 20px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.activity-form {
+	padding: 20px;
+}
+
+.form-group {
+	margin-bottom: 16px;
+}
+
+.form-group label {
+	display: block;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #4b5563;
+	margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 0.875rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}

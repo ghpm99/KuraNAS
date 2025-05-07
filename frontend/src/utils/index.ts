@@ -27,6 +27,22 @@ export const formatDate = (dateString: string): string => {
 	}
 };
 
+export const formatDuration = (seconds: number | undefined): string => {
+	if (!seconds) return 'Em andamento';
+
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secs = seconds % 60;
+
+	if (hours > 0) {
+		return `${hours}h ${minutes}m ${secs}s`;
+	} else if (minutes > 0) {
+		return `${minutes}m ${secs}s`;
+	} else {
+		return `${secs}s`;
+	}
+};
+
 type formatType = { type: 'image' | 'audio' | 'video' | 'document' | 'archive'; mime: string; description: string };
 
 export const getFileTypeInfo = (format: string): formatType => {

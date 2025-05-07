@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { FormAction } from '.';
 
 export type ActivityDiaryFormData = {
 	name: string;
@@ -9,7 +10,7 @@ export type ActivityDiaryData = {
 	id: number;
 	name: string;
 	description: string;
-	start_time: string; // ISO 8601
+	start_time: string;
 	end_time: string | null;
 	duration_seconds: number | null;
 	duration_formatted: string | null;
@@ -17,7 +18,7 @@ export type ActivityDiaryData = {
 };
 
 export type ActivityDiarySummary = {
-	date: string; // "YYYY-MM-DD"
+	date: string;
 	total_activities: number;
 	total_time_spent_seconds: number;
 	total_time_spent_formatted: string;
@@ -33,9 +34,13 @@ export type ActivityDiaryResponse = {
 	entries: ActivityDiaryData[];
 };
 
+export type messageType = 'success' | 'error' | 'info';
+
 export type ActivityDiaryType = {
 	form: ActivityDiaryFormData;
+	setForm: React.Dispatch<FormAction>;
 	loading: boolean;
+	message: { text: string; type: messageType };
 	error?: string;
 	data: ActivityDiaryResponse | null;
 };

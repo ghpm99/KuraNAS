@@ -13,10 +13,12 @@ const initialFormState: ActivityDiaryFormData = {
 	description: '',
 };
 
-const reducerFormData = (
-	state: ActivityDiaryFormData,
-	action: { type: string; payload?: any }
-): ActivityDiaryFormData => {
+export type FormAction =
+	| { type: 'SET_NAME'; payload: string }
+	| { type: 'SET_DESCRIPTION'; payload: string }
+	| { type: 'RESET' };
+
+const reducerFormData = (state: ActivityDiaryFormData, action: FormAction): ActivityDiaryFormData => {
 	switch (action.type) {
 		case 'SET_NAME':
 			return { ...state, name: action.payload };
@@ -25,7 +27,7 @@ const reducerFormData = (
 		case 'RESET':
 			return initialFormState;
 		default:
-			throw new Error(`Unknown action: ${action.type}`);
+			throw new Error(`Unknown action: ${action}`);
 	}
 };
 
@@ -42,6 +44,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
 			form: formData,
+			setForm: setFormData,
 			loading: true,
 
 			data: {
