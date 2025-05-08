@@ -39,10 +39,12 @@ export type messageType = 'success' | 'error' | 'info';
 export type ActivityDiaryType = {
 	form: ActivityDiaryFormData;
 	setForm: React.Dispatch<FormAction>;
+	submitForm: () => void;
 	loading: boolean;
 	message: { text: string; type: messageType };
 	error?: string;
 	data: ActivityDiaryResponse | null;
+	getCurrentDuration: (dateString: string) => number;
 };
 
 const ActivityDiaryContext = createContext<ActivityDiaryType | undefined>(undefined);

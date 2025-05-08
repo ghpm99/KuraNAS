@@ -3,6 +3,7 @@
 	border-radius: 8px;
 	border: 1px solid #e5e7eb;
 	overflow: hidden;
+	grid-area: form;
 }
 
 .card-title {

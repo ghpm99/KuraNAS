@@ -1,14 +1,14 @@
-import { messageType } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import style from './actionBar.module.css';
 
-const ActionBar = (message: { text: string; type: messageType }) => {
+const ActionBar = () => {
+	const { message } = useActivityDiary();
 	return (
-		<>
-			{message && <div className={`message-banner ${message.type}`}>{message.text}</div>}
+		<div className={style['action-bar']}>
+			{message && <div className={`${style['message-banner']}} ${style[message.type]}`}>{message.text}</div>}
 
-			<div className='action-bar'>
-				<h1 className='page-title'>Diário de Atividades</h1>
-			</div>
-		</>
+			<h1 className={style['page-title']}>Diário de Atividades</h1>
+		</div>
 	);
 };
 

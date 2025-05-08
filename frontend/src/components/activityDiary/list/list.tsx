@@ -1,15 +1,17 @@
-import { ActivityDiaryData } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
-import { formatDuration } from '@/utils';
+import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import { formatDate, formatDuration } from '@/utils';
+import styles from './list.module.css';
 
-const List = (activities: ActivityDiaryData[]) => {
+const List = () => {
+	const { data, getCurrentDuration } = useActivityDiary();
 	return (
-		<div className='activity-list-card'>
-			<h2 className='card-title'>Atividades Registradas</h2>
-			{activities.length === 0 ? (
-				<p className='no-activities'>Nenhuma atividade registrada ainda.</p>
+		<div className={styles['activity-list-card']}>
+			<h2 className={styles['card-title']}>Atividades Registradas</h2>
+			{data?.entries?.length === 0 ? (
+				<p className={styles['no-activities']}>Nenhuma atividade registrada ainda.</p>
 			) : (
-				<div className='table-container'>
-					<table className='activity-table'>
+				<div className={styles['table-container']}>
+					<table className={styles['activity-table']}>
 						<thead>
 							<tr>
 								<th>Nome</th>
@@ -20,16 +22,16 @@ const List = (activities: ActivityDiaryData[]) => {
 							</tr>
 						</thead>
 						<tbody>
-							{activities.map((activity) => (
-								<tr key={activity.id} className={activity.end_time === null ? 'active-row' : ''}>
+							{data?.entries?.map((activity) => (
+								<tr key={activity.id} className={activity.end_time === null ? styles['active-row'] : ''}>
 									<td>{activity.name}</td>
 									<td>{activity.description || '-'}</td>
-									<td>{formatDateTime(activity.startTime)}</td>
-									<td>{activity.endTime ? formatDateTime(activity.endTime) : 'Em andamento'}</td>
+									<td>{formatDate(activity.start_time)}</td>
+									<td>{activity.end_time ? formatDate(activity.end_time) : 'Em andamento'}</td>
 									<td>
-										{activity.endTime
-											? formatDuration(activity.duration)
-											: formatDuration(getCurrentDuration(activity.startTime))}
+										{activity.end_time
+											? activity.duration_formatted
+											: formatDuration(getCurrentDuration(activity.start_time))}
 									</td>
 								</tr>
 							))}
