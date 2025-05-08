@@ -1,17 +1,17 @@
 import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
 import { formatDate, formatDuration } from '@/utils';
 import styles from './list.module.css';
+import Card from '@/components/ui/Card/Card';
 
-const List = () => {
+const ActivityList = () => {
 	const { data, getCurrentDuration } = useActivityDiary();
 	return (
-		<div className={styles['activity-list-card']}>
-			<h2 className={styles['card-title']}>Atividades Registradas</h2>
+		<Card title='Atividades Registradas' className={styles['content']}>
 			{data?.entries?.length === 0 ? (
-				<p className={styles['no-activities']}>Nenhuma atividade registrada ainda.</p>
+				<p className={styles.noActivities}>Nenhuma atividade registrada ainda.</p>
 			) : (
-				<div className={styles['table-container']}>
-					<table className={styles['activity-table']}>
+				<div className={styles.tableContainer}>
+					<table className={styles.table}>
 						<thead>
 							<tr>
 								<th>Nome</th>
@@ -23,7 +23,7 @@ const List = () => {
 						</thead>
 						<tbody>
 							{data?.entries?.map((activity) => (
-								<tr key={activity.id} className={activity.end_time === null ? styles['active-row'] : ''}>
+								<tr key={activity.id} className={activity.end_time === null ? styles.activeRow : ''}>
 									<td>{activity.name}</td>
 									<td>{activity.description || '-'}</td>
 									<td>{formatDate(activity.start_time)}</td>
@@ -39,8 +39,8 @@ const List = () => {
 					</table>
 				</div>
 			)}
-		</div>
+		</Card>
 	);
 };
 
-export default List;
+export default ActivityList;

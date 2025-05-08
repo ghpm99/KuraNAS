@@ -1,7 +1,7 @@
 import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
 import style from './actionBar.module.css';
 
-const ActionBar = () => {
+const ActivityDiaryActionBar = () => {
 	const { message } = useActivityDiary();
 	return (
 		<div className={style['action-bar']}>
@@ -12,4 +12,4 @@ const ActionBar = () => {
 	);
 };
 
-export default ActionBar;
+export default ActivityDiaryActionBar;

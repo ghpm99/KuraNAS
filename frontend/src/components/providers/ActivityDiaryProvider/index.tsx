@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { apiBase } from '@/service';
+import { useQuery } from '@tanstack/react-query';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useReducer, useState } from 'react';
 import {
 	ActivityDiaryContextProvider,
 	ActivityDiaryFormData,
 	ActivityDiarySummary,
 	ActivityDiaryType,
+	messageType,
 } from './ActivityDiaryContext';
-import { useQuery } from '@tanstack/react-query';
-import { apiBase } from '@/service';
 
 const initialFormState: ActivityDiaryFormData = {
 	name: '',
@@ -34,7 +35,8 @@ const reducerFormData = (state: ActivityDiaryFormData, action: FormAction): Acti
 const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
-	const { status: summaryStatus, data: summaryData } = useQuery({
+	const [message, setMessage] = useState<{ text: string; type: messageType } | undefined>(undefined);
+	const { data: summaryData, error } = useQuery({
 		queryKey: ['activity-diary-summary'],
 		queryFn: async (): Promise<ActivityDiarySummary> => {
 			const response = await apiBase.get<ActivityDiarySummary>('/activity/summary');
@@ -50,9 +52,31 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => clearInterval(timer);
 	}, []);
 
-	const submitForm = () => {};
+	const addActivity = (form: ActivityDiaryFormData) => {
+		console.log(form);
+		setMessage({ text: 'Atividade adicionada com sucesso', type: 'success' });
+	};
 
-	const getCurrentDuration = (dateString: Date): number => {
+	const handleSubmit = (e: FormEvent) => {
+		e.preventDefault();
+		if (formData.name.trim()) {
+			addActivity({
+				name: formData.name,
+				description: formData.description,
+			});
+			setFormData({ type: 'RESET' });
+		}
+	};
+
+	const handleNameChange = ({ target }: ChangeEvent<HTMLInputElement>) => {
+		setFormData({ type: 'SET_NAME', payload: target.value });
+	};
+
+	const handleDescriptionChange = ({ target }: ChangeEvent<HTMLTextAreaElement>) => {
+		setFormData({ type: 'SET_DESCRIPTION', payload: target.value });
+	};
+
+	const getCurrentDuration = (dateString: string): number => {
 		const date = new Date(dateString);
 		return Math.floor((currentTime.getTime() - date.getTime()) / 1000);
 	};
@@ -60,15 +84,17 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
 			form: formData,
-			setForm: setFormData,
-			submitForm: submitForm,
+			handleSubmit,
+			handleNameChange,
+			handleDescriptionChange,
 			loading: true,
-
+			message: message,
 			data: {
 				entries: [],
 				summary: summaryData,
 			},
 			getCurrentDuration,
+			error: error?.message,
 		}),
 		[]
 	);
