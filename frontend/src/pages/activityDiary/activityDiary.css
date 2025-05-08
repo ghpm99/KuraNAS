@@ -3,8 +3,8 @@
 	grid-template-columns: 1fr min-content;
 	grid-template-rows: 80px 40px auto;
 	grid-template-areas:
-		'item-header sidebar'
-		'tabs sidebar'
-		'content  sidebar';
+		'action-bar'
+		'form summary'
+		'list';
 	grid-area: content-container;
 }

@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import {
 	ActivityDiaryContextProvider,
 	ActivityDiaryFormData,
@@ -32,8 +32,9 @@ const reducerFormData = (state: ActivityDiaryFormData, action: FormAction): Acti
 };
 
 const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
+	const [currentTime, setCurrentTime] = useState(new Date());
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
-	const { status, data: summaryData } = useQuery({
+	const { status: summaryStatus, data: summaryData } = useQuery({
 		queryKey: ['activity-diary-summary'],
 		queryFn: async (): Promise<ActivityDiarySummary> => {
 			const response = await apiBase.get<ActivityDiarySummary>('/activity/summary');
@@ -41,16 +42,33 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
+	useEffect(() => {
+		const timer = setInterval(() => {
+			setCurrentTime(new Date());
+		}, 1000);
+
+		return () => clearInterval(timer);
+	}, []);
+
+	const submitForm = () => {};
+
+	const getCurrentDuration = (dateString: Date): number => {
+		const date = new Date(dateString);
+		return Math.floor((currentTime.getTime() - date.getTime()) / 1000);
+	};
+
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
 			form: formData,
 			setForm: setFormData,
+			submitForm: submitForm,
 			loading: true,
 
 			data: {
 				entries: [],
 				summary: summaryData,
 			},
+			getCurrentDuration,
 		}),
 		[]
 	);
