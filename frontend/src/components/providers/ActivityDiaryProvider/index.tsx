@@ -1,6 +1,6 @@
 import { apiBase } from '@/service';
 import { useQuery } from '@tanstack/react-query';
-import { ChangeEvent, FormEvent, useEffect, useMemo, useReducer, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import {
 	ActivityDiaryContextProvider,
 	ActivityDiaryFormData,
@@ -52,21 +52,24 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => clearInterval(timer);
 	}, []);
 
-	const addActivity = (form: ActivityDiaryFormData) => {
+	const addActivity = useCallback((form: ActivityDiaryFormData) => {
 		console.log(form);
 		setMessage({ text: 'Atividade adicionada com sucesso', type: 'success' });
-	};
+	}, []);
 
-	const handleSubmit = (e: FormEvent) => {
-		e.preventDefault();
-		if (formData.name.trim()) {
-			addActivity({
-				name: formData.name,
-				description: formData.description,
-			});
-			setFormData({ type: 'RESET' });
-		}
-	};
+	const handleSubmit = useCallback(
+		(e: FormEvent) => {
+			e.preventDefault();
+			if (formData.name.trim()) {
+				addActivity({
+					name: formData.name,
+					description: formData.description,
+				});
+				setFormData({ type: 'RESET' });
+			}
+		},
+		[formData, addActivity]
+	);
 
 	const handleNameChange = ({ target }: ChangeEvent<HTMLInputElement>) => {
 		setFormData({ type: 'SET_NAME', payload: target.value });
@@ -76,10 +79,13 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		setFormData({ type: 'SET_DESCRIPTION', payload: target.value });
 	};
 
-	const getCurrentDuration = (dateString: string): number => {
-		const date = new Date(dateString);
-		return Math.floor((currentTime.getTime() - date.getTime()) / 1000);
-	};
+	const getCurrentDuration = useCallback(
+		(dateString: string): number => {
+			const date = new Date(dateString);
+			return Math.floor((currentTime.getTime() - date.getTime()) / 1000);
+		},
+		[currentTime]
+	);
 
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
@@ -96,7 +102,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			getCurrentDuration,
 			error: error?.message,
 		}),
-		[]
+		[error?.message, formData, getCurrentDuration, handleSubmit, message, summaryData]
 	);
 
 	return <ActivityDiaryContextProvider value={contextValue}>{children}</ActivityDiaryContextProvider>;
