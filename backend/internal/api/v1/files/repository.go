@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"nas-go/api/pkg/database/queries"
+
+	queries "nas-go/api/pkg/database/queries/file"
 	"nas-go/api/pkg/utils"
 )
 
