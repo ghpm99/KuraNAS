@@ -1,0 +1,12 @@
+.content {
+	display: grid;
+	/* grid-template-columns: 1fr min-content; */
+	grid-template-rows: 80px min-content auto;
+	grid-template-areas:
+		'action-bar action-bar'
+		'form summary'
+		'list list';
+	grid-area: content-container;
+	gap: 16px;
+	padding: 16px;
+}

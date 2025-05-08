@@ -1,5 +1,4 @@
-import { createContext, useContext } from 'react';
-import { FormAction } from '.';
+import { ChangeEvent, createContext, FormEvent, useContext } from 'react';
 
 export type ActivityDiaryFormData = {
 	name: string;
@@ -38,10 +37,11 @@ export type messageType = 'success' | 'error' | 'info';
 
 export type ActivityDiaryType = {
 	form: ActivityDiaryFormData;
-	setForm: React.Dispatch<FormAction>;
-	submitForm: () => void;
+	handleSubmit: (e: FormEvent) => void;
+	handleNameChange: (e: ChangeEvent<HTMLInputElement>) => void;
+	handleDescriptionChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
 	loading: boolean;
-	message: { text: string; type: messageType };
+	message?: { text: string; type: messageType };
 	error?: string;
 	data: ActivityDiaryResponse | null;
 	getCurrentDuration: (dateString: string) => number;

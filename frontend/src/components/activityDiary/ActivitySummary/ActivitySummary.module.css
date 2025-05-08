@@ -1,14 +1,6 @@
-.activity-summary-card {
-	background-color: white;
-	border-radius: 8px;
-	border: 1px solid #e5e7eb;
-	overflow: hidden;
-}
-
 .card-title {
 	font-size: 1rem;
 	font-weight: 600;
-	color: #111827;
 	margin: 0;
 	padding: 16px 20px;
 	border-bottom: 1px solid #e5e7eb;

@@ -1,9 +1,10 @@
-import ActionBar from '@/components/activityDiary/actionBar';
-import ActivityDiaryForm from '@/components/activityDiary/form';
-import List from '@/components/activityDiary/list';
-import Summary from '@/components/activityDiary/summary';
+import ActionBar from '@/components/activityDiary/ActivityDiaryActionBar';
+import ActivityDiaryForm from '@/components/activityDiary/ActivityDiaryForm';
+import List from '@/components/activityDiary/ActivityList';
+import Summary from '@/components/activityDiary/ActivitySummary';
 import ActivityDiaryProvider from '@/components/providers/ActivityDiaryProvider';
 import Sidebar from '@/components/sidebar';
+import style from './activityDiary.module.css';
 
 const ActivityDiaryPage = () => {
 	return (
@@ -11,7 +12,7 @@ const ActivityDiaryPage = () => {
 			<Sidebar>
 				<></>
 			</Sidebar>
-			<div className='content'>
+			<div className={style['content']}>
 				<ActionBar />
 				<ActivityDiaryForm />
 				<Summary />
