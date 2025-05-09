@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"nas-go/api/pkg/database/queries"
+	diaryQueries "nas-go/api/pkg/database/queries/diary"
+	fileQueries "nas-go/api/pkg/database/queries/file"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -29,13 +30,24 @@ func ConfigDatabase() (*sql.DB, error) {
 
 	fmt.Println("Successfully connected to database!")
 
-	createTable(localDatabase)
+	createFileTable(localDatabase)
+	createDiaryTable(localDatabase)
 	return localDatabase, nil
 
 }
 
-func createTable(db *sql.DB) {
-	_, err := db.Exec(queries.CreateTableQuery)
+func createDiaryTable(db *sql.DB) {
+	_, err := db.Exec(diaryQueries.CreateTableQuery)
+
+	if err != nil {
+		log.Fatalf("Erro ao criar tabela: %v", err)
+	}
+
+}
+
+func createFileTable(db *sql.DB) {
+
+	_, err := db.Exec(fileQueries.CreateTableQuery)
 
 	if err != nil {
 		log.Fatalf("Erro ao criar tabela: %v", err)
