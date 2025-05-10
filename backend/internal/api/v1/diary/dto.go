@@ -6,11 +6,25 @@ import (
 )
 
 type DiaryDto struct {
-	ID          int
-	Name        string
-	Description string
-	StartTime   time.Time
-	EndTime     utils.Optional[time.Time]
+	ID          int                       `json:"id"`
+	Name        string                    `json:"name" binding:"required"`
+	Description string                    `json:"description"`
+	StartTime   time.Time                 `json:"start_time"`
+	EndTime     utils.Optional[time.Time] `json:"end_time"`
+}
+
+type LongestActivity struct {
+	Name              string `json:"name"`
+	DurationSeconds   int    `json:"duration_seconds"`
+	DurationFormatted string `json:"duration_formatted"`
+}
+
+type DiarySummary struct {
+	Date                    time.Time        `json:"date"`
+	TotalActivities         int              `json:"total_activities"`
+	TotalTimeSpentSeconds   int              `json:"total_time_spent_seconds"`
+	TotalTimeSpentFormatted string           `json:"total_time_spent_formatted"`
+	LongestActivity         *LongestActivity `json:"longest_activity,omitempty"`
 }
 
 func (diaryModel *DiaryModel) ToDto() (DiaryDto, error) {
@@ -33,4 +47,28 @@ type DiaryFilter struct {
 	Description utils.Optional[string]
 	StartTime   utils.Optional[time.Time]
 	EndTime     utils.Optional[time.Time]
+}
+
+func ParsePaginationToDto(pagination *utils.PaginationResponse[DiaryModel]) (utils.PaginationResponse[DiaryDto], error) {
+	paginationResponse := utils.PaginationResponse[DiaryDto]{
+		Items: []DiaryDto{},
+		Pagination: utils.Pagination{
+			Page:     pagination.Pagination.Page,
+			PageSize: pagination.Pagination.PageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	for _, fileModel := range pagination.Items {
+		fileDtoResult, err := fileModel.ToDto()
+
+		if err != nil {
+			return paginationResponse, err
+		}
+		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
+	}
+	paginationResponse.Pagination = pagination.Pagination
+
+	return paginationResponse, nil
 }

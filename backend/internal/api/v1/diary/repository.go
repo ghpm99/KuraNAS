@@ -12,6 +12,14 @@ type Repository struct {
 	DbContext *sql.DB
 }
 
+func NewRepository(database *sql.DB) *Repository {
+	return &Repository{database}
+}
+
+func (r *Repository) GetDbContext() *sql.DB {
+	return r.DbContext
+}
+
 func (repository *Repository) CreateDiary(transaction *sql.Tx, diary DiaryModel) (DiaryModel, error) {
 	fail := func(err error) (DiaryModel, error) {
 		return diary, fmt.Errorf("CreateDiary: %v", err)
