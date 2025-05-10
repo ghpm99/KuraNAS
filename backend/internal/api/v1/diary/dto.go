@@ -26,3 +26,11 @@ func (diaryModel *DiaryModel) ToDto() (DiaryDto, error) {
 
 	return diaryDto, nil
 }
+
+type DiaryFilter struct {
+	ID          utils.Optional[int]
+	Name        utils.Optional[string]
+	Description utils.Optional[string]
+	StartTime   utils.Optional[time.Time]
+	EndTime     utils.Optional[time.Time]
+}
