@@ -14,5 +14,7 @@ type RepositoryInterface interface {
 
 type ServiceInterface interface {
 	CreateDiary(diaryDto DiaryDto) (diaryDtoResult DiaryDto, err error)
-	GetFiles(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryDto], error)
+	GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryDto], error)
+	UpdateDiary(diaryDto DiaryDto) (result bool, err error)
+	GetSummary() (DiarySummary, error)
 }

@@ -1,5 +1,5 @@
 CREATE TABLE
-    "activity_diary" (
+    IF NOT EXISTS "activity_diary" (
         "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
         "name" varchar(256) NOT NULL,
         "description" varchar(256) NULL,

@@ -1,8 +1,9 @@
 import { apiBase } from '@/service';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import {
 	ActivityDiaryContextProvider,
+	ActivityDiaryData,
 	ActivityDiaryFormData,
 	ActivityDiarySummary,
 	ActivityDiaryType,
@@ -39,8 +40,26 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const { data: summaryData, error } = useQuery({
 		queryKey: ['activity-diary-summary'],
 		queryFn: async (): Promise<ActivityDiarySummary> => {
-			const response = await apiBase.get<ActivityDiarySummary>('/activity/summary');
+			const response = await apiBase.get<ActivityDiarySummary>('/diary/summary');
 			return response.data;
+		},
+	});
+
+	const createDiaryMutation = useMutation({
+		mutationFn: async (form: ActivityDiaryFormData): Promise<ActivityDiaryData> => {
+			const response = await apiBase.post<ActivityDiaryData>('/diary/', {
+				name: form.name,
+				description: form.description,
+			});
+			return response.data;
+		},
+		onSuccess: (data) => {
+			setMessage({ text: 'Atividade adicionada com sucesso!', type: 'success' });
+			console.log('Diário criado:', data);
+		},
+		onError: (error) => {
+			setMessage({ text: 'Erro ao adicionar atividade.', type: 'error' });
+			console.error('Erro ao criar diário:', error);
 		},
 	});
 
@@ -52,23 +71,19 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => clearInterval(timer);
 	}, []);
 
-	const addActivity = useCallback((form: ActivityDiaryFormData) => {
-		console.log(form);
-		setMessage({ text: 'Atividade adicionada com sucesso', type: 'success' });
-	}, []);
-
 	const handleSubmit = useCallback(
 		(e: FormEvent) => {
 			e.preventDefault();
 			if (formData.name.trim()) {
-				addActivity({
+				createDiaryMutation.mutate({
 					name: formData.name,
 					description: formData.description,
 				});
+
 				setFormData({ type: 'RESET' });
 			}
 		},
-		[formData, addActivity]
+		[formData, createDiaryMutation]
 	);
 
 	const handleNameChange = ({ target }: ChangeEvent<HTMLInputElement>) => {

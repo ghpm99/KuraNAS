@@ -13,6 +13,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	registerCorsRoutes(router)
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
+	RegisterDiaryRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
@@ -30,6 +31,16 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 
+}
+
+func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
+
+	diaryGroup := router.Group("/diary")
+
+	diaryGroup.GET("/", context.Diary.Handler.GetDiaryHandler)
+	diaryGroup.GET("/summary", context.Diary.Handler.GetSummaryHandler)
+	diaryGroup.POST("/", context.Diary.Handler.CreateDiaryHandler)
+	diaryGroup.PUT("/:id", context.Diary.Handler.UpdateDiaryHandler)
 }
 
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -51,8 +62,8 @@ func registerReactRoutes(router *gin.Engine) {
 func registerCorsRoutes(router *gin.Engine) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "PUT", "PATCH"},
-		AllowHeaders:     []string{"Origin"},
+		AllowMethods:     []string{"GET", "PUT", "POST"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
