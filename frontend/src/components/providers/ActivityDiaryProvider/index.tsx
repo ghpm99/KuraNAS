@@ -9,6 +9,7 @@ import {
 	ActivityDiaryType,
 	messageType,
 } from './ActivityDiaryContext';
+import { Pagination } from '@/types/pagination';
 
 const initialFormState: ActivityDiaryFormData = {
 	name: '',
@@ -37,10 +38,18 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
 	const [message, setMessage] = useState<{ text: string; type: messageType } | undefined>(undefined);
-	const { data: summaryData, error } = useQuery({
+	const { data: summaryData, error: summaryError } = useQuery({
 		queryKey: ['activity-diary-summary'],
 		queryFn: async (): Promise<ActivityDiarySummary> => {
 			const response = await apiBase.get<ActivityDiarySummary>('/diary/summary');
+			return response.data;
+		},
+	});
+
+	const { data: diaryData, error } = useQuery({
+		queryKey: ['activity-diary-list'],
+		queryFn: async (): Promise<Pagination<ActivityDiaryData>> => {
+			const response = await apiBase.get<Pagination<ActivityDiaryData>>('/diary/');
 			return response.data;
 		},
 	});
@@ -111,13 +120,13 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			loading: true,
 			message: message,
 			data: {
-				entries: [],
+				entries: diaryData || { items: [], pagination: { page: 1, has_next: false, has_prev: false, page_size: 10 } },
 				summary: summaryData,
 			},
 			getCurrentDuration,
-			error: error?.message,
+			error: error?.message || summaryError?.message,
 		}),
-		[error?.message, formData, getCurrentDuration, handleSubmit, message, summaryData]
+		[error?.message, summaryError?.message, formData, getCurrentDuration, handleSubmit, message, diaryData, summaryData]
 	);
 
 	return <ActivityDiaryContextProvider value={contextValue}>{children}</ActivityDiaryContextProvider>;

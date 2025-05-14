@@ -1,3 +1,5 @@
+import { Optional } from '@/types/optional';
+import { Pagination } from '@/types/pagination';
 import { ChangeEvent, createContext, FormEvent, useContext } from 'react';
 
 export type ActivityDiaryFormData = {
@@ -10,7 +12,7 @@ export type ActivityDiaryData = {
 	name: string;
 	description: string;
 	start_time: string;
-	end_time: string | null;
+	end_time: Optional<string>;
 	duration_seconds: number | null;
 	duration_formatted: string | null;
 	in_progress?: boolean;
@@ -30,7 +32,7 @@ export type ActivityDiarySummary = {
 
 export type ActivityDiaryResponse = {
 	summary: ActivityDiarySummary | undefined;
-	entries: ActivityDiaryData[];
+	entries: Pagination<ActivityDiaryData>;
 };
 
 export type messageType = 'success' | 'error' | 'info';
