@@ -31,7 +31,7 @@ func (repository *Repository) CreateDiary(transaction *sql.Tx, diary DiaryModel)
 		diary.StartTime,
 	}
 
-	query := queries.CreateTableQuery
+	query := queries.InsertDiaryQuery
 
 	data, err := transaction.Exec(
 		query,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"nas-go/api/pkg/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +27,10 @@ func (handler *Handler) CreateDiaryHandler(c *gin.Context) {
 		return
 	}
 	fmt.Println(diaryDto)
+	startTime := time.Now()
+
+	diaryDto.StartTime = startTime
+	diaryDto.EndTime = utils.Optional[time.Time]{HasValue: false}
 
 	diaryResult, err := handler.service.CreateDiary(diaryDto)
 
