@@ -32,6 +32,31 @@ func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error
 
 func (service *Service) CreateDiary(diaryDto DiaryDto) (diaryDtoResult DiaryDto, err error) {
 	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+
+		if diaryDto.StartTime.IsZero() {
+			diaryDto.StartTime = time.Now()
+		}
+
+		if diaryDto.EndTime.HasValue {
+			diaryDto.EndTime = utils.Optional[time.Time]{HasValue: false}
+		}
+
+		currentDiaryPagination, err := service.Repository.GetDiary(DiaryFilter{}, 1, 1)
+		if err != nil {
+			return
+		}
+
+		if len(currentDiaryPagination.Items) > 0 {
+			currentDiaryPagination.Items[0].EndTime = sql.NullTime{
+				Time:  diaryDto.StartTime,
+				Valid: true,
+			}
+			_, err = service.Repository.UpdateDiary(tx, currentDiaryPagination.Items[0])
+			if err != nil {
+				return
+			}
+		}
+
 		diaryModel, err := diaryDto.ToModel()
 		if err != nil {
 			return
