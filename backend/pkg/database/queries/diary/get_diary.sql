@@ -14,7 +14,7 @@ WHERE
     AND ($7 OR start_time = $8)
     AND ($9 OR end_time = $10)
 ORDER BY
-	start_time,
+	- start_time,
     - id
 LIMIT
     $11 OFFSET $12;

@@ -46,7 +46,11 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
-	const { data: diaryData, error } = useQuery({
+	const {
+		data: diaryData,
+		error,
+		refetch: refetchList,
+	} = useQuery({
 		queryKey: ['activity-diary-list'],
 		queryFn: async (): Promise<Pagination<ActivityDiaryData>> => {
 			const response = await apiBase.get<Pagination<ActivityDiaryData>>('/diary/');
@@ -65,6 +69,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		onSuccess: (data) => {
 			setMessage({ text: 'Atividade adicionada com sucesso!', type: 'success' });
 			console.log('Diário criado:', data);
+			refetchList();
 		},
 		onError: (error) => {
 			setMessage({ text: 'Erro ao adicionar atividade.', type: 'error' });
@@ -83,20 +88,41 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const handleSubmit = useCallback(
 		(e: FormEvent) => {
 			e.preventDefault();
-			if (formData.name.trim()) {
-				createDiaryMutation.mutate({
-					name: formData.name,
-					description: formData.description,
-				});
-
-				setFormData({ type: 'RESET' });
+			if (formData.name.length > 50) {
+				setMessage({ text: 'O nome deve ter no máximo 50 caracteres.', type: 'error' });
+				return;
 			}
+			if (formData.name.length < 3) {
+				setMessage({ text: 'O nome deve ter no mínimo 3 caracteres.', type: 'error' });
+				return;
+			}
+			if (!/^[a-zA-Z0-9 ]+$/.test(formData.name)) {
+				setMessage({ text: 'O nome só pode conter letras, números e espaços.', type: 'error' });
+				return;
+			}
+			if (formData.name.trim() === '') {
+				setMessage({ text: 'O nome não pode ser vazio.', type: 'error' });
+				return;
+			}
+			if (message) {
+				setMessage(undefined);
+			}
+			const name = formData.name.trim().toLowerCase();
+
+			createDiaryMutation.mutate({
+				name: name,
+				description: formData.description,
+			});
+
+			setFormData({ type: 'RESET' });
 		},
-		[formData, createDiaryMutation]
+		[formData, createDiaryMutation, message]
 	);
 
 	const handleNameChange = ({ target }: ChangeEvent<HTMLInputElement>) => {
-		setFormData({ type: 'SET_NAME', payload: target.value });
+		const { value } = target;
+
+		setFormData({ type: 'SET_NAME', payload: value });
 	};
 
 	const handleDescriptionChange = ({ target }: ChangeEvent<HTMLTextAreaElement>) => {
