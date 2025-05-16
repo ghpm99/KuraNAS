@@ -1,7 +1,8 @@
 UPDATE home_file
 SET
-    name = $2,
-    "path" = $3,
+    name = $1,
+    "path" = $2,
+    parent_path = $3,
     format = $4,
     "size" = $5,
     updated_at = $6,
@@ -12,4 +13,4 @@ SET
     checksum=$11,
     deleted_at=$12
 WHERE
-    id = $1;
+    id = $13;

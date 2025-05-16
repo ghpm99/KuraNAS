@@ -1,23 +1,23 @@
 import './App.css';
 
-import ActionBar from '@/components/actionbar';
-import FileContent from '@/components/filecontent';
 import Header from '@/components/header';
-import Sidebar from '@/components/sidebar';
-import Tabs from '@/components/tabs';
+import ActivityDiaryPage from '@/pages/activityDiary';
+import AnalyticsPage from '@/pages/analytics';
+import FilePage from '@/pages/files';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-export default function NetflixStyleGallery() {
+export default function App() {
 	return (
-		<div className='file-manager'>
-			<Sidebar />
-			<div className='main-content'>
-				<Header />
-				<div className='content'>
-					<ActionBar />
-					<Tabs />
-					<FileContent />
-				</div>
+		<BrowserRouter>
+			<div className='sidebar-header'>
+				<h1 className='app-title'>KuraNAS</h1>
 			</div>
-		</div>
+			<Header />
+			<Routes>
+				<Route path='/' element={<FilePage />} />
+				<Route path='/activity-diary' element={<ActivityDiaryPage />} />
+				<Route path='/analytics' element={<AnalyticsPage />} />
+			</Routes>
+		</BrowserRouter>
 	);
 }

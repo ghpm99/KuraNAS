@@ -1,0 +1,18 @@
+.nav-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	text-decoration: none;
+	color: #f2f5f8;
+	border-radius: 8px;
+	font-size: 0.875rem;
+}
+
+.nav-item:hover {
+	background-color: #2e2d33;
+}
+
+.nav-item.active {
+	background-color: #2a282e;
+}

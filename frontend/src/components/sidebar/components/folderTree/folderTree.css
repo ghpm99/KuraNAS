@@ -1,0 +1,18 @@
+.nav-section {
+	padding-top: 12px;
+}
+
+.nav-section-title {
+	padding-inline: 12px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	color: #f2f5f8;
+	cursor: pointer;
+}
+
+.folder-list {
+	margin-top: 8px;
+	overflow: auto;
+	max-height: calc(100vh - 230px);
+}

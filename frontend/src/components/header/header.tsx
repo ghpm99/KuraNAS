@@ -1,4 +1,5 @@
 import { Bell, Grid, Search } from 'lucide-react';
+import './header.css';
 
 const Header = () => {
 	return (
@@ -15,7 +16,7 @@ const Header = () => {
 					<Bell className='icon' />
 				</button>
 				<div className='avatar'>
-					<img src='/placeholder.svg' alt='Avatar' width={32} height={32} />
+					<img src='/avatar.jpg' alt='Avatar' width={32} height={32} />
 				</div>
 			</div>
 		</header>

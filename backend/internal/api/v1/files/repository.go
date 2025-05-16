@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"nas-go/api/pkg/database/queries"
+
+	queries "nas-go/api/pkg/database/queries/file"
 	"nas-go/api/pkg/utils"
 )
 
@@ -20,20 +21,40 @@ func (r *Repository) GetDbContext() *sql.DB {
 	return r.DbContext
 }
 
-func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error) {
+func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 
 	paginationResponse := utils.PaginationResponse[FileModel]{
-		Items:      []FileModel{},
-		Pagination: pagination,
+		Items: []FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
 	}
 
-	fmt.Println("GetFiles: ", filter.Path, pagination.PageSize, pagination.Page)
+	args := []any{
+		!filter.ID.HasValue,
+		filter.ID.Value,
+		!filter.Name.HasValue,
+		filter.Name.Value,
+		!filter.Path.HasValue,
+		filter.Path.Value,
+		!filter.ParentPath.HasValue,
+		filter.ParentPath.Value,
+		!filter.Format.HasValue,
+		filter.Format.Value,
+		!filter.Type.HasValue,
+		filter.Type.Value,
+		!filter.DeletedAt.HasValue,
+		filter.DeletedAt.Value,
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
 
 	rows, err := r.DbContext.Query(
 		queries.GetFilesQuery,
-		filter.Path,
-		pagination.PageSize+1,
-		pagination.Page,
+		args...,
 	)
 	if err != nil {
 		return paginationResponse, err
@@ -46,6 +67,7 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 			&file.ID,
 			&file.Name,
 			&file.Path,
+			&file.ParentPath,
 			&file.Format,
 			&file.Size,
 			&file.UpdatedAt,
@@ -67,63 +89,6 @@ func (r *Repository) GetFiles(filter FileFilter, pagination utils.Pagination) (u
 	return paginationResponse, nil
 }
 
-func (r *Repository) GetFilesByPath(path string) ([]FileModel, error) {
-	rows, err := r.DbContext.Query(
-		queries.GetFilesByPathQuery,
-		path,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var files []FileModel
-	for rows.Next() {
-		var file FileModel
-		if err := rows.Scan(
-			&file.ID,
-			&file.Name,
-			&file.Path,
-			&file.Format,
-			&file.Size,
-			&file.UpdatedAt,
-			&file.CreatedAt,
-			&file.LastInteraction,
-			&file.LastBackup,
-		); err != nil {
-			return nil, err
-		}
-		files = append(files, file)
-	}
-
-	return files, nil
-}
-
-func (r *Repository) GetFileByNameAndPath(name string, path string) (FileModel, error) {
-	row := r.DbContext.QueryRow(
-		queries.GetFileByNameAndPathQuery,
-		name,
-		path,
-	)
-
-	var file FileModel
-
-	if err := row.Scan(
-		&file.ID,
-		&file.Name,
-		&file.Path,
-		&file.Format,
-		&file.Size,
-		&file.UpdatedAt,
-		&file.CreatedAt,
-		&file.LastInteraction,
-		&file.LastBackup,
-	); err != nil {
-		return file, err
-	}
-
-	return file, nil
-}
-
 func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error) {
 
 	fail := func(err error) (FileModel, error) {
@@ -133,6 +98,7 @@ func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel,
 	args := []any{
 		file.Name,
 		file.Path,
+		file.ParentPath,
 		file.Format,
 		file.Size,
 		file.UpdatedAt,
@@ -173,9 +139,9 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 
 	result, err := transaction.Exec(
 		queries.UpdateFileQuery,
-		&file.ID,
 		&file.Name,
 		&file.Path,
+		&file.ParentPath,
 		&file.Format,
 		&file.Size,
 		&file.UpdatedAt,
@@ -185,6 +151,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		&file.Type,
 		&file.CheckSum,
 		&file.DeletedAt,
+		&file.ID,
 	)
 
 	if err != nil {
@@ -205,19 +172,21 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 	return rowsAffected == 1, nil
 }
 
-func (r *Repository) GetPathByFileId(fileId int) (string, error) {
+func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetDirectoryContentCount: %v", err)
+	}
 	row := r.DbContext.QueryRow(
-		queries.GetPathByFileIdQuery,
+		queries.GetChildrenCountQuery,
+		parentPath,
 		fileId,
 	)
+	var childrenCount int
 
-	var path string
-
-	if err := row.Scan(
-		&path,
-	); err != nil {
-		return "", err
+	if err := row.Scan(&childrenCount); err != nil {
+		return fail(err)
 	}
 
-	return path, nil
+	return childrenCount, nil
+
 }

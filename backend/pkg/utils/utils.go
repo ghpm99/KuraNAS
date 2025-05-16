@@ -222,3 +222,13 @@ func (p *PaginationResponse[T]) UpdatePagination() {
 	p.SetHasNext()
 	p.SetHasPrev()
 }
+
+func CalculateOffset(page int, pageSize int) int {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 1
+	}
+	return (page - 1) * pageSize
+}

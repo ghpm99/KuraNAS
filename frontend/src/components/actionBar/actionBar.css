@@ -1,0 +1,121 @@
+.action-bar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding-left: 16px;
+	grid-area: item-header;
+}
+
+.action-bar-file {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 24px;
+	grid-area: item-header;
+}
+
+.button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 16px;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.file-title-container {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.primary-button {
+	background-color: #3b82f6;
+	color: white;
+	border: none;
+}
+
+.primary-button:hover {
+	background-color: #2563eb;
+}
+
+.secondary-button {
+	background-color: #1c1a1f;
+	color: #f2f5f8;
+	border: none;
+}
+
+.secondary-button:hover {
+	background-color: #2e2d33;
+}
+
+.icon {
+	width: 16px;
+	height: 16px;
+	color: #9ca3af;
+}
+
+.icon-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.icon-button:hover {
+	background-color: #f3f4f6;
+}
+
+.file-title-action {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0;
+}
+
+.file-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.primary-button {
+	background-color: #3b82f6;
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.primary-button:hover {
+	background-color: #2563eb;
+}
+
+.secondary-button {
+	background-color: white;
+	color: #4b5563;
+	border: 1px solid #e5e7eb;
+	padding: 8px 16px;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.secondary-button:hover {
+	background-color: #f9fafb;
+}

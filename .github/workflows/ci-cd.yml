@@ -1,0 +1,136 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: yarn install --frozen-lockfile
+      - run: yarn test --if-present
+
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: go fmt ./...
+      - run: go vet ./...
+
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: go test ./...
+
+  build:
+    name: Build & Package
+    needs: [lint-frontend, test-frontend, lint-backend, test-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      # Build frontend
+      - name: Build Frontend
+        run: |
+          cd frontend
+          yarn install --frozen-lockfile
+          yarn build
+      # Build backend para Linux
+      - name: Build Backend Linux
+        run: |
+          cd backend
+          GOOS=linux GOARCH=amd64 go build -o kuranas-linux cmd/nas/main.go
+      # Build backend para Windows
+      - name: Build Backend Windows
+        run: |
+          cd backend
+          GOOS=windows GOARCH=amd64 go build -o kuranas-windows.exe cmd/nas/main.go
+      # Empacotar artefatos Linux
+      - name: Package Linux
+        run: |
+          mkdir -p dist-linux
+          cp -r frontend/dist dist-linux/frontend
+          cp backend/kuranas-linux dist-linux/
+          cd dist-linux && zip -r ../kuranas-linux.zip .
+      # Empacotar artefatos Windows
+      - name: Package Windows
+        run: |
+          mkdir -p dist-windows
+          cp -r frontend/dist dist-windows/frontend
+          cp backend/kuranas-windows.exe dist-windows/
+          cd dist-windows && zip -r ../kuranas-windows.zip .
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuranas-linux
+          path: kuranas-linux.zip
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuranas-windows
+          path: kuranas-windows.zip
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: kuranas-linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: kuranas-windows
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            kuranas-linux.zip
+            kuranas-windows.zip

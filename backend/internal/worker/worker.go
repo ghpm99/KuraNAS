@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/utils"
 
 	"time"
@@ -10,12 +11,14 @@ import (
 
 type WorkerContext struct {
 	Tasks      chan utils.Task
-	Service    *files.Service
-	Repository *files.Repository
+	Service    files.ServiceInterface
+	Repository files.RepositoryInterface
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
-
+	if !config.AppConfig.EnableWorkers {
+		return
+	}
 	for i := range numWorkers {
 		go worker(i, context)
 	}
@@ -25,13 +28,13 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 func startWorkersScheduler(context *WorkerContext) {
 	for {
-		time.Sleep(10 * time.Hour) // ⏳ Roda a cada 10 horas
 		fmt.Println("Escaneamento de arquivos")
 		context.Tasks <- utils.Task{
 			Type: utils.ScanFiles,
 			Data: "Escaneamento de arquivos",
 		}
 		fmt.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+		time.Sleep(12 * time.Hour) // ⏳ Roda a cada 10 horas
 	}
 }
 

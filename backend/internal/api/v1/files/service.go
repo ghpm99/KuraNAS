@@ -4,120 +4,142 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"nas-go/api/internal/config"
+	"image"
+	"nas-go/api/pkg/icons"
+	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 )
-
-type RepositoryInterface interface {
-	GetDbContext() *sql.DB
-	GetFiles(filter FileFilter, pagination utils.Pagination) (utils.PaginationResponse[FileModel], error)
-	GetFilesByPath(path string) ([]FileModel, error)
-	GetFileByNameAndPath(name string, path string) (FileModel, error)
-	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
-	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
-	GetPathByFileId(fileId int) (string, error)
-}
 
 type Service struct {
 	Repository RepositoryInterface
 	Tasks      chan utils.Task
 }
 
-func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) *Service {
+func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
 	return &Service{Repository: repository, Tasks: tasksChannel}
 }
 
-func (s *Service) GetFiles(filter FileFilter, fileDtoList *utils.PaginationResponse[FileDto]) error {
+func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
 
-	if filter.FileParent == 0 {
-		filter.Path = config.AppConfig.EntryPoint
-	} else {
-		path, error := s.Repository.GetPathByFileId(filter.FileParent)
-		if error != nil {
-			return error
+	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+		fileModel, err := fileDto.ToModel()
+		if err != nil {
+			return
 		}
-		filter.Path = path
-	}
 
-	filesModel, err := s.Repository.GetFiles(filter, fileDtoList.Pagination)
+		result, err := s.Repository.CreateFile(tx, fileModel)
+		if err != nil {
+			return
+		}
+
+		fileDtoResult, err = result.ToDto()
+		return
+	})
+
+	return
+}
+
+func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+
+	filesModel, err := s.Repository.GetFiles(filter, page, pageSize)
 	if err != nil {
-		return err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	for _, imageModel := range filesModel.Items {
-		fileDtoList.Items = append(fileDtoList.Items, imageModel.ToDto())
-	}
-	fileDtoList.Pagination = filesModel.Pagination
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
 
-	return nil
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+
+	for index := range paginationResponse.Items {
+		if paginationResponse.Items[index].Type == Directory {
+			paginationResponse.Items[index].DirectoryContentCount = s.getDirectoryContentCount(paginationResponse.Items[index])
+		}
+	}
+
+	return paginationResponse, nil
 
 }
 
-func (s *Service) GetFilesByPath(path string) ([]FileDto, error) {
-
-	filesModel, err := s.Repository.GetFilesByPath(path)
+func (s *Service) getDirectoryContentCount(file FileDto) int {
+	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
+		return 0
 	}
 
-	var fileDtoList []FileDto
-	for _, fileModel := range filesModel {
-		fileDtoList = append(fileDtoList, fileModel.ToDto())
-	}
-
-	return fileDtoList, nil
+	return contentCount
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
-	fileModel, err := s.Repository.GetFileByNameAndPath(name, path)
+	filter := FileFilter{
+		Name: utils.Optional[string]{HasValue: true, Value: name},
+		Path: utils.Optional[string]{HasValue: true, Value: path},
+	}
+	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return FileDto{}, err
+		return FileDto{}, fmt.Errorf("erro ao buscar arquivos: %w", err)
+	}
+	switch len(pagination.Items) {
+	case 0:
+		return FileDto{}, sql.ErrNoRows
+	case 1:
+		return pagination.Items[0], nil
+	default:
+		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
 	}
 
-	error := fileModel.getCheckSumFromFile()
-	if error != nil {
-		fmt.Println(error)
-	}
-
-	return fileModel.ToDto(), nil
 }
 
-func (s *Service) CreateFile(fileDto FileDto) (FileDto, error) {
-	ctx := context.Background()
-
-	transaction, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
-
-	defer transaction.Rollback()
+func (s *Service) GetFileById(id int) (FileDto, error) {
+	filter := FileFilter{
+		ID: utils.Optional[int]{HasValue: true, Value: id},
+	}
+	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return fileDto, err
+		return FileDto{}, fmt.Errorf("erro ao buscar arquivo: %w", err)
 	}
-	result, err := s.Repository.CreateFile(transaction, fileDto.ToModel())
-
-	if err == nil {
-		err = transaction.Commit()
+	switch len(pagination.Items) {
+	case 0:
+		return FileDto{}, sql.ErrNoRows
+	case 1:
+		return pagination.Items[0], nil
+	default:
+		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
 	}
 
-	return result.ToDto(), err
 }
 
-func (service *Service) UpdateFile(file FileDto) (bool, error) {
-	ctx := context.Background()
-	transaction, err := service.Repository.GetDbContext().BeginTx(ctx, nil)
-
-	defer transaction.Rollback()
-
+func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
+	tx, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
 	if err != nil {
-		return false, err
+		return
 	}
-	result, err := service.Repository.UpdateFile(transaction, file.ToModel())
+	defer tx.Rollback()
 
-	if result {
-		err = transaction.Commit()
+	if err = fn(tx); err != nil {
+		return
 	}
 
-	return result, err
+	return tx.Commit()
+}
+
+func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
+	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+		fileModel, err := fileDto.ToModel()
+		if err != nil {
+			return
+		}
+		result, err = service.Repository.UpdateFile(tx, fileModel)
+
+		return
+
+	})
+
+	return
 }
 
 func (s *Service) ScanFilesTask(data string) {
@@ -125,6 +147,7 @@ func (s *Service) ScanFilesTask(data string) {
 		Type: utils.ScanFiles,
 		Data: "Escaneamento de arquivos",
 	}
+	s.Tasks <- task
 	s.Tasks <- task
 }
 
@@ -134,4 +157,35 @@ func (s *Service) ScanDirTask(data string) {
 		Data: data,
 	}
 	s.Tasks <- task
+}
+
+func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
+
+	if fileDto.Type == Directory {
+		return icons.FolderIcon()
+	}
+
+	switch fileDto.Format {
+	case ".jpg":
+		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		if err != nil {
+			return nil, err
+		}
+		return img.Thumbnail(image)
+	case ".png":
+		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		if err != nil {
+			return nil, err
+		}
+		return img.Thumbnail(image)
+	case ".pdf":
+		return icons.PdfIcon()
+	case ".mp3":
+		return icons.Mp3Icon()
+	case ".mp4":
+		return icons.Mp4Icon()
+	default:
+		return icons.Icon()
+	}
+
 }
