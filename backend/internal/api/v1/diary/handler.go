@@ -26,7 +26,6 @@ func (handler *Handler) CreateDiaryHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(diaryDto)
 	startTime := time.Now()
 
 	diaryDto.StartTime = startTime

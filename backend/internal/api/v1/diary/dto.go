@@ -11,6 +11,15 @@ type DiaryDto struct {
 	Description string                    `json:"description"`
 	StartTime   time.Time                 `json:"start_time"`
 	EndTime     utils.Optional[time.Time] `json:"end_time"`
+	Duration    int                       `json:"duration"`
+}
+
+func (diaryDto *DiaryDto) CalculateDuration() {
+	if diaryDto.EndTime.HasValue {
+		diaryDto.Duration = int(diaryDto.EndTime.Value.Sub(diaryDto.StartTime).Seconds())
+	} else {
+		diaryDto.Duration = int(time.Since(diaryDto.StartTime).Seconds())
+	}
 }
 
 type LongestActivity struct {
@@ -41,12 +50,18 @@ func (diaryModel *DiaryModel) ToDto() (DiaryDto, error) {
 	return diaryDto, nil
 }
 
+type DateRange struct {
+	Start time.Time
+	End   time.Time
+}
+
 type DiaryFilter struct {
 	ID          utils.Optional[int]
 	Name        utils.Optional[string]
 	Description utils.Optional[string]
 	StartTime   utils.Optional[time.Time]
 	EndTime     utils.Optional[time.Time]
+	DateRange   utils.Optional[DateRange]
 }
 
 func ParsePaginationToDto(pagination *utils.PaginationResponse[DiaryModel]) (utils.PaginationResponse[DiaryDto], error) {
@@ -66,6 +81,7 @@ func ParsePaginationToDto(pagination *utils.PaginationResponse[DiaryModel]) (uti
 		if err != nil {
 			return paginationResponse, err
 		}
+		fileDtoResult.CalculateDuration()
 		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
 	}
 	paginationResponse.Pagination = pagination.Pagination

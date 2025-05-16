@@ -107,9 +107,27 @@ func (service *Service) UpdateDiary(diaryDto DiaryDto) (result bool, err error) 
 }
 
 func (service *Service) GetSummary() (DiarySummary, error) {
+	filter := DiaryFilter{
+		DateRange: utils.Optional[DateRange]{
+			HasValue: true,
+			Value: DateRange{
+				Start: time.Now().Add(time.Hour * -1),
+				End:   time.Now(),
+			},
+		},
+	}
+
+	diaryPagination, err := service.Repository.GetDiary(filter, 1, 200)
+
+	if err != nil {
+		return DiarySummary{}, err
+	}
+
+	totalActivities := len(diaryPagination.Items)
+
 	return DiarySummary{
 		Date:                    time.Now(),
-		TotalActivities:         4,
+		TotalActivities:         totalActivities,
 		TotalTimeSpentSeconds:   457,
 		TotalTimeSpentFormatted: "teste",
 		LongestActivity: &LongestActivity{
