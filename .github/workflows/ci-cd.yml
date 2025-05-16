@@ -3,12 +3,10 @@ name: CI/CD
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-  # Gera release e artefatos ao criar uma tag
-  push:
     tags:
       - 'v*'
+  pull_request:
+    branches: [main]
 
 jobs:
   lint-frontend:
