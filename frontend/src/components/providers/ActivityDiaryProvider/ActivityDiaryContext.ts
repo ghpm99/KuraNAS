@@ -13,7 +13,7 @@ export type ActivityDiaryData = {
 	description: string;
 	start_time: string;
 	end_time: Optional<string>;
-	duration_seconds: number | null;
+	duration: number | undefined;
 	duration_formatted: string | null;
 	in_progress?: boolean;
 };

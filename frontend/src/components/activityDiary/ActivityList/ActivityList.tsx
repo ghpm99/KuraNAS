@@ -30,7 +30,7 @@ const ActivityList = () => {
 									<td>{activity.end_time.HasValue ? formatDate(activity.end_time.Value) : 'Em andamento'}</td>
 									<td>
 										{activity.end_time.HasValue
-											? activity.duration_formatted
+											? formatDuration(activity.duration)
 											: formatDuration(getCurrentDuration(activity.start_time))}
 									</td>
 								</tr>

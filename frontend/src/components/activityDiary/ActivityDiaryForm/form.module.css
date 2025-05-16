@@ -13,7 +13,6 @@
 .label {
 	font-size: 0.875rem;
 	font-weight: 500;
-	color: #4b5563;
 }
 
 .input,
@@ -24,6 +23,7 @@
 	border-radius: 6px;
 	font-size: 0.875rem;
 	font-family: inherit;
+	background-color: #2a282e;
 }
 
 .input:focus,

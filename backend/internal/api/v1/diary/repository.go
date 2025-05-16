@@ -75,6 +75,9 @@ func (repository *Repository) GetDiary(filter DiaryFilter, page int, pageSize in
 		filter.StartTime.Value,
 		!filter.EndTime.HasValue,
 		filter.EndTime.Value,
+		!filter.DateRange.HasValue,
+		filter.DateRange.Value.Start,
+		filter.DateRange.Value.End,
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
 	}
