@@ -11,7 +11,6 @@ import (
 
 type Repository struct {
 	DbContext *sql.DB
-	DbContext *sql.DB
 }
 
 func NewRepository(database *sql.DB) *Repository {
