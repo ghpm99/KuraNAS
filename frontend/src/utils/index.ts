@@ -28,7 +28,7 @@ export const formatDate = (dateString: string): string => {
 };
 
 export const formatDuration = (seconds: number | undefined): string => {
-	if (!seconds) return 'Em andamento';
+	if (!seconds || seconds <= 0) return 'Em andamento';
 
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor((seconds % 3600) / 60);

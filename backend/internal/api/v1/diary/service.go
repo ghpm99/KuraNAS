@@ -117,23 +117,75 @@ func (service *Service) GetSummary() (DiarySummary, error) {
 		},
 	}
 
-	diaryPagination, err := service.Repository.GetDiary(filter, 1, 200)
+	diaryModelPagination, err := service.Repository.GetDiary(filter, 1, 200)
 
 	if err != nil {
 		return DiarySummary{}, err
 	}
 
-	totalActivities := len(diaryPagination.Items)
+	diaryDtoPagination, err := ParsePaginationToDto(&diaryModelPagination)
+
+	if err != nil {
+		return DiarySummary{}, err
+	}
+
+	totalActivities := len(diaryDtoPagination.Items)
+	TotalTimeSpentSeconds, err := calculateDailyDuration(diaryDtoPagination.Items)
+	if err != nil {
+		return DiarySummary{}, err
+	}
+
+	longestActivity, err := getLongestActivity(diaryDtoPagination.Items)
+	if err != nil {
+		return DiarySummary{}, err
+	}
 
 	return DiarySummary{
-		Date:                    time.Now(),
-		TotalActivities:         totalActivities,
-		TotalTimeSpentSeconds:   457,
-		TotalTimeSpentFormatted: "teste",
-		LongestActivity: &LongestActivity{
-			Name:              "teste atividade",
-			DurationSeconds:   400,
-			DurationFormatted: "teste 2",
-		},
+		Date:                  time.Now(),
+		TotalActivities:       totalActivities,
+		TotalTimeSpentSeconds: TotalTimeSpentSeconds,
+		LongestActivity:       &longestActivity,
 	}, nil
+}
+
+func calculateDailyDuration(diaryDtos []DiaryDto) (int, error) {
+	totalDuration := 0
+
+	for _, diaryDto := range diaryDtos {
+		if diaryDto.EndTime.HasValue {
+			duration := int(diaryDto.EndTime.Value.Sub(diaryDto.StartTime).Seconds())
+			totalDuration += duration
+		} else {
+			duration := int(time.Since(diaryDto.StartTime).Seconds())
+			totalDuration += duration
+		}
+	}
+
+	return totalDuration, nil
+}
+
+func getLongestActivity(diaryDtos []DiaryDto) (LongestActivity, error) {
+	longestActivity := LongestActivity{
+		Name:              "",
+		DurationSeconds:   0,
+		DurationFormatted: "",
+	}
+
+	for _, diaryDto := range diaryDtos {
+		if diaryDto.EndTime.HasValue {
+			duration := int(diaryDto.EndTime.Value.Sub(diaryDto.StartTime).Seconds())
+			if duration > longestActivity.DurationSeconds {
+				longestActivity.DurationSeconds = duration
+				longestActivity.Name = diaryDto.Name
+			}
+		} else {
+			duration := int(time.Since(diaryDto.StartTime).Seconds())
+			if duration > longestActivity.DurationSeconds {
+				longestActivity.DurationSeconds = duration
+				longestActivity.Name = diaryDto.Name
+			}
+		}
+	}
+
+	return longestActivity, nil
 }

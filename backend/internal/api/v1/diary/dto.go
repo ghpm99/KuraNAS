@@ -29,11 +29,10 @@ type LongestActivity struct {
 }
 
 type DiarySummary struct {
-	Date                    time.Time        `json:"date"`
-	TotalActivities         int              `json:"total_activities"`
-	TotalTimeSpentSeconds   int              `json:"total_time_spent_seconds"`
-	TotalTimeSpentFormatted string           `json:"total_time_spent_formatted"`
-	LongestActivity         *LongestActivity `json:"longest_activity,omitempty"`
+	Date                  time.Time        `json:"date"`
+	TotalActivities       int              `json:"total_activities"`
+	TotalTimeSpentSeconds int              `json:"total_time_spent_seconds"`
+	LongestActivity       *LongestActivity `json:"longest_activity,omitempty"`
 }
 
 func (diaryModel *DiaryModel) ToDto() (DiaryDto, error) {
