@@ -22,7 +22,6 @@ export type ActivityDiarySummary = {
 	date: string;
 	total_activities: number;
 	total_time_spent_seconds: number;
-	total_time_spent_formatted: string;
 	longest_activity?: {
 		name: string;
 		duration_seconds: number;

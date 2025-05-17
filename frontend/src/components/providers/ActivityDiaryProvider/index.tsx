@@ -38,7 +38,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
 	const [message, setMessage] = useState<{ text: string; type: messageType } | undefined>(undefined);
-	const { data: summaryData, error: summaryError } = useQuery({
+
+	const {
+		data: summaryData,
+		error: summaryError,
+		refetch: refetchSummary,
+	} = useQuery({
 		queryKey: ['activity-diary-summary'],
 		queryFn: async (): Promise<ActivityDiarySummary> => {
 			const response = await apiBase.get<ActivityDiarySummary>('/diary/summary');
@@ -70,6 +75,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			setMessage({ text: 'Atividade adicionada com sucesso!', type: 'success' });
 			console.log('Diário criado:', data);
 			refetchList();
+			refetchSummary();
 		},
 		onError: (error) => {
 			setMessage({ text: 'Erro ao adicionar atividade.', type: 'error' });
