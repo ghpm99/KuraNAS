@@ -157,8 +157,19 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			},
 			getCurrentDuration,
 			error: error?.message || summaryError?.message,
+			currentTime,
 		}),
-		[error?.message, summaryError?.message, formData, getCurrentDuration, handleSubmit, message, diaryData, summaryData]
+		[
+			error?.message,
+			summaryError?.message,
+			formData,
+			getCurrentDuration,
+			handleSubmit,
+			message,
+			diaryData,
+			summaryData,
+			currentTime,
+		]
 	);
 
 	return <ActivityDiaryContextProvider value={contextValue}>{children}</ActivityDiaryContextProvider>;

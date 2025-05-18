@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useI18n from '../i18n/provider/i18nContext';
-import useFile from '../providers/fileProvider/fileContext';
+import useFile from '../hooks/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import './tabs.css';
 

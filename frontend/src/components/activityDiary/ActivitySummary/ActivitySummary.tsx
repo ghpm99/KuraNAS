@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
 import { formatDuration } from '@/utils';
 import styles from './ActivitySummary.module.css';
 import Card from '@/components/ui/Card/Card';

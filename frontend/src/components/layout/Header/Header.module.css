@@ -1,81 +1,80 @@
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: white;
+	grid-area: gh;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 24px;
+	background-color: #1c1a1f;
 }
 
 .searchContainer {
-  width: 384px;
-  position: relative;
+	width: 384px;
+	position: relative;
 }
 
 .searchIcon {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  width: 16px;
-  height: 16px;
-  color: #6b7280;
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	width: 16px;
+	height: 16px;
+	color: #6b7280;
 }
 
 .searchInput {
-  width: 100%;
-  padding: 8px 12px 8px 36px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 0.875rem;
+	width: 100%;
+	padding: 8px 12px 8px 36px;
+	border-radius: 6px;
+	font-size: 0.875rem;
 }
 
 .searchInput:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
 }
 
 .iconButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .iconButton:hover {
-  background-color: #f3f4f6;
+	background-color: #f3f4f6;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	overflow: hidden;
 }
 
 .icon {
-  width: 16px;
-  height: 16px;
-  color: #6b7280;
+	width: 16px;
+	height: 16px;
+	color: #6b7280;
 }
 
 .timeDisplay {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: #4b5563;
-  padding: 6px 10px;
-  background-color: #f3f4f6;
-  border-radius: 6px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.875rem;
+	color: #4b5563;
+	padding: 6px 10px;
+	background-color: #f3f4f6;
+	border-radius: 6px;
 }

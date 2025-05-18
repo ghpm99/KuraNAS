@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
 import style from './actionBar.module.css';
 
 const ActivityDiaryActionBar = () => {
