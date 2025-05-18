@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/providers/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import { Plus } from 'lucide-react';

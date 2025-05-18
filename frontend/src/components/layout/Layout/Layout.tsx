@@ -1,29 +1,31 @@
-"use client"
+'use client';
 
-import type { ReactNode } from "react"
-import { useActivity } from "../../../contexts/ActivityContext"
-import { useUI } from "../../../contexts/UIContext"
-import Header from "../Header/Header"
-import Sidebar from "../Sidebar/Sidebar"
-import styles from "./Layout.module.css"
+import type { ReactNode } from 'react';
+
+import Header from '../Header/Header';
+import Sidebar from '../Sidebar/Sidebar';
+import styles from './Layout.module.css';
+import { useUI } from '@/components/hooks/UI/uiContext';
+import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
 
 interface LayoutProps {
-  children: ReactNode
+	children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { activePage } = useUI()
-  const { currentTime } = useActivity()
+	const { activePage } = useUI();
+	const { currentTime } = useActivityDiary();
 
-  const showClock = activePage === "activity"
+	const showClock = activePage === 'activity';
 
-  return (
-    <div className={styles.layout}>
-      <Sidebar />
-      <div className={styles.mainContent}>
-        <Header showClock={showClock} currentTime={currentTime} />
-        <div className={styles.content}>{children}</div>
-      </div>
-    </div>
-  )
+	return (
+		<div className={styles.layout}>
+			<div className='sidebar-header'>
+				<h1 className='app-title'>KuraNAS</h1>
+			</div>
+			<Header showClock={showClock} currentTime={currentTime} />
+			<Sidebar />
+			<div className={styles.mainContent}>{children}</div>
+		</div>
+	);
 }

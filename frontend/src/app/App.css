@@ -1,14 +1,3 @@
-.file-manager {
-	display: grid;
-	grid-template-columns: 300px 1fr;
-	grid-template-rows: 80px auto;
-	grid-template-areas:
-		'logo gh'
-		'left-nav content-container';
-	height: 100vh;
-	background-color: #2a282e;
-}
-
 .sidebar-header {
 	grid-area: logo;
 	background-color: #1c1a1f;

@@ -1,5 +1,5 @@
 import { FileType, formatDate, formatSize, getFileTypeInfo } from '@/utils';
-import useFile from '../providers/fileProvider/fileContext';
+import useFile from '../hooks/fileProvider/fileContext';
 import './fileDetails.css';
 const FileDetails = () => {
 	const { selectedItem } = useFile();
