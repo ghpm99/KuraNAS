@@ -186,7 +186,7 @@ jobs:
 
   release:
     name: Release build artifacts
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
 
@@ -200,8 +200,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ github.sha }}
-          tag_name: release-${{ github.run_number }}
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
           files: |
             kuranas-linux.zip
             kuranas-windows.zip
