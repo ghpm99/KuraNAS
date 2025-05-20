@@ -76,13 +76,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
       - run: go test ./...
 
-  build:
+  build-linux:
+    name: Build on Linux
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, windows]
-
-    name: Build for ${{ matrix.os }}
 
     steps:
       - name: Checkout repository
@@ -108,11 +104,11 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: yarn build
 
-      - name: Build Go backend for ${{ matrix.os }}
+      - name: Build Go backend (Linux)
         working-directory: ${{ env.BACKEND_DIR }}
         env:
           CGO_ENABLED: 1
-          GOOS: ${{ matrix.os == 'windows' && 'windows' || 'linux' }}
+          GOOS: linux
           GOARCH: amd64
         run: |
           go build -o kuranas ./cmd/nas/main.go
@@ -121,32 +117,87 @@ jobs:
         run: |
           mkdir -p $BUILD_DIR/dist
           cp -r $DIST_DIR $BUILD_DIR/
-          cp $BACKEND_DIR/kuranas* $BUILD_DIR/
+          cp $BACKEND_DIR/kuranas $BUILD_DIR/
           cp -r $BACKEND_DIR/icons $BUILD_DIR/
           cp -r $BACKEND_DIR/translations $BUILD_DIR/
 
-      - name: Archive build folder
-        run: |
-          zip -r kuranas-${{ matrix.os }}.zip $BUILD_DIR
+      - name: Archive build (Linux)
+        run: zip -r kuranas-linux.zip $BUILD_DIR
 
-      - name: Upload build artifact
+      - name: Upload artifact (Linux)
         uses: actions/upload-artifact@v4
         with:
-          name: kuranas-${{ matrix.os }}
-          path: kuranas-${{ matrix.os }}.zip
+          name: kuranas-linux
+          path: kuranas-linux.zip
+
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: frontend
+        run: yarn build
+
+      - name: Build Go backend (Windows)
+        working-directory: backend
+        env:
+          CGO_ENABLED: 1
+          GOOS: windows
+          GOARCH: amd64
+        run: go build -o kuranas.exe ./cmd/nas/main.go
+
+      - name: Prepare build directory
+        shell: bash
+        run: |
+          mkdir -p $BUILD_DIR/dist
+          cp -r $DIST_DIR $BUILD_DIR/
+          cp backend/kuranas.exe $BUILD_DIR/
+          cp -r backend/icons $BUILD_DIR/
+          cp -r backend/translations $BUILD_DIR/
+
+      - name: Archive build (Windows)
+        run: Compress-Archive -Path $env:BUILD_DIR\* -DestinationPath kuranas-windows.zip
+
+      - name: Upload artifact (Windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuranas-windows
+          path: kuranas-windows.zip
 
   release:
+    name: Release build artifacts
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
+
     steps:
-      - name: Download build artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: kuranas-*
           merge-multiple: true
 
-      - name: Create GitHub release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: Release ${{ github.sha }}
