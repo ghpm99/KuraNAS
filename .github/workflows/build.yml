@@ -99,6 +99,8 @@ jobs:
 
       - name: Build frontend
         working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_API_URL: ''
         run: yarn build
 
       - name: Build Go backend (Linux)
@@ -153,6 +155,8 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
+        env:
+          VITE_API_URL: ''
         run: yarn build
 
       - name: Build Go backend (Windows)
