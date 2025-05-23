@@ -13,19 +13,11 @@ func GetBuildConfig(key string) string {
 	case "BuildVersion":
 		return "linux"
 	case "DbPath":
-		return "db.sqlite3"
+		return fmt.Sprintf("%s/kuranas/db.sqlite3", os.TempDir())
 	case "IconPath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
-		return fmt.Sprintf("%s/icons/", currentDir)
+		return "/etc/kuranas/icons/"
 	case "TranslationsPath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
-		return fmt.Sprintf("%s/translations/", currentDir)
+		return "/etc/kuranas/translations/"
 	default:
 		return ""
 	}
