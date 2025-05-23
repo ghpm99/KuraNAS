@@ -4,22 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"nas-go/api/internal/config"
 	diaryQueries "nas-go/api/pkg/database/queries/diary"
 	fileQueries "nas-go/api/pkg/database/queries/file"
-	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var dbName = "db.sqlite3"
-
 func ConfigDatabase() (*sql.DB, error) {
 
-	dbPath := os.Getenv("DB_PATH")
+	dbPath := config.GetBuildConfig("DbPath")
 
-	if dbPath == "" {
-		dbPath = "./" + dbName
-	}
 	fmt.Println("Database path", dbPath)
 	localDatabase, errSql := sql.Open("sqlite3", dbPath)
 
