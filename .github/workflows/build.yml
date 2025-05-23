@@ -33,6 +33,7 @@ jobs:
     name: Test Frontend
     runs-on: ubuntu-latest
     continue-on-error: true
+    needs: lint-frontend
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -63,6 +64,7 @@ jobs:
     name: Test Backend
     runs-on: ubuntu-latest
     continue-on-error: true
+    needs: lint-backend
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
@@ -76,7 +78,7 @@ jobs:
   build-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
-
+    needs: [test-backend, test-frontend]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -132,7 +134,7 @@ jobs:
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
-
+    needs: [test-backend, test-frontend]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
