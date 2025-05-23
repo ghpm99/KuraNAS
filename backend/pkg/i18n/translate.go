@@ -16,12 +16,10 @@ func GetPathFileTranslate() (string, error) {
 	if lang == "" {
 		lang = "en-US"
 	}
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
 
-	filePath := fmt.Sprintf("%s/translations/%s.json", currentDir, lang)
+	translationsPath := config.GetBuildConfig("TranslationsPath")
+
+	filePath := fmt.Sprintf("%s%s.json", translationsPath, lang)
 	return filePath, nil
 }
 

@@ -3,18 +3,16 @@ package icons
 import (
 	"fmt"
 	"image"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/img"
-	"os"
 	"strings"
 )
 
 func getIconPath(iconName string) (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
 
-	filePath := fmt.Sprintf("%s/icons/%s.png", currentDir, iconName)
+	iconsPath := config.GetBuildConfig("IconPath")
+
+	filePath := fmt.Sprintf("%s%s.png", iconsPath, iconName)
 	return filePath, nil
 }
 
