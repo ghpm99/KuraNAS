@@ -1,0 +1,103 @@
+.techInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.commitSection {
+	padding: 16px;
+	background-color: #f9fafb;
+	border-radius: 8px;
+	border: 1px solid #e5e7eb;
+}
+
+.commitHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.label {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #4b5563;
+}
+
+.copyButton {
+	padding: 6px 12px;
+	font-size: 0.75rem;
+}
+
+.copyIcon {
+	width: 12px;
+	height: 12px;
+}
+
+.commitHash {
+	font-family: 'Courier New', monospace;
+	font-size: 1rem;
+	color: #111827;
+	background-color: #f3f4f6;
+	padding: 12px;
+	border-radius: 6px;
+	border: 1px solid #d1d5db;
+	letter-spacing: 0.05em;
+	word-break: break-all;
+}
+
+.commitDescription {
+	font-size: 0.75rem;
+	color: #6b7280;
+	margin-top: 8px;
+}
+
+.buildInfo {
+	padding: 16px;
+	background-color: #f9fafb;
+	border-radius: 8px;
+	border: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #4b5563;
+	margin: 0 0 12px 0;
+}
+
+.buildDetails {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 8px;
+}
+
+@media (min-width: 768px) {
+	.buildDetails {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.buildItem {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.buildItem:last-child {
+	border-bottom: none;
+}
+
+.buildLabel {
+	font-size: 0.875rem;
+	color: #6b7280;
+}
+
+.buildValue {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #111827;
+	font-family: 'Courier New', monospace;
+}

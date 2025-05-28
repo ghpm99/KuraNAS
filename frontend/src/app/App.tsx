@@ -5,6 +5,7 @@ import ActivityDiaryPage from '@/pages/activityDiary';
 import AnalyticsPage from '@/pages/analytics';
 import FilePage from '@/pages/files';
 import { Route, Routes } from 'react-router-dom';
+import AboutPage from '@/pages/about';
 
 export default function App() {
 	return (
@@ -13,6 +14,7 @@ export default function App() {
 				<Route path='/' element={<FilePage />} />
 				<Route path='/activity-diary' element={<ActivityDiaryPage />} />
 				<Route path='/analytics' element={<AnalyticsPage />} />
+				<Route path='/about' element={<AboutPage />} />
 			</Routes>
 		</AppProviders>
 	);
