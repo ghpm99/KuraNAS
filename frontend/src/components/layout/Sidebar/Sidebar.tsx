@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid } from 'lucide-react';
+import { Info, LayoutGrid } from 'lucide-react';
 
 import useI18n from '@/components/i18n/provider/i18nContext';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
@@ -44,6 +44,9 @@ export default function Sidebar() {
 					}
 				>
 					Analytics
+				</NavItem>
+				<NavItem href='/about' icon={<Info className='icon' />}>
+					Sobre
 				</NavItem>
 				<FolderTree />
 			</nav>
