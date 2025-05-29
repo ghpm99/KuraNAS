@@ -3,24 +3,15 @@ import { useState } from 'react';
 import styles from './TechicalInfoCard.module.css';
 import Button from '@/components/ui/Button/Button';
 import { Copy } from 'lucide-react';
+import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
 
 const TechnicalInfoCard = () => {
-	const systemInfo = {
-		commitHash: 'abc123def456gh7890ijklmnopqrs',
-		buildDate: new Date().toLocaleDateString('pt-BR', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-		}),
-	};
+	const { commit_hash } = useAbout();
 	const [copied, setCopied] = useState(false);
 
 	const copyCommitHash = async () => {
 		try {
-			await navigator.clipboard.writeText(systemInfo.commitHash);
+			await navigator.clipboard.writeText(commit_hash);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch (err) {
@@ -39,7 +30,7 @@ const TechnicalInfoCard = () => {
 							{copied ? 'Copiado!' : 'Copiar'}
 						</Button>
 					</div>
-					<div className={styles.commitHash}>{systemInfo.commitHash}</div>
+					<div className={styles.commitHash}>{commit_hash}</div>
 					<div className={styles.commitDescription}>Identificador único da versão atual do código</div>
 				</div>
 
@@ -52,15 +43,15 @@ const TechnicalInfoCard = () => {
 						</div>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Compilador:</span>
-							<span className={styles.buildValue}>TypeScript 5.0</span>
+							<span className={styles.buildValue}>-</span>
 						</div>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Framework:</span>
-							<span className={styles.buildValue}>Next.js 14</span>
+							<span className={styles.buildValue}>-</span>
 						</div>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Node.js:</span>
-							<span className={styles.buildValue}>v20.10.0</span>
+							<span className={styles.buildValue}>-</span>
 						</div>
 					</div>
 				</div>

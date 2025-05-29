@@ -47,6 +47,7 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations := router.Group("/configuration")
 
 	configurations.GET("/translation", configuration.GetTranslationJson)
+	configurations.GET("/about", configuration.GetAboutHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {
