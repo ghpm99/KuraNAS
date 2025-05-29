@@ -6,9 +6,9 @@
 
 .commitSection {
 	padding: 16px;
-	background-color: #f9fafb;
+	background-color: #2a282e;
 	border-radius: 8px;
-	border: 1px solid #e5e7eb;
+	border: 1px solid #1c1a1f;
 }
 
 .commitHeader {
@@ -21,7 +21,6 @@
 .label {
 	font-size: 0.875rem;
 	font-weight: 600;
-	color: #4b5563;
 }
 
 .copyButton {
@@ -37,11 +36,11 @@
 .commitHash {
 	font-family: 'Courier New', monospace;
 	font-size: 1rem;
-	color: #111827;
-	background-color: #f3f4f6;
+	color: #737d86;
+	background-color: #1c1a1f;
 	padding: 12px;
 	border-radius: 6px;
-	border: 1px solid #d1d5db;
+	border: 1px solid #1c1a1f;
 	letter-spacing: 0.05em;
 	word-break: break-all;
 }
@@ -54,15 +53,15 @@
 
 .buildInfo {
 	padding: 16px;
-	background-color: #f9fafb;
+	background-color: #2a282e;
 	border-radius: 8px;
-	border: 1px solid #e5e7eb;
+	border: 1px solid #2a282e;
 }
 
 .sectionTitle {
 	font-size: 0.875rem;
 	font-weight: 600;
-	color: #4b5563;
+
 	margin: 0 0 12px 0;
 }
 
@@ -83,21 +82,16 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 8px 0;
-	border-bottom: 1px solid #e5e7eb;
-}
-
-.buildItem:last-child {
-	border-bottom: none;
+	border-bottom: 1px solid #1c1a1f;
 }
 
 .buildLabel {
 	font-size: 0.875rem;
-	color: #6b7280;
 }
 
 .buildValue {
 	font-size: 0.875rem;
 	font-weight: 500;
-	color: #111827;
+	color: #737d86;
 	font-family: 'Courier New', monospace;
 }

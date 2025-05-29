@@ -15,15 +15,15 @@
 	flex-direction: column;
 	gap: 4px;
 	padding: 12px;
-	background-color: #f9fafb;
+	background-color: #2a282e;
 	border-radius: 6px;
-	border: 1px solid #e5e7eb;
+	border: 1px solid #1c1a1f;
 }
 
 .label {
 	font-size: 0.75rem;
 	font-weight: 500;
-	color: #6b7280;
+
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 }
@@ -31,7 +31,7 @@
 .value {
 	font-size: 0.875rem;
 	font-weight: 600;
-	color: #111827;
+	color: #737d86;
 }
 
 .platform {

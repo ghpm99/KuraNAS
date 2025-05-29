@@ -6,9 +6,9 @@
 
 .statusItem {
 	padding: 16px;
-	background-color: #f9fafb;
+	background-color: #2a282e;
 	border-radius: 8px;
-	border: 1px solid #e5e7eb;
+	border: 1px solid #2a282e;
 }
 
 .statusHeader {
@@ -21,7 +21,7 @@
 .label {
 	font-size: 0.875rem;
 	font-weight: 600;
-	color: #4b5563;
+	color: white;
 }
 
 .status {
@@ -43,15 +43,15 @@
 
 .statusDescription {
 	font-size: 0.75rem;
-	color: #6b7280;
+	color: #737d86;
 	margin-top: 4px;
 }
 
 .folderPath {
 	font-family: 'Courier New', monospace;
 	font-size: 0.875rem;
-	color: #111827;
-	background-color: #f3f4f6;
+	color: white;
+	background-color: #2a282e;
 	padding: 8px;
 	border-radius: 4px;
 	word-break: break-all;

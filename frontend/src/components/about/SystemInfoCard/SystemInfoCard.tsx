@@ -1,13 +1,12 @@
 import Card from '@/components/ui/Card/Card';
 import styles from './SystemInfoCard.module.css';
+import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
 
 const SystemInfoCard = () => {
+	const { version, platform, lang } = useAbout();
 	const systemInfo = {
 		projectName: 'Kuranas',
-		programVersion: '1.0.0',
 		buildVersion: '20231001',
-		platform: 'Windows',
-		language: 'Português',
 		buildDate: new Date().toLocaleDateString('pt-BR', {
 			year: 'numeric',
 			month: '2-digit',
@@ -27,7 +26,7 @@ const SystemInfoCard = () => {
 				</div>
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Versão do Programa</span>
-					<span className={styles.value}>{systemInfo.programVersion}</span>
+					<span className={styles.value}>{version}</span>
 				</div>
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Build Version</span>
@@ -36,13 +35,13 @@ const SystemInfoCard = () => {
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Plataforma</span>
 					<span className={`${styles.value} ${styles.platform}`}>
-						<span className={styles.platformIcon}>{systemInfo.platform === 'Windows' ? '🪟' : '🐧'}</span>
-						{systemInfo.platform}
+						<span className={styles.platformIcon}>{platform === 'Windows' ? '🪟' : '🐧'}</span>
+						{platform}
 					</span>
 				</div>
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Idioma</span>
-					<span className={styles.value}>{systemInfo.language}</span>
+					<span className={styles.value}>{lang}</span>
 				</div>
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Data de Build</span>

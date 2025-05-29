@@ -1,11 +1,6 @@
 .content {
-	display: grid;
-	grid-template-columns: 1fr min-content;
-	grid-template-rows: 80px 40px auto;
-	grid-template-areas:
-		'item-header sidebar'
-		'tabs sidebar'
-		'content  sidebar';
+	max-width: 1200px;
+	margin: 0 auto;
 	grid-area: content-container;
 }
 
@@ -16,13 +11,13 @@
 .pageTitle {
 	font-size: 2rem;
 	font-weight: 700;
-	color: #111827;
+	color: white;
 	margin: 0 0 8px 0;
 }
 
 .pageDescription {
 	font-size: 1rem;
-	color: #6b7280;
+	color: #c5c5c5;
 	margin: 0;
 }
 
