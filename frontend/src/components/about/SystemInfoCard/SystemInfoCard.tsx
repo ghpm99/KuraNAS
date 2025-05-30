@@ -35,7 +35,7 @@ const SystemInfoCard = () => {
 				<div className={styles.infoItem}>
 					<span className={styles.label}>Plataforma</span>
 					<span className={`${styles.value} ${styles.platform}`}>
-						<span className={styles.platformIcon}>{platform === 'Windows' ? '🪟' : '🐧'}</span>
+						<span className={styles.platformIcon}>{platform === 'windows' ? '🪟' : '🐧'}</span>
 						{platform}
 					</span>
 				</div>

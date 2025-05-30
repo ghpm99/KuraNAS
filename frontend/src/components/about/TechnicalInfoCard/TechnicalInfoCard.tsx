@@ -6,7 +6,7 @@ import { Copy } from 'lucide-react';
 import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
 
 const TechnicalInfoCard = () => {
-	const { commit_hash } = useAbout();
+	const { commit_hash, gin_mode, gin_version } = useAbout();
 	const [copied, setCopied] = useState(false);
 
 	const copyCommitHash = async () => {
@@ -39,15 +39,15 @@ const TechnicalInfoCard = () => {
 					<div className={styles.buildDetails}>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Ambiente:</span>
-							<span className={styles.buildValue}>Production</span>
+							<span className={styles.buildValue}>{gin_mode}</span>
 						</div>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Compilador:</span>
 							<span className={styles.buildValue}>-</span>
 						</div>
 						<div className={styles.buildItem}>
-							<span className={styles.buildLabel}>Framework:</span>
-							<span className={styles.buildValue}>-</span>
+							<span className={styles.buildLabel}>BackEnd:</span>
+							<span className={styles.buildValue}>{gin_version}</span>
 						</div>
 						<div className={styles.buildItem}>
 							<span className={styles.buildLabel}>Node.js:</span>
