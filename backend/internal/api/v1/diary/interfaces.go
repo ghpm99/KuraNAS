@@ -17,4 +17,5 @@ type ServiceInterface interface {
 	GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryDto], error)
 	UpdateDiary(diaryDto DiaryDto) (result bool, err error)
 	GetSummary() (DiarySummary, error)
+	DuplicateDiary(id int) (DiaryDto, error)
 }

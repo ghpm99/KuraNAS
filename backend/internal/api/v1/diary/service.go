@@ -3,6 +3,8 @@ package diary
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"nas-go/api/pkg/utils"
 	"time"
 )
@@ -33,13 +35,8 @@ func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error
 func (service *Service) CreateDiary(diaryDto DiaryDto) (diaryDtoResult DiaryDto, err error) {
 	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
 
-		if diaryDto.StartTime.IsZero() {
-			diaryDto.StartTime = time.Now()
-		}
-
-		if diaryDto.EndTime.HasValue {
-			diaryDto.EndTime = utils.Optional[time.Time]{HasValue: false}
-		}
+		diaryDto.StartTime = time.Now()
+		diaryDto.EndTime = utils.Optional[time.Time]{HasValue: false}
 
 		currentDiaryPagination, err := service.Repository.GetDiary(DiaryFilter{}, 1, 1)
 		if err != nil {
@@ -188,4 +185,37 @@ func getLongestActivity(diaryDtos []DiaryDto) (LongestActivity, error) {
 	}
 
 	return longestActivity, nil
+}
+
+func (service *Service) DuplicateDiary(id int) (DiaryDto, error) {
+	fmt.Println("Duplicating diary with ID:", id)
+	filter := DiaryFilter{
+		ID: utils.Optional[int]{
+			HasValue: true,
+			Value:    id,
+		},
+	}
+
+	diaryModelPagination, err := service.Repository.GetDiary(filter, 1, 1)
+
+	if err != nil {
+		return DiaryDto{}, err
+	}
+
+	if len(diaryModelPagination.Items) == 0 {
+		return DiaryDto{}, errors.New("diary not found")
+	}
+
+	diaryDtoCurrent, err := diaryModelPagination.Items[0].ToDto()
+
+	if err != nil {
+		return DiaryDto{}, err
+	}
+
+	diaryDtoNew, err := service.CreateDiary(diaryDtoCurrent)
+	if err != nil {
+		return DiaryDto{}, err
+	}
+
+	return diaryDtoNew, nil
 }

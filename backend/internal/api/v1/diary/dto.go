@@ -14,6 +14,10 @@ type DiaryDto struct {
 	Duration    int                       `json:"duration"`
 }
 
+type DiaryId struct {
+	ID int `json:"id"`
+}
+
 func (diaryDto *DiaryDto) CalculateDuration() {
 	if diaryDto.EndTime.HasValue {
 		diaryDto.Duration = int(diaryDto.EndTime.Value.Sub(diaryDto.StartTime).Seconds())

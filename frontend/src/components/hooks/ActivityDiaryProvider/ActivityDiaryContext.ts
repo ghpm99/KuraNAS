@@ -47,6 +47,7 @@ export type ActivityDiaryType = {
 	data: ActivityDiaryResponse | null;
 	getCurrentDuration: (dateString: string) => number;
 	currentTime: Date;
+	copyActivity: (activity: ActivityDiaryData) => void;
 };
 
 const ActivityDiaryContext = createContext<ActivityDiaryType | undefined>(undefined);
