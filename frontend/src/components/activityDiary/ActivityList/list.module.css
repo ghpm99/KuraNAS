@@ -1,5 +1,6 @@
 .content {
 	grid-area: list;
+	overflow: auto;
 }
 
 .noActivities {
@@ -45,4 +46,8 @@
 .activeRow td:last-child {
 	color: #3b82f6;
 	font-weight: 500;
+}
+
+.copyButton {
+	cursor: pointer;
 }
