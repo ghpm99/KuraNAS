@@ -2,9 +2,11 @@ import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/Activ
 import { formatDate, formatDuration } from '@/utils';
 import styles from './list.module.css';
 import Card from '@/components/ui/Card/Card';
+import { Copy } from 'lucide-react';
 
 const ActivityList = () => {
-	const { data, getCurrentDuration } = useActivityDiary();
+	const { data, getCurrentDuration, copyActivity } = useActivityDiary();
+
 	return (
 		<Card title='Atividades Registradas' className={styles['content']}>
 			{data?.entries?.items.length === 0 ? (
@@ -19,6 +21,7 @@ const ActivityList = () => {
 								<th>Início</th>
 								<th>Fim</th>
 								<th>Duração</th>
+								<th>Ação</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -32,6 +35,11 @@ const ActivityList = () => {
 										{activity.end_time.HasValue
 											? formatDuration(activity.duration)
 											: formatDuration(getCurrentDuration(activity.start_time))}
+									</td>
+									<td>
+										<div onClick={() => copyActivity(activity)} className={styles.copyButton}>
+											<Copy />
+										</div>
 									</td>
 								</tr>
 							))}
