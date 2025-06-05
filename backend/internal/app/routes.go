@@ -41,12 +41,14 @@ func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
 	diaryGroup.GET("/summary", context.Diary.Handler.GetSummaryHandler)
 	diaryGroup.POST("/", context.Diary.Handler.CreateDiaryHandler)
 	diaryGroup.PUT("/:id", context.Diary.Handler.UpdateDiaryHandler)
+	diaryGroup.POST("/copy", context.Diary.Handler.DuplicateDiaryHandler)
 }
 
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations := router.Group("/configuration")
 
 	configurations.GET("/translation", configuration.GetTranslationJson)
+	configurations.GET("/about", configuration.GetAboutHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {

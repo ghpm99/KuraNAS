@@ -2,12 +2,14 @@ package config
 
 import (
 	"os"
+	"time"
 )
 
 type AppConfigStruct struct {
 	EntryPoint    string
 	Lang          string
 	EnableWorkers bool
+	StartupTime   time.Time
 }
 
 var AppConfig AppConfigStruct
@@ -17,5 +19,6 @@ func InitializeConfig() {
 		EntryPoint:    os.Getenv("ENTRY_POINT"),
 		Lang:          os.Getenv("LANGUAGE"),
 		EnableWorkers: os.Getenv("ENABLE_WORKERS") == "true",
+		StartupTime:   time.Now(),
 	}
 }

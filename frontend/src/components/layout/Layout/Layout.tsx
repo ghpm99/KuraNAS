@@ -25,7 +25,7 @@ export default function Layout({ children }: LayoutProps) {
 			</div>
 			<Header showClock={showClock} currentTime={currentTime} />
 			<Sidebar />
-			<div className={styles.mainContent}>{children}</div>
+			{children}
 		</div>
 	);
 }

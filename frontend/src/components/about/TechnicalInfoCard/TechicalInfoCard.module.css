@@ -1,0 +1,97 @@
+.techInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.commitSection {
+	padding: 16px;
+	background-color: #2a282e;
+	border-radius: 8px;
+	border: 1px solid #1c1a1f;
+}
+
+.commitHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.label {
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.copyButton {
+	padding: 6px 12px;
+	font-size: 0.75rem;
+}
+
+.copyIcon {
+	width: 12px;
+	height: 12px;
+}
+
+.commitHash {
+	font-family: 'Courier New', monospace;
+	font-size: 1rem;
+	color: #737d86;
+	background-color: #1c1a1f;
+	padding: 12px;
+	border-radius: 6px;
+	border: 1px solid #1c1a1f;
+	letter-spacing: 0.05em;
+	word-break: break-all;
+}
+
+.commitDescription {
+	font-size: 0.75rem;
+	color: #6b7280;
+	margin-top: 8px;
+}
+
+.buildInfo {
+	padding: 16px;
+	background-color: #2a282e;
+	border-radius: 8px;
+	border: 1px solid #2a282e;
+}
+
+.sectionTitle {
+	font-size: 0.875rem;
+	font-weight: 600;
+
+	margin: 0 0 12px 0;
+}
+
+.buildDetails {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 8px;
+}
+
+@media (min-width: 768px) {
+	.buildDetails {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.buildItem {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid #1c1a1f;
+}
+
+.buildLabel {
+	font-size: 0.875rem;
+}
+
+.buildValue {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #737d86;
+	font-family: 'Courier New', monospace;
+}
