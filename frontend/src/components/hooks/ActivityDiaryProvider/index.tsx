@@ -83,6 +83,25 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
+	const duplicateDiaryMutation = useMutation({
+		mutationFn: async (diaryId: number): Promise<ActivityDiaryData> => {
+			const response = await apiBase.post<ActivityDiaryData>('/diary/copy', {
+				ID: diaryId,
+			});
+			return response.data;
+		},
+		onSuccess: (data) => {
+			setMessage({ text: 'Atividade duplicada com sucesso!', type: 'success' });
+			console.log('Diário criado:', data);
+			refetchList();
+			refetchSummary();
+		},
+		onError: (error) => {
+			setMessage({ text: 'Erro ao duplicar atividade.', type: 'error' });
+			console.error('Erro ao criar diário:', error);
+		},
+	});
+
 	useEffect(() => {
 		const timer = setInterval(() => {
 			setCurrentTime(new Date());
@@ -143,6 +162,10 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		[currentTime]
 	);
 
+	const copyActivity = (activity: ActivityDiaryData) => {
+		duplicateDiaryMutation.mutate(activity.id);
+	};
+
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
 			form: formData,
@@ -158,6 +181,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			getCurrentDuration,
 			error: error?.message || summaryError?.message,
 			currentTime,
+			copyActivity,
 		}),
 		[
 			error?.message,
@@ -169,6 +193,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			diaryData,
 			summaryData,
 			currentTime,
+			copyActivity,
 		]
 	);
 

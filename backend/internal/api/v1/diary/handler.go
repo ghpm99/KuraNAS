@@ -40,6 +40,23 @@ func (handler *Handler) CreateDiaryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, diaryResult)
 }
 
+func (handler *Handler) DuplicateDiaryHandler(c *gin.Context) {
+	var diaryId DiaryId
+
+	if err := c.ShouldBindJSON(&diaryId); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	diaryDto, err := handler.service.DuplicateDiary(diaryId.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, diaryDto)
+}
+
 func (handler *Handler) GetDiaryHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)

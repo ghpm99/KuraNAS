@@ -9,4 +9,5 @@
 	grid-area: content-container;
 	gap: 16px;
 	padding: 16px;
+	overflow: auto;
 }
