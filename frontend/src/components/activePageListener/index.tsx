@@ -6,6 +6,7 @@ const routeToPageMap: Record<string, pages> = {
 	'/': 'files',
 	'/activity-diary': 'activity',
 	'/analytics': 'analytics',
+	'/about': 'about',
 };
 
 const ActivePageListener = () => {

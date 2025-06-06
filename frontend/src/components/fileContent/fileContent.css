@@ -7,7 +7,7 @@
 	display: grid;
 	grid-template-columns: repeat(1, 1fr);
 	gap: 24px;
-	max-height: 960px;
+	max-height: calc(100vh - 295px);
 	overflow: auto;
 }
 
