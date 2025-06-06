@@ -162,9 +162,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		[currentTime]
 	);
 
-	const copyActivity = (activity: ActivityDiaryData) => {
-		duplicateDiaryMutation.mutate(activity.id);
-	};
+	const copyActivity = useCallback(
+		(activity: ActivityDiaryData) => {
+			duplicateDiaryMutation.mutate(activity.id);
+		},
+		[duplicateDiaryMutation]
+	);
 
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({

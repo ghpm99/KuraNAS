@@ -7,4 +7,5 @@
 		'tabs sidebar'
 		'content  sidebar';
 	grid-area: content-container;
+	max-height: calc(100vh - 80px);
 }
