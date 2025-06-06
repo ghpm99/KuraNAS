@@ -2,13 +2,16 @@
 
 import { Info, LayoutGrid } from 'lucide-react';
 
+import { useUI } from '@/components/hooks/UI/uiContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import styles from './Sidebar.module.css';
 
-export default function Sidebar() {
+const Sidebar = () => {
 	const { t } = useI18n();
+	const { activePage } = useUI();
+	console.log('Sidebar', activePage);
 
 	return (
 		<div className={styles.sidebar}>
@@ -48,8 +51,10 @@ export default function Sidebar() {
 				<NavItem href='/about' icon={<Info className='icon' />}>
 					Sobre
 				</NavItem>
-				<FolderTree />
+				{activePage === 'files' && <FolderTree />}
 			</nav>
 		</div>
 	);
-}
+};
+
+export default Sidebar;
