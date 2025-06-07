@@ -7,9 +7,12 @@ export interface AboutContextType {
 	path: string;
 	lang: string;
 	enable_workers: boolean;
+	uptime: string;
 	statup_time: string;
 	gin_mode: string;
 	gin_version: string;
+	go_version: string;
+	node_version: string;
 }
 
 export const AboutContext = createContext<AboutContextType | undefined>(undefined);

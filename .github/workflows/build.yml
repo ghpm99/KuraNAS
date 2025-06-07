@@ -112,7 +112,7 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
-          go build -ldflags "-X 'api.Version=${{ github.ref_name }}' -X 'api.CommitHash=${{ github.sha }}'" -tags=linux -o kuranas ./cmd/nas/main.go
+          go build -ldflags "-X 'api.Version=${{ github.ref_name }}' -X 'api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=linux -o kuranas ./cmd/nas/main.go
 
       - name: Prepare build directory
         run: |
@@ -167,7 +167,7 @@ jobs:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
-        run: go build -ldflags "-X 'api.Version=${{ github.ref_name }}' -X 'api.CommitHash=${{ github.sha }}'" -tags=windows -o kuranas.exe ./cmd/nas/main.go
+        run: go build -ldflags "-X 'api.Version=${{ github.ref_name }}' -X 'api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=windows -o kuranas.exe ./cmd/nas/main.go
 
       - name: Prepare build directory
         shell: bash

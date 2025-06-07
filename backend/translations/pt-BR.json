@@ -24,5 +24,15 @@
 	"FOLDER": "Pasta",
 	"ITEM": "Item",
 	"ITENS": "Itens",
-	"ACTIVITY_DIARY": "Diário de Atividades"
+	"ACTIVITY_DIARY": "Diário de Atividades",
+	"ENABLED_WORKERS_DESCRIPTION": "Processamento em background ativo",
+	"DISABLED_WORKERS_DESCRIPTION": "Processamento em background inativo",
+	"ENABLED_WORKERS": "Habilitados",
+	"DISABLED_WORKERS": "Desabilitados",
+	"STATUS_SYSTEM_TITLE": "Status do Sistema",
+	"WORKERS": "Workers",
+	"WATCH_PATH": "Pasta Monitorada",
+	"WATCH_PATH_DESCRIPTION": "Monitorando alterações em arquivos",
+	"UPTIME": "Tempo de Execução",
+	"UPTIME_DESCRIPTION": "Tempo desde a última inicialização"
 }
