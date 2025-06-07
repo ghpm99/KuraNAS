@@ -31,5 +31,7 @@ func GetAboutHandler(c *gin.Context) {
 		"statup_time":    config.AppConfig.StartupTime.Format("2006-01-02 15:04:05"),
 		"gin_mode":       gin.Mode(),
 		"gin_version":    gin.Version,
+		"go_version":     api.GoVersion,
+		"node_version":   api.NodeVersion,
 	})
 }
