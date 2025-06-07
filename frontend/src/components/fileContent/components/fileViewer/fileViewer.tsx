@@ -1,8 +1,10 @@
 import { FileData } from '@/components/hooks/fileProvider/fileContext';
 import { getFileTypeInfo } from '@/utils';
 import './fileViewer.css';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const FileViewer = ({ file }: { file: FileData }) => {
+	const { t } = useI18n();
 	const blobUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/blob/${id}`;
 	const fileType = getFileTypeInfo(file.format);
 	if (fileType.type === 'image') {
@@ -13,7 +15,7 @@ const FileViewer = ({ file }: { file: FileData }) => {
 		return (
 			<audio controls>
 				<source src={blobUrl(file.id)} type={fileType.mime} />
-				Your browser does not support the audio element.
+				{t('AUDIO_NOT_SUPPORTED')}
 			</audio>
 		);
 	}
@@ -33,12 +35,16 @@ const FileViewer = ({ file }: { file: FileData }) => {
 	if (fileType.type === 'archive') {
 		return (
 			<a className='download-file' href={blobUrl(file.id)} download={file.name}>
-				Baixar {file.name}
+				{t('DOWNLOAD_FILE', { fileName: file.name })}
 			</a>
 		);
 	}
 
-	return <p>Formato de arquivo não suportado: {fileType.description}</p>;
+	return (
+		<p>
+			{t('UNSUPPORTED_FILE_FORMAT')} {t(fileType.description)}
+		</p>
+	);
 };
 
 export default FileViewer;

@@ -54,11 +54,11 @@ export const ActionBar = () => {
 				</button>
 				<button className='secondary-button'>
 					<Download className='icon' />
-					Download
+					{t('DOWNLOAD')}
 				</button>
 				<button className='primary-button'>
 					<Share2 className='icon' />
-					Share
+					{t('SHARE')}
 				</button>
 				<button className='icon-button'>
 					<MoreHorizontal className='icon' />

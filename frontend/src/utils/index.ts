@@ -59,42 +59,42 @@ type formatType = { type: 'image' | 'audio' | 'video' | 'document' | 'archive'; 
 export const getFileTypeInfo = (format: string): formatType => {
 	const fileTypes: Record<string, formatType> = {
 		// Imagens
-		'.jpg': { type: 'image', mime: 'image/jpeg', description: 'Imagem JPEG' },
-		'.jpeg': { type: 'image', mime: 'image/jpeg', description: 'Imagem JPEG' },
-		'.png': { type: 'image', mime: 'image/png', description: 'Imagem PNG' },
-		'.gif': { type: 'image', mime: 'image/gif', description: 'Imagem GIF' },
-		'.bmp': { type: 'image', mime: 'image/bmp', description: 'Imagem BMP' },
-		'.svg': { type: 'image', mime: 'image/svg+xml', description: 'Imagem SVG' },
-		'.webp': { type: 'image', mime: 'image/webp', description: 'Imagem WebP' },
+		'.jpg': { type: 'image', mime: 'image/jpeg', description: 'IMAGE_JPEG' },
+		'.jpeg': { type: 'image', mime: 'image/jpeg', description: 'IMAGE_JPEG' },
+		'.png': { type: 'image', mime: 'image/png', description: 'IMAGE_PNG' },
+		'.gif': { type: 'image', mime: 'image/gif', description: 'IMAGE_GIF' },
+		'.bmp': { type: 'image', mime: 'image/bmp', description: 'IMAGE_BMP' },
+		'.svg': { type: 'image', mime: 'image/svg+xml', description: 'IMAGE_SVG' },
+		'.webp': { type: 'image', mime: 'image/webp', description: 'IMAGE_WEBP' },
 
 		// Áudios
-		'.mp3': { type: 'audio', mime: 'audio/mpeg', description: 'Áudio MP3' },
-		'.wav': { type: 'audio', mime: 'audio/wav', description: 'Áudio WAV' },
-		'.aac': { type: 'audio', mime: 'audio/aac', description: 'Áudio AAC' },
-		'.flac': { type: 'audio', mime: 'audio/flac', description: 'Áudio FLAC' },
+		'.mp3': { type: 'audio', mime: 'audio/mpeg', description: 'AUDIO_MP3' },
+		'.wav': { type: 'audio', mime: 'audio/wav', description: 'AUDIO_WAV' },
+		'.aac': { type: 'audio', mime: 'audio/aac', description: 'AUDIO_AAC' },
+		'.flac': { type: 'audio', mime: 'audio/flac', description: 'AUDIO_FLAC' },
 
 		// Vídeos
-		'.mp4': { type: 'video', mime: 'video/mp4', description: 'Vídeo MP4' },
-		'.webm': { type: 'video', mime: 'video/webm', description: 'Vídeo WebM' },
-		'.ogg': { type: 'video', mime: 'video/ogg', description: 'Vídeo OGG' },
-		'.mov': { type: 'video', mime: 'video/quicktime', description: 'Vídeo MOV' },
+		'.mp4': { type: 'video', mime: 'video/mp4', description: 'VIDEO_MP4' },
+		'.webm': { type: 'video', mime: 'video/webm', description: 'VIDEO_WEBM' },
+		'.ogg': { type: 'video', mime: 'video/ogg', description: 'VIDEO_OGG' },
+		'.mov': { type: 'video', mime: 'video/quicktime', description: 'VIDEO_MOV' },
 
 		// Documentos
-		'.pdf': { type: 'document', mime: 'application/pdf', description: 'Documento PDF' },
-		'.txt': { type: 'document', mime: 'text/plain', description: 'Texto simples' },
-		'.html': { type: 'document', mime: 'text/html', description: 'Documento HTML' },
-		'.htm': { type: 'document', mime: 'text/html', description: 'Documento HTML' },
-		'.xml': { type: 'document', mime: 'application/xml', description: 'Documento XML' },
-		'.json': { type: 'document', mime: 'application/json', description: 'Documento JSON' },
-		'.csv': { type: 'document', mime: 'text/csv', description: 'Documento CSV' },
+		'.pdf': { type: 'document', mime: 'application/pdf', description: 'DOCUMENT_PDF' },
+		'.txt': { type: 'document', mime: 'text/plain', description: 'DOCUMENT_TXT' },
+		'.html': { type: 'document', mime: 'text/html', description: 'DOCUMENT_HTML' },
+		'.htm': { type: 'document', mime: 'text/html', description: 'DOCUMENT_HTML' },
+		'.xml': { type: 'document', mime: 'application/xml', description: 'DOCUMENT_XML' },
+		'.json': { type: 'document', mime: 'application/json', description: 'DOCUMENT_JSON' },
+		'.csv': { type: 'document', mime: 'text/csv', description: 'DOCUMENT_CSV' },
 
 		// Outros
-		'.zip': { type: 'archive', mime: 'application/zip', description: 'Arquivo ZIP' },
-		'.rar': { type: 'archive', mime: 'application/vnd.rar', description: 'Arquivo RAR' },
-		'.7z': { type: 'archive', mime: 'application/x-7z-compressed', description: 'Arquivo 7z' },
-		'.tar': { type: 'archive', mime: 'application/x-tar', description: 'Arquivo TAR' },
-		'.gz': { type: 'archive', mime: 'application/gzip', description: 'Arquivo GZIP' },
+		'.zip': { type: 'archive', mime: 'application/zip', description: 'ARCHIVE_ZIP' },
+		'.rar': { type: 'archive', mime: 'application/vnd.rar', description: 'ARCHIVE_RAR' },
+		'.7z': { type: 'archive', mime: 'application/x-7z-compressed', description: 'ARCHIVE_7Z' },
+		'.tar': { type: 'archive', mime: 'application/x-tar', description: 'ARCHIVE_TAR' },
+		'.gz': { type: 'archive', mime: 'application/gzip', description: 'ARCHIVE_GZIP' },
 	};
 
-	return fileTypes[format.toLowerCase()] || { type: 'unknown', mime: '', description: 'Formato desconhecido' };
+	return fileTypes[format.toLowerCase()] || { type: 'unknown', mime: '', description: 'UNKNOWN_FORMAT' };
 };
