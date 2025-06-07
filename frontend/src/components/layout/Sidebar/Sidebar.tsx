@@ -46,10 +46,10 @@ const Sidebar = () => {
 						</svg>
 					}
 				>
-					Analytics
+					{t('ANALYTICS')}
 				</NavItem>
 				<NavItem href='/about' icon={<Info className='icon' />}>
-					Sobre
+					{t('ABOUT')}
 				</NavItem>
 				{activePage === 'files' && <FolderTree />}
 			</nav>
