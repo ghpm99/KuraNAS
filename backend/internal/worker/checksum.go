@@ -22,13 +22,14 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string) {
 		return
 	}
 
-	err = fileDto.GetCheckSumFromFile()
+	checkSumHash, err := fileDto.GetCheckSumFromFile()
 
 	if err != nil {
 		fmt.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
 		return
 	}
 
+	fileDto.CheckSum = checkSumHash
 	result, err := service.UpdateFile(fileDto)
 
 	if err != nil || !result {
@@ -36,5 +37,5 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string) {
 		return
 	}
 
-	fmt.Printf("✅ Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
+	fmt.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
 }

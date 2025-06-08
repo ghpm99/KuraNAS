@@ -8,6 +8,7 @@ import (
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
+	"strconv"
 )
 
 type Service struct {
@@ -155,6 +156,14 @@ func (s *Service) ScanDirTask(data string) {
 	task := utils.Task{
 		Type: utils.ScanDir,
 		Data: data,
+	}
+	s.Tasks <- task
+}
+
+func (s *Service) UpdateCheckSumTask(fileId int) {
+	task := utils.Task{
+		Type: utils.UpdateCheckSum,
+		Data: strconv.Itoa(fileId),
 	}
 	s.Tasks <- task
 }

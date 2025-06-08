@@ -22,5 +22,6 @@ type ServiceInterface interface {
 	UpdateFile(file FileDto) (result bool, err error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
+	UpdateCheckSumTask(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 }
