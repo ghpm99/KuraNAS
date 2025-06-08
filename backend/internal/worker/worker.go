@@ -34,7 +34,7 @@ func startWorkersScheduler(context *WorkerContext) {
 			Data: "Escaneamento de arquivos",
 		}
 		fmt.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
-		time.Sleep(12 * time.Hour) // ⏳ Roda a cada 10 horas
+		time.Sleep(12 * time.Hour)
 	}
 }
 
@@ -42,10 +42,15 @@ func worker(id int, context *WorkerContext) {
 	for task := range context.Tasks {
 		fmt.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
 
-		if task.Type == utils.ScanFiles {
+		switch task.Type {
+		case utils.ScanFiles:
 			ScanFilesWorker(context.Service)
-		} else if task.Type == utils.ScanDir {
+		case utils.ScanDir:
 			ScanDirWorker(context.Service, task.Data)
+		case utils.UpdateCheckSum:
+			UpdateCheckSumWorker(context.Service, task.Data)
+		default:
+			fmt.Println("Tipo de tarefa desconhecido")
 		}
 		fmt.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}
