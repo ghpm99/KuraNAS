@@ -55,6 +55,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 				return fail(path, err)
 			}
 			i18n.PrintTranslate("FILE_UPDATE_SUCCESS", fileDto.ID)
+			service.UpdateCheckSumTask(fileDto.ID)
 			return nil
 		} else {
 			fileDto.Path = path
@@ -67,6 +68,7 @@ func ScanFilesWorker(service files.ServiceInterface) {
 			return fail(path, err)
 		}
 		i18n.PrintTranslate("FILE_CREATE_SUCCESS", fileCreated.ID)
+		service.UpdateCheckSumTask(fileCreated.ID)
 		return nil
 	})
 

@@ -141,11 +141,11 @@ type FileFilter struct {
 	DeletedAt  utils.Optional[time.Time]
 }
 
-func (fileDto *FileDto) GetCheckSumFromFile() error {
+func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {
 	file, err := os.Open(fileDto.Path)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer file.Close()
@@ -153,13 +153,11 @@ func (fileDto *FileDto) GetCheckSumFromFile() error {
 	h := sha256.New()
 
 	if _, err := io.Copy(h, file); err != nil {
-		return err
+		return "", err
 	}
 
 	checkSumBytes := h.Sum(nil)
 	checkSumString := fmt.Sprintf("%x", checkSumBytes)
 
-	fmt.Printf("Check sum %s, tamanho %d\n", checkSumString, len(checkSumString))
-
-	return nil
+	return checkSumString, nil
 }
