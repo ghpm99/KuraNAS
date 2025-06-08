@@ -3,7 +3,6 @@ package files
 import (
 	"crypto/sha256"
 	"database/sql"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -63,12 +62,9 @@ func (i *FileDto) ToModel() (FileModel, error) {
 	return fileModel, nil
 }
 
-func (fileModel *FileModel) getCheckSumFromFile() error {
+func (fileModel *FileModel) GetCheckSumFromFile() error {
 	file, err := os.Open(fileModel.Path)
 
-	if fileModel.Size > (1 * 1024 * 1024 * 1024) {
-		return errors.New("arquivo muito grande")
-	}
 	if err != nil {
 		return err
 	}
