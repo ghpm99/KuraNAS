@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
 	"time"
 )
 
 type WorkerContext struct {
-	Tasks      chan utils.Task
-	Service    files.ServiceInterface
-	Repository files.RepositoryInterface
+	Tasks   chan utils.Task
+	Service files.ServiceInterface
+	Logger  logger.LoggerServiceInterface
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -44,7 +45,7 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			ScanFilesWorker(context.Service)
+			ScanFilesWorker(context.Service, context.Logger)
 		case utils.ScanDir:
 			ScanDirWorker(context.Service, task.Data)
 		case utils.UpdateCheckSum:
