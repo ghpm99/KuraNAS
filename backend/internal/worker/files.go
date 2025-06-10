@@ -7,21 +7,25 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
 	"time"
 )
 
-func ScanFilesWorker(service files.ServiceInterface) {
+func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerServiceInterface) {
 	i18n.LogTranslate("SCAN_FILES_START")
+	Logger.CreateLog(logger.LoggerModel{
+		Name:        "ScanFilesWorker",
+		Description: i18n.GetMessage("SCAN_FILES_START"),
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+	}, nil)
 
 	fail := func(path string, err error) error {
-		msg, ok := i18n.GetMessage("ERROR_GET_FILE")
-		if ok {
-			return fmt.Errorf(msg, path, err)
-		}
-		return err
+		msg := i18n.GetMessage("ERROR_GET_FILE")
+		return fmt.Errorf(msg, path, err)
 	}
 
 	err := filepath.Walk(config.AppConfig.EntryPoint, func(path string, info os.FileInfo, err error) error {

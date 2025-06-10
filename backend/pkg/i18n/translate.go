@@ -40,17 +40,17 @@ func LoadTranslations() error {
 	return decoder.Decode(&translations)
 }
 
-func GetMessage(key string) (string, bool) {
+func GetMessage(key string) string {
 	if msg, ok := translations[key]; ok {
-		return msg, ok
+		return msg
 	}
 
-	return key, false
+	return key
 }
 
 func Translate(key string, args ...any) string {
-	msg, ok := GetMessage(key)
-	if ok {
+	msg := GetMessage(key)
+	if msg != key && len(args) > 0 {
 		return fmt.Sprintf(msg, args...)
 	}
 

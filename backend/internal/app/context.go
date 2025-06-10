@@ -4,16 +4,18 @@ import (
 	"database/sql"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
 
 var tasks = make(chan utils.Task, 100)
 
 type AppContext struct {
-	DB    *sql.DB
-	Tasks *chan utils.Task
-	Files *FileContext
-	Diary *DiaryContext
+	DB     *sql.DB
+	Logger logger.LoggerServiceInterface
+	Tasks  *chan utils.Task
+	Files  *FileContext
+	Diary  *DiaryContext
 }
 
 type FileContext struct {
@@ -29,20 +31,22 @@ type DiaryContext struct {
 }
 
 func NewContext(db *sql.DB) *AppContext {
-	fileContext := newFileContext(db)
+	LoggerService := logger.NewLoggerService(logger.NewLoggerRepository(db))
+	fileContext := newFileContext(db, LoggerService)
 	diaryContext := newDiaryContext(db)
 	context := &AppContext{
-		DB:    db,
-		Tasks: &tasks,
-		Files: fileContext,
-		Diary: diaryContext,
+		DB:     db,
+		Logger: LoggerService,
+		Tasks:  &tasks,
+		Files:  fileContext,
+		Diary:  diaryContext,
 	}
 	return context
 }
 
-func newFileContext(db *sql.DB) *FileContext {
+func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileContext {
 	repository := files.NewRepository(db)
-	service := files.NewService(repository, tasks)
+	service := files.NewService(repository, tasks, logger)
 	handler := files.NewHandler(service)
 	return &FileContext{
 		Handler:    handler,
