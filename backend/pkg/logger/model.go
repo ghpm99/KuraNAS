@@ -2,6 +2,7 @@ package logger
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -23,6 +24,11 @@ const (
 	LogStatusFailed    LogStatus = "FAILED"
 )
 
+type LogExtraData struct {
+	Data  any    `json:"data,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
 type LoggerModel struct {
 	ID          int            `json:"id"`
 	Name        string         `json:"name"`
@@ -36,4 +42,23 @@ type LoggerModel struct {
 	DeletedAt   sql.NullTime   `json:"deleted_at,omitempty"`
 	Status      LogStatus      `json:"status"`
 	ExtraData   sql.NullString `json:"extra_data,omitempty"`
+}
+
+func (loggerModel *LoggerModel) SetExtraData(extraData LogExtraData) error {
+
+	if extraData.Data == nil && loggerModel.ExtraData.Valid {
+		var existingData LogExtraData
+		if err := json.Unmarshal([]byte(loggerModel.ExtraData.String), &existingData); err == nil {
+			extraData.Data = existingData.Data
+		}
+	}
+
+	if jsonBytes, err := json.Marshal(extraData); err == nil {
+		loggerModel.ExtraData = sql.NullString{String: string(jsonBytes), Valid: true}
+	} else {
+		loggerModel.ExtraData = sql.NullString{Valid: false}
+		return err
+	}
+
+	return nil
 }

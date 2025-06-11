@@ -3,7 +3,6 @@ package logger
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"time"
 )
 
@@ -20,15 +19,10 @@ func (s *LoggerService) CreateLog(log LoggerModel, object interface{}) (LoggerMo
 	log.StartTime = time.Now()
 	log.UpdatedAt = time.Now()
 
-	if object != nil {
-		if jsonBytes, err := json.Marshal(object); err == nil {
-			log.ExtraData = sql.NullString{String: string(jsonBytes), Valid: true}
-		} else {
-			log.ExtraData = sql.NullString{Valid: false}
-		}
-	} else {
-		log.ExtraData = sql.NullString{Valid: false}
-	}
+	log.SetExtraData(LogExtraData{
+		Data:  object,
+		Error: "",
+	})
 
 	return s.withTransaction(func(tx *sql.Tx) (LoggerModel, error) {
 		return s.Repository.CreateLog(tx, log)
@@ -50,9 +44,20 @@ func (s *LoggerService) UpdateLog(log LoggerModel) (bool, error) {
 	})
 }
 
-func (s *LoggerService) CompleteLog(log LoggerModel) (bool, error) {
+func (s *LoggerService) CompleteWithSuccessLog(log LoggerModel) (bool, error) {
 	log.EndTime = sql.NullTime{Time: time.Now(), Valid: true}
 	log.Status = LogStatusCompleted
+
+	return s.UpdateLog(log)
+}
+
+func (s *LoggerService) CompleteWithErrorLog(log LoggerModel, err error) (bool, error) {
+	log.EndTime = sql.NullTime{Time: time.Now(), Valid: true}
+	log.Status = LogStatusFailed
+
+	log.SetExtraData(LogExtraData{
+		Error: err.Error(),
+	})
 
 	return s.UpdateLog(log)
 

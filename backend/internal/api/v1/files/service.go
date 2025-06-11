@@ -7,7 +7,6 @@ import (
 	"image"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
-	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"strconv"
 )
@@ -15,11 +14,10 @@ import (
 type Service struct {
 	Repository RepositoryInterface
 	Tasks      chan utils.Task
-	Logger     logger.LoggerServiceInterface
 }
 
-func NewService(repository RepositoryInterface, tasksChannel chan utils.Task, loggerService logger.LoggerServiceInterface) ServiceInterface {
-	return &Service{Repository: repository, Tasks: tasksChannel, Logger: loggerService}
+func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
+	return &Service{Repository: repository, Tasks: tasksChannel}
 }
 
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
@@ -44,13 +42,6 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 
 func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 
-	loggerModel, _ := s.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetFiles",
-		Description: "Fetching files with filter",
-		Level:       logger.LogLevelInfo,
-		Status:      logger.LogStatusPending,
-	}, filter)
-
 	filesModel, err := s.Repository.GetFiles(filter, page, pageSize)
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
@@ -68,7 +59,6 @@ func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.Pag
 		}
 	}
 
-	s.Logger.CompleteLog(loggerModel)
 	return paginationResponse, nil
 
 }

@@ -17,5 +17,6 @@ type LoggerServiceInterface interface {
 	GetLogByID(id int) (LoggerModel, error)
 	GetLogs(page, pageSize int) ([]LoggerModel, error)
 	UpdateLog(log LoggerModel) (bool, error)
-	CompleteLog(log LoggerModel) (bool, error)
+	CompleteWithSuccessLog(log LoggerModel) (bool, error)
+	CompleteWithErrorLog(log LoggerModel, err error) (bool, error)
 }

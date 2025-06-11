@@ -49,7 +49,7 @@ func InitializeApp() (*Application, error) {
 		Logger:  appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 2)
+	worker.StartWorkers(workerFileContext, 16)
 
 	return &Application{
 		Router:  router,
