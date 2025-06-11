@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
 
@@ -18,15 +19,24 @@ import (
 
 type Handler struct {
 	service ServiceInterface
+	Logger  logger.LoggerServiceInterface
 }
 
-func NewHandler(financialService ServiceInterface) *Handler {
+func NewHandler(financialService ServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
 	return &Handler{
 		service: financialService,
+		Logger:  loggerService,
 	}
 }
 
 func (handler *Handler) GetFilesHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetFiles",
+		Description: "Fetching files with filter",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
 
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
@@ -40,50 +50,89 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 		},
 	}
 
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: filter,
+	})
+
 	pagination, err := handler.service.GetFiles(filter, page, pageSize)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, pagination)
 }
 
 func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetFilesByPath",
+		Description: "Fetching files by path",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
 	path := c.DefaultQuery("path", config.AppConfig.EntryPoint)
 
-	pagination, err := handler.service.GetFiles(FileFilter{
+	filter := FileFilter{
 		Path: utils.Optional[string]{
 			HasValue: true,
 			Value:    path,
 		},
-	}, page, pageSize)
+	}
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: filter,
+	})
+
+	pagination, err := handler.service.GetFiles(filter, page, pageSize)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, pagination)
 }
 
 func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetChildrenById",
+		Description: "Fetching files by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 	id := utils.ParseInt(c.Param("id"), c)
 
-	file, err := handler.service.GetFiles(FileFilter{
+	filter := FileFilter{
 		ID: utils.Optional[int]{
 			HasValue: true,
 			Value:    id,
 		},
-	}, page, pageSize)
+	}
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: filter,
+	})
+
+	file, err := handler.service.GetFiles(filter, page, pageSize)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -96,24 +145,50 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 	}, page, pageSize)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, pagination)
 }
 
 func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "UpdateFiles",
+		Description: "Updating files with data",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	data := c.PostForm("data")
 	fmt.Println("📁 Recebendo dados para processamento:", data)
+
 	if data == "" {
+		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
 		return
 	}
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: data,
+	})
 	handler.service.ScanFilesTask(data)
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 }
 
 func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetFilesThree",
+		Description: "Fetching files with filter",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
@@ -128,6 +203,7 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 	if fileParentId != 0 {
 		fileParent, err := handler.service.GetFileById(fileParentId)
 		if err != nil {
+			handler.Logger.CompleteWithErrorLog(loggerModel, err)
 			fmt.Println("Error getting file by ID:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -145,22 +221,42 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 		}
 	}
 
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: fileFilter,
+	})
+
 	pagination, err := handler.service.GetFiles(fileFilter, page, pageSize)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, pagination)
 }
 
 func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetFileThumbnail",
+		Description: "Fetching file thumbnail by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	id := utils.ParseInt(c.Param("id"), c)
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: id,
+	})
 
 	file, err := handler.service.GetFileById(id)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
 		return
 	}
@@ -168,6 +264,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	thumbnail, err := handler.service.GetFileThumbnail(file, 320)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
 		return
 	}
@@ -175,19 +272,35 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	var buf bytes.Buffer
 	err = png.Encode(&buf, thumbnail)
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error3": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.Data(http.StatusOK, "image/png", buf.Bytes())
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetBlobFile",
+		Description: "Fetching file by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
 	id := utils.ParseInt(c.Param("id"), c)
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: id,
+	})
 
 	file, err := handler.service.GetFileById(id)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
 		return
 	}
@@ -195,9 +308,11 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 	data, err := os.ReadFile(file.Path)
 
 	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
 		return
 	}
 
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(file.Format)), data)
 }

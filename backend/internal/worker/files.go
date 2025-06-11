@@ -16,7 +16,7 @@ import (
 
 func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerServiceInterface) {
 	i18n.LogTranslate("SCAN_FILES_START")
-	Logger.CreateLog(logger.LoggerModel{
+	logger, _ := Logger.CreateLog(logger.LoggerModel{
 		Name:        "ScanFilesWorker",
 		Description: i18n.GetMessage("SCAN_FILES_START"),
 		Level:       logger.LogLevelInfo,
@@ -24,6 +24,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 	}, nil)
 
 	fail := func(path string, err error) error {
+		Logger.CompleteWithErrorLog(logger, err)
 		msg := i18n.GetMessage("ERROR_GET_FILE")
 		return fmt.Errorf(msg, path, err)
 	}
@@ -83,6 +84,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 	}
 
 	findFilesDeleted(service)
+	Logger.CompleteWithSuccessLog(logger)
 }
 
 func fileExists(path string) bool {

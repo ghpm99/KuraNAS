@@ -45,11 +45,11 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			ScanFilesWorker(context.Service, context.Logger)
+			go ScanFilesWorker(context.Service, context.Logger)
 		case utils.ScanDir:
-			ScanDirWorker(context.Service, task.Data)
+			go ScanDirWorker(context.Service, task.Data)
 		case utils.UpdateCheckSum:
-			UpdateCheckSumWorker(context.Service, task.Data)
+			go UpdateCheckSumWorker(context.Service, task.Data, context.Logger)
 		default:
 			fmt.Println("Tipo de tarefa desconhecido")
 		}
