@@ -1,7 +1,6 @@
 package app
 
 import (
-	"nas-go/api/internal/api/v1/configuration"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -47,8 +46,8 @@ func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations := router.Group("/configuration")
 
-	configurations.GET("/translation", configuration.GetTranslationJson)
-	configurations.GET("/about", configuration.GetAboutHandler)
+	configurations.GET("/translation", context.ConfigurationHandler.GetTranslationJson)
+	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {

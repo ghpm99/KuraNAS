@@ -44,12 +44,12 @@ func InitializeApp() (*Application, error) {
 	RegisterRoutes(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
-		Service:    appContext.Files.Service,
-		Repository: appContext.Files.Repository,
-		Tasks:      *appContext.Tasks,
+		Service: appContext.Files.Service,
+		Tasks:   *appContext.Tasks,
+		Logger:  appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 2)
+	worker.StartWorkers(workerFileContext, 16)
 
 	return &Application{
 		Router:  router,

@@ -1,6 +1,9 @@
 package files
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"io"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
@@ -136,4 +139,25 @@ type FileFilter struct {
 	Type       utils.Optional[FileType]
 	FileParent utils.Optional[int]
 	DeletedAt  utils.Optional[time.Time]
+}
+
+func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {
+	file, err := os.Open(fileDto.Path)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	h := sha256.New()
+
+	if _, err := io.Copy(h, file); err != nil {
+		return "", err
+	}
+
+	checkSumBytes := h.Sum(nil)
+	checkSumString := fmt.Sprintf("%x", checkSumBytes)
+
+	return checkSumString, nil
 }
