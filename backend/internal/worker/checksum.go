@@ -10,7 +10,7 @@ import (
 
 func UpdateCheckSumWorker(service files.ServiceInterface, data string, logService logger.LoggerServiceInterface) {
 
-	logger, _ := logService.CreateLog(logger.LoggerModel{
+	loggerModel, _ := logService.CreateLog(logger.LoggerModel{
 		Name:        "ScanFilesWorker",
 		Description: i18n.GetMessage("SCAN_FILES_START"),
 		Level:       logger.LogLevelInfo,
@@ -20,7 +20,7 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 	fileId, err := strconv.Atoi(data)
 
 	if err != nil {
-		logService.CompleteWithErrorLog(logger, err)
+		logService.CompleteWithErrorLog(loggerModel, err)
 		fmt.Printf("Erro ao converter ID do arquivo: %v\n", err)
 		return
 	}
@@ -28,7 +28,7 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 	fileDto, err := service.GetFileById(fileId)
 
 	if err != nil {
-		logService.CompleteWithErrorLog(logger, err)
+		logService.CompleteWithErrorLog(loggerModel, err)
 		fmt.Printf("Erro ao obter arquivo: %v\n", err)
 		return
 	}
@@ -36,7 +36,7 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 	checkSumHash, err := fileDto.GetCheckSumFromFile()
 
 	if err != nil {
-		logService.CompleteWithErrorLog(logger, err)
+		logService.CompleteWithErrorLog(loggerModel, err)
 		fmt.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
 		return
 	}
@@ -45,11 +45,11 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 	result, err := service.UpdateFile(fileDto)
 
 	if err != nil || !result {
-		logService.CompleteWithErrorLog(logger, err)
+		logService.CompleteWithErrorLog(loggerModel, err)
 		fmt.Printf("Erro ao atualizar arquivo: %v\n", err)
 		return
 	}
 
 	fmt.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
-	logService.CompleteWithSuccessLog(logger)
+	logService.CompleteWithSuccessLog(loggerModel)
 }
