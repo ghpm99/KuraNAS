@@ -104,7 +104,7 @@ func (handler *Handler) GetDiaryHandler(c *gin.Context) {
 	}, nil)
 
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "100"), c)
 
 	filter := DiaryFilter{}
 
