@@ -2,6 +2,7 @@ package files
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"nas-go/api/pkg/utils"
@@ -160,4 +161,18 @@ func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {
 	checkSumString := fmt.Sprintf("%x", checkSumBytes)
 
 	return checkSumString, nil
+}
+
+func (fileDto *FileDto) GetCheckSumFromPath(childrenChecksums []string) string {
+
+	hasher := sha256.New()
+	for _, h := range childrenChecksums {
+
+		bytes, err := hex.DecodeString(h)
+		if err != nil {
+			continue
+		}
+		hasher.Write(bytes)
+	}
+	return hex.EncodeToString(hasher.Sum(nil))
 }
