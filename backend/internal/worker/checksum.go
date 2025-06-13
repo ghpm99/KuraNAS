@@ -12,7 +12,7 @@ import (
 func UpdateCheckSumWorker(service files.ServiceInterface, data string, logService logger.LoggerServiceInterface) {
 
 	loggerModel, _ := logService.CreateLog(logger.LoggerModel{
-		Name:        "ScanFilesWorker",
+		Name:        "UpdateCheckSumWorker",
 		Description: i18n.GetMessage("SCAN_FILES_START"),
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
