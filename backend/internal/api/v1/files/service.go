@@ -8,6 +8,7 @@ import (
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
+	"os"
 	"strconv"
 )
 
@@ -197,4 +198,25 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, err
 		return icons.Icon()
 	}
 
+}
+
+func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
+
+	file, err := s.GetFileById(fileId)
+
+	if err != nil {
+		return FileBlob{}, err
+	}
+
+	data, err := os.ReadFile(file.Path)
+
+	if err != nil {
+		return FileBlob{}, err
+	}
+
+	return FileBlob{
+		ID:     file.ID,
+		Blob:   data,
+		Format: file.Format,
+	}, nil
 }

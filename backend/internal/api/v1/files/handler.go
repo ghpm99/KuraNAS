@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image/png"
 	"mime"
-	"os"
 	"strings"
 	"time"
 
@@ -297,7 +296,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		Data: id,
 	})
 
-	file, err := handler.service.GetFileById(id)
+	fileBlob, err := handler.service.GetFileBlobById(id)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -305,14 +304,6 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		return
 	}
 
-	data, err := os.ReadFile(file.Path)
-
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
-		return
-	}
-
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(file.Format)), data)
+	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(fileBlob.Format)), fileBlob.Blob)
 }

@@ -24,4 +24,5 @@ type ServiceInterface interface {
 	ScanDirTask(data string)
 	UpdateCheckSumTask(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
+	GetFileBlobById(fileId int) (FileBlob, error)
 }
