@@ -24,4 +24,20 @@ type ServiceInterface interface {
 	ScanDirTask(data string)
 	UpdateCheckSumTask(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
+	GetFileBlobById(fileId int) (FileBlob, error)
+}
+
+type RecentFileRepositoryInterface interface {
+	Upsert(ip string, fileID int) error
+	DeleteOld(ip string, keep int) error
+	GetRecentFiles(page int, pageSize int) ([]RecentFileModel, error)
+	Delete(ip string, fileID int) error
+	GetByFileID(fileID int) ([]RecentFileModel, error)
+}
+
+type RecentFileServiceInterface interface {
+	RegisterAccess(ip string, fileID int, keep int) error
+	GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error)
+	DeleteRecentFile(ip string, fileID int) error
+	GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error)
 }

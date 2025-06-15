@@ -3,7 +3,7 @@ import useFile from '../hooks/fileProvider/fileContext';
 import './fileDetails.css';
 import useI18n from '../i18n/provider/i18nContext';
 const FileDetails = () => {
-	const { selectedItem } = useFile();
+	const { selectedItem, isLoadingAccessData, recentAccessFiles } = useFile();
 	const { t } = useI18n();
 
 	if (!selectedItem || selectedItem.type === FileType.Directory) return <></>;
@@ -48,7 +48,20 @@ const FileDetails = () => {
 
 			<div className='details-section'>
 				<h3 className='section-title'>{t('RECENT_ACTIVITY')}</h3>
-				<ul className='activity-list'></ul>
+				{isLoadingAccessData ? (
+					<p className='loading-message'>{t('LOADING_RECENT_ACTIVITY')}</p>
+				) : (
+					<ul className='activity-list'>
+						{recentAccessFiles.map((access) =>
+							access.file_id !== selectedItem.id ? null : (
+								<li key={access.id} className='activity-item'>
+									<span className='activity-ip'>{access.ip_address}</span>
+									<span className='activity-date'>{formatDate(access.accessed_at)}</span>
+								</li>
+							)
+						)}
+					</ul>
+				)}
 			</div>
 		</div>
 	);

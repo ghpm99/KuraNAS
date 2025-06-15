@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image/png"
 	"mime"
-	"os"
 	"strings"
 	"time"
 
@@ -18,14 +17,20 @@ import (
 )
 
 type Handler struct {
-	service ServiceInterface
-	Logger  logger.LoggerServiceInterface
+	service           ServiceInterface
+	recentFileService RecentFileServiceInterface
+	Logger            logger.LoggerServiceInterface
 }
 
-func NewHandler(financialService ServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
+func NewHandler(
+	financialService ServiceInterface,
+	recentFileService RecentFileServiceInterface,
+	loggerService logger.LoggerServiceInterface,
+) *Handler {
 	return &Handler{
-		service: financialService,
-		Logger:  loggerService,
+		service:           financialService,
+		Logger:            loggerService,
+		recentFileService: recentFileService,
 	}
 }
 
@@ -297,7 +302,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		Data: id,
 	})
 
-	file, err := handler.service.GetFileById(id)
+	fileBlob, err := handler.service.GetFileBlobById(id)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -305,14 +310,59 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		return
 	}
 
-	data, err := os.ReadFile(file.Path)
+	handler.recentFileService.RegisterAccess(c.ClientIP(), fileBlob.ID, config.AppConfig.RecentFilesKeep)
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(fileBlob.Format)), fileBlob.Blob)
+}
+
+func (handler *Handler) GetRecentFilesHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetRecentFiles",
+		Description: "Fetching recent files",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	recentFiles, err := handler.recentFileService.GetRecentFiles(page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(file.Format)), data)
+	c.JSON(http.StatusOK, recentFiles)
+}
+
+func (handler *Handler) GetRecentAccessByFileHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetRecentAccessByFile",
+		Description: "Fetching recent access by file ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: id,
+	})
+
+	recentFiles, err := handler.recentFileService.GetRecentAccessByFileID(id)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, recentFiles)
 }

@@ -1,8 +1,9 @@
 import { apiBase } from '@/service';
 
+import { FileType } from '@/utils';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileContextProvider, FileContextType, FileData } from './fileContext';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { FileContextProvider, FileContextType, FileData, RecentAccessFile } from './fileContext';
 
 export type Pagination = {
 	hasNext: boolean;
@@ -18,8 +19,26 @@ export type PaginationResponse = {
 
 const pageSize = 200;
 
+const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
+	if (!itemId) return null;
+	for (const item of data) {
+		if (item.id === itemId) {
+			return item;
+		}
+		if (item?.file_children?.length > 0) {
+			const itemChildren = findItemInTree(item?.file_children, itemId);
+			if (itemChildren) {
+				return itemChildren;
+			}
+		}
+	}
+
+	return null;
+};
+
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 
@@ -48,6 +67,16 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
+	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
+		queryKey: ['files', 'tree', selectedItem],
+		queryFn: async () => {
+			if (selectedItem?.type !== FileType.File) return [];
+
+			const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${selectedItemId}`);
+			return response.data;
+		},
+	});
+
 	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children: FileData[]): FileData[] => {
 		return tree.map((node) => {
 			if (node.id === parentId) {
@@ -73,6 +102,15 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 	}, [data, selectedItemId, findAndAddChildren]);
 
+	useEffect(() => {
+		if (selectedItemId) {
+			const item = findItemInTree(fileTree, selectedItemId);
+			setSelectedItem(item);
+		} else {
+			setSelectedItem(null);
+		}
+	}, [fileTree, selectedItemId]);
+
 	const handleSelectItem = useCallback(
 		(itemId: number | null) => {
 			setSelectedItemId(itemId);
@@ -86,25 +124,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[expandedItems]
 	);
 
-	const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
-		if (!itemId) return null;
-		for (const item of data) {
-			if (item.id === itemId) {
-				return item;
-			}
-			if (item?.file_children?.length > 0) {
-				const itemChildren = findItemInTree(item?.file_children, itemId);
-				if (itemChildren) {
-					return itemChildren;
-				}
-			}
-		}
-
-		return null;
-	};
-
-	const selectedItem = findItemInTree(fileTree, selectedItemId);
-
 	const contextValue: FileContextType = useMemo(
 		() => ({
 			files: fileTree || [],
@@ -112,8 +131,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			selectedItem,
 			handleSelectItem,
 			expandedItems,
+			recentAccessFiles: fileAccessData || [],
+			isLoadingAccessData: isLoadingAccessData,
 		}),
-		[fileTree, status, selectedItem, handleSelectItem, expandedItems]
+		[fileTree, status, selectedItem, handleSelectItem, expandedItems, fileAccessData, isLoadingAccessData]
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };
