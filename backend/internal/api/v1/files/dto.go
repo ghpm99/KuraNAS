@@ -176,3 +176,33 @@ func (fileDto *FileDto) GetCheckSumFromPath(childrenChecksums []string) string {
 	}
 	return hex.EncodeToString(hasher.Sum(nil))
 }
+
+type FileBlob struct {
+	ID     int    `json:"id"`
+	Blob   []byte `json:"blob"`
+	Format string `json:"format"`
+}
+
+type RecentFileDto struct {
+	ID         int       `json:"id"`
+	IPAddress  string    `json:"ip_address"`
+	FileID     int       `json:"file_id"`
+	AccessedAt time.Time `json:"accessed_at"`
+}
+
+func (i *RecentFileDto) ToModel() RecentFileModel {
+	return RecentFileModel{
+		ID:         i.ID,
+		IPAddress:  i.IPAddress,
+		FileID:     i.FileID,
+		AccessedAt: i.AccessedAt,
+	}
+}
+func (i *RecentFileModel) ToDto() RecentFileDto {
+	return RecentFileDto{
+		ID:         i.ID,
+		IPAddress:  i.IPAddress,
+		FileID:     i.FileID,
+		AccessedAt: i.AccessedAt,
+	}
+}

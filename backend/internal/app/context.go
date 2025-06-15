@@ -21,9 +21,11 @@ type AppContext struct {
 }
 
 type FileContext struct {
-	Handler    *files.Handler
-	Service    files.ServiceInterface
-	Repository files.RepositoryInterface
+	Handler              *files.Handler
+	Service              files.ServiceInterface
+	RecentFileService    files.RecentFileServiceInterface
+	Repository           files.RepositoryInterface
+	RecentFileRepository files.RecentFileRepositoryInterface
 }
 
 type DiaryContext struct {
@@ -51,12 +53,18 @@ func NewContext(db *sql.DB) *AppContext {
 
 func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileContext {
 	repository := files.NewRepository(db)
+	recentFileRepository := files.NewRecentFileRepository(db)
+
 	service := files.NewService(repository, tasks)
-	handler := files.NewHandler(service, logger)
+	recentFileService := files.NewRecentFileService(recentFileRepository)
+
+	handler := files.NewHandler(service, recentFileService, logger)
 	return &FileContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:              handler,
+		Service:              service,
+		RecentFileService:    recentFileService,
+		Repository:           repository,
+		RecentFileRepository: recentFileRepository,
 	}
 }
 
