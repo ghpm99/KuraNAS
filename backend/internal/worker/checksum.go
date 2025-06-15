@@ -3,7 +3,6 @@ package worker
 import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"strconv"
@@ -13,7 +12,7 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 
 	loggerModel, _ := logService.CreateLog(logger.LoggerModel{
 		Name:        "UpdateCheckSumWorker",
-		Description: i18n.GetMessage("SCAN_FILES_START"),
+		Description: "Atualizando checksum de arquivo ou diretório",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
 	}, nil)

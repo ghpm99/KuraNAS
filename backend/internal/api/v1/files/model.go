@@ -25,6 +25,13 @@ type FileModel struct {
 	CheckSum        string
 }
 
+type RecentFileModel struct {
+	ID         int
+	IPAddress  string
+	FileID     int
+	AccessedAt time.Time
+}
+
 func (i *FileDto) ToModel() (FileModel, error) {
 
 	fileModel := FileModel{

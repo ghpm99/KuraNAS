@@ -17,8 +17,17 @@ export type FileData = {
 	file_children: FileData[];
 };
 
+export type RecentAccessFile = {
+	id: number;
+	ip_address: string;
+	file_id: number;
+	accessed_at: string;
+};
+
 export type FileContextType = {
 	files: FileData[];
+	recentAccessFiles: RecentAccessFile[];
+	isLoadingAccessData: boolean;
 	status: string;
 	selectedItem: FileData | null;
 	handleSelectItem: (itemId: number | null) => void;
