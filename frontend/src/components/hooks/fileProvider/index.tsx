@@ -3,19 +3,14 @@ import { apiBase } from '@/service';
 import { FileType } from '@/utils';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileContextProvider, FileContextType, FileData, RecentAccessFile } from './fileContext';
-
-export type Pagination = {
-	hasNext: boolean;
-	hasPrevious: boolean;
-	page: number;
-	pageSize: number;
-};
-
-export type PaginationResponse = {
-	items: FileData[];
-	pagination: Pagination;
-};
+import {
+	FileContextProvider,
+	FileContextType,
+	FileData,
+	FileListFilterType,
+	PaginationResponse,
+	RecentAccessFile,
+} from './fileContext';
 
 const pageSize = 200;
 
@@ -41,6 +36,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
+	const [fileListFilter, setFileListFilter] = useState<FileListFilterType>('all');
 
 	const queryParams = useMemo(
 		() => ({
@@ -51,10 +47,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	);
 
 	const { status, data } = useInfiniteQuery({
-		queryKey: ['files', queryParams],
+		queryKey: ['files', queryParams, fileListFilter],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
-				params: { ...queryParams, page: pageParam },
+				params: { ...queryParams, page: pageParam, type: fileListFilter },
 			});
 			return response.data;
 		},
@@ -133,8 +129,19 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			expandedItems,
 			recentAccessFiles: fileAccessData || [],
 			isLoadingAccessData: isLoadingAccessData,
+			fileListFilter,
+			setFileListFilter,
 		}),
-		[fileTree, status, selectedItem, handleSelectItem, expandedItems, fileAccessData, isLoadingAccessData]
+		[
+			fileTree,
+			status,
+			selectedItem,
+			handleSelectItem,
+			expandedItems,
+			fileAccessData,
+			isLoadingAccessData,
+			fileListFilter,
+		]
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };

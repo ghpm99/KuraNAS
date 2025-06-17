@@ -32,7 +32,23 @@ export type FileContextType = {
 	selectedItem: FileData | null;
 	handleSelectItem: (itemId: number | null) => void;
 	expandedItems: number[];
+	fileListFilter: FileListFilterType;
+	setFileListFilter: (filter: FileListFilterType) => void;
 };
+
+export type Pagination = {
+	hasNext: boolean;
+	hasPrevious: boolean;
+	page: number;
+	pageSize: number;
+};
+
+export type PaginationResponse = {
+	items: FileData[];
+	pagination: Pagination;
+};
+
+export type FileListFilterType = 'all' | 'recent' | 'starred';
 
 const FileContext = createContext<FileContextType | undefined>(undefined);
 
