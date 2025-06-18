@@ -199,10 +199,13 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 
 	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
+	fileCategory := c.DefaultQuery("category", string(AllCategory))
+
 	fileFilter := FileFilter{
 		DeletedAt: utils.Optional[time.Time]{
 			HasValue: false,
 		},
+		Category: FileCategory(fileCategory),
 	}
 
 	if fileParentId != 0 {

@@ -16,16 +16,50 @@ FROM
     home_file hf
 WHERE
     1 = 1
-    AND ($1 OR hf.id = $2)
-    AND ($3 OR hf.name LIKE '%' || $4 || '%')
-    AND ($5 OR hf."path" = $6)
-    AND ($7 OR hf."parent_path" = $8)
-    AND ($9 OR hf.format = $10)
-    AND ($11 OR hf."type" = $12)
-    AND ($13 OR hf.deleted_at = $14)
+    AND (
+        ?
+        OR hf.id = ?
+    )
+    AND (
+        ?
+        OR hf.name LIKE '%' || ? || '%'
+    )
+    AND (
+        ?
+        OR hf."path" = ?
+    )
+    AND (
+        ?
+        OR hf."parent_path" = ?
+    )
+    AND (
+        ?
+        OR hf.format = ?
+    )
+    AND (
+        ?
+        OR hf."type" = ?
+    )
+    AND (
+        ?
+        OR hf.deleted_at = ?
+    )
+    AND case ?
+        when 'all' then true
+        when 'recent' then hf.id IN (
+            SELECT
+                file_id
+            FROM
+                recent_file
+        )
+        when 'starred' then hf.starred = true
+        else false
+    end
 ORDER BY
     type,
     name,
     - id
 LIMIT
-    $15 OFFSET $16;
+    ?
+OFFSET
+    ?;

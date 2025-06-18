@@ -48,6 +48,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		filter.Type.Value,
 		!filter.DeletedAt.HasValue,
 		filter.DeletedAt.Value,
+		filter.Category,
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
 	}

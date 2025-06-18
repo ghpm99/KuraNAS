@@ -7,7 +7,7 @@ import {
 	FileContextProvider,
 	FileContextType,
 	FileData,
-	FileListFilterType,
+	FileListCategoryType,
 	PaginationResponse,
 	RecentAccessFile,
 } from './fileContext';
@@ -36,7 +36,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
-	const [fileListFilter, setFileListFilter] = useState<FileListFilterType>('all');
+	const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
 
 	const queryParams = useMemo(
 		() => ({
@@ -50,7 +50,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		queryKey: ['files', queryParams, fileListFilter],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
-				params: { ...queryParams, page: pageParam, type: fileListFilter },
+				params: { ...queryParams, page: pageParam, category: fileListFilter },
 			});
 			return response.data;
 		},
