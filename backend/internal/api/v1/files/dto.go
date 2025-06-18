@@ -131,6 +131,14 @@ func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
 	return nil
 }
 
+type FileCategory string
+
+const (
+	AllCategory     FileCategory = "all"
+	RecentCategory  FileCategory = "recent"
+	StarredCategory FileCategory = "starred"
+)
+
 type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]
@@ -140,6 +148,7 @@ type FileFilter struct {
 	Type       utils.Optional[FileType]
 	FileParent utils.Optional[int]
 	DeletedAt  utils.Optional[time.Time]
+	Category   FileCategory
 }
 
 func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {
