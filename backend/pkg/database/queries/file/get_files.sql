@@ -53,7 +53,7 @@ WHERE
                 recent_file
         )
         when 'starred' then hf.starred = true
-        else false
+        else true
     end
 ORDER BY
     type,
