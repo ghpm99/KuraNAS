@@ -1,13 +1,25 @@
 package migrations
 
 import (
+	"context"
 	"database/sql"
+	_ "embed"
+	"log"
 )
 
 type migration struct {
 	Name    string
 	Migrate func(*sql.Tx) error
 }
+
+//go:embed queries/create_migrations_table.sql
+var createMigrationDatabaseQuery string
+
+//go:embed queries/insert_migration.sql
+var insertMigrationQuery string
+
+//go:embed queries/migration_exists.sql
+var migrationExistsQuery string
 
 var migrationList = []migration{
 	{
@@ -20,8 +32,8 @@ func Init(db *sql.DB) {
 	if db == nil {
 		panic("Database connection is nil")
 	}
-
-	tx, err := db.BeginTx(nil, nil)
+	initMigrationList()
+	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		panic("Failed to begin transaction: " + err.Error())
 	}
@@ -35,30 +47,31 @@ func Init(db *sql.DB) {
 		}
 	}
 
+	if err := tx.Commit(); err != nil {
+		panic("Failed to commit transaction: " + err.Error())
+	}
+	log.Println("All migrations applied successfully")
+
+}
+
+func initMigrationList() {
+	logMigrationList()
+	diaryMigrationList()
+	fileMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {
-	_, err := tx.Exec(`
-		CREATE TABLE IF NOT EXISTS migrations (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL UNIQUE,
-			executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-	`)
+	_, err := tx.Exec(createMigrationDatabaseQuery)
 	return err
 }
 
 func recordMigration(tx *sql.Tx, name string) error {
-	_, err := tx.Exec(`
-		INSERT INTO migrations (name) VALUES (?);
-	`, name)
+	_, err := tx.Exec(insertMigrationQuery, name)
 	return err
 }
 
 func migrationExists(tx *sql.Tx, name string) (bool, error) {
-	rows, err := tx.Query(`
-		SELECT COUNT(*) FROM migrations WHERE name = ?;
-	`, name)
+	rows, err := tx.Query(migrationExistsQuery, name)
 	if err != nil {
 		return false, err
 	}
@@ -80,7 +93,7 @@ func runMigration(tx *sql.Tx, name string, migrationFunc func(*sql.Tx) error) er
 		return err
 	}
 	if exists {
-		return nil // Migration already applied
+		return nil
 	}
 
 	if err := migrationFunc(tx); err != nil {
@@ -90,11 +103,11 @@ func runMigration(tx *sql.Tx, name string, migrationFunc func(*sql.Tx) error) er
 	return recordMigration(tx, name)
 }
 
-func addMigration(name string, migrationFunc func(*sql.Tx) error) error {
+func addMigration(name string, migrationFunc func(*sql.Tx) error) {
 	migrationList = append(migrationList,
 		migration{
 			Name:    name,
 			Migrate: migrationFunc,
 		})
-	return nil
+
 }
