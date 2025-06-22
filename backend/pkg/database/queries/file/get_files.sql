@@ -11,7 +11,8 @@ SELECT
     hf.last_backup,
     hf."type",
     hf.checksum,
-    hf.deleted_at
+    hf.deleted_at,
+    hf.starred
 FROM
     home_file hf
 WHERE
