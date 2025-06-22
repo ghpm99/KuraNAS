@@ -23,6 +23,7 @@ type FileModel struct {
 	LastInteraction sql.NullTime
 	LastBackup      sql.NullTime
 	CheckSum        string
+	Starred         bool
 }
 
 type RecentFileModel struct {
@@ -45,6 +46,7 @@ func (i *FileDto) ToModel() (FileModel, error) {
 		UpdatedAt:  i.UpdatedAt,
 		CreatedAt:  i.CreatedAt,
 		CheckSum:   i.CheckSum,
+		Starred:    i.Starred,
 	}
 
 	deletedAt, err := i.DeletedAt.ParseToNullTime()

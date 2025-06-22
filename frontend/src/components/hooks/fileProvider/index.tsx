@@ -1,7 +1,7 @@
 import { apiBase } from '@/service';
 
 import { FileType } from '@/utils';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	FileContextProvider,
@@ -46,7 +46,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[selectedItemId]
 	);
 
-	const { status, data } = useInfiniteQuery({
+	const { status, data, refetch } = useInfiniteQuery({
 		queryKey: ['files', queryParams, fileListFilter],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
@@ -61,15 +61,26 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			}
 			return undefined;
 		},
+		staleTime: 0,
 	});
 
 	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
-		queryKey: ['files', 'tree', selectedItem],
+		queryKey: ['filesRecent', 'tree', selectedItem],
 		queryFn: async () => {
 			if (selectedItem?.type !== FileType.File) return [];
 
 			const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${selectedItemId}`);
 			return response.data;
+		},
+		staleTime: 0,
+	});
+
+	const { mutate: updateStarredFile } = useMutation({
+		mutationFn: async (itemId: number) => {
+			await apiBase.post(`/files/starred/${itemId}`);
+		},
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
@@ -120,6 +131,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[expandedItems]
 	);
 
+	const handleStarredItem = useCallback(
+		(itemId: number) => {
+			updateStarredFile(itemId);
+		},
+		[updateStarredFile]
+	);
+
 	const contextValue: FileContextType = useMemo(
 		() => ({
 			files: fileTree || [],
@@ -131,6 +149,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			isLoadingAccessData: isLoadingAccessData,
 			fileListFilter,
 			setFileListFilter,
+			handleStarredItem,
 		}),
 		[
 			fileTree,
@@ -141,6 +160,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			fileAccessData,
 			isLoadingAccessData,
 			fileListFilter,
+			handleStarredItem,
 		]
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;

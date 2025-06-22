@@ -78,6 +78,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 			&file.Type,
 			&file.CheckSum,
 			&file.DeletedAt,
+			&file.Starred,
 		); err != nil {
 			return paginationResponse, err
 		}
@@ -152,6 +153,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		&file.Type,
 		&file.CheckSum,
 		&file.DeletedAt,
+		&file.Starred,
 		&file.ID,
 	)
 
