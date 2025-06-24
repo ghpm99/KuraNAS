@@ -31,6 +31,23 @@ const findItemInTree = (data: FileData[], itemId: number | null): FileData | nul
 	return null;
 };
 
+const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
+	if (!itemId) return null;
+	for (const item of data) {
+		if (item.id === itemId) {
+			return item;
+		}
+		if (item?.file_children?.length > 0) {
+			const itemChildren = findItemInTree(item?.file_children, itemId);
+			if (itemChildren) {
+				return itemChildren;
+			}
+		}
+	}
+
+	return null;
+};
+
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
@@ -62,26 +79,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			return undefined;
 		},
 		staleTime: 0,
-	});
-
-	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
-		queryKey: ['filesRecent', 'tree', selectedItem],
-		queryFn: async () => {
-			if (selectedItem?.type !== FileType.File) return [];
-
-			const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${selectedItemId}`);
-			return response.data;
-		},
-		staleTime: 0,
-	});
-
-	const { mutate: updateStarredFile } = useMutation({
-		mutationFn: async (itemId: number) => {
-			await apiBase.post(`/files/starred/${itemId}`);
-		},
-		onSuccess: () => {
-			refetch();
-		},
 	});
 
 	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children: FileData[]): FileData[] => {
