@@ -33,6 +33,13 @@ type RecentFileModel struct {
 	AccessedAt time.Time
 }
 
+type RecentFileModel struct {
+	ID         int
+	IPAddress  string
+	FileID     int
+	AccessedAt time.Time
+}
+
 func (i *FileDto) ToModel() (FileModel, error) {
 
 	fileModel := FileModel{
