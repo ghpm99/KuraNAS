@@ -14,6 +14,7 @@ export type FileData = {
 	last_backup: string;
 	check_sum: string;
 	directory_content_count: number;
+	starred: boolean;
 	file_children: FileData[];
 };
 
@@ -31,8 +32,25 @@ export type FileContextType = {
 	status: string;
 	selectedItem: FileData | null;
 	handleSelectItem: (itemId: number | null) => void;
+	handleStarredItem: (itemId: number) => void;
 	expandedItems: number[];
+	fileListFilter: FileListCategoryType;
+	setFileListFilter: (filter: FileListCategoryType) => void;
 };
+
+export type Pagination = {
+	hasNext: boolean;
+	hasPrevious: boolean;
+	page: number;
+	pageSize: number;
+};
+
+export type PaginationResponse = {
+	items: FileData[];
+	pagination: Pagination;
+};
+
+export type FileListCategoryType = 'all' | 'recent' | 'starred';
 
 const FileContext = createContext<FileContextType | undefined>(undefined);
 

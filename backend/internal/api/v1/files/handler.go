@@ -199,10 +199,13 @@ func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
 
 	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
+	fileCategory := c.DefaultQuery("category", string(AllCategory))
+
 	fileFilter := FileFilter{
 		DeletedAt: utils.Optional[time.Time]{
 			HasValue: false,
 		},
+		Category: FileCategory(fileCategory),
 	}
 
 	if fileParentId != 0 {
@@ -365,4 +368,42 @@ func (handler *Handler) GetRecentAccessByFileHandler(c *gin.Context) {
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, recentFiles)
+}
+
+func (handler *Handler) StarreFileHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "StarFile",
+		Description: "Starring a file by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: id,
+	})
+
+	file, err := handler.service.GetFileById(id)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	file.Starred = !file.Starred
+
+	result, err := handler.service.UpdateFile(file)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"success": result})
 }
