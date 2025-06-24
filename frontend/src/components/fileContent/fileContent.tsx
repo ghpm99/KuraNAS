@@ -6,7 +6,7 @@ import FileViewer from './components/fileViewer/fileViewer';
 import './fileContent.css';
 
 const FileContent = () => {
-	const { status, handleSelectItem, selectedItem, files } = useFile();
+	const { status, handleSelectItem, selectedItem, files, handleStarredItem } = useFile();
 	const { t } = useI18n();
 
 	if (status === 'pending') {
@@ -39,9 +39,11 @@ const FileContent = () => {
 						<FileCard
 							key={file.id}
 							title={file.name}
+							starred={file.starred}
 							metadata={fileMetadata(file)}
 							thumbnail={thumbnailUrl(file.id)}
 							onClick={() => handleSelectItem(file.id)}
+							onClickStar={() => handleStarredItem(file.id)}
 						/>
 					))}
 				</div>
@@ -58,9 +60,11 @@ const FileContent = () => {
 						<FileCard
 							key={file.id}
 							title={file.name}
+							starred={file.starred}
 							metadata={fileMetadata(file)}
 							thumbnail={thumbnailUrl(file.id)}
 							onClick={() => handleSelectItem(file.id)}
+							onClickStar={() => handleStarredItem(file.id)}
 						/>
 					))}
 				</div>

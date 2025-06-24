@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "home_file_path_name" ON "home_file" ("path", "name");

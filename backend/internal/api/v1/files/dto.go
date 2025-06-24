@@ -33,6 +33,7 @@ type FileDto struct {
 	LastBackup            utils.Optional[time.Time] `json:"last_backup"`
 	CheckSum              string                    `json:"check_sum"`
 	DirectoryContentCount int                       `json:"directory_content_count"`
+	Starred               bool                      `json:"starred"`
 }
 
 func (i *FileModel) ToDto() (FileDto, error) {
@@ -48,6 +49,7 @@ func (i *FileModel) ToDto() (FileDto, error) {
 		UpdatedAt:  i.UpdatedAt,
 		CreatedAt:  i.CreatedAt,
 		CheckSum:   i.CheckSum,
+		Starred:    i.Starred,
 	}
 
 	err := fileDto.DeletedAt.ParseFromNullTime(i.DeletedAt)
@@ -131,6 +133,14 @@ func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
 	return nil
 }
 
+type FileCategory string
+
+const (
+	AllCategory     FileCategory = "all"
+	RecentCategory  FileCategory = "recent"
+	StarredCategory FileCategory = "starred"
+)
+
 type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]
@@ -140,6 +150,7 @@ type FileFilter struct {
 	Type       utils.Optional[FileType]
 	FileParent utils.Optional[int]
 	DeletedAt  utils.Optional[time.Time]
+	Category   FileCategory
 }
 
 func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {

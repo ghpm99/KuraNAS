@@ -1,21 +1,16 @@
 import { apiBase } from '@/service';
 
 import { FileType } from '@/utils';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileContextProvider, FileContextType, FileData, RecentAccessFile } from './fileContext';
-
-export type Pagination = {
-	hasNext: boolean;
-	hasPrevious: boolean;
-	page: number;
-	pageSize: number;
-};
-
-export type PaginationResponse = {
-	items: FileData[];
-	pagination: Pagination;
-};
+import {
+	FileContextProvider,
+	FileContextType,
+	FileData,
+	FileListCategoryType,
+	PaginationResponse,
+	RecentAccessFile,
+} from './fileContext';
 
 const pageSize = 200;
 
@@ -41,6 +36,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
+	const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
 
 	const queryParams = useMemo(
 		() => ({
@@ -50,11 +46,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[selectedItemId]
 	);
 
-	const { status, data } = useInfiniteQuery({
-		queryKey: ['files', queryParams],
+	const { status, data, refetch } = useInfiniteQuery({
+		queryKey: ['files', queryParams, fileListFilter],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
-				params: { ...queryParams, page: pageParam },
+				params: { ...queryParams, page: pageParam, category: fileListFilter },
 			});
 			return response.data;
 		},
@@ -65,15 +61,26 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			}
 			return undefined;
 		},
+		staleTime: 0,
 	});
 
 	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
-		queryKey: ['files', 'tree', selectedItem],
+		queryKey: ['filesRecent', 'tree', selectedItem],
 		queryFn: async () => {
 			if (selectedItem?.type !== FileType.File) return [];
 
 			const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${selectedItemId}`);
 			return response.data;
+		},
+		staleTime: 0,
+	});
+
+	const { mutate: updateStarredFile } = useMutation({
+		mutationFn: async (itemId: number) => {
+			await apiBase.post(`/files/starred/${itemId}`);
+		},
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
@@ -124,6 +131,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[expandedItems]
 	);
 
+	const handleStarredItem = useCallback(
+		(itemId: number) => {
+			updateStarredFile(itemId);
+		},
+		[updateStarredFile]
+	);
+
 	const contextValue: FileContextType = useMemo(
 		() => ({
 			files: fileTree || [],
@@ -133,8 +147,21 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			expandedItems,
 			recentAccessFiles: fileAccessData || [],
 			isLoadingAccessData: isLoadingAccessData,
+			fileListFilter,
+			setFileListFilter,
+			handleStarredItem,
 		}),
-		[fileTree, status, selectedItem, handleSelectItem, expandedItems, fileAccessData, isLoadingAccessData]
+		[
+			fileTree,
+			status,
+			selectedItem,
+			handleSelectItem,
+			expandedItems,
+			fileAccessData,
+			isLoadingAccessData,
+			fileListFilter,
+			handleStarredItem,
+		]
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };

@@ -4,14 +4,18 @@ const FileCard = ({
 	metadata,
 	thumbnail,
 	onClick,
+	starred,
+	onClickStar,
 }: {
 	title: string;
 	metadata: string;
 	thumbnail: string;
 	onClick: () => void;
+	starred?: boolean;
+	onClickStar?: () => void;
 }) => {
 	return (
-		<div className='file-card' onClick={onClick}>
+		<div className='file-card'>
 			<div className='file-thumbnail'>
 				<img
 					loading='lazy'
@@ -19,7 +23,11 @@ const FileCard = ({
 					width={652}
 					height={489}
 					className='thumbnail-image'
+					onClick={onClick}
 				/>
+				<span className='star-icon' onClick={onClickStar}>
+					{starred ? '★' : '☆'}
+				</span>
 			</div>
 			<div className='file-info'>
 				<h3 className='file-title'>{title}</h3>

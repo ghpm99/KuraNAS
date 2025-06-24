@@ -4,9 +4,6 @@ import (
 	_ "embed"
 )
 
-//go:embed create_table.sql
-var CreateTableQuery string
-
 //go:embed insert_file.sql
 var InsertFileQuery string
 
