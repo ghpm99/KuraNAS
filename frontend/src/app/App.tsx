@@ -12,6 +12,7 @@ export default function App() {
 		<AppProviders>
 			<Routes>
 				<Route path='/' element={<FilePage />} />
+				<Route path='/starred' element={<FilePage />} />
 				<Route path='/activity-diary' element={<ActivityDiaryPage />} />
 				<Route path='/analytics' element={<AnalyticsPage />} />
 				<Route path='/about' element={<AboutPage />} />
