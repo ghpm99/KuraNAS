@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: yarn install --frozen-lockfile
-      - run: yarn test --if-present
+      - run: yarn test
 
   lint-backend:
     name: Lint Backend
