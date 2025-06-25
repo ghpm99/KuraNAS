@@ -1,7 +1,7 @@
-import Card from '@/components/ui/Card/Card';
-import styles from './StatusCard.module.css';
 import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import Card from '@/components/ui/Card/Card';
+import styles from './StatusCard.module.css';
 
 const StatusCard = () => {
 	const { enable_workers, path, uptime } = useAbout();
