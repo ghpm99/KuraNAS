@@ -11,7 +11,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 )
 
-require github.com/kr/text v0.2.0 // indirect
+require (
+	github.com/kardianos/service v1.2.2 // indirect
+	github.com/kr/text v0.2.0 // indirect
+)
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
