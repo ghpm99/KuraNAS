@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"fmt"
+	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
@@ -29,19 +29,19 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 func startWorkersScheduler(context *WorkerContext) {
 	for {
-		fmt.Println("Escaneamento de arquivos")
+		log.Println("Escaneamento de arquivos")
 		context.Tasks <- utils.Task{
 			Type: utils.ScanFiles,
 			Data: "Escaneamento de arquivos",
 		}
-		fmt.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+		log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
 		time.Sleep(12 * time.Hour)
 	}
 }
 
 func worker(id int, context *WorkerContext) {
 	for task := range context.Tasks {
-		fmt.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
+		log.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
 
 		switch task.Type {
 		case utils.ScanFiles:
@@ -51,8 +51,8 @@ func worker(id int, context *WorkerContext) {
 		case utils.UpdateCheckSum:
 			go UpdateCheckSumWorker(context.Service, task.Data, context.Logger)
 		default:
-			fmt.Println("Tipo de tarefa desconhecido")
+			log.Println("Tipo de tarefa desconhecido")
 		}
-		fmt.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
+		log.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}
 }
