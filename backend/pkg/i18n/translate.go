@@ -10,7 +10,7 @@ import (
 
 var translations map[string]string
 
-func GetPathFileTranslate() (string, error) {
+func GetPathFileTranslate() string {
 	var lang = config.AppConfig.Lang
 
 	if lang == "" {
@@ -20,14 +20,11 @@ func GetPathFileTranslate() (string, error) {
 	translationsPath := config.GetBuildConfig("TranslationsPath")
 
 	filePath := fmt.Sprintf("%s%s.json", translationsPath, lang)
-	return filePath, nil
+	return filePath
 }
 
 func LoadTranslations() error {
-	filePath, err := GetPathFileTranslate()
-	if err != nil {
-		log.Println("Error getting translation file path: " + err.Error())
-	}
+	filePath := GetPathFileTranslate()
 
 	file, err := os.Open(filePath)
 	log.Println("Loading translations from: " + filePath)

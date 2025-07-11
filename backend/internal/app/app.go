@@ -27,9 +27,9 @@ func InitializeApp() (*Application, error) {
 	if err := config.LoadConfig(); err != nil {
 		return nil, err
 	}
+
 	config.InitializeConfig()
-	i18n.LoadTranslations()
-	if err := config.LoadConfig(); err != nil {
+	if err := i18n.LoadTranslations(); err != nil {
 		return nil, err
 	}
 
