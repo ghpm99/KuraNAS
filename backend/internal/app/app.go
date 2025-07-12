@@ -9,9 +9,6 @@ import (
 
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,8 +24,8 @@ func InitializeApp() (*Application, error) {
 	if err := config.LoadConfig(); err != nil {
 		return nil, err
 	}
-
 	config.InitializeConfig()
+
 	if err := i18n.LoadTranslations(); err != nil {
 		return nil, err
 	}
@@ -56,7 +53,7 @@ func InitializeApp() (*Application, error) {
 		Logger:  appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 16)
+	worker.StartWorkers(workerFileContext, 200)
 
 	return &Application{
 		Router:  router,
@@ -66,26 +63,17 @@ func InitializeApp() (*Application, error) {
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
 	server := &http.Server{
-		Addr:    ":8000",
+		Addr:    addr,
 		Handler: app.Router.Handler(),
 	}
 
 	app.Server = server
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
-
-	if enableGraceFul {
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		<-quit
-		return app.Stop()
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen: %s\n", err)
 	}
 
-	select {}
+	return nil
 }
 
 func (app *Application) Stop() error {
