@@ -24,24 +24,25 @@ func (p *program) Start(s service.Service) error {
 		p.logger.Info("Iniciando serviço KuraNAS...")
 	}
 
+	setupWorkingDirectory()
 	setupFileLogger()
-	p.quit = make(chan struct{})
+
+	application, err := app.InitializeApp()
+	if err != nil {
+		if p.logger != nil {
+			p.logger.Errorf("Erro ao inicializar app: %v", err)
+		} else {
+			log.Printf("Erro ao inicializar app: %v", err)
+		}
+		return err
+	}
+	if p.logger != nil {
+		p.logger.Info("Serviço KuraNAS iniciado com sucesso.")
+	}
+
+	p.app = application
 
 	go func() {
-		application, err := app.InitializeApp()
-		if err != nil {
-			if p.logger != nil {
-				p.logger.Errorf("Erro ao inicializar app: %v", err)
-			} else {
-				log.Printf("Erro ao inicializar app: %v", err)
-			}
-			return
-		}
-		if p.logger != nil {
-			p.logger.Info("Serviço KuraNAS iniciado com sucesso.")
-		}
-
-		p.app = application
 
 		if err := application.Run(":8000", true); err != nil {
 			if p.logger != nil {
@@ -53,13 +54,12 @@ func (p *program) Start(s service.Service) error {
 		if p.logger != nil {
 			p.logger.Info("Serviço KuraNAS finalizado.")
 		}
-		application.Stop()
 	}()
 
 	if p.logger != nil {
 		p.logger.Info("KuraNAS iniciado na porta 8000")
 	}
-	<-p.quit
+
 	return nil
 }
 
@@ -68,11 +68,8 @@ func (p *program) Stop(s service.Service) error {
 		p.logger.Info("Parando serviço KuraNAS")
 	}
 
-	if p.app != nil {
-		p.app.Stop()
-	}
-
 	if p.app != nil && p.app.Context != nil {
+		p.app.Stop()
 		close(p.quit)
 	}
 
@@ -140,6 +137,14 @@ func main() {
 
 	if err := s.Run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func setupWorkingDirectory() {
+	exePath, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exePath)
+		_ = os.Chdir(exeDir)
 	}
 }
 

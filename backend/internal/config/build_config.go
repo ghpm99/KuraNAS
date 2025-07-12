@@ -26,6 +26,12 @@ func GetBuildConfig(key string) string {
 			return ""
 		}
 		return fmt.Sprintf("%s/translations/", currentDir)
+	case "EnvFilePath":
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return ""
+		}
+		return fmt.Sprintf("%s/.env", currentDir)
 	default:
 		return ""
 	}
