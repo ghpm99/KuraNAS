@@ -1,0 +1,100 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.alert {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 16px;
+	background-color: #fef3c7;
+	border: 1px solid #f59e0b;
+	border-radius: 8px;
+}
+
+.alertIcon {
+	width: 20px;
+	height: 20px;
+	color: #f59e0b;
+	flex-shrink: 0;
+}
+
+.alertContent {
+	flex: 1;
+}
+
+.alertTitle {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #92400e;
+	margin-bottom: 4px;
+}
+
+.alertMessage {
+	font-size: 0.875rem;
+	color: #92400e;
+}
+
+.cardsGrid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 24px;
+}
+
+@media (min-width: 1024px) {
+	.cardsGrid {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.listItem {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+
+	border-radius: 6px;
+}
+
+.itemIcon {
+	width: 32px;
+	height: 32px;
+	border-radius: 6px;
+	background-color: #fef2f2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.icon {
+	width: 16px;
+	height: 16px;
+	color: #ef4444;
+}
+
+.itemContent {
+	flex: 1;
+	min-width: 0;
+}
+
+.itemName {
+	font-size: 0.875rem;
+	font-weight: 500;
+	margin-bottom: 2px;
+	word-break: break-all;
+}
+
+.itemMeta {
+	font-size: 0.75rem;
+	color: #6b7280;
+	font-family: 'Courier New', monospace;
+}

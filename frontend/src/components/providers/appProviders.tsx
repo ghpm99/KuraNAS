@@ -5,6 +5,7 @@ import ActivityDiaryProvider from '../hooks/ActivityDiaryProvider';
 import FileProvider from '../hooks/fileProvider';
 import { UIProvider } from '../hooks/UI';
 import Layout from '../layout/Layout/Layout';
+import { AnalyticsProvider } from '../contexts/AnalyticsContext';
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
 	return (
@@ -12,12 +13,14 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 			<FileProvider>
 				<ActivityDiaryProvider>
 					<AboutProvider>
-						<BrowserRouter>
-							<Layout>
-								<ActivePageListener />
-								{children}
-							</Layout>
-						</BrowserRouter>
+						<AnalyticsProvider>
+							<BrowserRouter>
+								<Layout>
+									<ActivePageListener />
+									{children}
+								</Layout>
+							</BrowserRouter>
+						</AnalyticsProvider>
 					</AboutProvider>
 				</ActivityDiaryProvider>
 			</FileProvider>

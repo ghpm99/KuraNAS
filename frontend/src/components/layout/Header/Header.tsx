@@ -1,5 +1,3 @@
-'use client';
-
 import { Bell, Clock, Search } from 'lucide-react';
 
 import styles from './Header.module.css';

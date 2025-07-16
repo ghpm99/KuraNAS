@@ -407,3 +407,66 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, gin.H{"success": result})
 }
+
+func (handler *Handler) GetTotalSpaceUsedHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetTotalSpaceUsed",
+		Description: "Fetching total space used",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	totalSpaceUsed, err := handler.service.GetTotalSpaceUsed()
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"total_space_used": totalSpaceUsed})
+}
+
+func (handler *Handler) GetTotalFilesHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetTotalFiles",
+		Description: "Fetching total files count",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	totalFiles, err := handler.service.GetTotalFiles()
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"total_files": totalFiles})
+}
+
+func (handler *Handler) GetTotalDirectoryHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetTotalSpaceUsedByPath",
+		Description: "Fetching total space used by path",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	totalSpaceUsed, err := handler.service.GetTotalDirectory()
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"total_space_used_by_path": totalSpaceUsed})
+}
