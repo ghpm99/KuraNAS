@@ -1,0 +1,59 @@
+.tableContainer {
+	overflow-x: auto;
+	margin: -20px;
+}
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+}
+
+.table th {
+	padding: 12px 16px;
+	text-align: left;
+	font-weight: 600;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid #e5e7eb;
+	color: #4b5563;
+}
+
+.table tr:last-child td {
+	border-bottom: none;
+}
+
+.typeCell {
+	font-weight: 500;
+	color: #111827;
+}
+
+.percentageContainer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.percentageBar {
+	flex: 1;
+	height: 8px;
+	background-color: #e5e7eb;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.percentageFill {
+	height: 100%;
+	background-color: #3b82f6;
+	transition: width 0.3s ease;
+}
+
+.percentageText {
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: #4b5563;
+	min-width: 35px;
+}

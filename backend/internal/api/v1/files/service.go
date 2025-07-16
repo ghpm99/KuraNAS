@@ -220,3 +220,14 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 		Format: file.Format,
 	}, nil
 }
+
+func (s *Service) GetTotalSpaceUsed() (int64, error) {
+	return 0, nil
+}
+
+func (s *Service) GetTotalFiles() (int64, error) {
+	return 0, nil
+}
+func (s *Service) GetTotalDirectory() (int64, error) {
+	return 0, nil
+}

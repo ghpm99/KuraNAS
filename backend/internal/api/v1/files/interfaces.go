@@ -25,6 +25,9 @@ type ServiceInterface interface {
 	UpdateCheckSumTask(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
+	GetTotalSpaceUsed() (int64, error)
+	GetTotalFiles() (int64, error)
+	GetTotalDirectory() (int64, error)
 }
 
 type RecentFileRepositoryInterface interface {

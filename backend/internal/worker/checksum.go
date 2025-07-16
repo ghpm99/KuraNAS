@@ -33,9 +33,10 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data string, logServic
 		return
 	}
 
-	if fileDto.Type == files.File {
+	switch fileDto.Type {
+	case files.File:
 		updateFileCheckSum(service, fileDto, logService, loggerModel)
-	} else if fileDto.Type == files.Directory {
+	case files.Directory:
 		updateDirectoryCheckSum(service, fileDto, logService, loggerModel)
 	}
 }

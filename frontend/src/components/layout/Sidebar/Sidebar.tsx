@@ -1,5 +1,3 @@
-'use client';
-
 import { Info, LayoutGrid, Star } from 'lucide-react';
 
 import { useUI } from '@/components/hooks/UI/uiContext';

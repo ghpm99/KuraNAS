@@ -32,6 +32,9 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
+	files.GET("/total-space-used", context.Files.Handler.GetTotalSpaceUsedHandler)
+	files.GET("/total-files", context.Files.Handler.GetTotalFilesHandler)
+	files.GET("/total-directory", context.Files.Handler.GetTotalDirectoryHandler)
 
 }
 

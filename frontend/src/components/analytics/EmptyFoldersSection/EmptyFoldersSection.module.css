@@ -1,0 +1,91 @@
+.section {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 24px;
+}
+
+@media (min-width: 1024px) {
+	.section {
+		grid-template-columns: 300px 1fr;
+	}
+}
+
+.card {
+	background-color: #1c1a1f;
+	border-radius: 8px;
+	padding: 20px;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cardContent {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.iconContainer {
+	width: 48px;
+	height: 48px;
+	border-radius: 8px;
+	background-color: #fef2f2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.icon {
+	width: 24px;
+	height: 24px;
+	color: #ef4444;
+}
+
+.info {
+	flex: 1;
+}
+
+.label {
+	font-size: 0.875rem;
+	color: #6b7280;
+	margin-bottom: 4px;
+}
+
+.value {
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+
+.pathsList {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.pathItem {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	background-color: #2a282e;
+	border-radius: 6px;
+	border: 1px solid #2a282e;
+}
+
+.pathIcon {
+	width: 16px;
+	height: 16px;
+	color: #ef4444;
+	flex-shrink: 0;
+}
+
+.pathText {
+	font-family: 'Courier New', monospace;
+	font-size: 0.875rem;
+	color: #4b5563;
+	word-break: break-all;
+}
