@@ -193,3 +193,21 @@ func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (in
 	return childrenCount, nil
 
 }
+
+func (r *Repository) GetCountByType(fileType FileType) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetCountByType: %v", err)
+	}
+
+	row := r.DbContext.QueryRow(
+		queries.CountByTypeQuery,
+		fileType,
+	)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return fail(err)
+	}
+
+	return count, nil
+}

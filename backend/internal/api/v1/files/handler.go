@@ -468,5 +468,5 @@ func (handler *Handler) GetTotalDirectoryHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, gin.H{"total_space_used_by_path": totalSpaceUsed})
+	c.JSON(http.StatusOK, gin.H{"total_directory": totalSpaceUsed})
 }

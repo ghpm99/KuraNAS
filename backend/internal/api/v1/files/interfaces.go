@@ -12,6 +12,7 @@ type RepositoryInterface interface {
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
+	GetCountByType(fileType FileType) (int, error)
 }
 
 type ServiceInterface interface {
@@ -26,8 +27,8 @@ type ServiceInterface interface {
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int64, error)
-	GetTotalFiles() (int64, error)
-	GetTotalDirectory() (int64, error)
+	GetTotalFiles() (int, error)
+	GetTotalDirectory() (int, error)
 }
 
 type RecentFileRepositoryInterface interface {

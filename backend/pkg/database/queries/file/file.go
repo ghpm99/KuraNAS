@@ -30,3 +30,6 @@ var GetRecentFilesQuery string
 
 //go:embed get_recent_by_file_id.sql
 var GetRecentByFileIDQuery string
+
+//go:embed count_by_type.sql
+var CountByTypeQuery string
