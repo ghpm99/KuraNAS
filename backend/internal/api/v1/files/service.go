@@ -225,9 +225,9 @@ func (s *Service) GetTotalSpaceUsed() (int64, error) {
 	return 0, nil
 }
 
-func (s *Service) GetTotalFiles() (int64, error) {
-	return 0, nil
+func (s *Service) GetTotalFiles() (int, error) {
+	return s.Repository.GetCountByType(File)
 }
-func (s *Service) GetTotalDirectory() (int64, error) {
-	return 0, nil
+func (s *Service) GetTotalDirectory() (int, error) {
+	return s.Repository.GetCountByType(Directory)
 }

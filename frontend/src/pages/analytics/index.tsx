@@ -12,13 +12,18 @@ import EmptyFoldersSection from '@/components/analytics/EmptyFoldersSection/Empt
 import CleanupSuggestions from '@/components/analytics/CleanupSuggestions/CleanupSuggestions';
 import BackupSection from '@/components/analytics/BackupSection/BackupSection';
 import TrashSection from '@/components/analytics/TrashSection/TrashSection';
+import { useAnalytics } from '@/components/contexts/AnalyticsContext';
 
 const AnalyticsPage = () => {
+	const { refreshAnalytics } = useAnalytics();
 	return (
 		<div className={styles.content}>
 			<div className={styles.header}>
 				<h1 className={styles.pageTitle}>Analytics de Arquivos</h1>
 				<p className={styles.pageDescription}>Análise detalhada do uso de armazenamento e distribuição de arquivos</p>
+				<button className={styles.refreshButton} onClick={refreshAnalytics}>
+					Atualizar Dados
+				</button>
 			</div>
 
 			{/* Visão Geral do Armazenamento */}
