@@ -35,7 +35,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/total-space-used", context.Files.Handler.GetTotalSpaceUsedHandler)
 	files.GET("/total-files", context.Files.Handler.GetTotalFilesHandler)
 	files.GET("/total-directory", context.Files.Handler.GetTotalDirectoryHandler)
-
+	files.GET("/report-size-by-format", context.Files.Handler.GetReportSizeByFormatHandler)
+	files.GET("/top-files-by-size", context.Files.Handler.GetTopFilesBySizeHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {

@@ -217,3 +217,10 @@ func (i *RecentFileModel) ToDto() RecentFileDto {
 		AccessedAt: i.AccessedAt,
 	}
 }
+
+type SizeReportDto struct {
+	Format     string  `json:"format"`
+	Total      int     `json:"total"`
+	Size       int64   `json:"size"`
+	Percentage float64 `json:"percentage"`
+}

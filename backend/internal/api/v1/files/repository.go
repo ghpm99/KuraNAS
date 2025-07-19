@@ -211,3 +211,71 @@ func (r *Repository) GetCountByType(fileType FileType) (int, error) {
 
 	return count, nil
 }
+
+func (r *Repository) GetTotalSpaceUsed() (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetTotalSpaceUsed: %v", err)
+	}
+
+	row := r.DbContext.QueryRow(queries.TotalSpaceUsedQuery)
+
+	var totalSpaceUsed int
+	if err := row.Scan(&totalSpaceUsed); err != nil {
+		return fail(err)
+	}
+
+	return totalSpaceUsed, nil
+}
+
+func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
+	fail := func(err error) ([]SizeReportModel, error) {
+		return nil, fmt.Errorf("GetReportSizeByFormat: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(queries.CountByFormatQuery, File)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	var report []SizeReportModel
+
+	for rows.Next() {
+		var item SizeReportModel
+		if err := rows.Scan(&item.Format, &item.Total, &item.Size); err != nil {
+			return fail(err)
+		}
+		report = append(report, item)
+	}
+
+	return report, nil
+}
+
+func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
+	fail := func(err error) ([]FileModel, error) {
+		return nil, fmt.Errorf("GetTopFilesBySize: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(queries.TopFilesBySizeQuery, limit)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	var topFiles []FileModel
+
+	for rows.Next() {
+		var file FileModel
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.Size,
+			&file.Path,
+		); err != nil {
+			return fail(err)
+		}
+		topFiles = append(topFiles, file)
+	}
+
+	return topFiles, nil
+}

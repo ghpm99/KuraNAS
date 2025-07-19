@@ -13,6 +13,7 @@ import CleanupSuggestions from '@/components/analytics/CleanupSuggestions/Cleanu
 import BackupSection from '@/components/analytics/BackupSection/BackupSection';
 import TrashSection from '@/components/analytics/TrashSection/TrashSection';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import Button from '@/components/ui/Button/Button';
 
 const AnalyticsPage = () => {
 	const { refreshAnalytics } = useAnalytics();
@@ -21,9 +22,9 @@ const AnalyticsPage = () => {
 			<div className={styles.header}>
 				<h1 className={styles.pageTitle}>Analytics de Arquivos</h1>
 				<p className={styles.pageDescription}>Análise detalhada do uso de armazenamento e distribuição de arquivos</p>
-				<button className={styles.refreshButton} onClick={refreshAnalytics}>
+				<Button className={styles.refreshButton} onClick={refreshAnalytics}>
 					Atualizar Dados
-				</button>
+				</Button>
 			</div>
 
 			{/* Visão Geral do Armazenamento */}

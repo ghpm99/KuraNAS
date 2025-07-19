@@ -13,6 +13,9 @@ type RepositoryInterface interface {
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
 	GetCountByType(fileType FileType) (int, error)
+	GetTotalSpaceUsed() (int, error)
+	GetReportSizeByFormat() ([]SizeReportModel, error)
+	GetTopFilesBySize(limit int) ([]FileModel, error)
 }
 
 type ServiceInterface interface {
@@ -26,9 +29,11 @@ type ServiceInterface interface {
 	UpdateCheckSumTask(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
-	GetTotalSpaceUsed() (int64, error)
+	GetTotalSpaceUsed() (int, error)
 	GetTotalFiles() (int, error)
 	GetTotalDirectory() (int, error)
+	GetReportSizeByFormat() ([]SizeReportDto, error)
+	GetTopFilesBySize(limit int) ([]FileDto, error)
 }
 
 type RecentFileRepositoryInterface interface {

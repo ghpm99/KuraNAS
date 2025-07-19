@@ -120,5 +120,11 @@
 	"ARCHIVE_7Z": "Arquivo 7z",
 	"ARCHIVE_TAR": "Arquivo TAR",
 	"ARCHIVE_GZIP": "Arquivo GZIP",
-	"UNKNOWN_FORMAT": "Formato desconhecido"
+	"UNKNOWN_FORMAT": "Formato desconhecido",
+	"image": "Imagens",
+	"audio": "Áudios",
+	"video": "Vídeos",
+	"document": "Documentos",
+	"archive": "Arquivos",
+	"unknown": "Outros"
 }

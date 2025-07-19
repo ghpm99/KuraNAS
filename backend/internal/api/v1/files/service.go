@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"image"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -221,8 +223,8 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 	}, nil
 }
 
-func (s *Service) GetTotalSpaceUsed() (int64, error) {
-	return 0, nil
+func (s *Service) GetTotalSpaceUsed() (int, error) {
+	return s.Repository.GetTotalSpaceUsed()
 }
 
 func (s *Service) GetTotalFiles() (int, error) {
@@ -230,4 +232,61 @@ func (s *Service) GetTotalFiles() (int, error) {
 }
 func (s *Service) GetTotalDirectory() (int, error) {
 	return s.Repository.GetCountByType(Directory)
+}
+
+func (s *Service) GetReportSizeByFormat() ([]SizeReportDto, error) {
+	report, err := s.Repository.GetReportSizeByFormat()
+	if err != nil {
+		return nil, fmt.Errorf("error getting report size by format: %w", err)
+	}
+	sizeReportMap := make(map[string]SizeReportDto, len(report))
+
+	var totalUsed int64
+	for _, item := range report {
+		totalUsed += item.Size
+		formatType := utils.GetFormatTypeByExtension(item.Format)
+		if dto, exists := sizeReportMap[formatType.Type]; exists {
+			dto.Total += item.Total
+			dto.Size += item.Size
+			sizeReportMap[formatType.Type] = dto
+		} else {
+			sizeReportMap[formatType.Type] = SizeReportDto{
+				Format: formatType.Type,
+				Total:  item.Total,
+				Size:   item.Size,
+			}
+		}
+	}
+
+	sizeReportDtos := make([]SizeReportDto, 0, len(sizeReportMap))
+
+	for typeName, dto := range sizeReportMap {
+		dto.Percentage = (float64(dto.Size) / float64(totalUsed)) * 100
+		dto.Format = i18n.Translate(typeName)
+		sizeReportDtos = append(sizeReportDtos, dto)
+	}
+
+	sort.Slice(sizeReportDtos, func(i, j int) bool {
+		return sizeReportDtos[i].Size > sizeReportDtos[j].Size
+	})
+
+	return sizeReportDtos, nil
+}
+
+func (s *Service) GetTopFilesBySize(limit int) ([]FileDto, error) {
+	files, err := s.Repository.GetTopFilesBySize(limit)
+	if err != nil {
+		return nil, fmt.Errorf("error getting top files by size: %w", err)
+	}
+
+	fileDtos := make([]FileDto, len(files))
+	for i, file := range files {
+		fileDto, err := file.ToDto()
+		if err != nil {
+			return nil, fmt.Errorf("error converting file model to dto: %w", err)
+		}
+		fileDtos[i] = fileDto
+	}
+
+	return fileDtos, nil
 }
