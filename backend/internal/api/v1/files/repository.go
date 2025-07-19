@@ -279,3 +279,47 @@ func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
 
 	return topFiles, nil
 }
+
+func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error) {
+
+	paginationResponse := utils.PaginationResponse[DuplicateFilesModel]{
+		Items: []DuplicateFilesModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	fail := func(err error) (utils.PaginationResponse[DuplicateFilesModel], error) {
+		return paginationResponse, fmt.Errorf("GetDuplicateFiles: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(
+		queries.GetDuplicateFilesQuery,
+		pageSize+1,
+		utils.CalculateOffset(page, pageSize),
+	)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var duplicate DuplicateFilesModel
+		if err := rows.Scan(
+			&duplicate.Name,
+			&duplicate.Size,
+			&duplicate.Copies,
+			&duplicate.Paths,
+		); err != nil {
+			return fail(err)
+		}
+		paginationResponse.Items = append(paginationResponse.Items, duplicate)
+	}
+
+	paginationResponse.UpdatePagination()
+
+	return paginationResponse, nil
+}

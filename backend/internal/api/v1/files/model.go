@@ -99,3 +99,10 @@ type SizeReportModel struct {
 	Total  int
 	Size   int64
 }
+
+type DuplicateFilesModel struct {
+	Name   string
+	Size   int64
+	Copies int
+	Paths  string
+}

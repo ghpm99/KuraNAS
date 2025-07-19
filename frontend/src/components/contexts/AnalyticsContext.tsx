@@ -32,7 +32,7 @@ interface LargestFile {
 
 interface Duplicate {
 	name: string;
-	size: string;
+	size: number;
 	copies: number;
 	paths: string[];
 }
@@ -73,9 +73,9 @@ interface AnalyticsData {
 	sizeRanges: SizeRange[];
 	largestFiles: FileData[];
 	duplicates: {
-		totalCount: number;
-		wastedSpace: string;
-		items: Duplicate[];
+		total: number;
+		total_size: number;
+		files: Duplicate[];
 	};
 	recentActivity: {
 		recentFiles: RecentFile[];
@@ -155,6 +155,14 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 		},
 	});
 
+	const { data: duplicateFiles, refetch: refetchduplicateFiles } = useQuery({
+		queryKey: ['duplicateFiles'],
+		queryFn: async () => {
+			const res = await apiBase.get('/files/duplicate-files');
+			return res.data;
+		},
+	});
+
 	const refreshAnalytics = () => {
 		// Aqui seria implementada a lógica para atualizar os dados
 		console.log('Refreshing analytics data...');
@@ -163,6 +171,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 		refetchtotalFolders();
 		refetchfileTypes();
 		refetchtopFiles();
+		refetchduplicateFiles();
 	};
 
 	const value = {
@@ -182,29 +191,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 				{ range: '> 1GB', count: 178 },
 			],
 			largestFiles: topFiles ?? [],
-			duplicates: {
-				totalCount: 1247,
-				wastedSpace: '45.6 GB',
-				items: [
-					{
-						name: 'logo_empresa.png',
-						size: '2.3 MB',
-						copies: 15,
-						paths: ['/imagens/logos/', '/documentos/templates/', '/apresentacoes/'],
-					},
-					{
-						name: 'manual_usuario.pdf',
-						size: '12.8 MB',
-						copies: 8,
-						paths: ['/documentos/manuais/', '/backup/docs/', '/compartilhado/'],
-					},
-					{
-						name: 'video_intro.mp4',
-						size: '156 MB',
-						copies: 5,
-						paths: ['/videos/intros/', '/projetos/video1/', '/backup/videos/'],
-					},
-				],
+			duplicates: duplicateFiles ?? {
+				totalCount: 0,
+				wastedSpace: '',
+				items: [],
 			},
 			recentActivity: {
 				recentFiles: [

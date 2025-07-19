@@ -514,3 +514,27 @@ func (handler *Handler) GetTopFilesBySizeHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, topFiles)
 }
+
+func (handler *Handler) GetDuplicateFilesHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetDuplicateFiles",
+		Description: "Fetching duplicate files",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	report, err := handler.service.GetDuplicateFiles(page, pageSize)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, report)
+}

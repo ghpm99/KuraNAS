@@ -224,3 +224,17 @@ type SizeReportDto struct {
 	Size       int64   `json:"size"`
 	Percentage float64 `json:"percentage"`
 }
+
+type DuplicateFileDto struct {
+	Name   string   `json:"name"`
+	Size   int64    `json:"size"`
+	Copies int      `json:"copies"`
+	Paths  []string `json:"paths"`
+}
+
+type DuplicateFileReportDto struct {
+	Files      []DuplicateFileDto `json:"files"`
+	TotalFiles int                `json:"total"`
+	TotalSize  int64              `json:"total_size"`
+	Pagination utils.Pagination   `json:"pagination"`
+}
