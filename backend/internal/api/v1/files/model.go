@@ -93,3 +93,9 @@ func (fileModel *FileModel) GetCheckSumFromFile() error {
 
 	return nil
 }
+
+type SizeReportModel struct {
+	Format string
+	Total  int
+	Size   int64
+}

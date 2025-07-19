@@ -3,6 +3,7 @@ import { File } from 'lucide-react';
 import Card from '../../ui/Card/Card';
 import styles from './LargestFilesTable.module.css';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import { formatSize } from '@/utils';
 
 export default function LargestFilesTable() {
 	const { analyticsData } = useAnalytics();
@@ -28,7 +29,7 @@ export default function LargestFilesTable() {
 										<span className={styles.fileName}>{file.name}</span>
 									</div>
 								</td>
-								<td className={styles.sizeCell}>{file.size}</td>
+								<td className={styles.sizeCell}>{formatSize(file.size)}</td>
 								<td className={styles.pathCell}>{file.path}</td>
 							</tr>
 						))}

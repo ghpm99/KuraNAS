@@ -1,6 +1,8 @@
 import { apiBase } from '@/service';
+import { formatSize } from '@/utils';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useState } from 'react';
+import { FileData } from '../hooks/fileProvider/fileContext';
 
 interface StorageOverview {
 	totalUsedSpace: string;
@@ -11,9 +13,9 @@ interface StorageOverview {
 }
 
 interface FileType {
-	type: string;
-	count: number;
-	size: string;
+	format: string;
+	total: number;
+	size: number;
 	percentage: number;
 }
 
@@ -69,7 +71,7 @@ interface AnalyticsData {
 	storageOverview: StorageOverview;
 	fileTypes: FileType[];
 	sizeRanges: SizeRange[];
-	largestFiles: LargestFile[];
+	largestFiles: FileData[];
 	duplicates: {
 		totalCount: number;
 		wastedSpace: string;
@@ -113,7 +115,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 		queryKey: ['totalUsedSpace'],
 		queryFn: async () => {
 			const res = await apiBase.get('/files/total-space-used');
-			return res.data.total_space_used;
+			const { data } = res;
+			if (!data || !data.total_space_used) {
+				return '';
+			}
+			return formatSize(data.total_space_used);
 		},
 	});
 
@@ -133,43 +139,49 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 		},
 	});
 
+	const { data: fileTypes, refetch: refetchfileTypes } = useQuery({
+		queryKey: ['fileTypes'],
+		queryFn: async () => {
+			const res = await apiBase.get('/files/report-size-by-format');
+			return res.data;
+		},
+	});
+
+	const { data: topFiles, refetch: refetchtopFiles } = useQuery({
+		queryKey: ['topFiles'],
+		queryFn: async () => {
+			const res = await apiBase.get('/files/top-files-by-size');
+			return res.data;
+		},
+	});
+
 	const refreshAnalytics = () => {
 		// Aqui seria implementada a lógica para atualizar os dados
 		console.log('Refreshing analytics data...');
 		refetchtotalUsedSpace();
 		refetchTotalFiles();
 		refetchtotalFolders();
+		refetchfileTypes();
+		refetchtopFiles();
 	};
 
 	const value = {
 		analyticsData: {
 			storageOverview: {
-				totalUsedSpace: totalUsedSpace ?? '1.2 TB',
+				totalUsedSpace: totalUsedSpace ?? '',
 				totalFiles: totalFiles ?? 0,
 				totalFolders: totalFolders ?? 0,
 				availableSpace: '800 GB',
 				diskUsage: { used: 60, free: 40 },
 			},
-			fileTypes: [
-				{ type: 'Vídeos', count: 1234, size: '450 GB', percentage: 37.5 },
-				{ type: 'Imagens', count: 15678, size: '320 GB', percentage: 26.7 },
-				{ type: 'Documentos', count: 8901, size: '180 GB', percentage: 15.0 },
-				{ type: 'Áudio', count: 2345, size: '120 GB', percentage: 10.0 },
-				{ type: 'Outros', count: 17520, size: '130 GB', percentage: 10.8 },
-			],
+			fileTypes: fileTypes ?? [],
 			sizeRanges: [
 				{ range: '< 10MB', count: 35000 },
 				{ range: '10-100MB', count: 8000 },
 				{ range: '100MB-1GB', count: 2500 },
 				{ range: '> 1GB', count: 178 },
 			],
-			largestFiles: [
-				{ name: 'projeto_final_4k.mp4', size: '8.5 GB', path: '/videos/projetos/' },
-				{ name: 'backup_sistema.zip', size: '6.2 GB', path: '/backups/' },
-				{ name: 'apresentacao_completa.pptx', size: '2.1 GB', path: '/documentos/apresentacoes/' },
-				{ name: 'dataset_machine_learning.csv', size: '1.8 GB', path: '/dados/ml/' },
-				{ name: 'video_tutorial_completo.mov', size: '1.5 GB', path: '/videos/tutoriais/' },
-			],
+			largestFiles: topFiles ?? [],
 			duplicates: {
 				totalCount: 1247,
 				wastedSpace: '45.6 GB',
@@ -271,10 +283,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 	return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>;
 }
 
-export function useAnalytics() {
+export const useAnalytics = () => {
 	const context = useContext(AnalyticsContext);
 	if (context === undefined) {
 		throw new Error('useAnalytics must be used within an AnalyticsProvider');
 	}
 	return context;
-}
+};

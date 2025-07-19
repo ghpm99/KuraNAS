@@ -33,3 +33,12 @@ var GetRecentByFileIDQuery string
 
 //go:embed count_by_type.sql
 var CountByTypeQuery string
+
+//go:embed total_space_used.sql
+var TotalSpaceUsedQuery string
+
+//go:embed count_by_format.sql
+var CountByFormatQuery string
+
+//go:embed top_files_by_size.sql
+var TopFilesBySizeQuery string

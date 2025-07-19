@@ -470,3 +470,47 @@ func (handler *Handler) GetTotalDirectoryHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, gin.H{"total_directory": totalSpaceUsed})
 }
+
+func (handler *Handler) GetReportSizeByFormatHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetReportSizeByFormat",
+		Description: "Fetching report size by format",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	report, err := handler.service.GetReportSizeByFormat()
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, report)
+}
+
+func (handler *Handler) GetTopFilesBySizeHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetTopFilesBySize",
+		Description: "Fetching top files by size",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	limit := utils.ParseInt(c.DefaultQuery("limit", "5"), c)
+
+	topFiles, err := handler.service.GetTopFilesBySize(limit)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, topFiles)
+}
