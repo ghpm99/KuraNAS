@@ -16,6 +16,7 @@ type RepositoryInterface interface {
 	GetTotalSpaceUsed() (int, error)
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
+	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 }
 
 type ServiceInterface interface {
@@ -34,6 +35,7 @@ type ServiceInterface interface {
 	GetTotalDirectory() (int, error)
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
+	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 }
 
 type RecentFileRepositoryInterface interface {

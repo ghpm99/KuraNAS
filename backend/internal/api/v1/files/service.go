@@ -12,6 +12,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type Service struct {
@@ -289,4 +290,29 @@ func (s *Service) GetTopFilesBySize(limit int) ([]FileDto, error) {
 	}
 
 	return fileDtos, nil
+}
+
+func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error) {
+	duplicateFiles, err := s.Repository.GetDuplicateFiles(page, pageSize)
+	if err != nil {
+		return DuplicateFileReportDto{}, fmt.Errorf("error getting duplicate files: %w", err)
+	}
+
+	report := DuplicateFileReportDto{
+		Files:      make([]DuplicateFileDto, len(duplicateFiles.Items)),
+		Pagination: duplicateFiles.Pagination,
+	}
+
+	for i, file := range duplicateFiles.Items {
+		report.TotalFiles += file.Copies
+		report.TotalSize += file.Size
+		report.Files[i] = DuplicateFileDto{
+			Name:   file.Name,
+			Size:   file.Size,
+			Copies: file.Copies,
+			Paths:  strings.Split(file.Paths, ","),
+		}
+	}
+
+	return report, nil
 }

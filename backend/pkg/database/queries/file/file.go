@@ -42,3 +42,6 @@ var CountByFormatQuery string
 
 //go:embed top_files_by_size.sql
 var TopFilesBySizeQuery string
+
+//go:embed get_duplicate_files.sql
+var GetDuplicateFilesQuery string
