@@ -31,3 +31,5 @@ Makefile.local
 
 build/
 bin/
+
+.venv
