@@ -14,17 +14,22 @@ def extract_image_metadata(image_path):
     """
     try:
         with Image.open(image_path) as img:
-            metadata = {
+            return {
                 "format": img.format,
                 "mode": img.mode,
-                "size": img.size,
+                "width": img.width,
+                "height": img.height,
                 "info": img.info,
             }
-            print(metadata)
-            return metadata
-    except Exception as e:
-        print(f"Error extracting metadata from {image_path}: {e}")
-        return None
+
+    except:
+        return {
+            "format": "",
+            "mode": "",
+            "width": 0,
+            "height": 0,
+            "info": {},
+        }
 
 
 if __name__ == "__main__":

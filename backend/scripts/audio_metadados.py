@@ -6,18 +6,23 @@ def extract_audio_metadata(audio_path):
     try:
         audio = File(audio_path, easy=True)
         if audio is None:
-            print(f"Arquivo não suportado ou corrompido: {audio_path}")
-            return None
+            return {
+                "mime": "",
+                "info": {},
+                "tags": {},
+            }
         metadata = {
             "mime": audio.mime[0] if hasattr(audio, "mime") and audio.mime else "",
             "info": dict(audio.info.__dict__) if hasattr(audio, "info") else {},
             "tags": dict(audio) if audio.tags else {},
         }
-        print(metadata)
         return metadata
-    except Exception as e:
-        print(f"Erro ao extrair metadados de {audio_path}: {e}")
-        return None
+    except:
+        return {
+            "mime": "",
+            "info": {},
+            "tags": {},
+        }
 
 
 if __name__ == "__main__":

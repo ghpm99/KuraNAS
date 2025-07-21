@@ -106,3 +106,31 @@ type DuplicateFilesModel struct {
 	Copies int
 	Paths  string
 }
+
+type ImageMetadadosModel struct {
+	ID        int
+	FilePath  string
+	Format    string
+	Mode      string
+	Width     int
+	Height    int
+	Info      string
+	CreatedAt time.Time
+}
+
+type AudioMetadadosModel struct {
+	ID        int
+	FilePath  string
+	Mime      string
+	Info      string
+	Tags      string
+	CreatedAt time.Time
+}
+
+type VideoMetadadosModel struct {
+	ID        int
+	FilePath  string
+	Format    string
+	Streams   string
+	CreatedAt time.Time
+}
