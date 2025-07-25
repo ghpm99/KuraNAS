@@ -11,9 +11,10 @@ import (
 )
 
 type WorkerContext struct {
-	Tasks   chan utils.Task
-	Service files.ServiceInterface
-	Logger  logger.LoggerServiceInterface
+	Tasks           chan utils.Task
+	FilesService    files.ServiceInterface
+	MetadataService files.MetadataRepositoryInterface
+	Logger          logger.LoggerServiceInterface
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -44,12 +45,20 @@ func worker(id int, context *WorkerContext) {
 		log.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
 
 		switch task.Type {
-		case utils.ScanFiles:
-			go ScanFilesWorker(context.Service, context.Logger)
-		case utils.ScanDir:
-			go ScanDirWorker(context.Service, task.Data)
+		// case utils.ScanFiles:
+		// 	go ScanFilesWorker(context.Service, context.Logger)
+		// case utils.ScanDir:
+		// 	go ScanDirWorker(context.Service, task.Data)
 		case utils.UpdateCheckSum:
-			go UpdateCheckSumWorker(context.Service, task.Data, context.Logger)
+			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
+		case utils.CreateImageMetadata:
+			go CreateImageMetadataWorker(context.MetadataService, task.Data, context.Logger)
+		case utils.CreateVideoMetadata:
+			go CreateVideoMetadataWorker(context.FilesService, task.Data, context.Logger)
+		case utils.CreateAudioMetadata:
+			go CreateAudioMetadataWorker(context.FilesService, task.Data, context.Logger)
+		case utils.CreateThumbnail:
+			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 		default:
 			log.Println("Tipo de tarefa desconhecido")
 		}

@@ -45,3 +45,15 @@ var TopFilesBySizeQuery string
 
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
+
+//go:embed insert_image_metadata.sql
+var InsertImageMetadataQuery string
+
+//go:embed get_image_metadata_by_id.sql
+var GetImageMetadataByIDQuery string
+
+//go:embed update_image_metadata.sql
+var UpdateImageMetadataQuery string
+
+//go:embed delete_image_metadata.sql
+var DeleteImageMetadataQuery string

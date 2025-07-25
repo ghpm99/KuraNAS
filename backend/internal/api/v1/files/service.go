@@ -207,6 +207,11 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 
 	file, err := s.GetFileById(fileId)
 
+	s.Tasks <- utils.Task{
+		Type: utils.CreateImageMetadata,
+		Data: file.Path,
+	}
+
 	if err != nil {
 		return FileBlob{}, err
 	}

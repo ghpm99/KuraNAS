@@ -52,3 +52,10 @@ type RecentFileServiceInterface interface {
 	DeleteRecentFile(ip string, fileID int) error
 	GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error)
 }
+
+type MetadataRepositoryInterface interface {
+	GetImageMetadataByID(id int) (ImageMetadataModel, error)
+	CreateImageMetadata(metadata ImageMetadataModel) (ImageMetadataModel, error)
+	UpdateImageMetadata(metadata ImageMetadataModel) (ImageMetadataModel, error)
+	DeleteImageMetadata(id int) error
+}
