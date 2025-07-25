@@ -48,9 +48,10 @@ func InitializeApp() (*Application, error) {
 	RegisterRoutes(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
-		Service: appContext.Files.Service,
-		Tasks:   *appContext.Tasks,
-		Logger:  appContext.Logger,
+		FilesService:    appContext.Files.Service,
+		MetadataService: appContext.Files.MetadataRepository,
+		Tasks:           *appContext.Tasks,
+		Logger:          appContext.Logger,
 	}
 
 	worker.StartWorkers(workerFileContext, 200)

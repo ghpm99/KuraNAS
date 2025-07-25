@@ -27,7 +27,7 @@ def extract_audio_metadata(audio_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python audio_metadados.py <caminho_do_audio>")
+        print("Uso: python audio_metadata.py <caminho_do_audio>")
         sys.exit(1)
     audio_path = sys.argv[1]
     extract_audio_metadata(audio_path)

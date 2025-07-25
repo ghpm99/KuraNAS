@@ -1,4 +1,5 @@
 import sys
+import json
 from PIL import Image
 
 
@@ -34,7 +35,7 @@ def extract_image_metadata(image_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python image_metadados.py <caminho_da_imagem>")
+        print("Uso: python image_metadata.py <caminho_da_imagem>")
         sys.exit(1)
     image_path = sys.argv[1]
-    extract_image_metadata(image_path)  # Replace with your image path
+    print(json.dumps(extract_image_metadata(image_path)))  # Replace with your image path

@@ -107,18 +107,18 @@ type DuplicateFilesModel struct {
 	Paths  string
 }
 
-type ImageMetadadosModel struct {
+type ImageMetadataModel struct {
 	ID        int
 	FilePath  string
 	Format    string
 	Mode      string
 	Width     int
 	Height    int
-	Info      string
+	Info      map[string]interface{}
 	CreatedAt time.Time
 }
 
-type AudioMetadadosModel struct {
+type AudioMetadataModel struct {
 	ID        int
 	FilePath  string
 	Mime      string
@@ -127,7 +127,7 @@ type AudioMetadadosModel struct {
 	CreatedAt time.Time
 }
 
-type VideoMetadadosModel struct {
+type VideoMetadataModel struct {
 	ID        int
 	FilePath  string
 	Format    string

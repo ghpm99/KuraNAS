@@ -26,6 +26,7 @@ type FileContext struct {
 	RecentFileService    files.RecentFileServiceInterface
 	Repository           files.RepositoryInterface
 	RecentFileRepository files.RecentFileRepositoryInterface
+	MetadataRepository   files.MetadataRepositoryInterface
 }
 
 type DiaryContext struct {
@@ -58,6 +59,8 @@ func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileConte
 	service := files.NewService(repository, tasks)
 	recentFileService := files.NewRecentFileService(recentFileRepository)
 
+	metadataRepository := files.NewMetadataRepository(db)
+
 	handler := files.NewHandler(service, recentFileService, logger)
 	return &FileContext{
 		Handler:              handler,
@@ -65,6 +68,7 @@ func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileConte
 		RecentFileService:    recentFileService,
 		Repository:           repository,
 		RecentFileRepository: recentFileRepository,
+		MetadataRepository:   metadataRepository,
 	}
 }
 
