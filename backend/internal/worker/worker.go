@@ -45,10 +45,10 @@ func worker(id int, context *WorkerContext) {
 		log.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
 
 		switch task.Type {
-		// case utils.ScanFiles:
-		// 	go ScanFilesWorker(context.Service, context.Logger)
-		// case utils.ScanDir:
-		// 	go ScanDirWorker(context.Service, task.Data)
+		case utils.ScanFiles:
+			go ScanFilesWorker(context.FilesService, context.Logger)
+		case utils.ScanDir:
+			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:
 			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
 		case utils.CreateImageMetadata:

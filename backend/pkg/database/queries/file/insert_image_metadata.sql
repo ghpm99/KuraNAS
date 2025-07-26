@@ -1,6 +1,7 @@
 INSERT INTO
     image_metadados (
-        file_path,
+        file_id,
+        "path",
         format,
         mode,
         width,
@@ -9,5 +10,5 @@ INSERT INTO
         created_at
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?) RETURNING id,
+    (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id,
     created_at

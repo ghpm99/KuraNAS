@@ -8,10 +8,16 @@ import (
 	"time"
 )
 
-func ScanDirWorker(service files.ServiceInterface, data string) {
+func ScanDirWorker(service files.ServiceInterface, data any) {
 	fmt.Println("🔍 Escaneando diretorio...")
 
-	entries, err := os.ReadDir(data)
+	path, ok := data.(string)
+	if !ok {
+		fmt.Println("Erro: data não é do tipo string")
+		return
+	}
+
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Printf("❌ Erro ao ler diretório %s: %v\n", data, err)
 		return
@@ -25,14 +31,14 @@ func ScanDirWorker(service files.ServiceInterface, data string) {
 			fmt.Printf("Erro ao obter informações: %v\n", err)
 			continue
 		}
-		fileDto.Path = data
+		fileDto.Path = path
 		dirFileMap[fileDto.Name] = fileDto
 	}
 
 	//Array de arquivos do cache
 	cacheFileArray, err := service.GetFiles(files.FileFilter{
 		Path: utils.Optional[string]{
-			Value:    data,
+			Value:    path,
 			HasValue: true,
 		},
 	}, 1, 1000)

@@ -5,6 +5,6 @@ import (
 	"nas-go/api/pkg/logger"
 )
 
-func CreateAudioMetadataWorker(service files.ServiceInterface, data string, logService logger.LoggerServiceInterface) {
+func CreateAudioMetadataWorker(service files.ServiceInterface, data any, logService logger.LoggerServiceInterface) {
 
 }
