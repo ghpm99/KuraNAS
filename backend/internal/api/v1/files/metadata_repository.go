@@ -21,7 +21,8 @@ func (r *MetadataRepository) CreateImageMetadata(metadata ImageMetadataModel) (I
 	infoJson, _ := json.Marshal(metadata.Info)
 	err := r.Db.QueryRow(
 		queries.InsertImageMetadataQuery,
-		metadata.FilePath,
+		metadata.FileId,
+		metadata.Path,
 		metadata.Format,
 		metadata.Mode,
 		metadata.Width,
@@ -43,7 +44,8 @@ func (r *MetadataRepository) GetImageMetadataByID(id int) (ImageMetadataModel, e
 
 	err := r.Db.QueryRow(queries.GetImageMetadataByIDQuery, id).Scan(
 		&metadata.ID,
-		&metadata.FilePath,
+		&metadata.FileId,
+		&metadata.Path,
 		&metadata.Format,
 		&metadata.Mode,
 		&metadata.Width,
@@ -51,6 +53,10 @@ func (r *MetadataRepository) GetImageMetadataByID(id int) (ImageMetadataModel, e
 		&infoStr,
 		&metadata.CreatedAt,
 	)
+
+	if err != nil {
+		return metadata, err
+	}
 
 	if err = json.Unmarshal([]byte(infoStr), &metadata.Info); err != nil {
 		return metadata, err
@@ -62,7 +68,7 @@ func (r *MetadataRepository) GetImageMetadataByID(id int) (ImageMetadataModel, e
 func (r *MetadataRepository) UpdateImageMetadata(metadata ImageMetadataModel) (ImageMetadataModel, error) {
 	_, err := r.Db.Exec(
 		queries.UpdateImageMetadataQuery,
-		metadata.FilePath,
+		metadata.Path,
 		metadata.Format,
 		metadata.Mode,
 		metadata.Width,

@@ -83,5 +83,5 @@ const (
 
 type Task struct {
 	Type TaskType
-	Data string
+	Data any
 }

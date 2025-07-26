@@ -239,6 +239,7 @@ const (
 	FormatTypeVideo    = "video"
 	FormatTypeDocument = "document"
 	FormatTypeArchive  = "archive"
+	FormatTypeUnknown  = "unknown"
 )
 
 type FormatType struct {
@@ -311,6 +312,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeArchive, Mime: "application/gzip", Description: "ARCHIVE_GZIP"}
 
 	default:
-		return FormatType{Type: "unknown", Mime: "", Description: "UNKNOWN_FORMAT"}
+		return FormatType{Type: FormatTypeUnknown, Mime: "", Description: "UNKNOWN_FORMAT"}
 	}
 }

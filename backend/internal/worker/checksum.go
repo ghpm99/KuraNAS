@@ -1,57 +1,44 @@
 package worker
 
 import (
-	"fmt"
+	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
-	"strconv"
 )
 
-func UpdateCheckSumWorker(service files.ServiceInterface, data string, logService logger.LoggerServiceInterface) {
+func UpdateCheckSumWorker(service files.ServiceInterface, data any, logService logger.LoggerServiceInterface) {
 
-	loggerModel, _ := logService.CreateLog(logger.LoggerModel{
-		Name:        "UpdateCheckSumWorker",
-		Description: "Atualizando checksum de arquivo ou diretório",
-		Level:       logger.LogLevelInfo,
-		Status:      logger.LogStatusPending,
-	}, nil)
+	fileId, ok := data.(int)
 
-	fileId, err := strconv.Atoi(data)
-
-	if err != nil {
-		logService.CompleteWithErrorLog(loggerModel, err)
-		fmt.Printf("Erro ao converter ID do arquivo: %v\n", err)
+	if !ok {
+		log.Println("Erro ao converter ID do arquivo: data não é int")
 		return
 	}
 
 	fileDto, err := service.GetFileById(fileId)
 
 	if err != nil {
-		logService.CompleteWithErrorLog(loggerModel, err)
-		fmt.Printf("Erro ao obter arquivo: %v\n", err)
+		log.Printf("Erro ao obter arquivo: %v\n", err)
 		return
 	}
 
 	switch fileDto.Type {
 	case files.File:
-		updateFileCheckSum(service, fileDto, logService, loggerModel)
+		updateFileCheckSum(service, fileDto)
 	case files.Directory:
-		updateDirectoryCheckSum(service, fileDto, logService, loggerModel)
+		updateDirectoryCheckSum(service, fileDto)
 	}
 }
 
 func updateFileCheckSum(
 	service files.ServiceInterface,
 	fileDto files.FileDto,
-	logService logger.LoggerServiceInterface,
-	loggerModel logger.LoggerModel,
 ) {
 	checkSumHash, err := fileDto.GetCheckSumFromFile()
 
 	if err != nil {
-		logService.CompleteWithErrorLog(loggerModel, err)
-		fmt.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
+		log.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
 		return
 	}
 
@@ -59,20 +46,17 @@ func updateFileCheckSum(
 	result, err := service.UpdateFile(fileDto)
 
 	if err != nil || !result {
-		logService.CompleteWithErrorLog(loggerModel, err)
-		fmt.Printf("Erro ao atualizar arquivo: %v\n", err)
+		log.Printf("Erro ao atualizar arquivo: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
-	logService.CompleteWithSuccessLog(loggerModel)
+	log.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
+
 }
 
 func updateDirectoryCheckSum(
 	service files.ServiceInterface,
 	fileDto files.FileDto,
-	logService logger.LoggerServiceInterface,
-	loggerModel logger.LoggerModel,
 ) {
 
 	var page = 1
@@ -89,8 +73,7 @@ func updateDirectoryCheckSum(
 		}, page, 1000)
 
 		if err != nil {
-			logService.CompleteWithErrorLog(loggerModel, err)
-			fmt.Printf("Erro ao obter arquivos do diretório: %v\n", err)
+			log.Printf("Erro ao obter arquivos do diretório: %v\n", err)
 			return
 		}
 
@@ -111,11 +94,10 @@ func updateDirectoryCheckSum(
 	result, err := service.UpdateFile(fileDto)
 
 	if err != nil || !result {
-		logService.CompleteWithErrorLog(loggerModel, err)
-		fmt.Printf("Erro ao atualizar diretório: %v\n", err)
+		log.Printf("Erro ao atualizar diretório: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Checksum atualizado com sucesso para o diretório: %s\n", fileDto.Name)
-	logService.CompleteWithSuccessLog(loggerModel)
+	log.Printf("Checksum atualizado com sucesso para o diretório: %s\n", fileDto.Name)
+
 }

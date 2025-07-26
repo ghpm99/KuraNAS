@@ -36,6 +36,7 @@ type ServiceInterface interface {
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
+	CreateMetadataTask(file FileDto)
 }
 
 type RecentFileRepositoryInterface interface {

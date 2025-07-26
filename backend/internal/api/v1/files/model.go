@@ -107,9 +107,11 @@ type DuplicateFilesModel struct {
 	Paths  string
 }
 
+// Todo: trocar filePath por Path e adicionar coluna de fileId
 type ImageMetadataModel struct {
 	ID        int
-	FilePath  string
+	FileId    int
+	Path      string
 	Format    string
 	Mode      string
 	Width     int
@@ -120,7 +122,8 @@ type ImageMetadataModel struct {
 
 type AudioMetadataModel struct {
 	ID        int
-	FilePath  string
+	FileId    int
+	Path      string
 	Mime      string
 	Info      string
 	Tags      string
@@ -129,7 +132,8 @@ type AudioMetadataModel struct {
 
 type VideoMetadataModel struct {
 	ID        int
-	FilePath  string
+	FileId    int
+	Path      string
 	Format    string
 	Streams   string
 	CreatedAt time.Time

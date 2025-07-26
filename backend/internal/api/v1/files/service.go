@@ -11,7 +11,6 @@ import (
 	"nas-go/api/pkg/utils"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -40,6 +39,8 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 		fileDtoResult, err = result.ToDto()
 		return
 	})
+
+	s.CreateMetadataTask(fileDtoResult)
 
 	return
 }
@@ -144,6 +145,7 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 
 	})
 
+	service.CreateMetadataTask(fileDto)
 	return
 }
 
@@ -167,7 +169,7 @@ func (s *Service) ScanDirTask(data string) {
 func (s *Service) UpdateCheckSumTask(fileId int) {
 	task := utils.Task{
 		Type: utils.UpdateCheckSum,
-		Data: strconv.Itoa(fileId),
+		Data: fileId,
 	}
 	s.Tasks <- task
 }
@@ -209,7 +211,7 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 
 	s.Tasks <- utils.Task{
 		Type: utils.CreateImageMetadata,
-		Data: file.Path,
+		Data: file,
 	}
 
 	if err != nil {
@@ -320,4 +322,26 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 	}
 
 	return report, nil
+}
+
+func (s *Service) CreateMetadataTask(fileDto FileDto) {
+	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+
+	switch formatType.Type {
+	case utils.FormatTypeImage:
+		s.Tasks <- utils.Task{
+			Type: utils.CreateImageMetadata,
+			Data: fileDto,
+		}
+	case utils.FormatTypeAudio:
+		s.Tasks <- utils.Task{
+			Type: utils.CreateImageMetadata,
+			Data: fileDto,
+		}
+	case utils.FormatTypeVideo:
+		s.Tasks <- utils.Task{
+			Type: utils.CreateImageMetadata,
+			Data: fileDto,
+		}
+	}
 }

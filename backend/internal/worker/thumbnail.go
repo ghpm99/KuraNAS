@@ -5,6 +5,6 @@ import (
 	"nas-go/api/pkg/logger"
 )
 
-func CreateThumbnailWorker(service files.ServiceInterface, data string, logService logger.LoggerServiceInterface) {
+func CreateThumbnailWorker(service files.ServiceInterface, data any, logService logger.LoggerServiceInterface) {
 
 }

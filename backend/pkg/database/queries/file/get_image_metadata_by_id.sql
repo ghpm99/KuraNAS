@@ -1,6 +1,7 @@
 SELECT
     id,
-    file_path,
+    file_id,
+    "path",
     format,
     mode,
     width,
