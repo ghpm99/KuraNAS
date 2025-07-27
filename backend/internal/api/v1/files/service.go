@@ -3,8 +3,10 @@ package files
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"image"
+	"log"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
@@ -15,8 +17,9 @@ import (
 )
 
 type Service struct {
-	Repository RepositoryInterface
-	Tasks      chan utils.Task
+	Repository         RepositoryInterface
+	MetadataRepository MetadataRepositoryInterface
+	Tasks              chan utils.Task
 }
 
 func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
@@ -36,11 +39,11 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 			return
 		}
 
+		s.UpsertMetadata(tx, fileDtoResult)
+
 		fileDtoResult, err = result.ToDto()
 		return
 	})
-
-	s.CreateMetadataTask(fileDtoResult)
 
 	return
 }
@@ -141,11 +144,11 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 		}
 		result, err = service.Repository.UpdateFile(tx, fileModel)
 
+		service.UpsertMetadata(tx, fileDto)
 		return
 
 	})
 
-	service.CreateMetadataTask(fileDto)
 	return
 }
 
@@ -208,11 +211,6 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, err
 func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 
 	file, err := s.GetFileById(fileId)
-
-	s.Tasks <- utils.Task{
-		Type: utils.CreateImageMetadata,
-		Data: file,
-	}
 
 	if err != nil {
 		return FileBlob{}, err
@@ -324,24 +322,83 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 	return report, nil
 }
 
-func (s *Service) CreateMetadataTask(fileDto FileDto) {
+func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
 
 	switch formatType.Type {
 	case utils.FormatTypeImage:
-		s.Tasks <- utils.Task{
-			Type: utils.CreateImageMetadata,
-			Data: fileDto,
-		}
+		_, err := s.UpsertImageMetadata(tx, fileDto)
+		return err
 	case utils.FormatTypeAudio:
-		s.Tasks <- utils.Task{
-			Type: utils.CreateImageMetadata,
-			Data: fileDto,
-		}
+		_, err := s.UpsertAudioMetadata(tx, fileDto)
+		return err
 	case utils.FormatTypeVideo:
-		s.Tasks <- utils.Task{
-			Type: utils.CreateImageMetadata,
-			Data: fileDto,
-		}
+		_, err := s.UpsertVideoMetadata(tx, fileDto)
+		return err
+	default:
+		return nil
 	}
+}
+
+func (s *Service) UpsertImageMetadata(tx *sql.Tx, fileDto FileDto) (ImageMetadataModel, error) {
+	metadata := ImageMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.ImageMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+	} else {
+		log.Println("Resultado:", result)
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+	}
+
+	return s.MetadataRepository.UpsertImageMetadata(tx, metadata)
+}
+
+func (s *Service) UpsertAudioMetadata(tx *sql.Tx, fileDto FileDto) (AudioMetadataModel, error) {
+	metadata := AudioMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.AudioMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+	} else {
+		log.Println("Resultado:", result)
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+	}
+
+	return s.MetadataRepository.UpsertAudioMetadata(tx, metadata)
+}
+
+func (s *Service) UpsertVideoMetadata(tx *sql.Tx, fileDto FileDto) (VideoMetadataModel, error) {
+	metadata := VideoMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.VideoMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+	} else {
+		log.Println("Resultado:", result)
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+	}
+
+	return s.MetadataRepository.UpsertVideoMetadata(tx, metadata)
 }

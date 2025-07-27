@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"net/http"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
@@ -314,4 +315,20 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	default:
 		return FormatType{Type: FormatTypeUnknown, Mime: "", Description: "UNKNOWN_FORMAT"}
 	}
+}
+
+const (
+	ImageMetadata = "image_metadata.py"
+	AudioMetadata = "audio_metadata.py"
+	VideoMetadata = "video_metadata.py"
+)
+
+func RunPythonScript(scriptName string, arg ...string) (string, error) {
+	args := append([]string{"scripts/" + scriptName}, arg...)
+	cmd := exec.Command("scripts/.venv/bin/python", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("erro ao executar script python: %v, output: %s", err, string(output))
+	}
+	return string(output), nil
 }

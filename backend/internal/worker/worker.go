@@ -51,12 +51,6 @@ func worker(id int, context *WorkerContext) {
 			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:
 			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
-		case utils.CreateImageMetadata:
-			go CreateImageMetadataWorker(context.MetadataService, task.Data, context.Logger)
-		case utils.CreateVideoMetadata:
-			go CreateVideoMetadataWorker(context.FilesService, task.Data, context.Logger)
-		case utils.CreateAudioMetadata:
-			go CreateAudioMetadataWorker(context.FilesService, task.Data, context.Logger)
 		case utils.CreateThumbnail:
 			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 		default:
