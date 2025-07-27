@@ -36,7 +36,7 @@ type ServiceInterface interface {
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
-	CreateMetadataTask(file FileDto)
+	UpsertMetadata(tx *sql.Tx, file FileDto) error
 }
 
 type RecentFileRepositoryInterface interface {
@@ -56,7 +56,12 @@ type RecentFileServiceInterface interface {
 
 type MetadataRepositoryInterface interface {
 	GetImageMetadataByID(id int) (ImageMetadataModel, error)
-	CreateImageMetadata(metadata ImageMetadataModel) (ImageMetadataModel, error)
-	UpdateImageMetadata(metadata ImageMetadataModel) (ImageMetadataModel, error)
+	UpsertImageMetadata(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error)
 	DeleteImageMetadata(id int) error
+	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
+	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
+	DeleteAudioMetadata(id int) error
+	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
+	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
+	DeleteVideoMetadata(id int) error
 }
