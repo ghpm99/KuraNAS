@@ -13,7 +13,7 @@ def serialize_value(v):
             return str(v)
     elif hasattr(v, "numerator") and hasattr(v, "denominator"):
         try:
-            return float(v)
+            return int(v)
         except ZeroDivisionError:
             return None
     elif isinstance(v, (list, tuple)):
@@ -61,8 +61,8 @@ def extract_image_metadata(image_path):
             data = {
                 "format": img.format,
                 "mode": img.mode,
-                "width": img.width,
-                "height": img.height,
+                "width": int(img.width),
+                "height": int(img.height),
                 "info": {
                     "datetime": img.info.get("datetime", ""),
                     "exif": exif,

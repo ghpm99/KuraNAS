@@ -1,4 +1,4 @@
-CREATE TABLE audio_metadados (
+CREATE TABLE audio_metadata (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_id INTEGER NOT NULL,
     "path" TEXT NOT NULL,

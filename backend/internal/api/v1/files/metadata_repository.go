@@ -93,15 +93,25 @@ func (r *MetadataRepository) DeleteImageMetadata(id int) error {
 func (r *MetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataModel, error) {
 	var metadata AudioMetadataModel
 
+	var infoStr string
+
 	err := r.Db.QueryRow(queries.GetAudioMetadataByIDQuery, id).Scan(
 		&metadata.ID,
 		&metadata.FileId,
 		&metadata.Path,
 		&metadata.Mime,
-		&metadata.Info,
+		&infoStr,
 		&metadata.Tags,
 		&metadata.CreatedAt,
 	)
+
+	if err != nil {
+		return metadata, err
+	}
+
+	if err = json.Unmarshal([]byte(infoStr), &metadata.Info); err != nil {
+		return metadata, err
+	}
 
 	return metadata, err
 }
@@ -110,11 +120,16 @@ func (r *MetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetad
 	var id int
 	var createdAt time.Time
 
+	infoJson, err := json.Marshal(metadata.Info)
+	if err != nil {
+		return metadata, err
+	}
+
 	args := []any{
 		metadata.FileId,
 		metadata.Path,
 		metadata.Mime,
-		metadata.Info,
+		infoJson,
 		metadata.Tags,
 		time.Now(),
 	}
@@ -126,7 +141,7 @@ func (r *MetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetad
 		row = r.Db.QueryRow(queries.UpsertAudioMetadataQuery, args...)
 	}
 
-	err := row.Scan(&id, &createdAt)
+	err = row.Scan(&id, &createdAt)
 	if err != nil {
 		return metadata, err
 	}

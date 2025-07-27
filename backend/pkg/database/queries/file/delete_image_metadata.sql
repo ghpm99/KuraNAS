@@ -1,4 +1,4 @@
 DELETE FROM
-    image_metadados
+    image_metadata
 WHERE
     id = ?

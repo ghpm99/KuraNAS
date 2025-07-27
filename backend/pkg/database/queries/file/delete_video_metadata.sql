@@ -1,4 +1,4 @@
 DELETE FROM
-    video_metadados
+    video_metadata
 WHERE
     id = ?

@@ -1,5 +1,5 @@
 INSERT INTO
-    image_metadados (
+    image_metadata (
         file_id,
         "path",
         format,
