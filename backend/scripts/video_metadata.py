@@ -34,4 +34,5 @@ if __name__ == "__main__":
         print("Uso: python video_metadata.py <caminho_do_video>")
         sys.exit(1)
     video_path = sys.argv[1]
-    extract_video_metadata(video_path)
+    metadata = extract_video_metadata(video_path)
+    print(json.dumps(metadata, indent=2, ensure_ascii=False))

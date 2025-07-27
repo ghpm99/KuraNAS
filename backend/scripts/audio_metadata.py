@@ -1,4 +1,5 @@
 import sys
+import json
 from mutagen import File
 
 
@@ -30,4 +31,5 @@ if __name__ == "__main__":
         print("Uso: python audio_metadata.py <caminho_do_audio>")
         sys.exit(1)
     audio_path = sys.argv[1]
-    extract_audio_metadata(audio_path)
+    metadata = extract_audio_metadata(audio_path)
+    print(json.dumps(metadata, indent=2, ensure_ascii=False))

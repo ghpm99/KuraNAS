@@ -7,6 +7,6 @@ SELECT
     tags,
     created_at
 FROM
-    audio_metadados
+    audio_metadata
 WHERE
     id = ?

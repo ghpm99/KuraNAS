@@ -1,5 +1,5 @@
 INSERT INTO
-    video_metadados (
+    video_metadata (
         file_id,
         "path",
         format,

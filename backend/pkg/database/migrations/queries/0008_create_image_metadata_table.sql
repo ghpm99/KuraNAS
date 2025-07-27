@@ -1,4 +1,4 @@
-CREATE TABLE image_metadados (
+CREATE TABLE image_metadata (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_id INTEGER NOT NULL,
     "path" TEXT NOT NULL,

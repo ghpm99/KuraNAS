@@ -116,7 +116,7 @@ type ImageMetadataModel struct {
 	Mode      string
 	Width     int
 	Height    int
-	Info      map[string]interface{}
+	Info      map[string]any
 	CreatedAt time.Time
 }
 
@@ -125,7 +125,7 @@ type AudioMetadataModel struct {
 	FileId    int
 	Path      string
 	Mime      string
-	Info      string
+	Info      map[string]any
 	Tags      string
 	CreatedAt time.Time
 }

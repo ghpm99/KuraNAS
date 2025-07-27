@@ -56,10 +56,9 @@ func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileConte
 	repository := files.NewRepository(db)
 	recentFileRepository := files.NewRecentFileRepository(db)
 
-	service := files.NewService(repository, tasks)
-	recentFileService := files.NewRecentFileService(recentFileRepository)
-
 	metadataRepository := files.NewMetadataRepository(db)
+	service := files.NewService(repository, metadataRepository, tasks)
+	recentFileService := files.NewRecentFileService(recentFileRepository)
 
 	handler := files.NewHandler(service, recentFileService, logger)
 	return &FileContext{

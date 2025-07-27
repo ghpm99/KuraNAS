@@ -1,4 +1,4 @@
-CREATE TABLE video_metadados (
+CREATE TABLE video_metadata (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_id INTEGER NOT NULL,
     "path" TEXT NOT NULL,

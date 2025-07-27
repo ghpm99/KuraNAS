@@ -9,6 +9,6 @@ SELECT
     info,
     created_at
 FROM
-    image_metadados
+    image_metadata
 WHERE
     id = ?

@@ -1,5 +1,5 @@
 INSERT INTO
-    audio_metadados (
+    audio_metadata (
         file_id,
         "path",
         mime,
