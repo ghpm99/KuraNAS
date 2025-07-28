@@ -3,6 +3,10 @@ import json
 from io import BytesIO
 from PIL import Image, ImageCms
 from PIL.ExifTags import TAGS
+import warnings
+
+
+warnings.filterwarnings("ignore", category=UserWarning, module="PIL.TiffImagePlugin")
 
 
 def serialize_value(v):
