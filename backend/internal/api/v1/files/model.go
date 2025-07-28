@@ -126,7 +126,7 @@ type AudioMetadataModel struct {
 	Path      string
 	Mime      string
 	Info      map[string]any
-	Tags      string
+	Tags      map[string]any
 	CreatedAt time.Time
 }
 
@@ -135,6 +135,6 @@ type VideoMetadataModel struct {
 	FileId    int
 	Path      string
 	Format    string
-	Streams   string
+	Streams   map[string]any
 	CreatedAt time.Time
 }

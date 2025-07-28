@@ -52,7 +52,6 @@ func (r *MetadataRepository) UpsertImageMetadata(tx *sql.Tx, metadata ImageMetad
 	}
 
 	queryArgs := []any{
-		metadata.ID,
 		metadata.FileId,
 		metadata.Path,
 		metadata.Format,
@@ -66,12 +65,12 @@ func (r *MetadataRepository) UpsertImageMetadata(tx *sql.Tx, metadata ImageMetad
 	if tx != nil {
 		row = tx.QueryRow(
 			queries.UpsertImageMetadataQuery,
-			queryArgs,
+			queryArgs...,
 		)
 	} else {
 		row = r.Db.QueryRow(
 			queries.UpsertImageMetadataQuery,
-			queryArgs,
+			queryArgs...,
 		)
 	}
 
@@ -94,6 +93,7 @@ func (r *MetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataModel, e
 	var metadata AudioMetadataModel
 
 	var infoStr string
+	var tagsStr string
 
 	err := r.Db.QueryRow(queries.GetAudioMetadataByIDQuery, id).Scan(
 		&metadata.ID,
@@ -101,7 +101,7 @@ func (r *MetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataModel, e
 		&metadata.Path,
 		&metadata.Mime,
 		&infoStr,
-		&metadata.Tags,
+		&tagsStr,
 		&metadata.CreatedAt,
 	)
 
@@ -110,6 +110,10 @@ func (r *MetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataModel, e
 	}
 
 	if err = json.Unmarshal([]byte(infoStr), &metadata.Info); err != nil {
+		return metadata, err
+	}
+
+	if err = json.Unmarshal([]byte(tagsStr), &metadata.Tags); err != nil {
 		return metadata, err
 	}
 
@@ -125,12 +129,17 @@ func (r *MetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetad
 		return metadata, err
 	}
 
+	tagsJson, err := json.Marshal(metadata.Tags)
+	if err != nil {
+		return metadata, err
+	}
+
 	args := []any{
 		metadata.FileId,
 		metadata.Path,
 		metadata.Mime,
 		infoJson,
-		metadata.Tags,
+		tagsJson,
 		time.Now(),
 	}
 
@@ -159,14 +168,22 @@ func (r *MetadataRepository) DeleteAudioMetadata(id int) error {
 func (r *MetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
 	var metadata VideoMetadataModel
 
+	var streamsStr string
 	err := r.Db.QueryRow(queries.GetVideoMetadataByIDQuery, id).Scan(
 		&metadata.ID,
 		&metadata.FileId,
 		&metadata.Path,
 		&metadata.Format,
-		&metadata.Streams,
+		&streamsStr,
 		&metadata.CreatedAt,
 	)
+	if err != nil {
+		return metadata, err
+	}
+
+	if err = json.Unmarshal([]byte(streamsStr), &metadata.Streams); err != nil {
+		return metadata, err
+	}
 
 	return metadata, err
 }
@@ -175,11 +192,16 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 	var id int
 	var createdAt time.Time
 
+	streamsJson, err := json.Marshal(metadata.Streams)
+	if err != nil {
+		return metadata, err
+	}
+
 	args := []any{
 		metadata.FileId,
 		metadata.Path,
 		metadata.Format,
-		metadata.Streams,
+		streamsJson,
 		time.Now(),
 	}
 
@@ -190,7 +212,7 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 		row = r.Db.QueryRow(queries.UpsertVideoMetadataQuery, args...)
 	}
 
-	err := row.Scan(&id, &createdAt)
+	err = row.Scan(&id, &createdAt)
 	if err != nil {
 		return metadata, err
 	}
