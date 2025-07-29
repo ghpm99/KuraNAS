@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
@@ -26,6 +27,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 	fail := func(path string, err error) error {
 		Logger.CompleteWithErrorLog(logger, err)
 		msg := i18n.GetMessage("ERROR_GET_FILE")
+		log.Printf("Error processing file %s: %v\n", path, err)
 		return fmt.Errorf(msg, path, err)
 	}
 
