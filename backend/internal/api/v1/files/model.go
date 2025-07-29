@@ -107,7 +107,6 @@ type DuplicateFilesModel struct {
 	Paths  string
 }
 
-// Todo: trocar filePath por Path e adicionar coluna de fileId
 type ImageMetadataModel struct {
 	ID        int
 	FileId    int
@@ -131,10 +130,26 @@ type AudioMetadataModel struct {
 }
 
 type VideoMetadataModel struct {
-	ID        int
-	FileId    int
-	Path      string
-	Format    string
-	Streams   map[string]any
-	CreatedAt time.Time
+	ID              int
+	FileId          int
+	Path            string
+	FormatName      string  `json:"format_name"`
+	Size            string  `json:"size"`
+	Duration        string  `json:"duration"`
+	Width           int     `json:"width"`
+	Height          int     `json:"height"`
+	FrameRate       float64 `json:"frame_rate"`
+	NbFrames        int     `json:"nb_frames"`
+	BitRate         string  `json:"bit_rate"`
+	CodecName       string  `json:"codec_name"`
+	CodecLongName   string  `json:"codec_long_name"`
+	PixFmt          string  `json:"pix_fmt"`
+	Level           int     `json:"level"`
+	Profile         string  `json:"profile"`
+	AspectRatio     string  `json:"aspect_ratio"`
+	AudioCodec      string  `json:"audio_codec"`
+	AudioChannels   int     `json:"audio_channels"`
+	AudioSampleRate string  `json:"audio_sample_rate"`
+	AudioBitRate    string  `json:"audio_bit_rate"`
+	CreatedAt       time.Time
 }

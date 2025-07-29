@@ -3,6 +3,7 @@ package files
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	queries "nas-go/api/pkg/database/queries/file"
 	"time"
 )
@@ -168,20 +169,30 @@ func (r *MetadataRepository) DeleteAudioMetadata(id int) error {
 func (r *MetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
 	var metadata VideoMetadataModel
 
-	var streamsStr string
 	err := r.Db.QueryRow(queries.GetVideoMetadataByIDQuery, id).Scan(
-		&metadata.ID,
 		&metadata.FileId,
 		&metadata.Path,
-		&metadata.Format,
-		&streamsStr,
+		&metadata.FormatName,
+		&metadata.Size,
+		&metadata.Duration,
+		&metadata.Width,
+		&metadata.Height,
+		&metadata.FrameRate,
+		&metadata.NbFrames,
+		&metadata.BitRate,
+		&metadata.CodecName,
+		&metadata.CodecLongName,
+		&metadata.PixFmt,
+		&metadata.Level,
+		&metadata.Profile,
+		&metadata.AspectRatio,
+		&metadata.AudioCodec,
+		&metadata.AudioChannels,
+		&metadata.AudioSampleRate,
+		&metadata.AudioBitRate,
 		&metadata.CreatedAt,
 	)
 	if err != nil {
-		return metadata, err
-	}
-
-	if err = json.Unmarshal([]byte(streamsStr), &metadata.Streams); err != nil {
 		return metadata, err
 	}
 
@@ -192,16 +203,27 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 	var id int
 	var createdAt time.Time
 
-	streamsJson, err := json.Marshal(metadata.Streams)
-	if err != nil {
-		return metadata, err
-	}
-
 	args := []any{
 		metadata.FileId,
 		metadata.Path,
-		metadata.Format,
-		streamsJson,
+		metadata.FormatName,
+		metadata.Size,
+		metadata.Duration,
+		metadata.Width,
+		metadata.Height,
+		metadata.FrameRate,
+		metadata.NbFrames,
+		metadata.BitRate,
+		metadata.CodecName,
+		metadata.CodecLongName,
+		metadata.PixFmt,
+		metadata.Level,
+		metadata.Profile,
+		metadata.AspectRatio,
+		metadata.AudioCodec,
+		metadata.AudioChannels,
+		metadata.AudioSampleRate,
+		metadata.AudioBitRate,
 		time.Now(),
 	}
 
@@ -212,8 +234,9 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 		row = r.Db.QueryRow(queries.UpsertVideoMetadataQuery, args...)
 	}
 
-	err = row.Scan(&id, &createdAt)
+	err := row.Scan(&id, &createdAt)
 	if err != nil {
+		log.Println("Error scanning video metadata:", err)
 		return metadata, err
 	}
 

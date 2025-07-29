@@ -45,13 +45,16 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 
 		err = s.UpsertMetadata(tx, fileDtoResult)
 		if err != nil {
+			log.Printf("Error upserting metadata: %v\n", err)
 			return
 		}
 
 		fileDtoResult, err = result.ToDto()
 		return
 	})
-
+	if err != nil {
+		return FileDto{}, fmt.Errorf("error creating file: %w", err)
+	}
 	return
 }
 
@@ -151,7 +154,15 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 		}
 		result, err = service.Repository.UpdateFile(tx, fileModel)
 
-		service.UpsertMetadata(tx, fileDto)
+		if err != nil {
+			return
+		}
+
+		err = service.UpsertMetadata(tx, fileDto)
+		if err != nil {
+			log.Printf("Error upserting metadata: %v\n", err)
+			return
+		}
 		return
 
 	})
@@ -419,6 +430,7 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
 		return err
 	case utils.FormatTypeVideo:
 		_, err := s.UpsertVideoMetadata(tx, fileDto)
+		log.Println("UpsertVideoMetadata:", err)
 		return err
 	default:
 		return nil
