@@ -226,9 +226,7 @@ func (s *Service) updateFileCheckSum(
 
 }
 
-func (s *Service) updateDirectoryCheckSum(
-	fileDto FileDto,
-) {
+func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
 
 	var page = 1
 	var hasNext = true

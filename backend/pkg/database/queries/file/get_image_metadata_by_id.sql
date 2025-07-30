@@ -6,9 +6,20 @@ SELECT
     mode,
     width,
     height,
-    info,
+    capture_date,
+    software,
+    make,
+    model,
+    lens_model,
+    iso,
+    exposure_time,
+    dpi_x,
+    dpi_y,
+    icc_profile,
+    gps_latitude,
+    gps_longitude,
     created_at
 FROM
     image_metadata
 WHERE
-    id = ?
+    id = ?;
