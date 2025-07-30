@@ -3,10 +3,30 @@ SELECT
     file_id,
     "path",
     mime,
-    info,
-    tags,
+    length,
+    bitrate,
+    sample_rate,
+    channels,
+    bitrate_mode,
+    encoder_info,
+    bit_depth,
+    title,
+    artist,
+    album,
+    album_artist,
+    track_number,
+    genre,
+    composer,
+    year,
+    recording_date,
+    encoder,
+    publisher,
+    original_release_date,
+    original_artist,
+    lyricist,
+    lyrics,
     created_at
 FROM
     audio_metadata
 WHERE
-    id = ?
+    id = ?;

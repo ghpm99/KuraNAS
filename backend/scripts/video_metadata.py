@@ -25,12 +25,10 @@ def extract_video_metadata(path):
         audio_stream = next((s for s in streams if s.get("codec_type") == "audio"), {})
 
         return {
-            # Arquivo geral
             "filename": os.path.basename(path),
             "format_name": format_info.get("format_name", ""),
             "size": format_info.get("size", ""),
             "duration": format_info.get("duration", ""),
-            # Vídeo
             "width": video_stream.get("width", 0),
             "height": video_stream.get("height", 0),
             "frame_rate": _parse_frame_rate(video_stream.get("avg_frame_rate", "")),
@@ -42,7 +40,6 @@ def extract_video_metadata(path):
             "level": video_stream.get("level", 0),
             "profile": video_stream.get("profile", ""),
             "aspect_ratio": video_stream.get("display_aspect_ratio", ""),
-            # Áudio
             "audio_codec": audio_stream.get("codec_name", ""),
             "audio_channels": audio_stream.get("channels", 0),
             "audio_sample_rate": audio_stream.get("sample_rate", ""),

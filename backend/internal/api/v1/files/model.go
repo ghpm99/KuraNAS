@@ -108,25 +108,56 @@ type DuplicateFilesModel struct {
 }
 
 type ImageMetadataModel struct {
-	ID        int
-	FileId    int
-	Path      string
-	Format    string
-	Mode      string
-	Width     int
-	Height    int
-	Info      map[string]any
-	CreatedAt time.Time
+	ID           int
+	FileId       int
+	Path         string
+	Format       string  `json:"format"`
+	Mode         string  `json:"mode"`
+	Width        int     `json:"width"`
+	Height       int     `json:"height"`
+	CaptureDate  string  `json:"capture_date"`
+	Software     string  `json:"software"`
+	Make         string  `json:"make"`
+	Model        string  `json:"model"`
+	LensModel    string  `json:"lens_model"`
+	ISO          int     `json:"iso"`
+	ExposureTime string  `json:"exposure_time"`
+	DPIX         float64 `json:"dpi_x"`
+	DPIY         float64 `json:"dpi_y"`
+	ICCProfile   string  `json:"icc_profile"`
+	GPSLatitude  float64 `json:"gps_latitude"`
+	GPSLongitude float64 `json:"gps_longitude"`
+	CreatedAt    time.Time
 }
 
 type AudioMetadataModel struct {
-	ID        int
-	FileId    int
-	Path      string
-	Mime      string
-	Info      map[string]any
-	Tags      map[string]any
-	CreatedAt time.Time
+	ID                  int
+	FileId              int
+	Path                string
+	Mime                string  `json:"mime"`
+	Length              float64 `json:"length"`
+	Bitrate             int     `json:"bitrate"`
+	SampleRate          int     `json:"sample_rate"`
+	Channels            int     `json:"channels"`
+	BitrateMode         int     `json:"bitrate_mode"`
+	EncoderInfo         string  `json:"encoder_info"`
+	BitDepth            int     `json:"bit_depth"`
+	Title               string  `json:"title"`
+	Artist              string  `json:"artist"`
+	Album               string  `json:"album"`
+	AlbumArtist         string  `json:"album_artist"`
+	TrackNumber         string  `json:"track_number"`
+	Genre               string  `json:"genre"`
+	Composer            string  `json:"composer"`
+	Year                string  `json:"year"`
+	RecordingDate       string  `json:"recording_date"`
+	Encoder             string  `json:"encoder"`
+	Publisher           string  `json:"publisher"`
+	OriginalReleaseDate string  `json:"original_release_date"`
+	OriginalArtist      string  `json:"original_artist"`
+	Lyricist            string  `json:"lyricist"`
+	Lyrics              string  `json:"lyrics"`
+	CreatedAt           time.Time
 }
 
 type VideoMetadataModel struct {

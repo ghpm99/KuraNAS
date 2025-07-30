@@ -1,117 +1,129 @@
 import sys
 import json
-from io import BytesIO
-from PIL import Image, ImageCms
-from PIL.ExifTags import TAGS
 import warnings
-
+from PIL import Image, ExifTags, ImageCms
+from io import BytesIO
 
 warnings.filterwarnings("ignore", category=UserWarning, module="PIL.TiffImagePlugin")
 
 
-def serialize_value(v):
-    if isinstance(v, bytes):
-        try:
-            return v.decode(errors="replace")
-        except Exception:
-            return str(v)
-    elif hasattr(v, "numerator") and hasattr(v, "denominator"):
-        try:
-            return int(v)
-        except ZeroDivisionError:
-            return None
-    elif isinstance(v, (list, tuple)):
-        return [serialize_value(i) for i in v]
-    elif isinstance(v, dict):
-        return {serialize_value(k): serialize_value(val) for k, val in v.items()}
-    else:
-        return v
+def serialize_value(value):
+    try:
+        if isinstance(value, bytes):
+            return value.decode(errors="replace")
+        elif hasattr(value, "numerator") and hasattr(value, "denominator"):
+            return float(value)
+        elif isinstance(value, (list, tuple)):
+            return [serialize_value(v) for v in value]
+        elif isinstance(value, dict):
+            return {str(k): serialize_value(v) for k, v in value.items()}
+        else:
+            return value
+    except Exception:
+        return str(value)
 
 
-def serialize_info(info):
-    return {k: serialize_value(v) for k, v in info.items()}
+def get_exif_dict(img):
+    exif_data = img._getexif()
+    if not exif_data:
+        return {}
 
-
-def get_exif_data(img):
-    """
-    Extrai os dados EXIF da imagem, se disponíveis.
-    """
     exif = {}
-    if hasattr(img, "_getexif"):
-        raw_exif = img._getexif()
-        if raw_exif:
-            for tag, value in raw_exif.items():
-                tag_name = TAGS.get(tag, tag)
-                exif[tag_name] = value
+    for tag_id, value in exif_data.items():
+        tag = ExifTags.TAGS.get(tag_id, tag_id)
+        exif[tag] = serialize_value(value)
     return exif
 
 
 def parse_icc_profile(icc_bytes):
-    """
-    Tenta extrair informações legíveis de um perfil ICC.
-    """
     try:
         profile = ImageCms.ImageCmsProfile(BytesIO(icc_bytes))
-        desc = ImageCms.getProfileDescription(profile)
-        return desc
-    except Exception as e:
-        return f"Perfil ICC não legível ({e})"
+        return ImageCms.getProfileDescription(profile)
+    except Exception:
+        return ""
+
+
+def extract_gps(exif):
+    gps = exif.get("GPSInfo", {})
+    gps_lat = gps_long = 0.0
+
+    def convert_gps(coord, ref):
+        try:
+            deg, min_, sec = coord
+            decimal = float(deg) + float(min_) / 60 + float(sec) / 3600
+            if ref in ["S", "W"]:
+                decimal = -decimal
+            return decimal
+        except Exception:
+            return 0.0
+
+    if gps:
+        lat = gps.get(2)
+        lat_ref = gps.get(1)
+        lon = gps.get(4)
+        lon_ref = gps.get(3)
+
+        if lat and lat_ref:
+            gps_lat = convert_gps(lat, lat_ref)
+        if lon and lon_ref:
+            gps_long = convert_gps(lon, lon_ref)
+
+    return gps_lat, gps_long
 
 
 def extract_image_metadata(image_path):
     try:
         with Image.open(image_path) as img:
-            exif = get_exif_data(img)
-            data = {
-                "format": img.format,
-                "mode": img.mode,
-                "width": int(img.width),
-                "height": int(img.height),
-                "info": {
-                    "datetime": img.info.get("datetime", ""),
-                    "exif": exif,
-                    "icc_profile": parse_icc_profile(img.info["icc_profile"]) if "icc_profile" in img.info else "",
-                    "dpi": img.info.get("dpi", (0, 0)),
-                    "compression": img.info.get("compression", ""),
-                    "transparency": img.info.get("transparency", ""),
-                    "gamma": img.info.get("gamma", ""),
-                    "background": img.info.get("background", ""),
-                    "interlace": img.info.get("interlace", ""),
-                    "palette": img.getpalette() if img.mode == "P" else "",
-                    "channels": len(img.getbands()),
-                    "has_alpha": "A" in img.getbands(),
-                    "comments": img.info.get("comments", ""),
-                },
-            }
-            return serialize_info(data)
+            exif = get_exif_dict(img)
+            gps_lat, gps_long = extract_gps(exif)
 
-    except Exception as e:
+            dpi = img.info.get("dpi", (0, 0))
+            icc_profile = parse_icc_profile(img.info.get("icc_profile", b""))
+
+            metadata = {
+                "format": img.format or "",
+                "mode": img.mode or "",
+                "width": img.width,
+                "height": img.height,
+                "capture_date": exif.get("DateTimeOriginal", ""),
+                "software": exif.get("Software", ""),
+                "make": exif.get("Make", ""),
+                "model": exif.get("Model", ""),
+                "lens_model": exif.get("LensModel", ""),
+                "iso": exif.get("ISOSpeedRatings", 0),
+                "exposure_time": exif.get("ExposureTime", ""),
+                "dpi_x": dpi[0],
+                "dpi_y": dpi[1],
+                "icc_profile": icc_profile,
+                "gps_latitude": gps_lat,
+                "gps_longitude": gps_long,
+            }
+            return metadata
+    except Exception:
         return {
             "format": "",
             "mode": "",
             "width": 0,
             "height": 0,
-            "info": {},
+            "capture_date": "",
+            "software": "",
+            "make": "",
+            "model": "",
+            "lens_model": "",
+            "iso": 0,
+            "exposure_time": "",
+            "dpi_x": 0,
+            "dpi_y": 0,
+            "icc_profile": "",
+            "gps_latitude": "",
+            "gps_longitude": "",
         }
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python image_metadata.py <caminho_da_imagem>")
         sys.exit(1)
 
     image_path = sys.argv[1]
-
-    try:
-        metadata = extract_image_metadata(image_path)
-        print(json.dumps(metadata, indent=2, ensure_ascii=False))
-    except Exception as e:
-        print(
-            {
-                "format": "",
-                "mode": "",
-                "width": 0,
-                "height": 0,
-                "info": {},
-            }
-        )
+    metadata = extract_image_metadata(image_path)
+    print(json.dumps(metadata, ensure_ascii=False))
