@@ -1,6 +1,7 @@
 import sys
 import json
 from mutagen import File
+from mutagen.id3 import ID3, ID3NoHeaderError
 
 # Mapeia nomes técnicos (ID3v2) para chaves amigáveis
 ID3_TAG_MAP = {
@@ -58,7 +59,7 @@ def serialize_value(value):
         return value[0] if len(value) > 0 and isinstance(value[0], (str, int, float)) else ""
     elif hasattr(value, "text"):
         return value.text[0] if isinstance(value.text, list) else value.text
-    return ""
+    return str(value) if value is not None else ""
 
 
 def extract_metadata(path):
@@ -85,11 +86,24 @@ def extract_metadata(path):
             output["bit_depth"] = getattr(info, "bits_per_sample", 0)
 
         # Tags
-        if audio.tags:
-            for key, value in audio.tags.items():
-                friendly = ID3_TAG_MAP.get(key, None)
-                if friendly and friendly in output:
-                    output[friendly] = serialize_value(value)
+        id3_tags = ID3(path)
+        if id3_tags is None:
+            return output
+
+        output["title"] = serialize_value(id3_tags["TIT2"].text[0])
+        output["artist"] = serialize_value(id3_tags["TPE1"].text[0])
+        output["album"] = serialize_value(id3_tags["TALB"].text[0])
+        output["album_artist"] = serialize_value(id3_tags["TPE2"].text[0])
+        output["track_number"] = serialize_value(id3_tags["TRCK"].text[0])
+        output["genre"] = serialize_value(id3_tags["TCON"].text[0])
+        output["composer"] = serialize_value(id3_tags["TCOM"].text[0])
+        output["year"] = serialize_value(id3_tags["TYER"].text[0])
+        output["recording_date"] = serialize_value(id3_tags["TDRC"].text[0])
+        output["encoder"] = serialize_value(id3_tags["TENC"].text[0])
+        output["publisher"] = serialize_value(id3_tags["TPUB"].text[0])
+        output["original_release_date"] = serialize_value(id3_tags["TDOR"].text[0])
+        output["original_artist"] = serialize_value(id3_tags["TOPE"].text[0])
+        output["lyricist"] = serialize_value(id3_tags["TEXT"].text[0])
 
     except Exception:
         pass

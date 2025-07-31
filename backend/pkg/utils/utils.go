@@ -332,3 +332,24 @@ func RunPythonScript(scriptName string, arg ...string) (string, error) {
 	}
 	return string(output), nil
 }
+
+func StructToArgs(v interface{}) []interface{} {
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	args := make([]interface{}, val.NumField())
+	for i := 0; i < val.NumField(); i++ {
+		args[i] = val.Field(i).Interface()
+	}
+	return args
+}
+
+func StructToScanPtrs(v interface{}) []interface{} {
+	val := reflect.ValueOf(v).Elem()
+	ptrs := make([]interface{}, val.NumField())
+	for i := 0; i < val.NumField(); i++ {
+		ptrs[i] = val.Field(i).Addr().Interface()
+	}
+	return ptrs
+}
