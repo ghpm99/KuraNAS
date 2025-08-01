@@ -150,7 +150,7 @@ type ImageMetadataModel struct {
 	MaxApertureValue  float64 `json:"max_aperture_value"`
 	GPSLatitude       float64 `json:"gps_latitude"`
 	GPSLongitude      float64 `json:"gps_longitude"`
-	GPSAltitude       string  `json:"gps_altitude"`
+	GPSAltitude       float64 `json:"gps_altitude"`
 	GPSDate           string  `json:"gps_date"`
 	GPSTime           string  `json:"gps_time"`
 	ImageDescription  string  `json:"image_description"`

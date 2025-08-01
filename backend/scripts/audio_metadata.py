@@ -1,7 +1,9 @@
+import os
 import sys
 import json
+import traceback
 from mutagen import File
-from mutagen.id3 import ID3, ID3NoHeaderError
+from mutagen.id3 import ID3
 
 # Mapeia nomes técnicos (ID3v2) para chaves amigáveis
 ID3_TAG_MAP = {
@@ -90,25 +92,64 @@ def extract_metadata(path):
         if id3_tags is None:
             return output
 
-        output["title"] = serialize_value(id3_tags["TIT2"].text[0])
-        output["artist"] = serialize_value(id3_tags["TPE1"].text[0])
-        output["album"] = serialize_value(id3_tags["TALB"].text[0])
-        output["album_artist"] = serialize_value(id3_tags["TPE2"].text[0])
-        output["track_number"] = serialize_value(id3_tags["TRCK"].text[0])
-        output["genre"] = serialize_value(id3_tags["TCON"].text[0])
-        output["composer"] = serialize_value(id3_tags["TCOM"].text[0])
-        output["year"] = serialize_value(id3_tags["TYER"].text[0])
-        output["recording_date"] = serialize_value(id3_tags["TDRC"].text[0])
-        output["encoder"] = serialize_value(id3_tags["TENC"].text[0])
-        output["publisher"] = serialize_value(id3_tags["TPUB"].text[0])
-        output["original_release_date"] = serialize_value(id3_tags["TDOR"].text[0])
-        output["original_artist"] = serialize_value(id3_tags["TOPE"].text[0])
-        output["lyricist"] = serialize_value(id3_tags["TEXT"].text[0])
+        output["title"] = serialize_value(
+            id3_tags.get("TIT2").text[0] if id3_tags.get("TIT2") and id3_tags.get("TIT2").text else ""
+        )
+        output["artist"] = serialize_value(
+            id3_tags.get("TPE1").text[0] if id3_tags.get("TPE1") and id3_tags.get("TPE1").text else ""
+        )
+        output["album"] = serialize_value(
+            id3_tags.get("TALB").text[0] if id3_tags.get("TALB") and id3_tags.get("TALB").text else ""
+        )
+        output["album_artist"] = serialize_value(
+            id3_tags.get("TPE2").text[0] if id3_tags.get("TPE2") and id3_tags.get("TPE2").text else ""
+        )
+        output["track_number"] = serialize_value(
+            id3_tags.get("TRCK").text[0] if id3_tags.get("TRCK") and id3_tags.get("TRCK").text else ""
+        )
+        output["genre"] = serialize_value(
+            id3_tags.get("TCON").text[0] if id3_tags.get("TCON") and id3_tags.get("TCON").text else ""
+        )
+        output["composer"] = serialize_value(
+            id3_tags.get("TCOM").text[0] if id3_tags.get("TCOM") and id3_tags.get("TCOM").text else ""
+        )
+        output["year"] = serialize_value(
+            id3_tags.get("TYER").text[0] if id3_tags.get("TYER") and id3_tags.get("TYER").text else ""
+        )
+        output["recording_date"] = serialize_value(
+            id3_tags.get("TDRC").text[0] if id3_tags.get("TDRC") and id3_tags.get("TDRC").text else ""
+        )
+        output["encoder"] = serialize_value(
+            id3_tags.get("TENC").text[0] if id3_tags.get("TENC") and id3_tags.get("TENC").text else ""
+        )
+        output["publisher"] = serialize_value(
+            id3_tags.get("TPUB").text[0] if id3_tags.get("TPUB") and id3_tags.get("TPUB").text else ""
+        )
+        output["original_release_date"] = serialize_value(
+            id3_tags.get("TDOR").text[0] if id3_tags.get("TDOR") and id3_tags.get("TDOR").text else ""
+        )
+        output["original_artist"] = serialize_value(
+            id3_tags.get("TOPE").text[0] if id3_tags.get("TOPE") and id3_tags.get("TOPE").text else ""
+        )
+        output["lyricist"] = serialize_value(
+            id3_tags.get("TEXT").text[0] if id3_tags.get("TEXT") and id3_tags.get("TEXT").text else ""
+        )
 
     except Exception:
-        pass
+        save_traceback(path)
 
     return output
+
+
+def save_traceback(path):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    logs_dir = os.path.join(base_dir, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    log_path = os.path.join(logs_dir, "audio_metadata.log")
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(f"Erro ao processar audio {path}:\n")
+        f.write(traceback.format_exc())
+        f.write("\n")
 
 
 if __name__ == "__main__":
@@ -117,4 +158,5 @@ if __name__ == "__main__":
         metadata = extract_metadata(path)
         print(json.dumps(metadata, ensure_ascii=False, indent=2))
     except Exception:
+        save_traceback(path)
         print(json.dumps(OUTPUT_KEYS, ensure_ascii=False, indent=2))
