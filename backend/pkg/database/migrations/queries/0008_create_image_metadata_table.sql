@@ -41,7 +41,7 @@ CREATE TABLE image_metadata (
     max_aperture_value REAL,
     gps_latitude REAL,
     gps_longitude REAL,
-    gps_altitude TEXT,
+    gps_altitude REAL,
     gps_date TEXT,
     gps_time TEXT,
     image_description TEXT,
