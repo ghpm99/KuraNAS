@@ -32,7 +32,12 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
-
+	files.GET("/total-space-used", context.Files.Handler.GetTotalSpaceUsedHandler)
+	files.GET("/total-files", context.Files.Handler.GetTotalFilesHandler)
+	files.GET("/total-directory", context.Files.Handler.GetTotalDirectoryHandler)
+	files.GET("/report-size-by-format", context.Files.Handler.GetReportSizeByFormatHandler)
+	files.GET("/top-files-by-size", context.Files.Handler.GetTopFilesBySizeHandler)
+	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {

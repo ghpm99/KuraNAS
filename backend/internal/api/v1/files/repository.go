@@ -193,3 +193,133 @@ func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (in
 	return childrenCount, nil
 
 }
+
+func (r *Repository) GetCountByType(fileType FileType) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetCountByType: %v", err)
+	}
+
+	row := r.DbContext.QueryRow(
+		queries.CountByTypeQuery,
+		fileType,
+	)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return fail(err)
+	}
+
+	return count, nil
+}
+
+func (r *Repository) GetTotalSpaceUsed() (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, fmt.Errorf("GetTotalSpaceUsed: %v", err)
+	}
+
+	row := r.DbContext.QueryRow(queries.TotalSpaceUsedQuery)
+
+	var totalSpaceUsed int
+	if err := row.Scan(&totalSpaceUsed); err != nil {
+		return fail(err)
+	}
+
+	return totalSpaceUsed, nil
+}
+
+func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
+	fail := func(err error) ([]SizeReportModel, error) {
+		return nil, fmt.Errorf("GetReportSizeByFormat: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(queries.CountByFormatQuery, File)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	var report []SizeReportModel
+
+	for rows.Next() {
+		var item SizeReportModel
+		if err := rows.Scan(&item.Format, &item.Total, &item.Size); err != nil {
+			return fail(err)
+		}
+		report = append(report, item)
+	}
+
+	return report, nil
+}
+
+func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
+	fail := func(err error) ([]FileModel, error) {
+		return nil, fmt.Errorf("GetTopFilesBySize: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(queries.TopFilesBySizeQuery, limit)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	var topFiles []FileModel
+
+	for rows.Next() {
+		var file FileModel
+		if err := rows.Scan(
+			&file.ID,
+			&file.Name,
+			&file.Size,
+			&file.Path,
+		); err != nil {
+			return fail(err)
+		}
+		topFiles = append(topFiles, file)
+	}
+
+	return topFiles, nil
+}
+
+func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error) {
+
+	paginationResponse := utils.PaginationResponse[DuplicateFilesModel]{
+		Items: []DuplicateFilesModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	fail := func(err error) (utils.PaginationResponse[DuplicateFilesModel], error) {
+		return paginationResponse, fmt.Errorf("GetDuplicateFiles: %v", err)
+	}
+
+	rows, err := r.DbContext.Query(
+		queries.GetDuplicateFilesQuery,
+		pageSize+1,
+		utils.CalculateOffset(page, pageSize),
+	)
+	if err != nil {
+		return fail(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var duplicate DuplicateFilesModel
+		if err := rows.Scan(
+			&duplicate.Name,
+			&duplicate.Size,
+			&duplicate.Copies,
+			&duplicate.Paths,
+		); err != nil {
+			return fail(err)
+		}
+		paginationResponse.Items = append(paginationResponse.Items, duplicate)
+	}
+
+	paginationResponse.UpdatePagination()
+
+	return paginationResponse, nil
+}

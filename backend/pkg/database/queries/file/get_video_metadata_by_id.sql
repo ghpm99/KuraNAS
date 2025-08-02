@@ -1,0 +1,27 @@
+SELECT
+    id,
+    file_id,
+    "path",
+    format_name,
+    "size",
+    duration,
+    width,
+    height,
+    frame_rate,
+    nb_frames,
+    bit_rate,
+    codec_name,
+    codec_long_name,
+    pix_fmt,
+    "level",
+    "profile",
+    aspect_ratio,
+    audio_codec,
+    audio_channels,
+    audio_sample_rate,
+    audio_bit_rate,
+    created_at
+FROM
+    video_metadata
+WHERE
+    id = ?;

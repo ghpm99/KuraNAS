@@ -9,7 +9,9 @@ NODE_VERSION := $(shell node -v)
 
 build:
 	@echo "Building backend..."
-	@go build -o kuranas $(MAIN_GO)
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
+	go build -ldflags "-X 'nas-go/api/api.Version=x.x.x' -X 'nas-go/api/api.CommitHash=abc123' -X 'nas-go/api/api.GoVersion=$(GO_VERSION)' -X 'nas-go/api/api.NodeVersion=$(NODE_VERSION)'" \
+	-o kuranas.exe ./cmd/nas
 	@echo "Backend build complete."
 
 test:

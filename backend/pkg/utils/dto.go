@@ -72,12 +72,13 @@ type PaginationResponse[T any] struct {
 type TaskType int
 
 const (
-	ScanFiles      TaskType = 1
-	ScanDir        TaskType = 2
-	UpdateCheckSum TaskType = 3
+	ScanFiles       TaskType = 1
+	ScanDir         TaskType = 2
+	UpdateCheckSum  TaskType = 3
+	CreateThumbnail TaskType = 4
 )
 
 type Task struct {
 	Type TaskType
-	Data string
+	Data any
 }

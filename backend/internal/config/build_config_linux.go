@@ -18,6 +18,8 @@ func GetBuildConfig(key string) string {
 		return "/etc/kuranas/icons/"
 	case "TranslationsPath":
 		return "/etc/kuranas/translations/"
+	case "EnvFilePath":
+		return "/etc/kuranas/.env"
 	default:
 		return ""
 	}

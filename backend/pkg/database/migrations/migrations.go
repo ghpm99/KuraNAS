@@ -26,6 +26,15 @@ var CreateHomeFileIndex6Query string
 //go:embed queries/0007_create_home_file_index.sql
 var CreateHomeFileIndex7Query string
 
+//go:embed queries/0008_create_image_metadata_table.sql
+var CreateImageMetadataTableQuery string
+
+//go:embed queries/0009_create_audio_metadata_table.sql
+var CreateAudioMetadataTableQuery string
+
+//go:embed queries/0010_create_video_metadata_table.sql
+var CreateVideoMetadataTableQuery string
+
 //go:embed queries/0001_create_diary_table.sql
 var CreateDiaryTableQuery string
 
@@ -60,6 +69,15 @@ func fileMigrationList() {
 
 	addMigration("0007_create_home_file_index_7",
 		defaultMigrationFunc(CreateHomeFileIndex7Query))
+
+	addMigration("0008_create_image_metadata_table",
+		defaultMigrationFunc(CreateImageMetadataTableQuery))
+
+	addMigration("0009_create_audio_metadata_table",
+		defaultMigrationFunc(CreateAudioMetadataTableQuery))
+
+	addMigration("0010_create_video_metadata_table",
+		defaultMigrationFunc(CreateVideoMetadataTableQuery))
 
 }
 

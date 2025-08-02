@@ -28,14 +28,7 @@ func (handler *Handler) GetTranslationJson(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	filePath, err := i18n.GetPathFileTranslate()
-	if err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
+	filePath := i18n.GetPathFileTranslate()
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
 	c.File(filePath)

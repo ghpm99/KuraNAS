@@ -3,22 +3,31 @@ package files
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"image"
+	"log"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
-	"strconv"
+	"sort"
+	"strings"
 )
 
 type Service struct {
-	Repository RepositoryInterface
-	Tasks      chan utils.Task
+	Repository         RepositoryInterface
+	MetadataRepository MetadataRepositoryInterface
+	Tasks              chan utils.Task
 }
 
-func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
-	return &Service{Repository: repository, Tasks: tasksChannel}
+func NewService(repository RepositoryInterface, metadataRepository MetadataRepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
+	return &Service{
+		Repository:         repository,
+		MetadataRepository: metadataRepository,
+		Tasks:              tasksChannel,
+	}
 }
 
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
@@ -34,10 +43,18 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 			return
 		}
 
+		err = s.UpsertMetadata(tx, fileDtoResult)
+		if err != nil {
+			log.Printf("Error upserting metadata: %v\n", err)
+			return
+		}
+
 		fileDtoResult, err = result.ToDto()
 		return
 	})
-
+	if err != nil {
+		return FileDto{}, fmt.Errorf("error creating file: %w", err)
+	}
 	return
 }
 
@@ -137,6 +154,15 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 		}
 		result, err = service.Repository.UpdateFile(tx, fileModel)
 
+		if err != nil {
+			return
+		}
+
+		err = service.UpsertMetadata(tx, fileDto)
+		if err != nil {
+			log.Printf("Error upserting metadata: %v\n", err)
+			return
+		}
 		return
 
 	})
@@ -161,12 +187,88 @@ func (s *Service) ScanDirTask(data string) {
 	s.Tasks <- task
 }
 
-func (s *Service) UpdateCheckSumTask(fileId int) {
-	task := utils.Task{
-		Type: utils.UpdateCheckSum,
-		Data: strconv.Itoa(fileId),
+func (s *Service) UpdateCheckSum(fileId int) {
+
+	fileDto, err := s.GetFileById(fileId)
+
+	if err != nil {
+		log.Printf("Erro ao obter arquivo: %v\n", err)
+		return
 	}
-	s.Tasks <- task
+
+	switch fileDto.Type {
+	case File:
+		s.updateFileCheckSum(fileDto)
+	case Directory:
+		s.updateDirectoryCheckSum(fileDto)
+	}
+}
+
+func (s *Service) updateFileCheckSum(
+	fileDto FileDto,
+) {
+	checkSumHash, err := fileDto.GetCheckSumFromFile()
+
+	if err != nil {
+		log.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
+		return
+	}
+
+	fileDto.CheckSum = checkSumHash
+	result, err := s.UpdateFile(fileDto)
+
+	if err != nil || !result {
+		log.Printf("Erro ao atualizar arquivo: %v\n", err)
+		return
+	}
+
+	log.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
+
+}
+
+func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
+
+	var page = 1
+	var hasNext = true
+	var checkSumFiles []string
+
+	for hasNext {
+
+		filesInDirectory, err := s.GetFiles(FileFilter{
+			ParentPath: utils.Optional[string]{
+				Value:    fileDto.Path,
+				HasValue: true,
+			},
+		}, page, 1000)
+
+		if err != nil {
+			log.Printf("Erro ao obter arquivos do diretório: %v\n", err)
+			return
+		}
+
+		for _, file := range filesInDirectory.Items {
+			checkSumFiles = append(checkSumFiles, file.CheckSum)
+		}
+		hasNext = filesInDirectory.Pagination.HasNext
+
+		if hasNext {
+			page = filesInDirectory.Pagination.Page + 1
+
+		}
+	}
+
+	resultCheckSum := fileDto.GetCheckSumFromPath(checkSumFiles)
+
+	fileDto.CheckSum = resultCheckSum
+	result, err := s.UpdateFile(fileDto)
+
+	if err != nil || !result {
+		log.Printf("Erro ao atualizar diretório: %v\n", err)
+		return
+	}
+
+	log.Printf("Checksum atualizado com sucesso para o diretório: %s\n", fileDto.Name)
+
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
@@ -219,4 +321,179 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 		Blob:   data,
 		Format: file.Format,
 	}, nil
+}
+
+func (s *Service) GetTotalSpaceUsed() (int, error) {
+	return s.Repository.GetTotalSpaceUsed()
+}
+
+func (s *Service) GetTotalFiles() (int, error) {
+	return s.Repository.GetCountByType(File)
+}
+func (s *Service) GetTotalDirectory() (int, error) {
+	return s.Repository.GetCountByType(Directory)
+}
+
+func (s *Service) GetReportSizeByFormat() ([]SizeReportDto, error) {
+	report, err := s.Repository.GetReportSizeByFormat()
+	if err != nil {
+		return nil, fmt.Errorf("error getting report size by format: %w", err)
+	}
+	sizeReportMap := make(map[string]SizeReportDto, len(report))
+
+	var totalUsed int64
+	for _, item := range report {
+		totalUsed += item.Size
+		formatType := utils.GetFormatTypeByExtension(item.Format)
+		if dto, exists := sizeReportMap[formatType.Type]; exists {
+			dto.Total += item.Total
+			dto.Size += item.Size
+			sizeReportMap[formatType.Type] = dto
+		} else {
+			sizeReportMap[formatType.Type] = SizeReportDto{
+				Format: formatType.Type,
+				Total:  item.Total,
+				Size:   item.Size,
+			}
+		}
+	}
+
+	sizeReportDtos := make([]SizeReportDto, 0, len(sizeReportMap))
+
+	for typeName, dto := range sizeReportMap {
+		dto.Percentage = (float64(dto.Size) / float64(totalUsed)) * 100
+		dto.Format = i18n.Translate(typeName)
+		sizeReportDtos = append(sizeReportDtos, dto)
+	}
+
+	sort.Slice(sizeReportDtos, func(i, j int) bool {
+		return sizeReportDtos[i].Size > sizeReportDtos[j].Size
+	})
+
+	return sizeReportDtos, nil
+}
+
+func (s *Service) GetTopFilesBySize(limit int) ([]FileDto, error) {
+	files, err := s.Repository.GetTopFilesBySize(limit)
+	if err != nil {
+		return nil, fmt.Errorf("error getting top files by size: %w", err)
+	}
+
+	fileDtos := make([]FileDto, len(files))
+	for i, file := range files {
+		fileDto, err := file.ToDto()
+		if err != nil {
+			return nil, fmt.Errorf("error converting file model to dto: %w", err)
+		}
+		fileDtos[i] = fileDto
+	}
+
+	return fileDtos, nil
+}
+
+func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error) {
+	duplicateFiles, err := s.Repository.GetDuplicateFiles(page, pageSize)
+	if err != nil {
+		return DuplicateFileReportDto{}, fmt.Errorf("error getting duplicate files: %w", err)
+	}
+
+	report := DuplicateFileReportDto{
+		Files:      make([]DuplicateFileDto, len(duplicateFiles.Items)),
+		Pagination: duplicateFiles.Pagination,
+	}
+
+	for i, file := range duplicateFiles.Items {
+		report.TotalFiles += file.Copies
+		report.TotalSize += file.Size
+		report.Files[i] = DuplicateFileDto{
+			Name:   file.Name,
+			Size:   file.Size,
+			Copies: file.Copies,
+			Paths:  strings.Split(file.Paths, ","),
+		}
+	}
+
+	return report, nil
+}
+
+func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
+	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+
+	switch formatType.Type {
+	case utils.FormatTypeImage:
+		_, err := s.UpsertImageMetadata(tx, fileDto)
+		return err
+	case utils.FormatTypeAudio:
+		_, err := s.UpsertAudioMetadata(tx, fileDto)
+		return err
+	case utils.FormatTypeVideo:
+		_, err := s.UpsertVideoMetadata(tx, fileDto)
+		log.Println("UpsertVideoMetadata:", err)
+		return err
+	default:
+		return nil
+	}
+}
+
+func (s *Service) UpsertImageMetadata(tx *sql.Tx, fileDto FileDto) (ImageMetadataModel, error) {
+	metadata := ImageMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.ImageMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+		return ImageMetadataModel{}, err
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+		return ImageMetadataModel{}, err
+	}
+
+	return s.MetadataRepository.UpsertImageMetadata(tx, metadata)
+}
+
+func (s *Service) UpsertAudioMetadata(tx *sql.Tx, fileDto FileDto) (AudioMetadataModel, error) {
+	metadata := AudioMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.AudioMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+		return AudioMetadataModel{}, err
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+		return AudioMetadataModel{}, err
+	}
+
+	return s.MetadataRepository.UpsertAudioMetadata(tx, metadata)
+}
+
+func (s *Service) UpsertVideoMetadata(tx *sql.Tx, fileDto FileDto) (VideoMetadataModel, error) {
+	metadata := VideoMetadataModel{
+		FileId: fileDto.ID,
+		Path:   fileDto.Path,
+	}
+
+	result, err := utils.RunPythonScript(utils.VideoMetadata, fileDto.Path)
+	if err != nil {
+		log.Println("Erro:", err)
+		return VideoMetadataModel{}, err
+	}
+
+	err = json.Unmarshal([]byte(result), &metadata)
+	if err != nil {
+		log.Println("Erro ao converter JSON:", err)
+		return VideoMetadataModel{}, err
+	}
+
+	return s.MetadataRepository.UpsertVideoMetadata(tx, metadata)
 }
