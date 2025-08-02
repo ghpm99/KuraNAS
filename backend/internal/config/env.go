@@ -8,8 +8,9 @@ import (
 )
 
 func LoadConfig() error {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment")
+
+	if err := godotenv.Load(GetBuildConfig("EnvFilePath")); err != nil {
+		log.Println("No .env file found at", GetBuildConfig("EnvFilePath"), ", using system environment")
 	}
 
 	return nil

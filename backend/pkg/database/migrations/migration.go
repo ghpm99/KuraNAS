@@ -30,11 +30,13 @@ var migrationList = []migration{
 
 func Init(db *sql.DB) {
 	if db == nil {
+		log.Println("Database connection is nil")
 		panic("Database connection is nil")
 	}
 	initMigrationList()
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
+		log.Println("Failed to begin transaction:", err)
 		panic("Failed to begin transaction: " + err.Error())
 	}
 	defer tx.Rollback()
@@ -43,11 +45,13 @@ func Init(db *sql.DB) {
 
 	for _, m := range migrationList {
 		if err := runMigration(tx, m.Name, m.Migrate); err != nil {
+			log.Printf("Failed to run migration %s: %v", m.Name, err)
 			panic("Failed to run migration " + m.Name + ": " + err.Error())
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
+		log.Println("Failed to commit transaction:", err)
 		panic("Failed to commit transaction: " + err.Error())
 	}
 	log.Println("All migrations applied successfully")

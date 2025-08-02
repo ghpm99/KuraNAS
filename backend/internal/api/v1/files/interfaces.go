@@ -12,6 +12,11 @@ type RepositoryInterface interface {
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
+	GetCountByType(fileType FileType) (int, error)
+	GetTotalSpaceUsed() (int, error)
+	GetReportSizeByFormat() ([]SizeReportModel, error)
+	GetTopFilesBySize(limit int) ([]FileModel, error)
+	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 }
 
 type ServiceInterface interface {
@@ -22,9 +27,16 @@ type ServiceInterface interface {
 	UpdateFile(file FileDto) (result bool, err error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
-	UpdateCheckSumTask(fileId int)
+	UpdateCheckSum(fileId int)
 	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
+	GetTotalSpaceUsed() (int, error)
+	GetTotalFiles() (int, error)
+	GetTotalDirectory() (int, error)
+	GetReportSizeByFormat() ([]SizeReportDto, error)
+	GetTopFilesBySize(limit int) ([]FileDto, error)
+	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
+	UpsertMetadata(tx *sql.Tx, file FileDto) error
 }
 
 type RecentFileRepositoryInterface interface {
@@ -40,4 +52,16 @@ type RecentFileServiceInterface interface {
 	GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error)
 	DeleteRecentFile(ip string, fileID int) error
 	GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error)
+}
+
+type MetadataRepositoryInterface interface {
+	GetImageMetadataByID(id int) (ImageMetadataModel, error)
+	UpsertImageMetadata(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error)
+	DeleteImageMetadata(id int) error
+	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
+	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
+	DeleteAudioMetadata(id int) error
+	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
+	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
+	DeleteVideoMetadata(id int) error
 }

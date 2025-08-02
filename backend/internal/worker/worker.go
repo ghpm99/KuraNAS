@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"fmt"
+	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
@@ -11,9 +11,10 @@ import (
 )
 
 type WorkerContext struct {
-	Tasks   chan utils.Task
-	Service files.ServiceInterface
-	Logger  logger.LoggerServiceInterface
+	Tasks           chan utils.Task
+	FilesService    files.ServiceInterface
+	MetadataService files.MetadataRepositoryInterface
+	Logger          logger.LoggerServiceInterface
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -29,30 +30,32 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 func startWorkersScheduler(context *WorkerContext) {
 	for {
-		fmt.Println("Escaneamento de arquivos")
+		log.Println("Escaneamento de arquivos")
 		context.Tasks <- utils.Task{
 			Type: utils.ScanFiles,
 			Data: "Escaneamento de arquivos",
 		}
-		fmt.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+		log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
 		time.Sleep(12 * time.Hour)
 	}
 }
 
 func worker(id int, context *WorkerContext) {
 	for task := range context.Tasks {
-		fmt.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
+		log.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
 
 		switch task.Type {
 		case utils.ScanFiles:
-			go ScanFilesWorker(context.Service, context.Logger)
+			go ScanFilesWorker(context.FilesService, context.Logger)
 		case utils.ScanDir:
-			go ScanDirWorker(context.Service, task.Data)
+			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:
-			go UpdateCheckSumWorker(context.Service, task.Data, context.Logger)
+			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
+		case utils.CreateThumbnail:
+			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 		default:
-			fmt.Println("Tipo de tarefa desconhecido")
+			log.Println("Tipo de tarefa desconhecido")
 		}
-		fmt.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
+		log.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}
 }

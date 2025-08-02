@@ -1,0 +1,49 @@
+.container {
+	display: flex;
+	gap: 24px;
+	align-items: center;
+}
+
+@media (max-width: 768px) {
+	.container {
+		flex-direction: column;
+	}
+}
+
+.chart {
+	flex-shrink: 0;
+}
+
+.legend {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	flex: 1;
+}
+
+.legendItem {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.legendColor {
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	flex-shrink: 0;
+}
+
+.legendText {
+	flex: 1;
+}
+
+.typeName {
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.typeStats {
+	font-size: 0.75rem;
+	color: #6b7280;
+}

@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database/migrations"
 
@@ -13,15 +13,15 @@ func ConfigDatabase() (*sql.DB, error) {
 
 	dbPath := config.GetBuildConfig("DbPath")
 
-	fmt.Println("Database path", dbPath)
+	log.Println("Database path", dbPath)
 	localDatabase, errSql := sql.Open("sqlite3", dbPath)
 
 	if errSql != nil {
-		fmt.Println("Erro ao conectar ao banco de dados SQLite:", errSql)
+		log.Println("Erro ao conectar ao banco de dados SQLite:", errSql)
 		return nil, errSql
 	}
 
-	fmt.Println("Successfully connected to database!")
+	log.Println("Successfully connected to database!")
 	migrations.Init(localDatabase)
 	return localDatabase, nil
 

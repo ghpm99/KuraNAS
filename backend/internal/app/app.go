@@ -9,9 +9,6 @@ import (
 
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +17,7 @@ import (
 type Application struct {
 	Router  *gin.Engine
 	Context *AppContext
+	Server  *http.Server
 }
 
 func InitializeApp() (*Application, error) {
@@ -27,9 +25,15 @@ func InitializeApp() (*Application, error) {
 		return nil, err
 	}
 	config.InitializeConfig()
-	i18n.LoadTranslations()
-	if err := config.LoadConfig(); err != nil {
+
+	if err := i18n.LoadTranslations(); err != nil {
 		return nil, err
+	}
+
+	if config.AppConfig.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
 	}
 
 	database, err := database.ConfigDatabase()
@@ -44,12 +48,13 @@ func InitializeApp() (*Application, error) {
 	RegisterRoutes(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
-		Service: appContext.Files.Service,
-		Tasks:   *appContext.Tasks,
-		Logger:  appContext.Logger,
+		FilesService:    appContext.Files.Service,
+		MetadataService: appContext.Files.MetadataRepository,
+		Tasks:           *appContext.Tasks,
+		Logger:          appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 16)
+	worker.StartWorkers(workerFileContext, 200)
 
 	return &Application{
 		Router:  router,
@@ -58,41 +63,31 @@ func InitializeApp() (*Application, error) {
 }
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
-	if enableGraceFul {
-		return configGracefulStop(app.Router)
-	} else {
-		return app.Router.Run(addr)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: app.Router.Handler(),
 	}
+
+	app.Server = server
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen: %s\n", err)
+	}
+
+	return nil
 }
 
-func configGracefulStop(router *gin.Engine) error {
-	server := &http.Server{
-		Addr:    ":8000",
-		Handler: router.Handler(),
-	}
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutdown Server...")
+func (app *Application) Stop() error {
+	log.Println("Parando servidor...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
+
+	if err := app.Server.Shutdown(ctx); err != nil {
+		log.Printf("Erro ao desligar servidor: %v\n", err)
 		return err
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Println("timeout of 5 seconds.")
-	}
-	log.Println("Server exiting")
-
+	log.Println("Servidor encerrado com sucesso.")
 	return nil
 }

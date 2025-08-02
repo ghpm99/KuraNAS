@@ -10,6 +10,7 @@ import {
 	messageType,
 } from './ActivityDiaryContext';
 import { Pagination } from '@/types/pagination';
+import { useSnackbar } from 'notistack';
 
 const initialFormState: ActivityDiaryFormData = {
 	name: '',
@@ -38,6 +39,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
 	const [message, setMessage] = useState<{ text: string; type: messageType } | undefined>(undefined);
+	const { enqueueSnackbar } = useSnackbar();
 
 	const {
 		data: summaryData,
@@ -72,13 +74,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			return response.data;
 		},
 		onSuccess: (data) => {
-			setMessage({ text: 'Atividade adicionada com sucesso!', type: 'success' });
-			console.log('Diário criado:', data);
+			enqueueSnackbar('Atividade adicionada com sucesso!', { variant: 'success' });
 			refetchList();
 			refetchSummary();
 		},
 		onError: (error) => {
-			setMessage({ text: 'Erro ao adicionar atividade.', type: 'error' });
+			enqueueSnackbar('Erro ao adicionar atividade.', { variant: 'error' });
 			console.error('Erro ao criar diário:', error);
 		},
 	});
@@ -91,13 +92,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			return response.data;
 		},
 		onSuccess: (data) => {
-			setMessage({ text: 'Atividade duplicada com sucesso!', type: 'success' });
-			console.log('Diário criado:', data);
+			enqueueSnackbar('Atividade duplicada com sucesso!', { variant: 'success' });
 			refetchList();
 			refetchSummary();
 		},
 		onError: (error) => {
-			setMessage({ text: 'Erro ao duplicar atividade.', type: 'error' });
+			enqueueSnackbar('Erro ao duplicar atividade.', { variant: 'error' });
 			console.error('Erro ao criar diário:', error);
 		},
 	});
