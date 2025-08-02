@@ -8,6 +8,7 @@ import ActivityDiaryProvider from '../hooks/ActivityDiaryProvider';
 import FileProvider from '../hooks/fileProvider';
 import { UIProvider } from '../hooks/UI';
 import Layout from '../layout/Layout/Layout';
+import { SnackbarProvider } from 'notistack';
 
 const darkTheme = createTheme({
 	palette: {
@@ -17,25 +18,27 @@ const darkTheme = createTheme({
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
 	return (
-		<ThemeProvider theme={darkTheme}>
-			<CssBaseline />
-			<UIProvider>
-				<FileProvider>
-					<ActivityDiaryProvider>
-						<AboutProvider>
-							<AnalyticsProvider>
-								<BrowserRouter>
-									<Layout>
-										<ActivePageListener />
-										{children}
-									</Layout>
-								</BrowserRouter>
-							</AnalyticsProvider>
-						</AboutProvider>
-					</ActivityDiaryProvider>
-				</FileProvider>
-			</UIProvider>
-		</ThemeProvider>
+		<SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+			<ThemeProvider theme={darkTheme}>
+				<CssBaseline />
+				<UIProvider>
+					<FileProvider>
+						<ActivityDiaryProvider>
+							<AboutProvider>
+								<AnalyticsProvider>
+									<BrowserRouter>
+										<Layout>
+											<ActivePageListener />
+											{children}
+										</Layout>
+									</BrowserRouter>
+								</AnalyticsProvider>
+							</AboutProvider>
+						</ActivityDiaryProvider>
+					</FileProvider>
+				</UIProvider>
+			</ThemeProvider>
+		</SnackbarProvider>
 	);
 };
 
