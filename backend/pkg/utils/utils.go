@@ -5,6 +5,7 @@ import (
 	"nas-go/api/internal/config"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -325,7 +326,8 @@ const (
 )
 
 func RunPythonScript(scriptName string, arg ...string) (string, error) {
-	args := append([]string{config.GetBuildConfig("ScriptPath") + scriptName}, arg...)
+	scriptPath := filepath.Join(config.GetBuildConfig("ScriptPath"), scriptName)
+	args := append([]string{scriptPath}, arg...)
 	cmd := exec.Command(config.GetBuildConfig("PythonScript"), args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

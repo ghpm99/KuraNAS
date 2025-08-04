@@ -6,6 +6,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func GetBuildConfig(key string) string {
@@ -21,9 +22,9 @@ func GetBuildConfig(key string) string {
 	case "EnvFilePath":
 		return fmt.Sprintf("%s\\Kuranas\\.env", os.Getenv("ProgramFiles"))
 	case "PythonScript":
-		return fmt.Sprintf(`%s\\Kuranas\\scripts\\.venv\\Scripts\\python.exe`, os.Getenv("ProgramFiles"))
+		return filepath.Join(os.Getenv("ProgramFiles"), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
 	case "ScriptPath":
-		return fmt.Sprintf(`%s\\Kuranas\\scripts\\`, os.Getenv("ProgramFiles"))
+		return filepath.Join(os.Getenv("ProgramFiles"), "Kuranas", "scripts") + string(os.PathSeparator)
 	default:
 		return ""
 	}
