@@ -121,6 +121,7 @@ jobs:
           cp $BACKEND_DIR/kuranas $BUILD_DIR/
           cp -r $BACKEND_DIR/icons $BUILD_DIR/
           cp -r $BACKEND_DIR/translations $BUILD_DIR/
+          cp -r $BACKEND_DIR/scripts $BUILD_DIR/
 
       - name: Archive build (Linux)
         run: zip -r kuranas-linux.zip $BUILD_DIR
@@ -177,6 +178,7 @@ jobs:
           cp backend/kuranas.exe $BUILD_DIR/
           cp -r backend/icons $BUILD_DIR/
           cp -r backend/translations $BUILD_DIR/
+          cp -r backend/scripts $BUILD_DIR/
 
       - name: Archive build (Windows)
         run: Compress-Archive -Path $env:BUILD_DIR\* -DestinationPath kuranas-windows.zip
