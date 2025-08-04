@@ -32,6 +32,12 @@ func GetBuildConfig(key string) string {
 			return ""
 		}
 		return fmt.Sprintf("%s/.env", currentDir)
+	case "PythonScript":
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return ""
+		}
+		return fmt.Sprintf("%s/scripts/.venv/bin/python", currentDir)
 	default:
 		return ""
 	}
