@@ -22,6 +22,8 @@ func GetBuildConfig(key string) string {
 		return "/etc/kuranas/.env"
 	case "PythonScript":
 		return "/etc/kuranas/scripts/.venv/bin/python"
+	case "ScriptPath":
+		return "/etc/kuranas/scripts/"
 	default:
 		return ""
 	}

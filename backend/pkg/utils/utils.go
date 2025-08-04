@@ -325,7 +325,7 @@ const (
 )
 
 func RunPythonScript(scriptName string, arg ...string) (string, error) {
-	args := append([]string{"scripts/" + scriptName}, arg...)
+	args := append([]string{config.GetBuildConfig("ScriptPath") + scriptName}, arg...)
 	cmd := exec.Command(config.GetBuildConfig("PythonScript"), args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
