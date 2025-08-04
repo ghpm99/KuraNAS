@@ -22,9 +22,9 @@ func GetBuildConfig(key string) string {
 	case "EnvFilePath":
 		return fmt.Sprintf("%s\\Kuranas\\.env", os.Getenv("ProgramFiles"))
 	case "PythonScript":
-		return filepath.Join(os.Getenv("ProgramFiles"), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
+		return filepath.Join(os.Getenv("SystemDrive"), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
 	case "ScriptPath":
-		return filepath.Join(os.Getenv("ProgramFiles"), "Kuranas", "scripts") + string(os.PathSeparator)
+		return filepath.Join(os.Getenv("SystemDrive"), "Kuranas", "scripts") + string(os.PathSeparator)
 	default:
 		return ""
 	}
