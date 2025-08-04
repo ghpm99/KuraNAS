@@ -20,6 +20,8 @@ func GetBuildConfig(key string) string {
 		return "/etc/kuranas/translations/"
 	case "EnvFilePath":
 		return "/etc/kuranas/.env"
+	case "PythonScript":
+		return "/etc/kuranas/scripts/.venv/bin/python"
 	default:
 		return ""
 	}

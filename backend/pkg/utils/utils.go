@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"nas-go/api/internal/config"
 	"net/http"
 	"os/exec"
 	"reflect"
@@ -325,7 +326,7 @@ const (
 
 func RunPythonScript(scriptName string, arg ...string) (string, error) {
 	args := append([]string{"scripts/" + scriptName}, arg...)
-	cmd := exec.Command("scripts/.venv/bin/python", args...)
+	cmd := exec.Command(config.GetBuildConfig("PythonScript"), args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("erro ao executar script python: %v, output: %s", err, string(output))
