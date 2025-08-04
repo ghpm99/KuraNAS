@@ -31,7 +31,9 @@ const FolderTree = () => {
 				expanded={expandedItems.includes(file.id)}
 				selected={selectedItem?.id === file.id}
 			>
-				{file.file_children?.length > 0 && <div className='folder-children'>{renderFiles(file.file_children)}</div>}
+				{file.file_children && file.file_children?.length > 0 && (
+					<div className='folder-children'>{renderFiles(file.file_children)}</div>
+				)}
 			</FolderItem>
 		));
 

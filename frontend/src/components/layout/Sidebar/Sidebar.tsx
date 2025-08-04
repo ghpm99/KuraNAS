@@ -9,7 +9,6 @@ import styles from './Sidebar.module.css';
 const Sidebar = () => {
 	const { t } = useI18n();
 	const { activePage } = useUI();
-	console.log('Sidebar', activePage);
 
 	return (
 		<div className={styles.sidebar}>

@@ -22,7 +22,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files := router.Group("/files")
 
 	files.GET("/", context.Files.Handler.GetFilesHandler)
-	files.GET("/tree", context.Files.Handler.GetFilesThreeHandler)
+	files.GET("/tree", context.Files.Handler.GetFilesTreeHandler)
 	files.GET("/:id", context.Files.Handler.GetChildrenByIdHandler)
 	files.GET("/recent", context.Files.Handler.GetRecentFilesHandler)
 	files.GET("/recent/:id", context.Files.Handler.GetRecentAccessByFileHandler)

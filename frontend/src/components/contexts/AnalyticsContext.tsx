@@ -1,7 +1,7 @@
 import { apiBase } from '@/service';
 import { formatSize } from '@/utils';
-import { useQueries, useQuery } from '@tanstack/react-query';
-import { createContext, type ReactNode, useContext, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { createContext, type ReactNode, useContext } from 'react';
 import { FileData } from '../hooks/fileProvider/fileContext';
 
 interface StorageOverview {
@@ -164,8 +164,6 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 	});
 
 	const refreshAnalytics = () => {
-		// Aqui seria implementada a lógica para atualizar os dados
-		console.log('Refreshing analytics data...');
 		refetchtotalUsedSpace();
 		refetchTotalFiles();
 		refetchtotalFolders();
@@ -174,7 +172,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 		refetchduplicateFiles();
 	};
 
-	const value = {
+	const value: AnalyticsContextType = {
 		analyticsData: {
 			storageOverview: {
 				totalUsedSpace: totalUsedSpace ?? '',

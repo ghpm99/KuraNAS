@@ -15,7 +15,7 @@ export type FileData = {
 	check_sum: string;
 	directory_content_count: number;
 	starred: boolean;
-	file_children: FileData[];
+	file_children?: FileData[];
 };
 
 export type RecentAccessFile = {
