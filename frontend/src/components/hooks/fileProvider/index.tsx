@@ -20,7 +20,7 @@ const findItemInTree = (data: FileData[], itemId: number | null): FileData | nul
 		if (item.id === itemId) {
 			return item;
 		}
-		if (item?.file_children?.length > 0) {
+		if (item?.file_children && item?.file_children?.length > 0) {
 			const itemChildren = findItemInTree(item?.file_children, itemId);
 			if (itemChildren) {
 				return itemChildren;
@@ -84,7 +84,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
-	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children: FileData[]): FileData[] => {
+	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children?: FileData[]): FileData[] => {
 		return tree.map((node) => {
 			if (node.id === parentId) {
 				return { ...node, file_children: children };
@@ -98,14 +98,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	useEffect(() => {
 		if (!data) return;
-
+		console.log('teste', data);
 		if (selectedItemId) {
 			setFileTree((currentTree) => {
-				const updatedTree = findAndAddChildren(currentTree, selectedItemId, data.pages[0].items);
+				const updatedTree = findAndAddChildren(currentTree, selectedItemId, data?.pages[0]?.items);
 				return updatedTree;
 			});
 		} else {
-			setFileTree(data.pages[0].items);
+			setFileTree(data?.pages[0]?.items ?? []);
 		}
 	}, [data, selectedItemId, findAndAddChildren]);
 
