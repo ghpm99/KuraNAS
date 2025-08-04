@@ -7,7 +7,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+func getSystemDriveRoot() string {
+	drive := os.Getenv("SystemDrive")
+	if !strings.HasSuffix(drive, string(os.PathSeparator)) {
+		drive += string(os.PathSeparator)
+	}
+	return drive
+}
 
 func GetBuildConfig(key string) string {
 	switch key {
@@ -22,9 +31,9 @@ func GetBuildConfig(key string) string {
 	case "EnvFilePath":
 		return fmt.Sprintf("%s\\Kuranas\\.env", os.Getenv("ProgramFiles"))
 	case "PythonScript":
-		return filepath.Join(os.Getenv("SystemDrive"), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
+		return filepath.Join(getSystemDriveRoot(), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
 	case "ScriptPath":
-		return filepath.Join(os.Getenv("SystemDrive"), "Kuranas", "scripts") + string(os.PathSeparator)
+		return filepath.Join(getSystemDriveRoot(), "Kuranas", "scripts") + string(os.PathSeparator)
 	default:
 		return ""
 	}
