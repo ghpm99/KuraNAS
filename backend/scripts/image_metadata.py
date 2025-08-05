@@ -209,7 +209,7 @@ def extract_metadata(image_path):
                 result["gps_longitude"] = parse_coord(
                     gps_tags.get("GPSLongitude", []), gps_tags.get("GPSLongitudeRef", 0)
                 )
-                result["gps_altitude"] = safe_decode(gps_tags.get("GPSAltitude", ""))
+                result["gps_altitude"] = safe_decode(gps_tags.get("GPSAltitude", 0))
                 result["gps_date"] = gps_tags.get("GPSDateStamp", "")
                 result["gps_time"] = format_gps_time(gps_tags.get("GPSTimeStamp", ""))
 
