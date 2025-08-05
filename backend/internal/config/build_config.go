@@ -4,7 +4,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -19,31 +18,31 @@ func GetBuildConfig(key string) string {
 		if err != nil {
 			return ""
 		}
-		return fmt.Sprintf("%s/icons/", currentDir)
+		return FilepathJoin(true, currentDir, "icons")
 	case "TranslationsPath":
 		currentDir, err := os.Getwd()
 		if err != nil {
 			return ""
 		}
-		return fmt.Sprintf("%s/translations/", currentDir)
+		return FilepathJoin(true, currentDir, "translations")
 	case "EnvFilePath":
 		currentDir, err := os.Getwd()
 		if err != nil {
 			return ""
 		}
-		return fmt.Sprintf("%s/.env", currentDir)
+		return FilepathJoin(false, currentDir, ".env")
 	case "PythonScript":
 		currentDir, err := os.Getwd()
 		if err != nil {
 			return ""
 		}
-		return fmt.Sprintf("%s/scripts/.venv/bin/python", currentDir)
+		return FilepathJoin(false, currentDir, "scripts", ".venv", "bin", "python")
 	case "ScriptPath":
 		currentDir, err := os.Getwd()
 		if err != nil {
 			return ""
 		}
-		return fmt.Sprintf("%s/scripts/", currentDir)
+		return FilepathJoin(true, currentDir, "scripts")
 	default:
 		return ""
 	}
