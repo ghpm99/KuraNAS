@@ -190,7 +190,7 @@ def extract_metadata(image_path):
             result["brightness_value"] = get("BrightnessValue", 0)
             result["exposure_bias"] = get("ExposureBiasValue", 0)
             result["metering_mode"] = get("MeteringMode", 0)
-            result["flash"] = get("Flash", 0)
+            result["flash"] = int(get("Flash", 0))
             result["focal_length"] = get("FocalLength", 0)
             result["white_balance"] = get("WhiteBalance", 0)
             result["exposure_program"] = get("ExposureProgram", 0)
