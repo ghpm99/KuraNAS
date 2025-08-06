@@ -12,7 +12,7 @@ export default function ActivityChart() {
 		<Card title='Atividade por Dia (Últimos 7 dias)'>
 			<div className={styles.chart}>
 				<div className={styles.chartArea}>
-					{activityChart.map((day, index) => (
+					{activityChart.map((day) => (
 						<div key={day.date} className={styles.dayColumn}>
 							<div className={styles.bars}>
 								<div

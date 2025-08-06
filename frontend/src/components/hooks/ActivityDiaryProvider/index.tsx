@@ -73,7 +73,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			});
 			return response.data;
 		},
-		onSuccess: (data) => {
+		onSuccess: () => {
 			enqueueSnackbar('Atividade adicionada com sucesso!', { variant: 'success' });
 			refetchList();
 			refetchSummary();
@@ -91,7 +91,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			});
 			return response.data;
 		},
-		onSuccess: (data) => {
+		onSuccess: () => {
 			enqueueSnackbar('Atividade duplicada com sucesso!', { variant: 'success' });
 			refetchList();
 			refetchSummary();

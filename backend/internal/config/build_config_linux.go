@@ -4,7 +4,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -13,13 +12,17 @@ func GetBuildConfig(key string) string {
 	case "BuildVersion":
 		return "linux"
 	case "DbPath":
-		return fmt.Sprintf("%s/kuranas/db.sqlite3", os.TempDir())
+		return FilepathJoin(false, os.TempDir(), "kuranas", "db.sqlite3")
 	case "IconPath":
-		return "/etc/kuranas/icons/"
+		return FilepathJoin(true, "etc", "kuranas", "icons")
 	case "TranslationsPath":
-		return "/etc/kuranas/translations/"
+		return FilepathJoin(true, "etc", "kuranas", "translations")
 	case "EnvFilePath":
-		return "/etc/kuranas/.env"
+		return FilepathJoin(false, "etc", "kuranas", ".env")
+	case "PythonScript":
+		return FilepathJoin(false, "etc", "kuranas", "scripts", ".venv", "bin", "python")
+	case "ScriptPath":
+		return FilepathJoin(true, "etc", "kuranas", "scripts")
 	default:
 		return ""
 	}

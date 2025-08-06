@@ -48,7 +48,7 @@ const FolderItem = ({
 		const formatSplit = label.split('.');
 		const formatFile = formatSplit[formatSplit.length - 1];
 
-		const formatLength = formatFile?.length;
+		const formatLength = formatFile?.length ?? 0;
 
 		const nameLenght = 12 - formatLength - 3;
 		const labelElipsed = label.substring(0, nameLenght);

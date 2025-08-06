@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"log"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
@@ -45,7 +44,6 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 
 		err = s.UpsertMetadata(tx, fileDtoResult)
 		if err != nil {
-			log.Printf("Error upserting metadata: %v\n", err)
 			return
 		}
 
@@ -160,7 +158,6 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 
 		err = service.UpsertMetadata(tx, fileDto)
 		if err != nil {
-			log.Printf("Error upserting metadata: %v\n", err)
 			return
 		}
 		return
@@ -187,46 +184,50 @@ func (s *Service) ScanDirTask(data string) {
 	s.Tasks <- task
 }
 
-func (s *Service) UpdateCheckSum(fileId int) {
+func (s *Service) UpdateCheckSum(fileId int) error {
 
 	fileDto, err := s.GetFileById(fileId)
 
 	if err != nil {
-		log.Printf("Erro ao obter arquivo: %v\n", err)
-		return
+		return err
 	}
 
 	switch fileDto.Type {
 	case File:
-		s.updateFileCheckSum(fileDto)
+		return s.updateFileCheckSum(fileDto)
 	case Directory:
-		s.updateDirectoryCheckSum(fileDto)
+		return s.updateDirectoryCheckSum(fileDto)
+	default:
+		return fmt.Errorf("file type not found")
 	}
+
 }
 
 func (s *Service) updateFileCheckSum(
 	fileDto FileDto,
-) {
+) error {
 	checkSumHash, err := fileDto.GetCheckSumFromFile()
 
 	if err != nil {
-		log.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
-		return
+		return err
 	}
 
 	fileDto.CheckSum = checkSumHash
 	result, err := s.UpdateFile(fileDto)
 
-	if err != nil || !result {
-		log.Printf("Erro ao atualizar arquivo: %v\n", err)
-		return
+	if err != nil {
+		return err
 	}
 
-	log.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
+	if !result {
+		return fmt.Errorf("erro ao atualizar arquivo: %v\n", err)
+	}
+
+	return nil
 
 }
 
-func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
+func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 
 	var page = 1
 	var hasNext = true
@@ -242,8 +243,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
 		}, page, 1000)
 
 		if err != nil {
-			log.Printf("Erro ao obter arquivos do diretório: %v\n", err)
-			return
+			return err
 		}
 
 		for _, file := range filesInDirectory.Items {
@@ -253,7 +253,6 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
 
 		if hasNext {
 			page = filesInDirectory.Pagination.Page + 1
-
 		}
 	}
 
@@ -262,13 +261,15 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) {
 	fileDto.CheckSum = resultCheckSum
 	result, err := s.UpdateFile(fileDto)
 
-	if err != nil || !result {
-		log.Printf("Erro ao atualizar diretório: %v\n", err)
-		return
+	if err != nil {
+		return err
 	}
 
-	log.Printf("Checksum atualizado com sucesso para o diretório: %s\n", fileDto.Name)
+	if !result {
+		return fmt.Errorf("nenhum diretorio atualizado")
+	}
 
+	return nil
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
@@ -428,7 +429,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
 		return err
 	case utils.FormatTypeVideo:
 		_, err := s.UpsertVideoMetadata(tx, fileDto)
-		log.Println("UpsertVideoMetadata:", err)
 		return err
 	default:
 		return nil
@@ -443,13 +443,11 @@ func (s *Service) UpsertImageMetadata(tx *sql.Tx, fileDto FileDto) (ImageMetadat
 
 	result, err := utils.RunPythonScript(utils.ImageMetadata, fileDto.Path)
 	if err != nil {
-		log.Println("Erro:", err)
 		return ImageMetadataModel{}, err
 	}
 
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {
-		log.Println("Erro ao converter JSON:", err)
 		return ImageMetadataModel{}, err
 	}
 
@@ -464,13 +462,11 @@ func (s *Service) UpsertAudioMetadata(tx *sql.Tx, fileDto FileDto) (AudioMetadat
 
 	result, err := utils.RunPythonScript(utils.AudioMetadata, fileDto.Path)
 	if err != nil {
-		log.Println("Erro:", err)
 		return AudioMetadataModel{}, err
 	}
 
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {
-		log.Println("Erro ao converter JSON:", err)
 		return AudioMetadataModel{}, err
 	}
 
@@ -485,13 +481,11 @@ func (s *Service) UpsertVideoMetadata(tx *sql.Tx, fileDto FileDto) (VideoMetadat
 
 	result, err := utils.RunPythonScript(utils.VideoMetadata, fileDto.Path)
 	if err != nil {
-		log.Println("Erro:", err)
 		return VideoMetadataModel{}, err
 	}
 
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {
-		log.Println("Erro ao converter JSON:", err)
 		return VideoMetadataModel{}, err
 	}
 

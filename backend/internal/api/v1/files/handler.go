@@ -184,10 +184,10 @@ func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 }
 
-func (handler *Handler) GetFilesThreeHandler(c *gin.Context) {
+func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetFilesThree",
+		Name:        "GetFilesTree",
 		Description: "Fetching files with filter",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,

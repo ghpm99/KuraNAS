@@ -10,7 +10,6 @@ export default function FileTypesChart() {
 
 	const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-	console.log('File Types Data:', fileTypes);
 	return (
 		<Card title='Distribuição por Tipo de Arquivo'>
 			<div className={styles.container}>
