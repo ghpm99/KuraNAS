@@ -54,7 +54,11 @@ export const formatDateTime = (date: Date): string => {
 	});
 };
 
-type formatType = { type: 'image' | 'audio' | 'video' | 'document' | 'archive'; mime: string; description: string };
+type formatType = {
+	type: 'image' | 'audio' | 'video' | 'document' | 'archive' | 'unknown';
+	mime: string;
+	description: string;
+};
 
 export const getFileTypeInfo = (format: string): formatType => {
 	const fileTypes: Record<string, formatType> = {

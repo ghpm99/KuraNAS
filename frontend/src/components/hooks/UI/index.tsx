@@ -12,7 +12,5 @@ export function UIProvider({ children }: { children: ReactNode }) {
 		[activePage, setActivePage]
 	);
 
-	console.log('UIProvider activePage:', activePage);
-
 	return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
 }

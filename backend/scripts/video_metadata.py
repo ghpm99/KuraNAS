@@ -1,4 +1,5 @@
 import json
+import locale
 import os
 import subprocess
 import sys
@@ -27,22 +28,31 @@ RESULT_DEFAULT = {
 }
 
 
+import locale
+
+
 def extract_video_metadata(path):
 
     result = RESULT_DEFAULT.copy()
-    result["filename"] = os.path.basename(path)
 
     if not os.path.isfile(path):
         return result
 
     try:
+        result["filename"] = os.path.basename(path)
+
         cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", path]
-        process = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Executa o comando sem decodificar automaticamente (text=False)
+        process = subprocess.run(cmd, capture_output=True, text=False, timeout=10)
 
         if process.returncode != 0:
             return result
 
-        data = json.loads(process.stdout)
+        # Decodifica stdout manualmente com utf-8
+        stdout = process.stdout.decode("utf-8", errors="replace")
+
+        data = json.loads(stdout)
         streams = data.get("streams", [])
         format_info = data.get("format", {})
 

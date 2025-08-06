@@ -11,7 +11,7 @@ export default function SizeRangesChart() {
 	return (
 		<Card title='Distribuição por Tamanho'>
 			<div className={styles.chart}>
-				{sizeRanges.map((range, index) => (
+				{sizeRanges.map((range) => (
 					<div key={range.range} className={styles.bar}>
 						<div className={styles.barContainer}>
 							<div className={styles.barFill} style={{ height: `${(range.count / maxCount) * 100}%` }}></div>
