@@ -3,6 +3,7 @@ package worker
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
@@ -75,10 +76,13 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 			return err
 		}
 
-		err = service.UpdateCheckSum(fileDto.ID)
-		if err != nil {
-			fail(path, err)
-		}
+		go func() {
+			err = service.UpdateCheckSum(fileDto.ID)
+			if err != nil {
+				fail(path, err)
+			}
+			fmt.Println("checksum atualizado com sucesso", fileDto.ID)
+		}()
 		successFilesCount++
 		return nil
 	})
