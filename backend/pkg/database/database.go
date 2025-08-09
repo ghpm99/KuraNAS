@@ -24,8 +24,6 @@ func ConfigDatabase() (*sql.DB, error) {
 		return nil, errSql
 	}
 
-	localDatabase.SetMaxOpenConns(1)
-
 	log.Println("Successfully connected to database!")
 	migrations.Init(localDatabase)
 	return localDatabase, nil
