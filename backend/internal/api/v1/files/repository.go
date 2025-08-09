@@ -5,19 +5,20 @@ import (
 	"errors"
 	"fmt"
 
+	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/file"
 	"nas-go/api/pkg/utils"
 )
 
 type Repository struct {
-	DbContext *sql.DB
+	DbContext *database.DbContext
 }
 
-func NewRepository(database *sql.DB) *Repository {
+func NewRepository(database *database.DbContext) *Repository {
 	return &Repository{database}
 }
 
-func (r *Repository) GetDbContext() *sql.DB {
+func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
@@ -53,37 +54,47 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		utils.CalculateOffset(page, pageSize),
 	}
 
-	rows, err := r.DbContext.Query(
-		queries.GetFilesQuery,
-		args...,
-	)
-	if err != nil {
-		return paginationResponse, err
-	}
-	defer rows.Close()
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		// A lógica de consulta e escaneamento é movida para dentro desta função
+		rows, err := tx.Query(
+			queries.GetFilesQuery,
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
 
-	for rows.Next() {
-		var file FileModel
-		if err := rows.Scan(
-			&file.ID,
-			&file.Name,
-			&file.Path,
-			&file.ParentPath,
-			&file.Format,
-			&file.Size,
-			&file.UpdatedAt,
-			&file.CreatedAt,
-			&file.LastInteraction,
-			&file.LastBackup,
-			&file.Type,
-			&file.CheckSum,
-			&file.DeletedAt,
-			&file.Starred,
-		); err != nil {
-			return paginationResponse, err
+		for rows.Next() {
+			var file FileModel
+			if err := rows.Scan(
+				&file.ID,
+				&file.Name,
+				&file.Path,
+				&file.ParentPath,
+				&file.Format,
+				&file.Size,
+				&file.UpdatedAt,
+				&file.CreatedAt,
+				&file.LastInteraction,
+				&file.LastBackup,
+				&file.Type,
+				&file.CheckSum,
+				&file.DeletedAt,
+				&file.Starred,
+			); err != nil {
+				return err
+			}
+
+			paginationResponse.Items = append(paginationResponse.Items, file)
 		}
 
-		paginationResponse.Items = append(paginationResponse.Items, file)
+		return nil
+	})
+
+	if err != nil {
+		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
+		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -176,112 +187,151 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 }
 
 func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
-	fail := func(err error) (int, error) {
-		return 0, fmt.Errorf("GetDirectoryContentCount: %v", err)
-	}
-	row := r.DbContext.QueryRow(
-		queries.GetChildrenCountQuery,
-		parentPath,
-		fileId,
-	)
 	var childrenCount int
 
-	if err := row.Scan(&childrenCount); err != nil {
-		return fail(err)
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+
+		row := tx.QueryRow(
+			queries.GetChildrenCountQuery,
+			parentPath,
+			fileId,
+		)
+
+		if err := row.Scan(&childrenCount); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("falha ao obter contagem de diretório: %w", err)
 	}
 
 	return childrenCount, nil
-
 }
 
 func (r *Repository) GetCountByType(fileType FileType) (int, error) {
-	fail := func(err error) (int, error) {
-		return 0, fmt.Errorf("GetCountByType: %v", err)
-	}
-
-	row := r.DbContext.QueryRow(
-		queries.CountByTypeQuery,
-		fileType,
-	)
 
 	var count int
-	if err := row.Scan(&count); err != nil {
-		return fail(err)
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+
+		row := tx.QueryRow(
+			queries.CountByTypeQuery,
+			fileType,
+		)
+
+		if err := row.Scan(&count); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("GetCountByType: %v", err)
 	}
 
 	return count, nil
 }
 
 func (r *Repository) GetTotalSpaceUsed() (int, error) {
-	fail := func(err error) (int, error) {
-		return 0, fmt.Errorf("GetTotalSpaceUsed: %v", err)
-	}
-
-	row := r.DbContext.QueryRow(queries.TotalSpaceUsedQuery)
-
 	var totalSpaceUsed int
-	if err := row.Scan(&totalSpaceUsed); err != nil {
-		return fail(err)
+
+	// Usa QueryTx para gerenciar o lock de leitura e a transação.
+	// A lógica de consulta é movida para dentro desta função anônima.
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		row := tx.QueryRow(queries.TotalSpaceUsedQuery)
+
+		// Escaneia o resultado
+		if err := row.Scan(&totalSpaceUsed); err != nil {
+			// Retorna o erro para que QueryTx o capture e o propague
+			return err
+		}
+
+		// Se tudo correr bem, retorna nil para indicar sucesso
+		return nil
+	})
+
+	if err != nil {
+		// Trata o erro aqui. A função QueryTx já o formatou para nós.
+		return 0, fmt.Errorf("falha ao obter espaço total usado: %w", err)
 	}
 
 	return totalSpaceUsed, nil
 }
 
 func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
-	fail := func(err error) ([]SizeReportModel, error) {
-		return nil, fmt.Errorf("GetReportSizeByFormat: %v", err)
-	}
-
-	rows, err := r.DbContext.Query(queries.CountByFormatQuery, File)
-	if err != nil {
-		return fail(err)
-	}
-	defer rows.Close()
-
 	var report []SizeReportModel
 
-	for rows.Next() {
-		var item SizeReportModel
-		if err := rows.Scan(&item.Format, &item.Total, &item.Size); err != nil {
-			return fail(err)
+	// Usa QueryTx para gerenciar o lock de leitura e a transação
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		// A lógica de consulta é movida para dentro desta função anônima
+		rows, err := tx.Query(queries.CountByFormatQuery, File)
+		if err != nil {
+			return err
 		}
-		report = append(report, item)
+		defer rows.Close()
+
+		// Itera sobre os resultados da consulta
+		for rows.Next() {
+			var item SizeReportModel
+			if err := rows.Scan(&item.Format, &item.Total, &item.Size); err != nil {
+				return err
+			}
+			report = append(report, item)
+		}
+
+		// Se a iteração terminar sem erros, retorna nil
+		return nil
+	})
+
+	if err != nil {
+		// Retorna a slice vazia e o erro em caso de falha na transação
+		return nil, fmt.Errorf("falha ao obter relatório por formato: %w", err)
 	}
 
 	return report, nil
 }
 
 func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
-	fail := func(err error) ([]FileModel, error) {
-		return nil, fmt.Errorf("GetTopFilesBySize: %v", err)
-	}
-
-	rows, err := r.DbContext.Query(queries.TopFilesBySizeQuery, limit)
-	if err != nil {
-		return fail(err)
-	}
-	defer rows.Close()
-
 	var topFiles []FileModel
 
-	for rows.Next() {
-		var file FileModel
-		if err := rows.Scan(
-			&file.ID,
-			&file.Name,
-			&file.Size,
-			&file.Path,
-		); err != nil {
-			return fail(err)
+	// Usa QueryTx para gerenciar o lock de leitura e a transação
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		// A lógica de consulta é movida para dentro desta função anônima
+		rows, err := tx.Query(queries.TopFilesBySizeQuery, limit)
+		if err != nil {
+			return err
 		}
-		topFiles = append(topFiles, file)
+		defer rows.Close()
+
+		// Itera sobre os resultados da consulta
+		for rows.Next() {
+			var file FileModel
+			if err := rows.Scan(
+				&file.ID,
+				&file.Name,
+				&file.Size,
+				&file.Path,
+			); err != nil {
+				return err
+			}
+			topFiles = append(topFiles, file)
+		}
+
+		// Se a iteração terminar sem erros, retorna nil
+		return nil
+	})
+
+	if err != nil {
+		// Retorna a slice vazia e o erro em caso de falha na transação
+		return nil, fmt.Errorf("falha ao obter top arquivos por tamanho: %w", err)
 	}
 
 	return topFiles, nil
 }
 
 func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error) {
-
 	paginationResponse := utils.PaginationResponse[DuplicateFilesModel]{
 		Items: []DuplicateFilesModel{},
 		Pagination: utils.Pagination{
@@ -292,31 +342,43 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 		},
 	}
 
-	fail := func(err error) (utils.PaginationResponse[DuplicateFilesModel], error) {
-		return paginationResponse, fmt.Errorf("GetDuplicateFiles: %v", err)
-	}
-
-	rows, err := r.DbContext.Query(
-		queries.GetDuplicateFilesQuery,
-		pageSize+1,
+	// A lógica de construção dos argumentos pode ser mantida aqui
+	args := []any{
+		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
-	)
-	if err != nil {
-		return fail(err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var duplicate DuplicateFilesModel
-		if err := rows.Scan(
-			&duplicate.Name,
-			&duplicate.Size,
-			&duplicate.Copies,
-			&duplicate.Paths,
-		); err != nil {
-			return fail(err)
+	// Usa QueryTx para gerenciar o lock de leitura e a transação
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		// A lógica de consulta e escaneamento é movida para dentro desta função
+		rows, err := tx.Query(
+			queries.GetDuplicateFilesQuery,
+			args...,
+		)
+		if err != nil {
+			return err
 		}
-		paginationResponse.Items = append(paginationResponse.Items, duplicate)
+		defer rows.Close()
+
+		for rows.Next() {
+			var duplicate DuplicateFilesModel
+			if err := rows.Scan(
+				&duplicate.Name,
+				&duplicate.Size,
+				&duplicate.Copies,
+				&duplicate.Paths,
+			); err != nil {
+				return err
+			}
+			paginationResponse.Items = append(paginationResponse.Items, duplicate)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
+		return paginationResponse, fmt.Errorf("falha ao obter arquivos duplicados: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()

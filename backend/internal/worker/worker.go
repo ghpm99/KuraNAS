@@ -6,7 +6,6 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
-	"os"
 )
 
 type WorkerContext struct {
@@ -15,13 +14,6 @@ type WorkerContext struct {
 	MetadataService files.MetadataRepositoryInterface
 	Logger          logger.LoggerServiceInterface
 }
-
-type FileWalk struct {
-	path string
-	info os.FileInfo
-}
-
-var fileWalkChannel = make(chan FileWalk, 100)
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
 	if !config.AppConfig.EnableWorkers {
@@ -51,7 +43,7 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			go ScanFilesWorker(context.FilesService, context.Logger)
+			go StartFileProcessingPipeline(context.FilesService, context.Logger)
 		case utils.ScanDir:
 			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:

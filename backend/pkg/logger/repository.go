@@ -3,18 +3,19 @@ package logger
 import (
 	"database/sql"
 	"fmt"
+	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/log"
 )
 
 type LoggerRepository struct {
-	DbContext *sql.DB
+	DbContext *database.DbContext
 }
 
-func NewLoggerRepository(db *sql.DB) *LoggerRepository {
+func NewLoggerRepository(db *database.DbContext) *LoggerRepository {
 	return &LoggerRepository{db}
 }
 
-func (r *LoggerRepository) GetDbContext() *sql.DB {
+func (r *LoggerRepository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
@@ -37,36 +38,57 @@ func (r *LoggerRepository) CreateLog(tx *sql.Tx, log LoggerModel) (LoggerModel, 
 }
 
 func (r *LoggerRepository) GetLogByID(id int) (LoggerModel, error) {
-	row := r.DbContext.QueryRow(queries.GetLogByIDQuery, id)
 	var log LoggerModel
-	err := row.Scan(
-		&log.ID, &log.Name, &log.Description, &log.Level, &log.IPAddress,
-		&log.StartTime, &log.EndTime, &log.CreatedAt, &log.UpdatedAt,
-		&log.DeletedAt, &log.Status, &log.ExtraData,
-	)
-	return log, err
-}
 
-func (r *LoggerRepository) GetLogs(page, pageSize int) ([]LoggerModel, error) {
-	offset := (page - 1) * pageSize
-	rows, err := r.DbContext.Query(queries.GetLogsQuery, pageSize, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var logs []LoggerModel
-	for rows.Next() {
-		var log LoggerModel
-		err := rows.Scan(
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		row := tx.QueryRow(queries.GetLogByIDQuery, id)
+
+		err := row.Scan(
 			&log.ID, &log.Name, &log.Description, &log.Level, &log.IPAddress,
 			&log.StartTime, &log.EndTime, &log.CreatedAt, &log.UpdatedAt,
 			&log.DeletedAt, &log.Status, &log.ExtraData,
 		)
-		if err != nil {
-			return nil, err
-		}
-		logs = append(logs, log)
+		return err
+	})
+
+	if err != nil {
+		return LoggerModel{}, fmt.Errorf("falha ao obter log por ID: %w", err)
 	}
+
+	return log, nil
+}
+
+func (r *LoggerRepository) GetLogs(page, pageSize int) ([]LoggerModel, error) {
+	var logs []LoggerModel
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		offset := (page - 1) * pageSize
+		rows, err := tx.Query(queries.GetLogsQuery, pageSize, offset)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var log LoggerModel
+			err := rows.Scan(
+				&log.ID, &log.Name, &log.Description, &log.Level, &log.IPAddress,
+				&log.StartTime, &log.EndTime, &log.CreatedAt, &log.UpdatedAt,
+				&log.DeletedAt, &log.Status, &log.ExtraData,
+			)
+			if err != nil {
+				return err
+			}
+			logs = append(logs, log)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao obter logs: %w", err)
+	}
+
 	return logs, nil
 }
 

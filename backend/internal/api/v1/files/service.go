@@ -1,9 +1,7 @@
 package files
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"image"
 	"nas-go/api/pkg/i18n"
@@ -29,9 +27,13 @@ func NewService(repository RepositoryInterface, metadataRepository MetadataRepos
 	}
 }
 
+func (s *Service) withTransaction(fn func(tx *sql.Tx) error) (err error) {
+	return s.Repository.GetDbContext().ExecTx(fn)
+}
+
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
 
-	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+	err = s.withTransaction(func(tx *sql.Tx) (err error) {
 		fileModel, err := fileDto.ToModel()
 		if err != nil {
 			return
@@ -42,10 +44,11 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 			return
 		}
 
-		err = s.UpsertMetadata(tx, fileDtoResult)
+		metadata, err := s.UpsertMetadata(tx, fileDtoResult)
 		if err != nil {
 			return
 		}
+		fileDtoResult.Metadata = metadata
 
 		fileDtoResult, err = result.ToDto()
 		return
@@ -130,22 +133,8 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 
 }
 
-func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
-	tx, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
-	if err != nil {
-		return
-	}
-	defer tx.Rollback()
-
-	if err = fn(tx); err != nil {
-		return
-	}
-
-	return tx.Commit()
-}
-
 func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
-	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+	err = service.withTransaction(func(tx *sql.Tx) (err error) {
 		fileModel, err := fileDto.ToModel()
 		if err != nil {
 			return
@@ -156,7 +145,10 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 			return
 		}
 
-		err = service.UpsertMetadata(tx, fileDto)
+		if fileDto.Metadata != nil {
+			_, err = service.UpsertMetadata(tx, fileDto)
+		}
+
 		if err != nil {
 			return
 		}
@@ -417,77 +409,44 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 	return report, nil
 }
 
-func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
-	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
+	var err error
 
-	switch formatType.Type {
-	case utils.FormatTypeImage:
-		_, err := s.UpsertImageMetadata(tx, fileDto)
-		return err
-	case utils.FormatTypeAudio:
-		_, err := s.UpsertAudioMetadata(tx, fileDto)
-		return err
-	case utils.FormatTypeVideo:
-		_, err := s.UpsertVideoMetadata(tx, fileDto)
-		return err
+	// O "type switch" com atribuição de variável 'm'
+	// 'm' será a variável que conterá o valor tipado dentro de cada 'case'
+	switch m := fileDto.Metadata.(type) {
+	case ImageMetadataModel:
+		// Agora 'm' já é do tipo ImageMetadataModel, sem a necessidade de conversão
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertImageMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
+	case AudioMetadataModel:
+		// 'm' é do tipo AudioMetadataModel aqui
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
+	case VideoMetadataModel:
+		// 'm' é do tipo VideoMetadataModel aqui
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
 	default:
-		return nil
-	}
-}
-
-func (s *Service) UpsertImageMetadata(tx *sql.Tx, fileDto FileDto) (ImageMetadataModel, error) {
-	metadata := ImageMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
+		// Caso o Metadata seja nil ou de um tipo não esperado, retorna o DTO original
+		// e um erro, se desejar, ou simplesmente 'nil'.
+		return fileDto, nil
 	}
 
-	result, err := utils.RunPythonScript(utils.ImageMetadata, fileDto.Path)
-	if err != nil {
-		return ImageMetadataModel{}, err
-	}
-
-	err = json.Unmarshal([]byte(result), &metadata)
-	if err != nil {
-		return ImageMetadataModel{}, err
-	}
-
-	return s.MetadataRepository.UpsertImageMetadata(tx, metadata)
-}
-
-func (s *Service) UpsertAudioMetadata(tx *sql.Tx, fileDto FileDto) (AudioMetadataModel, error) {
-	metadata := AudioMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
-	}
-
-	result, err := utils.RunPythonScript(utils.AudioMetadata, fileDto.Path)
-	if err != nil {
-		return AudioMetadataModel{}, err
-	}
-
-	err = json.Unmarshal([]byte(result), &metadata)
-	if err != nil {
-		return AudioMetadataModel{}, err
-	}
-
-	return s.MetadataRepository.UpsertAudioMetadata(tx, metadata)
-}
-
-func (s *Service) UpsertVideoMetadata(tx *sql.Tx, fileDto FileDto) (VideoMetadataModel, error) {
-	metadata := VideoMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
-	}
-
-	result, err := utils.RunPythonScript(utils.VideoMetadata, fileDto.Path)
-	if err != nil {
-		return VideoMetadataModel{}, err
-	}
-
-	err = json.Unmarshal([]byte(result), &metadata)
-	if err != nil {
-		return VideoMetadataModel{}, err
-	}
-
-	return s.MetadataRepository.UpsertVideoMetadata(tx, metadata)
+	return fileDto, err
 }
