@@ -2,11 +2,12 @@ package diary
 
 import (
 	"database/sql"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
 
 type RepositoryInterface interface {
-	GetDbContext() *sql.DB
+	GetDbContext() *database.DbContext
 	CreateDiary(transaction *sql.Tx, diary DiaryModel) (DiaryModel, error)
 	GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error)
 	UpdateDiary(transaction *sql.Tx, diary DiaryModel) (bool, error)

@@ -34,6 +34,7 @@ type FileDto struct {
 	CheckSum              string                    `json:"check_sum"`
 	DirectoryContentCount int                       `json:"directory_content_count"`
 	Starred               bool                      `json:"starred"`
+	Metadata              any                       `json:"metadata"`
 }
 
 func (i *FileModel) ToDto() (FileDto, error) {

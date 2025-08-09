@@ -63,17 +63,8 @@ func (s *LoggerService) CompleteWithErrorLog(log LoggerModel, err error) (bool, 
 
 }
 
-func (s *LoggerService) withTransaction(fn func(tx *sql.Tx) (LoggerModel, error)) (LoggerModel, error) {
-	tx, err := s.Repository.GetDbContext().BeginTx(context.Background(), nil)
-	if err != nil {
-		return LoggerModel{}, err
-	}
-	defer tx.Rollback()
-	result, err := fn(tx)
-	if err != nil {
-		return LoggerModel{}, err
-	}
-	return result, tx.Commit()
+func (s *LoggerService) withTransaction(fn func(tx *sql.Tx) error) (LoggerModel, error) {
+	return s.Repository.GetDbContext().ExecTx(fn)
 }
 
 func (s *LoggerService) withTransactionBool(fn func(tx *sql.Tx) (bool, error)) (bool, error) {

@@ -3,11 +3,12 @@ package files
 import (
 	"database/sql"
 	"image"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
 
 type RepositoryInterface interface {
-	GetDbContext() *sql.DB
+	GetDbContext() *database.DbContext
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
@@ -36,7 +37,7 @@ type ServiceInterface interface {
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
-	UpsertMetadata(tx *sql.Tx, file FileDto) error
+	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
 }
 
 type RecentFileRepositoryInterface interface {

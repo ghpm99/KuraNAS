@@ -5,6 +5,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
@@ -12,7 +13,7 @@ import (
 var tasks = make(chan utils.Task, 100)
 
 type AppContext struct {
-	DB                   *sql.DB
+	DB                   *database.DbContext
 	Logger               logger.LoggerServiceInterface
 	Tasks                *chan utils.Task
 	Files                *FileContext
@@ -36,13 +37,16 @@ type DiaryContext struct {
 }
 
 func NewContext(db *sql.DB) *AppContext {
-	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(db))
-	fileContext := newFileContext(db, loggerService)
-	diaryContext := newDiaryContext(db, loggerService)
+
+	dbContext := database.NewDbContext(db)
+
+	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
+	fileContext := newFileContext(dbContext, loggerService)
+	diaryContext := newDiaryContext(dbContext, loggerService)
 	configurationHandler := configuration.NewHandler(loggerService)
 
 	context := &AppContext{
-		DB:                   db,
+		DB:                   dbContext,
 		Logger:               loggerService,
 		Tasks:                &tasks,
 		Files:                fileContext,
@@ -52,11 +56,11 @@ func NewContext(db *sql.DB) *AppContext {
 	return context
 }
 
-func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileContext {
-	repository := files.NewRepository(db)
-	recentFileRepository := files.NewRecentFileRepository(db)
+func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *FileContext {
+	repository := files.NewRepository(dbContext)
+	recentFileRepository := files.NewRecentFileRepository(dbContext)
 
-	metadataRepository := files.NewMetadataRepository(db)
+	metadataRepository := files.NewMetadataRepository(dbContext)
 	service := files.NewService(repository, metadataRepository, tasks)
 	recentFileService := files.NewRecentFileService(recentFileRepository)
 
@@ -71,8 +75,8 @@ func newFileContext(db *sql.DB, logger logger.LoggerServiceInterface) *FileConte
 	}
 }
 
-func newDiaryContext(db *sql.DB, logger logger.LoggerServiceInterface) *DiaryContext {
-	repository := diary.NewRepository(db)
+func newDiaryContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *DiaryContext {
+	repository := diary.NewRepository(dbContext)
 	service := diary.NewService(repository, tasks)
 	handler := diary.NewHandler(service, logger)
 	return &DiaryContext{

@@ -1,0 +1,67 @@
+package database
+
+import (
+	"database/sql"
+	"sync"
+)
+
+type DbContext struct {
+	database *sql.DB
+	mutex    sync.RWMutex
+}
+
+func NewDbContext(db *sql.DB) *DbContext {
+	return &DbContext{
+		database: db,
+	}
+}
+
+func (context *DbContext) GetDatabase() *sql.DB {
+	return context.database
+}
+
+func (context *DbContext) ExecTx(fn func(*sql.Tx) error) error {
+	// Pega o lock de escrita para acesso exclusivo
+	context.mutex.Lock()
+	defer context.mutex.Unlock()
+
+	// Inicia a transação
+	tx, err := context.database.Begin()
+	if err != nil {
+		return err
+	}
+	// Garante que o Rollback será chamado em caso de falha.
+	defer tx.Rollback()
+
+	// Executa a função do usuário dentro da transação
+	if err := fn(tx); err != nil {
+		return err
+	}
+
+	// Faz o commit da transação
+	return tx.Commit()
+}
+
+// QueryTx executa uma função de transação de leitura com um read lock.
+// A função 'fn' recebe a transação e deve retornar um erro caso falhe.
+// Esta abordagem permite múltiplas leituras em paralelo.
+func (context *DbContext) QueryTx(fn func(*sql.Tx) error) error {
+	// Pega o read lock, permitindo que outros leitores continuem.
+	context.mutex.RLock()
+	defer context.mutex.RUnlock()
+
+	// Inicia a transação de leitura
+	tx, err := context.database.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // Rollback para transações de leitura é mais rápido que Commit
+
+	// Executa a função do usuário dentro da transação
+	if err := fn(tx); err != nil {
+		return err
+	}
+
+	// Não é necessário um commit em transações de leitura
+	return nil
+}

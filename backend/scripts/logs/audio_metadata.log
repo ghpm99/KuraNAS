@@ -100,3 +100,309 @@ Traceback (most recent call last):
     raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
 mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
 
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/Final Fantasy X   I Love You.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 71, in extract_metadata
+    audio = File(path, easy=False)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 164, in wrapper_func
+    return func(h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 302, in File
+    return Kind(fileobj, filename=filething.filename)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 420, in load
+    self.info = self._Info(fileobj, offset)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/mp3/__init__.py", line 401, in __init__
+    raise HeaderNotFoundError("can't sync to MPEG frame")
+mutagen.mp3.HeaderNotFoundError: can't sync to MPEG frame
+
+Erro ao processar audio /home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3:
+Traceback (most recent call last):
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/audio_metadata.py", line 91, in extract_metadata
+    id3_tags = ID3(path)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 76, in __init__
+    super(ID3, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 175, in __init__
+    super(ID3Tags, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 534, in __init__
+    super(DictProxy, self).__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_tags.py", line 110, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_file.py", line 151, in load
+    self._header = ID3Header(fileobj)
+                   ~~~~~~~~~^^^^^^^^^
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/mutagen/id3/_tags.py", line 66, in __init__
+    raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
+mutagen.id3._util.ID3NoHeaderError: '/home/ghpm9/documents/musicas/Diversos/kansas - carry on my wayward son.mp3' doesn't start with an ID3 tag
+

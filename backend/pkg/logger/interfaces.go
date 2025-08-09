@@ -2,10 +2,11 @@ package logger
 
 import (
 	"database/sql"
+	"nas-go/api/pkg/database"
 )
 
 type LoggerRepositoryInterface interface {
-	GetDbContext() *sql.DB
+	GetDbContext() *database.DbContext
 	CreateLog(tx *sql.Tx, log LoggerModel) (LoggerModel, error)
 	GetLogByID(id int) (LoggerModel, error)
 	GetLogs(page, pageSize int) ([]LoggerModel, error)
