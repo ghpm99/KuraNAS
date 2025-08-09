@@ -6,8 +6,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
-
-	"time"
+	"os"
 )
 
 type WorkerContext struct {
@@ -16,6 +15,13 @@ type WorkerContext struct {
 	MetadataService files.MetadataRepositoryInterface
 	Logger          logger.LoggerServiceInterface
 }
+
+type FileWalk struct {
+	path string
+	info os.FileInfo
+}
+
+var fileWalkChannel = make(chan FileWalk, 100)
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
 	if !config.AppConfig.EnableWorkers {
@@ -29,15 +35,14 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 }
 
 func startWorkersScheduler(context *WorkerContext) {
-	for {
-		log.Println("Escaneamento de arquivos")
-		context.Tasks <- utils.Task{
-			Type: utils.ScanFiles,
-			Data: "Escaneamento de arquivos",
-		}
-		log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
-		time.Sleep(12 * time.Hour)
+
+	log.Println("Escaneamento de arquivos")
+	context.Tasks <- utils.Task{
+		Type: utils.ScanFiles,
+		Data: "Escaneamento de arquivos",
 	}
+	log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+
 }
 
 func worker(id int, context *WorkerContext) {
