@@ -20,7 +20,7 @@ const initialAboutContext: AboutContextType = {
 	node_version: '',
 };
 
-export function AboutProvider({ children }: { children: React.ReactNode }) {
+export const AboutProvider = ({ children }: { children: React.ReactNode }) => {
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const { t } = useI18n();
 
@@ -59,4 +59,4 @@ export function AboutProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	return <AboutContext.Provider value={value}>{children}</AboutContext.Provider>;
-}
+};

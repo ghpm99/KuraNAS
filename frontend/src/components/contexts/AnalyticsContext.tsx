@@ -110,7 +110,7 @@ interface AnalyticsContextType {
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
-export function AnalyticsProvider({ children }: { children: ReactNode }) {
+export const AnalyticsProvider = ({ children }: { children: ReactNode }) => {
 	const { data: totalUsedSpace, refetch: refetchtotalUsedSpace } = useQuery({
 		queryKey: ['totalUsedSpace'],
 		queryFn: async () => {
@@ -269,7 +269,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 	};
 
 	return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>;
-}
+};
 
 export const useAnalytics = () => {
 	const context = useContext(AnalyticsContext);
