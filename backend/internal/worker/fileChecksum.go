@@ -7,13 +7,19 @@ import (
 	"sync"
 )
 
-func StartChecksumWorker(metadataProcessedChannel <-chan files.FileDto, checksumCompletedChannel chan<- files.FileDto, workerGroup *sync.WaitGroup) {
+func StartChecksumWorker(
+	metadataProcessedChannel <-chan files.FileDto,
+	checksumCompletedChannel chan<- files.FileDto,
+	getFileChecksum func(path string) (string, error),
+	getDirectorysum func(dirPath string) (string, error),
+	workerGroup *sync.WaitGroup,
+) {
 	defer workerGroup.Done()
 	defer close(checksumCompletedChannel)
 
 	for fileToProcess := range metadataProcessedChannel {
 		log.Println("StartChecksumWorker, Recendo arquivo de fila", fileToProcess.Path)
-		checksum, err := getCheckSum(fileToProcess)
+		checksum, err := getCheckSum(fileToProcess, getFileChecksum, getDirectorysum)
 
 		if err != nil {
 			log.Printf("Erro ao gerar checksum: %v\n", err)
@@ -25,32 +31,18 @@ func StartChecksumWorker(metadataProcessedChannel <-chan files.FileDto, checksum
 	}
 }
 
-func getCheckSum(fileDto files.FileDto) (string, error) {
+func getCheckSum(fileDto files.FileDto,
+	getFileChecksum func(path string) (string, error),
+	getDirectoryChecksum func(dirPath string) (string, error),
+) (string, error) {
 
 	switch fileDto.Type {
 	case files.File:
-		return getFileCheckSum(fileDto)
+		return getFileChecksum(fileDto.Path)
 	case files.Directory:
-		return getDirectoryCheckSum(fileDto)
+		return getDirectoryChecksum(fileDto.Path)
 	default:
 		return "", fmt.Errorf("file type not found")
 	}
 
-}
-
-func getFileCheckSum(
-	fileDto files.FileDto,
-) (string, error) {
-	return fileDto.GetCheckSumFromFile()
-}
-
-func getDirectoryCheckSum(fileDto files.FileDto) (string, error) {
-
-	var checkSumFiles []string
-
-	// TODO: buscar todos arquivos na pasta e adicionar checksum no array
-
-	resultCheckSum := fileDto.GetCheckSumFromPath(checkSumFiles)
-
-	return resultCheckSum, nil
 }

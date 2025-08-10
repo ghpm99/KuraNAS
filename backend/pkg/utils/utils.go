@@ -1,12 +1,17 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"nas-go/api/internal/config"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -319,21 +324,34 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	}
 }
 
+type ScriptType string
+
 const (
-	ImageMetadata = "image_metadata.py"
-	AudioMetadata = "audio_metadata.py"
-	VideoMetadata = "video_metadata.py"
+	ImageMetadata ScriptType = "image_metadata.py"
+	AudioMetadata ScriptType = "audio_metadata.py"
+	VideoMetadata ScriptType = "video_metadata.py"
 )
 
-func RunPythonScript(scriptName string, arg ...string) (string, error) {
-	scriptPath := filepath.Join(config.GetBuildConfig("ScriptPath"), scriptName)
+func RunPythonScript(scriptName ScriptType, arg ...string) (string, error) {
+
+	if len(scriptName) == 0 {
+		return "", fmt.Errorf("o nome do script não pode ser vazio")
+	}
+
+	scriptPath := filepath.Join(config.GetBuildConfig("ScriptPath"), string(scriptName))
+
 	args := append([]string{scriptPath}, arg...)
-	cmd := exec.Command(config.GetBuildConfig("PythonScript"), args...)
+
+	pythonExec := config.GetBuildConfig("PythonScript")
+
+	cmd := exec.Command(pythonExec, args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("erro ao executar script python: %v, output: %s", err, string(output))
 	}
-	return string(output), nil
+
+	return strings.TrimSpace(string(output)), nil
 }
 
 func StructToArgs(v interface{}) []interface{} {
@@ -355,4 +373,93 @@ func StructToScanPtrs(v interface{}) []interface{} {
 		ptrs[i] = val.Field(i).Addr().Interface()
 	}
 	return ptrs
+}
+
+func GetFileChecksum(path string) (string, error) {
+	file, err := os.Open(path)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	h := sha256.New()
+
+	if _, err := io.Copy(h, file); err != nil {
+		return "", err
+	}
+
+	checkSumBytes := h.Sum(nil)
+	checkSumString := fmt.Sprintf("%x", checkSumBytes)
+
+	return checkSumString, nil
+}
+
+func GetCheckSumFromPath(childrenChecksums []string) string {
+
+	hasher := sha256.New()
+	for _, h := range childrenChecksums {
+
+		bytes, err := hex.DecodeString(h)
+		if err != nil {
+			continue
+		}
+		hasher.Write(bytes)
+	}
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func GetDirectoryChecksum(dirPath string) (string, error) {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return "", fmt.Errorf("falha ao verificar o caminho '%s': %w", dirPath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("o caminho '%s' não é um diretório", dirPath)
+	}
+
+	var allChecksums []string
+
+	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("erro ao percorrer o caminho '%s': %w", path, err)
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("falha ao abrir o arquivo '%s': %w", path, err)
+		}
+		defer file.Close()
+
+		hash := sha256.New()
+
+		if _, err := io.Copy(hash, file); err != nil {
+			return fmt.Errorf("falha ao gerar hash para o arquivo '%s': %w", path, err)
+		}
+
+		fileChecksum := hex.EncodeToString(hash.Sum(nil))
+		allChecksums = append(allChecksums, fileChecksum)
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	sort.Strings(allChecksums)
+
+	var combinedChecksums string
+	for _, cs := range allChecksums {
+		combinedChecksums += cs
+	}
+
+	finalHash := sha256.Sum256([]byte(combinedChecksums))
+
+	return hex.EncodeToString(finalHash[:]), nil
 }

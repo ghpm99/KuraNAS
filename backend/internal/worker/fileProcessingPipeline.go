@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/utils"
 	"os"
 	"sync"
 )
@@ -15,7 +16,12 @@ type FileWalk struct {
 	Info os.FileInfo
 }
 
+var pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+	return utils.RunPythonScript(scriptType, filePath)
+}
+
 func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.LoggerServiceInterface) {
+
 	log.Println("Iniciando o pipeline de processamento de arquivos...")
 	logger, _ := Logger.CreateLog(logger.LoggerModel{
 		Name:        "StartFileProcessingPipeline",
@@ -43,12 +49,18 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 
 	for range 5 {
 		workerGroup.Add(1)
-		go StartChecksumWorker(metadataProcessedChannel, checksumCompletedChannel, &workerGroup)
+		go StartChecksumWorker(
+			metadataProcessedChannel,
+			checksumCompletedChannel,
+			utils.GetFileChecksum,
+			utils.GetDirectoryChecksum,
+			&workerGroup,
+		)
 	}
 
 	for range 3 {
 		workerGroup.Add(1)
-		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, &workerGroup)
+		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, &workerGroup)
 	}
 
 	workerGroup.Add(1)
