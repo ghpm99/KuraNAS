@@ -92,7 +92,7 @@ func (r *LoggerRepository) GetLogs(page, pageSize int) ([]LoggerModel, error) {
 	return logs, nil
 }
 
-func (r *LoggerRepository) UpdateLog(tx *sql.Tx, log LoggerModel) (bool, error) {
+func (r *LoggerRepository) UpdateLog(tx *sql.Tx, log LoggerModel) error {
 	query := queries.UpdateLogQuery
 	args := []any{
 		log.Name, log.Description, log.Level, log.IPAddress, log.StartTime, log.EndTime,
@@ -100,11 +100,14 @@ func (r *LoggerRepository) UpdateLog(tx *sql.Tx, log LoggerModel) (bool, error) 
 	}
 	result, err := tx.Exec(query, args...)
 	if err != nil {
-		return false, fmt.Errorf("UpdateLog: %v", err)
+		return fmt.Errorf("UpdateLog: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return false, err
+		return err
 	}
-	return rowsAffected == 1, nil
+	if rowsAffected > 1 {
+		return fmt.Errorf("multiples rows affected")
+	}
+	return nil
 }

@@ -7,6 +7,9 @@
 		'left-nav content-container';
 	height: 100vh;
 	background-color: #2a282e;
+	@media screen and (max-width: 940px) {
+		grid-template-columns: 0 auto;
+	}
 }
 
 .mainContent {

@@ -2,6 +2,9 @@
 	height: 100%;
 	grid-area: left-nav;
 	background-color: #1c1a1f;
+	@media screen and (max-width: 940px) {
+		display: none;
+	}
 }
 
 .nav {
