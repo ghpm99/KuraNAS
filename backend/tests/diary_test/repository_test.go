@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"nas-go/api/internal/api/v1/diary"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"reflect"
 	"testing"
@@ -19,7 +20,9 @@ func TestRepository_GetDiary(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := &diary.Repository{DbContext: db}
+	dbContext := database.NewDbContext(db)
+
+	repo := &diary.Repository{DbContext: dbContext}
 
 	type args struct {
 		filter   diary.DiaryFilter
@@ -238,11 +241,12 @@ func TestRepository_GetDiary(t *testing.T) {
 
 func TestRepository_GetDbContext(t *testing.T) {
 	db := &sql.DB{}
-	repo := &diary.Repository{DbContext: db}
+	dbContext := database.NewDbContext(db)
+	repo := &diary.Repository{DbContext: dbContext}
 
 	result := repo.GetDbContext()
 
-	if result != db {
+	if result != dbContext {
 		t.Errorf("Expected %v, got %v", db, result)
 	}
 }

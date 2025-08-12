@@ -15,7 +15,6 @@ func StartChecksumWorker(
 	workerGroup *sync.WaitGroup,
 ) {
 	defer workerGroup.Done()
-	defer close(checksumCompletedChannel)
 
 	for fileToProcess := range metadataProcessedChannel {
 		log.Println("StartChecksumWorker, Recendo arquivo de fila", fileToProcess.Path)

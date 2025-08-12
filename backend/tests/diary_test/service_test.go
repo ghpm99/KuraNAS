@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"nas-go/api/internal/api/v1/diary"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
@@ -13,12 +14,13 @@ import (
 )
 
 var db, _ = sql.Open("sqlite3", ":memory:")
+var dbContext = database.NewDbContext(db)
 
 type MockRepository struct {
 	GetDiaryFunc      func(filter diary.DiaryFilter, page int, pageSize int) (utils.PaginationResponse[diary.DiaryModel], error)
 	CreateDiaryFunc   func(tx *sql.Tx, diaryModel diary.DiaryModel) (diary.DiaryModel, error)
 	UpdateDiaryFunc   func(tx *sql.Tx, diaryModel diary.DiaryModel) (bool, error)
-	GetDbContextFunc  func() *sql.DB
+	GetDbContextFunc  func() *database.DbContext
 	BeginTxFunc       func(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 	CommitFunc        func() error
 	RollbackFunc      func() error
@@ -51,11 +53,11 @@ func (m *MockRepository) UpdateDiary(tx *sql.Tx, diaryModel diary.DiaryModel) (b
 	return m.ExpectedBool, m.ExpectedError
 }
 
-func (m *MockRepository) GetDbContext() *sql.DB {
+func (m *MockRepository) GetDbContext() *database.DbContext {
 	if m.GetDbContextFunc != nil {
 		return m.GetDbContextFunc()
 	}
-	return db
+	return dbContext
 }
 
 func (m *MockRepository) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {

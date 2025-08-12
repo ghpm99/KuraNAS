@@ -28,7 +28,6 @@ func StartMetadataWorker(
 		} else {
 			unprocessedFile.Metadata = metadata
 		}
-
 		log.Println("StartMetadataWorker, Enviando arquivo para fila", unprocessedFile.Path)
 
 		metadataProcessedChannel <- unprocessedFile
@@ -60,7 +59,7 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (files.ImageMe
 	if err != nil {
 		return metadata, err
 	}
-
+	log.Println("StartMetadataWorker, Resultado do script de imagem:", result)
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {
 		return metadata, err
@@ -79,6 +78,7 @@ func getAudioMetadata(fileDto files.FileDto, runner ScriptRunner) (files.AudioMe
 	if err != nil {
 		return metadata, err
 	}
+	log.Println("StartMetadataWorker, Resultado do script de áudio:", result)
 
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {
@@ -98,6 +98,7 @@ func getVideoMetadata(fileDto files.FileDto, runner ScriptRunner) (files.VideoMe
 	if err != nil {
 		return metadata, err
 	}
+	log.Println("StartMetadataWorker, Resultado do script de vídeo:", result)
 
 	err = json.Unmarshal([]byte(result), &metadata)
 	if err != nil {

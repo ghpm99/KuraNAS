@@ -11,7 +11,6 @@ import (
 
 func StartDirectoryWalker(targetDirectory string, fileWalkChannel chan<- FileWalk, workerGroup *sync.WaitGroup) {
 	defer workerGroup.Done()
-	defer close(fileWalkChannel)
 
 	walkCallback := func(filePath string, fileInfo os.FileInfo, err error) error {
 		if err != nil {

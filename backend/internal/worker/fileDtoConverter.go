@@ -3,12 +3,14 @@ package worker
 import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"path/filepath"
 	"sync"
 )
 
 func convertToDto(fw FileWalk) files.FileDto {
 	fileDto := files.FileDto{
-		Path: fw.Path,
+		Path:       fw.Path,
+		ParentPath: filepath.Dir(fw.Path),
 	}
 	fileDto.ParseFileInfoToFileDto(fw.Info)
 	return fileDto
