@@ -16,7 +16,7 @@ build:
 
 test:
 	@echo "Running tests..."
-	@go test ./tests/files_test/...
+	@go test -tags=dev -v ./tests/files_test/...
 	@echo "Tests completed."
 
 run:

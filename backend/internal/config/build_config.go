@@ -5,7 +5,23 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 )
+
+func FindProjectRoot() string {
+	dir, _ := os.Getwd()
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return ""
+}
 
 func GetBuildConfig(key string) string {
 	switch key {
@@ -14,34 +30,19 @@ func GetBuildConfig(key string) string {
 	case "DbPath":
 		return "db.sqlite3"
 	case "IconPath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
+		currentDir := FindProjectRoot()
 		return FilepathJoin(true, currentDir, "icons")
 	case "TranslationsPath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
+		currentDir := FindProjectRoot()
 		return FilepathJoin(true, currentDir, "translations")
 	case "EnvFilePath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
+		currentDir := FindProjectRoot()
 		return FilepathJoin(false, currentDir, ".env")
 	case "PythonScript":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
+		currentDir := FindProjectRoot()
 		return FilepathJoin(false, currentDir, "scripts", ".venv", "bin", "python")
 	case "ScriptPath":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return ""
-		}
+		currentDir := FindProjectRoot()
 		return FilepathJoin(true, currentDir, "scripts")
 	default:
 		return ""

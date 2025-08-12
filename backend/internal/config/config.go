@@ -45,7 +45,7 @@ func InitializeConfig() {
 func getJournalMode(mode string) string {
 	if !validJournalModes[strings.ToUpper(mode)] {
 		log.Printf("Modo de journal inválido: %s. Usando WAL como padrão.", mode)
-		return "WAL"
+		return "DELETE"
 	}
 	return mode
 }

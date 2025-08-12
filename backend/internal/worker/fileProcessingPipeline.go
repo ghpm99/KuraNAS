@@ -37,37 +37,57 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 	checksumCompletedChannel := make(chan files.FileDto, 100)
 
 	log.Println("criando worker group")
-	var workerGroup sync.WaitGroup
 
-	workerGroup.Add(1)
-	go StartDirectoryWalker(config.AppConfig.EntryPoint, fileWalkChannel, &workerGroup)
+	var walkerWG sync.WaitGroup
+	walkerWG.Add(1)
+	go func() {
+		StartDirectoryWalker(config.AppConfig.EntryPoint, fileWalkChannel, &walkerWG)
+		walkerWG.Wait()
+		close(fileWalkChannel)
+	}()
 
+	var dtoWG sync.WaitGroup
 	for range 5 {
-		workerGroup.Add(1)
-		go StartDtoConverterWorker(fileWalkChannel, fileDtoChannel, &workerGroup)
+		dtoWG.Add(1)
+		go StartDtoConverterWorker(fileWalkChannel, fileDtoChannel, &dtoWG)
 	}
+	go func() {
+		dtoWG.Wait() // Espere só os DTO workers
+		close(fileDtoChannel)
+	}()
 
+	var metaWG sync.WaitGroup
+	for range 3 {
+		metaWG.Add(1)
+		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, &metaWG)
+	}
+	go func() {
+		metaWG.Wait() // Espere só os metadata workers
+		close(metadataProcessedChannel)
+	}()
+
+	var checksumWG sync.WaitGroup
 	for range 5 {
-		workerGroup.Add(1)
+		checksumWG.Add(1)
 		go StartChecksumWorker(
 			metadataProcessedChannel,
 			checksumCompletedChannel,
 			utils.GetFileChecksum,
 			utils.GetDirectoryChecksum,
-			&workerGroup,
+			&checksumWG,
 		)
 	}
+	go func() {
+		checksumWG.Wait() // Espere só os metadata workers
+		close(checksumCompletedChannel)
+	}()
 
-	for range 3 {
-		workerGroup.Add(1)
-		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, &workerGroup)
-	}
-
-	workerGroup.Add(1)
-	go StartDatabasePersistenceWorker(service, checksumCompletedChannel, &workerGroup)
+	var dbWG sync.WaitGroup
+	dbWG.Add(1)
+	go StartDatabasePersistenceWorker(service, checksumCompletedChannel, &dbWG)
 
 	log.Println("Esperando processamento concluir")
-	workerGroup.Wait()
+	dbWG.Wait()
 
 	log.Println("Pipeline de processamento concluído.")
 	Logger.CompleteWithSuccessLog(logger)
