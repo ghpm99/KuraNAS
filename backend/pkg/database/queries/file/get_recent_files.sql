@@ -6,6 +6,6 @@ FROM
 ORDER BY
     accessed_at DESC
 LIMIT
-    ?
+    $1
 OFFSET
-    ?;
+    $2;

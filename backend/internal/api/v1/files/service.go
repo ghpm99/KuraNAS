@@ -43,8 +43,9 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 		if err != nil {
 			return
 		}
+		fileDto.ID = result.ID
 
-		metadata, err := s.UpsertMetadata(tx, fileDtoResult)
+		metadata, err := s.UpsertMetadata(tx, fileDto)
 		if err != nil {
 			return
 		}
@@ -417,6 +418,7 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	switch m := fileDto.Metadata.(type) {
 	case ImageMetadataModel:
 		// Agora 'm' já é do tipo ImageMetadataModel, sem a necessidade de conversão
+		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertImageMetadata(tx, m)
 		if upsertErr != nil {
 			err = upsertErr
@@ -426,6 +428,7 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 
 	case AudioMetadataModel:
 		// 'm' é do tipo AudioMetadataModel aqui
+		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
 		if upsertErr != nil {
 			err = upsertErr
@@ -435,6 +438,7 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 
 	case VideoMetadataModel:
 		// 'm' é do tipo VideoMetadataModel aqui
+		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
 		if upsertErr != nil {
 			err = upsertErr

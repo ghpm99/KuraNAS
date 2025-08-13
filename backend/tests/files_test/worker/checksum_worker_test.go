@@ -10,8 +10,7 @@ import (
 )
 
 func MockChecksum(path string) (string, error) {
-	// Simula a leitura de um arquivo e gera um checksum
-	hash := sha256.Sum256([]byte(path)) // Usa o path para gerar um checksum determinístico
+	hash := sha256.Sum256([]byte(path))
 	return hex.EncodeToString(hash[:]), nil
 }
 
@@ -19,6 +18,7 @@ func TestStartChecksumWorker(t *testing.T) {
 	// 1. Configuração dos canais e WaitGroup
 	metadataProcessedChannel := make(chan files.FileDto, 5)
 	checksumCompletedChannel := make(chan files.FileDto, 5)
+	monitorChannel := make(chan worker.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 
 	// 2. Popula o canal de entrada com dados de teste
@@ -47,7 +47,14 @@ func TestStartChecksumWorker(t *testing.T) {
 
 	// 3. Executa a função em uma goroutine
 	workerGroup.Add(1)
-	go worker.StartChecksumWorker(metadataProcessedChannel, checksumCompletedChannel, MockChecksum, MockChecksum, &workerGroup)
+	go worker.StartChecksumWorker(
+		metadataProcessedChannel,
+		checksumCompletedChannel,
+		MockChecksum,
+		MockChecksum,
+		monitorChannel,
+		&workerGroup,
+	)
 
 	// 4. Ler do canal de saída para verificar os dados processados
 	var receivedFiles []files.FileDto
@@ -62,6 +69,7 @@ func TestStartChecksumWorker(t *testing.T) {
 
 	// 5. Espera a goroutine principal terminar
 	workerGroup.Wait()
+	close(checksumCompletedChannel)
 
 	// 6. Espera a goroutine de leitura terminar
 	wgReader.Wait()

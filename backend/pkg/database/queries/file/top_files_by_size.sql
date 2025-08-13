@@ -1,11 +1,11 @@
-select
+SELECT
     hf.id,
     hf.name,
-    hf."size",
-    hf."path"
-from
+    hf.size,
+    hf.path
+FROM
     home_file hf
-order by
-    hf."size" desc
-limit
-    ?;
+ORDER BY
+    hf.size DESC
+LIMIT
+    $1;

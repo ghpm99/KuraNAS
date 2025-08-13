@@ -16,6 +16,12 @@ type FileWalk struct {
 	Info os.FileInfo
 }
 
+type ResultWorkerData struct {
+	Path    string
+	Success bool
+	Error   string
+}
+
 var pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
 	return utils.RunPythonScript(scriptType, filePath)
 }
@@ -31,6 +37,7 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 	}, nil)
 
 	log.Println("criando canais")
+	monitorChannel := make(chan ResultWorkerData, 100)
 	fileWalkChannel := make(chan FileWalk, 100)
 	fileDtoChannel := make(chan files.FileDto, 100)
 	metadataProcessedChannel := make(chan files.FileDto, 100)
@@ -38,10 +45,14 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 
 	log.Println("criando worker group")
 
+	var monitorWG sync.WaitGroup
+	monitorWG.Add(1)
+	go StartResultMonitorWorker(monitorChannel, &monitorWG)
+
 	var walkerWG sync.WaitGroup
 	walkerWG.Add(1)
 	go func() {
-		StartDirectoryWalker(config.AppConfig.EntryPoint, fileWalkChannel, &walkerWG)
+		StartDirectoryWalker(config.AppConfig.EntryPoint, fileWalkChannel, monitorChannel, &walkerWG)
 		walkerWG.Wait()
 		close(fileWalkChannel)
 	}()
@@ -52,17 +63,17 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 		go StartDtoConverterWorker(fileWalkChannel, fileDtoChannel, &dtoWG)
 	}
 	go func() {
-		dtoWG.Wait() // Espere só os DTO workers
+		dtoWG.Wait()
 		close(fileDtoChannel)
 	}()
 
 	var metaWG sync.WaitGroup
 	for range 3 {
 		metaWG.Add(1)
-		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, &metaWG)
+		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, monitorChannel, &metaWG)
 	}
 	go func() {
-		metaWG.Wait() // Espere só os metadata workers
+		metaWG.Wait()
 		close(metadataProcessedChannel)
 	}()
 
@@ -74,17 +85,18 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 			checksumCompletedChannel,
 			utils.GetFileChecksum,
 			utils.GetDirectoryChecksum,
+			monitorChannel,
 			&checksumWG,
 		)
 	}
 	go func() {
-		checksumWG.Wait() // Espere só os metadata workers
+		checksumWG.Wait()
 		close(checksumCompletedChannel)
 	}()
 
 	var dbWG sync.WaitGroup
 	dbWG.Add(1)
-	go StartDatabasePersistenceWorker(service, checksumCompletedChannel, &dbWG)
+	go StartDatabasePersistenceWorker(service, checksumCompletedChannel, monitorChannel, &dbWG)
 
 	log.Println("Esperando processamento concluir")
 	dbWG.Wait()

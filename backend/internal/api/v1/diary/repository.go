@@ -34,22 +34,17 @@ func (repository *Repository) CreateDiary(transaction *sql.Tx, diary DiaryModel)
 
 	query := queries.InsertDiaryQuery
 
-	data, err := transaction.Exec(
+	var diaryId int
+	err := transaction.QueryRow(
 		query,
 		args...,
-	)
+	).Scan(&diaryId)
 
 	if err != nil {
 		return fail(err)
 	}
 
-	diaryId, err := data.LastInsertId()
-
-	if err != nil {
-		return fail(err)
-	}
-
-	diary.ID = int(diaryId)
+	diary.ID = diaryId
 
 	return diary, nil
 }

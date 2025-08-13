@@ -1,9 +1,9 @@
 SELECT
     id,
     file_id,
-    "path",
+    PATH,
     mime,
-    length,
+    LENGTH,
     bitrate,
     sample_rate,
     channels,
@@ -17,7 +17,7 @@ SELECT
     track_number,
     genre,
     composer,
-    year,
+    YEAR,
     recording_date,
     encoder,
     publisher,
@@ -29,4 +29,4 @@ SELECT
 FROM
     audio_metadata
 WHERE
-    id = ?;
+    id = $1;

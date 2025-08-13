@@ -1,4 +1,4 @@
-select
-    sum(hf."size")
-from
-    home_file hf
+SELECT
+    SUM(hf.size)
+FROM
+    home_file hf;

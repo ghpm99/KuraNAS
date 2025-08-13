@@ -1,4 +1,4 @@
 INSERT INTO
-    migrations (name)
+    migrations (NAME)
 VALUES
-    (?);
+    ($1);

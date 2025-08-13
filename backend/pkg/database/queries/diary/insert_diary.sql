@@ -1,4 +1,6 @@
 INSERT INTO
-    activity_diary (name, description, start_time)
+    activity_diary (NAME, description, start_time)
 VALUES
-    ($1, $2, $3);
+    ($1, $2, $3)
+RETURNING
+    id;
