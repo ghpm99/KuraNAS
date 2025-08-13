@@ -125,22 +125,17 @@ func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel,
 
 	query := queries.InsertFileQuery
 
-	data, err := transaction.Exec(
+	var fileId int
+	err := transaction.QueryRow(
 		query,
 		args...,
-	)
+	).Scan(&fileId)
 
 	if err != nil {
 		return fail(err)
 	}
 
-	fileId, err := data.LastInsertId()
-
-	if err != nil {
-		return fail(err)
-	}
-
-	file.ID = int(fileId)
+	file.ID = fileId
 
 	return file, nil
 }

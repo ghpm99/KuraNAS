@@ -1,20 +1,20 @@
 SELECT
     id,
     file_id,
-    "path",
+    PATH,
     format_name,
-    "size",
+    size,
     duration,
-    width,
-    height,
+    WIDTH,
+    HEIGHT,
     frame_rate,
     nb_frames,
     bit_rate,
     codec_name,
     codec_long_name,
     pix_fmt,
-    "level",
-    "profile",
+    LEVEL,
+    profile,
     aspect_ratio,
     audio_codec,
     audio_channels,
@@ -24,4 +24,4 @@ SELECT
 FROM
     video_metadata
 WHERE
-    id = ?;
+    id = $1;

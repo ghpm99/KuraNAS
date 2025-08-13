@@ -1,7 +1,6 @@
 package worker_test
 
 import (
-	"log"
 	"nas-go/api/internal/worker"
 	"os"
 	"path/filepath"
@@ -17,10 +16,11 @@ func TestStartDirectoryWalker(t *testing.T) {
 	}
 
 	fileWalkChannel := make(chan worker.FileWalk, 10)
+	monitorChannel := make(chan worker.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 	workerGroup.Add(1)
 
-	go worker.StartDirectoryWalker(testDirectory, fileWalkChannel, &workerGroup)
+	go worker.StartDirectoryWalker(testDirectory, fileWalkChannel, monitorChannel, &workerGroup)
 
 	var receivedPaths []string
 
@@ -30,11 +30,11 @@ func TestStartDirectoryWalker(t *testing.T) {
 		defer wgReader.Done()
 		for fw := range fileWalkChannel {
 			receivedPaths = append(receivedPaths, fw.Path)
-			log.Printf("Recebido do canal: %s", fw.Path)
 		}
 	}()
 
 	workerGroup.Wait()
+	close(fileWalkChannel)
 
 	wgReader.Wait()
 

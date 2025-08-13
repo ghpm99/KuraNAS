@@ -20,20 +20,22 @@ func (r *LoggerRepository) GetDbContext() *database.DbContext {
 }
 
 func (r *LoggerRepository) CreateLog(tx *sql.Tx, log LoggerModel) (LoggerModel, error) {
+
 	query := queries.InsertLogQuery
+
 	args := []any{
 		log.Name, log.Description, log.Level, log.IPAddress, log.StartTime, log.EndTime,
 		log.Status, log.ExtraData,
 	}
-	result, err := tx.Exec(query, args...)
+
+	var id int
+	err := tx.QueryRow(query, args...).Scan(&id)
+
 	if err != nil {
 		return log, fmt.Errorf("CreateLog: %v", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return log, fmt.Errorf("CreateLog: %v", err)
-	}
-	log.ID = int(id)
+
+	log.ID = id
 	return log, nil
 }
 

@@ -1,8 +1,8 @@
 SELECT
     id,
-    name,
+    NAME,
     description,
-    level,
+    LEVEL,
     ip_address,
     start_time,
     end_time,
@@ -12,6 +12,6 @@ SELECT
     status,
     extra_data
 FROM
-    log
+    LOG
 WHERE
-    id = ?;
+    id = $1;

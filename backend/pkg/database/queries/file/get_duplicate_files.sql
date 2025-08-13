@@ -1,8 +1,8 @@
 SELECT
-    name,
+    NAME,
     SUM(size) AS total_size,
     COUNT(*) AS copies,
-    GROUP_CONCAT(path) AS paths
+    STRING_AGG(PATH, ',') AS paths
 FROM
     home_file
 WHERE
@@ -12,15 +12,19 @@ WHERE
         FROM
             home_file
         WHERE
-            checksum IS NOT ''
+            checksum IS NOT NULL
+            AND checksum <> ''
         GROUP BY
             checksum
         HAVING
             COUNT(*) > 1
     )
 GROUP BY
-    checksum
+    checksum,
+    NAME
 ORDER BY
     copies DESC
 LIMIT
-    ? OFFSET ?;
+    $1
+OFFSET
+    $2;

@@ -1,20 +1,9 @@
 package config
 
 import (
-	"log"
 	"os"
-	"strings"
 	"time"
 )
-
-var validJournalModes = map[string]bool{
-	"DELETE":   true,
-	"TRUNCATE": true,
-	"PERSIST":  true,
-	"MEMORY":   true,
-	"WAL":      true,
-	"OFF":      true,
-}
 
 type AppConfigStruct struct {
 	EntryPoint      string
@@ -23,8 +12,11 @@ type AppConfigStruct struct {
 	StartupTime     time.Time
 	RecentFilesKeep int
 	Env             string
-	DbJournalMode   string
-	DbBuzyTimeout   int
+	DbHost          string
+	DbPort          string
+	DbUser          string
+	DbPassword      string
+	DbName          string
 }
 
 var AppConfig AppConfigStruct
@@ -37,15 +29,10 @@ func InitializeConfig() {
 		StartupTime:     time.Now(),
 		RecentFilesKeep: 10,
 		Env:             os.Getenv("ENV"),
-		DbJournalMode:   getJournalMode(os.Getenv("JOURNAL_MODE")),
-		DbBuzyTimeout:   600000,
+		DbHost:          os.Getenv("DB_HOST"),
+		DbPort:          os.Getenv("DB_PORT"),
+		DbUser:          os.Getenv("DB_USER"),
+		DbPassword:      os.Getenv("DB_PASSWORD"),
+		DbName:          os.Getenv("DB_NAME"),
 	}
-}
-
-func getJournalMode(mode string) string {
-	if !validJournalModes[strings.ToUpper(mode)] {
-		log.Printf("Modo de journal inválido: %s. Usando WAL como padrão.", mode)
-		return "DELETE"
-	}
-	return mode
 }

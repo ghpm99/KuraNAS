@@ -1,6 +1,6 @@
-select
-    count(*)
-from
+SELECT
+    COUNT(*)
+FROM
     home_file hf
-where
-    hf."type" = ?
+WHERE
+    hf.type = $1;

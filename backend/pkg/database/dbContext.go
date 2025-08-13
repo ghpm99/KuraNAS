@@ -2,12 +2,10 @@ package database
 
 import (
 	"database/sql"
-	"sync"
 )
 
 type DbContext struct {
 	database *sql.DB
-	mutex    sync.RWMutex
 }
 
 func NewDbContext(db *sql.DB) *DbContext {
@@ -21,10 +19,6 @@ func (context *DbContext) GetDatabase() *sql.DB {
 }
 
 func (context *DbContext) ExecTx(fn func(*sql.Tx) error) error {
-	// Pega o lock de escrita para acesso exclusivo
-	context.mutex.Lock()
-	defer context.mutex.Unlock()
-
 	// Inicia a transação
 	tx, err := context.database.Begin()
 	if err != nil {
@@ -46,9 +40,6 @@ func (context *DbContext) ExecTx(fn func(*sql.Tx) error) error {
 // A função 'fn' recebe a transação e deve retornar um erro caso falhe.
 // Esta abordagem permite múltiplas leituras em paralelo.
 func (context *DbContext) QueryTx(fn func(*sql.Tx) error) error {
-	// Pega o read lock, permitindo que outros leitores continuem.
-	context.mutex.RLock()
-	defer context.mutex.RUnlock()
 
 	// Inicia a transação de leitura
 	tx, err := context.database.Begin()

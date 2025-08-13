@@ -3,4 +3,4 @@ SELECT
 FROM
     image_metadata
 WHERE
-    id = ?;
+    id = $1;

@@ -1,9 +1,9 @@
 INSERT INTO
     audio_metadata (
         file_id,
-        "path",
+        PATH,
         mime,
-        length,
+        LENGTH,
         bitrate,
         sample_rate,
         channels,
@@ -17,7 +17,7 @@ INSERT INTO
         track_number,
         genre,
         composer,
-        year,
+        YEAR,
         recording_date,
         encoder,
         publisher,
@@ -28,38 +28,12 @@ INSERT INTO
         created_at
     )
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    ) ON CONFLICT (file_id, "path") DO
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) ON CONFLICT (file_id, PATH)
+DO
 UPDATE
 SET
     mime = EXCLUDED.mime,
-    length = EXCLUDED.length,
+    LENGTH = EXCLUDED.length,
     bitrate = EXCLUDED.bitrate,
     sample_rate = EXCLUDED.sample_rate,
     channels = EXCLUDED.channels,
@@ -73,12 +47,14 @@ SET
     track_number = EXCLUDED.track_number,
     genre = EXCLUDED.genre,
     composer = EXCLUDED.composer,
-    year = EXCLUDED.year,
+    YEAR = EXCLUDED.year,
     recording_date = EXCLUDED.recording_date,
     encoder = EXCLUDED.encoder,
     publisher = EXCLUDED.publisher,
     original_release_date = EXCLUDED.original_release_date,
     original_artist = EXCLUDED.original_artist,
     lyricist = EXCLUDED.lyricist,
-    lyrics = EXCLUDED.lyrics RETURNING id,
+    lyrics = EXCLUDED.lyrics
+RETURNING
+    id,
     created_at;

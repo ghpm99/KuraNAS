@@ -52,6 +52,7 @@ func TestStartMetadataWorker(t *testing.T) {
 	// 1. Configuração dos canais e WaitGroup
 	fileDtoChannel := make(chan files.FileDto, 5)
 	metadataProcessedChannel := make(chan files.FileDto, 5)
+	monitorChannel := make(chan worker.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 
 	// 2. Popula o canal de entrada com dados de teste
@@ -69,7 +70,7 @@ func TestStartMetadataWorker(t *testing.T) {
 
 	// 3. Executa a função em uma goroutine, passando o mock
 	workerGroup.Add(1)
-	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, &workerGroup)
+	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup)
 
 	// 4. Ler do canal de saída para verificar os dados
 	var receivedFiles []files.FileDto

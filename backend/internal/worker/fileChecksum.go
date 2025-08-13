@@ -12,20 +12,24 @@ func StartChecksumWorker(
 	checksumCompletedChannel chan<- files.FileDto,
 	getFileChecksum func(path string) (string, error),
 	getDirectorysum func(dirPath string) (string, error),
+	monitorChannel chan<- ResultWorkerData,
 	workerGroup *sync.WaitGroup,
 ) {
 	defer workerGroup.Done()
 
 	for fileToProcess := range metadataProcessedChannel {
-		log.Println("StartChecksumWorker, Recendo arquivo de fila", fileToProcess.Path)
 		checksum, err := getCheckSum(fileToProcess, getFileChecksum, getDirectorysum)
 
 		if err != nil {
 			log.Printf("Erro ao gerar checksum: %v\n", err)
+			monitorChannel <- ResultWorkerData{
+				Path:    fileToProcess.Path,
+				Success: false,
+				Error:   err.Error(),
+			}
 		} else {
 			fileToProcess.CheckSum = checksum
 		}
-		log.Println("StartChecksumWorker, enviando arquivo para fila", fileToProcess.Path)
 		checksumCompletedChannel <- fileToProcess
 	}
 }
