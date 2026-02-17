@@ -1,4 +1,4 @@
-import { Info, LayoutGrid, Star } from 'lucide-react';
+import { BookImage, Info, LayoutGrid, Star } from 'lucide-react';
 
 import { useUI } from '@/components/hooks/UI/uiContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -15,6 +15,9 @@ const Sidebar = () => {
 			<nav className={styles.nav}>
 				<NavItem href='/' icon={<LayoutGrid className='icon' />}>
 					{t('ALL_FILES')}
+				</NavItem>
+				<NavItem href='/images' icon={<BookImage className='icon' />}>
+					Imagens
 				</NavItem>
 				<NavItem href='/starred' icon={<Star className='icon' />}>
 					{t('STARRED_FILES')}

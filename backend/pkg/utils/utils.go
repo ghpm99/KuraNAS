@@ -256,6 +256,8 @@ type FormatType struct {
 	Description string
 }
 
+var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp"}
+
 func GetFormatTypeByExtension(ext string) FormatType {
 	ext = strings.ToLower(ext)
 	switch ext {

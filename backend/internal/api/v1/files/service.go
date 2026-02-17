@@ -454,3 +454,18 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 
 	return fileDto, err
 }
+
+func (s *Service) GetImages(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetImages(page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
+
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+
+	return paginationResponse, nil
+}

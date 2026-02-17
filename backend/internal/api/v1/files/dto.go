@@ -88,6 +88,7 @@ func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (util
 		if err != nil {
 			return paginationResponse, err
 		}
+		fileDtoResult.Metadata = fileModel.Metadata
 		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
 	}
 	paginationResponse.Pagination = pagination.Pagination

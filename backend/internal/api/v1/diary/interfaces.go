@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type RepositoryInterface interface {
@@ -11,6 +12,7 @@ type RepositoryInterface interface {
 	CreateDiary(transaction *sql.Tx, diary DiaryModel) (DiaryModel, error)
 	GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error)
 	UpdateDiary(transaction *sql.Tx, diary DiaryModel) (bool, error)
+	GetSummary(dateReference time.Time) (DiarySummary, error)
 }
 
 type ServiceInterface interface {

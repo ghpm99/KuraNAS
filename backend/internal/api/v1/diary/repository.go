@@ -7,6 +7,7 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/diary"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type Repository struct {
@@ -148,4 +149,49 @@ func (repository *Repository) UpdateDiary(transaction *sql.Tx, diary DiaryModel)
 	}
 
 	return rowsAffected == 1, nil
+}
+
+func (repository *Repository) GetSummary(dateReference time.Time) (DiarySummary, error) {
+	summary := DiarySummary{}
+
+	args := []any{
+		dateReference,
+	}
+
+	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
+		row := tx.QueryRow(queries.GetDiarySummaryQuery, args...)
+
+		var longestActivityName sql.NullString
+		var longestActivityDurationSeconds sql.NullInt64
+
+		err := row.Scan(
+			&summary.Date,
+			&summary.TotalActivities,
+			&summary.TotalTimeSpentSeconds,
+			&longestActivityName,
+			&longestActivityDurationSeconds,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		if longestActivityName.Valid && longestActivityDurationSeconds.Valid {
+			summary.LongestActivity = &LongestActivity{
+				Name:              longestActivityName.String,
+				DurationSeconds:   int(longestActivityDurationSeconds.Int64),
+				DurationFormatted: "",
+			}
+		} else {
+			summary.LongestActivity = nil
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return summary, fmt.Errorf("GetSummary: %v", err)
+	}
+
+	return summary, nil
 }

@@ -100,8 +100,8 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 
 	log.Println("Esperando processamento concluir")
 	dbWG.Wait()
+	close(monitorChannel)
 
-	log.Println("Pipeline de processamento concluído.")
 	Logger.CompleteWithSuccessLog(logger)
 
 }

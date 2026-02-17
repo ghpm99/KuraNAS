@@ -38,6 +38,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/report-size-by-format", context.Files.Handler.GetReportSizeByFormatHandler)
 	files.GET("/top-files-by-size", context.Files.Handler.GetTopFilesBySizeHandler)
 	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
+	files.GET("/images", context.Files.Handler.GetImagesHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
