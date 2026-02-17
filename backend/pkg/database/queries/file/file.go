@@ -72,3 +72,6 @@ var UpsertVideoMetadataQuery string
 
 //go:embed delete_video_metadata.sql
 var DeleteVideoMetadataQuery string
+
+//go:embed get_images.sql
+var GetImagesQuery string

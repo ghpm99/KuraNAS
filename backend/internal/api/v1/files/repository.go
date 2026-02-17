@@ -8,6 +8,8 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/file"
 	"nas-go/api/pkg/utils"
+
+	"github.com/lib/pq"
 )
 
 type Repository struct {
@@ -377,6 +379,126 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 	}
 
 	paginationResponse.UpdatePagination()
+
+	return paginationResponse, nil
+}
+
+func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+
+	paginationResponse := utils.PaginationResponse[FileModel]{
+		Items: []FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	args := []any{
+		pq.Array(utils.ImageFormats),
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		// A lógica de consulta e escaneamento é movida para dentro desta função
+		rows, err := tx.Query(
+			queries.GetImagesQuery,
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var file FileModel
+			var metadata ImageMetadataModel
+			if err := rows.Scan(
+				&file.ID,
+				&file.Name,
+				&file.Path,
+				&file.ParentPath,
+				&file.Format,
+				&file.Size,
+				&file.UpdatedAt,
+				&file.CreatedAt,
+				&file.LastInteraction,
+				&file.LastBackup,
+				&file.Type,
+				&file.CheckSum,
+				&file.DeletedAt,
+				&file.Starred,
+				&metadata.ID,
+				&metadata.FileId,
+				&metadata.Path,
+				&metadata.Format,
+				&metadata.Mode,
+				&metadata.Width,
+				&metadata.Height,
+				&metadata.DPIX,
+				&metadata.DPIY,
+				&metadata.XResolution,
+				&metadata.YResolution,
+				&metadata.ResolutionUnit,
+				&metadata.Orientation,
+				&metadata.Compression,
+				&metadata.Photometric,
+				&metadata.ColorSpace,
+				&metadata.ComponentsConfig,
+				&metadata.ICCProfile,
+				&metadata.Make,
+				&metadata.Model,
+				&metadata.Software,
+				&metadata.LensModel,
+				&metadata.SerialNumber,
+				&metadata.DateTime,
+				&metadata.DateTimeOriginal,
+				&metadata.DateTimeDigitized,
+				&metadata.SubSecTime,
+				&metadata.ExposureTime,
+				&metadata.FNumber,
+				&metadata.ISO,
+				&metadata.ShutterSpeed,
+				&metadata.ApertureValue,
+				&metadata.BrightnessValue,
+				&metadata.ExposureBias,
+				&metadata.MeteringMode,
+				&metadata.Flash,
+				&metadata.FocalLength,
+				&metadata.WhiteBalance,
+				&metadata.ExposureProgram,
+				&metadata.MaxApertureValue,
+				&metadata.GPSLatitude,
+				&metadata.GPSLongitude,
+				&metadata.GPSAltitude,
+				&metadata.GPSDate,
+				&metadata.GPSTime,
+				&metadata.ImageDescription,
+				&metadata.UserComment,
+				&metadata.Copyright,
+				&metadata.Artist,
+				&metadata.CreatedAt,
+			); err != nil {
+				return err
+			}
+			fmt.Println("Encontrado file", file.ID)
+			file.Metadata = metadata
+
+			paginationResponse.Items = append(paginationResponse.Items, file)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
+		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+	}
+
+	paginationResponse.UpdatePagination()
+	fmt.Println("Paginacao length", len(paginationResponse.Items))
 
 	return paginationResponse, nil
 }

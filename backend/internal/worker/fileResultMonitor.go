@@ -21,6 +21,7 @@ func StartResultMonitorWorker(monitorChannel <-chan ResultWorkerData, wg *sync.W
 			totalErrors++
 			log.Printf("Arquivo: %s Error: %s", result.Path, result.Error)
 		}
-		log.Printf("Processados:%d Com sucesso:%d Com error:%d", totalProcessed, totalSuccess, totalErrors)
 	}
+	log.Printf("Processados:%d Com sucesso:%d Com error:%d", totalProcessed, totalSuccess, totalErrors)
+	log.Println("Pipeline de processamento concluído.")
 }

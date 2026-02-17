@@ -18,6 +18,7 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
+	GetImages(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 }
 
 type ServiceInterface interface {
@@ -38,6 +39,7 @@ type ServiceInterface interface {
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
+	GetImages(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 }
 
 type RecentFileRepositoryInterface interface {

@@ -12,3 +12,6 @@ var InsertDiaryQuery string
 
 //go:embed update_diary.sql
 var UpdateDiaryQuery string
+
+//go:embed daily_summary.sql
+var GetDiarySummaryQuery string
