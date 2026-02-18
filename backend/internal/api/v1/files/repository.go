@@ -483,7 +483,7 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 			); err != nil {
 				return err
 			}
-			fmt.Println("Encontrado file", file.ID)
+
 			file.Metadata = metadata
 
 			paginationResponse.Items = append(paginationResponse.Items, file)
