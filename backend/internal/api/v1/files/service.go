@@ -11,6 +11,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -271,6 +272,12 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, err
 		return icons.FolderIcon()
 	}
 
+	exists := s.CheckFileExistsByPath(fileDto.Path)
+
+	if !exists {
+		return nil, fmt.Errorf("file not found in path: %s", fileDto.Path)
+	}
+
 	switch fileDto.Format {
 	case ".jpg":
 		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
@@ -468,4 +475,42 @@ func (s *Service) GetImages(page int, pageSize int) (utils.PaginationResponse[Fi
 	}
 
 	return paginationResponse, nil
+}
+
+func (s *Service) CheckFileExists(fileId int) bool {
+	file, err := s.GetFileById(fileId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		}
+		return false
+	}
+
+	return s.CheckFileExistsByPath(file.Path)
+}
+
+func (s *Service) CheckFileExistsByPath(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}
+
+func (s *Service) DeleteFile(file FileDto, bySystem bool) error {
+	if bySystem && file.LastInteraction.HasValue && file.LastInteraction.Value.Add(24*time.Hour).After(time.Now()) {
+		return fmt.Errorf("file was recently accessed, cannot be deleted")
+	}
+
+	if !file.DeletedAt.HasValue {
+		file.DeletedAt = utils.Optional[time.Time]{HasValue: true, Value: time.Now()}
+	}
+
+	success, err := s.UpdateFile(file)
+	if err != nil {
+		return fmt.Errorf("error updating file before deletion: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("file not found for deletion")
+	}
+	return nil
 }

@@ -9,6 +9,7 @@ import FileProvider from '../hooks/fileProvider';
 import { UIProvider } from '../hooks/UI';
 import Layout from '../layout/Layout/Layout';
 import { SnackbarProvider } from 'notistack';
+import { ImageProvider } from '../hooks/imageProvider/imageProvider';
 
 const darkTheme = createTheme({
 	palette: {
@@ -23,18 +24,20 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 				<CssBaseline />
 				<UIProvider>
 					<FileProvider>
-						<ActivityDiaryProvider>
-							<AboutProvider>
-								<AnalyticsProvider>
-									<BrowserRouter>
-										<Layout>
-											<ActivePageListener />
-											{children}
-										</Layout>
-									</BrowserRouter>
-								</AnalyticsProvider>
-							</AboutProvider>
-						</ActivityDiaryProvider>
+						<ImageProvider>
+							<ActivityDiaryProvider>
+								<AboutProvider>
+									<AnalyticsProvider>
+										<BrowserRouter>
+											<Layout>
+												<ActivePageListener />
+												{children}
+											</Layout>
+										</BrowserRouter>
+									</AnalyticsProvider>
+								</AboutProvider>
+							</ActivityDiaryProvider>
+						</ImageProvider>
 					</FileProvider>
 				</UIProvider>
 			</ThemeProvider>

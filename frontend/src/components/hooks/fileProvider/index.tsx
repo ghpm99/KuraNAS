@@ -43,7 +43,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			page_size: pageSize,
 			file_parent: selectedItemId ?? undefined,
 		}),
-		[selectedItemId]
+		[selectedItemId],
 	);
 
 	const { status, data, refetch } = useInfiniteQuery({
@@ -128,14 +128,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 				setExpandedItems((prev) => [...prev, itemId]);
 			}
 		},
-		[expandedItems]
+		[expandedItems],
 	);
 
 	const handleStarredItem = useCallback(
 		(itemId: number) => {
 			updateStarredFile(itemId);
 		},
-		[updateStarredFile]
+		[updateStarredFile],
 	);
 
 	const contextValue: FileContextType = useMemo(
@@ -161,7 +161,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			isLoadingAccessData,
 			fileListFilter,
 			handleStarredItem,
-		]
+		],
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
 };

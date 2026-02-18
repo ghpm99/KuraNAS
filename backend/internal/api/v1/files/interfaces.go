@@ -40,6 +40,9 @@ type ServiceInterface interface {
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
 	GetImages(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	CheckFileExists(fileId int) bool
+	CheckFileExistsByPath(path string) bool
+	DeleteFile(file FileDto, bySystem bool) error
 }
 
 type RecentFileRepositoryInterface interface {
