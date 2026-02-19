@@ -680,3 +680,118 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, pagination)
 }
+
+func (handler *Handler) GetVideosHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideos",
+		Description: "Fetching video files",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	pagination, err := handler.service.GetVideos(page, pageSize)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) StreamVideoHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "StreamVideo",
+		Description: "Streaming video file",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verifica se arquivo existe
+	exists := handler.service.CheckFileExistsByPath(file.Path)
+	if !exists {
+		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Abre arquivo
+	videoFile, err := os.Open(file.Path)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer videoFile.Close()
+
+	// Pega informações do arquivo
+	fileInfo, err := videoFile.Stat()
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Headers para streaming de vídeo
+	c.Header("Content-Type", "video/mp4")
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=3600")
+
+	// Suporte a HTTP Range com chunks maiores para vídeo
+	rangeHeader := c.GetHeader("Range")
+	if rangeHeader != "" {
+		// Parse Range header: "bytes=0-1048576"
+		ranges := strings.Split(rangeHeader, "=")
+		if len(ranges) == 2 && ranges[0] == "bytes" {
+			byteRange := strings.Split(ranges[1], "-")
+			if len(byteRange) == 2 {
+				start, _ := strconv.ParseInt(byteRange[0], 10, 64)
+				end, _ := strconv.ParseInt(byteRange[1], 10, 64)
+
+				// Validação do range
+				if start >= 0 && end < fileInfo.Size() && start <= end {
+					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
+					c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
+					c.Status(http.StatusPartialContent)
+
+					videoFile.Seek(start, 0)
+					_, err := io.CopyN(c.Writer, videoFile, end-start+1)
+					if err != nil {
+						handler.Logger.CompleteWithErrorLog(loggerModel, err)
+						return
+					}
+
+					handler.Logger.CompleteWithSuccessLog(loggerModel)
+					return
+				}
+			}
+		}
+	}
+
+	// Streaming completo (sem range)
+	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
+	c.Status(http.StatusOK)
+
+	_, err = io.Copy(c.Writer, videoFile)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+}
