@@ -251,6 +251,7 @@ type FormatType struct {
 }
 
 var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp"}
+var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
 
 func GetFormatTypeByExtension(ext string) FormatType {
 	ext = strings.ToLower(ext)

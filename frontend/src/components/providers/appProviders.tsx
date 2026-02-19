@@ -10,6 +10,7 @@ import { UIProvider } from '../hooks/UI';
 import Layout from '../layout/Layout/Layout';
 import { SnackbarProvider } from 'notistack';
 import { ImageProvider } from '../hooks/imageProvider/imageProvider';
+import { MusicProvider } from '../hooks/musicProvider/musicProvider';
 
 const darkTheme = createTheme({
 	palette: {
@@ -25,18 +26,20 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 				<UIProvider>
 					<FileProvider>
 						<ImageProvider>
-							<ActivityDiaryProvider>
-								<AboutProvider>
-									<AnalyticsProvider>
-										<BrowserRouter>
-											<Layout>
-												<ActivePageListener />
-												{children}
-											</Layout>
-										</BrowserRouter>
-									</AnalyticsProvider>
-								</AboutProvider>
-							</ActivityDiaryProvider>
+							<MusicProvider>
+								<ActivityDiaryProvider>
+									<AboutProvider>
+										<AnalyticsProvider>
+											<BrowserRouter>
+												<Layout>
+													<ActivePageListener />
+													{children}
+												</Layout>
+											</BrowserRouter>
+										</AnalyticsProvider>
+									</AboutProvider>
+								</ActivityDiaryProvider>
+							</MusicProvider>
 						</ImageProvider>
 					</FileProvider>
 				</UIProvider>

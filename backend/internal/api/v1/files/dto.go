@@ -37,6 +37,25 @@ type FileDto struct {
 	Metadata              any                       `json:"metadata"`
 }
 
+type IMusicMetadata struct {
+	ID         int    `json:"id"`
+	FileId     int    `json:"file_id"`
+	Path       string `json:"path"`
+	Format     string `json:"format"`
+	Title      string `json:"title"`
+	Artist     string `json:"artist"`
+	Album      string `json:"album"`
+	Year       int    `json:"year"`
+	Genre      string `json:"genre"`
+	Track      int    `json:"track"`
+	Disc       int    `json:"disc"`
+	Duration   int    `json:"duration"`
+	Bitrate    int    `json:"bitrate"`
+	SampleRate int    `json:"sample_rate"`
+	Channels   int    `json:"channels"`
+	CreatedAt  string `json:"created_at"`
+}
+
 func (i *FileModel) ToDto() (FileDto, error) {
 
 	fileDto := FileDto{

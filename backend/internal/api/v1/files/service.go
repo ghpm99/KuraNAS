@@ -502,6 +502,21 @@ func (s *Service) GetImages(page int, pageSize int) (utils.PaginationResponse[Fi
 	return paginationResponse, nil
 }
 
+func (s *Service) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusic(page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
+
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+
+	return paginationResponse, nil
+}
+
 func (s *Service) CheckFileExists(fileId int) bool {
 	file, err := s.GetFileById(fileId)
 
