@@ -78,3 +78,6 @@ var GetImagesQuery string
 
 //go:embed get_music.sql
 var GetMusicQuery string
+
+//go:embed get_videos.sql
+var GetVideosQuery string

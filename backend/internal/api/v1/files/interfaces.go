@@ -19,6 +19,7 @@ type RepositoryInterface interface {
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 	GetImages(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 }
 
 type ServiceInterface interface {
@@ -41,6 +42,7 @@ type ServiceInterface interface {
 	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
 	GetImages(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	CheckFileExists(fileId int) bool
 	CheckFileExistsByPath(path string) bool
 	DeleteFile(file FileDto, bySystem bool) error
