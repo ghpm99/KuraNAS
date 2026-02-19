@@ -40,6 +40,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
 	files.GET("/images", context.Files.Handler.GetImagesHandler)
 	files.GET("/music", context.Files.Handler.GetMusicHandler)
+	files.GET("/stream/:id", context.Files.Handler.StreamAudioHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {

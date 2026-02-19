@@ -1,5 +1,6 @@
 import { formatSize } from '@/utils';
 import { useMusic } from '../hooks/musicProvider/musicProvider';
+import { useMusicPlayer } from '../hooks/musicPlayerProvider/musicPlayerProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
 import './musicContent.css';
 import {
@@ -10,12 +11,13 @@ import {
 	ListItemButton,
 	ListItemIcon,
 	ListItemText,
-	Typography,
 } from '@mui/material';
-import { Music, Play, Info } from 'lucide-react';
+import { Music, Play } from 'lucide-react';
+import PlayerControl from '../playerControl/playerControl';
 
 const MusicContent = () => {
 	const { music, fetchNextPage, hasNextPage, isFetchingNextPage } = useMusic();
+	const { playTrack } = useMusicPlayer();
 	const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({
 		enabled: hasNextPage && !isFetchingNextPage,
 		rootMargin: '400px',
@@ -55,12 +57,13 @@ const MusicContent = () => {
 
 	return (
 		<div className='file-content'>
+			<PlayerControl />
 			<List sx={{ width: '100%' }}>
 				{music.map((item, index) => {
 					const isLastItem = index === music.length - 1;
 					return (
 						<ListItem key={item.id} ref={isLastItem ? lastItemRef : null} sx={{ px: 0 }}>
-							<ListItemButton>
+							<ListItemButton onClick={() => playTrack(item)}>
 								<ListItemIcon>
 									<Music />
 								</ListItemIcon>
@@ -70,9 +73,6 @@ const MusicContent = () => {
 								/>
 								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`play ${item.name}`}>
 									<Play />
-								</IconButton>
-								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`info about ${item.name}`}>
-									<Info />
 								</IconButton>
 							</ListItemButton>
 						</ListItem>
