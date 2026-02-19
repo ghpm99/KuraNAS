@@ -10,7 +10,6 @@ func NewRecentFileService(repo RecentFileRepositoryInterface) *RecentFileService
 
 var DEFAULT_LIMIT = 10
 
-// Registra acesso e mantém só os N mais recentes
 func (s *RecentFileService) RegisterAccess(ip string, fileID int, keep int) error {
 	if err := s.Repo.Upsert(ip, fileID); err != nil {
 		return err

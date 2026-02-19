@@ -13,7 +13,6 @@ func StartResultMonitorWorker(monitorChannel <-chan ResultWorkerData, wg *sync.W
 	totalErrors := 0
 
 	for result := range monitorChannel {
-		// Aqui você pode monitorar, logar ou tomar ações conforme o resultado
 		totalProcessed++
 		if result.Success {
 			totalSuccess++

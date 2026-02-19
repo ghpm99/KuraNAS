@@ -1,4 +1,3 @@
-// src/hooks/useIntersectionObserver.ts
 import { useRef, useState, useCallback } from 'react';
 
 interface UseIntersectionObserverOptions {
@@ -35,7 +34,7 @@ export function useIntersectionObserver<T extends HTMLElement = HTMLDivElement>(
 						onIntersect();
 					}
 				},
-				{ threshold, rootMargin }
+				{ threshold, rootMargin },
 			);
 
 			observerRef.current = observer;
@@ -46,7 +45,7 @@ export function useIntersectionObserver<T extends HTMLElement = HTMLDivElement>(
 				observerRef.current = null;
 			};
 		},
-		[enabled, threshold, rootMargin, onIntersect]
+		[enabled, threshold, rootMargin, onIntersect],
 	);
 
 	return { ref, isIntersecting };

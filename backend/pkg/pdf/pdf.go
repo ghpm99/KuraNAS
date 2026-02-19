@@ -10,7 +10,6 @@ import (
 func Thumbnail() (image.Image, error) {
 	_, filename, _, _ := runtime.Caller(0)
 
-	// Constrói o caminho absoluto para o arquivo
 	filePath := filepath.Join(filepath.Dir(filename), "pdf.jpg")
 
 	file, err := os.Open(filePath)

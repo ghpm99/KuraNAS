@@ -61,7 +61,6 @@ func (r *Repository) GetDiary(filter DiaryFilter, page int, pageSize int) (utils
 		},
 	}
 
-	// A lógica de construção dos argumentos pode ser mantida aqui
 	args := []any{
 		!filter.ID.HasValue,
 		filter.ID.Value,
@@ -80,9 +79,7 @@ func (r *Repository) GetDiary(filter DiaryFilter, page int, pageSize int) (utils
 		utils.CalculateOffset(page, pageSize),
 	}
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta e escaneamento é movida para dentro desta função
 		rows, err := tx.Query(
 			queries.GetDiaryQuery,
 			args...,
@@ -110,7 +107,6 @@ func (r *Repository) GetDiary(filter DiaryFilter, page int, pageSize int) (utils
 	})
 
 	if err != nil {
-		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
 		return paginationResponse, fmt.Errorf("falha ao obter diário: %w", err)
 	}
 

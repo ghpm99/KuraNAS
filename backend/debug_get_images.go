@@ -10,17 +10,15 @@ import (
 )
 
 func main() {
-	// Conexão com o banco de dados
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Teste 1: Query simples sem JOIN
 	fmt.Println("=== Teste 1: Query simples ===")
 	simpleQuery := `
-		SELECT 
+		SELECT
 			hf.id,
 			hf."name",
 			hf."path",
@@ -73,7 +71,6 @@ func main() {
 	}
 	fmt.Printf("Total de arquivos encontrados (query simples): %d\n\n", count)
 
-	// Teste 2: Query com contagem total
 	fmt.Println("=== Teste 2: Contagem total ===")
 	var totalCount int
 	countQuery := "SELECT COUNT(*) FROM home_file WHERE format IN ($1)"
@@ -84,13 +81,12 @@ func main() {
 		fmt.Printf("Total de imagens no banco: %d\n\n", totalCount)
 	}
 
-	// Teste 3: Verificar formatos existentes
 	fmt.Println("=== Teste 3: Formatos existentes ==="
 	formatQuery := `
-		SELECT format, COUNT(*) 
-		FROM home_file 
-		WHERE format IS NOT NULL 
-		GROUP BY format 
+		SELECT format, COUNT(*)
+		FROM home_file
+		WHERE format IS NOT NULL
+		GROUP BY format
 		ORDER BY COUNT(*) DESC
 	`
 	rows, err = db.Query(formatQuery)

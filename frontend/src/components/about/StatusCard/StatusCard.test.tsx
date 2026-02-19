@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import StatusCard from './StatusCard';
 
-// Mocks
 jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
 	<div data-testid='card'>
 		<div>{title}</div>

@@ -82,7 +82,7 @@ export interface IImageContext {
 	images: IImageData[];
 	status: 'error' | 'success' | 'pending';
 	fetchNextPage: (
-		options?: FetchNextPageOptions | undefined
+		options?: FetchNextPageOptions | undefined,
 	) => Promise<InfiniteQueryObserverResult<InfiniteData<PaginationResponse, unknown>, Error>>;
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
@@ -97,7 +97,6 @@ export const ImageContextProvider = ImageContext.Provider;
 const pageSize = 200;
 
 export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
-	// This should be replaced with actual data fetching logic
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['images'],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
