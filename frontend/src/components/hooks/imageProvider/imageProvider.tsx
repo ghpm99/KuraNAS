@@ -1,6 +1,11 @@
 import { apiBase } from '@/service';
 import { Pagination } from '@/types/pagination';
-import { InfiniteData, useInfiniteQuery } from '@tanstack/react-query';
+import {
+	FetchNextPageOptions,
+	InfiniteData,
+	InfiniteQueryObserverResult,
+	useInfiniteQuery,
+} from '@tanstack/react-query';
 import { createContext, useContext } from 'react';
 
 export interface IImageMetadata {
@@ -74,8 +79,13 @@ export interface IImageData {
 }
 
 export interface IImageContext {
-	images: InfiniteData<PaginationResponse, unknown> | undefined;
+	images: IImageData[];
 	status: 'error' | 'success' | 'pending';
+	fetchNextPage: (
+		options?: FetchNextPageOptions | undefined
+	) => Promise<InfiniteQueryObserverResult<InfiniteData<PaginationResponse, unknown>, Error>>;
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
 }
 
 type PaginationResponse = Pagination<IImageData>;
@@ -88,7 +98,7 @@ const pageSize = 200;
 
 export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
 	// This should be replaced with actual data fetching logic
-	const { status, data } = useInfiniteQuery({
+	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['images'],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/images`, {
@@ -106,7 +116,13 @@ export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
 		staleTime: 0,
 	});
 
-	return <ImageContextProvider value={{ images: data, status }}>{children}</ImageContextProvider>;
+	const allImages = data?.pages.flatMap((page) => page.items) ?? [];
+
+	return (
+		<ImageContextProvider value={{ images: allImages, status, fetchNextPage, hasNextPage, isFetchingNextPage }}>
+			{children}
+		</ImageContextProvider>
+	);
 };
 
 export const useImage = () => {
