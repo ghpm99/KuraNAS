@@ -563,8 +563,8 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetFilesTree",
-		Description: "Fetching files with filter",
+		Name:        "GetMusic",
+		Description: "Fetching music files",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
 		IPAddress:   c.ClientIP(),
@@ -572,7 +572,7 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
-	pagination, err := handler.service.GetImages(page, pageSize)
+	pagination, err := handler.service.GetMusic(page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)

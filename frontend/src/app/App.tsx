@@ -7,6 +7,7 @@ import FilePage from '@/pages/files';
 import { Route, Routes } from 'react-router-dom';
 import AboutPage from '@/pages/about';
 import ImagesPage from '@/pages/images';
+import MusicPage from '@/pages/music';
 
 export default function App() {
 	return (
@@ -18,7 +19,7 @@ export default function App() {
 				<Route path='/analytics' element={<AnalyticsPage />} />
 				<Route path='/about' element={<AboutPage />} />
 				<Route path='/images' element={<ImagesPage />} />
-				<Route path='/music' element={<FilePage />} />
+				<Route path='/music' element={<MusicPage />} />
 			</Routes>
 		</AppProviders>
 	);

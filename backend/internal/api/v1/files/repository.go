@@ -478,3 +478,99 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 
 	return paginationResponse, nil
 }
+
+func (r *Repository) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+
+	paginationResponse := utils.PaginationResponse[FileModel]{
+		Items: []FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	args := []any{
+		pq.Array(utils.AudioFormats),
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(
+			queries.GetMusicQuery,
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var file FileModel
+			var metadata AudioMetadataModel
+
+			if err := rows.Scan(
+				&file.ID,
+				&file.Name,
+				&file.Path,
+				&file.ParentPath,
+				&file.Format,
+				&file.Size,
+				&file.UpdatedAt,
+				&file.CreatedAt,
+				&file.LastInteraction,
+				&file.LastBackup,
+				&file.Type,
+				&file.CheckSum,
+				&file.DeletedAt,
+				&file.Starred,
+				&metadata.ID,
+				&metadata.FileId,
+				&metadata.Path,
+				&metadata.Mime,
+				&metadata.Length,
+				&metadata.Bitrate,
+				&metadata.SampleRate,
+				&metadata.Channels,
+				&metadata.BitrateMode,
+				&metadata.EncoderInfo,
+				&metadata.BitDepth,
+				&metadata.Title,
+				&metadata.Artist,
+				&metadata.Album,
+				&metadata.AlbumArtist,
+				&metadata.TrackNumber,
+				&metadata.Genre,
+				&metadata.Composer,
+				&metadata.Year,
+				&metadata.RecordingDate,
+				&metadata.Encoder,
+				&metadata.Publisher,
+				&metadata.OriginalReleaseDate,
+				&metadata.OriginalArtist,
+				&metadata.Lyricist,
+				&metadata.Lyrics,
+				&metadata.CreatedAt,
+			); err != nil {
+				return err
+			}
+
+			file.Metadata = metadata
+
+			paginationResponse.Items = append(paginationResponse.Items, file)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+	}
+
+	paginationResponse.UpdatePagination()
+	fmt.Println("Paginacao music length", len(paginationResponse.Items))
+
+	return paginationResponse, nil
+}

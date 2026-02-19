@@ -1,15 +1,21 @@
 import { formatSize } from '@/utils';
-import { CircularProgress, IconButton, ImageList, ImageListItem, ImageListItemBar } from '@mui/material';
-import { InfoIcon } from 'lucide-react';
-import { useImage } from '../hooks/imageProvider/imageProvider';
+import { useMusic } from '../hooks/musicProvider/musicProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
-import './imageContent.css';
-
-const thumbnailWidth = 760;
-const thumbnailHeight = 760;
+import './musicContent.css';
+import {
+	CircularProgress,
+	IconButton,
+	List,
+	ListItem,
+	ListItemButton,
+	ListItemIcon,
+	ListItemText,
+	Typography,
+} from '@mui/material';
+import { Music, Play, Info } from 'lucide-react';
 
 const MusicContent = () => {
-	const { images, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
+	const { music, fetchNextPage, hasNextPage, isFetchingNextPage } = useMusic();
 	const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({
 		enabled: hasNextPage && !isFetchingNextPage,
 		rootMargin: '400px',
@@ -20,36 +26,59 @@ const MusicContent = () => {
 		},
 	});
 
-	const imageMetadata = (image: { format: string; size: number }): string => {
-		const format = image.format ? `${image.format} - ` : '';
-		const fileSize = formatSize(image.size);
-		return `${format}${fileSize}`;
+	const musicMetadata = (music: { format: string; size: number; metadata?: any }): string => {
+		const format = music.format ? `${music.format} - ` : '';
+		const fileSize = formatSize(music.size);
+		const duration = music.metadata?.duration ? formatDuration(music.metadata.duration) : '';
+		return `${format}${fileSize}${duration ? ` - ${duration}` : ''}`;
 	};
 
-	const thumbnailUrl = (id: number) =>
-		`${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
+	const formatDuration = (seconds: number): string => {
+		const mins = Math.floor(seconds / 60);
+		const secs = Math.floor(seconds % 60);
+		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	};
+
+	const getMusicTitle = (music: any): string => {
+		if (music.metadata?.title) {
+			return music.metadata.title;
+		}
+		return music.name;
+	};
+
+	const getMusicArtist = (music: any): string => {
+		if (music.metadata?.artist) {
+			return music.metadata.artist;
+		}
+		return 'Unknown Artist';
+	};
 
 	return (
 		<div className='file-content'>
-			<ImageList cols={3} gap={8} rowHeight={thumbnailHeight}>
-				{images.map((item, index) => {
-					const isLastItem = index === images.length - 1;
+			<List sx={{ width: '100%' }}>
+				{music.map((item, index) => {
+					const isLastItem = index === music.length - 1;
 					return (
-						<ImageListItem key={item.id} ref={isLastItem ? lastItemRef : null}>
-							<img className='thumbnail-img' src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
-							<ImageListItemBar
-								title={item.name}
-								subtitle={imageMetadata(item)}
-								actionIcon={
-									<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`info about ${item.name}`}>
-										<InfoIcon />
-									</IconButton>
-								}
-							/>
-						</ImageListItem>
+						<ListItem key={item.id} ref={isLastItem ? lastItemRef : null} sx={{ px: 0 }}>
+							<ListItemButton>
+								<ListItemIcon>
+									<Music />
+								</ListItemIcon>
+								<ListItemText
+									primary={getMusicTitle(item)}
+									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
+								/>
+								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`play ${item.name}`}>
+									<Play />
+								</IconButton>
+								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`info about ${item.name}`}>
+									<Info />
+								</IconButton>
+							</ListItemButton>
+						</ListItem>
 					);
 				})}
-			</ImageList>
+			</List>
 
 			{isFetchingNextPage && (
 				<div className='loading-indicator'>
@@ -57,7 +86,7 @@ const MusicContent = () => {
 				</div>
 			)}
 
-			{!hasNextPage && images.length > 0 && <div className='end-message'>Todas as imagens carregadas</div>}
+			{!hasNextPage && music.length > 0 && <div className='end-message'>All music loaded</div>}
 		</div>
 	);
 };

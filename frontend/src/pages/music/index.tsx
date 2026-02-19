@@ -1,16 +1,16 @@
-import ImageContent from '@/components/imageContent';
 import './music.css';
 import ActionBar from '@/components/actionBar';
 import Tabs from '@/components/tabs';
+import MusicContent from '@/components/musicContent';
 
-const ImagesPage = () => {
+const MusicPage = () => {
 	return (
 		<div className='content'>
 			<ActionBar />
 			<Tabs />
-			<ImageContent />
+			<MusicContent />
 		</div>
 	);
 };
 
-export default ImagesPage;
+export default MusicPage;
