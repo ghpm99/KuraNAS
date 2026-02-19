@@ -57,7 +57,6 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta e escaneamento é movida para dentro desta função
 		rows, err := tx.Query(
 			queries.GetFilesQuery,
 			args...,
@@ -95,7 +94,6 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	})
 
 	if err != nil {
-		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
 		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
 	}
 
@@ -234,23 +232,17 @@ func (r *Repository) GetCountByType(fileType FileType) (int, error) {
 func (r *Repository) GetTotalSpaceUsed() (int, error) {
 	var totalSpaceUsed int
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação.
-	// A lógica de consulta é movida para dentro desta função anônima.
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
 		row := tx.QueryRow(queries.TotalSpaceUsedQuery)
 
-		// Escaneia o resultado
 		if err := row.Scan(&totalSpaceUsed); err != nil {
-			// Retorna o erro para que QueryTx o capture e o propague
 			return err
 		}
 
-		// Se tudo correr bem, retorna nil para indicar sucesso
 		return nil
 	})
 
 	if err != nil {
-		// Trata o erro aqui. A função QueryTx já o formatou para nós.
 		return 0, fmt.Errorf("falha ao obter espaço total usado: %w", err)
 	}
 
@@ -260,16 +252,13 @@ func (r *Repository) GetTotalSpaceUsed() (int, error) {
 func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
 	var report []SizeReportModel
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta é movida para dentro desta função anônima
 		rows, err := tx.Query(queries.CountByFormatQuery, File)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 
-		// Itera sobre os resultados da consulta
 		for rows.Next() {
 			var item SizeReportModel
 			if err := rows.Scan(&item.Format, &item.Total, &item.Size); err != nil {
@@ -278,12 +267,10 @@ func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
 			report = append(report, item)
 		}
 
-		// Se a iteração terminar sem erros, retorna nil
 		return nil
 	})
 
 	if err != nil {
-		// Retorna a slice vazia e o erro em caso de falha na transação
 		return nil, fmt.Errorf("falha ao obter relatório por formato: %w", err)
 	}
 
@@ -293,16 +280,13 @@ func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
 func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
 	var topFiles []FileModel
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta é movida para dentro desta função anônima
 		rows, err := tx.Query(queries.TopFilesBySizeQuery, limit)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 
-		// Itera sobre os resultados da consulta
 		for rows.Next() {
 			var file FileModel
 			if err := rows.Scan(
@@ -316,12 +300,10 @@ func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
 			topFiles = append(topFiles, file)
 		}
 
-		// Se a iteração terminar sem erros, retorna nil
 		return nil
 	})
 
 	if err != nil {
-		// Retorna a slice vazia e o erro em caso de falha na transação
 		return nil, fmt.Errorf("falha ao obter top arquivos por tamanho: %w", err)
 	}
 
@@ -339,15 +321,12 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 		},
 	}
 
-	// A lógica de construção dos argumentos pode ser mantida aqui
 	args := []any{
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
 	}
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta e escaneamento é movida para dentro desta função
 		rows, err := tx.Query(
 			queries.GetDuplicateFilesQuery,
 			args...,
@@ -374,7 +353,6 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 	})
 
 	if err != nil {
-		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
 		return paginationResponse, fmt.Errorf("falha ao obter arquivos duplicados: %w", err)
 	}
 
@@ -402,7 +380,6 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 	}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta e escaneamento é movida para dentro desta função
 		rows, err := tx.Query(
 			queries.GetImagesQuery,
 			args...,
@@ -493,7 +470,6 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 	})
 
 	if err != nil {
-		// Retorna a resposta de paginação vazia e o erro em caso de falha na transação
 		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
 	}
 

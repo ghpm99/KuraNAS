@@ -268,21 +268,18 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 	return nil
 }
 
-func (s *Service) GetFileThumbnail(fileDto FileDto, width int) ([]byte, error) {
-	// Sanitize width
+func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	if width <= 0 {
 		width = 320
 	}
 	if width > 2048 {
-		width = 2048 // Max thumbnail size
+		width = 2048
 	}
 
-	// Diretório de cache
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheKey := fmt.Sprintf("%d_%d.jpg", fileDto.ID, width)
+	cacheKey := fmt.Sprintf("%d_%d.png", fileDto.ID, width)
 	cachePath := filepath.Join(cacheDir, cacheKey)
 
-	// Verifica cache
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
 	}
@@ -294,9 +291,8 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		thumbnailImg = img.Thumbnail(iconImg, uint(width))
+		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 	} else {
-		// Verifica se arquivo existe
 		exists := s.CheckFileExistsByPath(fileDto.Path)
 		if !exists {
 			err := s.DeleteFile(fileDto, true)
@@ -306,38 +302,33 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) ([]byte, error) {
 			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 		}
 
-		// Abre imagem (suporta múltiplos formatos via auto-detection)
 		srcImg, format, err := img.OpenImageFromFile(fileDto.Path)
 		if err != nil {
-			// Se não for imagem, retorna ícone apropriado
 			switch strings.ToLower(fileDto.Format) {
 			case ".pdf":
 				iconImg, _ := icons.PdfIcon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 			case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
 				iconImg, _ := icons.Mp3Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 			case ".mp4", ".avi", ".mkv", ".mov", ".webm":
 				iconImg, _ := icons.Mp4Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 			default:
 				iconImg, _ := icons.Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 			}
 		} else {
-			// É uma imagem - gera thumbnail
-			thumbnailImg = img.Thumbnail(srcImg, uint(width))
-			_ = format // evita warning de unused
+			thumbnailImg = img.Thumbnail(srcImg, uint(width), uint(height))
+			_ = format
 		}
 	}
 
-	// Codifica como JPEG
-	data, err := img.EncodeJPEG(thumbnailImg, 85)
+	data, err := img.EncodePNG(thumbnailImg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode thumbnail: %w", err)
 	}
 
-	// Salva no cache (não bloqueia em caso de erro)
 	_ = os.MkdirAll(cacheDir, 0755)
 	_ = os.WriteFile(cachePath, data, 0644)
 
@@ -461,11 +452,8 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	var err error
 
-	// O "type switch" com atribuição de variável 'm'
-	// 'm' será a variável que conterá o valor tipado dentro de cada 'case'
 	switch m := fileDto.Metadata.(type) {
 	case ImageMetadataModel:
-		// Agora 'm' já é do tipo ImageMetadataModel, sem a necessidade de conversão
 		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertImageMetadata(tx, m)
 		if upsertErr != nil {
@@ -475,7 +463,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 		fileDto.Metadata = upsertedMetadata
 
 	case AudioMetadataModel:
-		// 'm' é do tipo AudioMetadataModel aqui
 		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
 		if upsertErr != nil {
@@ -485,7 +472,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 		fileDto.Metadata = upsertedMetadata
 
 	case VideoMetadataModel:
-		// 'm' é do tipo VideoMetadataModel aqui
 		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
 		if upsertErr != nil {
@@ -495,8 +481,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 		fileDto.Metadata = upsertedMetadata
 
 	default:
-		// Caso o Metadata seja nil ou de um tipo não esperado, retorna o DTO original
-		// e um erro, se desejar, ou simplesmente 'nil'.
 		return fileDto, nil
 	}
 

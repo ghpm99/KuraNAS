@@ -23,7 +23,6 @@ func ScanDirWorker(service files.ServiceInterface, data any) {
 		return
 	}
 
-	// Map de arquivos do diretório
 	dirFileMap := make(map[string]files.FileDto)
 	for _, entry := range entries {
 		var fileDto = files.FileDto{}
@@ -35,7 +34,6 @@ func ScanDirWorker(service files.ServiceInterface, data any) {
 		dirFileMap[fileDto.Name] = fileDto
 	}
 
-	//Array de arquivos do cache
 	cacheFileArray, err := service.GetFiles(files.FileFilter{
 		Path: utils.Optional[string]{
 			Value:    path,

@@ -20,12 +20,9 @@ func NewMetadataRepository(db *database.DbContext) *MetadataRepository {
 func (r *MetadataRepository) GetImageMetadataByID(id int) (ImageMetadataModel, error) {
 	var metadata ImageMetadataModel
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta é movida para dentro desta função anônima
 		row := tx.QueryRow(queries.GetImageMetadataByIDQuery, id)
 
-		// Escaneia o resultado
 		if err := row.Scan(
 			&metadata.ID,
 			&metadata.FileId,
@@ -159,8 +156,6 @@ func (r *MetadataRepository) UpsertImageMetadata(tx *sql.Tx, metadata ImageMetad
 }
 
 func (r *MetadataRepository) DeleteImageMetadata(id int) error {
-	// Usa ExecTx para gerenciar o lock de escrita e a transação
-	// A lógica de execução da query é movida para dentro desta função anônima
 	err := r.Db.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(queries.DeleteImageMetadataQuery, id)
 		if err != nil {
@@ -170,7 +165,6 @@ func (r *MetadataRepository) DeleteImageMetadata(id int) error {
 	})
 
 	if err != nil {
-		// Se houver um erro, ele será propagado por ExecTx
 		return fmt.Errorf("falha ao deletar metadados da imagem: %w", err)
 	}
 
@@ -270,8 +264,6 @@ func (r *MetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetad
 	return metadata, nil
 }
 func (r *MetadataRepository) DeleteAudioMetadata(id int) error {
-	// Usa ExecTx para gerenciar o lock de escrita e a transação
-	// A lógica de execução da query é movida para dentro desta função anônima
 	err := r.Db.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(queries.DeleteAudioMetadataQuery, id)
 		if err != nil {
@@ -281,7 +273,6 @@ func (r *MetadataRepository) DeleteAudioMetadata(id int) error {
 	})
 
 	if err != nil {
-		// Se houver um erro, ele será propagado por ExecTx
 		return fmt.Errorf("falha ao deletar metadados de audio: %w", err)
 	}
 
@@ -291,12 +282,9 @@ func (r *MetadataRepository) DeleteAudioMetadata(id int) error {
 func (r *MetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
 	var metadata VideoMetadataModel
 
-	// Usa QueryTx para gerenciar o lock de leitura e a transação
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
-		// A lógica de consulta é movida para dentro desta função anônima
 		row := tx.QueryRow(queries.GetVideoMetadataByIDQuery, id)
 
-		// Escaneia o resultado
 		if err := row.Scan(
 			&metadata.FileId,
 			&metadata.Path,
@@ -376,8 +364,6 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 }
 
 func (r *MetadataRepository) DeleteVideoMetadata(id int) error {
-	// Usa ExecTx para gerenciar o lock de escrita e a transação
-	// A lógica de execução da query é movida para dentro desta função anônima
 	err := r.Db.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(queries.DeleteVideoMetadataQuery, id)
 		if err != nil {
@@ -387,7 +373,6 @@ func (r *MetadataRepository) DeleteVideoMetadata(id int) error {
 	})
 
 	if err != nil {
-		// Se houver um erro, ele será propagado por ExecTx
 		return fmt.Errorf("falha ao deletar metadados do vídeo: %w", err)
 	}
 

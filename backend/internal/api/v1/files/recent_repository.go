@@ -17,7 +17,6 @@ func NewRecentFileRepository(db *database.DbContext) *RecentFileRepository {
 }
 
 func (r *RecentFileRepository) Upsert(ip string, fileID int) error {
-	// ExecTx gerencia o lock de escrita e a transação.
 	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			queries.UpsertRecentFileQuery,
@@ -32,7 +31,6 @@ func (r *RecentFileRepository) Upsert(ip string, fileID int) error {
 }
 
 func (r *RecentFileRepository) DeleteOld(ip string, keep int) error {
-	// ExecTx gerencia o lock de escrita e a transação.
 	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			queries.DeleteOldRecentFilesQuery,
@@ -77,7 +75,6 @@ func (r *RecentFileRepository) GetRecentFiles(page int, pageSize int) ([]RecentF
 }
 
 func (r *RecentFileRepository) Delete(ip string, fileID int) error {
-	// ExecTx gerencia o lock de escrita e a transação.
 	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			queries.DeleteRecentFileQuery,

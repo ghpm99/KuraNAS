@@ -10,14 +10,12 @@ import (
 	"testing"
 )
 
-// mockScriptRunner é uma implementação mock de ScriptRunner.
 func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, error) {
 	switch scriptType {
 	case utils.ImageMetadata:
 		if filePath == "/test/image_with_error.jpg" {
 			return "", errors.New("erro de script")
 		}
-		// Retorna um JSON simulado de metadados de imagem
 		imgMetadata := files.ImageMetadataModel{
 			Format: "JPEG",
 			Width:  800,
@@ -26,7 +24,6 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 		jsonBytes, _ := json.Marshal(imgMetadata)
 		return string(jsonBytes), nil
 	case utils.VideoMetadata:
-		// Retorna um JSON simulado de metadados de vídeo
 		videoMetadata := files.VideoMetadataModel{
 			FormatName: "mp4",
 			Duration:   "120",
@@ -36,7 +33,6 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 		jsonBytes, _ := json.Marshal(videoMetadata)
 		return string(jsonBytes), nil
 	case utils.AudioMetadata:
-		// Retorna um JSON simulado de metadados de áudio
 		audioMetadata := files.AudioMetadataModel{
 			Mime:   "mp3",
 			Length: 180,
@@ -49,13 +45,11 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 }
 
 func TestStartMetadataWorker(t *testing.T) {
-	// 1. Configuração dos canais e WaitGroup
 	fileDtoChannel := make(chan files.FileDto, 5)
 	metadataProcessedChannel := make(chan files.FileDto, 5)
 	monitorChannel := make(chan worker.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 
-	// 2. Popula o canal de entrada com dados de teste
 	testFiles := []files.FileDto{
 		{ID: 1, Name: "image.jpg", Path: "/test/image.jpg", Format: ".jpg", Type: files.File},
 		{ID: 2, Name: "video.mp4", Path: "/test/video.mp4", Format: ".mp4", Type: files.File},
@@ -68,11 +62,9 @@ func TestStartMetadataWorker(t *testing.T) {
 	}
 	close(fileDtoChannel)
 
-	// 3. Executa a função em uma goroutine, passando o mock
 	workerGroup.Add(1)
 	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup)
 
-	// 4. Ler do canal de saída para verificar os dados
 	var receivedFiles []files.FileDto
 	var wgReader sync.WaitGroup
 	wgReader.Add(1)
@@ -83,12 +75,10 @@ func TestStartMetadataWorker(t *testing.T) {
 		}
 	}()
 
-	// 5. Espera a goroutine principal e a de leitura terminarem
 	workerGroup.Wait()
 	close(metadataProcessedChannel)
 	wgReader.Wait()
 
-	// 6. Validação dos resultados
 	if len(receivedFiles) != len(testFiles) {
 		t.Errorf("Número de arquivos recebidos incorreto. Esperado %d, recebido %d", len(testFiles), len(receivedFiles))
 	}

@@ -108,7 +108,6 @@ func GenerateFilterFromContext[T any](context *gin.Context, filter *T) {
 				fieldValue.SetBool(boolValue)
 			}
 		case reflect.Struct:
-			// Verifica se é um `time.Time`
 			fmt.Println(fieldType, paramValue)
 			if fieldType == reflect.TypeOf(time.Time{}) {
 				if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
@@ -117,9 +116,8 @@ func GenerateFilterFromContext[T any](context *gin.Context, filter *T) {
 				}
 			}
 		default:
-			// Verifica se é um `Optional`
 			if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-				elemType := fieldType.Field(0).Type // Tipo genérico do `Optional`
+				elemType := fieldType.Field(0).Type
 
 				switch elemType.Kind() {
 				case reflect.Int:
@@ -136,7 +134,6 @@ func GenerateFilterFromContext[T any](context *gin.Context, filter *T) {
 						fieldValue.Set(reflect.ValueOf(NewOptional(boolValue)))
 					}
 				case reflect.Struct:
-					// Para `Optional[time.Time]`
 					if elemType == reflect.TypeOf(time.Time{}) {
 						if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
 
@@ -168,7 +165,6 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 			fieldValue.SetBool(boolValue)
 		}
 	case reflect.Struct:
-		// Verifica se é um `time.Time`
 		if fieldType == reflect.TypeOf(time.Time{}) {
 			if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
 
@@ -176,9 +172,8 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 			}
 		}
 	default:
-		// Verifica se é um `Optional`
 		if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-			elemType := fieldType.Field(0).Type // Tipo genérico do `Optional`
+			elemType := fieldType.Field(0).Type
 
 			switch elemType.Kind() {
 			case reflect.Int:
@@ -195,7 +190,6 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 					fieldValue.Set(reflect.ValueOf(NewOptional(boolValue)))
 				}
 			case reflect.Struct:
-				// Para `Optional[time.Time]`
 				if elemType == reflect.TypeOf(time.Time{}) {
 					if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
 
@@ -261,7 +255,6 @@ var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".w
 func GetFormatTypeByExtension(ext string) FormatType {
 	ext = strings.ToLower(ext)
 	switch ext {
-	// Imagens
 	case ".jpg", ".jpeg":
 		return FormatType{Type: FormatTypeImage, Mime: "image/jpeg", Description: "IMAGE_JPEG"}
 	case ".png":
@@ -275,7 +268,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".webp":
 		return FormatType{Type: FormatTypeImage, Mime: "image/webp", Description: "IMAGE_WEBP"}
 
-	// Áudios
 	case ".mp3":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/mpeg", Description: "AUDIO_MP3"}
 	case ".wav":
@@ -285,7 +277,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".flac":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/flac", Description: "AUDIO_FLAC"}
 
-	// Vídeos
 	case ".mp4":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/mp4", Description: "VIDEO_MP4"}
 	case ".webm":
@@ -295,7 +286,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".mov":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/quicktime", Description: "VIDEO_MOV"}
 
-	// Documentos
 	case ".pdf":
 		return FormatType{Type: FormatTypeDocument, Mime: "application/pdf", Description: "DOCUMENT_PDF"}
 	case ".txt":
@@ -309,7 +299,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".csv":
 		return FormatType{Type: FormatTypeDocument, Mime: "text/csv", Description: "DOCUMENT_CSV"}
 
-	// Outros
 	case ".zip":
 		return FormatType{Type: FormatTypeArchive, Mime: "application/zip", Description: "ARCHIVE_ZIP"}
 	case ".rar":

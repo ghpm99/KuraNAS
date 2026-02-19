@@ -256,9 +256,10 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 
 	id := utils.ParseInt(c.Param("id"), c)
 	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "320"), c)
 
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: map[string]int{"id": id, "width": width},
+		Data: map[string]int{"id": id, "width": width, "height": height},
 	})
 
 	file, err := handler.service.GetFileById(id)
@@ -269,7 +270,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 		return
 	}
 
-	thumbnailData, err := handler.service.GetFileThumbnail(file, width)
+	thumbnailData, err := handler.service.GetFileThumbnail(file, width, height)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -282,9 +283,9 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Header("Content-Type", "image/jpeg")
-	c.Header("Cache-Control", "public, max-age=86400") // Cache 24h
-	c.Data(http.StatusOK, "image/jpeg", thumbnailData)
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/png", thumbnailData)
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {

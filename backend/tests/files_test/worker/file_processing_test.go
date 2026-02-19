@@ -11,8 +11,6 @@ import (
 	"testing"
 )
 
-// --- Mocks ---
-
 const (
 	testDir                  = "testscan"
 	expectedCreateFilesCount = 2
@@ -292,10 +290,7 @@ func (m *mockLogger) CompleteWithSuccessLog(logger.LoggerModel) error {
 	return nil
 }
 
-// --- Test ---
-
 func TestStartFileProcessingPipeline(t *testing.T) {
-	// Setup test directory
 
 	fmt.Println("Setting up test directory...")
 	config.AppConfig.EntryPoint = testDir

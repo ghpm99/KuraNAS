@@ -25,7 +25,6 @@ func main() {
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
 
-		// We received an interrupt signal, shut down.
 		prg.app.Stop()
 		close(prg.quit)
 	}()

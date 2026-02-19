@@ -5,6 +5,9 @@ import './imageContent.css';
 import { IconButton, ImageList, ImageListItem, ImageListItemBar, ListSubheader, CircularProgress } from '@mui/material';
 import { InfoIcon } from 'lucide-react';
 
+const thumbnailWidth = 760;
+const thumbnailHeight = 760;
+
 const ImageContent = () => {
 	const { images, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({
@@ -23,11 +26,12 @@ const ImageContent = () => {
 		return `${format}${fileSize}`;
 	};
 
-	const thumbnailUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}?width=240`;
+	const thumbnailUrl = (id: number) =>
+		`${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
 
 	return (
 		<div className='file-content'>
-			<ImageList cols={3} rowHeight={240}>
+			<ImageList cols={3} gap={8} rowHeight={thumbnailHeight}>
 				<ImageListItem key='Subheader' cols={3}>
 					<ListSubheader component='div'>Images</ListSubheader>
 				</ImageListItem>
