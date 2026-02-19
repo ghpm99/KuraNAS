@@ -1,16 +1,8 @@
 import { formatSize } from '@/utils';
-import { IImageData, useImage } from '../hooks/imageProvider/imageProvider';
+import { useImage } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
 import './imageContent.css';
-import {
-	IconButton,
-	ImageList,
-	ImageListItem,
-	ImageListItemBar,
-	ListSubheader,
-	CircularProgress,
-	CardMedia,
-} from '@mui/material';
+import { IconButton, ImageList, ImageListItem, ImageListItemBar, ListSubheader, CircularProgress } from '@mui/material';
 import { InfoIcon } from 'lucide-react';
 
 const ImageContent = () => {
@@ -25,17 +17,17 @@ const ImageContent = () => {
 		},
 	});
 
-	const imageMetadata = (image: IImageData): string => {
+	const imageMetadata = (image: { format: string; size: number }): string => {
 		const format = image.format ? `${image.format} - ` : '';
 		const fileSize = formatSize(image.size);
 		return `${format}${fileSize}`;
 	};
 
-	const thumbnailUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}`;
+	const thumbnailUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}?width=240`;
 
 	return (
 		<div className='file-content'>
-			<ImageList cols={3} rowHeight={489}>
+			<ImageList cols={3} rowHeight={240}>
 				<ImageListItem key='Subheader' cols={3}>
 					<ListSubheader component='div'>Images</ListSubheader>
 				</ImageListItem>
@@ -43,15 +35,7 @@ const ImageContent = () => {
 					const isLastItem = index === images.length - 1;
 					return (
 						<ImageListItem key={item.id} ref={isLastItem ? lastItemRef : null}>
-							<CardMedia
-								component='img'
-								width={652}
-								height={489}
-								image={thumbnailUrl(item.id)}
-								alt={item.name}
-								loading='lazy'
-								sx={{ objectFit: 'cover' }}
-							/>
+							<img className='thumbnail-img' src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
 							<ImageListItemBar
 								title={item.name}
 								subtitle={imageMetadata(item)}

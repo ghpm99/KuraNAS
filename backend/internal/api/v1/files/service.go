@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"image"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -266,45 +268,80 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 	return nil
 }
 
-func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
+func (s *Service) GetFileThumbnail(fileDto FileDto, width int) ([]byte, error) {
+	// Sanitize width
+	if width <= 0 {
+		width = 320
+	}
+	if width > 2048 {
+		width = 2048 // Max thumbnail size
+	}
+
+	// Diretório de cache
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	cacheKey := fmt.Sprintf("%d_%d.jpg", fileDto.ID, width)
+	cachePath := filepath.Join(cacheDir, cacheKey)
+
+	// Verifica cache
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	var thumbnailImg image.Image
 
 	if fileDto.Type == Directory {
-		return icons.FolderIcon()
-	}
-
-	exists := s.CheckFileExistsByPath(fileDto.Path)
-
-	if !exists {
-		err := s.DeleteFile(fileDto, true)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
-		}
-		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
-	}
-
-	switch fileDto.Format {
-	case ".jpg":
-		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		iconImg, err := icons.FolderIcon()
 		if err != nil {
 			return nil, err
 		}
-		return img.Thumbnail(image)
-	case ".png":
-		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
-		if err != nil {
-			return nil, err
+		thumbnailImg = img.Thumbnail(iconImg, uint(width))
+	} else {
+		// Verifica se arquivo existe
+		exists := s.CheckFileExistsByPath(fileDto.Path)
+		if !exists {
+			err := s.DeleteFile(fileDto, true)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
+			}
+			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 		}
-		return img.Thumbnail(image)
-	case ".pdf":
-		return icons.PdfIcon()
-	case ".mp3":
-		return icons.Mp3Icon()
-	case ".mp4":
-		return icons.Mp4Icon()
-	default:
-		return icons.Icon()
+
+		// Abre imagem (suporta múltiplos formatos via auto-detection)
+		srcImg, format, err := img.OpenImageFromFile(fileDto.Path)
+		if err != nil {
+			// Se não for imagem, retorna ícone apropriado
+			switch strings.ToLower(fileDto.Format) {
+			case ".pdf":
+				iconImg, _ := icons.PdfIcon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+			case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
+				iconImg, _ := icons.Mp3Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+			case ".mp4", ".avi", ".mkv", ".mov", ".webm":
+				iconImg, _ := icons.Mp4Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+			default:
+				iconImg, _ := icons.Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width))
+			}
+		} else {
+			// É uma imagem - gera thumbnail
+			thumbnailImg = img.Thumbnail(srcImg, uint(width))
+			_ = format // evita warning de unused
+		}
 	}
 
+	// Codifica como JPEG
+	data, err := img.EncodeJPEG(thumbnailImg, 85)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+
+	// Salva no cache (não bloqueia em caso de erro)
+	_ = os.MkdirAll(cacheDir, 0755)
+	_ = os.WriteFile(cachePath, data, 0644)
+
+	return data, nil
 }
 
 func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {

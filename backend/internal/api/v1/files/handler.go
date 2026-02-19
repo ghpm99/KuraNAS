@@ -1,10 +1,8 @@
 package files
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"image/png"
 	"mime"
 	"strings"
 	"time"
@@ -257,20 +255,21 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
 
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: id,
+		Data: map[string]int{"id": id, "width": width},
 	})
 
 	file, err := handler.service.GetFileById(id)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error1": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	thumbnail, err := handler.service.GetFileThumbnail(file, 320)
+	thumbnailData, err := handler.service.GetFileThumbnail(file, width)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -278,20 +277,14 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 		if errors.Is(err, ErrFileMissingDisk) {
 			httpStatus = http.StatusNotFound
 		}
-		c.JSON(httpStatus, gin.H{"error2": err.Error()})
-		return
-	}
-
-	var buf bytes.Buffer
-	err = png.Encode(&buf, thumbnail)
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error3": err.Error()})
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
 		return
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Data(http.StatusOK, "image/png", buf.Bytes())
+	c.Header("Content-Type", "image/jpeg")
+	c.Header("Cache-Control", "public, max-age=86400") // Cache 24h
+	c.Data(http.StatusOK, "image/jpeg", thumbnailData)
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
