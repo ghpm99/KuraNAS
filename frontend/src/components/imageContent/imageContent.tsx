@@ -1,9 +1,9 @@
 import { formatSize } from '@/utils';
+import { CircularProgress, IconButton, ImageList, ImageListItem, ImageListItemBar } from '@mui/material';
+import { InfoIcon } from 'lucide-react';
 import { useImage } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
 import './imageContent.css';
-import { IconButton, ImageList, ImageListItem, ImageListItemBar, ListSubheader, CircularProgress } from '@mui/material';
-import { InfoIcon } from 'lucide-react';
 
 const thumbnailWidth = 760;
 const thumbnailHeight = 760;
@@ -32,9 +32,6 @@ const ImageContent = () => {
 	return (
 		<div className='file-content'>
 			<ImageList cols={3} gap={8} rowHeight={thumbnailHeight}>
-				<ImageListItem key='Subheader' cols={3}>
-					<ListSubheader component='div'>Images</ListSubheader>
-				</ImageListItem>
 				{images.map((item, index) => {
 					const isLastItem = index === images.length - 1;
 					return (

@@ -1,9 +1,13 @@
 import ImageContent from '@/components/imageContent';
 import './images.css';
+import ActionBar from '@/components/actionBar';
+import Tabs from '@/components/tabs';
 
 const ImagesPage = () => {
 	return (
 		<div className='content'>
+			<ActionBar />
+			<Tabs />
 			<ImageContent />
 		</div>
 	);
