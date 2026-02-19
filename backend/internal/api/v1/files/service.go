@@ -275,7 +275,11 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, err
 	exists := s.CheckFileExistsByPath(fileDto.Path)
 
 	if !exists {
-		return nil, fmt.Errorf("file not found in path: %s", fileDto.Path)
+		err := s.DeleteFile(fileDto, true)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
+		}
+		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 	}
 
 	switch fileDto.Format {
@@ -496,7 +500,10 @@ func (s *Service) CheckFileExistsByPath(path string) bool {
 }
 
 func (s *Service) DeleteFile(file FileDto, bySystem bool) error {
-	if bySystem && file.LastInteraction.HasValue && file.LastInteraction.Value.Add(24*time.Hour).After(time.Now()) {
+	if file.DeletedAt.HasValue {
+		return fmt.Errorf("file already marked for deletion")
+	}
+	if bySystem && !file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now()) {
 		return fmt.Errorf("file was recently accessed, cannot be deleted")
 	}
 

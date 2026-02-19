@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image/png"
 	"mime"
@@ -265,7 +266,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error1": err.Error()})
 		return
 	}
 
@@ -273,7 +274,11 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error2": err.Error()})
 		return
 	}
 
