@@ -18,6 +18,7 @@ export default function App() {
 				<Route path='/analytics' element={<AnalyticsPage />} />
 				<Route path='/about' element={<AboutPage />} />
 				<Route path='/images' element={<ImagesPage />} />
+				<Route path='/music' element={<FilePage />} />
 			</Routes>
 		</AppProviders>
 	);

@@ -1,5 +1,5 @@
 import ImageContent from '@/components/imageContent';
-import './images.css';
+import './music.css';
 import ActionBar from '@/components/actionBar';
 import Tabs from '@/components/tabs';
 

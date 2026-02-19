@@ -8,7 +8,7 @@ import './imageContent.css';
 const thumbnailWidth = 760;
 const thumbnailHeight = 760;
 
-const ImageContent = () => {
+const MusicContent = () => {
 	const { images, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({
 		enabled: hasNextPage && !isFetchingNextPage,
@@ -62,4 +62,4 @@ const ImageContent = () => {
 	);
 };
 
-export default ImageContent;
+export default MusicContent;
