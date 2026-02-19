@@ -22,7 +22,8 @@ func getIcon(format string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	return img.OpenImageFromFile(path, ".png")
+	img, _, err := img.OpenImageFromFile(path)
+	return img, err
 }
 
 func PdfIcon() (image.Image, error) {
