@@ -8,6 +8,8 @@ import { Route, Routes } from 'react-router-dom';
 import AboutPage from '@/pages/about';
 import ImagesPage from '@/pages/images';
 import MusicPage from '@/pages/music';
+import VideosPage from '@/pages/videos/videos';
+import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
 
 export default function App() {
 	return (
@@ -20,6 +22,8 @@ export default function App() {
 				<Route path='/about' element={<AboutPage />} />
 				<Route path='/images' element={<ImagesPage />} />
 				<Route path='/music' element={<MusicPage />} />
+				<Route path='/videos' element={<VideosPage />} />
+				<Route path='/video/:id' element={<VideoPlayerPage />} />
 			</Routes>
 		</AppProviders>
 	);

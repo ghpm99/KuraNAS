@@ -1,4 +1,4 @@
-import { BookImage, Info, LayoutGrid, Music, Star } from 'lucide-react';
+import { BookImage, Info, LayoutGrid, Music, Star, Videotape } from 'lucide-react';
 
 import { useUI } from '@/components/hooks/UI/uiContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -21,6 +21,9 @@ const Sidebar = () => {
 				</NavItem>
 				<NavItem href='/music' icon={<Music className='icon' />}>
 					Musicas
+				</NavItem>
+				<NavItem href='/videos' icon={<Videotape className='icon' />}>
+					Vídeos
 				</NavItem>
 				<NavItem href='/starred' icon={<Star className='icon' />}>
 					{t('STARRED_FILES')}
