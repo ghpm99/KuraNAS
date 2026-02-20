@@ -1,0 +1,159 @@
+.video-controls {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+}
+
+.center-controls {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	pointer-events: auto;
+}
+
+.play-pause-button {
+	background: rgba(0, 0, 0, 0.7) !important;
+	color: white !important;
+	width: 64px !important;
+	height: 64px !important;
+	transition: all 0.3s ease !important;
+}
+
+.play-pause-button:hover {
+	background: rgba(0, 0, 0, 0.9) !important;
+	transform: scale(1.1);
+}
+
+.skip-button {
+	background: rgba(0, 0, 0, 0.5) !important;
+	color: white !important;
+	transition: all 0.3s ease !important;
+}
+
+.skip-button:hover {
+	background: rgba(0, 0, 0, 0.8) !important;
+	transform: scale(1.1);
+}
+
+.bottom-controls {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+	padding: 16px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	pointer-events: auto;
+}
+
+.left-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 120px;
+}
+
+.right-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 200px;
+}
+
+.progress-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-grow: 1;
+}
+
+.time-display,
+.duration-display {
+	color: white !important;
+	font-family: monospace;
+	font-size: 12px !important;
+	min-width: 45px;
+}
+
+.progress-bar {
+	.MuiSlider-track {
+		background: #1976d2 !important;
+	}
+
+	.MuiSlider-rail {
+		background: rgba(255, 255, 255, 0.3) !important;
+	}
+
+	.MuiSlider-thumb {
+		background: white !important;
+		width: 12px !important;
+		height: 12px !important;
+	}
+
+	.MuiSlider-thumb:hover {
+		box-shadow: 0 0 0 8px rgba(25, 118, 210, 0.3) !important;
+	}
+}
+
+.volume-slider {
+	.MuiSlider-track {
+		background: #1976d2 !important;
+	}
+
+	.MuiSlider-rail {
+		background: rgba(255, 255, 255, 0.3) !important;
+	}
+
+	.MuiSlider-thumb {
+		background: white !important;
+		width: 10px !important;
+		height: 10px !important;
+	}
+}
+
+.settings-menu .MuiPaper-root {
+	background: rgba(0, 0, 0, 0.9) !important;
+	color: white !important;
+}
+
+.settings-menu .MuiMenuItem-root {
+	color: white !important;
+}
+
+.settings-menu .MuiMenuItem-root:hover {
+	background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.settings-menu .MuiMenuItem-root.Mui-selected {
+	background: rgba(25, 118, 210, 0.3) !important;
+}
+
+@media (max-width: 768px) {
+	.bottom-controls {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.left-controls,
+	.right-controls {
+		min-width: auto;
+	}
+
+	.progress-container {
+		width: 100%;
+	}
+
+	.play-pause-button {
+		width: 48px !important;
+		height: 48px !important;
+	}
+}

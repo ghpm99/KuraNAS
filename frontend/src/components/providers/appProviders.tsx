@@ -12,6 +12,7 @@ import { SnackbarProvider } from 'notistack';
 import { ImageProvider } from '../hooks/imageProvider/imageProvider';
 import { MusicProvider } from '../hooks/musicProvider/musicProvider';
 import { MusicPlayerProvider } from '../hooks/musicPlayerProvider/musicPlayerProvider';
+import { VideoPlayerProvider } from '../hooks/videoPlayerProvider/videoPlayerProvider';
 
 const darkTheme = createTheme({
 	palette: {
@@ -33,10 +34,12 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 										<AboutProvider>
 											<AnalyticsProvider>
 												<BrowserRouter>
-													<Layout>
-														<ActivePageListener />
-														{children}
-													</Layout>
+													<VideoPlayerProvider>
+														<Layout>
+															<ActivePageListener />
+															{children}
+														</Layout>
+													</VideoPlayerProvider>
 												</BrowserRouter>
 											</AnalyticsProvider>
 										</AboutProvider>
