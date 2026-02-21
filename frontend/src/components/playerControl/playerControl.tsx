@@ -1,13 +1,14 @@
 import { Box, Card, CardContent, IconButton, Slider, Typography } from '@mui/material';
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { useMusicPlayer } from '../hooks/musicPlayerProvider/musicPlayerProvider';
 import './playerControl.css';
+import useMusicPlayer from '../hooks/useMusicPlayer/useMusicPlayer';
+import { useMusic } from '../hooks/musicProvider/musicProvider';
 
 const PlayerControl = () => {
+	const { playlist, currentTrack } = useMusic();
 	const {
-		currentTrack,
-		isPlaying,
+		status,
 		currentTime,
 		duration,
 		volume,
@@ -23,20 +24,6 @@ const PlayerControl = () => {
 		setCurrentTime,
 		setDuration,
 	} = useMusicPlayer();
-
-	useEffect(() => {
-		if (!audioRef.current) {
-			audioRef.current = new Audio();
-			audioRef.current.volume = volume;
-		}
-
-		return () => {
-			if (audioRef.current) {
-				audioRef.current.pause();
-				audioRef.current.src = '';
-			}
-		};
-	}, []);
 
 	useEffect(() => {
 		const audio = audioRef.current;
@@ -65,18 +52,14 @@ const PlayerControl = () => {
 	};
 
 	const getTrackTitle = (): string => {
-		if (!currentTrack) return 'No track playing';
-		return currentTrack.metadata?.title || currentTrack.name;
+		if (currentTrack === undefined) return 'No track playing';
+		return playlist[currentTrack]?.metadata?.title || playlist[currentTrack]?.name || 'Unknown Title';
 	};
 
 	const getTrackArtist = (): string => {
-		if (!currentTrack) return '';
-		return currentTrack.metadata?.artist || 'Unknown Artist';
+		if (currentTrack === undefined) return '';
+		return playlist[currentTrack]?.metadata?.artist || 'Unknown Artist';
 	};
-
-	if (!currentTrack) {
-		return null;
-	}
 
 	return (
 		<>
@@ -117,7 +100,8 @@ const PlayerControl = () => {
 							onClick={togglePlayPause}
 							sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
 						>
-							{isPlaying ? <Pause size={20} color='white' /> : <Play size={20} color='white' />}
+							{status === 'paused' && <Play size={20} color='white' />}
+							{status === 'playing' && <Pause size={20} color='white' />}
 						</IconButton>
 						<IconButton onClick={next} size='small'>
 							<SkipForward size={20} />

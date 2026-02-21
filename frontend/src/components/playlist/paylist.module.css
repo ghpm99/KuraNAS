@@ -1,0 +1,5 @@
+.playlist {
+	grid-area: sidebar;
+	height: 100%;
+	overflow-y: auto;
+}
