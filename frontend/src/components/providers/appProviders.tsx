@@ -1,18 +1,16 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { SnackbarProvider } from 'notistack';
 import { BrowserRouter } from 'react-router-dom';
 import ActivePageListener from '../activePageListener';
 import { AnalyticsProvider } from '../contexts/AnalyticsContext';
 import { AboutProvider } from '../hooks/AboutProvider';
 import ActivityDiaryProvider from '../hooks/ActivityDiaryProvider';
 import FileProvider from '../hooks/fileProvider';
-import { UIProvider } from '../hooks/UI';
-import Layout from '../layout/Layout/Layout';
-import { SnackbarProvider } from 'notistack';
 import { ImageProvider } from '../hooks/imageProvider/imageProvider';
-import { MusicProvider } from '../hooks/musicProvider/musicProvider';
-import { MusicPlayerProvider } from '../hooks/musicPlayerProvider/musicPlayerProvider';
+import { UIProvider } from '../hooks/UI';
 import { VideoPlayerProvider } from '../hooks/videoPlayerProvider/videoPlayerProvider';
+import Layout from '../layout/Layout/Layout';
 
 const darkTheme = createTheme({
 	palette: {
@@ -28,24 +26,20 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 				<UIProvider>
 					<FileProvider>
 						<ImageProvider>
-							<MusicPlayerProvider>
-								<MusicProvider>
-									<ActivityDiaryProvider>
-										<AboutProvider>
-											<AnalyticsProvider>
-												<BrowserRouter>
-													<VideoPlayerProvider>
-														<Layout>
-															<ActivePageListener />
-															{children}
-														</Layout>
-													</VideoPlayerProvider>
-												</BrowserRouter>
-											</AnalyticsProvider>
-										</AboutProvider>
-									</ActivityDiaryProvider>
-								</MusicProvider>
-							</MusicPlayerProvider>
+							<ActivityDiaryProvider>
+								<AboutProvider>
+									<AnalyticsProvider>
+										<BrowserRouter>
+											<VideoPlayerProvider>
+												<Layout>
+													<ActivePageListener />
+													{children}
+												</Layout>
+											</VideoPlayerProvider>
+										</BrowserRouter>
+									</AnalyticsProvider>
+								</AboutProvider>
+							</ActivityDiaryProvider>
 						</ImageProvider>
 					</FileProvider>
 				</UIProvider>
