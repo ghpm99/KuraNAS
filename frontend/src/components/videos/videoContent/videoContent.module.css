@@ -1,6 +1,12 @@
 .video-content {
 	padding: 24px;
-	min-height: 100vh;
+	height: 100%;
+	overflow: auto;
+	grid-area: content;
+}
+
+.title {
+	grid-area: item-header;
 }
 
 .loading-container {

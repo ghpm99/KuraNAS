@@ -1,18 +1,14 @@
-import './music.css';
-import ActionBar from '@/components/actionBar';
-import Tabs from '@/components/tabs';
+import MusicLayout from '@/components/music/musicLayout';
 import MusicContent from '@/components/musicContent';
-import { MusicProvider } from '@/components/hooks/musicProvider/musicProvider';
+import './music.css';
 
 const MusicPage = () => {
 	return (
-		<MusicProvider>
+		<MusicLayout>
 			<div className='content'>
-				<ActionBar />
-				<Tabs />
 				<MusicContent />
 			</div>
-		</MusicProvider>
+		</MusicLayout>
 	);
 };
 

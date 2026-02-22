@@ -1,5 +1,5 @@
-import VideoControls from '@/components/videoControls/videoControls';
-import VideoPlayer from '@/components/videoPlayer/videoPlayer';
+import VideoControls from '@/components/videos/videoControls/videoControls';
+import VideoPlayer from '@/components/videos/videoPlayer/videoPlayer';
 
 const VideoPlayerPage = () => {
 	return (
