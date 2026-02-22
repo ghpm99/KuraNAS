@@ -1,16 +1,10 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
+import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import ActivePageListener from '../activePageListener';
-import { AnalyticsProvider } from '../contexts/AnalyticsContext';
-import { AboutProvider } from '../hooks/AboutProvider';
-import ActivityDiaryProvider from '../hooks/ActivityDiaryProvider';
-import FileProvider from '../hooks/fileProvider';
-import { ImageProvider } from '../hooks/imageProvider/imageProvider';
-import { UIProvider } from '../hooks/UI';
-import { VideoPlayerProvider } from '../hooks/videoPlayerProvider/videoPlayerProvider';
-import Layout from '../layout/Layout/Layout';
+import I18nProvider from '../i18n/provider';
 
 const darkTheme = createTheme({
 	palette: {
@@ -18,33 +12,30 @@ const darkTheme = createTheme({
 	},
 });
 
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			refetchOnWindowFocus: false,
+			refetchOnReconnect: false,
+			staleTime: 1000 * 60 * 5, // 5 minutes
+		},
+	},
+});
+
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
 	return (
-		<SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-			<ThemeProvider theme={darkTheme}>
-				<CssBaseline />
-				<UIProvider>
-					<FileProvider>
-						<ImageProvider>
-							<ActivityDiaryProvider>
-								<AboutProvider>
-									<AnalyticsProvider>
-										<BrowserRouter>
-											<VideoPlayerProvider>
-												<Layout>
-													<ActivePageListener />
-													{children}
-												</Layout>
-											</VideoPlayerProvider>
-										</BrowserRouter>
-									</AnalyticsProvider>
-								</AboutProvider>
-							</ActivityDiaryProvider>
-						</ImageProvider>
-					</FileProvider>
-				</UIProvider>
-			</ThemeProvider>
-		</SnackbarProvider>
+		<QueryClientProvider client={queryClient}>
+			<StrictMode>
+				<I18nProvider>
+					<SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+						<ThemeProvider theme={darkTheme}>
+							<CssBaseline />
+							<BrowserRouter>{children}</BrowserRouter>
+						</ThemeProvider>
+					</SnackbarProvider>
+				</I18nProvider>
+			</StrictMode>
+		</QueryClientProvider>
 	);
 };
 

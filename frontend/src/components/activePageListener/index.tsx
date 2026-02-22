@@ -4,6 +4,10 @@ import { pages, useUI } from '../hooks/UI/uiContext';
 
 const routeToPageMap: Record<string, pages> = {
 	'/': 'files',
+	'/starred': 'files',
+	'/images': 'images',
+	'/music': 'music',
+	'/videos': 'videos',
 	'/activity-diary': 'activity',
 	'/analytics': 'analytics',
 	'/about': 'about',

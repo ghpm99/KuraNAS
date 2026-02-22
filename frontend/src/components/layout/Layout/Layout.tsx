@@ -10,7 +10,7 @@ interface LayoutProps {
 	children: ReactNode;
 }
 
-const Layout = ({ children }: LayoutProps) => {
+export const Layout = ({ children }: LayoutProps) => {
 	const { activePage } = useUI();
 	const { currentTime } = useActivityDiary();
 
@@ -27,5 +27,3 @@ const Layout = ({ children }: LayoutProps) => {
 		</div>
 	);
 };
-
-export default Layout;
