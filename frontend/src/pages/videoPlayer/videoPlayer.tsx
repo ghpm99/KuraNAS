@@ -41,14 +41,14 @@ const VideoPlayerPage = () => {
 
 	return (
 		<>
-			<VideoSettings
+			{/* <VideoSettings
 				anchorEl={null}
 				onClose={() => {}}
 				playbackRate={playbackRate}
 				quality={quality}
 				setPlaybackRate={setPlaybackRate}
 				setQuality={setQuality}
-			/>
+			/> */}
 			<VideoControls
 				currentTime={currentTime}
 				duration={duration}
@@ -75,7 +75,7 @@ const VideoPlayerPage = () => {
 				setDuration={setDuration}
 				nextVideo={() => {}}
 			/>
-			<VideoProgressBar currentTime={currentTime} duration={duration} seekTo={seekTo} />
+			{/* <VideoProgressBar currentTime={currentTime} duration={duration} seekTo={seekTo} /> */}
 		</>
 	);
 };
