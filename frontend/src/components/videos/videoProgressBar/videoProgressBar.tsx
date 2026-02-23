@@ -1,14 +1,15 @@
-import { useVideoPlayer } from '@/components/hooks/videoPlayerProvider/videoPlayerProvider';
-import { Slider, Box, Typography } from '@mui/material';
-import { useState, useRef, useEffect } from 'react';
+import { Box, Typography } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 import './videoProgressBar.css';
 
 interface VideoProgressBarProps {
 	className?: string;
+	currentTime: number;
+	duration: number;
+	seekTo: (time: number) => void;
 }
 
-const VideoProgressBar = ({ className = '' }: VideoProgressBarProps) => {
-	const { currentTime, duration, seekTo } = useVideoPlayer();
+const VideoProgressBar = ({ className = '', currentTime, duration, seekTo }: VideoProgressBarProps) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [hoverTime, setHoverTime] = useState<number | null>(null);
 	const [hoverPosition, setHoverPosition] = useState<number | null>(null);
@@ -96,7 +97,7 @@ const VideoProgressBar = ({ className = '' }: VideoProgressBarProps) => {
 	const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
 	return (
-		<Box 
+		<Box
 			className={`video-progress-bar ${className}`}
 			ref={progressBarRef}
 			onMouseMove={handleMouseMove}
@@ -106,44 +107,32 @@ const VideoProgressBar = ({ className = '' }: VideoProgressBarProps) => {
 			onClick={handleClick}
 		>
 			{/* Progress Track */}
-			<Box className="progress-track">
+			<Box className='progress-track'>
 				{/* Buffered portion (simplified - could be enhanced with actual buffering data) */}
-				<Box 
-					className="progress-buffered"
-					sx={{ width: `${progressPercentage}%` }}
-				/>
-				
+				<Box className='progress-buffered' sx={{ width: `${progressPercentage}%` }} />
+
 				{/* Played portion */}
-				<Box 
-					className="progress-played"
-					sx={{ width: `${progressPercentage}%` }}
-				/>
+				<Box className='progress-played' sx={{ width: `${progressPercentage}%` }} />
 			</Box>
 
 			{/* Hover Time Tooltip */}
 			{hoverTime !== null && hoverPosition !== null && (
-				<Box
-					className="hover-tooltip"
-					sx={{ left: `${hoverPosition}px` }}
-				>
-					<Typography variant="caption" className="tooltip-time">
+				<Box className='hover-tooltip' sx={{ left: `${hoverPosition}px` }}>
+					<Typography variant='caption' className='tooltip-time'>
 						{formatTime(hoverTime)}
 					</Typography>
 				</Box>
 			)}
 
 			{/* Current Time Indicator */}
-			<Box
-				className="progress-handle"
-				sx={{ left: `${progressPercentage}%` }}
-			/>
+			<Box className='progress-handle' sx={{ left: `${progressPercentage}%` }} />
 
 			{/* Time Display */}
-			<Box className="time-display">
-				<Typography variant="caption" className="current-time">
+			<Box className='time-display'>
+				<Typography variant='caption' className='current-time'>
 					{formatTime(currentTime)}
 				</Typography>
-				<Typography variant="caption" className="total-time">
+				<Typography variant='caption' className='total-time'>
 					{formatTime(duration)}
 				</Typography>
 			</Box>

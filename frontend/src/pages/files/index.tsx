@@ -3,15 +3,18 @@ import FileContent from '@/components/fileContent';
 import FileDetails from '@/components/fileDetails';
 import Tabs from '@/components/tabs';
 import './files.css';
+import FilesLayout from '@/components/files/filesLayout';
 
 const FilePage = () => {
 	return (
-		<div className='content'>
-			<ActionBar />
-			<Tabs />
-			<FileContent />
-			<FileDetails />
-		</div>
+		<FilesLayout>
+			<div className='content'>
+				<ActionBar />
+				<Tabs />
+				<FileContent />
+				<FileDetails />
+			</div>
+		</FilesLayout>
 	);
 };
 

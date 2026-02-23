@@ -15,25 +15,40 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import './videoControls.css';
 
-const VideoControls = () => {
-	const {
-		isPlaying,
-		currentTime,
-		duration,
-		volume,
-		playbackRate,
-		isFullscreen,
-		pause,
-		resume,
-		seekTo,
-		setVolume,
-		setPlaybackRate,
-		toggleFullscreen,
-		togglePlayPause,
-		nextVideo,
-		previousVideo,
-	} = useVideoPlayer();
-
+interface VideoControlsProps {
+	isPlaying: boolean;
+	currentTime: number;
+	duration: number;
+	volume: number;
+	playbackRate: number;
+	isFullscreen: boolean;
+	pause: () => void;
+	resume: () => void;
+	seekTo: (time: number) => void;
+	setVolume: (volume: number) => void;
+	setPlaybackRate: (rate: number) => void;
+	toggleFullscreen: () => void;
+	togglePlayPause: () => void;
+	nextVideo: () => void;
+	previousVideo: () => void;
+}
+const VideoControls = ({
+	isPlaying,
+	currentTime,
+	duration,
+	volume,
+	playbackRate,
+	isFullscreen,
+	pause,
+	resume,
+	seekTo,
+	setVolume,
+	setPlaybackRate,
+	toggleFullscreen,
+	togglePlayPause,
+	nextVideo,
+	previousVideo,
+}: VideoControlsProps) => {
 	const [showControls, setShowControls] = useState(true);
 	const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
 	const timeoutRef = useRef<NodeJS.Timeout>();

@@ -1,32 +1,25 @@
-import { useVideoPlayer } from '@/components/hooks/videoPlayerProvider/videoPlayerProvider';
-import { 
-	Menu,
-	MenuItem,
-	ListItemText,
-	ListItemIcon,
-	Divider,
-	Tooltip,
-	Typography
-} from '@mui/material';
-import { 
-	Speed,
-	HighQuality,
-	Subtitles,
-	VolumeUp,
-	Settings,
-	AspectRatio
-} from 'lucide-react';
-import { useState } from 'react';
+import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
+import { Gauge, Hd, Proportions, Settings, Subtitles, Volume2 } from 'lucide-react';
 import './videoSettings.css';
 
 interface VideoSettingsProps {
 	anchorEl: HTMLElement | null;
 	onClose: () => void;
+	playbackRate: number;
+	setPlaybackRate: (rate: number) => void;
+	quality: string;
+	setQuality: (quality: string) => void;
 }
 
-const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
-	const { playbackRate, setPlaybackRate, quality, setQuality } = useVideoPlayer();
-	const open = Boolean(anchorEl);
+const VideoSettings = ({
+	anchorEl,
+	onClose,
+	playbackRate,
+	setPlaybackRate,
+	quality,
+	setQuality,
+}: VideoSettingsProps) => {
+	const open = true;
 
 	const playbackRates = [
 		{ value: 0.5, label: '0.5x' },
@@ -34,7 +27,7 @@ const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
 		{ value: 1, label: 'Normal' },
 		{ value: 1.25, label: '1.25x' },
 		{ value: 1.5, label: '1.5x' },
-		{ value: 2, label: '2x' }
+		{ value: 2, label: '2x' },
 	];
 
 	const qualityOptions = [
@@ -42,7 +35,7 @@ const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
 		{ value: '1080p', label: '1080p' },
 		{ value: '720p', label: '720p' },
 		{ value: '480p', label: '480p' },
-		{ value: '360p', label: '360p' }
+		{ value: '360p', label: '360p' },
 	];
 
 	const handlePlaybackRateChange = (rate: number) => {
@@ -61,26 +54,26 @@ const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
 
 	return (
 		<Menu
-			anchorEl={anchorEl}
+			// anchorEl={anchorEl}
 			open={open}
 			onClose={handleClose}
 			classes={{
 				paper: 'video-settings-menu',
-				list: 'video-settings-list'
+				list: 'video-settings-list',
 			}}
 			anchorOrigin={{
 				vertical: 'top',
-				horizontal: 'right'
+				horizontal: 'right',
 			}}
 			transformOrigin={{
 				vertical: 'bottom',
-				horizontal: 'right'
+				horizontal: 'right',
 			}}
 		>
 			{/* Playback Speed Section */}
-			<div className="settings-section">
-				<Typography variant="subtitle2" className="section-title">
-					<Speed size={16} className="section-icon" />
+			<div className='settings-section'>
+				<Typography variant='subtitle2' className='section-title'>
+					<Gauge size={16} className='section-icon' />
 					Playback Speed
 				</Typography>
 				{playbackRates.map((rate) => (
@@ -88,27 +81,25 @@ const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
 						key={rate.value}
 						onClick={() => handlePlaybackRateChange(rate.value)}
 						selected={playbackRate === rate.value}
-						className="settings-menu-item"
+						className='settings-menu-item'
 					>
-						<ListItemText 
+						<ListItemText
 							primary={rate.label}
 							primaryTypographyProps={{
-								className: 'item-text'
+								className: 'item-text',
 							}}
 						/>
-						{playbackRate === rate.value && (
-							<div className="selected-indicator">✓</div>
-						)}
+						{playbackRate === rate.value && <div className='selected-indicator'>✓</div>}
 					</MenuItem>
 				))}
 			</div>
 
-			<Divider className="settings-divider" />
+			<Divider className='settings-divider' />
 
 			{/* Quality Section */}
-			<div className="settings-section">
-				<Typography variant="subtitle2" className="section-title">
-					<HighQuality size={16} className="section-icon" />
+			<div className='settings-section'>
+				<Typography variant='subtitle2' className='section-title'>
+					<Hd size={16} className='section-icon' />
 					Quality
 				</Typography>
 				{qualityOptions.map((option) => (
@@ -116,74 +107,72 @@ const VideoSettings = ({ anchorEl, onClose }: VideoSettingsProps) => {
 						key={option.value}
 						onClick={() => handleQualityChange(option.value)}
 						selected={quality === option.value}
-						className="settings-menu-item"
+						className='settings-menu-item'
 					>
-						<ListItemText 
+						<ListItemText
 							primary={option.label}
 							primaryTypographyProps={{
-								className: 'item-text'
+								className: 'item-text',
 							}}
 						/>
-						{quality === option.value && (
-							<div className="selected-indicator">✓</div>
-						)}
+						{quality === option.value && <div className='selected-indicator'>✓</div>}
 					</MenuItem>
 				))}
 			</div>
 
-			<Divider className="settings-divider" />
+			<Divider className='settings-divider' />
 
 			{/* Future Features (disabled for now) */}
-			<div className="settings-section">
-				<Typography variant="subtitle2" className="section-title">
-					<Settings size={16} className="section-icon" />
+			<div className='settings-section'>
+				<Typography variant='subtitle2' className='section-title'>
+					<Settings size={16} className='section-icon' />
 					More Options
 				</Typography>
-				
-				<MenuItem disabled className="settings-menu-item disabled">
+
+				<MenuItem disabled className='settings-menu-item disabled'>
 					<ListItemIcon>
 						<Subtitles size={16} />
 					</ListItemIcon>
-					<ListItemText 
-						primary="Subtitles"
-						secondary="Not available yet"
+					<ListItemText
+						primary='Subtitles'
+						secondary='Not available yet'
 						primaryTypographyProps={{
-							className: 'item-text'
+							className: 'item-text',
 						}}
 						secondaryTypographyProps={{
-							className: 'item-secondary'
+							className: 'item-secondary',
 						}}
 					/>
 				</MenuItem>
 
-				<MenuItem disabled className="settings-menu-item disabled">
+				<MenuItem disabled className='settings-menu-item disabled'>
 					<ListItemIcon>
-						<AspectRatio size={16} />
+						<Proportions size={16} />
 					</ListItemIcon>
-					<ListItemText 
-						primary="Aspect Ratio"
-						secondary="Auto detected"
+					<ListItemText
+						primary='Aspect Ratio'
+						secondary='Auto detected'
 						primaryTypographyProps={{
-							className: 'item-text'
+							className: 'item-text',
 						}}
 						secondaryTypographyProps={{
-							className: 'item-secondary'
+							className: 'item-secondary',
 						}}
 					/>
 				</MenuItem>
 
-				<MenuItem disabled className="settings-menu-item disabled">
+				<MenuItem disabled className='settings-menu-item disabled'>
 					<ListItemIcon>
-						<VolumeUp size={16} />
+						<Volume2 size={16} />
 					</ListItemIcon>
-					<ListItemText 
-						primary="Audio Track"
-						secondary="Default"
+					<ListItemText
+						primary='Audio Track'
+						secondary='Default'
 						primaryTypographyProps={{
-							className: 'item-text'
+							className: 'item-text',
 						}}
 						secondaryTypographyProps={{
-							className: 'item-secondary'
+							className: 'item-secondary',
 						}}
 					/>
 				</MenuItem>
