@@ -1,35 +1,26 @@
-import { useVideoPlayer } from '@/components/hooks/videoPlayerProvider/videoPlayerProvider';
-import { useEffect, useRef } from 'react';
+import { IVideoData } from '@/types/video';
+import { useEffect } from 'react';
 import './videoPlayer.css';
 
-const VideoPlayer = () => {
-	const {
-		currentVideo,
-		isPlaying,
-		currentTime,
-		duration,
-		volume,
-		playbackRate,
-		setVideoRef,
-		setCurrentTime,
-		setDuration,
-		nextVideo,
-	} = useVideoPlayer();
+interface VideoPlayerProps {
+	currentVideo: IVideoData | null;
 
-	const videoRef = useRef<HTMLVideoElement>(null);
-
-	useEffect(() => {
-		// Registra o videoRef no provider quando montar
-		if (videoRef.current) {
-			setVideoRef(videoRef.current);
-		}
-
-		// Cleanup quando desmontar
-		return () => {
-			setVideoRef(null);
-		};
-	}, [setVideoRef]);
-
+	volume: number;
+	playbackRate: number;
+	videoRef: React.RefObject<HTMLVideoElement | null>;
+	setCurrentTime: (time: number) => void;
+	setDuration: (duration: number) => void;
+	nextVideo: () => void;
+}
+const VideoPlayer = ({
+	currentVideo,
+	volume,
+	playbackRate,
+	videoRef,
+	setCurrentTime,
+	setDuration,
+	nextVideo,
+}: VideoPlayerProps) => {
 	useEffect(() => {
 		const video = videoRef.current;
 		if (!video) return;
