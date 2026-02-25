@@ -1,9 +1,0 @@
-Erro ao processar imagem /mnt/d/$RECYCLE.BIN/S-1-5-21-3621905366-2981647189-3475496836-1001/$ID6VZW1.png:
-Traceback (most recent call last):
-  File "/home/ghpm9/projects/KuraNAS/backend/scripts/image_metadata.py", line 140, in extract_metadata
-    with Image.open(image_path) as img:
-         ~~~~~~~~~~^^^^^^^^^^^^
-  File "/home/ghpm9/projects/KuraNAS/backend/scripts/.venv/lib/python3.13/site-packages/PIL/Image.py", line 3580, in open
-    raise UnidentifiedImageError(msg)
-PIL.UnidentifiedImageError: cannot identify image file '/mnt/d/$RECYCLE.BIN/S-1-5-21-3621905366-2981647189-3475496836-1001/$ID6VZW1.png'
-
