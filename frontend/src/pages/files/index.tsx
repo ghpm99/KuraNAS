@@ -9,10 +9,10 @@ const FilePage = () => {
 	return (
 		<FilesLayout>
 			<div className='content'>
-				<ActionBar />
-				<Tabs />
+				<div style={{ gridArea: 'item-header' }}><ActionBar /></div>
+				<div style={{ gridArea: 'tabs' }}><Tabs /></div>
 				<FileContent />
-				<FileDetails />
+				<div style={{ gridArea: 'sidebar' }}><FileDetails /></div>
 			</div>
 		</FilesLayout>
 	);

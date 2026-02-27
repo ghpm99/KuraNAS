@@ -1,7 +1,6 @@
 .content {
 	max-width: 1200px;
 	margin: 16px auto;
-	grid-area: content-container;
 	overflow-y: auto;
 }
 
@@ -12,13 +11,13 @@
 .pageTitle {
 	font-size: 2rem;
 	font-weight: 700;
-	color: white;
+	color: #e4e4e7;
 	margin: 0 0 8px 0;
 }
 
 .pageDescription {
 	font-size: 1rem;
-	color: #c5c5c5;
+	color: #a1a1aa;
 	margin: 0;
 }
 
