@@ -27,11 +27,16 @@ const Sidebar = () => {
 			sx={{
 				gridArea: 'left-nav',
 				height: '100%',
-				bgcolor: '#1c1a1f',
-				'@media (max-width: 940px)': { display: 'none' },
+				bgcolor: '#141419',
+				borderRight: '1px solid',
+				borderColor: 'divider',
+				display: 'flex',
+				flexDirection: 'column',
+				overflow: 'hidden',
+				'@media (max-width: 900px)': { display: 'none' },
 			}}
 		>
-			<List sx={{ px: 1, pt: 0.5 }} dense>
+			<List sx={{ px: 1, pt: 0.5, flexShrink: 0 }} dense>
 				<NavItem href='/' icon={<LayoutGrid size={20} />}>{t('ALL_FILES')}</NavItem>
 				<NavItem href='/images' icon={<BookImage size={20} />}>Imagens</NavItem>
 				<NavItem href='/music' icon={<Music size={20} />}>Musicas</NavItem>
@@ -41,7 +46,11 @@ const Sidebar = () => {
 				<NavItem href='/analytics' icon={<AnalyticsIcon />}>{t('ANALYTICS')}</NavItem>
 				<NavItem href='/about' icon={<Info size={20} />}>{t('ABOUT')}</NavItem>
 			</List>
-			{activePage === 'files' && <FolderTree />}
+			{activePage === 'files' && (
+				<Box sx={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+					<FolderTree />
+				</Box>
+			)}
 		</Box>
 	);
 };

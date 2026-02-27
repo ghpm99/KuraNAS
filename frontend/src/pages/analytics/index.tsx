@@ -1,3 +1,4 @@
+import AnalyticsLayout from '@/components/analytics/analyticsLayout';
 import StorageOverviewCards from '@/components/analytics/StorageOverviewCards/StorageOverviewCards';
 import styles from './analytics.module.css';
 import DiskUsageChart from '@/components/analytics/DiskUsageChart/DiskUsageChart';
@@ -15,7 +16,7 @@ import TrashSection from '@/components/analytics/TrashSection/TrashSection';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
 import Button from '@/components/ui/Button/Button';
 
-const AnalyticsPage = () => {
+const AnalyticsContent = () => {
 	const { refreshAnalytics } = useAnalytics();
 	return (
 		<div className={styles.content}>
@@ -27,7 +28,6 @@ const AnalyticsPage = () => {
 				</Button>
 			</div>
 
-			{/* Visão Geral do Armazenamento */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Visão Geral do Armazenamento</h2>
 				<StorageOverviewCards />
@@ -36,7 +36,6 @@ const AnalyticsPage = () => {
 				</div>
 			</section>
 
-			{/* Tipos e Tamanhos de Arquivo */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Tipos e Tamanhos de Arquivo</h2>
 				<div className={styles.chartsGrid}>
@@ -47,13 +46,11 @@ const AnalyticsPage = () => {
 				</div>
 			</section>
 
-			{/* Arquivos Duplicados */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Arquivos Duplicados e Redundância</h2>
 				<DuplicatesSection />
 			</section>
 
-			{/* Atividade Recente */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Atividade Recente</h2>
 				<div className={styles.activityGrid}>
@@ -62,30 +59,34 @@ const AnalyticsPage = () => {
 				</div>
 			</section>
 
-			{/* Organização */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Pastas Vazias e Organização</h2>
 				<EmptyFoldersSection />
 			</section>
 
-			{/* Sugestões de Limpeza */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Sugestões de Limpeza e Insights</h2>
 				<CleanupSuggestions />
 			</section>
 
-			{/* Backup */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Backup e Restauração</h2>
 				<BackupSection />
 			</section>
 
-			{/* Lixeira */}
 			<section className={styles.section}>
 				<h2 className={styles.sectionTitle}>Lixeira</h2>
 				<TrashSection />
 			</section>
 		</div>
+	);
+};
+
+const AnalyticsPage = () => {
+	return (
+		<AnalyticsLayout>
+			<AnalyticsContent />
+		</AnalyticsLayout>
 	);
 };
 

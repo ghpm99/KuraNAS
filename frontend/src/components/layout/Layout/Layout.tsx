@@ -18,12 +18,14 @@ export const Layout = ({ children }: LayoutProps) => {
 
 	return (
 		<div className={styles.layout}>
-			<div className='sidebar-header'>
+			<div className={styles.sidebarHeader}>
 				<h1 className='app-title'>KuraNAS</h1>
 			</div>
 			<Header showClock={showClock} currentTime={currentTime} />
 			<Sidebar />
-			{children}
+			<div className={styles.mainContent}>
+				{children}
+			</div>
 		</div>
 	);
 };

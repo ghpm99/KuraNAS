@@ -6,9 +6,22 @@
 		'logo gh'
 		'left-nav content-container';
 	height: 100vh;
-	background-color: #2a282e;
-	@media screen and (max-width: 940px) {
-		grid-template-columns: 0 auto;
+	background-color: var(--mui-palette-background-default, #0f0f13);
+	@media screen and (max-width: 900px) {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			'gh'
+			'content-container';
+	}
+}
+
+.sidebarHeader {
+	grid-area: logo;
+	background-color: #141419;
+	align-content: center;
+	text-align: center;
+	@media screen and (max-width: 900px) {
+		display: none;
 	}
 }
 
@@ -24,5 +37,4 @@
 	flex: 1;
 	padding: 24px;
 	overflow-y: auto;
-	background-color: #f9fafb;
 }
