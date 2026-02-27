@@ -1,7 +1,5 @@
+import { Box, Card, CardContent, CardHeader, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { File, Trash2 } from 'lucide-react';
-
-import Card from '../../ui/Card/Card';
-import styles from './TrashSection.module.css';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
 
 export default function TrashSection() {
@@ -9,60 +7,58 @@ export default function TrashSection() {
 	const { trash } = analyticsData;
 
 	return (
-		<div className={styles.section}>
-			<div className={styles.cardsGrid}>
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<File className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Arquivos na Lixeira</div>
-							<div className={styles.value}>{trash.totalFiles}</div>
-						</div>
-					</div>
-				</div>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<File size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>Arquivos na Lixeira</Typography>
+								<Typography variant='h6'>{trash.totalFiles}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<Trash2 size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>Espaço Ocupado</Typography>
+								<Typography variant='h6'>{trash.totalSpace}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+			</Grid>
 
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<Trash2 className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Espaço Ocupado</div>
-							<div className={styles.value}>{trash.totalSpace}</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<Card title='Arquivos na Lixeira'>
-				<div className={styles.tableContainer}>
-					<table className={styles.table}>
-						<thead>
-							<tr>
-								<th>Nome</th>
-								<th>Tamanho</th>
-								<th>Data de Exclusão</th>
-							</tr>
-						</thead>
-						<tbody>
-							{trash.files.map((file, index) => (
-								<tr key={index}>
-									<td>
-										<div className={styles.fileCell}>
-											<Trash2 className={styles.fileIcon} />
-											<span className={styles.fileName}>{file.name}</span>
-										</div>
-									</td>
-									<td className={styles.sizeCell}>{file.size}</td>
-									<td className={styles.dateCell}>{file.deletedDate}</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+			<Card>
+				<CardHeader title='Arquivos na Lixeira' titleTypographyProps={{ variant: 'h6' }} />
+				<Table>
+					<TableHead>
+						<TableRow>
+							<TableCell>Nome</TableCell>
+							<TableCell>Tamanho</TableCell>
+							<TableCell>Data de Exclusão</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{trash.files.map((file, index) => (
+							<TableRow key={index}>
+								<TableCell>
+									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+										<Trash2 size={16} />
+										{file.name}
+									</Box>
+								</TableCell>
+								<TableCell>{file.size}</TableCell>
+								<TableCell>{file.deletedDate}</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
 			</Card>
-		</div>
+		</Box>
 	);
 }

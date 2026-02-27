@@ -1,35 +1,20 @@
+import { Tab, Tabs as MuiTabs } from '@mui/material';
 import { FileType } from '@/utils';
 import useFile from '../hooks/fileProvider/fileContext';
 import useI18n from '../i18n/provider/i18nContext';
-import './tabs.css';
 
 const Tabs = () => {
 	const { t } = useI18n();
 	const { selectedItem, fileListFilter, setFileListFilter } = useFile();
 
-	if (selectedItem?.type === FileType.File) {
-		return <></>;
-	}
+	if (selectedItem?.type === FileType.File) return null;
+
 	return (
-		<div className='tabs'>
-			<div className='tabs-list'>
-				<button className={`tab ${fileListFilter === 'all' ? 'active' : ''}`} onClick={() => setFileListFilter('all')}>
-					{t('ALL_FILES')}
-				</button>
-				<button
-					className={`tab ${fileListFilter === 'recent' ? 'active' : ''}`}
-					onClick={() => setFileListFilter('recent')}
-				>
-					{t('RECENT_FILES')}
-				</button>
-				<button
-					className={`tab ${fileListFilter === 'starred' ? 'active' : ''}`}
-					onClick={() => setFileListFilter('starred')}
-				>
-					{t('STARRED_FILES')}
-				</button>
-			</div>
-		</div>
+		<MuiTabs value={fileListFilter} onChange={(_, val) => setFileListFilter(val)}>
+			<Tab label={t('ALL_FILES')} value='all' />
+			<Tab label={t('RECENT_FILES')} value='recent' />
+			<Tab label={t('STARRED_FILES')} value='starred' />
+		</MuiTabs>
 	);
 };
 

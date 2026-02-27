@@ -1,10 +1,18 @@
 import Card from '@/components/ui/Card/Card';
 import { useState } from 'react';
-import styles from './TechicalInfoCard.module.css';
-import Button from '@/components/ui/Button/Button';
+import { Box, Button, Divider, Typography } from '@mui/material';
 import { Copy } from 'lucide-react';
 import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
+
+function BuildRow({ label, value }: { label: string; value: string }) {
+	return (
+		<Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
+			<Typography variant='body2' color='text.secondary'>{label}</Typography>
+			<Typography variant='body2'>{value}</Typography>
+		</Box>
+	);
+}
 
 const TechnicalInfoCard = () => {
 	const { commit_hash, gin_mode, gin_version, go_version, node_version } = useAbout();
@@ -23,41 +31,23 @@ const TechnicalInfoCard = () => {
 
 	return (
 		<Card title={t('TECHNICAL_INFO_TITLE')}>
-			<div className={styles.techInfo}>
-				<div className={styles.commitSection}>
-					<div className={styles.commitHeader}>
-						<span className={styles.label}>{t('COMMIT_HASH')}</span>
-						<Button variant='secondary' onClick={copyCommitHash} className={styles.copyButton}>
-							<Copy className={styles.copyIcon} />
-							{copied ? t('COPIED') : t('COPY')}
-						</Button>
-					</div>
-					<div className={styles.commitHash}>{commit_hash}</div>
-					<div className={styles.commitDescription}>{t('COMMIT_DESCRIPTION')}</div>
-				</div>
+			<Box sx={{ mb: 2 }}>
+				<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+					<Typography variant='body2' fontWeight={500}>{t('COMMIT_HASH')}</Typography>
+					<Button variant='outlined' size='small' startIcon={<Copy size={14} />} onClick={copyCommitHash}>
+						{copied ? t('COPIED') : t('COPY')}
+					</Button>
+				</Box>
+				<Typography variant='body2' sx={{ fontFamily: 'monospace', mb: 0.5 }}>{commit_hash}</Typography>
+				<Typography variant='caption' color='text.secondary'>{t('COMMIT_DESCRIPTION')}</Typography>
+			</Box>
 
-				<div className={styles.buildInfo}>
-					<h4 className={styles.sectionTitle}>{t('BUILD_DETAILS_TITLE')}</h4>
-					<div className={styles.buildDetails}>
-						<div className={styles.buildItem}>
-							<span className={styles.buildLabel}>{t('ENVIRONMENT')}</span>
-							<span className={styles.buildValue}>{gin_mode}</span>
-						</div>
-						<div className={styles.buildItem}>
-							<span className={styles.buildLabel}>{t('COMPILER')}</span>
-							<span className={styles.buildValue}>{go_version}</span>
-						</div>
-						<div className={styles.buildItem}>
-							<span className={styles.buildLabel}>{t('BACKEND')}</span>
-							<span className={styles.buildValue}>{gin_version}</span>
-						</div>
-						<div className={styles.buildItem}>
-							<span className={styles.buildLabel}>{t('NODEJS')}</span>
-							<span className={styles.buildValue}>{node_version}</span>
-						</div>
-					</div>
-				</div>
-			</div>
+			<Divider sx={{ my: 1.5 }} />
+			<Typography variant='subtitle2' gutterBottom>{t('BUILD_DETAILS_TITLE')}</Typography>
+			<BuildRow label={t('ENVIRONMENT')} value={gin_mode} />
+			<BuildRow label={t('COMPILER')} value={go_version} />
+			<BuildRow label={t('BACKEND')} value={gin_version} />
+			<BuildRow label={t('NODEJS')} value={node_version} />
 		</Card>
 	);
 };
