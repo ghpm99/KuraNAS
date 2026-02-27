@@ -35,3 +35,4 @@ bin/
 .venv
 
 backend/thumbnails/
+backend/scripts/logs/

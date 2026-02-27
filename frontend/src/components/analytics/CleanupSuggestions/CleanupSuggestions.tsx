@@ -1,7 +1,5 @@
-import { AlertTriangle, FileX, Trash2 } from 'lucide-react';
-
-import Card from '../../ui/Card/Card';
-import styles from './CleanupSuggestions.module.css';
+import { Alert, Box, Card, CardHeader, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { FileX, Trash2 } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
 
 export default function CleanupSuggestions() {
@@ -9,55 +7,43 @@ export default function CleanupSuggestions() {
 	const { cleanup } = analyticsData;
 
 	return (
-		<div className={styles.section}>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 			{cleanup.criticalSpace && (
-				<div className={styles.alert}>
-					<AlertTriangle className={styles.alertIcon} />
-					<div className={styles.alertContent}>
-						<div className={styles.alertTitle}>Espaço Crítico</div>
-						<div className={styles.alertMessage}>
-							O uso de disco ultrapassou 90%. Considere limpar arquivos desnecessários.
-						</div>
-					</div>
-				</div>
+				<Alert severity='error'>
+					<strong>Espaço Crítico</strong>
+					<br />
+					O uso de disco ultrapassou 90%. Considere limpar arquivos desnecessários.
+				</Alert>
 			)}
 
-			<div className={styles.cardsGrid}>
-				<Card title='Arquivos Grandes Não Acessados'>
-					<div className={styles.list}>
+			<Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+				<Card>
+					<CardHeader title='Arquivos Grandes Não Acessados' titleTypographyProps={{ variant: 'h6' }} />
+					<List dense>
 						{cleanup.oldLargeFiles.map((file, index) => (
-							<div key={index} className={styles.listItem}>
-								<div className={styles.itemIcon}>
-									<FileX className={styles.icon} />
-								</div>
-								<div className={styles.itemContent}>
-									<div className={styles.itemName}>{file.name}</div>
-									<div className={styles.itemMeta}>
-										{file.size} • {file.path}
-									</div>
-								</div>
-							</div>
+							<ListItem key={index}>
+								<ListItemIcon sx={{ minWidth: 36 }}><FileX size={16} /></ListItemIcon>
+								<ListItemText primary={file.name} secondary={`${file.size} • ${file.path}`} />
+							</ListItem>
 						))}
-					</div>
+					</List>
 				</Card>
 
-				<Card title='Arquivos com Nomes Similares'>
-					<div className={styles.list}>
+				<Card>
+					<CardHeader title='Arquivos com Nomes Similares' titleTypographyProps={{ variant: 'h6' }} />
+					<List dense>
 						{cleanup.similarNames.map((similar, index) => (
-							<div key={index} className={styles.listItem}>
-								<div className={styles.itemIcon}>
-									<Trash2 className={styles.icon} />
-								</div>
-								<div className={styles.itemContent}>
-									<div className={styles.itemName}>{similar.name1}</div>
-									<div className={styles.itemName}>{similar.name2}</div>
-									<div className={styles.itemMeta}>Similaridade: {similar.similarity}%</div>
-								</div>
-							</div>
+							<ListItem key={index}>
+								<ListItemIcon sx={{ minWidth: 36 }}><Trash2 size={16} /></ListItemIcon>
+								<ListItemText
+									primary={`${similar.name1} / ${similar.name2}`}
+									secondary={`Similaridade: ${similar.similarity}%`}
+								/>
+							</ListItem>
 						))}
-					</div>
+					</List>
 				</Card>
-			</div>
-		</div>
+			</Box>
+		</Box>
 	);
 }
