@@ -15,6 +15,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterDiaryRoutes(routesV1, context)
 	RegisterMusicRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
+	RegisterUpdateRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -90,6 +91,13 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	configurations.GET("/translation", context.ConfigurationHandler.GetTranslationJson)
 	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
+}
+
+func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
+	update := router.Group("/update")
+
+	update.GET("/status", context.UpdateHandler.GetUpdateStatusHandler)
+	update.POST("/apply", context.UpdateHandler.ApplyUpdateHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {

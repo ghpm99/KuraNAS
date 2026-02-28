@@ -1,5 +1,6 @@
 import AboutLayout from '@/components/about/aboutLayout';
 import StatusCard from '@/components/about/StatusCard/StatusCard';
+import UpdateCard from '@/components/about/UpdateCard/UpdateCard';
 import styles from './about.module.css';
 import SystemInfoCard from '@/components/about/SystemInfoCard/SystemInfoCard';
 import TechnicalInfoCard from '@/components/about/TechnicalInfoCard/TechnicalInfoCard';
@@ -22,6 +23,7 @@ const AboutPage = () => {
 					</div>
 					<div className={styles.rightColumn}>
 						<StatusCard />
+						<UpdateCard />
 					</div>
 				</div>
 			</div>
