@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/music"
+	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -21,6 +22,7 @@ type AppContext struct {
 	Diary                *DiaryContext
 	Music                *MusicContext
 	ConfigurationHandler *configuration.Handler
+	UpdateHandler        *updater.Handler
 }
 
 type FileContext struct {
@@ -53,6 +55,8 @@ func NewContext(db *sql.DB) *AppContext {
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
 	configurationHandler := configuration.NewHandler(loggerService)
+	updateService := updater.NewService()
+	updateHandler := updater.NewHandler(updateService, loggerService)
 
 	context := &AppContext{
 		DB:                   dbContext,
@@ -62,6 +66,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Diary:                diaryContext,
 		Music:                musicContext,
 		ConfigurationHandler: configurationHandler,
+		UpdateHandler:        updateHandler,
 	}
 	return context
 }
