@@ -22,7 +22,7 @@ const AllTracksView = () => {
 					const isLastItem = index === music.length - 1;
 					return (
 						<ListItem key={item.id} ref={isLastItem ? lastItemRef : null} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => playTrack(item)}>
+							<ListItemButton onClick={() => addToQueue(item)}>
 								<ListItemIcon>
 									<Music />
 								</ListItemIcon>

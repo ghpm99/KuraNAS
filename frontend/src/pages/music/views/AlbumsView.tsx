@@ -19,7 +19,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicAlbums, getMusicByAlbum } from '@/service/music';
 import { MusicAlbum } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import { useMusic, IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 const AlbumsView = () => {
 	const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -99,7 +100,7 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string) => void }) => {
 };
 
 const AlbumTracksView = ({ album, onBack }: { album: string; onBack: () => void }) => {
-	const { getMusicTitle, musicMetadata, getMusicArtist, playTrack } = useMusic();
+	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-album', album],
@@ -132,7 +133,7 @@ const AlbumTracksView = ({ album, onBack }: { album: string; onBack: () => void 
 				<List sx={{ width: '100%' }}>
 					{tracks.map((item) => (
 						<ListItem key={item.id} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => playTrack(item)}>
+							<ListItemButton onClick={() => addToQueue(item)}>
 								<ListItemIcon>
 									<Music />
 								</ListItemIcon>

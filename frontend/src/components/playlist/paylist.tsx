@@ -1,16 +1,16 @@
 import { IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { useMusic } from '../hooks/musicProvider/musicProvider';
+import { useGlobalMusic } from '../providers/GlobalMusicProvider';
 import styles from './paylist.module.css';
 import { Music, Play } from 'lucide-react';
 
 const Playlist = () => {
-	const { playlist, playTrack, getMusicTitle } = useMusic();
+	const { queue, playTrackFromQueue, getMusicTitle } = useGlobalMusic();
 	return (
 		<div className={styles.playlist}>
 			<List sx={{ width: '100%' }}>
-				{playlist.map((item) => (
+				{queue.map((item, index) => (
 					<ListItem key={item.id} sx={{ px: 0 }}>
-						<ListItemButton onClick={() => playTrack(item)}>
+						<ListItemButton onClick={() => playTrackFromQueue(index)}>
 							<ListItemIcon>
 								<Music />
 							</ListItemIcon>
