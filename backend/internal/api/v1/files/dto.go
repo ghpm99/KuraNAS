@@ -259,3 +259,26 @@ type DuplicateFileReportDto struct {
 	TotalSize  int64              `json:"total_size"`
 	Pagination utils.Pagination   `json:"pagination"`
 }
+
+type MusicArtistDto struct {
+	Artist     string `json:"artist"`
+	TrackCount int    `json:"track_count"`
+	AlbumCount int    `json:"album_count"`
+}
+
+type MusicAlbumDto struct {
+	Album      string `json:"album"`
+	Artist     string `json:"artist"`
+	Year       string `json:"year"`
+	TrackCount int    `json:"track_count"`
+}
+
+type MusicGenreDto struct {
+	Genre      string `json:"genre"`
+	TrackCount int    `json:"track_count"`
+}
+
+type MusicFolderDto struct {
+	Folder     string `json:"folder"`
+	TrackCount int    `json:"track_count"`
+}

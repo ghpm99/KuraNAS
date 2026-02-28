@@ -532,6 +532,46 @@ func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[Fi
 	return paginationResponse, nil
 }
 
+func (s *Service) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	return s.Repository.GetMusicArtists(page, pageSize)
+}
+
+func (s *Service) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByArtist(artist, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	return s.Repository.GetMusicAlbums(page, pageSize)
+}
+
+func (s *Service) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByAlbum(album, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	return s.Repository.GetMusicGenres(page, pageSize)
+}
+
+func (s *Service) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByGenre(genre, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	return s.Repository.GetMusicFolders(page, pageSize)
+}
+
 func (s *Service) CheckFileExists(fileId int) bool {
 	file, err := s.GetFileById(fileId)
 

@@ -587,6 +587,163 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, pagination)
 }
 
+func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicArtists",
+		Description: "Fetching music artists",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicArtists(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByArtist",
+		Description: "Fetching music by artist",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	artist := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByArtist(artist, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicAlbums",
+		Description: "Fetching music albums",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicAlbums(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByAlbum",
+		Description: "Fetching music by album",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	album := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByAlbum(album, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicGenres",
+		Description: "Fetching music genres",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicGenres(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByGenre",
+		Description: "Fetching music by genre",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	genre := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByGenre(genre, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicFolders",
+		Description: "Fetching music folders",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicFolders(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
 // StreamAudioHandler implementa streaming de áudio com suporte a HTTP Range
 // Arquivo separado em stream_handler.go para evitar conflitos
 func (handler *Handler) StreamAudioHandler(c *gin.Context) {
