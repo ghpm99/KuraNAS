@@ -7,13 +7,16 @@ import {
 	ListItemIcon,
 	ListItemText,
 } from '@mui/material';
-import { Music, Play } from 'lucide-react';
+import { ListPlus, Music, Play } from 'lucide-react';
 import { useMusic } from '@/components/hooks/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import { useState } from 'react';
 
 const AllTracksView = () => {
 	const { music, hasNextPage, isFetchingNextPage, lastItemRef } = useMusic();
 	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	return (
 		<>
@@ -30,6 +33,15 @@ const AllTracksView = () => {
 									primary={getMusicTitle(item)}
 									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
 								/>
+								<IconButton
+									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
+									onClick={(e) => {
+										e.stopPropagation();
+										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
+									}}
+								>
+									<ListPlus size={18} />
+								</IconButton>
 								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`play ${item.name}`}>
 									<Play />
 								</IconButton>
@@ -38,6 +50,11 @@ const AllTracksView = () => {
 					);
 				})}
 			</List>
+			<AddToPlaylistMenu
+				fileId={menuAnchor?.fileId ?? 0}
+				anchorEl={menuAnchor?.el ?? null}
+				onClose={() => setMenuAnchor(null)}
+			/>
 
 			{isFetchingNextPage && (
 				<div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>

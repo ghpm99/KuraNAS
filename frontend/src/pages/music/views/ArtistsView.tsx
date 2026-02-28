@@ -13,8 +13,9 @@ import {
 	ListItemText,
 	Typography,
 } from '@mui/material';
-import { ArrowLeft, Music, Play, User } from 'lucide-react';
+import { ArrowLeft, ListPlus, Music, Play, User } from 'lucide-react';
 import { useState } from 'react';
+import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicArtists, getMusicByArtist } from '@/service/music';
 import { MusicArtist } from '@/types/music';
@@ -101,6 +102,7 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 
 const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => void }) => {
 	const { getMusicTitle, musicMetadata, addToQueue } = useGlobalMusic();
+	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-artist', artist],
@@ -138,6 +140,15 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 									<Music />
 								</ListItemIcon>
 								<ListItemText primary={getMusicTitle(item)} secondary={musicMetadata(item)} />
+								<IconButton
+									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
+									onClick={(e) => {
+										e.stopPropagation();
+										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
+									}}
+								>
+									<ListPlus size={18} />
+								</IconButton>
 								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }}>
 									<Play />
 								</IconButton>
@@ -146,6 +157,12 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 					))}
 				</List>
 			)}
+
+			<AddToPlaylistMenu
+				fileId={menuAnchor?.fileId ?? 0}
+				anchorEl={menuAnchor?.el ?? null}
+				onClose={() => setMenuAnchor(null)}
+			/>
 
 			{hasNextPage && (
 				<Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>

@@ -1,5 +1,5 @@
 import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { Disc, Folder, ListMusic, Tag, User } from 'lucide-react';
+import { Disc, Folder, ListMusic, ListPlus, Tag, User } from 'lucide-react';
 import { MusicView } from '@/types/music';
 import { useMusic } from '@/components/hooks/musicProvider/musicProvider';
 
@@ -9,6 +9,7 @@ const views: { key: MusicView; label: string; icon: React.ReactNode }[] = [
 	{ key: 'albums', label: 'Albums', icon: <Disc size={20} /> },
 	{ key: 'genres', label: 'Genres', icon: <Tag size={20} /> },
 	{ key: 'folders', label: 'Folders', icon: <Folder size={20} /> },
+	{ key: 'playlists', label: 'Playlists', icon: <ListPlus size={20} /> },
 ];
 
 const MusicSidebar = () => {

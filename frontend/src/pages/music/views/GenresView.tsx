@@ -9,7 +9,7 @@ import {
 	ListItemText,
 	Typography,
 } from '@mui/material';
-import { ArrowLeft, Music, Play, Tag } from 'lucide-react';
+import { ArrowLeft, ListPlus, Music, Play, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicGenres, getMusicByGenre } from '@/service/music';
@@ -17,6 +17,7 @@ import { MusicGenre } from '@/types/music';
 import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 
 const GenresView = () => {
 	const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -78,6 +79,7 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 
 const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void }) => {
 	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-genre', genre],
@@ -118,6 +120,15 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 									primary={getMusicTitle(item)}
 									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
 								/>
+								<IconButton
+									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
+									onClick={(e) => {
+										e.stopPropagation();
+										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
+									}}
+								>
+									<ListPlus size={18} />
+								</IconButton>
 								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }}>
 									<Play />
 								</IconButton>
@@ -126,6 +137,12 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 					))}
 				</List>
 			)}
+
+			<AddToPlaylistMenu
+				fileId={menuAnchor?.fileId ?? 0}
+				anchorEl={menuAnchor?.el ?? null}
+				onClose={() => setMenuAnchor(null)}
+			/>
 
 			{hasNextPage && (
 				<Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>

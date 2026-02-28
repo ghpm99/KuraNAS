@@ -9,7 +9,7 @@ import {
 	ListItemText,
 	Typography,
 } from '@mui/material';
-import { ArrowLeft, Folder, Music, Play } from 'lucide-react';
+import { ArrowLeft, Folder, ListPlus, Music, Play } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicFolders } from '@/service/music';
@@ -18,6 +18,7 @@ import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import { apiBase } from '@/service';
+import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 
 const FoldersView = () => {
 	const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -87,6 +88,7 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 
 const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => void }) => {
 	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['music-by-folder', folder],
@@ -94,7 +96,6 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 			const response = await apiBase.get<Pagination<IMusicData>>('/files/music', {
 				params: { page: 1, page_size: 500 },
 			});
-			// Filter client-side by parent_path since we don't have a dedicated endpoint
 			return {
 				...response.data,
 				items: response.data.items.filter((item) => item.path.startsWith(folder)),
@@ -137,6 +138,15 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 									primary={getMusicTitle(item)}
 									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
 								/>
+								<IconButton
+									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
+									onClick={(e) => {
+										e.stopPropagation();
+										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
+									}}
+								>
+									<ListPlus size={18} />
+								</IconButton>
 								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }}>
 									<Play />
 								</IconButton>
@@ -145,6 +155,12 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 					))}
 				</List>
 			)}
+
+			<AddToPlaylistMenu
+				fileId={menuAnchor?.fileId ?? 0}
+				anchorEl={menuAnchor?.el ?? null}
+				onClose={() => setMenuAnchor(null)}
+			/>
 		</Box>
 	);
 };
