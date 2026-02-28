@@ -1,10 +1,25 @@
 .content {
 	display: grid;
-	grid-template-columns: 1fr min-content;
-	grid-template-rows: 80px 40px auto;
-	grid-template-areas:
-		'item-header sidebar'
-		'tabs sidebar'
-		'content  sidebar';
+	grid-template-columns: 180px 1fr min-content;
+	grid-template-rows: auto;
+	grid-template-areas: 'views-sidebar content sidebar';
 	max-height: calc(100vh - 80px);
+}
+
+.music-views-sidebar {
+	grid-area: views-sidebar;
+	border-right: 1px solid rgba(255, 255, 255, 0.08);
+	padding: 8px;
+	overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+	.content {
+		grid-template-columns: 1fr min-content;
+		grid-template-areas: 'content sidebar';
+	}
+
+	.music-views-sidebar {
+		display: none;
+	}
 }

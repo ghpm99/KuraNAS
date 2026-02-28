@@ -5,6 +5,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -18,6 +19,7 @@ type AppContext struct {
 	Tasks                *chan utils.Task
 	Files                *FileContext
 	Diary                *DiaryContext
+	Music                *MusicContext
 	ConfigurationHandler *configuration.Handler
 }
 
@@ -36,6 +38,12 @@ type DiaryContext struct {
 	Repository diary.RepositoryInterface
 }
 
+type MusicContext struct {
+	Handler    *music.Handler
+	Service    music.ServiceInterface
+	Repository music.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -43,6 +51,7 @@ func NewContext(db *sql.DB) *AppContext {
 	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
 	fileContext := newFileContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
+	musicContext := newMusicContext(dbContext, loggerService)
 	configurationHandler := configuration.NewHandler(loggerService)
 
 	context := &AppContext{
@@ -51,6 +60,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Tasks:                &tasks,
 		Files:                fileContext,
 		Diary:                diaryContext,
+		Music:                musicContext,
 		ConfigurationHandler: configurationHandler,
 	}
 	return context
@@ -72,6 +82,17 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 		Repository:           repository,
 		RecentFileRepository: recentFileRepository,
 		MetadataRepository:   metadataRepository,
+	}
+}
+
+func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *MusicContext {
+	repository := music.NewRepository(dbContext)
+	service := music.NewService(repository)
+	handler := music.NewHandler(service, logger)
+	return &MusicContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
 	}
 }
 

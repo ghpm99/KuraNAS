@@ -1,5 +1,6 @@
 import { apiBase } from '@/service';
 import { Pagination } from '@/types/pagination';
+import { MusicView } from '@/types/music';
 import {
 	FetchNextPageOptions,
 	InfiniteData,
@@ -65,6 +66,8 @@ export interface IMusicContext {
 	hasTrackInPlaylist: boolean;
 	currentTrack: number | undefined;
 	setCurrentTrack: (index: number) => void;
+	currentView: MusicView;
+	setCurrentView: (view: MusicView) => void;
 }
 
 type PaginationResponse = Pagination<IMusicData>;
@@ -78,9 +81,7 @@ const pageSize = 200;
 export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 	const [playlist, setPlaylist] = useState<IMusicData[]>([]);
 	const [currentTrack, setCurrentTrack] = useState<number | undefined>(undefined);
-
-	console.log(playlist);
-	console.log(currentTrack);
+	const [currentView, setCurrentView] = useState<MusicView>('all');
 
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music'],
@@ -169,6 +170,8 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 				hasTrackInPlaylist,
 				currentTrack,
 				setCurrentTrack,
+				currentView,
+				setCurrentView,
 			}}
 		>
 			{children}
