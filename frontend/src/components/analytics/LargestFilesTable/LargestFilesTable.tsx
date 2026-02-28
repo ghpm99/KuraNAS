@@ -1,21 +1,23 @@
 import { Box, Card, CardHeader, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { File } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/utils';
 
 export default function LargestFilesTable() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { largestFiles } = analyticsData;
 
 	return (
 		<Card>
-			<CardHeader title='Maiores Arquivos' titleTypographyProps={{ variant: 'h6' }} />
+			<CardHeader title={t('ANALYTICS_LARGEST_FILES')} titleTypographyProps={{ variant: 'h6' }} />
 			<Table>
 				<TableHead>
 					<TableRow>
-						<TableCell>Arquivo</TableCell>
-						<TableCell>Tamanho</TableCell>
-						<TableCell>Caminho</TableCell>
+						<TableCell>{t('ANALYTICS_FILE')}</TableCell>
+						<TableCell>{t('ANALYTICS_FILE_SIZE')}</TableCell>
+						<TableCell>{t('ANALYTICS_FILE_PATH')}</TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>

@@ -29,6 +29,7 @@ import {
 } from '@/service/playlist';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import { useSnackbar } from 'notistack';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const PlaylistsView = () => {
 	const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
@@ -46,6 +47,7 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 	const [newDescription, setNewDescription] = useState('');
 	const queryClient = useQueryClient();
 	const { enqueueSnackbar } = useSnackbar();
+	const { t } = useI18n();
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['playlists'],
@@ -63,10 +65,10 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 			setCreateOpen(false);
 			setNewName('');
 			setNewDescription('');
-			enqueueSnackbar('Playlist created', { variant: 'success' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_CREATED'), { variant: 'success' });
 		},
 		onError: () => {
-			enqueueSnackbar('Failed to create playlist', { variant: 'error' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_CREATE_FAILED'), { variant: 'error' });
 		},
 	});
 
@@ -74,10 +76,10 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 		mutationFn: (id: number) => deletePlaylist(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['playlists'] });
-			enqueueSnackbar('Playlist deleted', { variant: 'success' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_DELETED'), { variant: 'success' });
 		},
 		onError: () => {
-			enqueueSnackbar('Failed to delete playlist', { variant: 'error' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_DELETE_FAILED'), { variant: 'error' });
 		},
 	});
 
@@ -94,14 +96,14 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 	return (
 		<Box>
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
-				<Typography variant='h6'>Playlists</Typography>
+				<Typography variant='h6'>{t('MUSIC_PLAYLISTS')}</Typography>
 				<Button
 					startIcon={<Plus size={18} />}
 					size='small'
 					variant='contained'
 					onClick={() => setCreateOpen(true)}
 				>
-					New
+					{t('MUSIC_NEW')}
 				</Button>
 			</Box>
 
@@ -131,7 +133,7 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 							</ListItemIcon>
 							<ListItemText
 								primary={playlist.name}
-								secondary={`${playlist.track_count} tracks${playlist.description ? ` - ${playlist.description}` : ''}`}
+								secondary={`${playlist.track_count} ${t('MUSIC_TRACKS_COUNT')}${playlist.description ? ` - ${playlist.description}` : ''}`}
 							/>
 						</ListItemButton>
 					</ListItem>
@@ -140,7 +142,7 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 
 			{playlists.length === 0 && (
 				<Typography variant='body2' color='text.secondary' sx={{ textAlign: 'center', p: 4 }}>
-					No playlists yet. Create one to get started.
+					{t('MUSIC_NO_PLAYLISTS_MSG')}
 				</Typography>
 			)}
 
@@ -151,25 +153,25 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 						sx={{ cursor: 'pointer', color: 'primary.main' }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}
 
 			<Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth='sm' fullWidth>
-				<DialogTitle>Create Playlist</DialogTitle>
+				<DialogTitle>{t('MUSIC_CREATE_PLAYLIST')}</DialogTitle>
 				<DialogContent>
 					<TextField
 						autoFocus
 						fullWidth
-						label='Name'
+						label={t('NAME')}
 						value={newName}
 						onChange={(e) => setNewName(e.target.value)}
 						sx={{ mt: 1, mb: 2 }}
 					/>
 					<TextField
 						fullWidth
-						label='Description (optional)'
+						label={t('MUSIC_DESCRIPTION_OPTIONAL')}
 						value={newDescription}
 						onChange={(e) => setNewDescription(e.target.value)}
 						multiline
@@ -177,13 +179,13 @@ const PlaylistListView = ({ onSelect }: { onSelect: (playlist: Playlist) => void
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setCreateOpen(false)}>Cancel</Button>
+					<Button onClick={() => setCreateOpen(false)}>{t('ACTION_CANCEL')}</Button>
 					<Button
 						variant='contained'
 						onClick={() => createMutation.mutate()}
 						disabled={!newName.trim() || createMutation.isPending}
 					>
-						{createMutation.isPending ? <CircularProgress size={20} /> : 'Create'}
+						{createMutation.isPending ? <CircularProgress size={20} /> : t('ACTION_CREATE')}
 					</Button>
 				</DialogActions>
 			</Dialog>
@@ -195,6 +197,7 @@ const PlaylistDetailView = ({ playlist, onBack }: { playlist: Playlist; onBack: 
 	const { getMusicTitle, getMusicArtist, musicMetadata, addToQueue } = useGlobalMusic();
 	const queryClient = useQueryClient();
 	const { enqueueSnackbar } = useSnackbar();
+	const { t } = useI18n();
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['playlist-tracks', playlist.id],
@@ -210,10 +213,10 @@ const PlaylistDetailView = ({ playlist, onBack }: { playlist: Playlist; onBack: 
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['playlist-tracks', playlist.id] });
 			queryClient.invalidateQueries({ queryKey: ['playlists'] });
-			enqueueSnackbar('Track removed', { variant: 'success' });
+			enqueueSnackbar(t('MUSIC_TRACK_REMOVED'), { variant: 'success' });
 		},
 		onError: () => {
-			enqueueSnackbar('Failed to remove track', { variant: 'error' });
+			enqueueSnackbar(t('MUSIC_TRACK_REMOVE_FAILED'), { variant: 'error' });
 		},
 	});
 
@@ -234,7 +237,7 @@ const PlaylistDetailView = ({ playlist, onBack }: { playlist: Playlist; onBack: 
 					)}
 				</Box>
 				<Typography variant='caption' color='text.secondary' sx={{ ml: 1 }}>
-					({tracks.length} tracks)
+					({tracks.length} {t('MUSIC_TRACKS_COUNT')})
 				</Typography>
 			</Box>
 
@@ -244,7 +247,7 @@ const PlaylistDetailView = ({ playlist, onBack }: { playlist: Playlist; onBack: 
 				</Box>
 			) : tracks.length === 0 ? (
 				<Typography variant='body2' color='text.secondary' sx={{ textAlign: 'center', p: 4 }}>
-					This playlist is empty. Add tracks from any view.
+					{t('MUSIC_PLAYLIST_EMPTY')}
 				</Typography>
 			) : (
 				<List sx={{ width: '100%' }}>
@@ -286,7 +289,7 @@ const PlaylistDetailView = ({ playlist, onBack }: { playlist: Playlist; onBack: 
 						sx={{ cursor: 'pointer', color: 'primary.main' }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}

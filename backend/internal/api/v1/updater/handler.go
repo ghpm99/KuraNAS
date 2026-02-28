@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
 
@@ -55,5 +56,5 @@ func (handler *Handler) ApplyUpdateHandler(c *gin.Context) {
 	}
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, gin.H{"message": "Update applied successfully. Restarting..."})
+	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("UPDATE_APPLIED")})
 }

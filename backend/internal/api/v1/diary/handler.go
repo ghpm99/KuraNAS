@@ -2,6 +2,7 @@ package diary
 
 import (
 	"fmt"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -136,7 +137,7 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 	data := c.PostForm("data")
 	if data == "" {
 		handler.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DATA_REQUIRED")})
 		return
 	}
 

@@ -104,7 +104,7 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return FileDto{}, fmt.Errorf("erro ao buscar arquivos: %w", err)
+		return FileDto{}, fmt.Errorf("error fetching files: %w", err)
 	}
 	switch len(pagination.Items) {
 	case 0:
@@ -124,7 +124,7 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return FileDto{}, fmt.Errorf("erro ao buscar arquivo: %w", err)
+		return FileDto{}, fmt.Errorf("error fetching file: %w", err)
 	}
 	switch len(pagination.Items) {
 	case 0:
@@ -166,7 +166,7 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 func (s *Service) ScanFilesTask(data string) {
 	task := utils.Task{
 		Type: utils.ScanFiles,
-		Data: "Escaneamento de arquivos",
+		Data: "File scan",
 	}
 	s.Tasks <- task
 	s.Tasks <- task
@@ -216,7 +216,7 @@ func (s *Service) updateFileCheckSum(
 	}
 
 	if !result {
-		return fmt.Errorf("erro ao atualizar arquivo: %v\n", err)
+		return fmt.Errorf("error updating file: %v", err)
 	}
 
 	return nil
@@ -262,7 +262,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 	}
 
 	if !result {
-		return fmt.Errorf("nenhum diretorio atualizado")
+		return fmt.Errorf("no directory updated")
 	}
 
 	return nil

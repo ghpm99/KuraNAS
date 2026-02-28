@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import './playerControl.css';
 import useMusicPlayer from '../hooks/useMusicPlayer/useMusicPlayer';
 import { useMusic } from '../hooks/musicProvider/musicProvider';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const PlayerControl = () => {
 	const { playlist, currentTrack } = useMusic();
@@ -24,6 +25,7 @@ const PlayerControl = () => {
 		setCurrentTime,
 		setDuration,
 	} = useMusicPlayer();
+	const { t } = useI18n();
 
 	useEffect(() => {
 		const audio = audioRef.current;
@@ -52,13 +54,13 @@ const PlayerControl = () => {
 	};
 
 	const getTrackTitle = (): string => {
-		if (currentTrack === undefined) return 'No track playing';
-		return playlist[currentTrack]?.metadata?.title || playlist[currentTrack]?.name || 'Unknown Title';
+		if (currentTrack === undefined) return t('PLAYER_NO_TRACK');
+		return playlist[currentTrack]?.metadata?.title || playlist[currentTrack]?.name || t('PLAYER_UNKNOWN_TITLE');
 	};
 
 	const getTrackArtist = (): string => {
 		if (currentTrack === undefined) return '';
-		return playlist[currentTrack]?.metadata?.artist || 'Unknown Artist';
+		return playlist[currentTrack]?.metadata?.artist || t('PLAYER_UNKNOWN_ARTIST');
 	};
 
 	return (

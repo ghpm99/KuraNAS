@@ -1,18 +1,20 @@
 import { Box, Card, CardContent, CardHeader, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { Copy, HardDrive } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/utils';
 
 export default function DuplicatesSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { duplicates } = analyticsData;
 
 	if (!duplicates || duplicates?.files?.length === 0) {
 		return (
 			<Card>
-				<CardHeader title='Arquivos Duplicados' titleTypographyProps={{ variant: 'h6' }} />
+				<CardHeader title={t('ANALYTICS_DUPLICATE_FILES')} titleTypographyProps={{ variant: 'h6' }} />
 				<CardContent>
-					<Typography>Nenhum arquivo duplicado encontrado.</Typography>
+					<Typography>{t('ANALYTICS_NO_DUPLICATES')}</Typography>
 				</CardContent>
 			</Card>
 		);
@@ -26,7 +28,7 @@ export default function DuplicatesSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<Copy size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Arquivos Duplicados</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_DUPLICATE_FILES')}</Typography>
 								<Typography variant='h6'>{duplicates.total}</Typography>
 							</Box>
 						</CardContent>
@@ -37,7 +39,7 @@ export default function DuplicatesSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<HardDrive size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Espaço Desperdiçado</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_WASTED_SPACE')}</Typography>
 								<Typography variant='h6'>{formatSize(duplicates.total_size)}</Typography>
 							</Box>
 						</CardContent>
@@ -46,14 +48,14 @@ export default function DuplicatesSection() {
 			</Grid>
 
 			<Card>
-				<CardHeader title='Maiores Duplicatas' titleTypographyProps={{ variant: 'h6' }} />
+				<CardHeader title={t('ANALYTICS_LARGEST_DUPLICATES')} titleTypographyProps={{ variant: 'h6' }} />
 				<Table sx={{ minWidth: 650 }} aria-label='simple table'>
 					<TableHead>
 						<TableRow>
-							<TableCell>Nome</TableCell>
-							<TableCell align='right'>Tamanho</TableCell>
-							<TableCell align='right'>Cópias</TableCell>
-							<TableCell align='right'>Caminhos</TableCell>
+							<TableCell>{t('NAME')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_FILE_SIZE')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_COPIES')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_PATHS')}</TableCell>
 						</TableRow>
 					</TableHead>
 					<TableBody>
@@ -67,7 +69,7 @@ export default function DuplicatesSection() {
 										<Box key={i} sx={{ fontSize: '0.75rem' }}>{path}</Box>
 									))}
 									{row.paths.length > 2 && (
-										<Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>+{row.paths.length - 2} mais</Box>
+										<Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>+{row.paths.length - 2} {t('ANALYTICS_MORE')}</Box>
 									)}
 								</TableCell>
 							</TableRow>

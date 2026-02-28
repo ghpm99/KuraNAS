@@ -1,9 +1,11 @@
 import { Box, Card, CardContent, CardHeader, List, ListItem, ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { FolderX } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 export default function EmptyFoldersSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { organization } = analyticsData;
 
 	return (
@@ -12,14 +14,14 @@ export default function EmptyFoldersSection() {
 				<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 					<FolderX size={32} />
 					<Box>
-						<Typography variant='body2' color='text.secondary'>Pastas Vazias</Typography>
+						<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_EMPTY_FOLDERS')}</Typography>
 						<Typography variant='h6'>{organization.emptyFolders}</Typography>
 					</Box>
 				</CardContent>
 			</Card>
 
 			<Card>
-				<CardHeader title='Caminhos Vazios' titleTypographyProps={{ variant: 'h6' }} />
+				<CardHeader title={t('ANALYTICS_EMPTY_PATHS')} titleTypographyProps={{ variant: 'h6' }} />
 				<List dense>
 					{organization.emptyPaths.map((path, index) => (
 						<ListItem key={index}>

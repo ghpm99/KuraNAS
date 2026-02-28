@@ -15,21 +15,23 @@ import BackupSection from '@/components/analytics/BackupSection/BackupSection';
 import TrashSection from '@/components/analytics/TrashSection/TrashSection';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
 import Button from '@/components/ui/Button/Button';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const AnalyticsContent = () => {
 	const { refreshAnalytics } = useAnalytics();
+	const { t } = useI18n();
 	return (
 		<div className={styles.content}>
 			<div className={styles.header}>
-				<h1 className={styles.pageTitle}>Analytics de Arquivos</h1>
-				<p className={styles.pageDescription}>Análise detalhada do uso de armazenamento e distribuição de arquivos</p>
+				<h1 className={styles.pageTitle}>{t('ANALYTICS_PAGE_TITLE')}</h1>
+				<p className={styles.pageDescription}>{t('ANALYTICS_PAGE_DESCRIPTION')}</p>
 				<Button className={styles.refreshButton} onClick={refreshAnalytics}>
-					Atualizar Dados
+					{t('ANALYTICS_REFRESH')}
 				</Button>
 			</div>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Visão Geral do Armazenamento</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_STORAGE_OVERVIEW')}</h2>
 				<StorageOverviewCards />
 				<div className={styles.chartGrid}>
 					<DiskUsageChart />
@@ -37,7 +39,7 @@ const AnalyticsContent = () => {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Tipos e Tamanhos de Arquivo</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_FILE_TYPES_SIZES')}</h2>
 				<div className={styles.chartsGrid}>
 					<FileTypesChart />
 					<FileTypesTable />
@@ -47,12 +49,12 @@ const AnalyticsContent = () => {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Arquivos Duplicados e Redundância</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_DUPLICATES_REDUNDANCY')}</h2>
 				<DuplicatesSection />
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Atividade Recente</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_RECENT_ACTIVITY_SECTION')}</h2>
 				<div className={styles.activityGrid}>
 					<ActivityChart />
 					<RecentActivity />
@@ -60,22 +62,22 @@ const AnalyticsContent = () => {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Pastas Vazias e Organização</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_EMPTY_FOLDERS_SECTION')}</h2>
 				<EmptyFoldersSection />
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Sugestões de Limpeza e Insights</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_CLEANUP_SECTION')}</h2>
 				<CleanupSuggestions />
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Backup e Restauração</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_BACKUP_SECTION')}</h2>
 				<BackupSection />
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.sectionTitle}>Lixeira</h2>
+				<h2 className={styles.sectionTitle}>{t('ANALYTICS_TRASH_SECTION')}</h2>
 				<TrashSection />
 			</section>
 		</div>

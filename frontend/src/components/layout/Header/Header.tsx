@@ -108,9 +108,9 @@ export default function Header({ showClock = false, currentTime }: HeaderProps) 
 				</Box>
 				<List sx={{ px: 1, pt: 1 }} dense onClick={() => setMobileOpen(false)}>
 					<NavItem href='/' icon={<LayoutGrid size={20} />}>{t('ALL_FILES')}</NavItem>
-					<NavItem href='/images' icon={<BookImage size={20} />}>Imagens</NavItem>
-					<NavItem href='/music' icon={<Music size={20} />}>Musicas</NavItem>
-					<NavItem href='/videos' icon={<Videotape size={20} />}>Vídeos</NavItem>
+					<NavItem href='/images' icon={<BookImage size={20} />}>{t('NAV_IMAGES')}</NavItem>
+					<NavItem href='/music' icon={<Music size={20} />}>{t('NAV_MUSIC')}</NavItem>
+					<NavItem href='/videos' icon={<Videotape size={20} />}>{t('NAV_VIDEOS')}</NavItem>
 					<NavItem href='/starred' icon={<Star size={20} />}>{t('STARRED_FILES')}</NavItem>
 					<NavItem href='/activity-diary' icon={<ActivityIcon />}>{t('ACTIVITY_DIARY')}</NavItem>
 					<NavItem href='/analytics' icon={<AnalyticsIcon />}>{t('ANALYTICS')}</NavItem>

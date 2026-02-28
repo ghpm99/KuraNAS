@@ -94,7 +94,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query files: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -200,7 +200,7 @@ func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (in
 	})
 
 	if err != nil {
-		return 0, fmt.Errorf("falha ao obter contagem de diretório: %w", err)
+		return 0, fmt.Errorf("failed to get directory count: %w", err)
 	}
 
 	return childrenCount, nil
@@ -243,7 +243,7 @@ func (r *Repository) GetTotalSpaceUsed() (int, error) {
 	})
 
 	if err != nil {
-		return 0, fmt.Errorf("falha ao obter espaço total usado: %w", err)
+		return 0, fmt.Errorf("failed to get total space used: %w", err)
 	}
 
 	return totalSpaceUsed, nil
@@ -271,7 +271,7 @@ func (r *Repository) GetReportSizeByFormat() ([]SizeReportModel, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("falha ao obter relatório por formato: %w", err)
+		return nil, fmt.Errorf("failed to get report by format: %w", err)
 	}
 
 	return report, nil
@@ -304,7 +304,7 @@ func (r *Repository) GetTopFilesBySize(limit int) ([]FileModel, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("falha ao obter top arquivos por tamanho: %w", err)
+		return nil, fmt.Errorf("failed to get top files by size: %w", err)
 	}
 
 	return topFiles, nil
@@ -353,7 +353,7 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha ao obter arquivos duplicados: %w", err)
+		return paginationResponse, fmt.Errorf("failed to get duplicate files: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -470,11 +470,10 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query files: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
-	fmt.Println("Paginacao length", len(paginationResponse.Items))
 
 	return paginationResponse, nil
 }
@@ -566,11 +565,10 @@ func (r *Repository) GetMusic(page int, pageSize int) (utils.PaginationResponse[
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query files: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
-	fmt.Println("Paginacao music length", len(paginationResponse.Items))
 
 	return paginationResponse, nil
 }
@@ -610,7 +608,7 @@ func (r *Repository) GetMusicArtists(page int, pageSize int) (utils.PaginationRe
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de artistas: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query artists: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -672,7 +670,7 @@ func (r *Repository) GetMusicByArtist(artist string, page int, pageSize int) (ut
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de músicas por artista: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query music by artist: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -714,7 +712,7 @@ func (r *Repository) GetMusicAlbums(page int, pageSize int) (utils.PaginationRes
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de álbuns: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query albums: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -776,7 +774,7 @@ func (r *Repository) GetMusicByAlbum(album string, page int, pageSize int) (util
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de músicas por álbum: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query music by album: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -818,7 +816,7 @@ func (r *Repository) GetMusicGenres(page int, pageSize int) (utils.PaginationRes
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de gêneros: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query genres: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -880,7 +878,7 @@ func (r *Repository) GetMusicByGenre(genre string, page int, pageSize int) (util
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de músicas por gênero: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query music by genre: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -922,7 +920,7 @@ func (r *Repository) GetMusicFolders(page int, pageSize int) (utils.PaginationRe
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de pastas de música: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query music folders: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
@@ -1011,11 +1009,10 @@ func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse
 	})
 
 	if err != nil {
-		return paginationResponse, fmt.Errorf("falha na consulta de arquivos: %w", err)
+		return paginationResponse, fmt.Errorf("failed to query files: %w", err)
 	}
 
 	paginationResponse.UpdatePagination()
-	fmt.Println("Paginacao videos length", len(paginationResponse.Items))
 
 	return paginationResponse, nil
 }

@@ -2,6 +2,7 @@ import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
 import { Database, File, Folder, HardDrive } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 function StatCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
 	return (
@@ -19,21 +20,22 @@ function StatCard({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
 
 export default function StorageOverviewCards() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { storageOverview } = analyticsData;
 
 	return (
 		<Grid container spacing={2}>
 			<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-				<StatCard icon={HardDrive} label='Espaço Utilizado' value={storageOverview.totalUsedSpace} />
+				<StatCard icon={HardDrive} label={t('ANALYTICS_SPACE_USED')} value={storageOverview.totalUsedSpace} />
 			</Grid>
 			<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-				<StatCard icon={File} label='Arquivos Armazenados' value={storageOverview.totalFiles.toLocaleString()} />
+				<StatCard icon={File} label={t('ANALYTICS_FILES_STORED')} value={storageOverview.totalFiles.toLocaleString()} />
 			</Grid>
 			<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-				<StatCard icon={Folder} label='Pastas Armazenadas' value={storageOverview.totalFolders.toLocaleString()} />
+				<StatCard icon={Folder} label={t('ANALYTICS_FOLDERS_STORED')} value={storageOverview.totalFolders.toLocaleString()} />
 			</Grid>
 			<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-				<StatCard icon={Database} label='Espaço Livre' value={storageOverview.availableSpace} />
+				<StatCard icon={Database} label={t('ANALYTICS_FREE_SPACE')} value={storageOverview.availableSpace} />
 			</Grid>
 		</Grid>
 	);
