@@ -1,6 +1,7 @@
 import { Box, Card, CardContent, CardHeader, Chip, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { Calendar, HardDrive } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const statusColor: Record<string, 'success' | 'error' | 'warning'> = {
 	success: 'success',
@@ -8,15 +9,16 @@ const statusColor: Record<string, 'success' | 'error' | 'warning'> = {
 	pending: 'warning',
 };
 
-const statusLabel: Record<string, string> = {
-	success: 'Sucesso',
-	failed: 'Falhou',
-	pending: 'Pendente',
-};
-
 export default function BackupSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { backup } = analyticsData;
+
+	const statusLabel: Record<string, string> = {
+		success: t('ANALYTICS_BACKUP_SUCCESS'),
+		failed: t('ANALYTICS_BACKUP_FAILED'),
+		pending: t('ANALYTICS_BACKUP_PENDING'),
+	};
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -26,7 +28,7 @@ export default function BackupSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<Calendar size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Último Backup</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_LAST_BACKUP')}</Typography>
 								<Typography variant='h6'>{backup.lastBackup}</Typography>
 							</Box>
 						</CardContent>
@@ -37,7 +39,7 @@ export default function BackupSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<HardDrive size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Tamanho do Último Backup</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_LAST_BACKUP_SIZE')}</Typography>
 								<Typography variant='h6'>{backup.lastBackupSize}</Typography>
 							</Box>
 						</CardContent>
@@ -46,13 +48,13 @@ export default function BackupSection() {
 			</Grid>
 
 			<Card>
-				<CardHeader title='Histórico de Backups' titleTypographyProps={{ variant: 'h6' }} />
+				<CardHeader title={t('ANALYTICS_BACKUP_HISTORY')} titleTypographyProps={{ variant: 'h6' }} />
 				<Table>
 					<TableHead>
 						<TableRow>
-							<TableCell>Data</TableCell>
-							<TableCell>Tamanho</TableCell>
-							<TableCell>Status</TableCell>
+							<TableCell>{t('ANALYTICS_BACKUP_DATE')}</TableCell>
+							<TableCell>{t('ANALYTICS_BACKUP_SIZE')}</TableCell>
+							<TableCell>{t('ANALYTICS_BACKUP_STATUS')}</TableCell>
 						</TableRow>
 					</TableHead>
 					<TableBody>
@@ -62,7 +64,7 @@ export default function BackupSection() {
 								<TableCell>{item.size}</TableCell>
 								<TableCell>
 									<Chip
-										label={statusLabel[item.status] ?? 'Pendente'}
+										label={statusLabel[item.status] ?? t('ANALYTICS_BACKUP_PENDING')}
 										color={statusColor[item.status] ?? 'warning'}
 										size='small'
 									/>

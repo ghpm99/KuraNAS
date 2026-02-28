@@ -11,11 +11,13 @@ import { ListPlus, Music, Play } from 'lucide-react';
 import { useMusic } from '@/components/hooks/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { useState } from 'react';
 
 const AllTracksView = () => {
 	const { music, hasNextPage, isFetchingNextPage, lastItemRef } = useMusic();
 	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const { t } = useI18n();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	return (
@@ -63,7 +65,7 @@ const AllTracksView = () => {
 			)}
 
 			{!hasNextPage && music.length > 0 && (
-				<div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 14 }}>All music loaded</div>
+				<div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 14 }}>{t('MUSIC_ALL_LOADED')}</div>
 			)}
 		</>
 	);

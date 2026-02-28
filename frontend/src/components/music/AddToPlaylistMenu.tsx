@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPlaylists, addTrackToPlaylist, createPlaylist } from '@/service/playlist';
 import { useSnackbar } from 'notistack';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 interface AddToPlaylistMenuProps {
 	fileId: number;
@@ -29,6 +30,7 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 	const [newName, setNewName] = useState('');
 	const queryClient = useQueryClient();
 	const { enqueueSnackbar } = useSnackbar();
+	const { t } = useI18n();
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['playlists-menu'],
@@ -41,11 +43,11 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['playlists'] });
 			queryClient.invalidateQueries({ queryKey: ['playlist-tracks'] });
-			enqueueSnackbar('Track added to playlist', { variant: 'success' });
+			enqueueSnackbar(t('MUSIC_TRACK_ADDED'), { variant: 'success' });
 			onClose();
 		},
 		onError: () => {
-			enqueueSnackbar('Failed to add track (may already exist)', { variant: 'warning' });
+			enqueueSnackbar(t('MUSIC_TRACK_ADD_FAILED'), { variant: 'warning' });
 		},
 	});
 
@@ -60,11 +62,11 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 			queryClient.invalidateQueries({ queryKey: ['playlists-menu'] });
 			setCreateOpen(false);
 			setNewName('');
-			enqueueSnackbar('Playlist created and track added', { variant: 'success' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_CREATED_ADDED'), { variant: 'success' });
 			onClose();
 		},
 		onError: () => {
-			enqueueSnackbar('Failed to create playlist', { variant: 'error' });
+			enqueueSnackbar(t('MUSIC_PLAYLIST_CREATE_FAILED'), { variant: 'error' });
 		},
 	});
 
@@ -75,7 +77,7 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 			<Menu anchorEl={anchorEl} open={!!anchorEl} onClose={onClose}>
 				{isLoading ? (
 					<MenuItem disabled>
-						<CircularProgress size={20} sx={{ mr: 1 }} /> Loading...
+						<CircularProgress size={20} sx={{ mr: 1 }} /> {t('LOADING')}
 					</MenuItem>
 				) : (
 					<>
@@ -88,7 +90,7 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 							<ListItemIcon>
 								<Plus size={18} />
 							</ListItemIcon>
-							<ListItemText primary='New playlist...' />
+							<ListItemText primary={t('MUSIC_NEW_PLAYLIST')} />
 						</MenuItem>
 						{playlists.map((playlist) => (
 							<MenuItem
@@ -104,7 +106,7 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 						))}
 						{playlists.length === 0 && (
 							<MenuItem disabled>
-								<ListItemText primary='No playlists yet' />
+								<ListItemText primary={t('MUSIC_NO_PLAYLISTS')} />
 							</MenuItem>
 						)}
 					</>
@@ -112,25 +114,25 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 			</Menu>
 
 			<Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth='sm' fullWidth>
-				<DialogTitle>Create Playlist & Add Track</DialogTitle>
+				<DialogTitle>{t('MUSIC_CREATE_PLAYLIST_ADD')}</DialogTitle>
 				<DialogContent>
 					<TextField
 						autoFocus
 						fullWidth
-						label='Playlist Name'
+						label={t('MUSIC_PLAYLIST_NAME')}
 						value={newName}
 						onChange={(e) => setNewName(e.target.value)}
 						sx={{ mt: 1 }}
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setCreateOpen(false)}>Cancel</Button>
+					<Button onClick={() => setCreateOpen(false)}>{t('ACTION_CANCEL')}</Button>
 					<Button
 						variant='contained'
 						onClick={() => createAndAddMutation.mutate()}
 						disabled={!newName.trim() || createAndAddMutation.isPending}
 					>
-						{createAndAddMutation.isPending ? <CircularProgress size={20} /> : 'Create & Add'}
+						{createAndAddMutation.isPending ? <CircularProgress size={20} /> : t('ACTION_CREATE_ADD')}
 					</Button>
 				</DialogActions>
 			</Dialog>

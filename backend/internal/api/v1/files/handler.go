@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -172,11 +173,9 @@ func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
 	}, nil)
 
 	data := c.PostForm("data")
-	fmt.Println("📁 Recebendo dados para processamento:", data)
-
 	if data == "" {
 		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DATA_REQUIRED")})
 		return
 	}
 	loggerModel.SetExtraData(logger.LogExtraData{
@@ -311,7 +310,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -744,8 +743,7 @@ func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, pagination)
 }
 
-// StreamAudioHandler implementa streaming de áudio com suporte a HTTP Range
-// Arquivo separado em stream_handler.go para evitar conflitos
+// StreamAudioHandler streams audio files with HTTP Range support
 func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
 		Name:        "StreamAudio",
@@ -764,15 +762,13 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		return
 	}
 
-	// Verifica se arquivo existe
 	exists := handler.service.CheckFileExistsByPath(file.Path)
 	if !exists {
 		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	// Abre arquivo
 	audioFile, err := os.Open(file.Path)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -781,7 +777,6 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	}
 	defer audioFile.Close()
 
-	// Pega informações do arquivo
 	fileInfo, err := audioFile.Stat()
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -789,12 +784,10 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		return
 	}
 
-	// Headers para streaming
 	c.Header("Content-Type", "audio/mpeg")
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600")
 
-	// Suporte a HTTP Range
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader != "" {
 		// Parse Range header: "bytes=0-1023"
@@ -825,7 +818,6 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		}
 	}
 
-	// Streaming completo (sem range)
 	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	c.Status(http.StatusOK)
 
@@ -879,15 +871,13 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
-	// Verifica se arquivo existe
 	exists := handler.service.CheckFileExistsByPath(file.Path)
 	if !exists {
 		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	// Abre arquivo
 	videoFile, err := os.Open(file.Path)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -896,7 +886,6 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 	}
 	defer videoFile.Close()
 
-	// Pega informações do arquivo
 	fileInfo, err := videoFile.Stat()
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -904,12 +893,10 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
-	// Headers para streaming de vídeo
 	c.Header("Content-Type", "video/mp4")
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600")
 
-	// Suporte a HTTP Range com chunks maiores para vídeo
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader != "" {
 		// Parse Range header: "bytes=0-1048576"
@@ -940,7 +927,6 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 		}
 	}
 
-	// Streaming completo (sem range)
 	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	c.Status(http.StatusOK)
 

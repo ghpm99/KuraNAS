@@ -1,9 +1,11 @@
 import { Box, Card, CardContent, CardHeader, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { File, Trash2 } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 export default function TrashSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { trash } = analyticsData;
 
 	return (
@@ -14,7 +16,7 @@ export default function TrashSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<File size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Arquivos na Lixeira</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_TRASH_FILES')}</Typography>
 								<Typography variant='h6'>{trash.totalFiles}</Typography>
 							</Box>
 						</CardContent>
@@ -25,7 +27,7 @@ export default function TrashSection() {
 						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<Trash2 size={32} />
 							<Box>
-								<Typography variant='body2' color='text.secondary'>Espaço Ocupado</Typography>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_TRASH_SPACE')}</Typography>
 								<Typography variant='h6'>{trash.totalSpace}</Typography>
 							</Box>
 						</CardContent>
@@ -34,13 +36,13 @@ export default function TrashSection() {
 			</Grid>
 
 			<Card>
-				<CardHeader title='Arquivos na Lixeira' titleTypographyProps={{ variant: 'h6' }} />
+				<CardHeader title={t('ANALYTICS_TRASH_FILES')} titleTypographyProps={{ variant: 'h6' }} />
 				<Table>
 					<TableHead>
 						<TableRow>
-							<TableCell>Nome</TableCell>
-							<TableCell>Tamanho</TableCell>
-							<TableCell>Data de Exclusão</TableCell>
+							<TableCell>{t('NAME')}</TableCell>
+							<TableCell>{t('ANALYTICS_FILE_SIZE')}</TableCell>
+							<TableCell>{t('ANALYTICS_TRASH_DELETE_DATE')}</TableCell>
 						</TableRow>
 					</TableHead>
 					<TableBody>

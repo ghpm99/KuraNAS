@@ -1,21 +1,23 @@
 import { Box, Card, CardHeader, LinearProgress, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/utils';
 
 export default function FileTypesTable() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { fileTypes } = analyticsData;
 
 	return (
 		<Card>
-			<CardHeader title='Resumo por Tipo de Arquivo' titleTypographyProps={{ variant: 'h6' }} />
+			<CardHeader title={t('ANALYTICS_FILE_TYPE_SUMMARY')} titleTypographyProps={{ variant: 'h6' }} />
 			<Table>
 				<TableHead>
 					<TableRow>
-						<TableCell>Tipo</TableCell>
-						<TableCell>Quantidade</TableCell>
-						<TableCell>Espaço Total</TableCell>
-						<TableCell>Percentual</TableCell>
+						<TableCell>{t('ANALYTICS_FILE_TYPE')}</TableCell>
+						<TableCell>{t('ANALYTICS_FILE_COUNT')}</TableCell>
+						<TableCell>{t('ANALYTICS_TOTAL_SPACE')}</TableCell>
+						<TableCell>{t('ANALYTICS_PERCENTAGE')}</TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
