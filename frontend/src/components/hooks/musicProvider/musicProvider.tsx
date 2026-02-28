@@ -9,7 +9,6 @@ import {
 } from '@tanstack/react-query';
 import { createContext, useContext, useState } from 'react';
 import { useIntersectionObserver } from '../IntersectionObserver/useIntersectionObserver';
-import { formatSize } from '@/utils';
 
 export interface IMusicMetadata {
 	id: number;
@@ -56,16 +55,7 @@ export interface IMusicContext {
 	) => Promise<InfiniteQueryObserverResult<InfiniteData<PaginationResponse, unknown>, Error>>;
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
-	getMusicArtist: (music: IMusicData) => string;
-	formatDuration: (seconds: number) => string;
-	musicMetadata: (music: { format: string; size: number; metadata?: IMusicMetadata }) => string;
-	getMusicTitle: (music: IMusicData) => string;
 	lastItemRef: (node: HTMLLIElement | null) => (() => void) | undefined;
-	playTrack: (track: IMusicData) => void;
-	playlist: IMusicData[];
-	hasTrackInPlaylist: boolean;
-	currentTrack: number | undefined;
-	setCurrentTrack: (index: number) => void;
 	currentView: MusicView;
 	setCurrentView: (view: MusicView) => void;
 }
@@ -79,8 +69,6 @@ export const MusicContextProvider = MusicContext.Provider;
 const pageSize = 200;
 
 export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
-	const [playlist, setPlaylist] = useState<IMusicData[]>([]);
-	const [currentTrack, setCurrentTrack] = useState<number | undefined>(undefined);
 	const [currentView, setCurrentView] = useState<MusicView>('all');
 
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -113,45 +101,6 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const allMusic = data?.pages.flatMap((page) => page.items) ?? [];
 
-	const getMusicArtist = (music: IMusicData): string => {
-		if (music.metadata?.artist) {
-			return music.metadata.artist;
-		}
-		return 'Unknown Artist';
-	};
-
-	const formatDuration = (seconds: number): string => {
-		const mins = Math.floor(seconds / 60);
-		const secs = Math.floor(seconds % 60);
-		return `${mins}:${secs.toString().padStart(2, '0')}`;
-	};
-
-	const musicMetadata = (music: { format: string; size: number; metadata?: IMusicMetadata }): string => {
-		const format = music.format ? `${music.format} - ` : '';
-		const fileSize = formatSize(music.size);
-		const duration = music.metadata?.duration ? formatDuration(music.metadata.duration) : '';
-		return `${format}${fileSize}${duration ? ` - ${duration}` : ''}`;
-	};
-
-	const getMusicTitle = (music: IMusicData): string => {
-		if (music.metadata?.title) {
-			return music.metadata.title;
-		}
-		return music.name;
-	};
-
-	const playTrack = (track: IMusicData) => {
-		if (playlist.some((t) => t.id === track.id)) {
-			return;
-		}
-		setPlaylist((prev) => [...prev, track]);
-		if (currentTrack === undefined) {
-			setCurrentTrack(0);
-		}
-	};
-
-	const hasTrackInPlaylist = playlist.length > 0;
-
 	return (
 		<MusicContextProvider
 			value={{
@@ -160,16 +109,7 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 				fetchNextPage,
 				hasNextPage,
 				isFetchingNextPage,
-				getMusicArtist,
-				formatDuration,
-				musicMetadata,
-				getMusicTitle,
 				lastItemRef,
-				playTrack,
-				playlist,
-				hasTrackInPlaylist,
-				currentTrack,
-				setCurrentTrack,
 				currentView,
 				setCurrentView,
 			}}

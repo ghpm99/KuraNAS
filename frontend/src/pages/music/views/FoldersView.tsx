@@ -15,7 +15,8 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicFolders } from '@/service/music';
 import { MusicFolder } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import { useMusic, IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import { apiBase } from '@/service';
 
 const FoldersView = () => {
@@ -85,7 +86,7 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 };
 
 const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => void }) => {
-	const { getMusicTitle, musicMetadata, getMusicArtist, playTrack } = useMusic();
+	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['music-by-folder', folder],
@@ -128,7 +129,7 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 				<List sx={{ width: '100%' }}>
 					{tracks.map((item) => (
 						<ListItem key={item.id} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => playTrack(item)}>
+							<ListItemButton onClick={() => addToQueue(item)}>
 								<ListItemIcon>
 									<Music />
 								</ListItemIcon>

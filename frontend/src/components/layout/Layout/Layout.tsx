@@ -5,6 +5,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import styles from './Layout.module.css';
 import { useUI } from '@/components/hooks/UI/uiContext';
 import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
+import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 interface LayoutProps {
 	children: ReactNode;
@@ -13,6 +14,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
 	const { activePage } = useUI();
 	const { currentTime } = useActivityDiary();
+	const { hasQueue } = useGlobalMusic();
 
 	const showClock = activePage === 'activity';
 
@@ -23,7 +25,7 @@ export const Layout = ({ children }: LayoutProps) => {
 			</div>
 			<Header showClock={showClock} currentTime={currentTime} />
 			<Sidebar />
-			<div className={styles.mainContent}>
+			<div className={styles.mainContent} style={hasQueue ? { paddingBottom: 80 } : undefined}>
 				{children}
 			</div>
 		</div>

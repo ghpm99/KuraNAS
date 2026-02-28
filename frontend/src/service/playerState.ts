@@ -22,11 +22,11 @@ export interface UpdatePlayerStateRequest {
 }
 
 export const getPlayerState = async (): Promise<PlayerStateDto> => {
-	const response = await apiBase.get<PlayerStateDto>('/music/player-state');
+	const response = await apiBase.get<PlayerStateDto>('/music/player-state/');
 	return response.data;
 };
 
 export const updatePlayerState = async (state: UpdatePlayerStateRequest): Promise<PlayerStateDto> => {
-	const response = await apiBase.put<PlayerStateDto>('/music/player-state', state);
+	const response = await apiBase.put<PlayerStateDto>('/music/player-state/', state);
 	return response.data;
 };
