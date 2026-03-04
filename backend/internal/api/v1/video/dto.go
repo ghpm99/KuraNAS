@@ -72,7 +72,8 @@ type VideoHomeCatalogDto struct {
 }
 
 type StartPlaybackRequest struct {
-	VideoID int `json:"video_id" binding:"required"`
+	VideoID    int  `json:"video_id" binding:"required"`
+	PlaylistID *int `json:"playlist_id"`
 }
 
 type UpdatePlaybackStateRequest struct {
@@ -90,6 +91,19 @@ type SetPlaylistHiddenRequest struct {
 
 type AddPlaylistVideoRequest struct {
 	VideoID int `json:"video_id" binding:"required"`
+}
+
+type UpdatePlaylistRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+type ReorderPlaylistItemRequest struct {
+	VideoID    int `json:"video_id" binding:"required"`
+	OrderIndex int `json:"order_index" binding:"required"`
+}
+
+type ReorderPlaylistRequest struct {
+	Items []ReorderPlaylistItemRequest `json:"items" binding:"required"`
 }
 
 func (m *VideoFileModel) ToDto() VideoFileDto {

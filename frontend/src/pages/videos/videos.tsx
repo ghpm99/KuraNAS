@@ -5,9 +5,9 @@ import styles from './videos.module.css';
 const VideosPage = () => {
 	return (
 		<VideoLayout>
-			<div className={styles.videosPage}>
-				<div className={styles.videosViewport}>
-				<VideoContent />
+			<div className={styles.content}>
+				<div className={styles.page}>
+					<VideoContent />
 				</div>
 			</div>
 		</VideoLayout>

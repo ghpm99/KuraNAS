@@ -8,6 +8,7 @@ const VideoPlayerPage = () => {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const playlistId = (location.state as { playlistId?: number } | null)?.playlistId;
 
 	if (!id || typeof id !== 'string') {
 		return <div>Invalid video ID</div>;
@@ -32,7 +33,7 @@ const VideoPlayerPage = () => {
 		setCurrentTime,
 		setDuration,
 		currentVideo,
-	} = useVideoPlayer({ videoId: id });
+	} = useVideoPlayer({ videoId: id, playlistId: playlistId ?? null });
 
 	useEffect(() => {
 		playVideo();

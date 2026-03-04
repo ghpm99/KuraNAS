@@ -1,13 +1,33 @@
 import {
 	useAllVideoFiles,
+	useVideoHomeCatalog,
 	useVideoPlaylistDetail,
 	useVideoPlaylists,
 	useVideosWithoutPlaylist,
 } from '@/components/hooks/useVideos/useVideos';
-import { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
-import { CircularProgress, IconButton, Typography } from '@mui/material';
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Videotape } from 'lucide-react';
-import { useMemo, useRef } from 'react';
+import {
+	addVideoToPlaylist,
+	removeVideoFromPlaylist,
+	reorderVideoPlaylist,
+	updateVideoPlaylistName,
+	VideoCatalogItemDto,
+	VideoFileDto,
+	VideoPlaylistDto,
+} from '@/service/videoPlayback';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CircularProgress, IconButton, TextField, Typography } from '@mui/material';
+import {
+	ArrowDown,
+	ArrowLeft,
+	ArrowUp,
+	ChevronLeft,
+	ChevronRight,
+	Play,
+	Plus,
+	Trash2,
+	Videotape,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './videoContent.module.css';
 
@@ -91,6 +111,44 @@ const PlaylistCard = ({
 	);
 };
 
+const ContinueCard = ({
+	item,
+	onPlay,
+}: {
+	item: VideoCatalogItemDto;
+	onPlay: (videoId: number) => void;
+}) => {
+	const pct = Math.max(0, Math.min(100, item.progress_pct || 0));
+	return (
+		<button type='button' className={styles.videoCard} onClick={() => onPlay(item.video.id)}>
+			<div className={styles.thumbnail}>
+				<img
+					className={styles.thumbStatic}
+					loading='lazy'
+					src={`${apiBase}/video-thumbnail/${item.video.id}?width=640&height=360`}
+					alt={item.video.name}
+				/>
+				<img
+					className={styles.thumbPreview}
+					loading='lazy'
+					src={`${apiBase}/video-preview/${item.video.id}?width=640&height=360`}
+					alt={`${item.video.name} preview`}
+				/>
+			</div>
+			<div className={styles.cardOverlay}>
+				<div className={styles.cardTopLine}>
+					<span className={styles.statusBadge}>Continuar</span>
+					<span className={styles.formatTag}>{Math.round(pct)}%</span>
+				</div>
+				<Typography className={styles.cardTitle}>{item.video.name}</Typography>
+				<div className={styles.progressTrack}>
+					<div className={styles.progressFill} style={{ width: `${pct}%` }} />
+				</div>
+			</div>
+		</button>
+	);
+};
+
 const PlaylistRail = ({
 	title,
 	playlists,
@@ -132,13 +190,123 @@ const PlaylistRail = ({
 	);
 };
 
-const PlaylistDetail = ({ playlist }: { playlist: VideoPlaylistDto }) => {
+const ContinueRail = ({
+	items,
+	onPlay,
+}: {
+	items: VideoCatalogItemDto[];
+	onPlay: (videoId: number) => void;
+}) => {
+	const railRef = useRef<HTMLDivElement>(null);
+	if (items.length === 0) return null;
+
+	const scrollBy = (direction: 1 | -1) => {
+		railRef.current?.scrollBy({ left: direction * 720, behavior: 'smooth' });
+	};
+
+	return (
+		<section className={styles.railSection}>
+			<div className={styles.railHeader}>
+				<Typography variant='h5' className={styles.railTitle}>
+					Continuar assistindo
+				</Typography>
+				<div className={styles.railActions}>
+					<IconButton className={styles.railNavBtn} onClick={() => scrollBy(-1)}>
+						<ChevronLeft size={18} />
+					</IconButton>
+					<IconButton className={styles.railNavBtn} onClick={() => scrollBy(1)}>
+						<ChevronRight size={18} />
+					</IconButton>
+				</div>
+			</div>
+			<div className={styles.rail} ref={railRef}>
+				{items.map((item) => (
+					<ContinueCard key={item.video.id} item={item} onPlay={onPlay} />
+				))}
+			</div>
+		</section>
+	);
+};
+
+const PlaylistDetail = ({
+	playlist,
+	allVideos,
+	onChanged,
+}: {
+	playlist: VideoPlaylistDto;
+	allVideos: VideoFileDto[];
+	onChanged: () => void;
+}) => {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
+	const queryClient = useQueryClient();
 	const coverId = playlist.cover_video_id || playlist.items[0]?.video.id;
 	const playlistSlug = searchParams.get('playlist') || slugify(playlist.name);
 	const selectedVideoQuery = searchParams.get('video');
 	const selectedVideoID = selectedVideoQuery ? Number(selectedVideoQuery) : null;
+	const [nameDraft, setNameDraft] = useState(playlist.name);
+
+	useEffect(() => {
+		setNameDraft(playlist.name);
+	}, [playlist.name]);
+
+	const isVirtual = playlist.id < 0;
+	const orderedItems = useMemo(
+		() => [...playlist.items].sort((a, b) => a.order_index - b.order_index || a.id - b.id),
+		[playlist.items],
+	);
+
+	const existingVideoIds = useMemo(() => new Set(orderedItems.map((item) => item.video.id)), [orderedItems]);
+	const candidates = useMemo(
+		() => allVideos.filter((video) => !existingVideoIds.has(video.id)).slice(0, 120),
+		[allVideos, existingVideoIds],
+	);
+
+	const refresh = async () => {
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: ['video-playlists'] }),
+			queryClient.invalidateQueries({ queryKey: ['video-playlist', playlist.id] }),
+			queryClient.invalidateQueries({ queryKey: ['video-unassigned'] }),
+		]);
+		onChanged();
+	};
+
+	const renameMutation = useMutation({
+		mutationFn: async () => updateVideoPlaylistName(playlist.id, nameDraft),
+		onSuccess: refresh,
+	});
+
+	const removeMutation = useMutation({
+		mutationFn: async (videoId: number) => removeVideoFromPlaylist(playlist.id, videoId),
+		onSuccess: refresh,
+	});
+
+	const addMutation = useMutation({
+		mutationFn: async (videoId: number) => addVideoToPlaylist(playlist.id, videoId),
+		onSuccess: refresh,
+	});
+
+	const reorderMutation = useMutation({
+		mutationFn: async (items: { video_id: number; order_index: number }[]) => reorderVideoPlaylist(playlist.id, items),
+		onSuccess: refresh,
+	});
+
+	const moveItem = (index: number, direction: -1 | 1) => {
+		const target = index + direction;
+		if (target < 0 || target >= orderedItems.length) return;
+		const swapped = [...orderedItems];
+		const current = swapped[index];
+		const next = swapped[target];
+		if (!current || !next) return;
+		swapped[index] = next;
+		swapped[target] = current;
+		reorderMutation.mutate(
+			swapped.map((item, idx) => ({
+				video_id: item.video.id,
+				order_index: idx,
+			})),
+		);
+	};
 
 	return (
 		<div className={styles.page}>
@@ -162,52 +330,154 @@ const PlaylistDetail = ({ playlist }: { playlist: VideoPlaylistDto }) => {
 				</div>
 			</section>
 
+			{!isVirtual && (
+				<section className={styles.managementPanel}>
+					<div className={styles.panelHeader}>
+						<Typography variant='h6'>Editar playlist</Typography>
+					</div>
+					<div className={styles.renameRow}>
+						<TextField
+							size='small'
+							value={nameDraft}
+							onChange={(event) => setNameDraft(event.target.value)}
+							placeholder='Nome de exibicao'
+						/>
+						<button
+							type='button'
+							className={styles.actionBtn}
+							onClick={() => renameMutation.mutate()}
+							disabled={renameMutation.isPending || !nameDraft.trim()}
+						>
+							Salvar nome
+						</button>
+					</div>
+				</section>
+			)}
+
 			<section className={styles.detailList}>
-				{playlist.items.map((item) => (
-					<button
-						type='button'
+				{orderedItems.map((item, index) => (
+					<div
 						key={item.video.id}
 						className={`${styles.detailItem} ${selectedVideoID === item.video.id ? styles.detailItemSelected : ''}`}
-						onClick={() => {
-							const currentPoint = `/videos?playlist=${encodeURIComponent(playlistSlug)}&video=${item.video.id}`;
-							setSearchParams({ playlist: playlistSlug, video: String(item.video.id) });
-							navigate(`/video/${item.video.id}`, { state: { from: currentPoint } });
-						}}
 					>
-						<div className={styles.detailThumb}>
-							<img
-								loading='lazy'
-								src={`${apiBase}/video-thumbnail/${item.video.id}?width=320&height=180`}
-								alt={item.video.name}
-							/>
-						</div>
-						<div className={styles.detailMeta}>
-							<Typography className={styles.detailTitle}>{item.video.name}</Typography>
-							<Typography className={styles.detailSub}>
-								{item.video.format.toUpperCase()} · {item.source_kind === 'manual' ? 'adicionado manualmente' : 'auto'}
-							</Typography>
-						</div>
-						<div className={styles.detailPlay}>
-							<Play size={16} />
-						</div>
-					</button>
+						<button
+							type='button'
+							className={styles.detailMainButton}
+							onClick={() => {
+								const currentPoint = `/videos?playlist=${encodeURIComponent(playlistSlug)}&video=${item.video.id}`;
+								setSearchParams({ playlist: playlistSlug, video: String(item.video.id) });
+								navigate(`/video/${item.video.id}`, {
+									state: { from: currentPoint, playlistId: playlist.id > 0 ? playlist.id : null },
+								});
+							}}
+						>
+							<div className={styles.detailThumb}>
+								<img
+									loading='lazy'
+									src={`${apiBase}/video-thumbnail/${item.video.id}?width=320&height=180`}
+									alt={item.video.name}
+								/>
+							</div>
+							<div className={styles.detailMeta}>
+								<Typography className={styles.detailTitle}>{item.video.name}</Typography>
+								<Typography className={styles.detailSub}>
+									{item.video.format.toUpperCase()} · {item.source_kind === 'manual' ? 'adicionado manualmente' : 'auto'}
+								</Typography>
+							</div>
+							<div className={styles.detailPlay}>
+								<Play size={16} />
+							</div>
+						</button>
+						{!isVirtual && (
+							<div className={styles.itemActions}>
+								<button
+									type='button'
+									className={styles.iconBtn}
+									onClick={() => moveItem(index, -1)}
+									disabled={index === 0 || reorderMutation.isPending}
+								>
+									<ArrowUp size={14} />
+								</button>
+								<button
+									type='button'
+									className={styles.iconBtn}
+									onClick={() => moveItem(index, 1)}
+									disabled={index === orderedItems.length - 1 || reorderMutation.isPending}
+								>
+									<ArrowDown size={14} />
+								</button>
+								<button
+									type='button'
+									className={styles.iconBtnDanger}
+									onClick={() => removeMutation.mutate(item.video.id)}
+									disabled={removeMutation.isPending}
+								>
+									<Trash2 size={14} />
+								</button>
+							</div>
+						)}
+					</div>
 				))}
 			</section>
+
+			{!isVirtual && candidates.length > 0 && (
+				<section className={styles.managementPanel}>
+					<div className={styles.panelHeader}>
+						<Typography variant='h6'>Adicionar videos</Typography>
+					</div>
+					<div className={styles.addGrid}>
+						{candidates.map((video) => (
+							<button
+								type='button'
+								key={video.id}
+								className={styles.addItemBtn}
+								onClick={() => addMutation.mutate(video.id)}
+								disabled={addMutation.isPending}
+							>
+								<span className={styles.addItemText}>{video.name}</span>
+								<Plus size={14} />
+							</button>
+						))}
+					</div>
+				</section>
+			)}
 		</div>
 	);
 };
 
 const VideoContent = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
+	const navigate = useNavigate();
 	const { data: playlists = [], isLoading } = useVideoPlaylists();
 	const { data: allVideos = [], isLoading: isLoadingAllVideos } = useAllVideoFiles();
 	const { data: unassignedVideos = [], isLoading: isLoadingUnassigned } = useVideosWithoutPlaylist();
+	const { data: homeCatalog } = useVideoHomeCatalog();
+
+	const continueItems = useMemo(
+		() => homeCatalog?.sections.find((section) => section.key === 'continue')?.items ?? [],
+		[homeCatalog],
+	);
+
+	const allCatalogVideos = useMemo(() => {
+		const map = new Map<number, VideoFileDto>();
+		for (const video of allVideos) {
+			map.set(video.id, video);
+		}
+		for (const section of homeCatalog?.sections ?? []) {
+			for (const item of section.items) {
+				if (!map.has(item.video.id)) {
+					map.set(item.video.id, item.video);
+				}
+			}
+		}
+		return Array.from(map.values());
+	}, [allVideos, homeCatalog]);
 
 	const virtualPlaylists = useMemo(() => {
-		const all = createVirtualPlaylist('Todos', 'todos', allVideos);
+		const all = createVirtualPlaylist('Todos', 'todos', allCatalogVideos);
 		const unassigned = createVirtualPlaylist('Sem playlist', 'sem-playlist', unassignedVideos);
-		return [all, unassigned].filter((p) => p.item_count > 0);
-	}, [allVideos, unassignedVideos]);
+		return [all, unassigned].filter((playlist) => playlist.item_count > 0);
+	}, [allCatalogVideos, unassignedVideos]);
 
 	const mergedPlaylists = useMemo(() => [...virtualPlaylists, ...playlists], [playlists, virtualPlaylists]);
 
@@ -217,7 +487,7 @@ const VideoContent = () => {
 		return mergedPlaylists.find((playlist) => slugify(playlist.name) === playlistSlug) ?? null;
 	}, [playlistSlug, mergedPlaylists]);
 
-	const isVirtualSelected = Boolean(selectedPlaylistSummary && selectedPlaylistSummary.id === -1);
+	const isVirtualSelected = Boolean(selectedPlaylistSummary && selectedPlaylistSummary.id < 0);
 	const selectedPlaylistId = !isVirtualSelected ? selectedPlaylistSummary?.id : undefined;
 	const { data: selectedPlaylistDetail, isLoading: isLoadingPlaylist } = useVideoPlaylistDetail(selectedPlaylistId);
 
@@ -244,6 +514,11 @@ const VideoContent = () => {
 		setSearchParams({ playlist: slugify(playlist.name) });
 	};
 
+	const playFromVideos = (videoId: number, playlistId?: number | null) => {
+		const from = `/videos${window.location.search}`;
+		navigate(`/video/${videoId}`, { state: { from, playlistId: playlistId ?? null } });
+	};
+
 	if (isLoading || isLoadingAllVideos || isLoadingUnassigned) {
 		return (
 			<div className={styles.loadingState}>
@@ -262,7 +537,15 @@ const VideoContent = () => {
 				</div>
 			);
 		}
-		return <PlaylistDetail playlist={isVirtualSelected ? selectedPlaylistSummary : (selectedPlaylistDetail as VideoPlaylistDto)} />;
+		return (
+			<PlaylistDetail
+				playlist={isVirtualSelected ? selectedPlaylistSummary : (selectedPlaylistDetail as VideoPlaylistDto)}
+				allVideos={allCatalogVideos}
+				onChanged={() => {
+					// no-op: mutations already invalidate queries
+				}}
+			/>
+		);
 	}
 
 	if (mergedPlaylists.length === 0) {
@@ -298,6 +581,7 @@ const VideoContent = () => {
 			)}
 
 			<div className={styles.railsContainer}>
+				<ContinueRail items={continueItems} onPlay={(videoId) => playFromVideos(videoId, null)} />
 				{Object.entries(grouped).map(([key, list]) => (
 					<PlaylistRail key={key} title={classificationTitle[key] ?? key} playlists={list} onSelect={onSelectPlaylist} />
 				))}

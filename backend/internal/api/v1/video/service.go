@@ -22,15 +22,30 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return s.Repository.GetDbContext().ExecTx(fn)
 }
 
-func (s *Service) StartPlayback(clientID string, videoID int) (PlaybackSessionDto, error) {
+func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (PlaybackSessionDto, error) {
 	videoFile, err := s.Repository.GetVideoFileByID(videoID)
 	if err != nil {
 		return PlaybackSessionDto{}, err
 	}
 
-	playlist, err := s.ensureContextPlaylist(string(ContextFolder), videoFile.ParentPath)
-	if err != nil {
-		return PlaybackSessionDto{}, err
+	var playlist VideoPlaylistModel
+	if playlistID != nil {
+		playlist, err = s.Repository.GetVideoPlaylistByID(*playlistID)
+		if err != nil {
+			return PlaybackSessionDto{}, err
+		}
+		inPlaylist, checkErr := s.Repository.CheckVideoInPlaylist(playlist.ID, videoID)
+		if checkErr != nil {
+			return PlaybackSessionDto{}, checkErr
+		}
+		if !inPlaylist {
+			return PlaybackSessionDto{}, errors.New("video nao pertence a playlist selecionada")
+		}
+	} else {
+		playlist, err = s.ensureContextPlaylist(string(ContextFolder), videoFile.ParentPath)
+		if err != nil {
+			return PlaybackSessionDto{}, err
+		}
 	}
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
@@ -273,21 +288,9 @@ func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSession
 
 func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPlaylistModel, error) {
 	playlistID := int(state.PlaylistID.Int64)
-	if !state.VideoID.Valid {
-		return VideoPlaylistModel{}, errors.New("estado sem video atual")
-	}
-
-	videoFile, err := s.Repository.GetVideoFileByID(int(state.VideoID.Int64))
+	playlist, err := s.Repository.GetVideoPlaylistByID(playlistID)
 	if err != nil {
 		return VideoPlaylistModel{}, err
-	}
-
-	playlist, err := s.Repository.GetPlaylistByContext(string(ContextFolder), videoFile.ParentPath)
-	if err != nil {
-		return VideoPlaylistModel{}, err
-	}
-	if playlist.ID != playlistID {
-		return VideoPlaylistModel{}, errors.New("playlist ativa inconsistente com o contexto")
 	}
 	return playlist, nil
 }
@@ -521,6 +524,45 @@ func (s *Service) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
 		result = append(result, model.ToDto())
 	}
 	return result, nil
+}
+
+func (s *Service) UpdatePlaylistName(playlistID int, name string) error {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return errors.New("nome da playlist nao pode ser vazio")
+	}
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		return s.Repository.UpdatePlaylistName(tx, playlistID, trimmed)
+	})
+}
+
+func (s *Service) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error {
+	if len(items) == 0 {
+		return errors.New("nenhum item enviado para reordenacao")
+	}
+
+	seenVideo := map[int]bool{}
+	seenOrder := map[int]bool{}
+	for _, item := range items {
+		if seenVideo[item.VideoID] {
+			return fmt.Errorf("video_id duplicado na reordenacao: %d", item.VideoID)
+		}
+		if seenOrder[item.OrderIndex] {
+			return fmt.Errorf("order_index duplicado na reordenacao: %d", item.OrderIndex)
+		}
+		seenVideo[item.VideoID] = true
+		seenOrder[item.OrderIndex] = true
+	}
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		for _, item := range items {
+			if err := s.Repository.ReorderPlaylistItem(tx, playlistID, item.VideoID, item.OrderIndex); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 type smartGroup struct {

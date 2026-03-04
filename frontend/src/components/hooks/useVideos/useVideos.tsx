@@ -1,4 +1,10 @@
-import { getAllVideoFiles, getVideoPlaylistById, getVideoPlaylists, getVideosWithoutPlaylist } from '@/service/videoPlayback';
+import {
+	getAllVideoFiles,
+	getVideoHomeCatalog,
+	getVideoPlaylistById,
+	getVideoPlaylists,
+	getVideosWithoutPlaylist,
+} from '@/service/videoPlayback';
 import { useQuery } from '@tanstack/react-query';
 
 export const useVideoPlaylists = () => {
@@ -27,5 +33,12 @@ export const useAllVideoFiles = () => {
 	return useQuery({
 		queryKey: ['all-video-files'],
 		queryFn: () => getAllVideoFiles(3000),
+	});
+};
+
+export const useVideoHomeCatalog = () => {
+	return useQuery({
+		queryKey: ['video-home-catalog'],
+		queryFn: () => getVideoHomeCatalog(24),
 	});
 };

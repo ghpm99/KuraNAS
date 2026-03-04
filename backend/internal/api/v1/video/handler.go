@@ -24,7 +24,7 @@ func (h *Handler) StartPlaybackHandler(c *gin.Context) {
 		return
 	}
 
-	session, err := h.service.StartPlayback(c.ClientIP(), req.VideoID)
+	session, err := h.service.StartPlayback(c.ClientIP(), req.VideoID, req.PlaylistID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -146,6 +146,34 @@ func (h *Handler) RemovePlaylistVideoHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	videoID := utils.ParseInt(c.Param("videoId"), c)
 	if err := h.service.RemoveVideoFromPlaylist(id, videoID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) UpdatePlaylistHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	var req UpdatePlaylistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.UpdatePlaylistName(id, req.Name); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) ReorderPlaylistHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	var req ReorderPlaylistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.ReorderPlaylistItems(id, req.Items); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

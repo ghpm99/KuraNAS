@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
 
-const useVideoPlayer = ({ videoId }: { videoId: string }) => {
+const useVideoPlayer = ({ videoId, playlistId }: { videoId: string; playlistId?: number | null }) => {
 	const [status, setStatus] = useState<Status>('waiting');
 	const [currentTime, setCurrentTime] = useState(0);
 	const [duration, setDuration] = useState(0);
@@ -77,14 +77,14 @@ const useVideoPlayer = ({ videoId }: { videoId: string }) => {
 	);
 
 	const playVideo = useCallback(async () => {
-		const response = await startVideoPlayback(Number(videoId));
+		const response = await startVideoPlayback(Number(videoId), playlistId ?? null);
 		setSession(response);
 		setCurrentTime(response.playback_state.current_time || 0);
 		setDuration(response.playback_state.duration || 0);
 		if (response.playback_state.video_id) {
 			attachVideoSource(response.playback_state.video_id, response.playback_state.current_time || 0);
 		}
-	}, [attachVideoSource, videoId]);
+	}, [attachVideoSource, playlistId, videoId]);
 
 	const pause = useCallback(() => {
 		if (videoRef.current) {

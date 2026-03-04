@@ -81,3 +81,12 @@ var DeletePlaylistExclusionQuery string
 
 //go:embed get_unassigned_videos.sql
 var GetUnassignedVideosQuery string
+
+//go:embed check_video_in_playlist.sql
+var CheckVideoInPlaylistQuery string
+
+//go:embed update_playlist_name.sql
+var UpdatePlaylistNameQuery string
+
+//go:embed reorder_playlist_item.sql
+var ReorderPlaylistItemQuery string

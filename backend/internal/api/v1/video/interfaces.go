@@ -32,10 +32,13 @@ type RepositoryInterface interface {
 	UpsertPlaylistExclusion(tx *sql.Tx, playlistID int, videoID int) error
 	DeletePlaylistExclusion(tx *sql.Tx, playlistID int, videoID int) error
 	GetUnassignedVideos(limit int) ([]VideoFileModel, error)
+	CheckVideoInPlaylist(playlistID int, videoID int) (bool, error)
+	UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error
+	ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
 }
 
 type ServiceInterface interface {
-	StartPlayback(clientID string, videoID int) (PlaybackSessionDto, error)
+	StartPlayback(clientID string, videoID int, playlistID *int) (PlaybackSessionDto, error)
 	GetPlaybackState(clientID string) (PlaybackSessionDto, error)
 	UpdatePlaybackState(clientID string, req UpdatePlaybackStateRequest) (VideoPlaybackStateDto, error)
 	NextVideo(clientID string) (PlaybackSessionDto, error)
@@ -48,4 +51,6 @@ type ServiceInterface interface {
 	AddVideoToPlaylist(playlistID int, videoID int) error
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error
 	GetUnassignedVideos(limit int) ([]VideoFileDto, error)
+	UpdatePlaylistName(playlistID int, name string) error
+	ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error
 }

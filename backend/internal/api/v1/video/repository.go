@@ -590,3 +590,30 @@ func (r *Repository) GetUnassignedVideos(limit int) ([]VideoFileModel, error) {
 
 	return results, nil
 }
+
+func (r *Repository) CheckVideoInPlaylist(playlistID int, videoID int) (bool, error) {
+	var count int
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.CheckVideoInPlaylistQuery, playlistID, videoID).Scan(&count)
+	})
+	if err != nil {
+		return false, fmt.Errorf("falha ao validar video na playlist: %w", err)
+	}
+	return count > 0, nil
+}
+
+func (r *Repository) UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error {
+	_, err := tx.Exec(queries.UpdatePlaylistNameQuery, playlistID, name)
+	if err != nil {
+		return fmt.Errorf("falha ao atualizar nome da playlist: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error {
+	_, err := tx.Exec(queries.ReorderPlaylistItemQuery, playlistID, videoID, orderIndex)
+	if err != nil {
+		return fmt.Errorf("falha ao reordenar item da playlist: %w", err)
+	}
+	return nil
+}

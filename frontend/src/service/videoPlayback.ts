@@ -82,8 +82,19 @@ export interface UpdateVideoPlaybackStateRequest {
 	completed?: boolean;
 }
 
-export const startVideoPlayback = async (videoId: number): Promise<VideoPlaybackSessionDto> => {
-	const response = await apiBase.post<VideoPlaybackSessionDto>('/video/playback/start', { video_id: videoId });
+export interface ReorderVideoPlaylistItemRequest {
+	video_id: number;
+	order_index: number;
+}
+
+export const startVideoPlayback = async (
+	videoId: number,
+	playlistId?: number | null,
+): Promise<VideoPlaybackSessionDto> => {
+	const response = await apiBase.post<VideoPlaybackSessionDto>('/video/playback/start', {
+		video_id: videoId,
+		playlist_id: playlistId ?? null,
+	});
 	return response.data;
 };
 
@@ -136,6 +147,17 @@ export const addVideoToPlaylist = async (playlistId: number, videoId: number): P
 
 export const removeVideoFromPlaylist = async (playlistId: number, videoId: number): Promise<void> => {
 	await apiBase.delete(`/video/playlists/${playlistId}/videos/${videoId}`);
+};
+
+export const reorderVideoPlaylist = async (
+	playlistId: number,
+	items: ReorderVideoPlaylistItemRequest[],
+): Promise<void> => {
+	await apiBase.put(`/video/playlists/${playlistId}/reorder`, { items });
+};
+
+export const updateVideoPlaylistName = async (playlistId: number, name: string): Promise<void> => {
+	await apiBase.put(`/video/playlists/${playlistId}`, { name });
 };
 
 export const getVideosWithoutPlaylist = async (limit = 2000): Promise<VideoFileDto[]> => {
