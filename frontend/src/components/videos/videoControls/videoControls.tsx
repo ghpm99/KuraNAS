@@ -71,6 +71,7 @@ const VideoControls = ({
 			resetTimer();
 		};
 
+		resetTimer();
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('keypress', handleKeyPress);
 

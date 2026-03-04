@@ -13,6 +13,7 @@ import {
 	VideoPlaylistDto,
 	getVideoPlaybackState,
 } from '@/service/videoPlayback';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, CircularProgress, Snackbar, TextField, Typography } from '@mui/material';
 import { ArrowDown, ArrowLeft, ArrowUp, Play, Plus, Trash2, Videotape } from 'lucide-react';
@@ -36,7 +37,7 @@ const slugify = (value: string) =>
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-+|-+$/g, '');
 
-const apiBase = `${import.meta.env.VITE_API_URL}/api/v1/files`;
+const apiBase = `${getApiV1BaseUrl()}/files`;
 
 const PlaylistCard = ({
 	playlist,
@@ -517,14 +518,6 @@ const VideoContent = () => {
 										disabled={!selectedPlaylist || addToPlaylistMutation.isPending || isAlreadyInPlaylist}
 										onClick={() => {
 											if (!selectedPlaylist) return;
-											if (isAlreadyInPlaylist) {
-												setFeedback({
-													open: true,
-													message: 'Esse video ja esta na playlist selecionada.',
-													severity: 'error',
-												});
-												return;
-											}
 											addToPlaylistMutation.mutate({ playlistId: selectedPlaylist, videoId: video.id });
 										}}
 									>

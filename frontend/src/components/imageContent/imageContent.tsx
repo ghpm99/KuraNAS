@@ -3,6 +3,7 @@ import { CircularProgress, IconButton, ImageList, ImageListItem, ImageListItemBa
 import { InfoIcon } from 'lucide-react';
 import { useImage } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 import './imageContent.css';
 
 const thumbnailWidth = 760;
@@ -27,7 +28,7 @@ const ImageContent = () => {
 	};
 
 	const thumbnailUrl = (id: number) =>
-		`${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
+		`${getApiV1BaseUrl()}/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
 
 	return (
 		<div className='file-content'>

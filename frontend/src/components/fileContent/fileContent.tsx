@@ -3,6 +3,7 @@ import FileCard from '../fileCard';
 import useI18n from '../i18n/provider/i18nContext';
 import useFile, { FileData } from '../hooks/fileProvider/fileContext';
 import FileViewer from './components/fileViewer/fileViewer';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 import './fileContent.css';
 
 const FileContent = () => {
@@ -28,7 +29,7 @@ const FileContent = () => {
 		return `${t('FOLDER')} - ${directoryContentCount} ${countText}`;
 	};
 
-	const thumbnailUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/thumbnail/${id}`;
+	const thumbnailUrl = (id: number) => `${getApiV1BaseUrl()}/files/thumbnail/${id}`;
 
 	if (!selectedItem) {
 		return (

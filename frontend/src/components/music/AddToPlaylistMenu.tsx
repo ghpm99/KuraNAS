@@ -71,6 +71,36 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 	});
 
 	const playlists = data?.items?.filter((p) => !p.is_system) ?? [];
+	const menuItems = [
+		<MenuItem
+			key='create'
+			onClick={() => {
+				setCreateOpen(true);
+				onClose();
+			}}
+		>
+			<ListItemIcon>
+				<Plus size={18} />
+			</ListItemIcon>
+			<ListItemText primary={t('MUSIC_NEW_PLAYLIST')} />
+		</MenuItem>,
+		...playlists.map((playlist) => (
+			<MenuItem key={playlist.id} onClick={() => addMutation.mutate(playlist.id)} disabled={addMutation.isPending}>
+				<ListItemIcon>
+					<ListMusic size={18} />
+				</ListItemIcon>
+				<ListItemText primary={playlist.name} />
+			</MenuItem>
+		)),
+	];
+
+	if (playlists.length === 0) {
+		menuItems.push(
+			<MenuItem key='empty' disabled>
+				<ListItemText primary={t('MUSIC_NO_PLAYLISTS')} />
+			</MenuItem>,
+		);
+	}
 
 	return (
 		<>
@@ -80,36 +110,7 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
 						<CircularProgress size={20} sx={{ mr: 1 }} /> {t('LOADING')}
 					</MenuItem>
 				) : (
-					<>
-						<MenuItem
-							onClick={() => {
-								setCreateOpen(true);
-								onClose();
-							}}
-						>
-							<ListItemIcon>
-								<Plus size={18} />
-							</ListItemIcon>
-							<ListItemText primary={t('MUSIC_NEW_PLAYLIST')} />
-						</MenuItem>
-						{playlists.map((playlist) => (
-							<MenuItem
-								key={playlist.id}
-								onClick={() => addMutation.mutate(playlist.id)}
-								disabled={addMutation.isPending}
-							>
-								<ListItemIcon>
-									<ListMusic size={18} />
-								</ListItemIcon>
-								<ListItemText primary={playlist.name} />
-							</MenuItem>
-						))}
-						{playlists.length === 0 && (
-							<MenuItem disabled>
-								<ListItemText primary={t('MUSIC_NO_PLAYLISTS')} />
-							</MenuItem>
-						)}
-					</>
+					menuItems
 				)}
 			</Menu>
 

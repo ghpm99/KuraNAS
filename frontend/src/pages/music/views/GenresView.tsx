@@ -122,6 +122,7 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 								/>
 								<IconButton
 									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
+									aria-label={`add ${item.name} to playlist`}
 									onClick={(e) => {
 										e.stopPropagation();
 										setMenuAnchor({ el: e.currentTarget, fileId: item.id });

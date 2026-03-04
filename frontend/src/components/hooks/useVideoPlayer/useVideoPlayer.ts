@@ -5,6 +5,7 @@ import {
 	updateVideoPlaybackState,
 	VideoPlaybackSessionDto,
 } from '@/service/videoPlayback';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
@@ -44,7 +45,7 @@ const useVideoPlayer = ({ videoId, playlistId }: { videoId: string; playlistId?:
 	const attachVideoSource = useCallback(
 		(videoToPlayId: number, seekSeconds?: number) => {
 			if (!videoRef.current) return;
-			videoRef.current.src = `${import.meta.env.VITE_API_URL}/api/v1/files/video-stream/${videoToPlayId}`;
+			videoRef.current.src = `${getApiV1BaseUrl()}/files/video-stream/${videoToPlayId}`;
 			if (typeof seekSeconds === 'number' && seekSeconds > 0) {
 				videoRef.current.currentTime = seekSeconds;
 			}
