@@ -5,6 +5,7 @@ import {
 } from '@/components/hooks/useVideos/useVideos';
 import {
 	addVideoToPlaylist,
+	getVideoPlaylistById,
 	removeVideoFromPlaylist,
 	reorderVideoPlaylist,
 	updateVideoPlaylistName,
@@ -13,7 +14,7 @@ import {
 	getVideoPlaybackState,
 } from '@/service/videoPlayback';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircularProgress, TextField, Typography } from '@mui/material';
+import { Alert, CircularProgress, Snackbar, TextField, Typography } from '@mui/material';
 import { ArrowDown, ArrowLeft, ArrowUp, Play, Plus, Trash2, Videotape } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -280,6 +281,11 @@ const VideoContent = () => {
 	});
 	const [videoSearch, setVideoSearch] = useState('');
 	const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<Record<number, number>>({});
+	const [feedback, setFeedback] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+		open: false,
+		message: '',
+		severity: 'success',
+	});
 
 	const playlistSlug = searchParams.get('playlist') || '';
 	const selectedPlaylistSummary = useMemo(() => {
@@ -326,6 +332,20 @@ const VideoContent = () => {
 		);
 	}, [allVideos, videoSearch]);
 
+	const { data: playlistMembershipMap = {} } = useQuery({
+		queryKey: ['video-playlist-membership', playlists.map((playlist) => playlist.id).join(',')],
+		enabled: playlists.length > 0,
+		queryFn: async () => {
+			const entries = await Promise.all(
+				playlists.map(async (playlist) => {
+					const detail = await getVideoPlaylistById(playlist.id);
+					return [playlist.id, new Set(detail.items.map((item) => item.video.id))] as const;
+				}),
+			);
+			return Object.fromEntries(entries) as Record<number, Set<number>>;
+		},
+	});
+
 	const addToPlaylistMutation = useMutation({
 		mutationFn: async ({ playlistId, videoId }: { playlistId: number; videoId: number }) =>
 			addVideoToPlaylist(playlistId, videoId),
@@ -333,8 +353,21 @@ const VideoContent = () => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['video-playlists'] }),
 				queryClient.invalidateQueries({ queryKey: ['video-playlist'] }),
+				queryClient.invalidateQueries({ queryKey: ['video-playlist-membership'] }),
 				queryClient.invalidateQueries({ queryKey: ['video-home-catalog'] }),
 			]);
+			setFeedback({
+				open: true,
+				message: 'Video adicionado a playlist com sucesso.',
+				severity: 'success',
+			});
+		},
+		onError: () => {
+			setFeedback({
+				open: true,
+				message: 'Nao foi possivel adicionar o video a playlist.',
+				severity: 'error',
+			});
 		},
 	});
 
@@ -441,6 +474,11 @@ const VideoContent = () => {
 				<div className={styles.allVideosList}>
 					{filteredVideos.map((video: VideoFileDto) => {
 						const selectedPlaylist = selectedPlaylistPerVideo[video.id] ?? playlists[0]?.id;
+						const isAlreadyInPlaylist = Boolean(
+							selectedPlaylist &&
+								playlistMembershipMap[selectedPlaylist] &&
+								playlistMembershipMap[selectedPlaylist]?.has(video.id),
+						);
 						return (
 							<div className={styles.allVideoItem} key={video.id}>
 								<div className={styles.allVideoThumb}>
@@ -480,14 +518,22 @@ const VideoContent = () => {
 									<button
 										type='button'
 										className={styles.actionBtn}
-										disabled={!selectedPlaylist || addToPlaylistMutation.isPending}
+										disabled={!selectedPlaylist || addToPlaylistMutation.isPending || isAlreadyInPlaylist}
 										onClick={() => {
 											if (!selectedPlaylist) return;
+											if (isAlreadyInPlaylist) {
+												setFeedback({
+													open: true,
+													message: 'Esse video ja esta na playlist selecionada.',
+													severity: 'error',
+												});
+												return;
+											}
 											addToPlaylistMutation.mutate({ playlistId: selectedPlaylist, videoId: video.id });
 										}}
 									>
 										<Plus size={14} />
-										Adicionar
+										{isAlreadyInPlaylist ? 'Ja adicionado' : 'Adicionar'}
 									</button>
 								</div>
 							</div>
@@ -495,6 +541,20 @@ const VideoContent = () => {
 					})}
 				</div>
 			</section>
+			<Snackbar
+				open={feedback.open}
+				autoHideDuration={2600}
+				onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+			>
+				<Alert
+					severity={feedback.severity}
+					variant='filled'
+					onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+				>
+					{feedback.message}
+				</Alert>
+			</Snackbar>
 		</div>
 	);
 };
