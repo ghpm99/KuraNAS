@@ -14,6 +14,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
 	RegisterMusicRoutes(routesV1, context)
+	RegisterVideoRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	registerReactRoutes(router)
@@ -31,6 +32,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
+	files.GET("/video-thumbnail/:id", context.Files.Handler.GetVideoThumbnailHandler)
+	files.GET("/video-preview/:id", context.Files.Handler.GetVideoPreviewHandler)
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
@@ -91,6 +94,18 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	configurations.GET("/translation", context.ConfigurationHandler.GetTranslationJson)
 	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
+}
+
+func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
+	playback := router.Group("/video/playback")
+	catalog := router.Group("/video/catalog")
+
+	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
+	playback.GET("/state", context.Video.Handler.GetPlaybackStateHandler)
+	playback.PUT("/state", context.Video.Handler.UpdatePlaybackStateHandler)
+	playback.POST("/next", context.Video.Handler.NextVideoHandler)
+	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
+	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
 }
 
 func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {

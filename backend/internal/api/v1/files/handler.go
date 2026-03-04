@@ -290,6 +290,80 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	c.Data(http.StatusOK, "image/png", thumbnailData)
 }
 
+func (handler *Handler) GetVideoThumbnailHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideoThumbnail",
+		Description: "Fetching video thumbnail by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	thumbnailData, err := handler.service.GetVideoThumbnail(file, width, height)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/png", thumbnailData)
+}
+
+func (handler *Handler) GetVideoPreviewHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideoPreview",
+		Description: "Fetching animated video preview by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	previewData, err := handler.service.GetVideoPreviewGif(file, width, height)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.Header("Content-Type", "image/gif")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/gif", previewData)
+}
+
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{

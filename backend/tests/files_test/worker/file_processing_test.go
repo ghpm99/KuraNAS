@@ -302,7 +302,7 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 	mockLog := &mockLogger{}
 
 	fmt.Println("Starting file processing pipeline...")
-	worker.StartFileProcessingPipeline(mockSvc, mockLog)
+	worker.StartFileProcessingPipeline(mockSvc, nil, mockLog)
 	fmt.Println("File processing pipeline started.")
 
 	if mockSvc.createFiles == nil && mockSvc.updateFiles == nil {

@@ -1,0 +1,20 @@
+.videosPage {
+	height: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	padding: 18px 22px 22px;
+}
+
+.videosViewport {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+@media (max-width: 768px) {
+	.videosPage {
+		padding: 10px 10px 14px;
+	}
+}

@@ -1,8 +1,6 @@
 import useVideoPlayer from '@/components/hooks/useVideoPlayer/useVideoPlayer';
 import VideoControls from '@/components/videos/videoControls/videoControls';
 import VideoPlayer from '@/components/videos/videoPlayer/videoPlayer';
-import VideoProgressBar from '@/components/videos/videoProgressBar/videoProgressBar';
-import VideoSettings from '@/components/videos/videoSettings/videoSettings';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -16,13 +14,13 @@ const VideoPlayerPage = () => {
 	const {
 		videoRef,
 		playVideo,
-		pause,
-		resume,
 		seekTo,
 		setVolume,
 		setPlaybackRate,
 		toggleFullscreen,
 		togglePlayPause,
+		nextVideo,
+		previousVideo,
 		status,
 		currentTime,
 		duration,
@@ -31,13 +29,12 @@ const VideoPlayerPage = () => {
 		isFullscreen,
 		setCurrentTime,
 		setDuration,
-		quality,
-		setQuality,
+		currentVideo,
 	} = useVideoPlayer({ videoId: id });
 
 	useEffect(() => {
 		playVideo();
-	}, []);
+	}, [playVideo]);
 
 	return (
 		<>
@@ -56,24 +53,22 @@ const VideoPlayerPage = () => {
 				isPlaying={status === 'playing'}
 				volume={volume}
 				playbackRate={playbackRate}
-				pause={pause}
-				resume={resume}
 				seekTo={seekTo}
 				setVolume={setVolume}
 				setPlaybackRate={setPlaybackRate}
 				toggleFullscreen={toggleFullscreen}
 				togglePlayPause={togglePlayPause}
-				nextVideo={() => {}}
-				previousVideo={() => {}}
+				nextVideo={nextVideo}
+				previousVideo={previousVideo}
 			/>
 			<VideoPlayer
-				currentVideo={null}
+				currentVideo={currentVideo}
 				volume={volume}
 				playbackRate={playbackRate}
 				videoRef={videoRef}
 				setCurrentTime={setCurrentTime}
 				setDuration={setDuration}
-				nextVideo={() => {}}
+				nextVideo={nextVideo}
 			/>
 			{/* <VideoProgressBar currentTime={currentTime} duration={duration} seekTo={seekTo} /> */}
 		</>

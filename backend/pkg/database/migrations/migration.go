@@ -59,6 +59,7 @@ func initMigrationList() {
 	diaryMigrationList()
 	fileMigrationList()
 	musicMigrationList()
+	videoMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {

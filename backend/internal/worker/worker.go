@@ -43,7 +43,7 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			go StartFileProcessingPipeline(context.FilesService, context.Logger)
+			go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
 		case utils.ScanDir:
 			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:

@@ -1,167 +1,171 @@
 import { useVideos } from '@/components/hooks/useVideos/useVideos';
-import { useVideoPlayer } from '@/components/hooks/videoPlayerProvider/videoPlayerProvider';
-import { Box, Card, CardContent, CircularProgress, Grid, IconButton, Typography } from '@mui/material';
-import { Play, Videotape } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import './videoContent.module.css';
+import { VideoCatalogItemDto, VideoCatalogSectionDto } from '@/service/videoPlayback';
+import { CircularProgress, IconButton, LinearProgress, Typography } from '@mui/material';
+import { ChevronLeft, ChevronRight, Play, Videotape } from 'lucide-react';
+import { useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './videoContent.module.css';
-import { IVideoData } from '@/types/video';
+
+const statusLabel: Record<string, string> = {
+	not_started: 'Nao iniciado',
+	in_progress: 'Em andamento',
+	completed: 'Assistido',
+};
+
+const sectionTitle: Record<string, string> = {
+	continue: 'Continue Assistindo',
+	series: 'Series',
+	movies: 'Filmes',
+	personal: 'Videos Pessoais',
+	recent: 'Adicionados Recentemente',
+};
+
+const apiBase = `${import.meta.env.VITE_API_URL}/api/v1/files`;
+
+const Thumbnail = ({ item }: { item: VideoCatalogItemDto }) => {
+	return (
+		<div className={styles.thumbnail}>
+			<div className={styles.thumbFallback}>
+				<Videotape size={38} color='white' />
+			</div>
+			<img
+				className={styles.thumbStatic}
+				loading='lazy'
+				src={`${apiBase}/video-thumbnail/${item.video.id}?width=640&height=360`}
+				alt={item.video.name}
+			/>
+			<img
+				className={styles.thumbPreview}
+				loading='lazy'
+				src={`${apiBase}/video-preview/${item.video.id}?width=640&height=360`}
+				alt={`${item.video.name} preview`}
+			/>
+		</div>
+	);
+};
+
+const VideoRail = ({ section }: { section: VideoCatalogSectionDto }) => {
+	const navigate = useNavigate();
+	const railRef = useRef<HTMLDivElement>(null);
+
+	if (section.items.length === 0) return null;
+
+	const scrollBy = (direction: 1 | -1) => {
+		const el = railRef.current;
+		if (!el) return;
+		el.scrollBy({ left: direction * 720, behavior: 'smooth' });
+	};
+
+	return (
+		<section className={styles.railSection}>
+			<div className={styles.railHeader}>
+				<Typography variant='h5' className={styles.railTitle}>
+					{sectionTitle[section.key] ?? section.title}
+				</Typography>
+				<div className={styles.railActions}>
+					<IconButton className={styles.railNavBtn} onClick={() => scrollBy(-1)}>
+						<ChevronLeft size={18} />
+					</IconButton>
+					<IconButton className={styles.railNavBtn} onClick={() => scrollBy(1)}>
+						<ChevronRight size={18} />
+					</IconButton>
+				</div>
+			</div>
+
+			<div className={styles.rail} ref={railRef}>
+				{section.items.map((item) => (
+					<button
+						type='button'
+						key={`${section.key}-${item.video.id}`}
+						className={styles.videoCard}
+						onClick={() => navigate(`/video/${item.video.id}`)}
+					>
+						<Thumbnail item={item} />
+						<div className={styles.cardOverlay}>
+							<div className={styles.cardTopLine}>
+								<span className={styles.statusBadge}>{statusLabel[item.status] ?? statusLabel.not_started}</span>
+								<span className={styles.formatTag}>{item.video.format.replace('.', '').toUpperCase()}</span>
+							</div>
+							<Typography className={styles.cardTitle}>{item.video.name}</Typography>
+							<LinearProgress
+								variant='determinate'
+								value={item.progress_pct}
+								className={styles.progress}
+							/>
+						</div>
+						<div className={styles.playButtonWrap}>
+							<Play size={18} />
+						</div>
+					</button>
+				))}
+			</div>
+		</section>
+	);
+};
+
+const Hero = ({ item }: { item: VideoCatalogItemDto }) => {
+	const navigate = useNavigate();
+	return (
+		<section className={styles.hero}>
+			<img
+				className={styles.heroImage}
+				src={`${apiBase}/video-thumbnail/${item.video.id}?width=1280&height=720`}
+				alt={item.video.name}
+			/>
+			<div className={styles.heroShade} />
+			<div className={styles.heroContent}>
+				<p className={styles.heroEyebrow}>KuraNAS Video</p>
+				<h1 className={styles.heroTitle}>{item.video.name}</h1>
+				<p className={styles.heroMeta}>{statusLabel[item.status] ?? statusLabel.not_started}</p>
+				<button type='button' className={styles.heroBtn} onClick={() => navigate(`/video/${item.video.id}`)}>
+					<Play size={18} />
+					<span>Assistir</span>
+				</button>
+			</div>
+		</section>
+	);
+};
 
 const VideoContent = () => {
-	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useVideos();
+	const { data, isLoading } = useVideos();
 
-	const { playVideo, playlist, setPlaylist } = useVideoPlayer();
-	const lastItemRef = useRef<HTMLDivElement>(null);
-
-	const videos = data?.pages.flatMap((page) => page.data) || [];
-
-	useEffect(() => {
-		if (videos.length > 0) {
-			//setPlaylist(videos);
-		}
-	}, [videos.length, setPlaylist, videos]);
-
-	useEffect(() => {
-		if (!lastItemRef.current || !hasNextPage || isFetchingNextPage) return;
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries[0].isIntersecting) {
-					fetchNextPage();
-				}
-			},
-			{ threshold: 0.1 },
-		);
-
-		observer.observe(lastItemRef.current);
-
-		return () => observer.disconnect();
-	}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-	const getVideoTitle = (video: IVideoData): string => {
-		return video.name;
-	};
-
-	const getVideoDuration = (video: IVideoData): string => {
-		if (video.metadata?.duration) {
-			return video.metadata.duration;
-		}
-		return 'Unknown';
-	};
-
-	const getVideoResolution = (video: IVideoData): string => {
-		if (video.metadata?.width && video.metadata?.height) {
-			return `${video.metadata.width}x${video.metadata.height}`;
-		}
-		return 'Unknown';
-	};
-
-	const formatFileSize = (bytes: number): string => {
-		const sizes = ['B', 'KB', 'MB', 'GB'];
-		if (bytes === 0) return '0 B';
-		const i = Math.floor(Math.log(bytes) / Math.log(1024));
-		return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
-	};
+	const sections = data?.sections ?? [];
+	const heroItem = useMemo(() => {
+		const continueSection = sections.find((section) => section.key === 'continue');
+		if (continueSection?.items?.[0]) return continueSection.items[0];
+		const recentSection = sections.find((section) => section.key === 'recent');
+		if (recentSection?.items?.[0]) return recentSection.items[0];
+		return sections[0]?.items?.[0] ?? null;
+	}, [sections]);
 
 	if (isLoading) {
 		return (
-			<div className='video-content'>
-				<div className='loading-container'>
-					<CircularProgress size={40} />
-					<Typography variant='h6' sx={{ mt: 2 }}>
-						Carregando vídeos...
-					</Typography>
-				</div>
+			<div className={styles.loadingState}>
+				<CircularProgress size={44} />
+				<Typography variant='h6'>Carregando catalogo de videos...</Typography>
+			</div>
+		);
+	}
+
+	if (!heroItem && sections.length === 0) {
+		return (
+			<div className={styles.emptyState}>
+				<Videotape size={72} />
+				<h2>Nenhum video encontrado</h2>
+				<p>Atualize a biblioteca para montar seu catalogo.</p>
 			</div>
 		);
 	}
 
 	return (
-		<>
-			<div className={styles.title}>
-				<Typography variant='h4' sx={{ mb: 3, fontWeight: 'bold' }}>
-					Vídeos
-				</Typography>
+		<div className={styles.page}>
+			{heroItem && <Hero item={heroItem} />}
+			<div className={styles.railsContainer}>
+				{sections.map((section) => (
+					<VideoRail key={section.key} section={section} />
+				))}
 			</div>
-			<div className={styles['video-content']}>
-				<Grid container spacing={3}>
-					{videos.map((video, index) => {
-						const isLastItem = index === videos.length - 1;
-						return (
-							<Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={video.id} ref={isLastItem ? lastItemRef : null}>
-								<Card
-									className={styles['video-card']}
-									onClick={() => playVideo(video)}
-									sx={{
-										cursor: 'pointer',
-										transition: 'transform 0.2s, box-shadow 0.2s',
-										'&:hover': {
-											transform: 'translateY(-4px)',
-											boxShadow: 4,
-										},
-									}}
-								>
-									<Box className={styles['video-thumbnail']}>
-										<Videotape size={48} color='white' />
-										<IconButton
-											className={styles['play-button']}
-											size='small'
-											onClick={(e) => {
-												e.stopPropagation();
-												playVideo(video);
-											}}
-										>
-											<Play size={20} color='white' />
-										</IconButton>
-									</Box>
-
-									<CardContent sx={{ p: 2 }}>
-										<Typography variant='subtitle2' noWrap sx={{ fontWeight: 'medium', mb: 1 }}>
-											{getVideoTitle(video)}
-										</Typography>
-
-										<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-											<Typography variant='caption' color='text.secondary'>
-												Duração: {getVideoDuration(video)}
-											</Typography>
-											<Typography variant='caption' color='text.secondary'>
-												Resolução: {getVideoResolution(video)}
-											</Typography>
-											<Typography variant='caption' color='text.secondary'>
-												Tamanho: {formatFileSize(video.size)}
-											</Typography>
-										</Box>
-									</CardContent>
-								</Card>
-							</Grid>
-						);
-					})}
-				</Grid>
-
-				{isFetchingNextPage && (
-					<div className={styles['loading-indicator']}>
-						<CircularProgress size={40} />
-					</div>
-				)}
-
-				{!hasNextPage && videos.length > 0 && (
-					<div className={styles['end-message']}>
-						<Typography variant='body2' color='text.secondary'>
-							Todos os vídeos foram carregados
-						</Typography>
-					</div>
-				)}
-
-				{videos.length === 0 && !isLoading && (
-					<div className={styles['empty-state']}>
-						<Videotape size={64} color='text.secondary' />
-						<Typography variant='h6' color='text.secondary' sx={{ mt: 2 }}>
-							Nenhum vídeo encontrado
-						</Typography>
-					</div>
-				)}
-			</div>
-		</>
+		</div>
 	);
 };
 

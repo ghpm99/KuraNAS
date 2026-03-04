@@ -1,12 +1,14 @@
 import VideoContent from '@/components/videos/videoContent/videoContent';
-import './videos.css';
 import VideoLayout from '@/components/videos/videoLayout';
+import styles from './videos.module.css';
 
 const VideosPage = () => {
 	return (
 		<VideoLayout>
-			<div className='content'>
+			<div className={styles.videosPage}>
+				<div className={styles.videosViewport}>
 				<VideoContent />
+				</div>
 			</div>
 		</VideoLayout>
 	);
