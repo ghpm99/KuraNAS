@@ -213,3 +213,59 @@ func TestInitPanicsWhenCreateMigrationsTableFails(t *testing.T) {
 
 	Init(db)
 }
+
+func TestMigrationExistsReturnsScanError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("bad_count").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow("not-a-number"))
+	mock.ExpectRollback()
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+
+	exists, err := migrationExists(tx, "bad_count")
+	if err == nil {
+		t.Fatalf("expected scan error from migrationExists")
+	}
+	if exists {
+		t.Fatalf("expected exists=false on scan error")
+	}
+	_ = tx.Rollback()
+}
+
+func TestRunMigrationReturnsRecordError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("record_fail").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec(regexp.QuoteMeta(insertMigrationQuery)).
+		WithArgs("record_fail").
+		WillReturnError(errors.New("insert failed"))
+	mock.ExpectRollback()
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+
+	err = runMigration(tx, "record_fail", func(*sql.Tx) error { return nil })
+	if err == nil {
+		t.Fatalf("expected record migration error")
+	}
+	_ = tx.Rollback()
+}

@@ -44,6 +44,8 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 				return nil
 			}
 			fail(path, err)
+			failedFilesCount++
+			return nil
 		}
 		name := info.Name()
 		fileDto, fileDtoError := service.GetFileByNameAndPath(name, path)
@@ -51,7 +53,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 		if fileDtoError != nil {
 			if !errors.Is(fileDtoError, sql.ErrNoRows) {
 				failedFilesCount++
-				return fail(path, err)
+				return fail(path, fileDtoError)
 			}
 			i18n.LogTranslate("FILE_NOT_FOUND_IN_DATABASE", path)
 		}
@@ -76,13 +78,13 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 			return err
 		}
 
-		go func() {
-			err = service.UpdateCheckSum(fileDto.ID)
-			if err != nil {
-				fail(path, err)
+		go func(fileID int, filePath string) {
+			checksumErr := service.UpdateCheckSum(fileID)
+			if checksumErr != nil {
+				fail(filePath, checksumErr)
 			}
-			fmt.Println("checksum atualizado com sucesso", fileDto.ID)
-		}()
+			fmt.Println("checksum atualizado com sucesso", fileID)
+		}(fileDto.ID, path)
 		successFilesCount++
 		return nil
 	})
@@ -158,11 +160,11 @@ func findFilesDeleted(service files.ServiceInterface) int {
 					Value:    time.Now(),
 				}
 				_, error := service.UpdateFile(file)
-				deletedFilesCount++
 				if error != nil {
 					i18n.LogTranslate("ERROR_DELETING_FILE", file.ID, file.Name)
 					continue
 				}
+				deletedFilesCount++
 			} else {
 				continue
 			}
@@ -171,7 +173,11 @@ func findFilesDeleted(service files.ServiceInterface) int {
 			break
 		}
 		currentPage++
-		pagination, error = service.GetFiles(files.FileFilter{}, currentPage, 20)
+		pagination, error = service.GetFiles(files.FileFilter{
+			DeletedAt: utils.Optional[time.Time]{
+				HasValue: true,
+			},
+		}, currentPage, 20)
 		if error != nil {
 			i18n.LogTranslate("ERROR_GET_FILES", error)
 			break

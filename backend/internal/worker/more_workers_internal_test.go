@@ -260,6 +260,46 @@ func TestScanFilesWorker(t *testing.T) {
 	}
 }
 
+func TestScanFilesWorker_UsesRepositoryErrorInFailureCallback(t *testing.T) {
+	prev := config.AppConfig
+	t.Cleanup(func() { config.AppConfig = prev })
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "item.txt")
+	if err := os.WriteFile(filePath, []byte("x"), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	config.AppConfig.EntryPoint = tmpDir
+
+	expectedErr := errors.New("db lookup failed")
+	svc := &workerFilesServiceMock{
+		getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+			return files.FileDto{}, expectedErr
+		},
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{}, nil
+		},
+	}
+
+	var receivedErr error
+	logSvc := &workerLoggerMock{
+		createLogFn: func(log logger.LoggerModel, object interface{}) (logger.LoggerModel, error) {
+			log.ID = 1
+			return log, nil
+		},
+		completeWithErrorLogFn: func(log logger.LoggerModel, err error) error {
+			receivedErr = err
+			return nil
+		},
+	}
+
+	ScanFilesWorker(svc, logSvc)
+
+	if !errors.Is(receivedErr, expectedErr) {
+		t.Fatalf("expected failure callback to receive repository error, got %v", receivedErr)
+	}
+}
+
 func TestCreateAndUpdateFileDtoHelpers(t *testing.T) {
 	svc := &workerFilesServiceMock{
 		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
@@ -335,6 +375,62 @@ func TestFindFilesDeleted(t *testing.T) {
 	}
 	if updates == 0 {
 		t.Fatalf("expected at least one update call")
+	}
+}
+
+func TestFindFilesDeleted_CountsOnlySuccessfulUpdatesAndKeepsDeletedFilterOnPagination(t *testing.T) {
+	tmpDir := t.TempDir()
+	missing1 := filepath.Join(tmpDir, "missing-1.txt")
+	missing2 := filepath.Join(tmpDir, "missing-2.txt")
+	existing := filepath.Join(tmpDir, "existing.txt")
+	if err := os.WriteFile(existing, []byte("ok"), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	pageCalls := 0
+	updates := 0
+	svc := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			pageCalls++
+			if !filter.DeletedAt.HasValue {
+				t.Fatalf("expected DeletedAt filter to be preserved on page %d", page)
+			}
+			if page == 1 {
+				return utils.PaginationResponse[files.FileDto]{
+					Items: []files.FileDto{{ID: 1, Name: "missing-1", Path: missing1}},
+					Pagination: utils.Pagination{
+						Page: 1, PageSize: 20, HasNext: true,
+					},
+				}, nil
+			}
+			return utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					{ID: 2, Name: "missing-2", Path: missing2},
+					{ID: 3, Name: "existing", Path: existing},
+				},
+				Pagination: utils.Pagination{
+					Page: 2, PageSize: 20, HasNext: false,
+				},
+			}, nil
+		},
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			updates++
+			if file.ID == 2 {
+				return false, errors.New("update failed")
+			}
+			return true, nil
+		},
+	}
+
+	deleted := findFilesDeleted(svc)
+	if pageCalls < 2 {
+		t.Fatalf("expected at least two pagination calls, got %d", pageCalls)
+	}
+	if updates != 2 {
+		t.Fatalf("expected two update attempts for missing files, got %d", updates)
+	}
+	if deleted != 1 {
+		t.Fatalf("expected deleted count to include only successful updates, got %d", deleted)
 	}
 }
 

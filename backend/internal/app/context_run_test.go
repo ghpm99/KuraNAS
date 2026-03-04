@@ -2,7 +2,9 @@ package app
 
 import (
 	"database/sql"
+	"errors"
 	"net"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -54,6 +56,37 @@ func TestApplicationRunAndStopGuards(t *testing.T) {
 	if err := app.Run("invalid-addr", false); err == nil {
 		t.Fatalf("expected Run to return listen error for invalid addr")
 	}
+}
+
+func TestApplicationStop_NilReceiverDoesNotPanic(t *testing.T) {
+	var app *Application
+
+	if err := app.Stop(); err != nil {
+		t.Fatalf("expected Stop to succeed for nil receiver, got %v", err)
+	}
+}
+
+type failingListener struct{}
+
+func (f *failingListener) Accept() (net.Conn, error) { return nil, errors.New("accept failed") }
+func (f *failingListener) Close() error              { return nil }
+func (f *failingListener) Addr() net.Addr            { return &net.TCPAddr{} }
+
+func TestApplicationStop_IdleServerIsNoop(t *testing.T) {
+	app := &Application{
+		Router: gin.New(),
+		Server: &http.Server{},
+	}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- app.Server.Serve(&failingListener{})
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	if err := app.Stop(); err != nil {
+		t.Fatalf("expected Stop to be a no-op on idle server, got %v", err)
+	}
+	<-errCh
 }
 
 func TestInitializeAppReturnsErrorWhenTranslationsAreMissing(t *testing.T) {

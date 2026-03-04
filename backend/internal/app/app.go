@@ -84,6 +84,10 @@ func (app *Application) Run(addr string, enableGraceFul bool) error {
 }
 
 func (app *Application) Stop() error {
+	if app == nil {
+		return nil
+	}
+
 	if app.Server == nil {
 		return nil
 	}

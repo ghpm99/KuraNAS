@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -299,6 +300,230 @@ func TestVideoRepositoryWritePaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("write operations failed: %v", err)
 	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestVideoRepositoryWriteBranches(t *testing.T) {
+	repo, mock, db := newVideoRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeletePlaylistItemsQuery)).
+		WithArgs(10).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.ReplacePlaylistItems(tx, 10, nil); err != nil {
+		t.Fatalf("ReplacePlaylistItems empty should succeed: %v", err)
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeletePlaylistItemsQuery)).
+		WithArgs(10).
+		WillReturnError(errors.New("delete failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.ReplacePlaylistItems(tx, 10, []int{1}); err == nil {
+		t.Fatalf("expected ReplacePlaylistItems delete error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeletePlaylistItemsQuery)).
+		WithArgs(10).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(regexp.QuoteMeta(queries.InsertPlaylistItemsQuery)).
+		WithArgs(10, sqlmock.AnyArg()).
+		WillReturnError(errors.New("insert failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.ReplacePlaylistItems(tx, 10, []int{1}); err == nil {
+		t.Fatalf("expected ReplacePlaylistItems insert error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.InsertPlaylistItemsWithSource(tx, 10, nil, "auto"); err != nil {
+		t.Fatalf("InsertPlaylistItemsWithSource empty should succeed: %v", err)
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.InsertPlaylistItemsWithSourceQuery)).
+		WithArgs(10, sqlmock.AnyArg(), "auto").
+		WillReturnError(errors.New("insert with source failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.InsertPlaylistItemsWithSource(tx, 10, []int{1}, "auto"); err == nil {
+		t.Fatalf("expected InsertPlaylistItemsWithSource error")
+	}
+	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestVideoRepositoryWriteErrorBranches(t *testing.T) {
+	repo, mock, db := newVideoRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertPlaybackStateQuery)).
+		WillReturnError(errors.New("upsert playback failed"))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if _, err := repo.UpsertPlaybackState(tx, VideoPlaybackStateModel{ClientID: "c1"}); err == nil {
+		t.Fatalf("expected UpsertPlaybackState error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.TouchPlaylistQuery)).
+		WithArgs(10).
+		WillReturnError(errors.New("touch failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.TouchPlaylist(tx, 10); err == nil {
+		t.Fatalf("expected TouchPlaylist error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertAutoPlaylistQuery)).
+		WillReturnError(errors.New("upsert auto failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if _, err := repo.UpsertAutoPlaylist(tx, "smart", "/s", "n", "gm", "c"); err == nil {
+		t.Fatalf("expected UpsertAutoPlaylist error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteAutoPlaylistItemsQuery)).
+		WithArgs(11).
+		WillReturnError(errors.New("delete auto failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.DeleteAutoPlaylistItems(tx, 11); err == nil {
+		t.Fatalf("expected DeleteAutoPlaylistItems error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.SetPlaylistHiddenQuery)).
+		WithArgs(11, true).
+		WillReturnError(errors.New("set hidden failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.SetPlaylistHidden(tx, 11, true); err == nil {
+		t.Fatalf("expected SetPlaylistHidden error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.AddPlaylistVideoManualQuery)).
+		WithArgs(11, 2).
+		WillReturnError(errors.New("add manual failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.AddPlaylistVideoManual(tx, 11, 2); err == nil {
+		t.Fatalf("expected AddPlaylistVideoManual error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.RemovePlaylistVideoQuery)).
+		WithArgs(11, 2).
+		WillReturnError(errors.New("remove failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.RemovePlaylistVideo(tx, 11, 2); err == nil {
+		t.Fatalf("expected RemovePlaylistVideo error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpsertPlaylistExclusionQuery)).
+		WithArgs(11, 2).
+		WillReturnError(errors.New("upsert exclusion failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.UpsertPlaylistExclusion(tx, 11, 2); err == nil {
+		t.Fatalf("expected UpsertPlaylistExclusion error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeletePlaylistExclusionQuery)).
+		WithArgs(11, 2).
+		WillReturnError(errors.New("delete exclusion failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.DeletePlaylistExclusion(tx, 11, 2); err == nil {
+		t.Fatalf("expected DeletePlaylistExclusion error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdatePlaylistNameQuery)).
+		WithArgs(11, "new").
+		WillReturnError(errors.New("update name failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.UpdatePlaylistName(tx, 11, "new"); err == nil {
+		t.Fatalf("expected UpdatePlaylistName error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistItemQuery)).
+		WithArgs(11, 2, 0).
+		WillReturnError(errors.New("reorder failed"))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.ReorderPlaylistItem(tx, 11, 2, 0); err == nil {
+		t.Fatalf("expected ReorderPlaylistItem error")
+	}
+	_ = tx.Rollback()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)

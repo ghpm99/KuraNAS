@@ -34,6 +34,7 @@ var (
 	osStartProcessFunc     = os.StartProcess
 	osExitFunc             = os.Exit
 	syscallExecFunc        = syscall.Exec
+	runtimeGOOS            = runtime.GOOS
 )
 
 type Service struct{}
@@ -155,7 +156,7 @@ func fetchLatestRelease() (GitHubRelease, error) {
 }
 
 func getAssetName() string {
-	if runtime.GOOS == "windows" {
+	if runtimeGOOS == "windows" {
 		return "kuranas-windows.zip"
 	}
 	return "kuranas-linux.zip"
@@ -224,7 +225,7 @@ func extractBinary(zipPath, destDir string) (string, error) {
 	defer r.Close()
 
 	binaryName := "kuranas"
-	if runtime.GOOS == "windows" {
+	if runtimeGOOS == "windows" {
 		binaryName = "kuranas.exe"
 	}
 
@@ -292,7 +293,7 @@ func applyUpdate(newBinaryPath string) error {
 		return fmt.Errorf("failed to copy new binary: %w", err)
 	}
 
-	if runtime.GOOS != "windows" {
+	if runtimeGOOS != "windows" {
 		if err := osChmodFunc(currentPath, 0755); err != nil {
 			return fmt.Errorf("failed to set executable permissions: %w", err)
 		}
@@ -307,7 +308,7 @@ func restartProcess() {
 		return
 	}
 
-	if runtime.GOOS == "windows" {
+	if runtimeGOOS == "windows" {
 		proc, err := osStartProcessFunc(execPath, os.Args, &os.ProcAttr{
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
 		})

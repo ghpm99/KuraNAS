@@ -3,6 +3,8 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"nas-go/api/internal/api/v1/configuration"
@@ -77,5 +79,63 @@ func TestRegisterCorsRoutes(t *testing.T) {
 	}
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
 		t.Fatalf("expected credentials header to be true, got %q", got)
+	}
+
+	reqDenied := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	reqDenied.Header.Set("Origin", "https://example.com")
+	wDenied := httptest.NewRecorder()
+	router.ServeHTTP(wDenied, reqDenied)
+	if wDenied.Code != http.StatusOK {
+		t.Fatalf("expected 200 for denied-origin request too, got %d", wDenied.Code)
+	}
+	if got := wDenied.Header().Get("Access-Control-Allow-Credentials"); got != "" {
+		t.Fatalf("expected denied-origin request to not include credentials header, got %q", got)
+	}
+}
+
+func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *testing.T) {
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get cwd: %v", err)
+	}
+	tmpRoot := t.TempDir()
+	if err := os.Chdir(tmpRoot); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(originalWD)
+	})
+
+	distDir := "dist"
+	assetsDir := filepath.Join(distDir, "assets")
+	if err := os.MkdirAll(assetsDir, 0755); err != nil {
+		t.Fatalf("failed to create dist assets dir: %v", err)
+	}
+	indexPath := filepath.Join(distDir, "index.html")
+	indexContent := []byte("<html><body>kuranas</body></html>")
+	if err := os.WriteFile(indexPath, indexContent, 0644); err != nil {
+		t.Fatalf("failed to write dist index: %v", err)
+	}
+
+	router := SetUpRouter()
+	registerReactRoutes(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/some/unknown/route", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected NoRoute to serve index with 200, got %d", w.Code)
+	}
+	if body := w.Body.String(); body == "" {
+		t.Fatalf("expected index response body for NoRoute")
+	}
+}
+
+func TestIsAllowedOrigin(t *testing.T) {
+	if !isAllowedOrigin("https://github.com") {
+		t.Fatalf("expected github origin to be allowed")
+	}
+	if isAllowedOrigin("https://example.com") {
+		t.Fatalf("expected non-github origin to be denied")
 	}
 }

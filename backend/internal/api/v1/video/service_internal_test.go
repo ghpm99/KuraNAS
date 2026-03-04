@@ -498,5 +498,103 @@ func TestVideoServiceHomeCatalog(t *testing.T) {
 	}
 }
 
+func TestVideoService_ErrorBranchesAndContextPlaylistVariants(t *testing.T) {
+	t.Run("ensureContextPlaylist returns existing playlist with items", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: 70, Name: "ctx"}, nil
+			},
+			getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+				return []VideoPlaylistItemModel{{ID: 1, PlaylistID: playlistID, VideoID: 1}}, nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		playlist, err := svc.ensureContextPlaylist(string(ContextFolder), "/videos")
+		if err != nil {
+			t.Fatalf("expected existing context playlist, got %v", err)
+		}
+		if playlist.ID != 70 {
+			t.Fatalf("expected playlist id 70, got %d", playlist.ID)
+		}
+	})
+
+	t.Run("ensureContextPlaylist updates existing playlist when empty", func(t *testing.T) {
+		replaced := false
+		repo := &videoRepoMock{
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: 80, Name: "ctx"}, nil
+			},
+			getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+				return []VideoPlaylistItemModel{}, nil
+			},
+			getVideosByParentPathFn: func(parentPath string) ([]VideoFileModel, error) {
+				return []VideoFileModel{{ID: 1, Name: "v1", ParentPath: parentPath, Path: parentPath + "/v1.mp4"}}, nil
+			},
+			replacePlaylistItemsFn: func(tx *sql.Tx, playlistID int, videoIDs []int) error {
+				replaced = true
+				return nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		playlist, err := svc.ensureContextPlaylist(string(ContextFolder), "/videos")
+		if err != nil {
+			t.Fatalf("expected update existing context playlist, got %v", err)
+		}
+		if playlist.ID != 80 || !replaced {
+			t.Fatalf("expected existing playlist replacement path")
+		}
+	})
+
+	t.Run("ensureContextPlaylist reports no videos found", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{}, errors.New("missing")
+			},
+			getVideosByParentPathFn: func(parentPath string) ([]VideoFileModel, error) {
+				return []VideoFileModel{}, nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if _, err := svc.ensureContextPlaylist(string(ContextFolder), "/empty"); err == nil {
+			t.Fatalf("expected no videos found error")
+		}
+	})
+
+	t.Run("getPlaybackState fails without active playlist", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{ClientID: clientID}, nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if _, err := svc.GetPlaybackState("c1"); err == nil {
+			t.Fatalf("expected missing playlist error")
+		}
+	})
+
+	t.Run("removeVideoFromPlaylist upserts exclusion for auto playlist", func(t *testing.T) {
+		upsertExclusionCalled := false
+		repo := &videoRepoMock{
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: id, Name: "auto", IsAuto: true}, nil
+			},
+			removePlaylistVideoFn: func(tx *sql.Tx, playlistID int, videoID int) error {
+				return nil
+			},
+			upsertPlaylistExclusionFn: func(tx *sql.Tx, playlistID int, videoID int) error {
+				upsertExclusionCalled = true
+				return nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if err := svc.RemoveVideoFromPlaylist(10, 3); err != nil {
+			t.Fatalf("expected remove from auto playlist success, got %v", err)
+		}
+		if !upsertExclusionCalled {
+			t.Fatalf("expected exclusion upsert for auto playlist")
+		}
+	})
+}
+
 func ptrFloat(v float64) *float64 { return &v }
 func ptrBool(v bool) *bool        { return &v }

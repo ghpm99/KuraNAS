@@ -544,6 +544,31 @@ func TestFilesHandlerGetChildrenByIdNotFound(t *testing.T) {
 	}
 }
 
+func TestFilesHandlerGetFilesTreeWithParentFilter(t *testing.T) {
+	expectedParentPath := "/tmp/parent"
+	service := &filesHandlerServiceFuncMock{
+		getFileByIdFn: func(id int) (FileDto, error) {
+			return FileDto{ID: id, Path: expectedParentPath}, nil
+		},
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			if !filter.ParentPath.HasValue || filter.ParentPath.Value != expectedParentPath {
+				t.Fatalf("expected ParentPath filter %q, got %+v", expectedParentPath, filter.ParentPath)
+			}
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/tree", handler.GetFilesTreeHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/tree?file_parent=123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", w.Code, w.Body.String())
+	}
+}
+
 func TestFilesHandlerErrorResponses(t *testing.T) {
 	errBoom := errors.New("boom")
 	service := &filesHandlerServiceFuncMock{

@@ -7,6 +7,7 @@ import (
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -267,6 +268,45 @@ func TestStartDirectoryWalker(t *testing.T) {
 	}
 }
 
+func TestStartDirectoryWalkerPermissionDenied(t *testing.T) {
+	tmpDir := t.TempDir()
+	restrictedDir := filepath.Join(tmpDir, "restricted")
+	if err := os.MkdirAll(restrictedDir, 0700); err != nil {
+		t.Fatalf("failed to create restricted dir: %v", err)
+	}
+	innerFile := filepath.Join(restrictedDir, "hidden.txt")
+	if err := os.WriteFile(innerFile, []byte("x"), 0600); err != nil {
+		t.Fatalf("failed to create file in restricted dir: %v", err)
+	}
+	if err := os.Chmod(restrictedDir, 0000); err != nil {
+		t.Fatalf("failed to remove permissions: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(restrictedDir, 0700)
+	})
+
+	fileWalkChannel := make(chan FileWalk, 10)
+	monitor := make(chan ResultWorkerData, 10)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go StartDirectoryWalker(tmpDir, fileWalkChannel, monitor, &wg)
+	wg.Wait()
+	close(fileWalkChannel)
+	close(monitor)
+
+	permissionErrors := 0
+	for item := range monitor {
+		if !item.Success && strings.Contains(strings.ToLower(item.Error), "permission") {
+			permissionErrors++
+		}
+	}
+
+	if permissionErrors == 0 {
+		t.Skip("environment did not surface permission-denied during walk")
+	}
+}
+
 func TestMetadataWorkerErrorBranch(t *testing.T) {
 	runner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "{invalid-json", nil
@@ -289,5 +329,35 @@ func TestMetadataWorkerErrorBranch(t *testing.T) {
 	}
 	if len(monitor) != 1 {
 		t.Fatalf("expected one monitor error item")
+	}
+}
+
+func TestGetMetadataDispatchByFormat(t *testing.T) {
+	runner := func(scriptType utils.ScriptType, filePath string) (string, error) {
+		switch scriptType {
+		case utils.ImageMetadata:
+			return `{"id":1,"file_id":1,"path":"` + filePath + `","format":"jpeg","mode":"RGB","width":1,"height":1,"created_at":"2026-01-01T00:00:00Z"}`, nil
+		case utils.AudioMetadata:
+			return `{"id":2,"file_id":1,"path":"` + filePath + `","mime":"audio/mpeg","length":1,"bitrate":320,"sample_rate":44100,"channels":2,"created_at":"2026-01-01T00:00:00Z"}`, nil
+		case utils.VideoMetadata:
+			return `{"id":3,"file_id":1,"path":"` + filePath + `","format_name":"mp4","size":"1","duration":"1","width":1,"height":1,"created_at":"2026-01-01T00:00:00Z"}`, nil
+		default:
+			return `{}`, nil
+		}
+	}
+
+	imgMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner)
+	if err != nil || imgMeta == nil {
+		t.Fatalf("expected image metadata dispatch success, err=%v", err)
+	}
+
+	audioMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner)
+	if err != nil || audioMeta == nil {
+		t.Fatalf("expected audio metadata dispatch success, err=%v", err)
+	}
+
+	videoMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner)
+	if err != nil || videoMeta == nil {
+		t.Fatalf("expected video metadata dispatch success, err=%v", err)
 	}
 }

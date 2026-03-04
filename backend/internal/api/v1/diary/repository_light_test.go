@@ -2,7 +2,9 @@ package diary
 
 import (
 	"database/sql"
+	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,6 +90,78 @@ func TestDiaryRepositoryCreateAndUpdate(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("UpdateDiary failed: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestDiaryRepositoryUpdateDiaryErrorBranches(t *testing.T) {
+	repo, mock, db := newDiaryRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateDiaryQuery)).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectRollback()
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	_, err = repo.UpdateDiary(tx, DiaryModel{ID: 1, Name: "x", Description: "y", StartTime: now})
+	if err == nil || !strings.Contains(err.Error(), "multiple rows affected") {
+		t.Fatalf("expected multiple rows affected error, got %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateDiaryQuery)).
+		WillReturnResult(sqlmock.NewErrorResult(errors.New("rows affected failed")))
+
+	tx2, err := db.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin tx2: %v", err)
+	}
+	defer tx2.Rollback()
+	_, err = repo.UpdateDiary(tx2, DiaryModel{ID: 1, Name: "x", Description: "y", StartTime: now})
+	if err == nil || !strings.Contains(err.Error(), "rows affected failed") {
+		t.Fatalf("expected rows affected error, got %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestDiaryRepositoryGetSummaryAndGetDiaryErrorBranches(t *testing.T) {
+	repo, mock, db := newDiaryRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetDiarySummaryQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"date", "total_activities", "total_time_spent_seconds", "longest_name", "longest_seconds"}).
+			AddRow(now, 0, 0, nil, nil))
+	mock.ExpectRollback()
+
+	summary, err := repo.GetSummary(now)
+	if err != nil {
+		t.Fatalf("expected GetSummary success with null longest activity, got %v", err)
+	}
+	if summary.LongestActivity != nil {
+		t.Fatalf("expected nil longest activity when database returns null values")
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetDiaryQuery)).
+		WillReturnError(errors.New("query failed"))
+	mock.ExpectRollback()
+
+	_, err = repo.GetDiary(DiaryFilter{}, 1, 10)
+	if err == nil || !strings.Contains(err.Error(), "falha ao obter diário") {
+		t.Fatalf("expected wrapped get diary error, got %v", err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

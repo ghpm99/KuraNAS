@@ -2,6 +2,7 @@ package worker
 
 import (
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,6 +22,9 @@ type pipelineFilesServiceMock struct {
 
 func (m *pipelineFilesServiceMock) UpdateFile(file files.FileDto) (bool, error) {
 	m.updated = append(m.updated, file)
+	if m.updateFileFn != nil {
+		return m.updateFileFn(file)
+	}
 	return true, nil
 }
 
@@ -82,6 +86,46 @@ func TestUpdateCheckSumWorker(t *testing.T) {
 	UpdateCheckSumWorker(mock, 2, &pipelineLoggerMock{})
 	if len(mock.updated) < 2 {
 		t.Fatalf("expected updated files from checksum worker, got %d", len(mock.updated))
+	}
+}
+
+func TestUpdateCheckSumWorker_ErrorBranchesDoNotUpdateInvalidEntries(t *testing.T) {
+	tmpDir := t.TempDir()
+	missingFile := filepath.Join(tmpDir, "missing.txt")
+	subDir := filepath.Join(tmpDir, "dir")
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+
+	updateCalls := 0
+	mock := &pipelineFilesServiceMock{
+		workerFilesServiceMock: workerFilesServiceMock{
+			getFileByIDFn: func(id int) (files.FileDto, error) {
+				switch id {
+				case 1:
+					// Missing path: checksum generation should fail and not call update.
+					return files.FileDto{ID: 1, Name: "missing", Path: missingFile, Type: files.File, UpdatedAt: time.Now()}, nil
+				case 2:
+					// Directory listing error: should return early and not call update.
+					return files.FileDto{ID: 2, Name: "dir", Path: subDir, Type: files.Directory, UpdatedAt: time.Now()}, nil
+				default:
+					return files.FileDto{}, errors.New("not found")
+				}
+			},
+			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+				return utils.PaginationResponse[files.FileDto]{}, errors.New("list failed")
+			},
+		},
+	}
+	mock.updateFileFn = func(file files.FileDto) (bool, error) {
+		updateCalls++
+		return true, nil
+	}
+
+	UpdateCheckSumWorker(mock, 1, &pipelineLoggerMock{})
+	UpdateCheckSumWorker(mock, 2, &pipelineLoggerMock{})
+	if updateCalls != 0 {
+		t.Fatalf("expected zero update calls for failing checksum branches, got %d", updateCalls)
 	}
 }
 

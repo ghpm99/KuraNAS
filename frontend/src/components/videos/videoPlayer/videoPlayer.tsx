@@ -56,19 +56,19 @@ const VideoPlayer = ({
 			video.removeEventListener('waiting', handleWaiting);
 			video.removeEventListener('playing', handlePlaying);
 		};
-	}, [nextVideo, setCurrentTime, setDuration]);
+	}, [nextVideo, setCurrentTime, setDuration, videoRef]);
 
 	useEffect(() => {
 		if (videoRef.current) {
 			videoRef.current.volume = volume;
 		}
-	}, [volume]);
+	}, [volume, videoRef]);
 
 	useEffect(() => {
 		if (videoRef.current) {
 			videoRef.current.playbackRate = playbackRate;
 		}
-	}, [playbackRate]);
+	}, [playbackRate, videoRef]);
 
 	const getVideoTitle = (): string => {
 		if (!currentVideo) return 'No video playing';

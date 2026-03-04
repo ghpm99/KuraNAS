@@ -99,6 +99,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		if (!data) return;
 		const nextItems = data?.pages[0]?.items ?? [];
 		if (selectedItemId) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setFileTree((currentTree) => addChildrenToTree(currentTree, selectedItemId, nextItems));
 			return;
 		}

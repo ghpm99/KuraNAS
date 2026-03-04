@@ -1,6 +1,7 @@
 package files
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -139,5 +140,29 @@ func TestFileModelChecksumAndServiceConstructors(t *testing.T) {
 	svc := NewService(&filesRepoMock{}, &metadataRepoMock{}, make(chan utils.Task, 1))
 	if svc == nil {
 		t.Fatalf("expected non-nil service")
+	}
+}
+
+func TestRecentFileService_RegisterAccessErrors(t *testing.T) {
+	upsertErrRepo := &recentRepoMock{
+		upsertFn:      func(ip string, fileID int) error { return errors.New("upsert failed") },
+		deleteOldFn:   func(ip string, keep int) error { return nil },
+		getRecentFn:   func(page int, pageSize int) ([]RecentFileModel, error) { return nil, nil },
+		deleteFn:      func(ip string, fileID int) error { return nil },
+		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) { return nil, nil },
+	}
+	if err := NewRecentFileService(upsertErrRepo).RegisterAccess("127.0.0.1", 1, 10); err == nil {
+		t.Fatalf("expected RegisterAccess to return upsert error")
+	}
+
+	deleteOldErrRepo := &recentRepoMock{
+		upsertFn:      func(ip string, fileID int) error { return nil },
+		deleteOldFn:   func(ip string, keep int) error { return errors.New("delete old failed") },
+		getRecentFn:   func(page int, pageSize int) ([]RecentFileModel, error) { return nil, nil },
+		deleteFn:      func(ip string, fileID int) error { return nil },
+		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) { return nil, nil },
+	}
+	if err := NewRecentFileService(deleteOldErrRepo).RegisterAccess("127.0.0.1", 1, 10); err == nil {
+		t.Fatalf("expected RegisterAccess to return delete-old error")
 	}
 }

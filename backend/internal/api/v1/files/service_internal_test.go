@@ -793,3 +793,250 @@ func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
 		t.Fatalf("expected non-empty video preview fallback")
 	}
 }
+
+func TestFileService_ErrorBranches(t *testing.T) {
+	s := newFilesServiceForTest(t, &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("get files failed")
+		},
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			return FileModel{}, errors.New("create failed")
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			return false, errors.New("update failed")
+		},
+		getImagesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("images failed")
+		},
+		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("music failed")
+		},
+		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("videos failed")
+		},
+		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("artist failed")
+		},
+		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("album failed")
+		},
+		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("genre failed")
+		},
+	}, &metadataRepoMock{
+		upsertImageFn: func(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error) {
+			return ImageMetadataModel{}, errors.New("upsert image failed")
+		},
+	})
+
+	if _, err := s.GetFiles(FileFilter{}, 1, 10); err == nil {
+		t.Fatalf("expected GetFiles error")
+	}
+	if _, err := s.CreateFile(FileDto{Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
+		t.Fatalf("expected CreateFile error")
+	}
+	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
+		t.Fatalf("expected UpdateFile error")
+	}
+	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File, Metadata: ImageMetadataModel{}}); err == nil {
+		t.Fatalf("expected UpdateFile metadata error")
+	}
+
+	if _, err := s.GetImages(1, 10); err == nil {
+		t.Fatalf("expected GetImages error")
+	}
+	if _, err := s.GetMusic(1, 10); err == nil {
+		t.Fatalf("expected GetMusic error")
+	}
+	if _, err := s.GetVideos(1, 10); err == nil {
+		t.Fatalf("expected GetVideos error")
+	}
+	if _, err := s.GetMusicByArtist("a", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByArtist error")
+	}
+	if _, err := s.GetMusicByAlbum("a", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByAlbum error")
+	}
+	if _, err := s.GetMusicByGenre("a", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByGenre error")
+	}
+}
+
+func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
+	s := newFilesServiceForTest(t, &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{
+				Items: []FileModel{sampleModel(999, "missing.bin", File)},
+			}, nil
+		},
+	}, &metadataRepoMock{})
+
+	if _, err := s.GetFileBlobById(999); err == nil {
+		t.Fatalf("expected GetFileBlobById read error")
+	}
+}
+
+func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
+	t.Run("GetFiles with directory count error falls back to zero", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{sampleModel(1, "dir", Directory)},
+				}, nil
+			},
+			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
+				return 0, errors.New("count failed")
+			},
+		}, &metadataRepoMock{})
+
+		out, err := s.GetFiles(FileFilter{}, 1, 10)
+		if err != nil {
+			t.Fatalf("expected GetFiles success, got %v", err)
+		}
+		if out.Items[0].DirectoryContentCount != 0 {
+			t.Fatalf("expected directory count fallback to 0")
+		}
+	})
+
+	t.Run("GetFileById no rows and multiple rows", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				if filter.ID.Value == 10 {
+					return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+				}
+				return utils.PaginationResponse[FileModel]{Items: []FileModel{
+					sampleModel(1, "a", File),
+					sampleModel(2, "b", File),
+				}}, nil
+			},
+		}, &metadataRepoMock{})
+
+		if _, err := s.GetFileById(10); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("expected sql.ErrNoRows, got %v", err)
+		}
+		if _, err := s.GetFileById(11); err == nil {
+			t.Fatalf("expected multiple rows error")
+		}
+	})
+
+	t.Run("UpdateCheckSum returns error when update does not affect rows", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		filePath := filepath.Join(tmpDir, "x.txt")
+		if err := os.WriteFile(filePath, []byte("abc"), 0644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{{
+						ID:         filter.ID.Value,
+						Name:       "x.txt",
+						Path:       filePath,
+						ParentPath: tmpDir,
+						Type:       File,
+						Format:     ".txt",
+						UpdatedAt:  time.Now(),
+						CreatedAt:  time.Now(),
+					}},
+				}, nil
+			},
+			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+				return false, nil
+			},
+		}, &metadataRepoMock{})
+
+		if err := s.UpdateCheckSum(1); err == nil {
+			t.Fatalf("expected UpdateCheckSum error when update returns false")
+		}
+	})
+
+	t.Run("UpdateCheckSum propagates get-file error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{}, errors.New("repository down")
+			},
+		}, &metadataRepoMock{})
+
+		if err := s.UpdateCheckSum(1); err == nil {
+			t.Fatalf("expected UpdateCheckSum to propagate fetch error")
+		}
+	})
+
+	t.Run("GetReportSizeByFormat propagates repository error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getReportSizeByFormatFn: func() ([]SizeReportModel, error) {
+				return nil, errors.New("report failed")
+			},
+		}, &metadataRepoMock{})
+
+		if _, err := s.GetReportSizeByFormat(); err == nil {
+			t.Fatalf("expected report error")
+		}
+	})
+
+	t.Run("UpsertMetadata audio and video errors", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{
+			upsertAudioFn: func(transaction *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
+				return AudioMetadataModel{}, errors.New("audio metadata failed")
+			},
+			upsertVideoFn: func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
+				return VideoMetadataModel{}, errors.New("video metadata failed")
+			},
+		})
+
+		if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: AudioMetadataModel{}}); err == nil {
+			t.Fatalf("expected audio metadata error")
+		}
+		if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: VideoMetadataModel{}}); err == nil {
+			t.Fatalf("expected video metadata error")
+		}
+	})
+
+	t.Run("CheckFileExists returns false on repository error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{}, errors.New("query failed")
+			},
+		}, &metadataRepoMock{})
+
+		if s.CheckFileExists(10) {
+			t.Fatalf("expected CheckFileExists false on repository error")
+		}
+	})
+
+	t.Run("DeleteFile propagates update errors", func(t *testing.T) {
+		sErr := newFilesServiceForTest(t, &filesRepoMock{
+			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+				return false, errors.New("update failed")
+			},
+		}, &metadataRepoMock{})
+
+		err := sErr.DeleteFile(FileDto{
+			ID:              1,
+			Name:            "x",
+			Path:            "/tmp/x",
+			Type:            File,
+			LastInteraction: utils.Optional[time.Time]{HasValue: true, Value: time.Now().Add(-48 * time.Hour)},
+		}, true)
+		if err == nil {
+			t.Fatalf("expected DeleteFile update error")
+		}
+
+		sFalse := newFilesServiceForTest(t, &filesRepoMock{
+			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+				return false, nil
+			},
+		}, &metadataRepoMock{})
+
+		err = sFalse.DeleteFile(FileDto{
+			ID:              2,
+			Name:            "y",
+			Path:            "/tmp/y",
+			Type:            File,
+			LastInteraction: utils.Optional[time.Time]{HasValue: true, Value: time.Now().Add(-48 * time.Hour)},
+		}, true)
+		if err == nil {
+			t.Fatalf("expected DeleteFile not-found error")
+		}
+	})
+}

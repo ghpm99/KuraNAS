@@ -2,6 +2,9 @@ package files
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"errors"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -11,6 +14,14 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
+
+func numberedCols(total int) []string {
+	cols := make([]string, 0, total)
+	for i := 1; i <= total; i++ {
+		cols = append(cols, fmt.Sprintf("c%d", i))
+	}
+	return cols
+}
 
 func newRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
 	t.Helper()
@@ -249,6 +260,145 @@ func TestRepositoryMediaQueriesScanErrorPaths(t *testing.T) {
 	mock.ExpectRollback()
 	if _, err := repo.GetVideos(1, 10); err == nil {
 		t.Fatalf("expected GetVideos scan error")
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestRepositoryUpdateFileBranches(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+	base := FileModel{
+		ID:         99,
+		Name:       "f",
+		Path:       "/tmp/f",
+		ParentPath: "/tmp",
+		Type:       File,
+		UpdatedAt:  now,
+		CreatedAt:  now,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateFileQuery)).
+		WillReturnError(errors.New("exec failed"))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if ok, err := repo.UpdateFile(tx, base); err == nil || ok {
+		t.Fatalf("expected UpdateFile exec error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateFileQuery)).
+		WillReturnResult(sqlmock.NewErrorResult(errors.New("rows affected failed")))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if ok, err := repo.UpdateFile(tx, base); err == nil || ok {
+		t.Fatalf("expected UpdateFile rows affected error")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateFileQuery)).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectRollback()
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if ok, err := repo.UpdateFile(tx, base); err == nil || ok {
+		t.Fatalf("expected UpdateFile multiple rows error")
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+	fileType := int(File)
+
+	imageValues := []driver.Value{
+		1, "img", "/tmp/img.jpg", "/tmp", ".jpg", int64(10), now, now, nil, nil, fileType, "sum", nil, false,
+		2, 1, "/tmp/img.jpg", "jpeg", "RGB", 10, 10, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 6.0, 2.0, 1.0, "cfg", "icc",
+		"mk", "mdl", "sw", "lens", "ser", "dt", "dto", "dtd", "sub", 1.0, 2.8, 100.0, 1.0, 2.0, 0.0, 3.0, 0.0, 50.0,
+		0.0, 1.0, 2.8, 1.8, -23.0, -46.0, 800.0, "2026:01:01", "12:00:00", "desc", "comment", "copy", "artist", now,
+	}
+
+	audioValues := []driver.Value{
+		3, "song", "/tmp/song.mp3", "/tmp", ".mp3", int64(20), now, now, nil, nil, fileType, "sum2", nil, true,
+		4, 3, "/tmp/song.mp3", "audio/mpeg", 123.4, 320, 44100, 2, 1, "enc", 16, "title", "artist", "album",
+		"albumArtist", "1", "rock", "composer", "2026", "2026-01-01", "lame", "pub", "2025-12-01", "orig", "lyr", "text", now,
+	}
+
+	videoValues := []driver.Value{
+		5, "video", "/tmp/video.mp4", "/tmp", ".mp4", int64(30), now, now, nil, nil, fileType, "sum3", nil, false,
+		6, 5, "/tmp/video.mp4", "mp4", "30", "60.0", 1920, 1080, 30.0, 1800, "1000000", "h264", "H.264", "yuv420p",
+		40, "High", "16:9", "aac", 2, "48000", "192000", now,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImagesQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(imageValues))).AddRow(imageValues...))
+	mock.ExpectRollback()
+	images, err := repo.GetImages(1, 10)
+	if err != nil || len(images.Items) != 1 {
+		t.Fatalf("GetImages failed len=%d err=%v", len(images.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
+	mock.ExpectRollback()
+	music, err := repo.GetMusic(1, 10)
+	if err != nil || len(music.Items) != 1 {
+		t.Fatalf("GetMusic failed len=%d err=%v", len(music.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByArtistQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
+	mock.ExpectRollback()
+	byArtist, err := repo.GetMusicByArtist("artist", 1, 10)
+	if err != nil || len(byArtist.Items) != 1 {
+		t.Fatalf("GetMusicByArtist failed len=%d err=%v", len(byArtist.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByAlbumQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
+	mock.ExpectRollback()
+	byAlbum, err := repo.GetMusicByAlbum("album", 1, 10)
+	if err != nil || len(byAlbum.Items) != 1 {
+		t.Fatalf("GetMusicByAlbum failed len=%d err=%v", len(byAlbum.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByGenreQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
+	mock.ExpectRollback()
+	byGenre, err := repo.GetMusicByGenre("rock", 1, 10)
+	if err != nil || len(byGenre.Items) != 1 {
+		t.Fatalf("GetMusicByGenre failed len=%d err=%v", len(byGenre.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideosQuery)).
+		WillReturnRows(sqlmock.NewRows(numberedCols(len(videoValues))).AddRow(videoValues...))
+	mock.ExpectRollback()
+	videos, err := repo.GetVideos(1, 10)
+	if err != nil || len(videos.Items) != 1 {
+		t.Fatalf("GetVideos failed len=%d err=%v", len(videos.Items), err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

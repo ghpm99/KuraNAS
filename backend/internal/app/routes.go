@@ -145,8 +145,12 @@ func registerCorsRoutes(router *gin.Engine) {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
-			return origin == "https://github.com"
+			return isAllowedOrigin(origin)
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+}
+
+func isAllowedOrigin(origin string) bool {
+	return origin == "https://github.com"
 }

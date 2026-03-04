@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { IMusicData, IMusicMetadata } from '../hooks/musicProvider/musicProvider';
 import { updatePlayerState } from '@/service/playerState';

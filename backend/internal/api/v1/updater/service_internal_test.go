@@ -22,6 +22,7 @@ func resetUpdaterOSFns() {
 	osStartProcessFunc = os.StartProcess
 	osExitFunc = os.Exit
 	syscallExecFunc = syscall.Exec
+	runtimeGOOS = runtime.GOOS
 }
 
 func TestApplyUpdateErrorBranches(t *testing.T) {
@@ -106,14 +107,11 @@ func TestRestartProcessBranches(t *testing.T) {
 	}
 	restartProcess()
 
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	called := false
 	osExecutableFunc = func() (string, error) {
 		return "/tmp/kuranas", nil
 	}
+	runtimeGOOS = "linux"
 	syscallExecFunc = func(path string, args []string, env []string) error {
 		called = true
 		if path != "/tmp/kuranas" {
@@ -124,7 +122,22 @@ func TestRestartProcessBranches(t *testing.T) {
 
 	restartProcess()
 	if !called {
-		t.Fatalf("expected syscall exec to be called")
+		t.Fatalf("expected syscall exec to be called on linux branch")
+	}
+
+	startCalled := false
+	exitCalled := false
+	runtimeGOOS = "windows"
+	osStartProcessFunc = func(name string, argv []string, attr *os.ProcAttr) (*os.Process, error) {
+		startCalled = true
+		return &os.Process{}, nil
+	}
+	osExitFunc = func(code int) {
+		exitCalled = true
+	}
+	restartProcess()
+	if !startCalled || !exitCalled {
+		t.Fatalf("expected windows branch to start process and exit")
 	}
 }
 
