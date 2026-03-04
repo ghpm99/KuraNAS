@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { apiBase } from '@/service';
 import { formatSize } from '@/utils';
 import { useQuery } from '@tanstack/react-query';

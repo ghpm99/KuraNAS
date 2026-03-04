@@ -34,7 +34,8 @@ const GlobalPlayerControl = () => {
 	const cycleRepeatMode = () => {
 		const modes = ['none', 'all', 'one'] as const;
 		const currentIdx = modes.indexOf(repeatMode);
-		setRepeatMode(modes[(currentIdx + 1) % modes.length]);
+		const nextMode = currentIdx === -1 ? modes[0] : (modes[(currentIdx + 1) % modes.length] ?? modes[0]);
+		setRepeatMode(nextMode);
 	};
 
 	const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;

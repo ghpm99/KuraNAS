@@ -50,6 +50,12 @@ var CreatePlaylistTrackTableQuery string
 //go:embed queries/0013_create_player_state_table.sql
 var CreatePlayerStateTableQuery string
 
+//go:embed queries/0014_create_video_playback_tables.sql
+var CreateVideoPlaybackTablesQuery string
+
+//go:embed queries/0015_extend_video_playlist_for_smart_grouping.sql
+var ExtendVideoPlaylistForSmartGroupingQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -109,4 +115,12 @@ func musicMigrationList() {
 
 	addMigration("0013_create_player_state_table",
 		defaultMigrationFunc(CreatePlayerStateTableQuery))
+}
+
+func videoMigrationList() {
+	addMigration("0014_create_video_playback_tables",
+		defaultMigrationFunc(CreateVideoPlaybackTablesQuery))
+
+	addMigration("0015_extend_video_playlist_for_smart_grouping",
+		defaultMigrationFunc(ExtendVideoPlaylistForSmartGroupingQuery))
 }

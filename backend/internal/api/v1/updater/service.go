@@ -17,6 +17,26 @@ import (
 
 const githubReleaseURL = "https://api.github.com/repos/ghpm99/KuraNAS/releases/latest"
 
+var (
+	fetchLatestReleaseFunc = fetchLatestRelease
+	getAssetNameFunc       = getAssetName
+	downloadFileFunc       = downloadFile
+	extractBinaryFunc      = extractBinary
+	applyUpdateFunc        = applyUpdate
+	restartProcessFunc     = restartProcess
+	osExecutableFunc       = os.Executable
+	evalSymlinksFunc       = filepath.EvalSymlinks
+	osRenameFunc           = os.Rename
+	osOpenFunc             = os.Open
+	osCreateFunc           = os.Create
+	osRemoveFunc           = os.Remove
+	osChmodFunc            = os.Chmod
+	osStartProcessFunc     = os.StartProcess
+	osExitFunc             = os.Exit
+	syscallExecFunc        = syscall.Exec
+	runtimeGOOS            = runtime.GOOS
+)
+
 type Service struct{}
 
 func NewService() *Service {
@@ -24,7 +44,7 @@ func NewService() *Service {
 }
 
 func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
-	release, err := fetchLatestRelease()
+	release, err := fetchLatestReleaseFunc()
 	if err != nil {
 		return UpdateStatusDto{}, fmt.Errorf("failed to fetch latest release: %w", err)
 	}
@@ -34,7 +54,7 @@ func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
 
 	updateAvailable := compareVersions(currentVersion, latestVersion) < 0
 
-	assetName := getAssetName()
+	assetName := getAssetNameFunc()
 	var assetSize int64
 	for _, asset := range release.Assets {
 		if asset.Name == assetName {
@@ -56,12 +76,12 @@ func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
 }
 
 func (s *Service) DownloadAndApply() error {
-	release, err := fetchLatestRelease()
+	release, err := fetchLatestReleaseFunc()
 	if err != nil {
 		return fmt.Errorf("failed to fetch latest release: %w", err)
 	}
 
-	assetName := getAssetName()
+	assetName := getAssetNameFunc()
 	var downloadURL string
 	var expectedSize int64
 	for _, asset := range release.Assets {
@@ -83,7 +103,7 @@ func (s *Service) DownloadAndApply() error {
 	defer os.RemoveAll(tmpDir)
 
 	zipPath := filepath.Join(tmpDir, assetName)
-	if err := downloadFile(downloadURL, zipPath); err != nil {
+	if err := downloadFileFunc(downloadURL, zipPath); err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
@@ -95,16 +115,16 @@ func (s *Service) DownloadAndApply() error {
 		return fmt.Errorf("downloaded file size mismatch: expected %d, got %d", expectedSize, info.Size())
 	}
 
-	binaryPath, err := extractBinary(zipPath, tmpDir)
+	binaryPath, err := extractBinaryFunc(zipPath, tmpDir)
 	if err != nil {
 		return fmt.Errorf("failed to extract binary: %w", err)
 	}
 
-	if err := applyUpdate(binaryPath); err != nil {
+	if err := applyUpdateFunc(binaryPath); err != nil {
 		return fmt.Errorf("failed to apply update: %w", err)
 	}
 
-	go restartProcess()
+	go restartProcessFunc()
 
 	return nil
 }
@@ -136,7 +156,7 @@ func fetchLatestRelease() (GitHubRelease, error) {
 }
 
 func getAssetName() string {
-	if runtime.GOOS == "windows" {
+	if runtimeGOOS == "windows" {
 		return "kuranas-windows.zip"
 	}
 	return "kuranas-linux.zip"
@@ -205,7 +225,7 @@ func extractBinary(zipPath, destDir string) (string, error) {
 	defer r.Close()
 
 	binaryName := "kuranas"
-	if runtime.GOOS == "windows" {
+	if runtimeGOOS == "windows" {
 		binaryName = "kuranas.exe"
 	}
 
@@ -237,44 +257,44 @@ func extractBinary(zipPath, destDir string) (string, error) {
 }
 
 func applyUpdate(newBinaryPath string) error {
-	currentPath, err := os.Executable()
+	currentPath, err := osExecutableFunc()
 	if err != nil {
 		return fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	currentPath, err = filepath.EvalSymlinks(currentPath)
+	currentPath, err = evalSymlinksFunc(currentPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve symlinks: %w", err)
 	}
 
 	oldPath := currentPath + ".old"
-	if err := os.Rename(currentPath, oldPath); err != nil {
+	if err := osRenameFunc(currentPath, oldPath); err != nil {
 		return fmt.Errorf("failed to rename current binary: %w", err)
 	}
 
-	src, err := os.Open(newBinaryPath)
+	src, err := osOpenFunc(newBinaryPath)
 	if err != nil {
-		os.Rename(oldPath, currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to open new binary: %w", err)
 	}
 	defer src.Close()
 
-	dst, err := os.Create(currentPath)
+	dst, err := osCreateFunc(currentPath)
 	if err != nil {
-		os.Rename(oldPath, currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to create new binary: %w", err)
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
-		os.Remove(currentPath)
-		os.Rename(oldPath, currentPath)
+		osRemoveFunc(currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to copy new binary: %w", err)
 	}
 
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(currentPath, 0755); err != nil {
+	if runtimeGOOS != "windows" {
+		if err := osChmodFunc(currentPath, 0755); err != nil {
 			return fmt.Errorf("failed to set executable permissions: %w", err)
 		}
 	}
@@ -283,21 +303,21 @@ func applyUpdate(newBinaryPath string) error {
 }
 
 func restartProcess() {
-	execPath, err := os.Executable()
+	execPath, err := osExecutableFunc()
 	if err != nil {
 		return
 	}
 
-	if runtime.GOOS == "windows" {
-		proc, err := os.StartProcess(execPath, os.Args, &os.ProcAttr{
+	if runtimeGOOS == "windows" {
+		proc, err := osStartProcessFunc(execPath, os.Args, &os.ProcAttr{
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
 		})
 		if err != nil {
 			return
 		}
 		proc.Release()
-		os.Exit(0)
+		osExitFunc(0)
 	} else {
-		syscall.Exec(execPath, os.Args, os.Environ())
+		syscallExecFunc(execPath, os.Args, os.Environ())
 	}
 }

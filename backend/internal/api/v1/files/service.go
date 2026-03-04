@@ -1,15 +1,20 @@
 package files
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"image"
+	"image/color/palette"
+	"image/draw"
+	"image/gif"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -335,6 +340,126 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 	return data, nil
 }
 
+func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
+	if width <= 0 {
+		width = 320
+	}
+	if height <= 0 {
+		height = 180
+	}
+	if width > 2048 {
+		width = 2048
+	}
+	if height > 2048 {
+		height = 2048
+	}
+
+	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	_ = os.MkdirAll(cacheDir, 0755)
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d.png", fileDto.ID, width, height))
+
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	if !s.CheckFileExistsByPath(fileDto.Path) {
+		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
+	}
+
+	ffmpegErr := exec.Command(
+		"ffmpeg",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-y",
+		"-ss", "00:00:03",
+		"-i", fileDto.Path,
+		"-frames:v", "1",
+		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
+		cachePath,
+	).Run()
+
+	if ffmpegErr == nil {
+		if data, err := os.ReadFile(cachePath); err == nil {
+			return data, nil
+		}
+	}
+
+	iconImg, _ := icons.Mp4Icon()
+	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
+	fallback, err := img.EncodePNG(thumb)
+	if err != nil {
+		return nil, err
+	}
+	_ = os.WriteFile(cachePath, fallback, 0644)
+	return fallback, nil
+}
+
+func (s *Service) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error) {
+	if width <= 0 {
+		width = 320
+	}
+	if height <= 0 {
+		height = 180
+	}
+	if width > 1024 {
+		width = 1024
+	}
+	if height > 1024 {
+		height = 1024
+	}
+
+	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	_ = os.MkdirAll(cacheDir, 0755)
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_preview.gif", fileDto.ID, width, height))
+
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	if !s.CheckFileExistsByPath(fileDto.Path) {
+		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
+	}
+
+	// Curta prévia animada: ~2.5s, baixa taxa de frames para performance de cache e rede local.
+	ffmpegErr := exec.Command(
+		"ffmpeg",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-y",
+		"-ss", "00:00:03",
+		"-t", "2.5",
+		"-i", fileDto.Path,
+		"-vf", fmt.Sprintf("fps=4,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
+		"-loop", "0",
+		cachePath,
+	).Run()
+
+	if ffmpegErr == nil {
+		if data, err := os.ReadFile(cachePath); err == nil {
+			return data, nil
+		}
+	}
+
+	iconImg, _ := icons.Mp4Icon()
+	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
+
+	paletted := image.NewPaletted(thumb.Bounds(), palette.Plan9)
+	draw.FloydSteinberg.Draw(paletted, thumb.Bounds(), thumb, image.Point{})
+
+	g := &gif.GIF{
+		Image:     []*image.Paletted{paletted},
+		Delay:     []int{120},
+		LoopCount: 0,
+	}
+	var buf bytes.Buffer
+	if err := gif.EncodeAll(&buf, g); err != nil {
+		return nil, err
+	}
+	fallback := buf.Bytes()
+	_ = os.WriteFile(cachePath, fallback, 0644)
+	return fallback, nil
+}
+
 func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 
 	file, err := s.GetFileById(fileId)
@@ -594,7 +719,7 @@ func (s *Service) DeleteFile(file FileDto, bySystem bool) error {
 	if file.DeletedAt.HasValue {
 		return fmt.Errorf("file already marked for deletion")
 	}
-	if bySystem && !file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now()) {
+	if bySystem && (!file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now())) {
 		return fmt.Errorf("file was recently accessed, cannot be deleted")
 	}
 

@@ -84,69 +84,20 @@ func GenerateFilterFromContext[T any](context *gin.Context, filter *T) {
 		fieldType := field.Type
 
 		if paramValue == "" {
-			if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-				fieldValue.Set(reflect.ValueOf(Optional[any]{
-					HasValue: false,
-					Value:    nil,
-				}))
+			if isOptionalType(fieldType) {
+				fieldValue.Set(reflect.Zero(fieldType))
 			}
 			continue
 		}
 
-		switch fieldType.Kind() {
-		case reflect.Int:
-			if intValue, err := strconv.Atoi(paramValue); err == nil {
-
-				fieldValue.SetInt(int64(intValue))
-			}
-		case reflect.String:
-
-			fieldValue.SetString(paramValue)
-		case reflect.Bool:
-			if boolValue, err := strconv.ParseBool(paramValue); err == nil {
-
-				fieldValue.SetBool(boolValue)
-			}
-		case reflect.Struct:
-			fmt.Println(fieldType, paramValue)
-			if fieldType == reflect.TypeOf(time.Time{}) {
-				if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
-					fmt.Println(parsedTime)
-					fieldValue.Set(reflect.ValueOf(parsedTime))
-				}
-			}
-		default:
-			if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-				elemType := fieldType.Field(0).Type
-
-				switch elemType.Kind() {
-				case reflect.Int:
-					if intValue, err := strconv.Atoi(paramValue); err == nil {
-
-						fieldValue.Set(reflect.ValueOf(NewOptional(intValue)))
-					}
-				case reflect.String:
-
-					fieldValue.Set(reflect.ValueOf(NewOptional(paramValue)))
-				case reflect.Bool:
-					if boolValue, err := strconv.ParseBool(paramValue); err == nil {
-
-						fieldValue.Set(reflect.ValueOf(NewOptional(boolValue)))
-					}
-				case reflect.Struct:
-					if elemType == reflect.TypeOf(time.Time{}) {
-						if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
-
-							fieldValue.Set(reflect.ValueOf(NewOptional(parsedTime)))
-						}
-					}
-				}
-			}
-
-		}
+		parseContextQuery(fieldType, fieldValue, paramValue)
 
 	}
 
+}
+
+func isOptionalType(fieldType reflect.Type) bool {
+	return fieldType.Kind() == reflect.Struct && strings.HasPrefix(fieldType.Name(), "Optional")
 }
 
 func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramValue string) {
@@ -170,9 +121,10 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 
 				fieldValue.Set(reflect.ValueOf(parsedTime))
 			}
+			return
 		}
-	default:
-		if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
+
+		if isOptionalType(fieldType) {
 			elemType := fieldType.Field(0).Type
 
 			switch elemType.Kind() {
@@ -197,7 +149,10 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 					}
 				}
 			}
+
+			return
 		}
+	default:
 
 	}
 }

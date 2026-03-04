@@ -10,9 +10,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var (
+	sqlOpenFn        = sql.Open
+	migrationsInitFn = migrations.Init
+)
+
 func ConfigDatabase() (*sql.DB, error) {
 
-	localDatabase, errSql := sql.Open("postgres", applyDatabaseConfig())
+	localDatabase, errSql := sqlOpenFn("postgres", applyDatabaseConfig())
 
 	if errSql != nil {
 		log.Println("Erro ao conectar ao banco de dados:", errSql)
@@ -20,7 +25,7 @@ func ConfigDatabase() (*sql.DB, error) {
 	}
 
 	log.Println("Successfully connected to database!")
-	migrations.Init(localDatabase)
+	migrationsInitFn(localDatabase)
 	return localDatabase, nil
 
 }
