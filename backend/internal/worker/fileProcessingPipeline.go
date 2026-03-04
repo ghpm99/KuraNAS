@@ -102,6 +102,17 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 	dbWG.Wait()
 	close(monitorChannel)
 
+	if tasks != nil {
+		select {
+		case tasks <- utils.Task{
+			Type: utils.GenerateVideoPlaylists,
+			Data: "Geracao automatica de playlists de video",
+		}:
+		default:
+			log.Println("fila de worker cheia, nao foi possivel enfileirar geracao de playlists de video")
+		}
+	}
+
 	Logger.CompleteWithSuccessLog(logger)
 
 }

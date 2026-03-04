@@ -11,6 +11,5 @@ SELECT
     updated_at,
     last_played_at
 FROM video_playlist
-WHERE type = $1
-  AND source_path = $2
+WHERE id = $1
 LIMIT 1;

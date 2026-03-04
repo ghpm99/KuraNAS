@@ -3,6 +3,7 @@ package worker
 import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -11,6 +12,7 @@ import (
 type WorkerContext struct {
 	Tasks           chan utils.Task
 	FilesService    files.ServiceInterface
+	VideoService    video.ServiceInterface
 	MetadataService files.MetadataRepositoryInterface
 	Logger          logger.LoggerServiceInterface
 }
@@ -50,6 +52,8 @@ func worker(id int, context *WorkerContext) {
 			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
 		case utils.CreateThumbnail:
 			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+		case utils.GenerateVideoPlaylists:
+			go GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 		default:
 			log.Println("Tipo de tarefa desconhecido")
 		}

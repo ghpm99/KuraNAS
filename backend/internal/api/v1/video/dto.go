@@ -14,18 +14,25 @@ type VideoFileDto struct {
 }
 
 type VideoPlaylistDto struct {
-	ID           int                    `json:"id"`
-	Type         string                 `json:"type"`
-	SourcePath   string                 `json:"source_path"`
-	CreatedAt    time.Time              `json:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at"`
-	LastPlayedAt *time.Time             `json:"last_played_at"`
-	Items        []VideoPlaylistItemDto `json:"items"`
+	ID             int                    `json:"id"`
+	Type           string                 `json:"type"`
+	SourcePath     string                 `json:"source_path"`
+	Name           string                 `json:"name"`
+	IsHidden       bool                   `json:"is_hidden"`
+	IsAuto         bool                   `json:"is_auto"`
+	GroupMode      string                 `json:"group_mode"`
+	Classification string                 `json:"classification"`
+	ItemCount      int                    `json:"item_count"`
+	CreatedAt      time.Time              `json:"created_at"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+	LastPlayedAt   *time.Time             `json:"last_played_at"`
+	Items          []VideoPlaylistItemDto `json:"items"`
 }
 
 type VideoPlaylistItemDto struct {
 	ID         int          `json:"id"`
 	OrderIndex int          `json:"order_index"`
+	SourceKind string       `json:"source_kind"`
 	Video      VideoFileDto `json:"video"`
 	Status     string       `json:"status"`
 }
@@ -76,6 +83,14 @@ type UpdatePlaybackStateRequest struct {
 	Completed   *bool    `json:"completed"`
 }
 
+type SetPlaylistHiddenRequest struct {
+	Hidden bool `json:"hidden"`
+}
+
+type AddPlaylistVideoRequest struct {
+	VideoID int `json:"video_id" binding:"required"`
+}
+
 func (m *VideoFileModel) ToDto() VideoFileDto {
 	return VideoFileDto{
 		ID:         m.ID,
@@ -91,12 +106,18 @@ func (m *VideoFileModel) ToDto() VideoFileDto {
 
 func (m *VideoPlaylistModel) ToDto(items []VideoPlaylistItemDto) VideoPlaylistDto {
 	dto := VideoPlaylistDto{
-		ID:         m.ID,
-		Type:       m.Type,
-		SourcePath: m.SourcePath,
-		CreatedAt:  m.CreatedAt,
-		UpdatedAt:  m.UpdatedAt,
-		Items:      items,
+		ID:             m.ID,
+		Type:           m.Type,
+		SourcePath:     m.SourcePath,
+		Name:           m.Name,
+		IsHidden:       m.IsHidden,
+		IsAuto:         m.IsAuto,
+		GroupMode:      m.GroupMode,
+		Classification: m.Classification,
+		ItemCount:      m.ItemCount,
+		CreatedAt:      m.CreatedAt,
+		UpdatedAt:      m.UpdatedAt,
+		Items:          items,
 	}
 	if m.LastPlayedAt.Valid {
 		t := m.LastPlayedAt.Time
@@ -109,6 +130,7 @@ func (m *VideoPlaylistItemModel) ToDto(status string) VideoPlaylistItemDto {
 	return VideoPlaylistItemDto{
 		ID:         m.ID,
 		OrderIndex: m.OrderIndex,
+		SourceKind: m.SourceKind,
 		Video:      m.Video.ToDto(),
 		Status:     status,
 	}

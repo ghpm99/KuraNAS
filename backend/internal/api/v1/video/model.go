@@ -23,12 +23,18 @@ type VideoFileModel struct {
 }
 
 type VideoPlaylistModel struct {
-	ID           int
-	Type         string
-	SourcePath   string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	LastPlayedAt sql.NullTime
+	ID             int
+	Type           string
+	SourcePath     string
+	Name           string
+	IsHidden       bool
+	IsAuto         bool
+	GroupMode      string
+	Classification string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	LastPlayedAt   sql.NullTime
+	ItemCount      int
 }
 
 type VideoPlaylistItemModel struct {
@@ -36,6 +42,7 @@ type VideoPlaylistItemModel struct {
 	PlaylistID int
 	VideoID    int
 	OrderIndex int
+	SourceKind string
 	Video      VideoFileModel
 }
 

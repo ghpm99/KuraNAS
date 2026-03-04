@@ -15,4 +15,4 @@ FROM video_playlist_item vpi
 JOIN home_file hf ON hf.id = vpi.video_id
 WHERE vpi.playlist_id = $1
   AND hf.deleted_at IS NULL
-ORDER BY vpi.order_index;
+ORDER BY vpi.order_index, vpi.id;

@@ -85,3 +85,69 @@ func (h *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, catalog)
 }
+
+func (h *Handler) RebuildPlaylistsHandler(c *gin.Context) {
+	if err := h.service.RebuildSmartPlaylists(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) GetPlaylistsHandler(c *gin.Context) {
+	includeHidden := c.DefaultQuery("include_hidden", "false") == "true"
+	playlists, err := h.service.GetPlaylists(includeHidden)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, playlists)
+}
+
+func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	playlist, err := h.service.GetPlaylistByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, playlist)
+}
+
+func (h *Handler) SetPlaylistHiddenHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	var req SetPlaylistHiddenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.SetPlaylistHidden(id, req.Hidden); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) AddPlaylistVideoHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	var req AddPlaylistVideoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.AddVideoToPlaylist(id, req.VideoID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"success": true})
+}
+
+func (h *Handler) RemovePlaylistVideoHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	videoID := utils.ParseInt(c.Param("videoId"), c)
+	if err := h.service.RemoveVideoFromPlaylist(id, videoID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}

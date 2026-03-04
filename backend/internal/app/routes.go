@@ -99,6 +99,7 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback := router.Group("/video/playback")
 	catalog := router.Group("/video/catalog")
+	playlists := router.Group("/video/playlists")
 
 	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
 	playback.GET("/state", context.Video.Handler.GetPlaybackStateHandler)
@@ -106,6 +107,13 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback.POST("/next", context.Video.Handler.NextVideoHandler)
 	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
 	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
+
+	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
+	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)
+	playlists.GET("/:id", context.Video.Handler.GetPlaylistByIDHandler)
+	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
+	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
+	playlists.DELETE("/:id/videos/:videoId", context.Video.Handler.RemovePlaylistVideoHandler)
 }
 
 func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {

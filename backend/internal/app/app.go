@@ -49,6 +49,7 @@ func InitializeApp() (*Application, error) {
 
 	workerFileContext := &worker.WorkerContext{
 		FilesService:    appContext.Files.Service,
+		VideoService:    appContext.Video.Service,
 		MetadataService: appContext.Files.MetadataRepository,
 		Tasks:           *appContext.Tasks,
 		Logger:          appContext.Logger,

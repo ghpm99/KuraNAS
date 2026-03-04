@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -392,6 +394,259 @@ func classifyVideo(video VideoFileModel) string {
 		return "series"
 	}
 	if strings.Contains(path, "/movies") || strings.Contains(path, "/filmes") || strings.Contains(path, "/movie") {
+		return "movie"
+	}
+	return "personal"
+}
+
+func (s *Service) RebuildSmartPlaylists() error {
+	videos, err := s.Repository.GetAllVideosForGrouping()
+	if err != nil {
+		return err
+	}
+
+	groups := buildSmartGroups(videos)
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		for _, group := range groups {
+			playlist, upsertErr := s.Repository.UpsertAutoPlaylist(
+				tx,
+				group.PlaylistType,
+				group.SourceKey,
+				group.Name,
+				group.GroupMode,
+				group.Classification,
+			)
+			if upsertErr != nil {
+				return upsertErr
+			}
+
+			exclusions, exclusionsErr := s.Repository.GetPlaylistExclusions(playlist.ID)
+			if exclusionsErr != nil {
+				return exclusionsErr
+			}
+
+			filtered := make([]int, 0, len(group.VideoIDs))
+			for _, id := range group.VideoIDs {
+				if !exclusions[id] {
+					filtered = append(filtered, id)
+				}
+			}
+
+			if err := s.Repository.DeleteAutoPlaylistItems(tx, playlist.ID); err != nil {
+				return err
+			}
+			if err := s.Repository.InsertPlaylistItemsWithSource(tx, playlist.ID, filtered, "auto"); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
+	models, err := s.Repository.GetVideoPlaylists(includeHidden)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]VideoPlaylistDto, 0, len(models))
+	for _, model := range models {
+		result = append(result, model.ToDto(nil))
+	}
+	return result, nil
+}
+
+func (s *Service) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
+	playlist, err := s.Repository.GetVideoPlaylistByID(id)
+	if err != nil {
+		return VideoPlaylistDto{}, err
+	}
+
+	items, err := s.Repository.GetVideoPlaylistItemsDetailed(id)
+	if err != nil {
+		return VideoPlaylistDto{}, err
+	}
+
+	itemDtos := make([]VideoPlaylistItemDto, 0, len(items))
+	for _, item := range items {
+		itemDtos = append(itemDtos, item.ToDto("not_started"))
+	}
+	playlist.ItemCount = len(itemDtos)
+	return playlist.ToDto(itemDtos), nil
+}
+
+func (s *Service) SetPlaylistHidden(playlistID int, hidden bool) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		return s.Repository.SetPlaylistHidden(tx, playlistID, hidden)
+	})
+}
+
+func (s *Service) AddVideoToPlaylist(playlistID int, videoID int) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		if err := s.Repository.AddPlaylistVideoManual(tx, playlistID, videoID); err != nil {
+			return err
+		}
+		return s.Repository.DeletePlaylistExclusion(tx, playlistID, videoID)
+	})
+}
+
+func (s *Service) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
+	playlist, err := s.Repository.GetVideoPlaylistByID(playlistID)
+	if err != nil {
+		return err
+	}
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		if err := s.Repository.RemovePlaylistVideo(tx, playlistID, videoID); err != nil {
+			return err
+		}
+		if playlist.IsAuto {
+			return s.Repository.UpsertPlaylistExclusion(tx, playlistID, videoID)
+		}
+		return nil
+	})
+}
+
+type smartGroup struct {
+	SourceKey      string
+	Name           string
+	PlaylistType   string
+	GroupMode      string
+	Classification string
+	VideoIDs       []int
+}
+
+func buildSmartGroups(videos []VideoFileModel) []smartGroup {
+	folderCount := map[string]int{}
+	prefixCount := map[string]int{}
+
+	for _, video := range videos {
+		folderCount[video.ParentPath]++
+		prefix := inferTitlePrefix(video.Name)
+		if prefix != "" {
+			prefixCount[prefix]++
+		}
+	}
+
+	groupMap := map[string]*smartGroup{}
+	order := []string{}
+
+	addToGroup := func(key string, group smartGroup, videoID int) {
+		existing, ok := groupMap[key]
+		if !ok {
+			copyGroup := group
+			copyGroup.VideoIDs = []int{}
+			groupMap[key] = &copyGroup
+			order = append(order, key)
+			existing = groupMap[key]
+		}
+		existing.VideoIDs = append(existing.VideoIDs, videoID)
+	}
+
+	for _, video := range videos {
+		classification := classifySmartVideo(video)
+		folderBase := strings.TrimSpace(filepath.Base(video.ParentPath))
+		folderIsStrong := folderCount[video.ParentPath] >= 2 && !isGenericFolderName(folderBase)
+		prefix := inferTitlePrefix(video.Name)
+		prefixIsStrong := prefix != "" && prefixCount[prefix] >= 2
+
+		switch {
+		case folderIsStrong:
+			addToGroup(
+				"folder:"+video.ParentPath,
+				smartGroup{
+					SourceKey:      "folder:" + video.ParentPath,
+					Name:           folderBase,
+					PlaylistType:   "folder",
+					GroupMode:      "folder",
+					Classification: classification,
+				},
+				video.ID,
+			)
+		case prefixIsStrong:
+			addToGroup(
+				"prefix:"+prefix,
+				smartGroup{
+					SourceKey:      "prefix:" + prefix,
+					Name:           strings.Title(prefix),
+					PlaylistType:   "series",
+					GroupMode:      "prefix",
+					Classification: classification,
+				},
+				video.ID,
+			)
+		default:
+			playlistType := "custom"
+			if classification == "movie" {
+				playlistType = "movie"
+			}
+			singletonName := strings.TrimSpace(strings.TrimSuffix(video.Name, filepath.Ext(video.Name)))
+			addToGroup(
+				fmt.Sprintf("single:%d", video.ID),
+				smartGroup{
+					SourceKey:      fmt.Sprintf("single:%d", video.ID),
+					Name:           singletonName,
+					PlaylistType:   playlistType,
+					GroupMode:      "single",
+					Classification: classification,
+				},
+				video.ID,
+			)
+		}
+	}
+
+	result := make([]smartGroup, 0, len(order))
+	for _, key := range order {
+		group := groupMap[key]
+		sort.Ints(group.VideoIDs)
+		result = append(result, *group)
+	}
+	return result
+}
+
+func inferTitlePrefix(name string) string {
+	noExt := strings.TrimSpace(strings.TrimSuffix(name, filepath.Ext(name)))
+	if noExt == "" {
+		return ""
+	}
+
+	bracketCleanup := regexp.MustCompile(`\\[[^\\]]+\\]|\\([^\\)]+\\)`)
+	episodeSuffix := regexp.MustCompile(`(?i)[\\s._-]*(s\\d{1,2}e\\d{1,2}|ep\\.?\\s?\\d+|epis[oó]dio\\s?\\d+|part\\s?\\d+|parte\\s?\\d+|\\d{1,3})$`)
+	spaceCollapse := regexp.MustCompile(`[\\s._-]+`)
+
+	value := strings.ToLower(noExt)
+	value = bracketCleanup.ReplaceAllString(value, "")
+	value = episodeSuffix.ReplaceAllString(value, "")
+	value = spaceCollapse.ReplaceAllString(value, " ")
+	value = strings.TrimSpace(value)
+	return value
+}
+
+func isGenericFolderName(name string) bool {
+	value := strings.ToLower(strings.TrimSpace(name))
+	if value == "" {
+		return true
+	}
+	generic := map[string]bool{
+		"videos": true, "video": true, "movies": true, "filmes": true, "downloads": true, "clips": true,
+		"desktop": true, "documentos": true, "documents": true, "media": true,
+	}
+	return generic[value]
+}
+
+func classifySmartVideo(video VideoFileModel) string {
+	path := strings.ToLower(video.Path + " " + video.ParentPath + " " + video.Name)
+	if strings.Contains(path, "steam") || strings.Contains(path, "tutorial") || strings.Contains(path, "sample") {
+		return "program"
+	}
+	if strings.Contains(path, "anime") || strings.Contains(path, "animes") {
+		return "anime"
+	}
+	if strings.Contains(path, "series") || strings.Contains(path, "season") || strings.Contains(path, "temporada") {
+		return "series"
+	}
+	if strings.Contains(path, "movie") || strings.Contains(path, "filme") || strings.Contains(path, "cinema") {
 		return "movie"
 	}
 	return "personal"

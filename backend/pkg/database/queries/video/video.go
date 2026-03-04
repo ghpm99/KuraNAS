@@ -39,3 +39,42 @@ var GetCatalogVideosQuery string
 
 //go:embed get_recent_videos.sql
 var GetRecentVideosQuery string
+
+//go:embed get_all_videos_for_grouping.sql
+var GetAllVideosForGroupingQuery string
+
+//go:embed upsert_auto_playlist.sql
+var UpsertAutoPlaylistQuery string
+
+//go:embed delete_auto_playlist_items.sql
+var DeleteAutoPlaylistItemsQuery string
+
+//go:embed insert_playlist_items_with_source.sql
+var InsertPlaylistItemsWithSourceQuery string
+
+//go:embed get_playlist_exclusions.sql
+var GetPlaylistExclusionsQuery string
+
+//go:embed get_video_playlists.sql
+var GetVideoPlaylistsQuery string
+
+//go:embed get_video_playlist_by_id.sql
+var GetVideoPlaylistByIDQuery string
+
+//go:embed get_video_playlist_items_detailed.sql
+var GetVideoPlaylistItemsDetailedQuery string
+
+//go:embed set_playlist_hidden.sql
+var SetPlaylistHiddenQuery string
+
+//go:embed add_playlist_video_manual.sql
+var AddPlaylistVideoManualQuery string
+
+//go:embed remove_playlist_video.sql
+var RemovePlaylistVideoQuery string
+
+//go:embed upsert_playlist_exclusion.sql
+var UpsertPlaylistExclusionQuery string
+
+//go:embed delete_playlist_exclusion.sql
+var DeletePlaylistExclusionQuery string
