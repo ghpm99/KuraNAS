@@ -17,6 +17,15 @@ import (
 
 const githubReleaseURL = "https://api.github.com/repos/ghpm99/KuraNAS/releases/latest"
 
+var (
+	fetchLatestReleaseFunc = fetchLatestRelease
+	getAssetNameFunc       = getAssetName
+	downloadFileFunc       = downloadFile
+	extractBinaryFunc      = extractBinary
+	applyUpdateFunc        = applyUpdate
+	restartProcessFunc     = restartProcess
+)
+
 type Service struct{}
 
 func NewService() *Service {
@@ -24,7 +33,7 @@ func NewService() *Service {
 }
 
 func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
-	release, err := fetchLatestRelease()
+	release, err := fetchLatestReleaseFunc()
 	if err != nil {
 		return UpdateStatusDto{}, fmt.Errorf("failed to fetch latest release: %w", err)
 	}
@@ -34,7 +43,7 @@ func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
 
 	updateAvailable := compareVersions(currentVersion, latestVersion) < 0
 
-	assetName := getAssetName()
+	assetName := getAssetNameFunc()
 	var assetSize int64
 	for _, asset := range release.Assets {
 		if asset.Name == assetName {
@@ -56,12 +65,12 @@ func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
 }
 
 func (s *Service) DownloadAndApply() error {
-	release, err := fetchLatestRelease()
+	release, err := fetchLatestReleaseFunc()
 	if err != nil {
 		return fmt.Errorf("failed to fetch latest release: %w", err)
 	}
 
-	assetName := getAssetName()
+	assetName := getAssetNameFunc()
 	var downloadURL string
 	var expectedSize int64
 	for _, asset := range release.Assets {
@@ -83,7 +92,7 @@ func (s *Service) DownloadAndApply() error {
 	defer os.RemoveAll(tmpDir)
 
 	zipPath := filepath.Join(tmpDir, assetName)
-	if err := downloadFile(downloadURL, zipPath); err != nil {
+	if err := downloadFileFunc(downloadURL, zipPath); err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
@@ -95,16 +104,16 @@ func (s *Service) DownloadAndApply() error {
 		return fmt.Errorf("downloaded file size mismatch: expected %d, got %d", expectedSize, info.Size())
 	}
 
-	binaryPath, err := extractBinary(zipPath, tmpDir)
+	binaryPath, err := extractBinaryFunc(zipPath, tmpDir)
 	if err != nil {
 		return fmt.Errorf("failed to extract binary: %w", err)
 	}
 
-	if err := applyUpdate(binaryPath); err != nil {
+	if err := applyUpdateFunc(binaryPath); err != nil {
 		return fmt.Errorf("failed to apply update: %w", err)
 	}
 
-	go restartProcess()
+	go restartProcessFunc()
 
 	return nil
 }

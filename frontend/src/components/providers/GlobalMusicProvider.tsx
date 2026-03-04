@@ -112,6 +112,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 			if (!audio || index < 0 || index >= queue.length) return;
 
 			const track = queue[index];
+			if (!track) return;
 			setCurrentIndex(index);
 			audio.src = `${import.meta.env.VITE_API_URL}/api/v1/files/stream/${track.id}`;
 			audio.play().catch(() => {});

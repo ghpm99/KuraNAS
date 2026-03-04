@@ -49,10 +49,13 @@ func (s *LoggerService) GetLogs(page, pageSize int) ([]LoggerModel, error) {
 }
 
 func (s *LoggerService) UpdateLog(log LoggerModel) error {
-	s.withTransaction(func(tx *sql.Tx) error {
+	err := s.withTransaction(func(tx *sql.Tx) error {
 		log.UpdatedAt = time.Now()
 		return s.Repository.UpdateLog(tx, log)
 	})
+	if err != nil {
+		return fmt.Errorf("error updating log: %w", err)
+	}
 	return nil
 }
 

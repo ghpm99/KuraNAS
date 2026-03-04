@@ -17,7 +17,6 @@ jobs:
   lint-frontend:
     name: Lint Frontend
     runs-on: ubuntu-latest
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -32,7 +31,6 @@ jobs:
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: lint-frontend
     defaults:
       run:
@@ -43,12 +41,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: yarn install --frozen-lockfile
-      - run: yarn test
+      - run: yarn test --coverage --watchAll=false
 
   lint-backend:
     name: Lint Backend
     runs-on: ubuntu-latest
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
@@ -57,13 +54,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - run: go fmt ./...
+      - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
 
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: lint-backend
     defaults:
       run:
@@ -73,7 +69,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - run: go test ./...
+      - run: go test ./... -cover
 
   build-linux:
     name: Build on Linux

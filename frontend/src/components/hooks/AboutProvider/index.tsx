@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { AboutContext, AboutContextType } from './AboutContext';
 import { apiBase } from '@/service';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDuration } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
@@ -44,18 +44,18 @@ export const AboutProvider = ({ children }: { children: React.ReactNode }) => {
 		refetchOnWindowFocus: false,
 	});
 
-	const getCurrentUptime = useCallback((): string => {
+	const getCurrentUptime = (): string => {
 		if (!data?.statup_time) {
 			return t('LOADING');
 		}
 		const date = new Date(data.statup_time);
 		const uptimeInSeconds = Math.floor((currentTime.getTime() - date.getTime()) / 1000);
 		return formatDuration(uptimeInSeconds);
-	}, [currentTime, data?.statup_time]);
+	};
 
 	const value = {
 		...(data || initialAboutContext),
-		uptime: getCurrentUptime() || t('LOADING'),
+		uptime: getCurrentUptime(),
 	};
 
 	return <AboutContext.Provider value={value}>{children}</AboutContext.Provider>;

@@ -26,6 +26,17 @@ var pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (str
 	return utils.RunPythonScript(scriptType, filePath)
 }
 
+func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, filePath string) (string, error)) {
+	if runner == nil {
+		pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+			return utils.RunPythonScript(scriptType, filePath)
+		}
+		return
+	}
+
+	pythonScriptRunner = runner
+}
+
 func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface) {
 
 	log.Println("Iniciando o pipeline de processamento de arquivos...")

@@ -22,12 +22,6 @@ const VideoProgressBar = ({ className = '', currentTime, duration, seekTo }: Vid
 		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 	};
 
-	const handleSeek = (event: Event, newValue: number | number[]) => {
-		if (!isDragging) {
-			seekTo(newValue as number);
-		}
-	};
-
 	const handleMouseDown = () => {
 		setIsDragging(true);
 	};

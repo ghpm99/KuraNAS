@@ -16,7 +16,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, CircularProgress, Snackbar, TextField, Typography } from '@mui/material';
 import { ArrowDown, ArrowLeft, ArrowUp, Play, Plus, Trash2, Videotape } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './videoContent.module.css';
 
@@ -106,10 +106,6 @@ const PlaylistDetail = ({
 	const selectedVideoQuery = searchParams.get('video');
 	const selectedVideoID = selectedVideoQuery ? Number(selectedVideoQuery) : null;
 	const [nameDraft, setNameDraft] = useState(playlist.name);
-
-	useEffect(() => {
-		setNameDraft(playlist.name);
-	}, [playlist.name]);
 
 	const orderedItems = useMemo(
 		() => [...playlist.items].sort((a, b) => a.order_index - b.order_index || a.id - b.id),

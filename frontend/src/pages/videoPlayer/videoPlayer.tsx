@@ -9,10 +9,7 @@ const VideoPlayerPage = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const playlistId = (location.state as { playlistId?: number } | null)?.playlistId;
-
-	if (!id || typeof id !== 'string') {
-		return <div>Invalid video ID</div>;
-	}
+	const videoId = typeof id === 'string' ? id : '';
 
 	const {
 		videoRef,
@@ -33,11 +30,16 @@ const VideoPlayerPage = () => {
 		setCurrentTime,
 		setDuration,
 		currentVideo,
-	} = useVideoPlayer({ videoId: id, playlistId: playlistId ?? null });
+		} = useVideoPlayer({ videoId, playlistId: playlistId ?? null });
 
 	useEffect(() => {
+		if (!videoId) return;
 		playVideo();
-	}, [playVideo]);
+	}, [playVideo, videoId]);
+
+	if (!videoId) {
+		return <div>Invalid video ID</div>;
+	}
 
 	const handleBack = () => {
 		const fromState = (location.state as { from?: string } | null)?.from;
