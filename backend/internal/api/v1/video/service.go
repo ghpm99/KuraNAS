@@ -296,37 +296,43 @@ func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPla
 }
 
 func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error) {
-	if limit <= 0 {
-		limit = 24
+	const defaultLimit = 24
+	const maxLimit = 100
+
+	normalizedLimit := limit
+	if normalizedLimit <= 0 {
+		normalizedLimit = defaultLimit
+	} else if normalizedLimit > maxLimit {
+		normalizedLimit = maxLimit
 	}
 
-	allVideos, err := s.Repository.GetCatalogVideos(limit * 4)
+	allVideos, err := s.Repository.GetCatalogVideos(normalizedLimit * 4)
 	if err != nil {
 		return VideoHomeCatalogDto{}, err
 	}
-	recentVideos, err := s.Repository.GetRecentVideos(limit)
+	recentVideos, err := s.Repository.GetRecentVideos(normalizedLimit)
 	if err != nil {
 		return VideoHomeCatalogDto{}, err
 	}
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
 
-	series := make([]VideoCatalogItemDto, 0, limit)
-	movies := make([]VideoCatalogItemDto, 0, limit)
-	personal := make([]VideoCatalogItemDto, 0, limit)
+	series := make([]VideoCatalogItemDto, 0, normalizedLimit)
+	movies := make([]VideoCatalogItemDto, 0, normalizedLimit)
+	personal := make([]VideoCatalogItemDto, 0, normalizedLimit)
 
 	for _, video := range allVideos {
 		item := s.toCatalogItem(video, state)
 		classification := classifyVideo(video)
-		if classification == "series" && len(series) < limit {
+		if classification == "series" && len(series) < normalizedLimit {
 			series = append(series, item)
 			continue
 		}
-		if classification == "movie" && len(movies) < limit {
+		if classification == "movie" && len(movies) < normalizedLimit {
 			movies = append(movies, item)
 			continue
 		}
-		if len(personal) < limit {
+		if len(personal) < normalizedLimit {
 			personal = append(personal, item)
 		}
 	}
