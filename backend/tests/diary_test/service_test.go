@@ -30,6 +30,7 @@ type MockRepository struct {
 	ExpectedError     error
 	ExpectedDiaries   []diary.DiaryModel
 	ExpectedDiaryDtos []diary.DiaryDto
+	ExpectedSummary   diary.DiarySummary
 }
 
 func (m *MockRepository) GetDiary(filter diary.DiaryFilter, page int, pageSize int) (utils.PaginationResponse[diary.DiaryModel], error) {
@@ -79,6 +80,10 @@ func (m *MockRepository) Rollback() error {
 		return m.RollbackFunc()
 	}
 	return m.ExpectedError
+}
+
+func (m *MockRepository) GetSummary(dateReference time.Time) (diary.DiarySummary, error) {
+	return m.ExpectedSummary, m.ExpectedError
 }
 
 func TestCreateDiary(t *testing.T) {

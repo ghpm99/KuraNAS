@@ -2,12 +2,15 @@ package worker_test
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/utils"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -300,9 +303,11 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 		newFilesList: []string{"teste3.xml", "teste1.txt"},
 	}
 	mockLog := &mockLogger{}
+	worker.SetPythonScriptRunnerForTesting(mockPipelineScriptRunner)
+	defer worker.SetPythonScriptRunnerForTesting(nil)
 
 	fmt.Println("Starting file processing pipeline...")
-	worker.StartFileProcessingPipeline(mockSvc, mockLog)
+	worker.StartFileProcessingPipeline(mockSvc, nil, mockLog)
 	fmt.Println("File processing pipeline started.")
 
 	if mockSvc.createFiles == nil && mockSvc.updateFiles == nil {
@@ -330,6 +335,41 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 	}
 	if !mockLog.completeWithSuccessCalled {
 		t.Error("Logger.CompleteWithSuccessLog was not called")
+	}
+}
+
+func mockPipelineScriptRunner(scriptType utils.ScriptType, filePath string) (string, error) {
+	switch scriptType {
+	case utils.ImageMetadata:
+		metadata := files.ImageMetadataModel{
+			Path:   filePath,
+			Format: "PNG",
+			Mode:   "RGB",
+		}
+		if strings.Contains(filePath, "ai-generated-8610368_1280.png") {
+			metadata.Width = 964
+			metadata.Height = 1280
+			metadata.DPIX = 95.9866
+			metadata.DPIY = 95.9866
+		}
+		if strings.Contains(filePath, "ChatGPT Image 28 de mar. de 2025, 20_45_52.png") {
+			metadata.Width = 1024
+			metadata.Height = 1536
+		}
+		jsonBytes, _ := json.Marshal(metadata)
+		return string(jsonBytes), nil
+	case utils.AudioMetadata:
+		jsonBytes, _ := json.Marshal(files.AudioMetadataModel{
+			Path: filePath,
+		})
+		return string(jsonBytes), nil
+	case utils.VideoMetadata:
+		jsonBytes, _ := json.Marshal(files.VideoMetadataModel{
+			Path: filePath,
+		})
+		return string(jsonBytes), nil
+	default:
+		return "", fmt.Errorf("script type not supported: %v", scriptType)
 	}
 }
 

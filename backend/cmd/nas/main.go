@@ -25,7 +25,9 @@ func main() {
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
 
-		prg.app.Stop()
+		if prg.app != nil {
+			_ = prg.app.Stop()
+		}
 		close(prg.quit)
 	}()
 

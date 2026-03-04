@@ -1,0 +1,13 @@
+SELECT
+    id,
+    name,
+    path,
+    parent_path,
+    format,
+    size,
+    created_at,
+    updated_at
+FROM home_file
+WHERE deleted_at IS NULL
+  AND format = ANY($1)
+ORDER BY LOWER(parent_path), LOWER(name), id;

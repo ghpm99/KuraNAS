@@ -7,6 +7,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/updater"
+	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -21,6 +22,7 @@ type AppContext struct {
 	Files                *FileContext
 	Diary                *DiaryContext
 	Music                *MusicContext
+	Video                *VideoContext
 	ConfigurationHandler *configuration.Handler
 	UpdateHandler        *updater.Handler
 }
@@ -46,6 +48,12 @@ type MusicContext struct {
 	Repository music.RepositoryInterface
 }
 
+type VideoContext struct {
+	Handler    *video.Handler
+	Service    video.ServiceInterface
+	Repository video.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -54,6 +62,7 @@ func NewContext(db *sql.DB) *AppContext {
 	fileContext := newFileContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
+	videoContext := newVideoContext(dbContext, loggerService)
 	configurationHandler := configuration.NewHandler(loggerService)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
@@ -65,6 +74,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Files:                fileContext,
 		Diary:                diaryContext,
 		Music:                musicContext,
+		Video:                videoContext,
 		ConfigurationHandler: configurationHandler,
 		UpdateHandler:        updateHandler,
 	}
@@ -95,6 +105,17 @@ func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	service := music.NewService(repository)
 	handler := music.NewHandler(service, logger)
 	return &MusicContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *VideoContext {
+	repository := video.NewRepository(dbContext)
+	service := video.NewService(repository)
+	handler := video.NewHandler(service, logger)
+	return &VideoContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

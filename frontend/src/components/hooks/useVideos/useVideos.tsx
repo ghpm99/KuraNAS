@@ -1,26 +1,44 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { IVideoData } from '@/types/video';
+import {
+	getAllVideoFiles,
+	getVideoHomeCatalog,
+	getVideoPlaylistById,
+	getVideoPlaylists,
+	getVideosWithoutPlaylist,
+} from '@/service/videoPlayback';
+import { useQuery } from '@tanstack/react-query';
 
-const fetchVideos = async ({ pageParam = 1 }): Promise<{ data: IVideoData[]; nextPage?: number }> => {
-	const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/files/videos?page=${pageParam}&page_size=15`);
-	
-	if (!response.ok) {
-		throw new Error('Failed to fetch videos');
-	}
-	
-	const result = await response.json();
-	
-	return {
-		data: result.items || [],
-		nextPage: result.pagination?.has_next ? pageParam + 1 : undefined,
-	};
+export const useVideoPlaylists = () => {
+	return useQuery({
+		queryKey: ['video-playlists'],
+		queryFn: () => getVideoPlaylists(false),
+	});
 };
 
-export const useVideos = () => {
-	return useInfiniteQuery({
-		queryKey: ['videos'],
-		queryFn: fetchVideos,
-		getNextPageParam: (lastPage) => lastPage.nextPage,
-		initialPageParam: 1,
+export const useVideoPlaylistDetail = (playlistId?: number) => {
+	return useQuery({
+		queryKey: ['video-playlist', playlistId],
+		queryFn: () => getVideoPlaylistById(playlistId as number),
+		enabled: Boolean(playlistId),
+	});
+};
+
+export const useVideosWithoutPlaylist = () => {
+	return useQuery({
+		queryKey: ['video-unassigned'],
+		queryFn: () => getVideosWithoutPlaylist(2000),
+	});
+};
+
+export const useAllVideoFiles = () => {
+	return useQuery({
+		queryKey: ['all-video-files'],
+		queryFn: () => getAllVideoFiles(3000),
+	});
+};
+
+export const useVideoHomeCatalog = () => {
+	return useQuery({
+		queryKey: ['video-home-catalog'],
+		queryFn: () => getVideoHomeCatalog(24),
 	});
 };

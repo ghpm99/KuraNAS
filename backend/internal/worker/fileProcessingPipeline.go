@@ -26,7 +26,18 @@ var pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (str
 	return utils.RunPythonScript(scriptType, filePath)
 }
 
-func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.LoggerServiceInterface) {
+func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, filePath string) (string, error)) {
+	if runner == nil {
+		pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+			return utils.RunPythonScript(scriptType, filePath)
+		}
+		return
+	}
+
+	pythonScriptRunner = runner
+}
+
+func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface) {
 
 	log.Println("Iniciando o pipeline de processamento de arquivos...")
 	logger, _ := Logger.CreateLog(logger.LoggerModel{
@@ -96,11 +107,22 @@ func StartFileProcessingPipeline(service files.ServiceInterface, Logger logger.L
 
 	var dbWG sync.WaitGroup
 	dbWG.Add(1)
-	go StartDatabasePersistenceWorker(service, checksumCompletedChannel, monitorChannel, &dbWG)
+	go StartDatabasePersistenceWorker(service, tasks, checksumCompletedChannel, monitorChannel, &dbWG)
 
 	log.Println("Esperando processamento concluir")
 	dbWG.Wait()
 	close(monitorChannel)
+
+	if tasks != nil {
+		select {
+		case tasks <- utils.Task{
+			Type: utils.GenerateVideoPlaylists,
+			Data: "Geracao automatica de playlists de video",
+		}:
+		default:
+			log.Println("fila de worker cheia, nao foi possivel enfileirar geracao de playlists de video")
+		}
+	}
 
 	Logger.CompleteWithSuccessLog(logger)
 

@@ -19,7 +19,7 @@ const VideoSettings = ({
 	quality,
 	setQuality,
 }: VideoSettingsProps) => {
-	const open = true;
+	const open = Boolean(anchorEl);
 
 	const playbackRates = [
 		{ value: 0.5, label: '0.5x' },
@@ -52,10 +52,10 @@ const VideoSettings = ({
 		onClose();
 	};
 
-	return (
-		<Menu
-			// anchorEl={anchorEl}
-			open={open}
+		return (
+			<Menu
+				anchorEl={anchorEl}
+				open={open}
 			onClose={handleClose}
 			classes={{
 				paper: 'video-settings-menu',

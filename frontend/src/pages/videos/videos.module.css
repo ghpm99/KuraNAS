@@ -1,0 +1,23 @@
+.content {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: 'content';
+	height: 100%;
+	min-height: 0;
+	padding: 18px 22px 22px;
+	overflow: hidden;
+}
+
+.page {
+	grid-area: content;
+	min-width: 0;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
+@media (max-width: 768px) {
+	.content {
+		padding: 10px 10px 14px;
+	}
+}

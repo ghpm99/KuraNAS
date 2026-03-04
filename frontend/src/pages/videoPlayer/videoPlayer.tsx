@@ -1,28 +1,26 @@
 import useVideoPlayer from '@/components/hooks/useVideoPlayer/useVideoPlayer';
 import VideoControls from '@/components/videos/videoControls/videoControls';
 import VideoPlayer from '@/components/videos/videoPlayer/videoPlayer';
-import VideoProgressBar from '@/components/videos/videoProgressBar/videoProgressBar';
-import VideoSettings from '@/components/videos/videoSettings/videoSettings';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const VideoPlayerPage = () => {
 	const { id } = useParams();
-
-	if (!id || typeof id !== 'string') {
-		return <div>Invalid video ID</div>;
-	}
+	const navigate = useNavigate();
+	const location = useLocation();
+	const playlistId = (location.state as { playlistId?: number } | null)?.playlistId;
+	const videoId = typeof id === 'string' ? id : '';
 
 	const {
 		videoRef,
 		playVideo,
-		pause,
-		resume,
 		seekTo,
 		setVolume,
 		setPlaybackRate,
 		toggleFullscreen,
 		togglePlayPause,
+		nextVideo,
+		previousVideo,
 		status,
 		currentTime,
 		duration,
@@ -31,13 +29,30 @@ const VideoPlayerPage = () => {
 		isFullscreen,
 		setCurrentTime,
 		setDuration,
-		quality,
-		setQuality,
-	} = useVideoPlayer({ videoId: id });
+		currentVideo,
+		} = useVideoPlayer({ videoId, playlistId: playlistId ?? null });
 
 	useEffect(() => {
+		if (!videoId) return;
 		playVideo();
-	}, []);
+	}, [playVideo, videoId]);
+
+	if (!videoId) {
+		return <div>Invalid video ID</div>;
+	}
+
+	const handleBack = () => {
+		const fromState = (location.state as { from?: string } | null)?.from;
+		if (fromState) {
+			navigate(fromState);
+			return;
+		}
+		if (window.history.length > 1) {
+			navigate(-1);
+			return;
+		}
+		navigate('/videos');
+	};
 
 	return (
 		<>
@@ -56,24 +71,23 @@ const VideoPlayerPage = () => {
 				isPlaying={status === 'playing'}
 				volume={volume}
 				playbackRate={playbackRate}
-				pause={pause}
-				resume={resume}
 				seekTo={seekTo}
 				setVolume={setVolume}
 				setPlaybackRate={setPlaybackRate}
 				toggleFullscreen={toggleFullscreen}
 				togglePlayPause={togglePlayPause}
-				nextVideo={() => {}}
-				previousVideo={() => {}}
+				nextVideo={nextVideo}
+				previousVideo={previousVideo}
 			/>
 			<VideoPlayer
-				currentVideo={null}
+				currentVideo={currentVideo}
 				volume={volume}
 				playbackRate={playbackRate}
 				videoRef={videoRef}
 				setCurrentTime={setCurrentTime}
 				setDuration={setDuration}
-				nextVideo={() => {}}
+				nextVideo={nextVideo}
+				onBack={handleBack}
 			/>
 			{/* <VideoProgressBar currentTime={currentTime} duration={duration} seekTo={seekTo} /> */}
 		</>

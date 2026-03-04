@@ -2,6 +2,7 @@ package files
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -72,22 +73,18 @@ func (i *FileModel) ToDto() (FileDto, error) {
 		Starred:    i.Starred,
 	}
 
-	err := fileDto.DeletedAt.ParseFromNullTime(i.DeletedAt)
-	if err != nil {
-		return fileDto, err
-	}
-
-	err = fileDto.LastInteraction.ParseFromNullTime(i.LastInteraction)
-	if err != nil {
-		return fileDto, err
-	}
-
-	err = fileDto.LastBackup.ParseFromNullTime(i.LastBackup)
-	if err != nil {
-		return fileDto, err
-	}
+	fileDto.DeletedAt = toOptionalTime(i.DeletedAt)
+	fileDto.LastInteraction = toOptionalTime(i.LastInteraction)
+	fileDto.LastBackup = toOptionalTime(i.LastBackup)
 
 	return fileDto, nil
+}
+
+func toOptionalTime(value sql.NullTime) utils.Optional[time.Time] {
+	if !value.Valid || value.Time.IsZero() {
+		return utils.Optional[time.Time]{HasValue: false}
+	}
+	return utils.Optional[time.Time]{HasValue: true, Value: value.Time}
 }
 
 func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (utils.PaginationResponse[FileDto], error) {

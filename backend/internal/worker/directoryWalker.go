@@ -30,6 +30,20 @@ func StartDirectoryWalker(
 			}
 			msg := i18n.GetMessage("ERROR_GET_FILE")
 			log.Printf(msg, filePath, err)
+			monitorChannel <- ResultWorkerData{
+				Path:    filePath,
+				Success: false,
+				Error:   err.Error(),
+			}
+			return nil
+		}
+		if fileInfo == nil {
+			monitorChannel <- ResultWorkerData{
+				Path:    filePath,
+				Success: false,
+				Error:   "file info is nil",
+			}
+			return nil
 		}
 		fileWalkChannel <- FileWalk{
 			Path: filePath,

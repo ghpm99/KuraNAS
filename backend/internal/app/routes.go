@@ -14,6 +14,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
 	RegisterMusicRoutes(routesV1, context)
+	RegisterVideoRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	registerReactRoutes(router)
@@ -31,6 +32,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
+	files.GET("/video-thumbnail/:id", context.Files.Handler.GetVideoThumbnailHandler)
+	files.GET("/video-preview/:id", context.Files.Handler.GetVideoPreviewHandler)
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
@@ -93,6 +96,30 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
 }
 
+func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
+	playback := router.Group("/video/playback")
+	catalog := router.Group("/video/catalog")
+	playlists := router.Group("/video/playlists")
+
+	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
+	playback.GET("/state", context.Video.Handler.GetPlaybackStateHandler)
+	playback.PUT("/state", context.Video.Handler.UpdatePlaybackStateHandler)
+	playback.POST("/next", context.Video.Handler.NextVideoHandler)
+	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
+	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
+
+	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
+	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)
+	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)
+	playlists.GET("/unassigned", context.Video.Handler.GetUnassignedVideosHandler)
+	playlists.PUT("/:id/reorder", context.Video.Handler.ReorderPlaylistHandler)
+	playlists.GET("/:id", context.Video.Handler.GetPlaylistByIDHandler)
+	playlists.PUT("/:id", context.Video.Handler.UpdatePlaylistHandler)
+	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
+	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
+	playlists.DELETE("/:id/videos/:videoId", context.Video.Handler.RemovePlaylistVideoHandler)
+}
+
 func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
 	update := router.Group("/update")
 
@@ -112,14 +139,18 @@ func registerReactRoutes(router *gin.Engine) {
 
 func registerCorsRoutes(router *gin.Engine) {
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"https://github.com"},
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
-			return origin == "https://github.com"
+			return isAllowedOrigin(origin)
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+}
+
+func isAllowedOrigin(origin string) bool {
+	return origin == "https://github.com"
 }

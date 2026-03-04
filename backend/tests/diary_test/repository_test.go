@@ -85,7 +85,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			wantErr: false,
 			mock: func(args args) {
 				rows := sqlmock.NewRows([]string{"id", "name", "description", "start_time", "end_time"})
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -96,6 +97,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnRows(rows)
+				mock.ExpectRollback()
 			},
 		},
 		{
@@ -145,7 +147,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			},
 			wantErr: true,
 			mock: func(args args) {
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -156,6 +159,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnError(errors.New("test error"))
+				mock.ExpectRollback()
 			},
 		},
 		{
@@ -207,7 +211,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			mock: func(args args) {
 				rows := sqlmock.NewRows([]string{"id", "name", "description", "start_time", "end_time"}).
 					AddRow(1, "test", "test", "test", "test")
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -218,6 +223,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnRows(rows)
+				mock.ExpectRollback()
 			},
 		},
 	}

@@ -39,6 +39,8 @@ type ServiceInterface interface {
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
+	GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error)
+	GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int, error)
 	GetTotalFiles() (int, error)

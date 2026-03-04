@@ -1,6 +1,8 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { IMusicData, IMusicMetadata } from '../hooks/musicProvider/musicProvider';
 import { updatePlayerState } from '@/service/playerState';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { formatSize } from '@/utils';
 
 type RepeatMode = 'none' | 'all' | 'one';
@@ -112,8 +114,9 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 			if (!audio || index < 0 || index >= queue.length) return;
 
 			const track = queue[index];
+			if (!track) return;
 			setCurrentIndex(index);
-			audio.src = `${import.meta.env.VITE_API_URL}/api/v1/files/stream/${track.id}`;
+			audio.src = `${getApiV1BaseUrl()}/files/stream/${track.id}`;
 			audio.play().catch(() => {});
 			syncState({ fileId: track.id, position: 0 });
 		},

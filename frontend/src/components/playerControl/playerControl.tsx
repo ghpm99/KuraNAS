@@ -1,50 +1,13 @@
 import { Box, Card, CardContent, IconButton, Slider, Typography } from '@mui/material';
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
-import { useEffect } from 'react';
 import './playerControl.css';
-import useMusicPlayer from '../hooks/useMusicPlayer/useMusicPlayer';
-import { useMusic } from '../hooks/musicProvider/musicProvider';
+import { useGlobalMusic } from '../providers/GlobalMusicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const PlayerControl = () => {
-	const { playlist, currentTrack } = useMusic();
-	const {
-		status,
-		currentTime,
-		duration,
-		volume,
-		playTrack,
-		pause,
-		resume,
-		next,
-		previous,
-		seek,
-		setVolume,
-		togglePlayPause,
-		audioRef,
-		setCurrentTime,
-		setDuration,
-	} = useMusicPlayer();
+	const { queue, currentIndex, isPlaying, currentTime, duration, volume, next, previous, seek, setVolume, togglePlayPause } =
+		useGlobalMusic();
 	const { t } = useI18n();
-
-	useEffect(() => {
-		const audio = audioRef.current;
-		if (!audio) return;
-
-		const updateTime = () => setCurrentTime(audio.currentTime);
-		const updateDuration = () => setDuration(audio.duration);
-		const handleEnded = () => next();
-
-		audio.addEventListener('timeupdate', updateTime);
-		audio.addEventListener('loadedmetadata', updateDuration);
-		audio.addEventListener('ended', handleEnded);
-
-		return () => {
-			audio.removeEventListener('timeupdate', updateTime);
-			audio.removeEventListener('loadedmetadata', updateDuration);
-			audio.removeEventListener('ended', handleEnded);
-		};
-	}, [audioRef, next, setCurrentTime, setDuration]);
 
 	const formatTime = (time: number): string => {
 		if (isNaN(time)) return '0:00';
@@ -54,18 +17,17 @@ const PlayerControl = () => {
 	};
 
 	const getTrackTitle = (): string => {
-		if (currentTrack === undefined) return t('PLAYER_NO_TRACK');
-		return playlist[currentTrack]?.metadata?.title || playlist[currentTrack]?.name || t('PLAYER_UNKNOWN_TITLE');
+		if (currentIndex === undefined) return t('PLAYER_NO_TRACK');
+		return queue[currentIndex]?.metadata?.title || queue[currentIndex]?.name || t('PLAYER_UNKNOWN_TITLE');
 	};
 
 	const getTrackArtist = (): string => {
-		if (currentTrack === undefined) return '';
-		return playlist[currentTrack]?.metadata?.artist || t('PLAYER_UNKNOWN_ARTIST');
+		if (currentIndex === undefined) return '';
+		return queue[currentIndex]?.metadata?.artist || t('PLAYER_UNKNOWN_ARTIST');
 	};
 
 	return (
 		<>
-			<audio ref={audioRef} />
 			<Card className='player-control' sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
 				<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
 					{/* Track Info */}
@@ -98,13 +60,13 @@ const PlayerControl = () => {
 						<IconButton onClick={previous} size='small'>
 							<SkipBack size={20} />
 						</IconButton>
-						<IconButton
-							onClick={togglePlayPause}
-							sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
-						>
-							{status === 'paused' && <Play size={20} color='white' />}
-							{status === 'playing' && <Pause size={20} color='white' />}
-						</IconButton>
+							<IconButton
+								onClick={togglePlayPause}
+								sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
+							>
+								{!isPlaying && <Play size={20} color='white' />}
+								{isPlaying && <Pause size={20} color='white' />}
+							</IconButton>
 						<IconButton onClick={next} size='small'>
 							<SkipForward size={20} />
 						</IconButton>

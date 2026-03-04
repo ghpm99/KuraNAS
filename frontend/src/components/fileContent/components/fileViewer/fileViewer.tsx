@@ -2,10 +2,11 @@ import { FileData } from '@/components/hooks/fileProvider/fileContext';
 import { getFileTypeInfo } from '@/utils';
 import './fileViewer.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { getApiV1BaseUrl } from '@/service/apiUrl';
 
 const FileViewer = ({ file }: { file: FileData }) => {
 	const { t } = useI18n();
-	const blobUrl = (id: number) => `${import.meta.env.VITE_API_URL}/api/v1/files/blob/${id}`;
+	const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
 	const fileType = getFileTypeInfo(file.format);
 	if (fileType.type === 'image') {
 		return <img src={blobUrl(file.id)} alt={file.name} />;

@@ -31,9 +31,20 @@ const findItemInTree = (data: FileData[], itemId: number | null): FileData | nul
 	return null;
 };
 
+const addChildrenToTree = (tree: FileData[], parentId: number, children?: FileData[]): FileData[] => {
+	return tree.map((node) => {
+		if (node.id === parentId) {
+			return { ...node, file_children: children };
+		}
+		if (node.file_children) {
+			return { ...node, file_children: addChildrenToTree(node.file_children, parentId, children) };
+		}
+		return node;
+	});
+};
+
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-	const [selectedItem, setSelectedItem] = useState<FileData | null>(null);
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 	const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
@@ -55,17 +66,17 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			return response.data;
 		},
 		initialPageParam: 1,
-		getNextPageParam: (lastPage) => {
-			if (lastPage.pagination.hasNext) {
-				return lastPage.pagination.page + 1;
-			}
-			return undefined;
-		},
-		staleTime: 0,
-	});
+			getNextPageParam: (lastPage) => {
+				if (lastPage.pagination.hasNext) {
+					return lastPage.pagination.page + 1;
+				}
+				return undefined;
+			},
+			staleTime: 0,
+		});
 
 	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
-		queryKey: ['filesRecent', 'tree', selectedItem],
+			queryKey: ['filesRecent', 'tree', selectedItemId],
 		queryFn: async () => {
 			if (selectedItem?.type !== FileType.File) return [];
 
@@ -84,39 +95,18 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
-	const findAndAddChildren = useCallback((tree: FileData[], parentId: number, children?: FileData[]): FileData[] => {
-		return tree.map((node) => {
-			if (node.id === parentId) {
-				return { ...node, file_children: children };
-			}
-			if (node.file_children) {
-				return { ...node, file_children: findAndAddChildren(node.file_children, parentId, children) };
-			}
-			return node;
-		});
-	}, []);
-
 	useEffect(() => {
 		if (!data) return;
-		console.log('teste', data);
+		const nextItems = data?.pages[0]?.items ?? [];
 		if (selectedItemId) {
-			setFileTree((currentTree) => {
-				const updatedTree = findAndAddChildren(currentTree, selectedItemId, data?.pages[0]?.items);
-				return updatedTree;
-			});
-		} else {
-			setFileTree(data?.pages[0]?.items ?? []);
+			// eslint-disable-next-line react-hooks/set-state-in-effect
+			setFileTree((currentTree) => addChildrenToTree(currentTree, selectedItemId, nextItems));
+			return;
 		}
-	}, [data, selectedItemId, findAndAddChildren]);
+		setFileTree(nextItems);
+	}, [data, selectedItemId]);
 
-	useEffect(() => {
-		if (selectedItemId) {
-			const item = findItemInTree(fileTree, selectedItemId);
-			setSelectedItem(item);
-		} else {
-			setSelectedItem(null);
-		}
-	}, [fileTree, selectedItemId]);
+	const selectedItem = findItemInTree(fileTree, selectedItemId);
 
 	const handleSelectItem = useCallback(
 		(itemId: number | null) => {

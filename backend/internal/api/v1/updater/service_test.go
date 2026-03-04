@@ -56,8 +56,16 @@ func TestParseSemVer(t *testing.T) {
 }
 
 func TestGetAssetName(t *testing.T) {
-	name := getAssetName()
-	if name != "kuranas-linux.zip" && name != "kuranas-windows.zip" {
-		t.Errorf("getAssetName() = %q, want kuranas-linux.zip or kuranas-windows.zip", name)
+	original := runtimeGOOS
+	t.Cleanup(func() { runtimeGOOS = original })
+
+	runtimeGOOS = "linux"
+	if name := getAssetName(); name != "kuranas-linux.zip" {
+		t.Errorf("getAssetName() linux = %q, want kuranas-linux.zip", name)
+	}
+
+	runtimeGOOS = "windows"
+	if name := getAssetName(); name != "kuranas-windows.zip" {
+		t.Errorf("getAssetName() windows = %q, want kuranas-windows.zip", name)
 	}
 }

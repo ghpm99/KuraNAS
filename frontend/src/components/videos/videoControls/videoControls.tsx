@@ -1,4 +1,3 @@
-import { useVideoPlayer } from '@/components/hooks/videoPlayerProvider/videoPlayerProvider';
 import { IconButton, Slider, Box, Typography, Menu, MenuItem, Tooltip } from '@mui/material';
 import {
 	Play,
@@ -22,8 +21,6 @@ interface VideoControlsProps {
 	volume: number;
 	playbackRate: number;
 	isFullscreen: boolean;
-	pause: () => void;
-	resume: () => void;
 	seekTo: (time: number) => void;
 	setVolume: (volume: number) => void;
 	setPlaybackRate: (rate: number) => void;
@@ -39,8 +36,6 @@ const VideoControls = ({
 	volume,
 	playbackRate,
 	isFullscreen,
-	pause,
-	resume,
 	seekTo,
 	setVolume,
 	setPlaybackRate,
@@ -51,7 +46,7 @@ const VideoControls = ({
 }: VideoControlsProps) => {
 	const [showControls, setShowControls] = useState(true);
 	const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
-	const timeoutRef = useRef<NodeJS.Timeout>();
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Auto-hide controls
 	useEffect(() => {
@@ -76,6 +71,7 @@ const VideoControls = ({
 			resetTimer();
 		};
 
+		resetTimer();
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('keypress', handleKeyPress);
 
@@ -100,11 +96,11 @@ const VideoControls = ({
 		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 	};
 
-	const handleSeek = (event: Event, newValue: number | number[]) => {
+	const handleSeek = (_event: Event, newValue: number | number[]) => {
 		seekTo(newValue as number);
 	};
 
-	const handleVolumeChange = (event: Event, newValue: number | number[]) => {
+	const handleVolumeChange = (_event: Event, newValue: number | number[]) => {
 		setVolume(newValue as number);
 	};
 
