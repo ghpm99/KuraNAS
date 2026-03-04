@@ -35,6 +35,7 @@ type VideoPlaylistModel struct {
 	UpdatedAt      time.Time
 	LastPlayedAt   sql.NullTime
 	ItemCount      int
+	CoverVideoID   sql.NullInt64
 }
 
 type VideoPlaylistItemModel struct {

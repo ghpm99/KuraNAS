@@ -508,6 +508,21 @@ func (s *Service) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
 	})
 }
 
+func (s *Service) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
+	if limit <= 0 {
+		limit = 2000
+	}
+	models, err := s.Repository.GetUnassignedVideos(limit)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]VideoFileDto, 0, len(models))
+	for _, model := range models {
+		result = append(result, model.ToDto())
+	}
+	return result, nil
+}
+
 type smartGroup struct {
 	SourceKey      string
 	Name           string

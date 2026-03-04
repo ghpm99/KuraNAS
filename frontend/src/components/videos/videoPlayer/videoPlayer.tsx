@@ -1,4 +1,5 @@
 import { IVideoData } from '@/types/video';
+import { ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import './videoPlayer.css';
 
@@ -11,6 +12,7 @@ interface VideoPlayerProps {
 	setCurrentTime: (time: number) => void;
 	setDuration: (duration: number) => void;
 	nextVideo: () => void;
+	onBack: () => void;
 }
 const VideoPlayer = ({
 	currentVideo,
@@ -20,6 +22,7 @@ const VideoPlayer = ({
 	setCurrentTime,
 	setDuration,
 	nextVideo,
+	onBack,
 }: VideoPlayerProps) => {
 	useEffect(() => {
 		const video = videoRef.current;
@@ -97,6 +100,10 @@ const VideoPlayer = ({
 
 				<div className='video-overlay'>
 					<div className='video-info'>
+						<button type='button' className='video-back-btn' onClick={onBack}>
+							<ArrowLeft size={16} />
+							<span>Voltar</span>
+						</button>
 						<h3 className='video-title'>{getVideoTitle()}</h3>
 						{getVideoMetadata() && <p className='video-metadata'>{getVideoMetadata()}</p>}
 					</div>

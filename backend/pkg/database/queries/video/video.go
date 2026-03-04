@@ -78,3 +78,6 @@ var UpsertPlaylistExclusionQuery string
 
 //go:embed delete_playlist_exclusion.sql
 var DeletePlaylistExclusionQuery string
+
+//go:embed get_unassigned_videos.sql
+var GetUnassignedVideosQuery string

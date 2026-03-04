@@ -23,6 +23,7 @@ type VideoPlaylistDto struct {
 	GroupMode      string                 `json:"group_mode"`
 	Classification string                 `json:"classification"`
 	ItemCount      int                    `json:"item_count"`
+	CoverVideoID   *int                   `json:"cover_video_id"`
 	CreatedAt      time.Time              `json:"created_at"`
 	UpdatedAt      time.Time              `json:"updated_at"`
 	LastPlayedAt   *time.Time             `json:"last_played_at"`
@@ -122,6 +123,10 @@ func (m *VideoPlaylistModel) ToDto(items []VideoPlaylistItemDto) VideoPlaylistDt
 	if m.LastPlayedAt.Valid {
 		t := m.LastPlayedAt.Time
 		dto.LastPlayedAt = &t
+	}
+	if m.CoverVideoID.Valid {
+		v := int(m.CoverVideoID.Int64)
+		dto.CoverVideoID = &v
 	}
 	return dto
 }

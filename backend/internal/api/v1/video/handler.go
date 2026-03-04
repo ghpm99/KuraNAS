@@ -151,3 +151,13 @@ func (h *Handler) RemovePlaylistVideoHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
+
+func (h *Handler) GetUnassignedVideosHandler(c *gin.Context) {
+	limit := utils.ParseInt(c.DefaultQuery("limit", "2000"), c)
+	videos, err := h.service.GetUnassignedVideos(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, videos)
+}

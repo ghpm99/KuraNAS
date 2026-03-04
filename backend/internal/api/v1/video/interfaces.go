@@ -31,6 +31,7 @@ type RepositoryInterface interface {
 	RemovePlaylistVideo(tx *sql.Tx, playlistID int, videoID int) error
 	UpsertPlaylistExclusion(tx *sql.Tx, playlistID int, videoID int) error
 	DeletePlaylistExclusion(tx *sql.Tx, playlistID int, videoID int) error
+	GetUnassignedVideos(limit int) ([]VideoFileModel, error)
 }
 
 type ServiceInterface interface {
@@ -46,4 +47,5 @@ type ServiceInterface interface {
 	SetPlaylistHidden(playlistID int, hidden bool) error
 	AddVideoToPlaylist(playlistID int, videoID int) error
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error
+	GetUnassignedVideos(limit int) ([]VideoFileDto, error)
 }

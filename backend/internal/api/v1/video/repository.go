@@ -436,6 +436,7 @@ func (r *Repository) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel
 				&item.UpdatedAt,
 				&item.LastPlayedAt,
 				&item.ItemCount,
+				&item.CoverVideoID,
 			); err != nil {
 				return err
 			}
@@ -553,4 +554,39 @@ func (r *Repository) DeletePlaylistExclusion(tx *sql.Tx, playlistID int, videoID
 		return fmt.Errorf("falha ao remover exclusao manual da playlist: %w", err)
 	}
 	return nil
+}
+
+func (r *Repository) GetUnassignedVideos(limit int) ([]VideoFileModel, error) {
+	results := []VideoFileModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetUnassignedVideosQuery, pq.Array(utils.VideoFormats), limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoFileModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.Name,
+				&item.Path,
+				&item.ParentPath,
+				&item.Format,
+				&item.Size,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return nil
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao listar videos sem playlist: %w", err)
+	}
+
+	return results, nil
 }

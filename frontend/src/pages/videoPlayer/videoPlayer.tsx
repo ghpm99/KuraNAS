@@ -2,10 +2,12 @@ import useVideoPlayer from '@/components/hooks/useVideoPlayer/useVideoPlayer';
 import VideoControls from '@/components/videos/videoControls/videoControls';
 import VideoPlayer from '@/components/videos/videoPlayer/videoPlayer';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const VideoPlayerPage = () => {
 	const { id } = useParams();
+	const navigate = useNavigate();
+	const location = useLocation();
 
 	if (!id || typeof id !== 'string') {
 		return <div>Invalid video ID</div>;
@@ -35,6 +37,19 @@ const VideoPlayerPage = () => {
 	useEffect(() => {
 		playVideo();
 	}, [playVideo]);
+
+	const handleBack = () => {
+		const fromState = (location.state as { from?: string } | null)?.from;
+		if (fromState) {
+			navigate(fromState);
+			return;
+		}
+		if (window.history.length > 1) {
+			navigate(-1);
+			return;
+		}
+		navigate('/videos');
+	};
 
 	return (
 		<>
@@ -69,6 +84,7 @@ const VideoPlayerPage = () => {
 				setCurrentTime={setCurrentTime}
 				setDuration={setDuration}
 				nextVideo={nextVideo}
+				onBack={handleBack}
 			/>
 			{/* <VideoProgressBar currentTime={currentTime} duration={duration} seekTo={seekTo} /> */}
 		</>

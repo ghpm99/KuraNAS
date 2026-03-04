@@ -7,11 +7,14 @@ export interface VideoFileDto {
 	parent_path: string;
 	format: string;
 	size: number;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface VideoPlaylistItemDto {
 	id: number;
 	order_index: number;
+	source_kind: 'auto' | 'manual';
 	video: VideoFileDto;
 	status: 'not_started' | 'in_progress' | 'completed';
 }
@@ -20,6 +23,13 @@ export interface VideoPlaylistDto {
 	id: number;
 	type: 'folder' | 'series' | 'movie' | 'custom';
 	source_path: string;
+	name: string;
+	is_hidden: boolean;
+	is_auto: boolean;
+	group_mode: 'folder' | 'prefix' | 'single';
+	classification: 'anime' | 'series' | 'movie' | 'personal' | 'program';
+	item_count: number;
+	cover_video_id: number | null;
 	created_at: string;
 	updated_at: string;
 	last_played_at: string | null;
@@ -57,6 +67,10 @@ export interface VideoCatalogSectionDto {
 
 export interface VideoHomeCatalogDto {
 	sections: VideoCatalogSectionDto[];
+}
+
+interface PaginationResponse<T> {
+	items: T[];
 }
 
 export interface UpdateVideoPlaybackStateRequest {
@@ -98,4 +112,40 @@ export const previousVideoPlayback = async (): Promise<VideoPlaybackSessionDto> 
 export const getVideoHomeCatalog = async (limit = 24): Promise<VideoHomeCatalogDto> => {
 	const response = await apiBase.get<VideoHomeCatalogDto>('/video/catalog/home', { params: { limit } });
 	return response.data;
+};
+
+export const getVideoPlaylists = async (includeHidden = false): Promise<VideoPlaylistDto[]> => {
+	const response = await apiBase.get<VideoPlaylistDto[]>('/video/playlists/', {
+		params: { include_hidden: includeHidden },
+	});
+	return response.data;
+};
+
+export const getVideoPlaylistById = async (playlistId: number): Promise<VideoPlaylistDto> => {
+	const response = await apiBase.get<VideoPlaylistDto>(`/video/playlists/${playlistId}`);
+	return response.data;
+};
+
+export const setVideoPlaylistHidden = async (playlistId: number, hidden: boolean): Promise<void> => {
+	await apiBase.put(`/video/playlists/${playlistId}/hidden`, { hidden });
+};
+
+export const addVideoToPlaylist = async (playlistId: number, videoId: number): Promise<void> => {
+	await apiBase.post(`/video/playlists/${playlistId}/videos`, { video_id: videoId });
+};
+
+export const removeVideoFromPlaylist = async (playlistId: number, videoId: number): Promise<void> => {
+	await apiBase.delete(`/video/playlists/${playlistId}/videos/${videoId}`);
+};
+
+export const getVideosWithoutPlaylist = async (limit = 2000): Promise<VideoFileDto[]> => {
+	const response = await apiBase.get<VideoFileDto[]>('/video/playlists/unassigned', { params: { limit } });
+	return response.data;
+};
+
+export const getAllVideoFiles = async (limit = 2000): Promise<VideoFileDto[]> => {
+	const response = await apiBase.get<PaginationResponse<VideoFileDto>>('/files/videos', {
+		params: { page: 1, page_size: limit },
+	});
+	return response.data.items ?? [];
 };
