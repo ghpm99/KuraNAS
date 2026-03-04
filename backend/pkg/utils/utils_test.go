@@ -19,6 +19,13 @@ type filterFixture struct {
 	Date    Optional[time.Time] `filter:"date"`
 }
 
+type simpleFilterFixture struct {
+	ID      int       `filter:"id"`
+	Name    string    `filter:"name"`
+	Enabled bool      `filter:"enabled"`
+	Date    time.Time `filter:"date"`
+}
+
 func newGinContext(rawQuery string) *gin.Context {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -62,6 +69,14 @@ func TestPlaceholderAndPrintQuery(t *testing.T) {
 	if !strings.Contains(got, "'john'") || !strings.Contains(got, "TRUE") || !strings.Contains(got, "2025-01-01") {
 		t.Fatalf("unexpected replaced query: %s", got)
 	}
+	got = replacePlaceholder("$4", "SELECT $4", int64(9))
+	if !strings.Contains(got, "9") {
+		t.Fatalf("expected int64 replacement, got: %s", got)
+	}
+	got = replacePlaceholder("$5", "SELECT $5", struct{}{})
+	if !strings.Contains(got, "NULL") {
+		t.Fatalf("expected default NULL replacement, got: %s", got)
+	}
 
 	// Just ensure no panic while formatting and printing.
 	PrintQuery("SELECT $1,$2,$3,$4", []interface{}{"a", 2, true, ts})
@@ -72,9 +87,17 @@ func TestGenerateFilterFromContextAndParseContextQuery(t *testing.T) {
 	ctx := newGinContext("id=7&name=alice&enabled=true&date=2025-02-03")
 	GenerateFilterFromContext(ctx, &filter)
 
-	// Current implementation does not populate Optional fields in this path.
-	if filter.ID.HasValue || filter.Name.HasValue || filter.Enabled.HasValue || filter.Date.HasValue {
-		t.Fatalf("expected optional fields to remain unset with current implementation")
+	if !filter.ID.HasValue || filter.ID.Value != 7 {
+		t.Fatalf("expected optional id=7, got %+v", filter.ID)
+	}
+	if !filter.Name.HasValue || filter.Name.Value != "alice" {
+		t.Fatalf("expected optional name=alice, got %+v", filter.Name)
+	}
+	if !filter.Enabled.HasValue || !filter.Enabled.Value {
+		t.Fatalf("expected optional enabled=true, got %+v", filter.Enabled)
+	}
+	if !filter.Date.HasValue || filter.Date.Value.Format("2006-01-02") != "2025-02-03" {
+		t.Fatalf("expected optional date parsed, got %+v", filter.Date)
 	}
 
 	// Exercise parseContextQuery branches directly.
@@ -92,6 +115,52 @@ func TestGenerateFilterFromContextAndParseContextQuery(t *testing.T) {
 	parseContextQuery(reflect.TypeOf(b), reflect.ValueOf(&b).Elem(), "true")
 	if !b {
 		t.Fatalf("expected bool true")
+	}
+	var tm time.Time
+	parseContextQuery(reflect.TypeOf(tm), reflect.ValueOf(&tm).Elem(), "2025-02-03")
+	if tm.Format("2006-01-02") != "2025-02-03" {
+		t.Fatalf("expected parsed time, got %v", tm)
+	}
+
+	optInt := Optional[int]{}
+	parseContextQuery(reflect.TypeOf(optInt), reflect.ValueOf(&optInt).Elem(), "11")
+	if !optInt.HasValue || optInt.Value != 11 {
+		t.Fatalf("expected optional int parsed, got %+v", optInt)
+	}
+
+	optBool := Optional[bool]{}
+	parseContextQuery(reflect.TypeOf(optBool), reflect.ValueOf(&optBool).Elem(), "true")
+	if !optBool.HasValue || !optBool.Value {
+		t.Fatalf("expected optional bool parsed, got %+v", optBool)
+	}
+}
+
+func TestGenerateFilterFromContextOptionalMissing(t *testing.T) {
+	filter := filterFixture{
+		ID:      NewOptional(10),
+		Name:    NewOptional("x"),
+		Enabled: NewOptional(true),
+		Date:    NewOptional(time.Now()),
+	}
+
+	ctx := newGinContext("")
+	GenerateFilterFromContext(ctx, &filter)
+
+	if filter.ID.HasValue || filter.Name.HasValue || filter.Enabled.HasValue || filter.Date.HasValue {
+		t.Fatalf("expected optional fields to be reset when query params are missing")
+	}
+}
+
+func TestGenerateFilterFromContextWithPrimitiveFields(t *testing.T) {
+	filter := simpleFilterFixture{}
+	ctx := newGinContext("id=8&name=bob&enabled=true&date=2026-01-03")
+	GenerateFilterFromContext(ctx, &filter)
+
+	if filter.ID != 8 || filter.Name != "bob" || !filter.Enabled {
+		t.Fatalf("unexpected primitive filter result: %+v", filter)
+	}
+	if filter.Date.Format("2006-01-02") != "2026-01-03" {
+		t.Fatalf("unexpected parsed date in filter: %v", filter.Date)
 	}
 }
 
@@ -118,6 +187,18 @@ func TestOptionalAndPagination(t *testing.T) {
 	if len(p.Items) != 2 {
 		t.Fatalf("expected one item trimmed for hasNext calculation")
 	}
+
+	p2 := PaginationResponse[int]{
+		Items: []int{1},
+		Pagination: Pagination{
+			Page:     1,
+			PageSize: 5,
+		},
+	}
+	p2.SetHasNext()
+	if p2.Pagination.HasNext {
+		t.Fatalf("expected has next false")
+	}
 }
 
 func TestCalculateOffsetAndFormatType(t *testing.T) {
@@ -139,6 +220,63 @@ func TestCalculateOffsetAndFormatType(t *testing.T) {
 	}
 	if got := GetFormatTypeByExtension(".unknown"); got.Type != FormatTypeUnknown {
 		t.Fatalf("expected unknown for unsupported extension")
+	}
+	if got := GetFormatTypeByExtension(".png"); got.Type != FormatTypeImage {
+		t.Fatalf("expected image for .png")
+	}
+	if got := GetFormatTypeByExtension(".gif"); got.Type != FormatTypeImage {
+		t.Fatalf("expected image for .gif")
+	}
+	if got := GetFormatTypeByExtension(".svg"); got.Type != FormatTypeImage {
+		t.Fatalf("expected image for .svg")
+	}
+	if got := GetFormatTypeByExtension(".webp"); got.Type != FormatTypeImage {
+		t.Fatalf("expected image for .webp")
+	}
+	if got := GetFormatTypeByExtension(".wav"); got.Type != FormatTypeAudio {
+		t.Fatalf("expected audio for .wav")
+	}
+	if got := GetFormatTypeByExtension(".aac"); got.Type != FormatTypeAudio {
+		t.Fatalf("expected audio for .aac")
+	}
+	if got := GetFormatTypeByExtension(".flac"); got.Type != FormatTypeAudio {
+		t.Fatalf("expected audio for .flac")
+	}
+	if got := GetFormatTypeByExtension(".webm"); got.Type != FormatTypeVideo {
+		t.Fatalf("expected video for .webm")
+	}
+	if got := GetFormatTypeByExtension(".ogg"); got.Type != FormatTypeVideo {
+		t.Fatalf("expected video for .ogg")
+	}
+	if got := GetFormatTypeByExtension(".mov"); got.Type != FormatTypeVideo {
+		t.Fatalf("expected video for .mov")
+	}
+	if got := GetFormatTypeByExtension(".txt"); got.Type != FormatTypeDocument {
+		t.Fatalf("expected document for .txt")
+	}
+	if got := GetFormatTypeByExtension(".html"); got.Type != FormatTypeDocument {
+		t.Fatalf("expected document for .html")
+	}
+	if got := GetFormatTypeByExtension(".xml"); got.Type != FormatTypeDocument {
+		t.Fatalf("expected document for .xml")
+	}
+	if got := GetFormatTypeByExtension(".json"); got.Type != FormatTypeDocument {
+		t.Fatalf("expected document for .json")
+	}
+	if got := GetFormatTypeByExtension(".csv"); got.Type != FormatTypeDocument {
+		t.Fatalf("expected document for .csv")
+	}
+	if got := GetFormatTypeByExtension(".rar"); got.Type != FormatTypeArchive {
+		t.Fatalf("expected archive for .rar")
+	}
+	if got := GetFormatTypeByExtension(".7z"); got.Type != FormatTypeArchive {
+		t.Fatalf("expected archive for .7z")
+	}
+	if got := GetFormatTypeByExtension(".tar"); got.Type != FormatTypeArchive {
+		t.Fatalf("expected archive for .tar")
+	}
+	if got := GetFormatTypeByExtension(".gz"); got.Type != FormatTypeArchive {
+		t.Fatalf("expected archive for .gz")
 	}
 }
 
@@ -164,6 +302,11 @@ func TestRunPythonScriptAndStructHelpers(t *testing.T) {
 	ptrs := StructToScanPtrs(&ptrObj)
 	if len(ptrs) != 2 {
 		t.Fatalf("unexpected StructToScanPtrs size: %d", len(ptrs))
+	}
+
+	args = StructToArgs(&obj)
+	if len(args) != 2 || args[1].(string) != "x" {
+		t.Fatalf("unexpected StructToArgs pointer output: %#v", args)
 	}
 }
 
@@ -198,5 +341,8 @@ func TestChecksums(t *testing.T) {
 	}
 	if _, err := GetDirectoryChecksum(file1); err == nil {
 		t.Fatalf("expected non-directory error")
+	}
+	if _, err := GetFileChecksum(filepath.Join(tmpDir, "missing")); err == nil {
+		t.Fatalf("expected GetFileChecksum error for missing file")
 	}
 }

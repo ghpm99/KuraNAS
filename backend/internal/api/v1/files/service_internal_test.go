@@ -3,6 +3,9 @@ package files
 import (
 	"database/sql"
 	"errors"
+	"image"
+	"image/color"
+	"image/png"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"os"
@@ -12,6 +15,47 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func ensureTestIcons(t *testing.T) {
+	t.Helper()
+
+	testRoot := filepath.Join("etc", "kuranas")
+	t.Cleanup(func() {
+		_ = os.RemoveAll(testRoot)
+	})
+
+	iconDir := filepath.Join(testRoot, "icons")
+	if err := os.MkdirAll(iconDir, 0755); err != nil {
+		t.Fatalf("failed to create icon dir: %v", err)
+	}
+
+	writeIcon := func(name string) {
+		t.Helper()
+		path := filepath.Join(iconDir, name+".png")
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+
+		f, err := os.Create(path)
+		if err != nil {
+			t.Fatalf("failed to create icon file %s: %v", path, err)
+		}
+		defer f.Close()
+
+		img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+		img.Set(0, 0, color.RGBA{R: 255, A: 255})
+		img.Set(1, 0, color.RGBA{G: 255, A: 255})
+		img.Set(0, 1, color.RGBA{B: 255, A: 255})
+		img.Set(1, 1, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+		if err := png.Encode(f, img); err != nil {
+			t.Fatalf("failed to encode icon %s: %v", path, err)
+		}
+	}
+
+	for _, name := range []string{"folder", "unknown", "mp4", "mp3", "pdf"} {
+		writeIcon(name)
+	}
+}
 
 type filesRepoMock struct {
 	db *database.DbContext
@@ -397,6 +441,15 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 	if err != nil || len(blob.Blob) == 0 {
 		t.Fatalf("expected blob bytes, err=%v", err)
 	}
+	if !s.CheckFileExists(10) {
+		t.Fatalf("expected CheckFileExists true for existing file")
+	}
+	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+	}
+	if s.CheckFileExists(999) {
+		t.Fatalf("expected CheckFileExists false for missing file")
+	}
 }
 
 func TestFileService_ReportsAndWrappers(t *testing.T) {
@@ -542,6 +595,9 @@ func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 	if err := s.DeleteFile(recent, true); err == nil {
 		t.Fatalf("expected recently accessed deletion error")
 	}
+	if err := s.DeleteFile(recent, false); err != nil {
+		t.Fatalf("expected manual delete to ignore recent-access rule, got %v", err)
+	}
 
 	// Force default branch in UpdateCheckSum.
 	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
@@ -550,5 +606,190 @@ func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 	}
 	if err := s.UpdateCheckSum(9); err == nil {
 		t.Fatalf("expected unknown file type error")
+	}
+}
+
+func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "data.txt")
+	if err := os.WriteFile(filePath, []byte("checksum"), 0644); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	updateCalls := 0
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue && filter.ID.Value == 1 {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{
+						{
+							ID:         1,
+							Name:       "data.txt",
+							Path:       filePath,
+							ParentPath: tmpDir,
+							Type:       File,
+							Format:     ".txt",
+							UpdatedAt:  time.Now(),
+							CreatedAt:  time.Now(),
+						},
+					},
+				}, nil
+			}
+			if filter.ID.HasValue && filter.ID.Value == 2 {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{
+						{
+							ID:         2,
+							Name:       "dir",
+							Path:       tmpDir,
+							ParentPath: filepath.Dir(tmpDir),
+							Type:       Directory,
+							UpdatedAt:  time.Now(),
+							CreatedAt:  time.Now(),
+						},
+					},
+				}, nil
+			}
+			if filter.ParentPath.HasValue {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{
+						{
+							ID:         3,
+							Name:       "child1",
+							Path:       filepath.Join(tmpDir, "c1"),
+							ParentPath: tmpDir,
+							Type:       File,
+							CheckSum:   "abcd",
+							UpdatedAt:  time.Now(),
+							CreatedAt:  time.Now(),
+						},
+					},
+					Pagination: utils.Pagination{Page: 1, PageSize: 1000, HasNext: false},
+				}, nil
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updateCalls++
+			return true, nil
+		},
+	}
+	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+
+	if err := s.UpdateCheckSum(1); err != nil {
+		t.Fatalf("expected file checksum update success, got %v", err)
+	}
+	if err := s.UpdateCheckSum(2); err != nil {
+		t.Fatalf("expected dir checksum update success, got %v", err)
+	}
+	if updateCalls < 2 {
+		t.Fatalf("expected at least two update calls, got %d", updateCalls)
+	}
+
+	oldAccess := time.Now().Add(-48 * time.Hour)
+	err := s.DeleteFile(FileDto{
+		ID:              4,
+		Name:            "old.txt",
+		Path:            filePath,
+		Type:            File,
+		LastInteraction: utils.Optional[time.Time]{HasValue: true, Value: oldAccess},
+	}, true)
+	if err != nil {
+		t.Fatalf("expected DeleteFile success for old access file, got %v", err)
+	}
+
+	thumbData, err := s.GetFileThumbnail(FileDto{
+		ID:              5,
+		Name:            "missing.txt",
+		Path:            filepath.Join(tmpDir, "missing.txt"),
+		ParentPath:      tmpDir,
+		Type:            File,
+		Format:          ".txt",
+		LastInteraction: utils.Optional[time.Time]{HasValue: true, Value: oldAccess},
+	}, 100, 100)
+	if err == nil || thumbData != nil {
+		t.Fatalf("expected GetFileThumbnail to fail on missing file with nil data")
+	}
+
+	if _, err := s.GetVideoThumbnail(FileDto{
+		ID:   6,
+		Path: filepath.Join(tmpDir, "missing.mp4"),
+		Type: File,
+	}, 320, 180); err == nil {
+		t.Fatalf("expected missing video thumbnail error")
+	}
+
+	if _, err := s.GetVideoPreviewGif(FileDto{
+		ID:   7,
+		Path: filepath.Join(tmpDir, "missing.mp4"),
+		Type: File,
+	}, 320, 180); err == nil {
+		t.Fatalf("expected missing video preview error")
+	}
+}
+
+func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
+	ensureTestIcons(t)
+
+	tmpDir := t.TempDir()
+	existingFile := filepath.Join(tmpDir, "not-image.txt")
+	if err := os.WriteFile(existingFile, []byte("plain text"), 0644); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	fakeVideo := filepath.Join(tmpDir, "video.mp4")
+	if err := os.WriteFile(fakeVideo, []byte("not-a-real-video"), 0644); err != nil {
+		t.Fatalf("failed to create fake video file: %v", err)
+	}
+
+	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+
+	dirThumb, err := s.GetFileThumbnail(FileDto{
+		ID:   101,
+		Path: tmpDir,
+		Type: Directory,
+	}, -10, 120)
+	if err != nil {
+		t.Fatalf("expected directory thumbnail success, got %v", err)
+	}
+	if len(dirThumb) == 0 {
+		t.Fatalf("expected non-empty directory thumbnail")
+	}
+
+	fileThumb, err := s.GetFileThumbnail(FileDto{
+		ID:     102,
+		Path:   existingFile,
+		Type:   File,
+		Format: ".txt",
+	}, 4096, 120)
+	if err != nil {
+		t.Fatalf("expected file fallback thumbnail success, got %v", err)
+	}
+	if len(fileThumb) == 0 {
+		t.Fatalf("expected non-empty file thumbnail")
+	}
+
+	videoThumb, err := s.GetVideoThumbnail(FileDto{
+		ID:   103,
+		Path: fakeVideo,
+		Type: File,
+	}, -1, -1)
+	if err != nil {
+		t.Fatalf("expected video thumbnail fallback success, got %v", err)
+	}
+	if len(videoThumb) == 0 {
+		t.Fatalf("expected non-empty video thumbnail fallback")
+	}
+
+	previewGif, err := s.GetVideoPreviewGif(FileDto{
+		ID:   104,
+		Path: fakeVideo,
+		Type: File,
+	}, -1, -1)
+	if err != nil {
+		t.Fatalf("expected video preview fallback success, got %v", err)
+	}
+	if len(previewGif) == 0 {
+		t.Fatalf("expected non-empty video preview fallback")
 	}
 }

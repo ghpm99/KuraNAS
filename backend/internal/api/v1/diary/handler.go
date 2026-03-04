@@ -149,7 +149,18 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 		Data: diaryDto,
 	})
 
-	handler.service.UpdateDiary(diaryDto)
+	updated, err := handler.service.UpdateDiary(diaryDto)
+	if err != nil {
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !updated {
+		err := fmt.Errorf("diary entry not found")
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, diaryDto)

@@ -2,8 +2,12 @@ package migrations
 
 import (
 	"database/sql"
+	"errors"
+	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -125,4 +129,87 @@ func TestDefaultMigrationFuncAndAddMigration(t *testing.T) {
 	if len(migrationList) != 1 {
 		t.Fatalf("expected 1 migration in list, got %d", len(migrationList))
 	}
+}
+
+func TestInitMigrationListPopulatesEntries(t *testing.T) {
+	oldList := migrationList
+	migrationList = nil
+	t.Cleanup(func() {
+		migrationList = oldList
+	})
+
+	initMigrationList()
+	if len(migrationList) < 10 {
+		t.Fatalf("expected migration list to be populated, got %d", len(migrationList))
+	}
+
+	foundVideo := false
+	for _, m := range migrationList {
+		if m.Name == "0014_create_video_playback_tables" {
+			foundVideo = true
+			break
+		}
+	}
+	if !foundVideo {
+		t.Fatalf("expected video migration in list")
+	}
+}
+
+func TestRunMigrationPropagatesMigrationError(t *testing.T) {
+	db := openMigrationDB(t)
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback()
+
+	if err := createMigrationDatabase(tx); err != nil {
+		t.Fatalf("failed to create migration table: %v", err)
+	}
+
+	expectedErr := "boom migration"
+	err = runMigration(tx, "failing", func(tx *sql.Tx) error {
+		return errors.New(expectedErr)
+	})
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected migration error %q, got %v", expectedErr, err)
+	}
+}
+
+func TestInitPanicsWhenBeginTxFails(t *testing.T) {
+	db := openMigrationDB(t)
+	_ = db.Close()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when begin tx fails")
+		} else if !strings.Contains(r.(string), "Failed to begin transaction") {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	Init(db)
+}
+
+func TestInitPanicsWhenCreateMigrationsTableFails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(createMigrationDatabaseQuery)).
+		WillReturnError(errors.New("create table failed"))
+	mock.ExpectRollback()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when creating migrations table fails")
+		} else if !strings.Contains(r.(string), "Failed to create migrations table") {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	Init(db)
 }

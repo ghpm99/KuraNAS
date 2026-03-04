@@ -122,6 +122,170 @@ func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFi
 	return []RecentFileDto{{ID: 2, FileID: fileID, IPAddress: "127.0.0.1", AccessedAt: time.Now()}}, nil
 }
 
+type filesHandlerServiceFuncMock struct {
+	filesHandlerServiceMock
+	getFilesFn           func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFileByIdFn        func(id int) (FileDto, error)
+	updateFileFn         func(file FileDto) (bool, error)
+	getFileBlobByIdFn    func(fileId int) (FileBlob, error)
+	getTotalSpaceUsedFn  func() (int, error)
+	getTotalFilesFn      func() (int, error)
+	getTotalDirectoryFn  func() (int, error)
+	getReportSizeByFmtFn func() ([]SizeReportDto, error)
+	getTopFilesBySizeFn  func(limit int) ([]FileDto, error)
+	getDuplicateFilesFn  func(page int, pageSize int) (DuplicateFileReportDto, error)
+	getImagesFn          func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getMusicFn           func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getVideosFn          func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getMusicArtistsFn    func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	getMusicByArtistFn   func(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getMusicAlbumsFn     func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	getMusicByAlbumFn    func(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getMusicGenresFn     func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	getMusicByGenreFn    func(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getMusicFoldersFn    func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
+}
+
+func (m *filesHandlerServiceFuncMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getFilesFn != nil {
+		return m.getFilesFn(filter, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetFiles(filter, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetFileById(id int) (FileDto, error) {
+	if m.getFileByIdFn != nil {
+		return m.getFileByIdFn(id)
+	}
+	return m.filesHandlerServiceMock.GetFileById(id)
+}
+func (m *filesHandlerServiceFuncMock) UpdateFile(file FileDto) (bool, error) {
+	if m.updateFileFn != nil {
+		return m.updateFileFn(file)
+	}
+	return m.filesHandlerServiceMock.UpdateFile(file)
+}
+func (m *filesHandlerServiceFuncMock) GetFileBlobById(fileId int) (FileBlob, error) {
+	if m.getFileBlobByIdFn != nil {
+		return m.getFileBlobByIdFn(fileId)
+	}
+	return m.filesHandlerServiceMock.GetFileBlobById(fileId)
+}
+func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
+	if m.getTotalSpaceUsedFn != nil {
+		return m.getTotalSpaceUsedFn()
+	}
+	return m.filesHandlerServiceMock.GetTotalSpaceUsed()
+}
+func (m *filesHandlerServiceFuncMock) GetTotalFiles() (int, error) {
+	if m.getTotalFilesFn != nil {
+		return m.getTotalFilesFn()
+	}
+	return m.filesHandlerServiceMock.GetTotalFiles()
+}
+func (m *filesHandlerServiceFuncMock) GetTotalDirectory() (int, error) {
+	if m.getTotalDirectoryFn != nil {
+		return m.getTotalDirectoryFn()
+	}
+	return m.filesHandlerServiceMock.GetTotalDirectory()
+}
+func (m *filesHandlerServiceFuncMock) GetReportSizeByFormat() ([]SizeReportDto, error) {
+	if m.getReportSizeByFmtFn != nil {
+		return m.getReportSizeByFmtFn()
+	}
+	return m.filesHandlerServiceMock.GetReportSizeByFormat()
+}
+func (m *filesHandlerServiceFuncMock) GetTopFilesBySize(limit int) ([]FileDto, error) {
+	if m.getTopFilesBySizeFn != nil {
+		return m.getTopFilesBySizeFn(limit)
+	}
+	return m.filesHandlerServiceMock.GetTopFilesBySize(limit)
+}
+func (m *filesHandlerServiceFuncMock) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error) {
+	if m.getDuplicateFilesFn != nil {
+		return m.getDuplicateFilesFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetDuplicateFiles(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetImages(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getImagesFn != nil {
+		return m.getImagesFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetImages(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getMusicFn != nil {
+		return m.getMusicFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusic(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getVideosFn != nil {
+		return m.getVideosFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetVideos(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	if m.getMusicArtistsFn != nil {
+		return m.getMusicArtistsFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicArtists(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getMusicByArtistFn != nil {
+		return m.getMusicByArtistFn(artist, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicByArtist(artist, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	if m.getMusicAlbumsFn != nil {
+		return m.getMusicAlbumsFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicAlbums(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getMusicByAlbumFn != nil {
+		return m.getMusicByAlbumFn(album, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicByAlbum(album, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	if m.getMusicGenresFn != nil {
+		return m.getMusicGenresFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicGenres(page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getMusicByGenreFn != nil {
+		return m.getMusicByGenreFn(genre, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicByGenre(genre, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	if m.getMusicFoldersFn != nil {
+		return m.getMusicFoldersFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetMusicFolders(page, pageSize)
+}
+
+type filesRecentServiceFuncMock struct {
+	filesRecentServiceMock
+	getRecentFilesFn  func(page int, pageSize int) ([]RecentFileDto, error)
+	getRecentByFileFn func(fileID int) ([]RecentFileDto, error)
+}
+
+func (m *filesRecentServiceFuncMock) GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error) {
+	if m.getRecentFilesFn != nil {
+		return m.getRecentFilesFn(page, pageSize)
+	}
+	return m.filesRecentServiceMock.GetRecentFiles(page, pageSize)
+}
+func (m *filesRecentServiceFuncMock) GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error) {
+	if m.getRecentByFileFn != nil {
+		return m.getRecentByFileFn(fileID)
+	}
+	return m.filesRecentServiceMock.GetRecentAccessByFileID(fileID)
+}
+
 type filesLoggerMock struct{}
 
 func (m *filesLoggerMock) CreateLog(log logger.LoggerModel, object interface{}) (logger.LoggerModel, error) {
@@ -342,5 +506,153 @@ func TestFilesHandlerStreamsAndErrorBranches(t *testing.T) {
 	videoRouter.ServeHTTP(w, req)
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for video preview generic error, got %d", w.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	w = httptest.NewRecorder()
+	audioRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected full audio stream 200 without range, got %d", w.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
+	w = httptest.NewRecorder()
+	videoRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected full video stream 200 without range, got %d", w.Code)
+	}
+}
+
+func TestFilesHandlerGetChildrenByIdNotFound(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			if filter.ID.HasValue {
+				return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+			}
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{{ID: 1, Path: "/tmp"}}}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/children/:id", handler.GetChildrenByIdHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/children/123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing parent file, got %d", w.Code)
+	}
+}
+
+func TestFilesHandlerErrorResponses(t *testing.T) {
+	errBoom := errors.New("boom")
+	service := &filesHandlerServiceFuncMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getFileByIdFn: func(id int) (FileDto, error) {
+			return FileDto{}, errBoom
+		},
+		updateFileFn: func(file FileDto) (bool, error) {
+			return false, errBoom
+		},
+		getFileBlobByIdFn: func(fileId int) (FileBlob, error) {
+			return FileBlob{}, errBoom
+		},
+		getTotalSpaceUsedFn: func() (int, error) { return 0, errBoom },
+		getTotalFilesFn:     func() (int, error) { return 0, errBoom },
+		getTotalDirectoryFn: func() (int, error) { return 0, errBoom },
+		getReportSizeByFmtFn: func() ([]SizeReportDto, error) {
+			return nil, errBoom
+		},
+		getTopFilesBySizeFn: func(limit int) ([]FileDto, error) { return nil, errBoom },
+		getDuplicateFilesFn: func(page int, pageSize int) (DuplicateFileReportDto, error) {
+			return DuplicateFileReportDto{}, errBoom
+		},
+		getImagesFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getMusicArtistsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+			return utils.PaginationResponse[MusicArtistDto]{}, errBoom
+		},
+		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getMusicAlbumsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+			return utils.PaginationResponse[MusicAlbumDto]{}, errBoom
+		},
+		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getMusicGenresFn: func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+			return utils.PaginationResponse[MusicGenreDto]{}, errBoom
+		},
+		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getMusicFoldersFn: func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+			return utils.PaginationResponse[MusicFolderDto]{}, errBoom
+		},
+	}
+	recentService := &filesRecentServiceFuncMock{
+		getRecentFilesFn: func(page int, pageSize int) ([]RecentFileDto, error) {
+			return nil, errBoom
+		},
+		getRecentByFileFn: func(fileID int) ([]RecentFileDto, error) {
+			return nil, errBoom
+		},
+	}
+	handler := NewHandler(service, recentService, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	tests := []struct {
+		method string
+		path   string
+		code   int
+	}{
+		{method: http.MethodGet, path: "/files", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/path?path=/tmp", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/tree", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/children/1", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/blob/1", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/recent", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusInternalServerError},
+		{method: http.MethodPost, path: "/files/starred/1", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/total-space-used", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/total-files", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/total-directory", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/report-size-by-format", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/top-files-by-size?limit=5", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/duplicate-files", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/images", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/videos", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/artists", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/artists/x", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/albums", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/albums/x", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/genres", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/genres/x", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/music/folders", code: http.StatusInternalServerError},
+		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusBadRequest},
+		{method: http.MethodGet, path: "/files/video-thumbnail/1", code: http.StatusBadRequest},
+		{method: http.MethodGet, path: "/files/video-preview/1", code: http.StatusBadRequest},
+		{method: http.MethodGet, path: "/files/stream/1", code: http.StatusNotFound},
+		{method: http.MethodGet, path: "/files/video-stream/1", code: http.StatusNotFound},
+	}
+
+	for _, tc := range tests {
+		req := httptest.NewRequest(tc.method, tc.path, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != tc.code {
+			t.Fatalf("path %s expected %d got %d body=%s", tc.path, tc.code, w.Code, w.Body.String())
+		}
 	}
 }

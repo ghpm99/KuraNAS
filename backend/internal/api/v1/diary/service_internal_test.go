@@ -254,3 +254,12 @@ func TestRepoMockCompileOnly(t *testing.T) {
 	var _ RepositoryInterface = (*repoMock)(nil)
 	_ = errors.New("")
 }
+
+func TestNewService(t *testing.T) {
+	repo := &repoMock{}
+	svc := NewService(repo, make(chan utils.Task, 1))
+	typed, ok := svc.(*Service)
+	if !ok || typed.Repository != repo {
+		t.Fatalf("expected concrete service with repository")
+	}
+}

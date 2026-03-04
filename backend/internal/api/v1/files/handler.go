@@ -144,6 +144,12 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if len(file.Items) == 0 {
+		err := fmt.Errorf("file not found")
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
 	pagination, err := handler.service.GetFiles(FileFilter{
 		Path: utils.Optional[string]{

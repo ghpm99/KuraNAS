@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
@@ -64,6 +65,10 @@ func InitializeApp() (*Application, error) {
 }
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
+	if app.Router == nil {
+		return fmt.Errorf("router is nil")
+	}
+
 	server := &http.Server{
 		Addr:    addr,
 		Handler: app.Router.Handler(),
@@ -72,13 +77,17 @@ func (app *Application) Run(addr string, enableGraceFul bool) error {
 	app.Server = server
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", err)
+		return err
 	}
 
 	return nil
 }
 
 func (app *Application) Stop() error {
+	if app.Server == nil {
+		return nil
+	}
+
 	log.Println("Parando servidor...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

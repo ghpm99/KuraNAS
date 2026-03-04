@@ -1,6 +1,7 @@
 package diary
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -30,6 +31,29 @@ func (m *diaryHandlerServiceMock) GetSummary() (DiarySummary, error) {
 }
 func (m *diaryHandlerServiceMock) DuplicateDiary(id int) (DiaryDto, error) {
 	return DiaryDto{ID: id, Name: "copy"}, nil
+}
+
+type diaryHandlerErrServiceMock struct {
+	diaryHandlerServiceMock
+}
+
+func (m *diaryHandlerErrServiceMock) CreateDiary(diaryDto DiaryDto) (DiaryDto, error) {
+	return DiaryDto{}, errors.New("create failed")
+}
+func (m *diaryHandlerErrServiceMock) GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryDto], error) {
+	return utils.PaginationResponse[DiaryDto]{}, errors.New("get failed")
+}
+func (m *diaryHandlerErrServiceMock) UpdateDiary(diaryDto DiaryDto) (result bool, err error) {
+	if diaryDto.Name == "missing" {
+		return false, nil
+	}
+	return false, errors.New("update failed")
+}
+func (m *diaryHandlerErrServiceMock) GetSummary() (DiarySummary, error) {
+	return DiarySummary{}, errors.New("summary failed")
+}
+func (m *diaryHandlerErrServiceMock) DuplicateDiary(id int) (DiaryDto, error) {
+	return DiaryDto{}, errors.New("duplicate failed")
 }
 
 type diaryLoggerMock struct{ logger.LoggerServiceInterface }
@@ -68,6 +92,48 @@ func TestDiaryHandlerEndpoints(t *testing.T) {
 		{http.MethodPost, "/diary", `{}`, "application/json", http.StatusBadRequest},
 		{http.MethodPost, "/diary/copy", `{}`, "application/json", http.StatusOK},
 		{http.MethodPut, "/diary/1", "", "", http.StatusBadRequest},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+			if tc.ct != "" {
+				req.Header.Set("Content-Type", tc.ct)
+			}
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			if w.Code != tc.code {
+				t.Fatalf("expected %d, got %d, body=%s", tc.code, w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestDiaryHandlerErrorResponses(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&diaryHandlerErrServiceMock{}, &diaryLoggerMock{})
+	router := gin.New()
+
+	router.POST("/diary", handler.CreateDiaryHandler)
+	router.POST("/diary/copy", handler.DuplicateDiaryHandler)
+	router.GET("/diary", handler.GetDiaryHandler)
+	router.PUT("/diary/:id", handler.UpdateDiaryHandler)
+	router.GET("/diary/summary", handler.GetSummaryHandler)
+
+	tests := []struct {
+		method string
+		path   string
+		body   string
+		ct     string
+		code   int
+	}{
+		{http.MethodPost, "/diary", `{"name":"x"}`, "application/json", http.StatusInternalServerError},
+		{http.MethodPost, "/diary/copy", `{"id":1}`, "application/json", http.StatusInternalServerError},
+		{http.MethodGet, "/diary?page=1&page_size=10", "", "", http.StatusInternalServerError},
+		{http.MethodGet, "/diary/summary", "", "", http.StatusInternalServerError},
+		{http.MethodPut, "/diary/1", "data=updated", "application/x-www-form-urlencoded", http.StatusInternalServerError},
+		{http.MethodPut, "/diary/1", "data=missing", "application/x-www-form-urlencoded", http.StatusNotFound},
+		{http.MethodPost, "/diary", `{`, "application/json", http.StatusBadRequest},
 	}
 
 	for _, tc := range tests {

@@ -301,3 +301,12 @@ func TestMusicService_ErrorPaths(t *testing.T) {
 		t.Fatalf("expected update player state error")
 	}
 }
+
+func TestMusicNewService(t *testing.T) {
+	repo := &musicRepoMock{}
+	svc := NewService(repo)
+	typed, ok := svc.(*Service)
+	if !ok || typed.Repository != repo {
+		t.Fatalf("expected concrete service with repository")
+	}
+}

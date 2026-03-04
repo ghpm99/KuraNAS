@@ -719,7 +719,7 @@ func (s *Service) DeleteFile(file FileDto, bySystem bool) error {
 	if file.DeletedAt.HasValue {
 		return fmt.Errorf("file already marked for deletion")
 	}
-	if bySystem && !file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now()) {
+	if bySystem && (!file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now())) {
 		return fmt.Errorf("file was recently accessed, cannot be deleted")
 	}
 

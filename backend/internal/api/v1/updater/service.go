@@ -24,6 +24,16 @@ var (
 	extractBinaryFunc      = extractBinary
 	applyUpdateFunc        = applyUpdate
 	restartProcessFunc     = restartProcess
+	osExecutableFunc       = os.Executable
+	evalSymlinksFunc       = filepath.EvalSymlinks
+	osRenameFunc           = os.Rename
+	osOpenFunc             = os.Open
+	osCreateFunc           = os.Create
+	osRemoveFunc           = os.Remove
+	osChmodFunc            = os.Chmod
+	osStartProcessFunc     = os.StartProcess
+	osExitFunc             = os.Exit
+	syscallExecFunc        = syscall.Exec
 )
 
 type Service struct{}
@@ -246,44 +256,44 @@ func extractBinary(zipPath, destDir string) (string, error) {
 }
 
 func applyUpdate(newBinaryPath string) error {
-	currentPath, err := os.Executable()
+	currentPath, err := osExecutableFunc()
 	if err != nil {
 		return fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	currentPath, err = filepath.EvalSymlinks(currentPath)
+	currentPath, err = evalSymlinksFunc(currentPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve symlinks: %w", err)
 	}
 
 	oldPath := currentPath + ".old"
-	if err := os.Rename(currentPath, oldPath); err != nil {
+	if err := osRenameFunc(currentPath, oldPath); err != nil {
 		return fmt.Errorf("failed to rename current binary: %w", err)
 	}
 
-	src, err := os.Open(newBinaryPath)
+	src, err := osOpenFunc(newBinaryPath)
 	if err != nil {
-		os.Rename(oldPath, currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to open new binary: %w", err)
 	}
 	defer src.Close()
 
-	dst, err := os.Create(currentPath)
+	dst, err := osCreateFunc(currentPath)
 	if err != nil {
-		os.Rename(oldPath, currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to create new binary: %w", err)
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
-		os.Remove(currentPath)
-		os.Rename(oldPath, currentPath)
+		osRemoveFunc(currentPath)
+		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to copy new binary: %w", err)
 	}
 
 	if runtime.GOOS != "windows" {
-		if err := os.Chmod(currentPath, 0755); err != nil {
+		if err := osChmodFunc(currentPath, 0755); err != nil {
 			return fmt.Errorf("failed to set executable permissions: %w", err)
 		}
 	}
@@ -292,21 +302,21 @@ func applyUpdate(newBinaryPath string) error {
 }
 
 func restartProcess() {
-	execPath, err := os.Executable()
+	execPath, err := osExecutableFunc()
 	if err != nil {
 		return
 	}
 
 	if runtime.GOOS == "windows" {
-		proc, err := os.StartProcess(execPath, os.Args, &os.ProcAttr{
+		proc, err := osStartProcessFunc(execPath, os.Args, &os.ProcAttr{
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
 		})
 		if err != nil {
 			return
 		}
 		proc.Release()
-		os.Exit(0)
+		osExitFunc(0)
 	} else {
-		syscall.Exec(execPath, os.Args, os.Environ())
+		syscallExecFunc(execPath, os.Args, os.Environ())
 	}
 }

@@ -191,6 +191,29 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	if processed != 2 {
 		t.Fatalf("expected 2 processed files, got %d", processed)
 	}
+
+	errRunner := func(scriptType utils.ScriptType, filePath string) (string, error) {
+		return "", errors.New("runner failed")
+	}
+	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner); err == nil {
+		t.Fatalf("expected image metadata runner error")
+	}
+	if _, err := getAudioMetadata(files.FileDto{ID: 2, Path: "/err.mp3"}, errRunner); err == nil {
+		t.Fatalf("expected audio metadata runner error")
+	}
+	if _, err := getVideoMetadata(files.FileDto{ID: 2, Path: "/err.mp4"}, errRunner); err == nil {
+		t.Fatalf("expected video metadata runner error")
+	}
+	if _, err := getAudioMetadata(files.FileDto{ID: 3, Path: "/bad.mp3"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
+		return "{invalid-json", nil
+	}); err == nil {
+		t.Fatalf("expected audio metadata json parse error")
+	}
+	if _, err := getVideoMetadata(files.FileDto{ID: 3, Path: "/bad.mp4"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
+		return "{invalid-json", nil
+	}); err == nil {
+		t.Fatalf("expected video metadata json parse error")
+	}
 }
 
 func TestStartDirectoryWalker(t *testing.T) {
@@ -230,7 +253,41 @@ func TestStartDirectoryWalker(t *testing.T) {
 	for range errCh {
 		receivedAny = true
 	}
-	if !receivedAny {
-		t.Fatalf("expected at least one callback item for missing path")
+	if receivedAny {
+		t.Fatalf("did not expect file walk items for missing path")
+	}
+	monitorErrors := 0
+	for item := range monErr {
+		if !item.Success {
+			monitorErrors++
+		}
+	}
+	if monitorErrors == 0 {
+		t.Fatalf("expected at least one monitor error for missing path")
+	}
+}
+
+func TestMetadataWorkerErrorBranch(t *testing.T) {
+	runner := func(scriptType utils.ScriptType, filePath string) (string, error) {
+		return "{invalid-json", nil
+	}
+	in := make(chan files.FileDto, 1)
+	out := make(chan files.FileDto, 1)
+	monitor := make(chan ResultWorkerData, 1)
+	var wg sync.WaitGroup
+
+	in <- files.FileDto{ID: 10, Path: "/x.png", Format: ".png", Type: files.File}
+	close(in)
+	wg.Add(1)
+	go StartMetadataWorker(in, out, runner, monitor, &wg)
+	wg.Wait()
+	close(out)
+	close(monitor)
+
+	if len(out) != 1 {
+		t.Fatalf("expected processed file output")
+	}
+	if len(monitor) != 1 {
+		t.Fatalf("expected one monitor error item")
 	}
 }
