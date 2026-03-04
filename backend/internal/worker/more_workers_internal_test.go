@@ -211,6 +211,17 @@ func TestScanDirWorkerAndHelpers(t *testing.T) {
 	}
 }
 
+func TestScanDirWorkerErrorBranches(t *testing.T) {
+	svc := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{}, errors.New("get files failed")
+		},
+	}
+
+	ScanDirWorker(svc, filepath.Join(t.TempDir(), "missing")) // read dir error
+	ScanDirWorker(svc, t.TempDir())                           // get files error
+}
+
 func TestScanFilesWorker(t *testing.T) {
 	prev := config.AppConfig
 	t.Cleanup(func() { config.AppConfig = prev })
@@ -300,6 +311,137 @@ func TestScanFilesWorker_UsesRepositoryErrorInFailureCallback(t *testing.T) {
 	}
 }
 
+func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
+	t.Run("existing file uses update path and triggers checksum", func(t *testing.T) {
+		prev := config.AppConfig
+		t.Cleanup(func() { config.AppConfig = prev })
+
+		tmpDir := t.TempDir()
+		filePath := filepath.Join(tmpDir, "existing.txt")
+		if err := os.WriteFile(filePath, []byte("x"), 0644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+		config.AppConfig.EntryPoint = tmpDir
+
+		updated := 0
+		checksums := make(chan int, 4)
+		svc := &workerFilesServiceMock{
+			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+				return files.FileDto{ID: 99, Name: name, Path: path}, nil
+			},
+			updateFileFn: func(file files.FileDto) (bool, error) {
+				updated++
+				return true, nil
+			},
+			updateCheckSumFn: func(fileID int) error {
+				checksums <- fileID
+				return nil
+			},
+			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+				return utils.PaginationResponse[files.FileDto]{}, nil
+			},
+		}
+		logSvc := &workerLoggerMock{}
+
+		ScanFilesWorker(svc, logSvc)
+		if updated == 0 {
+			t.Fatalf("expected update path to be used")
+		}
+		select {
+		case id := <-checksums:
+			if id != 99 {
+				t.Fatalf("expected checksum for existing id 99, got %d", id)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("expected checksum update call")
+		}
+	})
+
+	t.Run("missing root path exercises walk error branch", func(t *testing.T) {
+		prev := config.AppConfig
+		t.Cleanup(func() { config.AppConfig = prev })
+		config.AppConfig.EntryPoint = filepath.Join(t.TempDir(), "missing-root")
+
+		svc := &workerFilesServiceMock{
+			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+				return utils.PaginationResponse[files.FileDto]{}, nil
+			},
+		}
+
+		ScanFilesWorker(svc, &workerLoggerMock{})
+	})
+}
+
+func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.T) {
+	t.Run("create failure", func(t *testing.T) {
+		prev := config.AppConfig
+		t.Cleanup(func() { config.AppConfig = prev })
+
+		tmpDir := t.TempDir()
+		filePath := filepath.Join(tmpDir, "new.txt")
+		if err := os.WriteFile(filePath, []byte("x"), 0644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+		config.AppConfig.EntryPoint = tmpDir
+
+		checksumCalls := 0
+		svc := &workerFilesServiceMock{
+			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+				return files.FileDto{}, sql.ErrNoRows
+			},
+			createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+				return files.FileDto{}, errors.New("create failed")
+			},
+			updateCheckSumFn: func(fileID int) error {
+				checksumCalls++
+				return nil
+			},
+			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+				return utils.PaginationResponse[files.FileDto]{}, nil
+			},
+		}
+		logSvc := &workerLoggerMock{}
+		ScanFilesWorker(svc, logSvc)
+		if checksumCalls != 0 {
+			t.Fatalf("expected no checksum calls on create failure, got %d", checksumCalls)
+		}
+	})
+
+	t.Run("update returns false", func(t *testing.T) {
+		prev := config.AppConfig
+		t.Cleanup(func() { config.AppConfig = prev })
+
+		tmpDir := t.TempDir()
+		filePath := filepath.Join(tmpDir, "existing.txt")
+		if err := os.WriteFile(filePath, []byte("x"), 0644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+		config.AppConfig.EntryPoint = tmpDir
+
+		checksumCalls := 0
+		svc := &workerFilesServiceMock{
+			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+				return files.FileDto{ID: 1, Name: name, Path: path}, nil
+			},
+			updateFileFn: func(file files.FileDto) (bool, error) {
+				return false, nil
+			},
+			updateCheckSumFn: func(fileID int) error {
+				checksumCalls++
+				return nil
+			},
+			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+				return utils.PaginationResponse[files.FileDto]{}, nil
+			},
+		}
+		logSvc := &workerLoggerMock{}
+		ScanFilesWorker(svc, logSvc)
+		if checksumCalls != 0 {
+			t.Fatalf("expected no checksum calls when update fails, got %d", checksumCalls)
+		}
+	})
+}
+
 func TestCreateAndUpdateFileDtoHelpers(t *testing.T) {
 	svc := &workerFilesServiceMock{
 		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
@@ -327,6 +469,72 @@ func TestCreateAndUpdateFileDtoHelpers(t *testing.T) {
 
 	if err := updateFileDto(svc, files.FileDto{ID: 1}, fail); err != nil {
 		t.Fatalf("updateFileDto returned error: %v", err)
+	}
+}
+
+func TestCreateAndUpdateFileDtoHelpers_ErrorPaths(t *testing.T) {
+	expectedCreateErr := errors.New("create failed")
+	expectedUpdateErr := errors.New("update failed")
+
+	createSvc := &workerFilesServiceMock{
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			return files.FileDto{}, expectedCreateErr
+		},
+	}
+	createFailCalled := 0
+	fail := func(err error) error {
+		createFailCalled++
+		if !errors.Is(err, expectedCreateErr) {
+			t.Fatalf("expected create error in callback, got %v", err)
+		}
+		return nil
+	}
+	if _, err := createFileDto(createSvc, "/tmp/a.txt", files.FileDto{Name: "a.txt"}, fail); !errors.Is(err, expectedCreateErr) {
+		t.Fatalf("expected create error to propagate, got %v", err)
+	}
+	if createFailCalled != 1 {
+		t.Fatalf("expected create fail callback once, got %d", createFailCalled)
+	}
+
+	updateSvcErr := &workerFilesServiceMock{
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			return false, expectedUpdateErr
+		},
+	}
+	updateFailCalled := 0
+	updateFail := func(err error) error {
+		updateFailCalled++
+		if !errors.Is(err, expectedUpdateErr) {
+			t.Fatalf("expected update error in callback, got %v", err)
+		}
+		return nil
+	}
+	if err := updateFileDto(updateSvcErr, files.FileDto{ID: 1}, updateFail); !errors.Is(err, expectedUpdateErr) {
+		t.Fatalf("expected update error to propagate, got %v", err)
+	}
+	if updateFailCalled != 1 {
+		t.Fatalf("expected update fail callback once, got %d", updateFailCalled)
+	}
+
+	updateSvcFalse := &workerFilesServiceMock{
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			return false, nil
+		},
+	}
+	notUpdatedCallbackCalls := 0
+	notUpdatedFail := func(err error) error {
+		notUpdatedCallbackCalls++
+		if err == nil || err.Error() != "file was not updated" {
+			t.Fatalf("expected not-updated error in callback, got %v", err)
+		}
+		return nil
+	}
+	err := updateFileDto(updateSvcFalse, files.FileDto{ID: 1}, notUpdatedFail)
+	if err == nil || err.Error() != "file was not updated" {
+		t.Fatalf("expected not-updated error propagation, got %v", err)
+	}
+	if notUpdatedCallbackCalls != 1 {
+		t.Fatalf("expected not-updated callback once, got %d", notUpdatedCallbackCalls)
 	}
 }
 

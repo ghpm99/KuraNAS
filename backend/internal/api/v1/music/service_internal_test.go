@@ -302,6 +302,31 @@ func TestMusicService_ErrorPaths(t *testing.T) {
 	}
 }
 
+func TestMusicService_AdditionalErrorPaths(t *testing.T) {
+	repo := &musicRepoMock{
+		getPlaylistByIDFn: func(id int) (PlaylistModel, error) {
+			return PlaylistModel{}, errors.New("playlist fetch failed")
+		},
+		getPlaylistTracksFn: func(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackModel], error) {
+			return utils.PaginationResponse[PlaylistTrackModel]{}, errors.New("tracks fetch failed")
+		},
+		getPlayerStateFn: func(clientID string) (PlayerStateModel, error) {
+			return PlayerStateModel{}, errors.New("player state failed")
+		},
+	}
+	svc := newMusicServiceForTest(t, repo)
+
+	if _, err := svc.GetPlaylistByID(1); err == nil {
+		t.Fatalf("expected GetPlaylistByID error")
+	}
+	if _, err := svc.GetPlaylistTracks(1, 1, 10); err == nil {
+		t.Fatalf("expected GetPlaylistTracks error")
+	}
+	if _, err := svc.GetPlayerState("c1"); err == nil {
+		t.Fatalf("expected GetPlayerState error")
+	}
+}
+
 func TestMusicNewService(t *testing.T) {
 	repo := &musicRepoMock{}
 	svc := NewService(repo)

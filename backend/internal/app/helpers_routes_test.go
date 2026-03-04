@@ -80,6 +80,9 @@ func TestRegisterCorsRoutes(t *testing.T) {
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
 		t.Fatalf("expected credentials header to be true, got %q", got)
 	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://github.com" {
+		t.Fatalf("expected allowed origin header, got %q", got)
+	}
 
 	reqDenied := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	reqDenied.Header.Set("Origin", "https://example.com")
@@ -90,6 +93,18 @@ func TestRegisterCorsRoutes(t *testing.T) {
 	}
 	if got := wDenied.Header().Get("Access-Control-Allow-Credentials"); got != "" {
 		t.Fatalf("expected denied-origin request to not include credentials header, got %q", got)
+	}
+	if got := wDenied.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("expected denied-origin request to not include origin header, got %q", got)
+	}
+
+	reqPreflight := httptest.NewRequest(http.MethodOptions, "/ping", nil)
+	reqPreflight.Header.Set("Origin", "https://github.com")
+	reqPreflight.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	wPreflight := httptest.NewRecorder()
+	router.ServeHTTP(wPreflight, reqPreflight)
+	if wPreflight.Code != http.StatusNoContent {
+		t.Fatalf("expected preflight 204, got %d", wPreflight.Code)
 	}
 }
 

@@ -110,8 +110,14 @@ func updateFileDto(service files.ServiceInterface, fileDto files.FileDto, failCa
 		HasValue: false,
 	}
 	updated, err := service.UpdateFile(fileDto)
-	if err != nil || !updated {
-		return failCallback(err)
+	if err != nil {
+		_ = failCallback(err)
+		return err
+	}
+	if !updated {
+		updateErr := errors.New("file was not updated")
+		_ = failCallback(updateErr)
+		return updateErr
 	}
 	i18n.LogTranslate("FILE_UPDATE_SUCCESS", fileDto.ID)
 
@@ -125,7 +131,8 @@ func createFileDto(service files.ServiceInterface, path string, fileDto files.Fi
 	fileCreated, err := service.CreateFile(fileDto)
 
 	if err != nil {
-		return fileCreated, failCallback(err)
+		_ = failCallback(err)
+		return fileCreated, err
 	}
 	i18n.LogTranslate("FILE_CREATE_SUCCESS", fileCreated.ID)
 	return fileCreated, nil

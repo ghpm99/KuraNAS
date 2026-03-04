@@ -1,10 +1,13 @@
 package files
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"nas-go/api/pkg/utils"
 )
 
 func TestFileDto_ParseAndChecksums(t *testing.T) {
@@ -70,5 +73,48 @@ func TestRecentFileDtoModelConversions(t *testing.T) {
 	back := model.ToDto()
 	if back.ID != dto.ID || back.FileID != dto.FileID {
 		t.Fatalf("unexpected dto conversion result: %+v", back)
+	}
+}
+
+func TestFileModelToDtoAndPaginationParsing(t *testing.T) {
+	now := time.Now()
+	model := FileModel{
+		ID:              1,
+		Name:            "a.txt",
+		Path:            "/tmp/a.txt",
+		ParentPath:      "/tmp",
+		Type:            File,
+		Format:          ".txt",
+		Size:            10,
+		UpdatedAt:       now,
+		CreatedAt:       now,
+		DeletedAt:       sql.NullTime{Valid: false},
+		LastInteraction: sql.NullTime{Valid: true, Time: now},
+		LastBackup:      sql.NullTime{Valid: false},
+		CheckSum:        "sum",
+		Starred:         true,
+		Metadata:        map[string]any{"k": "v"},
+	}
+
+	dto, err := model.ToDto()
+	if err != nil {
+		t.Fatalf("expected ToDto success, got %v", err)
+	}
+	if dto.ID != 1 || !dto.LastInteraction.HasValue {
+		t.Fatalf("unexpected dto conversion: %+v", dto)
+	}
+
+	pagination, err := ParsePaginationToDto(&utils.PaginationResponse[FileModel]{
+		Items:      []FileModel{model},
+		Pagination: utils.Pagination{Page: 1, PageSize: 10, HasNext: false, HasPrev: false},
+	})
+	if err != nil {
+		t.Fatalf("expected ParsePaginationToDto success, got %v", err)
+	}
+	if len(pagination.Items) != 1 {
+		t.Fatalf("expected one item in parsed pagination")
+	}
+	if pagination.Items[0].Metadata == nil {
+		t.Fatalf("expected metadata propagation in ParsePaginationToDto")
 	}
 }

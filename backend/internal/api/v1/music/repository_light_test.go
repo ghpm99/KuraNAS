@@ -2,7 +2,9 @@ package music
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -12,6 +14,14 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
+
+func sequentialCols(total int) []string {
+	cols := make([]string, 0, total)
+	for i := 1; i <= total; i++ {
+		cols = append(cols, fmt.Sprintf("c%d", i))
+	}
+	return cols
+}
 
 func newMusicRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
 	t.Helper()
@@ -290,6 +300,42 @@ func TestMusicRepositoryWriteErrorBranches(t *testing.T) {
 		t.Fatalf("expected UpsertPlayerState error")
 	}
 	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestMusicRepositoryGetPlaylistTracksSuccessAndQueryError(t *testing.T) {
+	repo, mock, db := newMusicRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	trackValues := []driver.Value{
+		1, 10, 20, 0, now,
+		20, "song", "/tmp/song.mp3", "/tmp", ".mp3", int64(1024), now, now, nil, nil, 2, "sum", nil, false,
+		2, 20, "/tmp/song.mp3", "audio/mpeg", 120.0, 320, 44100, 2, 1, "enc", 16, "title", "artist", "album",
+		"albumArtist", "1", "rock", "composer", "2026", "2026-01-01", "lame", "pub", "2025-01-01", "orig", "lyr", "lyrics", now,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistTracksQuery)).
+		WithArgs(10, 11, 0).
+		WillReturnRows(sqlmock.NewRows(sequentialCols(len(trackValues))).AddRow(trackValues...))
+	mock.ExpectRollback()
+	items, err := repo.GetPlaylistTracks(10, 1, 10)
+	if err != nil || len(items.Items) != 1 {
+		t.Fatalf("expected GetPlaylistTracks success, len=%d err=%v", len(items.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistTracksQuery)).
+		WithArgs(10, 11, 0).
+		WillReturnError(errors.New("query failed"))
+	mock.ExpectRollback()
+	if _, err := repo.GetPlaylistTracks(10, 1, 10); err == nil {
+		t.Fatalf("expected GetPlaylistTracks query error")
+	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)

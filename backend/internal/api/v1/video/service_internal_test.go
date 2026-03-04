@@ -596,5 +596,307 @@ func TestVideoService_ErrorBranchesAndContextPlaylistVariants(t *testing.T) {
 	})
 }
 
+func TestVideoService_MoreErrorBranches(t *testing.T) {
+	t.Run("AddVideoToPlaylist propagates add error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			addPlaylistVideoManualFn: func(tx *sql.Tx, playlistID int, videoID int) error {
+				return errors.New("add failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if err := svc.AddVideoToPlaylist(1, 2); err == nil {
+			t.Fatalf("expected add error")
+		}
+	})
+
+	t.Run("AddVideoToPlaylist propagates exclusion delete error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			addPlaylistVideoManualFn: func(tx *sql.Tx, playlistID int, videoID int) error { return nil },
+			deletePlaylistExclusionFn: func(tx *sql.Tx, playlistID int, videoID int) error {
+				return errors.New("delete exclusion failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if err := svc.AddVideoToPlaylist(1, 2); err == nil {
+			t.Fatalf("expected exclusion delete error")
+		}
+	})
+
+	t.Run("RemoveVideoFromPlaylist propagates playlist fetch error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{}, errors.New("playlist not found")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if err := svc.RemoveVideoFromPlaylist(1, 2); err == nil {
+			t.Fatalf("expected playlist fetch error")
+		}
+	})
+
+	t.Run("RemoveVideoFromPlaylist propagates remove error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: id, IsAuto: false}, nil
+			},
+			removePlaylistVideoFn: func(tx *sql.Tx, playlistID int, videoID int) error {
+				return errors.New("remove failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if err := svc.RemoveVideoFromPlaylist(1, 2); err == nil {
+			t.Fatalf("expected remove error")
+		}
+	})
+
+	t.Run("StartPlayback rejects video not in selected playlist", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: id}, nil
+			},
+			checkVideoInPlaylistFn: func(playlistID int, videoID int) (bool, error) {
+				return false, nil
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		pid := 10
+		if _, err := svc.StartPlayback("c1", 1, &pid); err == nil {
+			t.Fatalf("expected not-in-playlist error")
+		}
+	})
+
+	t.Run("StartPlayback propagates selected-playlist lookup error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{}, errors.New("playlist lookup failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		pid := 10
+		if _, err := svc.StartPlayback("c1", 1, &pid); err == nil {
+			t.Fatalf("expected playlist lookup error")
+		}
+	})
+
+	t.Run("StartPlayback propagates in-playlist check error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: id}, nil
+			},
+			checkVideoInPlaylistFn: func(playlistID int, videoID int) (bool, error) {
+				return false, errors.New("membership check failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		pid := 10
+		if _, err := svc.StartPlayback("c1", 1, &pid); err == nil {
+			t.Fatalf("expected membership check error")
+		}
+	})
+
+	t.Run("StartPlayback propagates context videos error", func(t *testing.T) {
+		repo := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{}, errors.New("missing")
+			},
+			getVideosByParentPathFn: func(parentPath string) ([]VideoFileModel, error) {
+				return nil, errors.New("list videos failed")
+			},
+		}
+		svc := newVideoServiceForTest(t, repo)
+		if _, err := svc.StartPlayback("c1", 1, nil); err == nil {
+			t.Fatalf("expected context videos error")
+		}
+	})
+
+	t.Run("StartPlayback propagates upsert and touch errors", func(t *testing.T) {
+		repoUpsert := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: 1}, nil
+			},
+			getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+				return []VideoPlaylistItemModel{{ID: 1, PlaylistID: playlistID, VideoID: 1}}, nil
+			},
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{}, errors.New("none")
+			},
+			upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{}, errors.New("upsert failed")
+			},
+		}
+		svcUpsert := newVideoServiceForTest(t, repoUpsert)
+		if _, err := svcUpsert.StartPlayback("c1", 1, nil); err == nil {
+			t.Fatalf("expected upsert error")
+		}
+
+		repoTouch := &videoRepoMock{
+			getVideoFileByIDFn: func(id int) (VideoFileModel, error) {
+				return VideoFileModel{ID: id, ParentPath: "/videos", Path: "/videos/v.mp4"}, nil
+			},
+			getPlaylistByContextFn: func(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: 1}, nil
+			},
+			getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+				return []VideoPlaylistItemModel{{ID: 1, PlaylistID: playlistID, VideoID: 1}}, nil
+			},
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{}, errors.New("none")
+			},
+			upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+				state.ID = 1
+				return state, nil
+			},
+			touchPlaylistFn: func(tx *sql.Tx, playlistID int) error { return errors.New("touch failed") },
+		}
+		svcTouch := newVideoServiceForTest(t, repoTouch)
+		if _, err := svcTouch.StartPlayback("c1", 1, nil); err == nil {
+			t.Fatalf("expected touch error")
+		}
+	})
+
+	t.Run("RebuildSmartPlaylists propagates repository errors", func(t *testing.T) {
+		cases := []struct {
+			name string
+			repo *videoRepoMock
+		}{
+			{
+				name: "get grouped videos",
+				repo: &videoRepoMock{
+					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+						return nil, errors.New("grouping failed")
+					},
+				},
+			},
+			{
+				name: "upsert auto playlist",
+				repo: &videoRepoMock{
+					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					},
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+						return VideoPlaylistModel{}, errors.New("upsert failed")
+					},
+				},
+			},
+			{
+				name: "playlist exclusions",
+				repo: &videoRepoMock{
+					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					},
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+						return VideoPlaylistModel{ID: 1}, nil
+					},
+					getPlaylistExclusionsFn: func(playlistID int) (map[int]bool, error) {
+						return nil, errors.New("exclusions failed")
+					},
+				},
+			},
+			{
+				name: "delete auto items",
+				repo: &videoRepoMock{
+					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					},
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+						return VideoPlaylistModel{ID: 1}, nil
+					},
+					getPlaylistExclusionsFn:   func(playlistID int) (map[int]bool, error) { return map[int]bool{}, nil },
+					deleteAutoPlaylistItemsFn: func(tx *sql.Tx, playlistID int) error { return errors.New("delete auto failed") },
+				},
+			},
+			{
+				name: "insert playlist items",
+				repo: &videoRepoMock{
+					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					},
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+						return VideoPlaylistModel{ID: 1}, nil
+					},
+					getPlaylistExclusionsFn:   func(playlistID int) (map[int]bool, error) { return map[int]bool{}, nil },
+					deleteAutoPlaylistItemsFn: func(tx *sql.Tx, playlistID int) error { return nil },
+					insertPlaylistItemsSrcFn: func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error {
+						return errors.New("insert auto failed")
+					},
+				},
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				svc := newVideoServiceForTest(t, tc.repo)
+				if err := svc.RebuildSmartPlaylists(); err == nil {
+					t.Fatalf("expected error for case %s", tc.name)
+				}
+			})
+		}
+	})
+
+	t.Run("shiftPlayback validates active state and playlist/items errors", func(t *testing.T) {
+		repoNoActive := &videoRepoMock{
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{ClientID: clientID}, nil
+			},
+		}
+		svcNoActive := newVideoServiceForTest(t, repoNoActive)
+		if _, err := svcNoActive.NextVideo("c1"); err == nil {
+			t.Fatalf("expected no-active-video error")
+		}
+
+		repoPlaylistErr := &videoRepoMock{
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{
+					ClientID:   clientID,
+					PlaylistID: sql.NullInt64{Int64: 10, Valid: true},
+					VideoID:    sql.NullInt64{Int64: 1, Valid: true},
+				}, nil
+			},
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{}, errors.New("playlist failed")
+			},
+		}
+		svcPlaylistErr := newVideoServiceForTest(t, repoPlaylistErr)
+		if _, err := svcPlaylistErr.NextVideo("c1"); err == nil {
+			t.Fatalf("expected playlist lookup error")
+		}
+
+		repoNoItems := &videoRepoMock{
+			getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+				return VideoPlaybackStateModel{
+					ClientID:   clientID,
+					PlaylistID: sql.NullInt64{Int64: 10, Valid: true},
+					VideoID:    sql.NullInt64{Int64: 1, Valid: true},
+				}, nil
+			},
+			getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+				return VideoPlaylistModel{ID: id}, nil
+			},
+			getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+				return []VideoPlaylistItemModel{}, nil
+			},
+		}
+		svcNoItems := newVideoServiceForTest(t, repoNoItems)
+		if _, err := svcNoItems.NextVideo("c1"); err == nil {
+			t.Fatalf("expected empty playlist error")
+		}
+	})
+}
+
 func ptrFloat(v float64) *float64 { return &v }
 func ptrBool(v bool) *bool        { return &v }

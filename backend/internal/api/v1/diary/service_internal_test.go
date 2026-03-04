@@ -191,6 +191,44 @@ func TestServiceErrorPaths(t *testing.T) {
 	}
 }
 
+func TestServiceDuplicateDiaryErrorPaths(t *testing.T) {
+	t.Run("duplicate returns not found when source diary is missing", func(t *testing.T) {
+		mock := &repoMock{
+			getDiaryFn: func(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error) {
+				if filter.ID.HasValue {
+					return utils.PaginationResponse[DiaryModel]{Items: []DiaryModel{}}, nil
+				}
+				return utils.PaginationResponse[DiaryModel]{Items: []DiaryModel{}}, nil
+			},
+		}
+		service := newServiceForTest(t, mock)
+		if _, err := service.DuplicateDiary(10); err == nil {
+			t.Fatalf("expected duplicate diary not found error")
+		}
+	})
+
+	t.Run("duplicate propagates create error", func(t *testing.T) {
+		now := time.Now()
+		mock := &repoMock{
+			getDiaryFn: func(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error) {
+				if filter.ID.HasValue {
+					return utils.PaginationResponse[DiaryModel]{
+						Items: []DiaryModel{{ID: 1, Name: "source", StartTime: now}},
+					}, nil
+				}
+				return utils.PaginationResponse[DiaryModel]{Items: []DiaryModel{}}, nil
+			},
+			createDiaryFn: func(transaction *sql.Tx, diary DiaryModel) (DiaryModel, error) {
+				return DiaryModel{}, errors.New("create failed")
+			},
+		}
+		service := newServiceForTest(t, mock)
+		if _, err := service.DuplicateDiary(1); err == nil {
+			t.Fatalf("expected duplicate create error")
+		}
+	})
+}
+
 func TestCalculateDailyDurationAndLongestActivity(t *testing.T) {
 	now := time.Now()
 	entries := []DiaryDto{

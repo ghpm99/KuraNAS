@@ -9,6 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker"
+	"nas-go/api/pkg/utils"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -99,6 +103,101 @@ func TestInitializeAppReturnsErrorWhenTranslationsAreMissing(t *testing.T) {
 	}
 	if app != nil {
 		t.Fatalf("expected nil app on InitializeApp failure")
+	}
+}
+
+func TestInitializeAppLoadConfigAndDatabaseErrors(t *testing.T) {
+	origLoadConfig := loadConfigFn
+	origInitializeConfig := initializeConfigFn
+	origLoadTranslations := loadTranslationsFn
+	origConfigDatabase := configDatabaseFn
+	origNewContext := newContextFn
+	origNewRouter := newRouterFn
+	origRegisterRoutes := registerRoutesFn
+	origStartWorkers := startWorkersFn
+	t.Cleanup(func() {
+		loadConfigFn = origLoadConfig
+		initializeConfigFn = origInitializeConfig
+		loadTranslationsFn = origLoadTranslations
+		configDatabaseFn = origConfigDatabase
+		newContextFn = origNewContext
+		newRouterFn = origNewRouter
+		registerRoutesFn = origRegisterRoutes
+		startWorkersFn = origStartWorkers
+	})
+
+	loadConfigFn = func() error { return errors.New("load failed") }
+	if app, err := InitializeApp(); err == nil || app != nil {
+		t.Fatalf("expected load config error")
+	}
+
+	loadConfigFn = func() error { return nil }
+	initializeConfigFn = func() {}
+	loadTranslationsFn = func() error { return nil }
+	configDatabaseFn = func() (*sql.DB, error) { return nil, errors.New("db failed") }
+	if app, err := InitializeApp(); err == nil || app != nil {
+		t.Fatalf("expected database error")
+	}
+}
+
+func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
+	origLoadConfig := loadConfigFn
+	origInitializeConfig := initializeConfigFn
+	origLoadTranslations := loadTranslationsFn
+	origConfigDatabase := configDatabaseFn
+	origNewContext := newContextFn
+	origNewRouter := newRouterFn
+	origRegisterRoutes := registerRoutesFn
+	origStartWorkers := startWorkersFn
+	t.Cleanup(func() {
+		loadConfigFn = origLoadConfig
+		initializeConfigFn = origInitializeConfig
+		loadTranslationsFn = origLoadTranslations
+		configDatabaseFn = origConfigDatabase
+		newContextFn = origNewContext
+		newRouterFn = origNewRouter
+		registerRoutesFn = origRegisterRoutes
+		startWorkersFn = origStartWorkers
+	})
+
+	loadConfigFn = func() error { return nil }
+	initializeConfigFn = func() {}
+	loadTranslationsFn = func() error { return nil }
+	configDatabaseFn = func() (*sql.DB, error) {
+		return &sql.DB{}, nil
+	}
+	newContextFn = func(db *sql.DB) *AppContext {
+		tasks := make(chan utils.Task, 1)
+		return &AppContext{
+			Tasks: &tasks,
+			Files: &FileContext{},
+			Video: &VideoContext{},
+		}
+	}
+	newRouterFn = func(opts ...gin.OptionFunc) *gin.Engine { return gin.New(opts...) }
+	registerCalled := false
+	registerRoutesFn = func(router *gin.Engine, context *AppContext) { registerCalled = true }
+	workersCalled := false
+	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) { workersCalled = true }
+
+	config.AppConfig.Env = "production"
+	app, err := InitializeApp()
+	if err != nil || app == nil {
+		t.Fatalf("expected InitializeApp success, err=%v", err)
+	}
+	if gin.Mode() != gin.ReleaseMode {
+		t.Fatalf("expected release mode for production env")
+	}
+	if !registerCalled || !workersCalled {
+		t.Fatalf("expected routes and workers to be started")
+	}
+
+	config.AppConfig.Env = "dev"
+	if _, err := InitializeApp(); err != nil {
+		t.Fatalf("expected InitializeApp success in debug mode, err=%v", err)
+	}
+	if gin.Mode() != gin.DebugMode {
+		t.Fatalf("expected debug mode for non-production env")
 	}
 }
 

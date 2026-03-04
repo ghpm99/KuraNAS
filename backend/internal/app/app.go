@@ -15,6 +15,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	loadConfigFn       = config.LoadConfig
+	initializeConfigFn = config.InitializeConfig
+	loadTranslationsFn = i18n.LoadTranslations
+	configDatabaseFn   = database.ConfigDatabase
+	newContextFn       = NewContext
+	newRouterFn        = gin.Default
+	registerRoutesFn   = RegisterRoutes
+	startWorkersFn     = worker.StartWorkers
+)
+
 type Application struct {
 	Router  *gin.Engine
 	Context *AppContext
@@ -22,12 +33,12 @@ type Application struct {
 }
 
 func InitializeApp() (*Application, error) {
-	if err := config.LoadConfig(); err != nil {
+	if err := loadConfigFn(); err != nil {
 		return nil, err
 	}
-	config.InitializeConfig()
+	initializeConfigFn()
 
-	if err := i18n.LoadTranslations(); err != nil {
+	if err := loadTranslationsFn(); err != nil {
 		return nil, err
 	}
 
@@ -37,16 +48,16 @@ func InitializeApp() (*Application, error) {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	database, err := database.ConfigDatabase()
+	database, err := configDatabaseFn()
 	if err != nil {
 		return nil, err
 	}
 
-	appContext := NewContext(database)
+	appContext := newContextFn(database)
 
-	router := gin.Default()
+	router := newRouterFn()
 
-	RegisterRoutes(router, appContext)
+	registerRoutesFn(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
 		FilesService:    appContext.Files.Service,
@@ -56,7 +67,7 @@ func InitializeApp() (*Application, error) {
 		Logger:          appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 200)
+	startWorkersFn(workerFileContext, 200)
 
 	return &Application{
 		Router:  router,

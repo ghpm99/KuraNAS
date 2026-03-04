@@ -269,3 +269,80 @@ func TestRunMigrationReturnsRecordError(t *testing.T) {
 	}
 	_ = tx.Rollback()
 }
+
+func TestInitPanicsWhenRunMigrationFails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	origInitMigrationList := initMigrationListFn
+	origCreateMigrationDB := createMigrationDatabaseFn
+	origRunMigration := runMigrationFn
+	origList := migrationList
+	t.Cleanup(func() {
+		initMigrationListFn = origInitMigrationList
+		createMigrationDatabaseFn = origCreateMigrationDB
+		runMigrationFn = origRunMigration
+		migrationList = origList
+	})
+
+	initMigrationListFn = func() {}
+	createMigrationDatabaseFn = func(tx *sql.Tx) error { return nil }
+	runMigrationFn = func(tx *sql.Tx, name string, migrationFunc func(*sql.Tx) error) error {
+		return errors.New("run migration failed")
+	}
+	migrationList = []migration{{Name: "x", Migrate: func(*sql.Tx) error { return nil }}}
+
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when runMigration fails")
+		} else if !strings.Contains(r.(string), "Failed to run migration") {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	Init(db)
+}
+
+func TestInitPanicsWhenCommitFails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	origInitMigrationList := initMigrationListFn
+	origCreateMigrationDB := createMigrationDatabaseFn
+	origRunMigration := runMigrationFn
+	origList := migrationList
+	t.Cleanup(func() {
+		initMigrationListFn = origInitMigrationList
+		createMigrationDatabaseFn = origCreateMigrationDB
+		runMigrationFn = origRunMigration
+		migrationList = origList
+	})
+
+	initMigrationListFn = func() {}
+	createMigrationDatabaseFn = func(tx *sql.Tx) error { return nil }
+	runMigrationFn = func(tx *sql.Tx, name string, migrationFunc func(*sql.Tx) error) error { return nil }
+	migrationList = []migration{}
+
+	mock.ExpectBegin()
+	mock.ExpectCommit().WillReturnError(errors.New("commit failed"))
+	mock.ExpectRollback()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when commit fails")
+		} else if !strings.Contains(r.(string), "Failed to commit transaction") {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	Init(db)
+}

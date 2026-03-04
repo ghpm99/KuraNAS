@@ -2,6 +2,7 @@ package logger
 
 import (
 	"database/sql"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -139,6 +140,52 @@ func TestLoggerRepositoryUpdateLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateLog returned error: %v", err)
 	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestLoggerRepositoryUpdateLogErrorBranches(t *testing.T) {
+	repo, mock, db := newLoggerRepoWithMock(t)
+	defer db.Close()
+	model := sampleLogModel()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateLogQuery)).
+		WillReturnError(errors.New("exec failed"))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.UpdateLog(tx, model); err == nil {
+		t.Fatalf("expected exec error on UpdateLog")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateLogQuery)).
+		WillReturnResult(sqlmock.NewErrorResult(errors.New("rows affected failed")))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.UpdateLog(tx, model); err == nil {
+		t.Fatalf("expected rows affected error on UpdateLog")
+	}
+	_ = tx.Rollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateLogQuery)).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	tx, err = db.Begin()
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if err := repo.UpdateLog(tx, model); err == nil {
+		t.Fatalf("expected multiple rows error on UpdateLog")
+	}
+	_ = tx.Rollback()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet expectations: %v", err)

@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"os"
@@ -791,6 +792,93 @@ func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
 	}
 	if len(previewGif) == 0 {
 		t.Fatalf("expected non-empty video preview fallback")
+	}
+}
+
+func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
+	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	cacheFile := filepath.Join(cacheDir, "42_320.png")
+	cached := []byte("cached-png")
+
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		t.Fatalf("failed to create cache dir: %v", err)
+	}
+	if err := os.WriteFile(cacheFile, cached, 0644); err != nil {
+		t.Fatalf("failed to write cache file: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(cacheFile) })
+
+	data, err := s.GetFileThumbnail(FileDto{
+		ID:   42,
+		Path: "/path/not/used/on-cache-hit",
+		Type: File,
+	}, 0, 100)
+	if err != nil {
+		t.Fatalf("expected cache hit without error, got %v", err)
+	}
+	if string(data) != string(cached) {
+		t.Fatalf("expected cached data, got %q", string(data))
+	}
+}
+
+func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	s := newFilesServiceForTest(t, &filesRepoMock{
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			return false, errors.New("update failure")
+		},
+	}, &metadataRepoMock{})
+
+	_, err := s.GetFileThumbnail(FileDto{
+		ID:     99,
+		Path:   filepath.Join(tmpDir, "missing.txt"),
+		Type:   File,
+		Format: ".txt",
+	}, 100, 100)
+	if err == nil {
+		t.Fatalf("expected error for missing file with delete failure")
+	}
+	if !errors.Is(err, ErrDatabase) {
+		t.Fatalf("expected ErrDatabase wrapping, got %v", err)
+	}
+}
+
+func TestFileService_GetVideoThumbAndPreviewCacheHit(t *testing.T) {
+	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		t.Fatalf("failed to create video cache dir: %v", err)
+	}
+
+	thumbPath := filepath.Join(cacheDir, "501_320x180.png")
+	thumbBytes := []byte("cached-video-thumb")
+	if err := os.WriteFile(thumbPath, thumbBytes, 0644); err != nil {
+		t.Fatalf("failed to write thumb cache: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(thumbPath) })
+
+	thumb, err := s.GetVideoThumbnail(FileDto{ID: 501, Path: "/missing.mp4", Type: File}, 320, 180)
+	if err != nil {
+		t.Fatalf("expected video thumbnail cache hit, got %v", err)
+	}
+	if string(thumb) != string(thumbBytes) {
+		t.Fatalf("expected cached thumbnail bytes")
+	}
+
+	previewPath := filepath.Join(cacheDir, "502_320x180_preview.gif")
+	previewBytes := []byte("cached-video-preview")
+	if err := os.WriteFile(previewPath, previewBytes, 0644); err != nil {
+		t.Fatalf("failed to write preview cache: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(previewPath) })
+
+	preview, err := s.GetVideoPreviewGif(FileDto{ID: 502, Path: "/missing.mp4", Type: File}, 320, 180)
+	if err != nil {
+		t.Fatalf("expected video preview cache hit, got %v", err)
+	}
+	if string(preview) != string(previewBytes) {
+		t.Fatalf("expected cached preview bytes")
 	}
 }
 

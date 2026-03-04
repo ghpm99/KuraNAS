@@ -23,26 +23,32 @@ var migrationExistsQuery string
 
 var migrationList = []migration{}
 
+var (
+	initMigrationListFn       = initMigrationList
+	createMigrationDatabaseFn = createMigrationDatabase
+	runMigrationFn            = runMigration
+)
+
 func Init(db *sql.DB) {
 	if db == nil {
 		log.Println("Database connection is nil")
 		panic("Database connection is nil")
 	}
-	initMigrationList()
+	initMigrationListFn()
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		panic("Failed to begin transaction: " + err.Error())
 	}
 	defer tx.Rollback()
 
-	err = createMigrationDatabase(tx)
+	err = createMigrationDatabaseFn(tx)
 
 	if err != nil {
 		panic("Failed to create migrations table: " + err.Error())
 	}
 
 	for _, m := range migrationList {
-		if err := runMigration(tx, m.Name, m.Migrate); err != nil {
+		if err := runMigrationFn(tx, m.Name, m.Migrate); err != nil {
 			panic("Failed to run migration " + m.Name + ": " + err.Error())
 		}
 	}
