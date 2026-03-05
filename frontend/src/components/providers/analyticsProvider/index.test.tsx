@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { AnalyticsProvider } from './index';
 import { useAnalyticsOverview } from './analyticsContext';
 import { apiBase } from '@/service';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/service', () => ({
 	apiBase: {
@@ -10,6 +11,15 @@ jest.mock('@/service', () => ({
 }));
 
 const mockedApiGet = apiBase.get as jest.Mock;
+
+const createQueryClient = () =>
+	new QueryClient({
+		defaultOptions: {
+			queries: {
+				retry: false,
+			},
+		},
+	});
 
 const Consumer = () => {
 	const { period, loading, error, data, setPeriod, refresh } = useAnalyticsOverview();
@@ -54,10 +64,13 @@ describe('providers/analyticsProvider', () => {
 	});
 
 	it('loads default period and updates when period changes', async () => {
+		const queryClient = createQueryClient();
 		render(
-			<AnalyticsProvider>
-				<Consumer />
-			</AnalyticsProvider>,
+			<QueryClientProvider client={queryClient}>
+				<AnalyticsProvider>
+					<Consumer />
+				</AnalyticsProvider>
+			</QueryClientProvider>,
 		);
 
 		await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
@@ -74,10 +87,13 @@ describe('providers/analyticsProvider', () => {
 
 	it('exposes error key when request fails', async () => {
 		mockedApiGet.mockRejectedValueOnce(new Error('network'));
+		const queryClient = createQueryClient();
 		render(
-			<AnalyticsProvider>
-				<Consumer />
-			</AnalyticsProvider>,
+			<QueryClientProvider client={queryClient}>
+				<AnalyticsProvider>
+					<Consumer />
+				</AnalyticsProvider>
+			</QueryClientProvider>,
 		);
 
 		await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
