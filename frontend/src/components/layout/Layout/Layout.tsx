@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import Header from '../Header/Header';
 import Sidebar from '../Sidebar/Sidebar';
 import styles from './Layout.module.css';
-import { useUI } from '@/components/hooks/UI/uiContext';
-import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
+import { useUI } from '@/components/providers/uiProvider/uiContext';
+import { useActivityDiary } from '@/components/providers/activityDiaryProvider/ActivityDiaryContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 interface LayoutProps {

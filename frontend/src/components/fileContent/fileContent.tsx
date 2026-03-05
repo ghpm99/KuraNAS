@@ -1,7 +1,7 @@
 import { FileType, formatSize } from '@/utils';
 import FileCard from '../fileCard';
 import useI18n from '../i18n/provider/i18nContext';
-import useFile, { FileData } from '../hooks/fileProvider/fileContext';
+import useFile, { FileData } from '../providers/fileProvider/fileContext';
 import FileViewer from './components/fileViewer/fileViewer';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import './fileContent.css';

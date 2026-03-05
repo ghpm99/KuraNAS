@@ -156,7 +156,7 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 		return
 	}
 	if !updated {
-		err := fmt.Errorf("diary entry not found")
+		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_DIARY_NOT_FOUND"))
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

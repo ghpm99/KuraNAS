@@ -70,9 +70,7 @@ WHERE
     hf.format = ANY($1)
     AND hf.deleted_at IS NULL
 ORDER BY
-    hf.TYPE,
-    hf.NAME,
-    hf.id DESC
+    {{ORDER_BY}}
 LIMIT
     $2
 OFFSET

@@ -20,7 +20,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicArtists, getMusicByArtist } from '@/service/music';
 import { MusicArtist } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 const ArtistsView = () => {

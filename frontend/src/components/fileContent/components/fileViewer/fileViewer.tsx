@@ -1,4 +1,4 @@
-import { FileData } from '@/components/hooks/fileProvider/fileContext';
+import { FileData } from '@/components/providers/fileProvider/fileContext';
 import { getFileTypeInfo } from '@/utils';
 import './fileViewer.css';
 import useI18n from '@/components/i18n/provider/i18nContext';

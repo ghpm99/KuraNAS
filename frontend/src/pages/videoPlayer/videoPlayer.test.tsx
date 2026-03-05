@@ -35,6 +35,10 @@ jest.mock('@/components/videos/videoPlayer/videoPlayer', () => ({
 		</div>
 	),
 }));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({ t: (k: string) => ({ VIDEO_INVALID_ID: 'Invalid video ID' }[k] ?? k) }),
+}));
 
 describe('pages/videoPlayer/videoPlayer', () => {
 	beforeEach(() => {

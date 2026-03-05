@@ -1,6 +1,6 @@
 import { Tab, Tabs as MuiTabs } from '@mui/material';
 import { FileType } from '@/utils';
-import useFile from '../hooks/fileProvider/fileContext';
+import useFile from '../providers/fileProvider/fileContext';
 import useI18n from '../i18n/provider/i18nContext';
 
 const Tabs = () => {

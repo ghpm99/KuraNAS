@@ -14,7 +14,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => () => ({
 }));
 
 const mockUseAbout = jest.fn();
-jest.mock('@/components/hooks/AboutProvider/AboutContext', () => ({
+jest.mock('@/components/providers/aboutProvider/AboutContext', () => ({
 	useAbout: () => mockUseAbout(),
 }));
 

@@ -9,7 +9,7 @@ jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
 	</div>
 ));
 
-jest.mock('@/components/hooks/AboutProvider/AboutContext', () => ({
+jest.mock('@/components/providers/aboutProvider/AboutContext', () => ({
 	useAbout: () => ({
 		commit_hash: 'abc123',
 		gin_mode: 'release',

@@ -1,10 +1,12 @@
 import useVideoPlayer from '@/components/hooks/useVideoPlayer/useVideoPlayer';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import VideoControls from '@/components/videos/videoControls/videoControls';
 import VideoPlayer from '@/components/videos/videoPlayer/videoPlayer';
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const VideoPlayerPage = () => {
+	const { t } = useI18n();
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -38,7 +40,7 @@ const VideoPlayerPage = () => {
 	}, [playVideo, videoId]);
 
 	if (!videoId) {
-		return <div>Invalid video ID</div>;
+		return <div>{t('VIDEO_INVALID_ID')}</div>;
 	}
 
 	const handleBack = () => {

@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 import Layout from './index';
 
-jest.mock('@/components/hooks/UI', () => ({
+jest.mock('@/components/providers/uiProvider', () => ({
 	UIProvider: ({ children }: any) => <div data-testid='ui-provider'>{children}</div>,
 }));
 
-jest.mock('@/components/hooks/ActivityDiaryProvider', () => ({
+jest.mock('@/components/providers/activityDiaryProvider', () => ({
 	__esModule: true,
 	default: ({ children }: any) => <div data-testid='activity-provider'>{children}</div>,
 }));

@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/providers/activityDiaryProvider/ActivityDiaryContext';
 import Card from '@/components/ui/Card/Card';
 import { Box, Button, TextField } from '@mui/material';
 import { Plus } from 'lucide-react';

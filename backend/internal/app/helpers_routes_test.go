@@ -13,6 +13,7 @@ import (
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
+	"nas-go/api/internal/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +38,17 @@ func routeExists(routes gin.RoutesInfo, method, path string) bool {
 	return false
 }
 
+func setAllowedOriginsForTest(t *testing.T) {
+	t.Helper()
+	originalAllowedOrigins := config.AppConfig.AllowedOrigins
+	config.AppConfig.AllowedOrigins = "https://github.com,http://localhost:5173"
+	t.Cleanup(func() {
+		config.AppConfig.AllowedOrigins = originalAllowedOrigins
+	})
+}
+
 func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
+	setAllowedOriginsForTest(t)
 	router := SetUpRouter()
 	RegisterRoutes(router, buildRouteContext())
 
@@ -65,8 +76,10 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 }
 
 func TestRegisterCorsRoutes(t *testing.T) {
+	setAllowedOriginsForTest(t)
+
 	router := SetUpRouter()
-	registerCorsRoutes(router)
+	registerCorsRoutes(router, buildRouteContext())
 	router.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
@@ -143,14 +156,5 @@ func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *tes
 	}
 	if body := w.Body.String(); body == "" {
 		t.Fatalf("expected index response body for NoRoute")
-	}
-}
-
-func TestIsAllowedOrigin(t *testing.T) {
-	if !isAllowedOrigin("https://github.com") {
-		t.Fatalf("expected github origin to be allowed")
-	}
-	if isAllowedOrigin("https://example.com") {
-		t.Fatalf("expected non-github origin to be denied")
 	}
 }

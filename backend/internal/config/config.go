@@ -17,6 +17,7 @@ type AppConfigStruct struct {
 	DbUser          string
 	DbPassword      string
 	DbName          string
+	AllowedOrigins  string
 }
 
 var AppConfig AppConfigStruct
@@ -34,5 +35,6 @@ func InitializeConfig() {
 		DbUser:          os.Getenv("DB_USER"),
 		DbPassword:      os.Getenv("DB_PASSWORD"),
 		DbName:          os.Getenv("DB_NAME"),
+		AllowedOrigins:  os.Getenv("ALLOWED_ORIGINS"),
 	}
 }

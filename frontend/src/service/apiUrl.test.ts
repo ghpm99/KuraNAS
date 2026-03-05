@@ -24,8 +24,15 @@ describe('service/apiUrl', () => {
 		expect(getApiV1BaseUrl()).toBe('http://runtime.local/api/v1');
 	});
 
-	it('uses env when runtime global is blank', () => {
+	it('uses vite env when runtime global is blank', () => {
 		(globalThis as any).__KURANAS_API_URL__ = '   ';
+		process.env.VITE_API_URL = 'http://vite.local/';
+		expect(getApiBaseUrl()).toBe('http://vite.local');
+		expect(getApiV1BaseUrl()).toBe('http://vite.local/api/v1');
+	});
+
+	it('falls back to process env outside Vite runtime', () => {
+		(globalThis as any).__KURANAS_API_URL__ = ' ';
 		process.env.VITE_API_URL = 'http://env.local/';
 		expect(getApiBaseUrl()).toBe('http://env.local');
 		expect(getApiV1BaseUrl()).toBe('http://env.local/api/v1');

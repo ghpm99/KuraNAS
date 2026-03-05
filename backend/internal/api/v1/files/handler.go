@@ -145,7 +145,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 		return
 	}
 	if len(file.Items) == 0 {
-		err := fmt.Errorf("file not found")
+		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -630,8 +630,14 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 	}, nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	pagination, err := handler.service.GetImages(page, pageSize)
+	pagination, err := handler.service.GetImages(page, pageSize, groupBy)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)

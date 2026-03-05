@@ -1,4 +1,4 @@
-import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
+import { useAbout } from '@/components/providers/aboutProvider/AboutContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import Card from '@/components/ui/Card/Card';
 import { applyUpdate, getUpdateStatus } from '@/service/update';

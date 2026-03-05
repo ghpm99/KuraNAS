@@ -1,7 +1,7 @@
 import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { Disc, Folder, ListMusic, ListPlus, Tag, User } from 'lucide-react';
 import { MusicView } from '@/types/music';
-import { useMusic } from '@/components/hooks/musicProvider/musicProvider';
+import { useMusic } from '@/components/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const viewKeys: { key: MusicView; labelKey: string; icon: React.ReactNode }[] = [

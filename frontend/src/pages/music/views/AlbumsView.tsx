@@ -19,7 +19,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicAlbums, getMusicByAlbum } from '@/service/music';
 import { MusicAlbum } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 

@@ -1,6 +1,7 @@
 import { IVideoData } from '@/types/video';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import './videoPlayer.css';
 
 interface VideoPlayerProps {
@@ -24,6 +25,7 @@ const VideoPlayer = ({
 	nextVideo,
 	onBack,
 }: VideoPlayerProps) => {
+	const { t } = useI18n();
 	useEffect(() => {
 		const video = videoRef.current;
 		if (!video) return;
@@ -71,7 +73,7 @@ const VideoPlayer = ({
 	}, [playbackRate, videoRef]);
 
 	const getVideoTitle = (): string => {
-		if (!currentVideo) return 'No video playing';
+		if (!currentVideo) return t('VIDEO_NO_VIDEO_PLAYING');
 		return currentVideo.name;
 	};
 
@@ -102,7 +104,7 @@ const VideoPlayer = ({
 					<div className='video-info'>
 						<button type='button' className='video-back-btn' onClick={onBack}>
 							<ArrowLeft size={16} />
-							<span>Voltar</span>
+							<span>{t('VIDEO_BACK')}</span>
 						</button>
 						<h3 className='video-title'>{getVideoTitle()}</h3>
 						{getVideoMetadata() && <p className='video-metadata'>{getVideoMetadata()}</p>}

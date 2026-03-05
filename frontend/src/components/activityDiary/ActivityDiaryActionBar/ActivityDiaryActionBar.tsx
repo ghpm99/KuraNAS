@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/providers/activityDiaryProvider/ActivityDiaryContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { Alert, Box, Typography } from '@mui/material';
 

@@ -5,7 +5,7 @@ import MusicContent from './musicContent';
 const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 
-jest.mock('../hooks/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
+jest.mock('../providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('../providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
 
 jest.mock('@/pages/music/views/AllTracksView', () => () => <div>AllTracksView</div>);

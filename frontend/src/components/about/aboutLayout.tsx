@@ -1,4 +1,4 @@
-import { AboutProvider } from '../hooks/AboutProvider';
+import { AboutProvider } from '../providers/aboutProvider';
 import Layout from '../layout/Layout';
 
 const AboutLayout = ({ children }: { children: React.ReactNode }) => {

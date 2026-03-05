@@ -159,6 +159,26 @@ const (
 	StarredCategory FileCategory = "starred"
 )
 
+type ImageGroupBy string
+
+const (
+	ImageGroupByDate ImageGroupBy = "date"
+	ImageGroupByType ImageGroupBy = "type"
+	ImageGroupByName ImageGroupBy = "name"
+)
+
+func ParseImageGroupBy(value string) (ImageGroupBy, error) {
+	groupBy := ImageGroupBy(value)
+	switch groupBy {
+	case "", ImageGroupByDate:
+		return ImageGroupByDate, nil
+	case ImageGroupByType, ImageGroupByName:
+		return groupBy, nil
+	default:
+		return "", fmt.Errorf("invalid image group_by: %s", value)
+	}
+}
+
 type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]

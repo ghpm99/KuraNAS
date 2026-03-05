@@ -1,5 +1,5 @@
 import { FileType, formatDate, formatSize, getFileTypeInfo } from '@/utils';
-import useFile from '../hooks/fileProvider/fileContext';
+import useFile from '../providers/fileProvider/fileContext';
 import useI18n from '../i18n/provider/i18nContext';
 import { Box, CircularProgress, Divider, List, ListItem, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
