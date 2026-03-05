@@ -1,9 +1,16 @@
 name: Release Build
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_run:
+    workflows:
+      - Auto Tag Main
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 env:
   GO_VERSION: '1.24'
@@ -15,14 +22,48 @@ env:
   BACKEND_COVERAGE_MIN: '80'
 
 jobs:
+  resolve-tag:
+    name: Resolve tag from auto-tag workflow
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve semantic tag on workflow commit
+        id: resolve
+        shell: bash
+        run: |
+          TARGET_SHA="${{ github.event.workflow_run.head_sha }}"
+          git fetch --force --tags
+
+          TAGS=$(git tag --points-at "$TARGET_SHA" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [ -z "$TAGS" ]; then
+            echo "No semantic tag found on commit $TARGET_SHA."
+            exit 1
+          fi
+
+          TAG_NAME=$(printf '%s\n' "$TAGS" | sort -V | tail -n 1)
+          echo "Resolved tag: $TAG_NAME for commit: $TARGET_SHA"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+
   lint-frontend:
     name: Lint Frontend
     runs-on: ubuntu-latest
+    needs: resolve-tag
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -34,12 +75,14 @@ jobs:
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
-    needs: lint-frontend
+    needs: [resolve-tag, lint-frontend]
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -52,11 +95,14 @@ jobs:
   lint-backend:
     name: Lint Backend
     runs-on: ubuntu-latest
+    needs: resolve-tag
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -66,12 +112,14 @@ jobs:
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
-    needs: lint-backend
+    needs: [resolve-tag, lint-backend]
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -86,10 +134,12 @@ jobs:
   build-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
+    needs: [resolve-tag, test-backend, test-frontend]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -120,7 +170,7 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
-          go build -ldflags "-X 'nas-go/api/api.Version=${{ github.ref_name }}' -X 'nas-go/api/api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=linux -o kuranas ./cmd/nas/main.go
+          go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.resolve-tag.outputs.tag_name }}' -X 'nas-go/api/api.CommitHash=${{ needs.resolve-tag.outputs.commit_sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=linux -o kuranas ./cmd/nas/main.go
 
       - name: Prepare build directory
         run: |
@@ -143,10 +193,12 @@ jobs:
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
-    needs: [test-backend, test-frontend]
+    needs: [resolve-tag, test-backend, test-frontend]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -176,7 +228,7 @@ jobs:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
-        run: go build -ldflags "-X 'nas-go/api/api.Version=${{ github.ref_name }}' -X 'nas-go/api/api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=windows -o kuranas.exe ./cmd/nas
+        run: go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.resolve-tag.outputs.tag_name }}' -X 'nas-go/api/api.CommitHash=${{ needs.resolve-tag.outputs.commit_sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=windows -o kuranas.exe ./cmd/nas
 
       - name: Prepare build directory
         shell: bash
@@ -199,8 +251,7 @@ jobs:
 
   release:
     name: Release build artifacts
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-linux, build-windows]
+    needs: [resolve-tag, build-linux, build-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -213,8 +264,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
+          name: Release ${{ needs.resolve-tag.outputs.tag_name }}
+          tag_name: ${{ needs.resolve-tag.outputs.tag_name }}
           files: |
             kuranas-linux.zip
             kuranas-windows.zip
