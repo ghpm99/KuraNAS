@@ -215,10 +215,10 @@ func TestRepositoryMediaQueriesScanErrorPaths(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImagesQuery)).
+	mock.ExpectQuery(regexp.QuoteMeta(getImagesQueryByGroup(ImageGroupByDate))).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectRollback()
-	if _, err := repo.GetImages(1, 10); err == nil {
+	if _, err := repo.GetImages(1, 10, ImageGroupByDate); err == nil {
 		t.Fatalf("expected GetImages scan error")
 	}
 
@@ -348,10 +348,10 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImagesQuery)).
+	mock.ExpectQuery(regexp.QuoteMeta(getImagesQueryByGroup(ImageGroupByDate))).
 		WillReturnRows(sqlmock.NewRows(numberedCols(len(imageValues))).AddRow(imageValues...))
 	mock.ExpectRollback()
-	images, err := repo.GetImages(1, 10)
+	images, err := repo.GetImages(1, 10, ImageGroupByDate)
 	if err != nil || len(images.Items) != 1 {
 		t.Fatalf("GetImages failed len=%d err=%v", len(images.Items), err)
 	}

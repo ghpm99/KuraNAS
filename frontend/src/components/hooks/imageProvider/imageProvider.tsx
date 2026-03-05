@@ -8,6 +8,7 @@ import {
 	useInfiniteQuery,
 } from '@tanstack/react-query';
 import { createContext, useContext } from 'react';
+import { useState } from 'react';
 
 export interface IImageMetadata {
 	id: number;
@@ -82,6 +83,8 @@ export interface IImageData {
 export interface IImageContext {
 	images: IImageData[];
 	status: 'error' | 'success' | 'pending';
+	imageGroupBy: ImageGroupBy;
+	setImageGroupBy: (groupBy: ImageGroupBy) => void;
 	fetchNextPage: (
 		options?: FetchNextPageOptions | undefined,
 	) => Promise<InfiniteQueryObserverResult<InfiniteData<PaginationResponse, unknown>, Error>>;
@@ -90,6 +93,7 @@ export interface IImageContext {
 }
 
 type PaginationResponse = Pagination<IImageData>;
+export type ImageGroupBy = 'date' | 'type' | 'name';
 
 const ImageContext = createContext<IImageContext | undefined>(undefined);
 
@@ -98,11 +102,12 @@ export const ImageContextProvider = ImageContext.Provider;
 const pageSize = 200;
 
 export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
+	const [imageGroupBy, setImageGroupBy] = useState<ImageGroupBy>('date');
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['images'],
+		queryKey: ['images', imageGroupBy],
 		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
 			const response = await apiBase.get<PaginationResponse>(`/files/images`, {
-				params: { page: pageParam, page_size: pageSize },
+				params: { page: pageParam, page_size: pageSize, group_by: imageGroupBy },
 			});
 			return response.data;
 		},
@@ -119,7 +124,17 @@ export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
 	const allImages = data?.pages.flatMap((page) => page.items) ?? [];
 
 	return (
-		<ImageContextProvider value={{ images: allImages, status, fetchNextPage, hasNextPage, isFetchingNextPage }}>
+		<ImageContextProvider
+			value={{
+				images: allImages,
+				status,
+				imageGroupBy,
+				setImageGroupBy,
+				fetchNextPage,
+				hasNextPage,
+				isFetchingNextPage,
+			}}
+		>
 			{children}
 		</ImageContextProvider>
 	);

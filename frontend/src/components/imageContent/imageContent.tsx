@@ -1,10 +1,11 @@
 import { formatSize } from '@/utils';
 import { CircularProgress } from '@mui/material';
 import { CalendarDays, ChevronLeft, ChevronRight, Expand, Info, Minus, Plus, Search, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useImage, type IImageData } from '../hooks/imageProvider/imageProvider';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useImage, type IImageData, type ImageGroupBy } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import controlsStyles from './imageContentControls.module.css';
 import './imageContent.css';
 
 const thumbnailWidth = 960;
@@ -20,6 +21,12 @@ const categoryLabels = {
 } as const;
 
 type CategoryKey = keyof typeof categoryLabels;
+
+const groupByLabels: Record<ImageGroupBy, string> = {
+	date: 'Data',
+	type: 'Tipo',
+	name: 'Nome',
+};
 
 const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
 	month: 'long',
@@ -100,12 +107,13 @@ const thumbnailUrl = (id: number) =>
 const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
 
 const ImageContent = () => {
-	const { images, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
+	const { images, imageGroupBy, setImageGroupBy, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
 	const [search, setSearch] = useState('');
 	const [viewerImageId, setViewerImageId] = useState<number | null>(null);
 	const [zoom, setZoom] = useState(1);
 	const [showDetails, setShowDetails] = useState(true);
+	const isLoadingMoreRef = useRef(false);
 
 	const closeViewer = useCallback(() => {
 		setViewerImageId(null);
@@ -138,11 +146,7 @@ const ImageContent = () => {
 			return searchSample.includes(searchValue);
 		});
 
-		return filtered.sort((a, b) => {
-			const aDate = imageDates.get(a.id)?.getTime() ?? 0;
-			const bDate = imageDates.get(b.id)?.getTime() ?? 0;
-			return bDate - aDate;
-		});
+		return filtered;
 	}, [images, imageDates, activeCategory, search]);
 
 	const categoryCounts = useMemo(() => {
@@ -168,23 +172,41 @@ const ImageContent = () => {
 	}, [images, imageDates]);
 
 	const groupedImages = useMemo(() => {
-		const grouped = new Map<string, { label: string; sortValue: number; items: IImageData[] }>();
+		const grouped = new Map<string, { label: string; items: IImageData[] }>();
 
 		for (const item of filteredImages) {
 			const date = imageDates.get(item.id) ?? null;
-			const key = date ? `${date.getFullYear()}-${date.getMonth()}` : 'unknown';
+			const extension = item.format?.trim().toLowerCase() || 'Sem formato';
+			const firstLetter = item.name.trim().charAt(0).toUpperCase() || '#';
+
+			const key =
+				imageGroupBy === 'date'
+					? date
+						? `${date.getFullYear()}-${date.getMonth()}`
+						: 'unknown'
+					: imageGroupBy === 'type'
+						? extension
+						: firstLetter;
+			const label =
+				imageGroupBy === 'date'
+					? date
+						? monthFormatter.format(date)
+						: 'Sem data registrada'
+					: imageGroupBy === 'type'
+						? extension
+						: `Início ${firstLetter}`;
+
 			if (!grouped.has(key)) {
 				grouped.set(key, {
-					label: date ? monthFormatter.format(date) : 'Sem data registrada',
-					sortValue: date?.getTime() ?? 0,
+					label,
 					items: [],
 				});
 			}
 			grouped.get(key)?.items.push(item);
 		}
 
-		return Array.from(grouped.values()).sort((a, b) => b.sortValue - a.sortValue);
-	}, [filteredImages, imageDates]);
+		return Array.from(grouped.values());
+	}, [filteredImages, imageDates, imageGroupBy]);
 
 	const activeIndex = useMemo(
 		() => filteredImages.findIndex((image) => image.id === viewerImageId),
@@ -254,14 +276,24 @@ const ImageContent = () => {
 		return () => window.removeEventListener('keydown', onKeyDown);
 	}, [activeImage, closeViewer, goNext, goPrevious, increaseZoom, decreaseZoom, resetZoom]);
 
-	const { ref: loadMoreRef } = useIntersectionObserver<HTMLDivElement>({
-		enabled: hasNextPage && !isFetchingNextPage,
+	const handleLoadMore = useCallback(async () => {
+		if (!hasNextPage || isFetchingNextPage || isLoadingMoreRef.current) {
+			return;
+		}
+		isLoadingMoreRef.current = true;
+		try {
+			await fetchNextPage();
+		} finally {
+			isLoadingMoreRef.current = false;
+		}
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+	const lastVisibleImageId = filteredImages.at(-1)?.id;
+
+	const { ref: loadMoreRef } = useIntersectionObserver<HTMLButtonElement>({
+		enabled: hasNextPage && !isFetchingNextPage && filteredImages.length > 0,
 		rootMargin: '500px',
-		onIntersect: () => {
-			if (hasNextPage && !isFetchingNextPage) {
-				fetchNextPage();
-			}
-		},
+		onIntersect: handleLoadMore,
 	});
 
 	return (
@@ -281,6 +313,20 @@ const ImageContent = () => {
 						onChange={(event) => setSearch(event.target.value)}
 						placeholder='Buscar por nome, pasta, câmera...'
 					/>
+				</label>
+				<label className={controlsStyles.groupingSelect}>
+					<span>Agrupar por</span>
+					<select
+						aria-label='Agrupar imagens por'
+						value={imageGroupBy}
+						onChange={(event) => setImageGroupBy(event.target.value as ImageGroupBy)}
+					>
+						{(Object.keys(groupByLabels) as ImageGroupBy[]).map((key) => (
+							<option key={key} value={key}>
+								{groupByLabels[key]}
+							</option>
+						))}
+					</select>
 				</label>
 			</div>
 
@@ -323,6 +369,7 @@ const ImageContent = () => {
 									<button
 										type='button'
 										key={item.id}
+										ref={item.id === lastVisibleImageId ? loadMoreRef : undefined}
 										className={`photo-card ${orientation}`}
 										onClick={() => openImage(item.id)}
 										aria-label={`Abrir ${item.name}`}
@@ -339,8 +386,6 @@ const ImageContent = () => {
 					</section>
 				))}
 			</div>
-
-			<div ref={loadMoreRef} className='images-load-more-sentinel' aria-hidden='true' />
 
 			{isFetchingNextPage && (
 				<div className='loading-indicator'>

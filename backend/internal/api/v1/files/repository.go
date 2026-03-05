@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/file"
@@ -361,7 +362,24 @@ func (r *Repository) GetDuplicateFiles(page int, pageSize int) (utils.Pagination
 	return paginationResponse, nil
 }
 
-func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+func imageOrderByClause(groupBy ImageGroupBy) string {
+	switch groupBy {
+	case ImageGroupByType:
+		return `COALESCE(NULLIF(hf.format, ''), 'zzzz') ASC, hf.name ASC, hf.id DESC`
+	case ImageGroupByName:
+		return `hf.name ASC, hf.id DESC`
+	case ImageGroupByDate:
+		fallthrough
+	default:
+		return `COALESCE(NULLIF(im.datetime_original, ''), NULLIF(im.datetime, ''), to_char(hf.created_at, 'YYYY:MM:DD HH24:MI:SS')) DESC, hf.id DESC`
+	}
+}
+
+func getImagesQueryByGroup(groupBy ImageGroupBy) string {
+	return strings.Replace(queries.GetImagesQuery, "{{ORDER_BY}}", imageOrderByClause(groupBy), 1)
+}
+
+func (r *Repository) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
 
 	paginationResponse := utils.PaginationResponse[FileModel]{
 		Items: []FileModel{},
@@ -381,7 +399,7 @@ func (r *Repository) GetImages(page int, pageSize int) (utils.PaginationResponse
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
 		rows, err := tx.Query(
-			queries.GetImagesQuery,
+			getImagesQueryByGroup(groupBy),
 			args...,
 		)
 		if err != nil {

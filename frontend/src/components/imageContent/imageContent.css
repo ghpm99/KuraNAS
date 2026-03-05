@@ -79,11 +79,12 @@
 	gap: 24px;
 	grid-area: content;
 	overflow: auto;
+	align-items: center;
 }
 
 .images-group {
 	padding: 16px;
-	width: 98%;
+	width: calc(100% - 77px);
 }
 .images-group > header {
 	display: flex;
@@ -186,11 +187,6 @@
 
 .images-empty p {
 	margin: 8px 0 0;
-}
-
-.images-load-more-sentinel {
-	height: 24px;
-	grid-area: footer;
 }
 
 .loading-indicator {

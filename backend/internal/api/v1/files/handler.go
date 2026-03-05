@@ -630,8 +630,14 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 	}, nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	pagination, err := handler.service.GetImages(page, pageSize)
+	pagination, err := handler.service.GetImages(page, pageSize, groupBy)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)

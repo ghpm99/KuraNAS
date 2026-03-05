@@ -32,6 +32,8 @@ describe('imageContent', () => {
 					metadata: { width: 1600, height: 900, make: 'Sony', model: 'A7' },
 				},
 			],
+			imageGroupBy: 'date',
+			setImageGroupBy: jest.fn(),
 			fetchNextPage: jest.fn(),
 			hasNextPage: false,
 			isFetchingNextPage: true,
@@ -71,6 +73,8 @@ describe('imageContent', () => {
 					updated_at: '2025-01-10T10:00:00Z',
 				},
 			],
+			imageGroupBy: 'date',
+			setImageGroupBy: jest.fn(),
 			fetchNextPage,
 			hasNextPage: true,
 			isFetchingNextPage: false,
@@ -81,5 +85,32 @@ describe('imageContent', () => {
 
 		expect(fetchNextPage).toHaveBeenCalled();
 		expect(screen.queryByText('Todas as imagens carregadas')).not.toBeInTheDocument();
+	});
+
+	it('changes grouping through selector', () => {
+		const setImageGroupBy = jest.fn();
+		mockUseImage.mockReturnValue({
+			images: [
+				{
+					id: 1,
+					name: 'alpha.jpg',
+					path: '/photos',
+					format: '.jpg',
+					size: 1024,
+					created_at: '2025-01-10T10:00:00Z',
+					updated_at: '2025-01-10T10:00:00Z',
+				},
+			],
+			imageGroupBy: 'date',
+			setImageGroupBy,
+			fetchNextPage: jest.fn(),
+			hasNextPage: false,
+			isFetchingNextPage: false,
+		});
+
+		render(<ImageContent />);
+		fireEvent.change(screen.getByLabelText('Agrupar imagens por'), { target: { value: 'type' } });
+
+		expect(setImageGroupBy).toHaveBeenCalledWith('type');
 	});
 });

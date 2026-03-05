@@ -70,7 +70,7 @@ type filesRepoMock struct {
 	getReportSizeByFormatFn    func() ([]SizeReportModel, error)
 	getTopFilesBySizeFn        func(limit int) ([]FileModel, error)
 	getDuplicateFilesFn        func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	getImagesFn                func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getImagesFn                func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error)
 	getMusicFn                 func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getVideosFn                func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getMusicArtistsFn          func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
@@ -137,9 +137,9 @@ func (m *filesRepoMock) GetDuplicateFiles(page int, pageSize int) (utils.Paginat
 	}
 	return utils.PaginationResponse[DuplicateFilesModel]{Items: []DuplicateFilesModel{}}, nil
 }
-func (m *filesRepoMock) GetImages(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+func (m *filesRepoMock) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
 	if m.getImagesFn != nil {
-		return m.getImagesFn(page, pageSize)
+		return m.getImagesFn(page, pageSize, groupBy)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
@@ -479,7 +479,7 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 				},
 			}, nil
 		},
-		getImagesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		getImagesFn: func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "i", File)}}, nil
 		},
 		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
@@ -535,7 +535,7 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 		t.Fatalf("expected duplicates report, err=%v", err)
 	}
 
-	if _, err := s.GetImages(1, 10); err != nil {
+	if _, err := s.GetImages(1, 10, ImageGroupByDate); err != nil {
 		t.Fatalf("expected images success, err=%v", err)
 	}
 	if _, err := s.GetMusic(1, 10); err != nil {
@@ -893,7 +893,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("update failed")
 		},
-		getImagesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		getImagesFn: func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, errors.New("images failed")
 		},
 		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
@@ -930,7 +930,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		t.Fatalf("expected UpdateFile metadata error")
 	}
 
-	if _, err := s.GetImages(1, 10); err == nil {
+	if _, err := s.GetImages(1, 10, ImageGroupByDate); err == nil {
 		t.Fatalf("expected GetImages error")
 	}
 	if _, err := s.GetMusic(1, 10); err == nil {
