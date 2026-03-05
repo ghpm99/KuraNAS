@@ -3,7 +3,7 @@ import React from 'react';
 import { MusicProvider, useMusic } from './musicProvider';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiBase } from '@/service';
-import { useIntersectionObserver } from '../IntersectionObserver/useIntersectionObserver';
+import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 
 jest.mock('@/service', () => ({
 	apiBase: {
@@ -11,7 +11,7 @@ jest.mock('@/service', () => ({
 	},
 }));
 
-jest.mock('../IntersectionObserver/useIntersectionObserver', () => ({
+jest.mock('@/components/hooks/IntersectionObserver/useIntersectionObserver', () => ({
 	useIntersectionObserver: jest.fn(() => ({ ref: jest.fn() })),
 }));
 
