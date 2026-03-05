@@ -95,6 +95,90 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 	});
 
+	const rescanFiles = useCallback(async () => {
+		const formData = new FormData();
+		formData.append('data', 'manual-rescan');
+		await apiBase.post('/files/update', formData, {
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		});
+		await refetch();
+	}, [refetch]);
+
+	const uploadFiles = useCallback(
+		async (files: FileList, targetPath?: string) => {
+			const formData = new FormData();
+			for (const file of Array.from(files)) {
+				formData.append('files', file);
+			}
+			if (targetPath) {
+				formData.append('target_path', targetPath);
+			}
+			await apiBase.post('/files/upload', formData, {
+				headers: {
+					'Content-Type': 'multipart/form-data',
+				},
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
+	const createFolder = useCallback(
+		async (name: string, parentPath?: string) => {
+			await apiBase.post('/files/folder', {
+				name,
+				parent_path: parentPath,
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
+	const movePath = useCallback(
+		async (sourcePath: string, destinationPath: string) => {
+			await apiBase.post('/files/move', {
+				source_path: sourcePath,
+				destination_path: destinationPath,
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
+	const copyPath = useCallback(
+		async (sourcePath: string, destinationPath: string) => {
+			await apiBase.post('/files/copy', {
+				source_path: sourcePath,
+				destination_path: destinationPath,
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
+	const renamePath = useCallback(
+		async (sourcePath: string, newName: string) => {
+			await apiBase.post('/files/rename', {
+				source_path: sourcePath,
+				new_name: newName,
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
+	const deletePath = useCallback(
+		async (path: string) => {
+			await apiBase.delete('/files/path', {
+				data: { path },
+			});
+			await refetch();
+		},
+		[refetch],
+	);
+
 	useEffect(() => {
 		if (!data) return;
 		const nextItems = data?.pages[0]?.items ?? [];
@@ -140,6 +224,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			fileListFilter,
 			setFileListFilter,
 			handleStarredItem,
+			uploadFiles,
+			createFolder,
+			movePath,
+			copyPath,
+			renamePath,
+			deletePath,
+			rescanFiles,
 		}),
 		[
 			fileTree,
@@ -151,6 +242,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			isLoadingAccessData,
 			fileListFilter,
 			handleStarredItem,
+			uploadFiles,
+			createFolder,
+			movePath,
+			copyPath,
+			renamePath,
+			deletePath,
+			rescanFiles,
 		],
 	);
 	return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
