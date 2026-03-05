@@ -26,6 +26,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	}
 
 	go startWorkersScheduler(context)
+	startEntryPointWatcher(context)
 }
 
 func startWorkersScheduler(context *WorkerContext) {
