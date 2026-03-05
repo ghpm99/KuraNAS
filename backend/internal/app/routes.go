@@ -1,6 +1,8 @@
 package app
 
 import (
+	"nas-go/api/internal/config"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -9,7 +11,7 @@ import (
 
 func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
-	registerCorsRoutes(router)
+	registerCorsRoutes(router, context)
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
@@ -137,20 +139,23 @@ func registerReactRoutes(router *gin.Engine) {
 	router.Static("/frontend", "/dist")
 }
 
-func registerCorsRoutes(router *gin.Engine) {
+func registerCorsRoutes(router *gin.Engine, context *AppContext) {
+	// Get allowed origins from environment variable (comma-separated)
+	// Default to localhost for development
+	allowedOriginsStr := config.AppConfig.AllowedOrigins
+	allowedOrigins := strings.Split(allowedOriginsStr, ",")
+
+	// Trim whitespace from each origin
+	for i, origin := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(origin)
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://github.com"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return isAllowedOrigin(origin)
-		},
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
-}
-
-func isAllowedOrigin(origin string) bool {
-	return origin == "https://github.com"
 }

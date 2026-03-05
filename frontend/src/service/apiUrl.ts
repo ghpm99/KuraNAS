@@ -6,11 +6,9 @@ export const getApiBaseUrl = (): string => {
 		return normalizeBase(runtimeGlobal);
 	}
 
-	if (typeof process !== 'undefined') {
-		const envApiUrl = process.env?.VITE_API_URL;
-		if (typeof envApiUrl === 'string' && envApiUrl.trim().length > 0) {
-			return normalizeBase(envApiUrl);
-		}
+	const envApiUrl = import.meta.env.VITE_API_URL;
+	if (typeof envApiUrl === 'string' && envApiUrl.trim().length > 0) {
+		return normalizeBase(envApiUrl);
 	}
 
 	return '';
@@ -18,6 +16,6 @@ export const getApiBaseUrl = (): string => {
 
 export const getApiV1BaseUrl = (): string => {
 	const base = getApiBaseUrl();
+	console.log('API Base URL:', base);
 	return base ? `${base}/api/v1` : '/api/v1';
 };
-
