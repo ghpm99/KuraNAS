@@ -5,6 +5,7 @@
 	grid-template-areas:
 		'item-header sidebar'
 		'tabs sidebar'
-		'content  sidebar';
+		'content  sidebar'
+		'footer footer';
 	max-height: calc(100vh - 80px);
 }

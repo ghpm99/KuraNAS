@@ -1,16 +1,6 @@
 import { formatSize } from '@/utils';
 import { CircularProgress } from '@mui/material';
-import {
-	CalendarDays,
-	ChevronLeft,
-	ChevronRight,
-	Expand,
-	Info,
-	Minus,
-	Plus,
-	Search,
-	X,
-} from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Expand, Info, Minus, Plus, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useImage, type IImageData } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
@@ -140,13 +130,7 @@ const ImageContent = () => {
 				return true;
 			}
 
-			const searchSample = [
-				item.name,
-				item.path,
-				item.format,
-				item.metadata?.make,
-				item.metadata?.model,
-			]
+			const searchSample = [item.name, item.path, item.format, item.metadata?.make, item.metadata?.model]
 				.filter(Boolean)
 				.join(' ')
 				.toLowerCase();
@@ -207,7 +191,7 @@ const ImageContent = () => {
 		[filteredImages, viewerImageId],
 	);
 	const activeImage = activeIndex >= 0 ? filteredImages[activeIndex] : null;
-	const activeImageDate = activeImage ? imageDates.get(activeImage.id) ?? null : null;
+	const activeImageDate = activeImage ? (imageDates.get(activeImage.id) ?? null) : null;
 
 	const openImage = (id: number) => {
 		setViewerImageId(id);
@@ -281,7 +265,7 @@ const ImageContent = () => {
 	});
 
 	return (
-		<div className='image-gallery-content'>
+		<>
 			<div className='images-toolbar'>
 				<div>
 					<h2>Galeria de fotos</h2>
@@ -424,22 +408,42 @@ const ImageContent = () => {
 					{showDetails && (
 						<aside className='image-viewer-details'>
 							<h4>Detalhes</h4>
-							<p><strong>Nome:</strong> {activeImage.name}</p>
-							<p><strong>Pasta:</strong> {activeImage.path}</p>
-							<p><strong>Formato:</strong> {activeImage.format || 'N/D'}</p>
-							<p><strong>Tamanho:</strong> {formatSize(activeImage.size)}</p>
+							<p>
+								<strong>Nome:</strong> {activeImage.name}
+							</p>
+							<p>
+								<strong>Pasta:</strong> {activeImage.path}
+							</p>
+							<p>
+								<strong>Formato:</strong> {activeImage.format || 'N/D'}
+							</p>
+							<p>
+								<strong>Tamanho:</strong> {formatSize(activeImage.size)}
+							</p>
 							<p>
 								<strong>Dimensões:</strong>{' '}
 								{activeImage.metadata?.width && activeImage.metadata?.height
 									? `${activeImage.metadata.width}x${activeImage.metadata.height}`
 									: 'N/D'}
 							</p>
-							<p><strong>Câmera:</strong> {activeImage.metadata?.make || activeImage.metadata?.model || 'N/D'}</p>
-							<p><strong>Lente:</strong> {activeImage.metadata?.lens_model || 'N/D'}</p>
-							<p><strong>ISO:</strong> {activeImage.metadata?.iso || 'N/D'}</p>
-							<p><strong>Focal:</strong> {activeImage.metadata?.focal_length || 'N/D'}</p>
-							<p><strong>Abertura:</strong> {activeImage.metadata?.f_number || 'N/D'}</p>
-							<p><strong>Exposição:</strong> {activeImage.metadata?.exposure_time || 'N/D'}</p>
+							<p>
+								<strong>Câmera:</strong> {activeImage.metadata?.make || activeImage.metadata?.model || 'N/D'}
+							</p>
+							<p>
+								<strong>Lente:</strong> {activeImage.metadata?.lens_model || 'N/D'}
+							</p>
+							<p>
+								<strong>ISO:</strong> {activeImage.metadata?.iso || 'N/D'}
+							</p>
+							<p>
+								<strong>Focal:</strong> {activeImage.metadata?.focal_length || 'N/D'}
+							</p>
+							<p>
+								<strong>Abertura:</strong> {activeImage.metadata?.f_number || 'N/D'}
+							</p>
+							<p>
+								<strong>Exposição:</strong> {activeImage.metadata?.exposure_time || 'N/D'}
+							</p>
 						</aside>
 					)}
 
@@ -458,7 +462,7 @@ const ImageContent = () => {
 					</div>
 				</div>
 			)}
-		</div>
+		</>
 	);
 };
 
