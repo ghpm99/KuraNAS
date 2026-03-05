@@ -4,32 +4,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"nas-go/api/internal/app"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 )
-
-type program struct {
-	app  *app.Application
-	quit chan struct{}
-}
 
 func main() {
 	log.Println("[MAIN][DEV] Iniciando Kuranas")
-	prg := &program{}
-
-	prg.quit = make(chan struct{})
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-
-		if prg.app != nil {
-			_ = prg.app.Stop()
-		}
-		close(prg.quit)
-	}()
 
 	application, err := app.InitializeApp()
 	if err != nil {
@@ -37,6 +22,32 @@ func main() {
 		panic(err)
 	}
 
-	application.Run(":8000", false)
-	<-prg.quit
+	ctx, stopSignal := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignal()
+
+	runErr := make(chan error, 1)
+	go func() {
+		runErr <- application.Run(":8000", false)
+	}()
+
+	select {
+	case err := <-runErr:
+		if err != nil {
+			log.Printf("[MAIN][DEV] Servidor finalizado com erro: %v", err)
+		}
+	case <-ctx.Done():
+		log.Println("[MAIN][DEV] Sinal de interrupcao recebido, iniciando shutdown...")
+		if err := application.Stop(); err != nil {
+			log.Printf("[MAIN][DEV] Erro ao encerrar aplicacao: %v", err)
+		}
+
+		select {
+		case err := <-runErr:
+			if err != nil {
+				log.Printf("[MAIN][DEV] Servidor finalizado com erro apos shutdown: %v", err)
+			}
+		case <-time.After(6 * time.Second):
+			log.Println("[MAIN][DEV] Timeout aguardando encerramento do servidor")
+		}
+	}
 }

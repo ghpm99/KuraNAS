@@ -110,6 +110,10 @@ func (app *Application) Stop() error {
 
 	if err := app.Server.Shutdown(ctx); err != nil {
 		log.Printf("Erro ao desligar servidor: %v\n", err)
+		if closeErr := app.Server.Close(); closeErr != nil {
+			log.Printf("Erro ao forcar fechamento do servidor: %v\n", closeErr)
+			return closeErr
+		}
 		return err
 	}
 
