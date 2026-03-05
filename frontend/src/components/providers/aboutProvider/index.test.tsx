@@ -33,7 +33,7 @@ function Consumer() {
 	);
 }
 
-describe('hooks/AboutProvider/index', () => {
+describe('providers/aboutProvider/index', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date('2025-01-01T00:00:10Z'));

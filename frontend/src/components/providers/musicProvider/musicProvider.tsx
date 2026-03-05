@@ -9,7 +9,7 @@ import {
 	useInfiniteQuery,
 } from '@tanstack/react-query';
 import { createContext, useContext, useState } from 'react';
-import { useIntersectionObserver } from '../IntersectionObserver/useIntersectionObserver';
+import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 
 export interface IMusicMetadata {
 	id: number;

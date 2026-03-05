@@ -15,7 +15,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicGenres, getMusicByGenre } from '@/service/music';
 import { MusicGenre } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 

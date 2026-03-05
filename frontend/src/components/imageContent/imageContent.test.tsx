@@ -5,7 +5,7 @@ const mockUseImage = jest.fn();
 const mockRef = jest.fn();
 const mockUseIntersectionObserver = jest.fn();
 
-jest.mock('../hooks/imageProvider/imageProvider', () => ({ useImage: () => mockUseImage() }));
+jest.mock('../providers/imageProvider/imageProvider', () => ({ useImage: () => mockUseImage() }));
 jest.mock('../hooks/IntersectionObserver/useIntersectionObserver', () => ({
 	useIntersectionObserver: (...args: any[]) => mockUseIntersectionObserver(...args),
 }));

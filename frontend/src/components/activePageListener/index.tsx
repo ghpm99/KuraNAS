@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { pages, useUI } from '../hooks/UI/uiContext';
+import { pages, useUI } from '../providers/uiProvider/uiContext';
 
 const routeToPageMap: Record<string, pages> = {
 	'/': 'files',

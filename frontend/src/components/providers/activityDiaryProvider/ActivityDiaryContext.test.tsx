@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { ActivityDiaryContextProvider, useActivityDiary } from './ActivityDiaryContext';
 
-describe('hooks/ActivityDiaryProvider/ActivityDiaryContext', () => {
+describe('providers/activityDiaryProvider/ActivityDiaryContext', () => {
 	it('throws when used outside provider', () => {
 		expect(() => renderHook(() => useActivityDiary())).toThrow(
 			'useActivityDiary must be used within a ActivityDiaryProvider',

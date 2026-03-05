@@ -1,4 +1,4 @@
-import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
+import { useActivityDiary } from '@/components/providers/activityDiaryProvider/ActivityDiaryContext';
 import { formatDate, formatDuration } from '@/utils';
 import Card from '@/components/ui/Card/Card';
 import { IconButton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';

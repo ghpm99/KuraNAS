@@ -5,7 +5,7 @@ import {
 	useVideoPlaylistDetail,
 	useVideoPlaylists,
 	useVideosWithoutPlaylist,
-} from './useVideos';
+} from './useVideoQueries';
 
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: jest.fn(),
@@ -21,7 +21,7 @@ jest.mock('@/service/videoPlayback', () => ({
 
 const mockedUseQuery = useQuery as jest.Mock;
 
-describe('hooks/useVideos', () => {
+describe('providers/videoContentProvider/useVideoQueries', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockedUseQuery.mockReturnValue({ data: null, status: 'success' });

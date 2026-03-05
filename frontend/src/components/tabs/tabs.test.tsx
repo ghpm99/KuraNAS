@@ -5,7 +5,7 @@ import Tabs from './tabs';
 const mockUseFile = jest.fn();
 const mockSetFileListFilter = jest.fn();
 
-jest.mock('../hooks/fileProvider/fileContext', () => ({
+jest.mock('../providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
 }));

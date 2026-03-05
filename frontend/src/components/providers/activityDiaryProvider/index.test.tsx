@@ -62,7 +62,7 @@ const Harness = () => {
 	);
 };
 
-describe('hooks/ActivityDiaryProvider/index', () => {
+describe('providers/activityDiaryProvider/index', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		jest.spyOn(console, 'error').mockImplementation(() => {});

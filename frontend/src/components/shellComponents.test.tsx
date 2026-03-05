@@ -28,12 +28,12 @@ const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockVideoPlayer = jest.fn();
 
-jest.mock('@/components/hooks/fileProvider/fileContext', () => ({
+jest.mock('@/components/providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
 }));
 
-jest.mock('@/components/hooks/UI/uiContext', () => ({
+jest.mock('@/components/providers/uiProvider/uiContext', () => ({
 	useUI: () => mockUseUI(),
 }));
 
@@ -52,7 +52,7 @@ jest.mock('react-router-dom', () => ({
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => <div>FolderTreeMock</div>);
 jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ children }: any) => <div>{children}</div>);
 
-jest.mock('@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext', () => ({
+jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
 	useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
 }));
 

@@ -1,4 +1,4 @@
-import { ImageProvider } from '../hooks/imageProvider/imageProvider';
+import { ImageProvider } from '../providers/imageProvider/imageProvider';
 import Layout from '../layout/Layout';
 
 const ImagesLayout = ({ children }: { children: React.ReactNode }) => {

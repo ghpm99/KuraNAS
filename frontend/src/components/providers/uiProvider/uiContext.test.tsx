@@ -3,7 +3,7 @@ import React from 'react';
 import { UIProvider } from './index';
 import { useUI } from './uiContext';
 
-describe('hooks/UI/uiContext', () => {
+describe('providers/uiProvider/uiContext', () => {
 	it('throws when used outside provider', () => {
 		expect(() => renderHook(() => useUI())).toThrow('useUI must be used within a UIProvider');
 	});

@@ -40,7 +40,7 @@ function Consumer() {
 	);
 }
 
-describe('hooks/fileProvider/index', () => {
+describe('providers/fileProvider/index', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockedApiGet.mockResolvedValue({ data: [] });

@@ -1,5 +1,5 @@
 import { BookImage, Info, LayoutGrid, Music, Star, Videotape } from 'lucide-react';
-import { useUI } from '@/components/hooks/UI/uiContext';
+import { useUI } from '@/components/providers/uiProvider/uiContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import NavItem from '@/components/layout/Sidebar/components/navItem';

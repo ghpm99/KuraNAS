@@ -32,7 +32,7 @@ function Consumer() {
 	);
 }
 
-describe('hooks/imageProvider', () => {
+describe('providers/imageProvider', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockedUseInfiniteQuery.mockReturnValue({

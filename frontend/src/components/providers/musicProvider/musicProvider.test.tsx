@@ -36,7 +36,7 @@ function Consumer() {
 	);
 }
 
-describe('hooks/musicProvider', () => {
+describe('providers/musicProvider', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockedUseInfiniteQuery.mockReturnValue({

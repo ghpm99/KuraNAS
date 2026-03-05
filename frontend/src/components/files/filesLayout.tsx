@@ -1,4 +1,4 @@
-import FileProvider from '../hooks/fileProvider';
+import FileProvider from '../providers/fileProvider';
 import Layout from '../layout/Layout';
 
 const FilesLayout = ({ children }: { children: React.ReactNode }) => {

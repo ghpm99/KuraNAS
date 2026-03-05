@@ -4,7 +4,7 @@ import FileDetails from './fileDetails';
 
 const mockUseFile = jest.fn();
 
-jest.mock('../hooks/fileProvider/fileContext', () => ({
+jest.mock('../providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
 }));

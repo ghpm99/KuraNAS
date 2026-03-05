@@ -1,0 +1,84 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+type IdentifiableImage = { id: number };
+
+export function useImageViewer<T extends IdentifiableImage>(images: T[]) {
+	const [viewerImageId, setViewerImageId] = useState<number | null>(null);
+	const [zoom, setZoom] = useState(1);
+	const [showDetails, setShowDetails] = useState(true);
+
+	const activeIndex = useMemo(() => images.findIndex((image) => image.id === viewerImageId), [images, viewerImageId]);
+	const activeImage = activeIndex >= 0 ? images[activeIndex] : null;
+
+	const openImage = useCallback((id: number) => {
+		setViewerImageId(id);
+		setZoom(1);
+	}, []);
+
+	const closeViewer = useCallback(() => {
+		setViewerImageId(null);
+		setZoom(1);
+	}, []);
+
+	const goNext = useCallback(() => {
+		if (images.length === 0 || activeIndex < 0) return;
+		const nextImage = images[(activeIndex + 1) % images.length];
+		if (!nextImage) return;
+		setViewerImageId(nextImage.id);
+		setZoom(1);
+	}, [images, activeIndex]);
+
+	const goPrevious = useCallback(() => {
+		if (images.length === 0 || activeIndex < 0) return;
+		const previous = activeIndex === 0 ? images.length - 1 : activeIndex - 1;
+		const previousImage = images[previous];
+		if (!previousImage) return;
+		setViewerImageId(previousImage.id);
+		setZoom(1);
+	}, [images, activeIndex]);
+
+	const increaseZoom = useCallback(() => {
+		setZoom((value) => Math.min(5, Number((value + 0.2).toFixed(2))));
+	}, []);
+
+	const decreaseZoom = useCallback(() => {
+		setZoom((value) => Math.max(0.5, Number((value - 0.2).toFixed(2))));
+	}, []);
+
+	const resetZoom = useCallback(() => {
+		setZoom(1);
+	}, []);
+
+	useEffect(() => {
+		if (!activeImage) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') closeViewer();
+			if (event.key === 'ArrowRight') goNext();
+			if (event.key === 'ArrowLeft') goPrevious();
+			if (event.key === '+' || event.key === '=') increaseZoom();
+			if (event.key === '-') decreaseZoom();
+			if (event.key === '0') resetZoom();
+			if (event.key.toLowerCase() === 'i') setShowDetails((value) => !value);
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [activeImage, closeViewer, goNext, goPrevious, increaseZoom, decreaseZoom, resetZoom]);
+
+	return {
+		viewerImageId,
+		activeImage,
+		activeIndex,
+		zoom,
+		showDetails,
+		setShowDetails,
+		openImage,
+		closeViewer,
+		goNext,
+		goPrevious,
+		increaseZoom,
+		decreaseZoom,
+		resetZoom,
+	};
+}

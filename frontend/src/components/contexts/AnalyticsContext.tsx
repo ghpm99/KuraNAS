@@ -3,7 +3,7 @@ import { apiBase } from '@/service';
 import { formatSize } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext } from 'react';
-import { FileData } from '../hooks/fileProvider/fileContext';
+import { FileData } from '../providers/fileProvider/fileContext';
 
 interface StorageOverview {
 	totalUsedSpace: string;
