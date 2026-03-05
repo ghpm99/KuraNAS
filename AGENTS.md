@@ -53,3 +53,8 @@ Ensure `.github/workflows/quality.yml` checks pass before requesting review.
 For any frontend task, always consult `docs/standards/frontend-standards.md` before reading/changing implementation files.
 
 If there is a conflict between existing code and this standards file, follow the standards file and keep changes consistent with adjacent code where safe.
+
+## Backend Standards (Persistent Reference)
+For any backend task, always consult `docs/standards/backend-standards.md` before reading/changing implementation files.
+
+If there is a conflict between existing code and this standards file, follow the standards file and keep changes consistent with adjacent code where safe.
