@@ -7,5 +7,6 @@
 		"types": ["jest", "@testing-library/jest-dom"],
 		"lib": ["ES2020", "DOM"]
 	},
-	"include": ["src", "jest.setup.ts"]
+	"include": ["src", "jest.setup.ts"],
+	"exclude": ["dist", "node_modules", "**/*.test-d.ts"]
 }
