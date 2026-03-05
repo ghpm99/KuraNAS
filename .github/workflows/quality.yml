@@ -47,6 +47,7 @@ jobs:
           cache: yarn
           cache-dependency-path: frontend/yarn.lock
       - run: yarn install --frozen-lockfile
+      - run: yarn typecheck:test
       - run: yarn test --coverage --watchAll=false
 
   lint-backend:
