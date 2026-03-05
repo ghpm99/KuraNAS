@@ -188,7 +188,7 @@ describe('components/videos/videoContent', () => {
 		fireEvent.change(screen.getByPlaceholderText('Buscar video por nome, pasta ou formato'), { target: { value: 'ep-1' } });
 		expect(screen.getByText('ep-1.mp4')).toBeInTheDocument();
 
-		fireEvent.click(screen.getAllByRole('button', { name: /Reproduzir/i })[0]);
+		fireEvent.click(screen.getAllByRole('button', { name: /Reproduzir/i })[0]!);
 		expect(mockNavigate).toHaveBeenCalled();
 
 		fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });

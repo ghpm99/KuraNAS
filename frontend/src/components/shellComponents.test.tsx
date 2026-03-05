@@ -1,10 +1,7 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import Header from '@/components/layout/Header/Header';
 import { Layout } from '@/components/layout/Layout/Layout';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
-import FolderTree from '@/components/layout/Sidebar/components/folderTree';
-import FolderItem from '@/components/layout/Sidebar/components/folderTree/components/folderItem';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import Tabs from '@/components/tabs/tabs';
 import ActionBar from '@/components/actionBar/actionBar';

@@ -1,5 +1,4 @@
 import { act, render, screen } from '@testing-library/react';
-import React from 'react';
 import FileProvider from './index';
 import { useFile } from './fileContext';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';

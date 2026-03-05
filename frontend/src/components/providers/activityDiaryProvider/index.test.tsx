@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import ActivityDiaryProvider from '.';
 import { useActivityDiary } from './ActivityDiaryContext';
 
@@ -41,17 +40,17 @@ const Harness = () => {
 			<button
 				type='button'
 				onClick={() =>
-					context.copyActivity({
-						id: 9,
-						name: 'copiable',
-						description: '',
-						start_time: '2026-01-01T00:00:00.000Z',
-						end_time: null,
-						duration: 0,
-						duration_formatted: null,
-					})
-				}
-			>
+						context.copyActivity({
+							id: 9,
+							name: 'copiable',
+							description: '',
+							start_time: '2026-01-01T00:00:00.000Z',
+							end_time: { Value: '', HasValue: false },
+							duration: 0,
+							duration_formatted: null,
+						})
+					}
+				>
 				copy
 			</button>
 			<div data-testid='message'>{context.message?.text ?? ''}</div>

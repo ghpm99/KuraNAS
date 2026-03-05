@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import AboutLayout from './about/aboutLayout';
 import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
 import FilesLayout from './files/filesLayout';

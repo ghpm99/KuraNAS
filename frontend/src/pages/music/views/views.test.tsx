@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import AllTracksView from './AllTracksView';
 import ArtistsView from './ArtistsView';
 import AlbumsView from './AlbumsView';
@@ -170,7 +169,7 @@ describe('music views', () => {
 		expect(mockAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
-		fireEvent.click(screen.getAllByRole('button', { name: 'close-menu' })[0]);
+		fireEvent.click(screen.getAllByRole('button', { name: 'close-menu' })[0]!);
 	});
 
 	it('renders artists list/detail flow, load-more and back', () => {
@@ -194,7 +193,7 @@ describe('music views', () => {
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('Load more'));
 		expect(fetchArtistTracks).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('artist-1')).toBeInTheDocument();
 	});
 
@@ -207,7 +206,7 @@ describe('music views', () => {
 		fireEvent.click(screen.getByText('track-1'));
 		expect(mockAddToQueue).toHaveBeenCalled();
 
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('album-2')).toBeInTheDocument();
 	});
 
@@ -247,7 +246,7 @@ describe('music views', () => {
 		fireEvent.click(screen.getByText('track-1'));
 		expect(mockAddToQueue).toHaveBeenCalled();
 
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('/ - 2 tracks')).toBeInTheDocument();
 	});
 
@@ -307,7 +306,7 @@ describe('music views', () => {
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('genre-1'));
 		expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0);
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 	});
 
