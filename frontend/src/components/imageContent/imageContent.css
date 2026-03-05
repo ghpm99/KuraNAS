@@ -110,8 +110,26 @@
 
 .images-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 10px;
+}
+
+@media (max-width: 1280px) {
+	.images-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 900px) {
+	.images-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 560px) {
+	.images-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
 .photo-card {
@@ -351,10 +369,6 @@
 @media (max-width: 900px) {
 	.image-gallery-content {
 		padding: 12px;
-	}
-
-	.images-grid {
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 	}
 
 	.photo-overlay {
