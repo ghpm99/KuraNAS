@@ -79,12 +79,15 @@
 	gap: 24px;
 	grid-area: content;
 	overflow: auto;
-	align-items: center;
+	align-items: stretch;
+	width: 100%;
+	min-width: 0;
 }
 
 .images-group {
 	padding: 16px;
-	width: calc(100% - 77px);
+	width: 100%;
+	min-width: 0;
 }
 .images-group > header {
 	display: flex;

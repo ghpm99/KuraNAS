@@ -1,11 +1,12 @@
 .content {
 	display: grid;
-	grid-template-columns: 1fr min-content;
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-rows: 80px 40px auto;
 	grid-template-areas:
-		'item-header sidebar'
-		'tabs sidebar'
-		'content  sidebar'
-		'footer footer';
+		'item-header'
+		'tabs'
+		'content'
+		'footer';
 	max-height: calc(100vh - 80px);
+	min-width: 0;
 }
