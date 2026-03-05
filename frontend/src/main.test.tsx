@@ -1,7 +1,7 @@
 const renderMock = jest.fn();
-const createRootMock = jest.fn(() => ({ render: renderMock }));
+const createRootMock = jest.fn((_container: Element | DocumentFragment) => ({ render: renderMock }));
 
-jest.mock('react-dom/client', () => ({ createRoot: (...args: any[]) => createRootMock(...args) }));
+jest.mock('react-dom/client', () => ({ createRoot: (container: Element | DocumentFragment) => createRootMock(container) }));
 jest.mock('./app/App.tsx', () => () => null);
 
 describe('main entry', () => {

@@ -1,5 +1,4 @@
 import { act, render, screen } from '@testing-library/react';
-import React from 'react';
 import TechnicalInfoCard from './TechnicalInfoCard';
 
 jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (

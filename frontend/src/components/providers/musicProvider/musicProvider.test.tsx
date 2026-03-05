@@ -1,5 +1,4 @@
 import { act, render, screen } from '@testing-library/react';
-import React from 'react';
 import { MusicProvider, useMusic } from './musicProvider';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiBase } from '@/service';

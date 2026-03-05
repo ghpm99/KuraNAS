@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import FolderTree from './index';
 
 const mockUseFile = jest.fn();

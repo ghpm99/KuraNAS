@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import ActivityChart from './ActivityChart/ActivityChart';
 import BackupSection from './BackupSection/BackupSection';
 import CleanupSuggestions from './CleanupSuggestions/CleanupSuggestions';

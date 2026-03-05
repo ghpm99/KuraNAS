@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import FileViewer from './fileViewer';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
