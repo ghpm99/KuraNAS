@@ -23,6 +23,8 @@ func GetBuildConfig(key string) string {
 		return FilepathJoin(false, "etc", "kuranas", "scripts", ".venv", "bin", "python")
 	case "ScriptPath":
 		return FilepathJoin(true, "etc", "kuranas", "scripts")
+	case "ThumbnailPath":
+		return FilepathJoin(true, "etc", "kuranas", "thumbnails")
 	default:
 		return ""
 	}

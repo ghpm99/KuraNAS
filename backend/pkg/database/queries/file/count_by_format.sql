@@ -1,10 +1,10 @@
-select
+SELECT
     hf.format,
-    count(*) as total_itens,
-    sum(hf."size") as total_size
-from
+    COUNT(*) AS total_itens,
+    SUM(hf.size) AS total_size
+FROM
     home_file hf
-where
-    hf."type" = ?
-group by
-    hf.format
+WHERE
+    hf.type = $1
+GROUP BY
+    hf.format;

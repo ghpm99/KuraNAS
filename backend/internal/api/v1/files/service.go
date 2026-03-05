@@ -1,18 +1,24 @@
 package files
 
 import (
-	"context"
+	"bytes"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"image"
+	"image/color/palette"
+	"image/draw"
+	"image/gif"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -29,9 +35,13 @@ func NewService(repository RepositoryInterface, metadataRepository MetadataRepos
 	}
 }
 
+func (s *Service) withTransaction(fn func(tx *sql.Tx) error) (err error) {
+	return s.Repository.GetDbContext().ExecTx(fn)
+}
+
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
 
-	err = s.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+	err = s.withTransaction(func(tx *sql.Tx) (err error) {
 		fileModel, err := fileDto.ToModel()
 		if err != nil {
 			return
@@ -41,11 +51,13 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 		if err != nil {
 			return
 		}
+		fileDto.ID = result.ID
 
-		err = s.UpsertMetadata(tx, fileDtoResult)
+		metadata, err := s.UpsertMetadata(tx, fileDto)
 		if err != nil {
 			return
 		}
+		fileDtoResult.Metadata = metadata
 
 		fileDtoResult, err = result.ToDto()
 		return
@@ -97,7 +109,7 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return FileDto{}, fmt.Errorf("erro ao buscar arquivos: %w", err)
+		return FileDto{}, fmt.Errorf("error fetching files: %w", err)
 	}
 	switch len(pagination.Items) {
 	case 0:
@@ -117,7 +129,7 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 	pagination, err := s.GetFiles(filter, 1, 5)
 
 	if err != nil {
-		return FileDto{}, fmt.Errorf("erro ao buscar arquivo: %w", err)
+		return FileDto{}, fmt.Errorf("error fetching file: %w", err)
 	}
 	switch len(pagination.Items) {
 	case 0:
@@ -130,22 +142,8 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 
 }
 
-func (s *Service) withTransaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
-	tx, err := s.Repository.GetDbContext().BeginTx(ctx, nil)
-	if err != nil {
-		return
-	}
-	defer tx.Rollback()
-
-	if err = fn(tx); err != nil {
-		return
-	}
-
-	return tx.Commit()
-}
-
 func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
-	err = service.withTransaction(context.Background(), func(tx *sql.Tx) (err error) {
+	err = service.withTransaction(func(tx *sql.Tx) (err error) {
 		fileModel, err := fileDto.ToModel()
 		if err != nil {
 			return
@@ -156,7 +154,10 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 			return
 		}
 
-		err = service.UpsertMetadata(tx, fileDto)
+		if fileDto.Metadata != nil {
+			_, err = service.UpsertMetadata(tx, fileDto)
+		}
+
 		if err != nil {
 			return
 		}
@@ -170,7 +171,7 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 func (s *Service) ScanFilesTask(data string) {
 	task := utils.Task{
 		Type: utils.ScanFiles,
-		Data: "Escaneamento de arquivos",
+		Data: "File scan",
 	}
 	s.Tasks <- task
 	s.Tasks <- task
@@ -220,7 +221,7 @@ func (s *Service) updateFileCheckSum(
 	}
 
 	if !result {
-		return fmt.Errorf("erro ao atualizar arquivo: %v\n", err)
+		return fmt.Errorf("error updating file: %v", err)
 	}
 
 	return nil
@@ -266,41 +267,197 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 	}
 
 	if !result {
-		return fmt.Errorf("nenhum diretorio atualizado")
+		return fmt.Errorf("no directory updated")
 	}
 
 	return nil
 }
 
-func (s *Service) GetFileThumbnail(fileDto FileDto, width int) (image.Image, error) {
+func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
+	if width <= 0 {
+		width = 320
+	}
+	if width > 2048 {
+		width = 2048
+	}
+
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	cacheKey := fmt.Sprintf("%d_%d.png", fileDto.ID, width)
+	cachePath := filepath.Join(cacheDir, cacheKey)
+
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	var thumbnailImg image.Image
 
 	if fileDto.Type == Directory {
-		return icons.FolderIcon()
-	}
-
-	switch fileDto.Format {
-	case ".jpg":
-		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
+		iconImg, err := icons.FolderIcon()
 		if err != nil {
 			return nil, err
 		}
-		return img.Thumbnail(image)
-	case ".png":
-		image, err := img.OpenImageFromFile(fileDto.Path, fileDto.Format)
-		if err != nil {
-			return nil, err
+		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
+	} else {
+		exists := s.CheckFileExistsByPath(fileDto.Path)
+		if !exists {
+			err := s.DeleteFile(fileDto, true)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
+			}
+			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 		}
-		return img.Thumbnail(image)
-	case ".pdf":
-		return icons.PdfIcon()
-	case ".mp3":
-		return icons.Mp3Icon()
-	case ".mp4":
-		return icons.Mp4Icon()
-	default:
-		return icons.Icon()
+
+		srcImg, format, err := img.OpenImageFromFile(fileDto.Path)
+		if err != nil {
+			switch strings.ToLower(fileDto.Format) {
+			case ".pdf":
+				iconImg, _ := icons.PdfIcon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
+			case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
+				iconImg, _ := icons.Mp3Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
+			case ".mp4", ".avi", ".mkv", ".mov", ".webm":
+				iconImg, _ := icons.Mp4Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
+			default:
+				iconImg, _ := icons.Icon()
+				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
+			}
+		} else {
+			thumbnailImg = img.Thumbnail(srcImg, uint(width), uint(height))
+			_ = format
+		}
 	}
 
+	data, err := img.EncodePNG(thumbnailImg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+
+	_ = os.MkdirAll(cacheDir, 0755)
+	_ = os.WriteFile(cachePath, data, 0644)
+
+	return data, nil
+}
+
+func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
+	if width <= 0 {
+		width = 320
+	}
+	if height <= 0 {
+		height = 180
+	}
+	if width > 2048 {
+		width = 2048
+	}
+	if height > 2048 {
+		height = 2048
+	}
+
+	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	_ = os.MkdirAll(cacheDir, 0755)
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d.png", fileDto.ID, width, height))
+
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	if !s.CheckFileExistsByPath(fileDto.Path) {
+		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
+	}
+
+	ffmpegErr := exec.Command(
+		"ffmpeg",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-y",
+		"-ss", "00:00:03",
+		"-i", fileDto.Path,
+		"-frames:v", "1",
+		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
+		cachePath,
+	).Run()
+
+	if ffmpegErr == nil {
+		if data, err := os.ReadFile(cachePath); err == nil {
+			return data, nil
+		}
+	}
+
+	iconImg, _ := icons.Mp4Icon()
+	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
+	fallback, err := img.EncodePNG(thumb)
+	if err != nil {
+		return nil, err
+	}
+	_ = os.WriteFile(cachePath, fallback, 0644)
+	return fallback, nil
+}
+
+func (s *Service) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error) {
+	if width <= 0 {
+		width = 320
+	}
+	if height <= 0 {
+		height = 180
+	}
+	if width > 1024 {
+		width = 1024
+	}
+	if height > 1024 {
+		height = 1024
+	}
+
+	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	_ = os.MkdirAll(cacheDir, 0755)
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_preview.gif", fileDto.ID, width, height))
+
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	if !s.CheckFileExistsByPath(fileDto.Path) {
+		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
+	}
+
+	// Curta prévia animada: ~2.5s, baixa taxa de frames para performance de cache e rede local.
+	ffmpegErr := exec.Command(
+		"ffmpeg",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-y",
+		"-ss", "00:00:03",
+		"-t", "2.5",
+		"-i", fileDto.Path,
+		"-vf", fmt.Sprintf("fps=4,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
+		"-loop", "0",
+		cachePath,
+	).Run()
+
+	if ffmpegErr == nil {
+		if data, err := os.ReadFile(cachePath); err == nil {
+			return data, nil
+		}
+	}
+
+	iconImg, _ := icons.Mp4Icon()
+	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
+
+	paletted := image.NewPaletted(thumb.Bounds(), palette.Plan9)
+	draw.FloydSteinberg.Draw(paletted, thumb.Bounds(), thumb, image.Point{})
+
+	g := &gif.GIF{
+		Image:     []*image.Paletted{paletted},
+		Delay:     []int{120},
+		LoopCount: 0,
+	}
+	var buf bytes.Buffer
+	if err := gif.EncodeAll(&buf, g); err != nil {
+		return nil, err
+	}
+	fallback := buf.Bytes()
+	_ = os.WriteFile(cachePath, fallback, 0644)
+	return fallback, nil
 }
 
 func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
@@ -417,77 +574,166 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 	return report, nil
 }
 
-func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) error {
-	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
+	var err error
 
-	switch formatType.Type {
-	case utils.FormatTypeImage:
-		_, err := s.UpsertImageMetadata(tx, fileDto)
-		return err
-	case utils.FormatTypeAudio:
-		_, err := s.UpsertAudioMetadata(tx, fileDto)
-		return err
-	case utils.FormatTypeVideo:
-		_, err := s.UpsertVideoMetadata(tx, fileDto)
-		return err
+	switch m := fileDto.Metadata.(type) {
+	case ImageMetadataModel:
+		m.FileId = fileDto.ID
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertImageMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
+	case AudioMetadataModel:
+		m.FileId = fileDto.ID
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
+	case VideoMetadataModel:
+		m.FileId = fileDto.ID
+		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
+		if upsertErr != nil {
+			err = upsertErr
+			break
+		}
+		fileDto.Metadata = upsertedMetadata
+
 	default:
-		return nil
+		return fileDto, nil
 	}
+
+	return fileDto, err
 }
 
-func (s *Service) UpsertImageMetadata(tx *sql.Tx, fileDto FileDto) (ImageMetadataModel, error) {
-	metadata := ImageMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
-	}
-
-	result, err := utils.RunPythonScript(utils.ImageMetadata, fileDto.Path)
+func (s *Service) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetImages(page, pageSize, groupBy)
 	if err != nil {
-		return ImageMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	err = json.Unmarshal([]byte(result), &metadata)
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
+
 	if err != nil {
-		return ImageMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	return s.MetadataRepository.UpsertImageMetadata(tx, metadata)
+	return paginationResponse, nil
 }
 
-func (s *Service) UpsertAudioMetadata(tx *sql.Tx, fileDto FileDto) (AudioMetadataModel, error) {
-	metadata := AudioMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
-	}
-
-	result, err := utils.RunPythonScript(utils.AudioMetadata, fileDto.Path)
+func (s *Service) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusic(page, pageSize)
 	if err != nil {
-		return AudioMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	err = json.Unmarshal([]byte(result), &metadata)
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
+
 	if err != nil {
-		return AudioMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	return s.MetadataRepository.UpsertAudioMetadata(tx, metadata)
+	return paginationResponse, nil
 }
 
-func (s *Service) UpsertVideoMetadata(tx *sql.Tx, fileDto FileDto) (VideoMetadataModel, error) {
-	metadata := VideoMetadataModel{
-		FileId: fileDto.ID,
-		Path:   fileDto.Path,
-	}
-
-	result, err := utils.RunPythonScript(utils.VideoMetadata, fileDto.Path)
+func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetVideos(page, pageSize)
 	if err != nil {
-		return VideoMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	err = json.Unmarshal([]byte(result), &metadata)
+	paginationResponse, err := ParsePaginationToDto(&filesModel)
+
 	if err != nil {
-		return VideoMetadataModel{}, err
+		return utils.PaginationResponse[FileDto]{}, err
 	}
 
-	return s.MetadataRepository.UpsertVideoMetadata(tx, metadata)
+	return paginationResponse, nil
+}
+
+func (s *Service) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	return s.Repository.GetMusicArtists(page, pageSize)
+}
+
+func (s *Service) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByArtist(artist, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	return s.Repository.GetMusicAlbums(page, pageSize)
+}
+
+func (s *Service) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByAlbum(album, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	return s.Repository.GetMusicGenres(page, pageSize)
+}
+
+func (s *Service) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByGenre(genre, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	return s.Repository.GetMusicFolders(page, pageSize)
+}
+
+func (s *Service) CheckFileExists(fileId int) bool {
+	file, err := s.GetFileById(fileId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		}
+		return false
+	}
+
+	return s.CheckFileExistsByPath(file.Path)
+}
+
+func (s *Service) CheckFileExistsByPath(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}
+
+func (s *Service) DeleteFile(file FileDto, bySystem bool) error {
+	if file.DeletedAt.HasValue {
+		return fmt.Errorf("file already marked for deletion")
+	}
+	if bySystem && (!file.LastInteraction.HasValue || file.LastInteraction.Value.Add(24*time.Hour).After(time.Now())) {
+		return fmt.Errorf("file was recently accessed, cannot be deleted")
+	}
+
+	if !file.DeletedAt.HasValue {
+		file.DeletedAt = utils.Optional[time.Time]{HasValue: true, Value: time.Now()}
+	}
+
+	success, err := s.UpdateFile(file)
+	if err != nil {
+		return fmt.Errorf("error updating file before deletion: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("file not found for deletion")
+	}
+	return nil
 }

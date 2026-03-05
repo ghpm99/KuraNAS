@@ -1,8 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { apiBase } from '@/service';
 import { formatSize } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext } from 'react';
-import { FileData } from '../hooks/fileProvider/fileContext';
+import { FileData } from '../providers/fileProvider/fileContext';
 
 interface StorageOverview {
 	totalUsedSpace: string;
@@ -110,7 +111,7 @@ interface AnalyticsContextType {
 
 const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefined);
 
-export function AnalyticsProvider({ children }: { children: ReactNode }) {
+export const AnalyticsProvider = ({ children }: { children: ReactNode }) => {
 	const { data: totalUsedSpace, refetch: refetchtotalUsedSpace } = useQuery({
 		queryKey: ['totalUsedSpace'],
 		queryFn: async () => {
@@ -269,7 +270,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 	};
 
 	return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>;
-}
+};
 
 export const useAnalytics = () => {
 	const context = useContext(AnalyticsContext);

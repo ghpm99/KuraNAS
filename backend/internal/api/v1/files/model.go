@@ -24,6 +24,7 @@ type FileModel struct {
 	LastBackup      sql.NullTime
 	CheckSum        string
 	Starred         bool
+	Metadata        any
 }
 
 type RecentFileModel struct {

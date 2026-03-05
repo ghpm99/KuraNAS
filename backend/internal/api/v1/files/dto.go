@@ -2,6 +2,7 @@ package files
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -34,6 +35,26 @@ type FileDto struct {
 	CheckSum              string                    `json:"check_sum"`
 	DirectoryContentCount int                       `json:"directory_content_count"`
 	Starred               bool                      `json:"starred"`
+	Metadata              any                       `json:"metadata"`
+}
+
+type IMusicMetadata struct {
+	ID         int    `json:"id"`
+	FileId     int    `json:"file_id"`
+	Path       string `json:"path"`
+	Format     string `json:"format"`
+	Title      string `json:"title"`
+	Artist     string `json:"artist"`
+	Album      string `json:"album"`
+	Year       int    `json:"year"`
+	Genre      string `json:"genre"`
+	Track      int    `json:"track"`
+	Disc       int    `json:"disc"`
+	Duration   int    `json:"duration"`
+	Bitrate    int    `json:"bitrate"`
+	SampleRate int    `json:"sample_rate"`
+	Channels   int    `json:"channels"`
+	CreatedAt  string `json:"created_at"`
 }
 
 func (i *FileModel) ToDto() (FileDto, error) {
@@ -52,22 +73,18 @@ func (i *FileModel) ToDto() (FileDto, error) {
 		Starred:    i.Starred,
 	}
 
-	err := fileDto.DeletedAt.ParseFromNullTime(i.DeletedAt)
-	if err != nil {
-		return fileDto, err
-	}
-
-	err = fileDto.LastInteraction.ParseFromNullTime(i.LastInteraction)
-	if err != nil {
-		return fileDto, err
-	}
-
-	err = fileDto.LastBackup.ParseFromNullTime(i.LastBackup)
-	if err != nil {
-		return fileDto, err
-	}
+	fileDto.DeletedAt = toOptionalTime(i.DeletedAt)
+	fileDto.LastInteraction = toOptionalTime(i.LastInteraction)
+	fileDto.LastBackup = toOptionalTime(i.LastBackup)
 
 	return fileDto, nil
+}
+
+func toOptionalTime(value sql.NullTime) utils.Optional[time.Time] {
+	if !value.Valid || value.Time.IsZero() {
+		return utils.Optional[time.Time]{HasValue: false}
+	}
+	return utils.Optional[time.Time]{HasValue: true, Value: value.Time}
 }
 
 func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (utils.PaginationResponse[FileDto], error) {
@@ -87,6 +104,7 @@ func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (util
 		if err != nil {
 			return paginationResponse, err
 		}
+		fileDtoResult.Metadata = fileModel.Metadata
 		paginationResponse.Items = append(paginationResponse.Items, fileDtoResult)
 	}
 	paginationResponse.Pagination = pagination.Pagination
@@ -140,6 +158,26 @@ const (
 	RecentCategory  FileCategory = "recent"
 	StarredCategory FileCategory = "starred"
 )
+
+type ImageGroupBy string
+
+const (
+	ImageGroupByDate ImageGroupBy = "date"
+	ImageGroupByType ImageGroupBy = "type"
+	ImageGroupByName ImageGroupBy = "name"
+)
+
+func ParseImageGroupBy(value string) (ImageGroupBy, error) {
+	groupBy := ImageGroupBy(value)
+	switch groupBy {
+	case "", ImageGroupByDate:
+		return ImageGroupByDate, nil
+	case ImageGroupByType, ImageGroupByName:
+		return groupBy, nil
+	default:
+		return "", fmt.Errorf("invalid image group_by: %s", value)
+	}
+}
 
 type FileFilter struct {
 	ID         utils.Optional[int]
@@ -237,4 +275,27 @@ type DuplicateFileReportDto struct {
 	TotalFiles int                `json:"total"`
 	TotalSize  int64              `json:"total_size"`
 	Pagination utils.Pagination   `json:"pagination"`
+}
+
+type MusicArtistDto struct {
+	Artist     string `json:"artist"`
+	TrackCount int    `json:"track_count"`
+	AlbumCount int    `json:"album_count"`
+}
+
+type MusicAlbumDto struct {
+	Album      string `json:"album"`
+	Artist     string `json:"artist"`
+	Year       string `json:"year"`
+	TrackCount int    `json:"track_count"`
+}
+
+type MusicGenreDto struct {
+	Genre      string `json:"genre"`
+	TrackCount int    `json:"track_count"`
+}
+
+type MusicFolderDto struct {
+	Folder     string `json:"folder"`
+	TrackCount int    `json:"track_count"`
 }

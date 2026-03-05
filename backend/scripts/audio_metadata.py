@@ -156,7 +156,7 @@ if __name__ == "__main__":
     try:
         path = sys.argv[1]
         metadata = extract_metadata(path)
-        print(json.dumps(metadata, ensure_ascii=False, indent=2))
+        print(json.dumps(metadata, ensure_ascii=False))
     except Exception:
         save_traceback(path)
-        print(json.dumps(OUTPUT_KEYS, ensure_ascii=False, indent=2))
+        print(json.dumps(OUTPUT_KEYS, ensure_ascii=False))

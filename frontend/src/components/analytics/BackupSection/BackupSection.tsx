@@ -1,90 +1,79 @@
-import { Calendar, CheckCircle, HardDrive, XCircle } from 'lucide-react';
-
-import Card from '../../ui/Card/Card';
-import styles from './BackupSection.module.css';
+import { Box, Card, CardContent, CardHeader, Chip, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Calendar, HardDrive } from 'lucide-react';
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
+
+const statusColor: Record<string, 'success' | 'error' | 'warning'> = {
+	success: 'success',
+	failed: 'error',
+	pending: 'warning',
+};
 
 export default function BackupSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { backup } = analyticsData;
 
-	const getStatusIcon = (status: string) => {
-		switch (status) {
-			case 'success':
-				return <CheckCircle className={`${styles.statusIcon} ${styles.success}`} />;
-			case 'failed':
-				return <XCircle className={`${styles.statusIcon} ${styles.failed}`} />;
-			default:
-				return <Calendar className={`${styles.statusIcon} ${styles.pending}`} />;
-		}
-	};
-
-	const getStatusText = (status: string) => {
-		switch (status) {
-			case 'success':
-				return 'Sucesso';
-			case 'failed':
-				return 'Falhou';
-			default:
-				return 'Pendente';
-		}
+	const statusLabel: Record<string, string> = {
+		success: t('ANALYTICS_BACKUP_SUCCESS'),
+		failed: t('ANALYTICS_BACKUP_FAILED'),
+		pending: t('ANALYTICS_BACKUP_PENDING'),
 	};
 
 	return (
-		<div className={styles.section}>
-			<div className={styles.cardsGrid}>
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<Calendar className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Último Backup</div>
-							<div className={styles.value}>{backup.lastBackup}</div>
-						</div>
-					</div>
-				</div>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<Calendar size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_LAST_BACKUP')}</Typography>
+								<Typography variant='h6'>{backup.lastBackup}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<HardDrive size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_LAST_BACKUP_SIZE')}</Typography>
+								<Typography variant='h6'>{backup.lastBackupSize}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+			</Grid>
 
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<HardDrive className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Tamanho do Último Backup</div>
-							<div className={styles.value}>{backup.lastBackupSize}</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<Card title='Histórico de Backups'>
-				<div className={styles.tableContainer}>
-					<table className={styles.table}>
-						<thead>
-							<tr>
-								<th>Data</th>
-								<th>Tamanho</th>
-								<th>Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{backup.history.map((item, index) => (
-								<tr key={index}>
-									<td className={styles.dateCell}>{item.date}</td>
-									<td className={styles.sizeCell}>{item.size}</td>
-									<td className={styles.statusCell}>
-										<div className={styles.statusContainer}>
-											{getStatusIcon(item.status)}
-											<span>{getStatusText(item.status)}</span>
-										</div>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+			<Card>
+				<CardHeader title={t('ANALYTICS_BACKUP_HISTORY')} titleTypographyProps={{ variant: 'h6' }} />
+				<Table>
+					<TableHead>
+						<TableRow>
+							<TableCell>{t('ANALYTICS_BACKUP_DATE')}</TableCell>
+							<TableCell>{t('ANALYTICS_BACKUP_SIZE')}</TableCell>
+							<TableCell>{t('ANALYTICS_BACKUP_STATUS')}</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{backup.history.map((item, index) => (
+							<TableRow key={index}>
+								<TableCell>{item.date}</TableCell>
+								<TableCell>{item.size}</TableCell>
+								<TableCell>
+									<Chip
+										label={statusLabel[item.status] ?? t('ANALYTICS_BACKUP_PENDING')}
+										color={statusColor[item.status] ?? 'warning'}
+										size='small'
+									/>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
 			</Card>
-		</div>
+		</Box>
 	);
 }

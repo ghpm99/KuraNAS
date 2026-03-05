@@ -23,6 +23,8 @@ func GetBuildConfig(key string) string {
 		return FilepathJoin(false, os.Getenv("ProgramFiles"), "Kuranas", "scripts", ".venv", "Scripts", "python.exe")
 	case "ScriptPath":
 		return FilepathJoin(true, os.Getenv("ProgramFiles"), "Kuranas", "scripts")
+	case "ThumbnailPath":
+		return FilepathJoin(true, os.Getenv("ProgramFiles"), "Kuranas", "thumbnails")
 	default:
 		return ""
 	}

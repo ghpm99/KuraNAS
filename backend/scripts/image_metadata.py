@@ -67,19 +67,22 @@ RESULT_DEFAULT = {
 def safe_decode(value):
     try:
         if isinstance(value, bytes):
-            return value.decode(errors="replace")
+            decoded = value.decode(errors="replace")
+            return decoded.replace("\x00", "")
         elif isinstance(value, tuple):
             return [safe_decode(v) for v in value]
         elif hasattr(value, "numerator") and hasattr(value, "denominator"):
             # Para Rational: transforma em float, e arredonda para 6 casas
             return round(float(value.numerator) / float(value.denominator), 6) if value.denominator != 0 else 0
         elif isinstance(value, (int, float, str)):
+            if isinstance(value, str):
+                return value.replace("\x00", "")
             return value
         elif isinstance(value, IFDRational):
             # Para IFDRational: transforma em float, e arredonda para 6 casas
             return round(float(value.numerator) / float(value.denominator), 6) if value.denominator != 0 else 0
         else:
-            return str(value)
+            return str(value).replace("\x00", "")
     except Exception:
         save_traceback(f"{value}-{type(value)}")
         return ""

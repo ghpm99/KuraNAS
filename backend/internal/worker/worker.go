@@ -3,16 +3,16 @@ package worker
 import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
-
-	"time"
 )
 
 type WorkerContext struct {
 	Tasks           chan utils.Task
 	FilesService    files.ServiceInterface
+	VideoService    video.ServiceInterface
 	MetadataService files.MetadataRepositoryInterface
 	Logger          logger.LoggerServiceInterface
 }
@@ -29,15 +29,14 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 }
 
 func startWorkersScheduler(context *WorkerContext) {
-	for {
-		log.Println("Escaneamento de arquivos")
-		context.Tasks <- utils.Task{
-			Type: utils.ScanFiles,
-			Data: "Escaneamento de arquivos",
-		}
-		log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
-		time.Sleep(12 * time.Hour)
+
+	log.Println("Escaneamento de arquivos")
+	context.Tasks <- utils.Task{
+		Type: utils.ScanFiles,
+		Data: "Escaneamento de arquivos",
 	}
+	log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
+
 }
 
 func worker(id int, context *WorkerContext) {
@@ -46,13 +45,15 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			go ScanFilesWorker(context.FilesService, context.Logger)
+			go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
 		case utils.ScanDir:
 			go ScanDirWorker(context.FilesService, task.Data)
 		case utils.UpdateCheckSum:
 			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
 		case utils.CreateThumbnail:
 			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+		case utils.GenerateVideoPlaylists:
+			go GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 		default:
 			log.Println("Tipo de tarefa desconhecido")
 		}

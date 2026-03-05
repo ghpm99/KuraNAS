@@ -1,4 +1,6 @@
-import './fileCard.css';
+import { Box, Card, CardActionArea, CardContent, CardMedia, IconButton, Typography } from '@mui/material';
+import { Star } from 'lucide-react';
+
 const FileCard = ({
 	title,
 	metadata,
@@ -15,25 +17,26 @@ const FileCard = ({
 	onClickStar?: () => void;
 }) => {
 	return (
-		<div className='file-card'>
-			<div className='file-thumbnail'>
-				<img
+		<Card sx={{ position: 'relative' }}>
+			<CardActionArea onClick={onClick}>
+				<CardMedia
+					component='img'
+					image={thumbnail || '/placeholder.svg'}
+					alt={title}
 					loading='lazy'
-					src={thumbnail || '/placeholder.svg'}
-					width={652}
-					height={489}
-					className='thumbnail-image'
-					onClick={onClick}
+					sx={{ height: 140, objectFit: 'cover' }}
 				/>
-				<span className='star-icon' onClick={onClickStar}>
-					{starred ? '★' : '☆'}
-				</span>
-			</div>
-			<div className='file-info'>
-				<h3 className='file-title'>{title}</h3>
-				<p className='file-metadata'>{metadata}</p>
-			</div>
-		</div>
+				<CardContent sx={{ py: 1 }}>
+					<Typography variant='body2' fontWeight={500} noWrap>{title}</Typography>
+					<Typography variant='caption' color='text.secondary'>{metadata}</Typography>
+				</CardContent>
+			</CardActionArea>
+			<Box sx={{ position: 'absolute', top: 4, right: 4 }}>
+				<IconButton size='small' onClick={onClickStar}>
+					<Star size={16} fill={starred ? 'currentColor' : 'none'} />
+				</IconButton>
+			</Box>
+		</Card>
 	);
 };
 

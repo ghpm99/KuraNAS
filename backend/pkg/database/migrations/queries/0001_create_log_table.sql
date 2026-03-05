@@ -1,15 +1,15 @@
-CREATE TABLE
-    IF NOT EXISTS log (
-        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        name VARCHAR(256) NOT NULL,
-        description VARCHAR(256) NULL,
-        level VARCHAR(50) NOT NULL CHECK (level IN ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')),
-        ip_address VARCHAR(45) NULL,
-        start_time DATETIME NOT NULL,
-        end_time DATETIME NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        deleted_at DATETIME NULL,
+CREATE TABLE IF NOT EXISTS
+    LOG(
+        id SERIAL PRIMARY KEY,
+        NAME VARCHAR(256) NOT NULL,
+        description VARCHAR(256),
+        LEVEL VARCHAR(50) NOT NULL CHECK (LEVEL IN ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')),
+        ip_address VARCHAR(45),
+        start_time TIMESTAMPTZ NOT NULL,
+        end_time TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMPTZ,
         status VARCHAR(50) NOT NULL CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED')),
-        extra_data JSON NULL
+        extra_data JSON
     );

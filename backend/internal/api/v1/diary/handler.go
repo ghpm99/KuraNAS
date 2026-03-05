@@ -2,6 +2,7 @@ package diary
 
 import (
 	"fmt"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -136,7 +137,7 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 	data := c.PostForm("data")
 	if data == "" {
 		handler.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DATA_REQUIRED")})
 		return
 	}
 
@@ -148,7 +149,18 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 		Data: diaryDto,
 	})
 
-	handler.service.UpdateDiary(diaryDto)
+	updated, err := handler.service.UpdateDiary(diaryDto)
+	if err != nil {
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !updated {
+		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_DIARY_NOT_FOUND"))
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, diaryDto)

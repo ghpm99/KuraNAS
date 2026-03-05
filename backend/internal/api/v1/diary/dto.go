@@ -1,6 +1,7 @@
 package diary
 
 import (
+	"database/sql"
 	"nas-go/api/pkg/utils"
 	"time"
 )
@@ -46,11 +47,15 @@ func (diaryModel *DiaryModel) ToDto() (DiaryDto, error) {
 		Description: diaryModel.Description,
 		StartTime:   diaryModel.StartTime,
 	}
-	if err := diaryDto.EndTime.ParseFromNullTime(diaryModel.EndTime); err != nil {
-		return diaryDto, err
-	}
-
+	diaryDto.EndTime = toOptionalTime(diaryModel.EndTime)
 	return diaryDto, nil
+}
+
+func toOptionalTime(value sql.NullTime) utils.Optional[time.Time] {
+	if !value.Valid || value.Time.IsZero() {
+		return utils.Optional[time.Time]{HasValue: false}
+	}
+	return utils.Optional[time.Time]{HasValue: true, Value: value.Time}
 }
 
 type DateRange struct {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"nas-go/api/internal/api/v1/diary"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"reflect"
 	"testing"
@@ -19,7 +20,9 @@ func TestRepository_GetDiary(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := &diary.Repository{DbContext: db}
+	dbContext := database.NewDbContext(db)
+
+	repo := &diary.Repository{DbContext: dbContext}
 
 	type args struct {
 		filter   diary.DiaryFilter
@@ -82,7 +85,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			wantErr: false,
 			mock: func(args args) {
 				rows := sqlmock.NewRows([]string{"id", "name", "description", "start_time", "end_time"})
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -93,6 +97,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnRows(rows)
+				mock.ExpectRollback()
 			},
 		},
 		{
@@ -142,7 +147,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			},
 			wantErr: true,
 			mock: func(args args) {
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -153,6 +159,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnError(errors.New("test error"))
+				mock.ExpectRollback()
 			},
 		},
 		{
@@ -204,7 +211,8 @@ func TestRepository_GetDiary(t *testing.T) {
 			mock: func(args args) {
 				rows := sqlmock.NewRows([]string{"id", "name", "description", "start_time", "end_time"}).
 					AddRow(1, "test", "test", "test", "test")
-				mock.ExpectQuery(`SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
+				mock.ExpectBegin()
+				mock.ExpectQuery(`(?i)SELECT id, name, description, start_time, end_time FROM activity_diary.*ORDER BY.*LIMIT.*OFFSET`).
 					WithArgs(
 						true, args.filter.ID.Value,
 						true, args.filter.Name.Value,
@@ -215,6 +223,7 @@ func TestRepository_GetDiary(t *testing.T) {
 						args.pageSize+1, utils.CalculateOffset(args.page, args.pageSize),
 					).
 					WillReturnRows(rows)
+				mock.ExpectRollback()
 			},
 		},
 	}
@@ -238,11 +247,12 @@ func TestRepository_GetDiary(t *testing.T) {
 
 func TestRepository_GetDbContext(t *testing.T) {
 	db := &sql.DB{}
-	repo := &diary.Repository{DbContext: db}
+	dbContext := database.NewDbContext(db)
+	repo := &diary.Repository{DbContext: dbContext}
 
 	result := repo.GetDbContext()
 
-	if result != db {
+	if result != dbContext {
 		t.Errorf("Expected %v, got %v", db, result)
 	}
 }

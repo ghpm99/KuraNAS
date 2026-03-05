@@ -1,9 +1,9 @@
-import { useActivityDiary } from '@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext';
-import Button from '@/components/ui/Button/Button';
+import { useActivityDiary } from '@/components/providers/activityDiaryProvider/ActivityDiaryContext';
 import Card from '@/components/ui/Card/Card';
+import { Box, Button, TextField } from '@mui/material';
 import { Plus } from 'lucide-react';
-import styles from './form.module.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import type { ChangeEvent } from 'react';
 
 const ActivityDiaryForm = () => {
 	const { form, handleSubmit, handleNameChange, handleDescriptionChange } = useActivityDiary();
@@ -11,40 +11,32 @@ const ActivityDiaryForm = () => {
 
 	return (
 		<Card title={t('NEW_ACTIVITY_TITLE')}>
-			<form className={styles.form} onSubmit={handleSubmit}>
-				<div className={styles.formGroup}>
-					<label htmlFor='activity-name' className={styles.label}>
-						{t('ACTIVITY_NAME_LABEL')}
-					</label>
-					<input
-						type='text'
-						id='activity-name'
-						value={form.name}
-						onChange={handleNameChange}
-						placeholder={t('ACTIVITY_NAME_PLACEHOLDER')}
-						className={styles.input}
-						required
-					/>
-				</div>
-
-				<div className={styles.formGroup}>
-					<label htmlFor='activity-description' className={styles.label}>
-						{t('ACTIVITY_DESCRIPTION_LABEL')}
-					</label>
-					<textarea
-						id='activity-description'
-						value={form.description}
-						onChange={handleDescriptionChange}
-						placeholder={t('ACTIVITY_DESCRIPTION_PLACEHOLDER')}
-						className={styles.textarea}
-						rows={3}
-					/>
-				</div>
-
-				<Button type='submit' icon={Plus}>
+			<Box component='form' onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+				<TextField
+					id='activity-name'
+					label={t('ACTIVITY_NAME_LABEL')}
+					value={form.name}
+					onChange={handleNameChange as (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void}
+					placeholder={t('ACTIVITY_NAME_PLACEHOLDER')}
+					required
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					id='activity-description'
+					label={t('ACTIVITY_DESCRIPTION_LABEL')}
+					value={form.description}
+					onChange={handleDescriptionChange as (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void}
+					placeholder={t('ACTIVITY_DESCRIPTION_PLACEHOLDER')}
+					multiline
+					rows={3}
+					size='small'
+					fullWidth
+				/>
+				<Button type='submit' variant='contained' startIcon={<Plus size={16} />} sx={{ alignSelf: 'flex-start' }}>
 					{t('ADD_ACTIVITY')}
 				</Button>
-			</form>
+			</Box>
 		</Card>
 	);
 };

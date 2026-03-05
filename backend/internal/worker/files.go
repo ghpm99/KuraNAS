@@ -44,6 +44,8 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 				return nil
 			}
 			fail(path, err)
+			failedFilesCount++
+			return nil
 		}
 		name := info.Name()
 		fileDto, fileDtoError := service.GetFileByNameAndPath(name, path)
@@ -51,7 +53,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 		if fileDtoError != nil {
 			if !errors.Is(fileDtoError, sql.ErrNoRows) {
 				failedFilesCount++
-				return fail(path, err)
+				return fail(path, fileDtoError)
 			}
 			i18n.LogTranslate("FILE_NOT_FOUND_IN_DATABASE", path)
 		}
@@ -76,13 +78,13 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 			return err
 		}
 
-		go func() {
-			err = service.UpdateCheckSum(fileDto.ID)
-			if err != nil {
-				fail(path, err)
+		go func(fileID int, filePath string) {
+			checksumErr := service.UpdateCheckSum(fileID)
+			if checksumErr != nil {
+				fail(filePath, checksumErr)
 			}
-			fmt.Println("checksum atualizado com sucesso", fileDto.ID)
-		}()
+			fmt.Println("checksum atualizado com sucesso", fileID)
+		}(fileDto.ID, path)
 		successFilesCount++
 		return nil
 	})
@@ -108,8 +110,14 @@ func updateFileDto(service files.ServiceInterface, fileDto files.FileDto, failCa
 		HasValue: false,
 	}
 	updated, err := service.UpdateFile(fileDto)
-	if err != nil || !updated {
-		return failCallback(err)
+	if err != nil {
+		_ = failCallback(err)
+		return err
+	}
+	if !updated {
+		updateErr := errors.New("file was not updated")
+		_ = failCallback(updateErr)
+		return updateErr
 	}
 	i18n.LogTranslate("FILE_UPDATE_SUCCESS", fileDto.ID)
 
@@ -123,7 +131,8 @@ func createFileDto(service files.ServiceInterface, path string, fileDto files.Fi
 	fileCreated, err := service.CreateFile(fileDto)
 
 	if err != nil {
-		return fileCreated, failCallback(err)
+		_ = failCallback(err)
+		return fileCreated, err
 	}
 	i18n.LogTranslate("FILE_CREATE_SUCCESS", fileCreated.ID)
 	return fileCreated, nil
@@ -158,11 +167,11 @@ func findFilesDeleted(service files.ServiceInterface) int {
 					Value:    time.Now(),
 				}
 				_, error := service.UpdateFile(file)
-				deletedFilesCount++
 				if error != nil {
 					i18n.LogTranslate("ERROR_DELETING_FILE", file.ID, file.Name)
 					continue
 				}
+				deletedFilesCount++
 			} else {
 				continue
 			}
@@ -171,7 +180,11 @@ func findFilesDeleted(service files.ServiceInterface) int {
 			break
 		}
 		currentPage++
-		pagination, error = service.GetFiles(files.FileFilter{}, currentPage, 20)
+		pagination, error = service.GetFiles(files.FileFilter{
+			DeletedAt: utils.Optional[time.Time]{
+				HasValue: true,
+			},
+		}, currentPage, 20)
 		if error != nil {
 			i18n.LogTranslate("ERROR_GET_FILES", error)
 			break

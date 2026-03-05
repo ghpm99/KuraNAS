@@ -1,14 +1,17 @@
 package files
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
-	"image/png"
+	"io"
 	"mime"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -141,6 +144,12 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if len(file.Items) == 0 {
+		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
 	pagination, err := handler.service.GetFiles(FileFilter{
 		Path: utils.Optional[string]{
@@ -170,11 +179,9 @@ func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
 	}, nil)
 
 	data := c.PostForm("data")
-	fmt.Println("📁 Recebendo dados para processamento:", data)
-
 	if data == "" {
 		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DATA_REQUIRED")})
 		return
 	}
 	loggerModel.SetExtraData(logger.LogExtraData{
@@ -256,37 +263,111 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "320"), c)
 
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: id,
+		Data: map[string]int{"id": id, "width": width, "height": height},
 	})
 
 	file, err := handler.service.GetFileById(id)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	thumbnail, err := handler.service.GetFileThumbnail(file, 320)
+	thumbnailData, err := handler.service.GetFileThumbnail(file, width, height)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error2": err.Error()})
-		return
-	}
-
-	var buf bytes.Buffer
-	err = png.Encode(&buf, thumbnail)
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error3": err.Error()})
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
 		return
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Data(http.StatusOK, "image/png", buf.Bytes())
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/png", thumbnailData)
+}
+
+func (handler *Handler) GetVideoThumbnailHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideoThumbnail",
+		Description: "Fetching video thumbnail by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	thumbnailData, err := handler.service.GetVideoThumbnail(file, width, height)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/png", thumbnailData)
+}
+
+func (handler *Handler) GetVideoPreviewHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideoPreview",
+		Description: "Fetching animated video preview by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
+	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	previewData, err := handler.service.GetVideoPreviewGif(file, width, height)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		httpStatus := http.StatusInternalServerError
+		if errors.Is(err, ErrFileMissingDisk) {
+			httpStatus = http.StatusNotFound
+		}
+		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.Header("Content-Type", "image/gif")
+	c.Header("Cache-Control", "public, max-age=86400")
+	c.Data(http.StatusOK, "image/gif", previewData)
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
@@ -309,7 +390,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -537,4 +618,409 @@ func (handler *Handler) GetDuplicateFilesHandler(c *gin.Context) {
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, report)
+}
+
+func (handler *Handler) GetImagesHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetFilesTree",
+		Description: "Fetching files with filter",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	pagination, err := handler.service.GetImages(page, pageSize, groupBy)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusic",
+		Description: "Fetching music files",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	pagination, err := handler.service.GetMusic(page, pageSize)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicArtists",
+		Description: "Fetching music artists",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicArtists(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByArtist",
+		Description: "Fetching music by artist",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	artist := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByArtist(artist, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicAlbums",
+		Description: "Fetching music albums",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicAlbums(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByAlbum",
+		Description: "Fetching music by album",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	album := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByAlbum(album, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicGenres",
+		Description: "Fetching music genres",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicGenres(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicByGenre",
+		Description: "Fetching music by genre",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	genre := c.Param("name")
+
+	pagination, err := handler.service.GetMusicByGenre(genre, page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetMusicFolders",
+		Description: "Fetching music folders",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+
+	pagination, err := handler.service.GetMusicFolders(page, pageSize)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+// StreamAudioHandler streams audio files with HTTP Range support
+func (handler *Handler) StreamAudioHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "StreamAudio",
+		Description: "Streaming audio file",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	exists := handler.service.CheckFileExistsByPath(file.Path)
+	if !exists {
+		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
+
+	audioFile, err := os.Open(file.Path)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer audioFile.Close()
+
+	fileInfo, err := audioFile.Stat()
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", "audio/mpeg")
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=3600")
+
+	rangeHeader := c.GetHeader("Range")
+	if rangeHeader != "" {
+		// Parse Range header: "bytes=0-1023"
+		ranges := strings.Split(rangeHeader, "=")
+		if len(ranges) == 2 && ranges[0] == "bytes" {
+			byteRange := strings.Split(ranges[1], "-")
+			if len(byteRange) == 2 {
+				start, _ := strconv.ParseInt(byteRange[0], 10, 64)
+				end, _ := strconv.ParseInt(byteRange[1], 10, 64)
+
+				// Validação do range
+				if start >= 0 && end < fileInfo.Size() && start <= end {
+					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
+					c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
+					c.Status(http.StatusPartialContent)
+
+					audioFile.Seek(start, 0)
+					_, err := io.CopyN(c.Writer, audioFile, end-start+1)
+					if err != nil {
+						handler.Logger.CompleteWithErrorLog(loggerModel, err)
+						return
+					}
+
+					handler.Logger.CompleteWithSuccessLog(loggerModel)
+					return
+				}
+			}
+		}
+	}
+
+	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
+	c.Status(http.StatusOK)
+
+	_, err = io.Copy(c.Writer, audioFile)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+}
+
+func (handler *Handler) GetVideosHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "GetVideos",
+		Description: "Fetching video files",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+
+	pagination, err := handler.service.GetVideos(page, pageSize)
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, pagination)
+}
+
+func (handler *Handler) StreamVideoHandler(c *gin.Context) {
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "StreamVideo",
+		Description: "Streaming video file",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	exists := handler.service.CheckFileExistsByPath(file.Path)
+	if !exists {
+		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
+
+	videoFile, err := os.Open(file.Path)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer videoFile.Close()
+
+	fileInfo, err := videoFile.Stat()
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", "video/mp4")
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=3600")
+
+	rangeHeader := c.GetHeader("Range")
+	if rangeHeader != "" {
+		// Parse Range header: "bytes=0-1048576"
+		ranges := strings.Split(rangeHeader, "=")
+		if len(ranges) == 2 && ranges[0] == "bytes" {
+			byteRange := strings.Split(ranges[1], "-")
+			if len(byteRange) == 2 {
+				start, _ := strconv.ParseInt(byteRange[0], 10, 64)
+				end, _ := strconv.ParseInt(byteRange[1], 10, 64)
+
+				// Validação do range
+				if start >= 0 && end < fileInfo.Size() && start <= end {
+					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
+					c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
+					c.Status(http.StatusPartialContent)
+
+					videoFile.Seek(start, 0)
+					_, err := io.CopyN(c.Writer, videoFile, end-start+1)
+					if err != nil {
+						handler.Logger.CompleteWithErrorLog(loggerModel, err)
+						return
+					}
+
+					handler.Logger.CompleteWithSuccessLog(loggerModel)
+					return
+				}
+			}
+		}
+	}
+
+	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
+	c.Status(http.StatusOK)
+
+	_, err = io.Copy(c.Writer, videoFile)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
 }

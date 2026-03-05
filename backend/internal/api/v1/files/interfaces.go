@@ -2,12 +2,12 @@ package files
 
 import (
 	"database/sql"
-	"image"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
 
 type RepositoryInterface interface {
-	GetDbContext() *sql.DB
+	GetDbContext() *database.DbContext
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
@@ -17,6 +17,16 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
+	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error)
+	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 }
 
 type ServiceInterface interface {
@@ -28,7 +38,9 @@ type ServiceInterface interface {
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error
-	GetFileThumbnail(fileDto FileDto, width int) (image.Image, error)
+	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
+	GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error)
+	GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int, error)
 	GetTotalFiles() (int, error)
@@ -36,7 +48,20 @@ type ServiceInterface interface {
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
-	UpsertMetadata(tx *sql.Tx, file FileDto) error
+	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
+	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error)
+	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	CheckFileExists(fileId int) bool
+	CheckFileExistsByPath(path string) bool
+	DeleteFile(file FileDto, bySystem bool) error
+	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 }
 
 type RecentFileRepositoryInterface interface {

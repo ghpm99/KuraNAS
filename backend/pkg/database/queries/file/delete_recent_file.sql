@@ -1,4 +1,4 @@
 DELETE FROM recent_file
 WHERE
-    ip_address = ?
-    AND file_id = ?;
+    ip_address = $1
+    AND file_id = $2;

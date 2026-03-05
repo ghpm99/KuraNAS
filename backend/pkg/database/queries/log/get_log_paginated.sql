@@ -1,8 +1,8 @@
 SELECT
     id,
-    name,
+    NAME,
     description,
-    level,
+    LEVEL,
     ip_address,
     start_time,
     end_time,
@@ -12,10 +12,10 @@ SELECT
     status,
     extra_data
 FROM
-    log
+    LOG
 ORDER BY
     created_at DESC
 LIMIT
-    ?
+    $1
 OFFSET
-    ?;
+    $2;

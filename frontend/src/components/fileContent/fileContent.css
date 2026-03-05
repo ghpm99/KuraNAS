@@ -67,13 +67,11 @@
 .file-viewer-container {
 	display: flex;
 	height: 100vh;
-	background-color: #1c1a1f;
 }
 
 .file-viewer-sidebar {
 	width: 256px;
-	border-right: 1px solid #e5e7eb;
-	background-color: white;
+	border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .file-viewer-main {
@@ -93,9 +91,8 @@
 
 .preview-container {
 	grid-area: content;
-	background-color: #1c1a1f;
-	border-radius: 8px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 	overflow: hidden;
 	display: flex;
 	justify-content: center;
@@ -117,12 +114,12 @@
 	font-size: 2rem;
 	margin-top: 0;
 	margin-bottom: 24px;
-	color: #111827;
+	color: #e4e4e7;
 }
 
 .preview-document p {
 	font-size: 1rem;
 	line-height: 1.6;
-	color: #4b5563;
+	color: #a1a1aa;
 	margin-bottom: 16px;
 }
