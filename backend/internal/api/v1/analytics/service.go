@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"nas-go/api/internal/config"
 	"sort"
-	"syscall"
 	"time"
 )
 
@@ -87,13 +86,11 @@ func resolvePeriod(period string) (PeriodConfig, error) {
 }
 
 func getFileSystemStorage(usedBytes int64) (int64, int64) {
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(config.AppConfig.EntryPoint, &stat); err != nil {
+	totalBytes, freeBytes, err := getFileSystemStats(config.AppConfig.EntryPoint)
+	if err != nil {
 		return usedBytes, 0
 	}
 
-	totalBytes := int64(stat.Blocks) * int64(stat.Bsize)
-	freeBytes := int64(stat.Bavail) * int64(stat.Bsize)
 	if totalBytes <= 0 {
 		return usedBytes, freeBytes
 	}
