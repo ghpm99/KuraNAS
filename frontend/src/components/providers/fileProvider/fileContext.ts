@@ -4,6 +4,7 @@ export type FileData = {
 	id: number;
 	name: string;
 	path: string;
+	parent_path: string;
 	type: number;
 	format: string;
 	size: number;
@@ -33,6 +34,13 @@ export type FileContextType = {
 	selectedItem: FileData | null;
 	handleSelectItem: (itemId: number | null) => void;
 	handleStarredItem: (itemId: number) => void;
+	uploadFiles: (files: FileList, targetPath?: string) => Promise<void>;
+	createFolder: (name: string, parentPath?: string) => Promise<void>;
+	movePath: (sourcePath: string, destinationPath: string) => Promise<void>;
+	copyPath: (sourcePath: string, destinationPath: string) => Promise<void>;
+	renamePath: (sourcePath: string, newName: string) => Promise<void>;
+	deletePath: (path: string) => Promise<void>;
+	rescanFiles: () => Promise<void>;
 	expandedItems: number[];
 	fileListFilter: FileListCategoryType;
 	setFileListFilter: (filter: FileListCategoryType) => void;
