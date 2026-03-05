@@ -23,6 +23,9 @@ Go code must be `gofmt`-clean and pass `go vet` (enforced in CI). Use lowercase 
 
 Frontend uses TypeScript + ESLint (`frontend/eslint.config.js`). Follow existing local style (including current tab-based indentation where present), use `PascalCase` for React components, and keep tests as `*.test.ts(x)`. Preserve path alias usage like `@/service/...`.
 
+## Engineering Principles
+All project code (backend and frontend) must follow Clean Code principles and programming best practices.
+
 ## Internationalization (Mandatory)
 This project uses a single i18n source of truth based on JSON `key:value` translation files.
 
@@ -45,3 +48,8 @@ PRs should include:
 - commands run and test/lint results.
 
 Ensure `.github/workflows/quality.yml` checks pass before requesting review.
+
+## Frontend Standards (Persistent Reference)
+For any frontend task, always consult `docs/standards/frontend-standards.md` before reading/changing implementation files.
+
+If there is a conflict between existing code and this standards file, follow the standards file and keep changes consistent with adjacent code where safe.
