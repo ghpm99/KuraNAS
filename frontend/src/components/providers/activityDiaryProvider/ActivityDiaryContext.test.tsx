@@ -1,5 +1,4 @@
 import { renderHook } from '@testing-library/react';
-import React from 'react';
 import { ActivityDiaryContextProvider, useActivityDiary } from './ActivityDiaryContext';
 
 describe('providers/activityDiaryProvider/ActivityDiaryContext', () => {

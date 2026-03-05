@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import FileDetails from './fileDetails';
 
 const mockUseFile = jest.fn();

@@ -1,5 +1,4 @@
 import { act, render, screen } from '@testing-library/react';
-import React from 'react';
 import UpdateCard from './UpdateCard';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -64,7 +63,7 @@ describe('about/UpdateCard', () => {
 		expect(screen.getByText('CURRENT_VERSION')).toBeInTheDocument();
 		expect(screen.getByText('1.0.0')).toBeInTheDocument();
 		screen.getByText('CHECK_FOR_UPDATES').click();
-		expect(mockedUseQuery.mock.results[0].value.refetch).toHaveBeenCalled();
+		expect(mockedUseQuery.mock.results[0]!.value.refetch).toHaveBeenCalled();
 	});
 
 	it('renders update details and applies update with success snackbar', async () => {
@@ -111,7 +110,7 @@ describe('about/UpdateCard', () => {
 		expect(screen.getByText(/UPDATE_CHECK_ERROR/)).toBeInTheDocument();
 
 		await act(async () => {
-			mockedUseMutation.mock.results[0].value.mutate();
+			mockedUseMutation.mock.results[0]!.value.mutate();
 		});
 
 		expect(enqueueSnackbar).toHaveBeenCalledWith('UPDATE_APPLIED_ERROR', { variant: 'error' });

@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import PlayerControl from './playerControl';
 
 const mockUseGlobalMusic = jest.fn();
@@ -30,16 +29,16 @@ describe('playerControl', () => {
 
 		expect(screen.getByText('T')).toBeInTheDocument();
 		expect(screen.getByText('A')).toBeInTheDocument();
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(api.previous).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[1]);
+		fireEvent.click(screen.getAllByRole('button')[1]!);
 		expect(api.togglePlayPause).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[2]);
+		fireEvent.click(screen.getAllByRole('button')[2]!);
 		expect(api.next).toHaveBeenCalled();
 
 		const sliders = screen.getAllByRole('slider');
-		fireEvent.change(sliders[0], { target: { value: '50' } });
-		fireEvent.change(sliders[1], { target: { value: '0.2' } });
+		fireEvent.change(sliders[0]!, { target: { value: '50' } });
+		fireEvent.change(sliders[1]!, { target: { value: '0.2' } });
 		expect(api.seek).toHaveBeenCalledWith(50);
 		expect(api.setVolume).toHaveBeenCalledWith(0.2);
 	});

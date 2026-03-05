@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { useImage, ImageProvider } from './imageProvider';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiBase } from '@/service';

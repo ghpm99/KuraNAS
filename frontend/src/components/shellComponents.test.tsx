@@ -1,10 +1,7 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import Header from '@/components/layout/Header/Header';
 import { Layout } from '@/components/layout/Layout/Layout';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
-import FolderTree from '@/components/layout/Sidebar/components/folderTree';
-import FolderItem from '@/components/layout/Sidebar/components/folderTree/components/folderItem';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import Tabs from '@/components/tabs/tabs';
 import ActionBar from '@/components/actionBar/actionBar';
@@ -27,15 +24,20 @@ const mockUseLocation = jest.fn();
 const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockVideoPlayer = jest.fn();
+const mockUseAnalyticsOverview = jest.fn();
 
 jest.mock('@/components/providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
 }));
 
-jest.mock('@/components/providers/uiProvider/uiContext', () => ({
-	useUI: () => mockUseUI(),
-}));
+jest.mock('@/components/providers/uiProvider/uiContext', () => {
+	const actual = jest.requireActual('@/components/providers/uiProvider/uiContext');
+	return {
+		...actual,
+		useUI: () => mockUseUI(),
+	};
+});
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
@@ -51,6 +53,10 @@ jest.mock('react-router-dom', () => ({
 
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => <div>FolderTreeMock</div>);
 jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ children }: any) => <div>{children}</div>);
+jest.mock('@/components/layout/Layout', () => ({
+	__esModule: true,
+	default: ({ children }: any) => <div data-testid='analytics-layout'>{children}</div>,
+}));
 
 jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
 	useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
@@ -84,22 +90,23 @@ jest.mock('@/components/hooks/useVideoPlayer/useVideoPlayer', () => ({
 jest.mock('@/components/videos/videoControls/videoControls', () => () => <div>VideoControlsMock</div>);
 jest.mock('@/components/videos/videoPlayer/videoPlayer', () => () => <div>VideoPlayerMock</div>);
 
-jest.mock('@/components/analytics/analyticsLayout', () => ({ children }: any) => <div data-testid='analytics-layout'>{children}</div>);
-jest.mock('@/components/contexts/AnalyticsContext', () => ({ useAnalytics: () => ({ refreshAnalytics: jest.fn() }) }));
+jest.mock('@/components/providers/analyticsProvider', () => ({
+	AnalyticsProvider: ({ children }: any) => <div>{children}</div>,
+}));
+jest.mock('@/components/providers/analyticsProvider/analyticsContext', () => ({
+	useAnalyticsOverview: () => mockUseAnalyticsOverview(),
+}));
 jest.mock('@/components/ui/Button/Button', () => ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>);
-jest.mock('@/components/analytics/StorageOverviewCards/StorageOverviewCards', () => () => <div>StorageOverviewCards</div>);
-jest.mock('@/components/analytics/DiskUsageChart/DiskUsageChart', () => () => <div>DiskUsageChart</div>);
-jest.mock('@/components/analytics/FileTypesChart/FileTypesChart', () => () => <div>FileTypesChart</div>);
-jest.mock('@/components/analytics/FileTypesTable/FileTypesTable', () => () => <div>FileTypesTable</div>);
-jest.mock('@/components/analytics/SizeRangesChart/SizeRangesChart', () => () => <div>SizeRangesChart</div>);
-jest.mock('@/components/analytics/LargestFilesTable/LargestFilesTable', () => () => <div>LargestFilesTable</div>);
-jest.mock('@/components/analytics/DuplicatesSection/DuplicatesSection', () => () => <div>DuplicatesSection</div>);
-jest.mock('@/components/analytics/ActivityChart/ActivityChart', () => () => <div>ActivityChart</div>);
-jest.mock('@/components/analytics/RecentActivity/RecentActivity', () => () => <div>RecentActivity</div>);
-jest.mock('@/components/analytics/EmptyFoldersSection/EmptyFoldersSection', () => () => <div>EmptyFoldersSection</div>);
-jest.mock('@/components/analytics/CleanupSuggestions/CleanupSuggestions', () => () => <div>CleanupSuggestions</div>);
-jest.mock('@/components/analytics/BackupSection/BackupSection', () => () => <div>BackupSection</div>);
-jest.mock('@/components/analytics/TrashSection/TrashSection', () => () => <div>TrashSection</div>);
+jest.mock('@/components/hooks/useAnalyticsFormatters/useAnalyticsFormatters', () => ({
+	useAnalyticsFormatters: () => ({
+		formatBytes: () => '0 B',
+		formatPercent: () => '0%',
+		formatDate: () => '-',
+	}),
+}));
+jest.mock('@/components/hooks/useAnalyticsDerived/useAnalyticsDerived', () => ({
+	useAnalyticsDerived: () => ({ usedPercent: 0, reclaimablePercent: 0 }),
+}));
 
 jest.mock('@/components/about/aboutLayout', () => ({ children }: any) => <div data-testid='about-layout'>{children}</div>);
 jest.mock('@/components/about/SystemInfoCard/SystemInfoCard', () => () => <div>SystemInfoCard</div>);
@@ -121,6 +128,36 @@ beforeEach(() => {
 	mockUseUI.mockReturnValue({ activePage: 'files', setActivePage: jest.fn() });
 	mockUseLocation.mockReturnValue({ pathname: '/', state: null });
 	mockUseParams.mockReturnValue({ id: '10' });
+	mockUseAnalyticsOverview.mockReturnValue({
+		period: '7d',
+		setPeriod: jest.fn(),
+		loading: false,
+		error: '',
+		refresh: jest.fn(),
+		data: {
+			generated_at: '2026-01-01T00:00:00Z',
+			storage: { used_bytes: 1024, total_bytes: 2048, free_bytes: 1024, growth_bytes: 128 },
+			counts: { files_added: 2, files_total: 20 },
+			hot_folders: [{ path: '/media', bytes: 500, growth_bytes: 10 }],
+			duplicates: {
+				groups: 1,
+				reclaimable_size: 256,
+				top_groups: [{ signature: 'abcdef1234567890', copies: 2, reclaimable_size: 128 }],
+			},
+			health: {
+				status: 'scanning',
+				indexed_files: 100,
+				errors_last_24h: 0,
+				last_scan_at: '2026-01-01T00:00:00Z',
+				recent_errors: ['none'],
+			},
+			time_series: [{ date: '2026-01-01', used_bytes: 1024 }],
+			types: [{ type: 'video', count: 1, bytes: 1024 }],
+			top_folders: [{ path: '/media/videos', bytes: 1024, last_modified: '2026-01-01T00:00:00Z' }],
+			extensions: [{ ext: '.mp4', count: 1, bytes: 1024 }],
+			recent_files: [{ id: 1, name: 'movie.mp4', size_bytes: 1024, created_at: '2026-01-01T00:00:00Z' }],
+		},
+	});
 	mockVideoPlayer.mockReturnValue({
 		videoRef: { current: null },
 		playVideo: jest.fn(),
@@ -218,7 +255,7 @@ describe('shell components and pages', () => {
 
 		render(<AnalyticsPage />);
 		expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
-		expect(screen.getByText('StorageOverviewCards')).toBeInTheDocument();
+		expect(screen.getByText('ANALYTICS_PAGE_TITLE')).toBeInTheDocument();
 
 		render(<VideoPlayerPage />);
 		expect(screen.getByText('VideoControlsMock')).toBeInTheDocument();
