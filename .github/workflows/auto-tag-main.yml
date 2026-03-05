@@ -1,0 +1,55 @@
+name: Auto Tag Main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-tag-main
+  cancel-in-progress: false
+
+jobs:
+  create-tag:
+    name: Create semantic tag on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate next patch version
+        id: version
+        shell: bash
+        run: |
+          while IFS='=' read -r key value; do
+            case "$key" in
+              LAST_TAG) echo "last_tag=$value" >> "$GITHUB_OUTPUT" ;;
+              NEXT_TAG) echo "next_tag=$value" >> "$GITHUB_OUTPUT" ;;
+            esac
+          done < <(.github/scripts/next_tag.sh)
+
+      - name: Create next patch tag
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          NEXT_TAG: ${{ steps.version.outputs.next_tag }}
+          LAST_TAG: ${{ steps.version.outputs.last_tag }}
+        run: |
+          if git tag --points-at HEAD | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Current commit already has a semantic version tag. Skipping."
+            exit 0
+          fi
+
+          echo "Last tag: ${LAST_TAG:-<none>}"
+          echo "Creating tag: $NEXT_TAG"
+          git tag -a "$NEXT_TAG" -m "Release $NEXT_TAG"
+          git push origin "$NEXT_TAG"

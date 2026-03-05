@@ -1,0 +1,48 @@
+name: Auto Tag Dry Run
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  preview-next-tag:
+    name: Preview next semantic tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate next patch version (dry-run)
+        shell: bash
+        run: |
+          while IFS='=' read -r key value; do
+            case "$key" in
+              LAST_TAG) LAST_TAG="$value" ;;
+              NEXT_TAG) NEXT_TAG="$value" ;;
+            esac
+          done < <(.github/scripts/next_tag.sh)
+
+          echo "Last tag: ${LAST_TAG:-<none>}"
+          echo "Dry-run next tag: $NEXT_TAG"
+          echo "NEXT_TAG=$NEXT_TAG" >> "$GITHUB_ENV"
+
+          {
+            echo "## Auto Tag Dry Run"
+            echo "- Last tag: ${LAST_TAG:-<none>}"
+            echo "- Next tag (simulated): $NEXT_TAG"
+            echo "- Branch: ${GITHUB_REF_NAME}"
+            echo "- Commit: ${GITHUB_SHA}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Confirm no tag creation
+        run: |
+          echo "Dry-run only: no tag created and no push executed."
