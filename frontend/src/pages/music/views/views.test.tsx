@@ -20,7 +20,7 @@ const mockGetMusicFolders = jest.fn();
 const mockApiGet = jest.fn();
 const mockAddToQueue = jest.fn();
 
-jest.mock('@/components/hooks/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
+jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
 jest.mock('@tanstack/react-query', () => ({
 	useInfiniteQuery: (...args: any[]) => mockUseInfiniteQuery(...args),

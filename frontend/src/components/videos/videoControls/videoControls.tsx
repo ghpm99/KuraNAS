@@ -12,6 +12,7 @@ import {
 	Volume2,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import './videoControls.css';
 
 interface VideoControlsProps {
@@ -44,6 +45,7 @@ const VideoControls = ({
 	nextVideo,
 	previousVideo,
 }: VideoControlsProps) => {
+	const { t } = useI18n();
 	const [showControls, setShowControls] = useState(true);
 	const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -198,7 +200,7 @@ const VideoControls = ({
 						<Settings size={20} />
 					</IconButton>
 
-					<Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+					<Tooltip title={isFullscreen ? t('VIDEO_EXIT_FULLSCREEN') : t('VIDEO_FULLSCREEN')}>
 						<IconButton onClick={toggleFullscreen} size='small'>
 							{isFullscreen ? <Fullscreen size={20} /> : <Fullscreen size={20} />}
 						</IconButton>
@@ -214,7 +216,7 @@ const VideoControls = ({
 				className='settings-menu'
 			>
 				<Typography variant='subtitle2' sx={{ px: 2, py: 1, fontWeight: 'bold' }}>
-					Playback Speed
+					{t('VIDEO_PLAYBACK_SPEED')}
 				</Typography>
 				{playbackRates.map((rate) => (
 					<MenuItem key={rate} onClick={() => handlePlaybackRateChange(rate)} selected={playbackRate === rate}>

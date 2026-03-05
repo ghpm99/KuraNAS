@@ -8,7 +8,7 @@ import {
 	ListItemText,
 } from '@mui/material';
 import { ListPlus, Music, Play } from 'lucide-react';
-import { useMusic } from '@/components/hooks/musicProvider/musicProvider';
+import { useMusic } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import useI18n from '@/components/i18n/provider/i18nContext';

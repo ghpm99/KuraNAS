@@ -1,6 +1,6 @@
 import { ArrowLeft, Download, MoreHorizontal, Plus, Share2, Star } from 'lucide-react';
 import useI18n from '../i18n/provider/i18nContext';
-import useFile from '../hooks/fileProvider/fileContext';
+import useFile from '../providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import { Box, Button, IconButton, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';

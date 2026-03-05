@@ -2,7 +2,7 @@ import Card from '@/components/ui/Card/Card';
 import { useState } from 'react';
 import { Box, Button, Divider, Typography } from '@mui/material';
 import { Copy } from 'lucide-react';
-import { useAbout } from '@/components/hooks/AboutProvider/AboutContext';
+import { useAbout } from '@/components/providers/aboutProvider/AboutContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 function BuildRow({ label, value }: { label: string; value: string }) {

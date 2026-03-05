@@ -16,8 +16,14 @@ build:
 
 test:
 	@echo "Running tests..."
-	@go test -tags=dev -v ./tests/files_test/...
+	@go test -tags=dev -v ./...
 	@echo "Tests completed."
+
+coverage:
+	@echo "Running tests with coverage..."
+	@go test -tags=dev -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated at coverage.html."
 
 run:
 	@echo "Running backend..."

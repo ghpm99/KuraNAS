@@ -1,4 +1,4 @@
-import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 
 export interface Playlist {
 	id: number;

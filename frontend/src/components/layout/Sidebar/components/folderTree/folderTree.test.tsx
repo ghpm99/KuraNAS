@@ -4,7 +4,7 @@ import FolderTree from './index';
 
 const mockUseFile = jest.fn();
 
-jest.mock('@/components/hooks/fileProvider/fileContext', () => ({
+jest.mock('@/components/providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
 }));

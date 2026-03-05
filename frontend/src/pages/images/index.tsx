@@ -1,11 +1,11 @@
 import ImageContent from '@/components/imageContent';
-import './images.css';
+import styles from './images.module.css';
 import ImagesLayout from '@/components/images/imagesLayout';
 
 const ImagesPage = () => {
 	return (
 		<ImagesLayout>
-			<div className='content'>
+			<div className={styles['content']}>
 				<ImageContent />
 			</div>
 		</ImagesLayout>

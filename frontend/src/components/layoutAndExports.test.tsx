@@ -24,7 +24,7 @@ import ActivitySummaryIndex from './activityDiary/ActivitySummary';
 
 const mockUseMusic = jest.fn();
 
-jest.mock('@/components/hooks/musicProvider/musicProvider', () => ({
+jest.mock('@/components/providers/musicProvider/musicProvider', () => ({
 	useMusic: () => mockUseMusic(),
 }));
 

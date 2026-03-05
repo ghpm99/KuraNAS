@@ -12,6 +12,7 @@ export default {
   ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/config/viteEnv$': '<rootDir>/src/config/viteEnv.jest.ts',
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   transform: {

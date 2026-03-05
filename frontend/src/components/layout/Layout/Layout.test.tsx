@@ -7,8 +7,8 @@ const mockUseActivityDiary = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const headerSpy = jest.fn();
 
-jest.mock('@/components/hooks/UI/uiContext', () => ({ useUI: () => mockUseUI() }));
-jest.mock('@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext', () => ({
+jest.mock('@/components/providers/uiProvider/uiContext', () => ({ useUI: () => mockUseUI() }));
+jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
 	useActivityDiary: () => mockUseActivityDiary(),
 }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));

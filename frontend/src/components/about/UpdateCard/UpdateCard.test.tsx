@@ -10,7 +10,7 @@ jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
 	</div>
 ));
 
-jest.mock('@/components/hooks/AboutProvider/AboutContext', () => ({
+jest.mock('@/components/providers/aboutProvider/AboutContext', () => ({
 	useAbout: () => ({ version: '1.0.0' }),
 }));
 

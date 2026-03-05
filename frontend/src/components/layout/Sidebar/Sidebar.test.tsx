@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 const mockUseUI = jest.fn();
 
-jest.mock('@/components/hooks/UI/uiContext', () => ({ useUI: () => mockUseUI() }));
+jest.mock('@/components/providers/uiProvider/uiContext', () => ({ useUI: () => mockUseUI() }));
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
 	default: () => ({ t: (k: string) => k }),

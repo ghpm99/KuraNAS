@@ -6,7 +6,7 @@ const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const mockAddToQueue = jest.fn();
 
-jest.mock('@/components/hooks/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
+jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
 
 jest.mock('@/components/music/AddToPlaylistMenu', () => (props: any) => (

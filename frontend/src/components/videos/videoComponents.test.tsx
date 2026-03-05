@@ -6,6 +6,35 @@ import VideoProgressBar from './videoProgressBar/videoProgressBar';
 import VideoThumbnail from './videoThumbnail/videoThumbnail';
 import VideoPlayer from './videoPlayer/videoPlayer';
 
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({
+		t: (key: string, params?: Record<string, string | number>) => {
+			const map: Record<string, string> = {
+				VIDEO_PLAYBACK_SPEED: 'Playback Speed',
+				VIDEO_QUALITY: 'Quality',
+				VIDEO_MORE_OPTIONS: 'More Options',
+				VIDEO_SUBTITLES: 'Subtitles',
+				VIDEO_NOT_AVAILABLE_YET: 'Not available yet',
+				VIDEO_ASPECT_RATIO: 'Aspect Ratio',
+				VIDEO_AUTO_DETECTED: 'Auto detected',
+				VIDEO_AUDIO_TRACK: 'Audio Track',
+				VIDEO_DEFAULT: 'Default',
+				VIDEO_UNKNOWN: 'Unknown',
+				VIDEO_NO_VIDEO_PLAYING: 'No video playing',
+				VIDEO_BACK: 'Voltar',
+				VIDEO_AUTO: 'Auto',
+				VIDEO_NORMAL: 'Normal',
+				VIDEO_FULLSCREEN: 'Fullscreen',
+				VIDEO_EXIT_FULLSCREEN: 'Exit Fullscreen',
+			};
+			if (key === 'VIDEO_PLAY_ARIA') return `Play ${params?.title ?? ''}`.trim();
+			if (key === 'VIDEO_CODEC_TOOLTIP') return `Codec: ${params?.codec ?? ''}`.trim();
+			return map[key] ?? key;
+		},
+	}),
+}));
+
 describe('video components', () => {
 	it('renders and interacts with video controls', () => {
 		jest.useFakeTimers();

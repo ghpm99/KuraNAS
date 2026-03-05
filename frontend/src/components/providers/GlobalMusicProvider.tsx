@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { IMusicData, IMusicMetadata } from '../hooks/musicProvider/musicProvider';
+import { IMusicData, IMusicMetadata } from './musicProvider/musicProvider';
 import { updatePlayerState } from '@/service/playerState';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { formatSize } from '@/utils';

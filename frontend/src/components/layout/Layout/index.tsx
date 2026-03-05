@@ -1,5 +1,5 @@
-import ActivityDiaryProvider from '@/components/hooks/ActivityDiaryProvider';
-import { UIProvider } from '@/components/hooks/UI';
+import ActivityDiaryProvider from '@/components/providers/activityDiaryProvider';
+import { UIProvider } from '@/components/providers/uiProvider';
 import { ReactNode } from 'react';
 import { Layout as LayoutComponent } from './Layout';
 import ActivePageListener from '@/components/activePageListener';

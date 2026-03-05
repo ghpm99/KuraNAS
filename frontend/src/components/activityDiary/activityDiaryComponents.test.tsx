@@ -7,7 +7,7 @@ import ActivitySummary from './ActivitySummary/ActivitySummary';
 import ActivityDiaryLayout from './activityDiaryLayout';
 import ActivityDiaryPage from '@/pages/activityDiary';
 
-jest.mock('@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext', () => ({
+jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
 	useActivityDiary: jest.fn(),
 }));
 
@@ -32,7 +32,7 @@ jest.mock('@/components/activityDiary/ActivityDiaryForm', () => () => <div>Form<
 jest.mock('@/components/activityDiary/ActivitySummary', () => () => <div>Summary</div>);
 jest.mock('@/components/activityDiary/ActivityList', () => () => <div>List</div>);
 
-const { useActivityDiary } = jest.requireMock('@/components/hooks/ActivityDiaryProvider/ActivityDiaryContext');
+const { useActivityDiary } = jest.requireMock('@/components/providers/activityDiaryProvider/ActivityDiaryContext');
 
 const defaultCtx = {
 	message: undefined,

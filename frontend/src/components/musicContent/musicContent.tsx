@@ -1,4 +1,4 @@
-import { useMusic } from '../hooks/musicProvider/musicProvider';
+import { useMusic } from '../providers/musicProvider/musicProvider';
 import './musicContent.css';
 import Playlist from '../playlist/paylist';
 import AllTracksView from '@/pages/music/views/AllTracksView';

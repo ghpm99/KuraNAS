@@ -1,6 +1,6 @@
 import { Pagination } from '@/types/pagination';
 import { MusicAlbum, MusicArtist, MusicFolder, MusicGenre } from '@/types/music';
-import { IMusicData } from '@/components/hooks/musicProvider/musicProvider';
+import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { apiBase } from '.';
 
 export const getMusicArtists = async (page: number, pageSize: number) => {
