@@ -49,6 +49,34 @@ jest.mock('react-router-dom', () => ({
 jest.mock('@/service/apiUrl', () => ({
 	getApiV1BaseUrl: () => 'http://localhost:8000/v1',
 }));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({
+		t: (key: string, params?: Record<string, string | number>) => {
+			const map: Record<string, string> = {
+				VIDEO_LOADING_VIDEOS: 'Carregando videos...',
+				VIDEO_CONTINUE_WATCHING: 'Continuar assistindo',
+				VIDEO_ALL: 'Todos',
+				VIDEO_SEARCH_PLACEHOLDER: 'Buscar video por nome, pasta ou formato',
+				VIDEO_PLAY: 'Reproduzir',
+				VIDEO_ADD: 'Adicionar',
+				VIDEO_ADD_SUCCESS: 'Video adicionado a playlist com sucesso.',
+				VIDEO_NO_RECENT_PLAYLISTS: 'Nenhuma playlist com reproducao recente.',
+				VIDEO_ADD_ERROR: 'Nao foi possivel adicionar o video a playlist.',
+				VIDEO_ALREADY_ADDED: 'Ja adicionado',
+				VIDEO_EDIT_PLAYLIST: 'Editar playlist',
+				VIDEO_SAVE_NAME: 'Salvar nome',
+				VIDEO_BACK_TO_VIDEOS: 'Voltar para videos',
+				VIDEO_DISPLAY_NAME_PLACEHOLDER: 'Nome de exibicao',
+				VIDEO_LOADING_PLAYLIST: 'Carregando playlist...',
+			};
+			if (key === 'VIDEO_PREVIEW_ALT') return `${params?.name ?? ''} preview`.trim();
+			if (key === 'VIDEO_PLAYLIST_ITEM_COUNT') return `${params?.count ?? 0} videos`;
+			if (key === 'VIDEO_PLAYLIST_META') return `${params?.count ?? 0} videos nesta playlist`;
+			return map[key] ?? key;
+		},
+	}),
+}));
 
 const playlist = {
 	id: 1,

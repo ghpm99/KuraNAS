@@ -145,7 +145,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 		return
 	}
 	if len(file.Items) == 0 {
-		err := fmt.Errorf("file not found")
+		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

@@ -5,38 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useImage, type IImageData, type ImageGroupBy } from '../hooks/imageProvider/imageProvider';
 import { useIntersectionObserver } from '../hooks/IntersectionObserver/useIntersectionObserver';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import controlsStyles from './imageContentControls.module.css';
 import './imageContent.css';
 
 const thumbnailWidth = 960;
 const thumbnailHeight = 720;
 
-const categoryLabels = {
-	all: 'Todas',
-	recent: 'Recentes',
-	portrait: 'Retratos',
-	landscape: 'Paisagens',
-	screenshots: 'Capturas',
-	camera: 'Câmera',
-} as const;
-
-type CategoryKey = keyof typeof categoryLabels;
-
-const groupByLabels: Record<ImageGroupBy, string> = {
-	date: 'Data',
-	type: 'Tipo',
-	name: 'Nome',
-};
-
-const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
-	month: 'long',
-	year: 'numeric',
-});
-
-const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
-	dateStyle: 'medium',
-	timeStyle: 'short',
-});
+type CategoryKey = 'all' | 'recent' | 'portrait' | 'landscape' | 'screenshots' | 'camera';
 
 const imageDate = (image: IImageData): Date | null => {
 	const candidates = [
@@ -107,6 +83,7 @@ const thumbnailUrl = (id: number) =>
 const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
 
 const ImageContent = () => {
+	const { t } = useI18n();
 	const { images, imageGroupBy, setImageGroupBy, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
 	const [search, setSearch] = useState('');
@@ -114,6 +91,43 @@ const ImageContent = () => {
 	const [zoom, setZoom] = useState(1);
 	const [showDetails, setShowDetails] = useState(true);
 	const isLoadingMoreRef = useRef(false);
+	const locale = t('LOCALE');
+
+	const categoryLabels: Record<CategoryKey, string> = useMemo(
+		() => ({
+			all: t('IMAGES_CATEGORY_ALL'),
+			recent: t('IMAGES_CATEGORY_RECENT'),
+			portrait: t('IMAGES_CATEGORY_PORTRAIT'),
+			landscape: t('IMAGES_CATEGORY_LANDSCAPE'),
+			screenshots: t('IMAGES_CATEGORY_SCREENSHOTS'),
+			camera: t('IMAGES_CATEGORY_CAMERA'),
+		}),
+		[t],
+	);
+	const groupByLabels: Record<ImageGroupBy, string> = useMemo(
+		() => ({
+			date: t('IMAGES_GROUP_BY_DATE'),
+			type: t('IMAGES_GROUP_BY_TYPE'),
+			name: t('IMAGES_GROUP_BY_NAME'),
+		}),
+		[t],
+	);
+	const monthFormatter = useMemo(
+		() =>
+			new Intl.DateTimeFormat(locale, {
+				month: 'long',
+				year: 'numeric',
+			}),
+		[locale],
+	);
+	const dateFormatter = useMemo(
+		() =>
+			new Intl.DateTimeFormat(locale, {
+				dateStyle: 'medium',
+				timeStyle: 'short',
+			}),
+		[locale],
+	);
 
 	const closeViewer = useCallback(() => {
 		setViewerImageId(null);
@@ -176,7 +190,7 @@ const ImageContent = () => {
 
 		for (const item of filteredImages) {
 			const date = imageDates.get(item.id) ?? null;
-			const extension = item.format?.trim().toLowerCase() || 'Sem formato';
+			const extension = item.format?.trim().toLowerCase() || t('IMAGES_GROUP_NO_FORMAT');
 			const firstLetter = item.name.trim().charAt(0).toUpperCase() || '#';
 
 			const key =
@@ -191,10 +205,10 @@ const ImageContent = () => {
 				imageGroupBy === 'date'
 					? date
 						? monthFormatter.format(date)
-						: 'Sem data registrada'
+						: t('IMAGES_GROUP_NO_DATE')
 					: imageGroupBy === 'type'
 						? extension
-						: `Início ${firstLetter}`;
+						: t('IMAGES_GROUP_INITIAL', { letter: firstLetter });
 
 			if (!grouped.has(key)) {
 				grouped.set(key, {
@@ -206,7 +220,7 @@ const ImageContent = () => {
 		}
 
 		return Array.from(grouped.values());
-	}, [filteredImages, imageDates, imageGroupBy]);
+	}, [filteredImages, imageDates, imageGroupBy, monthFormatter, t]);
 
 	const activeIndex = useMemo(
 		() => filteredImages.findIndex((image) => image.id === viewerImageId),
@@ -288,7 +302,7 @@ const ImageContent = () => {
 		}
 	}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-	const lastVisibleImageId = filteredImages.at(-1)?.id;
+	const lastVisibleImageId = filteredImages.length > 0 ? filteredImages[filteredImages.length - 1]?.id : undefined;
 
 	const { ref: loadMoreRef } = useIntersectionObserver<HTMLButtonElement>({
 		enabled: hasNextPage && !isFetchingNextPage && filteredImages.length > 0,
@@ -300,9 +314,9 @@ const ImageContent = () => {
 		<>
 			<div className='images-toolbar'>
 				<div>
-					<h2>Galeria de fotos</h2>
+					<h2>{t('IMAGES_TITLE')}</h2>
 					<p>
-						{filteredImages.length} de {images.length} imagens
+						{t('IMAGES_COUNT_SUMMARY', { filtered: String(filteredImages.length), total: String(images.length) })}
 					</p>
 				</div>
 				<label className='images-search'>
@@ -311,13 +325,13 @@ const ImageContent = () => {
 						type='search'
 						value={search}
 						onChange={(event) => setSearch(event.target.value)}
-						placeholder='Buscar por nome, pasta, câmera...'
+						placeholder={t('IMAGES_SEARCH_PLACEHOLDER')}
 					/>
 				</label>
 				<label className={controlsStyles.groupingSelect}>
-					<span>Agrupar por</span>
+					<span>{t('IMAGES_GROUP_BY_LABEL')}</span>
 					<select
-						aria-label='Agrupar imagens por'
+						aria-label={t('IMAGES_GROUP_BY_ARIA')}
 						value={imageGroupBy}
 						onChange={(event) => setImageGroupBy(event.target.value as ImageGroupBy)}
 					>
@@ -330,7 +344,7 @@ const ImageContent = () => {
 				</label>
 			</div>
 
-			<div className='images-categories' role='tablist' aria-label='Categorias de imagens'>
+			<div className='images-categories' role='tablist' aria-label={t('IMAGES_CATEGORIES_ARIA')}>
 				{(Object.keys(categoryLabels) as CategoryKey[]).map((key) => (
 					<button
 						key={key}
@@ -346,8 +360,8 @@ const ImageContent = () => {
 
 			{groupedImages.length === 0 && !isFetchingNextPage && (
 				<div className='images-empty'>
-					<h3>Nenhuma imagem encontrada</h3>
-					<p>Tente remover filtros ou ajustar sua busca.</p>
+					<h3>{t('IMAGES_EMPTY_TITLE')}</h3>
+					<p>{t('IMAGES_EMPTY_DESC')}</p>
 				</div>
 			)}
 
@@ -357,7 +371,7 @@ const ImageContent = () => {
 						<header>
 							<CalendarDays size={16} />
 							<h3>{group.label}</h3>
-							<span>{group.items.length} fotos</span>
+							<span>{t('IMAGES_PHOTOS_COUNT', { count: String(group.items.length) })}</span>
 						</header>
 						<div className='images-grid'>
 							{group.items.map((item) => {
@@ -372,7 +386,7 @@ const ImageContent = () => {
 										ref={item.id === lastVisibleImageId ? loadMoreRef : undefined}
 										className={`photo-card ${orientation}`}
 										onClick={() => openImage(item.id)}
-										aria-label={`Abrir ${item.name}`}
+										aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: item.name })}
 									>
 										<img className='thumbnail-img' src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
 										<div className='photo-overlay'>
@@ -393,29 +407,29 @@ const ImageContent = () => {
 				</div>
 			)}
 
-			{!hasNextPage && images.length > 0 && <div className='end-message'>Todas as imagens carregadas</div>}
+			{!hasNextPage && images.length > 0 && <div className='end-message'>{t('IMAGES_END_MESSAGE')}</div>}
 
 			{activeImage && (
 				<div className='image-viewer-overlay' role='dialog' aria-modal='true'>
 					<div className='image-viewer-topbar'>
 						<div>
 							<strong>{activeImage.name}</strong>
-							<p>{activeImageDate ? dateFormatter.format(activeImageDate) : 'Data não disponível'}</p>
+							<p>{activeImageDate ? dateFormatter.format(activeImageDate) : t('IMAGES_DATE_UNAVAILABLE')}</p>
 						</div>
 						<div className='viewer-actions'>
-							<button type='button' onClick={() => setShowDetails((value) => !value)} aria-label='Alternar detalhes'>
+							<button type='button' onClick={() => setShowDetails((value) => !value)} aria-label={t('IMAGES_TOGGLE_DETAILS')}>
 								<Info size={16} />
 							</button>
-							<button type='button' onClick={decreaseZoom} aria-label='Reduzir zoom'>
+							<button type='button' onClick={decreaseZoom} aria-label={t('IMAGES_DECREASE_ZOOM')}>
 								<Minus size={16} />
 							</button>
-							<button type='button' onClick={resetZoom} aria-label='Resetar zoom'>
+							<button type='button' onClick={resetZoom} aria-label={t('IMAGES_RESET_ZOOM')}>
 								<Expand size={16} />
 							</button>
-							<button type='button' onClick={increaseZoom} aria-label='Aumentar zoom'>
+							<button type='button' onClick={increaseZoom} aria-label={t('IMAGES_INCREASE_ZOOM')}>
 								<Plus size={16} />
 							</button>
-							<button type='button' onClick={closeViewer} aria-label='Fechar visualizador'>
+							<button type='button' onClick={closeViewer} aria-label={t('IMAGES_CLOSE_VIEWER')}>
 								<X size={16} />
 							</button>
 						</div>
@@ -429,7 +443,7 @@ const ImageContent = () => {
 							if (event.deltaY > 0) decreaseZoom();
 						}}
 					>
-						<button type='button' className='viewer-nav left' onClick={goPrevious} aria-label='Imagem anterior'>
+						<button type='button' className='viewer-nav left' onClick={goPrevious} aria-label={t('IMAGES_PREVIOUS')}>
 							<ChevronLeft size={24} />
 						</button>
 						<img
@@ -438,13 +452,13 @@ const ImageContent = () => {
 							className='viewer-image'
 							style={{ transform: `scale(${zoom})` }}
 						/>
-						<button type='button' className='viewer-nav right' onClick={goNext} aria-label='Próxima imagem'>
+						<button type='button' className='viewer-nav right' onClick={goNext} aria-label={t('IMAGES_NEXT')}>
 							<ChevronRight size={24} />
 						</button>
 					</div>
 
 					<div className='image-viewer-bottom'>
-						<span>Zoom: {Math.round(zoom * 100)}%</span>
+						<span>{t('IMAGES_ZOOM_LABEL')}: {Math.round(zoom * 100)}%</span>
 						<span>
 							{activeIndex + 1} / {filteredImages.length}
 						</span>
@@ -452,42 +466,44 @@ const ImageContent = () => {
 
 					{showDetails && (
 						<aside className='image-viewer-details'>
-							<h4>Detalhes</h4>
+							<h4>{t('IMAGES_DETAILS_TITLE')}</h4>
 							<p>
-								<strong>Nome:</strong> {activeImage.name}
+								<strong>{t('IMAGES_DETAIL_NAME')}:</strong> {activeImage.name}
 							</p>
 							<p>
-								<strong>Pasta:</strong> {activeImage.path}
+								<strong>{t('IMAGES_DETAIL_FOLDER')}:</strong> {activeImage.path}
 							</p>
 							<p>
-								<strong>Formato:</strong> {activeImage.format || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_FORMAT')}:</strong> {activeImage.format || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Tamanho:</strong> {formatSize(activeImage.size)}
+								<strong>{t('IMAGES_DETAIL_SIZE')}:</strong> {formatSize(activeImage.size)}
 							</p>
 							<p>
-								<strong>Dimensões:</strong>{' '}
+								<strong>{t('IMAGES_DETAIL_DIMENSIONS')}:</strong>{' '}
 								{activeImage.metadata?.width && activeImage.metadata?.height
 									? `${activeImage.metadata.width}x${activeImage.metadata.height}`
-									: 'N/D'}
+									: t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Câmera:</strong> {activeImage.metadata?.make || activeImage.metadata?.model || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_CAMERA')}:</strong>{' '}
+								{activeImage.metadata?.make || activeImage.metadata?.model || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Lente:</strong> {activeImage.metadata?.lens_model || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_LENS')}:</strong> {activeImage.metadata?.lens_model || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>ISO:</strong> {activeImage.metadata?.iso || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_ISO')}:</strong> {activeImage.metadata?.iso || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Focal:</strong> {activeImage.metadata?.focal_length || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_FOCAL')}:</strong> {activeImage.metadata?.focal_length || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Abertura:</strong> {activeImage.metadata?.f_number || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_APERTURE')}:</strong> {activeImage.metadata?.f_number || t('COMMON_NOT_AVAILABLE')}
 							</p>
 							<p>
-								<strong>Exposição:</strong> {activeImage.metadata?.exposure_time || 'N/D'}
+								<strong>{t('IMAGES_DETAIL_EXPOSURE')}:</strong>{' '}
+								{activeImage.metadata?.exposure_time || t('COMMON_NOT_AVAILABLE')}
 							</p>
 						</aside>
 					)}
@@ -499,7 +515,7 @@ const ImageContent = () => {
 								key={item.id}
 								onClick={() => openImage(item.id)}
 								className={`filmstrip-item ${activeImage.id === item.id ? 'is-active' : ''}`}
-								aria-label={`Abrir ${item.name}`}
+								aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: item.name })}
 							>
 								<img src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
 							</button>

@@ -19,15 +19,8 @@ import { Alert, CircularProgress, Snackbar, TextField, Typography } from '@mui/m
 import { ArrowDown, ArrowLeft, ArrowUp, Play, Plus, Trash2, Videotape } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import styles from './videoContent.module.css';
-
-const classificationTitle: Record<string, string> = {
-	anime: 'Animes',
-	series: 'Series',
-	movie: 'Filmes',
-	personal: 'Gravacoes Pessoais',
-	program: 'Videos de Programas',
-};
 
 const slugify = (value: string) =>
 	value
@@ -52,6 +45,7 @@ const PlaylistCard = ({
 	focusVideoId?: number | null;
 	badge?: string;
 }) => {
+	const { t } = useI18n();
 	const coverId = focusVideoId ?? playlist.cover_video_id;
 	const coverThumb = coverId ? `${apiBase}/video-thumbnail/${coverId}?width=640&height=360` : '';
 	const coverPreview = coverId ? `${apiBase}/video-preview/${coverId}?width=640&height=360` : '';
@@ -66,13 +60,18 @@ const PlaylistCard = ({
 					{coverId && (
 						<>
 							<img className={styles.thumbStatic} loading='lazy' src={coverThumb} alt={playlist.name} />
-							<img className={styles.thumbPreview} loading='lazy' src={coverPreview} alt={`${playlist.name} preview`} />
+							<img
+								className={styles.thumbPreview}
+								loading='lazy'
+								src={coverPreview}
+								alt={t('VIDEO_PREVIEW_ALT', { name: playlist.name })}
+							/>
 						</>
 					)}
 				</div>
 				<div className={styles.cardOverlay}>
 					<div className={styles.cardTopLine}>
-						<span className={styles.statusBadge}>{playlist.item_count} videos</span>
+						<span className={styles.statusBadge}>{t('VIDEO_PLAYLIST_ITEM_COUNT', { count: String(playlist.item_count) })}</span>
 						<span className={styles.formatTag}>{(playlist.classification || 'personal').toUpperCase()}</span>
 					</div>
 					<Typography className={styles.cardTitle}>{playlist.name}</Typography>
@@ -86,7 +85,7 @@ const PlaylistCard = ({
 				disabled={!coverId && !playlist.cover_video_id}
 			>
 				<Play size={16} />
-				Reproduzir
+				{t('VIDEO_PLAY')}
 			</button>
 		</div>
 	);
@@ -99,6 +98,7 @@ const PlaylistDetail = ({
 	playlist: VideoPlaylistDto;
 	onChanged: () => void;
 }) => {
+	const { t } = useI18n();
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const queryClient = useQueryClient();
@@ -168,24 +168,24 @@ const PlaylistDetail = ({
 				<div className={styles.heroContent}>
 					<button type='button' className={styles.backBtn} onClick={() => setSearchParams({})}>
 						<ArrowLeft size={16} />
-						<span>Voltar para videos</span>
+						<span>{t('VIDEO_BACK_TO_VIDEOS')}</span>
 					</button>
 					<p className={styles.heroEyebrow}>{(playlist.classification || 'personal').toUpperCase()}</p>
 					<h1 className={styles.heroTitle}>{playlist.name}</h1>
-					<p className={styles.heroMeta}>{playlist.item_count} videos nesta playlist</p>
+					<p className={styles.heroMeta}>{t('VIDEO_PLAYLIST_META', { count: String(playlist.item_count) })}</p>
 				</div>
 			</section>
 
 			<section className={styles.managementPanel}>
 				<div className={styles.panelHeader}>
-					<Typography variant='h6'>Editar playlist</Typography>
+					<Typography variant='h6'>{t('VIDEO_EDIT_PLAYLIST')}</Typography>
 				</div>
 				<div className={styles.renameRow}>
 					<TextField
 						size='small'
 						value={nameDraft}
 						onChange={(event) => setNameDraft(event.target.value)}
-						placeholder='Nome de exibicao'
+						placeholder={t('VIDEO_DISPLAY_NAME_PLACEHOLDER')}
 					/>
 					<button
 						type='button'
@@ -193,7 +193,7 @@ const PlaylistDetail = ({
 						onClick={() => renameMutation.mutate()}
 						disabled={renameMutation.isPending || !nameDraft.trim()}
 					>
-						Salvar nome
+						{t('VIDEO_SAVE_NAME')}
 					</button>
 				</div>
 			</section>
@@ -225,7 +225,7 @@ const PlaylistDetail = ({
 							<div className={styles.detailMeta}>
 								<Typography className={styles.detailTitle}>{item.video.name}</Typography>
 								<Typography className={styles.detailSub}>
-									{item.video.format.toUpperCase()} · {item.source_kind === 'manual' ? 'manual' : 'auto'}
+									{item.video.format.toUpperCase()} · {item.source_kind === 'manual' ? t('VIDEO_SOURCE_MANUAL') : t('VIDEO_SOURCE_AUTO')}
 								</Typography>
 							</div>
 							<div className={styles.detailPlay}>
@@ -266,6 +266,7 @@ const PlaylistDetail = ({
 };
 
 const VideoContent = () => {
+	const { t } = useI18n();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -303,6 +304,13 @@ const VideoContent = () => {
 	}, [playlists]);
 
 	const groupedPlaylists = useMemo(() => {
+		const classificationTitle: Record<string, string> = {
+			anime: t('VIDEO_CLASS_ANIME'),
+			series: t('VIDEO_CLASS_SERIES'),
+			movie: t('VIDEO_CLASS_MOVIE'),
+			personal: t('VIDEO_CLASS_PERSONAL'),
+			program: t('VIDEO_CLASS_PROGRAM'),
+		};
 		const result: Record<string, VideoPlaylistDto[]> = {
 			anime: [],
 			series: [],
@@ -315,8 +323,8 @@ const VideoContent = () => {
 			if (!result[key]) result[key] = [];
 			result[key].push(playlist);
 		}
-		return result;
-	}, [playlists]);
+		return { grouped: result, classificationTitle };
+	}, [playlists, t]);
 
 	const filteredVideos = useMemo(() => {
 		if (!videoSearch.trim()) return allVideos;
@@ -355,14 +363,14 @@ const VideoContent = () => {
 			]);
 			setFeedback({
 				open: true,
-				message: 'Video adicionado a playlist com sucesso.',
+				message: t('VIDEO_ADD_SUCCESS'),
 				severity: 'success',
 			});
 		},
 		onError: () => {
 			setFeedback({
 				open: true,
-				message: 'Nao foi possivel adicionar o video a playlist.',
+				message: t('VIDEO_ADD_ERROR'),
 				severity: 'error',
 			});
 		},
@@ -382,7 +390,7 @@ const VideoContent = () => {
 		return (
 			<div className={styles.loadingState}>
 				<CircularProgress size={44} />
-				<Typography variant='h6'>Carregando videos...</Typography>
+				<Typography variant='h6'>{t('VIDEO_LOADING_VIDEOS')}</Typography>
 			</div>
 		);
 	}
@@ -392,7 +400,7 @@ const VideoContent = () => {
 			return (
 				<div className={styles.loadingState}>
 					<CircularProgress size={40} />
-					<Typography variant='h6'>Carregando playlist...</Typography>
+					<Typography variant='h6'>{t('VIDEO_LOADING_PLAYLIST')}</Typography>
 				</div>
 			);
 		}
@@ -403,17 +411,17 @@ const VideoContent = () => {
 		<div className={styles.page}>
 			<section className={styles.sectionBlock}>
 				<div className={styles.sectionHeader}>
-					<h2>Continuar assistindo</h2>
-					<p>Playlists com reproducao recente.</p>
+					<h2>{t('VIDEO_CONTINUE_WATCHING')}</h2>
+					<p>{t('VIDEO_RECENT_PLAYLISTS_DESC')}</p>
 				</div>
 				{continuePlaylists.length === 0 ? (
-					<div className={styles.sectionEmpty}>Nenhuma playlist com reproducao recente.</div>
+					<div className={styles.sectionEmpty}>{t('VIDEO_NO_RECENT_PLAYLISTS')}</div>
 				) : (
 					<div className={styles.gridCards}>
 						{continuePlaylists.map((playlist) => {
 							const isCurrent = playbackState?.playback_state.playlist_id === playlist.id;
 							const focusVideoId = isCurrent ? playbackState?.playback_state.video_id : playlist.cover_video_id;
-							const badge = isCurrent ? 'Em andamento' : 'Retomar';
+							const badge = isCurrent ? t('VIDEO_CONTINUE_BADGE_IN_PROGRESS') : t('VIDEO_CONTINUE_BADGE_RESUME');
 							return (
 								<PlaylistCard
 									key={`continue-${playlist.id}`}
@@ -431,14 +439,14 @@ const VideoContent = () => {
 
 			<section className={styles.sectionBlock}>
 				<div className={styles.sectionHeader}>
-					<h2>Playlists</h2>
-					<p>Catálogo organizado automaticamente.</p>
+					<h2>{t('VIDEO_PLAYLISTS')}</h2>
+					<p>{t('VIDEO_PLAYLISTS_DESC')}</p>
 				</div>
-				{Object.entries(groupedPlaylists).map(([key, list]) => {
+				{Object.entries(groupedPlaylists.grouped).map(([key, list]) => {
 					if (list.length === 0) return null;
 					return (
 						<div key={key} className={styles.groupBlock}>
-							<h3>{classificationTitle[key] ?? key}</h3>
+							<h3>{groupedPlaylists.classificationTitle[key] ?? key}</h3>
 							<div className={styles.gridCards}>
 								{list.map((playlist) => (
 									<PlaylistCard
@@ -456,14 +464,14 @@ const VideoContent = () => {
 
 			<section className={styles.sectionBlock}>
 				<div className={styles.sectionHeader}>
-					<h2>Todos</h2>
-					<p>Todos os videos do sistema com acao rapida para adicionar a playlists.</p>
+					<h2>{t('VIDEO_ALL')}</h2>
+					<p>{t('VIDEO_ALL_DESC')}</p>
 				</div>
 				<div className={styles.searchRow}>
 					<TextField
 						size='small'
 						fullWidth
-						placeholder='Buscar video por nome, pasta ou formato'
+						placeholder={t('VIDEO_SEARCH_PLACEHOLDER')}
 						value={videoSearch}
 						onChange={(event) => setVideoSearch(event.target.value)}
 					/>
@@ -494,7 +502,7 @@ const VideoContent = () => {
 								<div className={styles.allVideoActions}>
 									<button type='button' className={styles.actionBtn} onClick={() => playVideo(video.id, null)}>
 										<Play size={14} />
-										Reproduzir
+										{t('VIDEO_PLAY')}
 									</button>
 									<select
 										className={styles.playlistSelect}
@@ -522,7 +530,7 @@ const VideoContent = () => {
 										}}
 									>
 										<Plus size={14} />
-										{isAlreadyInPlaylist ? 'Ja adicionado' : 'Adicionar'}
+										{isAlreadyInPlaylist ? t('VIDEO_ALREADY_ADDED') : t('VIDEO_ADD')}
 									</button>
 								</div>
 							</div>

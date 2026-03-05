@@ -1,4 +1,5 @@
 import { IVideoData } from '@/types/video';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { 
 	Card, 
 	CardContent, 
@@ -16,6 +17,7 @@ interface VideoThumbnailProps {
 }
 
 const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
+	const { t } = useI18n();
 	const getVideoTitle = (): string => {
 		if (video.metadata?.format_name) {
 			return video.metadata.format_name;
@@ -27,21 +29,21 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 		if (video.metadata?.duration) {
 			return video.metadata.duration;
 		}
-		return 'Unknown';
+		return t('VIDEO_UNKNOWN');
 	};
 
 	const getVideoResolution = (): string => {
 		if (video.metadata?.width && video.metadata?.height) {
 			return `${video.metadata.width}x${video.metadata.height}`;
 		}
-		return 'Unknown';
+		return t('VIDEO_UNKNOWN');
 	};
 
 	const getVideoCodec = (): string => {
 		if (video.metadata?.codec_name) {
 			return video.metadata.codec_name.toUpperCase();
 		}
-		return 'Unknown';
+		return t('VIDEO_UNKNOWN');
 	};
 
 	const formatFileSize = (bytes: number): string => {
@@ -69,7 +71,7 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
 			role="button"
-			aria-label={`Play ${getVideoTitle()}`}
+			aria-label={t('VIDEO_PLAY_ARIA', { title: getVideoTitle() })}
 		>
 			{/* Thumbnail Container */}
 			<Box className="thumbnail-container">
@@ -116,7 +118,7 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 					</Box>
 
 					{/* Codec */}
-					<Tooltip title={`Codec: ${getVideoCodec()}`}>
+					<Tooltip title={t('VIDEO_CODEC_TOOLTIP', { codec: getVideoCodec() })}>
 						<Box className="metadata-item codec-badge">
 							<Typography variant="caption" className="codec-text">
 								{getVideoCodec()}

@@ -226,7 +226,7 @@ describe('shell components and pages', () => {
 
 		mockUseParams.mockReturnValueOnce({ id: undefined });
 		render(<VideoPlayerPage />);
-		expect(screen.getByText('Invalid video ID')).toBeInTheDocument();
+		expect(screen.getByText('VIDEO_INVALID_ID')).toBeInTheDocument();
 	});
 
 	it('renders action bar for selected file branch', () => {

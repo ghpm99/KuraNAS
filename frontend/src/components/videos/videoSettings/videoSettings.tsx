@@ -1,5 +1,6 @@
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import { Gauge, Hd, Proportions, Settings, Subtitles, Volume2 } from 'lucide-react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import './videoSettings.css';
 
 interface VideoSettingsProps {
@@ -19,19 +20,20 @@ const VideoSettings = ({
 	quality,
 	setQuality,
 }: VideoSettingsProps) => {
+	const { t } = useI18n();
 	const open = Boolean(anchorEl);
 
 	const playbackRates = [
 		{ value: 0.5, label: '0.5x' },
 		{ value: 0.75, label: '0.75x' },
-		{ value: 1, label: 'Normal' },
+		{ value: 1, label: t('VIDEO_NORMAL') },
 		{ value: 1.25, label: '1.25x' },
 		{ value: 1.5, label: '1.5x' },
 		{ value: 2, label: '2x' },
 	];
 
 	const qualityOptions = [
-		{ value: 'auto', label: 'Auto' },
+		{ value: 'auto', label: t('VIDEO_AUTO') },
 		{ value: '1080p', label: '1080p' },
 		{ value: '720p', label: '720p' },
 		{ value: '480p', label: '480p' },
@@ -74,7 +76,7 @@ const VideoSettings = ({
 			<div className='settings-section'>
 				<Typography variant='subtitle2' className='section-title'>
 					<Gauge size={16} className='section-icon' />
-					Playback Speed
+					{t('VIDEO_PLAYBACK_SPEED')}
 				</Typography>
 				{playbackRates.map((rate) => (
 					<MenuItem
@@ -100,7 +102,7 @@ const VideoSettings = ({
 			<div className='settings-section'>
 				<Typography variant='subtitle2' className='section-title'>
 					<Hd size={16} className='section-icon' />
-					Quality
+					{t('VIDEO_QUALITY')}
 				</Typography>
 				{qualityOptions.map((option) => (
 					<MenuItem
@@ -126,7 +128,7 @@ const VideoSettings = ({
 			<div className='settings-section'>
 				<Typography variant='subtitle2' className='section-title'>
 					<Settings size={16} className='section-icon' />
-					More Options
+					{t('VIDEO_MORE_OPTIONS')}
 				</Typography>
 
 				<MenuItem disabled className='settings-menu-item disabled'>
@@ -134,8 +136,8 @@ const VideoSettings = ({
 						<Subtitles size={16} />
 					</ListItemIcon>
 					<ListItemText
-						primary='Subtitles'
-						secondary='Not available yet'
+						primary={t('VIDEO_SUBTITLES')}
+						secondary={t('VIDEO_NOT_AVAILABLE_YET')}
 						primaryTypographyProps={{
 							className: 'item-text',
 						}}
@@ -150,8 +152,8 @@ const VideoSettings = ({
 						<Proportions size={16} />
 					</ListItemIcon>
 					<ListItemText
-						primary='Aspect Ratio'
-						secondary='Auto detected'
+						primary={t('VIDEO_ASPECT_RATIO')}
+						secondary={t('VIDEO_AUTO_DETECTED')}
 						primaryTypographyProps={{
 							className: 'item-text',
 						}}
@@ -166,8 +168,8 @@ const VideoSettings = ({
 						<Volume2 size={16} />
 					</ListItemIcon>
 					<ListItemText
-						primary='Audio Track'
-						secondary='Default'
+						primary={t('VIDEO_AUDIO_TRACK')}
+						secondary={t('VIDEO_DEFAULT')}
 						primaryTypographyProps={{
 							className: 'item-text',
 						}}

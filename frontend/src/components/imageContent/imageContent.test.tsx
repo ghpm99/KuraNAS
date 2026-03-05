@@ -12,6 +12,23 @@ jest.mock('../hooks/IntersectionObserver/useIntersectionObserver', () => ({
 jest.mock('@/service/apiUrl', () => ({
 	getApiV1BaseUrl: () => '/api/v1',
 }));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({
+		t: (key: string, params?: Record<string, string | number>) => {
+			const map: Record<string, string> = {
+				LOCALE: 'pt-BR',
+				IMAGES_TITLE: 'Galeria de fotos',
+				IMAGES_END_MESSAGE: 'Todas as imagens carregadas',
+				IMAGES_OPEN_IMAGE_ARIA: `Abrir ${params?.name ?? ''}`.trim(),
+				IMAGES_DETAILS_TITLE: 'Detalhes',
+				IMAGES_CLOSE_VIEWER: 'Fechar visualizador',
+				IMAGES_GROUP_BY_ARIA: 'Agrupar imagens por',
+			};
+			return map[key] ?? key;
+		},
+	}),
+}));
 
 describe('imageContent', () => {
 	beforeEach(() => {
