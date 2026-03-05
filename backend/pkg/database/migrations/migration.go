@@ -21,37 +21,39 @@ var insertMigrationQuery string
 //go:embed queries/migration_exists.sql
 var migrationExistsQuery string
 
-var migrationList = []migration{
-	{
-		Name:    "create_migrations_table",
-		Migrate: createMigrationDatabase,
-	},
-}
+var migrationList = []migration{}
+
+var (
+	initMigrationListFn       = initMigrationList
+	createMigrationDatabaseFn = createMigrationDatabase
+	runMigrationFn            = runMigration
+)
 
 func Init(db *sql.DB) {
 	if db == nil {
 		log.Println("Database connection is nil")
 		panic("Database connection is nil")
 	}
-	initMigrationList()
+	initMigrationListFn()
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
-		log.Println("Failed to begin transaction:", err)
 		panic("Failed to begin transaction: " + err.Error())
 	}
 	defer tx.Rollback()
 
-	createMigrationDatabase(tx)
+	err = createMigrationDatabaseFn(tx)
+
+	if err != nil {
+		panic("Failed to create migrations table: " + err.Error())
+	}
 
 	for _, m := range migrationList {
-		if err := runMigration(tx, m.Name, m.Migrate); err != nil {
-			log.Printf("Failed to run migration %s: %v", m.Name, err)
+		if err := runMigrationFn(tx, m.Name, m.Migrate); err != nil {
 			panic("Failed to run migration " + m.Name + ": " + err.Error())
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Println("Failed to commit transaction:", err)
 		panic("Failed to commit transaction: " + err.Error())
 	}
 	log.Println("All migrations applied successfully")
@@ -62,6 +64,8 @@ func initMigrationList() {
 	logMigrationList()
 	diaryMigrationList()
 	fileMigrationList()
+	musicMigrationList()
+	videoMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {

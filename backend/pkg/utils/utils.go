@@ -1,12 +1,17 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"nas-go/api/internal/config"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -79,72 +84,20 @@ func GenerateFilterFromContext[T any](context *gin.Context, filter *T) {
 		fieldType := field.Type
 
 		if paramValue == "" {
-			if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-				fieldValue.Set(reflect.ValueOf(Optional[any]{
-					HasValue: false,
-					Value:    nil,
-				}))
+			if isOptionalType(fieldType) {
+				fieldValue.Set(reflect.Zero(fieldType))
 			}
 			continue
 		}
 
-		switch fieldType.Kind() {
-		case reflect.Int:
-			if intValue, err := strconv.Atoi(paramValue); err == nil {
-
-				fieldValue.SetInt(int64(intValue))
-			}
-		case reflect.String:
-
-			fieldValue.SetString(paramValue)
-		case reflect.Bool:
-			if boolValue, err := strconv.ParseBool(paramValue); err == nil {
-
-				fieldValue.SetBool(boolValue)
-			}
-		case reflect.Struct:
-			// Verifica se é um `time.Time`
-			fmt.Println(fieldType, paramValue)
-			if fieldType == reflect.TypeOf(time.Time{}) {
-				if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
-					fmt.Println(parsedTime)
-					fieldValue.Set(reflect.ValueOf(parsedTime))
-				}
-			}
-		default:
-			// Verifica se é um `Optional`
-			if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-				elemType := fieldType.Field(0).Type // Tipo genérico do `Optional`
-
-				switch elemType.Kind() {
-				case reflect.Int:
-					if intValue, err := strconv.Atoi(paramValue); err == nil {
-
-						fieldValue.Set(reflect.ValueOf(NewOptional(intValue)))
-					}
-				case reflect.String:
-
-					fieldValue.Set(reflect.ValueOf(NewOptional(paramValue)))
-				case reflect.Bool:
-					if boolValue, err := strconv.ParseBool(paramValue); err == nil {
-
-						fieldValue.Set(reflect.ValueOf(NewOptional(boolValue)))
-					}
-				case reflect.Struct:
-					// Para `Optional[time.Time]`
-					if elemType == reflect.TypeOf(time.Time{}) {
-						if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
-
-							fieldValue.Set(reflect.ValueOf(NewOptional(parsedTime)))
-						}
-					}
-				}
-			}
-
-		}
+		parseContextQuery(fieldType, fieldValue, paramValue)
 
 	}
 
+}
+
+func isOptionalType(fieldType reflect.Type) bool {
+	return fieldType.Kind() == reflect.Struct && strings.HasPrefix(fieldType.Name(), "Optional")
 }
 
 func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramValue string) {
@@ -163,17 +116,16 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 			fieldValue.SetBool(boolValue)
 		}
 	case reflect.Struct:
-		// Verifica se é um `time.Time`
 		if fieldType == reflect.TypeOf(time.Time{}) {
 			if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
 
 				fieldValue.Set(reflect.ValueOf(parsedTime))
 			}
+			return
 		}
-	default:
-		// Verifica se é um `Optional`
-		if fieldType.Kind() == reflect.Struct && fieldType.Name() == "Optional" {
-			elemType := fieldType.Field(0).Type // Tipo genérico do `Optional`
+
+		if isOptionalType(fieldType) {
+			elemType := fieldType.Field(0).Type
 
 			switch elemType.Kind() {
 			case reflect.Int:
@@ -190,7 +142,6 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 					fieldValue.Set(reflect.ValueOf(NewOptional(boolValue)))
 				}
 			case reflect.Struct:
-				// Para `Optional[time.Time]`
 				if elemType == reflect.TypeOf(time.Time{}) {
 					if parsedTime, err := time.Parse("2006-01-02", paramValue); err == nil {
 
@@ -198,7 +149,10 @@ func parseContextQuery(fieldType reflect.Type, fieldValue reflect.Value, paramVa
 					}
 				}
 			}
+
+			return
 		}
+	default:
 
 	}
 }
@@ -251,10 +205,13 @@ type FormatType struct {
 	Description string
 }
 
+var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp"}
+var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
+var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
+
 func GetFormatTypeByExtension(ext string) FormatType {
 	ext = strings.ToLower(ext)
 	switch ext {
-	// Imagens
 	case ".jpg", ".jpeg":
 		return FormatType{Type: FormatTypeImage, Mime: "image/jpeg", Description: "IMAGE_JPEG"}
 	case ".png":
@@ -268,7 +225,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".webp":
 		return FormatType{Type: FormatTypeImage, Mime: "image/webp", Description: "IMAGE_WEBP"}
 
-	// Áudios
 	case ".mp3":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/mpeg", Description: "AUDIO_MP3"}
 	case ".wav":
@@ -278,7 +234,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".flac":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/flac", Description: "AUDIO_FLAC"}
 
-	// Vídeos
 	case ".mp4":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/mp4", Description: "VIDEO_MP4"}
 	case ".webm":
@@ -288,7 +243,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".mov":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/quicktime", Description: "VIDEO_MOV"}
 
-	// Documentos
 	case ".pdf":
 		return FormatType{Type: FormatTypeDocument, Mime: "application/pdf", Description: "DOCUMENT_PDF"}
 	case ".txt":
@@ -302,7 +256,6 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	case ".csv":
 		return FormatType{Type: FormatTypeDocument, Mime: "text/csv", Description: "DOCUMENT_CSV"}
 
-	// Outros
 	case ".zip":
 		return FormatType{Type: FormatTypeArchive, Mime: "application/zip", Description: "ARCHIVE_ZIP"}
 	case ".rar":
@@ -319,21 +272,34 @@ func GetFormatTypeByExtension(ext string) FormatType {
 	}
 }
 
+type ScriptType string
+
 const (
-	ImageMetadata = "image_metadata.py"
-	AudioMetadata = "audio_metadata.py"
-	VideoMetadata = "video_metadata.py"
+	ImageMetadata ScriptType = "image_metadata.py"
+	AudioMetadata ScriptType = "audio_metadata.py"
+	VideoMetadata ScriptType = "video_metadata.py"
 )
 
-func RunPythonScript(scriptName string, arg ...string) (string, error) {
-	scriptPath := filepath.Join(config.GetBuildConfig("ScriptPath"), scriptName)
+func RunPythonScript(scriptName ScriptType, arg ...string) (string, error) {
+
+	if len(scriptName) == 0 {
+		return "", fmt.Errorf("o nome do script não pode ser vazio")
+	}
+
+	scriptPath := filepath.Join(config.GetBuildConfig("ScriptPath"), string(scriptName))
+
 	args := append([]string{scriptPath}, arg...)
-	cmd := exec.Command(config.GetBuildConfig("PythonScript"), args...)
+
+	pythonExec := config.GetBuildConfig("PythonScript")
+
+	cmd := exec.Command(pythonExec, args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("erro ao executar script python: %v, output: %s", err, string(output))
 	}
-	return string(output), nil
+
+	return strings.TrimSpace(string(output)), nil
 }
 
 func StructToArgs(v interface{}) []interface{} {
@@ -355,4 +321,93 @@ func StructToScanPtrs(v interface{}) []interface{} {
 		ptrs[i] = val.Field(i).Addr().Interface()
 	}
 	return ptrs
+}
+
+func GetFileChecksum(path string) (string, error) {
+	file, err := os.Open(path)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	h := sha256.New()
+
+	if _, err := io.Copy(h, file); err != nil {
+		return "", err
+	}
+
+	checkSumBytes := h.Sum(nil)
+	checkSumString := fmt.Sprintf("%x", checkSumBytes)
+
+	return checkSumString, nil
+}
+
+func GetCheckSumFromPath(childrenChecksums []string) string {
+
+	hasher := sha256.New()
+	for _, h := range childrenChecksums {
+
+		bytes, err := hex.DecodeString(h)
+		if err != nil {
+			continue
+		}
+		hasher.Write(bytes)
+	}
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func GetDirectoryChecksum(dirPath string) (string, error) {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return "", fmt.Errorf("falha ao verificar o caminho '%s': %w", dirPath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("o caminho '%s' não é um diretório", dirPath)
+	}
+
+	var allChecksums []string
+
+	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("erro ao percorrer o caminho '%s': %w", path, err)
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("falha ao abrir o arquivo '%s': %w", path, err)
+		}
+		defer file.Close()
+
+		hash := sha256.New()
+
+		if _, err := io.Copy(hash, file); err != nil {
+			return fmt.Errorf("falha ao gerar hash para o arquivo '%s': %w", path, err)
+		}
+
+		fileChecksum := hex.EncodeToString(hash.Sum(nil))
+		allChecksums = append(allChecksums, fileChecksum)
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	sort.Strings(allChecksums)
+
+	var combinedChecksums string
+	for _, cs := range allChecksums {
+		combinedChecksums += cs
+	}
+
+	finalHash := sha256.Sum256([]byte(combinedChecksums))
+
+	return hex.EncodeToString(finalHash[:]), nil
 }

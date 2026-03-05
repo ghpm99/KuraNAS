@@ -3,17 +3,24 @@ import react from '@vitejs/plugin-react';
 import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 
-export default defineConfig({
-	plugins: [
-		react(),
-		legacy({
-			targets: ['defaults', '> 0.2%', 'not dead', 'Opera >= 50'],
-			modernPolyfills: true,
-		}),
-	],
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, './src'),
+export default defineConfig(() => {
+	const env = process.env.VITE_API_URL;
+
+	return {
+		plugins: [
+			react(),
+			legacy({
+				targets: ['defaults', '> 0.2%', 'not dead', 'Opera >= 50'],
+				modernPolyfills: true,
+			}),
+		],
+		resolve: {
+			alias: {
+				'@': path.resolve(__dirname, './src'),
+			},
 		},
-	},
+		define: {
+			'process.env.VITE_API_URL': JSON.stringify(env ?? ''),
+		},
+	};
 });

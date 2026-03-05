@@ -1,0 +1,49 @@
+.player-control {
+	background: rgba(33, 33, 33, 0.95);
+	backdrop-filter: blur(10px);
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.player-control .MuiCardContent-root {
+	padding: 8px 16px !important;
+}
+
+.player-control .MuiIconButton-root {
+	color: rgba(255, 255, 255, 0.7);
+	transition: all 0.2s ease;
+}
+
+.player-control .MuiIconButton-root:hover {
+	color: white;
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+.player-control .MuiIconButton-root.Mui-selected {
+	color: white;
+	background-color: rgba(255, 255, 255, 0.2);
+}
+
+.player-control .MuiSlider-root {
+	color: #1db954;
+}
+
+.player-control .MuiSlider-thumb {
+	background-color: #1db954;
+}
+
+.player-control .MuiSlider-track {
+	background-color: #1db954;
+}
+
+.player-control .MuiSlider-rail {
+	background-color: rgba(255, 255, 255, 0.3);
+}
+
+.player-control .MuiTypography-root {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.player-control .MuiTypography-caption {
+	color: rgba(255, 255, 255, 0.6);
+}

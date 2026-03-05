@@ -72,3 +72,33 @@ var UpsertVideoMetadataQuery string
 
 //go:embed delete_video_metadata.sql
 var DeleteVideoMetadataQuery string
+
+//go:embed get_images.sql
+var GetImagesQuery string
+
+//go:embed get_music.sql
+var GetMusicQuery string
+
+//go:embed get_videos.sql
+var GetVideosQuery string
+
+//go:embed get_music_artists.sql
+var GetMusicArtistsQuery string
+
+//go:embed get_music_by_artist.sql
+var GetMusicByArtistQuery string
+
+//go:embed get_music_albums.sql
+var GetMusicAlbumsQuery string
+
+//go:embed get_music_by_album.sql
+var GetMusicByAlbumQuery string
+
+//go:embed get_music_genres.sql
+var GetMusicGenresQuery string
+
+//go:embed get_music_by_genre.sql
+var GetMusicByGenreQuery string
+
+//go:embed get_music_folders.sql
+var GetMusicFoldersQuery string

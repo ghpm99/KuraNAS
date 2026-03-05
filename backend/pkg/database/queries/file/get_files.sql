@@ -1,66 +1,65 @@
 SELECT
     hf.id,
     hf.name,
-    hf."path",
+    hf.path,
     hf.parent_path,
     hf.format,
-    hf."size",
+    hf.size,
     hf.updated_at,
     hf.created_at,
     hf.last_interaction,
     hf.last_backup,
-    hf."type",
+    hf.type,
     hf.checksum,
     hf.deleted_at,
     hf.starred
 FROM
     home_file hf
 WHERE
-    1 = 1
-    AND (
-        ?
-        OR hf.id = ?
+    (
+        $1
+        OR hf.id = $2
     )
     AND (
-        ?
-        OR hf.name LIKE '%' || ? || '%'
+        $3
+        OR hf.name ILIKE '%' || $4 || '%'
     )
     AND (
-        ?
-        OR hf."path" = ?
+        $5
+        OR hf.path = $6
     )
     AND (
-        ?
-        OR hf."parent_path" = ?
+        $7
+        OR hf.parent_path = $8
     )
     AND (
-        ?
-        OR hf.format = ?
+        $9
+        OR hf.format = $10
     )
     AND (
-        ?
-        OR hf."type" = ?
+        $11
+        OR hf.type = $12
     )
     AND (
-        ?
-        OR hf.deleted_at = ?
+        $13
+        OR hf.deleted_at = $14
     )
-    AND case ?
-        when 'all' then true
-        when 'recent' then hf.id IN (
+    AND CASE $15
+        WHEN 'all' THEN TRUE
+        WHEN 'recent' THEN hf.id IN (
             SELECT
                 file_id
             FROM
                 recent_file
         )
-        when 'starred' then hf.starred = true
-        else true
-    end
+        WHEN 'starred' THEN hf.starred = TRUE
+        ELSE TRUE
+    END
 ORDER BY
-    type,
-    name,
-    - id
+TYPE,
+NAME,
+id DESC
 LIMIT
-    ?
+    $16
 OFFSET
-    ?;
+    $17;

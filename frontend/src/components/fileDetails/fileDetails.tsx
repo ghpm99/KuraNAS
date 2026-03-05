@@ -1,69 +1,69 @@
 import { FileType, formatDate, formatSize, getFileTypeInfo } from '@/utils';
-import useFile from '../hooks/fileProvider/fileContext';
-import './fileDetails.css';
+import useFile from '../providers/fileProvider/fileContext';
 import useI18n from '../i18n/provider/i18nContext';
+import { Box, CircularProgress, Divider, List, ListItem, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
+
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+	return (
+		<ListItem disablePadding sx={{ py: 0.5 }}>
+			<Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+				<Typography variant='caption' color='text.secondary'>{label}</Typography>
+				<Typography variant='caption' sx={{ maxWidth: '60%', textAlign: 'right', wordBreak: 'break-all' }}>
+					{value}
+				</Typography>
+			</Box>
+		</ListItem>
+	);
+}
+
 const FileDetails = () => {
 	const { selectedItem, isLoadingAccessData, recentAccessFiles } = useFile();
 	const { t } = useI18n();
 
-	if (!selectedItem || selectedItem.type === FileType.Directory) return <></>;
+	if (!selectedItem || selectedItem.type === FileType.Directory) return null;
+
 	const fileType = getFileTypeInfo(selectedItem.format);
+
 	return (
-		<div className='file-details'>
-			<div className='details-header'>
-				<h2 className='details-title'>{t('FILE_DETAILS_TITLE')}</h2>
-				<p className='details-subtitle'>{t('FILE_DETAILS_SUBTITLE')}</p>
-			</div>
+		<Box sx={{ p: 2 }}>
+			<Typography variant='subtitle1' fontWeight={600} gutterBottom>{t('FILE_DETAILS_TITLE')}</Typography>
+			<Typography variant='caption' color='text.secondary' display='block' gutterBottom>
+				{t('FILE_DETAILS_SUBTITLE')}
+			</Typography>
 
-			<div className='details-section'>
-				<h3 className='section-title'>{t('PROPERTIES')}</h3>
-				<div className='detail-item'>
-					<span className='detail-label'>{t('TYPE')}</span>
-					<span className='detail-value'>{fileType.description}</span>
-				</div>
-				<div className='detail-item'>
-					<span className='detail-label'>{t('SIZE')}</span>
-					<span className='detail-value'>
-						{formatSize(selectedItem.size)}({selectedItem.size} B)
-					</span>
-				</div>
-				<div className='detail-item'>
-					<span className='detail-label'>{t('CREATED')}</span>
-					<span className='detail-value'>{formatDate(selectedItem.created_at)}</span>
-				</div>
-				<div className='detail-item'>
-					<span className='detail-label'>{t('MODIFIED')}</span>
-					<span className='detail-value'>{formatDate(selectedItem.updated_at)}</span>
-				</div>
-				<div className='detail-item'>
-					<span className='detail-label'>{t('PATH')}</span>
-					<span className='detail-value'>{selectedItem.path}</span>
-				</div>
-			</div>
+			<Typography variant='overline' color='text.secondary' display='block' sx={{ mt: 2 }}>
+				{t('PROPERTIES')}
+			</Typography>
+			<List dense disablePadding>
+				<DetailRow label={t('TYPE')} value={fileType.description} />
+				<DetailRow label={t('SIZE')} value={`${formatSize(selectedItem.size)} (${selectedItem.size} B)`} />
+				<DetailRow label={t('CREATED')} value={formatDate(selectedItem.created_at)} />
+				<DetailRow label={t('MODIFIED')} value={formatDate(selectedItem.updated_at)} />
+				<DetailRow label={t('PATH')} value={selectedItem.path} />
+			</List>
 
-			<div className='details-section'>
-				<h3 className='section-title'>{t('TAGS')}</h3>
-				<div className='tag-list'></div>
-			</div>
-
-			<div className='details-section'>
-				<h3 className='section-title'>{t('RECENT_ACTIVITY')}</h3>
-				{isLoadingAccessData ? (
-					<p className='loading-message'>{t('LOADING_RECENT_ACTIVITY')}</p>
-				) : (
-					<ul className='activity-list'>
-						{recentAccessFiles.map((access) =>
-							access.file_id !== selectedItem.id ? null : (
-								<li key={access.id} className='activity-item'>
-									<span className='activity-ip'>{access.ip_address}</span>
-									<span className='activity-date'>{formatDate(access.accessed_at)}</span>
-								</li>
-							)
-						)}
-					</ul>
-				)}
-			</div>
-		</div>
+			<Divider sx={{ my: 1.5 }} />
+			<Typography variant='overline' color='text.secondary' display='block'>{t('RECENT_ACTIVITY')}</Typography>
+			{isLoadingAccessData ? (
+				<CircularProgress size={16} />
+			) : (
+				<List dense disablePadding>
+					{recentAccessFiles
+						.filter((access) => access.file_id === selectedItem.id)
+						.map((access) => (
+							<ListItem key={access.id} disablePadding sx={{ py: 0.5 }}>
+								<Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+									<Typography variant='caption'>{access.ip_address}</Typography>
+									<Typography variant='caption' color='text.secondary'>
+										{formatDate(access.accessed_at)}
+									</Typography>
+								</Box>
+							</ListItem>
+						))}
+				</List>
+			)}
+		</Box>
 	);
 };
 

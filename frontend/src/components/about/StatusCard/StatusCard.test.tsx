@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import StatusCard from './StatusCard';
 
-// Mocks
 jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
 	<div data-testid='card'>
 		<div>{title}</div>
@@ -15,7 +14,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => () => ({
 }));
 
 const mockUseAbout = jest.fn();
-jest.mock('@/components/hooks/AboutProvider/AboutContext', () => ({
+jest.mock('@/components/providers/aboutProvider/AboutContext', () => ({
 	useAbout: () => mockUseAbout(),
 }));
 

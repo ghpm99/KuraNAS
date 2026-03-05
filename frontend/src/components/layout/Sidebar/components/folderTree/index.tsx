@@ -1,28 +1,28 @@
-import useFile, { FileData } from '@/components/hooks/fileProvider/fileContext';
+import useFile, { FileData } from '@/components/providers/fileProvider/fileContext';
 import FolderItem from './components/folderItem';
-import './folderTree.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { Box, CircularProgress, List, Typography } from '@mui/material';
 
 const FolderTree = () => {
 	const { status, handleSelectItem, files, expandedItems, selectedItem } = useFile();
 	const { t } = useI18n();
 
 	if (status === 'loading') {
-		return <div>{t('LOADING')}</div>;
+		return <Box sx={{ p: 1.5 }}><CircularProgress size={16} /></Box>;
 	}
 	if (status === 'error' && files.length === 0) {
-		return <div>{t('ERROR_LOADING_FILES')}</div>;
+		return <Typography variant='caption' color='error' sx={{ px: 1.5 }}>{t('ERROR_LOADING_FILES')}</Typography>;
 	}
 
 	const handleClick = (file: FileData) => {
 		handleSelectItem(file.id);
 	};
 
-	const renderFiles = (fileArray: FileData[]) => {
+	const renderFiles = (fileArray: FileData[]): React.ReactNode => {
 		if (!fileArray || fileArray.length === 0) {
-			return <div>{t('EMPTY_FILE_LIST')}</div>;
+			return <Typography variant='caption' sx={{ px: 1.5 }}>{t('EMPTY_FILE_LIST')}</Typography>;
 		}
-		const fileComponent = fileArray.map((file) => (
+		return fileArray.map((file) => (
 			<FolderItem
 				key={file.id}
 				type={file.type}
@@ -31,26 +31,24 @@ const FolderTree = () => {
 				expanded={expandedItems.includes(file.id)}
 				selected={selectedItem?.id === file.id}
 			>
-				{file.file_children && file.file_children?.length > 0 && (
-					<div className='folder-children'>{renderFiles(file.file_children)}</div>
+				{file.file_children && file.file_children.length > 0 && (
+					<Box sx={{ pl: 2 }}>{renderFiles(file.file_children)}</Box>
 				)}
 			</FolderItem>
 		));
-
-		return fileComponent;
-	};
-
-	const handleUnselectItem = () => {
-		handleSelectItem(null);
 	};
 
 	return (
-		<div className='nav-section'>
-			<div className='nav-section-title' onClick={() => handleUnselectItem()}>
+		<Box sx={{ mt: 1 }}>
+			<Typography
+				variant='overline'
+				sx={{ px: 1.5, color: 'text.secondary', cursor: 'pointer', display: 'block' }}
+				onClick={() => handleSelectItem(null)}
+			>
 				{t('FILES')}
-			</div>
-			<div className='folder-list'>{renderFiles(files)}</div>
-		</div>
+			</Typography>
+			<List dense disablePadding>{renderFiles(files)}</List>
+		</Box>
 	);
 };
 

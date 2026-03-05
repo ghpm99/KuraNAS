@@ -1,5 +1,6 @@
+import { ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
-import './navItem.css';
+
 interface NavItemProps {
 	href: string;
 	icon: React.ReactNode;
@@ -8,11 +9,17 @@ interface NavItemProps {
 
 const NavItem = ({ href, icon, children }: NavItemProps) => {
 	const { pathname } = useLocation();
+
 	return (
-		<Link to={href} className={`nav-item ${href === pathname ? 'active' : ''}`}>
-			{icon}
-			<span>{children}</span>
-		</Link>
+		<ListItemButton
+			component={Link}
+			to={href}
+			selected={href === pathname}
+			sx={{ borderRadius: 1, mb: 0.5 }}
+		>
+			<ListItemIcon sx={{ minWidth: 36 }}>{icon}</ListItemIcon>
+			<ListItemText primary={children} primaryTypographyProps={{ variant: 'body2' }} />
+		</ListItemButton>
 	);
 };
 

@@ -1,85 +1,82 @@
+import { Box, Card, CardContent, CardHeader, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { Copy, HardDrive } from 'lucide-react';
-
 import { useAnalytics } from '@/components/contexts/AnalyticsContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/utils';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
-import Card from '../../ui/Card/Card';
-import styles from './DuplicatesSection.module.css';
 
 export default function DuplicatesSection() {
 	const { analyticsData } = useAnalytics();
+	const { t } = useI18n();
 	const { duplicates } = analyticsData;
 
 	if (!duplicates || duplicates?.files?.length === 0) {
 		return (
-			<Card title='Arquivos Duplicados'>
-				<div className={styles.emptyState}>
-					<p>Nenhum arquivo duplicado encontrado.</p>
-				</div>
+			<Card>
+				<CardHeader title={t('ANALYTICS_DUPLICATE_FILES')} titleTypographyProps={{ variant: 'h6' }} />
+				<CardContent>
+					<Typography>{t('ANALYTICS_NO_DUPLICATES')}</Typography>
+				</CardContent>
 			</Card>
 		);
 	}
+
 	return (
-		<div className={styles.section}>
-			<div className={styles.cardsGrid}>
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<Copy className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Arquivos Duplicados</div>
-							<div className={styles.value}>{duplicates.total}</div>
-						</div>
-					</div>
-				</div>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<Copy size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_DUPLICATE_FILES')}</Typography>
+								<Typography variant='h6'>{duplicates.total}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 6 }}>
+					<Card>
+						<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+							<HardDrive size={32} />
+							<Box>
+								<Typography variant='body2' color='text.secondary'>{t('ANALYTICS_WASTED_SPACE')}</Typography>
+								<Typography variant='h6'>{formatSize(duplicates.total_size)}</Typography>
+							</Box>
+						</CardContent>
+					</Card>
+				</Grid>
+			</Grid>
 
-				<div className={styles.card}>
-					<div className={styles.cardContent}>
-						<div className={styles.iconContainer}>
-							<HardDrive className={styles.icon} />
-						</div>
-						<div className={styles.info}>
-							<div className={styles.label}>Espaço Desperdiçado</div>
-							<div className={styles.value}>{formatSize(duplicates.total_size)}</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<Card title='Maiores Duplicatas'>
-				<div className={styles.tableContainer}>
-					<Table sx={{ minWidth: 650 }} aria-label='simple table'>
-						<TableHead>
-							<TableRow>
-								<TableCell>Nome</TableCell>
-								<TableCell align='right'>Tamanho</TableCell>
-								<TableCell align='right'>Cópias</TableCell>
-								<TableCell align='right'>Caminhos</TableCell>
+			<Card>
+				<CardHeader title={t('ANALYTICS_LARGEST_DUPLICATES')} titleTypographyProps={{ variant: 'h6' }} />
+				<Table sx={{ minWidth: 650 }} aria-label='simple table'>
+					<TableHead>
+						<TableRow>
+							<TableCell>{t('NAME')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_FILE_SIZE')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_COPIES')}</TableCell>
+							<TableCell align='right'>{t('ANALYTICS_PATHS')}</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{duplicates?.files?.map((row) => (
+							<TableRow key={row.name} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+								<TableCell component='th' scope='row'>{row.name}</TableCell>
+								<TableCell align='right'>{formatSize(row.size)}</TableCell>
+								<TableCell align='right'>{row.copies}</TableCell>
+								<TableCell align='right'>
+									{row.paths.slice(0, 2).map((path, i) => (
+										<Box key={i} sx={{ fontSize: '0.75rem' }}>{path}</Box>
+									))}
+									{row.paths.length > 2 && (
+										<Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>+{row.paths.length - 2} {t('ANALYTICS_MORE')}</Box>
+									)}
+								</TableCell>
 							</TableRow>
-						</TableHead>
-						<TableBody>
-							{duplicates?.files?.map((row) => (
-								<TableRow key={row.name} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-									<TableCell component='th' scope='row'>
-										{row.name}
-									</TableCell>
-									<TableCell align='right'>{formatSize(row.size)}</TableCell>
-									<TableCell align='right'>{row.copies}</TableCell>
-									<TableCell align='right'>
-										{row.paths.slice(0, 2).map((path, i) => (
-											<div key={i} className={styles.pathItem}>
-												{path}
-											</div>
-										))}
-										{row.paths.length > 2 && <div className={styles.moreItems}>+{row.paths.length - 2} mais</div>}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+						))}
+					</TableBody>
+				</Table>
 			</Card>
-		</div>
+		</Box>
 	);
 }

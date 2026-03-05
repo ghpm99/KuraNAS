@@ -4,19 +4,21 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/diary"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type Repository struct {
-	DbContext *sql.DB
+	DbContext *database.DbContext
 }
 
-func NewRepository(database *sql.DB) *Repository {
+func NewRepository(database *database.DbContext) *Repository {
 	return &Repository{database}
 }
 
-func (r *Repository) GetDbContext() *sql.DB {
+func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
@@ -33,28 +35,23 @@ func (repository *Repository) CreateDiary(transaction *sql.Tx, diary DiaryModel)
 
 	query := queries.InsertDiaryQuery
 
-	data, err := transaction.Exec(
+	var diaryId int
+	err := transaction.QueryRow(
 		query,
 		args...,
-	)
+	).Scan(&diaryId)
 
 	if err != nil {
 		return fail(err)
 	}
 
-	diaryId, err := data.LastInsertId()
-
-	if err != nil {
-		return fail(err)
-	}
-
-	diary.ID = int(diaryId)
+	diary.ID = diaryId
 
 	return diary, nil
 }
 
-func (repository *Repository) GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error) {
-	paginationReponse := utils.PaginationResponse[DiaryModel]{
+func (r *Repository) GetDiary(filter DiaryFilter, page int, pageSize int) (utils.PaginationResponse[DiaryModel], error) {
+	paginationResponse := utils.PaginationResponse[DiaryModel]{
 		Items: []DiaryModel{},
 		Pagination: utils.Pagination{
 			Page:     page,
@@ -82,35 +79,40 @@ func (repository *Repository) GetDiary(filter DiaryFilter, page int, pageSize in
 		utils.CalculateOffset(page, pageSize),
 	}
 
-	rows, err := repository.DbContext.Query(
-		queries.GetDiaryQuery,
-		args...,
-	)
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(
+			queries.GetDiaryQuery,
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
 
-	if err != nil {
-		return paginationReponse, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var diary DiaryModel
-		if err := rows.Scan(
-			&diary.ID,
-			&diary.Name,
-			&diary.Description,
-			&diary.StartTime,
-			&diary.EndTime,
-		); err != nil {
-			return paginationReponse, err
+		for rows.Next() {
+			var diary DiaryModel
+			if err := rows.Scan(
+				&diary.ID,
+				&diary.Name,
+				&diary.Description,
+				&diary.StartTime,
+				&diary.EndTime,
+			); err != nil {
+				return err
+			}
+			paginationResponse.Items = append(paginationResponse.Items, diary)
 		}
 
-		paginationReponse.Items = append(paginationReponse.Items, diary)
+		return nil
+	})
+
+	if err != nil {
+		return paginationResponse, fmt.Errorf("falha ao obter diário: %w", err)
 	}
 
-	paginationReponse.UpdatePagination()
+	paginationResponse.UpdatePagination()
 
-	return paginationReponse, nil
+	return paginationResponse, nil
 }
 
 func (repository *Repository) UpdateDiary(transaction *sql.Tx, diary DiaryModel) (bool, error) {
@@ -143,4 +145,49 @@ func (repository *Repository) UpdateDiary(transaction *sql.Tx, diary DiaryModel)
 	}
 
 	return rowsAffected == 1, nil
+}
+
+func (repository *Repository) GetSummary(dateReference time.Time) (DiarySummary, error) {
+	summary := DiarySummary{}
+
+	args := []any{
+		dateReference,
+	}
+
+	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
+		row := tx.QueryRow(queries.GetDiarySummaryQuery, args...)
+
+		var longestActivityName sql.NullString
+		var longestActivityDurationSeconds sql.NullInt64
+
+		err := row.Scan(
+			&summary.Date,
+			&summary.TotalActivities,
+			&summary.TotalTimeSpentSeconds,
+			&longestActivityName,
+			&longestActivityDurationSeconds,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		if longestActivityName.Valid && longestActivityDurationSeconds.Valid {
+			summary.LongestActivity = &LongestActivity{
+				Name:              longestActivityName.String,
+				DurationSeconds:   int(longestActivityDurationSeconds.Int64),
+				DurationFormatted: "",
+			}
+		} else {
+			summary.LongestActivity = nil
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return summary, fmt.Errorf("GetSummary: %v", err)
+	}
+
+	return summary, nil
 }

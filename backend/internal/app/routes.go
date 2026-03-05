@@ -1,6 +1,8 @@
 package app
 
 import (
+	"nas-go/api/internal/config"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -9,11 +11,14 @@ import (
 
 func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
-	registerCorsRoutes(router)
+	registerCorsRoutes(router, context)
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
+	RegisterMusicRoutes(routesV1, context)
+	RegisterVideoRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
+	RegisterUpdateRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -29,6 +34,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
+	files.GET("/video-thumbnail/:id", context.Files.Handler.GetVideoThumbnailHandler)
+	files.GET("/video-preview/:id", context.Files.Handler.GetVideoPreviewHandler)
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
@@ -38,6 +45,20 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/report-size-by-format", context.Files.Handler.GetReportSizeByFormatHandler)
 	files.GET("/top-files-by-size", context.Files.Handler.GetTopFilesBySizeHandler)
 	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
+	files.GET("/images", context.Files.Handler.GetImagesHandler)
+	files.GET("/music", context.Files.Handler.GetMusicHandler)
+	files.GET("/videos", context.Files.Handler.GetVideosHandler)
+	files.GET("/stream/:id", context.Files.Handler.StreamAudioHandler)
+	files.GET("/video-stream/:id", context.Files.Handler.StreamVideoHandler)
+
+	music := files.Group("/music")
+	music.GET("/artists", context.Files.Handler.GetMusicArtistsHandler)
+	music.GET("/artists/:name", context.Files.Handler.GetMusicByArtistHandler)
+	music.GET("/albums", context.Files.Handler.GetMusicAlbumsHandler)
+	music.GET("/albums/:name", context.Files.Handler.GetMusicByAlbumHandler)
+	music.GET("/genres", context.Files.Handler.GetMusicGenresHandler)
+	music.GET("/genres/:name", context.Files.Handler.GetMusicByGenreHandler)
+	music.GET("/folders", context.Files.Handler.GetMusicFoldersHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -51,11 +72,61 @@ func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
 	diaryGroup.POST("/copy", context.Diary.Handler.DuplicateDiaryHandler)
 }
 
+func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
+	playlists := router.Group("/music/playlists")
+
+	playlists.GET("/", context.Music.Handler.GetPlaylistsHandler)
+	playlists.POST("/", context.Music.Handler.CreatePlaylistHandler)
+	playlists.GET("/now-playing", context.Music.Handler.GetNowPlayingHandler)
+	playlists.GET("/:id", context.Music.Handler.GetPlaylistByIDHandler)
+	playlists.PUT("/:id", context.Music.Handler.UpdatePlaylistHandler)
+	playlists.DELETE("/:id", context.Music.Handler.DeletePlaylistHandler)
+	playlists.GET("/:id/tracks", context.Music.Handler.GetPlaylistTracksHandler)
+	playlists.POST("/:id/tracks", context.Music.Handler.AddPlaylistTrackHandler)
+	playlists.DELETE("/:id/tracks/:fileId", context.Music.Handler.RemovePlaylistTrackHandler)
+	playlists.PUT("/:id/tracks/reorder", context.Music.Handler.ReorderPlaylistTracksHandler)
+
+	playerState := router.Group("/music/player-state")
+	playerState.GET("/", context.Music.Handler.GetPlayerStateHandler)
+	playerState.PUT("/", context.Music.Handler.UpdatePlayerStateHandler)
+}
+
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations := router.Group("/configuration")
 
 	configurations.GET("/translation", context.ConfigurationHandler.GetTranslationJson)
 	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
+}
+
+func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
+	playback := router.Group("/video/playback")
+	catalog := router.Group("/video/catalog")
+	playlists := router.Group("/video/playlists")
+
+	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
+	playback.GET("/state", context.Video.Handler.GetPlaybackStateHandler)
+	playback.PUT("/state", context.Video.Handler.UpdatePlaybackStateHandler)
+	playback.POST("/next", context.Video.Handler.NextVideoHandler)
+	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
+	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
+
+	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
+	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)
+	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)
+	playlists.GET("/unassigned", context.Video.Handler.GetUnassignedVideosHandler)
+	playlists.PUT("/:id/reorder", context.Video.Handler.ReorderPlaylistHandler)
+	playlists.GET("/:id", context.Video.Handler.GetPlaylistByIDHandler)
+	playlists.PUT("/:id", context.Video.Handler.UpdatePlaylistHandler)
+	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
+	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
+	playlists.DELETE("/:id/videos/:videoId", context.Video.Handler.RemovePlaylistVideoHandler)
+}
+
+func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
+	update := router.Group("/update")
+
+	update.GET("/status", context.UpdateHandler.GetUpdateStatusHandler)
+	update.POST("/apply", context.UpdateHandler.ApplyUpdateHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {
@@ -68,16 +139,23 @@ func registerReactRoutes(router *gin.Engine) {
 	router.Static("/frontend", "/dist")
 }
 
-func registerCorsRoutes(router *gin.Engine) {
+func registerCorsRoutes(router *gin.Engine, context *AppContext) {
+	// Get allowed origins from environment variable (comma-separated)
+	// Default to localhost for development
+	allowedOriginsStr := config.AppConfig.AllowedOrigins
+	allowedOrigins := strings.Split(allowedOriginsStr, ",")
+
+	// Trim whitespace from each origin
+	for i, origin := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(origin)
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "PUT", "POST"},
+		AllowOrigins:     allowedOrigins,
+		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return origin == "https://github.com"
-		},
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
 }

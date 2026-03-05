@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
@@ -14,6 +15,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	loadConfigFn       = config.LoadConfig
+	initializeConfigFn = config.InitializeConfig
+	loadTranslationsFn = i18n.LoadTranslations
+	configDatabaseFn   = database.ConfigDatabase
+	newContextFn       = NewContext
+	newRouterFn        = gin.Default
+	registerRoutesFn   = RegisterRoutes
+	startWorkersFn     = worker.StartWorkers
+)
+
 type Application struct {
 	Router  *gin.Engine
 	Context *AppContext
@@ -21,12 +33,12 @@ type Application struct {
 }
 
 func InitializeApp() (*Application, error) {
-	if err := config.LoadConfig(); err != nil {
+	if err := loadConfigFn(); err != nil {
 		return nil, err
 	}
-	config.InitializeConfig()
+	initializeConfigFn()
 
-	if err := i18n.LoadTranslations(); err != nil {
+	if err := loadTranslationsFn(); err != nil {
 		return nil, err
 	}
 
@@ -36,25 +48,26 @@ func InitializeApp() (*Application, error) {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	database, err := database.ConfigDatabase()
+	database, err := configDatabaseFn()
 	if err != nil {
 		return nil, err
 	}
 
-	appContext := NewContext(database)
+	appContext := newContextFn(database)
 
-	router := gin.Default()
+	router := newRouterFn()
 
-	RegisterRoutes(router, appContext)
+	registerRoutesFn(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
 		FilesService:    appContext.Files.Service,
+		VideoService:    appContext.Video.Service,
 		MetadataService: appContext.Files.MetadataRepository,
 		Tasks:           *appContext.Tasks,
 		Logger:          appContext.Logger,
 	}
 
-	worker.StartWorkers(workerFileContext, 200)
+	startWorkersFn(workerFileContext, 200)
 
 	return &Application{
 		Router:  router,
@@ -63,6 +76,10 @@ func InitializeApp() (*Application, error) {
 }
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
+	if app.Router == nil {
+		return fmt.Errorf("router is nil")
+	}
+
 	server := &http.Server{
 		Addr:    addr,
 		Handler: app.Router.Handler(),
@@ -71,13 +88,21 @@ func (app *Application) Run(addr string, enableGraceFul bool) error {
 	app.Server = server
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", err)
+		return err
 	}
 
 	return nil
 }
 
 func (app *Application) Stop() error {
+	if app == nil {
+		return nil
+	}
+
+	if app.Server == nil {
+		return nil
+	}
+
 	log.Println("Parando servidor...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -85,6 +110,10 @@ func (app *Application) Stop() error {
 
 	if err := app.Server.Shutdown(ctx); err != nil {
 		log.Printf("Erro ao desligar servidor: %v\n", err)
+		if closeErr := app.Server.Close(); closeErr != nil {
+			log.Printf("Erro ao forcar fechamento do servidor: %v\n", closeErr)
+			return closeErr
+		}
 		return err
 	}
 

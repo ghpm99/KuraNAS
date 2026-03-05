@@ -1,9 +1,9 @@
 SELECT
 	id,
-    name,
-    description,
-    start_time,
-    end_time
+	NAME,
+	description,
+	start_time,
+	end_time
 FROM
 	activity_diary ad
 WHERE
@@ -12,5 +12,5 @@ WHERE
 	OR ad.end_time BETWEEN $1 AND $2
 	OR ad.end_time IS NULL
 ORDER BY
-	- start_time,
-    - id
+	start_time DESC,
+	id DESC;

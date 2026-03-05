@@ -2,40 +2,42 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database/migrations"
-	"strconv"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
+)
+
+var (
+	sqlOpenFn        = sql.Open
+	migrationsInitFn = migrations.Init
 )
 
 func ConfigDatabase() (*sql.DB, error) {
 
-	dbPath := config.GetBuildConfig("DbPath")
-
-	dbPathWithDSN := applyDatabaseConfigDSN(dbPath)
-
-	log.Println("Database path", dbPathWithDSN)
-	localDatabase, errSql := sql.Open("sqlite3", dbPathWithDSN)
+	localDatabase, errSql := sqlOpenFn("postgres", applyDatabaseConfig())
 
 	if errSql != nil {
-		log.Println("Erro ao conectar ao banco de dados SQLite:", errSql)
+		log.Println("Erro ao conectar ao banco de dados:", errSql)
 		return nil, errSql
 	}
 
-	localDatabase.SetMaxOpenConns(1)
-
 	log.Println("Successfully connected to database!")
-	migrations.Init(localDatabase)
+	migrationsInitFn(localDatabase)
 	return localDatabase, nil
 
 }
 
-func applyDatabaseConfigDSN(dbPath string) string {
-	dsnQuery := "_busy_timeout=" + strconv.Itoa(config.AppConfig.DbBuzyTimeout)
+func applyDatabaseConfig() string {
+	psqlSetup := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+		config.AppConfig.DbHost,
+		config.AppConfig.DbPort,
+		config.AppConfig.DbUser,
+		config.AppConfig.DbName,
+		config.AppConfig.DbPassword,
+	)
 
-	dsnQuery += "&_journal_mode=" + config.AppConfig.DbJournalMode
-
-	return dbPath + "?" + dsnQuery
+	return psqlSetup
 }

@@ -62,7 +62,6 @@ type formatType = {
 
 export const getFileTypeInfo = (format: string): formatType => {
 	const fileTypes: Record<string, formatType> = {
-		// Imagens
 		'.jpg': { type: 'image', mime: 'image/jpeg', description: 'IMAGE_JPEG' },
 		'.jpeg': { type: 'image', mime: 'image/jpeg', description: 'IMAGE_JPEG' },
 		'.png': { type: 'image', mime: 'image/png', description: 'IMAGE_PNG' },
@@ -71,19 +70,16 @@ export const getFileTypeInfo = (format: string): formatType => {
 		'.svg': { type: 'image', mime: 'image/svg+xml', description: 'IMAGE_SVG' },
 		'.webp': { type: 'image', mime: 'image/webp', description: 'IMAGE_WEBP' },
 
-		// Áudios
 		'.mp3': { type: 'audio', mime: 'audio/mpeg', description: 'AUDIO_MP3' },
 		'.wav': { type: 'audio', mime: 'audio/wav', description: 'AUDIO_WAV' },
 		'.aac': { type: 'audio', mime: 'audio/aac', description: 'AUDIO_AAC' },
 		'.flac': { type: 'audio', mime: 'audio/flac', description: 'AUDIO_FLAC' },
 
-		// Vídeos
 		'.mp4': { type: 'video', mime: 'video/mp4', description: 'VIDEO_MP4' },
 		'.webm': { type: 'video', mime: 'video/webm', description: 'VIDEO_WEBM' },
 		'.ogg': { type: 'video', mime: 'video/ogg', description: 'VIDEO_OGG' },
 		'.mov': { type: 'video', mime: 'video/quicktime', description: 'VIDEO_MOV' },
 
-		// Documentos
 		'.pdf': { type: 'document', mime: 'application/pdf', description: 'DOCUMENT_PDF' },
 		'.txt': { type: 'document', mime: 'text/plain', description: 'DOCUMENT_TXT' },
 		'.html': { type: 'document', mime: 'text/html', description: 'DOCUMENT_HTML' },
@@ -92,7 +88,6 @@ export const getFileTypeInfo = (format: string): formatType => {
 		'.json': { type: 'document', mime: 'application/json', description: 'DOCUMENT_JSON' },
 		'.csv': { type: 'document', mime: 'text/csv', description: 'DOCUMENT_CSV' },
 
-		// Outros
 		'.zip': { type: 'archive', mime: 'application/zip', description: 'ARCHIVE_ZIP' },
 		'.rar': { type: 'archive', mime: 'application/vnd.rar', description: 'ARCHIVE_RAR' },
 		'.7z': { type: 'archive', mime: 'application/x-7z-compressed', description: 'ARCHIVE_7Z' },

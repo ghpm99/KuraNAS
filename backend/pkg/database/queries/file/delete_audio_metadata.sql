@@ -1,4 +1,3 @@
-DELETE FROM
-    audio_metadata
+DELETE FROM audio_metadata
 WHERE
-    id = ?
+    id = $1;

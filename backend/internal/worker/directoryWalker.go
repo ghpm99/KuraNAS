@@ -1,0 +1,63 @@
+package worker
+
+import (
+	"errors"
+	"log"
+	"nas-go/api/pkg/i18n"
+	"os"
+	"path/filepath"
+	"sync"
+)
+
+func StartDirectoryWalker(
+	targetDirectory string,
+	fileWalkChannel chan<- FileWalk,
+	monitorChannel chan<- ResultWorkerData,
+	workerGroup *sync.WaitGroup,
+) {
+	defer workerGroup.Done()
+
+	walkCallback := func(filePath string, fileInfo os.FileInfo, err error) error {
+		if err != nil {
+			if errors.Is(err, os.ErrPermission) {
+				i18n.LogTranslate("ERROR_PERMISSION_DENIED", filePath)
+				monitorChannel <- ResultWorkerData{
+					Path:    filePath,
+					Success: false,
+					Error:   err.Error(),
+				}
+				return nil
+			}
+			msg := i18n.GetMessage("ERROR_GET_FILE")
+			log.Printf(msg, filePath, err)
+			monitorChannel <- ResultWorkerData{
+				Path:    filePath,
+				Success: false,
+				Error:   err.Error(),
+			}
+			return nil
+		}
+		if fileInfo == nil {
+			monitorChannel <- ResultWorkerData{
+				Path:    filePath,
+				Success: false,
+				Error:   "file info is nil",
+			}
+			return nil
+		}
+		fileWalkChannel <- FileWalk{
+			Path: filePath,
+			Info: fileInfo,
+		}
+		return nil
+	}
+
+	if err := filepath.Walk(targetDirectory, walkCallback); err != nil {
+		log.Printf("Erro na exploração do diretório: %v\n", err)
+		monitorChannel <- ResultWorkerData{
+			Path:    targetDirectory,
+			Success: false,
+			Error:   err.Error(),
+		}
+	}
+}

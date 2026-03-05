@@ -3,4 +3,4 @@ SELECT
 FROM
     migrations
 WHERE
-    name = ?;
+    NAME = $1;
