@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import I18nProvider from './index';
 import useI18n from './i18nContext';
 import { useQuery } from '@tanstack/react-query';

@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import AddToPlaylistMenu, { AddToPlaylistButton } from './AddToPlaylistMenu';
 
 const mockUseQuery = jest.fn();
@@ -105,7 +104,7 @@ describe('components/music/AddToPlaylistMenu', () => {
 		expect(mockEnqueueSnackbar).toHaveBeenCalledWith('MUSIC_TRACK_ADD_FAILED', { variant: 'warning' });
 
 		render(<AddToPlaylistButton fileId={6} />);
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 	});
 
 	it('shows empty playlists entry and handles create failure', () => {

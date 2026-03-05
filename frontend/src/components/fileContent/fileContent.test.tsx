@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
-import React from 'react';
 import FileContent from './fileContent';
 
 const mockUseFile = jest.fn();

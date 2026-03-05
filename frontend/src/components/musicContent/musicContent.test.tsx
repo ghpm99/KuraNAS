@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import MusicContent from './musicContent';
 
 const mockUseMusic = jest.fn();
@@ -25,7 +24,7 @@ describe('musicContent', () => {
 		views.forEach((view, i) => {
 			mockUseMusic.mockReturnValue({ currentView: view });
 			render(<MusicContent />);
-			expect(screen.getByText(labels[i])).toBeInTheDocument();
+			expect(screen.getByText(labels[i]!)).toBeInTheDocument();
 		});
 		expect(screen.getAllByText('Playlist').length).toBeGreaterThan(0);
 

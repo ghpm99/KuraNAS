@@ -1,68 +1,55 @@
 .content {
-	max-width: 1200px;
+	max-width: 1360px;
 	margin: 16px auto;
-	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 
-.container {
-	max-width: 1400px;
-	margin: 0 auto;
+.headerRow {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
 }
 
-.header {
-	margin-bottom: 32px;
+.headerActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
 }
 
-.pageTitle {
-	font-size: 2rem;
-	font-weight: 700;
-	margin: 0 0 8px 0;
+.quickActions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
 }
 
-.pageDescription {
-	font-size: 1rem;
-	color: #a1a1aa;
-	margin: 0;
+.healthHeader {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
 }
 
-.section {
-	margin-bottom: 48px;
+.footerRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding-bottom: 16px;
 }
 
-.sectionTitle {
-	font-size: 1.25rem;
-	font-weight: 600;
-	margin: 0 0 24px 0;
-	padding-bottom: 8px;
-	border-bottom: 2px solid rgba(255, 255, 255, 0.06);
-}
-
-.chartGrid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-	gap: 24px;
-}
-
-.chartsGrid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 24px;
-}
-
-@media (min-width: 1024px) {
-	.chartsGrid {
-		grid-template-columns: 1fr 1fr;
+@media (max-width: 900px) {
+	.content {
+		margin: 8px;
 	}
-}
 
-.activityGrid {
-	display: grid;
-	grid-template-columns: 1fr;
-	gap: 24px;
-}
-
-@media (min-width: 1024px) {
-	.activityGrid {
-		grid-template-columns: 1fr 1fr;
+	.footerRow {
+		flex-direction: column;
+		align-items: flex-start;
 	}
 }

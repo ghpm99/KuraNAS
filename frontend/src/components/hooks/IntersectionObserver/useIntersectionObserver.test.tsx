@@ -55,19 +55,19 @@ describe('useIntersectionObserver', () => {
 		});
 
 		expect(instances).toHaveLength(1);
-		expect(instances[0].options).toEqual({ threshold: 0.5, rootMargin: '16px' });
-		expect(instances[0].observe).toHaveBeenCalledWith(node);
+		expect(instances[0]!.options).toEqual({ threshold: 0.5, rootMargin: '16px' });
+		expect(instances[0]!.observe).toHaveBeenCalledWith(node);
 		expect(result.current.isIntersecting).toBe(false);
 
 		act(() => {
-			instances[0].emit(true);
+			instances[0]!.emit(true);
 		});
 
 		expect(result.current.isIntersecting).toBe(true);
 		expect(onIntersect).toHaveBeenCalledTimes(1);
 
 		act(() => {
-			instances[0].emitEntries([]);
+			instances[0]!.emitEntries([]);
 		});
 
 		expect(result.current.isIntersecting).toBe(false);
@@ -76,12 +76,12 @@ describe('useIntersectionObserver', () => {
 			result.current.ref(null);
 		});
 
-		expect(instances[0].disconnect).toHaveBeenCalledTimes(1);
+		expect(instances[0]!.disconnect).toHaveBeenCalledTimes(1);
 
 		act(() => {
 			cleanup?.();
 		});
-		expect(instances[0].disconnect).toHaveBeenCalledTimes(2);
+		expect(instances[0]!.disconnect).toHaveBeenCalledTimes(2);
 	});
 
 	it('does not create observer when disabled and disconnects existing observer', () => {
@@ -102,7 +102,7 @@ describe('useIntersectionObserver', () => {
 			result.current.ref(node);
 		});
 
-		expect(instances[0].disconnect).toHaveBeenCalledTimes(1);
+		expect(instances[0]!.disconnect).toHaveBeenCalledTimes(1);
 		expect(instances).toHaveLength(1);
 	});
 
@@ -115,7 +115,7 @@ describe('useIntersectionObserver', () => {
 		});
 
 		act(() => {
-			instances[0].emit(true);
+			instances[0]!.emit(true);
 		});
 
 		expect(result.current.isIntersecting).toBe(true);
