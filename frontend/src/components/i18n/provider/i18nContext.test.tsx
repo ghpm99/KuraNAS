@@ -1,5 +1,4 @@
 import { renderHook } from '@testing-library/react';
-import React from 'react';
 import { I18nContextProvider, useI18n } from './i18nContext';
 
 describe('i18n/provider/i18nContext', () => {

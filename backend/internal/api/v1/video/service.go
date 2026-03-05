@@ -306,7 +306,9 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 		normalizedLimit = maxLimit
 	}
 
-	allVideos, err := s.Repository.GetCatalogVideos(normalizedLimit * 4)
+	fetchLimit := normalizedLimit * 4
+
+	allVideos, err := s.Repository.GetCatalogVideos(fetchLimit)
 	if err != nil {
 		return VideoHomeCatalogDto{}, err
 	}

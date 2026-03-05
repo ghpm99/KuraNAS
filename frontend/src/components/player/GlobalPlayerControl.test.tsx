@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import GlobalPlayerControl from './GlobalPlayerControl';
 
 const mockUseGlobalMusic = jest.fn();
@@ -35,20 +34,20 @@ describe('GlobalPlayerControl', () => {
 		render(<GlobalPlayerControl />);
 
 		expect(screen.getByText('song')).toBeInTheDocument();
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(api.toggleShuffle).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[1]);
+		fireEvent.click(screen.getAllByRole('button')[1]!);
 		expect(api.previous).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[2]);
+		fireEvent.click(screen.getAllByRole('button')[2]!);
 		expect(api.togglePlayPause).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[3]);
+		fireEvent.click(screen.getAllByRole('button')[3]!);
 		expect(api.next).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[4]);
+		fireEvent.click(screen.getAllByRole('button')[4]!);
 		expect(api.setRepeatMode).toHaveBeenCalledWith('all');
 
 		const sliders = screen.getAllByRole('slider');
-		fireEvent.change(sliders[0], { target: { value: '11' } });
-		fireEvent.change(sliders[1], { target: { value: '0.3' } });
+		fireEvent.change(sliders[0]!, { target: { value: '11' } });
+		fireEvent.change(sliders[1]!, { target: { value: '0.3' } });
 		expect(api.seek).toHaveBeenCalledWith(11);
 		expect(api.setVolume).toHaveBeenCalledWith(0.3);
 	});
@@ -83,12 +82,12 @@ describe('GlobalPlayerControl', () => {
 		expect(screen.getByText('Meta Title')).toBeInTheDocument();
 		expect(screen.getByText('Meta Artist')).toBeInTheDocument();
 		expect(screen.getAllByText('0:00').length).toBeGreaterThan(0);
-		fireEvent.click(screen.getAllByRole('button')[4]);
+		fireEvent.click(screen.getAllByRole('button')[4]!);
 		expect(oneModeApi.setRepeatMode).toHaveBeenCalledWith('none');
 
 		mockUseGlobalMusic.mockReturnValue(unknownModeApi);
 		rerender(<GlobalPlayerControl />);
-		fireEvent.click(screen.getAllByRole('button')[4]);
+		fireEvent.click(screen.getAllByRole('button')[4]!);
 		expect(unknownModeApi.setRepeatMode).toHaveBeenCalledWith('none');
 	});
 });

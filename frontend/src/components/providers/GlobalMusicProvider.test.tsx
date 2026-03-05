@@ -1,5 +1,4 @@
 import { act, renderHook } from '@testing-library/react';
-import React from 'react';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
 
 const mockUpdatePlayerState = jest.fn();

@@ -1,4 +1,4 @@
-name: CI/CD
+name: Release Build
 
 on:
   push:
@@ -6,12 +6,13 @@ on:
       - 'v*'
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.24'
   NODE_VERSION: '20'
   BUILD_DIR: build
   FRONTEND_DIR: frontend
   BACKEND_DIR: backend
   DIST_DIR: frontend/dist
+  BACKEND_COVERAGE_MIN: '80'
 
 jobs:
   lint-frontend:
@@ -25,6 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
       - run: yarn install --frozen-lockfile
       - run: yarn lint
 
@@ -40,8 +43,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
       - run: yarn install --frozen-lockfile
       - run: yarn test --coverage --watchAll=false
+      - run: yarn build
 
   lint-backend:
     name: Lint Backend
@@ -69,7 +75,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - run: go test ./... -cover
+      - name: Run backend tests with coverage profile
+        run: go test ./... -coverprofile=coverage.out
+      - name: Enforce backend coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')
+          echo "Backend coverage: ${COVERAGE}%"
+          awk -v c="$COVERAGE" -v min="${BACKEND_COVERAGE_MIN}" 'BEGIN { exit(c >= min ? 0 : 1) }'
 
   build-linux:
     name: Build on Linux
@@ -77,7 +89,7 @@ jobs:
     needs: [test-backend, test-frontend]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -88,7 +100,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
+          cache: yarn
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install frontend dependencies
@@ -134,7 +146,7 @@ jobs:
     needs: [test-backend, test-frontend]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -145,7 +157,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
+          cache: yarn
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install frontend dependencies
@@ -199,7 +211,7 @@ jobs:
           merge-multiple: true
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}

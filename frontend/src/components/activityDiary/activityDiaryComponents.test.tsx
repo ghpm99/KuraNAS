@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import ActivityDiaryActionBar from './ActivityDiaryActionBar/ActivityDiaryActionBar';
 import ActivityDiaryForm from './ActivityDiaryForm/ActivityDiaryForm';
 import ActivityList from './ActivityList/ActivityList';
@@ -84,7 +83,7 @@ describe('activity diary components', () => {
 	it('submits form and triggers field handlers', () => {
 		render(<ActivityDiaryForm />);
 		fireEvent.change(screen.getByRole('textbox', { name: /ACTIVITY_NAME_LABEL/i }), { target: { value: 'New Name' } });
-		fireEvent.change(screen.getAllByRole('textbox')[1], { target: { value: 'New Description' } });
+		fireEvent.change(screen.getAllByRole('textbox')[1]!, { target: { value: 'New Description' } });
 		fireEvent.click(screen.getByText('ADD_ACTIVITY'));
 
 		expect(defaultCtx.handleNameChange).toHaveBeenCalled();
@@ -98,7 +97,7 @@ describe('activity diary components', () => {
 		expect(screen.getByText('D1')).toBeInTheDocument();
 
 		act(() => {
-			screen.getAllByRole('button')[0].click();
+			screen.getAllByRole('button')[0]!.click();
 		});
 		expect(defaultCtx.copyActivity).toHaveBeenCalled();
 	});
