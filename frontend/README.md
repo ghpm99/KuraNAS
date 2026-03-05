@@ -1,54 +1,99 @@
-# React + TypeScript + Vite
+# Frontend KuraNAS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação web do KuraNAS construída com React + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19
+- TypeScript
+- Vite
+- MUI
+- React Query
+- Jest + Testing Library
+- ESLint
 
-## Expanding the ESLint configuration
+## Estrutura
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```text
+frontend/
+├── src/
+│   ├── app/            # composição de rotas e inicialização da aplicação
+│   ├── components/     # componentes por domínio e providers
+│   ├── pages/          # páginas de rota (wrappers)
+│   ├── service/        # clientes e serviços de API
+│   ├── types/          # tipos compartilhados
+│   └── utils/          # utilitários
+├── public/
+├── jest.config.js
+├── eslint.config.js
+└── vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+cd frontend
+yarn
 ```
+
+## Scripts
+
+- Dev server:
+```bash
+yarn dev
+```
+- Build de produção:
+```bash
+yarn build
+```
+- Preview local do build:
+```bash
+yarn preview
+```
+- Lint:
+```bash
+yarn lint
+```
+- Testes:
+```bash
+yarn test --watchAll=false
+```
+- Cobertura:
+```bash
+yarn coverage
+```
+- Typecheck da configuração de testes:
+```bash
+yarn typecheck:test
+```
+
+## Variáveis de Ambiente
+
+Arquivos padrão:
+
+- `.env.development`
+- `.env.production`
+
+Variáveis usadas:
+
+- `VITE_API_URL`: URL base da API backend.
+- `VITE_DEBUG_MODE`: habilita flags de debug no ambiente de desenvolvimento.
+
+## API e i18n
+
+- O frontend consome a API via `src/service/index.ts` com base URL de `getApiV1BaseUrl()` (`src/service/apiUrl.ts`).
+- Textos visíveis devem vir de tradução via `useI18n()`.
+- Não adicionar texto hardcoded em componentes.
+- Novas mensagens devem ser adicionadas primeiro em `backend/translations` e consumidas por chave.
+
+## Padrões de Implementação
+
+Antes de alterar código frontend, siga:
+
+- `docs/standards/frontend-standards.md`
+
+Pontos obrigatórios:
+
+- lógica e chamadas HTTP em hooks/providers, não em componentes de render;
+- uso de alias `@/...`;
+- testes com cobertura mínima global de 80%.

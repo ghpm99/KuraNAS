@@ -1,85 +1,99 @@
 # KuraNAS
 
-## Descrição
+Sistema NAS pessoal com backend em Go e frontend em React, focado em gerenciamento de arquivos, mídia e monitoramento de uso.
 
-KuraNAS é um sistema NAS (Network Attached Storage) pessoal, projetado para ser simples, fácil de usar e acessível. Ele permite que você armazene, organize e compartilhe seus arquivos de forma segura em sua rede local.
+## Visão Geral
 
-## Funcionalidades
+- Backend: API HTTP, regras de negócio, acesso a banco, workers e i18n.
+- Frontend: SPA React + TypeScript consumindo API `/api/v1`.
+- Build integrado: geração de artefatos em `build/`.
 
-- **Armazenamento centralizado:** Armazene todos os seus arquivos em um único local, acessível de qualquer dispositivo na sua rede.
-- **Interface web:** Gerencie seus arquivos através de uma interface web intuitiva e fácil de usar.
-- **Compartilhamento de arquivos:** Compartilhe arquivos e pastas com outros usuários na sua rede.
-- **Controle de acesso:** Defina permissões de acesso para diferentes usuários e pastas.
-- **Upload e download:** Faça upload e download de arquivos facilmente através da interface web.
-- **Organização de arquivos:** Organize seus arquivos em pastas e subpastas.
-- **Pré-visualização de arquivos:** Visualize imagens, vídeos e documentos diretamente na interface web.
-- **Compatibilidade:** Acesse seus arquivos de qualquer dispositivo com um navegador web, incluindo computadores, tablets e smartphones.
+## Estrutura do Repositório
 
-## Arquitetura
-
-O KuraNAS é composto por duas partes principais:
-
-- **Frontend:** A interface web, construída com React e TypeScript.
-- **Backend:** O servidor, construído com Go.
-
-O frontend se comunica com o backend através de chamadas de API REST. O backend gerencia o armazenamento de arquivos, o controle de acesso e o compartilhamento de arquivos.
+```text
+.
+├── backend/            # API, workers, banco, i18n e scripts de backend
+├── frontend/           # Aplicação web React + Vite + TypeScript
+├── build/              # Saída de build integrada (gerado)
+├── docs/               # Padrões e documentação de engenharia
+├── Makefile            # Build integrado do projeto
+└── AGENTS.md           # Regras de colaboração para agentes
+```
 
 ## Pré-requisitos
 
-Antes de começar, você precisará ter o seguinte instalado:
+- Go (recomendado: 1.24+)
+- Node.js (recomendado: 20+)
+- Yarn 1.x
+- Make
 
-- **Go:** (Versão 1.20 ou superior)
-- **Node.js:** (Versão 16 ou superior)
-- **Yarn:** (Opcional, mas recomendado)
+## Desenvolvimento
 
-## Instalação
+1. Instale dependências do frontend:
 
-1.  **Clone o repositório:**
+```bash
+cd frontend && yarn
+```
 
-    ```bash
-    git clone https://github.com/seu-usuario/KuraNAS.git
-    cd KuraNAS
-    ```
+2. Suba o backend em modo dev (porta `8000`):
 
-2.  **Construa a aplicação:**
+```bash
+make -C backend run
+```
 
-    ```bash
-    make
-    ```
+3. Em outro terminal, suba o frontend:
 
-3.  **Execute o servidor:**
+```bash
+cd frontend && yarn dev
+```
 
-    ```bash
-    ./main
-    ```
+## Build Integrado
 
-    O servidor será executado na porta 8080 por padrão. Você pode alterar a porta configurando a variável de ambiente `PORT`.
+Gera frontend + backend e organiza saída em `build/`:
 
-## Configuração
+```bash
+make
+```
 
-O KuraNAS pode ser configurado através de variáveis de ambiente. As seguintes variáveis de ambiente estão disponíveis:
+Limpar artefatos:
 
-- `PORT`: A porta em que o servidor será executado (padrão: 8080).
-- `DATA_DIR`: O diretório onde os arquivos serão armazenados (padrão: ./data).
+```bash
+make clean
+```
 
-## Uso
+## Testes e Qualidade
 
-1.  Abra seu navegador web e acesse `http://localhost:8080` (ou o endereço e porta configurados).
-2.  Crie uma conta de usuário.
-3.  Comece a fazer upload e organizar seus arquivos.
+- Backend cobertura geral:
+```bash
+cd backend && go test ./... -cover
+```
+- Backend testes com tag `dev`:
+```bash
+make -C backend test
+```
+- Frontend lint:
+```bash
+cd frontend && yarn lint
+```
+- Frontend testes:
+```bash
+cd frontend && yarn test --watchAll=false
+```
+- Frontend cobertura:
+```bash
+cd frontend && yarn coverage
+```
 
-## Contribuição
+## Internacionalização (Obrigatória)
 
-Contribuições são bem-vindas! Se você encontrar um bug ou tiver uma sugestão de melhoria, por favor, abra uma issue ou envie um pull request.
+Este projeto usa JSON como fonte única de tradução.
 
-## Licença
+- Não hardcode texto visível para usuário em backend ou frontend.
+- Novas chaves devem ser adicionadas em `backend/translations`.
+- O frontend consome traduções via endpoint de configuração do backend.
 
-Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para mais informações.
+## Documentação por Módulo
 
-## Autores
-
-- [Guilherme H.](https://github.com/ghpm99)
-
-## Agradecimentos
-
-- Agradecimentos à comunidade open source por fornecer as ferramentas e bibliotecas que tornaram este projeto possível.
+- Frontend: `frontend/README.md`
+- Backend: `backend/README.md`
+- Padrões: `docs/standards/frontend-standards.md` e `docs/standards/backend-standards.md`
