@@ -76,7 +76,12 @@ func (h *Handler) PreviousVideoHandler(c *gin.Context) {
 }
 
 func (h *Handler) GetHomeCatalogHandler(c *gin.Context) {
+	const maxLimit = 100
 	limit := utils.ParseInt(c.DefaultQuery("limit", "24"), c)
+	if limit <= 0 || limit > maxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
+		return
+	}
 
 	catalog, err := h.service.GetHomeCatalog(c.ClientIP(), limit)
 	if err != nil {
