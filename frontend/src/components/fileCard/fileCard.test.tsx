@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import FileCard from './fileCard';
 
 describe('components/fileCard', () => {
@@ -21,7 +20,7 @@ describe('components/fileCard', () => {
 		expect(screen.getByText('jpg - 1 MB')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('Photo'));
 		expect(onClick).toHaveBeenCalled();
-		fireEvent.click(screen.getAllByRole('button')[1]);
+		fireEvent.click(screen.getAllByRole('button')[1]!);
 		expect(onClickStar).toHaveBeenCalled();
 	});
 

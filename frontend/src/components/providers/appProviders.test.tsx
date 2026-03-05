@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import AppProviders from './appProviders';
 
 jest.mock('react-router-dom', () => ({ BrowserRouter: ({ children }: any) => <div data-testid='router'>{children}</div> }));

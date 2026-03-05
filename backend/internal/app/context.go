@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
@@ -23,6 +24,7 @@ type AppContext struct {
 	Diary                *DiaryContext
 	Music                *MusicContext
 	Video                *VideoContext
+	Analytics            *AnalyticsContext
 	ConfigurationHandler *configuration.Handler
 	UpdateHandler        *updater.Handler
 }
@@ -54,6 +56,12 @@ type VideoContext struct {
 	Repository video.RepositoryInterface
 }
 
+type AnalyticsContext struct {
+	Handler    *analytics.Handler
+	Service    analytics.ServiceInterface
+	Repository analytics.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -63,6 +71,7 @@ func NewContext(db *sql.DB) *AppContext {
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
 	videoContext := newVideoContext(dbContext, loggerService)
+	analyticsContext := newAnalyticsContext(dbContext)
 	configurationHandler := configuration.NewHandler(loggerService)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
@@ -75,6 +84,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Diary:                diaryContext,
 		Music:                musicContext,
 		Video:                videoContext,
+		Analytics:            analyticsContext,
 		ConfigurationHandler: configurationHandler,
 		UpdateHandler:        updateHandler,
 	}
@@ -127,6 +137,17 @@ func newDiaryContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	service := diary.NewService(repository, tasks)
 	handler := diary.NewHandler(service, logger)
 	return &DiaryContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newAnalyticsContext(dbContext *database.DbContext) *AnalyticsContext {
+	repository := analytics.NewRepository(dbContext)
+	service := analytics.NewService(repository)
+	handler := analytics.NewHandler(service)
+	return &AnalyticsContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

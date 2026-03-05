@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import Header from './Header';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -19,7 +18,7 @@ describe('layout/Header', () => {
 		expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
 		expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
 
-		fireEvent.click(screen.getAllByRole('button')[0]);
+		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('KuraNAS')).toBeInTheDocument();
 		expect(screen.getAllByText('ALL_FILES').length).toBeGreaterThan(0);
 		expect(screen.getByText('NAV_IMAGES')).toBeInTheDocument();

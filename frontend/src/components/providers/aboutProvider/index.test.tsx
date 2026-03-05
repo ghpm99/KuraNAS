@@ -1,5 +1,4 @@
 import { act, render, screen } from '@testing-library/react';
-import React from 'react';
 import { AboutProvider } from './index';
 import { useAbout } from './AboutContext';
 import { useQuery } from '@tanstack/react-query';

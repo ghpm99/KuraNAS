@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React, { createRef } from 'react';
+import { createRef } from 'react';
 import VideoControls from './videoControls/videoControls';
 import VideoSettings from './videoSettings/videoSettings';
 import VideoProgressBar from './videoProgressBar/videoProgressBar';
@@ -61,29 +61,29 @@ describe('video components', () => {
 		const playPauseButton = container.querySelector('.play-pause-button') as HTMLButtonElement;
 		const skipButtons = container.querySelectorAll('.skip-button');
 		const rightControlsButtons = container.querySelectorAll('.right-controls button');
-		fireEvent.click(skipButtons[0]);
+		fireEvent.click(skipButtons[0]!);
 		expect(props.seekTo).toHaveBeenCalledWith(10);
-		fireEvent.click(skipButtons[1]);
+		fireEvent.click(skipButtons[1]!);
 		expect(props.seekTo).toHaveBeenCalledWith(30);
 		fireEvent.click(playPauseButton);
 		expect(props.togglePlayPause).toHaveBeenCalled();
 
-		fireEvent.click(rightControlsButtons[rightControlsButtons.length - 1]);
+			fireEvent.click(rightControlsButtons[rightControlsButtons.length - 1]!);
 		expect(props.toggleFullscreen).toHaveBeenCalled();
-		fireEvent.click(container.querySelectorAll('.left-controls button')[0]);
-		fireEvent.click(container.querySelectorAll('.left-controls button')[1]);
+		fireEvent.click(container.querySelectorAll('.left-controls button')[0]!);
+		fireEvent.click(container.querySelectorAll('.left-controls button')[1]!);
 		expect(props.previousVideo).toHaveBeenCalled();
 		expect(props.nextVideo).toHaveBeenCalled();
 
 		const sliders = screen.getAllByRole('slider');
-		fireEvent.change(sliders[0], { target: { value: '42' } });
-		fireEvent.change(sliders[1], { target: { value: '0.7' } });
+		fireEvent.change(sliders[0]!, { target: { value: '42' } });
+		fireEvent.change(sliders[1]!, { target: { value: '0.7' } });
 		expect(props.seekTo).toHaveBeenCalledWith(42);
 		expect(props.setVolume).toHaveBeenCalledWith(0.7);
 		fireEvent.mouseMove(document);
 		fireEvent.keyPress(document, { key: 'k' });
 
-		fireEvent.click(rightControlsButtons[1]);
+		fireEvent.click(rightControlsButtons[1]!);
 		fireEvent.click(screen.getByText('1.5x'));
 		expect(props.setPlaybackRate).toHaveBeenCalledWith(1.5);
 
