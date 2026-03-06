@@ -121,11 +121,9 @@
 	"ARCHIVE_TAR": "Arquivo TAR",
 	"ARCHIVE_GZIP": "Arquivo GZIP",
 	"UNKNOWN_FORMAT": "Formato desconhecido",
-
 	"NAV_IMAGES": "Imagens",
 	"NAV_MUSIC": "Músicas",
 	"NAV_VIDEOS": "Vídeos",
-
 	"ERROR_DATA_REQUIRED": "Dados são obrigatórios",
 	"ERROR_INVALID_REQUEST": "Requisição inválida",
 	"ERROR_INVALID_PATH": "Caminho inválido",
@@ -172,7 +170,6 @@
 	"ERROR_FILE_NOT_FOUND": "Arquivo não encontrado",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Período de analytics inválido. Use 24h, 7d, 30d ou 90d.",
 	"UPDATE_APPLIED": "Atualização aplicada com sucesso. Reiniciando...",
-
 	"ANALYTICS_PAGE_TITLE": "Analytics de Arquivos",
 	"ANALYTICS_PAGE_DESCRIPTION": "Análise detalhada do uso de armazenamento e distribuição de arquivos",
 	"ANALYTICS_REFRESH": "Atualizar Dados",
@@ -184,46 +181,36 @@
 	"ANALYTICS_CLEANUP_SECTION": "Sugestões de Limpeza e Insights",
 	"ANALYTICS_BACKUP_SECTION": "Backup e Restauração",
 	"ANALYTICS_TRASH_SECTION": "Lixeira",
-
 	"ANALYTICS_DISK_USAGE": "Uso de Disco",
 	"ANALYTICS_USED": "Usado",
 	"ANALYTICS_FREE": "Livre",
-
 	"ANALYTICS_FILE_TYPE_DISTRIBUTION": "Distribuição por Tipo de Arquivo",
 	"ANALYTICS_FILES_COUNT_LABEL": "arquivos",
-
 	"ANALYTICS_SPACE_USED": "Espaço Utilizado",
 	"ANALYTICS_FILES_STORED": "Arquivos Armazenados",
 	"ANALYTICS_FOLDERS_STORED": "Pastas Armazenadas",
 	"ANALYTICS_FREE_SPACE": "Espaço Livre",
-
 	"ANALYTICS_LARGEST_FILES": "Maiores Arquivos",
 	"ANALYTICS_FILE": "Arquivo",
 	"ANALYTICS_FILE_SIZE": "Tamanho",
 	"ANALYTICS_FILE_PATH": "Caminho",
-
 	"ANALYTICS_SIZE_DISTRIBUTION": "Distribuição por Tamanho",
-
 	"ANALYTICS_FILE_TYPE_SUMMARY": "Resumo por Tipo de Arquivo",
 	"ANALYTICS_FILE_TYPE": "Tipo",
 	"ANALYTICS_FILE_COUNT": "Quantidade",
 	"ANALYTICS_TOTAL_SPACE": "Espaço Total",
 	"ANALYTICS_PERCENTAGE": "Percentual",
-
 	"ANALYTICS_ACTIVITY_CHART": "Atividade por Dia (Últimos 7 dias)",
 	"ANALYTICS_CREATED": "Criados",
 	"ANALYTICS_MODIFIED": "Modificados",
-
 	"ANALYTICS_RECENTLY_ADDED": "Arquivos Recentemente Adicionados",
 	"ANALYTICS_MOST_ACCESSED": "Arquivos Mais Acessados",
 	"ANALYTICS_ACCESSES": "acessos",
-
 	"ANALYTICS_CRITICAL_SPACE": "Espaço Crítico",
 	"ANALYTICS_CRITICAL_SPACE_MSG": "O uso de disco ultrapassou 90%. Considere limpar arquivos desnecessários.",
 	"ANALYTICS_LARGE_UNACCESSED": "Arquivos Grandes Não Acessados",
 	"ANALYTICS_SIMILAR_NAMES": "Arquivos com Nomes Similares",
 	"ANALYTICS_SIMILARITY": "Similaridade: ",
-
 	"ANALYTICS_DUPLICATE_FILES": "Arquivos Duplicados",
 	"ANALYTICS_NO_DUPLICATES": "Nenhum arquivo duplicado encontrado.",
 	"ANALYTICS_WASTED_SPACE": "Espaço Desperdiçado",
@@ -231,10 +218,8 @@
 	"ANALYTICS_COPIES": "Cópias",
 	"ANALYTICS_PATHS": "Caminhos",
 	"ANALYTICS_MORE": "mais",
-
 	"ANALYTICS_EMPTY_FOLDERS": "Pastas Vazias",
 	"ANALYTICS_EMPTY_PATHS": "Caminhos Vazios",
-
 	"ANALYTICS_BACKUP_SUCCESS": "Sucesso",
 	"ANALYTICS_BACKUP_FAILED": "Falhou",
 	"ANALYTICS_BACKUP_PENDING": "Pendente",
@@ -244,7 +229,6 @@
 	"ANALYTICS_BACKUP_DATE": "Data",
 	"ANALYTICS_BACKUP_SIZE": "Tamanho",
 	"ANALYTICS_BACKUP_STATUS": "Status",
-
 	"ANALYTICS_TRASH_FILES": "Arquivos na Lixeira",
 	"ANALYTICS_TRASH_SPACE": "Espaço Ocupado",
 	"ANALYTICS_TRASH_DELETE_DATE": "Data de Exclusão",
@@ -281,7 +265,6 @@
 	"ANALYTICS_STATUS_SCANNING": "Varrendo",
 	"ANALYTICS_STATUS_ERROR": "Com erros",
 	"ANALYTICS_DATE": "Data",
-
 	"MUSIC_ALL_TRACKS": "Todas as Faixas",
 	"MUSIC_ARTISTS": "Artistas",
 	"MUSIC_ALBUMS": "Álbuns",
@@ -308,17 +291,14 @@
 	"MUSIC_TRACK_REMOVED": "Faixa removida",
 	"MUSIC_TRACK_REMOVE_FAILED": "Falha ao remover faixa",
 	"MUSIC_PLAYLIST_EMPTY": "Esta playlist está vazia. Adicione faixas de qualquer visualização.",
-
 	"PLAYER_NO_TRACK": "Nenhuma faixa tocando",
 	"PLAYER_UNKNOWN_TITLE": "Título Desconhecido",
 	"PLAYER_UNKNOWN_ARTIST": "Artista Desconhecido",
-
 	"ACTION_CANCEL": "Cancelar",
 	"ACTION_CREATE": "Criar",
 	"ACTION_CREATE_ADD": "Criar e Adicionar",
 	"ACTION_LOAD_MORE": "Carregar mais",
 	"COMMON_NOT_AVAILABLE": "N/D",
-
 	"IMAGES_CATEGORY_ALL": "Todas",
 	"IMAGES_CATEGORY_RECENT": "Recentes",
 	"IMAGES_CATEGORY_PORTRAIT": "Retratos",
@@ -363,7 +343,6 @@
 	"IMAGES_GROUP_NO_FORMAT": "Sem formato",
 	"IMAGES_GROUP_NO_DATE": "Sem data registrada",
 	"IMAGES_GROUP_INITIAL": "Início {{letter}}",
-
 	"VIDEO_INVALID_ID": "ID de vídeo inválido",
 	"VIDEO_NO_VIDEO_PLAYING": "Nenhum vídeo em reprodução",
 	"VIDEO_BACK": "Voltar",
@@ -414,13 +393,19 @@
 	"VIDEO_AUTO_DETECTED": "Auto detectado",
 	"VIDEO_AUDIO_TRACK": "Faixa de áudio",
 	"VIDEO_DEFAULT": "Padrão",
-
 	"ERROR_DIARY_NOT_FOUND": "Entrada de diário não encontrada",
-
 	"image": "Imagens",
 	"audio": "Áudios",
 	"video": "Vídeos",
 	"document": "Documentos",
 	"archive": "Arquivos",
-	"unknown": "Outros"
+	"unknown": "Outros",
+	"ERROR_JOB_INVALID_ID": "ID de job invalido",
+	"ERROR_JOB_NOT_FOUND": "Job nao encontrado",
+	"ERROR_GET_JOB": "Falha ao consultar job",
+	"ERROR_LIST_JOBS": "Falha ao listar jobs",
+	"ERROR_GET_JOB_STEPS": "Falha ao consultar steps do job",
+	"ERROR_UPLOAD_JOB_CREATE": "Falha ao enfileirar job de processamento do upload",
+	"ERROR_JOB_CANCEL": "Falha ao cancelar job",
+	"ACTION_JOB_CANCEL_SUCCESS": "Job cancelado com sucesso"
 }
