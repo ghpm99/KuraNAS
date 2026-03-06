@@ -38,6 +38,11 @@ func TestInitializeConfig(t *testing.T) {
 	t.Setenv("DB_USER", "user")
 	t.Setenv("DB_PASSWORD", "pass")
 	t.Setenv("DB_NAME", "db")
+	t.Setenv("WORKER_CONCURRENCY_CHECKSUM", "7")
+	t.Setenv("WORKER_CONCURRENCY_METADATA", "6")
+	t.Setenv("WORKER_CONCURRENCY_THUMBNAIL", "5")
+	t.Setenv("WORKER_RETRY_BACKOFF_MS", "1500")
+	t.Setenv("WORKER_SCHEDULER_POLL_MS", "2500")
 
 	InitializeConfig()
 
@@ -46,6 +51,13 @@ func TestInitializeConfig(t *testing.T) {
 	}
 	if AppConfig.RecentFilesKeep != 10 {
 		t.Fatalf("expected default recent files keep 10")
+	}
+	if AppConfig.WorkerConcurrencyChecksum != 7 ||
+		AppConfig.WorkerConcurrencyMetadata != 6 ||
+		AppConfig.WorkerConcurrencyThumbnail != 5 ||
+		AppConfig.WorkerRetryBackoffMS != 1500 ||
+		AppConfig.WorkerSchedulerPollMS != 2500 {
+		t.Fatalf("unexpected worker config values: %+v", AppConfig)
 	}
 }
 

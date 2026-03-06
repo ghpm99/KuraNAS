@@ -66,6 +66,9 @@ func InitializeApp() (*Application, error) {
 		Tasks:           *appContext.Tasks,
 		Logger:          appContext.Logger,
 	}
+	if appContext.Jobs != nil {
+		workerFileContext.JobsRepository = appContext.Jobs.Repository
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

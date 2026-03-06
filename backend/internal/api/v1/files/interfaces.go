@@ -38,6 +38,7 @@ type ServiceInterface interface {
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error
+	CreateUploadProcessJob(paths []string) (int, error)
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
 	GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error)
 	GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error)

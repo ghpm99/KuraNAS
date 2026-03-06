@@ -121,11 +121,9 @@
 	"ARCHIVE_TAR": "TAR Archive",
 	"ARCHIVE_GZIP": "GZIP Archive",
 	"UNKNOWN_FORMAT": "Unknown format",
-
 	"NAV_IMAGES": "Images",
 	"NAV_MUSIC": "Music",
 	"NAV_VIDEOS": "Videos",
-
 	"ERROR_DATA_REQUIRED": "Data is required",
 	"ERROR_INVALID_REQUEST": "Invalid request",
 	"ERROR_INVALID_PATH": "Invalid path",
@@ -172,7 +170,6 @@
 	"ERROR_FILE_NOT_FOUND": "File not found",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Invalid analytics period. Use 24h, 7d, 30d or 90d.",
 	"UPDATE_APPLIED": "Update applied successfully. Restarting...",
-
 	"ANALYTICS_PAGE_TITLE": "File Analytics",
 	"ANALYTICS_PAGE_DESCRIPTION": "Detailed analysis of storage usage and file distribution",
 	"ANALYTICS_REFRESH": "Refresh Data",
@@ -184,46 +181,36 @@
 	"ANALYTICS_CLEANUP_SECTION": "Cleanup Suggestions and Insights",
 	"ANALYTICS_BACKUP_SECTION": "Backup and Restore",
 	"ANALYTICS_TRASH_SECTION": "Trash",
-
 	"ANALYTICS_DISK_USAGE": "Disk Usage",
 	"ANALYTICS_USED": "Used",
 	"ANALYTICS_FREE": "Free",
-
 	"ANALYTICS_FILE_TYPE_DISTRIBUTION": "Distribution by File Type",
 	"ANALYTICS_FILES_COUNT_LABEL": "files",
-
 	"ANALYTICS_SPACE_USED": "Space Used",
 	"ANALYTICS_FILES_STORED": "Files Stored",
 	"ANALYTICS_FOLDERS_STORED": "Folders Stored",
 	"ANALYTICS_FREE_SPACE": "Free Space",
-
 	"ANALYTICS_LARGEST_FILES": "Largest Files",
 	"ANALYTICS_FILE": "File",
 	"ANALYTICS_FILE_SIZE": "Size",
 	"ANALYTICS_FILE_PATH": "Path",
-
 	"ANALYTICS_SIZE_DISTRIBUTION": "Distribution by Size",
-
 	"ANALYTICS_FILE_TYPE_SUMMARY": "Summary by File Type",
 	"ANALYTICS_FILE_TYPE": "Type",
 	"ANALYTICS_FILE_COUNT": "Count",
 	"ANALYTICS_TOTAL_SPACE": "Total Space",
 	"ANALYTICS_PERCENTAGE": "Percentage",
-
 	"ANALYTICS_ACTIVITY_CHART": "Activity by Day (Last 7 days)",
 	"ANALYTICS_CREATED": "Created",
 	"ANALYTICS_MODIFIED": "Modified",
-
 	"ANALYTICS_RECENTLY_ADDED": "Recently Added Files",
 	"ANALYTICS_MOST_ACCESSED": "Most Accessed Files",
 	"ANALYTICS_ACCESSES": "accesses",
-
 	"ANALYTICS_CRITICAL_SPACE": "Critical Space",
 	"ANALYTICS_CRITICAL_SPACE_MSG": "Disk usage exceeded 90%. Consider cleaning up unnecessary files.",
 	"ANALYTICS_LARGE_UNACCESSED": "Large Unaccessed Files",
 	"ANALYTICS_SIMILAR_NAMES": "Files with Similar Names",
 	"ANALYTICS_SIMILARITY": "Similarity: ",
-
 	"ANALYTICS_DUPLICATE_FILES": "Duplicate Files",
 	"ANALYTICS_NO_DUPLICATES": "No duplicate files found.",
 	"ANALYTICS_WASTED_SPACE": "Wasted Space",
@@ -231,10 +218,8 @@
 	"ANALYTICS_COPIES": "Copies",
 	"ANALYTICS_PATHS": "Paths",
 	"ANALYTICS_MORE": "more",
-
 	"ANALYTICS_EMPTY_FOLDERS": "Empty Folders",
 	"ANALYTICS_EMPTY_PATHS": "Empty Paths",
-
 	"ANALYTICS_BACKUP_SUCCESS": "Success",
 	"ANALYTICS_BACKUP_FAILED": "Failed",
 	"ANALYTICS_BACKUP_PENDING": "Pending",
@@ -244,7 +229,6 @@
 	"ANALYTICS_BACKUP_DATE": "Date",
 	"ANALYTICS_BACKUP_SIZE": "Size",
 	"ANALYTICS_BACKUP_STATUS": "Status",
-
 	"ANALYTICS_TRASH_FILES": "Files in Trash",
 	"ANALYTICS_TRASH_SPACE": "Space Occupied",
 	"ANALYTICS_TRASH_DELETE_DATE": "Deletion Date",
@@ -281,7 +265,6 @@
 	"ANALYTICS_STATUS_SCANNING": "Scanning",
 	"ANALYTICS_STATUS_ERROR": "With errors",
 	"ANALYTICS_DATE": "Date",
-
 	"MUSIC_ALL_TRACKS": "All Tracks",
 	"MUSIC_ARTISTS": "Artists",
 	"MUSIC_ALBUMS": "Albums",
@@ -308,17 +291,14 @@
 	"MUSIC_TRACK_REMOVED": "Track removed",
 	"MUSIC_TRACK_REMOVE_FAILED": "Failed to remove track",
 	"MUSIC_PLAYLIST_EMPTY": "This playlist is empty. Add tracks from any view.",
-
 	"PLAYER_NO_TRACK": "No track playing",
 	"PLAYER_UNKNOWN_TITLE": "Unknown Title",
 	"PLAYER_UNKNOWN_ARTIST": "Unknown Artist",
-
 	"ACTION_CANCEL": "Cancel",
 	"ACTION_CREATE": "Create",
 	"ACTION_CREATE_ADD": "Create & Add",
 	"ACTION_LOAD_MORE": "Load more",
 	"COMMON_NOT_AVAILABLE": "N/A",
-
 	"IMAGES_CATEGORY_ALL": "All",
 	"IMAGES_CATEGORY_RECENT": "Recent",
 	"IMAGES_CATEGORY_PORTRAIT": "Portrait",
@@ -363,7 +343,6 @@
 	"IMAGES_GROUP_NO_FORMAT": "No format",
 	"IMAGES_GROUP_NO_DATE": "No date registered",
 	"IMAGES_GROUP_INITIAL": "Initial {{letter}}",
-
 	"VIDEO_INVALID_ID": "Invalid video ID",
 	"VIDEO_NO_VIDEO_PLAYING": "No video playing",
 	"VIDEO_BACK": "Back",
@@ -414,13 +393,19 @@
 	"VIDEO_AUTO_DETECTED": "Auto detected",
 	"VIDEO_AUDIO_TRACK": "Audio Track",
 	"VIDEO_DEFAULT": "Default",
-
 	"ERROR_DIARY_NOT_FOUND": "Diary entry not found",
-
 	"image": "Images",
 	"audio": "Audio",
 	"video": "Videos",
 	"document": "Documents",
 	"archive": "Archives",
-	"unknown": "Other"
+	"unknown": "Other",
+	"ERROR_JOB_INVALID_ID": "Invalid job ID",
+	"ERROR_JOB_NOT_FOUND": "Job not found",
+	"ERROR_GET_JOB": "Failed to fetch job",
+	"ERROR_LIST_JOBS": "Failed to list jobs",
+	"ERROR_GET_JOB_STEPS": "Failed to fetch job steps",
+	"ERROR_UPLOAD_JOB_CREATE": "Failed to enqueue upload processing job",
+	"ERROR_JOB_CANCEL": "Failed to cancel job",
+	"ACTION_JOB_CANCEL_SUCCESS": "Job canceled successfully"
 }
