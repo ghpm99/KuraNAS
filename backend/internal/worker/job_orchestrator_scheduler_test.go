@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -306,5 +307,117 @@ func TestJobSchedulerMarksPartialFailure(t *testing.T) {
 	}
 	if job.Status != string(JobStatusPartialFail) {
 		t.Fatalf("expected partial_fail status, got %s", job.Status)
+	}
+}
+
+func TestJobSchedulerFailsStepWhenExecutorMissing(t *testing.T) {
+	fakeRepository := newFakeJobsRepository()
+	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{})
+	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
+
+	jobID, err := orchestrator.CreateJob(PlannedJob{
+		Type:     JobTypeFSEvent,
+		Priority: JobPriorityNormal,
+		Steps: []PlannedStep{
+			{
+				Key:  "checksum",
+				Type: StepTypeChecksum,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected create error: %v", err)
+	}
+
+	if err := scheduler.processJob(jobID); err != nil {
+		t.Fatalf("unexpected processJob error: %v", err)
+	}
+
+	job, err := fakeRepository.GetJobByID(jobID)
+	if err != nil {
+		t.Fatalf("GetJobByID returned error: %v", err)
+	}
+	if job.Status != string(JobStatusFailed) {
+		t.Fatalf("expected failed job, got %s", job.Status)
+	}
+
+	steps, err := fakeRepository.GetStepsByJobID(jobID)
+	if err != nil {
+		t.Fatalf("GetStepsByJobID returned error: %v", err)
+	}
+	if len(steps) != 1 {
+		t.Fatalf("expected one step, got %d", len(steps))
+	}
+	if steps[0].Status != string(StepStatusFailed) {
+		t.Fatalf("expected failed step, got %s", steps[0].Status)
+	}
+	if !strings.Contains(steps[0].LastError, "not configured") {
+		t.Fatalf("expected missing executor error in step, got %q", steps[0].LastError)
+	}
+}
+
+func TestJobSchedulerKeepsCanceledStatusWhenCancellationIsRequestedDuringExecution(t *testing.T) {
+	fakeRepository := newFakeJobsRepository()
+	jobID := 0
+
+	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{
+		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+			fakeRepository.mu.Lock()
+			job := fakeRepository.jobs[jobID]
+			job.CancelRequested = true
+			fakeRepository.jobs[jobID] = job
+			fakeRepository.mu.Unlock()
+			return nil
+		},
+		StepTypeChecksum: func(step jobsapi.StepModel) error {
+			return nil
+		},
+	})
+
+	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
+	createdJobID, err := orchestrator.CreateJob(PlannedJob{
+		Type:     JobTypeStartupScan,
+		Priority: JobPriorityLow,
+		Steps: []PlannedStep{
+			{
+				Key:  "scan",
+				Type: StepTypeScanFilesystem,
+			},
+			{
+				Key:       "checksum",
+				Type:      StepTypeChecksum,
+				DependsOn: []string{"scan"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected create error: %v", err)
+	}
+	jobID = createdJobID
+
+	if err := scheduler.processJob(jobID); err != nil {
+		t.Fatalf("unexpected processJob error: %v", err)
+	}
+
+	job, err := fakeRepository.GetJobByID(jobID)
+	if err != nil {
+		t.Fatalf("GetJobByID returned error: %v", err)
+	}
+	if job.Status != string(JobStatusCanceled) {
+		t.Fatalf("expected canceled job, got %s", job.Status)
+	}
+
+	steps, err := fakeRepository.GetStepsByJobID(jobID)
+	if err != nil {
+		t.Fatalf("GetStepsByJobID returned error: %v", err)
+	}
+	if len(steps) != 2 {
+		t.Fatalf("expected two steps, got %d", len(steps))
+	}
+	if steps[0].Status != string(StepStatusCompleted) {
+		t.Fatalf("expected first step completed, got %s", steps[0].Status)
+	}
+	if steps[1].Status != string(StepStatusCanceled) {
+		t.Fatalf("expected queued dependent step canceled, got %s", steps[1].Status)
 	}
 }

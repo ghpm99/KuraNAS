@@ -265,9 +265,6 @@ func executeScanFilesystemStep(context *WorkerContext, step jobs.StepModel) erro
 	}
 	root := payload.Path
 	if root == "" {
-		root = payload.Path
-	}
-	if root == "" {
 		return ErrStepSkipped
 	}
 
@@ -300,9 +297,9 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 	}
 
 	changedPaths := []string{}
-	filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
+	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			return nil
+			return fmt.Errorf("walk directory %q: %w", path, walkErr)
 		}
 		if d.IsDir() {
 			return nil
@@ -319,7 +316,7 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 				changedPaths = append(changedPaths, path)
 				return nil
 			}
-			return nil
+			return fmt.Errorf("load file by name/path %q: %w", path, getErr)
 		}
 
 		sameSize := existing.Size == info.Size()
@@ -330,6 +327,9 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 
 		return nil
 	})
+	if walkErr != nil {
+		return walkErr
+	}
 
 	if len(changedPaths) == 0 {
 		return ErrStepSkipped
@@ -394,16 +394,26 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 					HasValue: true,
 					Value:    time.Now(),
 				}
-				if updated, updateErr := context.FilesService.UpdateFile(file); updateErr == nil && updated {
-					updatedAny = true
+				updated, updateErr := context.FilesService.UpdateFile(file)
+				if updateErr != nil {
+					return fmt.Errorf("mark missing file deleted id=%d: %w", file.ID, updateErr)
 				}
+				if !updated {
+					return fmt.Errorf("mark missing file deleted id=%d: no rows updated", file.ID)
+				}
+				updatedAny = true
 			}
 
 			if !missing && file.DeletedAt.HasValue {
 				file.DeletedAt = utils.Optional[time.Time]{HasValue: false}
-				if updated, updateErr := context.FilesService.UpdateFile(file); updateErr == nil && updated {
-					updatedAny = true
+				updated, updateErr := context.FilesService.UpdateFile(file)
+				if updateErr != nil {
+					return fmt.Errorf("restore file from deleted state id=%d: %w", file.ID, updateErr)
 				}
+				if !updated {
+					return fmt.Errorf("restore file from deleted state id=%d: no rows updated", file.ID)
+				}
+				updatedAny = true
 			}
 		}
 
