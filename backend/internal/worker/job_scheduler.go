@@ -150,14 +150,11 @@ func (s *JobScheduler) processJob(jobID int) error {
 		return fmt.Errorf("job scheduler repository is required")
 	}
 
-	jobModel, err := s.repository.GetJobByID(jobID)
+	canceled, err := s.cancelIfRequested(jobID)
 	if err != nil {
-		return fmt.Errorf("load job %d before process: %w", jobID, err)
+		return err
 	}
-	if jobModel.CancelRequested || jobModel.Status == string(JobStatusCanceled) {
-		endedAt := time.Now()
-		_, _ = s.updateJobExecution(jobID, string(JobStatusCanceled), nil, &endedAt, nil, nil)
-		_ = s.cancelQueuedSteps(jobID)
+	if canceled {
 		return nil
 	}
 
@@ -167,6 +164,14 @@ func (s *JobScheduler) processJob(jobID int) error {
 	}
 
 	for {
+		canceled, cancelErr := s.cancelIfRequested(jobID)
+		if cancelErr != nil {
+			return cancelErr
+		}
+		if canceled {
+			return nil
+		}
+
 		steps, err := s.repository.GetStepsByJobID(jobID)
 		if err != nil {
 			return fmt.Errorf("load steps for job %d: %w", jobID, err)
@@ -213,6 +218,14 @@ func (s *JobScheduler) processJob(jobID int) error {
 		}
 	}
 
+	canceled, err := s.cancelIfRequested(jobID)
+	if err != nil {
+		return err
+	}
+	if canceled {
+		return nil
+	}
+
 	steps, err := s.repository.GetStepsByJobID(jobID)
 	if err != nil {
 		return fmt.Errorf("reload steps for job %d: %w", jobID, err)
@@ -241,9 +254,7 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 
 	executor := s.executors[StepType(step.Type)]
 	if executor == nil {
-		executor = func(step jobs.StepModel) error {
-			return nil
-		}
+		return fmt.Errorf("step executor is not configured for type %q", step.Type)
 	}
 
 	release := s.acquireStepSemaphore(StepType(step.Type))
@@ -321,6 +332,25 @@ func (s *JobScheduler) cancelQueuedSteps(jobID int) error {
 	}
 
 	return nil
+}
+
+func (s *JobScheduler) cancelIfRequested(jobID int) (bool, error) {
+	jobModel, err := s.repository.GetJobByID(jobID)
+	if err != nil {
+		return false, fmt.Errorf("load job %d before cancellation check: %w", jobID, err)
+	}
+	if !jobModel.CancelRequested && jobModel.Status != string(JobStatusCanceled) {
+		return false, nil
+	}
+
+	endedAt := time.Now()
+	if _, err := s.updateJobExecution(jobID, string(JobStatusCanceled), nil, &endedAt, nil, nil); err != nil {
+		return false, err
+	}
+	if err := s.cancelQueuedSteps(jobID); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *JobScheduler) withTx(fn func(*sql.Tx) (bool, error)) (bool, error) {

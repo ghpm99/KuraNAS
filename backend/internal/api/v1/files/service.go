@@ -183,7 +183,6 @@ func (s *Service) ScanFilesTask(data string) {
 		Data: "File scan",
 	}
 	s.Tasks <- task
-	s.Tasks <- task
 }
 
 func (s *Service) ScanDirTask(data string) {
