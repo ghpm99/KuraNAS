@@ -25,16 +25,35 @@ func startEntryPointWatcher(context *WorkerContext) {
 		lastSnapshot := collectEntryPointSnapshot(entryPoint)
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
+		lastDispatchAt := time.Time{}
+		pendingChanges := map[string]struct{}{}
+		debounceWindow := 2 * time.Second
 
 		for range ticker.C {
 			currentSnapshot := collectEntryPointSnapshot(entryPoint)
-			if snapshotsChanged(lastSnapshot, currentSnapshot) {
+			changedPaths := snapshotDiffPaths(lastSnapshot, currentSnapshot)
+			for _, changedPath := range changedPaths {
+				pendingChanges[changedPath] = struct{}{}
+			}
+			lastSnapshot = currentSnapshot
+
+			if len(pendingChanges) == 0 {
+				continue
+			}
+			if !lastDispatchAt.IsZero() && time.Since(lastDispatchAt) < debounceWindow {
+				continue
+			}
+
+			if context != nil && context.JobOrchestrator != nil {
+				_ = enqueueFilesystemEventJob(context, entryPoint, JobPriorityNormal)
+			} else {
 				select {
 				case context.Tasks <- utils.Task{Type: utils.ScanFiles, Data: "filesystem watch detected changes"}:
 				default:
 				}
-				lastSnapshot = currentSnapshot
 			}
+			lastDispatchAt = time.Now()
+			pendingChanges = map[string]struct{}{}
 		}
 	}()
 }
@@ -80,4 +99,29 @@ func snapshotsChanged(previous map[string]fileSnapshot, current map[string]fileS
 	}
 
 	return false
+}
+
+func snapshotDiffPaths(previous map[string]fileSnapshot, current map[string]fileSnapshot) []string {
+	changed := map[string]struct{}{}
+
+	for path, previousSnapshot := range previous {
+		currentSnapshot, exists := current[path]
+		if !exists || currentSnapshot != previousSnapshot {
+			changed[path] = struct{}{}
+		}
+	}
+
+	for path, currentSnapshot := range current {
+		previousSnapshot, exists := previous[path]
+		if !exists || previousSnapshot != currentSnapshot {
+			changed[path] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(changed))
+	for path := range changed {
+		result = append(result, path)
+	}
+
+	return result
 }

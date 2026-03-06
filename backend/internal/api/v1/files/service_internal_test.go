@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	jobsapi "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
@@ -204,6 +205,37 @@ type metadataRepoMock struct {
 	upsertVideoFn func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 }
 
+type filesJobsRepoMock struct {
+	jobsapi.RepositoryInterface
+	db           *database.DbContext
+	createdJobs  []jobsapi.JobModel
+	createdSteps []jobsapi.StepModel
+	createJobFn  func(tx *sql.Tx, job jobsapi.JobModel) (jobsapi.JobModel, error)
+	createStepFn func(tx *sql.Tx, step jobsapi.StepModel) (jobsapi.StepModel, error)
+}
+
+func (m *filesJobsRepoMock) GetDbContext() *database.DbContext {
+	return m.db
+}
+
+func (m *filesJobsRepoMock) CreateJob(tx *sql.Tx, job jobsapi.JobModel) (jobsapi.JobModel, error) {
+	if m.createJobFn != nil {
+		return m.createJobFn(tx, job)
+	}
+	job.ID = len(m.createdJobs) + 1
+	m.createdJobs = append(m.createdJobs, job)
+	return job, nil
+}
+
+func (m *filesJobsRepoMock) CreateStep(tx *sql.Tx, step jobsapi.StepModel) (jobsapi.StepModel, error) {
+	if m.createStepFn != nil {
+		return m.createStepFn(tx, step)
+	}
+	step.ID = len(m.createdSteps) + 1
+	m.createdSteps = append(m.createdSteps, step)
+	return step, nil
+}
+
 func (m *metadataRepoMock) GetImageMetadataByID(id int) (ImageMetadataModel, error) {
 	return ImageMetadataModel{}, nil
 }
@@ -247,6 +279,18 @@ func newFilesServiceForTest(t *testing.T, repo *filesRepoMock, metadata *metadat
 		Repository:         repo,
 		MetadataRepository: metadata,
 		Tasks:              make(chan utils.Task, 4),
+	}
+}
+
+func newFilesJobsRepoMockForTest(t *testing.T) *filesJobsRepoMock {
+	t.Helper()
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to open sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	return &filesJobsRepoMock{
+		db: database.NewDbContext(db),
 	}
 }
 
@@ -294,6 +338,59 @@ func TestFileService_GetAndFind(t *testing.T) {
 	idFile, err := s.GetFileById(123)
 	if err != nil || idFile.ID != 123 {
 		t.Fatalf("expected id 123, got %+v err=%v", idFile, err)
+	}
+}
+
+func TestFileService_CreateUploadProcessJob(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "video.mp4")
+	if err := os.WriteFile(filePath, []byte("video"), 0644); err != nil {
+		t.Fatalf("failed to create upload file: %v", err)
+	}
+
+	jobsRepo := newFilesJobsRepoMockForTest(t)
+	service := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	service.JobsRepository = jobsRepo
+
+	jobID, err := service.CreateUploadProcessJob([]string{filePath})
+	if err != nil {
+		t.Fatalf("expected upload job creation success, got %v", err)
+	}
+	if jobID <= 0 {
+		t.Fatalf("expected valid job id, got %d", jobID)
+	}
+	if len(jobsRepo.createdJobs) != 1 {
+		t.Fatalf("expected one created job, got %d", len(jobsRepo.createdJobs))
+	}
+	if jobsRepo.createdJobs[0].Type != "upload_process" {
+		t.Fatalf("expected upload_process job, got %s", jobsRepo.createdJobs[0].Type)
+	}
+	if jobsRepo.createdJobs[0].Priority != "high" {
+		t.Fatalf("expected high priority job, got %s", jobsRepo.createdJobs[0].Priority)
+	}
+
+	hasPersist := false
+	hasMetadata := false
+	hasChecksum := false
+	hasThumbnail := false
+	hasPlaylist := false
+	for _, step := range jobsRepo.createdSteps {
+		switch step.Type {
+		case "persist":
+			hasPersist = true
+		case "metadata":
+			hasMetadata = true
+		case "checksum":
+			hasChecksum = true
+		case "thumbnail":
+			hasThumbnail = true
+		case "playlist_index":
+			hasPlaylist = true
+		}
+	}
+
+	if !hasPersist || !hasMetadata || !hasChecksum || !hasThumbnail || !hasPlaylist {
+		t.Fatalf("expected upload steps persist/metadata/checksum/thumbnail/playlist_index, got %+v", jobsRepo.createdSteps)
 	}
 }
 
@@ -617,7 +714,6 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	updateCalls := 0
 	repo := &filesRepoMock{
 		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			if filter.ID.HasValue && filter.ID.Value == 1 {
@@ -670,10 +766,6 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 			}
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 		},
-		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-			updateCalls++
-			return true, nil
-		},
 	}
 	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
 
@@ -683,8 +775,20 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 	if err := s.UpdateCheckSum(2); err != nil {
 		t.Fatalf("expected dir checksum update success, got %v", err)
 	}
-	if updateCalls < 2 {
-		t.Fatalf("expected at least two update calls, got %d", updateCalls)
+	queuedTasks := 0
+drainLoop:
+	for {
+		select {
+		case task := <-s.Tasks:
+			if task.Type == utils.UpdateCheckSum {
+				queuedTasks++
+			}
+		default:
+			break drainLoop
+		}
+	}
+	if queuedTasks < 2 {
+		t.Fatalf("expected at least two queued checksum tasks, got %d", queuedTasks)
 	}
 
 	oldAccess := time.Now().Add(-48 * time.Hour)
@@ -1007,7 +1111,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("UpdateCheckSum returns error when update does not affect rows", func(t *testing.T) {
+	t.Run("UpdateCheckSum enqueues task for valid file type", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		filePath := filepath.Join(tmpDir, "x.txt")
 		if err := os.WriteFile(filePath, []byte("abc"), 0644); err != nil {
@@ -1028,13 +1132,19 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 					}},
 				}, nil
 			},
-			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-				return false, nil
-			},
 		}, &metadataRepoMock{})
 
-		if err := s.UpdateCheckSum(1); err == nil {
-			t.Fatalf("expected UpdateCheckSum error when update returns false")
+		if err := s.UpdateCheckSum(1); err != nil {
+			t.Fatalf("expected UpdateCheckSum success, got %v", err)
+		}
+
+		select {
+		case task := <-s.Tasks:
+			if task.Type != utils.UpdateCheckSum {
+				t.Fatalf("expected UpdateCheckSum task type, got %v", task.Type)
+			}
+		default:
+			t.Fatalf("expected checksum task enqueued")
 		}
 	})
 

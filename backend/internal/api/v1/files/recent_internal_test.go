@@ -137,7 +137,7 @@ func TestFileModelChecksumAndServiceConstructors(t *testing.T) {
 		t.Fatalf("GetCheckSumFromFile failed: %v", err)
 	}
 
-	svc := NewService(&filesRepoMock{}, &metadataRepoMock{}, make(chan utils.Task, 1))
+	svc := NewService(&filesRepoMock{}, &metadataRepoMock{}, nil, make(chan utils.Task, 1))
 	if svc == nil {
 		t.Fatalf("expected non-nil service")
 	}

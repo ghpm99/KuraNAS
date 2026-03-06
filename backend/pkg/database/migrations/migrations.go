@@ -56,6 +56,9 @@ var CreateVideoPlaybackTablesQuery string
 //go:embed queries/0015_extend_video_playlist_for_smart_grouping.sql
 var ExtendVideoPlaylistForSmartGroupingQuery string
 
+//go:embed queries/0016_create_worker_job_tables.sql
+var CreateWorkerJobTablesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -123,4 +126,9 @@ func videoMigrationList() {
 
 	addMigration("0015_extend_video_playlist_for_smart_grouping",
 		defaultMigrationFunc(ExtendVideoPlaylistForSmartGroupingQuery))
+}
+
+func workerMigrationList() {
+	addMigration("0016_create_worker_job_tables",
+		defaultMigrationFunc(CreateWorkerJobTablesQuery))
 }
