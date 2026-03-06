@@ -11,6 +11,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
@@ -22,6 +23,7 @@ import (
 func buildRouteContext() *AppContext {
 	return &AppContext{
 		Files:                &FileContext{Handler: files.NewHandler(nil, nil, nil)},
+		Jobs:                 &JobsContext{Handler: jobs.NewHandler(nil)},
 		Diary:                &DiaryContext{Handler: diary.NewHandler(nil, nil)},
 		Music:                &MusicContext{Handler: music.NewHandler(nil, nil)},
 		Video:                &VideoContext{Handler: video.NewHandler(nil, nil)},
@@ -67,6 +69,9 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/v1/diary/summary"},
 		{method: http.MethodGet, path: "/api/v1/music/playlists/"},
 		{method: http.MethodGet, path: "/api/v1/video/playlists/unassigned"},
+		{method: http.MethodGet, path: "/api/v1/jobs"},
+		{method: http.MethodGet, path: "/api/v1/jobs/:id"},
+		{method: http.MethodGet, path: "/api/v1/jobs/:id/steps"},
 		{method: http.MethodGet, path: "/api/v1/analytics/overview"},
 		{method: http.MethodGet, path: "/api/v1/configuration/about"},
 		{method: http.MethodPost, path: "/api/v1/update/apply"},

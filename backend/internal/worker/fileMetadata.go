@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/utils"
@@ -9,6 +10,56 @@ import (
 )
 
 type ScriptRunner func(scriptType utils.ScriptType, filePath string) (string, error)
+
+type MetadataStepInput struct {
+	File files.FileDto
+}
+
+type MetadataStepOutput struct {
+	File    files.FileDto
+	Skipped bool
+}
+
+type MetadataStepExecutor struct {
+	runner ScriptRunner
+}
+
+func NewMetadataStepExecutor(runner ScriptRunner) *MetadataStepExecutor {
+	if runner == nil {
+		runner = pythonScriptRunner
+	}
+	return &MetadataStepExecutor{runner: runner}
+}
+
+func (e *MetadataStepExecutor) Execute(input MetadataStepInput) (MetadataStepOutput, error) {
+	file := input.File
+	if file.Path == "" {
+		return MetadataStepOutput{File: file}, fmt.Errorf("metadata step: file path is required")
+	}
+
+	if shouldSkipMetadataStep(file) {
+		return MetadataStepOutput{File: file, Skipped: true}, newStepSkipped("metadata up-to-date")
+	}
+
+	metadata, err := getMetadata(file, e.runner)
+	if err != nil {
+		return MetadataStepOutput{File: file}, err
+	}
+
+	file.Metadata = metadata
+	return MetadataStepOutput{File: file}, nil
+}
+
+func shouldSkipMetadataStep(file files.FileDto) bool {
+	formatType := utils.GetFormatTypeByExtension(file.Format)
+	if formatType.Type != utils.FormatTypeImage &&
+		formatType.Type != utils.FormatTypeAudio &&
+		formatType.Type != utils.FormatTypeVideo {
+		return true
+	}
+
+	return file.Metadata != nil
+}
 
 func StartMetadataWorker(
 	fileDtoChannel <-chan files.FileDto,
@@ -18,11 +69,17 @@ func StartMetadataWorker(
 	workerGroup *sync.WaitGroup,
 ) {
 	defer workerGroup.Done()
+	executor := NewMetadataStepExecutor(runner)
 
 	for unprocessedFile := range fileDtoChannel {
-		metadata, err := getMetadata(unprocessedFile, runner)
+		output, err := executor.Execute(MetadataStepInput{File: unprocessedFile})
 
 		if err != nil {
+			if isStepSkipped(err) {
+				metadataProcessedChannel <- output.File
+				continue
+			}
+
 			log.Println(err)
 			monitorChannel <- ResultWorkerData{
 				Path:    unprocessedFile.Path,
@@ -30,7 +87,7 @@ func StartMetadataWorker(
 				Error:   err.Error(),
 			}
 		} else {
-			unprocessedFile.Metadata = metadata
+			unprocessedFile = output.File
 		}
 
 		metadataProcessedChannel <- unprocessedFile

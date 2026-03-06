@@ -40,6 +40,9 @@ func TestNewContextBuildsAllDependencies(t *testing.T) {
 	if ctx.Video == nil || ctx.Video.Handler == nil || ctx.Video.Service == nil {
 		t.Fatalf("expected video context initialized")
 	}
+	if ctx.Jobs == nil || ctx.Jobs.Handler == nil || ctx.Jobs.Service == nil || ctx.Jobs.Repository == nil {
+		t.Fatalf("expected jobs context initialized")
+	}
 	if ctx.ConfigurationHandler == nil || ctx.UpdateHandler == nil {
 		t.Fatalf("expected configuration and update handlers initialized")
 	}

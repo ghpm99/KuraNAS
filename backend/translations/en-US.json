@@ -171,6 +171,13 @@
 	"COPY_SUFFIX": "_copy",
 	"ERROR_FILE_NOT_FOUND": "File not found",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Invalid analytics period. Use 24h, 7d, 30d or 90d.",
+	"ERROR_JOBS_ID_REQUIRED": "Job id is required.",
+	"ERROR_JOBS_NOT_FOUND": "Job not found.",
+	"ERROR_JOBS_INVALID_PAGE": "Invalid page number.",
+	"ERROR_JOBS_INVALID_PAGE_SIZE": "Invalid page size.",
+	"ERROR_JOBS_INVALID_PRIORITY": "Invalid job priority filter.",
+	"ERROR_JOBS_FETCH_FAILED": "Failed to load jobs.",
+	"ERROR_JOBS_STEPS_FETCH_FAILED": "Failed to load job steps.",
 	"UPDATE_APPLIED": "Update applied successfully. Restarting...",
 
 	"ANALYTICS_PAGE_TITLE": "File Analytics",

@@ -171,6 +171,13 @@
 	"COPY_SUFFIX": "_copia",
 	"ERROR_FILE_NOT_FOUND": "Arquivo não encontrado",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Período de analytics inválido. Use 24h, 7d, 30d ou 90d.",
+	"ERROR_JOBS_ID_REQUIRED": "O id do job é obrigatório.",
+	"ERROR_JOBS_NOT_FOUND": "Job não encontrado.",
+	"ERROR_JOBS_INVALID_PAGE": "Número de página inválido.",
+	"ERROR_JOBS_INVALID_PAGE_SIZE": "Tamanho de página inválido.",
+	"ERROR_JOBS_INVALID_PRIORITY": "Filtro de prioridade de job inválido.",
+	"ERROR_JOBS_FETCH_FAILED": "Falha ao carregar jobs.",
+	"ERROR_JOBS_STEPS_FETCH_FAILED": "Falha ao carregar steps do job.",
 	"UPDATE_APPLIED": "Atualização aplicada com sucesso. Reiniciando...",
 
 	"ANALYTICS_PAGE_TITLE": "Analytics de Arquivos",

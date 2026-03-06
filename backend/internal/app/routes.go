@@ -17,6 +17,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterDiaryRoutes(routesV1, context)
 	RegisterMusicRoutes(routesV1, context)
 	RegisterVideoRoutes(routesV1, context)
+	RegisterJobsRoutes(routesV1, context)
 	RegisterAnalyticsRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
@@ -134,6 +135,15 @@ func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	update.GET("/status", context.UpdateHandler.GetUpdateStatusHandler)
 	update.POST("/apply", context.UpdateHandler.ApplyUpdateHandler)
+}
+
+func RegisterJobsRoutes(router *gin.RouterGroup, context *AppContext) {
+	jobs := router.Group("/jobs")
+
+	jobs.GET("/", context.Jobs.Handler.GetJobsHandler)
+	jobs.GET("", context.Jobs.Handler.GetJobsHandler)
+	jobs.GET("/:id", context.Jobs.Handler.GetJobByIDHandler)
+	jobs.GET("/:id/steps", context.Jobs.Handler.GetJobStepsHandler)
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {

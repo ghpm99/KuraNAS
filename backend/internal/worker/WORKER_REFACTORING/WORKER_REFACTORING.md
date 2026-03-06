@@ -202,3 +202,8 @@
   - erros
 
 - Sem depender de implementação específica de “canal de progresso da pipeline”.
+
+Voce esta trabalhando em uma refatoração do sistema atual de worker, o objetivo é tornar os
+  workers dentro do conceito de clean code seguindo o principio do single responsibility
+  principle, na pasta backend/internal/worker/WORKER_REFACTORING tem alguns arquivos com
+  tasks, comece pela task do arquivo worker_refactoring_7.md

@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
@@ -20,6 +21,7 @@ type AppContext struct {
 	DB                   *database.DbContext
 	Logger               logger.LoggerServiceInterface
 	Tasks                *chan utils.Task
+	Jobs                 *JobsContext
 	Files                *FileContext
 	Diary                *DiaryContext
 	Music                *MusicContext
@@ -36,6 +38,12 @@ type FileContext struct {
 	Repository           files.RepositoryInterface
 	RecentFileRepository files.RecentFileRepositoryInterface
 	MetadataRepository   files.MetadataRepositoryInterface
+}
+
+type JobsContext struct {
+	Handler    *jobs.Handler
+	Service    jobs.ServiceInterface
+	Repository jobs.RepositoryInterface
 }
 
 type DiaryContext struct {
@@ -67,6 +75,7 @@ func NewContext(db *sql.DB) *AppContext {
 	dbContext := database.NewDbContext(db)
 
 	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
+	jobsContext := newJobsContext(dbContext)
 	fileContext := newFileContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
@@ -80,6 +89,7 @@ func NewContext(db *sql.DB) *AppContext {
 		DB:                   dbContext,
 		Logger:               loggerService,
 		Tasks:                &tasks,
+		Jobs:                 jobsContext,
 		Files:                fileContext,
 		Diary:                diaryContext,
 		Music:                musicContext,
@@ -89,6 +99,18 @@ func NewContext(db *sql.DB) *AppContext {
 		UpdateHandler:        updateHandler,
 	}
 	return context
+}
+
+func newJobsContext(dbContext *database.DbContext) *JobsContext {
+	repository := jobs.NewRepository(dbContext)
+	service := jobs.NewService(repository)
+	handler := jobs.NewHandler(service)
+
+	return &JobsContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
 }
 
 func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *FileContext {
