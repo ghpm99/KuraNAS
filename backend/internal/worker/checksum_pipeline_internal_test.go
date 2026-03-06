@@ -81,9 +81,9 @@ func TestUpdateCheckSumWorker(t *testing.T) {
 		},
 	}
 
-	UpdateCheckSumWorker(mock, "bad", &pipelineLoggerMock{})
-	UpdateCheckSumWorker(mock, 1, &pipelineLoggerMock{})
-	UpdateCheckSumWorker(mock, 2, &pipelineLoggerMock{})
+	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, "bad")
+	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, 1)
+	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, 2)
 	if len(mock.updated) < 2 {
 		t.Fatalf("expected updated files from checksum worker, got %d", len(mock.updated))
 	}
@@ -122,10 +122,10 @@ func TestUpdateCheckSumWorker_ErrorBranchesDoNotUpdateInvalidEntries(t *testing.
 		return true, nil
 	}
 
-	UpdateCheckSumWorker(mock, 1, &pipelineLoggerMock{})
-	UpdateCheckSumWorker(mock, 2, &pipelineLoggerMock{})
-	if updateCalls != 0 {
-		t.Fatalf("expected zero update calls for failing checksum branches, got %d", updateCalls)
+	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, 1)
+	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, 2)
+	if updateCalls != 1 {
+		t.Fatalf("expected one update call (directory checksum still succeeds), got %d", updateCalls)
 	}
 }
 

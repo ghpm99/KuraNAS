@@ -45,6 +45,9 @@ func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { retur
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)               {}
 func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error       { return nil }
+func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, error) {
+	return 1, nil
+}
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
 }

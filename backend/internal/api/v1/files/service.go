@@ -3,11 +3,13 @@ package files
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color/palette"
 	"image/draw"
 	"image/gif"
+	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
@@ -24,13 +26,20 @@ import (
 type Service struct {
 	Repository         RepositoryInterface
 	MetadataRepository MetadataRepositoryInterface
+	JobsRepository     jobs.RepositoryInterface
 	Tasks              chan utils.Task
 }
 
-func NewService(repository RepositoryInterface, metadataRepository MetadataRepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
+func NewService(
+	repository RepositoryInterface,
+	metadataRepository MetadataRepositoryInterface,
+	jobsRepository jobs.RepositoryInterface,
+	tasksChannel chan utils.Task,
+) ServiceInterface {
 	return &Service{
 		Repository:         repository,
 		MetadataRepository: metadataRepository,
+		JobsRepository:     jobsRepository,
 		Tasks:              tasksChannel,
 	}
 }
@@ -185,6 +194,157 @@ func (s *Service) ScanDirTask(data string) {
 	s.Tasks <- task
 }
 
+type uploadJobPayload struct {
+	FileID int      `json:"file_id,omitempty"`
+	Path   string   `json:"path,omitempty"`
+	File   *FileDto `json:"file,omitempty"`
+}
+
+func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
+	if s.JobsRepository == nil {
+		return 0, fmt.Errorf("jobs repository is not configured")
+	}
+	if len(paths) == 0 {
+		return 0, fmt.Errorf("paths are required")
+	}
+
+	var createdJob jobs.JobModel
+	err := s.JobsRepository.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		scopeJSON, scopeErr := json.Marshal(map[string]any{"paths": paths})
+		if scopeErr != nil {
+			return fmt.Errorf("marshal upload scope: %w", scopeErr)
+		}
+
+		jobModel, createErr := s.JobsRepository.CreateJob(tx, jobs.JobModel{
+			Type:            "upload_process",
+			Priority:        "high",
+			Scope:           scopeJSON,
+			Status:          "queued",
+			CancelRequested: false,
+		})
+		if createErr != nil {
+			return createErr
+		}
+		createdJob = jobModel
+
+		for _, path := range paths {
+			fileInfo, statErr := os.Stat(path)
+			if statErr != nil {
+				return statErr
+			}
+
+			fileDto := FileDto{
+				Path:       path,
+				ParentPath: filepath.Dir(path),
+			}
+			if parseErr := fileDto.ParseFileInfoToFileDto(fileInfo); parseErr != nil {
+				return parseErr
+			}
+
+			persistPayload, marshalPersistErr := json.Marshal(uploadJobPayload{Path: path, File: &fileDto})
+			if marshalPersistErr != nil {
+				return marshalPersistErr
+			}
+
+			persistStep, createPersistErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+				JobID:       createdJob.ID,
+				Type:        "persist",
+				Status:      "queued",
+				DependsOn:   []byte("[]"),
+				Attempts:    0,
+				MaxAttempts: 3,
+				Progress:    0,
+				Payload:     persistPayload,
+			})
+			if createPersistErr != nil {
+				return createPersistErr
+			}
+
+			commonPayload, marshalCommonErr := json.Marshal(uploadJobPayload{Path: path})
+			if marshalCommonErr != nil {
+				return marshalCommonErr
+			}
+			dependsOnPersist, dependsErr := json.Marshal([]int{persistStep.ID})
+			if dependsErr != nil {
+				return dependsErr
+			}
+
+			if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+				JobID:       createdJob.ID,
+				Type:        "metadata",
+				Status:      "queued",
+				DependsOn:   dependsOnPersist,
+				Attempts:    0,
+				MaxAttempts: 3,
+				Progress:    0,
+				Payload:     commonPayload,
+			}); createStepErr != nil {
+				return createStepErr
+			}
+
+			if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+				JobID:       createdJob.ID,
+				Type:        "checksum",
+				Status:      "queued",
+				DependsOn:   dependsOnPersist,
+				Attempts:    0,
+				MaxAttempts: 3,
+				Progress:    0,
+				Payload:     commonPayload,
+			}); createStepErr != nil {
+				return createStepErr
+			}
+
+			formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+			if formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo {
+				thumbnailPayload, thumbnailPayloadErr := json.Marshal(uploadJobPayload{Path: path})
+				if thumbnailPayloadErr != nil {
+					return thumbnailPayloadErr
+				}
+				if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+					JobID:       createdJob.ID,
+					Type:        "thumbnail",
+					Status:      "queued",
+					DependsOn:   dependsOnPersist,
+					Attempts:    0,
+					MaxAttempts: 3,
+					Progress:    0,
+					Payload:     thumbnailPayload,
+				}); createStepErr != nil {
+					return createStepErr
+				}
+			}
+
+			if formatType.Type == utils.FormatTypeVideo {
+				playlistPayload, playlistPayloadErr := json.Marshal(uploadJobPayload{Path: path})
+				if playlistPayloadErr != nil {
+					return playlistPayloadErr
+				}
+				if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+					JobID:       createdJob.ID,
+					Type:        "playlist_index",
+					Status:      "queued",
+					DependsOn:   dependsOnPersist,
+					Attempts:    0,
+					MaxAttempts: 3,
+					Progress:    0,
+					Payload:     playlistPayload,
+				}); createStepErr != nil {
+					return createStepErr
+				}
+			}
+
+		}
+
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return createdJob.ID, nil
+}
+
 func (s *Service) UpdateCheckSum(fileId int) error {
 
 	fileDto, err := s.GetFileById(fileId)
@@ -194,10 +354,12 @@ func (s *Service) UpdateCheckSum(fileId int) error {
 	}
 
 	switch fileDto.Type {
-	case File:
-		return s.updateFileCheckSum(fileDto)
-	case Directory:
-		return s.updateDirectoryCheckSum(fileDto)
+	case File, Directory:
+		s.Tasks <- utils.Task{
+			Type: utils.UpdateCheckSum,
+			Data: fileId,
+		}
+		return nil
 	default:
 		return fmt.Errorf("file type not found")
 	}

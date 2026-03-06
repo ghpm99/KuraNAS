@@ -144,14 +144,20 @@ func TestInitMigrationListPopulatesEntries(t *testing.T) {
 	}
 
 	foundVideo := false
+	foundWorker := false
 	for _, m := range migrationList {
 		if m.Name == "0014_create_video_playback_tables" {
 			foundVideo = true
-			break
+		}
+		if m.Name == "0016_create_worker_job_tables" {
+			foundWorker = true
 		}
 	}
 	if !foundVideo {
 		t.Fatalf("expected video migration in list")
+	}
+	if !foundWorker {
+		t.Fatalf("expected worker migration in list")
 	}
 }
 

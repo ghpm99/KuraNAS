@@ -23,3 +23,19 @@ func TestSnapshotsChanged(t *testing.T) {
 		t.Fatalf("expected change when snapshot sizes differ")
 	}
 }
+
+func TestSnapshotDiffPaths(t *testing.T) {
+	previous := map[string]fileSnapshot{
+		"/a": {ModTimeUnix: 1, Size: 10, IsDir: false},
+		"/b": {ModTimeUnix: 1, Size: 20, IsDir: false},
+	}
+	current := map[string]fileSnapshot{
+		"/a": {ModTimeUnix: 2, Size: 10, IsDir: false},
+		"/c": {ModTimeUnix: 1, Size: 30, IsDir: false},
+	}
+
+	diff := snapshotDiffPaths(previous, current)
+	if len(diff) != 3 {
+		t.Fatalf("expected 3 changed paths, got %d (%v)", len(diff), diff)
+	}
+}
