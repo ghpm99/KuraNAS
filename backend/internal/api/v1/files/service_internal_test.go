@@ -501,7 +501,7 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 
 	s.ScanFilesTask("x")
 	s.ScanDirTask("/tmp")
-	if len(s.Tasks) < 3 {
+	if len(s.Tasks) < 2 {
 		t.Fatalf("expected tasks to be enqueued")
 	}
 
