@@ -18,6 +18,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterMusicRoutes(routesV1, context)
 	RegisterVideoRoutes(routesV1, context)
 	RegisterAnalyticsRoutes(routesV1, context)
+	RegisterJobsRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	registerReactRoutes(router)
@@ -139,6 +140,18 @@ func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
 	analytics := router.Group("/analytics")
 	analytics.GET("/overview", context.Analytics.Handler.GetOverviewHandler)
+}
+
+func RegisterJobsRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Jobs == nil || context.Jobs.Handler == nil {
+		return
+	}
+
+	jobs := router.Group("/jobs")
+	jobs.GET("/:id", context.Jobs.Handler.GetJobByIDHandler)
+	jobs.GET("", context.Jobs.Handler.ListJobsHandler)
+	jobs.GET("/:id/steps", context.Jobs.Handler.GetStepsByJobIDHandler)
+	jobs.POST("/:id/cancel", context.Jobs.Handler.CancelJobHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {

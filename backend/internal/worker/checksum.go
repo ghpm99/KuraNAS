@@ -1,13 +1,17 @@
 package worker
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
-	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/pkg/logger"
-	"nas-go/api/pkg/utils"
+	jobs "nas-go/api/internal/api/v1/jobs"
 )
 
-func UpdateCheckSumWorker(service files.ServiceInterface, data any, logService logger.LoggerServiceInterface) {
+func UpdateCheckSumWorker(context *WorkerContext, data any) {
+	if context == nil {
+		log.Println("UpdateCheckSumWorker: worker context nulo")
+		return
+	}
 
 	fileId, ok := data.(int)
 
@@ -15,89 +19,58 @@ func UpdateCheckSumWorker(service files.ServiceInterface, data any, logService l
 		log.Println("Erro ao converter ID do arquivo: data não é int")
 		return
 	}
-
-	fileDto, err := service.GetFileById(fileId)
-
-	if err != nil {
-		log.Printf("Erro ao obter arquivo: %v\n", err)
+	if fileId <= 0 {
+		log.Println("UpdateCheckSumWorker: fileId invalido")
 		return
 	}
 
-	switch fileDto.Type {
-	case files.File:
-		updateFileCheckSum(service, fileDto)
-	case files.Directory:
-		updateDirectoryCheckSum(service, fileDto)
-	}
-}
-
-func updateFileCheckSum(
-	service files.ServiceInterface,
-	fileDto files.FileDto,
-) {
-	checkSumHash, err := fileDto.GetCheckSumFromFile()
-
-	if err != nil {
-		log.Printf("Erro ao calcular checksum do arquivo: %v\n", err)
-		return
-	}
-
-	fileDto.CheckSum = checkSumHash
-	result, err := service.UpdateFile(fileDto)
-
-	if err != nil || !result {
-		log.Printf("Erro ao atualizar arquivo: %v\n", err)
-		return
-	}
-
-	log.Printf("Checksum atualizado com sucesso para o arquivo: %s\n", fileDto.Name)
-
-}
-
-func updateDirectoryCheckSum(
-	service files.ServiceInterface,
-	fileDto files.FileDto,
-) {
-
-	var page = 1
-	var hasNext = true
-	var checkSumFiles []string
-
-	for hasNext {
-
-		filesInDirectory, err := service.GetFiles(files.FileFilter{
-			ParentPath: utils.Optional[string]{
-				Value:    fileDto.Path,
-				HasValue: true,
+	if context.JobOrchestrator != nil {
+		if _, err := context.JobOrchestrator.CreateJob(PlannedJob{
+			Type:     JobTypeFSEvent,
+			Priority: JobPriorityNormal,
+			Scope: JobScope{
+				FileID: &fileId,
 			},
-		}, page, 1000)
-
-		if err != nil {
-			log.Printf("Erro ao obter arquivos do diretório: %v\n", err)
-			return
+			Steps: []PlannedStep{
+				{
+					Key:         "checksum",
+					Type:        StepTypeChecksum,
+					MaxAttempts: 1,
+					Payload:     mustMarshalChecksumStepPayload(fileId),
+				},
+			},
+		}); err != nil {
+			log.Printf("UpdateCheckSumWorker: erro ao criar job de checksum: %v\n", err)
 		}
-
-		for _, file := range filesInDirectory.Items {
-			checkSumFiles = append(checkSumFiles, file.CheckSum)
-		}
-		hasNext = filesInDirectory.Pagination.HasNext
-
-		if hasNext {
-			page = filesInDirectory.Pagination.Page + 1
-
-		}
-	}
-
-	resultCheckSum := fileDto.GetCheckSumFromPath(checkSumFiles)
-
-	fileDto.CheckSum = resultCheckSum
-	result, err := service.UpdateFile(fileDto)
-
-	if err != nil || !result {
-		log.Printf("Erro ao atualizar diretório: %v\n", err)
 		return
 	}
 
-	log.Printf("Checksum atualizado com sucesso para o diretório: %s\n", fileDto.Name)
+	// Legacy fallback for tests/contexts that still do not initialize
+	// the orchestrator. It still uses the official checksum step executor.
+	if context.FilesService == nil {
+		log.Println("UpdateCheckSumWorker: files service nulo")
+		return
+	}
 
+	payload, err := json.Marshal(StepFilePayload{FileID: fileId})
+	if err != nil {
+		log.Printf("UpdateCheckSumWorker: erro ao serializar payload de checksum: %v\n", err)
+		return
+	}
+
+	if err := executeChecksumStep(context, jobs.StepModel{
+		Type:    string(StepTypeChecksum),
+		Payload: payload,
+	}); err != nil {
+		log.Printf("UpdateCheckSumWorker: erro no step de checksum: %v\n", err)
+	}
+}
+
+func mustMarshalChecksumStepPayload(fileID int) []byte {
+	payload, err := json.Marshal(StepFilePayload{FileID: fileID})
+	if err != nil {
+		log.Printf("UpdateCheckSumWorker: erro ao serializar payload (fallback vazio): %v\n", err)
+		return []byte(fmt.Sprintf(`{"file_id":%d}`, fileID))
+	}
+	return payload
 }
