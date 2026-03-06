@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 )
 
 type inMemoryJobsRepository struct {
+	mu        sync.RWMutex
 	jobsByID  map[string]jobs.JobModel
 	stepsByID map[string]jobs.StepModel
 }
@@ -31,6 +33,8 @@ func newInMemoryJobsRepository() *inMemoryJobsRepository {
 func (r *inMemoryJobsRepository) GetDbContext() *database.DbContext { return nil }
 
 func (r *inMemoryJobsRepository) CreateJob(tx *sql.Tx, job jobs.JobModel) (jobs.JobModel, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if job.CreatedAt.IsZero() {
 		job.CreatedAt = time.Now().UTC()
 	}
@@ -39,6 +43,8 @@ func (r *inMemoryJobsRepository) CreateJob(tx *sql.Tx, job jobs.JobModel) (jobs.
 }
 
 func (r *inMemoryJobsRepository) CreateStep(tx *sql.Tx, step jobs.StepModel) (jobs.StepModel, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if step.CreatedAt.IsZero() {
 		step.CreatedAt = time.Now().UTC()
 	}
@@ -47,10 +53,14 @@ func (r *inMemoryJobsRepository) CreateStep(tx *sql.Tx, step jobs.StepModel) (jo
 }
 
 func (r *inMemoryJobsRepository) GetJobByID(id string) (jobs.JobModel, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	return r.jobsByID[id], nil
 }
 
 func (r *inMemoryJobsRepository) ListJobs(filter jobs.JobFilter, page int, pageSize int) (utils.PaginationResponse[jobs.JobModel], error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	items := make([]jobs.JobModel, 0, len(r.jobsByID))
 	for _, job := range r.jobsByID {
 		if filter.Status.HasValue && job.Status != filter.Status.Value {
@@ -78,7 +88,39 @@ func (r *inMemoryJobsRepository) ListJobs(filter jobs.JobFilter, page int, pageS
 	}, nil
 }
 
+func (r *inMemoryJobsRepository) ListJobsForScheduling(status string, limit int) ([]jobs.JobModel, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if limit <= 0 {
+		limit = 1
+	}
+
+	items := make([]jobs.JobModel, 0, len(r.jobsByID))
+	for _, job := range r.jobsByID {
+		if job.Status != status {
+			continue
+		}
+		items = append(items, job)
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].Priority == items[j].Priority {
+			return items[i].CreatedAt.Before(items[j].CreatedAt)
+		}
+		return items[i].Priority > items[j].Priority
+	})
+
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
+	return items, nil
+}
+
 func (r *inMemoryJobsRepository) GetStepsByJobID(jobID string) ([]jobs.StepModel, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	steps := []jobs.StepModel{}
 	for _, step := range r.stepsByID {
 		if step.JobID == jobID {
@@ -92,6 +134,8 @@ func (r *inMemoryJobsRepository) GetStepsByJobID(jobID string) ([]jobs.StepModel
 }
 
 func (r *inMemoryJobsRepository) UpdateJobStatus(tx *sql.Tx, id string, fromStatus string, toStatus string, startedAt *time.Time, endedAt *time.Time, lastError string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	job, exists := r.jobsByID[id]
 	if !exists || job.Status != fromStatus {
 		return false, nil
@@ -110,6 +154,8 @@ func (r *inMemoryJobsRepository) UpdateJobStatus(tx *sql.Tx, id string, fromStat
 }
 
 func (r *inMemoryJobsRepository) UpdateStepStatus(tx *sql.Tx, id string, fromStatus string, toStatus string, startedAt *time.Time, endedAt *time.Time, lastError string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	step, exists := r.stepsByID[id]
 	if !exists || step.Status != fromStatus {
 		return false, nil
@@ -128,6 +174,8 @@ func (r *inMemoryJobsRepository) UpdateStepStatus(tx *sql.Tx, id string, fromSta
 }
 
 func (r *inMemoryJobsRepository) UpdateStepExecution(tx *sql.Tx, id string, attempts int, lastError string, progress int, startedAt *time.Time, endedAt *time.Time) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	step, exists := r.stepsByID[id]
 	if !exists {
 		return false, nil
@@ -146,6 +194,8 @@ func (r *inMemoryJobsRepository) UpdateStepExecution(tx *sql.Tx, id string, atte
 }
 
 func (r *inMemoryJobsRepository) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	job, exists := r.jobsByID[id]
 	if !exists || job.CancelRequested {
 		return false, nil

@@ -301,12 +301,14 @@ type StepAtomicExecutor interface {
 func NewDefaultStepExecutor() *DefaultStepExecutor {
 	return &DefaultStepExecutor{
 		filesystemSnapshotsByJobID: map[string]map[string]files.FileDto{},
+		fileStateByJobID:           map[string]files.FileDto{},
 	}
 }
 
 type DefaultStepExecutor struct {
 	snapshotMutex              sync.Mutex
 	filesystemSnapshotsByJobID map[string]map[string]files.FileDto
+	fileStateByJobID           map[string]files.FileDto
 }
 
 func (e *DefaultStepExecutor) ExecuteStep(step domain.Step, context *WorkerContext) error {
@@ -318,28 +320,37 @@ func (e *DefaultStepExecutor) ExecuteStep(step domain.Step, context *WorkerConte
 	case domain.StepTypeScanFilesystem:
 		return e.executeScanFilesystemStep(step, context)
 	case domain.StepTypeMetadata:
-		fileInput, resolveErr := resolveStepFileInput(step, context)
+		fileInput, resolveErr := e.resolveStepFileInput(step, context)
 		if resolveErr != nil {
 			return resolveErr
 		}
-		_, execErr := NewMetadataStepExecutor(pythonScriptRunner).Execute(MetadataStepInput{File: fileInput})
+		output, execErr := NewMetadataStepExecutor(pythonScriptRunner).Execute(MetadataStepInput{File: fileInput})
+		if execErr == nil || isStepSkipped(execErr) {
+			e.storeFileState(step.JobID, output.File)
+		}
 		return execErr
 	case domain.StepTypeChecksum:
-		fileInput, resolveErr := resolveStepFileInput(step, context)
+		fileInput, resolveErr := e.resolveStepFileInput(step, context)
 		if resolveErr != nil {
 			return resolveErr
 		}
-		_, execErr := NewChecksumStepExecutor(utils.GetFileChecksum, utils.GetDirectoryChecksum).Execute(ChecksumStepInput{File: fileInput})
+		output, execErr := NewChecksumStepExecutor(utils.GetFileChecksum, utils.GetDirectoryChecksum).Execute(ChecksumStepInput{File: fileInput})
+		if execErr == nil || isStepSkipped(execErr) {
+			e.storeFileState(step.JobID, output.File)
+		}
 		return execErr
 	case domain.StepTypePersist:
-		fileInput, resolveErr := resolveStepFileInput(step, context)
+		fileInput, resolveErr := e.resolveStepFileInput(step, context)
 		if resolveErr != nil {
 			return resolveErr
 		}
-		_, execErr := NewPersistStepExecutor(context.FilesService).Execute(PersistStepInput{File: fileInput})
+		output, execErr := NewPersistStepExecutor(context.FilesService).Execute(PersistStepInput{File: fileInput})
+		if execErr == nil || isStepSkipped(execErr) {
+			e.storeFileState(step.JobID, output.File)
+		}
 		return execErr
 	case domain.StepTypeThumbnail:
-		fileInput, resolveErr := resolveStepFileInput(step, context)
+		fileInput, resolveErr := e.resolveStepFileInput(step, context)
 		if resolveErr != nil {
 			return resolveErr
 		}
@@ -554,6 +565,51 @@ func (e *DefaultStepExecutor) clearSnapshot(jobID string) {
 	e.snapshotMutex.Lock()
 	defer e.snapshotMutex.Unlock()
 	delete(e.filesystemSnapshotsByJobID, jobID)
+}
+
+func (e *DefaultStepExecutor) resolveStepFileInput(step domain.Step, context *WorkerContext) (files.FileDto, error) {
+	if fileState, found := e.loadFileState(step.JobID); found {
+		return fileState, nil
+	}
+
+	resolved, err := resolveStepFileInput(step, context)
+	if err != nil {
+		return files.FileDto{}, err
+	}
+	e.storeFileState(step.JobID, resolved)
+	return resolved, nil
+}
+
+func (e *DefaultStepExecutor) storeFileState(jobID string, file files.FileDto) {
+	if e == nil || jobID == "" || file.Path == "" {
+		return
+	}
+
+	e.snapshotMutex.Lock()
+	defer e.snapshotMutex.Unlock()
+	e.fileStateByJobID[jobID] = file
+}
+
+func (e *DefaultStepExecutor) loadFileState(jobID string) (files.FileDto, bool) {
+	if e == nil || jobID == "" {
+		return files.FileDto{}, false
+	}
+
+	e.snapshotMutex.Lock()
+	defer e.snapshotMutex.Unlock()
+	file, found := e.fileStateByJobID[jobID]
+	return file, found
+}
+
+func (e *DefaultStepExecutor) clearJobState(jobID string) {
+	if e == nil || jobID == "" {
+		return
+	}
+
+	e.snapshotMutex.Lock()
+	defer e.snapshotMutex.Unlock()
+	delete(e.filesystemSnapshotsByJobID, jobID)
+	delete(e.fileStateByJobID, jobID)
 }
 
 func resolveScopeRoot(scope domain.ScopePayload) string {

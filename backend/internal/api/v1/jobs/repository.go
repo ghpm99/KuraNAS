@@ -184,6 +184,47 @@ func (r *Repository) GetStepsByJobID(jobID string) ([]StepModel, error) {
 	return steps, nil
 }
 
+func (r *Repository) ListJobsForScheduling(status string, limit int) ([]JobModel, error) {
+	if limit < 1 {
+		limit = 1
+	}
+
+	items := make([]JobModel, 0, limit)
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.ListJobsForSchedulingQuery, status, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var job JobModel
+			if err := rows.Scan(
+				&job.ID,
+				&job.Type,
+				&job.Priority,
+				&job.ScopeJSON,
+				&job.Status,
+				&job.CreatedAt,
+				&job.StartedAt,
+				&job.EndedAt,
+				&job.CancelRequested,
+				&job.LastError,
+			); err != nil {
+				return err
+			}
+			items = append(items, job)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ListJobsForScheduling: %w", err)
+	}
+
+	return items, nil
+}
+
 func (r *Repository) UpdateJobStatus(
 	tx *sql.Tx,
 	id string,

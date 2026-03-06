@@ -12,9 +12,86 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/domain"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
+
+func TestDefaultStepExecutor_PropagatesFileStateAcrossSteps(t *testing.T) {
+	tmpDir := t.TempDir()
+	imagePath := filepath.Join(tmpDir, "photo.jpg")
+	if err := os.WriteFile(imagePath, []byte("binary-image-content"), 0644); err != nil {
+		t.Fatalf("failed to write test image: %v", err)
+	}
+
+	previousRunner := pythonScriptRunner
+	t.Cleanup(func() {
+		pythonScriptRunner = previousRunner
+	})
+	SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
+		return `{"path":"` + filePath + `"}`, nil
+	})
+
+	thumbnailCalls := 0
+	service := &workerFilesServiceMock{
+		getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+			return files.FileDto{}, sql.ErrNoRows
+		},
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			if fileDto.CheckSum == "" {
+				t.Fatalf("expected checksum to be propagated into persist step")
+			}
+			if fileDto.Metadata == nil {
+				t.Fatalf("expected metadata to be propagated into persist step")
+			}
+			fileDto.ID = 42
+			return fileDto, nil
+		},
+		getFileThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
+			if fileDto.ID != 42 {
+				t.Fatalf("expected thumbnail step to receive persisted file id, got %d", fileDto.ID)
+			}
+			thumbnailCalls++
+			return []byte("thumb"), nil
+		},
+	}
+
+	executor := NewDefaultStepExecutor()
+	ctx := &WorkerContext{FilesService: service}
+	jobID := "job-file-state"
+	scope := domain.NewFileScopePayload(domain.FileScope{
+		Name: filepath.Base(imagePath),
+		Path: imagePath,
+	})
+
+	for _, stepType := range []domain.StepType{
+		domain.StepTypeMetadata,
+		domain.StepTypeChecksum,
+		domain.StepTypePersist,
+		domain.StepTypeThumbnail,
+	} {
+		err := executor.ExecuteStep(domain.Step{
+			ID:    string(stepType),
+			JobID: jobID,
+			Type:  stepType,
+			Scope: scope,
+		}, ctx)
+		if err != nil {
+			t.Fatalf("step %s failed: %v", stepType, err)
+		}
+	}
+
+	state, found := executor.loadFileState(jobID)
+	if !found {
+		t.Fatalf("expected file state for job to be cached after step execution")
+	}
+	if state.ID != 42 {
+		t.Fatalf("expected cached file id=42, got %d", state.ID)
+	}
+	if thumbnailCalls != 1 {
+		t.Fatalf("expected one thumbnail generation call, got %d", thumbnailCalls)
+	}
+}
 
 type workerFilesServiceMock struct {
 	files.ServiceInterface

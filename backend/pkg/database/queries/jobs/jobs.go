@@ -16,6 +16,9 @@ var GetJobByIDQuery string
 //go:embed list_jobs.sql
 var ListJobsQuery string
 
+//go:embed list_jobs_for_scheduling.sql
+var ListJobsForSchedulingQuery string
+
 //go:embed get_steps_by_job_id.sql
 var GetStepsByJobIDQuery string
 

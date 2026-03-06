@@ -37,6 +37,13 @@ func (e *ThumbnailStepExecutor) Execute(input ThumbnailStepInput) (ThumbnailStep
 	fileDto := files.FileDto{}
 	if input.File != nil {
 		fileDto = *input.File
+		if fileDto.ID <= 0 {
+			loadedFile, err := e.service.GetFileByNameAndPath(fileDto.Name, fileDto.Path)
+			if err != nil {
+				return ThumbnailStepOutput{}, fmt.Errorf("thumbnail step: resolve persisted file: %w", err)
+			}
+			fileDto = loadedFile
+		}
 	} else {
 		if input.FileID <= 0 {
 			return ThumbnailStepOutput{}, fmt.Errorf("thumbnail step: invalid file id")

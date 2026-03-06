@@ -26,6 +26,7 @@ type JobScheduler struct {
 	runInTx               func(fn func(*sql.Tx) error) error
 	maxJobsPerTick        int
 	stepConcurrencyLimits map[domain.StepType]int
+	stepSemaphores        map[domain.StepType]chan struct{}
 	retryBaseBackoff      time.Duration
 	retryMaxBackoff       time.Duration
 
@@ -38,6 +39,14 @@ type JobScheduler struct {
 type schedulerStep struct {
 	Step            domain.Step
 	DependsOnStepID []string
+}
+
+type schedulerRepository interface {
+	ListJobsForScheduling(status string, limit int) ([]jobs.JobModel, error)
+}
+
+type jobExecutionLifecycle interface {
+	clearJobState(jobID string)
 }
 
 func NewJobScheduler(repository jobs.RepositoryInterface, executor StepAtomicExecutor, workerContext *WorkerContext) *JobScheduler {
@@ -56,10 +65,12 @@ func NewJobScheduler(repository jobs.RepositoryInterface, executor StepAtomicExe
 		workerContext:          workerContext,
 		maxJobsPerTick:         maxJobsPerTick,
 		stepConcurrencyLimits:  buildStepConcurrencyLimits(),
+		stepSemaphores:         map[domain.StepType]chan struct{}{},
 		retryBaseBackoff:       time.Duration(config.AppConfig.WorkerRetryBaseBackoffMillis) * time.Millisecond,
 		retryMaxBackoff:        time.Duration(config.AppConfig.WorkerRetryMaxBackoffMillis) * time.Millisecond,
 		retryNotBeforeByStepID: map[string]time.Time{},
 	}
+	scheduler.initializeStepSemaphores()
 
 	if scheduler.retryBaseBackoff <= 0 {
 		scheduler.retryBaseBackoff = 500 * time.Millisecond
@@ -115,21 +126,21 @@ func (s *JobScheduler) RunOnce() error {
 		return err
 	}
 
-	runningByType, err := s.countRunningStepsByType(jobModels)
-	if err != nil {
-		return err
-	}
-
+	var runGroup sync.WaitGroup
 	for _, jobModel := range jobModels {
-		if runErr := s.runSingleJob(jobModel, runningByType); runErr != nil {
-			continue
-		}
+		jobCandidate := jobModel
+		runGroup.Add(1)
+		go func() {
+			defer runGroup.Done()
+			_ = s.runSingleJob(jobCandidate)
+		}()
 	}
+	runGroup.Wait()
 
 	return nil
 }
 
-func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel, runningByType map[domain.StepType]int) error {
+func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel) error {
 	steps, err := s.repository.GetStepsByJobID(jobModel.ID)
 	if err != nil {
 		return err
@@ -160,9 +171,11 @@ func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel, runningByType map[do
 	if s.isStepRetryBlocked(nextStep.Step.ID) {
 		return nil
 	}
-	if s.isStepTypeAtCapacity(nextStep.Step.Type, runningByType) {
+	releaseStepSlot := s.acquireStepSlot(nextStep.Step.Type)
+	if releaseStepSlot == nil {
 		return nil
 	}
+	defer releaseStepSlot()
 
 	if s.workerContext != nil {
 		s.workerContext.EnsureJobExecutionContext(jobDomain.ID)
@@ -173,12 +186,7 @@ func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel, runningByType map[do
 	}
 
 	nextStep.Step.Scope = jobDomain.Scope
-	runningByType[nextStep.Step.Type]++
-
 	execErr := s.executor.ExecuteStep(nextStep.Step, s.workerContext)
-	if runningByType[nextStep.Step.Type] > 0 {
-		runningByType[nextStep.Step.Type]--
-	}
 
 	if finalizeErr := s.finalizeStep(nextStep.Step, execErr); finalizeErr != nil {
 		return finalizeErr
@@ -278,11 +286,36 @@ func (s *JobScheduler) applyCancellation(job domain.Job, steps []schedulerStep) 
 	if !hasRunningStep && s.workerContext != nil {
 		s.workerContext.ReleaseJobExecution(job.ID)
 	}
+	if !hasRunningStep {
+		if lifecycle, ok := s.executor.(jobExecutionLifecycle); ok {
+			lifecycle.clearJobState(job.ID)
+		}
+	}
 
 	return nil
 }
 
 func (s *JobScheduler) listSchedulableJobs() ([]jobs.JobModel, error) {
+	if schedulingRepo, ok := s.repository.(schedulerRepository); ok {
+		queuedJobs, err := schedulingRepo.ListJobsForScheduling(string(domain.JobStatusQueued), s.maxJobsPerTick)
+		if err != nil {
+			return nil, err
+		}
+		runningJobs, err := schedulingRepo.ListJobsForScheduling(string(domain.JobStatusRunning), s.maxJobsPerTick)
+		if err != nil {
+			return nil, err
+		}
+		jobsToProcess := append([]jobs.JobModel{}, queuedJobs...)
+		jobsToProcess = append(jobsToProcess, runningJobs...)
+		sort.SliceStable(jobsToProcess, func(i, j int) bool {
+			if jobsToProcess[i].Priority == jobsToProcess[j].Priority {
+				return jobsToProcess[i].CreatedAt.Before(jobsToProcess[j].CreatedAt)
+			}
+			return jobsToProcess[i].Priority > jobsToProcess[j].Priority
+		})
+		return jobsToProcess, nil
+	}
+
 	queuedJobs, err := s.repository.ListJobs(jobs.JobFilter{
 		Status: utils.Optional[string]{HasValue: true, Value: string(domain.JobStatusQueued)},
 	}, 1, s.maxJobsPerTick)
@@ -486,6 +519,9 @@ func (s *JobScheduler) reconcileJobState(jobID string, steps []schedulerStep, la
 	if s.workerContext != nil {
 		s.workerContext.ReleaseJobExecution(jobID)
 	}
+	if lifecycle, ok := s.executor.(jobExecutionLifecycle); ok {
+		lifecycle.clearJobState(jobID)
+	}
 
 	return nil
 }
@@ -509,6 +545,55 @@ func (s *JobScheduler) isStepTypeAtCapacity(stepType domain.StepType, runningByT
 		limit = 1
 	}
 	return runningByType[stepType] >= limit
+}
+
+func (s *JobScheduler) initializeStepSemaphores() {
+	if s == nil {
+		return
+	}
+
+	for stepType := range s.stepConcurrencyLimits {
+		limit := s.stepConcurrencyLimits[stepType]
+		if limit <= 0 {
+			limit = config.AppConfig.WorkerStepConcurrencyDefault
+		}
+		if limit <= 0 {
+			limit = 1
+		}
+		semaphore := make(chan struct{}, limit)
+		for range limit {
+			semaphore <- struct{}{}
+		}
+		s.stepSemaphores[stepType] = semaphore
+	}
+}
+
+func (s *JobScheduler) acquireStepSlot(stepType domain.StepType) func() {
+	if s == nil {
+		return nil
+	}
+
+	semaphore, exists := s.stepSemaphores[stepType]
+	if !exists || semaphore == nil {
+		limit := s.stepConcurrencyLimits[stepType]
+		if limit <= 0 {
+			limit = 1
+		}
+		semaphore = make(chan struct{}, limit)
+		for range limit {
+			semaphore <- struct{}{}
+		}
+		s.stepSemaphores[stepType] = semaphore
+	}
+
+	select {
+	case <-semaphore:
+		return func() {
+			semaphore <- struct{}{}
+		}
+	default:
+		return nil
+	}
 }
 
 func (s *JobScheduler) isStepRetryBlocked(stepID string) bool {
