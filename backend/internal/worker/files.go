@@ -3,7 +3,6 @@ package worker
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
@@ -78,13 +77,6 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 			return err
 		}
 
-		go func(fileID int, filePath string) {
-			checksumErr := service.UpdateCheckSum(fileID)
-			if checksumErr != nil {
-				fail(filePath, checksumErr)
-			}
-			fmt.Println("checksum atualizado com sucesso", fileID)
-		}(fileDto.ID, path)
 		successFilesCount++
 		return nil
 	})
@@ -95,13 +87,11 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 		i18n.LogTranslate("SCAN_FILES_SUCCESS")
 	}
 
-	deletedFilesCount := findFilesDeleted(service)
 	Logger.CompleteWithSuccessLog(logger)
 	log.Printf(
-		"%d Arquivos processados com sucesso. %d Arquivos falharam no processamento. %d Arquivos deletados",
+		"%d Arquivos processados com sucesso. %d Arquivos falharam no processamento.",
 		successFilesCount,
 		failedFilesCount,
-		deletedFilesCount,
 	)
 }
 
@@ -144,52 +134,4 @@ func fileExists(path string) bool {
 		return false
 	}
 	return err == nil
-}
-
-func findFilesDeleted(service files.ServiceInterface) int {
-	var deletedFilesCount = 0
-	var currentPage = 1
-	var pagination, error = service.GetFiles(files.FileFilter{
-		DeletedAt: utils.Optional[time.Time]{
-			HasValue: true,
-		},
-	}, currentPage, 20)
-	if error != nil {
-		i18n.LogTranslate("ERROR_GET_FILES", error)
-		return deletedFilesCount
-	}
-	for {
-		for _, file := range pagination.Items {
-			if !fileExists(file.Path) {
-				i18n.LogTranslate("FILE_DONT_EXIST", file.ID, file.Name)
-				file.DeletedAt = utils.Optional[time.Time]{
-					HasValue: true,
-					Value:    time.Now(),
-				}
-				_, error := service.UpdateFile(file)
-				if error != nil {
-					i18n.LogTranslate("ERROR_DELETING_FILE", file.ID, file.Name)
-					continue
-				}
-				deletedFilesCount++
-			} else {
-				continue
-			}
-		}
-		if !pagination.Pagination.HasNext {
-			break
-		}
-		currentPage++
-		pagination, error = service.GetFiles(files.FileFilter{
-			DeletedAt: utils.Optional[time.Time]{
-				HasValue: true,
-			},
-		}, currentPage, 20)
-		if error != nil {
-			i18n.LogTranslate("ERROR_GET_FILES", error)
-			break
-		}
-	}
-	return deletedFilesCount
-
 }

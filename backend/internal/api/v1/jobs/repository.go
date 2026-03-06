@@ -273,3 +273,40 @@ func (r *Repository) UpdateStepExecution(
 
 	return rowsAffected == 1, nil
 }
+
+func (r *Repository) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
+	if tx != nil {
+		result, err := tx.Exec(queries.RequestJobCancelQuery, id)
+		if err != nil {
+			return false, fmt.Errorf("RequestJobCancel: %w", err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return false, fmt.Errorf("RequestJobCancel rows affected: %w", err)
+		}
+
+		return rowsAffected == 1, nil
+	}
+
+	updated := false
+	err := r.DbContext.ExecTx(func(txContext *sql.Tx) error {
+		result, execErr := txContext.Exec(queries.RequestJobCancelQuery, id)
+		if execErr != nil {
+			return execErr
+		}
+
+		rowsAffected, rowsErr := result.RowsAffected()
+		if rowsErr != nil {
+			return rowsErr
+		}
+
+		updated = rowsAffected == 1
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("RequestJobCancel: %w", err)
+	}
+
+	return updated, nil
+}

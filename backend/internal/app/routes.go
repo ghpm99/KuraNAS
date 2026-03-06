@@ -144,6 +144,7 @@ func RegisterJobsRoutes(router *gin.RouterGroup, context *AppContext) {
 	jobs.GET("", context.Jobs.Handler.GetJobsHandler)
 	jobs.GET("/:id", context.Jobs.Handler.GetJobByIDHandler)
 	jobs.GET("/:id/steps", context.Jobs.Handler.GetJobStepsHandler)
+	jobs.POST("/:id/cancel", context.Jobs.Handler.CancelJobHandler)
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {

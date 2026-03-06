@@ -35,9 +35,9 @@ type ServiceInterface interface {
 	GetFileById(id int) (FileDto, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	UpdateFile(file FileDto) (result bool, err error)
+	ScheduleUploadProcess(uploadedPaths []string) (UploadProcessResult, error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
-	UpdateCheckSum(fileId int) error
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
 	GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error)
 	GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error)
@@ -62,6 +62,20 @@ type ServiceInterface interface {
 	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
 	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
+}
+
+type UploadProcessJobReference struct {
+	Path  string `json:"path"`
+	JobID string `json:"job_id"`
+}
+
+type UploadProcessResult struct {
+	JobID string                      `json:"job_id"`
+	Jobs  []UploadProcessJobReference `json:"jobs"`
+}
+
+type UploadProcessSchedulerInterface interface {
+	ScheduleUploadProcess(uploadedPaths []string) (UploadProcessResult, error)
 }
 
 type RecentFileRepositoryInterface interface {

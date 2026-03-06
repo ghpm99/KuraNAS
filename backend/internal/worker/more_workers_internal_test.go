@@ -21,7 +21,6 @@ type workerFilesServiceMock struct {
 	getFilesFn          func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	createFileFn        func(fileDto files.FileDto) (files.FileDto, error)
 	updateFileFn        func(file files.FileDto) (bool, error)
-	updateCheckSumFn    func(fileID int) error
 	getFileByIDFn       func(id int) (files.FileDto, error)
 	getFileByNamePathFn func(name, path string) (files.FileDto, error)
 	getFileThumbFn      func(fileDto files.FileDto, width, height int) ([]byte, error)
@@ -46,12 +45,6 @@ func (m *workerFilesServiceMock) UpdateFile(file files.FileDto) (bool, error) {
 		return m.updateFileFn(file)
 	}
 	return true, nil
-}
-func (m *workerFilesServiceMock) UpdateCheckSum(fileID int) error {
-	if m.updateCheckSumFn != nil {
-		return m.updateCheckSumFn(fileID)
-	}
-	return nil
 }
 func (m *workerFilesServiceMock) GetFileById(id int) (files.FileDto, error) {
 	if m.getFileByIDFn != nil {
@@ -125,23 +118,24 @@ func (m *workerLoggerMock) CompleteWithErrorLog(logModel logger.LoggerModel, err
 }
 
 func TestWorkerSchedulerAndWorkerLoop(t *testing.T) {
-	tasks := make(chan utils.Task, 2)
-	ctx := &WorkerContext{Tasks: tasks}
+	repo := newInMemoryJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, NewDefaultJobPlanner())
+	orchestrator.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
 
-	startWorkersScheduler(ctx)
-	select {
-	case task := <-tasks:
-		if task.Type != utils.ScanFiles {
-			t.Fatalf("expected ScanFiles task, got %v", task.Type)
-		}
-	default:
-		t.Fatalf("expected task in queue")
+	startWorkersScheduler(&WorkerContext{Orchestrator: orchestrator})
+	if len(repo.jobsByID) != 1 {
+		t.Fatalf("expected one startup job from scheduler, got %d", len(repo.jobsByID))
 	}
 
-	loopTasks := make(chan utils.Task, 1)
+	loopTasks := make(chan utils.Task, 3)
+	loopTasks <- utils.Task{Type: utils.ScanFiles, Data: "scan"}
+	loopTasks <- utils.Task{Type: utils.ScanDir, Data: "/tmp"}
 	loopTasks <- utils.Task{Type: utils.TaskType(99), Data: "x"}
 	close(loopTasks)
-	worker(1, &WorkerContext{Tasks: loopTasks})
+	worker(1, &WorkerContext{Tasks: loopTasks, Orchestrator: orchestrator})
+	if len(repo.jobsByID) != 3 {
+		t.Fatalf("expected startup and reindex jobs from legacy task conversion, got %d", len(repo.jobsByID))
+	}
 }
 
 func TestStartWorkersRespectsConfigFlag(t *testing.T) {
@@ -153,73 +147,38 @@ func TestStartWorkersRespectsConfigFlag(t *testing.T) {
 	StartWorkers(ctx, 1)
 }
 
-func TestStartWorkersEnabledSchedulesScanTask(t *testing.T) {
+func TestStartWorkersEnabledDoesNotFallbackToLegacyQueue(t *testing.T) {
 	prev := config.AppConfig
 	t.Cleanup(func() { config.AppConfig = prev })
 
 	config.AppConfig.EnableWorkers = true
-	ctx := &WorkerContext{Tasks: make(chan utils.Task, 2)}
+	repo := newInMemoryJobsRepository()
+	ctx := &WorkerContext{
+		Tasks:          make(chan utils.Task, 2),
+		JobsRepository: repo,
+	}
 
 	StartWorkers(ctx, 0)
 
 	select {
 	case task := <-ctx.Tasks:
-		if task.Type != utils.ScanFiles {
-			t.Fatalf("expected scheduled ScanFiles task, got %v", task.Type)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatalf("expected scheduled task from StartWorkers")
+		t.Fatalf("expected no legacy tasks in queue, got %v", task.Type)
+	case <-time.After(50 * time.Millisecond):
 	}
 }
 
-func TestScanDirWorkerAndHelpers(t *testing.T) {
-	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "new.txt"), []byte("x"), 0644); err != nil {
-		t.Fatalf("failed to create file: %v", err)
-	}
+func TestEnqueueReindexFolderJobIgnoresInvalidInput(t *testing.T) {
+	repo := newInMemoryJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, NewDefaultJobPlanner())
+	orchestrator.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+	ctx := &WorkerContext{Orchestrator: orchestrator}
 
-	var created, updated int
-	svc := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-			return utils.PaginationResponse[files.FileDto]{
-				Items: []files.FileDto{
-					{Name: "old.txt", Path: tmpDir + "/old.txt"},
-				},
-			}, nil
-		},
-		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
-			created++
-			return fileDto, nil
-		},
-		updateFileFn: func(file files.FileDto) (bool, error) {
-			updated++
-			return true, nil
-		},
-	}
+	enqueueReindexFolderJob(ctx, 123)
+	enqueueReindexFolderJob(ctx, "   ")
 
-	ScanDirWorker(svc, 123) // invalid input branch
-	ScanDirWorker(svc, tmpDir)
-	if created == 0 {
-		t.Fatalf("expected at least one create operation, created=%d updated=%d", created, updated)
+	if len(repo.jobsByID) != 0 {
+		t.Fatalf("expected invalid inputs to be ignored without job creation, got %d jobs", len(repo.jobsByID))
 	}
-
-	if !fileExists(filepath.Join(tmpDir, "new.txt")) {
-		t.Fatalf("expected fileExists true for existing file")
-	}
-	if fileExists(filepath.Join(tmpDir, "missing.txt")) {
-		t.Fatalf("expected fileExists false for missing file")
-	}
-}
-
-func TestScanDirWorkerErrorBranches(t *testing.T) {
-	svc := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-			return utils.PaginationResponse[files.FileDto]{}, errors.New("get files failed")
-		},
-	}
-
-	ScanDirWorker(svc, filepath.Join(t.TempDir(), "missing")) // read dir error
-	ScanDirWorker(svc, t.TempDir())                           // get files error
 }
 
 func TestScanFilesWorker(t *testing.T) {
@@ -234,7 +193,6 @@ func TestScanFilesWorker(t *testing.T) {
 	config.AppConfig.EntryPoint = tmpDir
 
 	createCalls := 0
-	checksumCalls := make(chan int, 4)
 	svc := &workerFilesServiceMock{
 		getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
 			return files.FileDto{}, sql.ErrNoRows
@@ -243,10 +201,6 @@ func TestScanFilesWorker(t *testing.T) {
 			createCalls++
 			fileDto.ID = createCalls
 			return fileDto, nil
-		},
-		updateCheckSumFn: func(fileID int) error {
-			checksumCalls <- fileID
-			return nil
 		},
 		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			return utils.PaginationResponse[files.FileDto]{}, nil
@@ -263,11 +217,6 @@ func TestScanFilesWorker(t *testing.T) {
 
 	if createCalls == 0 {
 		t.Fatalf("expected create calls > 0")
-	}
-	select {
-	case <-checksumCalls:
-	case <-time.After(2 * time.Second):
-		t.Fatalf("expected checksum call")
 	}
 }
 
@@ -312,7 +261,7 @@ func TestScanFilesWorker_UsesRepositoryErrorInFailureCallback(t *testing.T) {
 }
 
 func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
-	t.Run("existing file uses update path and triggers checksum", func(t *testing.T) {
+	t.Run("existing file uses update path", func(t *testing.T) {
 		prev := config.AppConfig
 		t.Cleanup(func() { config.AppConfig = prev })
 
@@ -324,7 +273,6 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 		config.AppConfig.EntryPoint = tmpDir
 
 		updated := 0
-		checksums := make(chan int, 4)
 		svc := &workerFilesServiceMock{
 			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
 				return files.FileDto{ID: 99, Name: name, Path: path}, nil
@@ -332,10 +280,6 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 			updateFileFn: func(file files.FileDto) (bool, error) {
 				updated++
 				return true, nil
-			},
-			updateCheckSumFn: func(fileID int) error {
-				checksums <- fileID
-				return nil
 			},
 			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 				return utils.PaginationResponse[files.FileDto]{}, nil
@@ -346,14 +290,6 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 		ScanFilesWorker(svc, logSvc)
 		if updated == 0 {
 			t.Fatalf("expected update path to be used")
-		}
-		select {
-		case id := <-checksums:
-			if id != 99 {
-				t.Fatalf("expected checksum for existing id 99, got %d", id)
-			}
-		case <-time.After(2 * time.Second):
-			t.Fatalf("expected checksum update call")
 		}
 	})
 
@@ -372,7 +308,7 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 	})
 }
 
-func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.T) {
+func TestScanFilesWorker_CreateAndUpdateFailures(t *testing.T) {
 	t.Run("create failure", func(t *testing.T) {
 		prev := config.AppConfig
 		t.Cleanup(func() { config.AppConfig = prev })
@@ -384,7 +320,6 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 		}
 		config.AppConfig.EntryPoint = tmpDir
 
-		checksumCalls := 0
 		svc := &workerFilesServiceMock{
 			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
 				return files.FileDto{}, sql.ErrNoRows
@@ -392,19 +327,12 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 			createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
 				return files.FileDto{}, errors.New("create failed")
 			},
-			updateCheckSumFn: func(fileID int) error {
-				checksumCalls++
-				return nil
-			},
 			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 				return utils.PaginationResponse[files.FileDto]{}, nil
 			},
 		}
 		logSvc := &workerLoggerMock{}
 		ScanFilesWorker(svc, logSvc)
-		if checksumCalls != 0 {
-			t.Fatalf("expected no checksum calls on create failure, got %d", checksumCalls)
-		}
 	})
 
 	t.Run("update returns false", func(t *testing.T) {
@@ -418,7 +346,6 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 		}
 		config.AppConfig.EntryPoint = tmpDir
 
-		checksumCalls := 0
 		svc := &workerFilesServiceMock{
 			getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
 				return files.FileDto{ID: 1, Name: name, Path: path}, nil
@@ -426,19 +353,12 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 			updateFileFn: func(file files.FileDto) (bool, error) {
 				return false, nil
 			},
-			updateCheckSumFn: func(fileID int) error {
-				checksumCalls++
-				return nil
-			},
 			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 				return utils.PaginationResponse[files.FileDto]{}, nil
 			},
 		}
 		logSvc := &workerLoggerMock{}
 		ScanFilesWorker(svc, logSvc)
-		if checksumCalls != 0 {
-			t.Fatalf("expected no checksum calls when update fails, got %d", checksumCalls)
-		}
 	})
 }
 
@@ -541,7 +461,6 @@ func TestCreateAndUpdateFileDtoHelpers_ErrorPaths(t *testing.T) {
 func TestWorkerKnownTaskBranches(t *testing.T) {
 	tasks := make(chan utils.Task, 4)
 	tasks <- utils.Task{Type: utils.ScanDir, Data: 123}
-	tasks <- utils.Task{Type: utils.UpdateCheckSum, Data: "bad"}
 	tasks <- utils.Task{Type: utils.CreateThumbnail, Data: "bad"}
 	tasks <- utils.Task{Type: utils.GenerateVideoPlaylists, Data: nil}
 	close(tasks)
@@ -553,104 +472,15 @@ func TestWorkerKnownTaskBranches(t *testing.T) {
 	})
 }
 
-func TestFindFilesDeleted(t *testing.T) {
-	tmpDir := t.TempDir()
-	missing := filepath.Join(tmpDir, "missing.txt")
-	existing := filepath.Join(tmpDir, "existing.txt")
-	if err := os.WriteFile(existing, []byte("ok"), 0644); err != nil {
-		t.Fatalf("failed to create file: %v", err)
-	}
-
-	updates := 0
-	svc := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-			return utils.PaginationResponse[files.FileDto]{
-				Items: []files.FileDto{
-					{ID: 1, Name: "missing", Path: missing},
-					{ID: 2, Name: "existing", Path: existing},
-				},
-			}, nil
-		},
-		updateFileFn: func(file files.FileDto) (bool, error) {
-			updates++
-			return true, nil
-		},
-	}
-
-	deleted := findFilesDeleted(svc)
-	if deleted != 1 {
-		t.Fatalf("expected 1 deleted file, got %d", deleted)
-	}
-	if updates == 0 {
-		t.Fatalf("expected at least one update call")
-	}
-}
-
-func TestFindFilesDeleted_CountsOnlySuccessfulUpdatesAndKeepsDeletedFilterOnPagination(t *testing.T) {
-	tmpDir := t.TempDir()
-	missing1 := filepath.Join(tmpDir, "missing-1.txt")
-	missing2 := filepath.Join(tmpDir, "missing-2.txt")
-	existing := filepath.Join(tmpDir, "existing.txt")
-	if err := os.WriteFile(existing, []byte("ok"), 0644); err != nil {
-		t.Fatalf("failed to create file: %v", err)
-	}
-
-	pageCalls := 0
-	updates := 0
-	svc := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-			pageCalls++
-			if !filter.DeletedAt.HasValue {
-				t.Fatalf("expected DeletedAt filter to be preserved on page %d", page)
-			}
-			if page == 1 {
-				return utils.PaginationResponse[files.FileDto]{
-					Items: []files.FileDto{{ID: 1, Name: "missing-1", Path: missing1}},
-					Pagination: utils.Pagination{
-						Page: 1, PageSize: 20, HasNext: true,
-					},
-				}, nil
-			}
-			return utils.PaginationResponse[files.FileDto]{
-				Items: []files.FileDto{
-					{ID: 2, Name: "missing-2", Path: missing2},
-					{ID: 3, Name: "existing", Path: existing},
-				},
-				Pagination: utils.Pagination{
-					Page: 2, PageSize: 20, HasNext: false,
-				},
-			}, nil
-		},
-		updateFileFn: func(file files.FileDto) (bool, error) {
-			updates++
-			if file.ID == 2 {
-				return false, errors.New("update failed")
-			}
-			return true, nil
-		},
-	}
-
-	deleted := findFilesDeleted(svc)
-	if pageCalls < 2 {
-		t.Fatalf("expected at least two pagination calls, got %d", pageCalls)
-	}
-	if updates != 2 {
-		t.Fatalf("expected two update attempts for missing files, got %d", updates)
-	}
-	if deleted != 1 {
-		t.Fatalf("expected deleted count to include only successful updates, got %d", deleted)
-	}
-}
-
 func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 	videoCalls := 0
 	imageCalls := 0
 	svc := &workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			if id == 1 {
-				return files.FileDto{ID: 1, Type: files.File, Format: ".mp4"}, nil
+				return files.FileDto{ID: 1, Type: files.File, Format: ".mp4", UpdatedAt: time.Now()}, nil
 			}
-			return files.FileDto{ID: 2, Type: files.File, Format: ".jpg"}, nil
+			return files.FileDto{ID: 2, Type: files.File, Format: ".jpg", UpdatedAt: time.Now()}, nil
 		},
 		getVideoThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
 			videoCalls++

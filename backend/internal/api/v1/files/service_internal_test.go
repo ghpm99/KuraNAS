@@ -204,6 +204,17 @@ type metadataRepoMock struct {
 	upsertVideoFn func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 }
 
+type uploadSchedulerMock struct {
+	scheduleFn func(uploadedPaths []string) (UploadProcessResult, error)
+}
+
+func (m *uploadSchedulerMock) ScheduleUploadProcess(uploadedPaths []string) (UploadProcessResult, error) {
+	if m.scheduleFn != nil {
+		return m.scheduleFn(uploadedPaths)
+	}
+	return UploadProcessResult{}, nil
+}
+
 func (m *metadataRepoMock) GetImageMetadataByID(id int) (ImageMetadataModel, error) {
 	return ImageMetadataModel{}, nil
 }
@@ -261,6 +272,57 @@ func sampleModel(id int, name string, typ FileType) FileModel {
 		Size:       10,
 		UpdatedAt:  time.Now(),
 		CreatedAt:  time.Now(),
+	}
+}
+
+func TestFileService_ScheduleUploadProcess(t *testing.T) {
+	s := &Service{
+		UploadScheduler: &uploadSchedulerMock{
+			scheduleFn: func(uploadedPaths []string) (UploadProcessResult, error) {
+				if len(uploadedPaths) != 2 {
+					t.Fatalf("expected 2 uploaded files, got %d", len(uploadedPaths))
+				}
+				return UploadProcessResult{
+					JobID: "job-1",
+					Jobs: []UploadProcessJobReference{
+						{Path: uploadedPaths[0], JobID: "job-1"},
+						{Path: uploadedPaths[1], JobID: "job-2"},
+					},
+				}, nil
+			},
+		},
+	}
+
+	result, err := s.ScheduleUploadProcess([]string{"/tmp/a.jpg", "/tmp/b.mp4"})
+	if err != nil {
+		t.Fatalf("expected schedule success, got %v", err)
+	}
+	if result.JobID != "job-1" {
+		t.Fatalf("expected job id job-1, got %s", result.JobID)
+	}
+	if len(result.Jobs) != 2 {
+		t.Fatalf("expected 2 job references, got %d", len(result.Jobs))
+	}
+}
+
+func TestFileService_ScheduleUploadProcessErrors(t *testing.T) {
+	s := &Service{}
+	if _, err := s.ScheduleUploadProcess(nil); !errors.Is(err, ErrNoUploadedFiles) {
+		t.Fatalf("expected ErrNoUploadedFiles, got %v", err)
+	}
+
+	s = &Service{UploadScheduler: &uploadSchedulerMock{
+		scheduleFn: func(uploadedPaths []string) (UploadProcessResult, error) {
+			return UploadProcessResult{}, nil
+		},
+	}}
+	if _, err := s.ScheduleUploadProcess([]string{"/tmp/a.jpg"}); !errors.Is(err, ErrUploadJobIDMissing) {
+		t.Fatalf("expected ErrUploadJobIDMissing, got %v", err)
+	}
+
+	s = &Service{}
+	if _, err := s.ScheduleUploadProcess([]string{"/tmp/a.jpg"}); !errors.Is(err, ErrUploadSchedulerUnavailable) {
+		t.Fatalf("expected ErrUploadSchedulerUnavailable, got %v", err)
 	}
 }
 
@@ -567,7 +629,7 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 	}
 }
 
-func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
+func TestFileService_DeleteBranches(t *testing.T) {
 	repo := &filesRepoMock{
 		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{
@@ -600,24 +662,15 @@ func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 		t.Fatalf("expected manual delete to ignore recent-access rule, got %v", err)
 	}
 
-	// Force default branch in UpdateCheckSum.
-	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-		m := sampleModel(filter.ID.Value, "unknown", FileType(99))
-		return utils.PaginationResponse[FileModel]{Items: []FileModel{m}}, nil
-	}
-	if err := s.UpdateCheckSum(9); err == nil {
-		t.Fatalf("expected unknown file type error")
-	}
 }
 
-func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
+func TestFileService_ThumbnailAndDeleteSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "data.txt")
 	if err := os.WriteFile(filePath, []byte("checksum"), 0644); err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	updateCalls := 0
 	repo := &filesRepoMock{
 		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			if filter.ID.HasValue && filter.ID.Value == 1 {
@@ -671,21 +724,10 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 		},
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-			updateCalls++
 			return true, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
-
-	if err := s.UpdateCheckSum(1); err != nil {
-		t.Fatalf("expected file checksum update success, got %v", err)
-	}
-	if err := s.UpdateCheckSum(2); err != nil {
-		t.Fatalf("expected dir checksum update success, got %v", err)
-	}
-	if updateCalls < 2 {
-		t.Fatalf("expected at least two update calls, got %d", updateCalls)
-	}
 
 	oldAccess := time.Now().Add(-48 * time.Hour)
 	err := s.DeleteFile(FileDto{
@@ -1004,49 +1046,6 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		}
 		if _, err := s.GetFileById(11); err == nil {
 			t.Fatalf("expected multiple rows error")
-		}
-	})
-
-	t.Run("UpdateCheckSum returns error when update does not affect rows", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		filePath := filepath.Join(tmpDir, "x.txt")
-		if err := os.WriteFile(filePath, []byte("abc"), 0644); err != nil {
-			t.Fatalf("failed to create file: %v", err)
-		}
-		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				return utils.PaginationResponse[FileModel]{
-					Items: []FileModel{{
-						ID:         filter.ID.Value,
-						Name:       "x.txt",
-						Path:       filePath,
-						ParentPath: tmpDir,
-						Type:       File,
-						Format:     ".txt",
-						UpdatedAt:  time.Now(),
-						CreatedAt:  time.Now(),
-					}},
-				}, nil
-			},
-			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-				return false, nil
-			},
-		}, &metadataRepoMock{})
-
-		if err := s.UpdateCheckSum(1); err == nil {
-			t.Fatalf("expected UpdateCheckSum error when update returns false")
-		}
-	})
-
-	t.Run("UpdateCheckSum propagates get-file error", func(t *testing.T) {
-		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				return utils.PaginationResponse[FileModel]{}, errors.New("repository down")
-			},
-		}, &metadataRepoMock{})
-
-		if err := s.UpdateCheckSum(1); err == nil {
-			t.Fatalf("expected UpdateCheckSum to propagate fetch error")
 		}
 	})
 

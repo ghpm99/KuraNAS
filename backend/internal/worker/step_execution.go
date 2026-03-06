@@ -1,6 +1,9 @@
 package worker
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type stepSkippedError struct {
 	reason string
@@ -23,4 +26,41 @@ func isStepSkipped(err error) bool {
 	}
 	var skippedErr *stepSkippedError
 	return errors.As(err, &skippedErr)
+}
+
+type transientStepError struct {
+	cause error
+}
+
+func (e *transientStepError) Error() string {
+	if e == nil || e.cause == nil {
+		return "transient step error"
+	}
+	return e.cause.Error()
+}
+
+func (e *transientStepError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.cause
+}
+
+func newTransientStepError(cause error) error {
+	if cause == nil {
+		return &transientStepError{}
+	}
+	return &transientStepError{cause: cause}
+}
+
+func isTransientStepError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var transientErr *transientStepError
+	return errors.As(err, &transientErr)
+}
+
+func isStepCanceled(err error) bool {
+	return errors.Is(err, context.Canceled)
 }

@@ -38,6 +38,8 @@ func TestInitializeConfig(t *testing.T) {
 	t.Setenv("DB_USER", "user")
 	t.Setenv("DB_PASSWORD", "pass")
 	t.Setenv("DB_NAME", "db")
+	t.Setenv("WORKER_RETRY_DEFAULT_MAX_ATTEMPTS", "5")
+	t.Setenv("WORKER_STEP_CONCURRENCY_CHECKSUM", "4")
 
 	InitializeConfig()
 
@@ -46,6 +48,12 @@ func TestInitializeConfig(t *testing.T) {
 	}
 	if AppConfig.RecentFilesKeep != 10 {
 		t.Fatalf("expected default recent files keep 10")
+	}
+	if AppConfig.WorkerRetryDefaultMaxAttempts != 5 {
+		t.Fatalf("expected worker retry max attempts from env, got %d", AppConfig.WorkerRetryDefaultMaxAttempts)
+	}
+	if AppConfig.WorkerStepConcurrencyChecksum != 4 {
+		t.Fatalf("expected checksum step concurrency from env, got %d", AppConfig.WorkerStepConcurrencyChecksum)
 	}
 }
 

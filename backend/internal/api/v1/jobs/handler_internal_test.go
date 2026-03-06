@@ -16,6 +16,7 @@ type jobsServiceStub struct {
 	getJobByIDFn    func(id string) (JobSummaryDto, error)
 	listJobsFn      func(filter JobFilter, page int, pageSize int) (utils.PaginationResponse[JobSummaryDto], error)
 	getStepsByJobFn func(jobID string) ([]StepDto, error)
+	cancelJobFn     func(id string) (JobSummaryDto, error)
 }
 
 func (s *jobsServiceStub) GetJobByID(id string) (JobSummaryDto, error) {
@@ -37,6 +38,13 @@ func (s *jobsServiceStub) GetStepsByJobID(jobID string) ([]StepDto, error) {
 		return s.getStepsByJobFn(jobID)
 	}
 	return []StepDto{}, nil
+}
+
+func (s *jobsServiceStub) CancelJob(id string) (JobSummaryDto, error) {
+	if s.cancelJobFn != nil {
+		return s.cancelJobFn(id)
+	}
+	return JobSummaryDto{ID: id}, nil
 }
 
 func TestJobsHandler(t *testing.T) {
@@ -131,6 +139,38 @@ func TestJobsHandler(t *testing.T) {
 
 		if w.Code != http.StatusInternalServerError {
 			t.Fatalf("expected 500, got %d", w.Code)
+		}
+	})
+
+	t.Run("cancel job success", func(t *testing.T) {
+		h := NewHandler(&jobsServiceStub{cancelJobFn: func(id string) (JobSummaryDto, error) {
+			return JobSummaryDto{ID: id}, nil
+		}})
+		router := gin.New()
+		router.POST("/jobs/:id/cancel", h.CancelJobHandler)
+
+		req := httptest.NewRequest(http.MethodPost, "/jobs/job-1/cancel", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusAccepted {
+			t.Fatalf("expected 202, got %d", w.Code)
+		}
+	})
+
+	t.Run("cancel job not allowed", func(t *testing.T) {
+		h := NewHandler(&jobsServiceStub{cancelJobFn: func(id string) (JobSummaryDto, error) {
+			return JobSummaryDto{}, ErrJobCancelNotAllowed
+		}})
+		router := gin.New()
+		router.POST("/jobs/:id/cancel", h.CancelJobHandler)
+
+		req := httptest.NewRequest(http.MethodPost, "/jobs/job-1/cancel", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", w.Code)
 		}
 	})
 }

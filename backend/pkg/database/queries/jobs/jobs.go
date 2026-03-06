@@ -27,3 +27,6 @@ var UpdateStepStatusQuery string
 
 //go:embed update_step_execution.sql
 var UpdateStepExecutionQuery string
+
+//go:embed request_job_cancel.sql
+var RequestJobCancelQuery string

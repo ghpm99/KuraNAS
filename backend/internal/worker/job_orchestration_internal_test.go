@@ -3,10 +3,13 @@ package worker
 import (
 	"database/sql"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/worker/domain"
 	"nas-go/api/pkg/database"
@@ -142,6 +145,16 @@ func (r *inMemoryJobsRepository) UpdateStepExecution(tx *sql.Tx, id string, atte
 	return true, nil
 }
 
+func (r *inMemoryJobsRepository) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
+	job, exists := r.jobsByID[id]
+	if !exists || job.CancelRequested {
+		return false, nil
+	}
+	job.CancelRequested = true
+	r.jobsByID[id] = job
+	return true, nil
+}
+
 type recordingExecutor struct {
 	executed []string
 }
@@ -186,8 +199,8 @@ func TestJobOrchestratorCreateJobPersistsStepsWithDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetStepsByJobID failed: %v", err)
 	}
-	if len(steps) != 2 {
-		t.Fatalf("expected 2 steps, got %d", len(steps))
+	if len(steps) != 3 {
+		t.Fatalf("expected 3 steps, got %d", len(steps))
 	}
 
 	stepByType := map[string]jobs.StepModel{}
@@ -197,8 +210,9 @@ func TestJobOrchestratorCreateJobPersistsStepsWithDependencies(t *testing.T) {
 
 	scanStep := stepByType[string(domain.StepTypeScanFilesystem)]
 	diffStep := stepByType[string(domain.StepTypeDiffAgainstDB)]
-	if scanStep.ID == "" || diffStep.ID == "" {
-		t.Fatalf("expected scan and diff steps to exist")
+	markDeletedStep := stepByType[string(domain.StepTypeMarkDeleted)]
+	if scanStep.ID == "" || diffStep.ID == "" || markDeletedStep.ID == "" {
+		t.Fatalf("expected scan, diff and mark_deleted steps to exist")
 	}
 
 	dependsOn := []string{}
@@ -207,6 +221,14 @@ func TestJobOrchestratorCreateJobPersistsStepsWithDependencies(t *testing.T) {
 	}
 	if len(dependsOn) != 1 || dependsOn[0] != scanStep.ID {
 		t.Fatalf("expected diff step to depend on scan step id, got %#v", dependsOn)
+	}
+
+	dependsOn = []string{}
+	if err := json.Unmarshal([]byte(markDeletedStep.DependsOnJSON), &dependsOn); err != nil {
+		t.Fatalf("failed to parse mark_deleted dependencies: %v", err)
+	}
+	if len(dependsOn) != 1 || dependsOn[0] != diffStep.ID {
+		t.Fatalf("expected mark_deleted step to depend on diff step id, got %#v", dependsOn)
 	}
 }
 
@@ -246,8 +268,8 @@ func TestSchedulerRespectsStepDependencies(t *testing.T) {
 			queuedCount++
 		}
 	}
-	if completedCount != 1 || queuedCount != 1 {
-		t.Fatalf("expected one completed and one queued after first tick, got completed=%d queued=%d", completedCount, queuedCount)
+	if completedCount != 1 || queuedCount != 2 {
+		t.Fatalf("expected one completed and two queued after first tick, got completed=%d queued=%d", completedCount, queuedCount)
 	}
 
 	if err := scheduler.RunOnce(); err != nil {
@@ -255,6 +277,13 @@ func TestSchedulerRespectsStepDependencies(t *testing.T) {
 	}
 	if len(executor.executed) != 2 {
 		t.Fatalf("expected two executed steps after second tick, got %d", len(executor.executed))
+	}
+
+	if err := scheduler.RunOnce(); err != nil {
+		t.Fatalf("third RunOnce failed: %v", err)
+	}
+	if len(executor.executed) != 3 {
+		t.Fatalf("expected three executed steps after third tick, got %d", len(executor.executed))
 	}
 
 	storedJob, _ := repo.GetJobByID(job.ID)
@@ -327,8 +356,197 @@ func TestSchedulerTreatsSkippedStepAsSuccessfulCompletion(t *testing.T) {
 		t.Fatalf("second RunOnce failed: %v", err)
 	}
 
+	if err := scheduler.RunOnce(); err != nil {
+		t.Fatalf("third RunOnce failed: %v", err)
+	}
+
 	storedJob, _ := repo.GetJobByID(job.ID)
 	if storedJob.Status != string(domain.JobStatusCompleted) {
 		t.Fatalf("expected completed job after skipped steps, got %s", storedJob.Status)
+	}
+}
+
+func TestExecuteMarkDeletedStepMarksMissingActiveFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	presentPath := filepath.Join(tmpDir, "present.txt")
+	if err := os.WriteFile(presentPath, []byte("ok"), 0644); err != nil {
+		t.Fatalf("failed to create present file: %v", err)
+	}
+
+	missingPath := filepath.Join(tmpDir, "missing.txt")
+	updatedIDs := []int{}
+	service := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					{ID: 1, Name: "missing.txt", Path: missingPath},
+					{ID: 2, Name: "present.txt", Path: presentPath},
+				},
+				Pagination: utils.Pagination{Page: 1, PageSize: pageSize, HasNext: false},
+			}, nil
+		},
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			if !file.DeletedAt.HasValue {
+				t.Fatalf("expected deleted_at to be set for file id=%d", file.ID)
+			}
+			updatedIDs = append(updatedIDs, file.ID)
+			return true, nil
+		},
+	}
+
+	executor := NewDefaultStepExecutor()
+	err := executor.ExecuteStep(domain.Step{
+		ID:    "mark-step",
+		JobID: "job-1",
+		Type:  domain.StepTypeMarkDeleted,
+		Scope: domain.NewRootScopePayload(tmpDir),
+	}, &WorkerContext{FilesService: service})
+	if err != nil {
+		t.Fatalf("mark_deleted execution failed: %v", err)
+	}
+
+	if len(updatedIDs) != 1 || updatedIDs[0] != 1 {
+		t.Fatalf("expected only missing file to be marked deleted, got ids=%v", updatedIDs)
+	}
+}
+
+func TestExecuteDiffAgainstDBStepReactivatesDeletedRecord(t *testing.T) {
+	tmpDir := t.TempDir()
+	reactivatedPath := filepath.Join(tmpDir, "reactivated.txt")
+	if err := os.WriteFile(reactivatedPath, []byte("content"), 0644); err != nil {
+		t.Fatalf("failed to create reactivated file: %v", err)
+	}
+	info, err := os.Stat(reactivatedPath)
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+
+	reactivatedUpdated := false
+	service := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					{
+						ID:        77,
+						Name:      info.Name(),
+						Path:      reactivatedPath,
+						UpdatedAt: info.ModTime(),
+						CreatedAt: info.ModTime(),
+						Size:      info.Size(),
+						Type:      files.File,
+						Format:    filepath.Ext(info.Name()),
+						DeletedAt: utils.Optional[time.Time]{HasValue: true, Value: time.Now().UTC()},
+					},
+				},
+				Pagination: utils.Pagination{Page: 1, PageSize: pageSize, HasNext: false},
+			}, nil
+		},
+		getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+			return files.FileDto{
+				ID:        77,
+				Name:      name,
+				Path:      path,
+				UpdatedAt: info.ModTime(),
+				CreatedAt: info.ModTime(),
+				Size:      info.Size(),
+				Type:      files.File,
+				Format:    filepath.Ext(name),
+				DeletedAt: utils.Optional[time.Time]{HasValue: true, Value: time.Now().UTC()},
+			}, nil
+		},
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			if file.ID == 77 && !file.DeletedAt.HasValue {
+				reactivatedUpdated = true
+			}
+			return true, nil
+		},
+	}
+
+	executor := NewDefaultStepExecutor()
+	err = executor.ExecuteStep(domain.Step{
+		ID:    "diff-step",
+		JobID: "job-2",
+		Type:  domain.StepTypeDiffAgainstDB,
+		Scope: domain.NewRootScopePayload(tmpDir),
+	}, &WorkerContext{FilesService: service})
+	if err != nil {
+		t.Fatalf("diff_against_db execution failed: %v", err)
+	}
+
+	if !reactivatedUpdated {
+		t.Fatalf("expected update with deleted_at reset when file reappears")
+	}
+}
+
+func TestExecuteDiffAgainstDBStepSkipsUnchangedEntries(t *testing.T) {
+	tmpDir := t.TempDir()
+	unchangedPath := filepath.Join(tmpDir, "unchanged.txt")
+	if err := os.WriteFile(unchangedPath, []byte("same"), 0644); err != nil {
+		t.Fatalf("failed to create unchanged file: %v", err)
+	}
+
+	rootInfo, err := os.Stat(tmpDir)
+	if err != nil {
+		t.Fatalf("stat root failed: %v", err)
+	}
+	info, err := os.Stat(unchangedPath)
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+
+	createCalls := 0
+	updateCalls := 0
+	service := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					{
+						ID:        9,
+						Name:      rootInfo.Name(),
+						Path:      tmpDir,
+						UpdatedAt: rootInfo.ModTime(),
+						CreatedAt: rootInfo.ModTime(),
+						Size:      rootInfo.Size(),
+						Type:      files.Directory,
+						DeletedAt: utils.Optional[time.Time]{HasValue: false},
+					},
+					{
+						ID:        10,
+						Name:      info.Name(),
+						Path:      unchangedPath,
+						UpdatedAt: info.ModTime(),
+						CreatedAt: info.ModTime(),
+						Size:      info.Size(),
+						Type:      files.File,
+						Format:    filepath.Ext(info.Name()),
+						DeletedAt: utils.Optional[time.Time]{HasValue: false},
+					},
+				},
+				Pagination: utils.Pagination{Page: 1, PageSize: pageSize, HasNext: false},
+			}, nil
+		},
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			createCalls++
+			return fileDto, nil
+		},
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			updateCalls++
+			return true, nil
+		},
+	}
+
+	executor := NewDefaultStepExecutor()
+	err = executor.ExecuteStep(domain.Step{
+		ID:    "diff-step",
+		JobID: "job-unchanged",
+		Type:  domain.StepTypeDiffAgainstDB,
+		Scope: domain.NewRootScopePayload(tmpDir),
+	}, &WorkerContext{FilesService: service})
+	if err != nil {
+		t.Fatalf("diff_against_db execution failed: %v", err)
+	}
+
+	if createCalls != 0 || updateCalls != 0 {
+		t.Fatalf("expected unchanged entry to skip fan-out, create=%d update=%d", createCalls, updateCalls)
 	}
 }

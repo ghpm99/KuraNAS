@@ -103,6 +103,31 @@ func (h *Handler) GetJobStepsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": steps})
 }
 
+func (h *Handler) CancelJobHandler(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_JOBS_ID_REQUIRED")})
+		return
+	}
+
+	job, err := h.service.CancelJob(id)
+	if err != nil {
+		if errors.Is(err, ErrJobNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_JOBS_NOT_FOUND")})
+			return
+		}
+		if errors.Is(err, ErrJobCancelNotAllowed) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_JOBS_CANCEL_NOT_ALLOWED")})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_JOBS_CANCEL_FAILED")})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, job)
+}
+
 func parsePositiveInt(value string) (int, error) {
 	parsed, err := strconv.Atoi(value)
 	if err != nil {

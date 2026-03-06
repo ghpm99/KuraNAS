@@ -108,9 +108,20 @@ func (handler *Handler) UploadFilesHandler(c *gin.Context) {
 		uploaded = append(uploaded, destinationPath)
 	}
 
-	handler.service.ScanDirTask(targetPath)
+	uploadProcess, scheduleErr := handler.service.ScheduleUploadProcess(uploaded)
+	if scheduleErr != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, scheduleErr)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_UPLOAD_JOB_CREATE_FAILED")})
+		return
+	}
+
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("ACTION_UPLOAD_SUCCESS"), "uploaded": uploaded})
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":  i18n.GetMessage("ACTION_UPLOAD_ACCEPTED"),
+		"uploaded": uploaded,
+		"job_id":   uploadProcess.JobID,
+		"jobs":     uploadProcess.Jobs,
+	})
 }
 
 func (handler *Handler) CreateFolderHandler(c *gin.Context) {

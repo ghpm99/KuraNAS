@@ -76,7 +76,7 @@ func NewContext(db *sql.DB) *AppContext {
 
 	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
 	jobsContext := newJobsContext(dbContext)
-	fileContext := newFileContext(dbContext, loggerService)
+	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
 	videoContext := newVideoContext(dbContext, loggerService)
@@ -113,12 +113,17 @@ func newJobsContext(dbContext *database.DbContext) *JobsContext {
 	}
 }
 
-func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *FileContext {
+func newFileContext(
+	dbContext *database.DbContext,
+	logger logger.LoggerServiceInterface,
+	jobsRepository jobs.RepositoryInterface,
+) *FileContext {
 	repository := files.NewRepository(dbContext)
 	recentFileRepository := files.NewRecentFileRepository(dbContext)
 
 	metadataRepository := files.NewMetadataRepository(dbContext)
-	service := files.NewService(repository, metadataRepository, tasks)
+	uploadProcessScheduler := newUploadProcessScheduler(jobsRepository)
+	service := files.NewService(repository, metadataRepository, tasks, uploadProcessScheduler)
 	recentFileService := files.NewRecentFileService(recentFileRepository)
 
 	handler := files.NewHandler(service, recentFileService, logger)

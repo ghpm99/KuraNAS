@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	ErrJobNotFound     = errors.New("job not found")
-	ErrInvalidPage     = errors.New("invalid page")
-	ErrInvalidPageSize = errors.New("invalid page size")
+	ErrJobNotFound         = errors.New("job not found")
+	ErrInvalidPage         = errors.New("invalid page")
+	ErrInvalidPageSize     = errors.New("invalid page size")
+	ErrJobCancelNotAllowed = errors.New("job cancel not allowed")
 )
 
 type Service struct {
@@ -91,6 +92,55 @@ func (s *Service) GetStepsByJobID(jobID string) ([]StepDto, error) {
 	}
 
 	return result, nil
+}
+
+func (s *Service) CancelJob(id string) (JobSummaryDto, error) {
+	job, err := s.Repository.GetJobByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return JobSummaryDto{}, ErrJobNotFound
+		}
+		return JobSummaryDto{}, fmt.Errorf("CancelJob get job: %w", err)
+	}
+
+	jobType := domain.JobType(job.Type)
+	if jobType != domain.JobTypeStartupScan && jobType != domain.JobTypeReindexFolder {
+		return JobSummaryDto{}, ErrJobCancelNotAllowed
+	}
+
+	jobStatus := domain.JobStatus(job.Status)
+	if jobStatus != domain.JobStatusQueued && jobStatus != domain.JobStatusRunning {
+		return JobSummaryDto{}, ErrJobCancelNotAllowed
+	}
+
+	if !job.CancelRequested {
+		dbContext := s.Repository.GetDbContext()
+		if dbContext != nil {
+			txErr := dbContext.ExecTx(func(tx *sql.Tx) error {
+				updated, cancelErr := s.Repository.RequestJobCancel(tx, id)
+				if cancelErr != nil {
+					return cancelErr
+				}
+				if !updated {
+					return fmt.Errorf("CancelJob request was not persisted")
+				}
+				return nil
+			})
+			if txErr != nil {
+				return JobSummaryDto{}, fmt.Errorf("CancelJob request: %w", txErr)
+			}
+		} else {
+			updated, cancelErr := s.Repository.RequestJobCancel(nil, id)
+			if cancelErr != nil {
+				return JobSummaryDto{}, fmt.Errorf("CancelJob request: %w", cancelErr)
+			}
+			if !updated {
+				return JobSummaryDto{}, fmt.Errorf("CancelJob request was not persisted")
+			}
+		}
+	}
+
+	return s.GetJobByID(id)
 }
 
 func toJobSummaryDto(job JobModel, steps []StepModel) JobSummaryDto {

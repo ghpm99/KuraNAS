@@ -40,3 +40,20 @@ Fechar a refatoracao com cobertura de testes, remocao do monolito e validacao fi
 
 ## Dependencias
 - Tasks 1-12.
+
+## Status da execucao (2026-03-06)
+- Caminhos legados aposentados:
+  - `StartFileProcessingPipeline` removido.
+  - `ScanDirWorker` removido.
+- Adaptacao de compatibilidade:
+  - tarefas legadas `ScanFiles` e `ScanDir` agora apenas enfileiram jobs (`startup_scan` e `reindex_folder`).
+- Cobertura adicionada/atualizada:
+  - teste explicito para `diff` com `unchanged` sem fan-out.
+  - testes de worker atualizados para validar conversao de task legada em job.
+- Documentacao do modulo atualizada em `backend/docs/scanfiles.md`.
+
+## Validacao executada
+- `cd backend && GOCACHE=/tmp/go-build go test ./internal/worker/...` ✅
+- `cd backend && GOCACHE=/tmp/go-build go test ./tests/files_test/worker/...` ✅
+- `cd backend && go test ./... -cover` ⚠️ (falhas preexistentes fora do escopo + restricao de cache no sandbox sem `GOCACHE`)
+- `make -C backend test` ⚠️ (falhas preexistentes fora do escopo + restricao de cache no sandbox sem `GOCACHE`)

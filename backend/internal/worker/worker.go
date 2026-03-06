@@ -1,6 +1,7 @@
 package worker
 
 import (
+	stdcontext "context"
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
@@ -9,6 +10,8 @@ import (
 	"nas-go/api/internal/worker/domain"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +25,10 @@ type WorkerContext struct {
 	Orchestrator    *JobOrchestrator
 	Scheduler       *JobScheduler
 	Logger          logger.LoggerServiceInterface
+
+	jobExecutionMutex    sync.Mutex
+	jobExecutionContexts map[string]stdcontext.Context
+	jobExecutionCancel   map[string]stdcontext.CancelFunc
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -51,31 +58,29 @@ func configureJobScheduler(context *WorkerContext) {
 	context.Orchestrator = NewJobOrchestrator(context.JobsRepository, NewDefaultJobPlanner())
 	context.Scheduler = NewJobScheduler(context.JobsRepository, context.StepExecutor, context)
 
-	go context.Scheduler.Start(2 * time.Second)
+	pollInterval := time.Duration(config.AppConfig.WorkerSchedulerPollIntervalSecond) * time.Second
+	if pollInterval <= 0 {
+		pollInterval = 2 * time.Second
+	}
+	go context.Scheduler.Start(pollInterval)
 }
 
 func startWorkersScheduler(context *WorkerContext) {
 	if context != nil && context.Orchestrator != nil {
-		_, err := context.Orchestrator.CreateJob(
+		job, err := context.Orchestrator.CreateJob(
 			domain.JobTypeStartupScan,
-			domain.JobPriorityNormal,
+			domain.JobPriorityLow,
 			domain.NewRootScopePayload(config.AppConfig.EntryPoint),
 		)
 		if err == nil {
-			log.Println("startup_scan job criado para scheduler")
+			log.Printf("startup_scan job criado para scheduler job_id=%s", job.ID)
 			return
 		}
 
-		log.Printf("erro ao criar startup_scan job, fallback para fila legada: %v\n", err)
+		log.Printf("erro ao criar startup_scan job: %v\n", err)
+		return
 	}
-
-	log.Println("Escaneamento de arquivos")
-	context.Tasks <- utils.Task{
-		Type: utils.ScanFiles,
-		Data: "Escaneamento de arquivos",
-	}
-	log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
-
+	log.Println("job orchestrator indisponivel; startup_scan nao foi enfileirado")
 }
 
 func worker(id int, context *WorkerContext) {
@@ -84,11 +89,9 @@ func worker(id int, context *WorkerContext) {
 
 		switch task.Type {
 		case utils.ScanFiles:
-			go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
+			enqueueStartupScanJob(context)
 		case utils.ScanDir:
-			go ScanDirWorker(context.FilesService, task.Data)
-		case utils.UpdateCheckSum:
-			go UpdateCheckSumWorker(context.FilesService, task.Data, context.Logger)
+			enqueueReindexFolderJob(context, task.Data)
 		case utils.CreateThumbnail:
 			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 		case utils.GenerateVideoPlaylists:
@@ -98,4 +101,121 @@ func worker(id int, context *WorkerContext) {
 		}
 		log.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}
+}
+
+func enqueueStartupScanJob(context *WorkerContext) {
+	if context == nil || context.Orchestrator == nil {
+		log.Println("scan_files task ignorada: job orchestrator indisponivel")
+		return
+	}
+
+	job, err := context.Orchestrator.CreateJob(
+		domain.JobTypeStartupScan,
+		domain.JobPriorityLow,
+		domain.NewRootScopePayload(config.AppConfig.EntryPoint),
+	)
+	if err != nil {
+		log.Printf("erro ao enfileirar startup_scan via task scan_files: %v", err)
+		return
+	}
+
+	log.Printf("scan_files convertida para startup_scan job_id=%s", job.ID)
+}
+
+func enqueueReindexFolderJob(context *WorkerContext, data any) {
+	if context == nil || context.Orchestrator == nil {
+		log.Println("scan_dir task ignorada: job orchestrator indisponivel")
+		return
+	}
+
+	scopePath, ok := data.(string)
+	scopePath = strings.TrimSpace(scopePath)
+	if !ok || scopePath == "" {
+		log.Printf("scan_dir task ignorada: path invalido (%T)", data)
+		return
+	}
+
+	job, err := context.Orchestrator.CreateJob(
+		domain.JobTypeReindexFolder,
+		domain.JobPriorityNormal,
+		domain.NewPathScopePayload(scopePath),
+	)
+	if err != nil {
+		log.Printf("erro ao enfileirar reindex_folder via task scan_dir path=%s: %v", scopePath, err)
+		return
+	}
+
+	log.Printf("scan_dir convertida para reindex_folder job_id=%s path=%s", job.ID, scopePath)
+}
+
+func (workerContext *WorkerContext) EnsureJobExecutionContext(jobID string) stdcontext.Context {
+	if workerContext == nil || jobID == "" {
+		return contextBackground()
+	}
+
+	workerContext.jobExecutionMutex.Lock()
+	defer workerContext.jobExecutionMutex.Unlock()
+
+	if workerContext.jobExecutionContexts == nil {
+		workerContext.jobExecutionContexts = map[string]stdcontext.Context{}
+	}
+	if workerContext.jobExecutionCancel == nil {
+		workerContext.jobExecutionCancel = map[string]stdcontext.CancelFunc{}
+	}
+
+	existing, exists := workerContext.jobExecutionContexts[jobID]
+	if exists {
+		return existing
+	}
+
+	jobContext, cancel := stdcontext.WithCancel(contextBackground())
+	workerContext.jobExecutionContexts[jobID] = jobContext
+	workerContext.jobExecutionCancel[jobID] = cancel
+	return jobContext
+}
+
+func (workerContext *WorkerContext) CancelJobExecution(jobID string) {
+	if workerContext == nil || jobID == "" {
+		return
+	}
+
+	workerContext.jobExecutionMutex.Lock()
+	defer workerContext.jobExecutionMutex.Unlock()
+
+	if cancel, exists := workerContext.jobExecutionCancel[jobID]; exists {
+		cancel()
+	}
+}
+
+func (workerContext *WorkerContext) ReleaseJobExecution(jobID string) {
+	if workerContext == nil || jobID == "" {
+		return
+	}
+
+	workerContext.jobExecutionMutex.Lock()
+	defer workerContext.jobExecutionMutex.Unlock()
+
+	if cancel, exists := workerContext.jobExecutionCancel[jobID]; exists {
+		cancel()
+		delete(workerContext.jobExecutionCancel, jobID)
+	}
+	delete(workerContext.jobExecutionContexts, jobID)
+}
+
+func (workerContext *WorkerContext) CheckJobCancellation(jobID string) error {
+	if workerContext == nil || jobID == "" {
+		return nil
+	}
+
+	jobContext := workerContext.EnsureJobExecutionContext(jobID)
+	select {
+	case <-jobContext.Done():
+		return jobContext.Err()
+	default:
+		return nil
+	}
+}
+
+func contextBackground() stdcontext.Context {
+	return stdcontext.Background()
 }

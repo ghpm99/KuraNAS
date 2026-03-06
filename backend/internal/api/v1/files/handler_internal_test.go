@@ -42,9 +42,16 @@ func (m *filesHandlerServiceMock) GetFiles(filter FileFilter, page int, pageSize
 	}, nil
 }
 func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { return true, nil }
-func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
-func (m *filesHandlerServiceMock) ScanDirTask(data string)               {}
-func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error       { return nil }
+func (m *filesHandlerServiceMock) ScheduleUploadProcess(uploadedPaths []string) (UploadProcessResult, error) {
+	result := UploadProcessResult{Jobs: make([]UploadProcessJobReference, 0, len(uploadedPaths))}
+	for _, path := range uploadedPaths {
+		result.Jobs = append(result.Jobs, UploadProcessJobReference{Path: path, JobID: "job-1"})
+	}
+	result.JobID = "job-1"
+	return result, nil
+}
+func (m *filesHandlerServiceMock) ScanFilesTask(data string) {}
+func (m *filesHandlerServiceMock) ScanDirTask(data string)   {}
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
 }

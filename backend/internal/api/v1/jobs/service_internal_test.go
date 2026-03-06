@@ -14,6 +14,7 @@ type jobsRepoMock struct {
 	getJobByIDFn    func(id string) (JobModel, error)
 	listJobsFn      func(filter JobFilter, page int, pageSize int) (utils.PaginationResponse[JobModel], error)
 	getStepsByJobFn func(jobID string) ([]StepModel, error)
+	requestCancelFn func(tx *sql.Tx, id string) (bool, error)
 }
 
 func (m *jobsRepoMock) GetDbContext() *database.DbContext { return nil }
@@ -48,6 +49,12 @@ func (m *jobsRepoMock) UpdateStepStatus(tx *sql.Tx, id string, fromStatus string
 	return false, errors.New("not used")
 }
 func (m *jobsRepoMock) UpdateStepExecution(tx *sql.Tx, id string, attempts int, lastError string, progress int, startedAt *time.Time, endedAt *time.Time) (bool, error) {
+	return false, errors.New("not used")
+}
+func (m *jobsRepoMock) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
+	if m.requestCancelFn != nil {
+		return m.requestCancelFn(tx, id)
+	}
 	return false, errors.New("not used")
 }
 
@@ -122,5 +129,54 @@ func TestJobsServiceGetStepsByJobIDNotFound(t *testing.T) {
 	_, err := svc.GetStepsByJobID("missing")
 	if !errors.Is(err, ErrJobNotFound) {
 		t.Fatalf("expected ErrJobNotFound, got %v", err)
+	}
+}
+
+func TestJobsServiceCancelJob(t *testing.T) {
+	repo := &jobsRepoMock{
+		getJobByIDFn: func(id string) (JobModel, error) {
+			return JobModel{
+				ID:              id,
+				Type:            "startup_scan",
+				Status:          "running",
+				Priority:        2,
+				CreatedAt:       time.Now().UTC(),
+				CancelRequested: false,
+			}, nil
+		},
+		requestCancelFn: func(tx *sql.Tx, id string) (bool, error) {
+			return true, nil
+		},
+		getStepsByJobFn: func(jobID string) ([]StepModel, error) {
+			return []StepModel{}, nil
+		},
+	}
+
+	svc := NewService(repo)
+	result, err := svc.CancelJob("job-1")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if result.ID != "job-1" {
+		t.Fatalf("expected canceled job id, got %s", result.ID)
+	}
+}
+
+func TestJobsServiceCancelJobNotAllowed(t *testing.T) {
+	repo := &jobsRepoMock{
+		getJobByIDFn: func(id string) (JobModel, error) {
+			return JobModel{
+				ID:        id,
+				Type:      "upload_process",
+				Status:    "running",
+				CreatedAt: time.Now().UTC(),
+			}, nil
+		},
+	}
+
+	svc := NewService(repo)
+	_, err := svc.CancelJob("job-1")
+	if !errors.Is(err, ErrJobCancelNotAllowed) {
+		t.Fatalf("expected ErrJobCancelNotAllowed, got %v", err)
 	}
 }

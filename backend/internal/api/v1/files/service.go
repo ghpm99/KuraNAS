@@ -25,13 +25,20 @@ type Service struct {
 	Repository         RepositoryInterface
 	MetadataRepository MetadataRepositoryInterface
 	Tasks              chan utils.Task
+	UploadScheduler    UploadProcessSchedulerInterface
 }
 
-func NewService(repository RepositoryInterface, metadataRepository MetadataRepositoryInterface, tasksChannel chan utils.Task) ServiceInterface {
+func NewService(
+	repository RepositoryInterface,
+	metadataRepository MetadataRepositoryInterface,
+	tasksChannel chan utils.Task,
+	uploadScheduler UploadProcessSchedulerInterface,
+) ServiceInterface {
 	return &Service{
 		Repository:         repository,
 		MetadataRepository: metadataRepository,
 		Tasks:              tasksChannel,
+		UploadScheduler:    uploadScheduler,
 	}
 }
 
@@ -185,92 +192,25 @@ func (s *Service) ScanDirTask(data string) {
 	s.Tasks <- task
 }
 
-func (s *Service) UpdateCheckSum(fileId int) error {
+func (s *Service) ScheduleUploadProcess(uploadedPaths []string) (UploadProcessResult, error) {
+	if len(uploadedPaths) == 0 {
+		return UploadProcessResult{}, ErrNoUploadedFiles
+	}
 
-	fileDto, err := s.GetFileById(fileId)
+	if s.UploadScheduler == nil {
+		return UploadProcessResult{}, ErrUploadSchedulerUnavailable
+	}
 
+	result, err := s.UploadScheduler.ScheduleUploadProcess(uploadedPaths)
 	if err != nil {
-		return err
+		return UploadProcessResult{}, fmt.Errorf("schedule upload process: %w", err)
 	}
 
-	switch fileDto.Type {
-	case File:
-		return s.updateFileCheckSum(fileDto)
-	case Directory:
-		return s.updateDirectoryCheckSum(fileDto)
-	default:
-		return fmt.Errorf("file type not found")
+	if result.JobID == "" {
+		return UploadProcessResult{}, ErrUploadJobIDMissing
 	}
 
-}
-
-func (s *Service) updateFileCheckSum(
-	fileDto FileDto,
-) error {
-	checkSumHash, err := fileDto.GetCheckSumFromFile()
-
-	if err != nil {
-		return err
-	}
-
-	fileDto.CheckSum = checkSumHash
-	result, err := s.UpdateFile(fileDto)
-
-	if err != nil {
-		return err
-	}
-
-	if !result {
-		return fmt.Errorf("error updating file: %v", err)
-	}
-
-	return nil
-
-}
-
-func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
-
-	var page = 1
-	var hasNext = true
-	var checkSumFiles []string
-
-	for hasNext {
-
-		filesInDirectory, err := s.GetFiles(FileFilter{
-			ParentPath: utils.Optional[string]{
-				Value:    fileDto.Path,
-				HasValue: true,
-			},
-		}, page, 1000)
-
-		if err != nil {
-			return err
-		}
-
-		for _, file := range filesInDirectory.Items {
-			checkSumFiles = append(checkSumFiles, file.CheckSum)
-		}
-		hasNext = filesInDirectory.Pagination.HasNext
-
-		if hasNext {
-			page = filesInDirectory.Pagination.Page + 1
-		}
-	}
-
-	resultCheckSum := fileDto.GetCheckSumFromPath(checkSumFiles)
-
-	fileDto.CheckSum = resultCheckSum
-	result, err := s.UpdateFile(fileDto)
-
-	if err != nil {
-		return err
-	}
-
-	if !result {
-		return fmt.Errorf("no directory updated")
-	}
-
-	return nil
+	return result, nil
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
