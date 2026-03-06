@@ -120,8 +120,8 @@ func TestJobsRepositoryReadPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetJobByIDQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "type", "priority", "scope_json", "status", "created_at", "started_at", "ended_at", "cancel_requested", "last_error",
-		}).AddRow("job-1", "startup_scan", 2, "{}", "queued", now, nil, nil, false, ""))
+			"id", "type", "priority", "parent_job_id", "scope_json", "status", "created_at", "started_at", "ended_at", "cancel_requested", "last_error",
+		}).AddRow("job-1", "startup_scan", 2, nil, "{}", "queued", now, nil, nil, false, ""))
 	mock.ExpectRollback()
 
 	job, err := repo.GetJobByID("job-1")
@@ -135,8 +135,8 @@ func TestJobsRepositoryReadPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.ListJobsQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "type", "priority", "scope_json", "status", "created_at", "started_at", "ended_at", "cancel_requested", "last_error",
-		}).AddRow("job-1", "startup_scan", 2, "{}", "queued", now, nil, nil, false, ""))
+			"id", "type", "priority", "parent_job_id", "scope_json", "status", "created_at", "started_at", "ended_at", "cancel_requested", "last_error",
+		}).AddRow("job-1", "startup_scan", 2, nil, "{}", "queued", now, nil, nil, false, ""))
 	mock.ExpectRollback()
 
 	list, err := repo.ListJobs(JobFilter{}, 1, 10)

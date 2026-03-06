@@ -57,6 +57,12 @@ func (m *jobsRepoMock) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
 	}
 	return false, errors.New("not used")
 }
+func (m *jobsRepoMock) RequestJobCancelCascade(tx *sql.Tx, id string) (bool, error) {
+	if m.requestCancelFn != nil {
+		return m.requestCancelFn(tx, id)
+	}
+	return false, errors.New("not used")
+}
 
 func TestJobsServiceGetJobByIDAggregatesProgress(t *testing.T) {
 	repo := &jobsRepoMock{

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"sort"
 	"strings"
@@ -34,6 +35,7 @@ type JobScheduler struct {
 	retryNotBeforeByStepID map[string]time.Time
 	recoveryMutex          sync.Mutex
 	hasRecoveredRunning    bool
+	metrics                *SchedulerMetrics
 }
 
 type schedulerStep struct {
@@ -69,6 +71,7 @@ func NewJobScheduler(repository jobs.RepositoryInterface, executor StepAtomicExe
 		retryBaseBackoff:       time.Duration(config.AppConfig.WorkerRetryBaseBackoffMillis) * time.Millisecond,
 		retryMaxBackoff:        time.Duration(config.AppConfig.WorkerRetryMaxBackoffMillis) * time.Millisecond,
 		retryNotBeforeByStepID: map[string]time.Time{},
+		metrics:                NewSchedulerMetrics(),
 	}
 	scheduler.initializeStepSemaphores()
 
@@ -117,6 +120,7 @@ func (s *JobScheduler) RunOnce() error {
 	if err != nil {
 		return err
 	}
+	s.recordJobQueueMetrics(jobModels)
 	if err := s.recoverInterruptedRunningSteps(jobModels); err != nil {
 		return err
 	}
@@ -125,6 +129,7 @@ func (s *JobScheduler) RunOnce() error {
 	if err != nil {
 		return err
 	}
+	s.recordJobQueueMetrics(jobModels)
 
 	var runGroup sync.WaitGroup
 	for _, jobModel := range jobModels {
@@ -185,6 +190,15 @@ func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel) error {
 		return transitionErr
 	}
 
+	stepStartedAt := time.Now().UTC()
+	log.Printf(
+		"event=worker_step_started job_id=%s step_id=%s step_type=%s attempt=%d",
+		jobDomain.ID,
+		nextStep.Step.ID,
+		nextStep.Step.Type,
+		nextStep.Step.Attempts+1,
+	)
+
 	nextStep.Step.Scope = jobDomain.Scope
 	execErr := s.executor.ExecuteStep(nextStep.Step, s.workerContext)
 
@@ -206,6 +220,7 @@ func (s *JobScheduler) runSingleJob(jobModel jobs.JobModel) error {
 	if execErr != nil && !isStepSkipped(execErr) {
 		lastError = execErr.Error()
 	}
+	s.recordStepMetrics(jobDomain, nextStep.Step, execErr, time.Since(stepStartedAt))
 
 	return s.reconcileJobState(jobModel.ID, parsedAfterExecution, lastError)
 }
@@ -644,6 +659,78 @@ func (s *JobScheduler) nextRetryAt(attempts int) time.Time {
 	}
 
 	return time.Now().UTC().Add(delay)
+}
+
+func (s *JobScheduler) recordJobQueueMetrics(jobModels []jobs.JobModel) {
+	if s == nil || s.metrics == nil {
+		return
+	}
+
+	queued := 0
+	running := 0
+	for _, job := range jobModels {
+		switch domain.JobStatus(job.Status) {
+		case domain.JobStatusQueued:
+			queued++
+		case domain.JobStatusRunning:
+			running++
+		}
+	}
+	s.metrics.RecordJobQueue(queued, running)
+	log.Printf("event=worker_scheduler_tick queued_jobs=%d running_jobs=%d total_jobs=%d", queued, running, len(jobModels))
+}
+
+func (s *JobScheduler) recordStepMetrics(job domain.Job, step domain.Step, execErr error, duration time.Duration) {
+	if s == nil || s.metrics == nil {
+		return
+	}
+
+	finalStatus := s.previewStepFinalStatus(step, execErr)
+	s.metrics.RecordStepExecution(step.Type, finalStatus, duration)
+
+	stepPath := ""
+	if job.Scope.File != nil {
+		stepPath = job.Scope.File.Path
+	} else if job.Scope.Path != nil {
+		stepPath = job.Scope.Path.Path
+	} else if job.Scope.Root != nil {
+		stepPath = job.Scope.Root.Root
+	}
+
+	lastError := ""
+	if execErr != nil {
+		lastError = execErr.Error()
+	}
+
+	log.Printf(
+		"event=worker_step_finished job_id=%s step_id=%s step_type=%s step_status=%s duration_ms=%d path=%s last_error=%q",
+		job.ID,
+		step.ID,
+		step.Type,
+		finalStatus,
+		duration.Milliseconds(),
+		stepPath,
+		lastError,
+	)
+}
+
+func (s *JobScheduler) previewStepFinalStatus(step domain.Step, execErr error) domain.StepStatus {
+	if isStepSkipped(execErr) {
+		return domain.StepStatusSkipped
+	}
+	if isStepCanceled(execErr) {
+		return domain.StepStatusCanceled
+	}
+	if execErr == nil {
+		return domain.StepStatusCompleted
+	}
+
+	attempts := step.Attempts + 1
+	if attempts < s.resolveMaxAttempts(step) && isTransientExecutionError(execErr) {
+		return domain.StepStatusQueued
+	}
+
+	return domain.StepStatusFailed
 }
 
 func isTransientExecutionError(err error) bool {

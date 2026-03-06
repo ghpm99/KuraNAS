@@ -17,6 +17,7 @@ type JobSummaryDto struct {
 	ID              string                `json:"id"`
 	Type            string                `json:"type"`
 	Priority        int                   `json:"priority"`
+	ParentJobID     *string               `json:"parent_job_id,omitempty"`
 	ScopeJSON       string                `json:"scope_json"`
 	Status          string                `json:"status"`
 	CreatedAt       time.Time             `json:"created_at"`

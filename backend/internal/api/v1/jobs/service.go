@@ -117,7 +117,7 @@ func (s *Service) CancelJob(id string) (JobSummaryDto, error) {
 		dbContext := s.Repository.GetDbContext()
 		if dbContext != nil {
 			txErr := dbContext.ExecTx(func(tx *sql.Tx) error {
-				updated, cancelErr := s.Repository.RequestJobCancel(tx, id)
+				updated, cancelErr := s.Repository.RequestJobCancelCascade(tx, id)
 				if cancelErr != nil {
 					return cancelErr
 				}
@@ -130,7 +130,7 @@ func (s *Service) CancelJob(id string) (JobSummaryDto, error) {
 				return JobSummaryDto{}, fmt.Errorf("CancelJob request: %w", txErr)
 			}
 		} else {
-			updated, cancelErr := s.Repository.RequestJobCancel(nil, id)
+			updated, cancelErr := s.Repository.RequestJobCancelCascade(nil, id)
 			if cancelErr != nil {
 				return JobSummaryDto{}, fmt.Errorf("CancelJob request: %w", cancelErr)
 			}
@@ -144,10 +144,16 @@ func (s *Service) CancelJob(id string) (JobSummaryDto, error) {
 }
 
 func toJobSummaryDto(job JobModel, steps []StepModel) JobSummaryDto {
+	var parentJobID *string
+	if job.ParentJobID.Valid {
+		parentJobID = &job.ParentJobID.String
+	}
+
 	return JobSummaryDto{
 		ID:              job.ID,
 		Type:            job.Type,
 		Priority:        job.Priority,
+		ParentJobID:     parentJobID,
 		ScopeJSON:       job.ScopeJSON,
 		Status:          job.Status,
 		CreatedAt:       job.CreatedAt,

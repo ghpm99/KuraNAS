@@ -93,9 +93,9 @@ func worker(id int, context *WorkerContext) {
 		case utils.ScanDir:
 			enqueueReindexFolderJob(context, task.Data)
 		case utils.CreateThumbnail:
-			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+			enqueueThumbnailJob(context, task.Data)
 		case utils.GenerateVideoPlaylists:
-			go GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
+			enqueuePlaylistIndexJob(context)
 		default:
 			log.Println("Tipo de tarefa desconhecido")
 		}
@@ -146,6 +146,64 @@ func enqueueReindexFolderJob(context *WorkerContext, data any) {
 	}
 
 	log.Printf("scan_dir convertida para reindex_folder job_id=%s path=%s", job.ID, scopePath)
+}
+
+func enqueueThumbnailJob(context *WorkerContext, data any) {
+	if context == nil || context.Orchestrator == nil {
+		log.Println("create_thumbnail task ignorada: job orchestrator indisponivel")
+		return
+	}
+
+	fileID, ok := data.(int)
+	if !ok || fileID <= 0 {
+		log.Printf("create_thumbnail task ignorada: file_id invalido (%T)", data)
+		return
+	}
+
+	plan := JobPlan{
+		Type:     domain.JobTypeFSEvent,
+		Priority: domain.JobPriorityNormal,
+		Scope: domain.NewFileScopePayload(domain.FileScope{
+			ID: fileID,
+		}),
+		Steps: []PlannedStep{
+			{
+				Type:        domain.StepTypeThumbnail,
+				MaxAttempts: defaultPlannedStepMaxAttempts(),
+			},
+		},
+	}
+	job, err := context.Orchestrator.CreatePlannedJob(plan)
+	if err != nil {
+		log.Printf("erro ao enfileirar thumbnail via task create_thumbnail file_id=%d: %v", fileID, err)
+		return
+	}
+	log.Printf("create_thumbnail convertida para fs_event job_id=%s file_id=%d", job.ID, fileID)
+}
+
+func enqueuePlaylistIndexJob(context *WorkerContext) {
+	if context == nil || context.Orchestrator == nil {
+		log.Println("generate_video_playlists task ignorada: job orchestrator indisponivel")
+		return
+	}
+
+	plan := JobPlan{
+		Type:     domain.JobTypeFSEvent,
+		Priority: domain.JobPriorityNormal,
+		Scope:    domain.NewRootScopePayload(config.AppConfig.EntryPoint),
+		Steps: []PlannedStep{
+			{
+				Type:        domain.StepTypePlaylistIndex,
+				MaxAttempts: defaultPlannedStepMaxAttempts(),
+			},
+		},
+	}
+	job, err := context.Orchestrator.CreatePlannedJob(plan)
+	if err != nil {
+		log.Printf("erro ao enfileirar playlist_index via task generate_video_playlists: %v", err)
+		return
+	}
+	log.Printf("generate_video_playlists convertida para fs_event job_id=%s", job.ID)
 }
 
 func (workerContext *WorkerContext) EnsureJobExecutionContext(jobID string) stdcontext.Context {

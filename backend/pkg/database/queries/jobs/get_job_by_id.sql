@@ -2,6 +2,7 @@ SELECT
     id,
     type,
     priority,
+    parent_job_id,
     scope_json,
     status,
     created_at,

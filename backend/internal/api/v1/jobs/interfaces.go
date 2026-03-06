@@ -19,6 +19,7 @@ type RepositoryInterface interface {
 	UpdateStepStatus(tx *sql.Tx, id string, fromStatus string, toStatus string, startedAt *time.Time, endedAt *time.Time, lastError string) (bool, error)
 	UpdateStepExecution(tx *sql.Tx, id string, attempts int, lastError string, progress int, startedAt *time.Time, endedAt *time.Time) (bool, error)
 	RequestJobCancel(tx *sql.Tx, id string) (bool, error)
+	RequestJobCancelCascade(tx *sql.Tx, id string) (bool, error)
 }
 
 type ServiceInterface interface {

@@ -29,10 +29,11 @@ type PlannedStep struct {
 }
 
 type JobPlan struct {
-	Type     domain.JobType
-	Priority domain.JobPriority
-	Scope    domain.ScopePayload
-	Steps    []PlannedStep
+	ParentJobID string
+	Type        domain.JobType
+	Priority    domain.JobPriority
+	Scope       domain.ScopePayload
+	Steps       []PlannedStep
 }
 
 type JobPlanner interface {
@@ -84,56 +85,7 @@ func defaultPlannedStepMaxAttempts() int {
 }
 
 func buildFileProcessingPlan(filePath string, priority domain.JobPriority) JobPlan {
-	fileFormatType := utils.GetFormatTypeByExtension(filepath.Ext(filePath)).Type
-	maxAttempts := defaultPlannedStepMaxAttempts()
-
-	steps := make([]PlannedStep, 0, 5)
-	checksumDependencies := []domain.StepType{}
-
-	if shouldExtractMetadata(fileFormatType) {
-		steps = append(steps, PlannedStep{
-			Type:        domain.StepTypeMetadata,
-			MaxAttempts: maxAttempts,
-		})
-		checksumDependencies = append(checksumDependencies, domain.StepTypeMetadata)
-	}
-
-	steps = append(steps, PlannedStep{
-		Type:        domain.StepTypeChecksum,
-		DependsOn:   checksumDependencies,
-		MaxAttempts: maxAttempts,
-	})
-	steps = append(steps, PlannedStep{
-		Type:        domain.StepTypePersist,
-		DependsOn:   []domain.StepType{domain.StepTypeChecksum},
-		MaxAttempts: maxAttempts,
-	})
-
-	if shouldGenerateThumbnail(fileFormatType) {
-		steps = append(steps, PlannedStep{
-			Type:        domain.StepTypeThumbnail,
-			DependsOn:   []domain.StepType{domain.StepTypePersist},
-			MaxAttempts: maxAttempts,
-		})
-	}
-
-	if fileFormatType == utils.FormatTypeVideo {
-		steps = append(steps, PlannedStep{
-			Type:        domain.StepTypePlaylistIndex,
-			DependsOn:   []domain.StepType{domain.StepTypePersist},
-			MaxAttempts: maxAttempts,
-		})
-	}
-
-	return JobPlan{
-		Type:     domain.JobTypeFSEvent,
-		Priority: priority,
-		Scope: domain.NewFileScopePayload(domain.FileScope{
-			Name: filepath.Base(filePath),
-			Path: filePath,
-		}),
-		Steps: steps,
-	}
+	return BuildFileEventProcessingPlan(filePath, priority)
 }
 
 func shouldExtractMetadata(fileFormatType string) bool {
@@ -223,6 +175,7 @@ func (o *JobOrchestrator) CreatePlannedJob(plan JobPlan) (domain.Job, error) {
 			ID:              jobID,
 			Type:            string(plan.Type),
 			Priority:        int(plan.Priority),
+			ParentJobID:     nullableText(plan.ParentJobID),
 			ScopeJSON:       scopeJSON,
 			Status:          string(domain.JobStatusQueued),
 			CancelRequested: false,
@@ -764,8 +717,9 @@ func enqueueProcessEntries(context *WorkerContext, step domain.Step, entries []f
 		}
 
 		plan := JobPlan{
-			Type:     domain.JobTypeFSEvent,
-			Priority: domain.JobPriorityLow,
+			ParentJobID: step.JobID,
+			Type:        domain.JobTypeFSEvent,
+			Priority:    domain.JobPriorityLow,
 			Scope: domain.NewFileScopePayload(domain.FileScope{
 				ID:   entry.ID,
 				Name: entry.Name,
@@ -780,6 +734,7 @@ func enqueueProcessEntries(context *WorkerContext, step domain.Step, entries []f
 		}
 		if entry.Type == files.File {
 			plan = buildFileProcessingPlan(entry.Path, domain.JobPriorityLow)
+			plan.ParentJobID = step.JobID
 			plan.Scope = domain.NewFileScopePayload(domain.FileScope{
 				ID:   entry.ID,
 				Name: entry.Name,
@@ -861,4 +816,16 @@ func newWorkerEntityID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+func nullableText(value string) sql.NullString {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return sql.NullString{}
+	}
+
+	return sql.NullString{
+		Valid:  true,
+		String: trimmed,
+	}
 }

@@ -33,3 +33,6 @@ var UpdateStepExecutionQuery string
 
 //go:embed request_job_cancel.sql
 var RequestJobCancelQuery string
+
+//go:embed request_job_cancel_cascade.sql
+var RequestJobCancelCascadeQuery string

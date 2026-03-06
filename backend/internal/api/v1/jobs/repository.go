@@ -28,6 +28,7 @@ func (r *Repository) CreateJob(tx *sql.Tx, job JobModel) (JobModel, error) {
 		job.ID,
 		job.Type,
 		job.Priority,
+		job.ParentJobID,
 		job.ScopeJSON,
 		job.Status,
 		job.CancelRequested,
@@ -69,6 +70,7 @@ func (r *Repository) GetJobByID(id string) (JobModel, error) {
 			&job.ID,
 			&job.Type,
 			&job.Priority,
+			&job.ParentJobID,
 			&job.ScopeJSON,
 			&job.Status,
 			&job.CreatedAt,
@@ -120,6 +122,7 @@ func (r *Repository) ListJobs(filter JobFilter, page int, pageSize int) (utils.P
 				&job.ID,
 				&job.Type,
 				&job.Priority,
+				&job.ParentJobID,
 				&job.ScopeJSON,
 				&job.Status,
 				&job.CreatedAt,
@@ -203,6 +206,7 @@ func (r *Repository) ListJobsForScheduling(status string, limit int) ([]JobModel
 				&job.ID,
 				&job.Type,
 				&job.Priority,
+				&job.ParentJobID,
 				&job.ScopeJSON,
 				&job.Status,
 				&job.CreatedAt,
@@ -347,6 +351,43 @@ func (r *Repository) RequestJobCancel(tx *sql.Tx, id string) (bool, error) {
 	})
 	if err != nil {
 		return false, fmt.Errorf("RequestJobCancel: %w", err)
+	}
+
+	return updated, nil
+}
+
+func (r *Repository) RequestJobCancelCascade(tx *sql.Tx, id string) (bool, error) {
+	if tx != nil {
+		result, err := tx.Exec(queries.RequestJobCancelCascadeQuery, id)
+		if err != nil {
+			return false, fmt.Errorf("RequestJobCancelCascade: %w", err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return false, fmt.Errorf("RequestJobCancelCascade rows affected: %w", err)
+		}
+
+		return rowsAffected > 0, nil
+	}
+
+	updated := false
+	err := r.DbContext.ExecTx(func(txContext *sql.Tx) error {
+		result, execErr := txContext.Exec(queries.RequestJobCancelCascadeQuery, id)
+		if execErr != nil {
+			return execErr
+		}
+
+		rowsAffected, rowsErr := result.RowsAffected()
+		if rowsErr != nil {
+			return rowsErr
+		}
+
+		updated = rowsAffected > 0
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("RequestJobCancelCascade: %w", err)
 	}
 
 	return updated, nil

@@ -11,6 +11,7 @@ type JobModel struct {
 	ID              string
 	Type            string
 	Priority        int
+	ParentJobID     sql.NullString
 	ScopeJSON       string
 	Status          string
 	CreatedAt       time.Time

@@ -205,6 +205,46 @@ func (r *inMemoryJobsRepository) RequestJobCancel(tx *sql.Tx, id string) (bool, 
 	return true, nil
 }
 
+func (r *inMemoryJobsRepository) RequestJobCancelCascade(tx *sql.Tx, id string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	root, exists := r.jobsByID[id]
+	if !exists {
+		return false, nil
+	}
+
+	updated := false
+	queue := []string{id}
+	visited := map[string]struct{}{}
+	for len(queue) > 0 {
+		jobID := queue[0]
+		queue = queue[1:]
+		if _, seen := visited[jobID]; seen {
+			continue
+		}
+		visited[jobID] = struct{}{}
+
+		job := r.jobsByID[jobID]
+		if !job.CancelRequested && (job.Status == string(domain.JobStatusQueued) || job.Status == string(domain.JobStatusRunning)) {
+			job.CancelRequested = true
+			r.jobsByID[jobID] = job
+			updated = true
+		}
+
+		for childID, candidate := range r.jobsByID {
+			if candidate.ParentJobID.Valid && candidate.ParentJobID.String == jobID {
+				queue = append(queue, childID)
+			}
+		}
+	}
+
+	if !updated && !root.CancelRequested {
+		return false, nil
+	}
+	return updated, nil
+}
+
 type recordingExecutor struct {
 	executed []string
 }
@@ -743,5 +783,64 @@ func TestCalculateJobStatusFromStepsReturnsPartialFail(t *testing.T) {
 	status := calculateJobStatusFromSteps(steps)
 	if status != domain.JobStatusPartialFail {
 		t.Fatalf("expected partial_fail, got %s", status)
+	}
+}
+
+func TestSchedulerRecordsMetricsSnapshot(t *testing.T) {
+	repo := newInMemoryJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, NewDefaultJobPlanner())
+	orchestrator.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+
+	_, err := orchestrator.CreatePlannedJob(BuildFileEventProcessingPlan("/tmp/metrics.txt", domain.JobPriorityNormal))
+	if err != nil {
+		t.Fatalf("failed to create metrics test job: %v", err)
+	}
+
+	scheduler := NewJobScheduler(repo, &recordingExecutor{}, &WorkerContext{})
+	scheduler.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+	if runErr := scheduler.RunOnce(); runErr != nil {
+		t.Fatalf("scheduler run failed: %v", runErr)
+	}
+
+	snapshot := scheduler.metrics.Snapshot()
+	if snapshot.TotalJobsSeen == 0 {
+		t.Fatalf("expected scheduler metrics to track job queue")
+	}
+	if len(snapshot.StepExecByStatus) == 0 {
+		t.Fatalf("expected scheduler metrics to track step executions")
+	}
+}
+
+func TestRequestJobCancelCascadeMarksDescendants(t *testing.T) {
+	repo := newInMemoryJobsRepository()
+	repo.jobsByID["parent"] = jobs.JobModel{
+		ID:        "parent",
+		Type:      string(domain.JobTypeStartupScan),
+		Status:    string(domain.JobStatusRunning),
+		Priority:  int(domain.JobPriorityLow),
+		CreatedAt: time.Now().UTC(),
+	}
+	repo.jobsByID["child"] = jobs.JobModel{
+		ID:          "child",
+		Type:        string(domain.JobTypeFSEvent),
+		Status:      string(domain.JobStatusQueued),
+		Priority:    int(domain.JobPriorityLow),
+		ParentJobID: sql.NullString{Valid: true, String: "parent"},
+		CreatedAt:   time.Now().UTC(),
+	}
+
+	updated, err := repo.RequestJobCancelCascade(nil, "parent")
+	if err != nil {
+		t.Fatalf("RequestJobCancelCascade failed: %v", err)
+	}
+	if !updated {
+		t.Fatalf("expected cascade cancel request to update records")
+	}
+
+	if !repo.jobsByID["parent"].CancelRequested {
+		t.Fatalf("expected parent cancel_requested=true")
+	}
+	if !repo.jobsByID["child"].CancelRequested {
+		t.Fatalf("expected child cancel_requested=true")
 	}
 }
