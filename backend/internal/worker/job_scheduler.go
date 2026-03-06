@@ -31,6 +31,8 @@ type JobScheduler struct {
 
 	retryMutex             sync.Mutex
 	retryNotBeforeByStepID map[string]time.Time
+	recoveryMutex          sync.Mutex
+	hasRecoveredRunning    bool
 }
 
 type schedulerStep struct {
@@ -101,6 +103,14 @@ func (s *JobScheduler) RunOnce() error {
 	}
 
 	jobModels, err := s.listSchedulableJobs()
+	if err != nil {
+		return err
+	}
+	if err := s.recoverInterruptedRunningSteps(jobModels); err != nil {
+		return err
+	}
+
+	jobModels, err = s.listSchedulableJobs()
 	if err != nil {
 		return err
 	}
@@ -703,6 +713,7 @@ func calculateJobStatusFromSteps(steps []schedulerStep) domain.JobStatus {
 	hasRunning := false
 	hasFailed := false
 	hasCanceled := false
+	hasNonFailedTerminal := false
 
 	for _, step := range steps {
 		switch step.Step.Status {
@@ -714,6 +725,9 @@ func calculateJobStatusFromSteps(steps []schedulerStep) domain.JobStatus {
 			hasRunning = true
 		case domain.StepStatusCanceled:
 			hasCanceled = true
+			hasNonFailedTerminal = true
+		case domain.StepStatusCompleted, domain.StepStatusSkipped:
+			hasNonFailedTerminal = true
 		}
 	}
 
@@ -721,6 +735,9 @@ func calculateJobStatusFromSteps(steps []schedulerStep) domain.JobStatus {
 		return domain.JobStatusRunning
 	}
 	if hasFailed {
+		if hasNonFailedTerminal {
+			return domain.JobStatusPartialFail
+		}
 		return domain.JobStatusFailed
 	}
 	if hasQueued {
@@ -731,6 +748,109 @@ func calculateJobStatusFromSteps(steps []schedulerStep) domain.JobStatus {
 	}
 
 	return domain.JobStatusCompleted
+}
+
+func (s *JobScheduler) recoverInterruptedRunningSteps(jobModels []jobs.JobModel) error {
+	s.recoveryMutex.Lock()
+	if s.hasRecoveredRunning {
+		s.recoveryMutex.Unlock()
+		return nil
+	}
+	s.hasRecoveredRunning = true
+	s.recoveryMutex.Unlock()
+
+	if s.runInTx == nil {
+		return fmt.Errorf("scheduler transaction is not configured")
+	}
+
+	const recoveryMessage = "step returned to queued after scheduler restart"
+
+	for _, jobModel := range jobModels {
+		if domain.JobStatus(jobModel.Status) != domain.JobStatusRunning {
+			continue
+		}
+
+		steps, err := s.repository.GetStepsByJobID(jobModel.ID)
+		if err != nil {
+			return err
+		}
+		parsedSteps, err := parseSchedulerSteps(steps)
+		if err != nil {
+			return err
+		}
+
+		hasRunningStep := false
+		for _, step := range parsedSteps {
+			if step.Step.Status == domain.StepStatusRunning {
+				hasRunningStep = true
+				break
+			}
+		}
+		if !hasRunningStep {
+			continue
+		}
+
+		if err := s.runInTx(func(tx *sql.Tx) error {
+			for _, step := range parsedSteps {
+				if step.Step.Status != domain.StepStatusRunning {
+					continue
+				}
+
+				updatedExecution, execErr := s.repository.UpdateStepExecution(
+					tx,
+					step.Step.ID,
+					step.Step.Attempts,
+					recoveryMessage,
+					0,
+					nil,
+					nil,
+				)
+				if execErr != nil {
+					return execErr
+				}
+				if !updatedExecution {
+					return fmt.Errorf("step %s execution metadata was not updated during recovery", step.Step.ID)
+				}
+
+				updatedStatus, statusErr := s.repository.UpdateStepStatus(
+					tx,
+					step.Step.ID,
+					string(domain.StepStatusRunning),
+					string(domain.StepStatusQueued),
+					nil,
+					nil,
+					recoveryMessage,
+				)
+				if statusErr != nil {
+					return statusErr
+				}
+				if !updatedStatus {
+					return fmt.Errorf("step %s was not requeued during recovery", step.Step.ID)
+				}
+			}
+
+			updatedJob, updateJobErr := s.repository.UpdateJobStatus(
+				tx,
+				jobModel.ID,
+				string(domain.JobStatusRunning),
+				string(domain.JobStatusQueued),
+				nil,
+				nil,
+				recoveryMessage,
+			)
+			if updateJobErr != nil {
+				return updateJobErr
+			}
+			if !updatedJob {
+				return fmt.Errorf("job %s was not requeued during recovery", jobModel.ID)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func toDomainJob(job jobs.JobModel) (domain.Job, error) {

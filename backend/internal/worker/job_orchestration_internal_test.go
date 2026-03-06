@@ -421,7 +421,11 @@ func TestExecuteDiffAgainstDBStepReactivatesDeletedRecord(t *testing.T) {
 		t.Fatalf("stat failed: %v", err)
 	}
 
-	reactivatedUpdated := false
+	repo := newInMemoryJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, NewDefaultJobPlanner())
+	orchestrator.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+
+	updateCalls := 0
 	service := &workerFilesServiceMock{
 		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			return utils.PaginationResponse[files.FileDto]{
@@ -455,9 +459,7 @@ func TestExecuteDiffAgainstDBStepReactivatesDeletedRecord(t *testing.T) {
 			}, nil
 		},
 		updateFileFn: func(file files.FileDto) (bool, error) {
-			if file.ID == 77 && !file.DeletedAt.HasValue {
-				reactivatedUpdated = true
-			}
+			updateCalls++
 			return true, nil
 		},
 	}
@@ -468,13 +470,36 @@ func TestExecuteDiffAgainstDBStepReactivatesDeletedRecord(t *testing.T) {
 		JobID: "job-2",
 		Type:  domain.StepTypeDiffAgainstDB,
 		Scope: domain.NewRootScopePayload(tmpDir),
-	}, &WorkerContext{FilesService: service})
+	}, &WorkerContext{
+		FilesService: service,
+		Orchestrator: orchestrator,
+	})
 	if err != nil {
 		t.Fatalf("diff_against_db execution failed: %v", err)
 	}
 
-	if !reactivatedUpdated {
-		t.Fatalf("expected update with deleted_at reset when file reappears")
+	if updateCalls != 0 {
+		t.Fatalf("expected diff step to enqueue follow-up job instead of mutating records directly, got update_calls=%d", updateCalls)
+	}
+	if len(repo.jobsByID) == 0 {
+		t.Fatalf("expected incremental child jobs to be enqueued")
+	}
+	foundReactivatedPath := false
+	for _, job := range repo.jobsByID {
+		if job.ScopeJSON == "" {
+			continue
+		}
+		scope := domain.ScopePayload{}
+		if err := json.Unmarshal([]byte(job.ScopeJSON), &scope); err != nil {
+			continue
+		}
+		if scope.File != nil && scope.File.Path == reactivatedPath {
+			foundReactivatedPath = true
+			break
+		}
+	}
+	if !foundReactivatedPath {
+		t.Fatalf("expected one child job scoped to reactivated file path")
 	}
 }
 
@@ -496,6 +521,10 @@ func TestExecuteDiffAgainstDBStepSkipsUnchangedEntries(t *testing.T) {
 
 	createCalls := 0
 	updateCalls := 0
+	repo := newInMemoryJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, NewDefaultJobPlanner())
+	orchestrator.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+
 	service := &workerFilesServiceMock{
 		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			return utils.PaginationResponse[files.FileDto]{
@@ -541,12 +570,128 @@ func TestExecuteDiffAgainstDBStepSkipsUnchangedEntries(t *testing.T) {
 		JobID: "job-unchanged",
 		Type:  domain.StepTypeDiffAgainstDB,
 		Scope: domain.NewRootScopePayload(tmpDir),
-	}, &WorkerContext{FilesService: service})
+	}, &WorkerContext{
+		FilesService: service,
+		Orchestrator: orchestrator,
+	})
 	if err != nil {
 		t.Fatalf("diff_against_db execution failed: %v", err)
 	}
 
 	if createCalls != 0 || updateCalls != 0 {
 		t.Fatalf("expected unchanged entry to skip fan-out, create=%d update=%d", createCalls, updateCalls)
+	}
+	if len(repo.jobsByID) != 0 {
+		t.Fatalf("expected unchanged entries to avoid child-job fan-out, got %d jobs", len(repo.jobsByID))
+	}
+}
+
+func TestExecuteMarkDeletedStepRespectsScopePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	scopedDir := filepath.Join(tmpDir, "scoped")
+	otherDir := filepath.Join(tmpDir, "other")
+	if err := os.MkdirAll(scopedDir, 0755); err != nil {
+		t.Fatalf("failed to create scoped dir: %v", err)
+	}
+	if err := os.MkdirAll(otherDir, 0755); err != nil {
+		t.Fatalf("failed to create other dir: %v", err)
+	}
+
+	existingScopedFile := filepath.Join(scopedDir, "existing.txt")
+	if err := os.WriteFile(existingScopedFile, []byte("ok"), 0644); err != nil {
+		t.Fatalf("failed to create scoped file: %v", err)
+	}
+
+	updatedIDs := []int{}
+	service := &workerFilesServiceMock{
+		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+			return utils.PaginationResponse[files.FileDto]{
+				Items: []files.FileDto{
+					{ID: 1, Path: existingScopedFile, Type: files.File, DeletedAt: utils.Optional[time.Time]{HasValue: false}},
+					{ID: 2, Path: filepath.Join(scopedDir, "missing.txt"), Type: files.File, DeletedAt: utils.Optional[time.Time]{HasValue: false}},
+					{ID: 3, Path: filepath.Join(otherDir, "outside-missing.txt"), Type: files.File, DeletedAt: utils.Optional[time.Time]{HasValue: false}},
+				},
+				Pagination: utils.Pagination{Page: 1, PageSize: pageSize, HasNext: false},
+			}, nil
+		},
+		updateFileFn: func(file files.FileDto) (bool, error) {
+			if file.DeletedAt.HasValue {
+				updatedIDs = append(updatedIDs, file.ID)
+			}
+			return true, nil
+		},
+	}
+
+	executor := NewDefaultStepExecutor()
+	err := executor.ExecuteStep(domain.Step{
+		ID:    "mark-deleted-scoped",
+		JobID: "job-mark-deleted-scoped",
+		Type:  domain.StepTypeMarkDeleted,
+		Scope: domain.NewPathScopePayload(scopedDir),
+	}, &WorkerContext{FilesService: service})
+	if err != nil {
+		t.Fatalf("mark_deleted execution failed: %v", err)
+	}
+
+	if len(updatedIDs) != 1 || updatedIDs[0] != 2 {
+		t.Fatalf("expected only scoped missing entry to be marked deleted, got ids=%v", updatedIDs)
+	}
+}
+
+func TestSchedulerRecoversInterruptedRunningStep(t *testing.T) {
+	repo := newInMemoryJobsRepository()
+	startedAt := time.Now().UTC().Add(-2 * time.Minute)
+	repo.jobsByID["job-running"] = jobs.JobModel{
+		ID:        "job-running",
+		Type:      string(domain.JobTypeStartupScan),
+		Status:    string(domain.JobStatusRunning),
+		Priority:  int(domain.JobPriorityLow),
+		CreatedAt: startedAt,
+	}
+	repo.stepsByID["step-running"] = jobs.StepModel{
+		ID:          "step-running",
+		JobID:       "job-running",
+		Type:        string(domain.StepTypeScanFilesystem),
+		Status:      string(domain.StepStatusRunning),
+		Attempts:    1,
+		MaxAttempts: 3,
+		CreatedAt:   startedAt,
+		StartedAt:   sql.NullTime{Valid: true, Time: startedAt},
+	}
+
+	scheduler := NewJobScheduler(repo, &recordingExecutor{}, &WorkerContext{})
+	scheduler.runInTx = func(fn func(*sql.Tx) error) error { return fn(nil) }
+
+	schedulableJobs, err := scheduler.listSchedulableJobs()
+	if err != nil {
+		t.Fatalf("listSchedulableJobs failed: %v", err)
+	}
+	if err := scheduler.recoverInterruptedRunningSteps(schedulableJobs); err != nil {
+		t.Fatalf("recoverInterruptedRunningSteps failed: %v", err)
+	}
+
+	job := repo.jobsByID["job-running"]
+	if job.Status != string(domain.JobStatusQueued) {
+		t.Fatalf("expected running job to be requeued after restart recovery, got %s", job.Status)
+	}
+
+	step := repo.stepsByID["step-running"]
+	if step.Status != string(domain.StepStatusQueued) {
+		t.Fatalf("expected running step to be requeued after restart recovery, got %s", step.Status)
+	}
+	if step.LastError == "" {
+		t.Fatalf("expected recovery message to be persisted")
+	}
+}
+
+func TestCalculateJobStatusFromStepsReturnsPartialFail(t *testing.T) {
+	steps := []schedulerStep{
+		{Step: domain.Step{ID: "failed", Status: domain.StepStatusFailed}},
+		{Step: domain.Step{ID: "completed", Status: domain.StepStatusCompleted}},
+	}
+
+	status := calculateJobStatusFromSteps(steps)
+	if status != domain.JobStatusPartialFail {
+		t.Fatalf("expected partial_fail, got %s", status)
 	}
 }

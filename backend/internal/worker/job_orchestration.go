@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -80,6 +81,70 @@ func defaultPlannedStepMaxAttempts() int {
 		return config.AppConfig.WorkerRetryDefaultMaxAttempts
 	}
 	return 3
+}
+
+func buildFileProcessingPlan(filePath string, priority domain.JobPriority) JobPlan {
+	fileFormatType := utils.GetFormatTypeByExtension(filepath.Ext(filePath)).Type
+	maxAttempts := defaultPlannedStepMaxAttempts()
+
+	steps := make([]PlannedStep, 0, 5)
+	checksumDependencies := []domain.StepType{}
+
+	if shouldExtractMetadata(fileFormatType) {
+		steps = append(steps, PlannedStep{
+			Type:        domain.StepTypeMetadata,
+			MaxAttempts: maxAttempts,
+		})
+		checksumDependencies = append(checksumDependencies, domain.StepTypeMetadata)
+	}
+
+	steps = append(steps, PlannedStep{
+		Type:        domain.StepTypeChecksum,
+		DependsOn:   checksumDependencies,
+		MaxAttempts: maxAttempts,
+	})
+	steps = append(steps, PlannedStep{
+		Type:        domain.StepTypePersist,
+		DependsOn:   []domain.StepType{domain.StepTypeChecksum},
+		MaxAttempts: maxAttempts,
+	})
+
+	if shouldGenerateThumbnail(fileFormatType) {
+		steps = append(steps, PlannedStep{
+			Type:        domain.StepTypeThumbnail,
+			DependsOn:   []domain.StepType{domain.StepTypePersist},
+			MaxAttempts: maxAttempts,
+		})
+	}
+
+	if fileFormatType == utils.FormatTypeVideo {
+		steps = append(steps, PlannedStep{
+			Type:        domain.StepTypePlaylistIndex,
+			DependsOn:   []domain.StepType{domain.StepTypePersist},
+			MaxAttempts: maxAttempts,
+		})
+	}
+
+	return JobPlan{
+		Type:     domain.JobTypeFSEvent,
+		Priority: priority,
+		Scope: domain.NewFileScopePayload(domain.FileScope{
+			Name: filepath.Base(filePath),
+			Path: filePath,
+		}),
+		Steps: steps,
+	}
+}
+
+func shouldExtractMetadata(fileFormatType string) bool {
+	return fileFormatType == utils.FormatTypeImage ||
+		fileFormatType == utils.FormatTypeAudio ||
+		fileFormatType == utils.FormatTypeVideo
+}
+
+func shouldGenerateThumbnail(fileFormatType string) bool {
+	return fileFormatType == utils.FormatTypeImage ||
+		fileFormatType == utils.FormatTypeVideo
 }
 
 type JobOrchestrator struct {
@@ -312,6 +377,9 @@ func (e *DefaultStepExecutor) executeDiffAgainstDBStep(step domain.Step, context
 	if context == nil || context.FilesService == nil {
 		return fmt.Errorf("diff_against_db step: file service is required")
 	}
+	if context.Orchestrator == nil {
+		return fmt.Errorf("diff_against_db step: job orchestrator is required")
+	}
 
 	defer func() {
 		if executionErr != nil {
@@ -380,7 +448,7 @@ func (e *DefaultStepExecutor) executeDiffAgainstDBStep(step domain.Step, context
 		}
 	}
 
-	if err := fanOutProcessEntries(context, entriesToProcess, shouldContinue); err != nil {
+	if err := enqueueProcessEntries(context, step, entriesToProcess, shouldContinue); err != nil {
 		return err
 	}
 
@@ -418,7 +486,12 @@ func (e *DefaultStepExecutor) executeMarkDeletedStep(step domain.Step, context *
 	defer e.clearSnapshot(step.JobID)
 
 	shouldContinue := buildJobCancellationChecker(context, step.JobID)
-	activeDBFiles, err := listActiveFiles(context.FilesService, shouldContinue)
+	rootScopePath := resolveScopeRoot(step.Scope)
+	if rootScopePath == "" {
+		return fmt.Errorf("mark_deleted step: root path is required")
+	}
+
+	activeDBFiles, err := listActiveFiles(context.FilesService, rootScopePath, shouldContinue)
 	if err != nil {
 		return err
 	}
@@ -530,15 +603,19 @@ func collectFilesystemSnapshot(rootPath string, shouldContinue func() error) (ma
 	return entries, nil
 }
 
-func listActiveFiles(service files.ServiceInterface, shouldContinue func() error) ([]files.FileDto, error) {
+func listActiveFiles(service files.ServiceInterface, rootPath string, shouldContinue func() error) ([]files.FileDto, error) {
 	allFiles, err := listAllFiles(service, shouldContinue)
 	if err != nil {
 		return nil, err
 	}
 
+	cleanRoot := filepath.Clean(rootPath)
 	activeEntries := make([]files.FileDto, 0, len(allFiles))
 	for _, fileEntry := range allFiles {
 		if fileEntry.DeletedAt.HasValue {
+			continue
+		}
+		if !isPathWithinScope(fileEntry.Path, cleanRoot) {
 			continue
 		}
 		activeEntries = append(activeEntries, fileEntry)
@@ -578,6 +655,16 @@ func isEntryUnchanged(dbEntry files.FileDto, filesystemEntry files.FileDto) bool
 	return dbEntry.Size == filesystemEntry.Size && dbEntry.UpdatedAt.Equal(filesystemEntry.UpdatedAt)
 }
 
+func isPathWithinScope(filePath string, scopePath string) bool {
+	cleanFilePath := filepath.Clean(filePath)
+	cleanScopePath := filepath.Clean(scopePath)
+
+	if cleanFilePath == cleanScopePath {
+		return true
+	}
+	return strings.HasPrefix(cleanFilePath, cleanScopePath+string(filepath.Separator))
+}
+
 func markDeletedEntries(service files.ServiceInterface, deletedEntries []files.FileDto, shouldContinue func() error) error {
 	if len(deletedEntries) == 0 {
 		return nil
@@ -608,15 +695,10 @@ func markDeletedEntries(service files.ServiceInterface, deletedEntries []files.F
 	return nil
 }
 
-func fanOutProcessEntries(context *WorkerContext, entries []files.FileDto, shouldContinue func() error) error {
+func enqueueProcessEntries(context *WorkerContext, step domain.Step, entries []files.FileDto, shouldContinue func() error) error {
 	if len(entries) == 0 {
 		return nil
 	}
-
-	metadataExecutor := NewMetadataStepExecutor(pythonScriptRunner)
-	checksumExecutor := NewChecksumStepExecutor(utils.GetFileChecksum, utils.GetDirectoryChecksum)
-	persistExecutor := NewPersistStepExecutor(context.FilesService)
-	thumbnailExecutor := NewThumbnailStepExecutor(context.FilesService)
 
 	for _, entry := range entries {
 		if shouldContinue != nil {
@@ -625,35 +707,34 @@ func fanOutProcessEntries(context *WorkerContext, entries []files.FileDto, shoul
 			}
 		}
 
-		workingEntry := entry
-
-		if workingEntry.Type == files.File {
-			metadataOutput, metadataErr := metadataExecutor.Execute(MetadataStepInput{File: workingEntry})
-			if metadataErr != nil && !isStepSkipped(metadataErr) {
-				return fmt.Errorf("diff_against_db fan-out metadata: %w", metadataErr)
-			}
-			workingEntry = metadataOutput.File
-
-			checksumOutput, checksumErr := checksumExecutor.Execute(ChecksumStepInput{File: workingEntry})
-			if checksumErr != nil && !isStepSkipped(checksumErr) {
-				return fmt.Errorf("diff_against_db fan-out checksum: %w", checksumErr)
-			}
-			workingEntry = checksumOutput.File
+		plan := JobPlan{
+			Type:     domain.JobTypeFSEvent,
+			Priority: domain.JobPriorityLow,
+			Scope: domain.NewFileScopePayload(domain.FileScope{
+				ID:   entry.ID,
+				Name: entry.Name,
+				Path: entry.Path,
+			}),
+			Steps: []PlannedStep{
+				{
+					Type:        domain.StepTypePersist,
+					MaxAttempts: defaultPlannedStepMaxAttempts(),
+				},
+			},
 		}
-
-		persistOutput, persistErr := persistExecutor.Execute(PersistStepInput{File: workingEntry})
-		if persistErr != nil && !isStepSkipped(persistErr) {
-			return fmt.Errorf("diff_against_db fan-out persist: %w", persistErr)
+		if entry.Type == files.File {
+			plan = buildFileProcessingPlan(entry.Path, domain.JobPriorityLow)
+			plan.Scope = domain.NewFileScopePayload(domain.FileScope{
+				ID:   entry.ID,
+				Name: entry.Name,
+				Path: entry.Path,
+			})
 		}
-		workingEntry = persistOutput.File
-
-		if workingEntry.Type != files.File {
-			continue
+		job, err := context.Orchestrator.CreatePlannedJob(plan)
+		if err != nil {
+			return fmt.Errorf("diff_against_db fan-out enqueue file=%s: %w", entry.Path, err)
 		}
-
-		if _, thumbnailErr := thumbnailExecutor.Execute(ThumbnailStepInput{File: &workingEntry}); thumbnailErr != nil && !isStepSkipped(thumbnailErr) {
-			return fmt.Errorf("diff_against_db fan-out thumbnail: %w", thumbnailErr)
-		}
+		log.Printf("diff_against_db enfileirou processamento incremental parent_job_id=%s child_job_id=%s path=%s", step.JobID, job.ID, entry.Path)
 	}
 
 	return nil
