@@ -183,6 +183,7 @@ type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]
 	Path       utils.Optional[string]
+	PathPrefix utils.Optional[string]
 	ParentPath utils.Optional[string]
 	Format     utils.Optional[string]
 	Type       utils.Optional[FileType]

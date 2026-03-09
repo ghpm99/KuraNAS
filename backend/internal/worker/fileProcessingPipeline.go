@@ -39,7 +39,7 @@ func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, fi
 
 func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface) {
 
-	log.Println("Iniciando o pipeline de processamento de arquivos...")
+	log.Println("starting file processing pipeline...")
 	logger, _ := Logger.CreateLog(logger.LoggerModel{
 		Name:        "StartFileProcessingPipeline",
 		Description: i18n.GetMessage("SCAN_FILES_START"),
@@ -47,14 +47,14 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 		Status:      logger.LogStatusPending,
 	}, nil)
 
-	log.Println("criando canais")
+	log.Println("creating channels")
 	monitorChannel := make(chan ResultWorkerData, 100)
 	fileWalkChannel := make(chan FileWalk, 100)
 	fileDtoChannel := make(chan files.FileDto, 100)
 	metadataProcessedChannel := make(chan files.FileDto, 100)
 	checksumCompletedChannel := make(chan files.FileDto, 100)
 
-	log.Println("criando worker group")
+	log.Println("creating worker groups")
 
 	var monitorWG sync.WaitGroup
 	monitorWG.Add(1)
@@ -109,7 +109,7 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 	dbWG.Add(1)
 	go StartDatabasePersistenceWorker(service, tasks, checksumCompletedChannel, monitorChannel, &dbWG)
 
-	log.Println("Esperando processamento concluir")
+	log.Println("waiting for processing to complete")
 	dbWG.Wait()
 	close(monitorChannel)
 
@@ -120,7 +120,7 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 			Data: "Geracao automatica de playlists de video",
 		}:
 		default:
-			log.Println("fila de worker cheia, nao foi possivel enfileirar geracao de playlists de video")
+			log.Println("worker queue full, could not enqueue video playlist generation")
 		}
 	}
 

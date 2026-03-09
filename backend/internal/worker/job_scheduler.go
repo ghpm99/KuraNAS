@@ -184,41 +184,47 @@ func (s *JobScheduler) processJob(jobID int) error {
 			break
 		}
 
-		executedAny := false
-
 		sort.Slice(steps, func(i, j int) bool {
 			return steps[i].ID < steps[j].ID
 		})
 
+		readySteps := []jobs.StepModel{}
 		for _, step := range steps {
 			if step.Status != string(StepStatusQueued) {
 				continue
 			}
-
 			ready, readyErr := stepDependenciesSatisfied(step, steps)
 			if readyErr != nil {
 				return readyErr
 			}
-			if !ready {
-				continue
+			if ready {
+				readySteps = append(readySteps, step)
 			}
-
-			if err := s.executeStep(step); err != nil {
-				executedAny = true
-				continue
-			}
-			executedAny = true
 		}
 
-		if !executedAny {
+		if len(readySteps) == 0 {
 			if cancelErr := s.cancelQueuedSteps(jobID); cancelErr != nil {
 				return cancelErr
 			}
 			break
 		}
+
+		if len(readySteps) == 1 {
+			_ = s.executeStep(readySteps[0])
+		} else {
+			var wg sync.WaitGroup
+			wg.Add(len(readySteps))
+			for _, rs := range readySteps {
+				go func(step jobs.StepModel) {
+					defer wg.Done()
+					_ = s.executeStep(step)
+				}(rs)
+			}
+			wg.Wait()
+		}
 	}
 
-	canceled, err := s.cancelIfRequested(jobID)
+	canceled, err = s.cancelIfRequested(jobID)
 	if err != nil {
 		return err
 	}
@@ -226,12 +232,12 @@ func (s *JobScheduler) processJob(jobID int) error {
 		return nil
 	}
 
-	steps, err := s.repository.GetStepsByJobID(jobID)
+	finalSteps, err := s.repository.GetStepsByJobID(jobID)
 	if err != nil {
 		return fmt.Errorf("reload steps for job %d: %w", jobID, err)
 	}
 
-	status := resolveJobStatus(steps)
+	status := resolveJobStatus(finalSteps)
 	finished := time.Now()
 	_, err = s.updateJobExecution(jobID, string(status), nil, &finished, nil, nil)
 	if err != nil {
@@ -253,14 +259,16 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 	}
 
 	executor := s.executors[StepType(step.Type)]
-	if executor == nil {
-		return fmt.Errorf("step executor is not configured for type %q", step.Type)
-	}
 
-	release := s.acquireStepSemaphore(StepType(step.Type))
-	runErr := executor(step)
-	if release != nil {
-		release()
+	var runErr error
+	if executor == nil {
+		runErr = fmt.Errorf("step executor is not configured for type %q", step.Type)
+	} else {
+		release := s.acquireStepSemaphore(StepType(step.Type))
+		runErr = executor(step)
+		if release != nil {
+			release()
+		}
 	}
 	ended := time.Now()
 
@@ -280,8 +288,6 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		if updateErr != nil {
 			return updateErr
 		}
-		backoff := time.Duration(config.AppConfig.WorkerRetryBackoffMS) * time.Millisecond
-		time.Sleep(backoff)
 		return nil
 	}
 
@@ -427,16 +433,26 @@ func resolveJobStatus(steps []jobs.StepModel) JobStatus {
 
 	hasFailed := false
 	hasSucceeded := false
+	allCanceled := true
 
 	for _, step := range steps {
 		switch StepStatus(step.Status) {
 		case StepStatusFailed:
 			hasFailed = true
+			allCanceled = false
 		case StepStatusCompleted, StepStatusSkipped:
 			hasSucceeded = true
+			allCanceled = false
+		case StepStatusCanceled:
+			// remains allCanceled = true
+		default:
+			allCanceled = false
 		}
 	}
 
+	if allCanceled {
+		return JobStatusCanceled
+	}
 	if hasFailed && hasSucceeded {
 		return JobStatusPartialFail
 	}

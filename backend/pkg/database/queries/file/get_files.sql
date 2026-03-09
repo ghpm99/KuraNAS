@@ -30,21 +30,25 @@ WHERE
     )
     AND (
         $7
-        OR hf.parent_path = $8
+        OR hf.path LIKE $8 || '%'
     )
     AND (
         $9
-        OR hf.format = $10
+        OR hf.parent_path = $10
     )
     AND (
         $11
-        OR hf.type = $12
+        OR hf.format = $12
     )
     AND (
         $13
-        OR hf.deleted_at = $14
+        OR hf.type = $14
     )
-    AND CASE $15
+    AND (
+        $15
+        OR hf.deleted_at = $16
+    )
+    AND CASE $17
         WHEN 'all' THEN TRUE
         WHEN 'recent' THEN hf.id IN (
             SELECT
@@ -60,6 +64,6 @@ TYPE,
 NAME,
 id DESC
 LIMIT
-    $16
+    $18
 OFFSET
-    $17;
+    $19;

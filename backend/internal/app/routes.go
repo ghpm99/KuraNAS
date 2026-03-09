@@ -116,6 +116,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback.PUT("/state", context.Video.Handler.UpdatePlaybackStateHandler)
 	playback.POST("/next", context.Video.Handler.NextVideoHandler)
 	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
+	playback.POST("/behavior", context.Video.Handler.TrackBehaviorEventHandler)
 	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)

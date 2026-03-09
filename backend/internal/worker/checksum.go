@@ -2,25 +2,23 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	jobs "nas-go/api/internal/api/v1/jobs"
 )
 
 func UpdateCheckSumWorker(context *WorkerContext, data any) {
 	if context == nil {
-		log.Println("UpdateCheckSumWorker: worker context nulo")
+		log.Println("UpdateCheckSumWorker: worker context is nil")
 		return
 	}
 
 	fileId, ok := data.(int)
-
 	if !ok {
-		log.Println("Erro ao converter ID do arquivo: data não é int")
+		log.Println("UpdateCheckSumWorker: data is not int")
 		return
 	}
 	if fileId <= 0 {
-		log.Println("UpdateCheckSumWorker: fileId invalido")
+		log.Println("UpdateCheckSumWorker: invalid fileId")
 		return
 	}
 
@@ -40,7 +38,7 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 				},
 			},
 		}); err != nil {
-			log.Printf("UpdateCheckSumWorker: erro ao criar job de checksum: %v\n", err)
+			log.Printf("UpdateCheckSumWorker: failed to create checksum job: %v\n", err)
 		}
 		return
 	}
@@ -48,13 +46,13 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 	// Legacy fallback for tests/contexts that still do not initialize
 	// the orchestrator. It still uses the official checksum step executor.
 	if context.FilesService == nil {
-		log.Println("UpdateCheckSumWorker: files service nulo")
+		log.Println("UpdateCheckSumWorker: files service is nil")
 		return
 	}
 
 	payload, err := json.Marshal(StepFilePayload{FileID: fileId})
 	if err != nil {
-		log.Printf("UpdateCheckSumWorker: erro ao serializar payload de checksum: %v\n", err)
+		log.Printf("UpdateCheckSumWorker: failed to serialize checksum payload: %v\n", err)
 		return
 	}
 
@@ -62,15 +60,10 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 		Type:    string(StepTypeChecksum),
 		Payload: payload,
 	}); err != nil {
-		log.Printf("UpdateCheckSumWorker: erro no step de checksum: %v\n", err)
+		log.Printf("UpdateCheckSumWorker: checksum step error: %v\n", err)
 	}
 }
 
 func mustMarshalChecksumStepPayload(fileID int) []byte {
-	payload, err := json.Marshal(StepFilePayload{FileID: fileID})
-	if err != nil {
-		log.Printf("UpdateCheckSumWorker: erro ao serializar payload (fallback vazio): %v\n", err)
-		return []byte(fmt.Sprintf(`{"file_id":%d}`, fileID))
-	}
-	return payload
+	return mustMarshalPayload(StepFilePayload{FileID: fileID})
 }
