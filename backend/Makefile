@@ -32,3 +32,5 @@ run:
     -X 'nas-go/api/api.GoVersion=$(GO_VERSION)' \
     -X 'nas-go/api/api.NodeVersion=$(NODE_VERSION)'" \
     -tags=dev cmd/nas/main.go
+
+#  go run -ldflags="-X 'nas-go/api/api.Version=develop' -X 'nas-go/api/api.CommitHash=develop' -X 'nas-go/api/api.GoVersion=1.26.1' -X 'nas-go/api/api.NodeVersion=v24.13.0'" -tags=dev cmd/nas/main.go
