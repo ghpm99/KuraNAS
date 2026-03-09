@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,18 +27,14 @@ func startEntryPointWatcher(context *WorkerContext) {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 		lastDispatchAt := time.Time{}
-		pendingChanges := map[string]struct{}{}
 		debounceWindow := 2 * time.Second
 
 		for range ticker.C {
 			currentSnapshot := collectEntryPointSnapshot(entryPoint)
-			changedPaths := snapshotDiffPaths(lastSnapshot, currentSnapshot)
-			for _, changedPath := range changedPaths {
-				pendingChanges[changedPath] = struct{}{}
-			}
+			changed := snapshotDiffPaths(lastSnapshot, currentSnapshot)
 			lastSnapshot = currentSnapshot
 
-			if len(pendingChanges) == 0 {
+			if len(changed) == 0 {
 				continue
 			}
 			if !lastDispatchAt.IsZero() && time.Since(lastDispatchAt) < debounceWindow {
@@ -45,7 +42,9 @@ func startEntryPointWatcher(context *WorkerContext) {
 			}
 
 			if context != nil && context.JobOrchestrator != nil {
-				_ = enqueueFilesystemEventJob(context, entryPoint, JobPriorityNormal)
+				if err := enqueueFilesystemEventJob(context, entryPoint, JobPriorityNormal); err != nil {
+					log.Printf("watcher: failed to enqueue fs_event job: %v\n", err)
+				}
 			} else {
 				select {
 				case context.Tasks <- utils.Task{Type: utils.ScanFiles, Data: "filesystem watch detected changes"}:
@@ -53,7 +52,6 @@ func startEntryPointWatcher(context *WorkerContext) {
 				}
 			}
 			lastDispatchAt = time.Now()
-			pendingChanges = map[string]struct{}{}
 		}
 	}()
 }
@@ -81,24 +79,6 @@ func collectEntryPointSnapshot(entryPoint string) map[string]fileSnapshot {
 	})
 
 	return snapshot
-}
-
-func snapshotsChanged(previous map[string]fileSnapshot, current map[string]fileSnapshot) bool {
-	if len(previous) != len(current) {
-		return true
-	}
-
-	for path, previousSnapshot := range previous {
-		currentSnapshot, exists := current[path]
-		if !exists {
-			return true
-		}
-		if currentSnapshot != previousSnapshot {
-			return true
-		}
-	}
-
-	return false
 }
 
 func snapshotDiffPaths(previous map[string]fileSnapshot, current map[string]fileSnapshot) []string {

@@ -185,6 +185,20 @@ func (h *Handler) ReorderPlaylistHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+func (h *Handler) TrackBehaviorEventHandler(c *gin.Context) {
+	var req TrackBehaviorEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.TrackBehaviorEvent(c.ClientIP(), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"success": true})
+}
+
 func (h *Handler) GetUnassignedVideosHandler(c *gin.Context) {
 	limit := utils.ParseInt(c.DefaultQuery("limit", "2000"), c)
 	videos, err := h.service.GetUnassignedVideos(limit)

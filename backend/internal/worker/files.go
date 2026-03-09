@@ -83,7 +83,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 			if checksumErr != nil {
 				fail(filePath, checksumErr)
 			}
-			fmt.Println("checksum atualizado com sucesso", fileID)
+			fmt.Println("checksum updated successfully", fileID)
 		}(fileDto.ID, path)
 		successFilesCount++
 		return nil

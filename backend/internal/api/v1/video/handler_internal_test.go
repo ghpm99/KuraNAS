@@ -60,6 +60,9 @@ func (m *videoHandlerServiceMock) UpdatePlaylistName(playlistID int, name string
 func (m *videoHandlerServiceMock) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error {
 	return nil
 }
+func (m *videoHandlerServiceMock) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error {
+	return nil
+}
 
 type videoHandlerErrServiceMock struct {
 	videoHandlerServiceMock
@@ -109,6 +112,9 @@ func (m *videoHandlerErrServiceMock) UpdatePlaylistName(playlistID int, name str
 }
 func (m *videoHandlerErrServiceMock) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error {
 	return errors.New("reorder failed")
+}
+func (m *videoHandlerErrServiceMock) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error {
+	return errors.New("track failed")
 }
 
 type videoLoggerMock struct{ logger.LoggerServiceInterface }
