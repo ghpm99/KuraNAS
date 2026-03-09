@@ -19,6 +19,7 @@ type RepositoryInterface interface {
 	GetCatalogVideos(limit int) ([]VideoFileModel, error)
 	GetRecentVideos(limit int) ([]VideoFileModel, error)
 	GetAllVideosForGrouping() ([]VideoFileModel, error)
+	GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error)
 	UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
 	DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) error
 	InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
@@ -35,6 +36,9 @@ type RepositoryInterface interface {
 	CheckVideoInPlaylist(playlistID int, videoID int) (bool, error)
 	UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error
 	ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
+	InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
+	GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error)
+	GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error)
 }
 
 type ServiceInterface interface {
@@ -53,4 +57,5 @@ type ServiceInterface interface {
 	GetUnassignedVideos(limit int) ([]VideoFileDto, error)
 	UpdatePlaylistName(playlistID int, name string) error
 	ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error
+	TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error
 }

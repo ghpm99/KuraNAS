@@ -90,3 +90,15 @@ var UpdatePlaylistNameQuery string
 
 //go:embed reorder_playlist_item.sql
 var ReorderPlaylistItemQuery string
+
+//go:embed insert_behavior_event.sql
+var InsertBehaviorEventQuery string
+
+//go:embed get_behavior_events.sql
+var GetBehaviorEventsQuery string
+
+//go:embed get_all_behavior_events.sql
+var GetAllBehaviorEventsQuery string
+
+//go:embed get_all_videos_with_metadata.sql
+var GetAllVideosWithMetadataQuery string

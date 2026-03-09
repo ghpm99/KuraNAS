@@ -3,6 +3,7 @@ package video
 import (
 	"database/sql"
 	"errors"
+	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/database"
 	"testing"
 	"time"
@@ -13,33 +14,37 @@ import (
 type videoRepoMock struct {
 	db *database.DbContext
 
-	getVideoFileByIDFn        func(id int) (VideoFileModel, error)
-	getVideosByParentPathFn   func(parentPath string) ([]VideoFileModel, error)
-	getPlaylistByContextFn    func(contextType string, sourcePath string) (VideoPlaylistModel, error)
-	createPlaylistFn          func(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)
-	replacePlaylistItemsFn    func(tx *sql.Tx, playlistID int, videoIDs []int) error
-	getPlaybackStateFn        func(clientID string) (VideoPlaybackStateModel, error)
-	upsertPlaybackStateFn     func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
-	touchPlaylistFn           func(tx *sql.Tx, playlistID int) error
-	getCatalogVideosFn        func(limit int) ([]VideoFileModel, error)
-	getRecentVideosFn         func(limit int) ([]VideoFileModel, error)
-	checkVideoInPlaylistFn    func(playlistID int, videoID int) (bool, error)
-	getUnassignedVideosFn     func(limit int) ([]VideoFileModel, error)
-	getVideoPlaylistsFn       func(includeHidden bool) ([]VideoPlaylistModel, error)
-	getVideoPlaylistByIDFn    func(id int) (VideoPlaylistModel, error)
-	getVideoPlaylistItemsFn   func(playlistID int) ([]VideoPlaylistItemModel, error)
-	setPlaylistHiddenFn       func(tx *sql.Tx, playlistID int, hidden bool) error
-	addPlaylistVideoManualFn  func(tx *sql.Tx, playlistID int, videoID int) error
-	deletePlaylistExclusionFn func(tx *sql.Tx, playlistID int, videoID int) error
-	removePlaylistVideoFn     func(tx *sql.Tx, playlistID int, videoID int) error
-	upsertPlaylistExclusionFn func(tx *sql.Tx, playlistID int, videoID int) error
-	updatePlaylistNameFn      func(tx *sql.Tx, playlistID int, name string) error
-	reorderPlaylistItemFn     func(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
-	getAllVideosForGroupingFn func() ([]VideoFileModel, error)
-	upsertAutoPlaylistFn      func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
-	getPlaylistExclusionsFn   func(playlistID int) (map[int]bool, error)
-	deleteAutoPlaylistItemsFn func(tx *sql.Tx, playlistID int) error
-	insertPlaylistItemsSrcFn  func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
+	getVideoFileByIDFn         func(id int) (VideoFileModel, error)
+	getVideosByParentPathFn    func(parentPath string) ([]VideoFileModel, error)
+	getPlaylistByContextFn     func(contextType string, sourcePath string) (VideoPlaylistModel, error)
+	createPlaylistFn           func(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)
+	replacePlaylistItemsFn     func(tx *sql.Tx, playlistID int, videoIDs []int) error
+	getPlaybackStateFn         func(clientID string) (VideoPlaybackStateModel, error)
+	upsertPlaybackStateFn      func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
+	touchPlaylistFn            func(tx *sql.Tx, playlistID int) error
+	getCatalogVideosFn         func(limit int) ([]VideoFileModel, error)
+	getRecentVideosFn          func(limit int) ([]VideoFileModel, error)
+	checkVideoInPlaylistFn     func(playlistID int, videoID int) (bool, error)
+	getUnassignedVideosFn      func(limit int) ([]VideoFileModel, error)
+	getVideoPlaylistsFn        func(includeHidden bool) ([]VideoPlaylistModel, error)
+	getVideoPlaylistByIDFn     func(id int) (VideoPlaylistModel, error)
+	getVideoPlaylistItemsFn    func(playlistID int) ([]VideoPlaylistItemModel, error)
+	setPlaylistHiddenFn        func(tx *sql.Tx, playlistID int, hidden bool) error
+	addPlaylistVideoManualFn   func(tx *sql.Tx, playlistID int, videoID int) error
+	deletePlaylistExclusionFn  func(tx *sql.Tx, playlistID int, videoID int) error
+	removePlaylistVideoFn      func(tx *sql.Tx, playlistID int, videoID int) error
+	upsertPlaylistExclusionFn  func(tx *sql.Tx, playlistID int, videoID int) error
+	updatePlaylistNameFn       func(tx *sql.Tx, playlistID int, name string) error
+	reorderPlaylistItemFn      func(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
+	getAllVideosForGroupingFn   func() ([]VideoFileModel, error)
+	getAllVideosWithMetadataFn  func() ([]VideoWithMetadataModel, error)
+	upsertAutoPlaylistFn       func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
+	getPlaylistExclusionsFn    func(playlistID int) (map[int]bool, error)
+	deleteAutoPlaylistItemsFn  func(tx *sql.Tx, playlistID int) error
+	insertPlaylistItemsSrcFn   func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
+	insertBehaviorEventFn      func(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
+	getBehaviorEventsFn        func(clientID string, limit int) ([]VideoBehaviorEventModel, error)
+	getAllBehaviorEventsFn     func(limit int) ([]VideoBehaviorEventModel, error)
 }
 
 func (m *videoRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -211,6 +216,30 @@ func (m *videoRepoMock) ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID 
 	}
 	return nil
 }
+func (m *videoRepoMock) GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error) {
+	if m.getAllVideosWithMetadataFn != nil {
+		return m.getAllVideosWithMetadataFn()
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error) {
+	if m.insertBehaviorEventFn != nil {
+		return m.insertBehaviorEventFn(tx, event)
+	}
+	return event, nil
+}
+func (m *videoRepoMock) GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
+	if m.getBehaviorEventsFn != nil {
+		return m.getBehaviorEventsFn(clientID, limit)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error) {
+	if m.getAllBehaviorEventsFn != nil {
+		return m.getAllBehaviorEventsFn(limit)
+	}
+	return nil, nil
+}
 
 func newVideoServiceForTest(t *testing.T, repo *videoRepoMock) *Service {
 	t.Helper()
@@ -220,36 +249,55 @@ func newVideoServiceForTest(t *testing.T, repo *videoRepoMock) *Service {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	repo.db = database.NewDbContext(db)
-	return &Service{Repository: repo}
+	return &Service{Repository: repo, PlaylistEngine: playlist.NewPlaylistEngine()}
 }
 
 func TestVideoHelpersClassificationAndGrouping(t *testing.T) {
-	if got := classifyVideo(VideoFileModel{Name: "S01E02 episode", ParentPath: "/series/show"}); got != "series" {
-		t.Fatalf("expected series classification, got %s", got)
-	}
-	if got := classifyVideo(VideoFileModel{Name: "Movie", ParentPath: "/movies"}); got != "movie" {
-		t.Fatalf("expected movie classification, got %s", got)
-	}
-	if got := classifyVideo(VideoFileModel{Name: "Clip", ParentPath: "/personal"}); got != "personal" {
-		t.Fatalf("expected personal classification, got %s", got)
+	classifier := playlist.NewVideoClassifier()
+
+	seriesResult := classifier.Classify(playlist.VideoEntry{Name: "S01E02 episode", ParentPath: "/series/show", Path: "/series/show/S01E02 episode"})
+	if seriesResult.Classification != playlist.ClassSeries {
+		t.Fatalf("expected series classification, got %s", seriesResult.Classification)
 	}
 
-	if got := inferTitlePrefix("My.Show.S01E02.mkv"); got == "" {
+	movieResult := classifier.Classify(playlist.VideoEntry{Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie"})
+	if movieResult.Classification != playlist.ClassMovie {
+		t.Fatalf("expected movie classification, got %s", movieResult.Classification)
+	}
+
+	personalResult := classifier.Classify(playlist.VideoEntry{Name: "Family Video", ParentPath: "/personal", Path: "/personal/Family Video"})
+	if personalResult.Classification != playlist.ClassPersonal {
+		t.Fatalf("expected personal classification, got %s", personalResult.Classification)
+	}
+
+	if got := playlist.InferTitlePrefix("My.Show.S01E02.mkv"); got == "" {
 		t.Fatalf("expected inferred title prefix")
 	}
-	if !isGenericFolderName("videos") || isGenericFolderName("myfolder") {
+	if !playlist.IsGenericFolderName("videos") || playlist.IsGenericFolderName("myfolder") {
 		t.Fatalf("generic folder detection mismatch")
 	}
-	if got := classifySmartVideo(VideoFileModel{Name: "tutorial", ParentPath: "/x"}); got != "program" {
-		t.Fatalf("expected program smart classification, got %s", got)
+
+	// "tutorial" classifica como course (mais especifico que program no novo classifier)
+	courseResult := classifier.Classify(playlist.VideoEntry{Name: "tutorial", ParentPath: "/x", Path: "/x/tutorial"})
+	if courseResult.Classification != playlist.ClassCourse {
+		t.Fatalf("expected course classification, got %s", courseResult.Classification)
 	}
 
-	groups := buildSmartGroups([]VideoFileModel{
-		{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"},
-		{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"},
-		{ID: 3, Name: "Movie.mkv", ParentPath: "/movies", Path: "/movies/Movie.mkv"},
+	// "steam" keyword classifica como program
+	programResult := classifier.Classify(playlist.VideoEntry{Name: "gameplay", ParentPath: "/steam", Path: "/steam/gameplay"})
+	if programResult.Classification != playlist.ClassProgram {
+		t.Fatalf("expected program classification, got %s", programResult.Classification)
+	}
+
+	engine := playlist.NewPlaylistEngine()
+	result := engine.Build(playlist.BuildInput{
+		Videos: []playlist.VideoEntry{
+			{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"},
+			{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"},
+			{ID: 3, Name: "Movie.mkv", ParentPath: "/movies", Path: "/movies/Movie.mkv"},
+		},
 	})
-	if len(groups) == 0 {
+	if len(result.Candidates) == 0 {
 		t.Fatalf("expected smart groups to be built")
 	}
 }
@@ -323,10 +371,10 @@ func TestVideoServiceWrappersAndValidations(t *testing.T) {
 
 func TestVideoServiceRebuildSmartPlaylists(t *testing.T) {
 	repo := &videoRepoMock{
-		getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
-			return []VideoFileModel{
-				{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"},
-				{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"},
+		getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
+			return []VideoWithMetadataModel{
+				{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
+				{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
 			}, nil
 		},
 		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
@@ -777,7 +825,7 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 			{
 				name: "get grouped videos",
 				repo: &videoRepoMock{
-					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
+					getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
 						return nil, errors.New("grouping failed")
 					},
 				},
@@ -785,8 +833,11 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 			{
 				name: "upsert auto playlist",
 				repo: &videoRepoMock{
-					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
-						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
+						return []VideoWithMetadataModel{
+							{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
+							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
+						}, nil
 					},
 					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{}, errors.New("upsert failed")
@@ -796,8 +847,11 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 			{
 				name: "playlist exclusions",
 				repo: &videoRepoMock{
-					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
-						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
+						return []VideoWithMetadataModel{
+							{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
+							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
+						}, nil
 					},
 					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil
@@ -810,8 +864,11 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 			{
 				name: "delete auto items",
 				repo: &videoRepoMock{
-					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
-						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
+						return []VideoWithMetadataModel{
+							{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
+							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
+						}, nil
 					},
 					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil
@@ -823,8 +880,11 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 			{
 				name: "insert playlist items",
 				repo: &videoRepoMock{
-					getAllVideosForGroupingFn: func() ([]VideoFileModel, error) {
-						return []VideoFileModel{{ID: 1, Name: "Movie", ParentPath: "/movies", Path: "/movies/Movie.mp4"}}, nil
+					getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
+						return []VideoWithMetadataModel{
+							{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
+							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
+						}, nil
 					},
 					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil

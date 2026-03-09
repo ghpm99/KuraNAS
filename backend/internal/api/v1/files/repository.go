@@ -44,6 +44,8 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		filter.Name.Value,
 		!filter.Path.HasValue,
 		filter.Path.Value,
+		!filter.PathPrefix.HasValue,
+		filter.PathPrefix.Value,
 		!filter.ParentPath.HasValue,
 		filter.ParentPath.Value,
 		!filter.Format.HasValue,

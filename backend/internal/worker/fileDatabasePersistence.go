@@ -46,7 +46,7 @@ func StartDatabasePersistenceWorker(
 			persistedFileID = createdFile.ID
 		}
 		if err != nil {
-			log.Println("StartDatabasePersistenceWorker, falhou em processar", err)
+			log.Println("StartDatabasePersistenceWorker: failed to process", err)
 			monitorChannel <- ResultWorkerData{
 				Path:    finalizedFile.Path,
 				Success: false,
@@ -83,7 +83,7 @@ func enqueueVideoThumbnailTask(tasks chan utils.Task, finalizedFile files.FileDt
 	select {
 	case tasks <- task:
 	default:
-		log.Printf("fila de tasks cheia, thumbnail de video ignorada para fileID=%d", fileID)
+		log.Printf("task queue full, skipping video thumbnail for fileID=%d", fileID)
 	}
 }
 

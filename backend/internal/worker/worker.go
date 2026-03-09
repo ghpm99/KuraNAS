@@ -43,18 +43,17 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 func startWorkersScheduler(context *WorkerContext) {
 	if context != nil && context.JobOrchestrator != nil {
 		if err := enqueueStartupScanJob(context); err != nil {
-			log.Printf("erro ao enfileirar startup_scan job: %v\n", err)
+			log.Printf("failed to enqueue startup_scan job: %v\n", err)
 		}
 		return
 	}
 
-	log.Println("Escaneamento de arquivos")
+	log.Println("enqueuing file scan task")
 	context.Tasks <- utils.Task{
 		Type: utils.ScanFiles,
-		Data: "Escaneamento de arquivos",
+		Data: "file scan",
 	}
-	log.Println("📁 Tarefa de escaneamento de arquivos enviada para a fila")
-
+	log.Println("file scan task enqueued")
 }
 
 func enqueueStartupScanJob(context *WorkerContext) error {
@@ -63,40 +62,12 @@ func enqueueStartupScanJob(context *WorkerContext) error {
 		return nil
 	}
 
-	jobID, err := context.JobOrchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
-		Scope: JobScope{
-			Root: rootPath,
-		},
-		Steps: []PlannedStep{
-			{
-				Key:         "scan_filesystem",
-				Type:        StepTypeScanFilesystem,
-				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
-			},
-			{
-				Key:         "diff_against_db",
-				Type:        StepTypeDiffAgainstDB,
-				DependsOn:   []string{"scan_filesystem"},
-				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
-			},
-			{
-				Key:         "mark_deleted",
-				Type:        StepTypeMarkDeleted,
-				DependsOn:   []string{"diff_against_db"},
-				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
-			},
-		},
-	})
+	jobID, err := context.JobOrchestrator.CreateJob(buildScanPlan(rootPath, JobTypeStartupScan, JobPriorityLow))
 	if err != nil {
 		return err
 	}
 
-	log.Printf("startup_scan job enfileirado id=%d\n", jobID)
+	log.Printf("startup_scan job enqueued id=%d\n", jobID)
 	return nil
 }
 
@@ -108,47 +79,52 @@ func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority
 		return nil
 	}
 
-	_, err := context.JobOrchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeFSEvent,
+	_, err := context.JobOrchestrator.CreateJob(buildScanPlan(rootPath, JobTypeFSEvent, priority))
+	return err
+}
+
+func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) PlannedJob {
+	payload := mustMarshalPayload(StepFilePayload{Path: rootPath})
+	return PlannedJob{
+		Type:     jobType,
 		Priority: priority,
-		Scope: JobScope{
-			Root: rootPath,
-		},
+		Scope:    JobScope{Root: rootPath},
 		Steps: []PlannedStep{
 			{
 				Key:         "scan_filesystem",
 				Type:        StepTypeScanFilesystem,
 				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
+				Payload:     payload,
 			},
 			{
 				Key:         "diff_against_db",
 				Type:        StepTypeDiffAgainstDB,
 				DependsOn:   []string{"scan_filesystem"},
 				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
+				Payload:     payload,
 			},
 			{
 				Key:         "mark_deleted",
 				Type:        StepTypeMarkDeleted,
 				DependsOn:   []string{"diff_against_db"},
 				MaxAttempts: 1,
-				Payload:     mustMarshalStartupPayload(rootPath),
+				Payload:     payload,
 			},
 		},
-	})
-	return err
+	}
 }
 
 func worker(id int, context *WorkerContext) {
 	for task := range context.Tasks {
-		log.Printf("Worker %d: Processando tarefa %s\n", id, task.Data)
+		log.Printf("worker %d: processing task %s\n", id, task.Data)
 
 		switch task.Type {
 		case utils.ScanFiles:
 			if context != nil && context.JobOrchestrator != nil {
 				go func() {
-					_ = enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow)
+					if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
+						log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
+					}
 				}()
 			} else {
 				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
@@ -158,7 +134,9 @@ func worker(id int, context *WorkerContext) {
 				targetPath, ok := task.Data.(string)
 				if ok {
 					go func() {
-						_ = enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal)
+						if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
+							log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
+						}
 					}()
 				}
 			} else {
@@ -171,8 +149,7 @@ func worker(id int, context *WorkerContext) {
 		case utils.GenerateVideoPlaylists:
 			go GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 		default:
-			log.Println("Tipo de tarefa desconhecido")
+			log.Printf("worker %d: unknown task type %v\n", id, task.Type)
 		}
-		log.Printf("Worker %d: Tarefa %s completa\n", id, task.Data)
 	}
 }
