@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"time"
@@ -28,6 +29,9 @@ type JobScheduler struct {
 	started bool
 	mu      sync.Mutex
 	stepSem map[StepType]chan struct{}
+
+	jobSem chan struct{}
+	jobWg  sync.WaitGroup
 }
 
 func NewJobScheduler(repository jobs.RepositoryInterface, executors map[StepType]StepExecutor) *JobScheduler {
@@ -35,13 +39,19 @@ func NewJobScheduler(repository jobs.RepositoryInterface, executors map[StepType
 		executors = map[StepType]StepExecutor{}
 	}
 
+	maxJobs := config.AppConfig.WorkerMaxConcurrentJobs
+	if maxJobs <= 0 {
+		maxJobs = 4
+	}
+
 	return &JobScheduler{
 		repository: repository,
 		executors:  executors,
-		queue:      make(chan int, 256),
+		queue:      make(chan int, 1024),
 		queued:     map[int]struct{}{},
 		stopCh:     make(chan struct{}),
 		stepSem:    buildStepSemaphoreMap(),
+		jobSem:     make(chan struct{}, maxJobs),
 	}
 }
 
@@ -69,6 +79,7 @@ func (s *JobScheduler) Stop() {
 	s.mu.Unlock()
 
 	s.stopWg.Wait()
+	s.jobWg.Wait()
 }
 
 func (s *JobScheduler) Enqueue(jobID int) bool {
@@ -112,7 +123,16 @@ func (s *JobScheduler) loop() {
 			s.mu.Lock()
 			delete(s.queued, jobID)
 			s.mu.Unlock()
-			_ = s.processJob(jobID)
+
+			s.jobSem <- struct{}{}
+			s.jobWg.Add(1)
+			go func(id int) {
+				defer s.jobWg.Done()
+				defer func() { <-s.jobSem }()
+				if err := s.processJob(id); err != nil {
+					log.Printf("[job=%d] processJob error: %v\n", id, err)
+				}
+			}(jobID)
 		case <-pollTicker.C:
 			s.scheduleQueuedJobs()
 		}
@@ -134,13 +154,26 @@ func (s *JobScheduler) scheduleQueuedJobs() {
 		filter.Status.Set(string(JobStatusQueued))
 		filter.Priority.Set(priority)
 
-		queuedJobs, err := s.repository.ListJobs(filter, 1, 100)
-		if err != nil {
-			continue
-		}
+		page := 1
+		for {
+			// Check if semaphore is full before loading more jobs
+			if len(s.jobSem) >= cap(s.jobSem) {
+				return
+			}
 
-		for _, job := range queuedJobs.Items {
-			_ = s.Enqueue(job.ID)
+			queuedJobs, err := s.repository.ListJobs(filter, page, 100)
+			if err != nil {
+				break
+			}
+
+			for _, job := range queuedJobs.Items {
+				_ = s.Enqueue(job.ID)
+			}
+
+			if !queuedJobs.Pagination.HasNext {
+				break
+			}
+			page++
 		}
 	}
 }
@@ -162,6 +195,8 @@ func (s *JobScheduler) processJob(jobID int) error {
 	if _, err := s.updateJobExecution(jobID, string(JobStatusRunning), &now, nil, nil, nil); err != nil {
 		return err
 	}
+
+	var firstStepErr error
 
 	for {
 		canceled, cancelErr := s.cancelIfRequested(jobID)
@@ -188,16 +223,16 @@ func (s *JobScheduler) processJob(jobID int) error {
 			return steps[i].ID < steps[j].ID
 		})
 
+		// Pre-parse all step dependencies (Fix 13)
+		parsedDeps := parseAllStepDependencies(steps)
+		statusByID := buildStatusMap(steps)
+
 		readySteps := []jobs.StepModel{}
 		for _, step := range steps {
 			if step.Status != string(StepStatusQueued) {
 				continue
 			}
-			ready, readyErr := stepDependenciesSatisfied(step, steps)
-			if readyErr != nil {
-				return readyErr
-			}
-			if ready {
+			if stepDependenciesSatisfied(step.ID, parsedDeps, statusByID) {
 				readySteps = append(readySteps, step)
 			}
 		}
@@ -210,14 +245,27 @@ func (s *JobScheduler) processJob(jobID int) error {
 		}
 
 		if len(readySteps) == 1 {
-			_ = s.executeStep(readySteps[0])
+			if err := s.executeStep(readySteps[0]); err != nil {
+				log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, readySteps[0].ID, readySteps[0].Type, err)
+				if firstStepErr == nil {
+					firstStepErr = err
+				}
+			}
 		} else {
 			var wg sync.WaitGroup
+			var errMu sync.Mutex
 			wg.Add(len(readySteps))
 			for _, rs := range readySteps {
 				go func(step jobs.StepModel) {
 					defer wg.Done()
-					_ = s.executeStep(step)
+					if err := s.executeStep(step); err != nil {
+						log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, step.ID, step.Type, err)
+						errMu.Lock()
+						if firstStepErr == nil {
+							firstStepErr = err
+						}
+						errMu.Unlock()
+					}
 				}(rs)
 			}
 			wg.Wait()
@@ -239,7 +287,14 @@ func (s *JobScheduler) processJob(jobID int) error {
 
 	status := resolveJobStatus(finalSteps)
 	finished := time.Now()
-	_, err = s.updateJobExecution(jobID, string(status), nil, &finished, nil, nil)
+
+	var lastError *string
+	if firstStepErr != nil && status != JobStatusCompleted {
+		errMsg := firstStepErr.Error()
+		lastError = &errMsg
+	}
+
+	_, err = s.updateJobExecution(jobID, string(status), nil, &finished, nil, lastError)
 	if err != nil {
 		return err
 	}
@@ -252,19 +307,27 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		step.MaxAttempts = 1
 	}
 
+	executor := s.executors[StepType(step.Type)]
+
+	// Acquire semaphore before marking as running (Fix 2)
+	var release func()
+	if executor != nil {
+		release = s.acquireStepSemaphore(StepType(step.Type))
+	}
+
 	started := time.Now()
 	_, err := s.updateStepExecution(step.ID, string(StepStatusRunning), step.Progress, step.Attempts+1, &started, nil, nil)
 	if err != nil {
+		if release != nil {
+			release()
+		}
 		return err
 	}
-
-	executor := s.executors[StepType(step.Type)]
 
 	var runErr error
 	if executor == nil {
 		runErr = fmt.Errorf("step executor is not configured for type %q", step.Type)
 	} else {
-		release := s.acquireStepSemaphore(StepType(step.Type))
 		runErr = executor(step)
 		if release != nil {
 			release()
@@ -287,6 +350,11 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		_, updateErr := s.updateStepExecution(step.ID, string(StepStatusQueued), step.Progress, step.Attempts+1, nil, nil, &runErrMessage)
 		if updateErr != nil {
 			return updateErr
+		}
+		// Apply retry backoff (Fix 3)
+		backoff := time.Duration(config.AppConfig.WorkerRetryBackoffMS) * time.Millisecond * time.Duration(step.Attempts+1)
+		if backoff > 0 {
+			time.Sleep(backoff)
 		}
 		return nil
 	}
@@ -388,33 +456,49 @@ func allStepsTerminal(steps []jobs.StepModel) bool {
 	return true
 }
 
-func stepDependenciesSatisfied(step jobs.StepModel, allSteps []jobs.StepModel) (bool, error) {
-	if len(step.DependsOn) == 0 {
-		return true, nil
+// parseAllStepDependencies pre-parses all step DependsOn JSON into a map (Fix 13).
+func parseAllStepDependencies(steps []jobs.StepModel) map[int][]int {
+	result := make(map[int][]int, len(steps))
+	for _, step := range steps {
+		if len(step.DependsOn) == 0 {
+			result[step.ID] = nil
+			continue
+		}
+		var deps []int
+		if err := json.Unmarshal(step.DependsOn, &deps); err != nil {
+			result[step.ID] = nil
+			continue
+		}
+		result[step.ID] = deps
+	}
+	return result
+}
+
+func buildStatusMap(steps []jobs.StepModel) map[int]string {
+	m := make(map[int]string, len(steps))
+	for _, step := range steps {
+		m[step.ID] = step.Status
+	}
+	return m
+}
+
+func stepDependenciesSatisfied(stepID int, parsedDeps map[int][]int, statusByID map[int]string) bool {
+	deps := parsedDeps[stepID]
+	if len(deps) == 0 {
+		return true
 	}
 
-	dependencyIDs := []int{}
-	if err := json.Unmarshal(step.DependsOn, &dependencyIDs); err != nil {
-		return false, fmt.Errorf("invalid dependencies payload for step %d: %w", step.ID, err)
-	}
-
-	statusesByID := map[int]string{}
-	for _, allStep := range allSteps {
-		statusesByID[allStep.ID] = allStep.Status
-	}
-
-	for _, dependencyID := range dependencyIDs {
-		dependencyStatus, exists := statusesByID[dependencyID]
+	for _, depID := range deps {
+		depStatus, exists := statusByID[depID]
 		if !exists {
-			return false, fmt.Errorf("step %d depends on missing step id %d", step.ID, dependencyID)
+			return false
 		}
-
-		if dependencyStatus != string(StepStatusCompleted) && dependencyStatus != string(StepStatusSkipped) {
-			return false, nil
+		if depStatus != string(StepStatusCompleted) && depStatus != string(StepStatusSkipped) {
+			return false
 		}
 	}
 
-	return true, nil
+	return true
 }
 
 func stepStatusTerminal(status string) bool {

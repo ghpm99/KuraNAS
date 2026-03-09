@@ -1,7 +1,9 @@
 package worker
 
 import (
+	"fmt"
 	"log"
+
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/video"
@@ -62,7 +64,12 @@ func enqueueStartupScanJob(context *WorkerContext) error {
 		return nil
 	}
 
-	jobID, err := context.JobOrchestrator.CreateJob(buildScanPlan(rootPath, JobTypeStartupScan, JobPriorityLow))
+	plan, planErr := buildScanPlan(rootPath, JobTypeStartupScan, JobPriorityLow)
+	if planErr != nil {
+		return planErr
+	}
+
+	jobID, err := context.JobOrchestrator.CreateJob(plan)
 	if err != nil {
 		return err
 	}
@@ -79,12 +86,20 @@ func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority
 		return nil
 	}
 
-	_, err := context.JobOrchestrator.CreateJob(buildScanPlan(rootPath, JobTypeFSEvent, priority))
+	plan, planErr := buildScanPlan(rootPath, JobTypeFSEvent, priority)
+	if planErr != nil {
+		return planErr
+	}
+
+	_, err := context.JobOrchestrator.CreateJob(plan)
 	return err
 }
 
-func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) PlannedJob {
-	payload := mustMarshalPayload(StepFilePayload{Path: rootPath})
+func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) (PlannedJob, error) {
+	payload, err := marshalPayload(StepFilePayload{Path: rootPath})
+	if err != nil {
+		return PlannedJob{}, fmt.Errorf("marshal scan payload: %w", err)
+	}
 	return PlannedJob{
 		Type:     jobType,
 		Priority: priority,
@@ -111,7 +126,7 @@ func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) Plann
 				Payload:     payload,
 			},
 		},
-	}
+	}, nil
 }
 
 func worker(id int, context *WorkerContext) {
@@ -121,11 +136,9 @@ func worker(id int, context *WorkerContext) {
 		switch task.Type {
 		case utils.ScanFiles:
 			if context != nil && context.JobOrchestrator != nil {
-				go func() {
-					if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
-						log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
-					}
-				}()
+				if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
+					log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
+				}
 			} else {
 				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
 			}
@@ -133,21 +146,19 @@ func worker(id int, context *WorkerContext) {
 			if context != nil && context.JobOrchestrator != nil {
 				targetPath, ok := task.Data.(string)
 				if ok {
-					go func() {
-						if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
-							log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
-						}
-					}()
+					if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
+						log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
+					}
 				}
 			} else {
 				go ScanDirWorker(context.FilesService, task.Data)
 			}
 		case utils.UpdateCheckSum:
-			go UpdateCheckSumWorker(context, task.Data)
+			UpdateCheckSumWorker(context, task.Data)
 		case utils.CreateThumbnail:
-			go CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+			CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 		case utils.GenerateVideoPlaylists:
-			go GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
+			GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 		default:
 			log.Printf("worker %d: unknown task type %v\n", id, task.Type)
 		}

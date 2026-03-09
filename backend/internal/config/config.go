@@ -24,6 +24,7 @@ type AppConfigStruct struct {
 	WorkerConcurrencyThumbnail int
 	WorkerRetryBackoffMS       int
 	WorkerSchedulerPollMS      int
+	WorkerMaxConcurrentJobs    int
 }
 
 var AppConfig AppConfigStruct
@@ -47,6 +48,7 @@ func InitializeConfig() {
 		WorkerConcurrencyThumbnail: parseEnvInt("WORKER_CONCURRENCY_THUMBNAIL", 2),
 		WorkerRetryBackoffMS:       parseEnvInt("WORKER_RETRY_BACKOFF_MS", 500),
 		WorkerSchedulerPollMS:      parseEnvInt("WORKER_SCHEDULER_POLL_MS", 2000),
+		WorkerMaxConcurrentJobs:    parseEnvInt("WORKER_MAX_CONCURRENT_JOBS", 4),
 	}
 }
 
