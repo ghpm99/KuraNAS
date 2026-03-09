@@ -148,5 +148,14 @@ func (p PlannedJob) Validate() error {
 		seenStepKeys[step.Key] = struct{}{}
 	}
 
+	// Validate that all DependsOn references point to known step keys
+	for _, step := range p.Steps {
+		for _, dep := range step.DependsOn {
+			if _, exists := seenStepKeys[dep]; !exists {
+				return fmt.Errorf("step %q depends on unknown step %q", step.Key, dep)
+			}
+		}
+	}
+
 	return nil
 }
