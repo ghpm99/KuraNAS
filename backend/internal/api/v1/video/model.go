@@ -58,3 +58,30 @@ type VideoPlaybackStateModel struct {
 	Completed   bool
 	LastUpdate  time.Time
 }
+
+type VideoBehaviorEventModel struct {
+	ID         int
+	ClientID   string
+	VideoID    int
+	PlaylistID int
+	EventType  string
+	Position   float64
+	Duration   float64
+	WatchedPct float64
+	CreatedAt  time.Time
+}
+
+// VideoWithMetadataModel extends VideoFileModel with optional video_metadata fields.
+type VideoWithMetadataModel struct {
+	VideoFileModel
+	// Nullable metadata fields (LEFT JOIN)
+	MetaDuration        sql.NullString
+	MetaWidth           sql.NullInt64
+	MetaHeight          sql.NullInt64
+	MetaFrameRate       sql.NullFloat64
+	MetaCodecName       sql.NullString
+	MetaAspectRatio     sql.NullString
+	MetaAudioChannels   sql.NullInt64
+	MetaAudioCodec      sql.NullString
+	MetaAudioSampleRate sql.NullString
+}

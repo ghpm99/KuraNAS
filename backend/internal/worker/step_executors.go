@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
@@ -375,17 +374,16 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 	page := 1
 	pageSize := 500
 	updatedAny := false
+	filter := files.FileFilter{
+		PathPrefix: utils.Optional[string]{HasValue: true, Value: root},
+	}
 	for {
-		result, listErr := context.FilesService.GetFiles(files.FileFilter{}, page, pageSize)
+		result, listErr := context.FilesService.GetFiles(filter, page, pageSize)
 		if listErr != nil {
 			return listErr
 		}
 
 		for _, file := range result.Items {
-			if !strings.HasPrefix(file.Path, root) {
-				continue
-			}
-
 			_, statErr := os.Stat(file.Path)
 			missing := statErr != nil && errors.Is(statErr, os.ErrNotExist)
 
@@ -431,11 +429,11 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 }
 
 func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority JobPriority) PlannedJob {
-	persistPayload, _ := json.Marshal(StepFilePayload{
+	persistPayload := mustMarshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 		File: &fileDto,
 	})
-	commonPayload, _ := json.Marshal(StepFilePayload{
+	commonPayload := mustMarshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 	})
 
@@ -492,10 +490,10 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 	}
 }
 
-func mustMarshalStartupPayload(rootPath string) []byte {
-	payload, err := json.Marshal(StepFilePayload{Path: rootPath})
+func mustMarshalPayload(v any) []byte {
+	payload, err := json.Marshal(v)
 	if err != nil {
-		return []byte(fmt.Sprintf(`{"path":"%s","ts":"%s"}`, rootPath, time.Now().Format(time.RFC3339)))
+		panic(fmt.Sprintf("mustMarshalPayload: %v", err))
 	}
 	return payload
 }

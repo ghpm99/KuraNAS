@@ -617,3 +617,136 @@ func (r *Repository) ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int
 	}
 	return nil
 }
+
+func (r *Repository) GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error) {
+	results := []VideoWithMetadataModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetAllVideosWithMetadataQuery, pq.Array(utils.VideoFormats))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoWithMetadataModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.Name,
+				&item.Path,
+				&item.ParentPath,
+				&item.Format,
+				&item.Size,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+				&item.MetaDuration,
+				&item.MetaWidth,
+				&item.MetaHeight,
+				&item.MetaFrameRate,
+				&item.MetaCodecName,
+				&item.MetaAspectRatio,
+				&item.MetaAudioChannels,
+				&item.MetaAudioCodec,
+				&item.MetaAudioSampleRate,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return nil
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao buscar videos com metadados para agrupamento: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error) {
+	err := tx.QueryRow(
+		queries.InsertBehaviorEventQuery,
+		event.ClientID,
+		event.VideoID,
+		event.PlaylistID,
+		event.EventType,
+		event.Position,
+		event.Duration,
+		event.WatchedPct,
+	).Scan(&event.ID, &event.CreatedAt)
+	if err != nil {
+		return event, fmt.Errorf("falha ao registrar evento de comportamento: %w", err)
+	}
+	return event, nil
+}
+
+func (r *Repository) GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
+	results := []VideoBehaviorEventModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetBehaviorEventsQuery, clientID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoBehaviorEventModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.ClientID,
+				&item.VideoID,
+				&item.PlaylistID,
+				&item.EventType,
+				&item.Position,
+				&item.Duration,
+				&item.WatchedPct,
+				&item.CreatedAt,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return nil
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao buscar eventos de comportamento: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error) {
+	results := []VideoBehaviorEventModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetAllBehaviorEventsQuery, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoBehaviorEventModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.ClientID,
+				&item.VideoID,
+				&item.PlaylistID,
+				&item.EventType,
+				&item.Position,
+				&item.Duration,
+				&item.WatchedPct,
+				&item.CreatedAt,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return nil
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao buscar todos os eventos de comportamento: %w", err)
+	}
+
+	return results, nil
+}

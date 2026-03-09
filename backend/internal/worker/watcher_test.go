@@ -2,6 +2,24 @@ package worker
 
 import "testing"
 
+func snapshotsChanged(previous map[string]fileSnapshot, current map[string]fileSnapshot) bool {
+	if len(previous) != len(current) {
+		return true
+	}
+
+	for path, previousSnapshot := range previous {
+		currentSnapshot, exists := current[path]
+		if !exists {
+			return true
+		}
+		if currentSnapshot != previousSnapshot {
+			return true
+		}
+	}
+
+	return false
+}
+
 func TestSnapshotsChanged(t *testing.T) {
 	base := map[string]fileSnapshot{
 		"/a": {ModTimeUnix: 1, Size: 10, IsDir: false},

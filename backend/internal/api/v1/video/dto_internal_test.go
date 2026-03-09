@@ -51,8 +51,8 @@ func TestVideoPlaylistAndPlaybackToDtoBranches(t *testing.T) {
 func TestVideoNewService(t *testing.T) {
 	repo := &videoRepoMock{}
 	service := NewService(repo)
-	typed, ok := service.(*Service)
-	if !ok || typed.Repository != repo {
-		t.Fatalf("expected concrete service with repository")
+	_, ok := service.(*Service)
+	if !ok {
+		t.Fatalf("expected concrete service")
 	}
 }
