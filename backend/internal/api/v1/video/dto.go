@@ -106,6 +106,14 @@ type ReorderPlaylistRequest struct {
 	Items []ReorderPlaylistItemRequest `json:"items" binding:"required"`
 }
 
+type TrackBehaviorEventRequest struct {
+	VideoID    int     `json:"video_id" binding:"required"`
+	PlaylistID *int    `json:"playlist_id"`
+	EventType  string  `json:"event_type" binding:"required"`
+	Position   float64 `json:"position"`
+	Duration   float64 `json:"duration"`
+}
+
 func (m *VideoFileModel) ToDto() VideoFileDto {
 	return VideoFileDto{
 		ID:         m.ID,

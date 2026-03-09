@@ -4,23 +4,30 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"regexp"
-	"sort"
+	"nas-go/api/internal/api/v1/video/playlist"
+	"strconv"
 	"strings"
 )
 
 type Service struct {
-	Repository RepositoryInterface
+	Repository     RepositoryInterface
+	PlaylistEngine *playlist.PlaylistEngine
 }
 
 func NewService(repository RepositoryInterface) ServiceInterface {
-	return &Service{Repository: repository}
+	return &Service{
+		Repository:     repository,
+		PlaylistEngine: playlist.NewPlaylistEngine(),
+	}
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return s.Repository.GetDbContext().ExecTx(fn)
 }
+
+// ---------------------------------------------------------------------------
+// Playback
+// ---------------------------------------------------------------------------
 
 func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (PlaybackSessionDto, error) {
 	videoFile, err := s.Repository.GetVideoFileByID(videoID)
@@ -28,13 +35,13 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 		return PlaybackSessionDto{}, err
 	}
 
-	var playlist VideoPlaylistModel
+	var pl VideoPlaylistModel
 	if playlistID != nil {
-		playlist, err = s.Repository.GetVideoPlaylistByID(*playlistID)
+		pl, err = s.Repository.GetVideoPlaylistByID(*playlistID)
 		if err != nil {
 			return PlaybackSessionDto{}, err
 		}
-		inPlaylist, checkErr := s.Repository.CheckVideoInPlaylist(playlist.ID, videoID)
+		inPlaylist, checkErr := s.Repository.CheckVideoInPlaylist(pl.ID, videoID)
 		if checkErr != nil {
 			return PlaybackSessionDto{}, checkErr
 		}
@@ -42,14 +49,14 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 			return PlaybackSessionDto{}, errors.New("video nao pertence a playlist selecionada")
 		}
 	} else {
-		playlist, err = s.ensureContextPlaylist(string(ContextFolder), videoFile.ParentPath)
+		pl, err = s.ensureContextPlaylist(string(ContextFolder), videoFile.ParentPath)
 		if err != nil {
 			return PlaybackSessionDto{}, err
 		}
 	}
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
-	if !state.PlaylistID.Valid || int(state.PlaylistID.Int64) != playlist.ID || !state.VideoID.Valid || int(state.VideoID.Int64) != videoID {
+	if !state.PlaylistID.Valid || int(state.PlaylistID.Int64) != pl.ID || !state.VideoID.Valid || int(state.VideoID.Int64) != videoID {
 		state = VideoPlaybackStateModel{
 			ClientID:    clientID,
 			CurrentTime: 0,
@@ -58,7 +65,7 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 			Completed:   false,
 		}
 	}
-	state.PlaylistID = sql.NullInt64{Int64: int64(playlist.ID), Valid: true}
+	state.PlaylistID = sql.NullInt64{Int64: int64(pl.ID), Valid: true}
 	state.VideoID = sql.NullInt64{Int64: int64(videoID), Valid: true}
 
 	if err := s.withTransaction(func(tx *sql.Tx) error {
@@ -67,12 +74,23 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 			return upsertErr
 		}
 		state = updatedState
-		return s.Repository.TouchPlaylist(tx, playlist.ID)
+
+		// Emitir evento de comportamento "started"
+		_, _ = s.Repository.InsertBehaviorEvent(tx, VideoBehaviorEventModel{
+			ClientID:   clientID,
+			VideoID:    videoID,
+			PlaylistID: pl.ID,
+			EventType:  string(playlist.EventStarted),
+			Position:   0,
+			Duration:   state.Duration,
+		})
+
+		return s.Repository.TouchPlaylist(tx, pl.ID)
 	}); err != nil {
 		return PlaybackSessionDto{}, err
 	}
 
-	return s.buildSession(clientID, playlist, state)
+	return s.buildSession(clientID, pl, state)
 }
 
 func (s *Service) GetPlaybackState(clientID string) (PlaybackSessionDto, error) {
@@ -84,12 +102,12 @@ func (s *Service) GetPlaybackState(clientID string) (PlaybackSessionDto, error) 
 		return PlaybackSessionDto{}, errors.New("estado sem playlist ativa")
 	}
 
-	playlist, err := s.playlistByIDAndClient(state)
+	pl, err := s.playlistByIDAndClient(state)
 	if err != nil {
 		return PlaybackSessionDto{}, err
 	}
 
-	return s.buildSession(clientID, playlist, state)
+	return s.buildSession(clientID, pl, state)
 }
 
 func (s *Service) UpdatePlaybackState(clientID string, req UpdatePlaybackStateRequest) (VideoPlaybackStateDto, error) {
@@ -124,6 +142,32 @@ func (s *Service) UpdatePlaybackState(clientID string, req UpdatePlaybackStateRe
 			return upsertErr
 		}
 		state = updatedState
+
+		// Emitir evento de comportamento baseado no estado
+		if req.Completed != nil && *req.Completed {
+			videoID := 0
+			if state.VideoID.Valid {
+				videoID = int(state.VideoID.Int64)
+			}
+			playlistID := 0
+			if state.PlaylistID.Valid {
+				playlistID = int(state.PlaylistID.Int64)
+			}
+			watchedPct := 0.0
+			if state.Duration > 0 {
+				watchedPct = (state.CurrentTime / state.Duration) * 100
+			}
+			_, _ = s.Repository.InsertBehaviorEvent(tx, VideoBehaviorEventModel{
+				ClientID:   clientID,
+				VideoID:    videoID,
+				PlaylistID: playlistID,
+				EventType:  string(playlist.EventCompleted),
+				Position:   state.CurrentTime,
+				Duration:   state.Duration,
+				WatchedPct: watchedPct,
+			})
+		}
+
 		if state.PlaylistID.Valid {
 			return s.Repository.TouchPlaylist(tx, int(state.PlaylistID.Int64))
 		}
@@ -144,156 +188,173 @@ func (s *Service) PreviousVideo(clientID string) (PlaybackSessionDto, error) {
 	return s.shiftPlayback(clientID, -1)
 }
 
-func (s *Service) ensureContextPlaylist(contextType string, sourcePath string) (VideoPlaylistModel, error) {
-	playlist, err := s.Repository.GetPlaylistByContext(contextType, sourcePath)
-	if err == nil {
-		items, itemsErr := s.Repository.GetPlaylistItems(playlist.ID)
-		if itemsErr == nil && len(items) > 0 {
-			return playlist, nil
-		}
+// ---------------------------------------------------------------------------
+// Behavior tracking
+// ---------------------------------------------------------------------------
+
+func (s *Service) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error {
+	validEvents := map[string]bool{
+		string(playlist.EventStarted):   true,
+		string(playlist.EventPaused):    true,
+		string(playlist.EventResumed):   true,
+		string(playlist.EventCompleted): true,
+		string(playlist.EventSkipped):   true,
+		string(playlist.EventAbandoned): true,
+	}
+	if !validEvents[req.EventType] {
+		return fmt.Errorf("tipo de evento invalido: %s", req.EventType)
 	}
 
-	videos, err := s.Repository.GetVideosByParentPath(sourcePath)
-	if err != nil {
-		return VideoPlaylistModel{}, err
-	}
-	if len(videos) == 0 {
-		return VideoPlaylistModel{}, errors.New("nenhum video encontrado para o contexto")
+	watchedPct := 0.0
+	if req.Duration > 0 {
+		watchedPct = (req.Position / req.Duration) * 100
 	}
 
-	if playlist.ID == 0 {
-		err = s.withTransaction(func(tx *sql.Tx) error {
-			created, createErr := s.Repository.CreatePlaylist(tx, contextType, sourcePath)
-			if createErr != nil {
-				return createErr
-			}
-			playlist = created
+	playlistID := 0
+	if req.PlaylistID != nil {
+		playlistID = *req.PlaylistID
+	}
 
-			videoIDs := make([]int, 0, len(videos))
-			for _, video := range videos {
-				videoIDs = append(videoIDs, video.ID)
-			}
-			return s.Repository.ReplacePlaylistItems(tx, playlist.ID, videoIDs)
+	return s.withTransaction(func(tx *sql.Tx) error {
+		_, err := s.Repository.InsertBehaviorEvent(tx, VideoBehaviorEventModel{
+			ClientID:   clientID,
+			VideoID:    req.VideoID,
+			PlaylistID: playlistID,
+			EventType:  req.EventType,
+			Position:   req.Position,
+			Duration:   req.Duration,
+			WatchedPct: watchedPct,
 		})
-		if err != nil {
-			return VideoPlaylistModel{}, err
-		}
-		return playlist, nil
-	}
-
-	err = s.withTransaction(func(tx *sql.Tx) error {
-		videoIDs := make([]int, 0, len(videos))
-		for _, video := range videos {
-			videoIDs = append(videoIDs, video.ID)
-		}
-		return s.Repository.ReplacePlaylistItems(tx, playlist.ID, videoIDs)
+		return err
 	})
-	if err != nil {
-		return VideoPlaylistModel{}, err
-	}
-	return playlist, nil
 }
 
-func (s *Service) buildSession(clientID string, playlist VideoPlaylistModel, state VideoPlaybackStateModel) (PlaybackSessionDto, error) {
-	items, err := s.Repository.GetPlaylistItems(playlist.ID)
+// ---------------------------------------------------------------------------
+// Smart playlists (powered by playlist engine)
+// ---------------------------------------------------------------------------
+
+func (s *Service) RebuildSmartPlaylists() error {
+	// Buscar videos com metadados enriquecidos
+	videosWithMeta, err := s.Repository.GetAllVideosWithMetadata()
 	if err != nil {
-		return PlaybackSessionDto{}, err
+		return err
 	}
 
-	itemDtos := make([]VideoPlaylistItemDto, 0, len(items))
-	currentVideoID := -1
-	if state.VideoID.Valid {
-		currentVideoID = int(state.VideoID.Int64)
+	// Converter para o formato do engine
+	entries := make([]playlist.VideoEntry, 0, len(videosWithMeta))
+	for _, v := range videosWithMeta {
+		entry := playlist.VideoEntry{
+			ID:         v.ID,
+			Name:       v.Name,
+			Path:       v.Path,
+			ParentPath: v.ParentPath,
+			Format:     v.Format,
+			Size:       v.Size,
+			CreatedAt:  v.CreatedAt,
+			UpdatedAt:  v.UpdatedAt,
+		}
+
+		// Enricher com metadados se disponiveis
+		if v.MetaWidth.Valid || v.MetaDuration.Valid {
+			meta := &playlist.VideoMeta{}
+			if v.MetaDuration.Valid {
+				meta.Duration = parseDurationSeconds(v.MetaDuration.String)
+			}
+			if v.MetaWidth.Valid {
+				meta.Width = int(v.MetaWidth.Int64)
+			}
+			if v.MetaHeight.Valid {
+				meta.Height = int(v.MetaHeight.Int64)
+			}
+			if v.MetaFrameRate.Valid {
+				meta.FrameRate = v.MetaFrameRate.Float64
+			}
+			if v.MetaCodecName.Valid {
+				meta.CodecName = v.MetaCodecName.String
+			}
+			if v.MetaAspectRatio.Valid {
+				meta.AspectRatio = v.MetaAspectRatio.String
+			}
+			if v.MetaAudioChannels.Valid {
+				meta.AudioChannels = int(v.MetaAudioChannels.Int64)
+			}
+			if v.MetaAudioCodec.Valid {
+				meta.AudioCodec = v.MetaAudioCodec.String
+			}
+			if v.MetaAudioSampleRate.Valid {
+				meta.AudioSampleRate = v.MetaAudioSampleRate.String
+			}
+			entry.Meta = meta
+		}
+
+		entries = append(entries, entry)
 	}
 
-	for _, item := range items {
-		status := "not_started"
-		if item.VideoID == currentVideoID {
-			if state.Completed {
-				status = "completed"
-			} else if state.CurrentTime > 0 {
-				status = "in_progress"
+	// Buscar eventos de comportamento para alimentar o engine
+	behaviorEvents, _ := s.Repository.GetAllBehaviorEvents(500)
+	engineBehavior := make([]playlist.BehaviorEvent, 0, len(behaviorEvents))
+	for _, e := range behaviorEvents {
+		engineBehavior = append(engineBehavior, playlist.BehaviorEvent{
+			ClientID:       e.ClientID,
+			VideoID:        e.VideoID,
+			PlaylistID:     e.PlaylistID,
+			EventType:      playlist.BehaviorEventType(e.EventType),
+			Position:       e.Position,
+			Duration:       e.Duration,
+			WatchedPercent: e.WatchedPct,
+			Timestamp:      e.CreatedAt,
+		})
+	}
+
+	// Executar o engine
+	result := s.PlaylistEngine.Build(playlist.BuildInput{
+		Videos:         entries,
+		BehaviorEvents: engineBehavior,
+	})
+
+	// Converter para smart groups e persistir
+	groups := result.ToSmartGroups()
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		for _, group := range groups {
+			pl, upsertErr := s.Repository.UpsertAutoPlaylist(
+				tx,
+				group.PlaylistType,
+				group.SourceKey,
+				group.Name,
+				group.GroupMode,
+				group.Classification,
+			)
+			if upsertErr != nil {
+				return upsertErr
+			}
+
+			exclusions, exclusionsErr := s.Repository.GetPlaylistExclusions(pl.ID)
+			if exclusionsErr != nil {
+				return exclusionsErr
+			}
+
+			filtered := make([]int, 0, len(group.VideoIDs))
+			for _, id := range group.VideoIDs {
+				if !exclusions[id] {
+					filtered = append(filtered, id)
+				}
+			}
+
+			if err := s.Repository.DeleteAutoPlaylistItems(tx, pl.ID); err != nil {
+				return err
+			}
+			if err := s.Repository.InsertPlaylistItemsWithSource(tx, pl.ID, filtered, "auto"); err != nil {
+				return err
 			}
 		}
-		itemDtos = append(itemDtos, item.ToDto(status))
-	}
-
-	state.ClientID = clientID
-	return PlaybackSessionDto{
-		Playlist:      playlist.ToDto(itemDtos),
-		PlaybackState: state.ToDto(),
-	}, nil
+		return nil
+	})
 }
 
-func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSessionDto, error) {
-	state, err := s.Repository.GetPlaybackState(clientID)
-	if err != nil {
-		return PlaybackSessionDto{}, err
-	}
-	if !state.PlaylistID.Valid || !state.VideoID.Valid {
-		return PlaybackSessionDto{}, errors.New("sem video ativo para avancar ou retroceder")
-	}
-
-	playlist, err := s.playlistByIDAndClient(state)
-	if err != nil {
-		return PlaybackSessionDto{}, err
-	}
-
-	items, err := s.Repository.GetPlaylistItems(playlist.ID)
-	if err != nil {
-		return PlaybackSessionDto{}, err
-	}
-	if len(items) == 0 {
-		return PlaybackSessionDto{}, errors.New("playlist sem itens")
-	}
-
-	currentIndex := -1
-	for i, item := range items {
-		if item.VideoID == int(state.VideoID.Int64) {
-			currentIndex = i
-			break
-		}
-	}
-	if currentIndex < 0 {
-		currentIndex = 0
-	}
-
-	nextIndex := currentIndex + direction
-	if nextIndex < 0 {
-		nextIndex = 0
-	}
-	if nextIndex >= len(items) {
-		nextIndex = len(items) - 1
-	}
-
-	state.VideoID = sql.NullInt64{Int64: int64(items[nextIndex].VideoID), Valid: true}
-	state.CurrentTime = 0
-	state.Duration = 0
-	state.IsPaused = false
-	state.Completed = false
-
-	if err := s.withTransaction(func(tx *sql.Tx) error {
-		updatedState, upsertErr := s.Repository.UpsertPlaybackState(tx, state)
-		if upsertErr != nil {
-			return upsertErr
-		}
-		state = updatedState
-		return s.Repository.TouchPlaylist(tx, playlist.ID)
-	}); err != nil {
-		return PlaybackSessionDto{}, err
-	}
-
-	return s.buildSession(clientID, playlist, state)
-}
-
-func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPlaylistModel, error) {
-	playlistID := int(state.PlaylistID.Int64)
-	playlist, err := s.Repository.GetVideoPlaylistByID(playlistID)
-	if err != nil {
-		return VideoPlaylistModel{}, err
-	}
-	return playlist, nil
-}
+// ---------------------------------------------------------------------------
+// Home catalog (uses classifier for better categorization)
+// ---------------------------------------------------------------------------
 
 func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error) {
 	const defaultLimit = 24
@@ -319,23 +380,30 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
 
+	// Usar o classifier do engine para categorizar
+	classifier := s.PlaylistEngine.Classifier
 	series := make([]VideoCatalogItemDto, 0, normalizedLimit)
 	movies := make([]VideoCatalogItemDto, 0, normalizedLimit)
 	personal := make([]VideoCatalogItemDto, 0, normalizedLimit)
 
 	for _, video := range allVideos {
 		item := s.toCatalogItem(video, state)
-		classification := classifyVideo(video)
-		if classification == "series" && len(series) < normalizedLimit {
-			series = append(series, item)
-			continue
-		}
-		if classification == "movie" && len(movies) < normalizedLimit {
-			movies = append(movies, item)
-			continue
-		}
-		if len(personal) < normalizedLimit {
-			personal = append(personal, item)
+		entry := videoModelToEntry(video)
+		classified := classifier.Classify(entry)
+
+		switch classified.Classification {
+		case playlist.ClassSeries, playlist.ClassAnime:
+			if len(series) < normalizedLimit {
+				series = append(series, item)
+			}
+		case playlist.ClassMovie:
+			if len(movies) < normalizedLimit {
+				movies = append(movies, item)
+			}
+		default:
+			if classified.Classification != playlist.ClassProgram && len(personal) < normalizedLimit {
+				personal = append(personal, item)
+			}
 		}
 	}
 
@@ -368,92 +436,9 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 	}, nil
 }
 
-func (s *Service) toCatalogItem(video VideoFileModel, state VideoPlaybackStateModel) VideoCatalogItemDto {
-	status := "not_started"
-	progressPct := 0.0
-	if state.VideoID.Valid && int(state.VideoID.Int64) == video.ID {
-		if state.Completed {
-			status = "completed"
-			progressPct = 100
-		} else if state.CurrentTime > 0 {
-			status = "in_progress"
-			if state.Duration > 0 {
-				progressPct = (state.CurrentTime / state.Duration) * 100
-			}
-		}
-	}
-
-	if progressPct < 0 {
-		progressPct = 0
-	}
-	if progressPct > 100 {
-		progressPct = 100
-	}
-
-	return VideoCatalogItemDto{
-		Video:       video.ToDto(),
-		Status:      status,
-		ProgressPct: progressPct,
-	}
-}
-
-func classifyVideo(video VideoFileModel) string {
-	path := strings.ToLower(video.Path + " " + video.ParentPath + " " + video.Name)
-	episodePattern := regexp.MustCompile(`s\\d{1,2}e\\d{1,2}|ep\\.?\\s?\\d+|epis[oó]dio\\s?\\d+`)
-
-	if strings.Contains(path, "/series") || strings.Contains(path, "/anime") || strings.Contains(path, "season") || strings.Contains(path, "temporada") || episodePattern.MatchString(path) {
-		return "series"
-	}
-	if strings.Contains(path, "/movies") || strings.Contains(path, "/filmes") || strings.Contains(path, "/movie") {
-		return "movie"
-	}
-	return "personal"
-}
-
-func (s *Service) RebuildSmartPlaylists() error {
-	videos, err := s.Repository.GetAllVideosForGrouping()
-	if err != nil {
-		return err
-	}
-
-	groups := buildSmartGroups(videos)
-
-	return s.withTransaction(func(tx *sql.Tx) error {
-		for _, group := range groups {
-			playlist, upsertErr := s.Repository.UpsertAutoPlaylist(
-				tx,
-				group.PlaylistType,
-				group.SourceKey,
-				group.Name,
-				group.GroupMode,
-				group.Classification,
-			)
-			if upsertErr != nil {
-				return upsertErr
-			}
-
-			exclusions, exclusionsErr := s.Repository.GetPlaylistExclusions(playlist.ID)
-			if exclusionsErr != nil {
-				return exclusionsErr
-			}
-
-			filtered := make([]int, 0, len(group.VideoIDs))
-			for _, id := range group.VideoIDs {
-				if !exclusions[id] {
-					filtered = append(filtered, id)
-				}
-			}
-
-			if err := s.Repository.DeleteAutoPlaylistItems(tx, playlist.ID); err != nil {
-				return err
-			}
-			if err := s.Repository.InsertPlaylistItemsWithSource(tx, playlist.ID, filtered, "auto"); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
+// ---------------------------------------------------------------------------
+// Playlist CRUD
+// ---------------------------------------------------------------------------
 
 func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	models, err := s.Repository.GetVideoPlaylists(includeHidden)
@@ -469,7 +454,7 @@ func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 }
 
 func (s *Service) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
-	playlist, err := s.Repository.GetVideoPlaylistByID(id)
+	pl, err := s.Repository.GetVideoPlaylistByID(id)
 	if err != nil {
 		return VideoPlaylistDto{}, err
 	}
@@ -483,8 +468,8 @@ func (s *Service) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
 	for _, item := range items {
 		itemDtos = append(itemDtos, item.ToDto("not_started"))
 	}
-	playlist.ItemCount = len(itemDtos)
-	return playlist.ToDto(itemDtos), nil
+	pl.ItemCount = len(itemDtos)
+	return pl.ToDto(itemDtos), nil
 }
 
 func (s *Service) SetPlaylistHidden(playlistID int, hidden bool) error {
@@ -503,7 +488,7 @@ func (s *Service) AddVideoToPlaylist(playlistID int, videoID int) error {
 }
 
 func (s *Service) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
-	playlist, err := s.Repository.GetVideoPlaylistByID(playlistID)
+	pl, err := s.Repository.GetVideoPlaylistByID(playlistID)
 	if err != nil {
 		return err
 	}
@@ -512,7 +497,7 @@ func (s *Service) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
 		if err := s.Repository.RemovePlaylistVideo(tx, playlistID, videoID); err != nil {
 			return err
 		}
-		if playlist.IsAuto {
+		if pl.IsAuto {
 			return s.Repository.UpsertPlaylistExclusion(tx, playlistID, videoID)
 		}
 		return nil
@@ -573,146 +558,226 @@ func (s *Service) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistIt
 	})
 }
 
-type smartGroup struct {
-	SourceKey      string
-	Name           string
-	PlaylistType   string
-	GroupMode      string
-	Classification string
-	VideoIDs       []int
-}
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
 
-func buildSmartGroups(videos []VideoFileModel) []smartGroup {
-	folderCount := map[string]int{}
-	prefixCount := map[string]int{}
-
-	for _, video := range videos {
-		folderCount[video.ParentPath]++
-		prefix := inferTitlePrefix(video.Name)
-		if prefix != "" {
-			prefixCount[prefix]++
+func (s *Service) ensureContextPlaylist(contextType string, sourcePath string) (VideoPlaylistModel, error) {
+	pl, err := s.Repository.GetPlaylistByContext(contextType, sourcePath)
+	if err == nil {
+		items, itemsErr := s.Repository.GetPlaylistItems(pl.ID)
+		if itemsErr == nil && len(items) > 0 {
+			return pl, nil
 		}
 	}
 
-	groupMap := map[string]*smartGroup{}
-	order := []string{}
-
-	addToGroup := func(key string, group smartGroup, videoID int) {
-		existing, ok := groupMap[key]
-		if !ok {
-			copyGroup := group
-			copyGroup.VideoIDs = []int{}
-			groupMap[key] = &copyGroup
-			order = append(order, key)
-			existing = groupMap[key]
-		}
-		existing.VideoIDs = append(existing.VideoIDs, videoID)
+	videos, err := s.Repository.GetVideosByParentPath(sourcePath)
+	if err != nil {
+		return VideoPlaylistModel{}, err
+	}
+	if len(videos) == 0 {
+		return VideoPlaylistModel{}, errors.New("nenhum video encontrado para o contexto")
 	}
 
-	for _, video := range videos {
-		classification := classifySmartVideo(video)
-		folderBase := strings.TrimSpace(filepath.Base(video.ParentPath))
-		folderIsStrong := folderCount[video.ParentPath] >= 2 && !isGenericFolderName(folderBase)
-		prefix := inferTitlePrefix(video.Name)
-		prefixIsStrong := prefix != "" && prefixCount[prefix] >= 2
-
-		switch {
-		case folderIsStrong:
-			addToGroup(
-				"folder:"+video.ParentPath,
-				smartGroup{
-					SourceKey:      "folder:" + video.ParentPath,
-					Name:           folderBase,
-					PlaylistType:   "folder",
-					GroupMode:      "folder",
-					Classification: classification,
-				},
-				video.ID,
-			)
-		case prefixIsStrong:
-			addToGroup(
-				"prefix:"+prefix,
-				smartGroup{
-					SourceKey:      "prefix:" + prefix,
-					Name:           strings.Title(prefix),
-					PlaylistType:   "series",
-					GroupMode:      "prefix",
-					Classification: classification,
-				},
-				video.ID,
-			)
-		default:
-			playlistType := "custom"
-			if classification == "movie" {
-				playlistType = "movie"
+	if pl.ID == 0 {
+		err = s.withTransaction(func(tx *sql.Tx) error {
+			created, createErr := s.Repository.CreatePlaylist(tx, contextType, sourcePath)
+			if createErr != nil {
+				return createErr
 			}
-			singletonName := strings.TrimSpace(strings.TrimSuffix(video.Name, filepath.Ext(video.Name)))
-			addToGroup(
-				fmt.Sprintf("single:%d", video.ID),
-				smartGroup{
-					SourceKey:      fmt.Sprintf("single:%d", video.ID),
-					Name:           singletonName,
-					PlaylistType:   playlistType,
-					GroupMode:      "single",
-					Classification: classification,
-				},
-				video.ID,
-			)
+			pl = created
+
+			videoIDs := make([]int, 0, len(videos))
+			for _, video := range videos {
+				videoIDs = append(videoIDs, video.ID)
+			}
+			return s.Repository.ReplacePlaylistItems(tx, pl.ID, videoIDs)
+		})
+		if err != nil {
+			return VideoPlaylistModel{}, err
+		}
+		return pl, nil
+	}
+
+	err = s.withTransaction(func(tx *sql.Tx) error {
+		videoIDs := make([]int, 0, len(videos))
+		for _, video := range videos {
+			videoIDs = append(videoIDs, video.ID)
+		}
+		return s.Repository.ReplacePlaylistItems(tx, pl.ID, videoIDs)
+	})
+	if err != nil {
+		return VideoPlaylistModel{}, err
+	}
+	return pl, nil
+}
+
+func (s *Service) buildSession(clientID string, pl VideoPlaylistModel, state VideoPlaybackStateModel) (PlaybackSessionDto, error) {
+	items, err := s.Repository.GetPlaylistItems(pl.ID)
+	if err != nil {
+		return PlaybackSessionDto{}, err
+	}
+
+	itemDtos := make([]VideoPlaylistItemDto, 0, len(items))
+	currentVideoID := -1
+	if state.VideoID.Valid {
+		currentVideoID = int(state.VideoID.Int64)
+	}
+
+	for _, item := range items {
+		status := "not_started"
+		if item.VideoID == currentVideoID {
+			if state.Completed {
+				status = "completed"
+			} else if state.CurrentTime > 0 {
+				status = "in_progress"
+			}
+		}
+		itemDtos = append(itemDtos, item.ToDto(status))
+	}
+
+	state.ClientID = clientID
+	return PlaybackSessionDto{
+		Playlist:      pl.ToDto(itemDtos),
+		PlaybackState: state.ToDto(),
+	}, nil
+}
+
+func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSessionDto, error) {
+	state, err := s.Repository.GetPlaybackState(clientID)
+	if err != nil {
+		return PlaybackSessionDto{}, err
+	}
+	if !state.PlaylistID.Valid || !state.VideoID.Valid {
+		return PlaybackSessionDto{}, errors.New("sem video ativo para avancar ou retroceder")
+	}
+
+	pl, err := s.playlistByIDAndClient(state)
+	if err != nil {
+		return PlaybackSessionDto{}, err
+	}
+
+	items, err := s.Repository.GetPlaylistItems(pl.ID)
+	if err != nil {
+		return PlaybackSessionDto{}, err
+	}
+	if len(items) == 0 {
+		return PlaybackSessionDto{}, errors.New("playlist sem itens")
+	}
+
+	currentIndex := -1
+	for i, item := range items {
+		if item.VideoID == int(state.VideoID.Int64) {
+			currentIndex = i
+			break
+		}
+	}
+	if currentIndex < 0 {
+		currentIndex = 0
+	}
+
+	nextIndex := currentIndex + direction
+	if nextIndex < 0 {
+		nextIndex = 0
+	}
+	if nextIndex >= len(items) {
+		nextIndex = len(items) - 1
+	}
+
+	// Emitir evento de skip se avancou
+	prevVideoID := int(state.VideoID.Int64)
+
+	state.VideoID = sql.NullInt64{Int64: int64(items[nextIndex].VideoID), Valid: true}
+	state.CurrentTime = 0
+	state.Duration = 0
+	state.IsPaused = false
+	state.Completed = false
+
+	if err := s.withTransaction(func(tx *sql.Tx) error {
+		updatedState, upsertErr := s.Repository.UpsertPlaybackState(tx, state)
+		if upsertErr != nil {
+			return upsertErr
+		}
+		state = updatedState
+
+		// Registrar skip do video anterior
+		if direction > 0 {
+			_, _ = s.Repository.InsertBehaviorEvent(tx, VideoBehaviorEventModel{
+				ClientID:   clientID,
+				VideoID:    prevVideoID,
+				PlaylistID: pl.ID,
+				EventType:  string(playlist.EventSkipped),
+			})
+		}
+
+		return s.Repository.TouchPlaylist(tx, pl.ID)
+	}); err != nil {
+		return PlaybackSessionDto{}, err
+	}
+
+	return s.buildSession(clientID, pl, state)
+}
+
+func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPlaylistModel, error) {
+	playlistID := int(state.PlaylistID.Int64)
+	pl, err := s.Repository.GetVideoPlaylistByID(playlistID)
+	if err != nil {
+		return VideoPlaylistModel{}, err
+	}
+	return pl, nil
+}
+
+func (s *Service) toCatalogItem(video VideoFileModel, state VideoPlaybackStateModel) VideoCatalogItemDto {
+	status := "not_started"
+	progressPct := 0.0
+	if state.VideoID.Valid && int(state.VideoID.Int64) == video.ID {
+		if state.Completed {
+			status = "completed"
+			progressPct = 100
+		} else if state.CurrentTime > 0 {
+			status = "in_progress"
+			if state.Duration > 0 {
+				progressPct = (state.CurrentTime / state.Duration) * 100
+			}
 		}
 	}
 
-	result := make([]smartGroup, 0, len(order))
-	for _, key := range order {
-		group := groupMap[key]
-		sort.Ints(group.VideoIDs)
-		result = append(result, *group)
+	if progressPct < 0 {
+		progressPct = 0
 	}
-	return result
+	if progressPct > 100 {
+		progressPct = 100
+	}
+
+	return VideoCatalogItemDto{
+		Video:       video.ToDto(),
+		Status:      status,
+		ProgressPct: progressPct,
+	}
 }
 
-func inferTitlePrefix(name string) string {
-	noExt := strings.TrimSpace(strings.TrimSuffix(name, filepath.Ext(name)))
-	if noExt == "" {
-		return ""
+func videoModelToEntry(v VideoFileModel) playlist.VideoEntry {
+	return playlist.VideoEntry{
+		ID:         v.ID,
+		Name:       v.Name,
+		Path:       v.Path,
+		ParentPath: v.ParentPath,
+		Format:     v.Format,
+		Size:       v.Size,
+		CreatedAt:  v.CreatedAt,
+		UpdatedAt:  v.UpdatedAt,
 	}
-
-	bracketCleanup := regexp.MustCompile(`\\[[^\\]]+\\]|\\([^\\)]+\\)`)
-	episodeSuffix := regexp.MustCompile(`(?i)[\\s._-]*(s\\d{1,2}e\\d{1,2}|ep\\.?\\s?\\d+|epis[oó]dio\\s?\\d+|part\\s?\\d+|parte\\s?\\d+|\\d{1,3})$`)
-	spaceCollapse := regexp.MustCompile(`[\\s._-]+`)
-
-	value := strings.ToLower(noExt)
-	value = bracketCleanup.ReplaceAllString(value, "")
-	value = episodeSuffix.ReplaceAllString(value, "")
-	value = spaceCollapse.ReplaceAllString(value, " ")
-	value = strings.TrimSpace(value)
-	return value
 }
 
-func isGenericFolderName(name string) bool {
-	value := strings.ToLower(strings.TrimSpace(name))
-	if value == "" {
-		return true
+// parseDurationSeconds converte duration string (ex: "3600.000000") para float64 em segundos.
+func parseDurationSeconds(s string) float64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
 	}
-	generic := map[string]bool{
-		"videos": true, "video": true, "movies": true, "filmes": true, "downloads": true, "clips": true,
-		"desktop": true, "documentos": true, "documents": true, "media": true,
+	val, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
 	}
-	return generic[value]
-}
-
-func classifySmartVideo(video VideoFileModel) string {
-	path := strings.ToLower(video.Path + " " + video.ParentPath + " " + video.Name)
-	if strings.Contains(path, "steam") || strings.Contains(path, "tutorial") || strings.Contains(path, "sample") {
-		return "program"
-	}
-	if strings.Contains(path, "anime") || strings.Contains(path, "animes") {
-		return "anime"
-	}
-	if strings.Contains(path, "series") || strings.Contains(path, "season") || strings.Contains(path, "temporada") {
-		return "series"
-	}
-	if strings.Contains(path, "movie") || strings.Contains(path, "filme") || strings.Contains(path, "cinema") {
-		return "movie"
-	}
-	return "personal"
+	return val
 }
