@@ -23,6 +23,11 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 	}
 
 	if context.JobOrchestrator != nil {
+		checksumPayload, marshalErr := marshalChecksumStepPayload(fileId)
+		if marshalErr != nil {
+			log.Printf("UpdateCheckSumWorker: failed to marshal checksum payload: %v\n", marshalErr)
+			return
+		}
 		if _, err := context.JobOrchestrator.CreateJob(PlannedJob{
 			Type:     JobTypeFSEvent,
 			Priority: JobPriorityNormal,
@@ -34,7 +39,7 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 					Key:         "checksum",
 					Type:        StepTypeChecksum,
 					MaxAttempts: 1,
-					Payload:     mustMarshalChecksumStepPayload(fileId),
+					Payload:     checksumPayload,
 				},
 			},
 		}); err != nil {
@@ -64,6 +69,6 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 	}
 }
 
-func mustMarshalChecksumStepPayload(fileID int) []byte {
-	return mustMarshalPayload(StepFilePayload{FileID: fileID})
+func marshalChecksumStepPayload(fileID int) ([]byte, error) {
+	return marshalPayload(StepFilePayload{FileID: fileID})
 }

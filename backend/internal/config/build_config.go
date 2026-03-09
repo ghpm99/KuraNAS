@@ -6,6 +6,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func FindProjectRoot() string {
@@ -40,6 +41,9 @@ func GetBuildConfig(key string) string {
 		return FilepathJoin(false, currentDir, ".env")
 	case "PythonScript":
 		currentDir := FindProjectRoot()
+		if runtime.GOOS == "windows" {
+			return FilepathJoin(false, currentDir, "scripts", ".venv", "Scripts", "python.exe")
+		}
 		return FilepathJoin(false, currentDir, "scripts", ".venv", "bin", "python")
 	case "ScriptPath":
 		currentDir := FindProjectRoot()

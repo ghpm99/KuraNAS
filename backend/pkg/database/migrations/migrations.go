@@ -62,6 +62,9 @@ var CreateWorkerJobTablesQuery string
 //go:embed queries/0017_create_video_behavior_event_table.sql
 var CreateVideoBehaviorEventTableQuery string
 
+//go:embed queries/0018_update_video_playlist_type_check.sql
+var UpdateVideoPlaylistTypeCheckQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -132,6 +135,9 @@ func videoMigrationList() {
 
 	addMigration("0017_create_video_behavior_event_table",
 		defaultMigrationFunc(CreateVideoBehaviorEventTableQuery))
+
+	addMigration("0018_update_video_playlist_type_check",
+		defaultMigrationFunc(UpdateVideoPlaylistTypeCheckQuery))
 }
 
 func workerMigrationList() {
