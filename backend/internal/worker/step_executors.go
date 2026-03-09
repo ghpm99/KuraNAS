@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -104,7 +105,7 @@ func resolveFileDtoForStep(service files.ServiceInterface, payload StepFilePaylo
 	if persistedErr == nil {
 		return persistedFile, nil
 	}
-	if persistedErr != nil && !errors.Is(persistedErr, sql.ErrNoRows) {
+	if !errors.Is(persistedErr, sql.ErrNoRows) {
 		return files.FileDto{}, persistedErr
 	}
 
@@ -137,6 +138,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 	// If there is no persisted file ID yet, metadata extraction is still valid,
 	// but persistence will happen in a dedicated step.
 	if fileDto.ID <= 0 {
+		log.Printf("[metadata] metadata extracted but file not persisted yet, skipping update (path=%s)\n", fileDto.Path)
 		return nil
 	}
 
@@ -295,10 +297,31 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		return ErrStepSkipped
 	}
 
+	// Batch-load all known files under root to avoid N+1 queries (Fix 5)
+	knownFiles := map[string]files.FileDto{}
+	filter := files.FileFilter{
+		PathPrefix: utils.Optional[string]{HasValue: true, Value: root},
+	}
+	page := 1
+	for {
+		result, listErr := context.FilesService.GetFiles(filter, page, 500)
+		if listErr != nil {
+			return fmt.Errorf("batch load files under %q: %w", root, listErr)
+		}
+		for _, f := range result.Items {
+			knownFiles[f.Path] = f
+		}
+		if !result.Pagination.HasNext {
+			break
+		}
+		page++
+	}
+
 	changedPaths := []string{}
 	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			return fmt.Errorf("walk directory %q: %w", path, walkErr)
+			log.Printf("[diff] skipping inaccessible path %q: %v\n", path, walkErr)
+			return nil
 		}
 		if d.IsDir() {
 			return nil
@@ -309,13 +332,10 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 
-		existing, getErr := context.FilesService.GetFileByNameAndPath(d.Name(), path)
-		if getErr != nil {
-			if errors.Is(getErr, sql.ErrNoRows) {
-				changedPaths = append(changedPaths, path)
-				return nil
-			}
-			return fmt.Errorf("load file by name/path %q: %w", path, getErr)
+		existing, exists := knownFiles[path]
+		if !exists {
+			changedPaths = append(changedPaths, path)
+			return nil
 		}
 
 		sameSize := existing.Size == info.Size()
@@ -348,7 +368,13 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			continue
 		}
 
-		_, createErr := context.JobOrchestrator.CreateJob(buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityLow))
+		plan, planErr := buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityLow)
+		if planErr != nil {
+			log.Printf("[diff] skipping file %q: %v\n", changedPath, planErr)
+			continue
+		}
+
+		_, createErr := context.JobOrchestrator.CreateJob(plan)
 		if createErr != nil {
 			return createErr
 		}
@@ -428,14 +454,20 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 	return nil
 }
 
-func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority JobPriority) PlannedJob {
-	persistPayload := mustMarshalPayload(StepFilePayload{
+func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority JobPriority) (PlannedJob, error) {
+	persistPayload, err := marshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 		File: &fileDto,
 	})
-	commonPayload := mustMarshalPayload(StepFilePayload{
+	if err != nil {
+		return PlannedJob{}, fmt.Errorf("marshal persist payload: %w", err)
+	}
+	commonPayload, err := marshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 	})
+	if err != nil {
+		return PlannedJob{}, fmt.Errorf("marshal common payload: %w", err)
+	}
 
 	steps := []PlannedStep{
 		{
@@ -487,13 +519,13 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 			Path: fileDto.Path,
 		},
 		Steps: steps,
-	}
+	}, nil
 }
 
-func mustMarshalPayload(v any) []byte {
+func marshalPayload(v any) ([]byte, error) {
 	payload, err := json.Marshal(v)
 	if err != nil {
-		panic(fmt.Sprintf("mustMarshalPayload: %v", err))
+		return nil, fmt.Errorf("marshalPayload: %w", err)
 	}
-	return payload
+	return payload, nil
 }

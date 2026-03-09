@@ -33,6 +33,7 @@ build/
 bin/
 
 .venv
+.yarn
 
 backend/thumbnails/
 backend/scripts/logs/
