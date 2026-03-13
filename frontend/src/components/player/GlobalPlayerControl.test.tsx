@@ -6,6 +6,11 @@ const mockUseGlobalMusic = jest.fn();
 jest.mock('../providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
 
 describe('GlobalPlayerControl', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+		mockUseGlobalMusic.mockReturnValue({ hasQueue: false });
+	});
+
 	it('returns null without queue', () => {
 		mockUseGlobalMusic.mockReturnValue({ hasQueue: false });
 		const { container } = render(<GlobalPlayerControl />);

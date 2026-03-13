@@ -1,15 +1,19 @@
-import { apiBase } from '@/service';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import {
+	createActivityDiaryEntry,
+	duplicateActivityDiaryEntry,
+	getActivityDiaryEntries,
+	getActivityDiarySummary,
+} from '@/service/activityDiary';
 import {
 	ActivityDiaryContextProvider,
 	ActivityDiaryData,
 	ActivityDiaryFormData,
-	ActivityDiarySummary,
 	ActivityDiaryType,
 	messageType,
 } from './ActivityDiaryContext';
-import { Pagination } from '@/types/pagination';
 import { useSnackbar } from 'notistack';
 
 const initialFormState: ActivityDiaryFormData = {
@@ -40,6 +44,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 	const [formData, setFormData] = useReducer(reducerFormData, initialFormState);
 	const [message, setMessage] = useState<{ text: string; type: messageType } | undefined>(undefined);
 	const { enqueueSnackbar } = useSnackbar();
+	const { t } = useI18n();
 
 	const {
 		data: summaryData,
@@ -47,10 +52,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		refetch: refetchSummary,
 	} = useQuery({
 		queryKey: ['activity-diary-summary'],
-		queryFn: async (): Promise<ActivityDiarySummary> => {
-			const response = await apiBase.get<ActivityDiarySummary>('/diary/summary');
-			return response.data;
-		},
+		queryFn: getActivityDiarySummary,
 	});
 
 	const {
@@ -59,46 +61,30 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		refetch: refetchList,
 	} = useQuery({
 		queryKey: ['activity-diary-list'],
-		queryFn: async (): Promise<Pagination<ActivityDiaryData>> => {
-			const response = await apiBase.get<Pagination<ActivityDiaryData>>('/diary/');
-			return response.data;
-		},
+		queryFn: getActivityDiaryEntries,
 	});
 
 	const createDiaryMutation = useMutation({
-		mutationFn: async (form: ActivityDiaryFormData): Promise<ActivityDiaryData> => {
-			const response = await apiBase.post<ActivityDiaryData>('/diary/', {
-				name: form.name,
-				description: form.description,
-			});
-			return response.data;
-		},
+		mutationFn: (form: ActivityDiaryFormData): Promise<ActivityDiaryData> => createActivityDiaryEntry(form),
 		onSuccess: () => {
-			enqueueSnackbar('Atividade adicionada com sucesso!', { variant: 'success' });
+			enqueueSnackbar(t('ACTIVITY_CREATE_SUCCESS'), { variant: 'success' });
 			refetchList();
 			refetchSummary();
 		},
-		onError: (error) => {
-			enqueueSnackbar('Erro ao adicionar atividade.', { variant: 'error' });
-			console.error('Erro ao criar diário:', error);
+		onError: () => {
+			enqueueSnackbar(t('ACTIVITY_CREATE_ERROR'), { variant: 'error' });
 		},
 	});
 
 	const duplicateDiaryMutation = useMutation({
-		mutationFn: async (diaryId: number): Promise<ActivityDiaryData> => {
-			const response = await apiBase.post<ActivityDiaryData>('/diary/copy', {
-				ID: diaryId,
-			});
-			return response.data;
-		},
+		mutationFn: (diaryId: number): Promise<ActivityDiaryData> => duplicateActivityDiaryEntry(diaryId),
 		onSuccess: () => {
-			enqueueSnackbar('Atividade duplicada com sucesso!', { variant: 'success' });
+			enqueueSnackbar(t('ACTIVITY_DUPLICATE_SUCCESS'), { variant: 'success' });
 			refetchList();
 			refetchSummary();
 		},
-		onError: (error) => {
-			enqueueSnackbar('Erro ao duplicar atividade.', { variant: 'error' });
-			console.error('Erro ao criar diário:', error);
+		onError: () => {
+			enqueueSnackbar(t('ACTIVITY_DUPLICATE_ERROR'), { variant: 'error' });
 		},
 	});
 
@@ -114,19 +100,19 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 		(e: FormEvent) => {
 			e.preventDefault();
 			if (formData.name.length > 50) {
-				setMessage({ text: 'O nome deve ter no máximo 50 caracteres.', type: 'error' });
+				setMessage({ text: t('ACTIVITY_NAME_MAX_ERROR'), type: 'error' });
 				return;
 			}
 			if (formData.name.length < 3) {
-				setMessage({ text: 'O nome deve ter no mínimo 3 caracteres.', type: 'error' });
+				setMessage({ text: t('ACTIVITY_NAME_MIN_ERROR'), type: 'error' });
 				return;
 			}
 			if (!/^[a-zA-Z0-9 ]+$/.test(formData.name)) {
-				setMessage({ text: 'O nome só pode conter letras, números e espaços.', type: 'error' });
+				setMessage({ text: t('ACTIVITY_NAME_INVALID_ERROR'), type: 'error' });
 				return;
 			}
 			if (formData.name.trim() === '') {
-				setMessage({ text: 'O nome não pode ser vazio.', type: 'error' });
+				setMessage({ text: t('ACTIVITY_NAME_EMPTY_ERROR'), type: 'error' });
 				return;
 			}
 			if (message) {
@@ -141,7 +127,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 
 			setFormData({ type: 'RESET' });
 		},
-		[formData, createDiaryMutation, message]
+		[formData, createDiaryMutation, message, t]
 	);
 
 	const handleNameChange = ({ target }: ChangeEvent<HTMLInputElement>) => {
@@ -171,12 +157,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const contextValue: ActivityDiaryType = useMemo(
 		() => ({
-			form: formData,
-			handleSubmit,
-			handleNameChange,
-			handleDescriptionChange,
-			loading: true,
-			message: message,
+				form: formData,
+				handleSubmit,
+				handleNameChange,
+				handleDescriptionChange,
+				loading: createDiaryMutation.isPending || duplicateDiaryMutation.isPending,
+				message: message,
 			data: {
 				entries: diaryData || { items: [], pagination: { page: 1, has_next: false, has_prev: false, page_size: 10 } },
 				summary: summaryData,
@@ -192,13 +178,15 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
 			formData,
 			getCurrentDuration,
 			handleSubmit,
-			message,
-			diaryData,
-			summaryData,
-			currentTime,
-			copyActivity,
-		]
-	);
+				message,
+				diaryData,
+				summaryData,
+				currentTime,
+				copyActivity,
+				createDiaryMutation.isPending,
+				duplicateDiaryMutation.isPending,
+			]
+		);
 
 	return <ActivityDiaryContextProvider value={contextValue}>{children}</ActivityDiaryContextProvider>;
 };

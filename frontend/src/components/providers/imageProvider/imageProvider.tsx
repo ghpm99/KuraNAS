@@ -1,5 +1,4 @@
 /* eslint-disable react-refresh/only-export-components */
-import { apiBase } from '@/service';
 import { Pagination } from '@/types/pagination';
 import {
 	FetchNextPageOptions,
@@ -9,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { createContext, useContext } from 'react';
 import { useState } from 'react';
+import { getImageFiles } from '@/service/files';
 
 export interface IImageMetadata {
 	id: number;
@@ -105,12 +105,7 @@ export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
 	const [imageGroupBy, setImageGroupBy] = useState<ImageGroupBy>('date');
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['images', imageGroupBy],
-		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
-			const response = await apiBase.get<PaginationResponse>(`/files/images`, {
-				params: { page: pageParam, page_size: pageSize, group_by: imageGroupBy },
-			});
-			return response.data;
-		},
+		queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> => getImageFiles(pageParam, pageSize, imageGroupBy),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => {
 			if (lastPage.pagination.has_next) {

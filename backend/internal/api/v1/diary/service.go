@@ -3,7 +3,6 @@ package diary
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"nas-go/api/pkg/utils"
 	"time"
 )
@@ -177,7 +176,6 @@ func getLongestActivity(diaryDtos []DiaryDto) (LongestActivity, error) {
 }
 
 func (service *Service) DuplicateDiary(id int) (DiaryDto, error) {
-	fmt.Println("Duplicating diary with ID:", id)
 	filter := DiaryFilter{
 		ID: utils.Optional[int]{
 			HasValue: true,

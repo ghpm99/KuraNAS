@@ -1,5 +1,4 @@
 /* eslint-disable react-refresh/only-export-components */
-import { apiBase } from '@/service';
 import { Pagination } from '@/types/pagination';
 import { MusicView } from '@/types/music';
 import {
@@ -10,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { createContext, useContext, useState } from 'react';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
+import { getMusic } from '@/service/music';
 
 export interface IMusicMetadata {
 	id: number;
@@ -74,12 +74,7 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music'],
-		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
-			const response = await apiBase.get<PaginationResponse>(`/files/music`, {
-				params: { page: pageParam, page_size: pageSize },
-			});
-			return response.data;
-		},
+		queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> => getMusic(pageParam, pageSize),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => {
 			if (lastPage.pagination.has_next) {

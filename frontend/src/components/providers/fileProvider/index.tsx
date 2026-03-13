@@ -1,15 +1,24 @@
-import { apiBase } from '@/service';
-
 import { FileType } from '@/utils';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+	copyFilePath,
+	createFolderAtPath,
+	deleteFilePath,
+	getFilesTree,
+	getRecentAccessByFileId,
+	moveFilePath,
+	renameFilePath,
+	rescanFiles as requestFilesRescan,
+	toggleStarredFile,
+	uploadFilesToPath,
+} from '@/service/files';
 import {
 	FileContextProvider,
 	FileContextType,
 	FileData,
 	FileListCategoryType,
 	PaginationResponse,
-	RecentAccessFile,
 } from './fileContext';
 
 const pageSize = 200;
@@ -59,12 +68,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const { status, data, refetch } = useInfiniteQuery({
 		queryKey: ['files', queryParams, fileListFilter],
-		queryFn: async ({ pageParam = 1 }): Promise<PaginationResponse> => {
-			const response = await apiBase.get<PaginationResponse>(`/files/tree`, {
-				params: { ...queryParams, page: pageParam, category: fileListFilter },
-			});
-			return response.data;
-		},
+		queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
+			getFilesTree({
+				page: pageParam,
+				pageSize,
+				fileParent: selectedItemId ?? undefined,
+				category: fileListFilter,
+			}),
 		initialPageParam: 1,
 			getNextPageParam: (lastPage) => {
 				if (lastPage.pagination.hasNext) {
@@ -75,51 +85,31 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 			staleTime: 0,
 		});
 
-	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
+		const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
 			queryKey: ['filesRecent', 'tree', selectedItemId],
-		queryFn: async () => {
-			if (selectedItem?.type !== FileType.File) return [];
+			queryFn: async () => {
+				if (selectedItem?.type !== FileType.File || selectedItemId == null) return [];
 
-			const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${selectedItemId}`);
-			return response.data;
-		},
+				return getRecentAccessByFileId(selectedItemId);
+			},
 		staleTime: 0,
 	});
 
 	const { mutate: updateStarredFile } = useMutation({
-		mutationFn: async (itemId: number) => {
-			await apiBase.post(`/files/starred/${itemId}`);
-		},
+		mutationFn: (itemId: number) => toggleStarredFile(itemId),
 		onSuccess: () => {
 			refetch();
 		},
 	});
 
 	const rescanFiles = useCallback(async () => {
-		const formData = new FormData();
-		formData.append('data', 'manual-rescan');
-		await apiBase.post('/files/update', formData, {
-			headers: {
-				'Content-Type': 'multipart/form-data',
-			},
-		});
+		await requestFilesRescan();
 		await refetch();
 	}, [refetch]);
 
 	const uploadFiles = useCallback(
 		async (files: FileList, targetPath?: string) => {
-			const formData = new FormData();
-			for (const file of Array.from(files)) {
-				formData.append('files', file);
-			}
-			if (targetPath) {
-				formData.append('target_path', targetPath);
-			}
-			await apiBase.post('/files/upload', formData, {
-				headers: {
-					'Content-Type': 'multipart/form-data',
-				},
-			});
+			await uploadFilesToPath(files, targetPath);
 			await refetch();
 		},
 		[refetch],
@@ -127,10 +117,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const createFolder = useCallback(
 		async (name: string, parentPath?: string) => {
-			await apiBase.post('/files/folder', {
-				name,
-				parent_path: parentPath,
-			});
+			await createFolderAtPath(name, parentPath);
 			await refetch();
 		},
 		[refetch],
@@ -138,10 +125,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const movePath = useCallback(
 		async (sourcePath: string, destinationPath: string) => {
-			await apiBase.post('/files/move', {
-				source_path: sourcePath,
-				destination_path: destinationPath,
-			});
+			await moveFilePath(sourcePath, destinationPath);
 			await refetch();
 		},
 		[refetch],
@@ -149,10 +133,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const copyPath = useCallback(
 		async (sourcePath: string, destinationPath: string) => {
-			await apiBase.post('/files/copy', {
-				source_path: sourcePath,
-				destination_path: destinationPath,
-			});
+			await copyFilePath(sourcePath, destinationPath);
 			await refetch();
 		},
 		[refetch],
@@ -160,10 +141,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const renamePath = useCallback(
 		async (sourcePath: string, newName: string) => {
-			await apiBase.post('/files/rename', {
-				source_path: sourcePath,
-				new_name: newName,
-			});
+			await renameFilePath(sourcePath, newName);
 			await refetch();
 		},
 		[refetch],
@@ -171,9 +149,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const deletePath = useCallback(
 		async (path: string) => {
-			await apiBase.delete('/files/path', {
-				data: { path },
-			});
+			await deleteFilePath(path);
 			await refetch();
 		},
 		[refetch],

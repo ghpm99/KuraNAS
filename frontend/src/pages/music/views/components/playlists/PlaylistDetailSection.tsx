@@ -30,6 +30,12 @@ export default function PlaylistDetailSection({
 	const { t } = useI18n();
 	const { addToQueue, getMusicArtist, getMusicTitle } = usePlaylistTrackHandlers();
 	const { currentTrack, isPlaying, formatDuration, replaceQueue } = useGlobalMusic();
+	const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			onActivate();
+		}
+	};
 
 	const allFiles = tracks.map((track) => track.file);
 
@@ -80,7 +86,11 @@ export default function PlaylistDetailSection({
 								}}
 							>
 								<ListItemButton
+									component='div'
+									role='button'
+									tabIndex={0}
 									onClick={() => addToQueue(track.file)}
+									onKeyDown={(event) => handleListItemKeyDown(event, () => addToQueue(track.file))}
 									sx={{
 										borderRadius: 1,
 										py: 0.5,

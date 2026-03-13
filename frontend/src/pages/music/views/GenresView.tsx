@@ -36,6 +36,13 @@ const GenresView = () => {
 	return <GenreListView onSelect={setSelectedGenre} />;
 };
 
+const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
+	if (event.key === 'Enter' || event.key === ' ') {
+		event.preventDefault();
+		onActivate();
+	}
+};
+
 const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
@@ -81,7 +88,14 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 									'&:hover .play-overlay': { opacity: 1, transform: 'translateY(0)' },
 								}}
 							>
-								<CardActionArea onClick={() => onSelect(genre.genre)} sx={{ position: 'relative' }}>
+								<CardActionArea
+									component='div'
+									role='button'
+									tabIndex={0}
+									onClick={() => onSelect(genre.genre)}
+									onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(genre.genre))}
+									sx={{ position: 'relative' }}
+								>
 									<Box
 										sx={{
 											height: 90,
@@ -136,7 +150,7 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}
@@ -145,6 +159,7 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 };
 
 const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void }) => {
+	const { t } = useI18n();
 	const { addToQueue, replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 	const color = getGenreColor(genre);
@@ -214,7 +229,7 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}

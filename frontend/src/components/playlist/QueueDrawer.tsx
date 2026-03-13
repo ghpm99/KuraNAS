@@ -16,7 +16,7 @@ const DRAWER_WIDTH = 360;
 
 const QueueDrawer = () => {
 	const {
-		queue,
+		queue = [],
 		currentIndex,
 		queueOpen,
 		setQueueOpen,
