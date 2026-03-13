@@ -10,6 +10,7 @@ import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import TrackListItem from '@/components/music/TrackListItem';
 import CategoryHeader from '@/components/music/CategoryHeader';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const AlbumsView = () => {
 	const [selectedAlbum, setSelectedAlbum] = useState<{ album: string; artist?: string } | null>(null);
@@ -27,7 +28,15 @@ const AlbumsView = () => {
 	return <AlbumListView onSelect={(album, artist) => setSelectedAlbum({ album, artist })} />;
 };
 
+const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
+	if (event.key === 'Enter' || event.key === ' ') {
+		event.preventDefault();
+		onActivate();
+	}
+};
+
 const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string) => void }) => {
+	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -69,7 +78,11 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 							}}
 						>
 							<CardActionArea
+								component='div'
+								role='button'
+								tabIndex={0}
 								onClick={() => onSelect(album.album, album.artist)}
+								onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(album.album, album.artist))}
 								sx={{ position: 'relative' }}
 							>
 								<Box
@@ -125,7 +138,7 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}
@@ -134,6 +147,7 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 };
 
 const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: string; onBack: () => void }) => {
+	const { t } = useI18n();
 	const { addToQueue, replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
@@ -203,7 +217,7 @@ const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: st
 						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}

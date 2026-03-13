@@ -26,12 +26,12 @@ type Handler struct {
 }
 
 func NewHandler(
-	financialService ServiceInterface,
+	filesService ServiceInterface,
 	recentFileService RecentFileServiceInterface,
 	loggerService logger.LoggerServiceInterface,
 ) *Handler {
 	return &Handler{
-		service:           financialService,
+		service:           filesService,
 		Logger:            loggerService,
 		recentFileService: recentFileService,
 	}
@@ -219,7 +219,6 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 		fileParent, err := handler.service.GetFileById(fileParentId)
 		if err != nil {
 			handler.Logger.CompleteWithErrorLog(loggerModel, err)
-			fmt.Println("Error getting file by ID:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

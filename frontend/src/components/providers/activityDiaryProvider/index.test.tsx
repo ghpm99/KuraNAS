@@ -5,23 +5,44 @@ import { useActivityDiary } from './ActivityDiaryContext';
 const mockUseQuery = jest.fn();
 const mockUseMutation = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
-const mockApiGet = jest.fn();
-const mockApiPost = jest.fn();
+const mockGetActivityDiarySummary = jest.fn();
+const mockGetActivityDiaryEntries = jest.fn();
+const mockCreateActivityDiaryEntry = jest.fn();
+const mockDuplicateActivityDiaryEntry = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: (...args: any[]) => mockUseQuery(...args),
 	useMutation: (...args: any[]) => mockUseMutation(...args),
 }));
 
-jest.mock('@/service', () => ({
-	apiBase: {
-		get: (...args: any[]) => mockApiGet(...args),
-		post: (...args: any[]) => mockApiPost(...args),
-	},
+jest.mock('@/service/activityDiary', () => ({
+	getActivityDiarySummary: (...args: any[]) => mockGetActivityDiarySummary(...args),
+	getActivityDiaryEntries: (...args: any[]) => mockGetActivityDiaryEntries(...args),
+	createActivityDiaryEntry: (...args: any[]) => mockCreateActivityDiaryEntry(...args),
+	duplicateActivityDiaryEntry: (...args: any[]) => mockDuplicateActivityDiaryEntry(...args),
 }));
 
 jest.mock('notistack', () => ({
 	useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
+}));
+
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({
+		t: (key: string) =>
+			(
+				{
+					ACTIVITY_CREATE_SUCCESS: 'Atividade adicionada com sucesso!',
+					ACTIVITY_CREATE_ERROR: 'Erro ao adicionar atividade.',
+					ACTIVITY_DUPLICATE_SUCCESS: 'Atividade duplicada com sucesso!',
+					ACTIVITY_DUPLICATE_ERROR: 'Erro ao duplicar atividade.',
+					ACTIVITY_NAME_MAX_ERROR: 'O nome da atividade deve ter no máximo 50 caracteres.',
+					ACTIVITY_NAME_MIN_ERROR: 'O nome da atividade deve ter no mínimo 3 caracteres.',
+					ACTIVITY_NAME_INVALID_ERROR: 'O nome da atividade só pode conter letras e números.',
+					ACTIVITY_NAME_EMPTY_ERROR: 'O nome da atividade não pode ser vazio.',
+				} as Record<string, string>
+			)[key] ?? key,
+	}),
 }));
 
 const Harness = () => {
@@ -66,34 +87,27 @@ describe('providers/activityDiaryProvider/index', () => {
 		jest.clearAllMocks();
 		jest.spyOn(console, 'error').mockImplementation(() => {});
 
-		mockApiGet.mockImplementation((path: string) => {
-			if (path === '/diary/summary') {
-				return Promise.resolve({
-					data: {
-						date: '2026-03-04',
-						total_activities: 1,
-						total_time_spent_seconds: 120,
-					},
-				});
-			}
-			return Promise.resolve({
-				data: {
-					items: [
-						{
-							id: 1,
-							name: 'entry',
-							description: 'x',
-							start_time: '2026-03-04T00:00:00.000Z',
-							end_time: null,
-							duration: 1,
-							duration_formatted: '1s',
-						},
-					],
-					pagination: { page: 1, page_size: 10, has_next: false, has_prev: false },
-				},
-			});
+		mockGetActivityDiarySummary.mockResolvedValue({
+			date: '2026-03-04',
+			total_activities: 1,
+			total_time_spent_seconds: 120,
 		});
-		mockApiPost.mockResolvedValue({ data: { id: 99 } });
+		mockGetActivityDiaryEntries.mockResolvedValue({
+			items: [
+				{
+					id: 1,
+					name: 'entry',
+					description: 'x',
+					start_time: '2026-03-04T00:00:00.000Z',
+					end_time: null,
+					duration: 1,
+					duration_formatted: '1s',
+				},
+			],
+			pagination: { page: 1, page_size: 10, has_next: false, has_prev: false },
+		});
+		mockCreateActivityDiaryEntry.mockResolvedValue({ id: 99 });
+		mockDuplicateActivityDiaryEntry.mockResolvedValue({ id: 100 });
 
 		mockUseQuery.mockImplementation((options: any) => {
 			options.queryFn?.();
@@ -177,7 +191,10 @@ describe('providers/activityDiaryProvider/index', () => {
 		expect(screen.getByLabelText('description')).toHaveValue('');
 		expect(Number(screen.getByTestId('duration').textContent)).toBeGreaterThanOrEqual(0);
 		expect(screen.getByTestId('entries')).toHaveTextContent('1');
-		expect(mockApiPost).toHaveBeenCalled();
+		expect(mockCreateActivityDiaryEntry).toHaveBeenCalledWith({
+			name: 'valid name',
+			description: 'desc',
+		});
 	});
 
 	it('copies activity and handles mutation errors', () => {

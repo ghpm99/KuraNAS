@@ -24,8 +24,8 @@ const TechnicalInfoCard = () => {
 			await navigator.clipboard.writeText(commit_hash);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
-		} catch (err) {
-			console.error(t('COPY_ERROR'), err);
+		} catch (error) {
+			console.error('Failed to copy commit hash', error);
 		}
 	};
 

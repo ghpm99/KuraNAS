@@ -90,7 +90,7 @@ func (fileModel *FileModel) GetCheckSumFromFile() error {
 	checkSumBytes := h.Sum(nil)
 	checkSumString := fmt.Sprintf("%x", checkSumBytes)
 
-	fmt.Printf("Check sum %s, tamanho %d\n", checkSumString, len(checkSumString))
+	fileModel.CheckSum = checkSumString
 
 	return nil
 }

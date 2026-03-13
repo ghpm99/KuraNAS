@@ -16,7 +16,7 @@ const mockGetMusicByAlbum = jest.fn();
 const mockGetMusicGenres = jest.fn();
 const mockGetMusicByGenre = jest.fn();
 const mockGetMusicFolders = jest.fn();
-const mockApiGet = jest.fn();
+const mockGetMusicByFolder = jest.fn();
 const mockAddToQueue = jest.fn();
 
 jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
@@ -34,12 +34,7 @@ jest.mock('@/service/music', () => ({
 	getMusicGenres: (...args: any[]) => mockGetMusicGenres(...args),
 	getMusicByGenre: (...args: any[]) => mockGetMusicByGenre(...args),
 	getMusicFolders: (...args: any[]) => mockGetMusicFolders(...args),
-}));
-
-jest.mock('@/service', () => ({
-	apiBase: {
-		get: (...args: any[]) => mockApiGet(...args),
-	},
+	getMusicByFolder: (...args: any[]) => mockGetMusicByFolder(...args),
 }));
 
 jest.mock('@/components/music/AddToPlaylistMenu', () => (props: any) => (
@@ -109,12 +104,9 @@ beforeEach(() => {
 	mockGetMusicGenres.mockResolvedValue(makePagination([{ genre: 'genre-1', track_count: 1 }]));
 	mockGetMusicByGenre.mockResolvedValue(makePagination([track]));
 	mockGetMusicFolders.mockResolvedValue(makePagination([{ folder: '/root/folder', track_count: 1 }]));
-	mockApiGet.mockResolvedValue({
-		data: {
-			items: [track, { ...track, id: 2, path: '/other/track-2.mp3', parent_path: '/other' }],
-			pagination: { page: 1, has_next: false, has_prev: false, total_pages: 1, total_items: 2 },
-		},
-	});
+	mockGetMusicByFolder.mockResolvedValue(
+		makePagination([track, { ...track, id: 2, path: '/other/track-2.mp3', parent_path: '/other' }])
+	);
 
 	mockUseInfiniteQuery.mockImplementation((options: any) => {
 		const [key] = options.queryKey as [string, ...any[]];
@@ -191,7 +183,7 @@ describe('music views', () => {
 		render(<ArtistsView />);
 		fireEvent.click(screen.getByText('artist-1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchArtistTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('artist-1')).toBeInTheDocument();
@@ -227,7 +219,7 @@ describe('music views', () => {
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
 		expect(screen.getByText('MenuAnchor-closed')).toBeInTheDocument();
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchGenreTracks).toHaveBeenCalled();
 
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
@@ -247,7 +239,8 @@ describe('music views', () => {
 		expect(mockAddToQueue).toHaveBeenCalled();
 
 		fireEvent.click(screen.getAllByRole('button')[0]!);
-		expect(screen.getByText('/ - 2 tracks')).toBeInTheDocument();
+		expect(screen.getByText('/')).toBeInTheDocument();
+		expect(screen.getByText('2 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
 	});
 
 	it('renders loading states of artists and albums', () => {
@@ -448,20 +441,20 @@ describe('music views', () => {
 		});
 
 		const { unmount } = render(<AlbumsView />);
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchAlbumsList).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('album-1'));
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchAlbumsTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
 		unmount();
 
 		const artistsRender = render(<ArtistsView />);
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchArtistsList).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('artist-1'));
-		fireEvent.click(screen.getByText('Load more'));
+		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchArtistsTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
