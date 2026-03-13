@@ -1,58 +1,73 @@
-import {
-	CircularProgress,
-	IconButton,
-	List,
-	ListItem,
-	ListItemButton,
-	ListItemIcon,
-	ListItemText,
-} from '@mui/material';
-import { ListPlus, Music, Play } from 'lucide-react';
+import { Box, CircularProgress, IconButton, List, Typography } from '@mui/material';
+import { Play, Shuffle } from 'lucide-react';
 import { useMusic } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import TrackListItem from '@/components/music/TrackListItem';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useState } from 'react';
 
 const AllTracksView = () => {
 	const { music, hasNextPage, isFetchingNextPage, lastItemRef } = useMusic();
-	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const { addToQueue, replaceQueue } = useGlobalMusic();
 	const { t } = useI18n();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
+	const handlePlayAll = () => {
+		if (music.length > 0) replaceQueue(music);
+	};
+
+	const handleShuffleAll = () => {
+		if (music.length > 0) {
+			const shuffled = [...music].sort(() => Math.random() - 0.5);
+			replaceQueue(shuffled);
+		}
+	};
+
 	return (
 		<>
-			<List sx={{ width: '100%' }}>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, pb: 1 }}>
+				<Typography variant='h6' fontWeight={700} sx={{ flex: 1 }}>
+					{t('MUSIC_ALL_TRACKS')}
+				</Typography>
+				{music.length > 0 && (
+					<Box sx={{ display: 'flex', gap: 1 }}>
+						<IconButton
+							onClick={handlePlayAll}
+							sx={{
+								bgcolor: 'primary.main',
+								color: 'white',
+								width: 36,
+								height: 36,
+								'&:hover': { bgcolor: 'primary.light', transform: 'scale(1.05)' },
+								transition: 'all 0.2s ease',
+							}}
+						>
+							<Play size={18} fill='white' />
+						</IconButton>
+						<IconButton onClick={handleShuffleAll} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
+							<Shuffle size={18} />
+						</IconButton>
+					</Box>
+				)}
+			</Box>
+
+			<List sx={{ width: '100%', px: 1 }}>
 				{music.map((item, index) => {
 					const isLastItem = index === music.length - 1;
 					return (
-						<ListItem key={item.id} ref={isLastItem ? lastItemRef : null} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => addToQueue(item)}>
-								<ListItemIcon>
-									<Music />
-								</ListItemIcon>
-								<ListItemText
-									primary={getMusicTitle(item)}
-									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
-								/>
-								<IconButton
-									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
-									aria-label={`add ${item.name} to playlist`}
-									onClick={(e) => {
-										e.stopPropagation();
-										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
-									}}
-								>
-									<ListPlus size={18} />
-								</IconButton>
-								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }} aria-label={`play ${item.name}`}>
-									<Play />
-								</IconButton>
-							</ListItemButton>
-						</ListItem>
+						<Box key={item.id} ref={isLastItem ? lastItemRef : null}>
+							<TrackListItem
+								track={item}
+								index={index}
+								onPlay={(track) => addToQueue(track)}
+								onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
+							/>
+						</Box>
 					);
 				})}
 			</List>
+
 			<AddToPlaylistMenu
 				fileId={menuAnchor?.fileId ?? 0}
 				anchorEl={menuAnchor?.el ?? null}
@@ -60,13 +75,15 @@ const AllTracksView = () => {
 			/>
 
 			{isFetchingNextPage && (
-				<div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-					<CircularProgress size={40} />
-				</div>
+				<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+					<CircularProgress size={32} />
+				</Box>
 			)}
 
 			{!hasNextPage && music.length > 0 && (
-				<div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 14 }}>{t('MUSIC_ALL_LOADED')}</div>
+				<Typography variant='caption' color='text.secondary' sx={{ display: 'block', textAlign: 'center', p: 2 }}>
+					{t('MUSIC_ALL_LOADED')}
+				</Typography>
 			)}
 		</>
 	);
