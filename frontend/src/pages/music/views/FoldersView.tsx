@@ -1,15 +1,5 @@
-import {
-	Box,
-	CircularProgress,
-	IconButton,
-	List,
-	ListItem,
-	ListItemButton,
-	ListItemIcon,
-	ListItemText,
-	Typography,
-} from '@mui/material';
-import { ArrowLeft, Folder, ListPlus, Music, Play } from 'lucide-react';
+import { Box, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
+import { Folder, Play } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicFolders } from '@/service/music';
@@ -19,6 +9,9 @@ import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import { apiBase } from '@/service';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import TrackListItem from '@/components/music/TrackListItem';
+import CategoryHeader from '@/components/music/CategoryHeader';
+import useI18n from '@/components/i18n/provider/i18nContext';
 
 const FoldersView = () => {
 	const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -31,6 +24,9 @@ const FoldersView = () => {
 };
 
 const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) => {
+	const { t } = useI18n();
+	const { replaceQueue } = useGlobalMusic();
+
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-folders'],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicFolder>> => {
@@ -42,6 +38,20 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 
 	const folders = data?.pages.flatMap((page) => page.items) ?? [];
 
+	const getFolderName = (path: string) => {
+		const parts = path.split('/').filter(Boolean);
+		return parts[parts.length - 1] || path;
+	};
+
+	const handlePlayFolder = async (e: React.MouseEvent, folder: string) => {
+		e.stopPropagation();
+		const response = await apiBase.get<Pagination<IMusicData>>('/files/music', {
+			params: { page: 1, page_size: 500 },
+		});
+		const tracks = response.data.items.filter((item) => item.path.startsWith(folder));
+		if (tracks.length > 0) replaceQueue(tracks);
+	};
+
 	if (isLoading) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -50,44 +60,75 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 		);
 	}
 
-	const getFolderName = (path: string) => {
-		const parts = path.split('/').filter(Boolean);
-		return parts[parts.length - 1] || path;
-	};
-
 	return (
-		<List sx={{ width: '100%' }}>
-			{folders.map((folder) => (
-				<ListItem key={folder.folder} sx={{ px: 0 }}>
-					<ListItemButton onClick={() => onSelect(folder.folder)}>
-						<ListItemIcon>
-							<Folder />
-						</ListItemIcon>
-						<ListItemText
-							primary={getFolderName(folder.folder)}
-							secondary={`${folder.folder} - ${folder.track_count} tracks`}
-						/>
-					</ListItemButton>
-				</ListItem>
-			))}
+		<Box sx={{ p: 1 }}>
+			<List sx={{ width: '100%' }}>
+				{folders.map((folder) => (
+					<ListItem
+						key={folder.folder}
+						disablePadding
+						sx={{
+							'&:hover .folder-play': { opacity: 1 },
+						}}
+					>
+						<ListItemButton
+							onClick={() => onSelect(folder.folder)}
+							sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
+						>
+							<ListItemIcon sx={{ minWidth: 40 }}>
+								<Box
+									sx={{
+										width: 40,
+										height: 40,
+										borderRadius: 1,
+										bgcolor: 'rgba(99, 102, 241, 0.12)',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+									}}
+								>
+									<Folder size={20} color='#6366f1' />
+								</Box>
+							</ListItemIcon>
+							<ListItemText
+								primary={getFolderName(folder.folder)}
+								secondary={`${folder.track_count} ${t('MUSIC_TRACKS_COUNT')}`}
+								primaryTypographyProps={{ fontWeight: 500 }}
+							/>
+							<IconButton
+								className='folder-play'
+								onClick={(e) => handlePlayFolder(e, folder.folder)}
+								sx={{
+									opacity: 0,
+									transition: 'all 0.2s ease',
+									color: 'primary.main',
+									'&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)' },
+								}}
+							>
+								<Play size={18} fill='#6366f1' />
+							</IconButton>
+						</ListItemButton>
+					</ListItem>
+				))}
+			</List>
 
 			{hasNextPage && (
-				<Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+				<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
 					<Typography
 						variant='body2'
-						sx={{ cursor: 'pointer', color: 'primary.main' }}
+						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
 						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
 					</Typography>
 				</Box>
 			)}
-		</List>
+		</Box>
 	);
 };
 
 const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => void }) => {
-	const { getMusicTitle, musicMetadata, getMusicArtist, addToQueue } = useGlobalMusic();
+	const { addToQueue, replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	const { data, isLoading } = useQuery({
@@ -110,17 +151,29 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 		return parts[parts.length - 1] || path;
 	};
 
+	const handlePlayAll = () => {
+		if (tracks.length > 0) replaceQueue(tracks);
+	};
+
+	const handleShuffleAll = () => {
+		if (tracks.length > 0) {
+			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+			replaceQueue(shuffled);
+		}
+	};
+
 	return (
-		<Box>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
-				<IconButton onClick={onBack} size='small'>
-					<ArrowLeft />
-				</IconButton>
-				<Typography variant='h6'>{getFolderName(folder)}</Typography>
-				<Typography variant='caption' color='text.secondary'>
-					({tracks.length} tracks)
-				</Typography>
-			</Box>
+		<Box sx={{ p: 2 }}>
+			<CategoryHeader
+				title={getFolderName(folder)}
+				subtitle={folder}
+				trackCount={tracks.length}
+				icon={<Folder size={48} opacity={0.7} />}
+				gradientFrom='#6366f1'
+				onBack={onBack}
+				onPlayAll={handlePlayAll}
+				onShuffleAll={handleShuffleAll}
+			/>
 
 			{isLoading ? (
 				<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -128,31 +181,14 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 				</Box>
 			) : (
 				<List sx={{ width: '100%' }}>
-					{tracks.map((item) => (
-						<ListItem key={item.id} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => addToQueue(item)}>
-								<ListItemIcon>
-									<Music />
-								</ListItemIcon>
-								<ListItemText
-									primary={getMusicTitle(item)}
-									secondary={`${getMusicArtist(item)} - ${musicMetadata(item)}`}
-								/>
-								<IconButton
-									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
-									aria-label={`add ${item.name} to playlist`}
-									onClick={(e) => {
-										e.stopPropagation();
-										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
-									}}
-								>
-									<ListPlus size={18} />
-								</IconButton>
-								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }}>
-									<Play />
-								</IconButton>
-							</ListItemButton>
-						</ListItem>
+					{tracks.map((item, index) => (
+						<TrackListItem
+							key={item.id}
+							track={item}
+							index={index}
+							onPlay={(track) => addToQueue(track)}
+							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
+						/>
 					))}
 				</List>
 			)}

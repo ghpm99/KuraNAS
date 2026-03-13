@@ -12,8 +12,13 @@ export interface IGlobalMusicContext {
 	queue: IMusicData[];
 	currentIndex: number | undefined;
 	addToQueue: (track: IMusicData) => void;
+	replaceQueue: (tracks: IMusicData[], startIndex?: number) => void;
 	playTrackFromQueue: (index: number) => void;
 	clearQueue: () => void;
+	removeFromQueue: (index: number) => void;
+	queueOpen: boolean;
+	setQueueOpen: (open: boolean) => void;
+	toggleQueue: () => void;
 
 	// Playback
 	isPlaying: boolean;
@@ -52,6 +57,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	const [volume, setVolumeState] = useState(1);
 	const [shuffle, setShuffle] = useState(false);
 	const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
+	const [queueOpen, setQueueOpen] = useState(false);
 
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -199,6 +205,65 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		setDuration(0);
 	}, []);
 
+	const replaceQueue = useCallback(
+		(tracks: IMusicData[], startIndex = 0) => {
+			if (tracks.length === 0) return;
+			setQueue(tracks);
+			setCurrentIndex(startIndex);
+			const audio = audioRef.current;
+			if (audio) {
+				const track = tracks[startIndex];
+				if (track) {
+					audio.src = `${getApiV1BaseUrl()}/files/stream/${track.id}`;
+					audio.play().catch(() => {});
+					syncState({ fileId: track.id, position: 0 });
+				}
+			}
+		},
+		[syncState],
+	);
+
+	const removeFromQueue = useCallback(
+		(index: number) => {
+			setQueue((prev) => {
+				const newQueue = prev.filter((_, i) => i !== index);
+				if (newQueue.length === 0) {
+					const audio = audioRef.current;
+					if (audio) {
+						audio.pause();
+						audio.src = '';
+					}
+					setCurrentIndex(undefined);
+					setIsPlaying(false);
+					setCurrentTime(0);
+					setDuration(0);
+				} else if (currentIndex !== undefined) {
+					if (index < currentIndex) {
+						setCurrentIndex(currentIndex - 1);
+					} else if (index === currentIndex) {
+						if (currentIndex >= newQueue.length) {
+							setCurrentIndex(newQueue.length - 1);
+						}
+						const nextTrack = newQueue[Math.min(currentIndex, newQueue.length - 1)];
+						if (nextTrack) {
+							const audio = audioRef.current;
+							if (audio) {
+								audio.src = `${getApiV1BaseUrl()}/files/stream/${nextTrack.id}`;
+								audio.play().catch(() => {});
+							}
+						}
+					}
+				}
+				return newQueue;
+			});
+		},
+		[currentIndex],
+	);
+
+	const toggleQueue = useCallback(() => {
+		setQueueOpen((prev) => !prev);
+	}, []);
+
 	const togglePlayPause = useCallback(() => {
 		const audio = audioRef.current;
 		if (!audio) return;
@@ -297,8 +362,13 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 				queue,
 				currentIndex,
 				addToQueue,
+				replaceQueue,
 				playTrackFromQueue,
 				clearQueue,
+				removeFromQueue,
+				queueOpen,
+				setQueueOpen,
+				toggleQueue,
 				isPlaying,
 				currentTime,
 				duration,

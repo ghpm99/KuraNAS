@@ -1,21 +1,9 @@
-import {
-	Box,
-	Card,
-	CardActionArea,
-	CardContent,
-	CircularProgress,
-	Grid,
-	IconButton,
-	List,
-	ListItem,
-	ListItemButton,
-	ListItemIcon,
-	ListItemText,
-	Typography,
-} from '@mui/material';
-import { ArrowLeft, ListPlus, Music, Play, User } from 'lucide-react';
+import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
+import { Play, User } from 'lucide-react';
 import { useState } from 'react';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import TrackListItem from '@/components/music/TrackListItem';
+import CategoryHeader from '@/components/music/CategoryHeader';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicArtists, getMusicByArtist } from '@/service/music';
 import { MusicArtist } from '@/types/music';
@@ -34,6 +22,8 @@ const ArtistsView = () => {
 };
 
 const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) => {
+	const { replaceQueue } = useGlobalMusic();
+
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-artists'],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicArtist>> => {
@@ -45,6 +35,12 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 
 	const artists = data?.pages.flatMap((page) => page.items) ?? [];
 
+	const handlePlayArtist = async (e: React.MouseEvent, artist: string) => {
+		e.stopPropagation();
+		const data = await getMusicByArtist(artist, 1, 200);
+		if (data.items.length > 0) replaceQueue(data.items);
+	};
+
 	if (isLoading) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -54,31 +50,71 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 	}
 
 	return (
-		<Box sx={{ p: 1 }}>
+		<Box sx={{ p: 2 }}>
 			<Grid container spacing={2}>
 				{artists.map((artist) => (
-					<Grid key={artist.artist} size={{ xs: 6, sm: 4, md: 3 }}>
-						<Card sx={{ bgcolor: 'background.paper' }}>
-							<CardActionArea onClick={() => onSelect(artist.artist)}>
+					<Grid key={artist.artist} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
+						<Card
+							sx={{
+								bgcolor: 'background.paper',
+								transition: 'all 0.2s ease',
+								'&:hover': {
+									bgcolor: 'rgba(255,255,255,0.04)',
+								},
+								'&:hover .play-overlay': { opacity: 1, transform: 'translateY(0)' },
+							}}
+						>
+							<CardActionArea onClick={() => onSelect(artist.artist)} sx={{ position: 'relative' }}>
 								<Box
 									sx={{
-										height: 120,
+										pt: 2,
 										display: 'flex',
-										alignItems: 'center',
 										justifyContent: 'center',
-										bgcolor: 'primary.dark',
 									}}
 								>
-									<User size={48} opacity={0.6} />
+									<Box
+										sx={{
+											width: 100,
+											height: 100,
+											borderRadius: '50%',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											bgcolor: 'primary.dark',
+											boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+										}}
+									>
+										<User size={40} opacity={0.7} />
+									</Box>
 								</Box>
-								<CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-									<Typography variant='subtitle2' noWrap>
+								<CardContent sx={{ p: 1.5, textAlign: 'center', '&:last-child': { pb: 1.5 } }}>
+									<Typography variant='subtitle2' fontWeight={600} noWrap>
 										{artist.artist}
 									</Typography>
 									<Typography variant='caption' color='text.secondary'>
-										{artist.album_count} albums - {artist.track_count} tracks
+										{artist.album_count} albums
 									</Typography>
 								</CardContent>
+								<IconButton
+									className='play-overlay'
+									onClick={(e) => handlePlayArtist(e, artist.artist)}
+									sx={{
+										position: 'absolute',
+										bottom: 50,
+										right: 8,
+										bgcolor: 'primary.main',
+										color: 'white',
+										width: 36,
+										height: 36,
+										opacity: 0,
+										transform: 'translateY(8px)',
+										transition: 'all 0.2s ease',
+										boxShadow: '0 4px 12px rgba(99,102,241,0.4)',
+										'&:hover': { bgcolor: 'primary.light', transform: 'translateY(0) scale(1.05)' },
+									}}
+								>
+									<Play size={16} fill='white' />
+								</IconButton>
 							</CardActionArea>
 						</Card>
 					</Grid>
@@ -86,10 +122,10 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 			</Grid>
 
 			{hasNextPage && (
-				<Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+				<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
 					<Typography
 						variant='body2'
-						sx={{ cursor: 'pointer', color: 'primary.main' }}
+						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
 						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
@@ -101,7 +137,7 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 };
 
 const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => void }) => {
-	const { getMusicTitle, musicMetadata, addToQueue } = useGlobalMusic();
+	const { addToQueue, replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -115,17 +151,28 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 
 	const tracks = data?.pages.flatMap((page) => page.items) ?? [];
 
+	const handlePlayAll = () => {
+		if (tracks.length > 0) replaceQueue(tracks);
+	};
+
+	const handleShuffleAll = () => {
+		if (tracks.length > 0) {
+			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+			replaceQueue(shuffled);
+		}
+	};
+
 	return (
-		<Box>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
-				<IconButton onClick={onBack} size='small'>
-					<ArrowLeft />
-				</IconButton>
-				<Typography variant='h6'>{artist}</Typography>
-				<Typography variant='caption' color='text.secondary'>
-					({tracks.length} tracks)
-				</Typography>
-			</Box>
+		<Box sx={{ p: 2 }}>
+			<CategoryHeader
+				title={artist}
+				trackCount={tracks.length}
+				icon={<User size={48} opacity={0.7} />}
+				gradientFrom='#4f46e5'
+				onBack={onBack}
+				onPlayAll={handlePlayAll}
+				onShuffleAll={handleShuffleAll}
+			/>
 
 			{isLoading ? (
 				<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -133,28 +180,15 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 				</Box>
 			) : (
 				<List sx={{ width: '100%' }}>
-					{tracks.map((item) => (
-						<ListItem key={item.id} sx={{ px: 0 }}>
-							<ListItemButton onClick={() => addToQueue(item)}>
-								<ListItemIcon>
-									<Music />
-								</ListItemIcon>
-								<ListItemText primary={getMusicTitle(item)} secondary={musicMetadata(item)} />
-								<IconButton
-									sx={{ color: 'rgba(255, 255, 255, 0.4)' }}
-									aria-label={`add ${item.name} to playlist`}
-									onClick={(e) => {
-										e.stopPropagation();
-										setMenuAnchor({ el: e.currentTarget, fileId: item.id });
-									}}
-								>
-									<ListPlus size={18} />
-								</IconButton>
-								<IconButton sx={{ color: 'rgba(255, 255, 255, 0.54)' }}>
-									<Play />
-								</IconButton>
-							</ListItemButton>
-						</ListItem>
+					{tracks.map((item, index) => (
+						<TrackListItem
+							key={item.id}
+							track={item}
+							index={index}
+							onPlay={(track) => addToQueue(track)}
+							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
+							showArtist={false}
+						/>
 					))}
 				</List>
 			)}
@@ -169,7 +203,7 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 				<Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
 					<Typography
 						variant='body2'
-						sx={{ cursor: 'pointer', color: 'primary.main' }}
+						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
 						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}

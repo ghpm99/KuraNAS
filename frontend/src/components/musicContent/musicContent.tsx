@@ -1,17 +1,15 @@
 import { useMusic } from '../providers/musicProvider/musicProvider';
 import './musicContent.css';
-import Playlist from '../playlist/paylist';
 import AllTracksView from '@/pages/music/views/AllTracksView';
 import ArtistsView from '@/pages/music/views/ArtistsView';
 import AlbumsView from '@/pages/music/views/AlbumsView';
 import GenresView from '@/pages/music/views/GenresView';
 import FoldersView from '@/pages/music/views/FoldersView';
 import PlaylistsView from '@/pages/music/views/PlaylistsView';
-import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import QueueDrawer from '@/components/playlist/QueueDrawer';
 
 const MusicContent = () => {
 	const { currentView } = useMusic();
-	const { hasQueue } = useGlobalMusic();
 
 	const renderView = () => {
 		switch (currentView) {
@@ -36,7 +34,7 @@ const MusicContent = () => {
 			<div className='music-content'>
 				{renderView()}
 			</div>
-			{hasQueue && <Playlist />}
+			<QueueDrawer />
 		</>
 	);
 };
