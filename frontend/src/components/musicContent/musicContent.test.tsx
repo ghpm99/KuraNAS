@@ -13,11 +13,27 @@ jest.mock('@/pages/music/views/AlbumsView', () => () => <div>AlbumsView</div>);
 jest.mock('@/pages/music/views/GenresView', () => () => <div>GenresView</div>);
 jest.mock('@/pages/music/views/FoldersView', () => () => <div>FoldersView</div>);
 jest.mock('@/pages/music/views/PlaylistsView', () => () => <div>PlaylistsView</div>);
-jest.mock('../playlist/paylist', () => () => <div>Playlist</div>);
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({ t: (key: string) => key }),
+}));
 
 describe('musicContent', () => {
 	it('renders all views and queue panel branch', () => {
-		mockUseGlobalMusic.mockReturnValue({ hasQueue: true });
+		mockUseGlobalMusic.mockReturnValue({
+			hasQueue: true,
+			queue: [],
+			currentIndex: undefined,
+			queueOpen: false,
+			setQueueOpen: jest.fn(),
+			playTrackFromQueue: jest.fn(),
+			removeFromQueue: jest.fn(),
+			clearQueue: jest.fn(),
+			getMusicTitle: jest.fn(),
+			getMusicArtist: jest.fn(),
+			isPlaying: false,
+			formatDuration: jest.fn(),
+		});
 		const views = ['all', 'artists', 'albums', 'genres', 'folders', 'playlists'] as const;
 		const labels = ['AllTracksView', 'ArtistsView', 'AlbumsView', 'GenresView', 'FoldersView', 'PlaylistsView'];
 
@@ -26,9 +42,22 @@ describe('musicContent', () => {
 			render(<MusicContent />);
 			expect(screen.getByText(labels[i]!)).toBeInTheDocument();
 		});
-		expect(screen.getAllByText('Playlist').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('MUSIC_QUEUE').length).toBeGreaterThan(0);
 
-		mockUseGlobalMusic.mockReturnValue({ hasQueue: false });
+		mockUseGlobalMusic.mockReturnValue({
+			hasQueue: false,
+			queue: [],
+			currentIndex: undefined,
+			queueOpen: false,
+			setQueueOpen: jest.fn(),
+			playTrackFromQueue: jest.fn(),
+			removeFromQueue: jest.fn(),
+			clearQueue: jest.fn(),
+			getMusicTitle: jest.fn(),
+			getMusicArtist: jest.fn(),
+			isPlaying: false,
+			formatDuration: jest.fn(),
+		});
 		mockUseMusic.mockReturnValue({ currentView: 'all' });
 		render(<MusicContent />);
 		expect(screen.getAllByText('AllTracksView').length).toBeGreaterThan(0);

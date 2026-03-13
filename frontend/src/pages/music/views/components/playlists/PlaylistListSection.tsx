@@ -29,6 +29,13 @@ export default function PlaylistListSection({
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
+	const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			onActivate();
+		}
+	};
+
 	const handlePlayPlaylist = async (e: React.MouseEvent, playlist: Playlist) => {
 		e.stopPropagation();
 		const data = await getPlaylistTracks(playlist.id, 1, 200);
@@ -65,7 +72,11 @@ export default function PlaylistListSection({
 						}}
 					>
 						<ListItemButton
+							component='div'
+							role='button'
+							tabIndex={0}
 							onClick={() => onSelect(playlist)}
+							onKeyDown={(event) => handleListItemKeyDown(event, () => onSelect(playlist))}
 							sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
 						>
 							<ListItemIcon sx={{ minWidth: 40 }}>

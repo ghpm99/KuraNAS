@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"mime/multipart"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
@@ -63,6 +64,12 @@ type ServiceInterface interface {
 	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
 	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
+	UploadFiles(targetPath string, files []*multipart.FileHeader) (UploadFilesResult, error)
+	CreateFolder(parentPath string, name string) (string, error)
+	MovePath(sourcePath string, destinationPath string) (string, error)
+	DeletePath(path string) error
+	RenamePath(sourcePath string, newName string) (string, error)
+	CopyPath(sourcePath string, destinationPath string) (string, error)
 }
 
 type RecentFileRepositoryInterface interface {

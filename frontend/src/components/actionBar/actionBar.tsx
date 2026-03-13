@@ -16,7 +16,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from 'notistack';
-import { apiBase } from '@/service';
+import { downloadFileBlob } from '@/service/files';
 
 export const ActionBar = () => {
 	const { selectedItem, uploadFiles, createFolder, movePath, copyPath, renamePath, deletePath, rescanFiles } =
@@ -24,11 +24,7 @@ export const ActionBar = () => {
 	const { t } = useI18n();
 	const { enqueueSnackbar } = useSnackbar();
 	const uploadInputRef = useRef<HTMLInputElement | null>(null);
-	const [createFolderOpen, setCreateFolderOpen] = useState(false);
-	const [moveOpen, setMoveOpen] = useState(false);
-	const [copyOpen, setCopyOpen] = useState(false);
-	const [renameOpen, setRenameOpen] = useState(false);
-	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [openDialog, setOpenDialog] = useState<'createFolder' | 'move' | 'copy' | 'rename' | 'delete' | null>(null);
 	const [folderName, setFolderName] = useState('');
 	const [moveTargetDir, setMoveTargetDir] = useState('');
 	const [copyDestinationPath, setCopyDestinationPath] = useState('');
@@ -57,13 +53,13 @@ export const ActionBar = () => {
 
 	const handleCreateFolder = async () => {
 		if (folderName.trim() === '') return;
-		try {
-			await createFolder(folderName.trim(), currentDirectoryPath);
-			enqueueSnackbar(t('ACTION_CREATE_FOLDER_SUCCESS'), { variant: 'success' });
-			setCreateFolderOpen(false);
-			setFolderName('');
-		} catch {
-			enqueueSnackbar(t('ERROR_CREATE_FOLDER_FAILED'), { variant: 'error' });
+			try {
+				await createFolder(folderName.trim(), currentDirectoryPath);
+				enqueueSnackbar(t('ACTION_CREATE_FOLDER_SUCCESS'), { variant: 'success' });
+				setOpenDialog(null);
+				setFolderName('');
+			} catch {
+				enqueueSnackbar(t('ERROR_CREATE_FOLDER_FAILED'), { variant: 'error' });
 		}
 	};
 
@@ -71,81 +67,79 @@ export const ActionBar = () => {
 		if (!selectedItem) return;
 		if (moveTargetDir.trim() === '') return;
 		const destinationPath = `${moveTargetDir.trim().replace(/[\\/]+$/, '')}/${selectedItem.name}`;
-		try {
-			await movePath(selectedItem.path, destinationPath);
-			enqueueSnackbar(t('ACTION_MOVE_SUCCESS'), { variant: 'success' });
-			setMoveOpen(false);
-		} catch {
-			enqueueSnackbar(t('ERROR_MOVE_FAILED'), { variant: 'error' });
-		}
+			try {
+				await movePath(selectedItem.path, destinationPath);
+				enqueueSnackbar(t('ACTION_MOVE_SUCCESS'), { variant: 'success' });
+				setOpenDialog(null);
+			} catch {
+				enqueueSnackbar(t('ERROR_MOVE_FAILED'), { variant: 'error' });
+			}
 	};
 
 	const handleDeleteSelected = async () => {
 		if (!selectedItem) return;
-		try {
-			await deletePath(selectedItem.path);
-			enqueueSnackbar(t('ACTION_DELETE_SUCCESS'), { variant: 'success' });
-			setDeleteOpen(false);
-		} catch {
-			enqueueSnackbar(t('ERROR_DELETE_FAILED'), { variant: 'error' });
-		}
+			try {
+				await deletePath(selectedItem.path);
+				enqueueSnackbar(t('ACTION_DELETE_SUCCESS'), { variant: 'success' });
+				setOpenDialog(null);
+			} catch {
+				enqueueSnackbar(t('ERROR_DELETE_FAILED'), { variant: 'error' });
+			}
 	};
 
 	const handleCopySelected = async () => {
 		if (!selectedItem) return;
 		if (copyDestinationPath.trim() === '') return;
-		try {
-			await copyPath(selectedItem.path, copyDestinationPath.trim());
-			enqueueSnackbar(t('ACTION_COPY_SUCCESS'), { variant: 'success' });
-			setCopyOpen(false);
-		} catch {
-			enqueueSnackbar(t('ERROR_COPY_FAILED'), { variant: 'error' });
-		}
+			try {
+				await copyPath(selectedItem.path, copyDestinationPath.trim());
+				enqueueSnackbar(t('ACTION_COPY_SUCCESS'), { variant: 'success' });
+				setOpenDialog(null);
+			} catch {
+				enqueueSnackbar(t('ERROR_COPY_FAILED'), { variant: 'error' });
+			}
 	};
 
 	const handleRenameSelected = async () => {
 		if (!selectedItem) return;
 		if (renameName.trim() === '' || renameName.trim() === selectedItem.name) return;
-		try {
-			await renamePath(selectedItem.path, renameName.trim());
-			enqueueSnackbar(t('ACTION_RENAME_SUCCESS'), { variant: 'success' });
-			setRenameOpen(false);
-		} catch {
-			enqueueSnackbar(t('ERROR_RENAME_FAILED'), { variant: 'error' });
-		}
+			try {
+				await renamePath(selectedItem.path, renameName.trim());
+				enqueueSnackbar(t('ACTION_RENAME_SUCCESS'), { variant: 'success' });
+				setOpenDialog(null);
+			} catch {
+				enqueueSnackbar(t('ERROR_RENAME_FAILED'), { variant: 'error' });
+			}
 	};
 
 	const openCreateFolderDialog = () => {
 		setFolderName('');
-		setCreateFolderOpen(true);
+		setOpenDialog('createFolder');
 	};
 
 	const openMoveDialog = () => {
 		if (!selectedItem) return;
 		setMoveTargetDir(selectedItem.parent_path);
-		setMoveOpen(true);
+		setOpenDialog('move');
 	};
 
 	const openCopyDialog = () => {
 		if (!selectedItem) return;
 		const defaultTarget = `${selectedItem.parent_path.replace(/[\\/]+$/, '')}/${selectedItem.name}${t('COPY_SUFFIX')}`;
 		setCopyDestinationPath(defaultTarget);
-		setCopyOpen(true);
+		setOpenDialog('copy');
 	};
 
 	const openRenameDialog = () => {
 		if (!selectedItem) return;
 		setRenameName(selectedItem.name);
-		setRenameOpen(true);
+		setOpenDialog('rename');
 	};
 
 	const handleDownloadSelected = async () => {
 		if (!selectedItem || selectedItem.type !== FileType.File) return;
 		try {
-			const response = await apiBase.get(`/files/blob/${selectedItem.id}`, {
-				responseType: 'blob',
-			});
-			const blobUrl = URL.createObjectURL(response.data);
+			const fileBlob = await downloadFileBlob(selectedItem.id);
+			const blobUrl = URL.createObjectURL(fileBlob);
 			const link = document.createElement('a');
 			link.href = blobUrl;
 			link.download = selectedItem.name;
@@ -198,10 +192,10 @@ export const ActionBar = () => {
 					<Button
 						color='error'
 						variant='outlined'
-						size='small'
-						startIcon={<Trash2 size={16} />}
-						onClick={() => setDeleteOpen(true)}
-					>
+							size='small'
+							startIcon={<Trash2 size={16} />}
+							onClick={() => setOpenDialog('delete')}
+						>
 						{t('DELETE')}
 					</Button>
 				)}
@@ -211,7 +205,7 @@ export const ActionBar = () => {
 					</Button>
 				)}
 			</Box>
-			<Dialog open={createFolderOpen} onClose={() => setCreateFolderOpen(false)} maxWidth='sm' fullWidth>
+			<Dialog open={openDialog === 'createFolder'} onClose={() => setOpenDialog(null)} maxWidth='sm' fullWidth>
 				<DialogTitle>{t('NEW_FOLDER')}</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -224,13 +218,13 @@ export const ActionBar = () => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setCreateFolderOpen(false)}>{t('ACTION_CANCEL')}</Button>
+					<Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
 					<Button onClick={handleCreateFolder} variant='contained' disabled={folderName.trim() === ''}>
 						{t('NEW_FOLDER')}
 					</Button>
 				</DialogActions>
 			</Dialog>
-			<Dialog open={moveOpen} onClose={() => setMoveOpen(false)} maxWidth='md' fullWidth>
+			<Dialog open={openDialog === 'move'} onClose={() => setOpenDialog(null)} maxWidth='md' fullWidth>
 				<DialogTitle>{t('MOVE')}</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -243,13 +237,13 @@ export const ActionBar = () => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setMoveOpen(false)}>{t('ACTION_CANCEL')}</Button>
+					<Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
 					<Button onClick={handleMoveSelected} variant='contained' disabled={moveTargetDir.trim() === ''}>
 						{t('MOVE')}
 					</Button>
 				</DialogActions>
 			</Dialog>
-			<Dialog open={copyOpen} onClose={() => setCopyOpen(false)} maxWidth='md' fullWidth>
+			<Dialog open={openDialog === 'copy'} onClose={() => setOpenDialog(null)} maxWidth='md' fullWidth>
 				<DialogTitle>{t('COPY')}</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -262,13 +256,13 @@ export const ActionBar = () => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setCopyOpen(false)}>{t('ACTION_CANCEL')}</Button>
+					<Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
 					<Button onClick={handleCopySelected} variant='contained' disabled={copyDestinationPath.trim() === ''}>
 						{t('COPY')}
 					</Button>
 				</DialogActions>
 			</Dialog>
-			<Dialog open={renameOpen} onClose={() => setRenameOpen(false)} maxWidth='sm' fullWidth>
+			<Dialog open={openDialog === 'rename'} onClose={() => setOpenDialog(null)} maxWidth='sm' fullWidth>
 				<DialogTitle>{t('RENAME')}</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -281,7 +275,7 @@ export const ActionBar = () => {
 					/>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setRenameOpen(false)}>{t('ACTION_CANCEL')}</Button>
+					<Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
 					<Button
 						onClick={handleRenameSelected}
 						variant='contained'
@@ -291,13 +285,13 @@ export const ActionBar = () => {
 					</Button>
 				</DialogActions>
 			</Dialog>
-			<Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth='xs' fullWidth>
+			<Dialog open={openDialog === 'delete'} onClose={() => setOpenDialog(null)} maxWidth='xs' fullWidth>
 				<DialogTitle>{t('DELETE')}</DialogTitle>
 				<DialogContent>
 					<Typography variant='body2'>{t('CONFIRM_DELETE')}</Typography>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setDeleteOpen(false)}>{t('ACTION_CANCEL')}</Button>
+					<Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
 					<Button onClick={handleDeleteSelected} variant='contained' color='error'>
 						{t('DELETE')}
 					</Button>

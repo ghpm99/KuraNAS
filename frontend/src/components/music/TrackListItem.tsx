@@ -15,11 +15,14 @@ const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = tru
 	const { currentTrack, isPlaying, getMusicTitle, getMusicArtist, formatDuration } = useGlobalMusic();
 	const isCurrentTrack = currentTrack?.id === track.id;
 	const duration = track.metadata?.duration;
+	const trackTitle = getMusicTitle(track);
+	const trackArtist = getMusicArtist(track);
 
 	return (
 		<ListItem disablePadding sx={{ px: 0 }}>
 			<ListItemButton
 				onClick={() => onPlay(track)}
+				aria-label={`play ${trackTitle}`}
 				sx={{
 					borderRadius: 1,
 					py: 0.5,
@@ -80,11 +83,11 @@ const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = tru
 						fontWeight={isCurrentTrack ? 600 : 400}
 						color={isCurrentTrack ? 'primary.main' : 'text.primary'}
 					>
-						{getMusicTitle(track)}
+						{trackTitle}
 					</Typography>
 					{showArtist && (
 						<Typography variant='caption' color='text.secondary' noWrap component='div'>
-							{getMusicArtist(track)}
+							{trackArtist}
 						</Typography>
 					)}
 				</Box>
@@ -93,6 +96,7 @@ const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = tru
 				{onAddToPlaylist && (
 					<IconButton
 						size='small'
+						aria-label={`add ${trackTitle} to playlist`}
 						sx={{
 							color: 'text.secondary',
 							opacity: 0,

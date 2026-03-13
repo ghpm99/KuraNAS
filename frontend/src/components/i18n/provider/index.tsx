@@ -1,14 +1,11 @@
-import { apiBase } from '@/service';
 import { useQuery } from '@tanstack/react-query';
+import { getTranslations } from '@/service/configuration';
 import { I18nContextProvider, I18nContextType } from './i18nContext';
 
 const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 	const { status, data } = useQuery({
 		queryKey: ['configuration'],
-		queryFn: async () => {
-			const response = await apiBase.get(`/configuration/translation`);
-			return response.data;
-		},
+		queryFn: getTranslations,
 	});
 
 	const t = (key: string, options?: Record<string, string>): string => {

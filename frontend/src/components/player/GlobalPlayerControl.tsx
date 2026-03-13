@@ -28,6 +28,13 @@ const GlobalPlayerControl = () => {
 
 	if (!hasQueue) return null;
 
+	const currentTrackTitle = getMusicTitle ? getMusicTitle(currentTrack!) : currentTrack?.metadata?.title || currentTrack?.name || '';
+	const currentTrackArtist = getMusicArtist
+		? getMusicArtist(currentTrack!)
+		: currentTrack?.metadata?.artist || '';
+	const safeCurrentTime = Number.isFinite(currentTime) ? currentTime : 0;
+	const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+
 	const formatTime = (time: number): string => {
 		if (isNaN(time)) return '0:00';
 		const minutes = Math.floor(time / 60);
@@ -96,10 +103,10 @@ const GlobalPlayerControl = () => {
 					</Box>
 					<Box sx={{ minWidth: 0 }}>
 						<Typography variant='body2' fontWeight={600} noWrap>
-							{getMusicTitle(currentTrack!) }
+							{currentTrackTitle}
 						</Typography>
 						<Typography variant='caption' color='text.secondary' noWrap component='div'>
-							{getMusicArtist(currentTrack!)}
+							{currentTrackArtist}
 						</Typography>
 					</Box>
 				</Box>
@@ -107,14 +114,15 @@ const GlobalPlayerControl = () => {
 				{/* Center: Controls + Progress */}
 				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-						<IconButton onClick={toggleShuffle} size='small' sx={{ opacity: shuffle ? 1 : 0.4 }}>
+						<IconButton onClick={toggleShuffle} size='small' aria-label='toggle shuffle' sx={{ opacity: shuffle ? 1 : 0.4 }}>
 							<Shuffle size={16} />
 						</IconButton>
-						<IconButton onClick={previous} size='small'>
+						<IconButton onClick={previous} size='small' aria-label='previous track'>
 							<SkipBack size={18} />
 						</IconButton>
 						<IconButton
 							onClick={togglePlayPause}
+							aria-label={isPlaying ? 'pause playback' : 'play playback'}
 							sx={{
 								bgcolor: 'white',
 								color: 'black',
@@ -126,12 +134,13 @@ const GlobalPlayerControl = () => {
 						>
 							{isPlaying ? <Pause size={18} /> : <Play size={18} style={{ marginLeft: 2 }} />}
 						</IconButton>
-						<IconButton onClick={next} size='small'>
+						<IconButton onClick={next} size='small' aria-label='next track'>
 							<SkipForward size={18} />
 						</IconButton>
 						<IconButton
 							onClick={cycleRepeatMode}
 							size='small'
+							aria-label='change repeat mode'
 							sx={{
 								opacity: repeatMode !== 'none' ? 1 : 0.4,
 								color: repeatMode !== 'none' ? 'primary.main' : undefined,
@@ -146,8 +155,9 @@ const GlobalPlayerControl = () => {
 						</Typography>
 						<Slider
 							size='small'
-							value={currentTime}
-							max={duration || 100}
+							aria-label='seek playback'
+							value={safeCurrentTime}
+							max={safeDuration || 100}
 							onChange={(_, value) => seek(value as number)}
 							sx={{
 								flexGrow: 1,
@@ -174,6 +184,7 @@ const GlobalPlayerControl = () => {
 					<IconButton
 						size='small'
 						onClick={toggleQueue}
+						aria-label='toggle queue'
 						sx={{
 							color: queueOpen ? 'primary.main' : 'text.secondary',
 							'&:hover': { color: queueOpen ? 'primary.light' : 'text.primary' },
@@ -185,11 +196,13 @@ const GlobalPlayerControl = () => {
 						<IconButton
 							size='small'
 							onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
+							aria-label={volume === 0 ? 'unmute volume' : 'mute volume'}
 						>
 							{volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
 						</IconButton>
 						<Slider
 							size='small'
+							aria-label='set volume'
 							value={volume}
 							max={1}
 							step={0.01}

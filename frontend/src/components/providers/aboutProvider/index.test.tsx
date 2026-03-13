@@ -2,12 +2,10 @@ import { act, render, screen } from '@testing-library/react';
 import { AboutProvider } from './index';
 import { useAbout } from './AboutContext';
 import { useQuery } from '@tanstack/react-query';
-import { apiBase } from '@/service';
+import { getAboutConfiguration } from '@/service/configuration';
 
-jest.mock('@/service', () => ({
-	apiBase: {
-		get: jest.fn(),
-	},
+jest.mock('@/service/configuration', () => ({
+	getAboutConfiguration: jest.fn(),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
@@ -20,7 +18,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 }));
 
 const mockedUseQuery = useQuery as jest.Mock;
-const mockedApiGet = apiBase.get as jest.Mock;
+const mockedGetAboutConfiguration = getAboutConfiguration as jest.Mock;
 
 function Consumer() {
 	const about = useAbout();
@@ -37,7 +35,7 @@ describe('providers/aboutProvider/index', () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date('2025-01-01T00:00:10Z'));
 		jest.clearAllMocks();
-		mockedApiGet.mockResolvedValue({ status: 200, data: {} });
+		mockedGetAboutConfiguration.mockResolvedValue({});
 	});
 
 	afterEach(() => {
@@ -99,7 +97,7 @@ describe('providers/aboutProvider/index', () => {
 	});
 
 	it('executes queryFn and returns API payload on success status', async () => {
-		mockedApiGet.mockResolvedValueOnce({ status: 200, data: { version: '3.0.0' } });
+		mockedGetAboutConfiguration.mockResolvedValueOnce({ version: '3.0.0' });
 		mockedUseQuery.mockReturnValue({ data: undefined });
 
 		render(
@@ -110,11 +108,11 @@ describe('providers/aboutProvider/index', () => {
 
 		const options = mockedUseQuery.mock.calls[0][0];
 		await expect(options.queryFn()).resolves.toEqual({ version: '3.0.0' });
-		expect(mockedApiGet).toHaveBeenCalledWith('configuration/about');
+		expect(mockedGetAboutConfiguration).toHaveBeenCalled();
 	});
 
-	it('executes queryFn and throws for non-200 status', async () => {
-		mockedApiGet.mockResolvedValueOnce({ status: 500, data: {} });
+	it('propagates service errors from queryFn', async () => {
+		mockedGetAboutConfiguration.mockRejectedValueOnce(new Error('configuration failed'));
 		mockedUseQuery.mockReturnValue({ data: undefined });
 
 		render(
@@ -124,6 +122,6 @@ describe('providers/aboutProvider/index', () => {
 		);
 
 		const options = mockedUseQuery.mock.calls[0][0];
-		await expect(options.queryFn()).rejects.toThrow('Network response was not ok');
+		await expect(options.queryFn()).rejects.toThrow('configuration failed');
 	});
 });
