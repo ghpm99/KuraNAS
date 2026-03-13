@@ -28,7 +28,7 @@ export const useFullscreen = (): UseFullscreenReturn => {
 		};
 
 		const handleFullscreenError = (event: Event) => {
-			console.error('Fullscreen error:', event);
+			console.error('Fullscreen error', event);
 		};
 
 		document.addEventListener('fullscreenchange', handleFullscreenChange);

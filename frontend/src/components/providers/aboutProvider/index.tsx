@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { AboutContext, AboutContextType } from './AboutContext';
-import { apiBase } from '@/service';
 import { useEffect, useState } from 'react';
 import { formatDuration } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { getAboutConfiguration } from '@/service/configuration';
 
 const initialAboutContext: AboutContextType = {
 	version: '',
@@ -34,13 +34,7 @@ export const AboutProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const { data } = useQuery({
 		queryKey: ['about'],
-		queryFn: async () => {
-			const response = await apiBase.get<AboutContextType>('configuration/about');
-			if (response.status !== 200) {
-				throw new Error('Network response was not ok');
-			}
-			return response.data;
-		},
+		queryFn: getAboutConfiguration,
 		refetchOnWindowFocus: false,
 	});
 

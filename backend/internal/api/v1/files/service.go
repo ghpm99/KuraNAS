@@ -103,7 +103,6 @@ func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.Pag
 func (s *Service) getDirectoryContentCount(file FileDto) int {
 	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
 	if err != nil {
-		fmt.Println(err)
 		return 0
 	}
 

@@ -8,6 +8,9 @@ const PlayerControl = () => {
 	const { queue, currentIndex, isPlaying, currentTime, duration, volume, next, previous, seek, setVolume, togglePlayPause } =
 		useGlobalMusic();
 	const { t } = useI18n();
+	const safeCurrentTime = Number.isFinite(currentTime) ? currentTime : 0;
+	const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+	const safeVolume = Number.isFinite(volume) ? volume : 0;
 
 	const formatTime = (time: number): string => {
 		if (isNaN(time)) return '0:00';
@@ -79,8 +82,8 @@ const PlayerControl = () => {
 						</Typography>
 						<Slider
 							size='small'
-							value={currentTime}
-							max={duration || 100}
+							value={safeCurrentTime}
+							max={safeDuration || 100}
 							onChange={(_, value) => seek(value as number)}
 							sx={{ flexGrow: 1 }}
 						/>
@@ -94,7 +97,7 @@ const PlayerControl = () => {
 						<Volume2 size={20} />
 						<Slider
 							size='small'
-							value={volume}
+							value={safeVolume}
 							max={1}
 							step={0.1}
 							onChange={(_, value) => setVolume(value as number)}

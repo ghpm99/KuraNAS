@@ -24,7 +24,7 @@ func (handler *Handler) GetOverviewHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_INVALID_PERIOD")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_LOAD")})
 		return
 	}
 

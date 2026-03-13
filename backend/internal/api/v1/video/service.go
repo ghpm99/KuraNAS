@@ -14,6 +14,17 @@ type Service struct {
 	PlaylistEngine *playlist.PlaylistEngine
 }
 
+var (
+	ErrVideoNotInPlaylist      = errors.New("video not in selected playlist")
+	ErrPlaybackStateNotFound   = errors.New("playback state not found")
+	ErrInvalidBehaviorEvent    = errors.New("invalid behavior event")
+	ErrPlaylistNameRequired    = errors.New("playlist name is required")
+	ErrPlaylistReorderRequired = errors.New("playlist reorder items are required")
+	ErrNoVideosForContext      = errors.New("no videos found for context")
+	ErrPlaybackNavigation      = errors.New("playback navigation unavailable")
+	ErrPlaylistWithoutItems    = errors.New("playlist has no items")
+)
+
 func NewService(repository RepositoryInterface) ServiceInterface {
 	return &Service{
 		Repository:     repository,
@@ -46,7 +57,7 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 			return PlaybackSessionDto{}, checkErr
 		}
 		if !inPlaylist {
-			return PlaybackSessionDto{}, errors.New("video nao pertence a playlist selecionada")
+			return PlaybackSessionDto{}, ErrVideoNotInPlaylist
 		}
 	} else {
 		pl, err = s.ensureContextPlaylist(string(ContextFolder), videoFile.ParentPath)
@@ -99,7 +110,7 @@ func (s *Service) GetPlaybackState(clientID string) (PlaybackSessionDto, error) 
 		return PlaybackSessionDto{}, err
 	}
 	if !state.PlaylistID.Valid {
-		return PlaybackSessionDto{}, errors.New("estado sem playlist ativa")
+		return PlaybackSessionDto{}, ErrPlaybackStateNotFound
 	}
 
 	pl, err := s.playlistByIDAndClient(state)
@@ -202,7 +213,7 @@ func (s *Service) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequ
 		string(playlist.EventAbandoned): true,
 	}
 	if !validEvents[req.EventType] {
-		return fmt.Errorf("tipo de evento invalido: %s", req.EventType)
+		return fmt.Errorf("%w: %s", ErrInvalidBehaviorEvent, req.EventType)
 	}
 
 	watchedPct := 0.0
@@ -522,7 +533,7 @@ func (s *Service) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
 func (s *Service) UpdatePlaylistName(playlistID int, name string) error {
 	trimmed := strings.TrimSpace(name)
 	if trimmed == "" {
-		return errors.New("nome da playlist nao pode ser vazio")
+		return ErrPlaylistNameRequired
 	}
 
 	return s.withTransaction(func(tx *sql.Tx) error {
@@ -532,7 +543,7 @@ func (s *Service) UpdatePlaylistName(playlistID int, name string) error {
 
 func (s *Service) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error {
 	if len(items) == 0 {
-		return errors.New("nenhum item enviado para reordenacao")
+		return ErrPlaylistReorderRequired
 	}
 
 	seenVideo := map[int]bool{}
@@ -576,7 +587,7 @@ func (s *Service) ensureContextPlaylist(contextType string, sourcePath string) (
 		return VideoPlaylistModel{}, err
 	}
 	if len(videos) == 0 {
-		return VideoPlaylistModel{}, errors.New("nenhum video encontrado para o contexto")
+		return VideoPlaylistModel{}, ErrNoVideosForContext
 	}
 
 	if pl.ID == 0 {
@@ -649,7 +660,7 @@ func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSession
 		return PlaybackSessionDto{}, err
 	}
 	if !state.PlaylistID.Valid || !state.VideoID.Valid {
-		return PlaybackSessionDto{}, errors.New("sem video ativo para avancar ou retroceder")
+		return PlaybackSessionDto{}, ErrPlaybackNavigation
 	}
 
 	pl, err := s.playlistByIDAndClient(state)
@@ -662,7 +673,7 @@ func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSession
 		return PlaybackSessionDto{}, err
 	}
 	if len(items) == 0 {
-		return PlaybackSessionDto{}, errors.New("playlist sem itens")
+		return PlaybackSessionDto{}, ErrPlaylistWithoutItems
 	}
 
 	currentIndex := -1

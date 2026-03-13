@@ -2,12 +2,11 @@ import { Box, CircularProgress, IconButton, List, ListItem, ListItemButton, List
 import { Folder, Play } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getMusicFolders } from '@/service/music';
+import { getMusicByFolder, getMusicFolders } from '@/service/music';
 import { MusicFolder } from '@/types/music';
 import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
-import { apiBase } from '@/service';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import TrackListItem from '@/components/music/TrackListItem';
 import CategoryHeader from '@/components/music/CategoryHeader';
@@ -21,6 +20,13 @@ const FoldersView = () => {
 	}
 
 	return <FolderListView onSelect={setSelectedFolder} />;
+};
+
+const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
+	if (event.key === 'Enter' || event.key === ' ') {
+		event.preventDefault();
+		onActivate();
+	}
 };
 
 const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) => {
@@ -45,10 +51,8 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 
 	const handlePlayFolder = async (e: React.MouseEvent, folder: string) => {
 		e.stopPropagation();
-		const response = await apiBase.get<Pagination<IMusicData>>('/files/music', {
-			params: { page: 1, page_size: 500 },
-		});
-		const tracks = response.data.items.filter((item) => item.path.startsWith(folder));
+		const data = await getMusicByFolder(folder, 1, 500);
+		const tracks = data.items;
 		if (tracks.length > 0) replaceQueue(tracks);
 	};
 
@@ -72,7 +76,11 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 						}}
 					>
 						<ListItemButton
+							component='div'
+							role='button'
+							tabIndex={0}
 							onClick={() => onSelect(folder.folder)}
+							onKeyDown={(event) => handleListItemKeyDown(event, () => onSelect(folder.folder))}
 							sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
 						>
 							<ListItemIcon sx={{ minWidth: 40 }}>
@@ -119,7 +127,7 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 						sx={{ cursor: 'pointer', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
 						onClick={() => fetchNextPage()}
 					>
-						{isFetchingNextPage ? <CircularProgress size={20} /> : 'Load more'}
+						{isFetchingNextPage ? <CircularProgress size={20} /> : t('ACTION_LOAD_MORE')}
 					</Typography>
 				</Box>
 			)}
@@ -133,15 +141,7 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['music-by-folder', folder],
-		queryFn: async (): Promise<Pagination<IMusicData>> => {
-			const response = await apiBase.get<Pagination<IMusicData>>('/files/music', {
-				params: { page: 1, page_size: 500 },
-			});
-			return {
-				...response.data,
-				items: response.data.items.filter((item) => item.path.startsWith(folder)),
-			};
-		},
+		queryFn: (): Promise<Pagination<IMusicData>> => getMusicByFolder(folder, 1, 500),
 	});
 
 	const tracks = data?.items ?? [];

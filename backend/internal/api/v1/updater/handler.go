@@ -32,7 +32,7 @@ func (handler *Handler) GetUpdateStatusHandler(c *gin.Context) {
 	status, err := handler.service.CheckForUpdate()
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_UPDATE_STATUS")})
 		return
 	}
 
@@ -51,7 +51,7 @@ func (handler *Handler) ApplyUpdateHandler(c *gin.Context) {
 
 	if err := handler.service.DownloadAndApply(); err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_UPDATE_APPLY")})
 		return
 	}
 
