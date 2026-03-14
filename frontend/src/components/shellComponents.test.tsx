@@ -11,9 +11,12 @@ import Card from '@/components/ui/Card/Card';
 import Message from '@/components/ui/Message/Message';
 import FileCard from '@/components/fileCard/fileCard';
 import AboutPage from '@/pages/about';
+import FavoritesPage from '@/pages/favorites';
 import FilesPage from '@/pages/files';
+import HomePage from '@/pages/home';
 import ImagesPage from '@/pages/images';
 import MusicPage from '@/pages/music';
+import SettingsPage from '@/pages/settings';
 import VideosPage from '@/pages/videos/videos';
 import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
 import AnalyticsPage from '@/pages/analytics';
@@ -126,7 +129,7 @@ beforeEach(() => {
 		files: [],
 	});
 	mockUseUI.mockReturnValue({ activePage: 'files', setActivePage: jest.fn() });
-	mockUseLocation.mockReturnValue({ pathname: '/', state: null });
+	mockUseLocation.mockReturnValue({ pathname: '/files', state: null });
 	mockUseParams.mockReturnValue({ id: '10' });
 	mockUseAnalyticsOverview.mockReturnValue({
 		period: '7d',
@@ -182,7 +185,7 @@ beforeEach(() => {
 
 describe('shell components and pages', () => {
 	it('renders header, layout and sidebar', () => {
-		render(<Header showClock currentTime={new Date('2026-01-01T00:00:00Z')} />);
+		render(<Header showClock />);
 		expect(screen.getByPlaceholderText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
 		expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
 
@@ -198,7 +201,7 @@ describe('shell components and pages', () => {
 	});
 
 	it('renders nav item, tabs, action bar and active page listener', () => {
-		render(<NavItem href='/' icon={<span>x</span>}>Home</NavItem>);
+		render(<NavItem href='/files' icon={<span>x</span>}>Home</NavItem>);
 		expect(screen.getByText('Home')).toBeInTheDocument();
 
 		render(<Tabs />);
@@ -209,6 +212,18 @@ describe('shell components and pages', () => {
 
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('files');
+
+		mockUseLocation.mockReturnValueOnce({ pathname: '/home' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('home');
+
+		mockUseLocation.mockReturnValueOnce({ pathname: '/favorites' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('favorites');
+
+		mockUseLocation.mockReturnValueOnce({ pathname: '/settings' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('settings');
 
 		mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
 		render(<ActivePageListener />);
@@ -236,9 +251,17 @@ describe('shell components and pages', () => {
 	});
 
 	it('renders composition pages and video back behavior', () => {
+		render(<HomePage />);
+		expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
+		expect(screen.getByText('HOME_PAGE_TITLE')).toBeInTheDocument();
+
 		render(<FilesPage />);
 		expect(screen.getByTestId('files-layout')).toBeInTheDocument();
 		expect(screen.getByText('FileContentMock')).toBeInTheDocument();
+
+		render(<FavoritesPage />);
+		expect(screen.getAllByTestId('files-layout').length).toBeGreaterThan(0);
+		expect(mockUseFile().setFileListFilter).toHaveBeenCalledWith('starred');
 
 		render(<ImagesPage />);
 		expect(screen.getByTestId('images-layout')).toBeInTheDocument();
@@ -254,8 +277,11 @@ describe('shell components and pages', () => {
 		expect(screen.getByText('SystemInfoCard')).toBeInTheDocument();
 
 		render(<AnalyticsPage />);
-		expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
+		expect(screen.getAllByTestId('analytics-layout').length).toBeGreaterThan(0);
 		expect(screen.getByText('ANALYTICS_PAGE_TITLE')).toBeInTheDocument();
+
+		render(<SettingsPage />);
+		expect(screen.getByText('SETTINGS_PAGE_TITLE')).toBeInTheDocument();
 
 		render(<VideoPlayerPage />);
 		expect(screen.getByText('VideoControlsMock')).toBeInTheDocument();
