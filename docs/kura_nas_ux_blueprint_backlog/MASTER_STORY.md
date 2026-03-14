@@ -12,8 +12,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 ## Snapshot atual
 
 - Status geral: `IN_PROGRESS`
-- Fase atual recomendada: `Fundacao`
-- Proxima task recomendada: `TASK-003`
+- Fase atual recomendada: `Explorer`
+- Proxima task recomendada: `TASK-004`
 
 ## Quadro de tasks
 
@@ -21,7 +21,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | --- | --- | --- | --- |
 | TASK-001 | Migrar IA global e rotas base | DONE | Fundacao |
 | TASK-002 | Criar tokens visuais e AppShell unificado | DONE | Fundacao |
-| TASK-003 | Entregar Home hub v1 | TODO | Fundacao |
+| TASK-003 | Entregar Home hub v1 | DONE | Fundacao |
 | TASK-004 | Refatorar a estrutura da pagina Arquivos | TODO | Explorer |
 | TASK-005 | Tornar a abertura de midia transversal e consistente | TODO | Explorer |
 | TASK-006 | Criar Favoritos v1 como dominio proprio | TODO | Explorer |
@@ -46,6 +46,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-13 | STORY-SETUP | Backlog inicial criado a partir do blueprint e do codigo atual. | Adicionados diagnostico, backlog faseado e master story em `docs/kura_nas_ux_blueprint_backlog/`. |
 | 2026-03-13 | TASK-001 | Rotas base e navegacao principal migradas para Home, Files, Favorites e Settings. | Frontend recebeu novas rotas `/home`, `/files`, `/favorites` e `/settings`, com redirects de `/` e `/starred`, Home/Settings iniciais, atualizacao da navegacao e i18n compartilhado. |
 | 2026-03-13 | TASK-002 | Tema global, tokens visuais e AppShell foram unificados para as paginas principais. | Frontend recebeu tokens centralizados, novo `AppShell`, topbar/sidebar modulares, desacoplamento do `ActivityDiaryProvider` e atualizacao de i18n/testes do shell. |
+| 2026-03-14 | TASK-003 | Home v1 passou a combinar continuidade de musica e video, recentes e estado do NAS. | Frontend ganhou busca local no hub, cards responsivos com dados de `analytics`, `video` e `music`, novos textos i18n compartilhados e cobertura de testes para o fluxo inicial. |
 
 ## Como atualizar ao concluir uma task
 
@@ -59,5 +60,6 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 Nenhuma task deve ser considerada concluida sem:
 
 - ajuste de i18n quando houver texto novo
-- testes/validacao minima do escopo alterado
+- testes/validacao de 100% do escopo alterado
+- não estar de acordo com o clean code e as boas praticas no desenvolvimento de software
 - atualizacao desta story principal
