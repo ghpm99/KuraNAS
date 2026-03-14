@@ -4,6 +4,7 @@ import { IMusicData, IMusicMetadata } from './musicProvider/musicProvider';
 import { updatePlayerState } from '@/service/playerState';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { formatSize } from '@/utils';
+import type { MusicPlaybackContext } from '@/components/music/playbackContext';
 
 type RepeatMode = 'none' | 'all' | 'one';
 
@@ -11,14 +12,15 @@ export interface IGlobalMusicContext {
 	// Queue
 	queue: IMusicData[];
 	currentIndex: number | undefined;
-	addToQueue: (track: IMusicData) => void;
-	replaceQueue: (tracks: IMusicData[], startIndex?: number) => void;
+	addToQueue: (track: IMusicData, playbackContext?: MusicPlaybackContext) => void;
+	replaceQueue: (tracks: IMusicData[], startIndex?: number, playbackContext?: MusicPlaybackContext) => void;
 	playTrackFromQueue: (index: number) => void;
 	clearQueue: () => void;
 	removeFromQueue: (index: number) => void;
 	queueOpen: boolean;
 	setQueueOpen: (open: boolean) => void;
 	toggleQueue: () => void;
+	playbackContext?: MusicPlaybackContext;
 
 	// Playback
 	isPlaying: boolean;
@@ -79,6 +81,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	const [shuffle, setShuffle] = useState(false);
 	const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
 	const [queueOpen, setQueueOpen] = useState(false);
+	const [playbackContext, setPlaybackContext] = useState<MusicPlaybackContext | undefined>(undefined);
 
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,13 +118,14 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
 	// Debounced sync to backend
 	const syncState = useCallback(
-		(overrides?: { fileId?: number | null; position?: number; vol?: number }) => {
+		(overrides?: { fileId?: number | null; position?: number; vol?: number; playlistId?: number | null }) => {
 			if (syncTimeoutRef.current) {
 				clearTimeout(syncTimeoutRef.current);
 			}
 			syncTimeoutRef.current = setTimeout(() => {
 				const track = currentIndex !== undefined ? queue[currentIndex] : undefined;
 				updatePlayerState({
+					playlist_id: overrides?.playlistId !== undefined ? overrides.playlistId : (playbackContext?.playlistId ?? null),
 					current_file_id: overrides?.fileId !== undefined ? overrides.fileId : (track?.id ?? null),
 					current_position: overrides?.position !== undefined ? overrides.position : (audioRef.current?.currentTime ?? 0),
 					volume: overrides?.vol !== undefined ? overrides.vol : volume,
@@ -132,7 +136,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 				});
 			}, 2000);
 		},
-		[currentIndex, queue, volume, shuffle, repeatMode],
+		[currentIndex, queue, volume, shuffle, repeatMode, playbackContext],
 	);
 
 	const loadAndPlay = useCallback(
@@ -189,7 +193,10 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	}, [handleTrackEnded]);
 
 	const addToQueue = useCallback(
-		(track: IMusicData) => {
+		(track: IMusicData, nextPlaybackContext?: MusicPlaybackContext) => {
+			if (currentIndex === undefined && nextPlaybackContext) {
+				setPlaybackContext(nextPlaybackContext);
+			}
 			setQueue((prev) => {
 				if (prev.some((t) => t.id === track.id)) return prev;
 				const newQueue = [...prev, track];
@@ -224,20 +231,26 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		setIsPlaying(false);
 		setCurrentTime(0);
 		setDuration(0);
+		setPlaybackContext(undefined);
 	}, []);
 
 	const replaceQueue = useCallback(
-		(tracks: IMusicData[], startIndex = 0) => {
+		(tracks: IMusicData[], startIndex = 0, nextPlaybackContext?: MusicPlaybackContext) => {
 			if (tracks.length === 0) return;
 			setQueue(tracks);
 			setCurrentIndex(startIndex);
+			setPlaybackContext(nextPlaybackContext);
 			const audio = audioRef.current;
 			if (audio) {
 				const track = tracks[startIndex];
 				if (track) {
 					audio.src = `${getApiV1BaseUrl()}/files/stream/${track.id}`;
 					audio.play().catch(() => {});
-					syncState({ fileId: track.id, position: 0 });
+					syncState({
+						fileId: track.id,
+						position: 0,
+						playlistId: nextPlaybackContext?.playlistId ?? null,
+					});
 				}
 			}
 		},
@@ -258,6 +271,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 					setIsPlaying(false);
 					setCurrentTime(0);
 					setDuration(0);
+					setPlaybackContext(undefined);
 				} else if (currentIndex !== undefined) {
 					if (index < currentIndex) {
 						setCurrentIndex(currentIndex - 1);
@@ -354,7 +368,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	// Sync state when shuffle/repeat changes
 	useEffect(() => {
 		syncState();
-	}, [shuffle, repeatMode, syncState]);
+	}, [shuffle, repeatMode, playbackContext, syncState]);
 
 	return (
 		<GlobalMusicContext.Provider
@@ -369,6 +383,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 				queueOpen,
 				setQueueOpen,
 				toggleQueue,
+				playbackContext,
 				isPlaying,
 				currentTime,
 				duration,

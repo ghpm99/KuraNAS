@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AllTracksView from './AllTracksView';
 import ArtistsView from './ArtistsView';
 import AlbumsView from './AlbumsView';
@@ -17,7 +17,7 @@ const mockGetMusicGenres = jest.fn();
 const mockGetMusicByGenre = jest.fn();
 const mockGetMusicFolders = jest.fn();
 const mockGetMusicByFolder = jest.fn();
-const mockAddToQueue = jest.fn();
+const mockReplaceQueue = jest.fn();
 
 jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
@@ -89,7 +89,7 @@ beforeEach(() => {
 		getMusicTitle: (m: any) => m.name,
 		getMusicArtist: (m: any) => m.artist ?? 'artist',
 		musicMetadata: () => 'meta',
-		addToQueue: mockAddToQueue,
+		replaceQueue: mockReplaceQueue,
 	});
 	mockUseMusic.mockReturnValue({
 		music: [track],
@@ -158,13 +158,13 @@ describe('music views', () => {
 		expect(screen.getByText('MUSIC_ALL_LOADED')).toBeInTheDocument();
 
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		fireEvent.click(screen.getAllByRole('button', { name: 'close-menu' })[0]!);
 	});
 
-	it('renders artists list/detail flow, load-more and back', () => {
+	it('renders artists list/detail flow, load-more and back', async () => {
 		const fetchArtistTracks = jest.fn();
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
@@ -180,29 +180,46 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		render(<ArtistsView />);
+		const { container } = render(<ArtistsView />);
+		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
+		await waitFor(() => {
+			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		});
+
 		fireEvent.click(screen.getByText('artist-1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
+		const artistDetailButtons = screen.getAllByRole('button');
+		fireEvent.click(artistDetailButtons[1]!);
+		fireEvent.click(artistDetailButtons[2]!);
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		expect(mockReplaceQueue).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchArtistTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('artist-1')).toBeInTheDocument();
 	});
 
-	it('renders albums flow and exercises track actions', () => {
-		render(<AlbumsView />);
+	it('renders albums flow and exercises track actions', async () => {
+		const { container } = render(<AlbumsView />);
+		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
+		await waitFor(() => {
+			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		});
 		fireEvent.click(screen.getByText('album-1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
+		const detailButtons = screen.getAllByRole('button');
+		fireEvent.click(detailButtons[1]!);
+		fireEvent.click(detailButtons[2]!);
 
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockAddToQueue).toHaveBeenCalled();
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
 		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('album-2')).toBeInTheDocument();
 	});
 
-	it('renders genres flow, detail load-more and menu click', () => {
+	it('renders genres flow, detail load-more and menu click', async () => {
 		const fetchGenreTracks = jest.fn();
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
@@ -214,11 +231,18 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		render(<GenresView />);
+		const { container } = render(<GenresView />);
+		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
+		await waitFor(() => {
+			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		});
 		fireEvent.click(screen.getByText('genre-1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
 		expect(screen.getByText('MenuAnchor-closed')).toBeInTheDocument();
+		const detailButtons = screen.getAllByRole('button');
+		fireEvent.click(detailButtons[1]!);
+		fireEvent.click(detailButtons[2]!);
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchGenreTracks).toHaveBeenCalled();
 
@@ -229,14 +253,25 @@ describe('music views', () => {
 		expect(screen.getByText('MenuAnchor-closed')).toBeInTheDocument();
 	});
 
-	it('renders folders flow and folder filter/query path', () => {
-		render(<FoldersView />);
+	it('renders folders flow and folder filter/query path', async () => {
+		const { container } = render(<FoldersView />);
+		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
+		await waitFor(() => {
+			expect(mockReplaceQueue).toHaveBeenCalledWith(
+				[expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })],
+				0,
+				expect.any(Object),
+			);
+		});
 		fireEvent.click(screen.getByText('folder'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
+		const detailButtons = screen.getAllByRole('button');
+		fireEvent.click(detailButtons[1]!);
+		fireEvent.click(detailButtons[2]!);
 
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockAddToQueue).toHaveBeenCalled();
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
 		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(screen.getByText('/')).toBeInTheDocument();
@@ -466,5 +501,96 @@ describe('music views', () => {
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'close-menu' }));
 		expect(screen.getByText('MenuAnchor-closed')).toBeInTheDocument();
+	});
+
+	it('covers genre keyboard navigation and play overlay with empty responses', async () => {
+		mockUseInfiniteQuery.mockImplementation((options: any) => {
+			const [key] = options.queryKey;
+			options.queryFn?.({});
+			options.queryFn?.({ pageParam: 1 });
+			if (key === 'music-genres') {
+				return {
+					data: { pages: [makePagination([{ genre: 'genre-1', track_count: 1 }], true)] },
+					isLoading: false,
+					fetchNextPage: jest.fn(),
+					hasNextPage: true,
+					isFetchingNextPage: false,
+				};
+			}
+			if (key === 'music-by-genre') {
+				return makeInfiniteResult([], false);
+			}
+			return makeInfiniteResult([]);
+		});
+		const firstRender = render(<GenresView />);
+		const genreCard = screen.getByText('genre-1').closest('[role="button"]') as HTMLElement;
+		fireEvent.keyDown(genreCard, { key: ' ' });
+		expect(firstRender.container.querySelector('svg.lucide-arrow-left')).toBeInTheDocument();
+		firstRender.unmount();
+
+		const secondRender = render(<GenresView />);
+		const secondGenreCard = screen.getByText('genre-1').closest('[role="button"]') as HTMLElement;
+		fireEvent.keyDown(secondGenreCard, { key: 'Escape' });
+		expect(secondRender.container.querySelector('svg.lucide-arrow-left')).not.toBeInTheDocument();
+
+		mockReplaceQueue.mockClear();
+		mockGetMusicByGenre.mockClear();
+		mockGetMusicByGenre.mockResolvedValueOnce(makePagination([]));
+		fireEvent.click(secondRender.container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
+		await waitFor(() => {
+			expect(mockGetMusicByGenre).toHaveBeenCalledWith('genre-1', 1, 200);
+		});
+		expect(mockReplaceQueue).not.toHaveBeenCalled();
+		expect(screen.getByText('ACTION_LOAD_MORE')).toBeInTheDocument();
+	});
+
+	it('covers empty and loading genre detail branches', () => {
+		mockUseInfiniteQuery.mockImplementation((options: any) => {
+			const [key] = options.queryKey;
+			options.queryFn?.({});
+			if (key === 'music-genres') {
+				return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+			}
+			if (key === 'music-by-genre') {
+				return {
+					data: { pages: [makePagination([], false)] },
+					isLoading: false,
+					fetchNextPage: jest.fn(),
+					hasNextPage: false,
+					isFetchingNextPage: false,
+				};
+			}
+			return makeInfiniteResult([]);
+		});
+
+		const { rerender } = render(<GenresView />);
+		fireEvent.click(screen.getByText('genre-1'));
+		mockReplaceQueue.mockClear();
+		const detailButtons = screen.getAllByRole('button');
+		fireEvent.click(detailButtons[1]!);
+		fireEvent.click(detailButtons[2]!);
+		expect(mockReplaceQueue).not.toHaveBeenCalled();
+
+		mockUseInfiniteQuery.mockImplementation((options: any) => {
+			const [key] = options.queryKey;
+			options.queryFn?.({});
+			if (key === 'music-genres') {
+				return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+			}
+			if (key === 'music-by-genre') {
+				return {
+					data: undefined,
+					isLoading: true,
+					fetchNextPage: jest.fn(),
+					hasNextPage: false,
+					isFetchingNextPage: false,
+				};
+			}
+			return makeInfiniteResult([]);
+		});
+
+		rerender(<GenresView />);
+		fireEvent.click(screen.getByText('genre-1'));
+		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 	});
 });

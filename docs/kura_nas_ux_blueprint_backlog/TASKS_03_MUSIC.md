@@ -15,7 +15,7 @@
 - Dependencias: `TASK-002`.
 
 ## TASK-008 - Entregar Home de musica e contexto de reproducao
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: sair da listagem crua e criar uma experiencia de consumo proxima do blueprint.
 - Estado atual: ha biblioteca, fila global e playlists, mas sem uma tela inicial do dominio.

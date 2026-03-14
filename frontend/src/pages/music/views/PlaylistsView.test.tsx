@@ -6,6 +6,7 @@ const mockUseMutation = jest.fn();
 const mockUseQueryClient = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
 const mockUseGlobalMusic = jest.fn();
+const mockReplaceQueue = jest.fn();
 const mockGetPlaylists = jest.fn();
 const mockCreatePlaylist = jest.fn();
 const mockDeletePlaylist = jest.fn();
@@ -62,7 +63,7 @@ describe('pages/music/views/PlaylistsView', () => {
 			getMusicTitle: (m: any) => m.name,
 			getMusicArtist: () => 'artist',
 			musicMetadata: () => 'meta',
-			addToQueue: jest.fn(),
+			replaceQueue: mockReplaceQueue,
 		});
 		mockGetPlaylists.mockResolvedValue({
 			items: [{ id: 1, name: 'P1', track_count: 1, description: 'desc', is_system: false }],
@@ -118,6 +119,7 @@ describe('pages/music/views/PlaylistsView', () => {
 		fireEvent.click(screen.getByText('P1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('track-1'));
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 90 })], 0, expect.any(Object));
 
 		const removeButton = container.querySelector('svg.lucide-trash2')?.closest('button') as HTMLElement;
 		fireEvent.click(removeButton);

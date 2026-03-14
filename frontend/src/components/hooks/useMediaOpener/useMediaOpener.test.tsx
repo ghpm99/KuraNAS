@@ -54,14 +54,21 @@ describe('components/hooks/useMediaOpener', () => {
 				size: 1024,
 			}),
 		).toBe(true);
-		expect(mockReplaceQueue).toHaveBeenCalledWith([
+		expect(mockReplaceQueue).toHaveBeenCalledWith(
+			[
+				expect.objectContaining({
+					id: 7,
+					name: 'song.mp3',
+					path: '/music/song.mp3',
+					format: '.mp3',
+				}),
+			],
+			0,
 			expect.objectContaining({
-				id: 7,
-				name: 'song.mp3',
-				path: '/music/song.mp3',
-				format: '.mp3',
+				href: '/files?filter=recent',
+				labelKey: 'FILES',
 			}),
-		]);
+		);
 		expect(mockNavigate).toHaveBeenCalledWith('/music', {
 			state: { from: '/files?filter=recent' },
 		});
