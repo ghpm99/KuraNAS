@@ -31,7 +31,7 @@
 - Dependencias: `TASK-001`.
 
 ## TASK-003 - Entregar Home hub v1
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: criar a pagina inicial como hub de continuidade, biblioteca e estado do sistema.
 - Estado atual: nao existe `Home`; o usuario cai direto em `FilePage`.

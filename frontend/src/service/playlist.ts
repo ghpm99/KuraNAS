@@ -9,6 +9,11 @@ export const getPlaylists = async (page: number, pageSize: number) => {
 	return response.data;
 };
 
+export const getNowPlayingPlaylist = async () => {
+	const response = await apiBase.get<Playlist>('/music/playlists/now-playing');
+	return response.data;
+};
+
 export const getPlaylistById = async (id: number) => {
 	const response = await apiBase.get<Playlist>(`/music/playlists/${id}`);
 	return response.data;
