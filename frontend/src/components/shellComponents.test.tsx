@@ -82,6 +82,7 @@ jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => <div 
 jest.mock('@/components/music/musicLayout', () => ({ children }: any) => <div data-testid='music-layout'>{children}</div>);
 jest.mock('@/components/music/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
 jest.mock('@/components/musicContent', () => () => <div>MusicContentMock</div>);
+jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 
 jest.mock('@/components/videos/videoLayout', () => ({ children }: any) => <div data-testid='video-layout'>{children}</div>);
 jest.mock('@/components/videos/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
@@ -253,7 +254,7 @@ describe('shell components and pages', () => {
 	it('renders composition pages and video back behavior', () => {
 		render(<HomePage />);
 		expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
-		expect(screen.getByText('HOME_PAGE_TITLE')).toBeInTheDocument();
+		expect(screen.getByText('HomeScreenMock')).toBeInTheDocument();
 
 		render(<FilesPage />);
 		expect(screen.getByTestId('files-layout')).toBeInTheDocument();
