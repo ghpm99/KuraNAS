@@ -13,7 +13,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 
 - Status geral: `IN_PROGRESS`
 - Fase atual recomendada: `Explorer`
-- Proxima task recomendada: `TASK-004`
+- Proxima task recomendada: `TASK-005`
 
 ## Quadro de tasks
 
@@ -22,7 +22,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-001 | Migrar IA global e rotas base | DONE | Fundacao |
 | TASK-002 | Criar tokens visuais e AppShell unificado | DONE | Fundacao |
 | TASK-003 | Entregar Home hub v1 | DONE | Fundacao |
-| TASK-004 | Refatorar a estrutura da pagina Arquivos | TODO | Explorer |
+| TASK-004 | Refatorar a estrutura da pagina Arquivos | DONE | Explorer |
 | TASK-005 | Tornar a abertura de midia transversal e consistente | TODO | Explorer |
 | TASK-006 | Criar Favoritos v1 como dominio proprio | TODO | Explorer |
 | TASK-007 | Reorganizar IA e rotas do dominio Musica | TODO | Musica |
@@ -47,6 +47,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-13 | TASK-001 | Rotas base e navegacao principal migradas para Home, Files, Favorites e Settings. | Frontend recebeu novas rotas `/home`, `/files`, `/favorites` e `/settings`, com redirects de `/` e `/starred`, Home/Settings iniciais, atualizacao da navegacao e i18n compartilhado. |
 | 2026-03-13 | TASK-002 | Tema global, tokens visuais e AppShell foram unificados para as paginas principais. | Frontend recebeu tokens centralizados, novo `AppShell`, topbar/sidebar modulares, desacoplamento do `ActivityDiaryProvider` e atualizacao de i18n/testes do shell. |
 | 2026-03-14 | TASK-003 | Home v1 passou a combinar continuidade de musica e video, recentes e estado do NAS. | Frontend ganhou busca local no hub, cards responsivos com dados de `analytics`, `video` e `music`, novos textos i18n compartilhados e cobertura de testes para o fluxo inicial. |
+| 2026-03-14 | TASK-004 | Arquivos ganhou um explorer mais explicito com breadcrumb, toggle de grade/lista e preview lateral sem poluir o grid. | Frontend recebeu `FilesExplorerScreen`, `FileContent` com modos `grid/list`, acesso movel a arvore e atualizacao de i18n/testes do dominio. |
 
 ## Como atualizar ao concluir uma task
 
