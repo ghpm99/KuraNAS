@@ -92,4 +92,21 @@ describe('fileContent', () => {
 		render(<FileContent />);
 		expect(screen.getByText('viewer:report.pdf')).toBeInTheDocument();
 	});
+
+	it('supports list view without duplicated heading', () => {
+		mockUseFile.mockReturnValue({
+			status: 'success',
+			handleSelectItem: jest.fn(),
+			handleStarredItem: jest.fn(),
+			selectedItem: null,
+			fileListFilter: 'all',
+			files: [
+				{ id: 1, type: 2, name: 'song', format: '.mp3', size: 1024, starred: false },
+			],
+		});
+
+		render(<FileContent viewMode='list' showHeading={false} />);
+		expect(screen.queryByText('FILES')).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
+	});
 });

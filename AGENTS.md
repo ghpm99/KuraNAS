@@ -26,6 +26,19 @@ Frontend uses TypeScript + ESLint (`frontend/eslint.config.js`). Follow existing
 ## Engineering Principles
 All project code (backend and frontend) must follow Clean Code principles and programming best practices.
 
+This is mandatory for every change in this repository:
+
+- Follow Clean Architecture principles in addition to Clean Code.
+- Keep pages, components, handlers, services, and functions small, cohesive, and focused on a single responsibility.
+- Prefer clear separation of concerns, explicit boundaries, dependency inversion, and low coupling with high cohesion.
+- Avoid god objects, oversized files, hidden side effects, duplicated logic, speculative abstractions, and hard-to-maintain control flow.
+- Use names that reveal intent, keep functions at a single level of abstraction, and make behavior easy to read, test, and change.
+- New code must be structured so it is easy to test, with tests covering the changed behavior and relevant edge cases.
+- Every delivered change must include 100% test coverage for the code that was added or modified.
+- No change may be considered complete if any existing test fails, even outside the changed area.
+- No change may be considered complete if any quality gate fails, including tests, coverage thresholds, lint, formatting, type checks, or any other configured repository validation.
+- Delivery is only acceptable when the repository is fully passing the applicable quality gates for the affected stack(s).
+
 ## Internationalization (Mandatory)
 This project uses a single i18n source of truth based on JSON `key:value` translation files.
 

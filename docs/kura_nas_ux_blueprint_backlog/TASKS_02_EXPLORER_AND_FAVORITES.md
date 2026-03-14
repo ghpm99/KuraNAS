@@ -1,7 +1,7 @@
 # Tasks 02 - Explorer And Favorites
 
 ## TASK-004 - Refatorar a estrutura da pagina Arquivos
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: alinhar `Arquivos` ao papel de explorer puro, com header claro, breadcrumb, tree opcional, grid/lista e preview lateral.
 - Estado atual: `FilePage` ja possui action bar, tabs, grid e sidebar de detalhes, mas a estrutura ainda e muito presa ao layout legado.
