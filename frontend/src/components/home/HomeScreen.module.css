@@ -231,6 +231,16 @@
 	gap: var(--app-spacing-4);
 }
 
+.recentCardButton {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+
 .recentCard {
 	display: flex;
 	align-items: flex-start;
@@ -248,6 +258,11 @@
 	transform: translateY(-1px);
 	border-color: rgba(125, 211, 252, 0.4);
 	background: rgba(125, 211, 252, 0.08);
+}
+
+.recentCardButton:focus-visible .recentCard {
+	outline: 2px solid rgba(125, 211, 252, 0.9);
+	outline-offset: 2px;
 }
 
 .recentIcon {

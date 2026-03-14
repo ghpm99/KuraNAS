@@ -1,5 +1,3 @@
-export type MusicView = 'all' | 'artists' | 'albums' | 'genres' | 'folders' | 'playlists';
-
 export interface MusicArtist {
 	artist: string;
 	track_count: number;

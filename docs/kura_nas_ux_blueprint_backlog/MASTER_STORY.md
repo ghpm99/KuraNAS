@@ -12,8 +12,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 ## Snapshot atual
 
 - Status geral: `IN_PROGRESS`
-- Fase atual recomendada: `Explorer`
-- Proxima task recomendada: `TASK-005`
+- Fase atual recomendada: `Musica`
+- Proxima task recomendada: `TASK-008`
 
 ## Quadro de tasks
 
@@ -23,9 +23,9 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-002 | Criar tokens visuais e AppShell unificado | DONE | Fundacao |
 | TASK-003 | Entregar Home hub v1 | DONE | Fundacao |
 | TASK-004 | Refatorar a estrutura da pagina Arquivos | DONE | Explorer |
-| TASK-005 | Tornar a abertura de midia transversal e consistente | TODO | Explorer |
-| TASK-006 | Criar Favoritos v1 como dominio proprio | TODO | Explorer |
-| TASK-007 | Reorganizar IA e rotas do dominio Musica | TODO | Musica |
+| TASK-005 | Tornar a abertura de midia transversal e consistente | DONE | Explorer |
+| TASK-006 | Criar Favoritos v1 como dominio proprio | DONE | Explorer |
+| TASK-007 | Reorganizar IA e rotas do dominio Musica | DONE | Musica |
 | TASK-008 | Entregar Home de musica e contexto de reproducao | TODO | Musica |
 | TASK-009 | Normalizar metadados e playlists automaticas de musica | TODO | Musica |
 | TASK-010 | Reorganizar IA e rotas do dominio Videos | TODO | Videos |
@@ -48,6 +48,9 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-13 | TASK-002 | Tema global, tokens visuais e AppShell foram unificados para as paginas principais. | Frontend recebeu tokens centralizados, novo `AppShell`, topbar/sidebar modulares, desacoplamento do `ActivityDiaryProvider` e atualizacao de i18n/testes do shell. |
 | 2026-03-14 | TASK-003 | Home v1 passou a combinar continuidade de musica e video, recentes e estado do NAS. | Frontend ganhou busca local no hub, cards responsivos com dados de `analytics`, `video` e `music`, novos textos i18n compartilhados e cobertura de testes para o fluxo inicial. |
 | 2026-03-14 | TASK-004 | Arquivos ganhou um explorer mais explicito com breadcrumb, toggle de grade/lista e preview lateral sem poluir o grid. | Frontend recebeu `FilesExplorerScreen`, `FileContent` com modos `grid/list`, acesso movel a arvore e atualizacao de i18n/testes do dominio. |
+| 2026-03-14 | TASK-005 | Abertura de midia passou a seguir uma regra unica entre Home, Arquivos e Favoritos. | Frontend ganhou `useMediaOpener`, redirecionamento de audio/video/imagem para experiencias dedicadas e suporte a abrir imagem alvo no viewer via rota. |
+| 2026-03-14 | TASK-006 | Favoritos virou pagina propria com filtros por tipo e contexto dedicado. | Frontend ganhou `FavoritesScreen`, filtros locais `Tudo/Pastas/Arquivos/Midias`, reaproveito vertical do `starred`, novos textos i18n e cobertura para o fluxo da nova area. |
+| 2026-03-14 | TASK-007 | Musica passou a expor subrotas restauraveis com shell secundario e landing de contexto. | Frontend ganhou IA por URL em `/music`, `/music/playlists`, `/music/artists`, `/music/albums`, `/music/genres` e `/music/folders`, header contextual, i18n compartilhado e testes do dominio. |
 
 ## Como atualizar ao concluir uma task
 
