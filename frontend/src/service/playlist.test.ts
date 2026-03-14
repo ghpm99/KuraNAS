@@ -12,6 +12,7 @@ import {
 	addTrackToPlaylist,
 	createPlaylist,
 	deletePlaylist,
+	getNowPlayingPlaylist,
 	getPlaylistById,
 	getPlaylists,
 	getPlaylistTracks,
@@ -40,6 +41,16 @@ describe('service/playlist', () => {
 		expect(mockedApi.get).toHaveBeenCalledWith('/music/playlists/', {
 			params: { page: 2, page_size: 25 },
 		});
+		expect(result).toEqual(payload);
+	});
+
+	it('gets now playing playlist', async () => {
+		const payload = { id: 9, name: 'Now Playing' };
+		mockedApi.get.mockResolvedValue({ data: payload });
+
+		const result = await getNowPlayingPlaylist();
+
+		expect(mockedApi.get).toHaveBeenCalledWith('/music/playlists/now-playing');
 		expect(result).toEqual(payload);
 	});
 
@@ -97,4 +108,3 @@ describe('service/playlist', () => {
 		expect(created).toEqual(payload);
 	});
 });
-
