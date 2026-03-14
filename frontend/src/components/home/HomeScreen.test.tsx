@@ -3,11 +3,26 @@ import { MemoryRouter } from 'react-router-dom';
 import HomeScreen from './HomeScreen';
 
 const mockUseHomeScreen = jest.fn();
+const mockOpenMediaItem = jest.fn();
+const mockNavigate = jest.fn();
 
 jest.mock('./useHomeScreen', () => ({
 	__esModule: true,
 	default: () => mockUseHomeScreen(),
 }));
+jest.mock('@/components/hooks/useMediaOpener/useMediaOpener', () => ({
+	__esModule: true,
+	default: () => ({
+		openMediaItem: (...args: any[]) => mockOpenMediaItem(...args),
+	}),
+}));
+jest.mock('react-router-dom', () => {
+	const actual = jest.requireActual('react-router-dom');
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
+	};
+});
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
@@ -74,6 +89,7 @@ jest.mock('@/service/apiUrl', () => ({
 describe('components/home/HomeScreen', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		mockOpenMediaItem.mockReturnValue(false);
 		mockUseHomeScreen.mockReturnValue({
 			searchQuery: '',
 			setSearchQuery: jest.fn(),
@@ -140,6 +156,19 @@ describe('components/home/HomeScreen', () => {
 		expect(screen.getByText('System status')).toBeInTheDocument();
 		expect(screen.getAllByText('Open area').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('Resume').length).toBeGreaterThan(0);
+	});
+
+	it('uses the shared media opener for recent files and falls back to files when needed', () => {
+		render(
+			<MemoryRouter>
+				<HomeScreen />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: /photo\.jpg/i }));
+
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 21, name: 'photo.jpg' }));
+		expect(mockNavigate).toHaveBeenCalledWith('/files');
 	});
 
 	it('clears the current search and renders empty states when no content is available', () => {

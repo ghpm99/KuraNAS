@@ -16,7 +16,7 @@
 - Dependencias: `TASK-002`.
 
 ## TASK-005 - Tornar a abertura de midia transversal e consistente
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `S`
 - Objetivo: garantir que imagem, audio, video e documento sempre abram na melhor experiencia disponivel em qualquer ponto do produto.
 - Estado atual: `fileViewer.tsx` ja sabe exibir tipos de arquivo, mas a regra ainda esta concentrada no explorer.
@@ -30,7 +30,7 @@
 - Dependencias: `TASK-004`.
 
 ## TASK-006 - Criar Favoritos v1 como dominio proprio
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: transformar favoritos em pagina propria e nao mais em variante escondida do explorer.
 - Estado atual: `/starred` reaproveita `FilePage`; o dominio aceita apenas arquivos marcados com `starred`.

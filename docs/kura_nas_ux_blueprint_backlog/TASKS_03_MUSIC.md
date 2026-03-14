@@ -1,7 +1,7 @@
 # Tasks 03 - Music
 
 ## TASK-007 - Reorganizar IA e rotas do dominio Musica
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: alinhar musica ao mapa `Inicio`, `Playlists`, `Artistas`, `Albuns`, `Generos` e `Pastas`.
 - Estado atual: `MusicSidebar.tsx` ja possui essas views, mas tudo acontece dentro de uma unica pagina sem rotas do dominio.

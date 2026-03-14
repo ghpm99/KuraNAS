@@ -3,10 +3,17 @@ import { fireEvent } from '@testing-library/react';
 import FileContent from './fileContent';
 
 const mockUseFile = jest.fn();
+const mockOpenMediaItem = jest.fn();
 
 jest.mock('../providers/fileProvider/fileContext', () => ({
 	__esModule: true,
 	default: () => mockUseFile(),
+}));
+jest.mock('@/components/hooks/useMediaOpener/useMediaOpener', () => ({
+	__esModule: true,
+	default: () => ({
+		openMediaItem: (...args: any[]) => mockOpenMediaItem(...args),
+	}),
 }));
 
 jest.mock('../i18n/provider/i18nContext', () => ({
@@ -24,6 +31,11 @@ jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar }: any) 
 jest.mock('./components/fileViewer/fileViewer', () => ({ file }: any) => <div>viewer:{file.name}</div>);
 
 describe('fileContent', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+		mockOpenMediaItem.mockReturnValue(false);
+	});
+
 	it('renders pending and error states', () => {
 		mockUseFile.mockReturnValue({ status: 'pending', selectedItem: null, files: [] });
 		render(<FileContent />);
@@ -52,6 +64,7 @@ describe('fileContent', () => {
 		expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
 		expect(screen.getByText(/FOLDER - 1 ITEM/)).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'song' }));
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1, name: 'song' }));
 		expect(rootHandleSelectItem).toHaveBeenCalledWith(1);
 		fireEvent.click(screen.getByRole('button', { name: 'star-song' }));
 		expect(rootHandleStarredItem).toHaveBeenCalledWith(1);
@@ -78,6 +91,7 @@ describe('fileContent', () => {
 		expect(screen.getByRole('button', { name: 'child' })).toBeInTheDocument();
 		expect(screen.getByText(/FOLDER - 3 ITENS/)).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'child' }));
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 3, name: 'child' }));
 		expect(handleSelectItem).toHaveBeenCalledWith(3);
 		fireEvent.click(screen.getByRole('button', { name: 'star-child' }));
 		expect(handleStarredItem).toHaveBeenCalledWith(3);
@@ -91,6 +105,27 @@ describe('fileContent', () => {
 		});
 		render(<FileContent />);
 		expect(screen.getByText('viewer:report.pdf')).toBeInTheDocument();
+	});
+
+	it('does not reselect files handled by the shared media opener', () => {
+		const handleSelectItem = jest.fn();
+		mockOpenMediaItem.mockReturnValue(true);
+		mockUseFile.mockReturnValue({
+			status: 'success',
+			handleSelectItem,
+			handleStarredItem: jest.fn(),
+			selectedItem: null,
+			fileListFilter: 'all',
+			files: [
+				{ id: 1, type: 2, name: 'movie.mp4', format: '.mp4', size: 1024, starred: false },
+			],
+		});
+
+		render(<FileContent />);
+		fireEvent.click(screen.getByRole('button', { name: 'movie.mp4' }));
+
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1, name: 'movie.mp4' }));
+		expect(handleSelectItem).not.toHaveBeenCalled();
 	});
 
 	it('supports list view without duplicated heading', () => {
@@ -108,5 +143,32 @@ describe('fileContent', () => {
 		render(<FileContent viewMode='list' showHeading={false} />);
 		expect(screen.queryByText('FILES')).not.toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
+	});
+
+	it('supports custom collection data and empty state messages', () => {
+		mockUseFile.mockReturnValue({
+			status: 'success',
+			handleSelectItem: jest.fn(),
+			handleStarredItem: jest.fn(),
+			selectedItem: null,
+			fileListFilter: 'starred',
+			files: [],
+		});
+
+		const { rerender } = render(
+			<FileContent
+				title='Favorites scope'
+				items={[
+					{ id: 7, type: 2, name: 'notes.txt', format: '.txt', size: 12, starred: true },
+				]}
+				emptyStateMessage='EMPTY_FAVORITES'
+			/>,
+		);
+
+		expect(screen.getByText('Favorites scope')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'notes.txt' })).toBeInTheDocument();
+
+		rerender(<FileContent title='Favorites scope' items={[]} emptyStateMessage='EMPTY_FAVORITES' />);
+		expect(screen.getByText('EMPTY_FAVORITES')).toBeInTheDocument();
 	});
 });

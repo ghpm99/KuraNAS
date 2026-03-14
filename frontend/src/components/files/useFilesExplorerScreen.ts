@@ -1,7 +1,8 @@
-import useFile, { type FileData } from '@/components/providers/fileProvider/fileContext';
+import useFile from '@/components/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
 import { useMemo, useState } from 'react';
+import { findTrailById } from './fileNavigation';
 
 export type FilesViewMode = 'grid' | 'list';
 
@@ -9,32 +10,6 @@ export type BreadcrumbSegment = {
 	id: number | null;
 	label: string;
 	isCurrent: boolean;
-};
-
-const findTrailById = (
-	nodes: FileData[],
-	targetId: number | null,
-	parents: FileData[] = [],
-): FileData[] | null => {
-	if (!targetId) {
-		return null;
-	}
-
-	for (const node of nodes) {
-		const nextParents = [...parents, node];
-		if (node.id === targetId) {
-			return nextParents;
-		}
-
-		if (node.file_children?.length) {
-			const branch = findTrailById(node.file_children, targetId, nextParents);
-			if (branch) {
-				return branch;
-			}
-		}
-	}
-
-	return null;
 };
 
 const useFilesExplorerScreen = () => {

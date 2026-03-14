@@ -21,12 +21,6 @@ import ActivityDiaryFormIndex from './activityDiary/ActivityDiaryForm';
 import ActivityListIndex from './activityDiary/ActivityList';
 import ActivitySummaryIndex from './activityDiary/ActivitySummary';
 
-const mockUseMusic = jest.fn();
-
-jest.mock('@/components/providers/musicProvider/musicProvider', () => ({
-	useMusic: () => mockUseMusic(),
-}));
-
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
 	default: () => ({ t: (key: string) => key }),
@@ -38,7 +32,8 @@ jest.mock('react-router-dom', () => ({
 			{children}
 		</a>
 	),
-	useLocation: () => ({ pathname: '/images' }),
+	Outlet: () => <div>OutletMock</div>,
+	useLocation: () => ({ pathname: '/music/artists' }),
 }));
 
 describe('layout wrappers and export indexes', () => {
@@ -53,13 +48,10 @@ describe('layout wrappers and export indexes', () => {
 		expect((MusicLayout as any)({ children: child })).toBeTruthy();
 	});
 
-	it('renders music sidebar and updates selected view', () => {
-		const setCurrentView = jest.fn();
-		mockUseMusic.mockReturnValue({ currentView: 'all', setCurrentView });
-
+	it('renders music sidebar links', () => {
 		render(<MusicSidebar />);
-		fireEvent.click(screen.getByText('MUSIC_ARTISTS'));
-		expect(setCurrentView).toHaveBeenCalledWith('artists');
+		expect(screen.getByRole('link', { name: /MUSIC_ARTISTS/i })).toHaveAttribute('href', '/music/artists');
+		expect(screen.getByRole('link', { name: /MUSIC_PLAYLISTS/i })).toHaveAttribute('href', '/music/playlists');
 	});
 
 	it('renders nav item link and generic button', () => {
