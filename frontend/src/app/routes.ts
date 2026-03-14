@@ -16,6 +16,18 @@ export const appRoutes = {
 
 export const isVideoPlayerRoute = (pathname: string) => pathname.startsWith(`${appRoutes.videoPlayerBase}/`);
 
+export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
+
+export const getMusicRoute = (section: MusicSection) => {
+	if (section === 'home') {
+		return appRoutes.music;
+	}
+
+	return `${appRoutes.music}/${section}`;
+};
+
+export const isMusicRoute = (pathname: string) => pathname === appRoutes.music || pathname.startsWith(`${appRoutes.music}/`);
+
 export const getFileBrowserRootPath = (pathname: string) => {
 	if (pathname === appRoutes.favorites || pathname === appRoutes.legacyFavorites) {
 		return appRoutes.favorites;

@@ -29,8 +29,7 @@ function Consumer() {
 		<div>
 			<span data-testid="count">{ctx.music.length}</span>
 			<span data-testid="status">{ctx.status}</span>
-			<button onClick={() => ctx.setCurrentView('artists')}>set-view</button>
-			<span data-testid="view">{ctx.currentView}</span>
+			<span data-testid="has-next-page">{String(ctx.hasNextPage)}</span>
 		</div>
 	);
 }
@@ -49,7 +48,7 @@ describe('providers/musicProvider', () => {
 		mockedUseIntersectionObserver.mockImplementation(() => ({ ref: jest.fn() }));
 	});
 
-	it('provides music context and updates current view', () => {
+	it('provides music context data', () => {
 		render(
 			<MusicProvider>
 				<Consumer />
@@ -58,11 +57,7 @@ describe('providers/musicProvider', () => {
 
 		expect(screen.getByTestId('count')).toHaveTextContent('1');
 		expect(screen.getByTestId('status')).toHaveTextContent('success');
-		expect(screen.getByTestId('view')).toHaveTextContent('all');
-		act(() => {
-			screen.getByText('set-view').click();
-		});
-		expect(screen.getByTestId('view')).toHaveTextContent('artists');
+		expect(screen.getByTestId('has-next-page')).toHaveTextContent('true');
 	});
 
 	it('executes query function and next page resolver', async () => {

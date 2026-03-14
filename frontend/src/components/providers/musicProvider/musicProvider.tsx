@@ -1,13 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Pagination } from '@/types/pagination';
-import { MusicView } from '@/types/music';
 import {
 	FetchNextPageOptions,
 	InfiniteData,
 	InfiniteQueryObserverResult,
 	useInfiniteQuery,
 } from '@tanstack/react-query';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { getMusic } from '@/service/music';
 
@@ -57,8 +56,6 @@ export interface IMusicContext {
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
 	lastItemRef: (node: HTMLLIElement | null) => (() => void) | undefined;
-	currentView: MusicView;
-	setCurrentView: (view: MusicView) => void;
 }
 
 type PaginationResponse = Pagination<IMusicData>;
@@ -70,8 +67,6 @@ export const MusicContextProvider = MusicContext.Provider;
 const pageSize = 200;
 
 export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
-	const [currentView, setCurrentView] = useState<MusicView>('all');
-
 	const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music'],
 		queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> => getMusic(pageParam, pageSize),
@@ -106,8 +101,6 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
 				hasNextPage,
 				isFetchingNextPage,
 				lastItemRef,
-				currentView,
-				setCurrentView,
 			}}
 		>
 			{children}

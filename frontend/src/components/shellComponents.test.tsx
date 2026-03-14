@@ -49,6 +49,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 
 jest.mock('react-router-dom', () => ({
 	Link: ({ children, to }: any) => <a href={to}>{children}</a>,
+	Outlet: () => <div>OutletMock</div>,
 	useLocation: () => mockUseLocation(),
 	useParams: () => mockUseParams(),
 	useNavigate: () => mockNavigate,
@@ -74,6 +75,7 @@ jest.mock('@/components/actionBar', () => () => <div>ActionBarMock</div>);
 jest.mock('@/components/fileContent', () => () => <div>FileContentMock</div>);
 jest.mock('@/components/fileDetails', () => () => <div>FileDetailsMock</div>);
 jest.mock('@/components/tabs', () => () => <div>TabsMock</div>);
+jest.mock('@/components/favorites/FavoritesScreen', () => () => <div>FavoritesScreenMock</div>);
 jest.mock('@/components/files/filesLayout', () => ({ children }: any) => <div data-testid='files-layout'>{children}</div>);
 jest.mock('@/components/files/FilesExplorerScreen', () => () => <div>FilesExplorerScreenMock</div>);
 
@@ -227,6 +229,10 @@ describe('shell components and pages', () => {
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('settings');
 
+		mockUseLocation.mockReturnValueOnce({ pathname: '/music/playlists' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('music');
+
 		mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
@@ -264,6 +270,7 @@ describe('shell components and pages', () => {
 		render(<FavoritesPage />);
 		expect(screen.getAllByTestId('files-layout').length).toBeGreaterThan(0);
 		expect(mockUseFile().setFileListFilter).toHaveBeenCalledWith('starred');
+		expect(screen.getByText('FavoritesScreenMock')).toBeInTheDocument();
 
 		render(<ImagesPage />);
 		expect(screen.getByTestId('images-layout')).toBeInTheDocument();

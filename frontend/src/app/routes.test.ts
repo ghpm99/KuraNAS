@@ -1,0 +1,22 @@
+import { appRoutes, getFileBrowserRootPath, getMusicRoute, isMusicRoute, isVideoPlayerRoute } from './routes';
+
+describe('app routes helpers', () => {
+	it('matches video player routes', () => {
+		expect(isVideoPlayerRoute('/video/10')).toBe(true);
+		expect(isVideoPlayerRoute('/music')).toBe(false);
+	});
+
+	it('builds music section routes and detects nested music paths', () => {
+		expect(getMusicRoute('home')).toBe(appRoutes.music);
+		expect(getMusicRoute('genres')).toBe('/music/genres');
+		expect(isMusicRoute('/music')).toBe(true);
+		expect(isMusicRoute('/music/playlists')).toBe(true);
+		expect(isMusicRoute('/videos')).toBe(false);
+	});
+
+	it('returns the correct browser root path', () => {
+		expect(getFileBrowserRootPath('/files')).toBe('/files');
+		expect(getFileBrowserRootPath('/favorites')).toBe('/favorites');
+		expect(getFileBrowserRootPath('/starred')).toBe('/favorites');
+	});
+});
