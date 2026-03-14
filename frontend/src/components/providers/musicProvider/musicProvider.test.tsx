@@ -69,7 +69,7 @@ describe('providers/musicProvider', () => {
 
 		const options = mockedUseInfiniteQuery.mock.calls[0][0];
 		await options.queryFn({ pageParam: 2 });
-		expect(mockedApiGet).toHaveBeenCalledWith('/files/music', {
+		expect(mockedApiGet).toHaveBeenCalledWith('/music/library', {
 			params: { page: 2, page_size: 200 },
 		});
 		expect(options.getNextPageParam({ pagination: { has_next: true, page: 9 } })).toBe(10);

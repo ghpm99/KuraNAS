@@ -27,6 +27,8 @@ func respondMusicError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_NOT_FOUND")})
+	case errors.Is(err, ErrAutoPlaylistReadOnly):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_OPERATION_FAILED")})
 	}
@@ -168,7 +170,7 @@ func (handler *Handler) GetPlaylistTracksHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 
-	pagination, err := handler.service.GetPlaylistTracks(id, page, pageSize)
+	pagination, err := handler.service.GetPlaylistTracks(c.ClientIP(), id, page, pageSize)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)

@@ -29,7 +29,7 @@
 - Dependencias: `TASK-007`.
 
 ## TASK-009 - Normalizar metadados e playlists automaticas de musica
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: sustentar musica com dados tratados no backend, e nao apenas metadados crus.
 - Estado atual: backend possui playlists manuais e player state; generos e agrupamentos ainda dependem de valores crus.

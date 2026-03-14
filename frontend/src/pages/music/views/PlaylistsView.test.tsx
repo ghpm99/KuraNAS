@@ -2,12 +2,14 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import PlaylistsView from './PlaylistsView';
 
 const mockUseInfiniteQuery = jest.fn();
+const mockUseQuery = jest.fn();
 const mockUseMutation = jest.fn();
 const mockUseQueryClient = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const mockReplaceQueue = jest.fn();
 const mockGetPlaylists = jest.fn();
+const mockGetAutomaticPlaylists = jest.fn();
 const mockCreatePlaylist = jest.fn();
 const mockDeletePlaylist = jest.fn();
 const mockGetPlaylistTracks = jest.fn();
@@ -15,12 +17,14 @@ const mockRemoveTrackFromPlaylist = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
 	useInfiniteQuery: (...args: any[]) => mockUseInfiniteQuery(...args),
+	useQuery: (...args: any[]) => mockUseQuery(...args),
 	useMutation: (...args: any[]) => mockUseMutation(...args),
 	useQueryClient: () => mockUseQueryClient(),
 }));
 
 jest.mock('@/service/playlist', () => ({
 	getPlaylists: (...args: any[]) => mockGetPlaylists(...args),
+	getAutomaticPlaylists: (...args: any[]) => mockGetAutomaticPlaylists(...args),
 	createPlaylist: (...args: any[]) => mockCreatePlaylist(...args),
 	deletePlaylist: (...args: any[]) => mockDeletePlaylist(...args),
 	getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
@@ -66,9 +70,10 @@ describe('pages/music/views/PlaylistsView', () => {
 			replaceQueue: mockReplaceQueue,
 		});
 		mockGetPlaylists.mockResolvedValue({
-			items: [{ id: 1, name: 'P1', track_count: 1, description: 'desc', is_system: false }],
+			items: [{ id: 1, name: 'P1', track_count: 1, description: 'desc', is_system: false, is_auto: false, kind: 'manual', source_key: '' }],
 			pagination: { page: 1, has_next: false, has_prev: false, total_pages: 1, total_items: 1 },
 		});
+		mockGetAutomaticPlaylists.mockResolvedValue([]);
 		mockGetPlaylistTracks.mockResolvedValue({
 			items: [{ id: 7, file: { id: 90, name: 'track-1', format: 'mp3', size: 1000 } }],
 			pagination: { page: 1, has_next: false, has_prev: false, total_pages: 1, total_items: 1 },
@@ -77,6 +82,10 @@ describe('pages/music/views/PlaylistsView', () => {
 		mockDeletePlaylist.mockResolvedValue({});
 		mockRemoveTrackFromPlaylist.mockResolvedValue({});
 
+		mockUseQuery.mockImplementation((options: any) => {
+			options.queryFn?.();
+			return { data: [], isLoading: false };
+		});
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
 			options.queryFn?.({ pageParam: 1 });
@@ -84,7 +93,7 @@ describe('pages/music/views/PlaylistsView', () => {
 			options.getNextPageParam?.({ pagination: { has_next: false, page: 1 } });
 
 			if (key === 'playlists') {
-				return page([{ id: 1, name: 'P1', track_count: 1, description: 'desc', is_system: false }]);
+				return page([{ id: 1, name: 'P1', track_count: 1, description: 'desc', is_system: false, is_auto: false, kind: 'manual', source_key: '' }]);
 			}
 			return page([{ id: 7, file: { id: 90, name: 'track-1', format: 'mp3', size: 1000 } }]);
 		});
@@ -132,7 +141,7 @@ describe('pages/music/views/PlaylistsView', () => {
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
 			options.queryFn?.({ pageParam: 1 });
-			if (key === 'playlists') return page([{ id: 1, name: 'P1', track_count: 0, is_system: false }]);
+			if (key === 'playlists') return page([{ id: 1, name: 'P1', track_count: 0, is_system: false, is_auto: false, kind: 'manual', source_key: '' }]);
 			return page([]);
 		});
 		mockUseMutation.mockImplementation((options: any) => {
@@ -169,12 +178,13 @@ describe('pages/music/views/PlaylistsView', () => {
 		unmount();
 
 		const fetchNextPage = jest.fn();
+		mockUseQuery.mockReturnValue({ data: [], isLoading: false });
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
 			options.queryFn?.({ pageParam: 1 });
 			if (key === 'playlists') {
 				return {
-					...page([{ id: 1, name: 'P1', track_count: 1, description: '', is_system: false }], true),
+					...page([{ id: 1, name: 'P1', track_count: 1, description: '', is_system: false, is_auto: false, kind: 'manual', source_key: '' }], true),
 					fetchNextPage,
 				};
 			}
@@ -191,7 +201,7 @@ describe('pages/music/views/PlaylistsView', () => {
 		mockUseInfiniteQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
 			options.queryFn?.({ pageParam: 1 });
-			if (key === 'playlists') return page([{ id: 1, name: 'P1', track_count: 1, is_system: false }]);
+			if (key === 'playlists') return page([{ id: 1, name: 'P1', track_count: 1, is_system: false, is_auto: false, kind: 'manual', source_key: '' }]);
 			return {
 				...page([{ id: 7, file: { id: 90, name: 'track-1', format: 'mp3', size: 1000 } }], true),
 				fetchNextPage: fetchTracksNext,

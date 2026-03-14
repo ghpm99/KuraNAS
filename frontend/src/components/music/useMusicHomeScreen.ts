@@ -1,29 +1,21 @@
 import { getMusicRoute } from '@/app/routes';
 import {
-	buildMusicAlbumHighlights,
-	buildMusicArtistHighlights,
-	type MusicAlbumHighlight,
-	type MusicArtistHighlight,
-} from '@/components/music/musicHomeData';
-import {
 	createAlbumPlaybackContext,
 	createArtistPlaybackContext,
 	createPlaylistPlaybackContext,
 } from '@/components/music/playbackContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
-import { useMusic } from '@/components/providers/musicProvider/musicProvider';
-import { getPlaylistTracks, getPlaylists } from '@/service/playlist';
-import { getMusicByAlbum, getMusicByArtist } from '@/service/music';
+import { getPlaylistTracks } from '@/service/playlist';
+import { getMusicByAlbum, getMusicByArtist, getMusicHomeCatalog } from '@/service/music';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
+import type { MusicAlbum, MusicArtist } from '@/types/music';
 
 const featuredPlaylistPageSize = 4;
-const homeHighlightLimit = 4;
 
 const getActionKey = (type: 'playlist' | 'artist' | 'album', value: string | number) => `${type}-${value}`;
 
 export const useMusicHomeScreen = () => {
-	const { status, music } = useMusic();
 	const {
 		currentIndex,
 		currentTrack,
@@ -37,16 +29,17 @@ export const useMusicHomeScreen = () => {
 	} = useGlobalMusic();
 	const [pendingActionKey, setPendingActionKey] = useState<string | null>(null);
 
-	const { data: playlistResponse, isLoading: isLoadingPlaylists } = useQuery({
-		queryKey: ['music-home', 'playlists'],
-		queryFn: () => getPlaylists(1, featuredPlaylistPageSize),
+	const { data: homeCatalog, isLoading: isLoadingCatalog, status } = useQuery({
+		queryKey: ['music-home', 'catalog'],
+		queryFn: () => getMusicHomeCatalog(featuredPlaylistPageSize),
 	});
 
-	const featuredPlaylists = playlistResponse?.items ?? [];
-	const artistHighlights = useMemo(() => buildMusicArtistHighlights(music, homeHighlightLimit), [music]);
-	const albumHighlights = useMemo(() => buildMusicAlbumHighlights(music, homeHighlightLimit), [music]);
-	const totalArtists = useMemo(() => buildMusicArtistHighlights(music, music.length).length, [music]);
-	const totalAlbums = useMemo(() => buildMusicAlbumHighlights(music, music.length).length, [music]);
+	const featuredPlaylists = homeCatalog?.playlists ?? [];
+	const artistHighlights = homeCatalog?.artists ?? [];
+	const albumHighlights = homeCatalog?.albums ?? [];
+	const totalTracks = homeCatalog?.summary.total_tracks ?? 0;
+	const totalArtists = homeCatalog?.summary.total_artists ?? 0;
+	const totalAlbums = homeCatalog?.summary.total_albums ?? 0;
 
 	const playPlaylist = useCallback(
 		async (playlistId: number, playlistName: string) => {
@@ -68,15 +61,15 @@ export const useMusicHomeScreen = () => {
 	);
 
 	const playArtist = useCallback(
-		async (artist: string) => {
-			const actionKey = getActionKey('artist', artist);
+		async (artist: MusicArtist) => {
+			const actionKey = getActionKey('artist', artist.key);
 			setPendingActionKey(actionKey);
 
 			try {
-				const response = await getMusicByArtist(artist, 1, 200);
+				const response = await getMusicByArtist(artist.key, 1, 200);
 
 				if (response.items.length > 0) {
-					replaceQueue(response.items, 0, createArtistPlaybackContext(artist));
+					replaceQueue(response.items, 0, createArtistPlaybackContext(artist.artist));
 				}
 			} finally {
 				setPendingActionKey((currentKey) => (currentKey === actionKey ? null : currentKey));
@@ -86,15 +79,15 @@ export const useMusicHomeScreen = () => {
 	);
 
 	const playAlbum = useCallback(
-		async (album: string) => {
-			const actionKey = getActionKey('album', album);
+		async (album: MusicAlbum) => {
+			const actionKey = getActionKey('album', album.key);
 			setPendingActionKey(actionKey);
 
 			try {
-				const response = await getMusicByAlbum(album, 1, 200);
+				const response = await getMusicByAlbum(album.key, 1, 200);
 
 				if (response.items.length > 0) {
-					replaceQueue(response.items, 0, createAlbumPlaybackContext(album));
+					replaceQueue(response.items, 0, createAlbumPlaybackContext(album.album));
 				}
 			} finally {
 				setPendingActionKey((currentKey) => (currentKey === actionKey ? null : currentKey));
@@ -118,7 +111,7 @@ export const useMusicHomeScreen = () => {
 		status,
 		hasQueue,
 		queueCount: queue.length,
-		totalTracks: music.length,
+		totalTracks,
 		totalArtists,
 		totalAlbums,
 		totalPlaylists: featuredPlaylists.length,
@@ -128,7 +121,7 @@ export const useMusicHomeScreen = () => {
 		playbackContext,
 		returnToContextHref: playbackContext?.href,
 		openQueue: toggleQueue,
-		isLoadingPlaylists,
+		isLoadingPlaylists: isLoadingCatalog,
 		featuredPlaylists: featuredPlaylists.map((playlist) => ({
 			...playlist,
 			href: getMusicRoute('playlists'),
@@ -137,12 +130,12 @@ export const useMusicHomeScreen = () => {
 		artistHighlights: artistHighlights.map((artist) => ({
 			...artist,
 			href: getMusicRoute('artists'),
-			actionKey: getActionKey('artist', artist.artist),
+			actionKey: getActionKey('artist', artist.key),
 		})),
 		albumHighlights: albumHighlights.map((album) => ({
 			...album,
 			href: getMusicRoute('albums'),
-			actionKey: getActionKey('album', album.album),
+			actionKey: getActionKey('album', album.key),
 		})),
 		isActionPending: (actionKey: string) => pendingActionKey === actionKey,
 		playPlaylist,
@@ -152,5 +145,5 @@ export const useMusicHomeScreen = () => {
 };
 
 export type MusicHomeScreenData = ReturnType<typeof useMusicHomeScreen>;
-export type MusicHomeArtistCard = MusicArtistHighlight & { href: string; actionKey: string };
-export type MusicHomeAlbumCard = MusicAlbumHighlight & { href: string; actionKey: string };
+export type MusicHomeArtistCard = MusicArtist & { href: string; actionKey: string };
+export type MusicHomeAlbumCard = MusicAlbum & { href: string; actionKey: string };
