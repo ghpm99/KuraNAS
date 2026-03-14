@@ -2,6 +2,7 @@ import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconBut
 import { Play, User } from 'lucide-react';
 import { useState } from 'react';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
+import { createArtistPlaybackContext } from '@/components/music/playbackContext';
 import TrackListItem from '@/components/music/TrackListItem';
 import CategoryHeader from '@/components/music/CategoryHeader';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -47,7 +48,7 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 	const handlePlayArtist = async (e: React.MouseEvent, artist: string) => {
 		e.stopPropagation();
 		const data = await getMusicByArtist(artist, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createArtistPlaybackContext(artist));
 	};
 
 	if (isLoading) {
@@ -154,8 +155,9 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 
 const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => void }) => {
 	const { t } = useI18n();
-	const { addToQueue, replaceQueue } = useGlobalMusic();
+	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
+	const playbackContext = createArtistPlaybackContext(artist);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-artist', artist],
@@ -169,13 +171,13 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 	const tracks = data?.pages.flatMap((page) => page.items) ?? [];
 
 	const handlePlayAll = () => {
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (tracks.length > 0) {
 			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -202,7 +204,7 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 							key={item.id}
 							track={item}
 							index={index}
-							onPlay={(track) => addToQueue(track)}
+							onPlay={(_, trackIndex) => replaceQueue(tracks, trackIndex, playbackContext)}
 							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
 							showArtist={false}
 						/>

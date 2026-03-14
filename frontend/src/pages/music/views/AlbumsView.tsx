@@ -3,6 +3,7 @@ import { Disc, Play } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicAlbums, getMusicByAlbum } from '@/service/music';
+import { createAlbumPlaybackContext } from '@/components/music/playbackContext';
 import { MusicAlbum } from '@/types/music';
 import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
@@ -53,7 +54,7 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 	const handlePlayAlbum = async (e: React.MouseEvent, album: string) => {
 		e.stopPropagation();
 		const data = await getMusicByAlbum(album, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createAlbumPlaybackContext(album));
 	};
 
 	if (isLoading) {
@@ -148,8 +149,9 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 
 const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: string; onBack: () => void }) => {
 	const { t } = useI18n();
-	const { addToQueue, replaceQueue } = useGlobalMusic();
+	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
+	const playbackContext = createAlbumPlaybackContext(album);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-album', album],
@@ -163,13 +165,13 @@ const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: st
 	const tracks = data?.pages.flatMap((page) => page.items) ?? [];
 
 	const handlePlayAll = () => {
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (tracks.length > 0) {
 			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -197,7 +199,7 @@ const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: st
 							key={item.id}
 							track={item}
 							index={index}
-							onPlay={(track) => addToQueue(track)}
+							onPlay={(_, trackIndex) => replaceQueue(tracks, trackIndex, playbackContext)}
 							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
 						/>
 					))}

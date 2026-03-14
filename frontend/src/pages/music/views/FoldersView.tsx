@@ -3,6 +3,7 @@ import { Folder, Play } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicByFolder, getMusicFolders } from '@/service/music';
+import { createFolderPlaybackContext } from '@/components/music/playbackContext';
 import { MusicFolder } from '@/types/music';
 import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
@@ -53,7 +54,7 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 		e.stopPropagation();
 		const data = await getMusicByFolder(folder, 1, 500);
 		const tracks = data.items;
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, createFolderPlaybackContext(folder));
 	};
 
 	if (isLoading) {
@@ -136,8 +137,9 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 };
 
 const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => void }) => {
-	const { addToQueue, replaceQueue } = useGlobalMusic();
+	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
+	const playbackContext = createFolderPlaybackContext(folder);
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['music-by-folder', folder],
@@ -152,13 +154,13 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 	};
 
 	const handlePlayAll = () => {
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (tracks.length > 0) {
 			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -186,7 +188,7 @@ const FolderTracksView = ({ folder, onBack }: { folder: string; onBack: () => vo
 							key={item.id}
 							track={item}
 							index={index}
-							onPlay={(track) => addToQueue(track)}
+							onPlay={(_, trackIndex) => replaceQueue(tracks, trackIndex, playbackContext)}
 							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
 						/>
 					))}

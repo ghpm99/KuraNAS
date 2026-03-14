@@ -1,4 +1,5 @@
 import { appRoutes } from '@/app/routes';
+import { createRouteMusicPlaybackContext } from '@/components/music/playbackContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import type { IMusicData, IMusicMetadata } from '@/components/providers/musicProvider/musicProvider';
 import { FileType, getFileTypeInfo } from '@/utils';
@@ -72,7 +73,7 @@ export default function useMediaOpener() {
 					});
 					return true;
 				case 'audio':
-					replaceQueue([toMusicTrack(file)]);
+					replaceQueue([toMusicTrack(file)], 0, createRouteMusicPlaybackContext(location.pathname, location.search));
 					navigate(appRoutes.music, {
 						state: { from: currentRoute },
 					});

@@ -3,7 +3,7 @@ import AllTracksView from './AllTracksView';
 
 const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
-const mockAddToQueue = jest.fn();
+const mockReplaceQueue = jest.fn();
 
 jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
@@ -39,7 +39,7 @@ describe('AllTracksView', () => {
 			getMusicTitle: (m: any) => m.name,
 			getMusicArtist: (m: any) => m.artist,
 			musicMetadata: () => 'meta',
-			addToQueue: mockAddToQueue,
+			replaceQueue: mockReplaceQueue,
 		});
 	});
 
@@ -57,13 +57,18 @@ describe('AllTracksView', () => {
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
 		expect(screen.getByText('MenuAnchor-closed')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('AddToPlaylistMenu-1')).toBeInTheDocument();
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'close-menu' }));
 		expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
+
+		const actionButtons = screen.getAllByRole('button');
+		fireEvent.click(actionButtons[0]!);
+		fireEvent.click(actionButtons[1]!);
+		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 	});
 
 	it('renders fetching spinner and omits all-loaded when there are next pages', () => {

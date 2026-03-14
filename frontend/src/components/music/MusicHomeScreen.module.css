@@ -6,46 +6,139 @@
 
 .heroGrid {
 	display: grid;
-	grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+	grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
 	gap: 20px;
 }
 
 .panel {
 	padding: 24px;
 	border-radius: 20px;
-	background: rgba(18, 18, 28, 0.88);
+	background:
+		radial-gradient(circle at top left, rgba(124, 58, 237, 0.18), transparent 42%),
+		linear-gradient(180deg, rgba(18, 22, 35, 0.96) 0%, rgba(13, 17, 28, 0.96) 100%);
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	box-shadow: 0 16px 40px rgba(4, 7, 16, 0.24);
 }
 
-.panelLabel {
-	display: block;
-	margin-bottom: 10px;
+.heroPanel {
+	position: relative;
+	overflow: hidden;
+}
+
+.panelLabel,
+.subsectionLabel,
+.cardEyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 	font-size: 0.75rem;
 	font-weight: 700;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: rgba(255, 255, 255, 0.46);
+	color: rgba(255, 255, 255, 0.5);
 }
 
-.panelTitle {
+.panelTitle,
+.sectionTitle,
+.cardTitle {
 	margin: 0;
-	font-size: 1.35rem;
-	font-weight: 700;
 	color: rgba(255, 255, 255, 0.95);
 }
 
-.panelDescription {
-	margin: 10px 0 0;
+.panelTitle {
+	margin-top: 10px;
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+
+.sectionTitle {
+	font-size: 1.2rem;
+	font-weight: 650;
+}
+
+.cardTitle {
+	font-size: 1rem;
+	font-weight: 650;
+}
+
+.panelDescription,
+.cardDescription,
+.contextLabel,
+.nextTrackCard span {
+	margin: 0;
 	font-size: 0.94rem;
 	line-height: 1.6;
-	color: rgba(255, 255, 255, 0.66);
+	color: rgba(255, 255, 255, 0.68);
+}
+
+.trackMeta {
+	margin-top: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.trackMeta strong,
+.nextTrackCard strong {
+	font-size: 1.05rem;
+	color: rgba(255, 255, 255, 0.96);
+}
+
+.contextLabel {
+	margin-top: 18px;
+	padding: 10px 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nextTracks {
+	margin-top: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.nextTrackList {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 12px;
+}
+
+.nextTrackCard {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px 14px;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 18px;
+}
+
+.metricGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	margin-top: 18px;
+}
+
+.metricItem {
+	padding: 16px;
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .metricValue {
 	display: block;
-	margin-top: 12px;
-	font-size: 2.1rem;
+	font-size: 1.9rem;
 	font-weight: 700;
 	color: rgba(255, 255, 255, 0.96);
 }
@@ -54,48 +147,47 @@
 	display: block;
 	margin-top: 6px;
 	font-size: 0.85rem;
-	color: rgba(255, 255, 255, 0.56);
+	color: rgba(255, 255, 255, 0.58);
 }
 
-.trackMeta {
-	margin-top: 16px;
+.section {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 14px;
 }
 
-.sectionGrid {
+.sectionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.cardGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	gap: 16px;
 }
 
-.sectionCard {
+.sectionCard,
+.emptyCard {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 12px;
 	padding: 20px;
 	border-radius: 18px;
-	background: linear-gradient(180deg, rgba(33, 34, 51, 0.92) 0%, rgba(17, 18, 28, 0.92) 100%);
+	background:
+		linear-gradient(180deg, rgba(24, 30, 48, 0.96) 0%, rgba(14, 18, 29, 0.96) 100%);
 	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 12px 28px rgba(4, 7, 16, 0.18);
 }
 
-.sectionTitle {
-	margin: 0;
-	font-size: 1.02rem;
-	font-weight: 600;
-	color: rgba(255, 255, 255, 0.94);
-}
-
-.sectionDescription {
-	margin: 0;
-	font-size: 0.88rem;
-	line-height: 1.5;
-	color: rgba(255, 255, 255, 0.62);
-}
-
-.sectionAction {
-	align-self: flex-start;
+.emptyCard {
+	align-items: center;
+	justify-content: center;
+	min-height: 160px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.66);
 }
 
 @media (max-width: 900px) {
@@ -105,5 +197,10 @@
 
 	.panel {
 		padding: 20px;
+	}
+
+	.sectionHeader {
+		flex-direction: column;
+		align-items: flex-start;
 	}
 }

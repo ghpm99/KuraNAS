@@ -26,9 +26,11 @@ const QueueDrawer = () => {
 		getMusicTitle,
 		getMusicArtist,
 		isPlaying,
+		playbackContext,
 		formatDuration,
 	} = useGlobalMusic();
 	const { t } = useI18n();
+	const playbackContextLabel = playbackContext ? t(playbackContext.labelKey, playbackContext.labelParams) : '';
 
 	const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
 	const upcomingTracks = queue
@@ -111,6 +113,11 @@ const QueueDrawer = () => {
 							<Typography variant='caption' color='text.secondary' noWrap>
 								{getMusicArtist(currentTrack)}
 							</Typography>
+							{playbackContextLabel && (
+								<Typography variant='caption' color='text.secondary' noWrap component='div'>
+									{t('MUSIC_PLAYBACK_FROM', { context: playbackContextLabel })}
+								</Typography>
+							)}
 						</Box>
 						{currentTrack.metadata?.duration && (
 							<Typography variant='caption' color='text.secondary' sx={{ flexShrink: 0 }}>

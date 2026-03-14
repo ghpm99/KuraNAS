@@ -3,6 +3,7 @@ import { Play, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicGenres, getMusicByGenre } from '@/service/music';
+import { createGenrePlaybackContext } from '@/components/music/playbackContext';
 import { MusicGenre } from '@/types/music';
 import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
@@ -61,7 +62,7 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 	const handlePlayGenre = async (e: React.MouseEvent, genre: string) => {
 		e.stopPropagation();
 		const data = await getMusicByGenre(genre, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createGenrePlaybackContext(genre));
 	};
 
 	if (isLoading) {
@@ -160,9 +161,10 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 
 const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void }) => {
 	const { t } = useI18n();
-	const { addToQueue, replaceQueue } = useGlobalMusic();
+	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
 	const color = getGenreColor(genre);
+	const playbackContext = createGenrePlaybackContext(genre);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-by-genre', genre],
@@ -176,13 +178,13 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 	const tracks = data?.pages.flatMap((page) => page.items) ?? [];
 
 	const handlePlayAll = () => {
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (tracks.length > 0) {
 			const shuffled = [...tracks].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -209,7 +211,7 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 							key={item.id}
 							track={item}
 							index={index}
-							onPlay={(track) => addToQueue(track)}
+							onPlay={(_, trackIndex) => replaceQueue(tracks, trackIndex, playbackContext)}
 							onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
 						/>
 					))}

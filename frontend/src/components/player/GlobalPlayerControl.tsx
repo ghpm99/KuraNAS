@@ -1,9 +1,11 @@
 import { Box, Card, CardContent, IconButton, Slider, Typography } from '@mui/material';
 import { ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '../providers/GlobalMusicProvider';
 import '../playerControl/playerControl.css';
 
 const GlobalPlayerControl = () => {
+	const { t } = useI18n();
 	const {
 		isPlaying,
 		currentTime,
@@ -20,6 +22,7 @@ const GlobalPlayerControl = () => {
 		setRepeatMode,
 		currentTrack,
 		hasQueue,
+		playbackContext,
 		getMusicTitle,
 		getMusicArtist,
 		toggleQueue,
@@ -32,6 +35,7 @@ const GlobalPlayerControl = () => {
 	const currentTrackArtist = getMusicArtist
 		? getMusicArtist(currentTrack!)
 		: currentTrack?.metadata?.artist || '';
+	const playbackContextLabel = playbackContext ? t(playbackContext.labelKey, playbackContext.labelParams) : '';
 	const safeCurrentTime = Number.isFinite(currentTime) ? currentTime : 0;
 	const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
 
@@ -108,6 +112,11 @@ const GlobalPlayerControl = () => {
 						<Typography variant='caption' color='text.secondary' noWrap component='div'>
 							{currentTrackArtist}
 						</Typography>
+						{playbackContextLabel && (
+							<Typography variant='caption' color='text.secondary' noWrap component='div'>
+								{t('MUSIC_PLAYBACK_FROM', { context: playbackContextLabel })}
+							</Typography>
+						)}
 					</Box>
 				</Box>
 
