@@ -5,6 +5,9 @@ export interface Playlist {
 	name: string;
 	description: string;
 	is_system: boolean;
+	is_auto: boolean;
+	kind: string;
+	source_key: string;
 	created_at: string;
 	updated_at: string;
 	track_count: number;

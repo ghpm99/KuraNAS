@@ -2,6 +2,7 @@ package music
 
 import (
 	"database/sql"
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
@@ -20,19 +21,32 @@ type RepositoryInterface interface {
 	GetNowPlaying() (PlaylistModel, error)
 	GetPlayerState(clientID string) (PlayerStateModel, error)
 	UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error)
+	GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error)
 }
 
 type ServiceInterface interface {
 	GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error)
+	GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error)
 	GetPlaylistByID(id int) (PlaylistDto, error)
 	CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)
 	UpdatePlaylist(id int, req UpdatePlaylistRequest) (PlaylistDto, error)
 	DeletePlaylist(id int) error
-	GetPlaylistTracks(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error)
+	GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error)
 	AddPlaylistTrack(playlistID int, fileID int) (PlaylistTrackDto, error)
 	RemovePlaylistTrack(playlistID int, fileID int) error
 	ReorderPlaylistTracks(playlistID int, tracks []ReorderTrackItem) error
 	GetOrCreateNowPlaying() (PlaylistDto, error)
+	GetHomeCatalog(clientID string, limit int) (MusicHomeCatalogDto, error)
+	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	GetLibraryTracksByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	GetLibraryTracksByAlbum(albumKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	GetLibraryTracksByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
 	GetPlayerState(clientID string) (PlayerStateDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 }

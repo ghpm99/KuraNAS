@@ -1,11 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { Pagination } from '@/types/pagination';
 import { Playlist, PlaylistTrack } from '@/types/playlist';
 import {
+	getAutomaticPlaylists,
 	createPlaylist,
 	deletePlaylist,
 	getPlaylistTracks,
@@ -35,6 +36,11 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		}
 		return getPlaylistTracks(selectedPlaylist.id, pageParam, 50);
 	};
+
+	const automaticPlaylistsQuery = useQuery({
+		queryKey: ['automatic-playlists'],
+		queryFn: getAutomaticPlaylists,
+	});
 
 	const playlistsQuery = useInfiniteQuery({
 		queryKey: ['playlists'],
@@ -96,14 +102,17 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		},
 	});
 
-	const playlists = useMemo(() => playlistsQuery.data?.pages.flatMap((page) => page.items) ?? [], [playlistsQuery.data]);
+	const playlists = useMemo(
+		() => [...(automaticPlaylistsQuery.data ?? []), ...(playlistsQuery.data?.pages.flatMap((page) => page.items) ?? [])],
+		[automaticPlaylistsQuery.data, playlistsQuery.data],
+	);
 	const tracks = useMemo(() => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [], [tracksQuery.data]);
 
 	const contextValue: PlaylistsContextData = {
 		selectedPlaylist,
 		playlists,
 		tracks,
-		isLoadingPlaylists: playlistsQuery.isLoading,
+		isLoadingPlaylists: playlistsQuery.isLoading || automaticPlaylistsQuery.isLoading,
 		isLoadingTracks: tracksQuery.isLoading,
 		hasNextPlaylistPage: Boolean(playlistsQuery.hasNextPage),
 		hasNextTrackPage: Boolean(tracksQuery.hasNextPage),

@@ -82,10 +82,12 @@ func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
 
 func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists := router.Group("/music/playlists")
+	library := router.Group("/music/library")
 
 	playlists.GET("/", context.Music.Handler.GetPlaylistsHandler)
 	playlists.POST("/", context.Music.Handler.CreatePlaylistHandler)
 	playlists.GET("/now-playing", context.Music.Handler.GetNowPlayingHandler)
+	playlists.GET("/system", context.Music.Handler.GetAutomaticPlaylistsHandler)
 	playlists.GET("/:id", context.Music.Handler.GetPlaylistByIDHandler)
 	playlists.PUT("/:id", context.Music.Handler.UpdatePlaylistHandler)
 	playlists.DELETE("/:id", context.Music.Handler.DeletePlaylistHandler)
@@ -93,6 +95,17 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.POST("/:id/tracks", context.Music.Handler.AddPlaylistTrackHandler)
 	playlists.DELETE("/:id/tracks/:fileId", context.Music.Handler.RemovePlaylistTrackHandler)
 	playlists.PUT("/:id/tracks/reorder", context.Music.Handler.ReorderPlaylistTracksHandler)
+
+	library.GET("", context.Music.Handler.GetLibraryTracksHandler)
+	library.GET("/", context.Music.Handler.GetLibraryTracksHandler)
+	library.GET("/home", context.Music.Handler.GetHomeCatalogHandler)
+	library.GET("/artists", context.Music.Handler.GetLibraryArtistsHandler)
+	library.GET("/artists/:key/tracks", context.Music.Handler.GetLibraryTracksByArtistHandler)
+	library.GET("/albums", context.Music.Handler.GetLibraryAlbumsHandler)
+	library.GET("/albums/:key/tracks", context.Music.Handler.GetLibraryTracksByAlbumHandler)
+	library.GET("/genres", context.Music.Handler.GetLibraryGenresHandler)
+	library.GET("/genres/:key/tracks", context.Music.Handler.GetLibraryTracksByGenreHandler)
+	library.GET("/folders", context.Music.Handler.GetLibraryFoldersHandler)
 
 	playerState := router.Group("/music/player-state")
 	playerState.GET("/", context.Music.Handler.GetPlayerStateHandler)

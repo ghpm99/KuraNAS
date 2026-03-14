@@ -170,13 +170,13 @@ const MusicHomeScreen = () => {
 								<span className={styles.cardEyebrow}>{t('MUSIC_ARTISTS')}</span>
 								<h3 className={styles.cardTitle}>{artist.artist}</h3>
 								<p className={styles.cardDescription}>
-									{artist.trackCount} {t('MUSIC_TRACKS_COUNT')} · {artist.albumCount} {t('MUSIC_ALBUMS')}
+									{artist.track_count} {t('MUSIC_TRACKS_COUNT')} · {artist.album_count} {t('MUSIC_ALBUMS')}
 								</p>
 								<div className={styles.actions}>
 									<Button
 										variant='contained'
 										size='small'
-										onClick={() => playArtist(artist.artist)}
+										onClick={() => playArtist(artist)}
 										disabled={isActionPending(artist.actionKey)}
 									>
 										{isActionPending(artist.actionKey) ? t('LOADING') : t('MUSIC_HOME_PLAY_NOW')}
@@ -215,13 +215,13 @@ const MusicHomeScreen = () => {
 									{album.year ? ` · ${album.year}` : ''}
 								</p>
 								<span className={styles.metricCaption}>
-									{album.trackCount} {t('MUSIC_TRACKS_COUNT')}
+									{album.track_count} {t('MUSIC_TRACKS_COUNT')}
 								</span>
 								<div className={styles.actions}>
 									<Button
 										variant='contained'
 										size='small'
-										onClick={() => playAlbum(album.album)}
+										onClick={() => playAlbum(album)}
 										disabled={isActionPending(album.actionKey)}
 									>
 										{isActionPending(album.actionKey) ? t('LOADING') : t('MUSIC_HOME_PLAY_NOW')}

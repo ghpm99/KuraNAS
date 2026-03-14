@@ -14,7 +14,7 @@ import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const ArtistsView = () => {
-	const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
+	const [selectedArtist, setSelectedArtist] = useState<MusicArtist | null>(null);
 
 	if (selectedArtist) {
 		return <ArtistTracksView artist={selectedArtist} onBack={() => setSelectedArtist(null)} />;
@@ -30,7 +30,7 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) => {
+const ArtistListView = ({ onSelect }: { onSelect: (artist: MusicArtist) => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -45,10 +45,10 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 
 	const artists = data?.pages.flatMap((page) => page.items) ?? [];
 
-	const handlePlayArtist = async (e: React.MouseEvent, artist: string) => {
+	const handlePlayArtist = async (e: React.MouseEvent, artist: MusicArtist) => {
 		e.stopPropagation();
-		const data = await getMusicByArtist(artist, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items, 0, createArtistPlaybackContext(artist));
+		const data = await getMusicByArtist(artist.key, 1, 200);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createArtistPlaybackContext(artist.artist));
 	};
 
 	if (isLoading) {
@@ -78,8 +78,8 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 								component='div'
 								role='button'
 								tabIndex={0}
-								onClick={() => onSelect(artist.artist)}
-								onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(artist.artist))}
+								onClick={() => onSelect(artist)}
+								onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(artist))}
 								sx={{ position: 'relative' }}
 							>
 								<Box
@@ -109,12 +109,12 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 										{artist.artist}
 									</Typography>
 									<Typography variant='caption' color='text.secondary'>
-										{artist.album_count} albums
+										{artist.album_count} {t('MUSIC_ALBUMS')}
 									</Typography>
 								</CardContent>
 								<IconButton
 									className='play-overlay'
-									onClick={(e) => handlePlayArtist(e, artist.artist)}
+									onClick={(e) => handlePlayArtist(e, artist)}
 									sx={{
 										position: 'absolute',
 										bottom: 50,
@@ -153,16 +153,16 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: string) => void }) =>
 	);
 };
 
-const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => void }) => {
+const ArtistTracksView = ({ artist, onBack }: { artist: MusicArtist; onBack: () => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
-	const playbackContext = createArtistPlaybackContext(artist);
+	const playbackContext = createArtistPlaybackContext(artist.artist);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-by-artist', artist],
+		queryKey: ['music-by-artist', artist.key],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<IMusicData>> => {
-			return getMusicByArtist(artist, pageParam, 50);
+			return getMusicByArtist(artist.key, pageParam, 50);
 		},
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
@@ -184,7 +184,7 @@ const ArtistTracksView = ({ artist, onBack }: { artist: string; onBack: () => vo
 	return (
 		<Box sx={{ p: 2 }}>
 			<CategoryHeader
-				title={artist}
+				title={artist.artist}
 				trackCount={tracks.length}
 				icon={<User size={48} opacity={0.7} />}
 				gradientFrom='#4f46e5'

@@ -40,6 +40,7 @@ export default function PlaylistDetailSection({
 
 	const allFiles = tracks.map((track) => track.file);
 	const playbackContext = createPlaylistPlaybackContext(playlist);
+	const canRemoveTracks = !playlist.is_system && !playlist.is_auto;
 
 	const handlePlayAll = () => {
 		if (allFiles.length > 0) replaceQueue(allFiles, 0, playbackContext);
@@ -153,17 +154,19 @@ export default function PlaylistDetailSection({
 										</Typography>
 									</Box>
 
-									<IconButton
-										className='remove-btn'
-										size='small'
-										onClick={(e) => {
-											e.stopPropagation();
-											onRemoveTrack(track.file.id);
-										}}
-										sx={{ opacity: 0, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-									>
-										<Trash2 size={14} />
-									</IconButton>
+									{canRemoveTracks && (
+										<IconButton
+											className='remove-btn'
+											size='small'
+											onClick={(e) => {
+												e.stopPropagation();
+												onRemoveTrack(track.file.id);
+											}}
+											sx={{ opacity: 0, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+										>
+											<Trash2 size={14} />
+										</IconButton>
+									)}
 
 									{duration ? (
 										<Typography variant='caption' color='text.secondary' sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'right' }}>

@@ -28,7 +28,7 @@ const getGenreColor = (genre: string) => {
 };
 
 const GenresView = () => {
-	const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+	const [selectedGenre, setSelectedGenre] = useState<MusicGenre | null>(null);
 
 	if (selectedGenre) {
 		return <GenreTracksView genre={selectedGenre} onBack={() => setSelectedGenre(null)} />;
@@ -44,7 +44,7 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
+const GenreListView = ({ onSelect }: { onSelect: (genre: MusicGenre) => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -59,10 +59,10 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 
 	const genres = data?.pages.flatMap((page) => page.items) ?? [];
 
-	const handlePlayGenre = async (e: React.MouseEvent, genre: string) => {
+	const handlePlayGenre = async (e: React.MouseEvent, genre: MusicGenre) => {
 		e.stopPropagation();
-		const data = await getMusicByGenre(genre, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items, 0, createGenrePlaybackContext(genre));
+		const data = await getMusicByGenre(genre.key, 1, 200);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createGenrePlaybackContext(genre.genre));
 	};
 
 	if (isLoading) {
@@ -93,8 +93,8 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 									component='div'
 									role='button'
 									tabIndex={0}
-									onClick={() => onSelect(genre.genre)}
-									onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(genre.genre))}
+									onClick={() => onSelect(genre)}
+									onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(genre))}
 									sx={{ position: 'relative' }}
 								>
 									<Box
@@ -119,7 +119,7 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 									</CardContent>
 									<IconButton
 										className='play-overlay'
-										onClick={(e) => handlePlayGenre(e, genre.genre)}
+										onClick={(e) => handlePlayGenre(e, genre)}
 										sx={{
 											position: 'absolute',
 											bottom: 42,
@@ -159,17 +159,17 @@ const GenreListView = ({ onSelect }: { onSelect: (genre: string) => void }) => {
 	);
 };
 
-const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void }) => {
+const GenreTracksView = ({ genre, onBack }: { genre: MusicGenre; onBack: () => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
-	const color = getGenreColor(genre);
-	const playbackContext = createGenrePlaybackContext(genre);
+	const color = getGenreColor(genre.genre);
+	const playbackContext = createGenrePlaybackContext(genre.genre);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-by-genre', genre],
+		queryKey: ['music-by-genre', genre.key],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<IMusicData>> => {
-			return getMusicByGenre(genre, pageParam, 50);
+			return getMusicByGenre(genre.key, pageParam, 50);
 		},
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
@@ -191,7 +191,7 @@ const GenreTracksView = ({ genre, onBack }: { genre: string; onBack: () => void 
 	return (
 		<Box sx={{ p: 2 }}>
 			<CategoryHeader
-				title={genre}
+				title={genre.genre}
 				trackCount={tracks.length}
 				icon={<Tag size={48} opacity={0.7} />}
 				gradientFrom={color}
