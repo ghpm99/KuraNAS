@@ -27,7 +27,7 @@ export interface VideoPlaylistDto {
 	is_hidden: boolean;
 	is_auto: boolean;
 	group_mode: 'folder' | 'prefix' | 'single';
-	classification: 'anime' | 'series' | 'movie' | 'personal' | 'program';
+	classification: 'anime' | 'series' | 'movie' | 'personal' | 'clip' | 'program';
 	item_count: number;
 	cover_video_id: number | null;
 	created_at: string;

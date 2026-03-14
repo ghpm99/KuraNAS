@@ -1,4 +1,4 @@
-import { appRoutes, getFileBrowserRootPath, getMusicRoute, isMusicRoute, isVideoPlayerRoute } from './routes';
+import { appRoutes, getFileBrowserRootPath, getMusicRoute, getVideoRoute, isMusicRoute, isVideoPlayerRoute, isVideoRoute } from './routes';
 
 describe('app routes helpers', () => {
 	it('matches video player routes', () => {
@@ -12,6 +12,14 @@ describe('app routes helpers', () => {
 		expect(isMusicRoute('/music')).toBe(true);
 		expect(isMusicRoute('/music/playlists')).toBe(true);
 		expect(isMusicRoute('/videos')).toBe(false);
+	});
+
+	it('builds video section routes and detects nested video paths', () => {
+		expect(getVideoRoute('home')).toBe(appRoutes.videos);
+		expect(getVideoRoute('series')).toBe('/videos/series');
+		expect(isVideoRoute('/videos')).toBe(true);
+		expect(isVideoRoute('/videos/folders')).toBe(true);
+		expect(isVideoRoute('/music')).toBe(false);
 	});
 
 	it('returns the correct browser root path', () => {
