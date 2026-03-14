@@ -75,6 +75,7 @@ jest.mock('@/components/fileContent', () => () => <div>FileContentMock</div>);
 jest.mock('@/components/fileDetails', () => () => <div>FileDetailsMock</div>);
 jest.mock('@/components/tabs', () => () => <div>TabsMock</div>);
 jest.mock('@/components/files/filesLayout', () => ({ children }: any) => <div data-testid='files-layout'>{children}</div>);
+jest.mock('@/components/files/FilesExplorerScreen', () => () => <div>FilesExplorerScreenMock</div>);
 
 jest.mock('@/components/imageContent', () => () => <div>ImageContentMock</div>);
 jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => <div data-testid='images-layout'>{children}</div>);
@@ -258,7 +259,7 @@ describe('shell components and pages', () => {
 
 		render(<FilesPage />);
 		expect(screen.getByTestId('files-layout')).toBeInTheDocument();
-		expect(screen.getByText('FileContentMock')).toBeInTheDocument();
+		expect(screen.getByText('FilesExplorerScreenMock')).toBeInTheDocument();
 
 		render(<FavoritesPage />);
 		expect(screen.getAllByTestId('files-layout').length).toBeGreaterThan(0);
