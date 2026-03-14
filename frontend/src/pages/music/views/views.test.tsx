@@ -97,11 +97,11 @@ beforeEach(() => {
 		isFetchingNextPage: false,
 		lastItemRef: jest.fn(),
 	});
-	mockGetMusicArtists.mockResolvedValue(makePagination([{ artist: 'artist-1', album_count: 1, track_count: 1 }]));
+	mockGetMusicArtists.mockResolvedValue(makePagination([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }]));
 	mockGetMusicByArtist.mockResolvedValue(makePagination([track]));
-	mockGetMusicAlbums.mockResolvedValue(makePagination([{ album: 'album-1', artist: 'artist-1', track_count: 1, year: 2024 }]));
+	mockGetMusicAlbums.mockResolvedValue(makePagination([{ key: 'artist-1 album-1', album: 'album-1', artist: 'artist-1', track_count: 1, year: 2024 }]));
 	mockGetMusicByAlbum.mockResolvedValue(makePagination([track]));
-	mockGetMusicGenres.mockResolvedValue(makePagination([{ genre: 'genre-1', track_count: 1 }]));
+	mockGetMusicGenres.mockResolvedValue(makePagination([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }]));
 	mockGetMusicByGenre.mockResolvedValue(makePagination([track]));
 	mockGetMusicFolders.mockResolvedValue(makePagination([{ folder: '/root/folder', track_count: 1 }]));
 	mockGetMusicByFolder.mockResolvedValue(
@@ -117,18 +117,18 @@ beforeEach(() => {
 
 		switch (key) {
 			case 'music-artists':
-				return makeInfiniteResult([{ artist: 'artist-1', album_count: 1, track_count: 1 }], true);
+				return makeInfiniteResult([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }], true);
 			case 'music-by-artist':
 				return makeInfiniteResult([track], true);
 			case 'music-albums':
 				return makeInfiniteResult([
-					{ album: 'album-1', artist: 'artist-1', track_count: 1, year: 2024 },
-					{ album: 'album-2', artist: 'artist-2', track_count: 2, year: undefined },
+					{ key: 'artist-1 album-1', album: 'album-1', artist: 'artist-1', track_count: 1, year: 2024 },
+					{ key: 'artist-2 album-2', album: 'album-2', artist: 'artist-2', track_count: 2, year: undefined },
 				]);
 			case 'music-by-album':
 				return makeInfiniteResult([track], true);
 			case 'music-genres':
-				return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+				return makeInfiniteResult([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }]);
 			case 'music-by-genre':
 				return makeInfiniteResult([track], true);
 			case 'music-folders':
@@ -172,7 +172,7 @@ describe('music views', () => {
 			options.getNextPageParam?.({ pagination: { has_next: true, page: 1 } });
 			options.getNextPageParam?.({ pagination: { has_next: false, page: 1 } });
 			if (key === 'music-artists') {
-				return makeInfiniteResult([{ artist: 'artist-1', album_count: 1, track_count: 1 }], true, true);
+				return makeInfiniteResult([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }], true, true);
 			}
 			if (key === 'music-by-artist') {
 				return { ...makeInfiniteResult([track], true), fetchNextPage: fetchArtistTracks };
@@ -226,7 +226,7 @@ describe('music views', () => {
 			options.queryFn?.({ pageParam: 1 });
 			options.getNextPageParam?.({ pagination: { has_next: true, page: 1 } });
 			options.getNextPageParam?.({ pagination: { has_next: false, page: 1 } });
-			if (key === 'music-genres') return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+			if (key === 'music-genres') return makeInfiniteResult([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }]);
 			if (key === 'music-by-genre') return { ...makeInfiniteResult([track], true), fetchNextPage: fetchGenreTracks };
 			return makeInfiniteResult([]);
 		});
@@ -318,7 +318,7 @@ describe('music views', () => {
 			options.queryFn?.({ pageParam: 1 });
 			if (key === 'music-genres') {
 				return {
-					data: { pages: [makePagination([{ genre: 'genre-1', track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: jest.fn(),
 					hasNextPage: true,
@@ -366,7 +366,7 @@ describe('music views', () => {
 			options.queryFn?.({ pageParam: 1 });
 			if (key === 'music-albums') {
 				return {
-					data: { pages: [makePagination([{ album: 'album-1', artist: 'artist-1', track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'artist-1 album-1', album: 'album-1', artist: 'artist-1', track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: fetchAlbums,
 					hasNextPage: true,
@@ -384,7 +384,7 @@ describe('music views', () => {
 			}
 			if (key === 'music-artists') {
 				return {
-					data: { pages: [makePagination([{ artist: 'artist-1', album_count: 1, track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: fetchArtists,
 					hasNextPage: true,
@@ -433,7 +433,7 @@ describe('music views', () => {
 			options.queryFn?.({ pageParam: 1 });
 			if (key === 'music-albums') {
 				return {
-					data: { pages: [makePagination([{ album: 'album-1', artist: 'artist-1', track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'artist-1 album-1', album: 'album-1', artist: 'artist-1', track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: fetchAlbumsList,
 					hasNextPage: true,
@@ -451,7 +451,7 @@ describe('music views', () => {
 			}
 			if (key === 'music-artists') {
 				return {
-					data: { pages: [makePagination([{ artist: 'artist-1', album_count: 1, track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: fetchArtistsList,
 					hasNextPage: true,
@@ -510,7 +510,7 @@ describe('music views', () => {
 			options.queryFn?.({ pageParam: 1 });
 			if (key === 'music-genres') {
 				return {
-					data: { pages: [makePagination([{ genre: 'genre-1', track_count: 1 }], true)] },
+					data: { pages: [makePagination([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }], true)] },
 					isLoading: false,
 					fetchNextPage: jest.fn(),
 					hasNextPage: true,
@@ -549,7 +549,7 @@ describe('music views', () => {
 			const [key] = options.queryKey;
 			options.queryFn?.({});
 			if (key === 'music-genres') {
-				return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+				return makeInfiniteResult([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }]);
 			}
 			if (key === 'music-by-genre') {
 				return {
@@ -575,7 +575,7 @@ describe('music views', () => {
 			const [key] = options.queryKey;
 			options.queryFn?.({});
 			if (key === 'music-genres') {
-				return makeInfiniteResult([{ genre: 'genre-1', track_count: 1 }]);
+				return makeInfiniteResult([{ key: 'genre-1', genre: 'genre-1', track_count: 1 }]);
 			}
 			if (key === 'music-by-genre') {
 				return {

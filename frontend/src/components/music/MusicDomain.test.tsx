@@ -1,20 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MusicDomainHeader from './MusicDomainHeader';
 import MusicHomeScreen from './MusicHomeScreen';
 import MusicSidebar from './MusicSidebar';
 
-const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const mockUseQuery = useQuery as jest.Mock;
 const mockGetPlaylistTracks = jest.fn();
 const mockGetMusicByArtist = jest.fn();
 const mockGetMusicByAlbum = jest.fn();
-
-jest.mock('@/components/providers/musicProvider/musicProvider', () => ({
-	useMusic: () => mockUseMusic(),
-}));
 
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
@@ -31,6 +26,7 @@ jest.mock('@/service/playlist', () => ({
 jest.mock('@/service/music', () => ({
 	getMusicByArtist: (...args: any[]) => mockGetMusicByArtist(...args),
 	getMusicByAlbum: (...args: any[]) => mockGetMusicByAlbum(...args),
+	getMusicHomeCatalog: jest.fn(),
 }));
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -56,11 +52,25 @@ describe('components/music domain shell', () => {
 		jest.clearAllMocks();
 		mockUseQuery.mockReturnValue({
 			data: {
-				items: [
-					{ id: 5, name: 'Playlist A', description: 'Desc', track_count: 4, is_system: false },
+				summary: {
+					total_tracks: 3,
+					total_artists: 2,
+					total_albums: 2,
+					total_genres: 1,
+					total_folders: 1,
+				},
+				playlists: [
+					{ id: 5, name: 'Playlist A', description: 'Desc', track_count: 4, is_system: false, is_auto: false, kind: 'manual', source_key: '' },
+				],
+				artists: [
+					{ key: 'artist-a', artist: 'Artist A', album_count: 1, track_count: 2 },
+				],
+				albums: [
+					{ key: 'artist-a::album-a', album: 'Album A', artist: 'Artist A', year: '2024', track_count: 2 },
 				],
 			},
 			isLoading: false,
+			status: 'success',
 		});
 		mockGetPlaylistTracks.mockResolvedValue({
 			items: [{ file: { id: 20, name: 'Playlist Song', metadata: { title: 'Playlist Song', artist: 'Playlist Artist' } } }],
@@ -70,14 +80,6 @@ describe('components/music domain shell', () => {
 		});
 		mockGetMusicByAlbum.mockResolvedValue({
 			items: [{ id: 40, name: 'Album Song', metadata: { title: 'Album Song', artist: 'Artist A', album: 'Album A' } }],
-		});
-		mockUseMusic.mockReturnValue({
-			status: 'success',
-			music: [
-				{ id: 1, created_at: '2026-03-12T10:00:00Z', updated_at: '', last_interaction: '', metadata: { artist: 'Artist A', album: 'Album A', year: 2024 } },
-				{ id: 2, created_at: '2026-03-11T10:00:00Z', updated_at: '', last_interaction: '', metadata: { artist: 'Artist B', album: 'Album B', year: 2023 } },
-				{ id: 3, created_at: '2026-03-10T10:00:00Z', updated_at: '', last_interaction: '', metadata: { artist: 'Artist A', album: 'Album A', year: 2024 } },
-			],
 		});
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
@@ -170,22 +172,19 @@ describe('components/music domain shell', () => {
 		const playButtons = screen.getAllByRole('button', { name: 'MUSIC_HOME_PLAY_NOW' });
 		fireEvent.click(playButtons[0]!);
 		fireEvent.click(playButtons[1]!);
-		fireEvent.click(playButtons[3]!);
+		fireEvent.click(playButtons[2]!);
 
-		await screen.findByText('MUSIC_HOME_RECENT_ALBUMS');
-		expect(mockGetPlaylistTracks).toHaveBeenCalledWith(5, 1, 200);
-		expect(mockGetMusicByArtist).toHaveBeenCalledWith('Artist A', 1, 200);
-		expect(mockGetMusicByAlbum).toHaveBeenCalledWith('Album A', 1, 200);
-		expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 20 })], 0, expect.objectContaining({ kind: 'playlist' }));
-		expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 30 })], 0, expect.objectContaining({ kind: 'artist' }));
-		expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 40 })], 0, expect.objectContaining({ kind: 'album' }));
+		await waitFor(() => {
+			expect(mockGetPlaylistTracks).toHaveBeenCalledWith(5, 1, 200);
+			expect(mockGetMusicByArtist).toHaveBeenCalledWith('artist-a', 1, 200);
+			expect(mockGetMusicByAlbum).toHaveBeenCalledWith('artist-a::album-a', 1, 200);
+			expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 20 })], 0, expect.objectContaining({ kind: 'playlist' }));
+			expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 30 })], 0, expect.objectContaining({ kind: 'artist' }));
+			expect(replaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 40 })], 0, expect.objectContaining({ kind: 'album' }));
+		});
 	});
 
 	it('renders music home empty state while catalog is loading', () => {
-		mockUseMusic.mockReturnValue({
-			status: 'pending',
-			music: [],
-		});
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: undefined,
 			currentTrack: undefined,
@@ -198,8 +197,20 @@ describe('components/music domain shell', () => {
 			toggleQueue: jest.fn(),
 		});
 		mockUseQuery.mockReturnValue({
-			data: { items: [] },
+			data: {
+				summary: {
+					total_tracks: 0,
+					total_artists: 0,
+					total_albums: 0,
+					total_genres: 0,
+					total_folders: 0,
+				},
+				playlists: [],
+				artists: [],
+				albums: [],
+			},
 			isLoading: true,
+			status: 'pending',
 		});
 
 		render(

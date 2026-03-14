@@ -13,6 +13,7 @@ import {
 	getMusicByGenre,
 	getMusicFolders,
 	getMusicGenres,
+	getMusicHomeCatalog,
 } from './music';
 
 const mockedApi = apiBase as unknown as {
@@ -27,14 +28,14 @@ describe('service/music', () => {
 
 	it('gets artists list', async () => {
 		await getMusicArtists(1, 20);
-		expect(mockedApi.get).toHaveBeenCalledWith('/files/music/artists', {
+		expect(mockedApi.get).toHaveBeenCalledWith('/music/library/artists', {
 			params: { page: 1, page_size: 20 },
 		});
 	});
 
 	it('gets music by encoded artist', async () => {
 		await getMusicByArtist('AC/DC', 2, 10);
-		expect(mockedApi.get).toHaveBeenCalledWith('/files/music/artists/AC%2FDC', {
+		expect(mockedApi.get).toHaveBeenCalledWith('/music/library/artists/AC%2FDC/tracks', {
 			params: { page: 2, page_size: 10 },
 		});
 	});
@@ -43,10 +44,10 @@ describe('service/music', () => {
 		await getMusicAlbums(1, 5);
 		await getMusicByAlbum('Album X', 3, 15);
 
-		expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/files/music/albums', {
+		expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/music/library/albums', {
 			params: { page: 1, page_size: 5 },
 		});
-		expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/files/music/albums/Album%20X', {
+		expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/music/library/albums/Album%20X/tracks', {
 			params: { page: 3, page_size: 15 },
 		});
 	});
@@ -55,19 +56,25 @@ describe('service/music', () => {
 		await getMusicGenres(1, 8);
 		await getMusicByGenre('R&B/Soul', 4, 12);
 
-		expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/files/music/genres', {
+		expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/music/library/genres', {
 			params: { page: 1, page_size: 8 },
 		});
-		expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/files/music/genres/R%26B%2FSoul', {
+		expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/music/library/genres/R%26B%2FSoul/tracks', {
 			params: { page: 4, page_size: 12 },
 		});
 	});
 
 	it('gets folders list', async () => {
 		await getMusicFolders(9, 30);
-		expect(mockedApi.get).toHaveBeenCalledWith('/files/music/folders', {
+		expect(mockedApi.get).toHaveBeenCalledWith('/music/library/folders', {
 			params: { page: 9, page_size: 30 },
 		});
 	});
-});
 
+	it('gets music home catalog', async () => {
+		await getMusicHomeCatalog(4);
+		expect(mockedApi.get).toHaveBeenCalledWith('/music/library/home', {
+			params: { limit: 4 },
+		});
+	});
+});

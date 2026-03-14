@@ -1,16 +1,12 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useMusicHomeScreen } from './useMusicHomeScreen';
 
-const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const mockUseQuery = jest.fn();
 const mockGetPlaylistTracks = jest.fn();
 const mockGetMusicByArtist = jest.fn();
 const mockGetMusicByAlbum = jest.fn();
-
-jest.mock('@/components/providers/musicProvider/musicProvider', () => ({
-	useMusic: () => mockUseMusic(),
-}));
+const mockGetMusicHomeCatalog = jest.fn();
 
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
@@ -21,25 +17,18 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/service/playlist', () => ({
-	getPlaylists: jest.fn(() => Promise.resolve({ items: [] })),
 	getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
 }));
 
 jest.mock('@/service/music', () => ({
 	getMusicByArtist: (...args: any[]) => mockGetMusicByArtist(...args),
 	getMusicByAlbum: (...args: any[]) => mockGetMusicByAlbum(...args),
+	getMusicHomeCatalog: (...args: any[]) => mockGetMusicHomeCatalog(...args),
 }));
 
 describe('useMusicHomeScreen', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockUseMusic.mockReturnValue({
-			status: 'success',
-			music: [
-				{ id: 1, created_at: '2026-03-10T10:00:00Z', metadata: { artist: 'Artist A', album: 'Album A', year: 2024 } },
-				{ id: 2, created_at: '2026-03-11T10:00:00Z', metadata: { artist: 'Artist B', album: 'Album B', year: 2025 } },
-			],
-		});
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
 			currentTrack: { id: 1 },
@@ -53,10 +42,21 @@ describe('useMusicHomeScreen', () => {
 		});
 		mockUseQuery.mockReturnValue({
 			data: {
-				items: [{ id: 5, name: 'Mix', description: '', track_count: 3, is_system: false }],
+				summary: {
+					total_tracks: 2,
+					total_artists: 2,
+					total_albums: 2,
+					total_genres: 1,
+					total_folders: 1,
+				},
+				playlists: [{ id: 5, name: 'Mix', description: '', track_count: 3, is_system: false, is_auto: false, kind: 'manual', source_key: '' }],
+				artists: [{ key: 'artist-a', artist: 'Artist A', track_count: 1, album_count: 1 }],
+				albums: [{ key: 'artist-a::album-a', album: 'Album A', artist: 'Artist A', year: '2024', track_count: 1 }],
 			},
 			isLoading: false,
+			status: 'success',
 		});
+		mockGetMusicHomeCatalog.mockResolvedValue({});
 		mockGetPlaylistTracks.mockResolvedValue({
 			items: [{ file: { id: 10 } }],
 		});
@@ -105,6 +105,7 @@ describe('useMusicHomeScreen', () => {
 		mockUseQuery.mockReturnValue({
 			data: undefined,
 			isLoading: true,
+			status: 'pending',
 		});
 		mockGetPlaylistTracks.mockImplementationOnce(
 			() =>
@@ -136,8 +137,8 @@ describe('useMusicHomeScreen', () => {
 		expect(result.current.isActionPending('playlist-5')).toBe(false);
 
 		await act(async () => {
-			await result.current.playArtist('Artist A');
-			await result.current.playAlbum('Album A');
+			await result.current.playArtist({ key: 'artist-a', artist: 'Artist A', track_count: 1, album_count: 1 });
+			await result.current.playAlbum({ key: 'artist-a::album-a', album: 'Album A', artist: 'Artist A', year: '2024', track_count: 1 });
 		});
 		expect(replaceQueue).not.toHaveBeenCalled();
 	});

@@ -12,8 +12,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 ## Snapshot atual
 
 - Status geral: `IN_PROGRESS`
-- Fase atual recomendada: `Musica`
-- Proxima task recomendada: `TASK-009`
+- Fase atual recomendada: `Videos`
+- Proxima task recomendada: `TASK-010`
 
 ## Quadro de tasks
 
@@ -27,7 +27,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-006 | Criar Favoritos v1 como dominio proprio | DONE | Explorer |
 | TASK-007 | Reorganizar IA e rotas do dominio Musica | DONE | Musica |
 | TASK-008 | Entregar Home de musica e contexto de reproducao | DONE | Musica |
-| TASK-009 | Normalizar metadados e playlists automaticas de musica | TODO | Musica |
+| TASK-009 | Normalizar metadados e playlists automaticas de musica | DONE | Musica |
 | TASK-010 | Reorganizar IA e rotas do dominio Videos | TODO | Videos |
 | TASK-011 | Refinar classificacao e paginas de detalhe de videos | TODO | Videos |
 | TASK-012 | Evoluir o player de video para contexto completo | TODO | Videos |
@@ -52,6 +52,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-14 | TASK-006 | Favoritos virou pagina propria com filtros por tipo e contexto dedicado. | Frontend ganhou `FavoritesScreen`, filtros locais `Tudo/Pastas/Arquivos/Midias`, reaproveito vertical do `starred`, novos textos i18n e cobertura para o fluxo da nova area. |
 | 2026-03-14 | TASK-007 | Musica passou a expor subrotas restauraveis com shell secundario e landing de contexto. | Frontend ganhou IA por URL em `/music`, `/music/playlists`, `/music/artists`, `/music/albums`, `/music/genres` e `/music/folders`, header contextual, i18n compartilhado e testes do dominio. |
 | 2026-03-14 | TASK-008 | `/music` passou a abrir uma home de consumo com contexto claro de reproducao. | Frontend ganhou Home de musica com continuar ouvindo, playlists em destaque, artistas/albuns recentes, contexto de origem no player/fila e cobertura para os fluxos novos. |
+| 2026-03-14 | TASK-009 | Musica passou a consumir catalogo normalizado do backend com playlists automaticas de primeiro nivel. | Backend ganhou contratos proprios em `/music/library` e playlists automaticas para continuar ouvindo/recentes/favoritas; frontend migrou Home, artistas, albuns, generos e playlists para os contratos novos com i18n e testes atualizados. |
 
 ## Como atualizar ao concluir uma task
 

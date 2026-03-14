@@ -284,8 +284,8 @@ func TestRunPythonScriptAndStructHelpers(t *testing.T) {
 	if _, err := RunPythonScript(""); err == nil {
 		t.Fatalf("expected empty script name error")
 	}
-	if _, err := RunPythonScript(ImageMetadata, "/tmp/file"); err == nil {
-		t.Fatalf("expected execution error when python/script path is unavailable")
+	if _, err := RunPythonScript(ScriptType("missing_script.py"), "/tmp/file"); err == nil {
+		t.Fatalf("expected execution error for missing script")
 	}
 
 	type sample struct {

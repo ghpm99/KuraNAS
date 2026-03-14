@@ -38,7 +38,7 @@ describe('components/music/AddToPlaylistMenu', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockUseQueryClient.mockReturnValue({ invalidateQueries });
-		mockGetPlaylists.mockResolvedValue({ items: [{ id: 10, name: 'My Playlist', is_system: false }] });
+		mockGetPlaylists.mockResolvedValue({ items: [{ id: 10, name: 'My Playlist', is_system: false, is_auto: false, kind: 'manual', source_key: '' }] });
 		mockAddTrackToPlaylist.mockResolvedValue({});
 		mockCreatePlaylist.mockResolvedValue({ id: 99, name: 'Roadtrip' });
 		mockUseQuery.mockImplementation((options: any) => {
@@ -46,8 +46,8 @@ describe('components/music/AddToPlaylistMenu', () => {
 			return {
 			data: {
 				items: [
-					{ id: 10, name: 'My Playlist', is_system: false },
-					{ id: 11, name: 'System Playlist', is_system: true },
+					{ id: 10, name: 'My Playlist', is_system: false, is_auto: false, kind: 'manual', source_key: '' },
+					{ id: 11, name: 'System Playlist', is_system: true, is_auto: true, kind: 'automatic', source_key: 'favorites' },
 				],
 			},
 			isLoading: false,

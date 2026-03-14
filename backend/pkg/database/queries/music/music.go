@@ -39,3 +39,12 @@ var GetPlayerStateQuery string
 
 //go:embed upsert_player_state.sql
 var UpsertPlayerStateQuery string
+
+//go:embed get_library_tracks.sql
+var GetLibraryTracksQuery string
+
+//go:embed get_library_index_entries.sql
+var GetLibraryIndexEntriesQuery string
+
+//go:embed get_library_files_by_ids.sql
+var GetLibraryFilesByIDsQuery string
