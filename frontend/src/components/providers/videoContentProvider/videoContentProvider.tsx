@@ -2,39 +2,45 @@
 import {
 	addVideoToPlaylist,
 	getAllVideoFiles,
+	getVideoHomeCatalog,
 	getVideoPlaybackState,
 	getVideoPlaylistById,
 	getVideoPlaylists,
+	type VideoCatalogItemDto,
 	reorderVideoPlaylist,
 	removeVideoFromPlaylist,
 	updateVideoPlaylistName,
 	type VideoFileDto,
 	type VideoPlaylistDto,
 } from '@/service/videoPlayback';
+import { type VideoSection } from '@/app/routes';
+import { getVideoSectionFromPath } from '@/components/videos/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 type FeedbackState = { open: boolean; message: string; severity: 'success' | 'error' };
 
-type GroupedPlaylists = {
-	classificationTitle: Record<string, string>;
-	grouped: Record<string, VideoPlaylistDto[]>;
-};
-
 export interface VideoContentContextData {
+	currentSection: VideoSection;
 	playlists: VideoPlaylistDto[];
 	allVideos: VideoFileDto[];
 	filteredVideos: VideoFileDto[];
 	continuePlaylists: VideoPlaylistDto[];
-	groupedPlaylists: GroupedPlaylists;
+	seriesPlaylists: VideoPlaylistDto[];
+	moviePlaylists: VideoPlaylistDto[];
+	personalPlaylists: VideoPlaylistDto[];
+	clipPlaylists: VideoPlaylistDto[];
+	folderPlaylists: VideoPlaylistDto[];
+	recentCatalogItems: VideoCatalogItemDto[];
 	playlistMembershipMap: Record<number, Set<number>>;
 	selectedPlaylistSummary: VideoPlaylistDto | null;
 	selectedPlaylistDetail: VideoPlaylistDto | null;
 	isLoadingPlaylists: boolean;
 	isLoadingVideos: boolean;
 	isLoadingSelectedPlaylist: boolean;
+	isLoadingHomeCatalog: boolean;
 	isAddingToPlaylist: boolean;
 	isRenamingPlaylist: boolean;
 	isRemovingFromPlaylist: boolean;
@@ -69,10 +75,12 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const { t } = useI18n();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const queryClient = useQueryClient();
 	const [videoSearch, setVideoSearch] = useState('');
 	const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<Record<number, number>>({});
 	const [feedback, setFeedback] = useState<FeedbackState>({ open: false, message: '', severity: 'success' });
+	const currentSection = getVideoSectionFromPath(location.pathname);
 
 	const { data: playlists = [], isLoading: isLoadingPlaylists } = useQuery({
 		queryKey: ['video-playlists'],
@@ -81,6 +89,10 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const { data: allVideos = [], isLoading: isLoadingVideos } = useQuery({
 		queryKey: ['video-all-files'],
 		queryFn: () => getAllVideoFiles(2000),
+	});
+	const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = useQuery({
+		queryKey: ['video-home-catalog'],
+		queryFn: () => getVideoHomeCatalog(12),
 	});
 	const { data: playbackState } = useQuery({
 		queryKey: ['video-playback-state'],
@@ -114,28 +126,32 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		[playlists],
 	);
 
-	const groupedPlaylists = useMemo<GroupedPlaylists>(() => {
-		const classificationTitle: Record<string, string> = {
-			anime: t('VIDEO_CLASS_ANIME'),
-			series: t('VIDEO_CLASS_SERIES'),
-			movie: t('VIDEO_CLASS_MOVIE'),
-			personal: t('VIDEO_CLASS_PERSONAL'),
-			program: t('VIDEO_CLASS_PROGRAM'),
-		};
-		const grouped: Record<string, VideoPlaylistDto[]> = {
-			anime: [],
-			series: [],
-			movie: [],
-			personal: [],
-			program: [],
-		};
-		for (const playlist of playlists) {
-			const key = playlist.classification || 'personal';
-			if (!grouped[key]) grouped[key] = [];
-			grouped[key].push(playlist);
-		}
-		return { classificationTitle, grouped };
-	}, [playlists, t]);
+	const seriesPlaylists = useMemo(
+		() => playlists.filter((playlist) => playlist.classification === 'series' || playlist.classification === 'anime'),
+		[playlists],
+	);
+
+	const moviePlaylists = useMemo(
+		() => playlists.filter((playlist) => playlist.classification === 'movie'),
+		[playlists],
+	);
+
+	const personalPlaylists = useMemo(
+		() => playlists.filter((playlist) => playlist.classification === 'personal'),
+		[playlists],
+	);
+
+	const clipPlaylists = useMemo(
+		() => playlists.filter((playlist) => playlist.classification === 'clip' || playlist.classification === 'program'),
+		[playlists],
+	);
+
+	const folderPlaylists = useMemo(() => playlists.filter((playlist) => playlist.type === 'folder'), [playlists]);
+
+	const recentCatalogItems = useMemo(
+		() => homeCatalog?.sections.find((section) => section.key === 'recent')?.items ?? [],
+		[homeCatalog?.sections],
+	);
 
 	const filteredVideos = useMemo(() => {
 		if (!videoSearch.trim()) return allVideos;
@@ -207,9 +223,14 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		onSuccess: refreshVideoQueries,
 	});
 
+	const getCurrentRoute = () => {
+		const currentSearch = searchParams.toString();
+		return `${location.pathname}${currentSearch ? `?${currentSearch}` : ''}`;
+	};
+
 	const playVideo = (videoId: number, playlistId?: number | null) => {
 		if (!videoId) return;
-		const from = `/videos${window.location.search}`;
+		const from = getCurrentRoute();
 		navigate(`/video/${videoId}`, { state: { from, playlistId: playlistId ?? null } });
 	};
 
@@ -218,22 +239,32 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		const slug = slugify(selectedPlaylistSummary.name);
 		setSearchParams({ playlist: slug, video: String(videoId) });
 		navigate(`/video/${videoId}`, {
-			state: { from: `/videos?playlist=${encodeURIComponent(slug)}&video=${videoId}`, playlistId: selectedPlaylistSummary.id },
+			state: {
+				from: `${location.pathname}?playlist=${encodeURIComponent(slug)}&video=${videoId}`,
+				playlistId: selectedPlaylistSummary.id,
+			},
 		});
 	};
 
 	const contextValue: VideoContentContextData = {
+		currentSection,
 		playlists,
 		allVideos,
 		filteredVideos,
 		continuePlaylists,
-		groupedPlaylists,
+		seriesPlaylists,
+		moviePlaylists,
+		personalPlaylists,
+		clipPlaylists,
+		folderPlaylists,
+		recentCatalogItems,
 		playlistMembershipMap,
 		selectedPlaylistSummary,
 		selectedPlaylistDetail,
 		isLoadingPlaylists,
 		isLoadingVideos,
 		isLoadingSelectedPlaylist,
+		isLoadingHomeCatalog,
 		isAddingToPlaylist: addToPlaylistMutation.isPending,
 		isRenamingPlaylist: renameMutation.isPending,
 		isRemovingFromPlaylist: removeFromPlaylistMutation.isPending,

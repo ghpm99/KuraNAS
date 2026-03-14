@@ -49,7 +49,7 @@ function AppContent() {
 					<Route path='folders' element={<FoldersView />} />
 					<Route path='*' element={<Navigate to={getMusicRoute('home')} replace />} />
 				</Route>
-				<Route path={appRoutes.videos} element={<VideosPage />} />
+				<Route path={`${appRoutes.videos}/*`} element={<VideosPage />} />
 				<Route path={`${appRoutes.videoPlayerBase}/:id`} element={<VideoPlayerPage />} />
 				<Route path='*' element={<Navigate to={appRoutes.home} replace />} />
 			</Routes>
