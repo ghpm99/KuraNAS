@@ -49,19 +49,20 @@ func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
 	prevLang := config.AppConfig.Lang
 	t.Cleanup(func() { config.AppConfig.Lang = prevLang })
 
-	translationDir := filepath.Join("etc", "kuranas", "translations")
+	translationPath := GetPathFileTranslate()
+	translationDir := filepath.Dir(translationPath)
 	if err := os.MkdirAll(translationDir, 0755); err != nil {
 		t.Fatalf("failed to create translation dir: %v", err)
 	}
 
 	validLang := "test-valid"
-	validPath := filepath.Join(translationDir, validLang+".json")
+	config.AppConfig.Lang = validLang
+	validPath := GetPathFileTranslate()
 	if err := os.WriteFile(validPath, []byte(`{"HELLO":"ola"}`), 0644); err != nil {
 		t.Fatalf("failed to write valid translation file: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Remove(validPath) })
 
-	config.AppConfig.Lang = validLang
 	if err := LoadTranslations(); err != nil {
 		t.Fatalf("expected LoadTranslations success, got %v", err)
 	}
@@ -70,13 +71,13 @@ func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
 	}
 
 	invalidLang := "test-invalid"
-	invalidPath := filepath.Join(translationDir, invalidLang+".json")
+	config.AppConfig.Lang = invalidLang
+	invalidPath := GetPathFileTranslate()
 	if err := os.WriteFile(invalidPath, []byte(`{invalid-json`), 0644); err != nil {
 		t.Fatalf("failed to write invalid translation file: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Remove(invalidPath) })
 
-	config.AppConfig.Lang = invalidLang
 	if err := LoadTranslations(); err == nil {
 		t.Fatalf("expected json decode error for invalid translation content")
 	}

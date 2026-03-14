@@ -2,7 +2,7 @@ package icons
 
 import "testing"
 
-func TestIconFunctionsReturnErrorWhenAssetMissing(t *testing.T) {
+func TestIconFunctionsResolveAssetsForCurrentBuildConfig(t *testing.T) {
 	tests := []struct {
 		name string
 		fn   func() (interface{}, error)
@@ -42,11 +42,11 @@ func TestIconFunctionsReturnErrorWhenAssetMissing(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			img, err := tc.fn()
-			if err == nil {
-				t.Fatalf("expected error when icon file does not exist")
+			if err != nil {
+				t.Fatalf("expected icon resolution success for %s, got %v", tc.name, err)
 			}
-			if img != nil {
-				t.Fatalf("expected nil image on error")
+			if img == nil {
+				t.Fatalf("expected non-nil image for %s", tc.name)
 			}
 		})
 	}

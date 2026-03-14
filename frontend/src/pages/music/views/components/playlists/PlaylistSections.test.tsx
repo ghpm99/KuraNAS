@@ -31,6 +31,9 @@ const playlist = {
 	name: 'Roadtrip',
 	description: 'favorites',
 	is_system: false,
+	is_auto: false,
+	kind: 'manual',
+	source_key: '',
 	created_at: '',
 	updated_at: '',
 	track_count: 2,
@@ -41,6 +44,9 @@ const systemPlaylist = {
 	id: 2,
 	name: 'System Mix',
 	is_system: true,
+	is_auto: true,
+	kind: 'automatic',
+	source_key: 'favorites',
 };
 
 const tracks = [

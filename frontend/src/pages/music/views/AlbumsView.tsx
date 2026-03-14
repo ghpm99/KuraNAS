@@ -14,19 +14,18 @@ import CategoryHeader from '@/components/music/CategoryHeader';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const AlbumsView = () => {
-	const [selectedAlbum, setSelectedAlbum] = useState<{ album: string; artist?: string } | null>(null);
+	const [selectedAlbum, setSelectedAlbum] = useState<MusicAlbum | null>(null);
 
 	if (selectedAlbum) {
 		return (
 			<AlbumTracksView
-				album={selectedAlbum.album}
-				artist={selectedAlbum.artist}
+				album={selectedAlbum}
 				onBack={() => setSelectedAlbum(null)}
 			/>
 		);
 	}
 
-	return <AlbumListView onSelect={(album, artist) => setSelectedAlbum({ album, artist })} />;
+	return <AlbumListView onSelect={setSelectedAlbum} />;
 };
 
 const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -36,7 +35,7 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string) => void }) => {
+const AlbumListView = ({ onSelect }: { onSelect: (album: MusicAlbum) => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -51,10 +50,10 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 
 	const albums = data?.pages.flatMap((page) => page.items) ?? [];
 
-	const handlePlayAlbum = async (e: React.MouseEvent, album: string) => {
+	const handlePlayAlbum = async (e: React.MouseEvent, album: MusicAlbum) => {
 		e.stopPropagation();
-		const data = await getMusicByAlbum(album, 1, 200);
-		if (data.items.length > 0) replaceQueue(data.items, 0, createAlbumPlaybackContext(album));
+		const data = await getMusicByAlbum(album.key, 1, 200);
+		if (data.items.length > 0) replaceQueue(data.items, 0, createAlbumPlaybackContext(album.album));
 	};
 
 	if (isLoading) {
@@ -82,8 +81,8 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 								component='div'
 								role='button'
 								tabIndex={0}
-								onClick={() => onSelect(album.album, album.artist)}
-								onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(album.album, album.artist))}
+								onClick={() => onSelect(album)}
+								onKeyDown={(event) => handleActionAreaKeyDown(event, () => onSelect(album))}
 								sx={{ position: 'relative' }}
 							>
 								<Box
@@ -108,7 +107,7 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 								</CardContent>
 								<IconButton
 									className='play-overlay'
-									onClick={(e) => handlePlayAlbum(e, album.album)}
+									onClick={(e) => handlePlayAlbum(e, album)}
 									sx={{
 										position: 'absolute',
 										bottom: 50,
@@ -147,16 +146,16 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: string, artist?: string
 	);
 };
 
-const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: string; onBack: () => void }) => {
+const AlbumTracksView = ({ album, onBack }: { album: MusicAlbum; onBack: () => void }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
-	const playbackContext = createAlbumPlaybackContext(album);
+	const playbackContext = createAlbumPlaybackContext(album.album);
 
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-by-album', album],
+		queryKey: ['music-by-album', album.key],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<IMusicData>> => {
-			return getMusicByAlbum(album, pageParam, 50);
+			return getMusicByAlbum(album.key, pageParam, 50);
 		},
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
@@ -178,8 +177,8 @@ const AlbumTracksView = ({ album, artist, onBack }: { album: string; artist?: st
 	return (
 		<Box sx={{ p: 2 }}>
 			<CategoryHeader
-				title={album}
-				subtitle={artist}
+				title={album.album}
+				subtitle={album.artist}
 				trackCount={tracks.length}
 				icon={<Disc size={48} opacity={0.7} />}
 				gradientFrom='#7c3aed'

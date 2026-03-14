@@ -3,9 +3,12 @@ package music
 import (
 	"database/sql"
 	"fmt"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/music"
 	"nas-go/api/pkg/utils"
+
+	"github.com/lib/pq"
 )
 
 type Repository struct {
@@ -18,6 +21,59 @@ func NewRepository(database *database.DbContext) *Repository {
 
 func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
+}
+
+func scanMusicFile(rows *sql.Rows, file *files.FileModel) error {
+	var metadata files.AudioMetadataModel
+
+	if err := rows.Scan(
+		&file.ID, &file.Name, &file.Path, &file.ParentPath,
+		&file.Format, &file.Size, &file.UpdatedAt, &file.CreatedAt,
+		&file.LastInteraction, &file.LastBackup, &file.Type,
+		&file.CheckSum, &file.DeletedAt, &file.Starred,
+		&metadata.ID, &metadata.FileId, &metadata.Path,
+		&metadata.Mime, &metadata.Length, &metadata.Bitrate,
+		&metadata.SampleRate, &metadata.Channels,
+		&metadata.BitrateMode, &metadata.EncoderInfo, &metadata.BitDepth,
+		&metadata.Title, &metadata.Artist, &metadata.Album,
+		&metadata.AlbumArtist, &metadata.TrackNumber, &metadata.Genre,
+		&metadata.Composer, &metadata.Year, &metadata.RecordingDate,
+		&metadata.Encoder, &metadata.Publisher, &metadata.OriginalReleaseDate,
+		&metadata.OriginalArtist, &metadata.Lyricist, &metadata.Lyrics,
+		&metadata.CreatedAt,
+	); err != nil {
+		return err
+	}
+
+	file.Metadata = metadata
+	return nil
+}
+
+func (r *Repository) getLibraryFiles(args ...any) ([]files.FileModel, error) {
+	results := []files.FileModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetLibraryFilesByIDsQuery, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var file files.FileModel
+			if err := scanMusicFile(rows, &file); err != nil {
+				return err
+			}
+			results = append(results, file)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar arquivos da biblioteca de musica: %w", err)
+	}
+
+	return results, nil
 }
 
 func (r *Repository) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error) {
@@ -63,6 +119,99 @@ func (r *Repository) GetPlaylists(page int, pageSize int) (utils.PaginationRespo
 
 	paginationResponse.UpdatePagination()
 	return paginationResponse, nil
+}
+
+func (r *Repository) GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	paginationResponse := utils.PaginationResponse[files.FileModel]{
+		Items: []files.FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	args := []any{
+		pq.Array(utils.AudioFormats),
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetLibraryTracksQuery, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var file files.FileModel
+			if err := scanMusicFile(rows, &file); err != nil {
+				return err
+			}
+			paginationResponse.Items = append(paginationResponse.Items, file)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return paginationResponse, fmt.Errorf("falha ao buscar a biblioteca de musica: %w", err)
+	}
+
+	paginationResponse.UpdatePagination()
+	return paginationResponse, nil
+}
+
+func (r *Repository) GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error) {
+	results := []MusicLibraryIndexEntryModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetLibraryIndexEntriesQuery, pq.Array(utils.AudioFormats))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item MusicLibraryIndexEntryModel
+			if err := rows.Scan(
+				&item.FileID,
+				&item.FileName,
+				&item.FilePath,
+				&item.ParentPath,
+				&item.Starred,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+				&item.LastInteraction,
+				&item.Title,
+				&item.Artist,
+				&item.AlbumArtist,
+				&item.Album,
+				&item.Genre,
+				&item.Year,
+				&item.TrackNumber,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar indice da biblioteca de musica: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error) {
+	if len(fileIDs) == 0 {
+		return []files.FileModel{}, nil
+	}
+
+	return r.getLibraryFiles(pq.Array(utils.AudioFormats), pq.Array(fileIDs))
 }
 
 func (r *Repository) GetPlaylistByID(id int) (PlaylistModel, error) {

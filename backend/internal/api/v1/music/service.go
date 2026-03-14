@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"fmt"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
 
@@ -29,6 +30,19 @@ func (s *Service) GetPlaylists(page int, pageSize int) (utils.PaginationResponse
 }
 
 func (s *Service) GetPlaylistByID(id int) (PlaylistDto, error) {
+	if id < 0 {
+		playlists, err := s.GetAutomaticPlaylists("")
+		if err != nil {
+			return PlaylistDto{}, err
+		}
+		for _, playlist := range playlists {
+			if playlist.ID == id {
+				return playlist, nil
+			}
+		}
+		return PlaylistDto{}, sql.ErrNoRows
+	}
+
 	playlist, err := s.Repository.GetPlaylistByID(id)
 	if err != nil {
 		return PlaylistDto{}, err
@@ -56,6 +70,10 @@ func (s *Service) CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)
 }
 
 func (s *Service) UpdatePlaylist(id int, req UpdatePlaylistRequest) (PlaylistDto, error) {
+	if id < 0 {
+		return PlaylistDto{}, ErrAutoPlaylistReadOnly
+	}
+
 	var result PlaylistModel
 
 	err := s.withTransaction(func(tx *sql.Tx) error {
@@ -75,12 +93,30 @@ func (s *Service) UpdatePlaylist(id int, req UpdatePlaylistRequest) (PlaylistDto
 }
 
 func (s *Service) DeletePlaylist(id int) error {
+	if id < 0 {
+		return ErrAutoPlaylistReadOnly
+	}
+
 	return s.withTransaction(func(tx *sql.Tx) error {
 		return s.Repository.DeletePlaylist(tx, id)
 	})
 }
 
-func (s *Service) GetPlaylistTracks(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error) {
+func (s *Service) GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error) {
+	if playlistID < 0 {
+		indexEntries, err := s.Repository.GetLibraryIndexEntries()
+		if err != nil {
+			return utils.PaginationResponse[PlaylistTrackDto]{}, err
+		}
+
+		fileIDs, err := s.automaticPlaylistTrackIDs(clientID, playlistID, indexEntries)
+		if err != nil {
+			return utils.PaginationResponse[PlaylistTrackDto]{}, err
+		}
+
+		return s.loadPlaylistTracksByIDs(fileIDs, page, pageSize)
+	}
+
 	tracksModel, err := s.Repository.GetPlaylistTracks(playlistID, page, pageSize)
 	if err != nil {
 		return utils.PaginationResponse[PlaylistTrackDto]{}, err
@@ -89,6 +125,10 @@ func (s *Service) GetPlaylistTracks(playlistID int, page int, pageSize int) (uti
 }
 
 func (s *Service) AddPlaylistTrack(playlistID int, fileID int) (PlaylistTrackDto, error) {
+	if playlistID < 0 {
+		return PlaylistTrackDto{}, ErrAutoPlaylistReadOnly
+	}
+
 	var result PlaylistTrackModel
 
 	err := s.withTransaction(func(tx *sql.Tx) error {
@@ -113,12 +153,20 @@ func (s *Service) AddPlaylistTrack(playlistID int, fileID int) (PlaylistTrackDto
 }
 
 func (s *Service) RemovePlaylistTrack(playlistID int, fileID int) error {
+	if playlistID < 0 {
+		return ErrAutoPlaylistReadOnly
+	}
+
 	return s.withTransaction(func(tx *sql.Tx) error {
 		return s.Repository.RemovePlaylistTrack(tx, playlistID, fileID)
 	})
 }
 
 func (s *Service) ReorderPlaylistTracks(playlistID int, tracks []ReorderTrackItem) error {
+	if playlistID < 0 {
+		return ErrAutoPlaylistReadOnly
+	}
+
 	return s.withTransaction(func(tx *sql.Tx) error {
 		for _, track := range tracks {
 			err := s.Repository.ReorderPlaylistTrack(tx, playlistID, track.FileID, track.Position)
@@ -139,7 +187,7 @@ func (s *Service) GetOrCreateNowPlaying() (PlaylistDto, error) {
 	// Now Playing queue doesn't exist, create it
 	var result PlaylistModel
 	err = s.withTransaction(func(tx *sql.Tx) error {
-		p, err := s.Repository.CreatePlaylist(tx, "Now Playing", "", true)
+		p, err := s.Repository.CreatePlaylist(tx, i18n.GetMessage("MUSIC_NOW_PLAYING_NAME"), "", true)
 		if err != nil {
 			return err
 		}

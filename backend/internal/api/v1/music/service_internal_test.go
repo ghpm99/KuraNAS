@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"errors"
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"testing"
@@ -26,6 +27,9 @@ type musicRepoMock struct {
 	getNowPlayingFn        func() (PlaylistModel, error)
 	getPlayerStateFn       func(clientID string) (PlayerStateModel, error)
 	upsertPlayerStateFn    func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getLibraryIndexFn      func() ([]MusicLibraryIndexEntryModel, error)
+	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
 }
 
 func (m *musicRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -100,6 +104,24 @@ func (m *musicRepoMock) UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (P
 		return m.upsertPlayerStateFn(tx, state)
 	}
 	return state, nil
+}
+func (m *musicRepoMock) GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getLibraryTracksFn != nil {
+		return m.getLibraryTracksFn(page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error) {
+	if m.getLibraryIndexFn != nil {
+		return m.getLibraryIndexFn()
+	}
+	return []MusicLibraryIndexEntryModel{}, nil
+}
+func (m *musicRepoMock) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error) {
+	if m.getLibraryFilesByIDsFn != nil {
+		return m.getLibraryFilesByIDsFn(fileIDs)
+	}
+	return []files.FileModel{}, nil
 }
 
 func newMusicServiceForTest(t *testing.T, repo *musicRepoMock) *Service {
@@ -193,7 +215,7 @@ func TestMusicService_TrackOperations(t *testing.T) {
 	}
 	svc := newMusicServiceForTest(t, repo)
 
-	tracks, err := svc.GetPlaylistTracks(1, 1, 10)
+	tracks, err := svc.GetPlaylistTracks("client-1", 1, 1, 10)
 	if err != nil || len(tracks.Items) != 1 {
 		t.Fatalf("expected tracks success, err=%v", err)
 	}
@@ -319,7 +341,7 @@ func TestMusicService_AdditionalErrorPaths(t *testing.T) {
 	if _, err := svc.GetPlaylistByID(1); err == nil {
 		t.Fatalf("expected GetPlaylistByID error")
 	}
-	if _, err := svc.GetPlaylistTracks(1, 1, 10); err == nil {
+	if _, err := svc.GetPlaylistTracks("client-1", 1, 1, 10); err == nil {
 		t.Fatalf("expected GetPlaylistTracks error")
 	}
 	if _, err := svc.GetPlayerState("c1"); err == nil {

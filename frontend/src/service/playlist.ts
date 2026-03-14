@@ -14,6 +14,11 @@ export const getNowPlayingPlaylist = async () => {
 	return response.data;
 };
 
+export const getAutomaticPlaylists = async () => {
+	const response = await apiBase.get<Playlist[]>('/music/playlists/system');
+	return response.data;
+};
+
 export const getPlaylistById = async (id: number) => {
 	const response = await apiBase.get<Playlist>(`/music/playlists/${id}`);
 	return response.data;
