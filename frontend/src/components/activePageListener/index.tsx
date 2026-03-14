@@ -1,4 +1,4 @@
-import { appRoutes, isMusicRoute } from '@/app/routes';
+import { appRoutes, isMusicRoute, isVideoRoute } from '@/app/routes';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { pages, useUI } from '../providers/uiProvider/uiContext';
@@ -6,6 +6,10 @@ import { pages, useUI } from '../providers/uiProvider/uiContext';
 const getPageFromPath = (pathname: string): pages => {
 	if (isMusicRoute(pathname)) {
 		return 'music';
+	}
+
+	if (isVideoRoute(pathname)) {
+		return 'videos';
 	}
 
 	switch (pathname) {
@@ -18,8 +22,6 @@ const getPageFromPath = (pathname: string): pages => {
 			return 'favorites';
 		case appRoutes.images:
 			return 'images';
-		case appRoutes.videos:
-			return 'videos';
 		case appRoutes.settings:
 			return 'settings';
 		case appRoutes.activityDiary:
