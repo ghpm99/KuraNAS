@@ -1,3 +1,4 @@
+import { getFileBrowserRootPath } from '@/app/routes';
 import { ArrowLeft, Copy, FolderPlus, MoveRight, Pencil, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import useI18n from '../i18n/provider/i18nContext';
 import useFile from '../providers/fileProvider/fileContext';
@@ -13,15 +14,16 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from 'notistack';
 import { downloadFileBlob } from '@/service/files';
 
 export const ActionBar = () => {
-	const { selectedItem, uploadFiles, createFolder, movePath, copyPath, renamePath, deletePath, rescanFiles } =
+	const { selectedItem, uploadFiles, createFolder, movePath, copyPath, renamePath, deletePath, rescanFiles, fileListFilter } =
 		useFile();
 	const { t } = useI18n();
+	const location = useLocation();
 	const { enqueueSnackbar } = useSnackbar();
 	const uploadInputRef = useRef<HTMLInputElement | null>(null);
 	const [openDialog, setOpenDialog] = useState<'createFolder' | 'move' | 'copy' | 'rename' | 'delete' | null>(null);
@@ -29,6 +31,9 @@ export const ActionBar = () => {
 	const [moveTargetDir, setMoveTargetDir] = useState('');
 	const [copyDestinationPath, setCopyDestinationPath] = useState('');
 	const [renameName, setRenameName] = useState('');
+	const browserRootPath = getFileBrowserRootPath(location.pathname);
+	const currentListTitle =
+		fileListFilter === 'starred' ? t('STARRED_FILES') : fileListFilter === 'recent' ? t('RECENT_FILES') : t('FILES');
 
 	const currentDirectoryPath = selectedItem
 		? selectedItem.type === FileType.Directory
@@ -156,11 +161,11 @@ export const ActionBar = () => {
 		<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 				{selectedItem && (
-					<IconButton component={Link} to='/' size='small'>
+					<IconButton component={Link} to={browserRootPath} size='small'>
 						<ArrowLeft size={16} />
 					</IconButton>
 				)}
-				<Typography variant='h6'>{selectedItem?.name ?? t('FILES')}</Typography>
+				<Typography variant='h6'>{selectedItem?.name ?? currentListTitle}</Typography>
 			</Box>
 			<Box sx={{ display: 'flex', gap: 1 }}>
 				<input ref={uploadInputRef} type='file' multiple style={{ display: 'none' }} onChange={handleUploadChange} />

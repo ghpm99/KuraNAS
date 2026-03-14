@@ -22,7 +22,9 @@ describe('layout/Sidebar', () => {
 				<Sidebar />
 			</MemoryRouter>,
 		);
-		expect(screen.getByText('ALL_FILES')).toBeInTheDocument();
+		expect(screen.getByText('APP_NAME')).toBeInTheDocument();
+		expect(screen.getByText('HOME')).toBeInTheDocument();
+		expect(screen.getByText('FILES')).toBeInTheDocument();
 		expect(screen.getByText('NAV_IMAGES')).toBeInTheDocument();
 		expect(screen.queryByText('FolderTree')).not.toBeInTheDocument();
 	});
@@ -30,7 +32,7 @@ describe('layout/Sidebar', () => {
 	it('shows folder tree only for files page', () => {
 		mockUseUI.mockReturnValue({ activePage: 'files' });
 		render(
-			<MemoryRouter initialEntries={['/']}>
+			<MemoryRouter initialEntries={['/files']}>
 				<Sidebar />
 			</MemoryRouter>,
 		);

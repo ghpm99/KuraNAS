@@ -1,20 +1,8 @@
-import ActivityDiaryProvider from '@/components/providers/activityDiaryProvider';
-import { UIProvider } from '@/components/providers/uiProvider';
 import { ReactNode } from 'react';
-import { Layout as LayoutComponent } from './Layout';
-import ActivePageListener from '@/components/activePageListener';
+import AppShell from '../AppShell';
 
 const Layout = ({ children }: { children: ReactNode }) => {
-	return (
-		<UIProvider>
-			<ActivityDiaryProvider>
-				<LayoutComponent>
-					<ActivePageListener />
-					{children}
-				</LayoutComponent>
-			</ActivityDiaryProvider>
-		</UIProvider>
-	);
+	return <AppShell>{children}</AppShell>;
 };
 
 export default Layout;

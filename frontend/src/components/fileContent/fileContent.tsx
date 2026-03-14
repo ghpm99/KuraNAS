@@ -7,8 +7,10 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import './fileContent.css';
 
 const FileContent = () => {
-	const { status, handleSelectItem, selectedItem, files, handleStarredItem } = useFile();
+	const { status, handleSelectItem, selectedItem, files, handleStarredItem, fileListFilter } = useFile();
 	const { t } = useI18n();
+	const currentListTitle =
+		fileListFilter === 'starred' ? t('STARRED_FILES') : fileListFilter === 'recent' ? t('RECENT_FILES') : t('FILES');
 
 	if (status === 'pending') {
 		return <div className='file-content'>{t('LOADING')}</div>;
@@ -34,7 +36,7 @@ const FileContent = () => {
 	if (!selectedItem) {
 		return (
 			<div className='file-content'>
-				<h1>{t('FILES')}</h1>
+				<h1>{currentListTitle}</h1>
 				<div className='file-grid'>
 					{files?.map((file) => (
 						<FileCard

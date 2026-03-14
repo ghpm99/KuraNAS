@@ -1,16 +1,34 @@
+import { appRoutes } from '@/app/routes';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { pages, useUI } from '../providers/uiProvider/uiContext';
 
-const routeToPageMap: Record<string, pages> = {
-	'/': 'files',
-	'/starred': 'files',
-	'/images': 'images',
-	'/music': 'music',
-	'/videos': 'videos',
-	'/activity-diary': 'activity',
-	'/analytics': 'analytics',
-	'/about': 'about',
+const getPageFromPath = (pathname: string): pages => {
+	switch (pathname) {
+		case appRoutes.home:
+			return 'home';
+		case appRoutes.files:
+			return 'files';
+		case appRoutes.favorites:
+		case appRoutes.legacyFavorites:
+			return 'favorites';
+		case appRoutes.images:
+			return 'images';
+		case appRoutes.music:
+			return 'music';
+		case appRoutes.videos:
+			return 'videos';
+		case appRoutes.settings:
+			return 'settings';
+		case appRoutes.activityDiary:
+			return 'activity';
+		case appRoutes.analytics:
+			return 'analytics';
+		case appRoutes.about:
+			return 'about';
+		default:
+			return 'unknown';
+	}
 };
 
 const ActivePageListener = () => {
@@ -19,8 +37,7 @@ const ActivePageListener = () => {
 	const { setActivePage } = useUI();
 
 	useEffect(() => {
-		const page = routeToPageMap[location.pathname] || 'unknown';
-		setActivePage(page);
+		setActivePage(getPageFromPath(location.pathname));
 	}, [location.pathname, setActivePage]);
 
 	return null;

@@ -1,6 +1,17 @@
 import { createContext, useContext } from 'react';
 
-export type pages = 'files' | 'images' | 'music' | 'videos' | 'activity' | 'analytics' | 'about' | 'unknown';
+export type pages =
+	| 'home'
+	| 'files'
+	| 'favorites'
+	| 'images'
+	| 'music'
+	| 'videos'
+	| 'settings'
+	| 'activity'
+	| 'analytics'
+	| 'about'
+	| 'unknown';
 
 interface UIContextType {
 	activePage: pages;
