@@ -85,7 +85,12 @@ describe('components/providers/GlobalMusicProvider', () => {
 		expect(result.current.musicMetadata(track1)).toContain('2:01');
 
 		act(() => {
-			result.current.addToQueue(track1);
+			result.current.addToQueue(track1, {
+				kind: 'album',
+				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
+				labelParams: { name: 'Album 1' },
+				href: '/music/albums',
+			});
 			result.current.addToQueue(track2);
 			result.current.addToQueue(track1);
 		});
@@ -94,6 +99,10 @@ describe('components/providers/GlobalMusicProvider', () => {
 		});
 		expect(result.current.queue.length).toBe(2);
 		expect(result.current.currentIndex).toBe(0);
+		expect(result.current.playbackContext).toMatchObject({
+			labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
+			labelParams: { name: 'Album 1' },
+		});
 
 		act(() => {
 			result.current.playTrackFromQueue(1);
@@ -126,7 +135,11 @@ describe('components/providers/GlobalMusicProvider', () => {
 		await act(async () => {
 			jest.advanceTimersByTime(2200);
 		});
-		expect(mockUpdatePlayerState).toHaveBeenCalled();
+		expect(mockUpdatePlayerState).toHaveBeenCalledWith(
+			expect.objectContaining({
+				playlist_id: null,
+			}),
+		);
 
 		Math.random = jest.fn(() => 0);
 		act(() => {
@@ -151,6 +164,7 @@ describe('components/providers/GlobalMusicProvider', () => {
 		});
 		expect(result.current.queue).toEqual([]);
 		expect(result.current.hasQueue).toBe(false);
+		expect(result.current.playbackContext).toBeUndefined();
 	});
 
 	it('covers next/previous and track-end branches for repeat modes', () => {
@@ -231,5 +245,73 @@ describe('components/providers/GlobalMusicProvider', () => {
 
 	it('throws when hook is used outside provider', () => {
 		expect(() => renderHook(() => useGlobalMusic())).toThrow('useGlobalMusic must be used within a GlobalMusicProvider');
+	});
+
+	it('syncs playlist identifiers when a playlist context replaces the queue', async () => {
+		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+		act(() => {
+			result.current.replaceQueue([track1], 0, {
+				kind: 'playlist',
+				labelKey: 'MUSIC_PLAYBACK_CONTEXT_PLAYLIST',
+				labelParams: { name: 'Mix A' },
+				href: '/music/playlists',
+				playlistId: 15,
+			});
+		});
+
+		await act(async () => {
+			jest.advanceTimersByTime(2200);
+		});
+
+		expect(result.current.playbackContext).toMatchObject({ playlistId: 15 });
+		expect(mockUpdatePlayerState).toHaveBeenCalledWith(
+			expect.objectContaining({
+				playlist_id: 15,
+				current_file_id: 1,
+			}),
+		);
+	});
+
+	it('covers queue toggling, end-of-queue stop, and remove-from-queue branches', () => {
+		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+		expect(result.current.queueOpen).toBe(false);
+		act(() => {
+			result.current.toggleQueue();
+		});
+		expect(result.current.queueOpen).toBe(true);
+
+		act(() => {
+			result.current.replaceQueue([track1, track2], 1, {
+				kind: 'album',
+				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
+				labelParams: { name: 'Album 1' },
+				href: '/music/albums',
+			});
+		});
+		act(() => {
+			fakeAudio.emit('play');
+			result.current.setRepeatMode('none');
+			fakeAudio.emit('ended');
+		});
+		expect(result.current.isPlaying).toBe(false);
+
+		act(() => {
+			result.current.replaceQueue([track1, track2], 1);
+			result.current.removeFromQueue(0);
+		});
+		expect(result.current.currentIndex).toBe(0);
+
+		act(() => {
+			result.current.replaceQueue([track1, track2], 0);
+			result.current.removeFromQueue(0);
+		});
+		expect(fakeAudio.src).toContain('/files/stream/2');
+
+		act(() => {
+			result.current.replaceQueue([], 0);
+		});
+		expect(result.current.queue.length).toBeGreaterThan(0);
 	});
 });

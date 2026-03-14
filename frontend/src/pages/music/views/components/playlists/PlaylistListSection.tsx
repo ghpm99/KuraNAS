@@ -1,5 +1,6 @@
 import { Box, Button, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { ListMusic, Play, Plus, Trash2 } from 'lucide-react';
+import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
 import { Playlist } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
@@ -40,7 +41,7 @@ export default function PlaylistListSection({
 		e.stopPropagation();
 		const data = await getPlaylistTracks(playlist.id, 1, 200);
 		const tracks = data.items.map((item) => item.file);
-		if (tracks.length > 0) replaceQueue(tracks);
+		if (tracks.length > 0) replaceQueue(tracks, 0, createPlaylistPlaybackContext(playlist));
 	};
 
 	if (isLoading) {

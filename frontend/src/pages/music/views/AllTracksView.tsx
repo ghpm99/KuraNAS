@@ -1,5 +1,6 @@
 import { Box, CircularProgress, IconButton, List, Typography } from '@mui/material';
 import { Play, Shuffle } from 'lucide-react';
+import { createAllTracksPlaybackContext } from '@/components/music/playbackContext';
 import { useMusic } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
@@ -9,18 +10,19 @@ import { useState } from 'react';
 
 const AllTracksView = () => {
 	const { music, hasNextPage, isFetchingNextPage, lastItemRef } = useMusic();
-	const { addToQueue, replaceQueue } = useGlobalMusic();
+	const { replaceQueue } = useGlobalMusic();
 	const { t } = useI18n();
 	const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; fileId: number } | null>(null);
+	const playbackContext = createAllTracksPlaybackContext();
 
 	const handlePlayAll = () => {
-		if (music.length > 0) replaceQueue(music);
+		if (music.length > 0) replaceQueue(music, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (music.length > 0) {
 			const shuffled = [...music].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -60,7 +62,7 @@ const AllTracksView = () => {
 							<TrackListItem
 								track={item}
 								index={index}
-								onPlay={(track) => addToQueue(track)}
+								onPlay={(_, trackIndex) => replaceQueue(music, trackIndex, playbackContext)}
 								onAddToPlaylist={(e, fileId) => setMenuAnchor({ el: e.currentTarget as HTMLElement, fileId })}
 							/>
 						</Box>

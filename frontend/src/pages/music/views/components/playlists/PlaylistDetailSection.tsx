@@ -1,5 +1,6 @@
 import { Box, CircularProgress, IconButton, List, ListItem, ListItemButton, Typography } from '@mui/material';
 import { ListMusic, Pause, Play, Trash2 } from 'lucide-react';
+import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
 import { Playlist, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlaylistTrackHandlers } from '@/components/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers';
@@ -28,7 +29,7 @@ export default function PlaylistDetailSection({
 	onLoadMore,
 }: PlaylistDetailSectionProps) {
 	const { t } = useI18n();
-	const { addToQueue, getMusicArtist, getMusicTitle } = usePlaylistTrackHandlers();
+	const { getMusicArtist, getMusicTitle } = usePlaylistTrackHandlers();
 	const { currentTrack, isPlaying, formatDuration, replaceQueue } = useGlobalMusic();
 	const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
 		if (event.key === 'Enter' || event.key === ' ') {
@@ -38,15 +39,16 @@ export default function PlaylistDetailSection({
 	};
 
 	const allFiles = tracks.map((track) => track.file);
+	const playbackContext = createPlaylistPlaybackContext(playlist);
 
 	const handlePlayAll = () => {
-		if (allFiles.length > 0) replaceQueue(allFiles);
+		if (allFiles.length > 0) replaceQueue(allFiles, 0, playbackContext);
 	};
 
 	const handleShuffleAll = () => {
 		if (allFiles.length > 0) {
 			const shuffled = [...allFiles].sort(() => Math.random() - 0.5);
-			replaceQueue(shuffled);
+			replaceQueue(shuffled, 0, playbackContext);
 		}
 	};
 
@@ -89,8 +91,8 @@ export default function PlaylistDetailSection({
 									component='div'
 									role='button'
 									tabIndex={0}
-									onClick={() => addToQueue(track.file)}
-									onKeyDown={(event) => handleListItemKeyDown(event, () => addToQueue(track.file))}
+									onClick={() => replaceQueue(allFiles, index, playbackContext)}
+									onKeyDown={(event) => handleListItemKeyDown(event, () => replaceQueue(allFiles, index, playbackContext))}
 									sx={{
 										borderRadius: 1,
 										py: 0.5,

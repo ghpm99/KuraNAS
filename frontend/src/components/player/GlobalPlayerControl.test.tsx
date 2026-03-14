@@ -4,6 +4,12 @@ import GlobalPlayerControl from './GlobalPlayerControl';
 const mockUseGlobalMusic = jest.fn();
 
 jest.mock('../providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+	__esModule: true,
+	default: () => ({
+		t: (key: string, params?: Record<string, string>) => params?.context ? `${key}:${params.context}` : params?.name ? `${key}:${params.name}` : key,
+	}),
+}));
 
 describe('GlobalPlayerControl', () => {
 	beforeEach(() => {
@@ -34,11 +40,13 @@ describe('GlobalPlayerControl', () => {
 			toggleShuffle: jest.fn(),
 			setRepeatMode: jest.fn(),
 			currentTrack: { name: 'song' },
+			playbackContext: { labelKey: 'MUSIC_PLAYBACK_CONTEXT_PLAYLIST', labelParams: { name: 'Mix A' } },
 		};
 		mockUseGlobalMusic.mockReturnValue(api);
 		render(<GlobalPlayerControl />);
 
 		expect(screen.getByText('song')).toBeInTheDocument();
+		expect(screen.getByText('MUSIC_PLAYBACK_FROM:MUSIC_PLAYBACK_CONTEXT_PLAYLIST:Mix A')).toBeInTheDocument();
 		fireEvent.click(screen.getAllByRole('button')[0]!);
 		expect(api.toggleShuffle).toHaveBeenCalled();
 		fireEvent.click(screen.getAllByRole('button')[1]!);
@@ -74,6 +82,7 @@ describe('GlobalPlayerControl', () => {
 			toggleShuffle: jest.fn(),
 			setRepeatMode: jest.fn(),
 			currentTrack: { metadata: { title: 'Meta Title', artist: 'Meta Artist' } },
+			playbackContext: undefined,
 		};
 		const unknownModeApi = {
 			...oneModeApi,

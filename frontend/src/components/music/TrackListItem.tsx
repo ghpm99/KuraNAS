@@ -6,7 +6,7 @@ import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 interface TrackListItemProps {
 	track: IMusicData;
 	index: number;
-	onPlay: (track: IMusicData) => void;
+	onPlay: (track: IMusicData, index: number) => void;
 	onAddToPlaylist?: (e: React.MouseEvent<HTMLElement>, fileId: number) => void;
 	showArtist?: boolean;
 }
@@ -21,7 +21,7 @@ const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = tru
 	return (
 		<ListItem disablePadding sx={{ px: 0 }}>
 			<ListItemButton
-				onClick={() => onPlay(track)}
+				onClick={() => onPlay(track, index)}
 				aria-label={`play ${trackTitle}`}
 				sx={{
 					borderRadius: 1,
