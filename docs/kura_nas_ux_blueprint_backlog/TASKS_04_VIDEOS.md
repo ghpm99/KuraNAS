@@ -1,7 +1,7 @@
 # Tasks 04 - Videos
 
 ## TASK-010 - Reorganizar IA e rotas do dominio Videos
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: alinhar videos ao mapa `Inicio`, `Continuar assistindo`, `Series`, `Filmes`, `Pessoais`, `Clipes` e `Pastas`.
 - Estado atual: o frontend ja mostra playlists e biblioteca geral, mas ainda sem a segmentacao do blueprint.

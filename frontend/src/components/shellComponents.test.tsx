@@ -88,6 +88,8 @@ jest.mock('@/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 
 jest.mock('@/components/videos/videoLayout', () => ({ children }: any) => <div data-testid='video-layout'>{children}</div>);
+jest.mock('@/components/videos/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
+jest.mock('@/components/videos/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
 jest.mock('@/components/videos/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
 jest.mock('@/components/hooks/useVideoPlayer/useVideoPlayer', () => ({
@@ -233,6 +235,10 @@ describe('shell components and pages', () => {
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('music');
 
+		mockUseLocation.mockReturnValueOnce({ pathname: '/videos/series' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('videos');
+
 		mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
@@ -280,6 +286,8 @@ describe('shell components and pages', () => {
 
 		render(<VideosPage />);
 		expect(screen.getByTestId('video-layout')).toBeInTheDocument();
+		expect(screen.getByText('VideoDomainHeaderMock')).toBeInTheDocument();
+		expect(screen.getByText('VideoSidebarMock')).toBeInTheDocument();
 
 		render(<AboutPage />);
 		expect(screen.getByTestId('about-layout')).toBeInTheDocument();
