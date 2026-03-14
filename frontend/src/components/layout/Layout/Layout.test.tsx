@@ -1,16 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { Layout } from './Layout';
 
-const mockUseUI = jest.fn();
-const mockUseActivityDiary = jest.fn();
-const mockUseGlobalMusic = jest.fn();
+const mockUseAppShell = jest.fn();
 const headerSpy = jest.fn();
 
-jest.mock('@/components/providers/uiProvider/uiContext', () => ({ useUI: () => mockUseUI() }));
-jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
-	useActivityDiary: () => mockUseActivityDiary(),
-}));
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
+jest.mock('@/components/layout/AppShell/useAppShell', () => ({ useAppShell: () => mockUseAppShell() }));
 
 jest.mock('../Header/Header', () => ({
 	__esModule: true,
@@ -28,12 +22,10 @@ jest.mock('../Sidebar/Sidebar', () => ({
 describe('layout/Layout/Layout', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockUseActivityDiary.mockReturnValue({ currentTime: new Date('2026-03-04T10:00:00Z') });
 	});
 
 	it('renders with activity page clock and queue padding', () => {
-		mockUseUI.mockReturnValue({ activePage: 'activity' });
-		mockUseGlobalMusic.mockReturnValue({ hasQueue: true });
+		mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
 
 		render(
 			<Layout>
@@ -41,7 +33,6 @@ describe('layout/Layout/Layout', () => {
 			</Layout>,
 		);
 
-		expect(screen.getByText('KuraNAS')).toBeInTheDocument();
 		expect(screen.getByTestId('header')).toBeInTheDocument();
 		expect(screen.getByTestId('sidebar')).toBeInTheDocument();
 		expect(screen.getByText('body')).toBeInTheDocument();
@@ -49,8 +40,7 @@ describe('layout/Layout/Layout', () => {
 	});
 
 	it('renders without clock when page is not activity', () => {
-		mockUseUI.mockReturnValue({ activePage: 'files' });
-		mockUseGlobalMusic.mockReturnValue({ hasQueue: false });
+		mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
 
 		render(
 			<Layout>

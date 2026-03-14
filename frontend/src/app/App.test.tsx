@@ -17,10 +17,13 @@ jest.mock('@/components/ErrorBoundary', () => ({ children }: any) => <div data-t
 
 jest.mock('@/pages/activityDiary', () => () => <div>ActivityDiaryPage</div>);
 jest.mock('@/pages/analytics', () => () => <div>AnalyticsPage</div>);
+jest.mock('@/pages/favorites', () => () => <div>FavoritesPage</div>);
 jest.mock('@/pages/files', () => () => <div>FilePage</div>);
+jest.mock('@/pages/home', () => () => <div>HomePage</div>);
 jest.mock('@/pages/about', () => () => <div>AboutPage</div>);
 jest.mock('@/pages/images', () => () => <div>ImagesPage</div>);
 jest.mock('@/pages/music', () => () => <div>MusicPage</div>);
+jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);
 

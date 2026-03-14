@@ -1,18 +1,17 @@
 import ActionBar from '@/components/actionBar';
-import FileListFilterSync from '@/components/files/FileListFilterSync';
 import FileContent from '@/components/fileContent';
 import FileDetails from '@/components/fileDetails';
-import Tabs from '@/components/tabs';
-import './files.css';
+import FileListFilterSync from '@/components/files/FileListFilterSync';
 import FilesLayout from '@/components/files/filesLayout';
+import '@/pages/files/files.css';
 
-const FilePage = () => {
+const FavoritesPage = () => {
 	return (
 		<FilesLayout>
 			<div className='content'>
-				<FileListFilterSync filter='all' />
+				<FileListFilterSync filter='starred' />
 				<div style={{ gridArea: 'item-header' }}><ActionBar /></div>
-				<div style={{ gridArea: 'tabs' }}><Tabs /></div>
+				<div style={{ gridArea: 'tabs' }} />
 				<FileContent />
 				<div style={{ gridArea: 'sidebar' }}><FileDetails /></div>
 			</div>
@@ -20,4 +19,4 @@ const FilePage = () => {
 	);
 };
 
-export default FilePage;
+export default FavoritesPage;
