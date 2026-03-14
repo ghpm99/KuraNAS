@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useImage, type IImageData, type ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { useImageViewer } from '@/components/hooks/useImageViewer/useImageViewer';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSearchParams } from 'react-router-dom';
 import ImageCategoryTabs from './components/ImageCategoryTabs';
 import ImageGroupsGrid from './components/ImageGroupsGrid';
 import ImageToolbar from './components/ImageToolbar';
@@ -51,6 +52,7 @@ const imageCategoryCheck = (category: CategoryKey, image: IImageData, date: Date
 
 export default function ImageContent() {
 	const { t } = useI18n();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const { images, imageGroupBy, setImageGroupBy, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
 	const [search, setSearch] = useState('');
@@ -175,7 +177,45 @@ export default function ImageContent() {
 		resetZoom,
 	} = useImageViewer(filteredImages);
 
+	const requestedImageId = Number(searchParams.get('image') ?? '');
 	const activeImageDate = activeImage ? (imageDates.get(activeImage.id) ?? null) : null;
+
+	const updateImageSearchParam = useCallback(
+		(imageId: number | null) => {
+			const nextSearchParams = new URLSearchParams(searchParams);
+			if (imageId == null) {
+				nextSearchParams.delete('image');
+			} else {
+				nextSearchParams.set('image', String(imageId));
+			}
+			setSearchParams(nextSearchParams);
+		},
+		[searchParams, setSearchParams],
+	);
+
+	const handleOpenImage = useCallback(
+		(imageId: number) => {
+			openImage(imageId);
+			updateImageSearchParam(imageId);
+		},
+		[openImage, updateImageSearchParam],
+	);
+
+	const handleCloseViewer = useCallback(() => {
+		closeViewer();
+		updateImageSearchParam(null);
+	}, [closeViewer, updateImageSearchParam]);
+
+	useEffect(() => {
+		if (!Number.isFinite(requestedImageId) || requestedImageId <= 0) {
+			return;
+		}
+
+		const hasRequestedImage = filteredImages.some((image) => image.id === requestedImageId);
+		if (hasRequestedImage) {
+			openImage(requestedImageId);
+		}
+	}, [filteredImages, openImage, requestedImageId]);
 
 	const handleLoadMore = useCallback(async () => {
 		if (!hasNextPage || isFetchingNextPage || isLoadingMoreRef.current) return;
@@ -219,7 +259,7 @@ export default function ImageContent() {
 				hasNextPage={Boolean(hasNextPage)}
 				lastVisibleImageId={lastVisibleImageId}
 				loadMoreRef={loadMoreRef}
-				onOpenImage={openImage}
+				onOpenImage={handleOpenImage}
 			/>
 			{activeImage && (
 				<ImageViewerModal
@@ -234,10 +274,10 @@ export default function ImageContent() {
 					onDecreaseZoom={decreaseZoom}
 					onResetZoom={resetZoom}
 					onIncreaseZoom={increaseZoom}
-					onClose={closeViewer}
+					onClose={handleCloseViewer}
 					onPrevious={goPrevious}
 					onNext={goNext}
-					onOpenImage={openImage}
+					onOpenImage={handleOpenImage}
 				/>
 			)}
 		</>

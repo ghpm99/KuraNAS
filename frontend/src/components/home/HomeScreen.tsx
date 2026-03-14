@@ -1,7 +1,9 @@
 import { appRoutes } from '@/app/routes';
+import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useHomeScreen from './useHomeScreen';
+import type { HomeRecentFile } from './useHomeScreen';
 import { formatDate, formatSize, getFileTypeInfo } from '@/utils';
 import {
 	AlertCircle,
@@ -20,7 +22,7 @@ import {
 import { Button, Chip, InputAdornment, LinearProgress, Skeleton, TextField } from '@mui/material';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import styles from './HomeScreen.module.css';
 
 type QuickAction = {
@@ -51,26 +53,10 @@ const getAnalyticsStatusKey = (status: 'ok' | 'scanning' | 'error') => {
 	}
 };
 
-const getRecentFileRoute = (file: { id: number; format: string }) => {
-	const fileType = getFileTypeInfo(file.format);
-
-	if (fileType.type === 'video') {
-		return `${appRoutes.videoPlayerBase}/${file.id}`;
-	}
-
-	if (fileType.type === 'image') {
-		return appRoutes.images;
-	}
-
-	if (fileType.type === 'audio') {
-		return appRoutes.music;
-	}
-
-	return appRoutes.files;
-};
-
 const HomeScreen = () => {
 	const { t } = useI18n();
+	const navigate = useNavigate();
+	const { openMediaItem } = useMediaOpener();
 	const {
 		searchQuery,
 		setSearchQuery,
@@ -188,6 +174,12 @@ const HomeScreen = () => {
 		? filteredVideoItems.filter((item) => item.video.id !== videoResume.video.id)
 		: filteredVideoItems;
 
+	const handleOpenRecentFile = (file: HomeRecentFile) => {
+		if (!openMediaItem(file)) {
+			navigate(appRoutes.files);
+		}
+	};
+
 	return (
 		<div className={styles.page}>
 			<section className={styles.hero}>
@@ -298,17 +290,24 @@ const HomeScreen = () => {
 							{filteredRecentFiles.map((file) => {
 								const fileType = getFileTypeInfo(file.format);
 								return (
-									<RouterLink key={file.id} className={styles.recentCard} to={getRecentFileRoute(file)}>
-										<div className={styles.recentIcon}>{t(fileType.description)}</div>
-										<div className={styles.recentContent}>
-											<div className={styles.recentHeader}>
-												<h3 className={styles.recentTitle}>{file.name}</h3>
-												<Chip size='small' label={file.format || file.name.split('.').pop() || '--'} />
+									<button
+										key={file.id}
+										type='button'
+										className={styles.recentCardButton}
+										onClick={() => handleOpenRecentFile(file)}
+									>
+										<div className={styles.recentCard}>
+											<div className={styles.recentIcon}>{t(fileType.description)}</div>
+											<div className={styles.recentContent}>
+												<div className={styles.recentHeader}>
+													<h3 className={styles.recentTitle}>{file.name}</h3>
+													<Chip size='small' label={file.format || file.name.split('.').pop() || '--'} />
+												</div>
+												<p className={styles.recentMeta}>{formatSize(file.size_bytes)} · {formatDate(file.created_at)}</p>
+												<p className={styles.recentPath}>{file.parent_path}</p>
 											</div>
-											<p className={styles.recentMeta}>{formatSize(file.size_bytes)} · {formatDate(file.created_at)}</p>
-											<p className={styles.recentPath}>{file.parent_path}</p>
 										</div>
-									</RouterLink>
+									</button>
 								);
 							})}
 						</div>

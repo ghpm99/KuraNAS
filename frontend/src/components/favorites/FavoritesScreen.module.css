@@ -1,0 +1,257 @@
+.page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-5);
+	padding: var(--app-spacing-6);
+}
+
+.hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+	gap: var(--app-spacing-4);
+	padding: clamp(20px, 3vw, 32px);
+	border: 1px solid var(--app-color-border-subtle);
+	border-radius: var(--app-radius-xl);
+	background:
+		radial-gradient(circle at top left, rgba(225, 29, 72, 0.16), transparent 34%),
+		radial-gradient(circle at right center, rgba(14, 165, 233, 0.16), transparent 36%),
+		linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(10, 15, 28, 0.9));
+	box-shadow: var(--app-shadow-card);
+}
+
+.heroCopy {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-3);
+}
+
+.heroEyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: fit-content;
+	padding: 8px 12px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.05);
+	color: var(--app-color-text-secondary);
+	font-size: 0.82rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.heroTitle {
+	margin: 0;
+	font-size: clamp(1.8rem, 2.5vw, 2.6rem);
+	line-height: 1.05;
+}
+
+.heroDescription {
+	margin: 0;
+	max-width: 720px;
+	color: var(--app-color-text-secondary);
+	line-height: 1.6;
+}
+
+.heroMeta {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--app-spacing-3);
+}
+
+.heroMetric {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: var(--app-spacing-4);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: var(--app-radius-lg);
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.heroMetricLabel {
+	color: var(--app-color-text-secondary);
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.heroMetricValue {
+	font-size: 1.4rem;
+	font-weight: 700;
+}
+
+.heroMetricHelp {
+	color: var(--app-color-text-secondary);
+	font-size: 0.9rem;
+}
+
+.workspace {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--app-spacing-5);
+}
+
+.workspaceWithPreview {
+	grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.mainColumn {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-4);
+	min-width: 0;
+}
+
+.panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-3);
+	padding: var(--app-spacing-4);
+	border: 1px solid var(--app-color-border-subtle);
+	border-radius: var(--app-radius-xl);
+	background:
+		linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(10, 15, 28, 0.92)),
+		var(--app-background-panel);
+	box-shadow: var(--app-shadow-card);
+	min-width: 0;
+}
+
+.contextHeader {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--app-spacing-4);
+}
+
+.contextTitle {
+	margin: 0 0 6px;
+	color: var(--app-color-text-secondary);
+	font-size: 0.82rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.breadcrumbButton {
+	border: none;
+	padding: 0;
+	background: transparent;
+	color: var(--app-color-text-primary);
+	cursor: pointer;
+	font: inherit;
+	font-weight: 600;
+}
+
+.breadcrumbButton:hover {
+	color: #fda4af;
+}
+
+.breadcrumbCurrent {
+	color: var(--app-color-text-secondary);
+	font-weight: 500;
+}
+
+.breadcrumbSeparator {
+	color: var(--app-color-text-secondary);
+}
+
+.contextActions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 12px;
+}
+
+.contextMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	color: var(--app-color-text-secondary);
+	font-size: 0.92rem;
+}
+
+.filterValue {
+	margin-left: 6px;
+	color: var(--app-color-text-primary);
+	font-weight: 600;
+}
+
+.filterButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.filterCount {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.08);
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
+.contentCard {
+	padding: var(--app-spacing-2);
+	min-height: 320px;
+}
+
+.previewColumn {
+	min-width: 0;
+}
+
+.previewCard {
+	position: sticky;
+	top: var(--app-spacing-4);
+	max-height: calc(100vh - 132px);
+	overflow: auto;
+}
+
+@media (max-width: 1080px) {
+	.hero {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.workspaceWithPreview {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.previewCard {
+		position: static;
+		max-height: none;
+	}
+}
+
+@media (max-width: 900px) {
+	.page {
+		padding: var(--app-spacing-4);
+	}
+}
+
+@media (max-width: 640px) {
+	.heroMeta {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.contextHeader {
+		flex-direction: column;
+	}
+
+	.contextActions {
+		justify-content: flex-start;
+	}
+}

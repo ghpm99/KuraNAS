@@ -1,0 +1,109 @@
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.heroGrid {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+	gap: 20px;
+}
+
+.panel {
+	padding: 24px;
+	border-radius: 20px;
+	background: rgba(18, 18, 28, 0.88);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 16px 40px rgba(4, 7, 16, 0.24);
+}
+
+.panelLabel {
+	display: block;
+	margin-bottom: 10px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.46);
+}
+
+.panelTitle {
+	margin: 0;
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.95);
+}
+
+.panelDescription {
+	margin: 10px 0 0;
+	font-size: 0.94rem;
+	line-height: 1.6;
+	color: rgba(255, 255, 255, 0.66);
+}
+
+.metricValue {
+	display: block;
+	margin-top: 12px;
+	font-size: 2.1rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.96);
+}
+
+.metricCaption {
+	display: block;
+	margin-top: 6px;
+	font-size: 0.85rem;
+	color: rgba(255, 255, 255, 0.56);
+}
+
+.trackMeta {
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.sectionGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 16px;
+}
+
+.sectionCard {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 20px;
+	border-radius: 18px;
+	background: linear-gradient(180deg, rgba(33, 34, 51, 0.92) 0%, rgba(17, 18, 28, 0.92) 100%);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sectionTitle {
+	margin: 0;
+	font-size: 1.02rem;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.94);
+}
+
+.sectionDescription {
+	margin: 0;
+	font-size: 0.88rem;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.62);
+}
+
+.sectionAction {
+	align-self: flex-start;
+}
+
+@media (max-width: 900px) {
+	.heroGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.panel {
+		padding: 20px;
+	}
+}

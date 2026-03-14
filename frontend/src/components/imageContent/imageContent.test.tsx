@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import ImageContent from './imageContent';
 
 const mockUseImage = jest.fn();
@@ -56,7 +57,11 @@ describe('imageContent', () => {
 			isFetchingNextPage: true,
 		});
 
-		render(<ImageContent />);
+		render(
+			<MemoryRouter>
+				<ImageContent />
+			</MemoryRouter>,
+		);
 
 		expect(screen.getByText('Galeria de fotos')).toBeInTheDocument();
 		expect(screen.getByText('Todas as imagens carregadas')).toBeInTheDocument();
@@ -97,7 +102,11 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(<ImageContent />);
+		render(
+			<MemoryRouter>
+				<ImageContent />
+			</MemoryRouter>,
+		);
 		optionsRef.onIntersect();
 
 		expect(fetchNextPage).toHaveBeenCalled();
@@ -125,9 +134,42 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(<ImageContent />);
+		render(
+			<MemoryRouter initialEntries={['/images?image=1']}>
+				<ImageContent />
+			</MemoryRouter>,
+		);
 		fireEvent.change(screen.getByLabelText('Agrupar imagens por'), { target: { value: 'type' } });
 
 		expect(setImageGroupBy).toHaveBeenCalledWith('type');
+	});
+
+	it('opens the viewer from the image search param', () => {
+		mockUseImage.mockReturnValue({
+			images: [
+				{
+					id: 1,
+					name: 'img1',
+					path: '/photos',
+					format: '.jpg',
+					size: 1024,
+					created_at: '2025-01-10T10:00:00Z',
+					updated_at: '2025-01-10T10:00:00Z',
+				},
+			],
+			imageGroupBy: 'date',
+			setImageGroupBy: jest.fn(),
+			fetchNextPage: jest.fn(),
+			hasNextPage: false,
+			isFetchingNextPage: false,
+		});
+
+		render(
+			<MemoryRouter initialEntries={['/images?image=1']}>
+				<ImageContent />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
 	});
 });
