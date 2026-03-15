@@ -8,6 +8,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/music"
+	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/database"
@@ -28,6 +29,7 @@ type AppContext struct {
 	Video         *VideoContext
 	Analytics     *AnalyticsContext
 	Configuration *ConfigurationContext
+	Search        *SearchContext
 	UpdateHandler *updater.Handler
 }
 
@@ -76,6 +78,12 @@ type ConfigurationContext struct {
 	Repository configuration.RepositoryInterface
 }
 
+type SearchContext struct {
+	Handler    *search.Handler
+	Service    search.ServiceInterface
+	Repository search.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -88,6 +96,7 @@ func NewContext(db *sql.DB) *AppContext {
 	videoContext := newVideoContext(dbContext, loggerService)
 	analyticsContext := newAnalyticsContext(dbContext)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
+	searchContext := newSearchContext(dbContext)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
@@ -102,6 +111,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Video:         videoContext,
 		Analytics:     analyticsContext,
 		Configuration: configurationContext,
+		Search:        searchContext,
 		UpdateHandler: updateHandler,
 	}
 	return context
@@ -188,6 +198,18 @@ func newConfigurationContext(dbContext *database.DbContext, loggerService logger
 	_ = service.ApplyRuntimeSettings()
 
 	return &ConfigurationContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newSearchContext(dbContext *database.DbContext) *SearchContext {
+	repository := search.NewRepository(dbContext)
+	service := search.NewService(repository)
+	handler := search.NewHandler(service)
+
+	return &SearchContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

@@ -21,6 +21,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterJobsRoutes(routesV1, context)
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
+	RegisterSearchRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -151,6 +152,15 @@ func RegisterUpdateRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	update.GET("/status", context.UpdateHandler.GetUpdateStatusHandler)
 	update.POST("/apply", context.UpdateHandler.ApplyUpdateHandler)
+}
+
+func RegisterSearchRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Search == nil || context.Search.Handler == nil {
+		return
+	}
+
+	search := router.Group("/search")
+	search.GET("/global", context.Search.Handler.SearchGlobalHandler)
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
