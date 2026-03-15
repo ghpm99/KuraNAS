@@ -1,7 +1,7 @@
 # Tasks 05 - Images
 
 ## TASK-013 - Criar pipeline de classificacao persistida para imagens
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: mover a inteligencia de imagens do frontend para o backend/pipeline.
 - Estado atual: `imageContent.tsx` classifica `recent`, `screenshots` e `camera` por heuristica local; nao ha categoria persistida.
