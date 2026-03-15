@@ -42,17 +42,21 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 			"datetime", "datetime_original", "datetime_digitized", "subsec_time", "exposure_time", "f_number", "iso",
 			"shutter_speed", "aperture_value", "brightness_value", "exposure_bias", "metering_mode", "flash", "focal_length",
 			"white_balance", "exposure_program", "max_aperture_value", "gps_latitude", "gps_longitude", "gps_altitude",
-			"gps_date", "gps_time", "image_description", "user_comment", "copyright", "artist", "created_at",
+			"gps_date", "gps_time", "image_description", "user_comment", "copyright", "artist",
+			"classification_category", "classification_confidence", "created_at",
 		}).AddRow(
 			1, 10, "/i.jpg", "jpeg", "rgb", 100, 80, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 1.0, 2.0, 1.0,
 			"cfg", "icc", "mk", "md", "sw", "lens", "sn", "2026", "2026", "2026", "1", 0.1, 2.8, 200.0,
 			3.0, 2.0, 1.0, 0.0, 5.0, 0.0, 35.0, 0.0, 1.0, 2.0, -23.5, -46.6, 700.0, "2026-01-01",
-			"12:00:00", "desc", "comment", "cpr", "art", now,
+			"12:00:00", "desc", "comment", "cpr", "art", "photo", 0.91, now,
 		))
 	mock.ExpectRollback()
 	imageMeta, err := repo.GetImageMetadataByID(1)
 	if err != nil || imageMeta.ID != 1 {
 		t.Fatalf("GetImageMetadataByID failed meta=%+v err=%v", imageMeta, err)
+	}
+	if imageMeta.Classification.Category != ImageClassificationCategoryPhoto {
+		t.Fatalf("expected persisted classification, got %+v", imageMeta.Classification)
 	}
 
 	mock.ExpectBegin()

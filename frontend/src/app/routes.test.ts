@@ -1,4 +1,4 @@
-import { appRoutes, getFileBrowserRootPath, getMusicRoute, getVideoRoute, isMusicRoute, isVideoPlayerRoute, isVideoRoute } from './routes';
+import { appRoutes, getFileBrowserRootPath, getImageRoute, getMusicRoute, getVideoRoute, isImageRoute, isMusicRoute, isVideoPlayerRoute, isVideoRoute } from './routes';
 
 describe('app routes helpers', () => {
 	it('matches video player routes', () => {
@@ -12,6 +12,14 @@ describe('app routes helpers', () => {
 		expect(isMusicRoute('/music')).toBe(true);
 		expect(isMusicRoute('/music/playlists')).toBe(true);
 		expect(isMusicRoute('/videos')).toBe(false);
+	});
+
+	it('builds image section routes and detects nested image paths', () => {
+		expect(getImageRoute('library')).toBe(appRoutes.images);
+		expect(getImageRoute('albums')).toBe('/images/albums');
+		expect(isImageRoute('/images')).toBe(true);
+		expect(isImageRoute('/images/folders')).toBe(true);
+		expect(isImageRoute('/music')).toBe(false);
 	});
 
 	it('builds video section routes and detects nested video paths', () => {

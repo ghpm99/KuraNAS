@@ -65,6 +65,9 @@ var CreateVideoBehaviorEventTableQuery string
 //go:embed queries/0018_update_video_playlist_type_check.sql
 var UpdateVideoPlaylistTypeCheckQuery string
 
+//go:embed queries/0019_add_image_classification_columns.sql
+var AddImageClassificationColumnsQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -102,6 +105,9 @@ func fileMigrationList() {
 
 	addMigration("0010_create_video_metadata_table",
 		defaultMigrationFunc(CreateVideoMetadataTableQuery))
+
+	addMigration("0019_add_image_classification_columns",
+		defaultMigrationFunc(AddImageClassificationColumnsQuery))
 
 }
 

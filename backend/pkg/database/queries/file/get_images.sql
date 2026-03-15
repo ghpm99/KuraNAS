@@ -62,6 +62,8 @@ SELECT
     im.user_comment,
     im.copyright,
     im.artist,
+    im.classification_category,
+    im.classification_confidence,
     im.created_at
 FROM
     home_file hf

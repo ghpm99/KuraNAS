@@ -68,6 +68,8 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (files.ImageMe
 		return metadata, err
 	}
 
+	metadata.Classification = files.ClassifyImage(fileDto, metadata)
+
 	return metadata, nil
 }
 
