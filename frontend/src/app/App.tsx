@@ -37,7 +37,7 @@ function AppContent() {
 				<Route path={appRoutes.legacyFavorites} element={<Navigate to={appRoutes.favorites} replace />} />
 				<Route path={appRoutes.settings} element={<SettingsPage />} />
 				<Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
-				<Route path={appRoutes.analytics} element={<AnalyticsPage />} />
+				<Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
 				<Route path={appRoutes.about} element={<AboutPage />} />
 				<Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
 				<Route path={`${appRoutes.music}/*`} element={<MusicPage />}>

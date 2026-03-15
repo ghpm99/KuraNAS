@@ -62,6 +62,19 @@ export interface AnalyticsOverview {
 			paths: string[];
 		}>;
 	};
+	library: {
+		categorized_media: number;
+		audio_with_metadata: number;
+		video_with_metadata: number;
+		image_with_metadata: number;
+		image_classified: number;
+	};
+	processing: {
+		metadata_pending: number;
+		metadata_failed: number;
+		thumbnail_pending: number;
+		thumbnail_failed: number;
+	};
 	health: {
 		status: 'ok' | 'scanning' | 'error';
 		last_scan_at: string;

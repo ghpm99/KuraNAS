@@ -68,6 +68,9 @@ var UpdateVideoPlaylistTypeCheckQuery string
 //go:embed queries/0019_add_image_classification_columns.sql
 var AddImageClassificationColumnsQuery string
 
+//go:embed queries/0020_create_app_settings_table.sql
+var CreateAppSettingsTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -149,4 +152,9 @@ func videoMigrationList() {
 func workerMigrationList() {
 	addMigration("0016_create_worker_job_tables",
 		defaultMigrationFunc(CreateWorkerJobTablesQuery))
+}
+
+func configurationMigrationList() {
+	addMigration("0020_create_app_settings_table",
+		defaultMigrationFunc(CreateAppSettingsTableQuery))
 }

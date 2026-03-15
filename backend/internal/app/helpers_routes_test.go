@@ -22,14 +22,14 @@ import (
 
 func buildRouteContext() *AppContext {
 	return &AppContext{
-		Files:                &FileContext{Handler: files.NewHandler(nil, nil, nil)},
-		Jobs:                 &JobsContext{Handler: jobs.NewHandler(nil)},
-		Diary:                &DiaryContext{Handler: diary.NewHandler(nil, nil)},
-		Music:                &MusicContext{Handler: music.NewHandler(nil, nil)},
-		Video:                &VideoContext{Handler: video.NewHandler(nil, nil)},
-		Analytics:            &AnalyticsContext{Handler: analytics.NewHandler(nil)},
-		ConfigurationHandler: configuration.NewHandler(nil),
-		UpdateHandler:        updater.NewHandler(updater.NewService(), nil),
+		Files:         &FileContext{Handler: files.NewHandler(nil, nil, nil)},
+		Jobs:          &JobsContext{Handler: jobs.NewHandler(nil)},
+		Diary:         &DiaryContext{Handler: diary.NewHandler(nil, nil)},
+		Music:         &MusicContext{Handler: music.NewHandler(nil, nil)},
+		Video:         &VideoContext{Handler: video.NewHandler(nil, nil)},
+		Analytics:     &AnalyticsContext{Handler: analytics.NewHandler(nil)},
+		Configuration: &ConfigurationContext{Handler: configuration.NewHandler(nil, nil)},
+		UpdateHandler: updater.NewHandler(updater.NewService(), nil),
 	}
 }
 
@@ -75,6 +75,8 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/v1/video/playlists/unassigned"},
 		{method: http.MethodGet, path: "/api/v1/analytics/overview"},
 		{method: http.MethodGet, path: "/api/v1/configuration/about"},
+		{method: http.MethodGet, path: "/api/v1/configuration/settings"},
+		{method: http.MethodPut, path: "/api/v1/configuration/settings"},
 		{method: http.MethodPost, path: "/api/v1/update/apply"},
 	}
 	for _, check := range checks {
