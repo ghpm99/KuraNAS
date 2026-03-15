@@ -13,7 +13,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 
 - Status geral: `IN_PROGRESS`
 - Fase atual recomendada: `Sistema`
-- Proxima task recomendada: `TASK-018`
+- Proxima task recomendada: `TASK-019`
 
 ## Quadro de tasks
 
@@ -36,7 +36,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-015 | Evoluir viewer e acoes de imagem | DONE | Imagens |
 | TASK-016 | Separar Analytics em visao geral e biblioteca/indexacao | DONE | Sistema |
 | TASK-017 | Criar Settings e consolidar configuracoes | DONE | Sistema |
-| TASK-018 | Limpar About e retirar Activity Diary da camada principal | TODO | Sistema |
+| TASK-018 | Limpar About e retirar Activity Diary da camada principal | DONE | Sistema |
 | TASK-019 | Implementar busca global e remover legado restante | TODO | Sistema |
 
 ## Historico
@@ -61,6 +61,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-14 | TASK-015 | O viewer de imagens virou uma experiencia principal de consumo com acoes e contexto reais. | Frontend ganhou novo viewer com slideshow, filmstrip opcional, painel de metadados por secoes, favoritar com mutation otimista e handoff para `/files` abrindo a pasta de origem por `path`, com i18n e testes atualizados. |
 | 2026-03-15 | TASK-016 | Analytics passou a separar saude geral de biblioteca/indexacao com navegacao contextual. | Backend passou a expor sinais de enriquecimento e fila de processamento; frontend reorganizou a pagina em `/analytics` e `/analytics/library` com i18n compartilhado e cobertura para a nova IA do dominio. |
 | 2026-03-15 | TASK-017 | Settings virou um dominio real com persistencia, contrato inicial e efeitos de runtime onde ja fazia sentido. | Backend ganhou `/configuration/settings` com persistencia e idioma aplicado no endpoint de traducoes; frontend entregou a nova tela por secoes, provider global para configuracoes e integracao imediata com accent/reduced motion/slideshow, com i18n e testes atualizados. |
+| 2026-03-15 | TASK-018 | About virou uma pagina tecnica compacta e o Activity Diary saiu da camada principal. | Frontend consolidou o `About` em um resumo tecnico com atalhos operacionais, removeu o acoplamento do diario no `AppShell`, manteve o diario apenas como rota tecnica isolada e atualizou i18n/testes do fluxo. |
 
 ## Como atualizar ao concluir uma task
 

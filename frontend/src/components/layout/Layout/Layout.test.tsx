@@ -24,7 +24,7 @@ describe('layout/Layout/Layout', () => {
 		jest.clearAllMocks();
 	});
 
-	it('renders with activity page clock and queue padding', () => {
+	it('renders header, sidebar and body when queue is active', () => {
 		mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
 
 		render(
@@ -39,7 +39,7 @@ describe('layout/Layout/Layout', () => {
 		expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: true }));
 	});
 
-	it('renders without clock when page is not activity', () => {
+	it('renders without clock when shell does not request it', () => {
 		mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
 
 		render(
