@@ -19,6 +19,7 @@ export const isVideoPlayerRoute = (pathname: string) => pathname.startsWith(`${a
 export type ImageSection = 'library' | 'recent' | 'captures' | 'photos' | 'folders' | 'albums';
 export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
 export type VideoSection = 'home' | 'continue' | 'series' | 'movies' | 'personal' | 'clips' | 'folders';
+export type AnalyticsSection = 'overview' | 'library';
 
 export const getImageRoute = (section: ImageSection) => {
 	if (section === 'library') {
@@ -49,6 +50,16 @@ export const getVideoRoute = (section: VideoSection) => {
 };
 
 export const isVideoRoute = (pathname: string) => pathname === appRoutes.videos || pathname.startsWith(`${appRoutes.videos}/`);
+
+export const getAnalyticsRoute = (section: AnalyticsSection) => {
+	if (section === 'overview') {
+		return appRoutes.analytics;
+	}
+
+	return `${appRoutes.analytics}/${section}`;
+};
+
+export const isAnalyticsRoute = (pathname: string) => pathname === appRoutes.analytics || pathname.startsWith(`${appRoutes.analytics}/`);
 
 export const getFileBrowserRootPath = (pathname: string) => {
 	if (pathname === appRoutes.favorites || pathname === appRoutes.legacyFavorites) {

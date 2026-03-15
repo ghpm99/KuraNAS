@@ -18,17 +18,17 @@ import (
 var tasks = make(chan utils.Task, 100)
 
 type AppContext struct {
-	DB                   *database.DbContext
-	Logger               logger.LoggerServiceInterface
-	Tasks                *chan utils.Task
-	Files                *FileContext
-	Jobs                 *JobsContext
-	Diary                *DiaryContext
-	Music                *MusicContext
-	Video                *VideoContext
-	Analytics            *AnalyticsContext
-	ConfigurationHandler *configuration.Handler
-	UpdateHandler        *updater.Handler
+	DB            *database.DbContext
+	Logger        logger.LoggerServiceInterface
+	Tasks         *chan utils.Task
+	Files         *FileContext
+	Jobs          *JobsContext
+	Diary         *DiaryContext
+	Music         *MusicContext
+	Video         *VideoContext
+	Analytics     *AnalyticsContext
+	Configuration *ConfigurationContext
+	UpdateHandler *updater.Handler
 }
 
 type FileContext struct {
@@ -70,6 +70,12 @@ type AnalyticsContext struct {
 	Repository analytics.RepositoryInterface
 }
 
+type ConfigurationContext struct {
+	Handler    *configuration.Handler
+	Service    configuration.ServiceInterface
+	Repository configuration.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -81,22 +87,22 @@ func NewContext(db *sql.DB) *AppContext {
 	musicContext := newMusicContext(dbContext, loggerService)
 	videoContext := newVideoContext(dbContext, loggerService)
 	analyticsContext := newAnalyticsContext(dbContext)
-	configurationHandler := configuration.NewHandler(loggerService)
+	configurationContext := newConfigurationContext(dbContext, loggerService)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
 	context := &AppContext{
-		DB:                   dbContext,
-		Logger:               loggerService,
-		Tasks:                &tasks,
-		Files:                fileContext,
-		Jobs:                 jobsContext,
-		Diary:                diaryContext,
-		Music:                musicContext,
-		Video:                videoContext,
-		Analytics:            analyticsContext,
-		ConfigurationHandler: configurationHandler,
-		UpdateHandler:        updateHandler,
+		DB:            dbContext,
+		Logger:        loggerService,
+		Tasks:         &tasks,
+		Files:         fileContext,
+		Jobs:          jobsContext,
+		Diary:         diaryContext,
+		Music:         musicContext,
+		Video:         videoContext,
+		Analytics:     analyticsContext,
+		Configuration: configurationContext,
+		UpdateHandler: updateHandler,
 	}
 	return context
 }
@@ -169,6 +175,19 @@ func newAnalyticsContext(dbContext *database.DbContext) *AnalyticsContext {
 	service := analytics.NewService(repository)
 	handler := analytics.NewHandler(service)
 	return &AnalyticsContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newConfigurationContext(dbContext *database.DbContext, loggerService logger.LoggerServiceInterface) *ConfigurationContext {
+	repository := configuration.NewRepository(dbContext)
+	service := configuration.NewService(repository)
+	handler := configuration.NewHandler(service, loggerService)
+	_ = service.ApplyRuntimeSettings()
+
+	return &ConfigurationContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

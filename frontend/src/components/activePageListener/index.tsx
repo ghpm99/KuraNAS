@@ -1,4 +1,4 @@
-import { appRoutes, isImageRoute, isMusicRoute, isVideoRoute } from '@/app/routes';
+import { appRoutes, isAnalyticsRoute, isImageRoute, isMusicRoute, isVideoRoute } from '@/app/routes';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { pages, useUI } from '../providers/uiProvider/uiContext';
@@ -16,6 +16,10 @@ const getPageFromPath = (pathname: string): pages => {
 		return 'images';
 	}
 
+	if (isAnalyticsRoute(pathname)) {
+		return 'analytics';
+	}
+
 	switch (pathname) {
 		case appRoutes.home:
 			return 'home';
@@ -28,8 +32,6 @@ const getPageFromPath = (pathname: string): pages => {
 			return 'settings';
 		case appRoutes.activityDiary:
 			return 'activity';
-		case appRoutes.analytics:
-			return 'analytics';
 		case appRoutes.about:
 			return 'about';
 		default:

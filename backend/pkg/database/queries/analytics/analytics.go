@@ -26,6 +26,12 @@ var FolderHotRankQuery string
 //go:embed duplicates_summary.sql
 var DuplicatesSummaryQuery string
 
+//go:embed library_metadata_summary.sql
+var LibraryMetadataSummaryQuery string
+
+//go:embed processing_queue_summary.sql
+var ProcessingQueueSummaryQuery string
+
 //go:embed duplicates_top_groups.sql
 var DuplicatesTopGroupsQuery string
 

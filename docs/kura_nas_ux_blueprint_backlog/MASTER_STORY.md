@@ -13,7 +13,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 
 - Status geral: `IN_PROGRESS`
 - Fase atual recomendada: `Sistema`
-- Proxima task recomendada: `TASK-016`
+- Proxima task recomendada: `TASK-018`
 
 ## Quadro de tasks
 
@@ -34,8 +34,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-013 | Criar pipeline de classificacao persistida para imagens | DONE | Imagens |
 | TASK-014 | Reorganizar IA da biblioteca de imagens | DONE | Imagens |
 | TASK-015 | Evoluir viewer e acoes de imagem | DONE | Imagens |
-| TASK-016 | Separar Analytics em visao geral e biblioteca/indexacao | TODO | Sistema |
-| TASK-017 | Criar Settings e consolidar configuracoes | TODO | Sistema |
+| TASK-016 | Separar Analytics em visao geral e biblioteca/indexacao | DONE | Sistema |
+| TASK-017 | Criar Settings e consolidar configuracoes | DONE | Sistema |
 | TASK-018 | Limpar About e retirar Activity Diary da camada principal | TODO | Sistema |
 | TASK-019 | Implementar busca global e remover legado restante | TODO | Sistema |
 
@@ -59,6 +59,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-14 | TASK-013 | Imagens passou a receber classificacao persistida no pipeline, com categoria semantica e score de confianca. | Backend passou a classificar `capture/photo/other` no fluxo de metadados e expor isso no contrato de imagens; frontend removeu heuristica local para `Capturas` e `Câmera/Fotos`, mantendo o filtro consumindo a classificacao persistida. |
 | 2026-03-14 | TASK-014 | Imagens passou a navegar por Biblioteca, Recentes, Capturas, Fotos, Pastas e Albuns automáticos com shell contextual. | Frontend ganhou subrotas restauraveis em `/images/*`, header/sidebar do dominio, visoes de pastas e albuns automaticos com i18n compartilhado e cobertura para a nova IA da biblioteca. |
 | 2026-03-14 | TASK-015 | O viewer de imagens virou uma experiencia principal de consumo com acoes e contexto reais. | Frontend ganhou novo viewer com slideshow, filmstrip opcional, painel de metadados por secoes, favoritar com mutation otimista e handoff para `/files` abrindo a pasta de origem por `path`, com i18n e testes atualizados. |
+| 2026-03-15 | TASK-016 | Analytics passou a separar saude geral de biblioteca/indexacao com navegacao contextual. | Backend passou a expor sinais de enriquecimento e fila de processamento; frontend reorganizou a pagina em `/analytics` e `/analytics/library` com i18n compartilhado e cobertura para a nova IA do dominio. |
+| 2026-03-15 | TASK-017 | Settings virou um dominio real com persistencia, contrato inicial e efeitos de runtime onde ja fazia sentido. | Backend ganhou `/configuration/settings` com persistencia e idioma aplicado no endpoint de traducoes; frontend entregou a nova tela por secoes, provider global para configuracoes e integracao imediata com accent/reduced motion/slideshow, com i18n e testes atualizados. |
 
 ## Como atualizar ao concluir uma task
 

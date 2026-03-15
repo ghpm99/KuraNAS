@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type IdentifiableImage = { id: number };
 
-const slideshowIntervalInMs = 3500;
+const defaultSlideshowIntervalInMs = 3500;
 
-export function useImageViewer<T extends IdentifiableImage>(images: T[]) {
+export function useImageViewer<T extends IdentifiableImage>(images: T[], slideshowIntervalInMs = defaultSlideshowIntervalInMs) {
 	const [viewerImageId, setViewerImageId] = useState<number | null>(null);
 	const [zoom, setZoom] = useState(1);
 	const [showDetails, setShowDetails] = useState(true);
@@ -91,7 +91,7 @@ export function useImageViewer<T extends IdentifiableImage>(images: T[]) {
 		}, slideshowIntervalInMs);
 
 		return () => window.clearInterval(intervalId);
-	}, [activeImage, goNext, images.length, isSlideshowPlaying]);
+	}, [activeImage, goNext, images.length, isSlideshowPlaying, slideshowIntervalInMs]);
 
 	return {
 		viewerImageId,

@@ -1,7 +1,7 @@
 # Tasks 06 - System And Search
 
 ## TASK-016 - Separar Analytics em visao geral e biblioteca/indexacao
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: alinhar analytics ao blueprint com duas camadas: saude geral e estado da biblioteca.
 - Estado atual: ha apenas uma pagina `Analytics` com overview unico.
@@ -15,7 +15,7 @@
 - Dependencias: `TASK-002`.
 
 ## TASK-017 - Criar Settings e consolidar configuracoes
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: introduzir o dominio `Configuracoes` no produto e no backend.
 - Estado atual: backend expoe apenas `translation` e `about`; nao existe pagina de configuracao.
