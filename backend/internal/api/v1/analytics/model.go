@@ -20,6 +20,8 @@ type OverviewDataModel struct {
 	RecentFiles      []RecentFileModel
 	Duplicates       DuplicatesSummaryModel
 	TopDuplicateSets []DuplicateGroupModel
+	LibrarySummary   LibrarySummaryModel
+	Processing       ProcessingSummaryModel
 	HealthStatus     sql.NullString
 	LastScanStart    sql.NullTime
 	LastScanEnd      sql.NullTime
@@ -89,6 +91,21 @@ type DuplicateGroupModel struct {
 	ItemSize        int64
 	ReclaimableSize int64
 	Paths           []string
+}
+
+type LibrarySummaryModel struct {
+	CategorizedMedia  int64
+	AudioWithMetadata int64
+	VideoWithMetadata int64
+	ImageWithMetadata int64
+	ImageClassified   int64
+}
+
+type ProcessingSummaryModel struct {
+	MetadataPending  int64
+	MetadataFailed   int64
+	ThumbnailPending int64
+	ThumbnailFailed  int64
 }
 
 type LogErrorModel struct {

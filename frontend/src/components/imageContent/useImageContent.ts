@@ -8,6 +8,7 @@ import { useImage, type ImageGroupBy } from '@/components/providers/imageProvide
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { useImageViewer } from '@/components/hooks/useImageViewer/useImageViewer';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import { toggleStarredFile } from '@/service/files';
 import type { Pagination } from '@/types/pagination';
 import {
@@ -69,6 +70,7 @@ const updateImageStarredInCache = (queryData: ImageQueryData | undefined, itemId
 
 export const useImageContent = () => {
 	const { t } = useI18n();
+	const { settings } = useSettings();
 	const { enqueueSnackbar } = useSnackbar();
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -228,7 +230,7 @@ export const useImageContent = () => {
 		setShowFilmstrip,
 		isSlideshowPlaying,
 		toggleSlideshow,
-	} = useImageViewer(filteredImages);
+	} = useImageViewer(filteredImages, settings.players.image_slideshow_seconds * 1000);
 
 	const updateSearchParams = useCallback(
 		(updates: Record<string, string | null>) => {

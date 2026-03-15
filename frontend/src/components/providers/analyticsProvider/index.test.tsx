@@ -51,6 +51,19 @@ describe('providers/analyticsProvider', () => {
 				top_folders: [],
 				recent_files: [],
 				duplicates: { groups: 0, files: 0, reclaimable_size: 0, top_groups: [] },
+				library: {
+					categorized_media: 6,
+					audio_with_metadata: 2,
+					video_with_metadata: 2,
+					image_with_metadata: 2,
+					image_classified: 2,
+				},
+				processing: {
+					metadata_pending: 1,
+					metadata_failed: 0,
+					thumbnail_pending: 2,
+					thumbnail_failed: 0,
+				},
 				health: {
 					status: 'ok',
 					last_scan_at: '',

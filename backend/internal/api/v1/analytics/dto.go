@@ -14,6 +14,8 @@ type OverviewDto struct {
 	TopFolders  []FolderUsageDto     `json:"top_folders"`
 	RecentFiles []RecentFileDto      `json:"recent_files"`
 	Duplicates  DuplicatesDto        `json:"duplicates"`
+	Library     LibraryDto           `json:"library"`
+	Processing  ProcessingDto        `json:"processing"`
 	Health      HealthDto            `json:"health"`
 }
 
@@ -85,6 +87,21 @@ type DuplicateGroupDto struct {
 	SizeBytes       int64    `json:"size_bytes"`
 	ReclaimableSize int64    `json:"reclaimable_size"`
 	Paths           []string `json:"paths"`
+}
+
+type LibraryDto struct {
+	CategorizedMedia  int64 `json:"categorized_media"`
+	AudioWithMetadata int64 `json:"audio_with_metadata"`
+	VideoWithMetadata int64 `json:"video_with_metadata"`
+	ImageWithMetadata int64 `json:"image_with_metadata"`
+	ImageClassified   int64 `json:"image_classified"`
+}
+
+type ProcessingDto struct {
+	MetadataPending  int64 `json:"metadata_pending"`
+	MetadataFailed   int64 `json:"metadata_failed"`
+	ThumbnailPending int64 `json:"thumbnail_pending"`
+	ThumbnailFailed  int64 `json:"thumbnail_failed"`
 }
 
 type HealthDto struct {

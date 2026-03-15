@@ -115,8 +115,10 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations := router.Group("/configuration")
 
-	configurations.GET("/translation", context.ConfigurationHandler.GetTranslationJson)
-	configurations.GET("/about", context.ConfigurationHandler.GetAboutHandler)
+	configurations.GET("/translation", context.Configuration.Handler.GetTranslationJson)
+	configurations.GET("/about", context.Configuration.Handler.GetAboutHandler)
+	configurations.GET("/settings", context.Configuration.Handler.GetSettingsHandler)
+	configurations.PUT("/settings", context.Configuration.Handler.UpdateSettingsHandler)
 }
 
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {

@@ -64,6 +64,19 @@ func (s *Service) GetOverview(period string) (OverviewDto, error) {
 			ReclaimableSize: data.Duplicates.ReclaimableBytes,
 			TopGroups:       toDuplicateGroupDto(data.TopDuplicateSets),
 		},
+		Library: LibraryDto{
+			CategorizedMedia:  data.LibrarySummary.CategorizedMedia,
+			AudioWithMetadata: data.LibrarySummary.AudioWithMetadata,
+			VideoWithMetadata: data.LibrarySummary.VideoWithMetadata,
+			ImageWithMetadata: data.LibrarySummary.ImageWithMetadata,
+			ImageClassified:   data.LibrarySummary.ImageClassified,
+		},
+		Processing: ProcessingDto{
+			MetadataPending:  data.Processing.MetadataPending,
+			MetadataFailed:   data.Processing.MetadataFailed,
+			ThumbnailPending: data.Processing.ThumbnailPending,
+			ThumbnailFailed:  data.Processing.ThumbnailFailed,
+		},
 		Health: toHealthDto(data),
 	}
 

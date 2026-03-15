@@ -35,12 +35,14 @@ func TestServiceGetOverviewRejectsInvalidPeriod(t *testing.T) {
 func TestServiceGetOverviewMapsHealthAndPeriod(t *testing.T) {
 	now := time.Now().UTC()
 	stub := &repositoryStub{response: OverviewDataModel{
-		StorageKpis:   StorageKpisModel{UsedBytes: 100, GrowthBytes: 10, FilesAdded: 2, FilesTotal: 5, FoldersTotal: 3},
-		HealthStatus:  sql.NullString{String: "FAILED", Valid: true},
-		LastScanStart: sql.NullTime{Time: now.Add(-2 * time.Minute), Valid: true},
-		LastScanEnd:   sql.NullTime{Time: now.Add(-1 * time.Minute), Valid: true},
-		ErrorsLast24h: 3,
-		RecentErrors:  []LogErrorModel{{Name: "ScanFiles", Description: sql.NullString{String: "boom", Valid: true}, CreatedAt: now}},
+		StorageKpis:    StorageKpisModel{UsedBytes: 100, GrowthBytes: 10, FilesAdded: 2, FilesTotal: 5, FoldersTotal: 3},
+		LibrarySummary: LibrarySummaryModel{CategorizedMedia: 4, AudioWithMetadata: 1, VideoWithMetadata: 2, ImageWithMetadata: 1, ImageClassified: 1},
+		Processing:     ProcessingSummaryModel{MetadataPending: 2, MetadataFailed: 1, ThumbnailPending: 3, ThumbnailFailed: 1},
+		HealthStatus:   sql.NullString{String: "FAILED", Valid: true},
+		LastScanStart:  sql.NullTime{Time: now.Add(-2 * time.Minute), Valid: true},
+		LastScanEnd:    sql.NullTime{Time: now.Add(-1 * time.Minute), Valid: true},
+		ErrorsLast24h:  3,
+		RecentErrors:   []LogErrorModel{{Name: "ScanFiles", Description: sql.NullString{String: "boom", Valid: true}, CreatedAt: now}},
 	}}
 
 	service := NewService(stub)
@@ -56,6 +58,12 @@ func TestServiceGetOverviewMapsHealthAndPeriod(t *testing.T) {
 	}
 	if result.Counts.FilesTotal != 5 {
 		t.Fatalf("expected files total 5, got %d", result.Counts.FilesTotal)
+	}
+	if result.Library.CategorizedMedia != 4 {
+		t.Fatalf("expected categorized media 4, got %d", result.Library.CategorizedMedia)
+	}
+	if result.Processing.ThumbnailPending != 3 {
+		t.Fatalf("expected thumbnail pending 3, got %d", result.Processing.ThumbnailPending)
 	}
 	if len(result.Health.RecentErrors) != 1 {
 		t.Fatalf("expected 1 recent error")
