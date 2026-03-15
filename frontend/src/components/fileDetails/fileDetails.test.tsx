@@ -15,7 +15,7 @@ jest.mock('../i18n/provider/i18nContext', () => ({
 
 describe('fileDetails', () => {
 	it('returns null for no item or directory', () => {
-		mockUseFile.mockReturnValue({ selectedItem: null, isLoadingAccessData: false, recentAccessFiles: [] });
+		mockUseFile.mockReturnValue({ selectedItem: null, isLoadingAccessData: false, recentAccessFiles: [], handleSelectItem: jest.fn() });
 		const { container } = render(<FileDetails />);
 		expect(container).toBeEmptyDOMElement();
 
@@ -23,6 +23,7 @@ describe('fileDetails', () => {
 			selectedItem: { id: 1, type: 1 },
 			isLoadingAccessData: false,
 			recentAccessFiles: [],
+			handleSelectItem: jest.fn(),
 		});
 		const d = render(<FileDetails />);
 		expect(d.container).toBeEmptyDOMElement();
@@ -41,6 +42,7 @@ describe('fileDetails', () => {
 			},
 			isLoadingAccessData: false,
 			recentAccessFiles: [{ id: 10, ip_address: '127.0.0.1', file_id: 2, accessed_at: '2026-01-03T00:00:00Z' }],
+			handleSelectItem: jest.fn(),
 		});
 
 		render(<FileDetails />);
@@ -62,6 +64,7 @@ describe('fileDetails', () => {
 			},
 			isLoadingAccessData: true,
 			recentAccessFiles: [],
+			handleSelectItem: jest.fn(),
 		});
 		render(<FileDetails />);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();

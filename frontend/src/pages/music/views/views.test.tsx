@@ -22,6 +22,12 @@ const mockReplaceQueue = jest.fn();
 
 jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
 jest.mock('@tanstack/react-query', () => ({
 	useInfiniteQuery: (...args: any[]) => mockUseInfiniteQuery(...args),
 	useQuery: (...args: any[]) => mockUseQuery(...args),
@@ -94,9 +100,6 @@ const clickBackButton = (container: HTMLElement) => {
 beforeEach(() => {
 	jest.clearAllMocks();
 	mockUseGlobalMusic.mockReturnValue({
-		getMusicTitle: (m: any) => m.name,
-		getMusicArtist: (m: any) => m.artist ?? 'artist',
-		musicMetadata: () => 'meta',
 		replaceQueue: mockReplaceQueue,
 	});
 	mockUseMusic.mockReturnValue({
@@ -236,7 +239,7 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		const { container } = render(<GenresView />);
+		const { container } = renderWithRouter(<GenresView />);
 		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
 		await waitFor(() => {
 			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
@@ -320,7 +323,7 @@ describe('music views', () => {
 			hasNextPage: false,
 			isFetchingNextPage: false,
 		});
-		const { unmount } = render(<GenresView />);
+		const { unmount } = renderWithRouter(<GenresView />);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		unmount();
 
@@ -341,7 +344,7 @@ describe('music views', () => {
 			}
 			return makeInfiniteResult([]);
 		});
-		render(<GenresView />);
+		renderWithRouter(<GenresView />);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('genre-1'));
 		expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0);
@@ -537,13 +540,13 @@ describe('music views', () => {
 			}
 			return makeInfiniteResult([]);
 		});
-		const firstRender = render(<GenresView />);
+		const firstRender = renderWithRouter(<GenresView />);
 		const genreCard = screen.getByText('genre-1').closest('[role="button"]') as HTMLElement;
 		fireEvent.keyDown(genreCard, { key: ' ' });
 		expect(firstRender.container.querySelector('svg.lucide-arrow-left')).toBeInTheDocument();
 		firstRender.unmount();
 
-		const secondRender = render(<GenresView />);
+		const secondRender = renderWithRouter(<GenresView />);
 		const secondGenreCard = screen.getByText('genre-1').closest('[role="button"]') as HTMLElement;
 		fireEvent.keyDown(secondGenreCard, { key: 'Escape' });
 		expect(secondRender.container.querySelector('svg.lucide-arrow-left')).not.toBeInTheDocument();
@@ -578,7 +581,7 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		const { rerender } = render(<GenresView />);
+		const { rerender } = renderWithRouter(<GenresView />);
 		fireEvent.click(screen.getByText('genre-1'));
 		mockReplaceQueue.mockClear();
 		const detailButtons = screen.getAllByRole('button');
@@ -604,7 +607,7 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		rerender(<GenresView />);
+		rerender(<MemoryRouter><GenresView /></MemoryRouter>);
 		fireEvent.click(screen.getByText('genre-1'));
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 	});

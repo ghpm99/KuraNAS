@@ -7,6 +7,12 @@ const mockReplaceQueue = jest.fn();
 
 jest.mock('@/components/providers/musicProvider/musicProvider', () => ({ useMusic: () => mockUseMusic() }));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
 
 jest.mock('@/components/music/AddToPlaylistMenu', () => (props: any) => (
 	<div>
@@ -36,9 +42,6 @@ describe('AllTracksView', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockUseGlobalMusic.mockReturnValue({
-			getMusicTitle: (m: any) => m.name,
-			getMusicArtist: (m: any) => m.artist,
-			musicMetadata: () => 'meta',
 			replaceQueue: mockReplaceQueue,
 		});
 	});

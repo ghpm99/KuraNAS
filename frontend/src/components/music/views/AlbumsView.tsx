@@ -43,7 +43,7 @@ export default function AlbumsView() {
 			const next = new URLSearchParams(current);
 			next.set('album', album.key);
 			return next;
-		}, { replace: true });
+		});
 	};
 
 	const handleBack = () => {

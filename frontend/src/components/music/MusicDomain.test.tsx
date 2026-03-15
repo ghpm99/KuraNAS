@@ -15,6 +15,13 @@ jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
+
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: jest.fn(),
 }));
@@ -84,8 +91,6 @@ describe('components/music domain shell', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
 			currentTrack: { id: 10, name: 'Song A' },
-			getMusicArtist: () => 'Artist A',
-			getMusicTitle: () => 'Song A',
 			hasQueue: true,
 			playbackContext: {
 				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
@@ -116,8 +121,6 @@ describe('components/music domain shell', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
 			currentTrack: { id: 10, name: 'Song A' },
-			getMusicArtist: () => 'Artist A',
-			getMusicTitle: () => 'Song A',
 			hasQueue: true,
 			playbackContext: {
 				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
@@ -154,8 +157,6 @@ describe('components/music domain shell', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
 			currentTrack: { id: 10, name: 'Song A' },
-			getMusicArtist: () => 'Artist A',
-			getMusicTitle: () => 'Song A',
 			hasQueue: true,
 			playbackContext: undefined,
 			queue: [{ id: 10 }, { id: 11, name: 'Song B' }],
@@ -188,8 +189,6 @@ describe('components/music domain shell', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: undefined,
 			currentTrack: undefined,
-			getMusicArtist: () => '',
-			getMusicTitle: () => '',
 			hasQueue: false,
 			playbackContext: undefined,
 			queue: [],

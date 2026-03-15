@@ -1,6 +1,7 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
 import { ListPlus, Pause, Play } from 'lucide-react';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 
 interface TrackListItemProps {
@@ -12,7 +13,7 @@ interface TrackListItemProps {
 }
 
 const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = true }: TrackListItemProps) => {
-	const { currentTrack, isPlaying, getMusicTitle, getMusicArtist, formatDuration } = useGlobalMusic();
+	const { currentTrack, isPlaying } = useGlobalMusic();
 	const isCurrentTrack = currentTrack?.id === track.id;
 	const duration = track.metadata?.duration;
 	const trackTitle = getMusicTitle(track);
@@ -119,7 +120,7 @@ const TrackListItem = ({ track, index, onPlay, onAddToPlaylist, showArtist = tru
 						color='text.secondary'
 						sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'right' }}
 					>
-						{formatDuration(duration)}
+						{formatMusicDuration(duration)}
 					</Typography>
 				) : (
 					<Box sx={{ width: 36 }} />

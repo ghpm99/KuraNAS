@@ -5,6 +5,7 @@ import {
 	createPlaylistPlaybackContext,
 } from '@/components/music/playbackContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import { getPlaylistTracks } from '@/service/playlist';
 import { getMusicByAlbum, getMusicByArtist, getMusicHomeCatalog } from '@/service/music';
 import { useQuery } from '@tanstack/react-query';
@@ -19,8 +20,6 @@ export const useMusicHomeScreen = () => {
 	const {
 		currentIndex,
 		currentTrack,
-		getMusicArtist,
-		getMusicTitle,
 		hasQueue,
 		playbackContext,
 		queue,

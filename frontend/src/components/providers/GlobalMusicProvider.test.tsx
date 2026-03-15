@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata } from '@/utils/music';
 
 const mockUpdatePlayerState = jest.fn();
 const mockGetPlayerState = jest.fn();
@@ -31,11 +32,14 @@ class FakeAudio {
 	volume = 1;
 	currentTime = 0;
 	duration = 200;
+	paused = true;
 	play = jest.fn(() => {
+		this.paused = false;
 		this.emit('play');
 		return Promise.resolve();
 	});
 	pause = jest.fn(() => {
+		this.paused = true;
 		this.emit('pause');
 	});
 	private listeners = new Map<string, Set<() => void>>();
@@ -114,10 +118,10 @@ describe('components/providers/GlobalMusicProvider', () => {
 		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
 
 		expect(result.current.hasQueue).toBe(false);
-		expect(result.current.getMusicTitle(track1)).toBe('Song 1');
-		expect(result.current.getMusicArtist(track2)).toBe('Unknown Artist');
-		expect(result.current.formatDuration(65)).toBe('1:05');
-		expect(result.current.musicMetadata(track1)).toContain('2:01');
+		expect(getMusicTitle(track1)).toBe('Song 1');
+		expect(getMusicArtist(track2)).toBe('Unknown Artist');
+		expect(formatMusicDuration(65)).toBe('1:05');
+		expect(musicMetadata(track1)).toContain('2:01');
 
 		act(() => {
 			result.current.addToQueue(track1, {
@@ -269,13 +273,13 @@ describe('components/providers/GlobalMusicProvider', () => {
 		);
 
 		expect(
-			result.current.musicMetadata({
+			musicMetadata({
 				format: '',
 				size: 512,
 			} as any),
 		).toContain('512 B');
-		expect(result.current.getMusicTitle({ id: 7, name: 'fallback.mp3', format: 'mp3', size: 1 } as any)).toBe('fallback.mp3');
-		expect(result.current.getMusicArtist({ id: 7, name: 'x', format: 'mp3', size: 1 } as any)).toBe('Unknown Artist');
+		expect(getMusicTitle({ id: 7, name: 'fallback.mp3', format: 'mp3', size: 1 } as any)).toBe('fallback.mp3');
+		expect(getMusicArtist({ id: 7, name: 'x', format: 'mp3', size: 1 } as any)).toBe('Unknown Artist');
 	});
 
 	it('throws when hook is used outside provider', () => {

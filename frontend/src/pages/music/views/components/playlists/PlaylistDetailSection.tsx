@@ -5,6 +5,7 @@ import { Playlist, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlaylistTrackHandlers } from '@/components/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers';
 import CategoryHeader from '@/components/music/CategoryHeader';
+import { formatMusicDuration } from '@/utils/music';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 type PlaylistDetailSectionProps = {
@@ -30,7 +31,7 @@ export default function PlaylistDetailSection({
 }: PlaylistDetailSectionProps) {
 	const { t } = useI18n();
 	const { getMusicArtist, getMusicTitle } = usePlaylistTrackHandlers();
-	const { currentTrack, isPlaying, formatDuration, replaceQueue } = useGlobalMusic();
+	const { currentTrack, isPlaying, replaceQueue } = useGlobalMusic();
 	const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
@@ -170,7 +171,7 @@ export default function PlaylistDetailSection({
 
 									{duration ? (
 										<Typography variant='caption' color='text.secondary' sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'right' }}>
-											{formatDuration(duration)}
+											{formatMusicDuration(duration)}
 										</Typography>
 									) : (
 										<Box sx={{ width: 36 }} />

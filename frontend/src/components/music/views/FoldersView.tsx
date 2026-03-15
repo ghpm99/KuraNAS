@@ -40,7 +40,7 @@ export default function FoldersView() {
 			const next = new URLSearchParams(current);
 			next.set('folder', folder);
 			return next;
-		}, { replace: true });
+		});
 	};
 
 	const handleBack = () => {

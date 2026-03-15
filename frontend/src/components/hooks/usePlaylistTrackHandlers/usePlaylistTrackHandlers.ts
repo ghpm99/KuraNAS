@@ -1,8 +1,6 @@
-import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist, musicMetadata } from '@/utils/music';
 
 export function usePlaylistTrackHandlers() {
-	const { getMusicArtist, getMusicTitle, musicMetadata } = useGlobalMusic();
-
 	return {
 		getMusicArtist,
 		getMusicTitle,

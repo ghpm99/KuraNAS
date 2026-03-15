@@ -9,6 +9,13 @@ jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (track: any) => track.name,
+	getMusicArtist: () => 'artist-9',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (duration: number) => `dur-${duration}`,
+}));
+
 const baseTrack: any = {
 	id: 9,
 	name: 'track-9',
@@ -25,9 +32,6 @@ describe('TrackListItem', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentTrack: { id: 9 },
 			isPlaying: true,
-			getMusicTitle: (track: any) => track.name,
-			getMusicArtist: () => 'artist-9',
-			formatDuration: (duration: number) => `dur-${duration}`,
 		});
 	});
 
@@ -56,9 +60,6 @@ describe('TrackListItem', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentTrack: { id: 9 },
 			isPlaying: false,
-			getMusicTitle: (track: any) => track.name,
-			getMusicArtist: () => 'artist-9',
-			formatDuration: (duration: number) => `dur-${duration}`,
 		});
 
 		const { rerender } = render(
@@ -75,9 +76,6 @@ describe('TrackListItem', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentTrack: { id: 1 },
 			isPlaying: false,
-			getMusicTitle: (track: any) => track.name,
-			getMusicArtist: () => 'artist-9',
-			formatDuration: (duration: number) => `dur-${duration}`,
 		});
 
 		rerender(

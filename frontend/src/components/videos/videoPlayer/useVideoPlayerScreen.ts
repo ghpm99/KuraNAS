@@ -11,7 +11,7 @@ import {
 import { buildVideoPlaylistDetail, type VideoDetailItem } from '@/components/videos/videoContent/useVideoPlaylistDetail';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type VideoPlayerLocationState = {
 	from?: string;
@@ -56,8 +56,12 @@ export default function useVideoPlayerScreen() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [searchParams] = useSearchParams();
 	const locationState = (location.state as VideoPlayerLocationState | null) ?? null;
 	const videoId = typeof id === 'string' ? id : '';
+
+	const playlistIdFromUrl = searchParams.get('playlist');
+	const resolvedPlaylistId = playlistIdFromUrl ? Number(playlistIdFromUrl) : (locationState?.playlistId ?? null);
 
 	const {
 		videoRef,
@@ -83,7 +87,7 @@ export default function useVideoPlayerScreen() {
 		onVideoEnded,
 		} = useVideoPlayer({
 			videoId,
-			playlistId: locationState?.playlistId ?? null,
+			playlistId: resolvedPlaylistId,
 			persistProgress: settings.players.remember_video_progress,
 		});
 	const syncedRouteVideoIdRef = useRef<string | null>(null);
@@ -96,7 +100,8 @@ export default function useVideoPlayerScreen() {
 		return getVideoDetailRoute(getVideoSectionForPlaylist(playlist), slugify(playlist.name));
 	}, [playlist]);
 
-	const originRoute = locationState?.from ?? fallbackContextRoute;
+	const fromParam = searchParams.get('from');
+	const originRoute = fromParam ?? locationState?.from ?? fallbackContextRoute;
 	const originPathname = getPathname(originRoute);
 
 	const originLabels = useMemo(() => {
@@ -182,22 +187,39 @@ export default function useVideoPlayerScreen() {
 			? t('VIDEO_PLAYER_NEXT_EPISODES')
 			: t('VIDEO_PLAYER_RELATED_VIDEOS');
 
+	const resolvedPlaylistIdForState = playbackState?.playlist_id ?? playlist?.id ?? resolvedPlaylistId ?? null;
+
+	const buildVideoPlayerUrl = useCallback(
+		(targetVideoId: number | string) => {
+			const params = new URLSearchParams();
+			if (resolvedPlaylistIdForState) {
+				params.set('playlist', String(resolvedPlaylistIdForState));
+			}
+			if (originRoute) {
+				params.set('from', originRoute);
+			}
+			const qs = params.toString();
+			return `${appRoutes.videoPlayerBase}/${targetVideoId}${qs ? `?${qs}` : ''}`;
+		},
+		[originRoute, resolvedPlaylistIdForState],
+	);
+
 	const persistedState = useMemo(
 		() => ({
 			...(locationState ?? {}),
 			from: originRoute,
-			playlistId: playbackState?.playlist_id ?? playlist?.id ?? locationState?.playlistId ?? null,
+			playlistId: resolvedPlaylistIdForState,
 		}),
-		[locationState, originRoute, playbackState?.playlist_id, playlist?.id],
+		[locationState, originRoute, resolvedPlaylistIdForState],
 	);
 
 	const openVideo = useCallback(
 		(targetVideoId: number) => {
-			navigate(`${appRoutes.videoPlayerBase}/${targetVideoId}`, {
+			navigate(buildVideoPlayerUrl(targetVideoId), {
 				state: persistedState,
 			});
 		},
-		[navigate, persistedState],
+		[buildVideoPlayerUrl, navigate, persistedState],
 	);
 
 	const handleBack = useCallback(() => {
@@ -230,11 +252,11 @@ export default function useVideoPlayerScreen() {
 		}
 
 		syncedRouteVideoIdRef.current = String(currentVideo.id);
-		navigate(`${appRoutes.videoPlayerBase}/${currentVideo.id}`, {
+		navigate(buildVideoPlayerUrl(currentVideo.id), {
 			replace: true,
 			state: persistedState,
 		});
-	}, [currentVideo?.id, navigate, persistedState, videoId]);
+	}, [buildVideoPlayerUrl, currentVideo?.id, navigate, persistedState, videoId]);
 
 	return {
 		videoId,
