@@ -86,6 +86,7 @@ jest.mock('@/components/music/musicLayout', () => ({ children }: any) => <div da
 jest.mock('@/components/music/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
 jest.mock('@/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
+jest.mock('@/components/settings/SettingsScreen', () => () => <div>SETTINGS_PAGE_TITLE</div>);
 
 jest.mock('@/components/videos/videoLayout', () => ({ children }: any) => <div data-testid='video-layout'>{children}</div>);
 jest.mock('@/components/videos/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
@@ -141,25 +142,49 @@ beforeEach(() => {
 		data: {
 			generated_at: '2026-01-01T00:00:00Z',
 			storage: { used_bytes: 1024, total_bytes: 2048, free_bytes: 1024, growth_bytes: 128 },
-			counts: { files_added: 2, files_total: 20 },
+			counts: { files_added: 2, files_total: 20, folders: 4 },
 			hot_folders: [{ path: '/media', bytes: 500, growth_bytes: 10 }],
 			duplicates: {
 				groups: 1,
+				files: 2,
 				reclaimable_size: 256,
 				top_groups: [{ signature: 'abcdef1234567890', copies: 2, reclaimable_size: 128 }],
+			},
+			library: {
+				categorized_media: 8,
+				audio_with_metadata: 3,
+				video_with_metadata: 3,
+				image_with_metadata: 2,
+				image_classified: 2,
+			},
+			processing: {
+				metadata_pending: 1,
+				metadata_failed: 0,
+				thumbnail_pending: 2,
+				thumbnail_failed: 1,
 			},
 			health: {
 				status: 'scanning',
 				indexed_files: 100,
 				errors_last_24h: 0,
 				last_scan_at: '2026-01-01T00:00:00Z',
+				last_scan_seconds: 30,
 				recent_errors: ['none'],
 			},
 			time_series: [{ date: '2026-01-01', used_bytes: 1024 }],
 			types: [{ type: 'video', count: 1, bytes: 1024 }],
 			top_folders: [{ path: '/media/videos', bytes: 1024, last_modified: '2026-01-01T00:00:00Z' }],
 			extensions: [{ ext: '.mp4', count: 1, bytes: 1024 }],
-			recent_files: [{ id: 1, name: 'movie.mp4', size_bytes: 1024, created_at: '2026-01-01T00:00:00Z' }],
+			recent_files: [
+				{
+					id: 1,
+					name: 'movie.mp4',
+					parent_path: '/media/videos',
+					size_bytes: 1024,
+					created_at: '2026-01-01T00:00:00Z',
+					updated_at: '2026-01-01T00:00:00Z',
+				},
+			],
 		},
 	});
 });
@@ -213,6 +238,10 @@ describe('shell components and pages', () => {
 		mockUseLocation.mockReturnValueOnce({ pathname: '/videos/series' });
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('videos');
+
+		mockUseLocation.mockReturnValueOnce({ pathname: '/analytics/library' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('analytics');
 
 		mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
 		render(<ActivePageListener />);
@@ -270,7 +299,7 @@ describe('shell components and pages', () => {
 
 		render(<AnalyticsPage />);
 		expect(screen.getAllByTestId('analytics-layout').length).toBeGreaterThan(0);
-		expect(screen.getByText('ANALYTICS_PAGE_TITLE')).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: 'ANALYTICS_SECTION_OVERVIEW' })).toBeInTheDocument();
 
 		render(<SettingsPage />);
 		expect(screen.getByText('SETTINGS_PAGE_TITLE')).toBeInTheDocument();

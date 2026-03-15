@@ -132,6 +132,25 @@ func (r *Repository) GetOverviewData(period PeriodConfig, limits OverviewLimits)
 			return err
 		}
 
+		if err := tx.QueryRow(queries.LibraryMetadataSummaryQuery).Scan(
+			&result.LibrarySummary.CategorizedMedia,
+			&result.LibrarySummary.AudioWithMetadata,
+			&result.LibrarySummary.VideoWithMetadata,
+			&result.LibrarySummary.ImageWithMetadata,
+			&result.LibrarySummary.ImageClassified,
+		); err != nil {
+			return err
+		}
+
+		if err := tx.QueryRow(queries.ProcessingQueueSummaryQuery).Scan(
+			&result.Processing.MetadataPending,
+			&result.Processing.MetadataFailed,
+			&result.Processing.ThumbnailPending,
+			&result.Processing.ThumbnailFailed,
+		); err != nil {
+			return err
+		}
+
 		dupRows, err := tx.Query(queries.DuplicatesTopGroupsQuery, limits.TopDuplicates)
 		if err != nil {
 			return err
