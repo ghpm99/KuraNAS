@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver
 import { useImageViewer } from '@/components/hooks/useImageViewer/useImageViewer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
-import { toggleStarredFile } from '@/service/files';
+import { getFileByPath, toggleStarredFile } from '@/service/files';
 import type { Pagination } from '@/types/pagination';
 import {
 	buildAutomaticAlbumCollections,
@@ -81,6 +81,26 @@ export const useImageContent = () => {
 	const isLoadingMoreRef = useRef(false);
 	const locale = t('LOCALE');
 	const activeSection = getImageSectionFromPath(location.pathname);
+	const requestedImageId = Number(searchParams.get('image') ?? '');
+	const requestedImagePath = searchParams.get('imagePath')?.trim() ?? '';
+	const shouldResolveRequestedImage = Number.isFinite(requestedImageId)
+		&& requestedImageId > 0
+		&& requestedImagePath.length > 0
+		&& !images.some((image) => image.id === requestedImageId);
+	const requestedImageQuery = useQuery({
+		queryKey: ['images', 'path', requestedImagePath],
+		queryFn: () => getFileByPath(requestedImagePath),
+		enabled: shouldResolveRequestedImage,
+	});
+	const resolvedRequestedImage = requestedImageQuery.data && requestedImageQuery.data.id === requestedImageId
+		? requestedImageQuery.data
+		: null;
+	const imagesWithRequestedItem = useMemo(
+		() => (resolvedRequestedImage && !images.some((image) => image.id === resolvedRequestedImage.id)
+			? [...images, resolvedRequestedImage]
+			: images),
+		[images, resolvedRequestedImage],
+	);
 
 	const groupByLabels: Record<ImageGroupBy, string> = useMemo(
 		() => ({
@@ -109,9 +129,12 @@ export const useImageContent = () => {
 		[locale],
 	);
 
-	const imageDates = useMemo(() => new Map<number, Date | null>(images.map((item) => [item.id, getImageDate(item)] as const)), [images]);
-	const folderCollections = useMemo(() => buildFolderCollections(images), [images]);
-	const albumCollections = useMemo(() => buildAutomaticAlbumCollections(images), [images]);
+	const imageDates = useMemo(
+		() => new Map<number, Date | null>(imagesWithRequestedItem.map((item) => [item.id, getImageDate(item)] as const)),
+		[imagesWithRequestedItem],
+	);
+	const folderCollections = useMemo(() => buildFolderCollections(imagesWithRequestedItem), [imagesWithRequestedItem]);
+	const albumCollections = useMemo(() => buildAutomaticAlbumCollections(imagesWithRequestedItem), [imagesWithRequestedItem]);
 
 	const selectedFolderId = activeSection === 'folders' ? (searchParams.get(selectionSearchParamMap.folders) ?? '') : '';
 	const selectedAlbumId = activeSection === 'albums' ? (searchParams.get(selectionSearchParamMap.albums) ?? '') : '';
@@ -128,8 +151,8 @@ export const useImageContent = () => {
 			return selectedAlbum?.images ?? [];
 		}
 
-		return images.filter((item) => matchesImageSection(activeSection, item, imageDates.get(item.id) ?? null));
-	}, [activeSection, imageDates, images, selectedAlbum, selectedFolder]);
+		return imagesWithRequestedItem.filter((item) => matchesImageSection(activeSection, item, imageDates.get(item.id) ?? null));
+	}, [activeSection, imageDates, imagesWithRequestedItem, selectedAlbum, selectedFolder]);
 
 	const filteredImages = useMemo(
 		() => baseImages.filter((item) => matchesImageSearch(item, search)),
@@ -248,7 +271,6 @@ export const useImageContent = () => {
 		[searchParams, setSearchParams],
 	);
 
-	const requestedImageId = Number(searchParams.get('image') ?? '');
 	const activeImageDate = activeImage ? (imageDates.get(activeImage.id) ?? null) : null;
 	const activeFolderPath = activeImage ? getImageDirectoryPath(activeImage) : '';
 
