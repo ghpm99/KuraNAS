@@ -29,7 +29,7 @@
 - Dependencias: `TASK-010`.
 
 ## TASK-012 - Evoluir o player de video para contexto completo
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: transformar o player em extensao natural da biblioteca, com proximo item, retomada e contexto visivel.
 - Estado atual: `videoPlayer.tsx` toca o video e possui controles; o fluxo ainda e muito isolado da biblioteca.

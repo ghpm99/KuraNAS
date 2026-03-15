@@ -14,7 +14,12 @@ import {
 	type VideoPlaylistDto,
 } from '@/service/videoPlayback';
 import { type VideoSection } from '@/app/routes';
-import { getVideoDetailRoute, getVideoDetailSlugFromPath, getVideoSectionFromPath } from '@/components/videos/navigation';
+import {
+	getVideoDetailRoute,
+	getVideoDetailSlugFromPath,
+	getVideoSectionForPlaylist,
+	getVideoSectionFromPath,
+} from '@/components/videos/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -224,26 +229,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 
 	const getCurrentRoute = () => `${location.pathname}${location.search}`;
 
-	const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> => {
-		if (currentSection !== 'home') {
-			return currentSection;
-		}
-
-		if (playlist.type === 'folder') {
-			return 'folders';
-		}
-		if (playlist.classification === 'movie') {
-			return 'movies';
-		}
-		if (playlist.classification === 'clip' || playlist.classification === 'program') {
-			return 'clips';
-		}
-		if (playlist.classification === 'series' || playlist.classification === 'anime') {
-			return 'series';
-		}
-
-		return 'personal';
-	};
+	const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> =>
+		currentSection !== 'home' ? currentSection : getVideoSectionForPlaylist(playlist);
 
 	const playVideo = (videoId: number, playlistId?: number | null) => {
 		if (!videoId) return;
