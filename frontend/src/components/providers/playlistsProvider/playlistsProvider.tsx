@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -108,22 +108,15 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		() => [...(automaticPlaylistsQuery.data ?? []), ...(playlistsQuery.data?.pages.flatMap((page) => page.items) ?? [])],
 		[automaticPlaylistsQuery.data, playlistsQuery.data],
 	);
-	const tracks = useMemo(() => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [], [tracksQuery.data]);
 	const requestedPlaylistId = Number(searchParams.get('playlist') ?? '');
-
-	useEffect(() => {
-		if (!Number.isFinite(requestedPlaylistId) || requestedPlaylistId <= 0 || selectedPlaylist?.id === requestedPlaylistId) {
-			return;
-		}
-
-		const requestedPlaylist = playlists.find((playlist) => playlist.id === requestedPlaylistId) ?? null;
-		if (requestedPlaylist) {
-			setSelectedPlaylist(requestedPlaylist);
-		}
-	}, [playlists, requestedPlaylistId, selectedPlaylist?.id]);
+	const requestedPlaylist = Number.isFinite(requestedPlaylistId) && requestedPlaylistId > 0
+		? (playlists.find((playlist) => playlist.id === requestedPlaylistId) ?? null)
+		: null;
+	const activePlaylist = selectedPlaylist ?? requestedPlaylist;
+	const tracks = useMemo(() => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [], [tracksQuery.data]);
 
 	const contextValue: PlaylistsContextData = {
-		selectedPlaylist,
+		selectedPlaylist: activePlaylist,
 		playlists,
 		tracks,
 		isLoadingPlaylists: playlistsQuery.isLoading || automaticPlaylistsQuery.isLoading,
@@ -138,22 +131,22 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		createOpen,
 		newName,
 		newDescription,
-			selectPlaylist: (playlist) => {
-				setSelectedPlaylist(playlist);
-				setSearchParams((current) => {
-					const next = new URLSearchParams(current);
-					next.set('playlist', String(playlist.id));
-					return next;
-				}, { replace: true });
-			},
-			backToList: () => {
-				setSelectedPlaylist(null);
-				setSearchParams((current) => {
-					const next = new URLSearchParams(current);
-					next.delete('playlist');
-					return next;
-				}, { replace: true });
-			},
+		selectPlaylist: (playlist) => {
+			setSelectedPlaylist(playlist);
+			setSearchParams((current) => {
+				const next = new URLSearchParams(current);
+				next.set('playlist', String(playlist.id));
+				return next;
+			}, { replace: true });
+		},
+		backToList: () => {
+			setSelectedPlaylist(null);
+			setSearchParams((current) => {
+				const next = new URLSearchParams(current);
+				next.delete('playlist');
+				return next;
+			}, { replace: true });
+		},
 		fetchNextPlaylistPage: playlistsQuery.fetchNextPage,
 		fetchNextTrackPage: tracksQuery.fetchNextPage,
 		openCreateDialog: () => setCreateOpen(true),
@@ -164,8 +157,8 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		deletePlaylistById: (id) => deleteMutation.mutate(id),
 		removeTrackByFileId: (fileId) => removeMutation.mutate(fileId),
 		playlistQueryFn,
-			playlistTracksQueryFn,
-		};
+		playlistTracksQueryFn,
+	};
 
 	return <PlaylistsContext.Provider value={contextValue}>{children}</PlaylistsContext.Provider>;
 }

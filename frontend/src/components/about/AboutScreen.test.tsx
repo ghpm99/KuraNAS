@@ -50,18 +50,16 @@ describe('components/about/AboutScreen', () => {
 
 		expect(screen.getByRole('heading', { name: 'ABOUT_PAGE_TITLE' })).toBeInTheDocument();
 		expect(screen.getByText('2.4.0')).toBeInTheDocument();
-		expect(screen.getByText('/srv/media')).toBeInTheDocument();
-		expect(screen.getByText('abc123def456')).toBeInTheDocument();
-		expect(screen.getByText('ABOUT_TOOL_ANALYTICS_TITLE')).toBeInTheDocument();
-		expect(screen.getByText('ABOUT_TOOL_SETTINGS_TITLE')).toBeInTheDocument();
-		expect(screen.getByText('ABOUT_TOOL_DIARY_TITLE')).toBeInTheDocument();
+			expect(screen.getByText('/srv/media')).toBeInTheDocument();
+			expect(screen.getByText('abc123def456')).toBeInTheDocument();
+			expect(screen.getByText('ABOUT_TOOL_ANALYTICS_TITLE')).toBeInTheDocument();
+			expect(screen.getByText('ABOUT_TOOL_SETTINGS_TITLE')).toBeInTheDocument();
 
-		const links = screen.getAllByRole('link', { name: 'ABOUT_OPEN_TOOL' });
-		expect(links).toHaveLength(3);
-		expect(links[0]).toHaveAttribute('href', '/analytics');
-		expect(links[1]).toHaveAttribute('href', '/settings');
-		expect(links[2]).toHaveAttribute('href', '/activity-diary');
-	});
+			const links = screen.getAllByRole('link', { name: 'ABOUT_OPEN_TOOL' });
+			expect(links).toHaveLength(2);
+			expect(links[0]).toHaveAttribute('href', '/analytics');
+			expect(links[1]).toHaveAttribute('href', '/settings');
+		});
 
 	it('copies the commit hash and shows feedback', async () => {
 		render(

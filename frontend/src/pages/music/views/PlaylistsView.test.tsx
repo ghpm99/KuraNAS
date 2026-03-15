@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import PlaylistsView from './PlaylistsView';
+import { MemoryRouter } from 'react-router-dom';
 
 const mockUseInfiniteQuery = jest.fn();
 const mockUseQuery = jest.fn();
@@ -60,6 +61,12 @@ const page = (items: any[], hasNext = false) => ({
 });
 
 describe('pages/music/views/PlaylistsView', () => {
+	const renderPlaylistsView = () => render(
+		<MemoryRouter>
+			<PlaylistsView />
+		</MemoryRouter>,
+	);
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockUseQueryClient.mockReturnValue({ invalidateQueries: jest.fn() });
@@ -107,7 +114,7 @@ describe('pages/music/views/PlaylistsView', () => {
 	});
 
 	it('handles list view actions and creation flow', () => {
-		const { container } = render(<PlaylistsView />);
+		const { container } = renderPlaylistsView();
 		expect(screen.getByText('MUSIC_PLAYLISTS')).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('button', { name: 'MUSIC_NEW' }));
@@ -124,7 +131,7 @@ describe('pages/music/views/PlaylistsView', () => {
 	});
 
 	it('renders detail view and handles remove flow', () => {
-		const { container } = render(<PlaylistsView />);
+		const { container } = renderPlaylistsView();
 		fireEvent.click(screen.getByText('P1'));
 		expect(screen.getByText('track-1')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('track-1'));
@@ -155,7 +162,7 @@ describe('pages/music/views/PlaylistsView', () => {
 			};
 		});
 
-		render(<PlaylistsView />);
+		renderPlaylistsView();
 		fireEvent.click(screen.getByRole('button', { name: 'MUSIC_NEW' }));
 		fireEvent.change(screen.getByLabelText('NAME'), { target: { value: 'x' } });
 		fireEvent.click(screen.getByRole('button', { name: 'ACTION_CREATE' }));
@@ -173,7 +180,7 @@ describe('pages/music/views/PlaylistsView', () => {
 			hasNextPage: false,
 			isFetchingNextPage: false,
 		});
-		const { unmount } = render(<PlaylistsView />);
+		const { unmount } = renderPlaylistsView();
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		unmount();
 
@@ -191,7 +198,7 @@ describe('pages/music/views/PlaylistsView', () => {
 			return page([{ id: 7, file: { id: 90, name: 'track-1', format: 'mp3', size: 1000 } }]);
 		});
 
-		render(<PlaylistsView />);
+		renderPlaylistsView();
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchNextPage).toHaveBeenCalled();
 	});
@@ -207,7 +214,7 @@ describe('pages/music/views/PlaylistsView', () => {
 				fetchNextPage: fetchTracksNext,
 			};
 		});
-		render(<PlaylistsView />);
+		renderPlaylistsView();
 		fireEvent.click(screen.getByText('P1'));
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchTracksNext).toHaveBeenCalled();

@@ -28,15 +28,15 @@ describe('FilePathSync', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockUseFile.mockReturnValue({
-			handleSelectItem: jest.fn(),
+			selectResolvedItem: jest.fn(),
 			selectedItem: null,
 		});
 	});
 
 	it('selects the requested folder path once it is resolved', async () => {
-		const handleSelectItem = jest.fn();
+		const selectResolvedItem = jest.fn();
 		mockUseFile.mockReturnValue({
-			handleSelectItem,
+			selectResolvedItem,
 			selectedItem: null,
 		});
 		mockGetFileByPath.mockResolvedValue({
@@ -55,16 +55,16 @@ describe('FilePathSync', () => {
 					</Routes>
 				</MemoryRouter>
 			</QueryClientProvider>,
-		);
+			);
 
-		await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
-		await waitFor(() => expect(handleSelectItem).toHaveBeenCalledWith(42));
-	});
+			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
+			await waitFor(() => expect(selectResolvedItem).toHaveBeenCalledWith(expect.objectContaining({ id: 42 })));
+		});
 
 	it('ignores unknown paths without selecting a folder', async () => {
-		const handleSelectItem = jest.fn();
+		const selectResolvedItem = jest.fn();
 		mockUseFile.mockReturnValue({
-			handleSelectItem,
+			selectResolvedItem,
 			selectedItem: null,
 		});
 		mockGetFileByPath.mockResolvedValue(null);
@@ -79,14 +79,14 @@ describe('FilePathSync', () => {
 			</QueryClientProvider>,
 		);
 
-		await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/missing'));
-		expect(handleSelectItem).not.toHaveBeenCalled();
-	});
+			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/missing'));
+			expect(selectResolvedItem).not.toHaveBeenCalled();
+		});
 
 	it('does not reselect the folder when it is already active', async () => {
-		const handleSelectItem = jest.fn();
+		const selectResolvedItem = jest.fn();
 		mockUseFile.mockReturnValue({
-			handleSelectItem,
+			selectResolvedItem,
 			selectedItem: { id: 42 },
 		});
 		mockGetFileByPath.mockResolvedValue({
@@ -107,7 +107,7 @@ describe('FilePathSync', () => {
 			</QueryClientProvider>,
 		);
 
-		await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
-		expect(handleSelectItem).not.toHaveBeenCalled();
-	});
+			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
+			expect(selectResolvedItem).not.toHaveBeenCalled();
+		});
 });

@@ -1,6 +1,6 @@
 import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
 import { Play, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import { createArtistPlaybackContext } from '@/components/music/playbackContext';
 import TrackListItem from '@/components/music/TrackListItem';
@@ -15,12 +15,23 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSearchParams } from 'react-router-dom';
 
 const ArtistsView = () => {
-	const [selectedArtist, setSelectedArtist] = useState<MusicArtist | null>(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const selectedArtistKey = searchParams.get('artist') ?? '';
+	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ['music-artists'],
+		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicArtist>> => {
+			return getMusicArtists(pageParam, 50);
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
+	});
+	const artists = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const selectedArtist = useMemo(
+		() => artists.find((artist) => artist.key === selectedArtistKey) ?? null,
+		[artists, selectedArtistKey],
+	);
 
 	const handleSelectArtist = (artist: MusicArtist) => {
-		setSelectedArtist(artist);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.set('artist', artist.key);
@@ -29,7 +40,6 @@ const ArtistsView = () => {
 	};
 
 	const handleBack = () => {
-		setSelectedArtist(null);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.delete('artist');
@@ -41,7 +51,16 @@ const ArtistsView = () => {
 		return <ArtistTracksView artist={selectedArtist} onBack={handleBack} />;
 	}
 
-	return <ArtistListView onSelect={handleSelectArtist} selectedArtistKey={selectedArtistKey} />;
+	return (
+		<ArtistListView
+			artists={artists}
+			isLoading={isLoading}
+			fetchNextPage={fetchNextPage}
+			hasNextPage={hasNextPage}
+			isFetchingNextPage={isFetchingNextPage}
+			onSelect={handleSelectArtist}
+		/>
+	);
 };
 
 const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -51,31 +70,18 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const ArtistListView = ({ onSelect, selectedArtistKey }: { onSelect: (artist: MusicArtist) => void; selectedArtistKey: string }) => {
+type ArtistListViewProps = {
+	artists: MusicArtist[];
+	isLoading: boolean;
+	fetchNextPage: () => Promise<unknown>;
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
+	onSelect: (artist: MusicArtist) => void;
+};
+
+const ArtistListView = ({ artists, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, onSelect }: ArtistListViewProps) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
-
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-artists'],
-		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicArtist>> => {
-			return getMusicArtists(pageParam, 50);
-		},
-		initialPageParam: 1,
-		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
-	});
-
-	const artists = data?.pages.flatMap((page) => page.items) ?? [];
-
-	useEffect(() => {
-		if (!selectedArtistKey) {
-			return;
-		}
-
-		const requestedArtist = artists.find((artist) => artist.key === selectedArtistKey);
-		if (requestedArtist) {
-			onSelect(requestedArtist);
-		}
-	}, [artists, onSelect, selectedArtistKey]);
 
 	const handlePlayArtist = async (e: React.MouseEvent, artist: MusicArtist) => {
 		e.stopPropagation();

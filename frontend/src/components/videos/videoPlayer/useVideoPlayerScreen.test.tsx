@@ -53,6 +53,17 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	}),
 }));
 
+jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
+	useSettings: () => ({
+		settings: {
+			players: {
+				remember_video_progress: true,
+				autoplay_next_video: true,
+			},
+		},
+	}),
+}));
+
 const buildPlaylist = (overrides?: Partial<any>) => ({
 	id: 7,
 	type: 'series',
