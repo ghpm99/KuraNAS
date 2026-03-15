@@ -2,9 +2,9 @@ package music
 
 import (
 	"errors"
+	"nas-go/api/internal/api/v1/files"
 	"net/http"
 	"net/http/httptest"
-	"nas-go/api/internal/api/v1/files"
 	"strings"
 	"testing"
 
@@ -75,6 +75,9 @@ func (m *musicHandlerServiceMock) GetLibraryTracksByGenre(genreKey string, page 
 func (m *musicHandlerServiceMock) GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
 	return utils.PaginationResponse[MusicFolderGroupDto]{Items: []MusicFolderGroupDto{{Folder: "/", TrackCount: 1}}}, nil
 }
+func (m *musicHandlerServiceMock) GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
+}
 func (m *musicHandlerServiceMock) GetPlayerState(clientID string) (PlayerStateDto, error) {
 	return PlayerStateDto{ID: 1, ClientID: clientID}, nil
 }
@@ -141,6 +144,9 @@ func (m *musicHandlerErrServiceMock) GetLibraryTracksByGenre(genreKey string, pa
 func (m *musicHandlerErrServiceMock) GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
 	return utils.PaginationResponse[MusicFolderGroupDto]{}, errors.New("library folders error")
 }
+func (m *musicHandlerErrServiceMock) GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("folder tracks error")
+}
 func (m *musicHandlerErrServiceMock) GetPlayerState(clientID string) (PlayerStateDto, error) {
 	return PlayerStateDto{}, errors.New("state error")
 }
@@ -175,6 +181,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 	router.GET("/music/playlists/now-playing", handler.GetNowPlayingHandler)
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
+	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
 
 	tests := []struct {
 		method string
@@ -194,6 +201,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/music/playlists/now-playing", "", http.StatusOK},
 		{http.MethodGet, "/music/player-state", "", http.StatusOK},
 		{http.MethodPut, "/music/player-state", `{"volume":0.5}`, http.StatusOK},
+		{http.MethodGet, "/music/library/folders/root/tracks?page=2&page_size=25", "", http.StatusOK},
 		{http.MethodGet, "/music/playlists/404", "", http.StatusNotFound},
 		{http.MethodPost, "/music/playlists", `{}`, http.StatusBadRequest},
 	}
@@ -229,6 +237,7 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 	router.GET("/music/playlists/now-playing", handler.GetNowPlayingHandler)
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
+	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
 
 	tests := []struct {
 		method string
@@ -247,6 +256,7 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 		{http.MethodGet, "/music/playlists/now-playing", "", http.StatusInternalServerError},
 		{http.MethodGet, "/music/player-state", "", http.StatusNotFound},
 		{http.MethodPut, "/music/player-state", `{"volume":0.5}`, http.StatusInternalServerError},
+		{http.MethodGet, "/music/library/folders/root/tracks", "", http.StatusInternalServerError},
 		{http.MethodPut, "/music/player-state", `{`, http.StatusBadRequest},
 		{http.MethodPost, "/music/playlists", `{}`, http.StatusBadRequest},
 		{http.MethodPut, "/music/playlists/1/tracks/reorder", `{}`, http.StatusBadRequest},

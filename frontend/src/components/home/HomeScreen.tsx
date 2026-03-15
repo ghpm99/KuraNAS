@@ -4,7 +4,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import useGlobalSearch from '@/components/search/useGlobalSearch';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useHomeScreen from './useHomeScreen';
-import type { HomeRecentFile } from './useHomeScreen';
+import type { HomeFavoriteFile, HomeRecentFile, HomeRecentImage } from './useHomeScreen';
 import { formatDate, formatSize, getFileTypeInfo } from '@/utils';
 import {
 	AlertCircle,
@@ -45,6 +45,9 @@ const getAnalyticsStatusKey = (status: 'ok' | 'scanning' | 'error') => {
 	}
 };
 
+const imageThumbnailUrl = (id: number) =>
+	`${getApiV1BaseUrl()}/files/thumbnail/${id}?width=480&height=360`;
+
 const HomeScreen = () => {
 	const { t } = useI18n();
 	const navigate = useNavigate();
@@ -52,11 +55,15 @@ const HomeScreen = () => {
 	const { openSearch, shortcut } = useGlobalSearch();
 	const {
 		recentFiles,
+		favoriteItems = [],
+		recentImages = [],
 		videoContinueItems,
 		videoResume,
 		musicResume,
 		analytics,
 		isAnalyticsLoading,
+		isFavoritesLoading = false,
+		isImagesLoading = false,
 		isVideoLoading,
 		isMusicLoading,
 	} = useHomeScreen();
@@ -135,6 +142,19 @@ const HomeScreen = () => {
 				search: `?path=${encodeURIComponent(file.path)}`,
 			});
 		}
+	};
+
+	const handleOpenFavoriteFile = (file: HomeFavoriteFile) => {
+		if (!openMediaItem(file)) {
+			navigate({
+				pathname: appRoutes.files,
+				search: `?path=${encodeURIComponent(file.path)}`,
+			});
+		}
+	};
+
+	const handleOpenRecentImage = (image: HomeRecentImage) => {
+		openMediaItem(image);
 	};
 
 	return (
@@ -268,6 +288,100 @@ const HomeScreen = () => {
 					) : (
 						<div className={styles.emptyState}>
 							<p className={styles.emptyTitle}>{t('HOME_RECENT_EMPTY')}</p>
+						</div>
+					)}
+				</section>
+
+				<section className={styles.panel}>
+					<div className={styles.sectionHeader}>
+						<div>
+							<h2 className={styles.sectionTitle}>{t('NAV_IMAGES')}</h2>
+							<p className={styles.sectionDescription}>{t('HOME_IMAGES_DESCRIPTION')}</p>
+						</div>
+						<Button component={RouterLink} to={appRoutes.images} variant='text'>
+							{t('NAV_IMAGES')}
+						</Button>
+					</div>
+
+					{isImagesLoading ? (
+						<div className={styles.imageGrid}>
+							{Array.from({ length: 3 }).map((_, index) => (
+								<Skeleton key={index} variant='rounded' height={132} />
+							))}
+						</div>
+					) : recentImages.length > 0 ? (
+						<div className={styles.imageGrid}>
+							{recentImages.map((image) => (
+								<button
+									key={image.id}
+									type='button'
+									className={styles.imageCard}
+									onClick={() => handleOpenRecentImage(image)}
+									aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: image.name })}
+								>
+									<img src={imageThumbnailUrl(image.id)} alt={image.name} className={styles.imageCardImage} loading='lazy' />
+									<div className={styles.imageCardOverlay}>
+										<strong>{image.name}</strong>
+										<span>{formatDate(image.created_at)}</span>
+									</div>
+								</button>
+							))}
+						</div>
+					) : (
+						<div className={styles.emptyState}>
+							<p className={styles.emptyTitle}>{t('HOME_IMAGES_EMPTY')}</p>
+						</div>
+					)}
+				</section>
+
+				<section className={styles.panel}>
+					<div className={styles.sectionHeader}>
+						<div>
+							<h2 className={styles.sectionTitle}>{t('STARRED_FILES')}</h2>
+							<p className={styles.sectionDescription}>{t('HOME_FAVORITES_DESCRIPTION')}</p>
+						</div>
+						<Button component={RouterLink} to={appRoutes.favorites} variant='text'>
+							{t('STARRED_FILES')}
+						</Button>
+					</div>
+
+					{isFavoritesLoading ? (
+						<div className={styles.recentList}>
+							{Array.from({ length: 3 }).map((_, index) => (
+								<div key={index} className={styles.recentCard}>
+									<Skeleton variant='rectangular' height={72} />
+								</div>
+							))}
+						</div>
+					) : favoriteItems.length > 0 ? (
+						<div className={styles.recentList}>
+							{favoriteItems.map((file) => {
+								const fileType = getFileTypeInfo(file.format);
+								return (
+									<button
+										key={file.id}
+										type='button'
+										className={styles.recentCardButton}
+										onClick={() => handleOpenFavoriteFile(file)}
+									>
+										<div className={styles.recentCard}>
+											<div className={styles.recentIcon}>{t(fileType.description)}</div>
+											<div className={styles.recentContent}>
+												<div className={styles.recentHeader}>
+													<h3 className={styles.recentTitle}>{file.name}</h3>
+													<Chip size='small' label={file.format || '--'} />
+												</div>
+												<p className={styles.recentMeta}>{formatSize(file.size)} · {formatDate(file.updated_at || file.created_at)}</p>
+												<p className={styles.recentPath}>{file.parent_path}</p>
+											</div>
+										</div>
+									</button>
+								);
+							})}
+						</div>
+					) : (
+						<div className={styles.emptyState}>
+							<p className={styles.emptyTitle}>{t('HOME_FAVORITES_EMPTY')}</p>
 						</div>
 					)}
 				</section>

@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import type { ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import controlsStyles from '../imageContentControls.module.css';
+import styles from '../ImageContent.module.css';
 
 type ImageToolbarProps = {
 	title: string;
@@ -27,12 +28,12 @@ export default function ImageToolbar({
 	const { t } = useI18n();
 
 	return (
-		<div className='images-toolbar'>
+		<div className={styles.toolbar}>
 			<div>
 				<h2>{title}</h2>
 				<p>{summary}</p>
 			</div>
-			<label className='images-search'>
+			<label className={styles.search}>
 				<Search size={16} />
 				<input
 					type='search'

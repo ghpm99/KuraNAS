@@ -1,3 +1,4 @@
+import { appRoutes } from '@/app/routes';
 import { ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 import styles from './NavItem.module.css';
@@ -11,13 +12,16 @@ interface NavItemProps {
 
 const NavItem = ({ href, icon, children, onClick }: NavItemProps) => {
 	const { pathname } = useLocation();
-	const className = href === pathname ? `${styles.navItem} ${styles.selected}` : styles.navItem;
+	const isSelected = href === appRoutes.home
+		? pathname === href
+		: pathname === href || pathname.startsWith(`${href}/`);
+	const className = isSelected ? `${styles.navItem} ${styles.selected}` : styles.navItem;
 
 	return (
 		<ListItemButton
 			component={Link}
 			to={href}
-			selected={href === pathname}
+			selected={isSelected}
 			onClick={onClick}
 			className={className}
 		>

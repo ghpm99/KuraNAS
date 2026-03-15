@@ -47,6 +47,11 @@ type VideoPlaylistItemModel struct {
 	Video      VideoFileModel
 }
 
+type VideoPlaylistMembershipModel struct {
+	PlaylistID int
+	VideoID    int
+}
+
 type VideoPlaybackStateModel struct {
 	ID          int
 	ClientID    string

@@ -42,6 +42,20 @@ describe('components/hooks/useMediaOpener', () => {
 		});
 	});
 
+	it('keeps image path in the route and ignores directories', () => {
+		const { result } = renderHook(() => useMediaOpener());
+
+		expect(result.current.openMediaItem({ id: 10, name: 'detail.jpg', format: '.jpg', path: '/images/detail.jpg' })).toBe(true);
+		expect(mockNavigate).toHaveBeenCalledWith({
+			pathname: '/images',
+			search: '?image=10&imagePath=%2Fimages%2Fdetail.jpg',
+		}, {
+			state: { from: '/files?filter=recent' },
+		});
+
+		expect(result.current.openMediaItem({ id: 11, name: 'folder', format: '', type: 1 })).toBe(false);
+	});
+
 	it('sends audio files to the global player and ignores unsupported formats', () => {
 		const { result } = renderHook(() => useMediaOpener());
 

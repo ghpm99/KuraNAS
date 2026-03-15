@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import { createRouteMusicPlaybackContext } from '@/components/music/playbackContext';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import type { IImageMetadata } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData, IMusicMetadata } from '@/components/providers/musicProvider/musicProvider';
 import { FileType, getFileTypeInfo } from '@/utils';
 import { useCallback } from 'react';
@@ -21,7 +22,7 @@ type OpenableMediaFile = {
 	check_sum?: string;
 	directory_content_count?: number;
 	starred?: boolean;
-	metadata?: IMusicMetadata;
+	metadata?: IMusicMetadata | IImageMetadata;
 };
 
 const getCurrentRoute = (pathname: string, search: string) => `${pathname}${search}`;
@@ -41,8 +42,16 @@ const toMusicTrack = (file: OpenableMediaFile): IMusicData => ({
 	check_sum: file.check_sum ?? '',
 	directory_content_count: file.directory_content_count ?? 0,
 	starred: file.starred ?? false,
-	metadata: file.metadata,
+	metadata: isMusicMetadata(file.metadata) ? file.metadata : undefined,
 });
+
+const isMusicMetadata = (metadata: OpenableMediaFile['metadata']): metadata is IMusicMetadata => {
+	if (!metadata) {
+		return false;
+	}
+
+	return 'duration' in metadata || 'album' in metadata || 'artist' in metadata;
+};
 
 export default function useMediaOpener() {
 	const navigate = useNavigate();
@@ -67,7 +76,9 @@ export default function useMediaOpener() {
 				case 'image':
 					navigate({
 						pathname: appRoutes.images,
-						search: `?image=${file.id}`,
+						search: file.path
+							? `?image=${file.id}&imagePath=${encodeURIComponent(file.path)}`
+							: `?image=${file.id}`,
 					}, {
 						state: { from: currentRoute },
 					});

@@ -107,6 +107,7 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("/genres", context.Music.Handler.GetLibraryGenresHandler)
 	library.GET("/genres/:key/tracks", context.Music.Handler.GetLibraryTracksByGenreHandler)
 	library.GET("/folders", context.Music.Handler.GetLibraryFoldersHandler)
+	library.GET("/folders/:key/tracks", context.Music.Handler.GetLibraryTracksByFolderHandler)
 
 	playerState := router.Group("/music/player-state")
 	playerState.GET("/", context.Music.Handler.GetPlayerStateHandler)
@@ -125,6 +126,7 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback := router.Group("/video/playback")
 	catalog := router.Group("/video/catalog")
+	library := router.Group("/video/library")
 	playlists := router.Group("/video/playlists")
 
 	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
@@ -134,9 +136,11 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
 	playback.POST("/behavior", context.Video.Handler.TrackBehaviorEventHandler)
 	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
+	library.GET("/files", context.Video.Handler.ListLibraryVideosHandler)
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)
+	playlists.GET("/memberships", context.Video.Handler.GetPlaylistMembershipsHandler)
 	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)
 	playlists.GET("/unassigned", context.Video.Handler.GetUnassignedVideosHandler)
 	playlists.PUT("/:id/reorder", context.Video.Handler.ReorderPlaylistHandler)
