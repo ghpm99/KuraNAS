@@ -154,6 +154,9 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	if err != nil || imgMeta.Format != "PNG" {
 		t.Fatalf("expected image metadata, err=%v", err)
 	}
+	if imgMeta.Classification.Category != files.ImageClassificationCategoryOther {
+		t.Fatalf("expected default image classification, got %s", imgMeta.Classification.Category)
+	}
 	audioMeta, err := getAudioMetadata(files.FileDto{ID: 1, Path: "/a.mp3"}, runner)
 	if err != nil || audioMeta.Mime != "mp3" {
 		t.Fatalf("expected audio metadata, err=%v", err)
@@ -185,8 +188,17 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	processed := 0
 	for item := range out {
 		processed++
-		if item.Format == ".png" && item.Metadata == nil {
-			t.Fatalf("expected metadata for png")
+		if item.Format == ".png" {
+			if item.Metadata == nil {
+				t.Fatalf("expected metadata for png")
+			}
+			metadata, ok := item.Metadata.(files.ImageMetadataModel)
+			if !ok {
+				t.Fatalf("expected image metadata model, got %T", item.Metadata)
+			}
+			if metadata.Classification.Category != files.ImageClassificationCategoryOther {
+				t.Fatalf("expected classified image metadata, got %s", metadata.Classification.Category)
+			}
 		}
 	}
 	if processed != 2 {

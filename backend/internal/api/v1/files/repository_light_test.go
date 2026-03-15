@@ -332,7 +332,7 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 		1, "img", "/tmp/img.jpg", "/tmp", ".jpg", int64(10), now, now, nil, nil, fileType, "sum", nil, false,
 		2, 1, "/tmp/img.jpg", "jpeg", "RGB", 10, 10, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 6.0, 2.0, 1.0, "cfg", "icc",
 		"mk", "mdl", "sw", "lens", "ser", "dt", "dto", "dtd", "sub", 1.0, 2.8, 100.0, 1.0, 2.0, 0.0, 3.0, 0.0, 50.0,
-		0.0, 1.0, 2.8, 1.8, -23.0, -46.0, 800.0, "2026:01:01", "12:00:00", "desc", "comment", "copy", "artist", now,
+		0.0, 1.0, 2.8, 1.8, -23.0, -46.0, 800.0, "2026:01:01", "12:00:00", "desc", "comment", "copy", "artist", "photo", 0.88, now,
 	}
 
 	audioValues := []driver.Value{
@@ -354,6 +354,13 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 	images, err := repo.GetImages(1, 10, ImageGroupByDate)
 	if err != nil || len(images.Items) != 1 {
 		t.Fatalf("GetImages failed len=%d err=%v", len(images.Items), err)
+	}
+	metadata, ok := images.Items[0].Metadata.(ImageMetadataModel)
+	if !ok {
+		t.Fatalf("expected image metadata model, got %T", images.Items[0].Metadata)
+	}
+	if metadata.Classification.Category != ImageClassificationCategoryPhoto {
+		t.Fatalf("expected classification from query, got %+v", metadata.Classification)
 	}
 
 	mock.ExpectBegin()

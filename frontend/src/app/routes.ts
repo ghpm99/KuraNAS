@@ -16,8 +16,19 @@ export const appRoutes = {
 
 export const isVideoPlayerRoute = (pathname: string) => pathname.startsWith(`${appRoutes.videoPlayerBase}/`);
 
+export type ImageSection = 'library' | 'recent' | 'captures' | 'photos' | 'folders' | 'albums';
 export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
 export type VideoSection = 'home' | 'continue' | 'series' | 'movies' | 'personal' | 'clips' | 'folders';
+
+export const getImageRoute = (section: ImageSection) => {
+	if (section === 'library') {
+		return appRoutes.images;
+	}
+
+	return `${appRoutes.images}/${section}`;
+};
+
+export const isImageRoute = (pathname: string) => pathname === appRoutes.images || pathname.startsWith(`${appRoutes.images}/`);
 
 export const getMusicRoute = (section: MusicSection) => {
 	if (section === 'home') {
