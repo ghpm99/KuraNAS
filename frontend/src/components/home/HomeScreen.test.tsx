@@ -5,6 +5,7 @@ import HomeScreen from './HomeScreen';
 const mockUseHomeScreen = jest.fn();
 const mockOpenMediaItem = jest.fn();
 const mockNavigate = jest.fn();
+const mockOpenSearch = jest.fn();
 
 jest.mock('./useHomeScreen', () => ({
 	__esModule: true,
@@ -14,6 +15,13 @@ jest.mock('@/components/hooks/useMediaOpener/useMediaOpener', () => ({
 	__esModule: true,
 	default: () => ({
 		openMediaItem: (...args: any[]) => mockOpenMediaItem(...args),
+	}),
+}));
+jest.mock('@/components/search/useGlobalSearch', () => ({
+	__esModule: true,
+	default: () => ({
+		openSearch: mockOpenSearch,
+		shortcut: 'Ctrl+K',
 	}),
 }));
 jest.mock('react-router-dom', () => {
@@ -37,9 +45,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 				HOME_PAGE_DESCRIPTION: 'Home description',
 				HOME_HERO_EYEBROW: 'Home hub',
 				SEARCH_PLACEHOLDER: 'Search...',
-				HOME_SEARCH_HELP: 'Filter shortcuts and media.',
-				HOME_CLEAR_SEARCH: 'Clear search',
-				HOME_LIBRARY_TITLE: 'Explore library',
+					HOME_LIBRARY_TITLE: 'Explore library',
 				HOME_LIBRARY_DESCRIPTION: 'Library routes',
 				HOME_MEDIA_DESCRIPTION: 'Media routes',
 				HOME_SYSTEM_DESCRIPTION: 'System routes',
@@ -69,8 +75,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 				HOME_RECENT_EMPTY: 'No recent files',
 				HOME_MUSIC_EMPTY: 'No music',
 				HOME_VIDEO_EMPTY: 'No videos',
-				HOME_SEARCH_EMPTY: 'No results',
-				LOADING: 'Loading...',
+					GLOBAL_SEARCH_SHORTCUT: `Open global search with ${params?.shortcut}`,
+					LOADING: 'Loading...',
 				IMAGE_JPEG: 'JPEG Image',
 				IN_PROGRESS: 'In progress',
 				VIDEO_CONTINUE_BADGE_RESUME: 'Resume',
@@ -87,18 +93,19 @@ jest.mock('@/service/apiUrl', () => ({
 }));
 
 describe('components/home/HomeScreen', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-		mockOpenMediaItem.mockReturnValue(false);
+		beforeEach(() => {
+			jest.clearAllMocks();
+			mockOpenMediaItem.mockReturnValue(false);
 		mockUseHomeScreen.mockReturnValue({
 			searchQuery: '',
 			setSearchQuery: jest.fn(),
 			recentFiles: [
-				{
-					id: 21,
-					name: 'photo.jpg',
-					parent_path: '/photos',
-					format: '.jpg',
+					{
+						id: 21,
+						name: 'photo.jpg',
+						path: '/photos/photo.jpg',
+						parent_path: '/photos',
+						format: '.jpg',
 					size_bytes: 1024,
 					created_at: '2026-03-14T12:00:00Z',
 				},
@@ -165,20 +172,20 @@ describe('components/home/HomeScreen', () => {
 			</MemoryRouter>,
 		);
 
-		fireEvent.click(screen.getByRole('button', { name: /photo\.jpg/i }));
+			fireEvent.click(screen.getByRole('button', { name: /photo\.jpg/i }));
 
-		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 21, name: 'photo.jpg' }));
-		expect(mockNavigate).toHaveBeenCalledWith('/files');
-	});
+			expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 21, name: 'photo.jpg' }));
+			expect(mockNavigate).toHaveBeenCalledWith({
+				pathname: '/files',
+				search: '?path=%2Fphotos%2Fphoto.jpg',
+			});
+		});
 
-	it('clears the current search and renders empty states when no content is available', () => {
-		const setSearchQuery = jest.fn();
-		mockUseHomeScreen.mockReturnValue({
-			searchQuery: 'missing',
-			setSearchQuery,
-			recentFiles: [],
-			videoContinueItems: [],
-			videoResume: null,
+		it('opens the global search from the home hero and renders empty states when no content is available', () => {
+			mockUseHomeScreen.mockReturnValue({
+				recentFiles: [],
+				videoContinueItems: [],
+				videoResume: null,
 			musicResume: null,
 			analytics: null,
 			isAnalyticsLoading: false,
@@ -186,18 +193,17 @@ describe('components/home/HomeScreen', () => {
 			isMusicLoading: false,
 		});
 
-		render(
-			<MemoryRouter>
-				<HomeScreen />
-			</MemoryRouter>,
-		);
+			render(
+				<MemoryRouter>
+					<HomeScreen />
+				</MemoryRouter>,
+			);
 
-		fireEvent.click(screen.getByText('Clear search'));
+			fireEvent.click(screen.getByLabelText('GLOBAL_SEARCH_OPEN'));
 
-		expect(setSearchQuery).toHaveBeenCalledWith('');
-		expect(screen.getByText('No results')).toBeInTheDocument();
-		expect(screen.getByText('No recent files')).toBeInTheDocument();
-		expect(screen.getByText('No music')).toBeInTheDocument();
-		expect(screen.getByText('No videos')).toBeInTheDocument();
+			expect(mockOpenSearch).toHaveBeenCalled();
+			expect(screen.getByText('No recent files')).toBeInTheDocument();
+			expect(screen.getByText('No music')).toBeInTheDocument();
+			expect(screen.getByText('No videos')).toBeInTheDocument();
 	});
 });

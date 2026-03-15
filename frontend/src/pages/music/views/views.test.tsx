@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import AllTracksView from './AllTracksView';
 import ArtistsView from './ArtistsView';
 import AlbumsView from './AlbumsView';
@@ -82,6 +83,13 @@ const makeInfiniteResult = (items: any[], hasNext = false, isFetchingNextPage = 
 	hasNextPage: hasNext,
 	isFetchingNextPage,
 });
+
+const renderWithRouter = (ui: React.ReactElement, initialEntry = '/') =>
+	render(<MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>);
+
+const clickBackButton = (container: HTMLElement) => {
+	fireEvent.click(container.querySelector('svg.lucide-arrow-left')?.closest('button') as HTMLElement);
+};
 
 beforeEach(() => {
 	jest.clearAllMocks();
@@ -180,7 +188,7 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		const { container } = render(<ArtistsView />);
+		const { container } = renderWithRouter(<ArtistsView />);
 		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
 		await waitFor(() => {
 			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
@@ -200,7 +208,7 @@ describe('music views', () => {
 	});
 
 	it('renders albums flow and exercises track actions', async () => {
-		const { container } = render(<AlbumsView />);
+		const { container } = renderWithRouter(<AlbumsView />);
 		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
 		await waitFor(() => {
 			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
@@ -215,8 +223,10 @@ describe('music views', () => {
 		fireEvent.click(screen.getByText('track-1'));
 		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
-		fireEvent.click(screen.getAllByRole('button')[0]!);
-		expect(screen.getByText('album-2')).toBeInTheDocument();
+		clickBackButton(container);
+		await waitFor(() => {
+			expect(screen.getByText('album-2')).toBeInTheDocument();
+		});
 	});
 
 	it('renders genres flow, detail load-more and menu click', async () => {
@@ -254,7 +264,7 @@ describe('music views', () => {
 	});
 
 	it('renders folders flow and folder filter/query path', async () => {
-		const { container } = render(<FoldersView />);
+		const { container } = renderWithRouter(<FoldersView />);
 		fireEvent.click(container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement);
 		await waitFor(() => {
 			expect(mockReplaceQueue).toHaveBeenCalledWith(
@@ -273,9 +283,11 @@ describe('music views', () => {
 		fireEvent.click(screen.getByText('track-1'));
 		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
 
-		fireEvent.click(screen.getAllByRole('button')[0]!);
-		expect(screen.getByText('/')).toBeInTheDocument();
-		expect(screen.getByText('2 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
+		clickBackButton(container);
+		await waitFor(() => {
+			expect(screen.getByText('/')).toBeInTheDocument();
+			expect(screen.getByText('2 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
+		});
 	});
 
 	it('renders loading states of artists and albums', () => {
@@ -286,7 +298,7 @@ describe('music views', () => {
 			hasNextPage: false,
 			isFetchingNextPage: false,
 		});
-		const { unmount } = render(<ArtistsView />);
+		const { unmount } = renderWithRouter(<ArtistsView />);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		unmount();
 
@@ -297,7 +309,7 @@ describe('music views', () => {
 			hasNextPage: false,
 			isFetchingNextPage: false,
 		});
-		render(<AlbumsView />);
+		renderWithRouter(<AlbumsView />);
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 	});
 
@@ -352,7 +364,7 @@ describe('music views', () => {
 			isLoading: true,
 		});
 
-		render(<FoldersView />);
+		renderWithRouter(<FoldersView />);
 		expect(screen.getByText('/')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('/'));
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -403,7 +415,7 @@ describe('music views', () => {
 			return makeInfiniteResult([]);
 		});
 
-		const { unmount } = render(<AlbumsView />);
+		const { unmount } = renderWithRouter(<AlbumsView />);
 		expect(screen.getByText('album-1')).toBeInTheDocument();
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('album-1'));
@@ -411,7 +423,7 @@ describe('music views', () => {
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		unmount();
 
-		render(<ArtistsView />);
+		renderWithRouter(<ArtistsView />);
 		expect(screen.getByText('artist-1')).toBeInTheDocument();
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		fireEvent.click(screen.getByText('artist-1'));
@@ -475,7 +487,7 @@ describe('music views', () => {
 			isLoading: false,
 		});
 
-		const { unmount } = render(<AlbumsView />);
+		const { container: albumsContainer, unmount } = renderWithRouter(<AlbumsView />);
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchAlbumsList).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('album-1'));
@@ -483,9 +495,10 @@ describe('music views', () => {
 		expect(fetchAlbumsTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
+		clickBackButton(albumsContainer);
 		unmount();
 
-		const artistsRender = render(<ArtistsView />);
+		const artistsRender = renderWithRouter(<ArtistsView />);
 		fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
 		expect(fetchArtistsList).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('artist-1'));
@@ -493,9 +506,10 @@ describe('music views', () => {
 		expect(fetchArtistsTracks).toHaveBeenCalled();
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
+		clickBackButton(artistsRender.container);
 		artistsRender.unmount();
 
-		render(<FoldersView />);
+		renderWithRouter(<FoldersView />);
 		fireEvent.click(screen.getByText('/'));
 		fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
 		expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();

@@ -4,12 +4,11 @@ import {
 	Button,
 	Chip,
 	FormControl,
-	FormControlLabel,
 	InputLabel,
 	MenuItem,
 	Select,
 	Switch,
-	TextField,
+	FormControlLabel,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import useSettingsScreen from './useSettingsScreen';
@@ -25,18 +24,14 @@ const SettingsScreen = () => {
 		hasError,
 		hasUnsavedChanges,
 		languageOptions,
-		accentOptions,
-		slideshowOptions,
-		watchedPathsText,
-		setLibraryField,
-		setIndexingField,
-		setPlayersField,
-		setAppearanceField,
-		setLanguageField,
-		handleWatchedPathsChange,
-		handleReset,
-		handleSave,
-	} = useSettingsScreen();
+			accentOptions,
+			slideshowOptions,
+			setPlayersField,
+			setAppearanceField,
+			setLanguageField,
+			handleReset,
+			handleSave,
+		} = useSettingsScreen();
 
 	const disableActions = isLoading || isSaving;
 
@@ -60,81 +55,33 @@ const SettingsScreen = () => {
 			{hasError ? <Alert severity='error'>{t('SETTINGS_LOAD_ERROR')}</Alert> : null}
 
 			<div className={styles.grid}>
-				<section className={styles.panel}>
-					<div className={styles.panelHeader}>
-						<h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_LIBRARY')}</h2>
-						<p className={styles.panelDescription}>{t('SETTINGS_SECTION_LIBRARY_DESCRIPTION')}</p>
-					</div>
-					<TextField
-						label={t('SETTINGS_LIBRARY_WATCHED_PATHS')}
-						value={watchedPathsText}
-						onChange={(event) => handleWatchedPathsChange(event.target.value)}
-						multiline
-						minRows={4}
-						disabled={disableActions}
-						helperText={t('SETTINGS_LIBRARY_WATCHED_PATHS_HELP')}
-					/>
-					<FormControlLabel
-						control={
-							<Switch
-								checked={draft.library.remember_last_location}
-								onChange={(_, checked) => setLibraryField('remember_last_location', checked)}
-								disabled={disableActions}
-							/>
-						}
-						label={t('SETTINGS_LIBRARY_REMEMBER_LAST_LOCATION')}
-					/>
-					<FormControlLabel
-						control={
-							<Switch
-								checked={draft.library.prioritize_favorites}
-								onChange={(_, checked) => setLibraryField('prioritize_favorites', checked)}
-								disabled={disableActions}
-							/>
-						}
-						label={t('SETTINGS_LIBRARY_PRIORITIZE_FAVORITES')}
-					/>
-					<p className={styles.hint}>{t('SETTINGS_LIBRARY_RUNTIME_ROOT', { path: settings.library.runtime_root_path || '-' })}</p>
-				</section>
+					<section className={styles.panel}>
+						<div className={styles.panelHeader}>
+							<h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_LIBRARY')}</h2>
+							<p className={styles.panelDescription}>{t('SETTINGS_SECTION_LIBRARY_DESCRIPTION')}</p>
+						</div>
+						<div className={styles.summary}>
+							{settings.library.watched_paths.map((path) => (
+								<Chip key={path} label={path} variant='outlined' />
+							))}
+						</div>
+						<Alert severity='info'>{t('SETTINGS_LIBRARY_WATCHED_PATHS_HELP')}</Alert>
+						<p className={styles.hint}>{t('SETTINGS_LIBRARY_RUNTIME_ROOT', { path: settings.library.runtime_root_path || '-' })}</p>
+					</section>
 
-				<section className={styles.panel}>
-					<div className={styles.panelHeader}>
-						<h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_INDEXING')}</h2>
-						<p className={styles.panelDescription}>{t('SETTINGS_SECTION_INDEXING_DESCRIPTION')}</p>
-					</div>
-					<FormControlLabel
-						control={
-							<Switch
-								checked={draft.indexing.scan_on_startup}
-								onChange={(_, checked) => setIndexingField('scan_on_startup', checked)}
-								disabled={disableActions}
-							/>
-						}
-						label={t('SETTINGS_INDEXING_SCAN_ON_STARTUP')}
-					/>
-					<FormControlLabel
-						control={
-							<Switch
-								checked={draft.indexing.extract_metadata}
-								onChange={(_, checked) => setIndexingField('extract_metadata', checked)}
-								disabled={disableActions}
-							/>
-						}
-						label={t('SETTINGS_INDEXING_EXTRACT_METADATA')}
-					/>
-					<FormControlLabel
-						control={
-							<Switch
-								checked={draft.indexing.generate_previews}
-								onChange={(_, checked) => setIndexingField('generate_previews', checked)}
-								disabled={disableActions}
-							/>
-						}
-						label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')}
-					/>
-					<Alert severity={settings.indexing.workers_enabled ? 'success' : 'warning'}>
-						{settings.indexing.workers_enabled ? t('SETTINGS_INDEXING_WORKERS_ON') : t('SETTINGS_INDEXING_WORKERS_OFF')}
-					</Alert>
+					<section className={styles.panel}>
+						<div className={styles.panelHeader}>
+							<h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_INDEXING')}</h2>
+							<p className={styles.panelDescription}>{t('SETTINGS_SECTION_INDEXING_DESCRIPTION')}</p>
+						</div>
+						<div className={styles.summary}>
+							<Chip label={t('SETTINGS_INDEXING_SCAN_ON_STARTUP')} variant={draft.indexing.scan_on_startup ? 'filled' : 'outlined'} />
+							<Chip label={t('SETTINGS_INDEXING_EXTRACT_METADATA')} variant={draft.indexing.extract_metadata ? 'filled' : 'outlined'} />
+							<Chip label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')} variant={draft.indexing.generate_previews ? 'filled' : 'outlined'} />
+						</div>
+						<Alert severity={settings.indexing.workers_enabled ? 'success' : 'warning'}>
+							{settings.indexing.workers_enabled ? t('SETTINGS_INDEXING_WORKERS_ON') : t('SETTINGS_INDEXING_WORKERS_OFF')}
+						</Alert>
 				</section>
 
 				<section className={styles.panel}>
