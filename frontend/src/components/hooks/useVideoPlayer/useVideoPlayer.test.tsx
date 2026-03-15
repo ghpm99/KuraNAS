@@ -104,6 +104,8 @@ describe('hooks/useVideoPlayer', () => {
 		expect(result.current.currentTime).toBe(34);
 		expect(result.current.volume).toBe(1);
 		expect(result.current.playbackRate).toBe(1.5);
+		expect(result.current.playlist?.id).toBe(11);
+		expect(result.current.playbackState?.video_id).toBe(7);
 
 		await act(async () => {
 			result.current.pause();
@@ -134,11 +136,11 @@ describe('hooks/useVideoPlayer', () => {
 		expect(mockNextVideoPlayback).toHaveBeenCalled();
 		expect(mockPreviousVideoPlayback).toHaveBeenCalled();
 
-		act(() => {
+		await act(async () => {
 			result.current.setDuration(120);
-			result.current.onVideoEnded();
+			await result.current.onVideoEnded();
 		});
-		expect(mockNextVideoPlayback).toHaveBeenCalledTimes(2);
+		expect(mockNextVideoPlayback).toHaveBeenCalledTimes(1);
 
 		await act(async () => {
 			jest.advanceTimersByTime(5000);
@@ -175,6 +177,7 @@ describe('hooks/useVideoPlayer', () => {
 			await result.current.playVideo();
 		});
 		expect(result.current.currentVideo).toBeNull();
+		expect(result.current.playbackState?.video_id).toBe(0);
 
 		act(() => {
 			result.current.togglePlayPause();

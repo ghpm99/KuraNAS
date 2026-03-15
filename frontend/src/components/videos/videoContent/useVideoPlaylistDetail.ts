@@ -79,50 +79,52 @@ const parseEpisode = (name: string): ParsedEpisode => {
 	};
 };
 
+export const buildVideoPlaylistDetail = (playlist: VideoPlaylistDto) => {
+	const orderedItems = [...playlist.items]
+		.sort((a, b) => a.order_index - b.order_index || a.id - b.id)
+		.map((item) => {
+			const parsed = parseEpisode(item.video.name);
+			return {
+				...item,
+				...parsed,
+			};
+		});
+
+	const completedCount = orderedItems.filter((item) => item.status === 'completed').length;
+	const inProgressItem = orderedItems.find((item) => item.status === 'in_progress') ?? null;
+	const resumeItem = inProgressItem ?? orderedItems.find((item) => item.status !== 'completed') ?? orderedItems[0] ?? null;
+	const hasEpisodeData = orderedItems.some((item) => item.episodeNumber !== null);
+
+	const groupedSeasons = hasEpisodeData
+		? orderedItems.reduce<VideoSeasonGroup[]>((groups, item) => {
+				const seasonNumber = item.seasonNumber ?? 1;
+				const key = `season-${seasonNumber}`;
+				const existingGroup = groups.find((group) => group.key === key);
+				if (existingGroup) {
+					existingGroup.items.push(item);
+					return groups;
+				}
+
+				return [
+					...groups,
+					{
+						key,
+						label: String(seasonNumber),
+						items: [item],
+					},
+				];
+		  }, [])
+		: [];
+
+	return {
+		orderedItems,
+		groupedSeasons,
+		completedCount,
+		hasEpisodeData,
+		resumeItem,
+	};
+};
+
 export const useVideoPlaylistDetail = (playlist: VideoPlaylistDto) => {
-	return useMemo(() => {
-		const orderedItems = [...playlist.items]
-			.sort((a, b) => a.order_index - b.order_index || a.id - b.id)
-			.map((item) => {
-				const parsed = parseEpisode(item.video.name);
-				return {
-					...item,
-					...parsed,
-				};
-			});
-
-		const completedCount = orderedItems.filter((item) => item.status === 'completed').length;
-		const inProgressItem = orderedItems.find((item) => item.status === 'in_progress') ?? null;
-		const resumeItem = inProgressItem ?? orderedItems.find((item) => item.status !== 'completed') ?? orderedItems[0] ?? null;
-		const hasEpisodeData = orderedItems.some((item) => item.episodeNumber !== null);
-
-		const groupedSeasons = hasEpisodeData
-			? orderedItems.reduce<VideoSeasonGroup[]>((groups, item) => {
-					const seasonNumber = item.seasonNumber ?? 1;
-					const key = `season-${seasonNumber}`;
-					const existingGroup = groups.find((group) => group.key === key);
-					if (existingGroup) {
-						existingGroup.items.push(item);
-						return groups;
-					}
-
-					return [
-						...groups,
-						{
-							key,
-							label: String(seasonNumber),
-							items: [item],
-						},
-					];
-			  }, [])
-			: [];
-
-		return {
-			orderedItems,
-			groupedSeasons,
-			completedCount,
-			hasEpisodeData,
-			resumeItem,
-		};
-	}, [playlist]);
+	return useMemo(() => buildVideoPlaylistDetail(playlist), [playlist]);
 };

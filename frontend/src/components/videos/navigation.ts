@@ -74,6 +74,25 @@ export const getVideoDetailSlugFromPath = (pathname: string) => {
 export const getVideoDetailRoute = (section: Exclude<VideoSection, 'home'>, slug: string) =>
 	`${getVideoRoute(section)}/${encodeURIComponent(slug)}`;
 
+export const getVideoSectionForPlaylist = (
+	playlist: Pick<{ type: string; classification: string }, 'type' | 'classification'>,
+): Exclude<VideoSection, 'home'> => {
+	if (playlist.type === 'folder') {
+		return 'folders';
+	}
+	if (playlist.classification === 'movie') {
+		return 'movies';
+	}
+	if (playlist.classification === 'clip' || playlist.classification === 'program') {
+		return 'clips';
+	}
+	if (playlist.classification === 'series' || playlist.classification === 'anime') {
+		return 'series';
+	}
+
+	return 'personal';
+};
+
 export const getVideoSectionMeta = (section: VideoSection) => {
 	const matchedItem = videoNavigationItems.find((item) => item.key === section);
 
