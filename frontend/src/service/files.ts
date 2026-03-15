@@ -1,4 +1,9 @@
-import type { FileListCategoryType, PaginationResponse as FilePaginationResponse, RecentAccessFile } from '@/components/providers/fileProvider/fileContext';
+import type {
+	FileData,
+	FileListCategoryType,
+	PaginationResponse as FilePaginationResponse,
+	RecentAccessFile,
+} from '@/components/providers/fileProvider/fileContext';
 import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { Pagination } from '@/types/pagination';
@@ -31,6 +36,14 @@ export const getFilesTree = async ({
 export const getRecentAccessByFileId = async (fileId: number): Promise<RecentAccessFile[]> => {
 	const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${fileId}`);
 	return response.data;
+};
+
+export const getFileByPath = async (path: string): Promise<FileData | null> => {
+	const response = await apiBase.get<FilePaginationResponse>('/files/path', {
+		params: { path },
+	});
+
+	return response.data.items[0] ?? null;
 };
 
 export const toggleStarredFile = async (itemId: number): Promise<void> => {
