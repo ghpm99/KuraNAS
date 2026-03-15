@@ -29,7 +29,7 @@
 - Dependencias: `TASK-001`, `TASK-002`.
 
 ## TASK-018 - Limpar About e retirar Activity Diary da camada principal
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `S`
 - Objetivo: posicionar `About` como pagina tecnica compacta e remover `Activity Diary` da experiencia principal.
 - Estado atual: `About` ja existe; `activity-diary` ainda e pagina de primeiro nivel e parte do shell.
