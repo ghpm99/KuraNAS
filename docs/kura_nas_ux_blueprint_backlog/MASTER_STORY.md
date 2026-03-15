@@ -12,8 +12,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 ## Snapshot atual
 
 - Status geral: `IN_PROGRESS`
-- Fase atual recomendada: `Videos`
-- Proxima task recomendada: `TASK-012`
+- Fase atual recomendada: `Imagens`
+- Proxima task recomendada: `TASK-013`
 
 ## Quadro de tasks
 
@@ -30,7 +30,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-009 | Normalizar metadados e playlists automaticas de musica | DONE | Musica |
 | TASK-010 | Reorganizar IA e rotas do dominio Videos | DONE | Videos |
 | TASK-011 | Refinar classificacao e paginas de detalhe de videos | DONE | Videos |
-| TASK-012 | Evoluir o player de video para contexto completo | TODO | Videos |
+| TASK-012 | Evoluir o player de video para contexto completo | DONE | Videos |
 | TASK-013 | Criar pipeline de classificacao persistida para imagens | TODO | Imagens |
 | TASK-014 | Reorganizar IA da biblioteca de imagens | TODO | Imagens |
 | TASK-015 | Evoluir viewer e acoes de imagem | TODO | Imagens |
@@ -55,6 +55,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-14 | TASK-009 | Musica passou a consumir catalogo normalizado do backend com playlists automaticas de primeiro nivel. | Backend ganhou contratos proprios em `/music/library` e playlists automaticas para continuar ouvindo/recentes/favoritas; frontend migrou Home, artistas, albuns, generos e playlists para os contratos novos com i18n e testes atualizados. |
 | 2026-03-14 | TASK-010 | Videos passou a navegar por Home, Continuar, Series, Filmes, Pessoais, Clipes e Pastas com shell contextual. | Frontend ganhou subrotas/restauracao por URL em `/videos/*`, header/sidebar dedicados, home por categorias reaproveitando playlists e catalogo, ajustes de i18n compartilhado e cobertura de testes para o novo fluxo. |
 | 2026-03-14 | TASK-011 | Videos ganhou detalhe contextual por URL com foco em series, filmes, pessoais e clipes, mais progresso por item. | Backend passou a devolver progresso por item e heuristicas mais robustas para serie/pessoal/clipe; frontend migrou o detalhe para rotas dedicadas, agrupou episodios por temporada e manteve a gestao de pastas sem quebrar o fluxo existente. |
+| 2026-03-14 | TASK-012 | O player de video passou a manter contexto visivel, fila contextual e retorno consistente para a biblioteca. | Frontend ganhou tela contextual com origem, proximos itens/relacionados, sincronizacao da URL com a sessao de playback, conclusao correta do ultimo item, i18n compartilhado e cobertura de testes do fluxo. |
 
 ## Como atualizar ao concluir uma task
 

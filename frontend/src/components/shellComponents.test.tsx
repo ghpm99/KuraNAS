@@ -26,7 +26,6 @@ const mockUseUI = jest.fn();
 const mockUseLocation = jest.fn();
 const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
-const mockVideoPlayer = jest.fn();
 const mockUseAnalyticsOverview = jest.fn();
 
 jest.mock('@/components/providers/fileProvider/fileContext', () => ({
@@ -92,12 +91,7 @@ jest.mock('@/components/videos/VideoDomainHeader', () => () => <div>VideoDomainH
 jest.mock('@/components/videos/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
 jest.mock('@/components/videos/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
-jest.mock('@/components/hooks/useVideoPlayer/useVideoPlayer', () => ({
-	__esModule: true,
-	default: (...args: any[]) => mockVideoPlayer(...args),
-}));
-jest.mock('@/components/videos/videoControls/videoControls', () => () => <div>VideoControlsMock</div>);
-jest.mock('@/components/videos/videoPlayer/videoPlayer', () => () => <div>VideoPlayerMock</div>);
+jest.mock('@/components/videos/videoPlayer/VideoPlayerScreen', () => () => <div>VideoPlayerScreenMock</div>);
 
 jest.mock('@/components/providers/analyticsProvider', () => ({
 	AnalyticsProvider: ({ children }: any) => <div>{children}</div>,
@@ -166,26 +160,6 @@ beforeEach(() => {
 			extensions: [{ ext: '.mp4', count: 1, bytes: 1024 }],
 			recent_files: [{ id: 1, name: 'movie.mp4', size_bytes: 1024, created_at: '2026-01-01T00:00:00Z' }],
 		},
-	});
-	mockVideoPlayer.mockReturnValue({
-		videoRef: { current: null },
-		playVideo: jest.fn(),
-		seekTo: jest.fn(),
-		setVolume: jest.fn(),
-		setPlaybackRate: jest.fn(),
-		toggleFullscreen: jest.fn(),
-		togglePlayPause: jest.fn(),
-		nextVideo: jest.fn(),
-		previousVideo: jest.fn(),
-		status: 'paused',
-		currentTime: 0,
-		duration: 10,
-		volume: 1,
-		playbackRate: 1,
-		isFullscreen: false,
-		setCurrentTime: jest.fn(),
-		setDuration: jest.fn(),
-		currentVideo: null,
 	});
 });
 
@@ -301,12 +275,7 @@ describe('shell components and pages', () => {
 		expect(screen.getByText('SETTINGS_PAGE_TITLE')).toBeInTheDocument();
 
 		render(<VideoPlayerPage />);
-		expect(screen.getByText('VideoControlsMock')).toBeInTheDocument();
-		expect(screen.getByText('VideoPlayerMock')).toBeInTheDocument();
-
-		mockUseParams.mockReturnValueOnce({ id: undefined });
-		render(<VideoPlayerPage />);
-		expect(screen.getByText('VIDEO_INVALID_ID')).toBeInTheDocument();
+		expect(screen.getByText('VideoPlayerScreenMock')).toBeInTheDocument();
 	});
 
 	it('renders action bar for selected file branch', () => {
