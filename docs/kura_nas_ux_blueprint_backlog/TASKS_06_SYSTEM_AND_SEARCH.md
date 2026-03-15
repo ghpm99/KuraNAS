@@ -43,7 +43,7 @@
 - Dependencias: `TASK-001`, `TASK-017`.
 
 ## TASK-019 - Implementar busca global e remover legado restante
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: fechar o blueprint com uma busca/global command palette e eliminar o legado visual e estrutural remanescente.
 - Estado atual: `Header.tsx` tem um input visual sem comportamento global.

@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import Header from './Header';
 
+const mockOpenSearch = jest.fn();
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
-	default: () => ({ t: (key: string) => key }),
+	default: () => ({ t: (key: string, options?: Record<string, string>) => options?.shortcut ? `${key}:${options.shortcut}` : key }),
 }));
 
 jest.mock('@/components/layout/Sidebar/Sidebar', () => ({
@@ -11,10 +13,16 @@ jest.mock('@/components/layout/Sidebar/Sidebar', () => ({
 	default: ({ mobile }: { mobile?: boolean }) => <div>{mobile ? 'SidebarMobile' : 'SidebarDesktop'}</div>,
 }));
 
+jest.mock('@/components/search/useGlobalSearch', () => ({
+	__esModule: true,
+	default: () => ({ openSearch: mockOpenSearch, shortcut: 'Ctrl+K' }),
+}));
+
 describe('layout/Header', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date('2026-03-04T10:00:00.000Z'));
+		mockOpenSearch.mockReset();
 	});
 
 	afterEach(() => {
@@ -23,9 +31,12 @@ describe('layout/Header', () => {
 
 	it('renders search, clock and mobile drawer', () => {
 		render(<Header showClock />);
-		expect(screen.getByPlaceholderText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
+		expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
 		expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
 		expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
+
+		fireEvent.click(screen.getByLabelText('GLOBAL_SEARCH_OPEN'));
+		expect(mockOpenSearch).toHaveBeenCalled();
 
 		fireEvent.click(screen.getByLabelText('OPEN_NAVIGATION_MENU'));
 		expect(screen.getByText('SidebarMobile')).toBeInTheDocument();

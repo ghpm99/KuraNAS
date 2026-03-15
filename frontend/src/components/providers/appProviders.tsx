@@ -6,6 +6,7 @@ import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { appTheme } from '@/theme/appTheme';
 import I18nProvider from '../i18n/provider';
+import GlobalSearchProvider from '../search/GlobalSearchProvider';
 import SettingsProvider from './settingsProvider';
 
 const queryClient = new QueryClient({
@@ -27,7 +28,9 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 						<SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
 							<ThemeProvider theme={appTheme}>
 								<CssBaseline />
-								<BrowserRouter>{children}</BrowserRouter>
+								<BrowserRouter>
+									<GlobalSearchProvider>{children}</GlobalSearchProvider>
+								</BrowserRouter>
 							</ThemeProvider>
 						</SnackbarProvider>
 					</SettingsProvider>
