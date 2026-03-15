@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,11 +43,17 @@ func (m *videoHandlerServiceMock) RebuildSmartPlaylists() error { return nil }
 func (m *videoHandlerServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return []VideoPlaylistDto{{ID: 1, Name: "p"}}, nil
 }
+func (m *videoHandlerServiceMock) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
+	return []VideoPlaylistMembershipDto{{PlaylistID: 1, VideoID: 10}}, nil
+}
 func (m *videoHandlerServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	if id == 404 {
 		return VideoPlaylistDto{}, errors.New("missing")
 	}
 	return VideoPlaylistDto{ID: id, Name: "p"}, nil
+}
+func (m *videoHandlerServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: "v"}}}, nil
 }
 func (m *videoHandlerServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error  { return nil }
 func (m *videoHandlerServiceMock) AddVideoToPlaylist(playlistID int, videoID int) error { return nil }
@@ -92,8 +99,14 @@ func (m *videoHandlerErrServiceMock) RebuildSmartPlaylists() error {
 func (m *videoHandlerErrServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return nil, errors.New("playlists failed")
 }
+func (m *videoHandlerErrServiceMock) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
+	return nil, errors.New("memberships failed")
+}
 func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	return VideoPlaylistDto{}, errors.New("playlist missing")
+}
+func (m *videoHandlerErrServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{}, errors.New("library failed")
 }
 func (m *videoHandlerErrServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error {
 	return errors.New("set hidden failed")
@@ -132,6 +145,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 	router.GET("/video/catalog/home", handler.GetHomeCatalogHandler)
 	router.POST("/video/playlists/rebuild", handler.RebuildPlaylistsHandler)
 	router.GET("/video/playlists", handler.GetPlaylistsHandler)
+	router.GET("/video/playlists/memberships", handler.GetPlaylistMembershipsHandler)
 	router.GET("/video/playlists/:id", handler.GetPlaylistByIDHandler)
 	router.PUT("/video/playlists/:id/hidden", handler.SetPlaylistHiddenHandler)
 	router.POST("/video/playlists/:id/videos", handler.AddPlaylistVideoHandler)
@@ -139,6 +153,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 	router.PUT("/video/playlists/:id", handler.UpdatePlaylistHandler)
 	router.PUT("/video/playlists/:id/reorder", handler.ReorderPlaylistHandler)
 	router.GET("/video/playlists/unassigned", handler.GetUnassignedVideosHandler)
+	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
 
 	tests := []struct {
 		method string
@@ -154,6 +169,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/video/catalog/home?limit=10", "", http.StatusOK},
 		{http.MethodPost, "/video/playlists/rebuild", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists?include_hidden=true", "", http.StatusOK},
+		{http.MethodGet, "/video/playlists/memberships?include_hidden=true", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists/1", "", http.StatusOK},
 		{http.MethodPut, "/video/playlists/1/hidden", `{"hidden":true}`, http.StatusOK},
 		{http.MethodPost, "/video/playlists/1/videos", `{"video_id":10}`, http.StatusCreated},
@@ -161,6 +177,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodPut, "/video/playlists/1", `{"name":"new"}`, http.StatusOK},
 		{http.MethodPut, "/video/playlists/1/reorder", `{"items":[{"video_id":1,"order_index":0}]}`, http.StatusOK},
 		{http.MethodGet, "/video/playlists/unassigned?limit=100", "", http.StatusOK},
+		{http.MethodGet, "/video/library/files?page=2&page_size=25&query=clip", "", http.StatusOK},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodGet, "/video/playlists/404", "", http.StatusNotFound},
 	}
@@ -193,6 +210,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 	router.GET("/video/catalog/home", handler.GetHomeCatalogHandler)
 	router.POST("/video/playlists/rebuild", handler.RebuildPlaylistsHandler)
 	router.GET("/video/playlists", handler.GetPlaylistsHandler)
+	router.GET("/video/playlists/memberships", handler.GetPlaylistMembershipsHandler)
 	router.GET("/video/playlists/:id", handler.GetPlaylistByIDHandler)
 	router.PUT("/video/playlists/:id/hidden", handler.SetPlaylistHiddenHandler)
 	router.POST("/video/playlists/:id/videos", handler.AddPlaylistVideoHandler)
@@ -200,6 +218,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 	router.PUT("/video/playlists/:id", handler.UpdatePlaylistHandler)
 	router.PUT("/video/playlists/:id/reorder", handler.ReorderPlaylistHandler)
 	router.GET("/video/playlists/unassigned", handler.GetUnassignedVideosHandler)
+	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
 
 	tests := []struct {
 		method string
@@ -215,6 +234,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 		{http.MethodGet, "/video/catalog/home?limit=10", "", http.StatusInternalServerError},
 		{http.MethodPost, "/video/playlists/rebuild", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists?include_hidden=true", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/playlists/memberships?include_hidden=true", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists/1", "", http.StatusNotFound},
 		{http.MethodPut, "/video/playlists/1/hidden", `{"hidden":true}`, http.StatusInternalServerError},
 		{http.MethodPost, "/video/playlists/1/videos", `{"video_id":10}`, http.StatusInternalServerError},
@@ -222,6 +242,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 		{http.MethodPut, "/video/playlists/1", `{"name":"new"}`, http.StatusInternalServerError},
 		{http.MethodPut, "/video/playlists/1/reorder", `{"items":[{"video_id":1,"order_index":0}]}`, http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists/unassigned?limit=100", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/library/files?query=test", "", http.StatusInternalServerError},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playback/state", `{`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playlists/1/hidden", `{}`, http.StatusInternalServerError},

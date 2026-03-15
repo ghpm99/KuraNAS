@@ -4,6 +4,7 @@ import { formatSize } from '@/utils';
 import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import styles from '../ImageContent.module.css';
 
 const thumbnailWidth = 960;
 const thumbnailHeight = 720;
@@ -41,7 +42,7 @@ export default function ImageGroupsGrid({
 
 	if (groups.length === 0 && !isFetchingNextPage) {
 		return (
-			<div className='images-empty'>
+			<div className={styles.empty}>
 				<h3>{t('IMAGES_EMPTY_TITLE')}</h3>
 				<p>{t('IMAGES_EMPTY_DESC')}</p>
 			</div>
@@ -50,19 +51,19 @@ export default function ImageGroupsGrid({
 
 	return (
 		<>
-			<div className='images-sections'>
+			<div className={styles.sections}>
 				{groups.map((group) => (
-					<section key={group.label} className='images-group'>
-						<header>
+					<section key={group.label} className={styles.group}>
+						<header className={styles.groupHeader}>
 							<CalendarDays size={16} />
 							<h3>{group.label}</h3>
 							<span>{t('IMAGES_PHOTOS_COUNT', { count: String(group.items.length) })}</span>
 						</header>
-						<div className='images-grid'>
+						<div className={styles.grid}>
 							{group.items.map((item) => {
 								const width = item.metadata?.width ?? 1;
 								const height = item.metadata?.height ?? 1;
-								const orientation = height > width ? 'portrait' : 'landscape';
+								const orientationClass = height > width ? styles.portrait : styles.landscape;
 								const ref = item.id === lastVisibleImageId ? loadMoreRef : undefined;
 
 								return (
@@ -70,12 +71,12 @@ export default function ImageGroupsGrid({
 										type='button'
 										key={item.id}
 										ref={ref}
-										className={`photo-card ${orientation}`}
+										className={`${styles.photoCard} ${orientationClass}`}
 										onClick={() => onOpenImage(item.id)}
 										aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: item.name })}
 									>
-										<img className='thumbnail-img' src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
-										<div className='photo-overlay'>
+										<img className={styles.thumbnail} src={thumbnailUrl(item.id)} alt={item.name} loading='lazy' />
+										<div className={styles.photoOverlay}>
 											<p>{item.name}</p>
 											<span>{imageMetadataSummary(item)}</span>
 										</div>
@@ -87,11 +88,11 @@ export default function ImageGroupsGrid({
 				))}
 			</div>
 			{isFetchingNextPage && (
-				<div className='loading-indicator'>
+				<div className={styles.loadingIndicator}>
 					<CircularProgress size={40} />
 				</div>
 			)}
-			{!hasNextPage && totalImages > 0 && <div className='end-message'>{t('IMAGES_END_MESSAGE')}</div>}
+			{!hasNextPage && totalImages > 0 && <div className={styles.endMessage}>{t('IMAGES_END_MESSAGE')}</div>}
 		</>
 	);
 }

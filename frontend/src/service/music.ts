@@ -67,15 +67,8 @@ export const getMusic = async (page: number, pageSize: number) => {
 };
 
 export const getMusicByFolder = async (folder: string, page: number, pageSize: number) => {
-	const data = await getMusic(page, pageSize);
-	const items = data.items.filter((item) => item.path.startsWith(folder));
-
-	return {
-		...data,
-		items,
-		pagination: {
-			...data.pagination,
-			total_items: items.length,
-		},
-	};
+	const response = await apiBase.get<Pagination<IMusicData>>(`/music/library/folders/${encodeURIComponent(folder)}/tracks`, {
+		params: { page, page_size: pageSize },
+	});
+	return response.data;
 };

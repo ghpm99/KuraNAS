@@ -12,10 +12,13 @@ type VideoLibrarySectionProps = {
 	search: string;
 	selectedPlaylistPerVideo: Record<number, number>;
 	isAddingToPlaylist: boolean;
+	isFetchingMoreVideos: boolean;
+	hasMoreVideos: boolean;
 	onSearchChange: (value: string) => void;
 	onSelectPlaylistForVideo: (videoId: number, playlistId: number) => void;
 	onPlayVideo: (videoId: number, playlistId?: number | null) => void;
 	onAddVideo: (videoId: number) => void;
+	onLoadMore: () => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -27,10 +30,13 @@ export default function VideoLibrarySection({
 	search,
 	selectedPlaylistPerVideo,
 	isAddingToPlaylist,
+	isFetchingMoreVideos,
+	hasMoreVideos,
 	onSearchChange,
 	onSelectPlaylistForVideo,
 	onPlayVideo,
 	onAddVideo,
+	onLoadMore,
 }: VideoLibrarySectionProps) {
 	const { t } = useI18n();
 
@@ -102,6 +108,18 @@ export default function VideoLibrarySection({
 					);
 				})}
 			</div>
+			{hasMoreVideos ? (
+				<div className={styles.libraryFooter}>
+					<button
+						type='button'
+						className={styles.actionBtn}
+						onClick={onLoadMore}
+						disabled={isFetchingMoreVideos}
+					>
+						{isFetchingMoreVideos ? t('LOADING') : t('ACTION_LOAD_MORE')}
+					</button>
+				</div>
+			) : null}
 		</section>
 	);
 }

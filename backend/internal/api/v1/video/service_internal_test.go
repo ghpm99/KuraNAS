@@ -5,6 +5,7 @@ import (
 	"errors"
 	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
 
@@ -27,8 +28,10 @@ type videoRepoMock struct {
 	checkVideoInPlaylistFn     func(playlistID int, videoID int) (bool, error)
 	getUnassignedVideosFn      func(limit int) ([]VideoFileModel, error)
 	getVideoPlaylistsFn        func(includeHidden bool) ([]VideoPlaylistModel, error)
+	getVideoPlaylistMembersFn  func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	getVideoPlaylistByIDFn     func(id int) (VideoPlaylistModel, error)
 	getVideoPlaylistItemsFn    func(playlistID int) ([]VideoPlaylistItemModel, error)
+	listLibraryVideosFn        func(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error)
 	setPlaylistHiddenFn        func(tx *sql.Tx, playlistID int, hidden bool) error
 	addPlaylistVideoManualFn   func(tx *sql.Tx, playlistID int, videoID int) error
 	deletePlaylistExclusionFn  func(tx *sql.Tx, playlistID int, videoID int) error
@@ -150,6 +153,12 @@ func (m *videoRepoMock) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistMo
 	}
 	return nil, nil
 }
+func (m *videoRepoMock) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
+	if m.getVideoPlaylistMembersFn != nil {
+		return m.getVideoPlaylistMembersFn(includeHidden)
+	}
+	return nil, nil
+}
 func (m *videoRepoMock) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 	if m.getVideoPlaylistByIDFn != nil {
 		return m.getVideoPlaylistByIDFn(id)
@@ -161,6 +170,12 @@ func (m *videoRepoMock) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPl
 		return m.getVideoPlaylistItemsFn(playlistID)
 	}
 	return nil, nil
+}
+func (m *videoRepoMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error) {
+	if m.listLibraryVideosFn != nil {
+		return m.listLibraryVideosFn(page, pageSize, searchQuery)
+	}
+	return utils.PaginationResponse[VideoFileModel]{}, nil
 }
 func (m *videoRepoMock) SetPlaylistHidden(tx *sql.Tx, playlistID int, hidden bool) error {
 	if m.setPlaylistHiddenFn != nil {
