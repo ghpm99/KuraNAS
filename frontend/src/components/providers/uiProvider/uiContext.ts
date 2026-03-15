@@ -8,7 +8,6 @@ export type pages =
 	| 'music'
 	| 'videos'
 	| 'settings'
-	| 'activity'
 	| 'analytics'
 	| 'about'
 	| 'unknown';

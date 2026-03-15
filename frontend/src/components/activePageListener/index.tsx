@@ -31,7 +31,7 @@ const getPageFromPath = (pathname: string): pages => {
 		case appRoutes.settings:
 			return 'settings';
 		case appRoutes.activityDiary:
-			return 'activity';
+			return 'unknown';
 		case appRoutes.about:
 			return 'about';
 		default:
