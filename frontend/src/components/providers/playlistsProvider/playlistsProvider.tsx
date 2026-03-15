@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -14,6 +14,7 @@ import {
 	removeTrackFromPlaylist,
 } from '@/service/playlist';
 import { PlaylistsContextData } from './playlistsContext';
+import { useSearchParams } from 'react-router-dom';
 
 const PlaylistsContext = createContext<PlaylistsContextData | undefined>(undefined);
 
@@ -22,6 +23,7 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const { t } = useI18n();
 	const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [newName, setNewName] = useState('');
 	const [newDescription, setNewDescription] = useState('');
@@ -107,6 +109,18 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		[automaticPlaylistsQuery.data, playlistsQuery.data],
 	);
 	const tracks = useMemo(() => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [], [tracksQuery.data]);
+	const requestedPlaylistId = Number(searchParams.get('playlist') ?? '');
+
+	useEffect(() => {
+		if (!Number.isFinite(requestedPlaylistId) || requestedPlaylistId <= 0 || selectedPlaylist?.id === requestedPlaylistId) {
+			return;
+		}
+
+		const requestedPlaylist = playlists.find((playlist) => playlist.id === requestedPlaylistId) ?? null;
+		if (requestedPlaylist) {
+			setSelectedPlaylist(requestedPlaylist);
+		}
+	}, [playlists, requestedPlaylistId, selectedPlaylist?.id]);
 
 	const contextValue: PlaylistsContextData = {
 		selectedPlaylist,
@@ -124,8 +138,22 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		createOpen,
 		newName,
 		newDescription,
-		selectPlaylist: (playlist) => setSelectedPlaylist(playlist),
-		backToList: () => setSelectedPlaylist(null),
+			selectPlaylist: (playlist) => {
+				setSelectedPlaylist(playlist);
+				setSearchParams((current) => {
+					const next = new URLSearchParams(current);
+					next.set('playlist', String(playlist.id));
+					return next;
+				}, { replace: true });
+			},
+			backToList: () => {
+				setSelectedPlaylist(null);
+				setSearchParams((current) => {
+					const next = new URLSearchParams(current);
+					next.delete('playlist');
+					return next;
+				}, { replace: true });
+			},
 		fetchNextPlaylistPage: playlistsQuery.fetchNextPage,
 		fetchNextTrackPage: tracksQuery.fetchNextPage,
 		openCreateDialog: () => setCreateOpen(true),
@@ -136,8 +164,8 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		deletePlaylistById: (id) => deleteMutation.mutate(id),
 		removeTrackByFileId: (fileId) => removeMutation.mutate(fileId),
 		playlistQueryFn,
-		playlistTracksQueryFn,
-	};
+			playlistTracksQueryFn,
+		};
 
 	return <PlaylistsContext.Provider value={contextValue}>{children}</PlaylistsContext.Provider>;
 }

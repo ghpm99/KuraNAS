@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import useGlobalSearch from '@/components/search/useGlobalSearch';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useHomeScreen from './useHomeScreen';
 import type { HomeRecentFile } from './useHomeScreen';
@@ -33,15 +34,6 @@ type QuickAction = {
 	icon: ReactNode;
 };
 
-const matchesSearch = (query: string, ...values: Array<string | undefined>) => {
-	const normalizedQuery = query.trim().toLowerCase();
-	if (!normalizedQuery) {
-		return true;
-	}
-
-	return values.some((value) => value?.toLowerCase().includes(normalizedQuery));
-};
-
 const getAnalyticsStatusKey = (status: 'ok' | 'scanning' | 'error') => {
 	switch (status) {
 		case 'scanning':
@@ -57,9 +49,8 @@ const HomeScreen = () => {
 	const { t } = useI18n();
 	const navigate = useNavigate();
 	const { openMediaItem } = useMediaOpener();
+	const { openSearch, shortcut } = useGlobalSearch();
 	const {
-		searchQuery,
-		setSearchQuery,
 		recentFiles,
 		videoContinueItems,
 		videoResume,
@@ -122,45 +113,8 @@ const HomeScreen = () => {
 		},
 	], [t]);
 
-	const filteredActions = useMemo(
-		() => quickActions.filter((action) => matchesSearch(searchQuery, action.label, action.description)),
-		[quickActions, searchQuery],
-	);
-
-	const filteredRecentFiles = useMemo(
-		() => recentFiles.filter((file) => matchesSearch(searchQuery, file.name, file.parent_path, file.format)),
-		[recentFiles, searchQuery],
-	);
-
-	const filteredVideoItems = useMemo(
-		() => videoContinueItems.filter((item) => matchesSearch(searchQuery, item.video.name, item.video.parent_path)),
-		[searchQuery, videoContinueItems],
-	);
-
-	const supportsMusicSection = matchesSearch(
-		searchQuery,
-		t('MUSIC_NOW_PLAYING'),
-		t('HOME_MUSIC_DESCRIPTION'),
-		musicResume?.track.name,
-		musicResume?.track.metadata?.title,
-		musicResume?.track.metadata?.artist,
-	);
-
-	const supportsStatusSection = matchesSearch(
-		searchQuery,
-		t('STATUS_SYSTEM_TITLE'),
-		t('HOME_STATUS_DESCRIPTION'),
-		analytics?.health.status,
-	);
-
-	const searchHasResults = filteredActions.length > 0
-		|| filteredRecentFiles.length > 0
-		|| filteredVideoItems.length > 0
-		|| (supportsMusicSection && Boolean(musicResume))
-		|| (supportsStatusSection && Boolean(analytics));
-
-	const storageUsedLabel = analytics
-		? `${formatSize(analytics.storage.used_bytes)} / ${formatSize(analytics.storage.total_bytes)}`
+		const storageUsedLabel = analytics
+			? `${formatSize(analytics.storage.used_bytes)} / ${formatSize(analytics.storage.total_bytes)}`
 		: '--';
 	const storageFreeLabel = analytics ? formatSize(analytics.storage.free_bytes) : '--';
 	const analyticsStatusLabel = analytics ? t(getAnalyticsStatusKey(analytics.health.status)) : t('LOADING');
@@ -170,13 +124,16 @@ const HomeScreen = () => {
 
 	const musicTitle = musicResume?.track.metadata?.title || musicResume?.track.name || '';
 	const musicArtist = musicResume?.track.metadata?.artist || t('HOME_UNKNOWN_ARTIST');
-	const featuredVideoItems = videoResume
-		? filteredVideoItems.filter((item) => item.video.id !== videoResume.video.id)
-		: filteredVideoItems;
+		const featuredVideoItems = videoResume
+			? videoContinueItems.filter((item) => item.video.id !== videoResume.video.id)
+			: videoContinueItems;
 
 	const handleOpenRecentFile = (file: HomeRecentFile) => {
 		if (!openMediaItem(file)) {
-			navigate(appRoutes.files);
+			navigate({
+				pathname: appRoutes.files,
+				search: `?path=${encodeURIComponent(file.path)}`,
+			});
 		}
 	};
 
@@ -193,28 +150,31 @@ const HomeScreen = () => {
 				</div>
 
 				<div className={styles.heroSearch}>
-					<TextField
-						fullWidth
-						value={searchQuery}
-						onChange={(event) => setSearchQuery(event.target.value)}
-						placeholder={t('SEARCH_PLACEHOLDER')}
-						InputProps={{
-							startAdornment: (
-								<InputAdornment position='start'>
-									<Search size={18} />
-								</InputAdornment>
-							),
-						}}
-					/>
-					<div className={styles.searchMeta}>
-						<p className={styles.searchHint}>{t('HOME_SEARCH_HELP')}</p>
-						{searchQuery ? (
-							<Button variant='text' onClick={() => setSearchQuery('')}>
-								{t('HOME_CLEAR_SEARCH')}
+						<TextField
+							fullWidth
+							value=''
+							onClick={openSearch}
+							onFocus={openSearch}
+							placeholder={t('SEARCH_PLACEHOLDER')}
+							inputProps={{
+								readOnly: true,
+								'aria-label': t('GLOBAL_SEARCH_OPEN'),
+							}}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position='start'>
+										<Search size={18} />
+									</InputAdornment>
+								),
+							}}
+						/>
+						<div className={styles.searchMeta}>
+							<p className={styles.searchHint}>{t('GLOBAL_SEARCH_SHORTCUT', { shortcut })}</p>
+							<Button variant='text' onClick={openSearch}>
+								{t('HOME_OPEN_SECTION')}
 							</Button>
-						) : null}
+						</div>
 					</div>
-				</div>
 
 				<div className={styles.heroMetrics}>
 					<div className={styles.metricCard}>
@@ -242,9 +202,9 @@ const HomeScreen = () => {
 						</div>
 					</div>
 
-					<div className={styles.actionsGrid}>
-						{filteredActions.map((action) => (
-							<article key={action.id} className={styles.actionCard}>
+						<div className={styles.actionsGrid}>
+							{quickActions.map((action) => (
+								<article key={action.id} className={styles.actionCard}>
 								<div className={styles.actionIcon}>{action.icon}</div>
 								<div className={styles.actionContent}>
 									<h3 className={styles.actionTitle}>{action.label}</h3>
@@ -253,17 +213,11 @@ const HomeScreen = () => {
 								<Button component={RouterLink} to={action.route} variant='text' endIcon={<ArrowRight size={16} />}>
 									{t('HOME_OPEN_SECTION')}
 								</Button>
-							</article>
-						))}
-					</div>
-
-					{searchQuery && !searchHasResults ? (
-						<div className={styles.emptyState}>
-							<p className={styles.emptyTitle}>{t('HOME_SEARCH_EMPTY')}</p>
+								</article>
+							))}
 						</div>
-					) : null}
-				</div>
-			</section>
+					</div>
+				</section>
 
 			<div className={styles.contentGrid}>
 				<section className={styles.panel}>
@@ -285,9 +239,9 @@ const HomeScreen = () => {
 								</div>
 							))}
 						</div>
-					) : filteredRecentFiles.length > 0 ? (
-						<div className={styles.recentList}>
-							{filteredRecentFiles.map((file) => {
+						) : recentFiles.length > 0 ? (
+							<div className={styles.recentList}>
+								{recentFiles.map((file) => {
 								const fileType = getFileTypeInfo(file.format);
 								return (
 									<button
@@ -331,7 +285,7 @@ const HomeScreen = () => {
 
 					{isMusicLoading ? (
 						<Skeleton variant='rounded' height={180} />
-					) : supportsMusicSection && musicResume ? (
+						) : musicResume ? (
 						<div className={styles.mediaCard}>
 							<div className={styles.mediaHeader}>
 								<div>
@@ -381,7 +335,7 @@ const HomeScreen = () => {
 
 					{isVideoLoading ? (
 						<Skeleton variant='rounded' height={220} />
-					) : (videoResume || filteredVideoItems.length > 0) ? (
+						) : (videoResume || videoContinueItems.length > 0) ? (
 						<div className={styles.videoStack}>
 							{videoResume ? (
 								<article className={styles.videoHeroCard}>
@@ -440,9 +394,8 @@ const HomeScreen = () => {
 					)}
 				</section>
 
-				{supportsStatusSection ? (
 					<section className={`${styles.panel} ${styles.statusPanel}`}>
-						<div className={styles.sectionHeader}>
+							<div className={styles.sectionHeader}>
 							<div>
 								<h2 className={styles.sectionTitle}>{t('STATUS_SYSTEM_TITLE')}</h2>
 								<p className={styles.sectionDescription}>{t('HOME_STATUS_DESCRIPTION')}</p>
@@ -488,10 +441,9 @@ const HomeScreen = () => {
 								<p className={styles.emptyTitle}>{t('HOME_STATUS_DESCRIPTION')}</p>
 							</div>
 						)}
-					</section>
-				) : null}
+						</section>
+				</div>
 			</div>
-		</div>
 	);
 };
 

@@ -1,6 +1,6 @@
 import { Box, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { Folder, Play } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicByFolder, getMusicFolders } from '@/service/music';
 import { createFolderPlaybackContext } from '@/components/music/playbackContext';
@@ -12,15 +12,36 @@ import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import TrackListItem from '@/components/music/TrackListItem';
 import CategoryHeader from '@/components/music/CategoryHeader';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSearchParams } from 'react-router-dom';
 
 const FoldersView = () => {
 	const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const selectedFolderPath = searchParams.get('folder') ?? '';
+
+	const handleSelectFolder = (folder: string) => {
+		setSelectedFolder(folder);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.set('folder', folder);
+			return next;
+		}, { replace: true });
+	};
+
+	const handleBack = () => {
+		setSelectedFolder(null);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.delete('folder');
+			return next;
+		}, { replace: true });
+	};
 
 	if (selectedFolder) {
-		return <FolderTracksView folder={selectedFolder} onBack={() => setSelectedFolder(null)} />;
+		return <FolderTracksView folder={selectedFolder} onBack={handleBack} />;
 	}
 
-	return <FolderListView onSelect={setSelectedFolder} />;
+	return <FolderListView onSelect={handleSelectFolder} selectedFolderPath={selectedFolderPath} />;
 };
 
 const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -30,7 +51,7 @@ const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActiva
 	}
 };
 
-const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) => {
+const FolderListView = ({ onSelect, selectedFolderPath }: { onSelect: (folder: string) => void; selectedFolderPath: string }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -44,6 +65,17 @@ const FolderListView = ({ onSelect }: { onSelect: (folder: string) => void }) =>
 	});
 
 	const folders = data?.pages.flatMap((page) => page.items) ?? [];
+
+	useEffect(() => {
+		if (!selectedFolderPath) {
+			return;
+		}
+
+		const requestedFolder = folders.find((folder) => folder.folder === selectedFolderPath);
+		if (requestedFolder) {
+			onSelect(requestedFolder.folder);
+		}
+	}, [folders, onSelect, selectedFolderPath]);
 
 	const getFolderName = (path: string) => {
 		const parts = path.split('/').filter(Boolean);

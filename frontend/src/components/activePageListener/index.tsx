@@ -28,10 +28,11 @@ const getPageFromPath = (pathname: string): pages => {
 		case appRoutes.favorites:
 		case appRoutes.legacyFavorites:
 			return 'favorites';
-		case appRoutes.settings:
-			return 'settings';
-		case appRoutes.activityDiary:
-			return 'unknown';
+			case appRoutes.settings:
+				return 'settings';
+			case appRoutes.activityDiary:
+			case appRoutes.legacyActivityDiary:
+				return 'unknown';
 		case appRoutes.about:
 			return 'about';
 		default:
