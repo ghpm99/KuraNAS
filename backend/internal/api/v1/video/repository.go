@@ -6,6 +6,7 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/video"
 	"nas-go/api/pkg/utils"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -451,6 +452,33 @@ func (r *Repository) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel
 	return playlists, nil
 }
 
+func (r *Repository) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
+	memberships := []VideoPlaylistMembershipModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetVideoPlaylistMembershipsQuery, includeHidden)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var membership VideoPlaylistMembershipModel
+			if err := rows.Scan(&membership.PlaylistID, &membership.VideoID); err != nil {
+				return err
+			}
+			memberships = append(memberships, membership)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return memberships, fmt.Errorf("falha ao buscar membros das playlists de video: %w", err)
+	}
+
+	return memberships, nil
+}
+
 func (r *Repository) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 	var playlist VideoPlaylistModel
 
@@ -589,6 +617,63 @@ func (r *Repository) GetUnassignedVideos(limit int) ([]VideoFileModel, error) {
 	}
 
 	return results, nil
+}
+
+func (r *Repository) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error) {
+	paginationResponse := utils.PaginationResponse[VideoFileModel]{
+		Items: []VideoFileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  false,
+			HasPrev:  false,
+		},
+	}
+
+	searchPattern := ""
+	if trimmedSearch := strings.TrimSpace(searchQuery); trimmedSearch != "" {
+		searchPattern = "%" + trimmedSearch + "%"
+	}
+
+	args := []any{
+		pq.Array(utils.VideoFormats),
+		searchPattern,
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetLibraryVideosQuery, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoFileModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.Name,
+				&item.Path,
+				&item.ParentPath,
+				&item.Format,
+				&item.Size,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+			); err != nil {
+				return err
+			}
+			paginationResponse.Items = append(paginationResponse.Items, item)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return paginationResponse, fmt.Errorf("falha ao buscar biblioteca de videos: %w", err)
+	}
+
+	paginationResponse.UpdatePagination()
+	return paginationResponse, nil
 }
 
 func (r *Repository) CheckVideoInPlaylist(playlistID int, videoID int) (bool, error) {

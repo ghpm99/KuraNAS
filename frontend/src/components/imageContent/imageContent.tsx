@@ -6,7 +6,6 @@ import ImageViewerModal from './components/ImageViewerModal';
 import ImageCollectionsPanel from './components/ImageCollectionsPanel';
 import { useImageContent } from './useImageContent';
 import styles from './ImageContent.module.css';
-import './imageContent.css';
 
 export default function ImageContent() {
 	const { t } = useI18n();

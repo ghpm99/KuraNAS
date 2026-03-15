@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import VideoContent from './videoContent';
 
 const mockUseQuery = jest.fn();
+const mockUseInfiniteQuery = jest.fn();
 const mockUseMutation = jest.fn();
 const mockUseQueryClient = jest.fn();
 const mockNavigate = jest.fn();
@@ -9,10 +10,11 @@ const mockInvalidateQueries = jest.fn();
 const mockLocation = { pathname: '/videos', search: '' };
 
 const mockGetVideoPlaylists = jest.fn();
-const mockGetAllVideoFiles = jest.fn();
+const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
 const mockGetVideoPlaylistById = jest.fn();
+const mockGetVideoPlaylistMemberships = jest.fn();
 const mockRemoveVideoFromPlaylist = jest.fn();
 const mockReorderVideoPlaylist = jest.fn();
 const mockUpdateVideoPlaylistName = jest.fn();
@@ -20,10 +22,11 @@ const mockGetVideoPlaybackState = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
 	getVideoPlaylists: (...args: any[]) => mockGetVideoPlaylists(...args),
-	getAllVideoFiles: (...args: any[]) => mockGetAllVideoFiles(...args),
+	getVideoLibraryFiles: (...args: any[]) => mockGetVideoLibraryFiles(...args),
 	getVideoHomeCatalog: (...args: any[]) => mockGetVideoHomeCatalog(...args),
 	addVideoToPlaylist: (...args: any[]) => mockAddVideoToPlaylist(...args),
 	getVideoPlaylistById: (...args: any[]) => mockGetVideoPlaylistById(...args),
+	getVideoPlaylistMemberships: (...args: any[]) => mockGetVideoPlaylistMemberships(...args),
 	removeVideoFromPlaylist: (...args: any[]) => mockRemoveVideoFromPlaylist(...args),
 	reorderVideoPlaylist: (...args: any[]) => mockReorderVideoPlaylist(...args),
 	updateVideoPlaylistName: (...args: any[]) => mockUpdateVideoPlaylistName(...args),
@@ -32,6 +35,7 @@ jest.mock('@/service/videoPlayback', () => ({
 
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: (...args: any[]) => mockUseQuery(...args),
+	useInfiniteQuery: (...args: any[]) => mockUseInfiniteQuery(...args),
 	useMutation: (...args: any[]) => mockUseMutation(...args),
 	useQueryClient: () => mockUseQueryClient(),
 }));
@@ -231,7 +235,7 @@ let playlistsData: any[] = [];
 let allVideosData: any[] = [];
 let homeCatalogData: any = undefined;
 let playbackData: any = undefined;
-let membershipData: Record<number, Set<number>> = {};
+let membershipData: any[] = [];
 let selectedPlaylistData: any = undefined;
 let selectedPlaylistLoading = false;
 let mutationShouldError = false;
@@ -251,16 +255,20 @@ beforeEach(() => {
 		],
 	};
 	playbackData = { playback_state: { playlist_id: 1, video_id: 30 } };
-	membershipData = {};
+	membershipData = [];
 	selectedPlaylistData = detailPlaylist;
 	selectedPlaylistLoading = false;
 	mutationShouldError = false;
 
 	mockUseQueryClient.mockReturnValue({ invalidateQueries: mockInvalidateQueries });
 	mockGetVideoPlaylists.mockResolvedValue(playlistsData);
-	mockGetAllVideoFiles.mockResolvedValue(allVideosData);
+	mockGetVideoLibraryFiles.mockResolvedValue({
+		items: allVideosData,
+		pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
+	});
 	mockGetVideoHomeCatalog.mockResolvedValue(homeCatalogData);
 	mockGetVideoPlaylistById.mockResolvedValue(detailPlaylist);
+	mockGetVideoPlaylistMemberships.mockResolvedValue(membershipData);
 	mockGetVideoPlaybackState.mockResolvedValue(playbackData);
 	mockAddVideoToPlaylist.mockResolvedValue({});
 	mockRemoveVideoFromPlaylist.mockResolvedValue({});
@@ -273,12 +281,28 @@ beforeEach(() => {
 			options.queryFn?.();
 		}
 		if (key === 'video-playlists') return { data: playlistsData, isLoading: false };
-		if (key === 'video-all-files') return { data: allVideosData, isLoading: false };
 		if (key === 'video-home-catalog') return { data: homeCatalogData, isLoading: false };
 		if (key === 'video-playback-state') return { data: playbackData };
 		if (key === 'video-playlist-membership') return { data: membershipData };
 		if (key === 'video-playlist') return { data: selectedPlaylistData, isLoading: selectedPlaylistLoading };
 		return { data: undefined, isLoading: false };
+	});
+	mockUseInfiniteQuery.mockImplementation((options: any) => {
+		options.queryFn?.({ pageParam: 1 });
+		return {
+			data: {
+				pages: [
+					{
+						items: allVideosData,
+						pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
+					},
+				],
+			},
+			isLoading: false,
+			isFetchingNextPage: false,
+			hasNextPage: false,
+			fetchNextPage: jest.fn(),
+		};
 	});
 
 	mockUseMutation.mockImplementation((options: any) => ({
@@ -299,11 +323,17 @@ describe('components/videos/videoContent', () => {
 		mockUseQuery.mockImplementation((options: any) => {
 			const [key] = options.queryKey;
 			if (key === 'video-playlists') return { data: [], isLoading: true };
-			if (key === 'video-all-files') return { data: [], isLoading: false };
 			if (key === 'video-home-catalog') return { data: homeCatalogData, isLoading: false };
 			if (key === 'video-playback-state') return { data: playbackData };
-			if (key === 'video-playlist-membership') return { data: {} };
+			if (key === 'video-playlist-membership') return { data: [] };
 			return { data: undefined, isLoading: false };
+		});
+		mockUseInfiniteQuery.mockReturnValue({
+			data: { pages: [{ items: [], pagination: { page: 1, page_size: 60, has_next: false, has_prev: false } }] },
+			isLoading: false,
+			isFetchingNextPage: false,
+			hasNextPage: false,
+			fetchNextPage: jest.fn(),
 		});
 
 		render(<VideoContent />);

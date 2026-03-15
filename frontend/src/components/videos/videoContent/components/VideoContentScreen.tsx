@@ -20,6 +20,8 @@ export default function VideoContentScreen() {
 		isLoadingVideos,
 		isLoadingSelectedPlaylist,
 		isLoadingHomeCatalog,
+		isFetchingMoreVideos,
+		hasMoreVideos,
 		isAddingToPlaylist,
 		isRenamingPlaylist,
 		isRemovingFromPlaylist,
@@ -40,6 +42,7 @@ export default function VideoContentScreen() {
 		setVideoSearch,
 		setSelectedPlaylistForVideo,
 		closeFeedback,
+		loadMoreVideos,
 		selectPlaylist,
 		clearSelectedPlaylist,
 		playVideo,
@@ -180,10 +183,13 @@ export default function VideoContentScreen() {
 							search={videoSearch}
 							selectedPlaylistPerVideo={selectedPlaylistPerVideo}
 							isAddingToPlaylist={isAddingToPlaylist}
+							isFetchingMoreVideos={isFetchingMoreVideos}
+							hasMoreVideos={hasMoreVideos}
 							onSearchChange={setVideoSearch}
 							onSelectPlaylistForVideo={setSelectedPlaylistForVideo}
 							onPlayVideo={playVideo}
 							onAddVideo={addVideoFromLibrary}
+							onLoadMore={loadMoreVideos}
 						/>
 					</>
 				);

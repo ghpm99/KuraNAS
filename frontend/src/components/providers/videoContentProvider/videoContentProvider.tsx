@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
 	addVideoToPlaylist,
-	getAllVideoFiles,
 	getVideoHomeCatalog,
+	getVideoLibraryFiles,
+	getVideoPlaylistMemberships,
 	getVideoPlaybackState,
 	getVideoPlaylistById,
 	getVideoPlaylists,
@@ -20,7 +21,7 @@ import {
 	getVideoSectionForPlaylist,
 	getVideoSectionFromPath,
 } from '@/components/videos/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -46,6 +47,8 @@ export interface VideoContentContextData {
 	isLoadingVideos: boolean;
 	isLoadingSelectedPlaylist: boolean;
 	isLoadingHomeCatalog: boolean;
+	isFetchingMoreVideos: boolean;
+	hasMoreVideos: boolean;
 	isAddingToPlaylist: boolean;
 	isRenamingPlaylist: boolean;
 	isRemovingFromPlaylist: boolean;
@@ -56,6 +59,7 @@ export interface VideoContentContextData {
 	setVideoSearch: (value: string) => void;
 	setSelectedPlaylistForVideo: (videoId: number, playlistId: number) => void;
 	closeFeedback: () => void;
+	loadMoreVideos: () => void;
 	selectPlaylist: (playlist: VideoPlaylistDto) => void;
 	clearSelectedPlaylist: () => void;
 	playVideo: (videoId: number, playlistId?: number | null) => void;
@@ -90,13 +94,21 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		queryKey: ['video-playlists'],
 		queryFn: () => getVideoPlaylists(false),
 	});
-	const { data: allVideos = [], isLoading: isLoadingVideos } = useQuery({
-		queryKey: ['video-all-files'],
-		queryFn: () => getAllVideoFiles(2000),
-	});
 	const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = useQuery({
 		queryKey: ['video-home-catalog'],
 		queryFn: () => getVideoHomeCatalog(12),
+	});
+	const {
+		data: videoLibraryData,
+		isLoading: isLoadingVideos,
+		isFetchingNextPage: isFetchingMoreVideos,
+		hasNextPage: hasMoreVideos = false,
+		fetchNextPage,
+	} = useInfiniteQuery({
+		queryKey: ['video-library-files', videoSearch],
+		queryFn: ({ pageParam = 1 }) => getVideoLibraryFiles(pageParam, 60, videoSearch),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
 	});
 	const { data: playbackState } = useQuery({
 		queryKey: ['video-playback-state'],
@@ -157,30 +169,39 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		[homeCatalog?.sections],
 	);
 
+	const allVideos = useMemo(
+		() => videoLibraryData?.pages.flatMap((page) => page.items) ?? [],
+		[videoLibraryData],
+	);
+
 	const filteredVideos = useMemo(() => {
-		if (!videoSearch.trim()) return allVideos;
-		const query = videoSearch.toLowerCase();
-		return allVideos.filter(
-			(video) =>
-				video.name.toLowerCase().includes(query) ||
-				video.parent_path.toLowerCase().includes(query) ||
-				video.format.toLowerCase().includes(query),
+		const normalizedSearch = videoSearch.trim().toLowerCase();
+		if (!normalizedSearch) {
+			return allVideos;
+		}
+
+		return allVideos.filter((video) =>
+			[video.name, video.parent_path, video.format].some((value) => value.toLowerCase().includes(normalizedSearch)),
 		);
 	}, [allVideos, videoSearch]);
 
-	const { data: playlistMembershipMap = {} } = useQuery({
+	const { data: playlistMemberships = [] } = useQuery({
 		queryKey: ['video-playlist-membership', playlists.map((playlist) => playlist.id).join(',')],
 		enabled: playlists.length > 0,
-		queryFn: async () => {
-			const entries = await Promise.all(
-				playlists.map(async (playlist) => {
-					const detail = await getVideoPlaylistById(playlist.id);
-					return [playlist.id, new Set(detail.items.map((item) => item.video.id))] as const;
-				}),
-			);
-			return Object.fromEntries(entries) as Record<number, Set<number>>;
-		},
+		queryFn: () => getVideoPlaylistMemberships(false),
 	});
+
+	const playlistMembershipMap = useMemo<Record<number, Set<number>>>(() => {
+		const membershipsByPlaylist: Record<number, Set<number>> = {};
+		for (const membership of playlistMemberships) {
+			if (!membershipsByPlaylist[membership.playlist_id]) {
+				membershipsByPlaylist[membership.playlist_id] = new Set<number>();
+			}
+			membershipsByPlaylist[membership.playlist_id]?.add(membership.video_id);
+		}
+
+		return membershipsByPlaylist;
+	}, [playlistMemberships]);
 
 	const refreshVideoQueries = async () => {
 		await Promise.all([
@@ -267,6 +288,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		isLoadingVideos,
 		isLoadingSelectedPlaylist,
 		isLoadingHomeCatalog,
+		isFetchingMoreVideos,
+		hasMoreVideos,
 		isAddingToPlaylist: addToPlaylistMutation.isPending,
 		isRenamingPlaylist: renameMutation.isPending,
 		isRemovingFromPlaylist: removeFromPlaylistMutation.isPending,
@@ -279,6 +302,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			setSelectedPlaylistPerVideo((prev) => ({ ...prev, [videoId]: playlistId }));
 		},
 		closeFeedback: () => setFeedback((prev) => ({ ...prev, open: false })),
+		loadMoreVideos: () => {
+			if (hasMoreVideos && !isFetchingMoreVideos) {
+				void fetchNextPage();
+			}
+		},
 		selectPlaylist: (playlist) => navigate(getVideoDetailRoute(resolvePlaylistSection(playlist), slugify(playlist.name))),
 		clearSelectedPlaylist: () => {
 			if (currentSection === 'home') {
@@ -327,6 +355,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		}
 		return { ...playlist, cover_video_id: playbackVideoId ?? playlist.cover_video_id };
 	});
+	contextValue.filteredVideos = filteredVideos;
 
 	return <VideoContentContext.Provider value={contextValue}>{children}</VideoContentContext.Provider>;
 }

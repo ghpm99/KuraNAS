@@ -141,21 +141,14 @@ beforeEach(() => {
 				return makeInfiniteResult([track], true);
 			case 'music-folders':
 				return makeInfiniteResult([{ folder: '/root/folder', track_count: 1 }, { folder: '/', track_count: 2 }], true);
+			case 'music-by-folder':
+				return makeInfiniteResult([track], true);
 			default:
 				return makeInfiniteResult([]);
 		}
 	});
 
-	mockUseQuery.mockImplementation((options: any) => {
-		options.queryFn?.();
-		return {
-			data: {
-				items: [track],
-				pagination: { page: 1, has_next: false, has_prev: false, total_pages: 1, total_items: 1 },
-			},
-			isLoading: false,
-		};
-	});
+	mockUseQuery.mockImplementation(() => ({ data: undefined, isLoading: false }));
 });
 
 describe('music views', () => {
@@ -221,7 +214,9 @@ describe('music views', () => {
 		fireEvent.click(detailButtons[2]!);
 
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		await waitFor(() => {
+			expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		});
 
 		clickBackButton(container);
 		await waitFor(() => {
@@ -281,7 +276,11 @@ describe('music views', () => {
 		fireEvent.click(detailButtons[2]!);
 
 		fireEvent.click(screen.getByText('track-1'));
-		expect(mockReplaceQueue).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })], 0, expect.any(Object));
+		expect(mockReplaceQueue).toHaveBeenCalledWith(
+			[expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })],
+			0,
+			expect.any(Object),
+		);
 
 		clickBackButton(container);
 		await waitFor(() => {
@@ -357,11 +356,16 @@ describe('music views', () => {
 			if (key === 'music-folders') {
 				return makeInfiniteResult([{ folder: '/', track_count: 2 }], true, true);
 			}
+			if (key === 'music-by-folder') {
+				return {
+					data: undefined,
+					isLoading: true,
+					fetchNextPage: jest.fn(),
+					hasNextPage: false,
+					isFetchingNextPage: false,
+				};
+			}
 			return makeInfiniteResult([]);
-		});
-		mockUseQuery.mockReturnValue({
-			data: undefined,
-			isLoading: true,
 		});
 
 		renderWithRouter(<FoldersView />);
@@ -480,11 +484,8 @@ describe('music views', () => {
 				};
 			}
 			if (key === 'music-folders') return makeInfiniteResult([{ folder: '/', track_count: 1 }]);
+			if (key === 'music-by-folder') return makeInfiniteResult([track]);
 			return makeInfiniteResult([]);
-		});
-		mockUseQuery.mockReturnValue({
-			data: { items: [track], pagination: { page: 1, has_next: false, has_prev: false, total_pages: 1, total_items: 1 } },
-			isLoading: false,
 		});
 
 		const { container: albumsContainer, unmount } = renderWithRouter(<AlbumsView />);

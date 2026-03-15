@@ -65,6 +65,12 @@
 	color: #c9d8ef;
 }
 
+.libraryFooter {
+	display: flex;
+	justify-content: center;
+	padding-top: 16px;
+}
+
 .groupBlock {
 	display: flex;
 	flex-direction: column;

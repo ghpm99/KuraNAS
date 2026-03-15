@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"nas-go/api/internal/api/v1/video/playlist"
+	"nas-go/api/pkg/utils"
 	"strconv"
 	"strings"
 )
@@ -469,6 +470,23 @@ func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return result, nil
 }
 
+func (s *Service) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
+	models, err := s.Repository.GetVideoPlaylistMemberships(includeHidden)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]VideoPlaylistMembershipDto, 0, len(models))
+	for _, model := range models {
+		result = append(result, VideoPlaylistMembershipDto{
+			PlaylistID: model.PlaylistID,
+			VideoID:    model.VideoID,
+		})
+	}
+
+	return result, nil
+}
+
 func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	pl, err := s.Repository.GetVideoPlaylistByID(id)
 	if err != nil {
@@ -536,6 +554,28 @@ func (s *Service) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
 		result = append(result, model.ToDto())
 	}
 	return result, nil
+}
+
+func (s *Service) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
+	models, err := s.Repository.ListLibraryVideos(page, pageSize, searchQuery)
+	if err != nil {
+		return utils.PaginationResponse[VideoFileDto]{}, err
+	}
+
+	items := make([]VideoFileDto, 0, len(models.Items))
+	for _, model := range models.Items {
+		items = append(items, model.ToDto())
+	}
+
+	return utils.PaginationResponse[VideoFileDto]{
+		Items: items,
+		Pagination: utils.Pagination{
+			Page:     models.Pagination.Page,
+			PageSize: models.Pagination.PageSize,
+			HasNext:  models.Pagination.HasNext,
+			HasPrev:  models.Pagination.HasPrev,
+		},
+	}, nil
 }
 
 func (s *Service) UpdatePlaylistName(playlistID int, name string) error {
