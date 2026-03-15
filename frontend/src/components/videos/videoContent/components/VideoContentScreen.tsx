@@ -2,9 +2,11 @@ import { CircularProgress, Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/components/providers/videoContentProvider';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
+import VideoContextDetailView from './VideoContextDetailView';
 import VideoHomeScreen from './VideoHomeScreen';
 import VideoLibrarySection from './VideoLibrarySection';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
+import VideoSeriesDetailView from './VideoSeriesDetailView';
 import VideoSectionPlaylistGrid from './VideoSectionPlaylistGrid';
 import styles from '../videoContent.module.css';
 
@@ -64,6 +66,26 @@ export default function VideoContentScreen() {
 					<CircularProgress size={40} />
 					<Typography variant='h6'>{t('VIDEO_LOADING_PLAYLIST')}</Typography>
 				</div>
+			);
+		}
+
+		if (selectedPlaylistDetail.classification === 'series' || selectedPlaylistDetail.classification === 'anime') {
+			return (
+				<VideoSeriesDetailView
+					playlist={selectedPlaylistDetail}
+					onBack={clearSelectedPlaylist}
+					onOpenVideo={openPlaylistVideo}
+				/>
+			);
+		}
+
+		if (currentSection !== 'folders') {
+			return (
+				<VideoContextDetailView
+					playlist={selectedPlaylistDetail}
+					onBack={clearSelectedPlaylist}
+					onOpenVideo={openPlaylistVideo}
+				/>
 			);
 		}
 

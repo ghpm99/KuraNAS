@@ -134,7 +134,7 @@ func (h *Handler) GetPlaylistsHandler(c *gin.Context) {
 
 func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
-	playlist, err := h.service.GetPlaylistByID(id)
+	playlist, err := h.service.GetPlaylistByID(c.ClientIP(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 		return

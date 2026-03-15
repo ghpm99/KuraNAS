@@ -91,10 +91,10 @@ type pathContainsSpec struct {
 	confidence float64
 }
 
-func (s *pathContainsSpec) Name() string       { return s.name }
+func (s *pathContainsSpec) Name() string        { return s.name }
 func (s *pathContainsSpec) Confidence() float64 { return s.confidence }
 func (s *pathContainsSpec) IsSatisfiedBy(v VideoEntry) bool {
-	lower := strings.ToLower(v.Path + " " + v.ParentPath)
+	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
 	for _, kw := range s.keywords {
 		if strings.Contains(lower, kw) {
 			return true
@@ -108,7 +108,7 @@ type episodePatternSpec struct {
 	pattern *regexp.Regexp
 }
 
-func (s *episodePatternSpec) Name() string       { return "episode_pattern" }
+func (s *episodePatternSpec) Name() string        { return "episode_pattern" }
 func (s *episodePatternSpec) Confidence() float64 { return 0.9 }
 func (s *episodePatternSpec) IsSatisfiedBy(v VideoEntry) bool {
 	return s.pattern.MatchString(strings.ToLower(v.Name))
@@ -122,7 +122,7 @@ type durationRangeSpec struct {
 	confidence float64
 }
 
-func (s *durationRangeSpec) Name() string       { return s.name }
+func (s *durationRangeSpec) Name() string        { return s.name }
 func (s *durationRangeSpec) Confidence() float64 { return s.confidence }
 func (s *durationRangeSpec) IsSatisfiedBy(v VideoEntry) bool {
 	if v.Meta == nil || v.Meta.Duration <= 0 {
@@ -133,12 +133,12 @@ func (s *durationRangeSpec) IsSatisfiedBy(v VideoEntry) bool {
 
 // resolutionSpec classifica por resolucao (ex: >= 720p para conteudo "profissional").
 type resolutionSpec struct {
-	name      string
-	minHeight int
+	name       string
+	minHeight  int
 	confidence float64
 }
 
-func (s *resolutionSpec) Name() string       { return s.name }
+func (s *resolutionSpec) Name() string        { return s.name }
 func (s *resolutionSpec) Confidence() float64 { return s.confidence }
 func (s *resolutionSpec) IsSatisfiedBy(v VideoEntry) bool {
 	if v.Meta == nil {
@@ -152,7 +152,7 @@ type coursePatternSpec struct {
 	pattern *regexp.Regexp
 }
 
-func (s *coursePatternSpec) Name() string       { return "course_pattern" }
+func (s *coursePatternSpec) Name() string        { return "course_pattern" }
 func (s *coursePatternSpec) Confidence() float64 { return 0.85 }
 func (s *coursePatternSpec) IsSatisfiedBy(v VideoEntry) bool {
 	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
@@ -168,7 +168,7 @@ func (s *coursePatternSpec) IsSatisfiedBy(v VideoEntry) bool {
 // clipSpec detecta clips curtos (< 60s ou keywords como "clip", "meme", "shorts").
 type clipSpec struct{}
 
-func (s *clipSpec) Name() string       { return "clip_short_video" }
+func (s *clipSpec) Name() string        { return "clip_short_video" }
 func (s *clipSpec) Confidence() float64 { return 0.7 }
 func (s *clipSpec) IsSatisfiedBy(v VideoEntry) bool {
 	lower := strings.ToLower(v.Name + " " + v.ParentPath)
@@ -188,7 +188,7 @@ func (s *clipSpec) IsSatisfiedBy(v VideoEntry) bool {
 // musicVideoSpec detecta videos musicais.
 type musicVideoSpec struct{}
 
-func (s *musicVideoSpec) Name() string       { return "music_video" }
+func (s *musicVideoSpec) Name() string        { return "music_video" }
 func (s *musicVideoSpec) Confidence() float64 { return 0.75 }
 func (s *musicVideoSpec) IsSatisfiedBy(v VideoEntry) bool {
 	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
@@ -208,7 +208,7 @@ type compositeSpec struct {
 	confidence float64
 }
 
-func (s *compositeSpec) Name() string       { return s.name }
+func (s *compositeSpec) Name() string        { return s.name }
 func (s *compositeSpec) Confidence() float64 { return s.confidence }
 func (s *compositeSpec) IsSatisfiedBy(v VideoEntry) bool {
 	for _, spec := range s.specs {
@@ -224,7 +224,7 @@ func (s *compositeSpec) IsSatisfiedBy(v VideoEntry) bool {
 // ---------------------------------------------------------------------------
 
 func defaultClassificationRules() []ClassificationRule {
-	episodeRe := regexp.MustCompile(`s\d{1,2}e\d{1,2}|ep\.?\s?\d+|epis[oó]dio\s?\d+`)
+	episodeRe := regexp.MustCompile(`(?i)s\d{1,2}e\d{1,2}|\d{1,2}x\d{1,2}|ep\.?\s?\d+|epis[oó]dio\s?\d+|season\s?\d+\s*episode\s?\d+|cap[ií]tulo\s?\d+`)
 	courseRe := regexp.MustCompile(`(?i)(?:aula|lesson|lecture|module|modulo)\s*\d+`)
 
 	return []ClassificationRule{
@@ -237,6 +237,19 @@ func defaultClassificationRules() []ClassificationRule {
 		{
 			Spec:           &coursePatternSpec{pattern: courseRe},
 			Classification: ClassCourse,
+			Priority:       1,
+		},
+		{
+			Spec: &pathContainsSpec{
+				name: "personal_capture_path",
+				keywords: []string{
+					"/camera", "/dcim", "/captura", "/captures", "/screenrecord",
+					"/screen-record", "/screen recording", "/gravacoes", "/gravacao",
+					"/obs", "/dvr", "/webcam", "/whatsapp video",
+				},
+				confidence: 0.85,
+			},
+			Classification: ClassPersonal,
 			Priority:       1,
 		},
 
@@ -262,7 +275,7 @@ func defaultClassificationRules() []ClassificationRule {
 			Priority:       2,
 		},
 		{
-			Spec:           &pathContainsSpec{name: "program_path", keywords: []string{"steam", "program", "sample"}, confidence: 0.7},
+			Spec:           &pathContainsSpec{name: "program_path", keywords: []string{"steam", "program", "sample", "benchmark"}, confidence: 0.7},
 			Classification: ClassProgram,
 			Priority:       2,
 		},
@@ -301,8 +314,8 @@ func defaultClassificationRules() []ClassificationRule {
 // ---------------------------------------------------------------------------
 
 var (
-	EpisodePattern   = regexp.MustCompile(`(?i)s(\d{1,2})e(\d{1,2})`)
-	EpisodeNumeric   = regexp.MustCompile(`(?i)(?:ep\.?\s?|epis[oó]dio\s?)(\d+)`)
+	EpisodePattern   = regexp.MustCompile(`(?i)s(\d{1,2})e(\d{1,2})|(\d{1,2})x(\d{1,2})`)
+	EpisodeNumeric   = regexp.MustCompile(`(?i)(?:ep\.?\s?|epis[oó]dio\s?|cap[ií]tulo\s?)(\d+)`)
 	SequentialNumber = regexp.MustCompile(`(?:^|\D)(\d{1,3})(?:\D|$)`)
 )
 
@@ -314,8 +327,8 @@ func InferTitlePrefix(name string) string {
 	}
 
 	bracketCleanup := regexp.MustCompile(`\[[^\]]+\]|\([^\)]+\)`)
-	episodeInline := regexp.MustCompile(`(?i)[\s._-]*(s\d{1,2}e\d{1,2})[\s._-]*`)
-	episodeSuffix := regexp.MustCompile(`(?i)[\s._-]*(ep\.?\s?\d+|epis[oó]dio\s?\d+|part\s?\d+|parte\s?\d+|\d{1,3})$`)
+	episodeInline := regexp.MustCompile(`(?i)[\s._-]*(s\d{1,2}e\d{1,2}|\d{1,2}x\d{1,2})[\s._-]*`)
+	episodeSuffix := regexp.MustCompile(`(?i)[\s._-]*(ep\.?\s?\d+|epis[oó]dio\s?\d+|cap[ií]tulo\s?\d+|part\s?\d+|parte\s?\d+|\d{1,3})$`)
 	spaceCollapse := regexp.MustCompile(`[\s._-]+`)
 
 	value := strings.ToLower(noExt)
