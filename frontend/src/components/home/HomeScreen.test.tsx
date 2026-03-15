@@ -110,6 +110,24 @@ describe('components/home/HomeScreen', () => {
 					created_at: '2026-03-14T12:00:00Z',
 				},
 			],
+			favoriteItems: [
+				{
+					id: 31,
+					name: 'favorite.mp4',
+					path: '/favorites/favorite.mp4',
+					parent_path: '/favorites',
+					format: '.mp4',
+				},
+			],
+			recentImages: [
+				{
+					id: 41,
+					name: 'cover.jpg',
+					path: '/images/cover.jpg',
+					parent_path: '/images',
+					format: '.jpg',
+				},
+			],
 			videoContinueItems: [
 				{
 					video: { id: 5, name: 'Episode 5', parent_path: '/shows' },
@@ -143,6 +161,8 @@ describe('components/home/HomeScreen', () => {
 				health: { status: 'ok', indexed_files: 10, errors_last_24h: 0, last_scan_at: '2026-03-14T12:00:00Z' },
 			},
 			isAnalyticsLoading: false,
+			isFavoritesLoading: false,
+			isImagesLoading: false,
 			isVideoLoading: false,
 			isMusicLoading: false,
 		});
@@ -181,14 +201,68 @@ describe('components/home/HomeScreen', () => {
 			});
 		});
 
+	it('opens recent images and favorite files from the dedicated home sections', () => {
+		render(
+			<MemoryRouter>
+				<HomeScreen />
+			</MemoryRouter>,
+		);
+
+		mockOpenMediaItem.mockReturnValueOnce(true);
+		fireEvent.click(screen.getByAltText('cover.jpg').closest('button') as HTMLElement);
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 41, name: 'cover.jpg' }));
+
+		mockOpenMediaItem.mockReturnValueOnce(true);
+		fireEvent.click(screen.getByRole('button', { name: /favorite\.mp4/i }));
+		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 31, name: 'favorite.mp4' }));
+		expect(mockNavigate).not.toHaveBeenCalledWith({
+			pathname: '/files',
+			search: '?path=%2Ffavorites%2Ffavorite.mp4',
+		});
+	});
+
+	it('renders loading placeholders for images and favorites sections', () => {
+		mockUseHomeScreen.mockReturnValue({
+			searchQuery: '',
+			setSearchQuery: jest.fn(),
+			recentFiles: [],
+			favoriteItems: [],
+			recentImages: [],
+			videoContinueItems: [],
+			videoResume: null,
+			musicResume: null,
+			analytics: null,
+			isAnalyticsLoading: false,
+			isFavoritesLoading: true,
+			isImagesLoading: true,
+			isVideoLoading: false,
+			isMusicLoading: false,
+		});
+
+		const { container } = render(
+			<MemoryRouter>
+				<HomeScreen />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByText('No recent files')).toBeInTheDocument();
+		expect(screen.queryByText('HOME_IMAGES_EMPTY')).not.toBeInTheDocument();
+		expect(screen.queryByText('HOME_FAVORITES_EMPTY')).not.toBeInTheDocument();
+		expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);
+	});
+
 		it('opens the global search from the home hero and renders empty states when no content is available', () => {
 			mockUseHomeScreen.mockReturnValue({
 				recentFiles: [],
+				favoriteItems: [],
+				recentImages: [],
 				videoContinueItems: [],
 				videoResume: null,
 			musicResume: null,
 			analytics: null,
 			isAnalyticsLoading: false,
+			isFavoritesLoading: false,
+			isImagesLoading: false,
 			isVideoLoading: false,
 			isMusicLoading: false,
 		});

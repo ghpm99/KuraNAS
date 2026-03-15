@@ -836,3 +836,43 @@ func (s *Service) GetLibraryTracksByGenre(genreKey string, page int, pageSize in
 	sortGenreTracks(filtered)
 	return s.getLibraryTracksByEntries(filtered, page, pageSize)
 }
+
+func (s *Service) GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	indexEntries, err := s.Repository.GetLibraryIndexEntries()
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+
+	normalizedFolder := strings.TrimSpace(folderPath)
+	if normalizedFolder == "" {
+		return utils.PaginationResponse[files.FileDto]{}, nil
+	}
+
+	prefix := normalizedFolder
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
+	filtered := make([]MusicLibraryIndexEntryModel, 0)
+	for _, entry := range indexEntries {
+		if entry.ParentPath == normalizedFolder || strings.HasPrefix(entry.ParentPath, prefix) {
+			filtered = append(filtered, entry)
+		}
+	}
+
+	sort.SliceStable(filtered, func(left int, right int) bool {
+		if filtered[left].ParentPath != filtered[right].ParentPath {
+			return filtered[left].ParentPath < filtered[right].ParentPath
+		}
+		if filtered[left].Album != filtered[right].Album {
+			return filtered[left].Album < filtered[right].Album
+		}
+		if filtered[left].TrackNumber != filtered[right].TrackNumber {
+			return filtered[left].TrackNumber < filtered[right].TrackNumber
+		}
+
+		return filtered[left].FileName < filtered[right].FileName
+	})
+
+	return s.getLibraryTracksByEntries(filtered, page, pageSize)
+}

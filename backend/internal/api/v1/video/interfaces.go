@@ -3,6 +3,7 @@ package video
 import (
 	"database/sql"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
 )
 
 type RepositoryInterface interface {
@@ -25,8 +26,10 @@ type RepositoryInterface interface {
 	InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)
+	GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	GetVideoPlaylistByID(id int) (VideoPlaylistModel, error)
 	GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error)
+	ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error)
 	SetPlaylistHidden(tx *sql.Tx, playlistID int, hidden bool) error
 	AddPlaylistVideoManual(tx *sql.Tx, playlistID int, videoID int) error
 	RemovePlaylistVideo(tx *sql.Tx, playlistID int, videoID int) error
@@ -50,7 +53,9 @@ type ServiceInterface interface {
 	GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error)
 	RebuildSmartPlaylists() error
 	GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error)
+	GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error)
 	GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error)
+	ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error)
 	SetPlaylistHidden(playlistID int, hidden bool) error
 	AddVideoToPlaylist(playlistID int, videoID int) error
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error

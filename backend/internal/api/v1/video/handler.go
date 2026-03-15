@@ -132,6 +132,16 @@ func (h *Handler) GetPlaylistsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, playlists)
 }
 
+func (h *Handler) GetPlaylistMembershipsHandler(c *gin.Context) {
+	includeHidden := c.DefaultQuery("include_hidden", "false") == "true"
+	memberships, err := h.service.GetPlaylistMemberships(includeHidden)
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, memberships)
+}
+
 func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	playlist, err := h.service.GetPlaylistByID(c.ClientIP(), id)
@@ -229,5 +239,19 @@ func (h *Handler) GetUnassignedVideosHandler(c *gin.Context) {
 		respondVideoError(c, err)
 		return
 	}
+	c.JSON(http.StatusOK, videos)
+}
+
+func (h *Handler) ListLibraryVideosHandler(c *gin.Context) {
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	query := c.DefaultQuery("query", "")
+
+	videos, err := h.service.ListLibraryVideos(page, pageSize, query)
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, videos)
 }

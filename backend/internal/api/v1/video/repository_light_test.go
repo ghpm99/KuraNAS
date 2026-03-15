@@ -120,6 +120,14 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistMembershipsQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"playlist_id", "video_id"}).AddRow(1, 2))
+	mock.ExpectRollback()
+	if out, err := repo.GetVideoPlaylistMemberships(true); err != nil || len(out) != 1 {
+		t.Fatalf("GetVideoPlaylistMemberships failed len=%d err=%v", len(out), err)
+	}
+
+	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistByIDQuery)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", false, false, "", "", now, now, nil))
@@ -143,6 +151,16 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	mock.ExpectRollback()
 	if out, err := repo.GetUnassignedVideos(10); err != nil || len(out) != 1 {
 		t.Fatalf("GetUnassignedVideos failed len=%d err=%v", len(out), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetLibraryVideosQuery)).
+		WillReturnRows(sqlmock.NewRows(videoCols).
+			AddRow(4, "clip-1", "/videos/clip-1.mp4", "/videos", ".mp4", 55, now, now).
+			AddRow(5, "clip-2", "/videos/clip-2.mp4", "/videos", ".mp4", 66, now, now))
+	mock.ExpectRollback()
+	if out, err := repo.ListLibraryVideos(1, 1, "clip"); err != nil || len(out.Items) != 1 || !out.Pagination.HasNext {
+		t.Fatalf("ListLibraryVideos failed out=%+v err=%v", out, err)
 	}
 
 	mock.ExpectBegin()

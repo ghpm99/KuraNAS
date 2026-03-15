@@ -1,9 +1,9 @@
 package music
 
 import (
-	"net/http"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -113,6 +113,15 @@ func (handler *Handler) GetLibraryFoldersHandler(c *gin.Context) {
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 	handler.respondLibraryTracks(c, "GetMusicLibraryFolders", "Fetching music folders catalog", func() (any, error) {
 		return handler.service.GetLibraryFolders(page, pageSize)
+	})
+}
+
+func (handler *Handler) GetLibraryTracksByFolderHandler(c *gin.Context) {
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	folderKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicTracksByFolder", "Fetching music tracks by folder", func() (any, error) {
+		return handler.service.GetLibraryTracksByFolder(folderKey, page, pageSize)
 	})
 }
 

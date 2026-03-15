@@ -9,6 +9,7 @@ import {
 	Select,
 	Switch,
 	FormControlLabel,
+	TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import useSettingsScreen from './useSettingsScreen';
@@ -23,12 +24,16 @@ const SettingsScreen = () => {
 		isSaving,
 		hasError,
 		hasUnsavedChanges,
-		languageOptions,
+			languageOptions,
 			accentOptions,
 			slideshowOptions,
+			watchedPathsText,
+			setLibraryField,
+			setIndexingField,
 			setPlayersField,
 			setAppearanceField,
 			setLanguageField,
+			handleWatchedPathsChange,
 			handleReset,
 			handleSave,
 		} = useSettingsScreen();
@@ -61,10 +66,39 @@ const SettingsScreen = () => {
 							<p className={styles.panelDescription}>{t('SETTINGS_SECTION_LIBRARY_DESCRIPTION')}</p>
 						</div>
 						<div className={styles.summary}>
-							{settings.library.watched_paths.map((path) => (
+							{draft.library.watched_paths.map((path) => (
 								<Chip key={path} label={path} variant='outlined' />
 							))}
 						</div>
+						<TextField
+							fullWidth
+							multiline
+							minRows={4}
+							label={t('SETTINGS_LIBRARY_WATCHED_PATHS')}
+							value={watchedPathsText}
+							onChange={(event) => handleWatchedPathsChange(event.target.value)}
+							disabled={disableActions}
+						/>
+						<FormControlLabel
+							control={
+								<Switch
+									checked={draft.library.remember_last_location}
+									onChange={(_, checked) => setLibraryField('remember_last_location', checked)}
+									disabled={disableActions}
+								/>
+							}
+							label={t('SETTINGS_LIBRARY_REMEMBER_LAST_LOCATION')}
+						/>
+						<FormControlLabel
+							control={
+								<Switch
+									checked={draft.library.prioritize_favorites}
+									onChange={(_, checked) => setLibraryField('prioritize_favorites', checked)}
+									disabled={disableActions}
+								/>
+							}
+							label={t('SETTINGS_LIBRARY_PRIORITIZE_FAVORITES')}
+						/>
 						<Alert severity='info'>{t('SETTINGS_LIBRARY_WATCHED_PATHS_HELP')}</Alert>
 						<p className={styles.hint}>{t('SETTINGS_LIBRARY_RUNTIME_ROOT', { path: settings.library.runtime_root_path || '-' })}</p>
 					</section>
@@ -79,6 +113,36 @@ const SettingsScreen = () => {
 							<Chip label={t('SETTINGS_INDEXING_EXTRACT_METADATA')} variant={draft.indexing.extract_metadata ? 'filled' : 'outlined'} />
 							<Chip label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')} variant={draft.indexing.generate_previews ? 'filled' : 'outlined'} />
 						</div>
+						<FormControlLabel
+							control={
+								<Switch
+									checked={draft.indexing.scan_on_startup}
+									onChange={(_, checked) => setIndexingField('scan_on_startup', checked)}
+									disabled={disableActions}
+								/>
+							}
+							label={t('SETTINGS_INDEXING_SCAN_ON_STARTUP')}
+						/>
+						<FormControlLabel
+							control={
+								<Switch
+									checked={draft.indexing.extract_metadata}
+									onChange={(_, checked) => setIndexingField('extract_metadata', checked)}
+									disabled={disableActions}
+								/>
+							}
+							label={t('SETTINGS_INDEXING_EXTRACT_METADATA')}
+						/>
+						<FormControlLabel
+							control={
+								<Switch
+									checked={draft.indexing.generate_previews}
+									onChange={(_, checked) => setIndexingField('generate_previews', checked)}
+									disabled={disableActions}
+								/>
+							}
+							label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')}
+						/>
 						<Alert severity={settings.indexing.workers_enabled ? 'success' : 'warning'}>
 							{settings.indexing.workers_enabled ? t('SETTINGS_INDEXING_WORKERS_ON') : t('SETTINGS_INDEXING_WORKERS_OFF')}
 						</Alert>

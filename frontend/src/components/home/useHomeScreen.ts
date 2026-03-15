@@ -1,6 +1,9 @@
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import type { FileData } from '@/components/providers/fileProvider/fileContext';
+import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { fetchAnalyticsOverview } from '@/service/analytics';
+import { getFilesTree, getImageFiles } from '@/service/files';
 import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 import { getVideoHomeCatalog, getVideoPlaybackState, type VideoCatalogItemDto, type VideoFileDto } from '@/service/videoPlayback';
@@ -10,6 +13,8 @@ import { useMemo, useState } from 'react';
 const homeAnalyticsPeriod = '30d' as const;
 const nowPlayingPageSize = 200;
 const videoHomeLimit = 12;
+const homeFavoritesLimit = 6;
+const homeImagesLimit = 6;
 
 const clampProgress = (value: number) => {
 	if (!Number.isFinite(value)) {
@@ -58,6 +63,19 @@ const useHomeScreen = () => {
 		queryKey: ['home', 'analytics-overview', homeAnalyticsPeriod],
 		queryFn: () => fetchAnalyticsOverview(homeAnalyticsPeriod),
 	});
+	const favoritesQuery = useQuery({
+		queryKey: ['home', 'favorites'],
+		queryFn: () =>
+			getFilesTree({
+				page: 1,
+				pageSize: homeFavoritesLimit,
+				category: 'starred',
+			}),
+	});
+	const imagesQuery = useQuery({
+		queryKey: ['home', 'images'],
+		queryFn: () => getImageFiles(1, homeImagesLimit, 'date'),
+	});
 
 	const videoCatalogQuery = useQuery({
 		queryKey: ['home', 'video-home-catalog'],
@@ -90,6 +108,8 @@ const useHomeScreen = () => {
 	});
 
 	const recentFiles = analyticsQuery.data?.recent_files?.slice(0, 6) ?? [];
+	const favoriteItems = favoritesQuery.data?.items?.slice(0, homeFavoritesLimit) ?? [];
+	const recentImages = imagesQuery.data?.items?.slice(0, homeImagesLimit) ?? [];
 
 	const videoContinueItems = useMemo(() => {
 		const continueSection = videoCatalogQuery.data?.sections.find((section) => section.key === 'continue');
@@ -165,11 +185,15 @@ const useHomeScreen = () => {
 		searchQuery,
 		setSearchQuery,
 		recentFiles,
+		favoriteItems,
+		recentImages,
 		videoContinueItems,
 		videoResume,
 		musicResume,
 		analytics: analyticsQuery.data,
 		isAnalyticsLoading: analyticsQuery.isLoading,
+		isFavoritesLoading: favoritesQuery.isLoading,
+		isImagesLoading: imagesQuery.isLoading,
 		isVideoLoading: videoCatalogQuery.isLoading || videoPlaybackQuery.isLoading,
 		isMusicLoading: playerStateQuery.isLoading || nowPlayingQuery.isLoading || nowPlayingTracksQuery.isLoading,
 	};
@@ -180,6 +204,8 @@ export const homeScreenUtils = {
 };
 
 export type HomeRecentFile = ReturnType<typeof useHomeScreen>['recentFiles'][number];
+export type HomeFavoriteFile = FileData;
+export type HomeRecentImage = IImageData;
 export type HomeVideoItem = VideoCatalogItemDto;
 
 export default useHomeScreen;

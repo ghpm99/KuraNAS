@@ -1,4 +1,5 @@
 import { apiBase } from '.';
+import type { Pagination } from '@/types/pagination';
 
 export interface VideoFileDto {
 	id: number;
@@ -74,6 +75,11 @@ interface PaginationResponse<T> {
 	items: T[];
 }
 
+export interface VideoPlaylistMembershipDto {
+	playlist_id: number;
+	video_id: number;
+}
+
 export interface UpdateVideoPlaybackStateRequest {
 	playlist_id?: number | null;
 	video_id?: number | null;
@@ -133,6 +139,13 @@ export const getVideoPlaylists = async (includeHidden = false): Promise<VideoPla
 	return response.data;
 };
 
+export const getVideoPlaylistMemberships = async (includeHidden = false): Promise<VideoPlaylistMembershipDto[]> => {
+	const response = await apiBase.get<VideoPlaylistMembershipDto[]>('/video/playlists/memberships', {
+		params: { include_hidden: includeHidden },
+	});
+	return response.data;
+};
+
 export const getVideoPlaylistById = async (playlistId: number): Promise<VideoPlaylistDto> => {
 	const response = await apiBase.get<VideoPlaylistDto>(`/video/playlists/${playlistId}`);
 	return response.data;
@@ -171,4 +184,19 @@ export const getAllVideoFiles = async (limit = 2000): Promise<VideoFileDto[]> =>
 		params: { page: 1, page_size: limit },
 	});
 	return response.data.items ?? [];
+};
+
+export const getVideoLibraryFiles = async (
+	page: number,
+	pageSize: number,
+	searchQuery = '',
+): Promise<Pagination<VideoFileDto>> => {
+	const response = await apiBase.get<Pagination<VideoFileDto>>('/video/library/files', {
+		params: {
+			page,
+			page_size: pageSize,
+			query: searchQuery,
+		},
+	});
+	return response.data;
 };

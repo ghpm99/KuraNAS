@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { useQuery } from '@tanstack/react-query';
-import useHomeScreen from './useHomeScreen';
+import useHomeScreen, { homeScreenUtils } from './useHomeScreen';
 
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: jest.fn(),
@@ -52,6 +52,8 @@ describe('components/home/useHomeScreen', () => {
 	it('builds the expected home queries', async () => {
 		mockedUseQuery
 			.mockReturnValueOnce(buildQueryState({ recent_files: [], health: {}, storage: {}, counts: {} }))
+			.mockReturnValueOnce(buildQueryState({ items: [] }))
+			.mockReturnValueOnce(buildQueryState({ items: [] }))
 			.mockReturnValueOnce(buildQueryState({ sections: [] }))
 			.mockReturnValueOnce(buildQueryState(null))
 			.mockReturnValueOnce(buildQueryState({ current_file_id: null }))
@@ -61,14 +63,19 @@ describe('components/home/useHomeScreen', () => {
 		renderHook(() => useHomeScreen());
 
 		const analyticsOptions = mockedUseQuery.mock.calls[0][0];
-		const videoCatalogOptions = mockedUseQuery.mock.calls[1][0];
-		const videoPlaybackOptions = mockedUseQuery.mock.calls[2][0];
-		const playerStateOptions = mockedUseQuery.mock.calls[3][0];
-		const nowPlayingOptions = mockedUseQuery.mock.calls[4][0];
-		const nowPlayingTracksOptions = mockedUseQuery.mock.calls[5][0];
+		const favoritesOptions = mockedUseQuery.mock.calls[1][0];
+		const imagesOptions = mockedUseQuery.mock.calls[2][0];
+		const videoCatalogOptions = mockedUseQuery.mock.calls[3][0];
+		const videoPlaybackOptions = mockedUseQuery.mock.calls[4][0];
+		const playerStateOptions = mockedUseQuery.mock.calls[5][0];
+		const nowPlayingOptions = mockedUseQuery.mock.calls[6][0];
+		const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
 
 		expect(analyticsOptions.queryKey).toEqual(['home', 'analytics-overview', '30d']);
 		await expect(analyticsOptions.queryFn()).resolves.toEqual({});
+
+		expect(favoritesOptions.queryKey).toEqual(['home', 'favorites']);
+		expect(imagesOptions.queryKey).toEqual(['home', 'images']);
 
 		expect(videoCatalogOptions.queryKey).toEqual(['home', 'video-home-catalog']);
 		await expect(videoCatalogOptions.queryFn()).resolves.toEqual({ sections: [] });
@@ -95,6 +102,8 @@ describe('components/home/useHomeScreen', () => {
 				storage: { used_bytes: 1024, total_bytes: 2048, free_bytes: 1024 },
 				counts: {},
 			}))
+			.mockReturnValueOnce(buildQueryState({ items: [{ id: 55, name: 'favorite.mp4' }] }))
+			.mockReturnValueOnce(buildQueryState({ items: [{ id: 77, name: 'cover.jpg' }] }))
 			.mockReturnValueOnce(buildQueryState({
 				sections: [
 					{
@@ -137,6 +146,8 @@ describe('components/home/useHomeScreen', () => {
 		const { result } = renderHook(() => useHomeScreen());
 
 		expect(result.current.recentFiles).toHaveLength(1);
+		expect(result.current.favoriteItems).toHaveLength(1);
+		expect(result.current.recentImages).toHaveLength(1);
 		expect(result.current.videoContinueItems).toHaveLength(1);
 		expect(result.current.videoResume).toEqual({
 			video: { id: 3, name: 'Episode 3', parent_path: '/shows' },
@@ -159,5 +170,12 @@ describe('components/home/useHomeScreen', () => {
 			queueCount: 4,
 			isPlaying: false,
 		});
+	});
+
+	it('clamps invalid and overflow progress values', () => {
+		expect(homeScreenUtils.getProgressPercent(Number.NaN, 120)).toBe(0);
+		expect(homeScreenUtils.getProgressPercent(300, 100)).toBe(100);
+		expect(homeScreenUtils.getProgressPercent(0, 0, 135)).toBe(100);
+		expect(homeScreenUtils.getProgressPercent(0, 0, -20)).toBe(0);
 	});
 });

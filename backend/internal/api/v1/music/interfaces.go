@@ -47,6 +47,7 @@ type ServiceInterface interface {
 	GetLibraryGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
 	GetLibraryTracksByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetPlayerState(clientID string) (PlayerStateDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 }
