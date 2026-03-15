@@ -15,7 +15,7 @@
 - Dependencias: `TASK-002`.
 
 ## TASK-011 - Refinar classificacao e paginas de detalhe de videos
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: aprofundar series, filmes, pessoais e clipes em paginas de detalhe coerentes.
 - Estado atual: backend ja possui classificacao e playlists inteligentes; frontend ainda opera mais por playlist do que por experiencia de biblioteca.

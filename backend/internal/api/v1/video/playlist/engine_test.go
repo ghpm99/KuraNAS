@@ -9,8 +9,8 @@ func TestClassifier_SeriesDetection(t *testing.T) {
 	c := NewVideoClassifier()
 
 	tests := []struct {
-		name     string
-		video    VideoEntry
+		name      string
+		video     VideoEntry
 		wantClass VideoClassification
 	}{
 		{
@@ -24,6 +24,11 @@ func TestClassifier_SeriesDetection(t *testing.T) {
 			wantClass: ClassSeries, // episode_pattern (priority 1) beats anime_path (priority 2)
 		},
 		{
+			name:      "episode pattern 1x02",
+			video:     VideoEntry{Name: "Dark 1x02.mkv", Path: "/tv/Dark 1x02.mkv", ParentPath: "/tv"},
+			wantClass: ClassSeries,
+		},
+		{
 			name:      "movie by path",
 			video:     VideoEntry{Name: "Inception.mkv", Path: "/movies/Inception.mkv", ParentPath: "/movies"},
 			wantClass: ClassMovie,
@@ -34,18 +39,23 @@ func TestClassifier_SeriesDetection(t *testing.T) {
 			wantClass: ClassCourse,
 		},
 		{
-			name:  "clip by short duration",
-			video: VideoEntry{Name: "random.mp4", Path: "/personal/random.mp4", ParentPath: "/personal", Meta: &VideoMeta{Duration: 30}},
+			name:      "clip by short duration",
+			video:     VideoEntry{Name: "random.mp4", Path: "/personal/random.mp4", ParentPath: "/personal", Meta: &VideoMeta{Duration: 30}},
 			wantClass: ClassClip,
 		},
 		{
-			name:  "movie by long duration and HD",
-			video: VideoEntry{Name: "something.mkv", Path: "/stuff/something.mkv", ParentPath: "/stuff", Meta: &VideoMeta{Duration: 7200, Height: 1080}},
+			name:      "movie by long duration and HD",
+			video:     VideoEntry{Name: "something.mkv", Path: "/stuff/something.mkv", ParentPath: "/stuff", Meta: &VideoMeta{Duration: 7200, Height: 1080}},
 			wantClass: ClassMovie,
 		},
 		{
 			name:      "personal fallback",
 			video:     VideoEntry{Name: "family.mp4", Path: "/personal/family.mp4", ParentPath: "/personal"},
+			wantClass: ClassPersonal,
+		},
+		{
+			name:      "personal capture path beats clip",
+			video:     VideoEntry{Name: "VID_0001.mp4", Path: "/DCIM/Camera/VID_0001.mp4", ParentPath: "/DCIM/Camera", Meta: &VideoMeta{Duration: 20}},
 			wantClass: ClassPersonal,
 		},
 		{
@@ -72,6 +82,7 @@ func TestInferTitlePrefix(t *testing.T) {
 		want string
 	}{
 		{"Breaking Bad S01E02.mkv", "breaking bad"},
+		{"Dark 1x02.mkv", "dark"},
 		{"Naruto EP05.mp4", "naruto"},
 		{"My.Show.S02E10.720p.mkv", "my show 720p"},
 		{"[SubGroup] Anime - 03.mkv", "anime"},
