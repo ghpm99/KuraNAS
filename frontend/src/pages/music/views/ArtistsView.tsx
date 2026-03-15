@@ -1,6 +1,6 @@
 import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
 import { Play, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import { createArtistPlaybackContext } from '@/components/music/playbackContext';
 import TrackListItem from '@/components/music/TrackListItem';
@@ -12,15 +12,36 @@ import { Pagination } from '@/types/pagination';
 import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSearchParams } from 'react-router-dom';
 
 const ArtistsView = () => {
 	const [selectedArtist, setSelectedArtist] = useState<MusicArtist | null>(null);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const selectedArtistKey = searchParams.get('artist') ?? '';
+
+	const handleSelectArtist = (artist: MusicArtist) => {
+		setSelectedArtist(artist);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.set('artist', artist.key);
+			return next;
+		}, { replace: true });
+	};
+
+	const handleBack = () => {
+		setSelectedArtist(null);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.delete('artist');
+			return next;
+		}, { replace: true });
+	};
 
 	if (selectedArtist) {
-		return <ArtistTracksView artist={selectedArtist} onBack={() => setSelectedArtist(null)} />;
+		return <ArtistTracksView artist={selectedArtist} onBack={handleBack} />;
 	}
 
-	return <ArtistListView onSelect={setSelectedArtist} />;
+	return <ArtistListView onSelect={handleSelectArtist} selectedArtistKey={selectedArtistKey} />;
 };
 
 const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -30,7 +51,7 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const ArtistListView = ({ onSelect }: { onSelect: (artist: MusicArtist) => void }) => {
+const ArtistListView = ({ onSelect, selectedArtistKey }: { onSelect: (artist: MusicArtist) => void; selectedArtistKey: string }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -44,6 +65,17 @@ const ArtistListView = ({ onSelect }: { onSelect: (artist: MusicArtist) => void 
 	});
 
 	const artists = data?.pages.flatMap((page) => page.items) ?? [];
+
+	useEffect(() => {
+		if (!selectedArtistKey) {
+			return;
+		}
+
+		const requestedArtist = artists.find((artist) => artist.key === selectedArtistKey);
+		if (requestedArtist) {
+			onSelect(requestedArtist);
+		}
+	}, [artists, onSelect, selectedArtistKey]);
 
 	const handlePlayArtist = async (e: React.MouseEvent, artist: MusicArtist) => {
 		e.stopPropagation();

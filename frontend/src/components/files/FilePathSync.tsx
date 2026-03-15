@@ -5,7 +5,7 @@ import useFile from '@/components/providers/fileProvider/fileContext';
 import { getFileByPath } from '@/service/files';
 
 export default function FilePathSync() {
-	const { handleSelectItem, selectedItem } = useFile();
+	const { selectResolvedItem, selectedItem } = useFile();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const requestedPath = searchParams.get('path')?.trim() ?? '';
 
@@ -22,13 +22,13 @@ export default function FilePathSync() {
 		}
 
 		if (requestedItem?.id && requestedItem.id !== selectedItem?.id) {
-			handleSelectItem(requestedItem.id);
+			selectResolvedItem(requestedItem);
 		}
 
 		const nextSearchParams = new URLSearchParams(searchParams);
 		nextSearchParams.delete('path');
 		setSearchParams(nextSearchParams, { replace: true });
-	}, [handleSelectItem, isFetched, requestedItem, requestedPath, searchParams, selectedItem?.id, setSearchParams]);
+	}, [isFetched, requestedItem, requestedPath, searchParams, selectResolvedItem, selectedItem?.id, setSearchParams]);
 
 	return null;
 }

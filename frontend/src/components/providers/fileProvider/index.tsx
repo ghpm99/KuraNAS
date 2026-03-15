@@ -57,6 +57,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
 	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 	const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
+	const [selectedItemSnapshot, setSelectedItemSnapshot] = useState<FileData | null>(null);
 
 	const queryParams = useMemo(
 		() => ({
@@ -166,11 +167,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		setFileTree(nextItems);
 	}, [data, selectedItemId]);
 
-	const selectedItem = findItemInTree(fileTree, selectedItemId);
+		const selectedItem = findItemInTree(fileTree, selectedItemId) ?? selectedItemSnapshot;
 
 	const handleSelectItem = useCallback(
 		(itemId: number | null) => {
 			setSelectedItemId(itemId);
+			setSelectedItemSnapshot(null);
 			if (!itemId) return;
 			if (expandedItems.includes(itemId)) {
 				setExpandedItems((prev) => prev.filter((id) => id !== itemId));
@@ -180,6 +182,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 		[expandedItems],
 	);
+
+	const selectResolvedItem = useCallback((item: FileData | null) => {
+		setSelectedItemSnapshot(item);
+		setSelectedItemId(item?.id ?? null);
+	}, []);
 
 	const handleStarredItem = useCallback(
 		(itemId: number) => {
@@ -191,10 +198,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const contextValue: FileContextType = useMemo(
 		() => ({
 			files: fileTree || [],
-			status: status,
-			selectedItem,
-			handleSelectItem,
-			expandedItems,
+				status: status,
+				selectedItem,
+				handleSelectItem,
+				selectResolvedItem,
+				expandedItems,
 			recentAccessFiles: fileAccessData || [],
 			isLoadingAccessData: isLoadingAccessData,
 			fileListFilter,
@@ -210,10 +218,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		}),
 		[
 			fileTree,
-			status,
-			selectedItem,
-			handleSelectItem,
-			expandedItems,
+				status,
+				selectedItem,
+				handleSelectItem,
+				selectResolvedItem,
+				expandedItems,
 			fileAccessData,
 			isLoadingAccessData,
 			fileListFilter,
