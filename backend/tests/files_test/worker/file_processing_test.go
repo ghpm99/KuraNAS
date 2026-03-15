@@ -151,6 +151,10 @@ var expectedUpdateFiles = []files.FileDto{
 			UserComment:       "",
 			Copyright:         "",
 			Artist:            "",
+			Classification: files.ImageClassificationModel{
+				Category:   files.ImageClassificationCategoryOther,
+				Confidence: 0.35,
+			},
 		},
 	},
 	{
@@ -210,6 +214,10 @@ var expectedUpdateFiles = []files.FileDto{
 			UserComment:       "",
 			Copyright:         "",
 			Artist:            "",
+			Classification: files.ImageClassificationModel{
+				Category:   files.ImageClassificationCategoryOther,
+				Confidence: 0.35,
+			},
 		},
 	},
 	{

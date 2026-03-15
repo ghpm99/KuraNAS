@@ -13,7 +13,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 
 - Status geral: `IN_PROGRESS`
 - Fase atual recomendada: `Imagens`
-- Proxima task recomendada: `TASK-013`
+- Proxima task recomendada: `TASK-015`
 
 ## Quadro de tasks
 
@@ -31,8 +31,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-010 | Reorganizar IA e rotas do dominio Videos | DONE | Videos |
 | TASK-011 | Refinar classificacao e paginas de detalhe de videos | DONE | Videos |
 | TASK-012 | Evoluir o player de video para contexto completo | DONE | Videos |
-| TASK-013 | Criar pipeline de classificacao persistida para imagens | TODO | Imagens |
-| TASK-014 | Reorganizar IA da biblioteca de imagens | TODO | Imagens |
+| TASK-013 | Criar pipeline de classificacao persistida para imagens | DONE | Imagens |
+| TASK-014 | Reorganizar IA da biblioteca de imagens | DONE | Imagens |
 | TASK-015 | Evoluir viewer e acoes de imagem | TODO | Imagens |
 | TASK-016 | Separar Analytics em visao geral e biblioteca/indexacao | TODO | Sistema |
 | TASK-017 | Criar Settings e consolidar configuracoes | TODO | Sistema |
@@ -56,6 +56,8 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-14 | TASK-010 | Videos passou a navegar por Home, Continuar, Series, Filmes, Pessoais, Clipes e Pastas com shell contextual. | Frontend ganhou subrotas/restauracao por URL em `/videos/*`, header/sidebar dedicados, home por categorias reaproveitando playlists e catalogo, ajustes de i18n compartilhado e cobertura de testes para o novo fluxo. |
 | 2026-03-14 | TASK-011 | Videos ganhou detalhe contextual por URL com foco em series, filmes, pessoais e clipes, mais progresso por item. | Backend passou a devolver progresso por item e heuristicas mais robustas para serie/pessoal/clipe; frontend migrou o detalhe para rotas dedicadas, agrupou episodios por temporada e manteve a gestao de pastas sem quebrar o fluxo existente. |
 | 2026-03-14 | TASK-012 | O player de video passou a manter contexto visivel, fila contextual e retorno consistente para a biblioteca. | Frontend ganhou tela contextual com origem, proximos itens/relacionados, sincronizacao da URL com a sessao de playback, conclusao correta do ultimo item, i18n compartilhado e cobertura de testes do fluxo. |
+| 2026-03-14 | TASK-013 | Imagens passou a receber classificacao persistida no pipeline, com categoria semantica e score de confianca. | Backend passou a classificar `capture/photo/other` no fluxo de metadados e expor isso no contrato de imagens; frontend removeu heuristica local para `Capturas` e `Câmera/Fotos`, mantendo o filtro consumindo a classificacao persistida. |
+| 2026-03-14 | TASK-014 | Imagens passou a navegar por Biblioteca, Recentes, Capturas, Fotos, Pastas e Albuns automáticos com shell contextual. | Frontend ganhou subrotas restauraveis em `/images/*`, header/sidebar do dominio, visoes de pastas e albuns automaticos com i18n compartilhado e cobertura para a nova IA da biblioteca. |
 
 ## Como atualizar ao concluir uma task
 

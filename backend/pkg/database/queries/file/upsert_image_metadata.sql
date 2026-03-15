@@ -48,6 +48,8 @@ INSERT INTO
         user_comment,
         copyright,
         artist,
+        classification_category,
+        classification_confidence,
         created_at
     )
 VALUES
@@ -100,7 +102,10 @@ VALUES
         $46,
         $47,
         $48,
-        $49
+        $49,
+        $50,
+        $51,
+        $52
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
@@ -150,7 +155,9 @@ SET
     image_description = EXCLUDED.image_description,
     user_comment = EXCLUDED.user_comment,
     copyright = EXCLUDED.copyright,
-    artist = EXCLUDED.artist
+    artist = EXCLUDED.artist,
+    classification_category = EXCLUDED.classification_category,
+    classification_confidence = EXCLUDED.classification_confidence
 RETURNING
     id,
     created_at;

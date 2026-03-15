@@ -10,6 +10,13 @@ import { createContext, useContext } from 'react';
 import { useState } from 'react';
 import { getImageFiles } from '@/service/files';
 
+export type PersistedImageCategory = 'capture' | 'photo' | 'other';
+
+export interface IImageClassification {
+	category: PersistedImageCategory;
+	confidence: number;
+}
+
 export interface IImageMetadata {
 	id: number;
 	fileId: number;
@@ -60,6 +67,7 @@ export interface IImageMetadata {
 	user_comment: string;
 	copyright: string;
 	artist: string;
+	classification: IImageClassification;
 	createdAt: string;
 }
 export interface IImageData {

@@ -1,0 +1,75 @@
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	min-width: 0;
+}
+
+.selectionSummary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 20px;
+	border-radius: 20px;
+	background: rgba(18, 20, 32, 0.92);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.selectionMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.selectionMeta h3,
+.selectionMeta p {
+	margin: 0;
+}
+
+.selectionMeta h3 {
+	font-size: 1rem;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.94);
+}
+
+.selectionMeta p {
+	font-size: 0.9rem;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.62);
+}
+
+.backButton {
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 999px;
+	padding: 10px 14px;
+	background: rgba(255, 255, 255, 0.03);
+	color: rgba(255, 255, 255, 0.88);
+	cursor: pointer;
+	font: inherit;
+	transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.backButton:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+.loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 240px;
+	padding: 24px;
+	border-radius: 24px;
+	background: rgba(14, 16, 28, 0.86);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 900px) {
+	.selectionSummary {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}
