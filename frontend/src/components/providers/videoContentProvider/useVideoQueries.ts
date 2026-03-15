@@ -9,14 +9,14 @@ import { useQuery } from '@tanstack/react-query';
 
 export const useVideoPlaylists = () => {
 	return useQuery({
-		queryKey: ['video-playlists'],
+		queryKey: ['video', 'playlists'],
 		queryFn: () => getVideoPlaylists(false),
 	});
 };
 
 export const useVideoPlaylistDetail = (playlistId?: number) => {
 	return useQuery({
-		queryKey: ['video-playlist', playlistId],
+		queryKey: ['video', 'playlist-detail', playlistId],
 		queryFn: () => getVideoPlaylistById(playlistId as number),
 		enabled: Boolean(playlistId),
 	});
@@ -24,21 +24,21 @@ export const useVideoPlaylistDetail = (playlistId?: number) => {
 
 export const useVideosWithoutPlaylist = () => {
 	return useQuery({
-		queryKey: ['video-unassigned'],
+		queryKey: ['video', 'unassigned'],
 		queryFn: () => getVideosWithoutPlaylist(2000),
 	});
 };
 
 export const useAllVideoFiles = () => {
 	return useQuery({
-		queryKey: ['all-video-files'],
+		queryKey: ['video', 'all-files'],
 		queryFn: () => getAllVideoFiles(3000),
 	});
 };
 
 export const useVideoHomeCatalog = () => {
 	return useQuery({
-		queryKey: ['video-home-catalog'],
+		queryKey: ['video', 'home-catalog'],
 		queryFn: () => getVideoHomeCatalog(24),
 	});
 };

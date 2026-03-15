@@ -276,15 +276,15 @@ beforeEach(() => {
 	mockUpdateVideoPlaylistName.mockResolvedValue({});
 
 	mockUseQuery.mockImplementation((options: any) => {
-		const [key] = options.queryKey;
+		const [, subKey] = options.queryKey;
 		if (options.enabled !== false) {
 			options.queryFn?.();
 		}
-		if (key === 'video-playlists') return { data: playlistsData, isLoading: false };
-		if (key === 'video-home-catalog') return { data: homeCatalogData, isLoading: false };
-		if (key === 'video-playback-state') return { data: playbackData };
-		if (key === 'video-playlist-membership') return { data: membershipData };
-		if (key === 'video-playlist') return { data: selectedPlaylistData, isLoading: selectedPlaylistLoading };
+		if (subKey === 'playlists') return { data: playlistsData, isLoading: false };
+		if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
+		if (subKey === 'playback-state') return { data: playbackData };
+		if (subKey === 'playlist-membership') return { data: membershipData };
+		if (subKey === 'playlist-detail') return { data: selectedPlaylistData, isLoading: selectedPlaylistLoading };
 		return { data: undefined, isLoading: false };
 	});
 	mockUseInfiniteQuery.mockImplementation((options: any) => {
@@ -321,11 +321,11 @@ beforeEach(() => {
 describe('components/videos/videoContent', () => {
 	it('renders loading state', () => {
 		mockUseQuery.mockImplementation((options: any) => {
-			const [key] = options.queryKey;
-			if (key === 'video-playlists') return { data: [], isLoading: true };
-			if (key === 'video-home-catalog') return { data: homeCatalogData, isLoading: false };
-			if (key === 'video-playback-state') return { data: playbackData };
-			if (key === 'video-playlist-membership') return { data: [] };
+			const [, subKey] = options.queryKey;
+			if (subKey === 'playlists') return { data: [], isLoading: true };
+			if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
+			if (subKey === 'playback-state') return { data: playbackData };
+			if (subKey === 'playlist-membership') return { data: [] };
 			return { data: undefined, isLoading: false };
 		});
 		mockUseInfiniteQuery.mockReturnValue({

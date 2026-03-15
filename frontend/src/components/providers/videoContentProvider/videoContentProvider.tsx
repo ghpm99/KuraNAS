@@ -26,6 +26,9 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
+const VIDEO_LIBRARY_PAGE_SIZE = 60;
+const VIDEO_HOME_CATALOG_LIMIT = 12;
+
 type FeedbackState = { open: boolean; message: string; severity: 'success' | 'error' };
 
 export interface VideoContentContextData {
@@ -91,12 +94,12 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const currentSection = getVideoSectionFromPath(location.pathname);
 
 	const { data: playlists = [], isLoading: isLoadingPlaylists } = useQuery({
-		queryKey: ['video-playlists'],
+		queryKey: ['video', 'playlists'],
 		queryFn: () => getVideoPlaylists(false),
 	});
 	const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = useQuery({
-		queryKey: ['video-home-catalog'],
-		queryFn: () => getVideoHomeCatalog(12),
+		queryKey: ['video', 'home-catalog'],
+		queryFn: () => getVideoHomeCatalog(VIDEO_HOME_CATALOG_LIMIT),
 	});
 	const {
 		data: videoLibraryData,
@@ -105,15 +108,22 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		hasNextPage: hasMoreVideos = false,
 		fetchNextPage,
 	} = useInfiniteQuery({
-		queryKey: ['video-library-files', videoSearch],
-		queryFn: ({ pageParam = 1 }) => getVideoLibraryFiles(pageParam, 60, videoSearch),
+		queryKey: ['video', 'library-files', videoSearch],
+		queryFn: ({ pageParam = 1 }) => getVideoLibraryFiles(pageParam, VIDEO_LIBRARY_PAGE_SIZE, videoSearch),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
 	});
+
+	const hasContinuePlaylists = useMemo(
+		() => playlists.some((playlist) => Boolean(playlist.last_played_at)),
+		[playlists],
+	);
+
 	const { data: playbackState } = useQuery({
-		queryKey: ['video-playback-state'],
+		queryKey: ['video', 'playback-state'],
 		queryFn: getVideoPlaybackState,
 		retry: false,
+		enabled: hasContinuePlaylists,
 	});
 
 	const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
@@ -123,24 +133,31 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	}, [playlistSlug, playlists]);
 
 	const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } = useQuery({
-		queryKey: ['video-playlist', selectedPlaylistSummary?.id],
+		queryKey: ['video', 'playlist-detail', selectedPlaylistSummary?.id],
 		enabled: Boolean(selectedPlaylistSummary?.id),
 		queryFn: () => getVideoPlaylistById(selectedPlaylistSummary?.id ?? 0),
 	});
 
 	const selectedPlaylistDetail = selectedPlaylistDetailData ?? null;
 
-	const continuePlaylists = useMemo(
-		() =>
-			[...playlists]
-				.filter((playlist) => Boolean(playlist.last_played_at))
-				.sort((a, b) => {
-					const aTime = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
-					const bTime = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
-					return bTime - aTime;
-				}),
-		[playlists],
-	);
+	const continuePlaylists = useMemo(() => {
+		const sorted = [...playlists]
+			.filter((playlist) => Boolean(playlist.last_played_at))
+			.sort((a, b) => {
+				const aTime = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
+				const bTime = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
+				return bTime - aTime;
+			});
+
+		const playbackPlaylistId = playbackState?.playback_state.playlist_id;
+		const playbackVideoId = playbackState?.playback_state.video_id;
+		if (!playbackPlaylistId) return sorted;
+
+		return sorted.map((playlist) => {
+			if (playlist.id !== playbackPlaylistId) return playlist;
+			return { ...playlist, cover_video_id: playbackVideoId ?? playlist.cover_video_id };
+		});
+	}, [playlists, playbackState]);
 
 	const seriesPlaylists = useMemo(
 		() => playlists.filter((playlist) => playlist.classification === 'series' || playlist.classification === 'anime'),
@@ -186,7 +203,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	}, [allVideos, videoSearch]);
 
 	const { data: playlistMemberships = [] } = useQuery({
-		queryKey: ['video-playlist-membership', playlists.map((playlist) => playlist.id).join(',')],
+		queryKey: ['video', 'playlist-membership', playlists.map((playlist) => playlist.id).join(',')],
 		enabled: playlists.length > 0,
 		queryFn: () => getVideoPlaylistMemberships(false),
 	});
@@ -203,12 +220,18 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		return membershipsByPlaylist;
 	}, [playlistMemberships]);
 
-	const refreshVideoQueries = async () => {
+	const invalidatePlaylistQueries = async () => {
 		await Promise.all([
-			queryClient.invalidateQueries({ queryKey: ['video-playlists'] }),
-			queryClient.invalidateQueries({ queryKey: ['video-playlist'] }),
-			queryClient.invalidateQueries({ queryKey: ['video-playlist-membership'] }),
-			queryClient.invalidateQueries({ queryKey: ['video-home-catalog'] }),
+			queryClient.invalidateQueries({ queryKey: ['video', 'playlists'] }),
+			queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
+			queryClient.invalidateQueries({ queryKey: ['video', 'playlist-membership'] }),
+		]);
+	};
+
+	const invalidateAllVideoQueries = async () => {
+		await Promise.all([
+			invalidatePlaylistQueries(),
+			queryClient.invalidateQueries({ queryKey: ['video', 'home-catalog'] }),
 		]);
 	};
 
@@ -216,7 +239,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		mutationFn: async ({ playlistId, videoId }: { playlistId: number; videoId: number }) =>
 			addVideoToPlaylist(playlistId, videoId),
 		onSuccess: async () => {
-			await refreshVideoQueries();
+			await invalidateAllVideoQueries();
 			setFeedback({ open: true, message: t('VIDEO_ADD_SUCCESS'), severity: 'success' });
 		},
 		onError: () => {
@@ -229,7 +252,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			if (!selectedPlaylistSummary) return;
 			return updateVideoPlaylistName(selectedPlaylistSummary.id, name);
 		},
-		onSuccess: refreshVideoQueries,
+		onSuccess: () => invalidatePlaylistQueries(),
 	});
 
 	const removeFromPlaylistMutation = useMutation({
@@ -237,7 +260,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			if (!selectedPlaylistSummary) return;
 			return removeVideoFromPlaylist(selectedPlaylistSummary.id, videoId);
 		},
-		onSuccess: refreshVideoQueries,
+		onSuccess: () => invalidateAllVideoQueries(),
 	});
 
 	const reorderMutation = useMutation({
@@ -245,7 +268,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			if (!selectedPlaylistSummary) return;
 			return reorderVideoPlaylist(selectedPlaylistSummary.id, items);
 		},
-		onSuccess: refreshVideoQueries,
+		onSuccess: () => invalidatePlaylistQueries(),
 	});
 
 	const getCurrentRoute = () => `${location.pathname}${location.search}`;
@@ -346,16 +369,6 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			);
 		},
 	};
-
-	const playbackPlaylistId = playbackState?.playback_state.playlist_id;
-	const playbackVideoId = playbackState?.playback_state.video_id;
-	contextValue.continuePlaylists = continuePlaylists.map((playlist) => {
-		if (playlist.id !== playbackPlaylistId) {
-			return playlist;
-		}
-		return { ...playlist, cover_video_id: playbackVideoId ?? playlist.cover_video_id };
-	});
-	contextValue.filteredVideos = filteredVideos;
 
 	return <VideoContentContext.Provider value={contextValue}>{children}</VideoContentContext.Provider>;
 }

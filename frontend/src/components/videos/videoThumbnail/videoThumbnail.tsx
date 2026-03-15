@@ -1,4 +1,4 @@
-import { IVideoData } from '@/types/video';
+import type { VideoFileDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { 
 	Card, 
@@ -12,8 +12,8 @@ import { Play, Videotape, Clock, Monitor } from 'lucide-react';
 import './videoThumbnail.css';
 
 interface VideoThumbnailProps {
-	video: IVideoData;
-	onPlay: (video: IVideoData) => void;
+	video: VideoFileDto;
+	onPlay: (video: VideoFileDto) => void;
 }
 
 const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {

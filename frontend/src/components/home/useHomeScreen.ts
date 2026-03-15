@@ -8,7 +8,7 @@ import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 import { getVideoHomeCatalog, getVideoPlaybackState, type VideoCatalogItemDto, type VideoFileDto } from '@/service/videoPlayback';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 const homeAnalyticsPeriod = '30d' as const;
 const nowPlayingPageSize = 200;
@@ -50,7 +50,6 @@ export type HomeVideoResume = {
 };
 
 const useHomeScreen = () => {
-	const [searchQuery, setSearchQuery] = useState('');
 	const {
 		queue,
 		currentTrack,
@@ -182,8 +181,6 @@ const useHomeScreen = () => {
 	]);
 
 	return {
-		searchQuery,
-		setSearchQuery,
 		recentFiles,
 		favoriteItems,
 		recentImages,
