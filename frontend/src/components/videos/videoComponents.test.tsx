@@ -222,37 +222,36 @@ describe('video components', () => {
 
 	it('binds video player events and metadata display', () => {
 		const ref = createRef<HTMLVideoElement>();
-		const nextVideo = jest.fn();
+		const onVideoEnded = jest.fn();
 		const setCurrentTime = jest.fn();
 		const setDuration = jest.fn();
 		const onBack = jest.fn();
 		const currentVideo: any = {
 			name: 'v.mp4',
-			metadata: { width: 1280, height: 720, duration: '00:30', codec_name: 'h265' },
 		};
 		const { container } = render(
 			<VideoPlayer
 				currentVideo={currentVideo}
-				volume={0.4}
-				playbackRate={1.5}
 				videoRef={ref}
 				setCurrentTime={setCurrentTime}
 				setDuration={setDuration}
-				nextVideo={nextVideo}
 				onBack={onBack}
+				onVideoEnded={onVideoEnded}
+				originBadgeLabel='Series'
+				contextDescription='From My Show'
+				metadataLine='My Show • Item 1 of 3'
 			/>,
 		);
 		const video = container.querySelector('video') as HTMLVideoElement;
 		Object.defineProperty(video, 'currentTime', { value: 12, configurable: true });
 		Object.defineProperty(video, 'duration', { value: 30, configurable: true });
 		expect(screen.getByText('v.mp4')).toBeInTheDocument();
+		expect(screen.getByText('From My Show')).toBeInTheDocument();
+		expect(screen.getByText('My Show • Item 1 of 3')).toBeInTheDocument();
 		fireEvent(video, new Event('timeupdate'));
 		fireEvent(video, new Event('loadedmetadata'));
-		fireEvent(video, new Event('canplay'));
-		fireEvent(video, new Event('waiting'));
-		fireEvent(video, new Event('playing'));
 		fireEvent(video, new Event('ended'));
-		expect(nextVideo).toHaveBeenCalled();
+		expect(onVideoEnded).toHaveBeenCalled();
 		fireEvent.click(screen.getByText('Voltar'));
 		expect(onBack).toHaveBeenCalled();
 	});
@@ -270,13 +269,14 @@ describe('video components', () => {
 		render(
 			<VideoPlayer
 				currentVideo={null}
-				volume={1}
-				playbackRate={1}
 				videoRef={ref}
 				setCurrentTime={jest.fn()}
 				setDuration={jest.fn()}
-				nextVideo={jest.fn()}
 				onBack={jest.fn()}
+				onVideoEnded={jest.fn()}
+				originBadgeLabel='Videos'
+				contextDescription='From Videos'
+				metadataLine=''
 			/>,
 		);
 		expect(screen.getByText('No video playing')).toBeInTheDocument();
@@ -291,17 +291,18 @@ describe('video components', () => {
 		};
 		render(
 			<VideoPlayer
-				currentVideo={{ name: 'just-name.mp4', metadata: { duration: '01:00' } } as any}
-				volume={0.3}
-				playbackRate={1}
+				currentVideo={{ name: 'just-name.mp4' } as any}
 				videoRef={inertRef}
 				setCurrentTime={jest.fn()}
 				setDuration={jest.fn()}
-				nextVideo={jest.fn()}
 				onBack={jest.fn()}
+				onVideoEnded={jest.fn()}
+				originBadgeLabel='Videos'
+				contextDescription='From Files'
+				metadataLine='Collection • Item 1 of 1'
 			/>,
 		);
 		expect(screen.getByText('just-name.mp4')).toBeInTheDocument();
-		expect(screen.getByText('01:00')).toBeInTheDocument();
+		expect(screen.getByText('Collection • Item 1 of 1')).toBeInTheDocument();
 	});
 });

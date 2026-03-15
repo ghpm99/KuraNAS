@@ -42,6 +42,9 @@ const useVideoPlayer = ({ videoId, playlistId }: { videoId: string; playlistId?:
 		return session.playlist.items.find((item) => item.video.id === session.playback_state.video_id)?.video ?? null;
 	}, [session]);
 
+	const playlist = session?.playlist ?? null;
+	const playbackState = session?.playback_state ?? null;
+
 	const attachVideoSource = useCallback(
 		(videoToPlayId: number, seekSeconds?: number) => {
 			if (!videoRef.current) return;
@@ -170,10 +173,10 @@ const useVideoPlayer = ({ videoId, playlistId }: { videoId: string; playlistId?:
 		setDuration(newDuration);
 	}, []);
 
-	const onVideoEnded = useCallback(() => {
-		syncState({ completed: true, isPaused: true, currentTime: duration });
-		nextVideo();
-	}, [duration, nextVideo, syncState]);
+	const onVideoEnded = useCallback(async () => {
+		setStatus('paused');
+		await syncState({ completed: true, isPaused: true, currentTime: duration });
+	}, [duration, syncState]);
 
 	useEffect(() => {
 		syncTimerRef.current = window.setInterval(() => {
@@ -211,6 +214,8 @@ const useVideoPlayer = ({ videoId, playlistId }: { videoId: string; playlistId?:
 		quality,
 		setQuality,
 		playlistItems: session?.playlist.items ?? [],
+		playlist,
+		playbackState,
 		currentVideo,
 		onVideoEnded,
 	};

@@ -29,6 +29,8 @@ interface VideoControlsProps {
 	togglePlayPause: () => void;
 	nextVideo: () => void;
 	previousVideo: () => void;
+	canGoNext?: boolean;
+	canGoPrevious?: boolean;
 }
 const VideoControls = ({
 	isPlaying,
@@ -44,6 +46,8 @@ const VideoControls = ({
 	togglePlayPause,
 	nextVideo,
 	previousVideo,
+	canGoNext = true,
+	canGoPrevious = true,
 }: VideoControlsProps) => {
 	const { t } = useI18n();
 	const [showControls, setShowControls] = useState(true);
@@ -157,10 +161,10 @@ const VideoControls = ({
 					<Typography variant='caption' className='time-display'>
 						{formatTime(currentTime)}
 					</Typography>
-					<IconButton onClick={previousVideo} size='small'>
+					<IconButton onClick={previousVideo} size='small' disabled={!canGoPrevious}>
 						<SkipBack size={20} />
 					</IconButton>
-					<IconButton onClick={nextVideo} size='small'>
+					<IconButton onClick={nextVideo} size='small' disabled={!canGoNext}>
 						<SkipForward size={20} />
 					</IconButton>
 				</Box>
