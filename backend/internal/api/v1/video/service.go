@@ -14,6 +14,11 @@ type Service struct {
 	PlaylistEngine *playlist.PlaylistEngine
 }
 
+type videoItemProgress struct {
+	Status      string
+	ProgressPct float64
+}
+
 var (
 	ErrVideoNotInPlaylist      = errors.New("video not in selected playlist")
 	ErrPlaybackStateNotFound   = errors.New("playback state not found")
@@ -464,7 +469,7 @@ func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return result, nil
 }
 
-func (s *Service) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
+func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	pl, err := s.Repository.GetVideoPlaylistByID(id)
 	if err != nil {
 		return VideoPlaylistDto{}, err
@@ -475,9 +480,12 @@ func (s *Service) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
 		return VideoPlaylistDto{}, err
 	}
 
+	progressByVideo := s.buildPlaylistProgress(clientID, items)
+
 	itemDtos := make([]VideoPlaylistItemDto, 0, len(items))
 	for _, item := range items {
-		itemDtos = append(itemDtos, item.ToDto("not_started"))
+		progress := progressByVideo[item.VideoID]
+		itemDtos = append(itemDtos, item.ToDto(progress.Status, progress.ProgressPct))
 	}
 	pl.ItemCount = len(itemDtos)
 	return pl.ToDto(itemDtos), nil
@@ -636,15 +644,11 @@ func (s *Service) buildSession(clientID string, pl VideoPlaylistModel, state Vid
 	}
 
 	for _, item := range items {
-		status := "not_started"
+		progress := videoItemProgress{Status: "not_started", ProgressPct: 0}
 		if item.VideoID == currentVideoID {
-			if state.Completed {
-				status = "completed"
-			} else if state.CurrentTime > 0 {
-				status = "in_progress"
-			}
+			progress = playlistProgressFromState(state)
 		}
-		itemDtos = append(itemDtos, item.ToDto(status))
+		itemDtos = append(itemDtos, item.ToDto(progress.Status, progress.ProgressPct))
 	}
 
 	state.ClientID = clientID
@@ -765,6 +769,93 @@ func (s *Service) toCatalogItem(video VideoFileModel, state VideoPlaybackStateMo
 		Status:      status,
 		ProgressPct: progressPct,
 	}
+}
+
+func (s *Service) buildPlaylistProgress(clientID string, items []VideoPlaylistItemModel) map[int]videoItemProgress {
+	progressByVideo := make(map[int]videoItemProgress, len(items))
+
+	for _, item := range items {
+		progressByVideo[item.VideoID] = videoItemProgress{
+			Status:      "not_started",
+			ProgressPct: 0,
+		}
+	}
+
+	state, err := s.Repository.GetPlaybackState(clientID)
+	if err == nil && state.VideoID.Valid {
+		videoID := int(state.VideoID.Int64)
+		if _, ok := progressByVideo[videoID]; ok {
+			progressByVideo[videoID] = playlistProgressFromState(state)
+		}
+	}
+
+	events, err := s.Repository.GetBehaviorEvents(clientID, len(items)*4+8)
+	if err != nil {
+		return progressByVideo
+	}
+
+	for _, event := range events {
+		current, exists := progressByVideo[event.VideoID]
+		if !exists || current.Status != "not_started" {
+			continue
+		}
+
+		progressByVideo[event.VideoID] = playlistProgressFromEvent(event)
+	}
+
+	return progressByVideo
+}
+
+func playlistProgressFromState(state VideoPlaybackStateModel) videoItemProgress {
+	progress := 0.0
+	status := "not_started"
+
+	if state.Completed {
+		status = "completed"
+		progress = 100
+	} else if state.CurrentTime > 0 {
+		status = "in_progress"
+		if state.Duration > 0 {
+			progress = (state.CurrentTime / state.Duration) * 100
+		}
+	}
+
+	return videoItemProgress{
+		Status:      status,
+		ProgressPct: clampProgressPct(progress),
+	}
+}
+
+func playlistProgressFromEvent(event VideoBehaviorEventModel) videoItemProgress {
+	progress := event.WatchedPct
+	if progress <= 0 && event.Duration > 0 {
+		progress = (event.Position / event.Duration) * 100
+	}
+
+	switch event.EventType {
+	case string(playlist.EventCompleted):
+		return videoItemProgress{Status: "completed", ProgressPct: 100}
+	case string(playlist.EventStarted), string(playlist.EventPaused), string(playlist.EventResumed),
+		string(playlist.EventSkipped), string(playlist.EventAbandoned):
+		if progress > 0 {
+			return videoItemProgress{
+				Status:      "in_progress",
+				ProgressPct: clampProgressPct(progress),
+			}
+		}
+	}
+
+	return videoItemProgress{Status: "not_started", ProgressPct: 0}
+}
+
+func clampProgressPct(progress float64) float64 {
+	if progress < 0 {
+		return 0
+	}
+	if progress > 100 {
+		return 100
+	}
+	return progress
 }
 
 func videoModelToEntry(v VideoFileModel) playlist.VideoEntry {

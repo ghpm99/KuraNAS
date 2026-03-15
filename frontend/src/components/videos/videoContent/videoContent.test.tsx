@@ -5,10 +5,8 @@ const mockUseQuery = jest.fn();
 const mockUseMutation = jest.fn();
 const mockUseQueryClient = jest.fn();
 const mockNavigate = jest.fn();
-const mockSetSearchParams = jest.fn();
 const mockInvalidateQueries = jest.fn();
 const mockLocation = { pathname: '/videos', search: '' };
-const mockSetSearch = { value: '' };
 
 const mockGetVideoPlaylists = jest.fn();
 const mockGetAllVideoFiles = jest.fn();
@@ -42,7 +40,6 @@ jest.mock('react-router-dom', () => ({
 	Link: ({ children, to }: any) => <a href={to}>{children}</a>,
 	useLocation: () => mockLocation,
 	useNavigate: () => mockNavigate,
-	useSearchParams: () => [new URLSearchParams(mockSetSearch.value), mockSetSearchParams],
 }));
 
 jest.mock('@/service/apiUrl', () => ({
@@ -95,10 +92,26 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 				VIDEO_CONTINUE_BADGE_RESUME: 'Retomar',
 				VIDEO_SOURCE_MANUAL: 'manual',
 				VIDEO_SOURCE_AUTO: 'auto',
+				VIDEO_DETAIL_COLLECTION_META: '{{count}} itens',
+				VIDEO_DETAIL_COLLECTION_TOTAL: 'Total',
+				VIDEO_DETAIL_COLLECTION_COMPLETED: 'Concluidos',
+				VIDEO_DETAIL_COLLECTION_PENDING: 'Pendentes',
+				VIDEO_DETAIL_COLLECTION_ITEMS: 'Itens da colecao',
+				VIDEO_DETAIL_COLLECTION_ITEMS_DESCRIPTION: 'Continue do ponto certo ou abra qualquer item do contexto.',
+				VIDEO_DETAIL_RESUME_ACTION: 'Retomar agora',
+				VIDEO_DETAIL_SERIES_EYEBROW: 'Serie',
+				VIDEO_DETAIL_SEASON_LABEL: 'Temporada {{season}}',
+				VIDEO_DETAIL_SEASON_DESCRIPTION: '{{count}} episodios organizados em sequencia.',
 			};
 			if (key === 'VIDEO_PREVIEW_ALT') return `${params?.name ?? ''} preview`.trim();
 			if (key === 'VIDEO_PLAYLIST_ITEM_COUNT') return `${params?.count ?? 0} videos`;
 			if (key === 'VIDEO_PLAYLIST_META') return `${params?.count ?? 0} videos nesta playlist`;
+			if (key === 'VIDEO_DETAIL_SERIES_PROGRESS') {
+				return `${params?.completed ?? 0} de ${params?.count ?? 0} concluidos`;
+			}
+			if (key === 'VIDEO_DETAIL_COLLECTION_META') return `${params?.count ?? 0} itens`;
+			if (key === 'VIDEO_DETAIL_SEASON_LABEL') return `Temporada ${params?.season ?? ''}`.trim();
+			if (key === 'VIDEO_DETAIL_SEASON_DESCRIPTION') return `${params?.count ?? 0} episodios organizados em sequencia.`;
 			return map[key] ?? key;
 		},
 	}),
@@ -117,7 +130,9 @@ const playlist = {
 			id: 50,
 			order_index: 0,
 			source_kind: 'manual',
-			video: { id: 30, name: 'ep-1.mp4', format: 'mp4', path: '/videos/ep-1.mp4', parent_path: '/videos', size: 10 },
+			status: 'in_progress',
+			progress_pct: 55,
+			video: { id: 30, name: 'Show S01E01.mp4', format: 'mp4', path: '/videos/ep-1.mp4', parent_path: '/videos', size: 10 },
 		},
 	],
 };
@@ -142,6 +157,26 @@ const clipPlaylist = {
 	last_played_at: null,
 };
 
+const moviePlaylist = {
+	...playlist,
+	id: 4,
+	name: 'Movie Playlist',
+	type: 'movie',
+	classification: 'movie',
+	cover_video_id: 33,
+	last_played_at: null,
+};
+
+const personalPlaylist = {
+	...playlist,
+	id: 5,
+	name: 'Personal Playlist',
+	type: 'custom',
+	classification: 'personal',
+	cover_video_id: 34,
+	last_played_at: null,
+};
+
 const detailPlaylist = {
 	...playlist,
 	items: [
@@ -149,13 +184,45 @@ const detailPlaylist = {
 			id: 50,
 			order_index: 0,
 			source_kind: 'manual',
-			video: { id: 30, name: 'ep-1.mp4', format: 'mp4', path: '/videos/ep-1.mp4', parent_path: '/videos', size: 10 },
+			status: 'completed',
+			progress_pct: 100,
+			video: { id: 30, name: 'Show S01E01.mp4', format: 'mp4', path: '/videos/ep-1.mp4', parent_path: '/videos', size: 10 },
 		},
 		{
 			id: 51,
 			order_index: 1,
 			source_kind: 'auto',
-			video: { id: 31, name: 'ep-2.mkv', format: 'mkv', path: '/videos/ep-2.mkv', parent_path: '/videos', size: 12 },
+			status: 'in_progress',
+			progress_pct: 45,
+			video: { id: 31, name: 'Show S01E02.mkv', format: 'mkv', path: '/videos/ep-2.mkv', parent_path: '/videos', size: 12 },
+		},
+	],
+};
+
+const folderDetailPlaylist = {
+	...folderPlaylist,
+	items: [
+		{
+			id: 52,
+			order_index: 0,
+			source_kind: 'manual',
+			status: 'not_started',
+			progress_pct: 0,
+			video: { id: 31, name: 'Home Clip.mp4', format: 'mp4', path: '/videos/home-clip.mp4', parent_path: '/videos/home', size: 10 },
+		},
+	],
+};
+
+const clipDetailPlaylist = {
+	...clipPlaylist,
+	items: [
+		{
+			id: 60,
+			order_index: 0,
+			source_kind: 'auto',
+			status: 'not_started',
+			progress_pct: 0,
+			video: { id: 32, name: 'Quick Clip.mp4', format: 'mp4', path: '/clips/quick-clip.mp4', parent_path: '/clips', size: 10 },
 		},
 	],
 };
@@ -171,10 +238,9 @@ let mutationShouldError = false;
 
 beforeEach(() => {
 	jest.clearAllMocks();
-	mockSetSearch.value = '';
 	mockLocation.pathname = '/videos';
 	mockLocation.search = '';
-	playlistsData = [playlist, folderPlaylist, clipPlaylist];
+	playlistsData = [playlist, folderPlaylist, clipPlaylist, moviePlaylist, personalPlaylist];
 	allVideosData = [{ id: 30, name: 'ep-1.mp4', parent_path: '/videos', format: 'mp4' }];
 	homeCatalogData = {
 		sections: [
@@ -255,6 +321,22 @@ describe('components/videos/videoContent', () => {
 		expect(screen.getAllByText('Abrir secao').length).toBeGreaterThan(0);
 	});
 
+	it('routes home card selection to contextual detail urls', () => {
+		render(<VideoContent />);
+
+		fireEvent.click(screen.getAllByRole('button', { name: /Playlist One/i })[0]!);
+		fireEvent.click(screen.getAllByRole('button', { name: /Movie Playlist/i })[0]!);
+		fireEvent.click(screen.getAllByRole('button', { name: /Personal Playlist/i })[0]!);
+		fireEvent.click(screen.getAllByRole('button', { name: /Clip Playlist/i })[0]!);
+		fireEvent.click(screen.getAllByRole('button', { name: /Folder Playlist/i })[0]!);
+
+		expect(mockNavigate).toHaveBeenNthCalledWith(1, '/videos/series/playlist-one');
+		expect(mockNavigate).toHaveBeenNthCalledWith(2, '/videos/movies/movie-playlist');
+		expect(mockNavigate).toHaveBeenNthCalledWith(3, '/videos/personal/personal-playlist');
+		expect(mockNavigate).toHaveBeenNthCalledWith(4, '/videos/clips/clip-playlist');
+		expect(mockNavigate).toHaveBeenNthCalledWith(5, '/videos/folders/folder-playlist');
+	});
+
 	it('renders folders section and handles add/play/search actions', async () => {
 		mockLocation.pathname = '/videos/folders';
 		render(<VideoContent />);
@@ -277,19 +359,47 @@ describe('components/videos/videoContent', () => {
 		expect(await screen.findByText('Video adicionado a playlist com sucesso.')).toBeInTheDocument();
 	});
 
-	it('renders selected playlist detail branch and actions', () => {
-		mockLocation.pathname = '/videos/series';
-		mockSetSearch.value = 'playlist=playlist-one';
+	it('renders series detail branch from route-based detail path', () => {
+		mockLocation.pathname = '/videos/series/playlist-one';
+
+		render(<VideoContent />);
+		expect(screen.getByText('Temporada 1')).toBeInTheDocument();
+		expect(screen.getAllByText('Show').length).toBeGreaterThan(0);
+		expect(screen.getByText('Retomar agora')).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: /Retomar agora/i }));
+		expect(mockNavigate).toHaveBeenCalledWith('/video/31', {
+			state: { from: '/videos/series/playlist-one', playlistId: 1 },
+		});
+	});
+
+	it('renders folder detail branch and actions', () => {
+		mockLocation.pathname = '/videos/folders/folder-playlist';
+		selectedPlaylistData = folderDetailPlaylist;
 
 		render(<VideoContent />);
 		expect(screen.getByText('Editar playlist')).toBeInTheDocument();
 
 		fireEvent.change(screen.getByPlaceholderText('Nome de exibicao'), { target: { value: 'Renamed' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Salvar nome' }));
-		expect(mockUpdateVideoPlaylistName).toHaveBeenCalledWith(1, 'Renamed');
+		expect(mockUpdateVideoPlaylistName).toHaveBeenCalledWith(2, 'Renamed');
 
 		fireEvent.click(screen.getByRole('button', { name: /Voltar para videos/i }));
-		expect(mockSetSearchParams).toHaveBeenCalled();
+		expect(mockNavigate).toHaveBeenCalledWith('/videos/folders');
+	});
+
+	it('renders context detail branch for clips', () => {
+		mockLocation.pathname = '/videos/clips/clip-playlist';
+		selectedPlaylistData = clipDetailPlaylist;
+
+		render(<VideoContent />);
+		expect(screen.getByText('Itens da colecao')).toBeInTheDocument();
+		expect(screen.getByText('Quick Clip')).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: /Reproduzir/i }));
+		expect(mockNavigate).toHaveBeenCalledWith('/video/32', {
+			state: { from: '/videos/clips/clip-playlist', playlistId: 3 },
+		});
 	});
 
 	it('handles add-to-playlist error', async () => {

@@ -47,10 +47,32 @@ export const videoNavigationItems: VideoNavigationItem[] = [
 const videoRouteEntries = videoNavigationItems.map((item) => [getVideoRoute(item.key), item.key] as const);
 
 export const getVideoSectionFromPath = (pathname: string): VideoSection => {
-	const matchedEntry = videoRouteEntries.find(([route]) => route === pathname);
+	if (pathname === getVideoRoute('home')) {
+		return 'home';
+	}
+
+	const matchedEntry = videoRouteEntries.find(([route, section]) => {
+		if (section === 'home') {
+			return false;
+		}
+
+		return pathname === route || pathname.startsWith(`${route}/`);
+	});
 
 	return matchedEntry?.[1] ?? 'home';
 };
+
+export const getVideoDetailSlugFromPath = (pathname: string) => {
+	const segments = pathname.split('/').filter(Boolean);
+	if (segments[0] !== 'videos' || segments.length < 3) {
+		return '';
+	}
+
+	return decodeURIComponent(segments[2] ?? '');
+};
+
+export const getVideoDetailRoute = (section: Exclude<VideoSection, 'home'>, slug: string) =>
+	`${getVideoRoute(section)}/${encodeURIComponent(slug)}`;
 
 export const getVideoSectionMeta = (section: VideoSection) => {
 	const matchedItem = videoNavigationItems.find((item) => item.key === section);

@@ -17,6 +17,7 @@ export interface VideoPlaylistItemDto {
 	source_kind: 'auto' | 'manual';
 	video: VideoFileDto;
 	status: 'not_started' | 'in_progress' | 'completed';
+	progress_pct: number;
 }
 
 export interface VideoPlaylistDto {

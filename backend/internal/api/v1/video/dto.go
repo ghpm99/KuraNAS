@@ -31,11 +31,12 @@ type VideoPlaylistDto struct {
 }
 
 type VideoPlaylistItemDto struct {
-	ID         int          `json:"id"`
-	OrderIndex int          `json:"order_index"`
-	SourceKind string       `json:"source_kind"`
-	Video      VideoFileDto `json:"video"`
-	Status     string       `json:"status"`
+	ID          int          `json:"id"`
+	OrderIndex  int          `json:"order_index"`
+	SourceKind  string       `json:"source_kind"`
+	Video       VideoFileDto `json:"video"`
+	Status      string       `json:"status"`
+	ProgressPct float64      `json:"progress_pct"`
 }
 
 type VideoPlaybackStateDto struct {
@@ -153,13 +154,14 @@ func (m *VideoPlaylistModel) ToDto(items []VideoPlaylistItemDto) VideoPlaylistDt
 	return dto
 }
 
-func (m *VideoPlaylistItemModel) ToDto(status string) VideoPlaylistItemDto {
+func (m *VideoPlaylistItemModel) ToDto(status string, progressPct float64) VideoPlaylistItemDto {
 	return VideoPlaylistItemDto{
-		ID:         m.ID,
-		OrderIndex: m.OrderIndex,
-		SourceKind: m.SourceKind,
-		Video:      m.Video.ToDto(),
-		Status:     status,
+		ID:          m.ID,
+		OrderIndex:  m.OrderIndex,
+		SourceKind:  m.SourceKind,
+		Video:       m.Video.ToDto(),
+		Status:      status,
+		ProgressPct: progressPct,
 	}
 }
 

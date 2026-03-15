@@ -50,7 +50,7 @@ type ServiceInterface interface {
 	GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error)
 	RebuildSmartPlaylists() error
 	GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error)
-	GetPlaylistByID(id int) (VideoPlaylistDto, error)
+	GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error)
 	SetPlaylistHidden(playlistID int, hidden bool) error
 	AddVideoToPlaylist(playlistID int, videoID int) error
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error

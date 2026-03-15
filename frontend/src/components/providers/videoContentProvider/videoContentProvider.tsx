@@ -14,10 +14,10 @@ import {
 	type VideoPlaylistDto,
 } from '@/service/videoPlayback';
 import { type VideoSection } from '@/app/routes';
-import { getVideoSectionFromPath } from '@/components/videos/navigation';
+import { getVideoDetailRoute, getVideoDetailSlugFromPath, getVideoSectionFromPath } from '@/components/videos/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 type FeedbackState = { open: boolean; message: string; severity: 'success' | 'error' };
@@ -73,7 +73,6 @@ const slugify = (value: string) =>
 
 export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const { t } = useI18n();
-	const [searchParams, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const queryClient = useQueryClient();
@@ -100,7 +99,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		retry: false,
 	});
 
-	const playlistSlug = searchParams.get('playlist') || '';
+	const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
 	const selectedPlaylistSummary = useMemo(() => {
 		if (!playlistSlug) return null;
 		return playlists.find((playlist) => slugify(playlist.name) === playlistSlug) ?? null;
@@ -223,9 +222,27 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		onSuccess: refreshVideoQueries,
 	});
 
-	const getCurrentRoute = () => {
-		const currentSearch = searchParams.toString();
-		return `${location.pathname}${currentSearch ? `?${currentSearch}` : ''}`;
+	const getCurrentRoute = () => `${location.pathname}${location.search}`;
+
+	const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> => {
+		if (currentSection !== 'home') {
+			return currentSection;
+		}
+
+		if (playlist.type === 'folder') {
+			return 'folders';
+		}
+		if (playlist.classification === 'movie') {
+			return 'movies';
+		}
+		if (playlist.classification === 'clip' || playlist.classification === 'program') {
+			return 'clips';
+		}
+		if (playlist.classification === 'series' || playlist.classification === 'anime') {
+			return 'series';
+		}
+
+		return 'personal';
 	};
 
 	const playVideo = (videoId: number, playlistId?: number | null) => {
@@ -236,11 +253,9 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 
 	const openPlaylistVideo = (videoId: number) => {
 		if (!selectedPlaylistSummary) return;
-		const slug = slugify(selectedPlaylistSummary.name);
-		setSearchParams({ playlist: slug, video: String(videoId) });
 		navigate(`/video/${videoId}`, {
 			state: {
-				from: `${location.pathname}?playlist=${encodeURIComponent(slug)}&video=${videoId}`,
+				from: getCurrentRoute(),
 				playlistId: selectedPlaylistSummary.id,
 			},
 		});
@@ -277,8 +292,14 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 			setSelectedPlaylistPerVideo((prev) => ({ ...prev, [videoId]: playlistId }));
 		},
 		closeFeedback: () => setFeedback((prev) => ({ ...prev, open: false })),
-		selectPlaylist: (playlist) => setSearchParams({ playlist: slugify(playlist.name) }),
-		clearSelectedPlaylist: () => setSearchParams({}),
+		selectPlaylist: (playlist) => navigate(getVideoDetailRoute(resolvePlaylistSection(playlist), slugify(playlist.name))),
+		clearSelectedPlaylist: () => {
+			if (currentSection === 'home') {
+				navigate('/videos');
+				return;
+			}
+			navigate(`/videos/${currentSection}`);
+		},
 		playVideo,
 		openPlaylistVideo,
 		addVideoFromLibrary: (videoId) => {
