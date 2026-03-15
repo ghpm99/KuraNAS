@@ -1,15 +1,32 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ImageContent from './imageContent';
 
 const mockUseImage = jest.fn();
 const mockRef = jest.fn();
 const mockUseIntersectionObserver = jest.fn();
+const mockToggleStarredFile = jest.fn();
+const mockNavigate = jest.fn();
+const mockEnqueueSnackbar = jest.fn();
 
 jest.mock('../providers/imageProvider/imageProvider', () => ({ useImage: () => mockUseImage() }));
 jest.mock('../hooks/IntersectionObserver/useIntersectionObserver', () => ({
 	useIntersectionObserver: (...args: any[]) => mockUseIntersectionObserver(...args),
 }));
+jest.mock('notistack', () => ({
+	useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
+}));
+jest.mock('@/service/files', () => ({
+	toggleStarredFile: (...args: any[]) => mockToggleStarredFile(...args),
+}));
+jest.mock('react-router-dom', () => {
+	const actual = jest.requireActual('react-router-dom');
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
+	};
+});
 jest.mock('@/service/apiUrl', () => ({
 	getApiV1BaseUrl: () => '/api/v1',
 }));
@@ -36,6 +53,32 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 				IMAGES_GROUP_BY_ARIA: 'Agrupar imagens por',
 				IMAGES_BACK_TO_FOLDERS: 'Voltar para pastas',
 				IMAGES_BACK_TO_ALBUMS: 'Voltar para albuns',
+				IMAGES_VIEWER_ADD_FAVORITE: 'Favoritar',
+				IMAGES_VIEWER_REMOVE_FAVORITE: 'Desfavoritar',
+				IMAGES_VIEWER_OPEN_FOLDER: 'Abrir pasta',
+				IMAGES_VIEWER_START_SLIDESHOW: 'Iniciar slideshow',
+				IMAGES_VIEWER_STOP_SLIDESHOW: 'Pausar slideshow',
+				IMAGES_VIEWER_HIDE_FILMSTRIP: 'Ocultar tira',
+				IMAGES_VIEWER_SHOW_FILMSTRIP: 'Mostrar tira',
+				IMAGES_VIEWER_HIDE_FILMSTRIP_SHORT: 'Tira off',
+				IMAGES_VIEWER_SHOW_FILMSTRIP_SHORT: 'Tira on',
+				IMAGES_VIEWER_KEYBOARD_HINT: 'Atalhos',
+				IMAGES_VIEWER_POSITION: `${params?.current ?? 1} de ${params?.total ?? 1}`,
+				IMAGES_VIEWER_FAVORITE_ADDED: 'Imagem adicionada aos favoritos',
+				IMAGES_VIEWER_FAVORITE_REMOVED: 'Imagem removida dos favoritos',
+				IMAGES_VIEWER_FAVORITE_ERROR: 'Erro ao atualizar favorito',
+				IMAGES_DETAILS_SECTION_LIBRARY: 'Biblioteca',
+				IMAGES_DETAILS_SECTION_CAPTURE: 'Captura',
+				IMAGES_DETAILS_SECTION_DEVICE: 'Dispositivo',
+				IMAGES_DETAIL_DATE: 'Data',
+				IMAGES_DETAIL_CREATED: 'Criado em',
+				IMAGES_DETAIL_SOFTWARE: 'Software',
+				IMAGES_DETAIL_DESCRIPTION: 'Descricao',
+				IMAGES_DETAIL_CATEGORY: 'Categoria',
+				IMAGES_DETAIL_CONFIDENCE: 'Confianca',
+				IMAGES_CLASSIFICATION_CAPTURE: 'Captura',
+				IMAGES_CLASSIFICATION_PHOTO: 'Foto',
+				IMAGES_CLASSIFICATION_OTHER: 'Outro',
 				IMAGES_FOLDERS_EMPTY_TITLE: 'Nenhuma pasta encontrada',
 				IMAGES_FOLDERS_EMPTY_DESC: 'Sem pastas',
 				IMAGES_ALBUMS_EMPTY_TITLE: 'Nenhum album encontrado',
@@ -45,6 +88,24 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 		},
 	}),
 }));
+
+const createQueryClient = () =>
+	new QueryClient({
+		defaultOptions: {
+			queries: {
+				retry: false,
+			},
+		},
+	});
+
+const renderImageContent = (initialEntries: string[]) =>
+	render(
+		<QueryClientProvider client={createQueryClient()}>
+			<MemoryRouter initialEntries={initialEntries}>
+				<ImageContent />
+			</MemoryRouter>
+		</QueryClientProvider>,
+	);
 
 const createImage = (overrides: Record<string, any> = {}) => ({
 	id: 1,
@@ -67,7 +128,9 @@ const createImage = (overrides: Record<string, any> = {}) => ({
 
 describe('imageContent', () => {
 	beforeEach(() => {
+		jest.clearAllMocks();
 		mockUseIntersectionObserver.mockImplementation(() => ({ ref: mockRef }));
+		mockToggleStarredFile.mockResolvedValue(undefined);
 		mockUseImage.mockReturnValue({
 			images: [createImage()],
 			status: 'success',
@@ -80,11 +143,7 @@ describe('imageContent', () => {
 	});
 
 	it('renders grouped library and opens viewer with details', () => {
-		render(
-			<MemoryRouter initialEntries={['/images']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images']);
 
 		expect(screen.getByText('Biblioteca')).toBeInTheDocument();
 		expect(screen.getByText('Todas as imagens carregadas')).toBeInTheDocument();
@@ -92,7 +151,7 @@ describe('imageContent', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: /abrir img1/i }));
 		expect(screen.getByRole('dialog')).toBeInTheDocument();
-		expect(screen.getByText('Detalhes')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Abrir pasta' })).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('button', { name: 'Fechar visualizador' }));
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -116,11 +175,7 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images']);
 		optionsRef.onIntersect();
 
 		expect(fetchNextPage).toHaveBeenCalled();
@@ -139,11 +194,7 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images?image=1']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images?image=1']);
 		fireEvent.change(screen.getByLabelText('Agrupar imagens por'), { target: { value: 'type' } });
 
 		expect(setImageGroupBy).toHaveBeenCalledWith('type');
@@ -182,11 +233,7 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images/captures']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images/captures']);
 
 		expect(screen.queryByRole('button', { name: /abrir screenshot_local\.png/i })).not.toBeInTheDocument();
 		expect(screen.getByRole('button', { name: /abrir trip\.jpg/i })).toBeInTheDocument();
@@ -206,11 +253,7 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images/folders']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images/folders']);
 
 		expect(screen.getByText('Pastas')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: /abrir travel/i }));
@@ -241,11 +284,7 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images/albums']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images/albums']);
 
 		expect(screen.queryByLabelText('Agrupar imagens por')).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: /abrir outros/i }));
@@ -267,23 +306,34 @@ describe('imageContent', () => {
 			isFetchingNextPage: false,
 		});
 
-		render(
-			<MemoryRouter initialEntries={['/images']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images']);
 
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 		expect(screen.queryByText('IMAGES_EMPTY_TITLE')).not.toBeInTheDocument();
 	});
 
 	it('opens the viewer from the image search param', () => {
-		render(
-			<MemoryRouter initialEntries={['/images?image=1']}>
-				<ImageContent />
-			</MemoryRouter>,
-		);
+		renderImageContent(['/images?image=1']);
 
 		expect(screen.getByRole('dialog')).toBeInTheDocument();
+	});
+
+	it('favorites the active image from the viewer and shows feedback', async () => {
+		renderImageContent(['/images?image=1']);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Favoritar' }));
+
+		await waitFor(() => expect(mockToggleStarredFile).toHaveBeenCalledWith(1));
+	});
+
+	it('opens the current folder in files from the viewer', () => {
+		renderImageContent(['/images?image=1']);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Abrir pasta' }));
+
+		expect(mockNavigate).toHaveBeenCalledWith({
+			pathname: '/files',
+			search: '?path=%2Fphotos',
+		});
 	});
 });

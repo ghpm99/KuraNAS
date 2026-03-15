@@ -29,12 +29,16 @@ export default function ImageContent() {
 		groupedImages,
 		handleCloseViewer,
 		handleOpenImage,
+		handleOpenFolder,
+		handleToggleFavorite,
 		handleSelectAlbum,
 		handleSelectFolder,
 		hasNextPage,
 		imageGroupBy,
 		increaseZoom,
+		isFavoritePending,
 		isFetchingNextPage,
+		isSlideshowPlaying,
 		lastVisibleImageId,
 		loadMoreRef,
 		resetZoom,
@@ -42,10 +46,13 @@ export default function ImageContent() {
 		setImageGroupBy,
 		setSearch,
 		setShowDetails,
+		setShowFilmstrip,
 		showDetails,
+		showFilmstrip,
 		status,
 		summary,
 		title,
+		toggleSlideshow,
 		viewMode,
 		zoom,
 		decreaseZoom,
@@ -129,7 +136,14 @@ export default function ImageContent() {
 					filteredImages={filteredImages}
 					zoom={zoom}
 					showDetails={showDetails}
+					showFilmstrip={showFilmstrip}
+					isSlideshowPlaying={isSlideshowPlaying}
+					isFavoritePending={isFavoritePending}
 					onToggleDetails={() => setShowDetails((value) => !value)}
+					onToggleFilmstrip={() => setShowFilmstrip((value) => !value)}
+					onToggleSlideshow={toggleSlideshow}
+					onToggleFavorite={handleToggleFavorite}
+					onOpenFolder={handleOpenFolder}
 					onDecreaseZoom={decreaseZoom}
 					onResetZoom={resetZoom}
 					onIncreaseZoom={increaseZoom}

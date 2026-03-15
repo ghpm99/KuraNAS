@@ -15,7 +15,7 @@
 - Dependencias: nenhuma obrigatoria, mas ajuda ja estar no AppShell final.
 
 ## TASK-014 - Reorganizar IA da biblioteca de imagens
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `M`
 - Objetivo: alinhar imagens ao mapa `Biblioteca`, `Recentes`, `Capturas`, `Fotos`, `Pastas` e `Albuns`.
 - Estado atual: existe uma boa grade com viewer, mas a IA atual ainda usa filtros tecnicos como `portrait` e `landscape`.
@@ -29,7 +29,7 @@
 - Dependencias: `TASK-013`.
 
 ## TASK-015 - Evoluir viewer e acoes de imagem
-- Status: `TODO`
+- Status: `DONE`
 - Tamanho: `S`
 - Objetivo: transformar o viewer atual em um viewer de produto, com contexto, metadados e acoes relevantes.
 - Estado atual: o modal ja exibe imagem, navegacao e detalhes; ainda falta consolidar a experiencia final.
