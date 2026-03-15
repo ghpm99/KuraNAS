@@ -36,8 +36,8 @@ type videoRepoMock struct {
 	upsertPlaylistExclusionFn  func(tx *sql.Tx, playlistID int, videoID int) error
 	updatePlaylistNameFn       func(tx *sql.Tx, playlistID int, name string) error
 	reorderPlaylistItemFn      func(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
-	getAllVideosForGroupingFn   func() ([]VideoFileModel, error)
-	getAllVideosWithMetadataFn  func() ([]VideoWithMetadataModel, error)
+	getAllVideosForGroupingFn  func() ([]VideoFileModel, error)
+	getAllVideosWithMetadataFn func() ([]VideoWithMetadataModel, error)
 	upsertAutoPlaylistFn       func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
 	getPlaylistExclusionsFn    func(playlistID int) (map[int]bool, error)
 	deleteAutoPlaylistItemsFn  func(tx *sql.Tx, playlistID int) error
@@ -336,7 +336,7 @@ func TestVideoServiceWrappersAndValidations(t *testing.T) {
 	if _, err := svc.GetPlaylists(true); err != nil {
 		t.Fatalf("expected get playlists success, err=%v", err)
 	}
-	if _, err := svc.GetPlaylistByID(10); err != nil {
+	if _, err := svc.GetPlaylistByID("client-1", 10); err != nil {
 		t.Fatalf("expected get playlist by id success, err=%v", err)
 	}
 	if err := svc.SetPlaylistHidden(10, true); err != nil {
@@ -366,6 +366,63 @@ func TestVideoServiceWrappersAndValidations(t *testing.T) {
 	}
 	if err := svc.ReorderPlaylistItems(10, []ReorderPlaylistItemRequest{{VideoID: 1, OrderIndex: 0}, {VideoID: 2, OrderIndex: 0}}); err == nil {
 		t.Fatalf("expected duplicated order index reorder error")
+	}
+}
+
+func TestGetPlaylistByIDUsesPlaybackAndBehaviorProgress(t *testing.T) {
+	repo := &videoRepoMock{
+		getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+			return VideoPlaylistModel{ID: id, Name: "Show", Classification: "series"}, nil
+		},
+		getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+			return []VideoPlaylistItemModel{
+				{
+					ID:         1,
+					PlaylistID: playlistID,
+					VideoID:    10,
+					OrderIndex: 0,
+					SourceKind: "auto",
+					Video:      VideoFileModel{ID: 10, Name: "Show S01E01.mkv", Path: "/series/show/Show S01E01.mkv", ParentPath: "/series/show"},
+				},
+				{
+					ID:         2,
+					PlaylistID: playlistID,
+					VideoID:    11,
+					OrderIndex: 1,
+					SourceKind: "auto",
+					Video:      VideoFileModel{ID: 11, Name: "Show S01E02.mkv", Path: "/series/show/Show S01E02.mkv", ParentPath: "/series/show"},
+				},
+			}, nil
+		},
+		getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+			return VideoPlaybackStateModel{
+				ClientID:    clientID,
+				VideoID:     sql.NullInt64{Int64: 11, Valid: true},
+				CurrentTime: 60,
+				Duration:    120,
+			}, nil
+		},
+		getBehaviorEventsFn: func(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
+			return []VideoBehaviorEventModel{
+				{VideoID: 10, EventType: string(playlist.EventCompleted), WatchedPct: 100},
+			}, nil
+		},
+	}
+
+	svc := newVideoServiceForTest(t, repo)
+	detail, err := svc.GetPlaylistByID("client-1", 7)
+	if err != nil {
+		t.Fatalf("expected playlist detail success, err=%v", err)
+	}
+	if len(detail.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(detail.Items))
+	}
+
+	if detail.Items[0].Status != "completed" || detail.Items[0].ProgressPct != 100 {
+		t.Fatalf("expected first item completed, got status=%s pct=%.1f", detail.Items[0].Status, detail.Items[0].ProgressPct)
+	}
+	if detail.Items[1].Status != "in_progress" || detail.Items[1].ProgressPct != 50 {
+		t.Fatalf("expected second item in progress at 50%%, got status=%s pct=%.1f", detail.Items[1].Status, detail.Items[1].ProgressPct)
 	}
 }
 

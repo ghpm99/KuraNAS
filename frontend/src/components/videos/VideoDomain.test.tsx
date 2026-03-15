@@ -13,7 +13,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 describe('components/videos domain shell', () => {
 	it('renders contextual header and active sidebar item from route', () => {
 		render(
-			<MemoryRouter initialEntries={['/videos/folders']}>
+			<MemoryRouter initialEntries={['/videos/folders/archive-home']}>
 				<VideoDomainHeader />
 				<VideoSidebar />
 			</MemoryRouter>,

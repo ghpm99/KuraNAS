@@ -42,7 +42,7 @@ func (m *videoHandlerServiceMock) RebuildSmartPlaylists() error { return nil }
 func (m *videoHandlerServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return []VideoPlaylistDto{{ID: 1, Name: "p"}}, nil
 }
-func (m *videoHandlerServiceMock) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
+func (m *videoHandlerServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	if id == 404 {
 		return VideoPlaylistDto{}, errors.New("missing")
 	}
@@ -92,7 +92,7 @@ func (m *videoHandlerErrServiceMock) RebuildSmartPlaylists() error {
 func (m *videoHandlerErrServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return nil, errors.New("playlists failed")
 }
-func (m *videoHandlerErrServiceMock) GetPlaylistByID(id int) (VideoPlaylistDto, error) {
+func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	return VideoPlaylistDto{}, errors.New("playlist missing")
 }
 func (m *videoHandlerErrServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error {
