@@ -1,3 +1,12 @@
+.container {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	height: 100%;
+	min-height: 0;
+	padding: 18px 22px 22px;
+	overflow: hidden;
+}
+
 .page {
 	display: flex;
 	flex-direction: column;
@@ -5,15 +14,6 @@
 	min-width: 0;
 	height: 100%;
 	min-height: 0;
-}
-
-.content {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	height: 100%;
-	min-height: 0;
-	padding: 18px 22px 22px;
-	overflow: hidden;
 }
 
 .domainContent {
@@ -24,8 +24,15 @@
 	min-height: 0;
 }
 
+.contentArea {
+	min-height: 0;
+	min-width: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
 @media (max-width: 768px) {
-	.content {
+	.container {
 		padding: 10px 10px 14px;
 	}
 }
