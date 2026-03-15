@@ -77,18 +77,13 @@ export const useAboutScreen = () => {
 				description: t('ABOUT_TOOL_ANALYTICS_DESCRIPTION'),
 				href: appRoutes.analytics,
 			},
-			{
-				title: t('ABOUT_TOOL_SETTINGS_TITLE'),
-				description: t('ABOUT_TOOL_SETTINGS_DESCRIPTION'),
-				href: appRoutes.settings,
-			},
-			{
-				title: t('ABOUT_TOOL_DIARY_TITLE'),
-				description: t('ABOUT_TOOL_DIARY_DESCRIPTION'),
-				href: appRoutes.activityDiary,
-			},
-		],
-		[t],
+				{
+					title: t('ABOUT_TOOL_SETTINGS_TITLE'),
+					description: t('ABOUT_TOOL_SETTINGS_DESCRIPTION'),
+					href: appRoutes.settings,
+				},
+			],
+			[t],
 	);
 
 	const copyCommitHash = useCallback(async () => {

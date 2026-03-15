@@ -1,6 +1,6 @@
 import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
 import { Disc, Play } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicAlbums, getMusicByAlbum } from '@/service/music';
 import { createAlbumPlaybackContext } from '@/components/music/playbackContext';
@@ -12,20 +12,41 @@ import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import TrackListItem from '@/components/music/TrackListItem';
 import CategoryHeader from '@/components/music/CategoryHeader';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSearchParams } from 'react-router-dom';
 
 const AlbumsView = () => {
 	const [selectedAlbum, setSelectedAlbum] = useState<MusicAlbum | null>(null);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const selectedAlbumKey = searchParams.get('album') ?? '';
+
+	const handleSelectAlbum = (album: MusicAlbum) => {
+		setSelectedAlbum(album);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.set('album', album.key);
+			return next;
+		}, { replace: true });
+	};
+
+	const handleBack = () => {
+		setSelectedAlbum(null);
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.delete('album');
+			return next;
+		}, { replace: true });
+	};
 
 	if (selectedAlbum) {
 		return (
 			<AlbumTracksView
 				album={selectedAlbum}
-				onBack={() => setSelectedAlbum(null)}
+				onBack={handleBack}
 			/>
 		);
 	}
 
-	return <AlbumListView onSelect={setSelectedAlbum} />;
+	return <AlbumListView onSelect={handleSelectAlbum} selectedAlbumKey={selectedAlbumKey} />;
 };
 
 const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -35,7 +56,7 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const AlbumListView = ({ onSelect }: { onSelect: (album: MusicAlbum) => void }) => {
+const AlbumListView = ({ onSelect, selectedAlbumKey }: { onSelect: (album: MusicAlbum) => void; selectedAlbumKey: string }) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
 
@@ -49,6 +70,17 @@ const AlbumListView = ({ onSelect }: { onSelect: (album: MusicAlbum) => void }) 
 	});
 
 	const albums = data?.pages.flatMap((page) => page.items) ?? [];
+
+	useEffect(() => {
+		if (!selectedAlbumKey) {
+			return;
+		}
+
+		const requestedAlbum = albums.find((album) => album.key === selectedAlbumKey);
+		if (requestedAlbum) {
+			onSelect(requestedAlbum);
+		}
+	}, [albums, onSelect, selectedAlbumKey]);
 
 	const handlePlayAlbum = async (e: React.MouseEvent, album: MusicAlbum) => {
 		e.stopPropagation();

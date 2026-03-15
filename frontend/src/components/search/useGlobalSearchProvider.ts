@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { appRoutes, getAnalyticsRoute, getMusicRoute } from '@/app/routes';
+import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
 import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/components/videos/navigation';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { searchGlobal } from '@/service/search';
@@ -131,9 +131,9 @@ export const useGlobalSearchProvider = () => {
 			{
 				id: 'action-videos-continue',
 				kind: 'action',
-				label: t('VIDEO_SECTION_CONTINUE'),
-				description: t('VIDEO_SECTION_CONTINUE_DESCRIPTION'),
-				onSelect: () => navigate('/videos/continue'),
+					label: t('VIDEO_SECTION_CONTINUE'),
+					description: t('VIDEO_SECTION_CONTINUE_DESCRIPTION'),
+					onSelect: () => navigate(getVideoRoute('continue')),
 			},
 			{
 				id: 'action-analytics',
@@ -220,7 +220,7 @@ export const useGlobalSearchProvider = () => {
 				tracks: String(item.track_count),
 				albums: String(item.album_count),
 			}),
-			onSelect: () => navigate(getMusicRoute('artists')),
+				onSelect: () => navigate({ pathname: getMusicRoute('artists'), search: `?artist=${encodeURIComponent(item.key)}` }),
 		}));
 		if (artists.length > 0) {
 			nextSections.push({ id: 'artists', title: t('GLOBAL_SEARCH_SECTION_ARTISTS'), items: artists });
@@ -235,7 +235,7 @@ export const useGlobalSearchProvider = () => {
 				tracks: String(item.track_count),
 			}),
 			meta: item.year,
-			onSelect: () => navigate(getMusicRoute('albums')),
+				onSelect: () => navigate({ pathname: getMusicRoute('albums'), search: `?album=${encodeURIComponent(item.key)}` }),
 		}));
 		if (albums.length > 0) {
 			nextSections.push({ id: 'albums', title: t('GLOBAL_SEARCH_SECTION_ALBUMS'), items: albums });
@@ -258,9 +258,9 @@ export const useGlobalSearchProvider = () => {
 			meta: item.scope === 'video' ? item.classification : item.description,
 			onSelect: () => {
 				if (item.scope === 'music') {
-					navigate(getMusicRoute('playlists'));
-					return;
-				}
+						navigate({ pathname: getMusicRoute('playlists'), search: `?playlist=${item.id}` });
+						return;
+					}
 
 				const section = getVideoSectionForPlaylist({
 					type: item.source_path ? item.description : 'custom',
@@ -291,8 +291,12 @@ export const useGlobalSearchProvider = () => {
 			label: item.name,
 			description: item.path,
 			meta: item.context || item.category,
-			onSelect: () => navigate({ pathname: appRoutes.images, search: `?image=${item.id}` }),
-		}));
+				onSelect: () =>
+					navigate({
+						pathname: appRoutes.images,
+						search: `?image=${item.id}&imagePath=${encodeURIComponent(item.path)}`,
+					}),
+			}));
 		if (images.length > 0) {
 			nextSections.push({ id: 'images', title: t('GLOBAL_SEARCH_SECTION_IMAGES'), items: images });
 		}
