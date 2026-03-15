@@ -44,6 +44,8 @@
 	border: 1px solid var(--app-color-border-subtle);
 	border-radius: var(--app-radius-pill);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+	color: inherit;
+	cursor: pointer;
 }
 
 .searchField:focus-within {
@@ -51,19 +53,33 @@
 	box-shadow: var(--app-shadow-active-primary);
 }
 
+.searchField:hover {
+	border-color: var(--app-color-border-strong);
+}
+
 .searchIcon {
 	flex-shrink: 0;
 	color: var(--app-color-text-muted);
 }
 
-.searchInput {
-	width: 100%;
-	color: var(--app-color-text-primary);
+.searchPlaceholder {
+	flex: 1;
+	min-width: 0;
+	color: var(--app-color-text-muted);
+	text-align: left;
 }
 
-.searchInput input::placeholder {
-	color: var(--app-color-text-muted);
-	opacity: 1;
+.searchShortcut {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--app-spacing-2);
+	height: 28px;
+	border-radius: 999px;
+	background-color: rgba(255, 255, 255, 0.05);
+	color: var(--app-color-text-secondary);
+	font-size: 0.75rem;
+	font-weight: 600;
 }
 
 .actions {
@@ -136,6 +152,10 @@
 	.searchField {
 		height: 40px;
 		padding: 0 var(--app-spacing-3);
+	}
+
+	.searchShortcut {
+		display: none;
 	}
 
 	.clock {
