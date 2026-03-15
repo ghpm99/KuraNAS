@@ -27,6 +27,7 @@ const mockUseLocation = jest.fn();
 const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockUseAnalyticsOverview = jest.fn();
+const mockOpenSearch = jest.fn();
 
 jest.mock('@/components/providers/fileProvider/fileContext', () => ({
 	__esModule: true,
@@ -43,7 +44,12 @@ jest.mock('@/components/providers/uiProvider/uiContext', () => {
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
-	default: () => ({ t: (k: string) => k }),
+	default: () => ({ t: (k: string, options?: Record<string, string>) => options?.shortcut ? `${k}:${options.shortcut}` : k }),
+}));
+
+jest.mock('@/components/search/useGlobalSearch', () => ({
+	__esModule: true,
+	default: () => ({ openSearch: mockOpenSearch, shortcut: 'Ctrl+K' }),
 }));
 
 jest.mock('react-router-dom', () => ({
@@ -189,7 +195,7 @@ beforeEach(() => {
 describe('shell components and pages', () => {
 	it('renders header, layout and sidebar', () => {
 		render(<Header showClock />);
-		expect(screen.getByPlaceholderText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
+		expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
 		expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
 
 		render(<Layout><div>child</div></Layout>);

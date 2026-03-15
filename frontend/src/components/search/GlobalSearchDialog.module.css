@@ -1,0 +1,208 @@
+.dialogPaper {
+	width: min(760px, calc(100vw - 32px));
+	border-radius: 28px !important;
+	border: 1px solid rgba(132, 150, 180, 0.18);
+	background:
+		radial-gradient(circle at top, rgba(34, 61, 96, 0.38), transparent 42%),
+		linear-gradient(180deg, rgba(13, 20, 30, 0.98) 0%, rgba(10, 16, 24, 0.98) 100%);
+	backdrop-filter: blur(18px);
+	box-shadow: 0 32px 70px rgba(0, 0, 0, 0.48);
+}
+
+.content {
+	padding: var(--app-spacing-5) !important;
+}
+
+.searchField {
+	display: flex;
+	align-items: center;
+	gap: var(--app-spacing-3);
+	padding: 0 var(--app-spacing-4);
+	min-height: 56px;
+	border-radius: 20px;
+	border: 1px solid rgba(132, 150, 180, 0.18);
+	background-color: rgba(12, 18, 27, 0.92);
+}
+
+.searchField:focus-within {
+	border-color: rgba(109, 93, 246, 0.58);
+	box-shadow: var(--app-shadow-active-primary);
+}
+
+.searchIcon {
+	color: var(--app-color-text-muted);
+	flex-shrink: 0;
+}
+
+.searchInput {
+	flex: 1;
+	color: var(--app-color-text-primary);
+}
+
+.searchInput input::placeholder {
+	color: var(--app-color-text-muted);
+	opacity: 1;
+}
+
+.shortcut {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 64px;
+	height: 32px;
+	padding: 0 var(--app-spacing-2);
+	border-radius: 999px;
+	border: 1px solid rgba(132, 150, 180, 0.18);
+	background-color: rgba(255, 255, 255, 0.04);
+	color: var(--app-color-text-secondary);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.results {
+	margin-top: var(--app-spacing-4);
+	max-height: min(68vh, 620px);
+	overflow-y: auto;
+	padding-right: var(--app-spacing-1);
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-2);
+}
+
+.section + .section {
+	margin-top: var(--app-spacing-4);
+}
+
+.sectionTitle {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--app-color-text-muted);
+	padding: 0 var(--app-spacing-2);
+}
+
+.item {
+	display: flex;
+	align-items: center;
+	gap: var(--app-spacing-3);
+	width: 100%;
+	padding: var(--app-spacing-3) var(--app-spacing-3);
+	border: 1px solid transparent;
+	border-radius: 20px;
+	background-color: rgba(255, 255, 255, 0.02);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.item:hover,
+.itemActive {
+	border-color: rgba(132, 150, 180, 0.24);
+	background-color: rgba(255, 255, 255, 0.06);
+	transform: translateY(-1px);
+}
+
+.itemIcon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 14px;
+	background-color: rgba(64, 112, 189, 0.18);
+	color: #dce9ff;
+	flex-shrink: 0;
+}
+
+.itemBody {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.itemLabel {
+	color: var(--app-color-text-primary);
+	font-weight: 600;
+}
+
+.itemDescription {
+	color: var(--app-color-text-secondary);
+	font-size: 0.875rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.itemMeta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 56px;
+	max-width: 180px;
+	padding: 0 var(--app-spacing-2);
+	height: 28px;
+	border-radius: 999px;
+	background-color: rgba(255, 255, 255, 0.06);
+	color: var(--app-color-text-secondary);
+	font-size: 0.75rem;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.emptyState {
+	display: grid;
+	place-items: center;
+	gap: var(--app-spacing-2);
+	min-height: 220px;
+	padding: var(--app-spacing-6);
+	text-align: center;
+	color: var(--app-color-text-secondary);
+}
+
+.emptyState h3 {
+	margin: 0;
+	font-size: 1.05rem;
+	color: var(--app-color-text-primary);
+}
+
+.emptyState p {
+	margin: 0;
+	max-width: 320px;
+}
+
+@media (max-width: 640px) {
+	.dialogPaper {
+		width: calc(100vw - 16px);
+		border-radius: 22px !important;
+	}
+
+	.content {
+		padding: var(--app-spacing-3) !important;
+	}
+
+	.searchField {
+		min-height: 50px;
+		padding: 0 var(--app-spacing-3);
+	}
+
+	.shortcut {
+		display: none;
+	}
+
+	.item {
+		padding: var(--app-spacing-3);
+	}
+
+	.itemMeta {
+		max-width: 120px;
+	}
+}

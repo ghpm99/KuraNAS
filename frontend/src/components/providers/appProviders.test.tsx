@@ -3,6 +3,7 @@ import AppProviders from './appProviders';
 
 jest.mock('react-router-dom', () => ({ BrowserRouter: ({ children }: any) => <div data-testid='router'>{children}</div> }));
 jest.mock('../i18n/provider', () => ({ children }: any) => <div data-testid='i18n'>{children}</div>);
+jest.mock('../search/GlobalSearchProvider', () => ({ children }: any) => <div data-testid='global-search-provider'>{children}</div>);
 jest.mock('./settingsProvider', () => ({ children }: any) => <div data-testid='settings-provider'>{children}</div>);
 
 describe('appProviders', () => {
@@ -15,6 +16,7 @@ describe('appProviders', () => {
 
 		expect(screen.getByTestId('router')).toBeInTheDocument();
 		expect(screen.getByTestId('i18n')).toBeInTheDocument();
+		expect(screen.getByTestId('global-search-provider')).toBeInTheDocument();
 		expect(screen.getByTestId('settings-provider')).toBeInTheDocument();
 		expect(screen.getByText('body')).toBeInTheDocument();
 	});

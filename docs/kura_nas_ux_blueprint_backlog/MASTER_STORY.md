@@ -11,9 +11,9 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 
 ## Snapshot atual
 
-- Status geral: `IN_PROGRESS`
-- Fase atual recomendada: `Sistema`
-- Proxima task recomendada: `TASK-019`
+- Status geral: `DONE`
+- Fase atual recomendada: `Encerrado`
+- Proxima task recomendada: `-`
 
 ## Quadro de tasks
 
@@ -37,7 +37,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | TASK-016 | Separar Analytics em visao geral e biblioteca/indexacao | DONE | Sistema |
 | TASK-017 | Criar Settings e consolidar configuracoes | DONE | Sistema |
 | TASK-018 | Limpar About e retirar Activity Diary da camada principal | DONE | Sistema |
-| TASK-019 | Implementar busca global e remover legado restante | TODO | Sistema |
+| TASK-019 | Implementar busca global e remover legado restante | DONE | Sistema |
 
 ## Historico
 
@@ -62,6 +62,7 @@ Acompanhar a evolucao do KuraNAS do estado atual para o blueprint de UX, mantend
 | 2026-03-15 | TASK-016 | Analytics passou a separar saude geral de biblioteca/indexacao com navegacao contextual. | Backend passou a expor sinais de enriquecimento e fila de processamento; frontend reorganizou a pagina em `/analytics` e `/analytics/library` com i18n compartilhado e cobertura para a nova IA do dominio. |
 | 2026-03-15 | TASK-017 | Settings virou um dominio real com persistencia, contrato inicial e efeitos de runtime onde ja fazia sentido. | Backend ganhou `/configuration/settings` com persistencia e idioma aplicado no endpoint de traducoes; frontend entregou a nova tela por secoes, provider global para configuracoes e integracao imediata com accent/reduced motion/slideshow, com i18n e testes atualizados. |
 | 2026-03-15 | TASK-018 | About virou uma pagina tecnica compacta e o Activity Diary saiu da camada principal. | Frontend consolidou o `About` em um resumo tecnico com atalhos operacionais, removeu o acoplamento do diario no `AppShell`, manteve o diario apenas como rota tecnica isolada e atualizou i18n/testes do fluxo. |
+| 2026-03-15 | TASK-019 | A busca global virou command palette real no shell e passou a abrir conteudos e areas-chave a partir de um unico ponto. | Backend ganhou `/search/global` agregando arquivos, pastas, musica, videos e imagens; frontend conectou o `Header` a uma palette com acoes rapidas, resultados agrupados, atalhos de teclado e i18n compartilhado. |
 
 ## Como atualizar ao concluir uma task
 

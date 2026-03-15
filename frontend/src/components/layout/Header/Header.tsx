@@ -1,7 +1,8 @@
-import { Avatar, Drawer, IconButton, InputBase } from '@mui/material';
+import { Avatar, Drawer, IconButton } from '@mui/material';
 import { Bell, Clock3, Menu, Search } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
+import useGlobalSearch from '@/components/search/useGlobalSearch';
 import styles from './Header.module.css';
 import { useHeader } from './useHeader';
 
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export default function Header({ showClock = false }: HeaderProps) {
 	const { t } = useI18n();
+	const { openSearch, shortcut } = useGlobalSearch();
 	const { currentTime, mobileOpen, closeMobileMenu, openMobileMenu } = useHeader(showClock);
 
 	return (
@@ -27,14 +29,16 @@ export default function Header({ showClock = false }: HeaderProps) {
 						>
 							<Menu size={18} />
 						</IconButton>
-						<div className={styles.searchField}>
+						<button
+							type='button'
+							className={styles.searchField}
+							onClick={openSearch}
+							aria-label={t('GLOBAL_SEARCH_OPEN')}
+						>
 							<Search size={16} className={styles.searchIcon} />
-							<InputBase
-								type='search'
-								placeholder={t('SEARCH_PLACEHOLDER')}
-								className={styles.searchInput}
-							/>
-						</div>
+							<span className={styles.searchPlaceholder}>{t('SEARCH_PLACEHOLDER')}</span>
+							<span className={styles.searchShortcut}>{t('GLOBAL_SEARCH_SHORTCUT', { shortcut })}</span>
+						</button>
 					</div>
 
 					<div className={styles.actions}>
