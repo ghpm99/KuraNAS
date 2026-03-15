@@ -1,17 +1,18 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { IMusicData, IMusicMetadata } from './musicProvider/musicProvider';
+import type { IMusicData } from './musicProvider/musicProvider';
 import { getPlayerState, updatePlayerState } from '@/service/playerState';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
-import { formatSize } from '@/utils';
 import { createPlaylistPlaybackContext, type MusicPlaybackContext } from '@/components/music/playbackContext';
 import { useSettings } from './settingsProvider/settingsContext';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
+import { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata } from '@/utils/music';
 
 type RepeatMode = 'none' | 'all' | 'one';
 
+const SYNC_DEBOUNCE_MS = 2000;
+const RESTART_THRESHOLD_SECONDS = 3;
+
 export interface IGlobalMusicContext {
-	// Queue
 	queue: IMusicData[];
 	currentIndex: number | undefined;
 	addToQueue: (track: IMusicData, playbackContext?: MusicPlaybackContext) => void;
@@ -23,16 +24,12 @@ export interface IGlobalMusicContext {
 	setQueueOpen: (open: boolean) => void;
 	toggleQueue: () => void;
 	playbackContext?: MusicPlaybackContext;
-
-	// Playback
 	isPlaying: boolean;
 	currentTime: number;
 	duration: number;
 	volume: number;
 	shuffle: boolean;
 	repeatMode: RepeatMode;
-
-	// Controls
 	togglePlayPause: () => void;
 	next: () => void;
 	previous: () => void;
@@ -40,38 +37,24 @@ export interface IGlobalMusicContext {
 	setVolume: (volume: number) => void;
 	toggleShuffle: () => void;
 	setRepeatMode: (mode: RepeatMode) => void;
-
-	// Helpers
 	currentTrack: IMusicData | undefined;
 	hasQueue: boolean;
 	getMusicTitle: (music: IMusicData) => string;
 	getMusicArtist: (music: IMusicData) => string;
-	musicMetadata: (music: { format: string; size: number; metadata?: IMusicMetadata }) => string;
+	musicMetadata: typeof musicMetadata;
 	formatDuration: (seconds: number) => string;
 }
 
-export const getMusicTitle = (music: IMusicData): string => {
-	return music.metadata?.title || music.name;
-};
-
-export const getMusicArtist = (music: IMusicData): string => {
-	return music.metadata?.artist || 'Unknown Artist';
-};
-
-export const formatMusicDuration = (seconds: number): string => {
-	const mins = Math.floor(seconds / 60);
-	const secs = Math.floor(seconds % 60);
-	return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-export const musicMetadata = (music: { format: string; size: number; metadata?: IMusicMetadata }): string => {
-	const format = music.format ? `${music.format} - ` : '';
-	const fileSize = formatSize(music.size);
-	const dur = music.metadata?.duration ? formatMusicDuration(music.metadata.duration) : '';
-	return `${format}${fileSize}${dur ? ` - ${dur}` : ''}`;
-};
-
 const GlobalMusicContext = createContext<IGlobalMusicContext | undefined>(undefined);
+
+const getShuffledIndex = (queueLength: number, currentIndex: number | undefined): number => {
+	if (queueLength <= 1) return 0;
+	const candidates = Array.from({ length: queueLength }, (_, i) => i).filter((i) => i !== currentIndex);
+	return candidates[Math.floor(Math.random() * candidates.length)]!;
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+export { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata };
 
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
 	const { settings, isLoading: isLoadingSettings } = useSettings();
@@ -89,6 +72,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const hasHydratedQueueRef = useRef(false);
+	const handleTrackEndedRef = useRef<() => void>(() => {});
 
 	// Initialize audio element once
 	useEffect(() => {
@@ -98,7 +82,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
 		const onTimeUpdate = () => setCurrentTime(audio.currentTime);
 		const onLoadedMetadata = () => setDuration(audio.duration);
-		const onEnded = () => handleTrackEnded();
+		const onEnded = () => handleTrackEndedRef.current();
 		const onPause = () => setIsPlaying(false);
 		const onPlay = () => setIsPlaying(true);
 
@@ -117,6 +101,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 			audio.pause();
 			audio.src = '';
 		};
+		// volume is only needed at init time — audio.volume is updated directly in setVolume
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -169,7 +154,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		};
 	}, [isLoadingSettings, settings.players.remember_music_queue]);
 
-	// Debounced sync to backend
 	const syncState = useCallback(
 		(overrides?: { fileId?: number | null; position?: number; vol?: number; playlistId?: number | null }) => {
 			if (syncTimeoutRef.current) {
@@ -184,10 +168,8 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 					volume: overrides?.vol !== undefined ? overrides.vol : volume,
 					shuffle,
 					repeat_mode: repeatMode,
-				}).catch(() => {
-					// Silently ignore sync errors for personal NAS
-				});
-			}, 2000);
+				}).catch(() => {});
+			}, SYNC_DEBOUNCE_MS);
 		},
 		[currentIndex, queue, volume, shuffle, repeatMode, playbackContext],
 	);
@@ -220,8 +202,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		if (currentIndex === undefined) return;
 
 		if (shuffle) {
-			const nextIndex = Math.floor(Math.random() * queue.length);
-			loadAndPlay(nextIndex);
+			loadAndPlay(getShuffledIndex(queue.length, currentIndex));
 			return;
 		}
 
@@ -235,14 +216,9 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		}
 	}, [currentIndex, queue.length, repeatMode, shuffle, loadAndPlay]);
 
-	// Update the ended handler when dependencies change
+	// Keep the ref in sync so the audio 'ended' listener always calls the latest version
 	useEffect(() => {
-		const audio = audioRef.current;
-		if (!audio) return;
-
-		const onEnded = () => handleTrackEnded();
-		audio.addEventListener('ended', onEnded);
-		return () => audio.removeEventListener('ended', onEnded);
+		handleTrackEndedRef.current = handleTrackEnded;
 	}, [handleTrackEnded]);
 
 	const addToQueue = useCallback(
@@ -253,7 +229,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 			setQueue((prev) => {
 				if (prev.some((t) => t.id === track.id)) return prev;
 				const newQueue = [...prev, track];
-				// If nothing is playing, start playing the added track
 				if (currentIndex === undefined) {
 					setTimeout(() => loadAndPlay(newQueue.length - 1), 0);
 				}
@@ -367,8 +342,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		if (queue.length === 0 || currentIndex === undefined) return;
 
 		if (shuffle) {
-			const nextIndex = Math.floor(Math.random() * queue.length);
-			loadAndPlay(nextIndex);
+			loadAndPlay(getShuffledIndex(queue.length, currentIndex));
 			return;
 		}
 
@@ -379,8 +353,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	const previous = useCallback(() => {
 		if (queue.length === 0 || currentIndex === undefined) return;
 
-		// If more than 3 seconds in, restart current track
-		if (audioRef.current && audioRef.current.currentTime > 3) {
+		if (audioRef.current && audioRef.current.currentTime > RESTART_THRESHOLD_SECONDS) {
 			audioRef.current.currentTime = 0;
 			return;
 		}
@@ -418,7 +391,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
 	const hasQueue = queue.length > 0;
 
-	// Sync state when shuffle/repeat changes
 	useEffect(() => {
 		syncState();
 	}, [shuffle, repeatMode, playbackContext, syncState]);
@@ -463,6 +435,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 	);
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalMusic = () => {
 	const context = useContext(GlobalMusicContext);
 	if (!context) {

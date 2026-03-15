@@ -1,6 +1,6 @@
 import { IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { useGlobalMusic } from '../providers/GlobalMusicProvider';
-import styles from './paylist.module.css';
+import styles from './playlist.module.css';
 import { Music, Play } from 'lucide-react';
 
 const Playlist = () => {

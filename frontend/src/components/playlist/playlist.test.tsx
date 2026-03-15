@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import Playlist from './paylist';
+import Playlist from './playlist';
 
 const mockUseGlobalMusic = jest.fn();
 

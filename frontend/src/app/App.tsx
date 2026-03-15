@@ -33,12 +33,12 @@ function AppContent() {
 				<Route path={appRoutes.root} element={<Navigate to={appRoutes.home} replace />} />
 				<Route path={appRoutes.home} element={<HomePage />} />
 				<Route path={appRoutes.files} element={<FilePage />} />
-					<Route path={appRoutes.favorites} element={<FavoritesPage />} />
-					<Route path={appRoutes.legacyFavorites} element={<Navigate to={appRoutes.favorites} replace />} />
-					<Route path={appRoutes.settings} element={<SettingsPage />} />
-					<Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
-					<Route path={appRoutes.legacyActivityDiary} element={<Navigate to={appRoutes.activityDiary} replace />} />
-					<Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
+				<Route path={appRoutes.favorites} element={<FavoritesPage />} />
+				<Route path={appRoutes.legacyFavorites} element={<Navigate to={appRoutes.favorites} replace />} />
+				<Route path={appRoutes.settings} element={<SettingsPage />} />
+				<Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
+				<Route path={appRoutes.legacyActivityDiary} element={<Navigate to={appRoutes.activityDiary} replace />} />
+				<Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
 				<Route path={appRoutes.about} element={<AboutPage />} />
 				<Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
 				<Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
