@@ -2,6 +2,7 @@ import { Box, Card, CardContent, IconButton, Slider, Typography } from '@mui/mat
 import { ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import '../playerControl/playerControl.css';
 
 const GlobalPlayerControl = () => {
@@ -23,8 +24,6 @@ const GlobalPlayerControl = () => {
 		currentTrack,
 		hasQueue,
 		playbackContext,
-		getMusicTitle,
-		getMusicArtist,
 		toggleQueue,
 		queueOpen,
 	} = useGlobalMusic();

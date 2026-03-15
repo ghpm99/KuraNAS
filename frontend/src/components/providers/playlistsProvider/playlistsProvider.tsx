@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -22,27 +22,20 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 	const queryClient = useQueryClient();
 	const { enqueueSnackbar } = useSnackbar();
 	const { t } = useI18n();
-	const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [newName, setNewName] = useState('');
 	const [newDescription, setNewDescription] = useState('');
 
-	const playlistQueryFn = async (pageParam: number): Promise<Pagination<Playlist>> => getPlaylists(pageParam, 50);
-	const playlistTracksQueryFn = async (pageParam: number): Promise<Pagination<PlaylistTrack>> => {
-		if (!selectedPlaylist) {
-			return {
-				items: [],
-				pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
-			};
-		}
-		return getPlaylistTracks(selectedPlaylist.id, pageParam, 50);
-	};
-
 	const automaticPlaylistsQuery = useQuery({
 		queryKey: ['automatic-playlists'],
 		queryFn: getAutomaticPlaylists,
 	});
+
+	const playlistQueryFn = useCallback(
+		async (pageParam: number): Promise<Pagination<Playlist>> => getPlaylists(pageParam, 50),
+		[],
+	);
 
 	const playlistsQuery = useInfiniteQuery({
 		queryKey: ['playlists'],
@@ -50,6 +43,32 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
 	});
+
+	const playlists = useMemo(
+		() => [...(automaticPlaylistsQuery.data ?? []), ...(playlistsQuery.data?.pages.flatMap((page) => page.items) ?? [])],
+		[automaticPlaylistsQuery.data, playlistsQuery.data],
+	);
+
+	const selectedPlaylistId = Number(searchParams.get('playlist') ?? '');
+	const selectedPlaylist = useMemo(
+		() => (Number.isFinite(selectedPlaylistId) && selectedPlaylistId > 0
+			? (playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null)
+			: null),
+		[playlists, selectedPlaylistId],
+	);
+
+	const playlistTracksQueryFn = useCallback(
+		async (pageParam: number): Promise<Pagination<PlaylistTrack>> => {
+			if (!selectedPlaylist) {
+				return {
+					items: [],
+					pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
+				};
+			}
+			return getPlaylistTracks(selectedPlaylist.id, pageParam, 50);
+		},
+		[selectedPlaylist],
+	);
 
 	const tracksQuery = useInfiniteQuery({
 		queryKey: ['playlist-tracks', selectedPlaylist?.id],
@@ -104,19 +123,10 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		},
 	});
 
-	const playlists = useMemo(
-		() => [...(automaticPlaylistsQuery.data ?? []), ...(playlistsQuery.data?.pages.flatMap((page) => page.items) ?? [])],
-		[automaticPlaylistsQuery.data, playlistsQuery.data],
-	);
-	const requestedPlaylistId = Number(searchParams.get('playlist') ?? '');
-	const requestedPlaylist = Number.isFinite(requestedPlaylistId) && requestedPlaylistId > 0
-		? (playlists.find((playlist) => playlist.id === requestedPlaylistId) ?? null)
-		: null;
-	const activePlaylist = selectedPlaylist ?? requestedPlaylist;
 	const tracks = useMemo(() => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [], [tracksQuery.data]);
 
 	const contextValue: PlaylistsContextData = {
-		selectedPlaylist: activePlaylist,
+		selectedPlaylist,
 		playlists,
 		tracks,
 		isLoadingPlaylists: playlistsQuery.isLoading || automaticPlaylistsQuery.isLoading,
@@ -132,15 +142,13 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
 		newName,
 		newDescription,
 		selectPlaylist: (playlist) => {
-			setSelectedPlaylist(playlist);
 			setSearchParams((current) => {
 				const next = new URLSearchParams(current);
 				next.set('playlist', String(playlist.id));
 				return next;
-			}, { replace: true });
+			});
 		},
 		backToList: () => {
-			setSelectedPlaylist(null);
 			setSearchParams((current) => {
 				const next = new URLSearchParams(current);
 				next.delete('playlist');

@@ -398,7 +398,7 @@ describe('components/videos/videoContent', () => {
 		expect(screen.getByText('Retomar agora')).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('button', { name: /Retomar agora/i }));
-		expect(mockNavigate).toHaveBeenCalledWith('/video/31', {
+		expect(mockNavigate).toHaveBeenCalledWith('/video/31?playlist=1&from=%2Fvideos%2Fseries%2Fplaylist-one', {
 			state: { from: '/videos/series/playlist-one', playlistId: 1 },
 		});
 	});
@@ -427,7 +427,7 @@ describe('components/videos/videoContent', () => {
 		expect(screen.getByText('Quick Clip')).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('button', { name: /Reproduzir/i }));
-		expect(mockNavigate).toHaveBeenCalledWith('/video/32', {
+		expect(mockNavigate).toHaveBeenCalledWith('/video/32?playlist=3&from=%2Fvideos%2Fclips%2Fclip-playlist', {
 			state: { from: '/videos/clips/clip-playlist', playlistId: 3 },
 		});
 	});

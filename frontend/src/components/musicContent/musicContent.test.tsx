@@ -4,6 +4,12 @@ import MusicContent from './musicContent';
 const mockUseGlobalMusic = jest.fn();
 
 jest.mock('../providers/GlobalMusicProvider', () => ({ useGlobalMusic: () => mockUseGlobalMusic() }));
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
 jest.mock('react-router-dom', () => ({
 	Outlet: () => <div>OutletView</div>,
 }));
@@ -23,10 +29,7 @@ describe('musicContent', () => {
 			playTrackFromQueue: jest.fn(),
 			removeFromQueue: jest.fn(),
 			clearQueue: jest.fn(),
-			getMusicTitle: jest.fn(),
-			getMusicArtist: jest.fn(),
 			isPlaying: false,
-			formatDuration: jest.fn(),
 		});
 
 		render(<MusicContent />);
@@ -42,10 +45,7 @@ describe('musicContent', () => {
 			playTrackFromQueue: jest.fn(),
 			removeFromQueue: jest.fn(),
 			clearQueue: jest.fn(),
-			getMusicTitle: jest.fn(),
-			getMusicArtist: jest.fn(),
 			isPlaying: false,
-			formatDuration: jest.fn(),
 		});
 		render(<MusicContent />);
 		expect(screen.getAllByText('OutletView').length).toBeGreaterThan(0);

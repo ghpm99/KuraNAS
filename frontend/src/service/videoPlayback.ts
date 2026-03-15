@@ -1,6 +1,14 @@
 import { apiBase } from '.';
 import type { Pagination } from '@/types/pagination';
 
+export interface VideoMetadataDto {
+	format_name?: string;
+	duration?: string;
+	width?: number;
+	height?: number;
+	codec_name?: string;
+}
+
 export interface VideoFileDto {
 	id: number;
 	name: string;
@@ -10,6 +18,7 @@ export interface VideoFileDto {
 	size: number;
 	created_at?: string;
 	updated_at?: string;
+	metadata?: VideoMetadataDto;
 }
 
 export interface VideoPlaylistItemDto {

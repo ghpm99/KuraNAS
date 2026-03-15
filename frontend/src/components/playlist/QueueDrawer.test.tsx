@@ -11,6 +11,13 @@ jest.mock('../providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (track: any) => `title-${track.id}`,
+	getMusicArtist: (track: any) => `artist-${track.id}`,
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (duration: number) => `dur-${duration}`,
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
 	default: () => ({
@@ -41,14 +48,11 @@ describe('QueueDrawer', () => {
 			playTrackFromQueue: mockPlayTrackFromQueue,
 			removeFromQueue: mockRemoveFromQueue,
 			clearQueue: mockClearQueue,
-			getMusicTitle: (track: any) => `title-${track.id}`,
-			getMusicArtist: (track: any) => `artist-${track.id}`,
 			isPlaying: true,
 			playbackContext: {
 				labelKey: 'MUSIC_PLAYBACK_CONTEXT_PLAYLIST',
 				labelParams: { name: 'Roadtrip' },
 			},
-			formatDuration: (duration: number) => `dur-${duration}`,
 		});
 	});
 
@@ -89,11 +93,8 @@ describe('QueueDrawer', () => {
 			playTrackFromQueue: mockPlayTrackFromQueue,
 			removeFromQueue: mockRemoveFromQueue,
 			clearQueue: mockClearQueue,
-			getMusicTitle: (track: any) => `title-${track.id}`,
-			getMusicArtist: (track: any) => `artist-${track.id}`,
 			isPlaying: false,
 			playbackContext: undefined,
-			formatDuration: (duration: number) => `dur-${duration}`,
 		});
 
 		render(<QueueDrawer />);

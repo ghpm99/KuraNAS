@@ -1,7 +1,8 @@
 import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
 import { Play, Tag } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
 import CategoryHeader from '@/components/music/CategoryHeader';
 import TrackListItem from '@/components/music/TrackListItem';
@@ -37,27 +38,64 @@ const loadGenreTracks = (genreKey: string) =>
 	loadAllTracks((page, pageSize) => getMusicByGenre(genreKey, page, pageSize));
 
 export default function GenresView() {
-	const [selectedGenre, setSelectedGenre] = useState<MusicGenre | null>(null);
-
-	if (selectedGenre) {
-		return <GenreTracksView genre={selectedGenre} onBack={() => setSelectedGenre(null)} />;
-	}
-
-	return <GenreListView onSelect={setSelectedGenre} />;
-}
-
-function GenreListView({ onSelect }: { onSelect: (genre: MusicGenre) => void }) {
-	const { t } = useI18n();
-	const { replaceQueue } = useGlobalMusic();
-
+	const [searchParams, setSearchParams] = useSearchParams();
+	const selectedGenreKey = searchParams.get('genre') ?? '';
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ['music-genres'],
 		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicGenre>> => getMusicGenres(pageParam, MUSIC_COLLECTION_PAGE_SIZE),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
 	});
+	const genres = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const selectedGenre = useMemo(
+		() => genres.find((genre) => genre.key === selectedGenreKey) ?? null,
+		[genres, selectedGenreKey],
+	);
 
-	const genres = data?.pages.flatMap((page) => page.items) ?? [];
+	const handleSelectGenre = (genre: MusicGenre) => {
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.set('genre', genre.key);
+			return next;
+		});
+	};
+
+	const handleBack = () => {
+		setSearchParams((current) => {
+			const next = new URLSearchParams(current);
+			next.delete('genre');
+			return next;
+		}, { replace: true });
+	};
+
+	if (selectedGenre) {
+		return <GenreTracksView genre={selectedGenre} onBack={handleBack} />;
+	}
+
+	return (
+		<GenreListView
+			genres={genres}
+			isLoading={isLoading}
+			fetchNextPage={fetchNextPage}
+			hasNextPage={hasNextPage}
+			isFetchingNextPage={isFetchingNextPage}
+			onSelect={handleSelectGenre}
+		/>
+	);
+}
+
+type GenreListViewProps = {
+	genres: MusicGenre[];
+	isLoading: boolean;
+	fetchNextPage: () => Promise<unknown>;
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
+	onSelect: (genre: MusicGenre) => void;
+};
+
+function GenreListView({ genres, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, onSelect }: GenreListViewProps) {
+	const { t } = useI18n();
+	const { replaceQueue } = useGlobalMusic();
 
 	const handlePlayGenre = async (event: React.MouseEvent, genre: MusicGenre) => {
 		event.stopPropagation();

@@ -1,10 +1,11 @@
 import { IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { getMusicTitle } from '@/utils/music';
 import styles from './playlist.module.css';
 import { Music, Play } from 'lucide-react';
 
 const Playlist = () => {
-	const { queue, playTrackFromQueue, getMusicTitle } = useGlobalMusic();
+	const { queue, playTrackFromQueue } = useGlobalMusic();
 	return (
 		<div className={styles.playlist}>
 			<List sx={{ width: '100%' }}>

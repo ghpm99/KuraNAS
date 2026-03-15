@@ -93,10 +93,11 @@ describe('providers/fileProvider/index', () => {
 		expect(screen.getByTestId('selected-id')).toHaveTextContent('1');
 		expect(screen.getByTestId('expanded')).toHaveTextContent('1');
 
+		// Clicking the same item again should toggle deselect
 		act(() => {
 			screen.getByText('select-folder').click();
 		});
-		expect(screen.getByTestId('expanded')).toHaveTextContent('');
+		expect(screen.getByTestId('selected-id')).toHaveTextContent('none');
 
 		act(() => {
 			screen.getByText('clear').click();

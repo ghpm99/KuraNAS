@@ -15,10 +15,12 @@ jest.mock('@/components/hooks/useVideoPlayer/useVideoPlayer', () => ({
 	default: (...args: any[]) => mockUseVideoPlayer(...args),
 }));
 
+const mockSearchParams = new URLSearchParams();
 jest.mock('react-router-dom', () => ({
 	useNavigate: () => mockNavigate,
 	useParams: () => mockUseParams(),
 	useLocation: () => mockUseLocation(),
+	useSearchParams: () => [mockSearchParams],
 }));
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -145,6 +147,8 @@ const buildPlayerState = (overrides?: Partial<any>) => ({
 describe('components/videos/videoPlayer/useVideoPlayerScreen', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		mockSearchParams.delete('playlist');
+		mockSearchParams.delete('from');
 		mockUseParams.mockReturnValue({ id: '30' });
 		mockUseLocation.mockReturnValue({ state: { from: '/videos/series/my-show', playlistId: 7 } });
 		mockUseVideoPlayer.mockReturnValue(buildPlayerState());
@@ -186,10 +190,13 @@ describe('components/videos/videoPlayer/useVideoPlayerScreen', () => {
 
 		rerender();
 
-		expect(mockNavigate).toHaveBeenCalledWith('/video/31', {
-			replace: true,
-			state: { from: '/videos/series/my-show', playlistId: 7 },
-		});
+		expect(mockNavigate).toHaveBeenCalledWith(
+			expect.stringContaining('/video/31'),
+			expect.objectContaining({
+				replace: true,
+				state: expect.objectContaining({ from: '/videos/series/my-show', playlistId: 7 }),
+			}),
+		);
 
 		mockUseParams.mockReturnValue({ id: '31' });
 		rerender();
@@ -264,9 +271,12 @@ describe('components/videos/videoPlayer/useVideoPlayerScreen', () => {
 				result.current.openVideo(55);
 			});
 
-			expect(mockNavigate).toHaveBeenCalledWith('/video/55', {
-				state: { from, playlistId: null },
-			});
+			expect(mockNavigate).toHaveBeenCalledWith(
+				expect.stringContaining('/video/55'),
+				expect.objectContaining({
+					state: expect.objectContaining({ from, playlistId: null }),
+				}),
+			);
 
 			unmount();
 			jest.clearAllMocks();

@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { ListMusic, Play, Pause, Trash2, X } from 'lucide-react';
 import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const DRAWER_WIDTH = 360;
@@ -23,11 +24,8 @@ const QueueDrawer = () => {
 		playTrackFromQueue,
 		removeFromQueue,
 		clearQueue,
-		getMusicTitle,
-		getMusicArtist,
 		isPlaying,
 		playbackContext,
-		formatDuration,
 	} = useGlobalMusic();
 	const { t } = useI18n();
 	const playbackContextLabel = playbackContext ? t(playbackContext.labelKey, playbackContext.labelParams) : '';
@@ -121,7 +119,7 @@ const QueueDrawer = () => {
 						</Box>
 						{currentTrack.metadata?.duration && (
 							<Typography variant='caption' color='text.secondary' sx={{ flexShrink: 0 }}>
-								{formatDuration(currentTrack.metadata.duration)}
+								{formatMusicDuration(currentTrack.metadata.duration)}
 							</Typography>
 						)}
 					</Box>
@@ -168,7 +166,7 @@ const QueueDrawer = () => {
 							/>
 							{track.metadata?.duration && (
 								<Typography variant='caption' color='text.secondary' sx={{ ml: 1, flexShrink: 0 }}>
-									{formatDuration(track.metadata.duration)}
+									{formatMusicDuration(track.metadata.duration)}
 								</Typography>
 							)}
 						</ListItemButton>

@@ -14,6 +14,7 @@ import {
 	type VideoFileDto,
 	type VideoPlaylistDto,
 } from '@/service/videoPlayback';
+import { videoQueryKeys } from './useVideoQueries';
 import { type VideoSection } from '@/app/routes';
 import {
 	getVideoDetailRoute,
@@ -94,11 +95,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const currentSection = getVideoSectionFromPath(location.pathname);
 
 	const { data: playlists = [], isLoading: isLoadingPlaylists } = useQuery({
-		queryKey: ['video', 'playlists'],
+		queryKey: videoQueryKeys.playlists,
 		queryFn: () => getVideoPlaylists(false),
 	});
 	const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = useQuery({
-		queryKey: ['video', 'home-catalog'],
+		queryKey: videoQueryKeys.homeCatalog,
 		queryFn: () => getVideoHomeCatalog(VIDEO_HOME_CATALOG_LIMIT),
 	});
 	const {
@@ -108,7 +109,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 		hasNextPage: hasMoreVideos = false,
 		fetchNextPage,
 	} = useInfiniteQuery({
-		queryKey: ['video', 'library-files', videoSearch],
+		queryKey: videoQueryKeys.libraryFiles(videoSearch),
 		queryFn: ({ pageParam = 1 }) => getVideoLibraryFiles(pageParam, VIDEO_LIBRARY_PAGE_SIZE, videoSearch),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
@@ -120,7 +121,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	);
 
 	const { data: playbackState } = useQuery({
-		queryKey: ['video', 'playback-state'],
+		queryKey: videoQueryKeys.playbackState,
 		queryFn: getVideoPlaybackState,
 		retry: false,
 		enabled: hasContinuePlaylists,
@@ -133,7 +134,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	}, [playlistSlug, playlists]);
 
 	const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } = useQuery({
-		queryKey: ['video', 'playlist-detail', selectedPlaylistSummary?.id],
+		queryKey: videoQueryKeys.playlistDetail(selectedPlaylistSummary?.id),
 		enabled: Boolean(selectedPlaylistSummary?.id),
 		queryFn: () => getVideoPlaylistById(selectedPlaylistSummary?.id ?? 0),
 	});
@@ -203,7 +204,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	}, [allVideos, videoSearch]);
 
 	const { data: playlistMemberships = [] } = useQuery({
-		queryKey: ['video', 'playlist-membership', playlists.map((playlist) => playlist.id).join(',')],
+		queryKey: videoQueryKeys.playlistMembership(playlists.map((playlist) => playlist.id).join(',')),
 		enabled: playlists.length > 0,
 		queryFn: () => getVideoPlaylistMemberships(false),
 	});
@@ -222,7 +223,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 
 	const invalidatePlaylistQueries = async () => {
 		await Promise.all([
-			queryClient.invalidateQueries({ queryKey: ['video', 'playlists'] }),
+			queryClient.invalidateQueries({ queryKey: videoQueryKeys.playlists }),
 			queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
 			queryClient.invalidateQueries({ queryKey: ['video', 'playlist-membership'] }),
 		]);
@@ -231,7 +232,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const invalidateAllVideoQueries = async () => {
 		await Promise.all([
 			invalidatePlaylistQueries(),
-			queryClient.invalidateQueries({ queryKey: ['video', 'home-catalog'] }),
+			queryClient.invalidateQueries({ queryKey: videoQueryKeys.homeCatalog }),
 		]);
 	};
 
@@ -276,17 +277,31 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
 	const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> =>
 		currentSection !== 'home' ? currentSection : getVideoSectionForPlaylist(playlist);
 
+	const buildVideoPlayerUrl = (videoId: number, playlistId?: number | null) => {
+		const params = new URLSearchParams();
+		if (playlistId) {
+			params.set('playlist', String(playlistId));
+		}
+		const from = getCurrentRoute();
+		if (from) {
+			params.set('from', from);
+		}
+		const qs = params.toString();
+		return `/video/${videoId}${qs ? `?${qs}` : ''}`;
+	};
+
 	const playVideo = (videoId: number, playlistId?: number | null) => {
 		if (!videoId) return;
 		const from = getCurrentRoute();
-		navigate(`/video/${videoId}`, { state: { from, playlistId: playlistId ?? null } });
+		navigate(buildVideoPlayerUrl(videoId, playlistId), { state: { from, playlistId: playlistId ?? null } });
 	};
 
 	const openPlaylistVideo = (videoId: number) => {
 		if (!selectedPlaylistSummary) return;
-		navigate(`/video/${videoId}`, {
+		const from = getCurrentRoute();
+		navigate(buildVideoPlayerUrl(videoId, selectedPlaylistSummary.id), {
 			state: {
-				from: getCurrentRoute(),
+				from,
 				playlistId: selectedPlaylistSummary.id,
 			},
 		});

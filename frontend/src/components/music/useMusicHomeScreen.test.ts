@@ -12,6 +12,13 @@ jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? `title-${m.id}`,
+	getMusicArtist: (m: any) => m.metadata?.artist ?? `artist-${m.id}`,
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
+
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: (...args: any[]) => mockUseQuery(...args),
 }));
@@ -32,8 +39,6 @@ describe('useMusicHomeScreen', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: 0,
 			currentTrack: { id: 1 },
-			getMusicArtist: (track: any) => `artist-${track.id}`,
-			getMusicTitle: (track: any) => `title-${track.id}`,
 			hasQueue: true,
 			playbackContext: { href: '/music/albums' },
 			queue: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
@@ -94,8 +99,6 @@ describe('useMusicHomeScreen', () => {
 		mockUseGlobalMusic.mockReturnValue({
 			currentIndex: undefined,
 			currentTrack: undefined,
-			getMusicArtist: () => '',
-			getMusicTitle: () => '',
 			hasQueue: false,
 			playbackContext: undefined,
 			queue: [],

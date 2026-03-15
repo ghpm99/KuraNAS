@@ -4,7 +4,9 @@
       "Bash(go test:*)",
       "Bash(go build:*)",
       "Bash(cd:*)",
-      "Bash(yarn test:*)"
+      "Bash(yarn test:*)",
+      "Bash(git status:*)",
+      "Bash(yarn lint:*)"
     ]
   }
 }

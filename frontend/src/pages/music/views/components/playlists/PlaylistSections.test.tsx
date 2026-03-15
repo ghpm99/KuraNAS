@@ -10,6 +10,13 @@ jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
+
 jest.mock('@/components/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers', () => ({
 	usePlaylistTrackHandlers: () => ({
 		getMusicTitle: (track: any) => track.name,
@@ -83,7 +90,6 @@ describe('playlist sections', () => {
 			replaceQueue: mockReplaceQueue,
 			currentTrack: { id: 200 },
 			isPlaying: false,
-			formatDuration: () => '3:00',
 		});
 		mockGetPlaylistTracks.mockResolvedValue({
 			items: tracks,
@@ -324,7 +330,6 @@ describe('playlist sections', () => {
 			replaceQueue: mockReplaceQueue,
 			currentTrack: { id: 100 },
 			isPlaying: false,
-			formatDuration: () => '3:00',
 		});
 		rerender(
 			<PlaylistDetailSection
@@ -344,7 +349,6 @@ describe('playlist sections', () => {
 			replaceQueue: mockReplaceQueue,
 			currentTrack: { id: 100 },
 			isPlaying: true,
-			formatDuration: () => '3:00',
 		});
 		rerender(
 			<PlaylistDetailSection

@@ -196,6 +196,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const handleSelectItem = useCallback(
 		(itemId: number | null) => {
+			if (itemId !== null && itemId === selectedItemId) {
+				setSelectedItemId(null);
+				setSelectedItemSnapshot(null);
+				return;
+			}
 			setSelectedItemId(itemId);
 			setSelectedItemSnapshot(null);
 			if (!itemId) return;
@@ -205,7 +210,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 				setExpandedItems((prev) => [...prev, itemId]);
 			}
 		},
-		[expandedItems],
+		[expandedItems, selectedItemId],
 	);
 
 	const selectResolvedItem = useCallback((item: FileData | null) => {

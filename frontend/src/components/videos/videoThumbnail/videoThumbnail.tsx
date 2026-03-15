@@ -1,15 +1,16 @@
 import type { VideoFileDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { 
-	Card, 
-	CardContent, 
-	Typography, 
-	IconButton, 
+import { formatSize } from '@/utils';
+import {
+	Card,
+	CardContent,
+	Typography,
+	IconButton,
 	Box,
 	Tooltip
 } from '@mui/material';
 import { Play, Videotape, Clock, Monitor } from 'lucide-react';
-import './videoThumbnail.css';
+import styles from './videoThumbnail.module.css';
 
 interface VideoThumbnailProps {
 	video: VideoFileDto;
@@ -46,13 +47,6 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 		return t('VIDEO_UNKNOWN');
 	};
 
-	const formatFileSize = (bytes: number): string => {
-		const sizes = ['B', 'KB', 'MB', 'GB'];
-		if (bytes === 0) return '0 B';
-		const i = Math.floor(Math.log(bytes) / Math.log(1024));
-		return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-	};
-
 	const handlePlay = () => {
 		onPlay(video);
 	};
@@ -65,8 +59,8 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 	};
 
 	return (
-		<Card 
-			className="video-thumbnail-card"
+		<Card
+			className={styles.card}
 			onClick={handlePlay}
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
@@ -74,11 +68,11 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 			aria-label={t('VIDEO_PLAY_ARIA', { title: getVideoTitle() })}
 		>
 			{/* Thumbnail Container */}
-			<Box className="thumbnail-container">
-				<Box className="thumbnail-placeholder">
-					<Videotape size={48} className="thumbnail-icon" />
-					<IconButton 
-						className="play-overlay"
+			<Box className={styles.thumbnailContainer}>
+				<Box className={styles.thumbnailPlaceholder}>
+					<Videotape size={48} className={styles.thumbnailIcon} />
+					<IconButton
+						className={styles.playOverlay}
 						onClick={(e) => {
 							e.stopPropagation();
 							handlePlay();
@@ -91,44 +85,44 @@ const VideoThumbnail = ({ video, onPlay }: VideoThumbnailProps) => {
 			</Box>
 
 			{/* Video Info */}
-			<CardContent className="video-info">
-				<Typography 
-					variant="subtitle2" 
-					className="video-title"
+			<CardContent className={styles.videoInfo}>
+				<Typography
+					variant="subtitle2"
+					className={styles.videoTitle}
 					title={getVideoTitle()}
 				>
 					{getVideoTitle()}
 				</Typography>
 
-				<Box className="metadata-container">
+				<Box className={styles.metadataContainer}>
 					{/* Duration */}
-					<Box className="metadata-item">
-						<Clock size={14} className="metadata-icon" />
-						<Typography variant="caption" className="metadata-text">
+					<Box className={styles.metadataItem}>
+						<Clock size={14} className={styles.metadataIcon} />
+						<Typography variant="caption" className={styles.metadataText}>
 							{getVideoDuration()}
 						</Typography>
 					</Box>
 
 					{/* Resolution */}
-					<Box className="metadata-item">
-						<Monitor size={14} className="metadata-icon" />
-						<Typography variant="caption" className="metadata-text">
+					<Box className={styles.metadataItem}>
+						<Monitor size={14} className={styles.metadataIcon} />
+						<Typography variant="caption" className={styles.metadataText}>
 							{getVideoResolution()}
 						</Typography>
 					</Box>
 
 					{/* Codec */}
 					<Tooltip title={t('VIDEO_CODEC_TOOLTIP', { codec: getVideoCodec() })}>
-						<Box className="metadata-item codec-badge">
-							<Typography variant="caption" className="codec-text">
+						<Box className={`${styles.metadataItem} ${styles.codecBadge}`}>
+							<Typography variant="caption" className={styles.codecText}>
 								{getVideoCodec()}
 							</Typography>
 						</Box>
 					</Tooltip>
 
 					{/* File Size */}
-					<Typography variant="caption" className="file-size">
-						{formatFileSize(video.size)}
+					<Typography variant="caption" className={styles.fileSize}>
+						{formatSize(video.size)}
 					</Typography>
 				</Box>
 			</CardContent>

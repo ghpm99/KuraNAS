@@ -1,7 +1,8 @@
 import { FileType, formatDate, formatSize, getFileTypeInfo } from '@/utils';
 import useFile from '../providers/fileProvider/fileContext';
 import useI18n from '../i18n/provider/i18nContext';
-import { Box, CircularProgress, Divider, List, ListItem, Typography } from '@mui/material';
+import { Box, CircularProgress, Divider, IconButton, List, ListItem, Typography } from '@mui/material';
+import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
@@ -18,7 +19,7 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 const FileDetails = () => {
-	const { selectedItem, isLoadingAccessData, recentAccessFiles } = useFile();
+	const { selectedItem, isLoadingAccessData, recentAccessFiles, handleSelectItem } = useFile();
 	const { t } = useI18n();
 
 	if (!selectedItem || selectedItem.type === FileType.Directory) return null;
@@ -27,7 +28,16 @@ const FileDetails = () => {
 
 	return (
 		<Box sx={{ p: 2 }}>
-			<Typography variant='subtitle1' fontWeight={600} gutterBottom>{t('FILE_DETAILS_TITLE')}</Typography>
+			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<Typography variant='subtitle1' fontWeight={600} gutterBottom>{t('FILE_DETAILS_TITLE')}</Typography>
+				<IconButton
+					size='small'
+					onClick={() => handleSelectItem(null)}
+					aria-label={t('CLOSE')}
+				>
+					<X size={18} />
+				</IconButton>
+			</Box>
 			<Typography variant='caption' color='text.secondary' display='block' gutterBottom>
 				{t('FILE_DETAILS_SUBTITLE')}
 			</Typography>

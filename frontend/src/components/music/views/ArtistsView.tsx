@@ -43,7 +43,7 @@ export default function ArtistsView() {
 			const next = new URLSearchParams(current);
 			next.set('artist', artist.key);
 			return next;
-		}, { replace: true });
+		});
 	};
 
 	const handleBack = () => {

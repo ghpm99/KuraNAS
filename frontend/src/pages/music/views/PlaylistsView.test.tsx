@@ -40,6 +40,13 @@ jest.mock('@/components/providers/GlobalMusicProvider', () => ({
 	useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/utils/music', () => ({
+	getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
+	getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
+	musicMetadata: () => 'meta',
+	formatMusicDuration: (s: number) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`,
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
 	default: () => ({ t: (k: string) => k }),
@@ -71,9 +78,6 @@ describe('pages/music/views/PlaylistsView', () => {
 		jest.clearAllMocks();
 		mockUseQueryClient.mockReturnValue({ invalidateQueries: jest.fn() });
 		mockUseGlobalMusic.mockReturnValue({
-			getMusicTitle: (m: any) => m.name,
-			getMusicArtist: () => 'artist',
-			musicMetadata: () => 'meta',
 			replaceQueue: mockReplaceQueue,
 		});
 		mockGetPlaylists.mockResolvedValue({

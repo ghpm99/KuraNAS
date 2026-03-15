@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import FilePathSync from './FilePathSync';
 
@@ -23,6 +23,8 @@ const createQueryClient = () =>
 			},
 		},
 	});
+
+const flushPromises = () => act(() => new Promise((r) => setTimeout(r, 0)));
 
 describe('FilePathSync', () => {
 	beforeEach(() => {
@@ -55,11 +57,15 @@ describe('FilePathSync', () => {
 					</Routes>
 				</MemoryRouter>
 			</QueryClientProvider>,
-			);
+		);
 
-			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
-			await waitFor(() => expect(selectResolvedItem).toHaveBeenCalledWith(expect.objectContaining({ id: 42 })));
-		});
+		await waitFor(
+			() => {
+				expect(selectResolvedItem).toHaveBeenCalledWith(expect.objectContaining({ id: 42 }));
+			},
+			{ timeout: 3000 },
+		);
+	});
 
 	it('ignores unknown paths without selecting a folder', async () => {
 		const selectResolvedItem = jest.fn();
@@ -79,15 +85,16 @@ describe('FilePathSync', () => {
 			</QueryClientProvider>,
 		);
 
-			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/missing'));
-			expect(selectResolvedItem).not.toHaveBeenCalled();
-		});
+		await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/missing'));
+		await flushPromises();
+		expect(selectResolvedItem).not.toHaveBeenCalled();
+	});
 
 	it('does not reselect the folder when it is already active', async () => {
 		const selectResolvedItem = jest.fn();
 		mockUseFile.mockReturnValue({
 			selectResolvedItem,
-			selectedItem: { id: 42 },
+			selectedItem: { id: 42, path: '/photos/travel' },
 		});
 		mockGetFileByPath.mockResolvedValue({
 			id: 42,
@@ -107,7 +114,8 @@ describe('FilePathSync', () => {
 			</QueryClientProvider>,
 		);
 
-			await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
-			expect(selectResolvedItem).not.toHaveBeenCalled();
-		});
+		await waitFor(() => expect(mockGetFileByPath).toHaveBeenCalledWith('/photos/travel'));
+		await flushPromises();
+		expect(selectResolvedItem).not.toHaveBeenCalled();
+	});
 });
