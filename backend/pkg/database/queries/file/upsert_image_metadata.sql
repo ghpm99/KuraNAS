@@ -104,8 +104,7 @@ VALUES
         $48,
         $49,
         $50,
-        $51,
-        $52
+        $51
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
