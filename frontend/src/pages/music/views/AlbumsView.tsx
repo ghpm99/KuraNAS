@@ -1,6 +1,6 @@
 import { Box, Card, CardActionArea, CardContent, CircularProgress, Grid, IconButton, List, Typography } from '@mui/material';
 import { Disc, Play } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getMusicAlbums, getMusicByAlbum } from '@/service/music';
 import { createAlbumPlaybackContext } from '@/components/music/playbackContext';
@@ -15,12 +15,23 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSearchParams } from 'react-router-dom';
 
 const AlbumsView = () => {
-	const [selectedAlbum, setSelectedAlbum] = useState<MusicAlbum | null>(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const selectedAlbumKey = searchParams.get('album') ?? '';
+	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ['music-albums'],
+		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicAlbum>> => {
+			return getMusicAlbums(pageParam, 50);
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
+	});
+	const albums = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const selectedAlbum = useMemo(
+		() => albums.find((album) => album.key === selectedAlbumKey) ?? null,
+		[albums, selectedAlbumKey],
+	);
 
 	const handleSelectAlbum = (album: MusicAlbum) => {
-		setSelectedAlbum(album);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.set('album', album.key);
@@ -29,7 +40,6 @@ const AlbumsView = () => {
 	};
 
 	const handleBack = () => {
-		setSelectedAlbum(null);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.delete('album');
@@ -46,7 +56,16 @@ const AlbumsView = () => {
 		);
 	}
 
-	return <AlbumListView onSelect={handleSelectAlbum} selectedAlbumKey={selectedAlbumKey} />;
+	return (
+		<AlbumListView
+			albums={albums}
+			isLoading={isLoading}
+			fetchNextPage={fetchNextPage}
+			hasNextPage={hasNextPage}
+			isFetchingNextPage={isFetchingNextPage}
+			onSelect={handleSelectAlbum}
+		/>
+	);
 };
 
 const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -56,31 +75,18 @@ const handleActionAreaKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActi
 	}
 };
 
-const AlbumListView = ({ onSelect, selectedAlbumKey }: { onSelect: (album: MusicAlbum) => void; selectedAlbumKey: string }) => {
+type AlbumListViewProps = {
+	albums: MusicAlbum[];
+	isLoading: boolean;
+	fetchNextPage: () => Promise<unknown>;
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
+	onSelect: (album: MusicAlbum) => void;
+};
+
+const AlbumListView = ({ albums, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, onSelect }: AlbumListViewProps) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
-
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-albums'],
-		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicAlbum>> => {
-			return getMusicAlbums(pageParam, 50);
-		},
-		initialPageParam: 1,
-		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
-	});
-
-	const albums = data?.pages.flatMap((page) => page.items) ?? [];
-
-	useEffect(() => {
-		if (!selectedAlbumKey) {
-			return;
-		}
-
-		const requestedAlbum = albums.find((album) => album.key === selectedAlbumKey);
-		if (requestedAlbum) {
-			onSelect(requestedAlbum);
-		}
-	}, [albums, onSelect, selectedAlbumKey]);
 
 	const handlePlayAlbum = async (e: React.MouseEvent, album: MusicAlbum) => {
 		e.stopPropagation();

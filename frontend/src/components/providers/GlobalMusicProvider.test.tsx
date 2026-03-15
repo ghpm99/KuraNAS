@@ -2,14 +2,28 @@ import { act, renderHook } from '@testing-library/react';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
 
 const mockUpdatePlayerState = jest.fn();
+const mockGetPlayerState = jest.fn();
 const mockGetApiV1BaseUrl = jest.fn();
+const mockGetNowPlayingPlaylist = jest.fn();
+const mockGetPlaylistTracks = jest.fn();
+const mockUseSettings = jest.fn();
 
 jest.mock('@/service/playerState', () => ({
+	getPlayerState: (...args: any[]) => mockGetPlayerState(...args),
 	updatePlayerState: (...args: any[]) => mockUpdatePlayerState(...args),
 }));
 
 jest.mock('@/service/apiUrl', () => ({
 	getApiV1BaseUrl: () => mockGetApiV1BaseUrl(),
+}));
+
+jest.mock('@/service/playlist', () => ({
+	getNowPlayingPlaylist: (...args: any[]) => mockGetNowPlayingPlaylist(...args),
+	getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
+}));
+
+jest.mock('./settingsProvider/settingsContext', () => ({
+	useSettings: () => mockUseSettings(),
 }));
 
 class FakeAudio {
@@ -67,6 +81,27 @@ describe('components/providers/GlobalMusicProvider', () => {
 		jest.useFakeTimers();
 		fakeAudio = new FakeAudio();
 		mockGetApiV1BaseUrl.mockReturnValue('http://localhost:8000/v1');
+		mockGetPlayerState.mockResolvedValue({
+			playlist_id: null,
+			current_file_id: null,
+			current_position: 0,
+			volume: 1,
+			shuffle: false,
+			repeat_mode: 'none',
+		});
+		mockGetNowPlayingPlaylist.mockResolvedValue({
+			id: null,
+			track_count: 0,
+		});
+		mockGetPlaylistTracks.mockResolvedValue({ items: [] });
+		mockUseSettings.mockReturnValue({
+			settings: {
+				players: {
+					remember_music_queue: false,
+				},
+			},
+			isLoading: false,
+		});
 		mockUpdatePlayerState.mockResolvedValue({});
 		(global as any).Audio = jest.fn(() => fakeAudio);
 	});
@@ -313,5 +348,48 @@ describe('components/providers/GlobalMusicProvider', () => {
 			result.current.replaceQueue([], 0);
 		});
 		expect(result.current.queue.length).toBeGreaterThan(0);
+	});
+
+	it('hydrates the queue from the persisted playlist when restoration is enabled', async () => {
+		mockUseSettings.mockReturnValue({
+			settings: {
+				players: {
+					remember_music_queue: true,
+				},
+			},
+			isLoading: false,
+		});
+		mockGetPlayerState.mockResolvedValue({
+			playlist_id: 99,
+			current_file_id: 2,
+			current_position: 12,
+			volume: 0.7,
+			shuffle: false,
+			repeat_mode: 'none',
+		});
+		mockGetNowPlayingPlaylist.mockResolvedValue({
+			id: 99,
+			name: 'Recovered Mix',
+			track_count: 2,
+		});
+		mockGetPlaylistTracks.mockResolvedValue({
+			items: [{ file: track1 }, { file: track2 }],
+		});
+
+		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		expect(mockGetPlayerState).toHaveBeenCalledTimes(1);
+		expect(mockGetNowPlayingPlaylist).toHaveBeenCalledTimes(1);
+		expect(mockGetPlaylistTracks).toHaveBeenCalledWith(99, 1, 2);
+		expect(result.current.queue).toEqual([track1, track2]);
+		expect(result.current.currentIndex).toBe(1);
+		expect(result.current.playbackContext).toMatchObject({
+			kind: 'playlist',
+			playlistId: 99,
+		});
 	});
 });

@@ -159,12 +159,37 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	useEffect(() => {
 		if (!data) return;
 		const nextItems = data?.pages[0]?.items ?? [];
+		let cancelled = false;
 		if (selectedItemId) {
-			// eslint-disable-next-line react-hooks/set-state-in-effect
-			setFileTree((currentTree) => addChildrenToTree(currentTree, selectedItemId, nextItems));
-			return;
+			queueMicrotask(() => {
+				if (cancelled) {
+					return;
+				}
+
+				setFileTree((currentTree) => addChildrenToTree(currentTree, selectedItemId, nextItems));
+				setSelectedItemSnapshot((currentSnapshot) => {
+					if (!currentSnapshot || currentSnapshot.id !== selectedItemId || currentSnapshot.type !== FileType.Directory) {
+						return currentSnapshot;
+					}
+
+					return {
+						...currentSnapshot,
+						file_children: nextItems,
+					};
+				});
+			});
+			return () => {
+				cancelled = true;
+			};
 		}
-		setFileTree(nextItems);
+		queueMicrotask(() => {
+			if (!cancelled) {
+				setFileTree(nextItems);
+			}
+		});
+		return () => {
+			cancelled = true;
+		};
 	}, [data, selectedItemId]);
 
 		const selectedItem = findItemInTree(fileTree, selectedItemId) ?? selectedItemSnapshot;

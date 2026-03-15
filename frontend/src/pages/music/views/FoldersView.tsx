@@ -1,6 +1,6 @@
 import { Box, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { Folder, Play } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getMusicByFolder, getMusicFolders } from '@/service/music';
 import { createFolderPlaybackContext } from '@/components/music/playbackContext';
@@ -15,12 +15,19 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSearchParams } from 'react-router-dom';
 
 const FoldersView = () => {
-	const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 	const selectedFolderPath = searchParams.get('folder') ?? '';
+	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ['music-folders'],
+		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicFolder>> => {
+			return getMusicFolders(pageParam, 50);
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
+	});
+	const folders = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
 	const handleSelectFolder = (folder: string) => {
-		setSelectedFolder(folder);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.set('folder', folder);
@@ -29,7 +36,6 @@ const FoldersView = () => {
 	};
 
 	const handleBack = () => {
-		setSelectedFolder(null);
 		setSearchParams((current) => {
 			const next = new URLSearchParams(current);
 			next.delete('folder');
@@ -37,11 +43,20 @@ const FoldersView = () => {
 		}, { replace: true });
 	};
 
-	if (selectedFolder) {
-		return <FolderTracksView folder={selectedFolder} onBack={handleBack} />;
+	if (selectedFolderPath) {
+		return <FolderTracksView folder={selectedFolderPath} onBack={handleBack} />;
 	}
 
-	return <FolderListView onSelect={handleSelectFolder} selectedFolderPath={selectedFolderPath} />;
+	return (
+		<FolderListView
+			folders={folders}
+			isLoading={isLoading}
+			fetchNextPage={fetchNextPage}
+			hasNextPage={hasNextPage}
+			isFetchingNextPage={isFetchingNextPage}
+			onSelect={handleSelectFolder}
+		/>
+	);
 };
 
 const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActivate: () => void) => {
@@ -51,31 +66,18 @@ const handleListItemKeyDown = (event: React.KeyboardEvent<HTMLElement>, onActiva
 	}
 };
 
-const FolderListView = ({ onSelect, selectedFolderPath }: { onSelect: (folder: string) => void; selectedFolderPath: string }) => {
+type FolderListViewProps = {
+	folders: MusicFolder[];
+	isLoading: boolean;
+	fetchNextPage: () => Promise<unknown>;
+	hasNextPage: boolean;
+	isFetchingNextPage: boolean;
+	onSelect: (folder: string) => void;
+};
+
+const FolderListView = ({ folders, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, onSelect }: FolderListViewProps) => {
 	const { t } = useI18n();
 	const { replaceQueue } = useGlobalMusic();
-
-	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ['music-folders'],
-		queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicFolder>> => {
-			return getMusicFolders(pageParam, 50);
-		},
-		initialPageParam: 1,
-		getNextPageParam: (lastPage) => (lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined),
-	});
-
-	const folders = data?.pages.flatMap((page) => page.items) ?? [];
-
-	useEffect(() => {
-		if (!selectedFolderPath) {
-			return;
-		}
-
-		const requestedFolder = folders.find((folder) => folder.folder === selectedFolderPath);
-		if (requestedFolder) {
-			onSelect(requestedFolder.folder);
-		}
-	}, [folders, onSelect, selectedFolderPath]);
 
 	const getFolderName = (path: string) => {
 		const parts = path.split('/').filter(Boolean);
