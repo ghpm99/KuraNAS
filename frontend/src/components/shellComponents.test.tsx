@@ -114,10 +114,7 @@ jest.mock('@/components/hooks/useAnalyticsDerived/useAnalyticsDerived', () => ({
 }));
 
 jest.mock('@/components/about/aboutLayout', () => ({ children }: any) => <div data-testid='about-layout'>{children}</div>);
-jest.mock('@/components/about/SystemInfoCard/SystemInfoCard', () => () => <div>SystemInfoCard</div>);
-jest.mock('@/components/about/TechnicalInfoCard/TechnicalInfoCard', () => () => <div>TechnicalInfoCard</div>);
-jest.mock('@/components/about/StatusCard/StatusCard', () => () => <div>StatusCard</div>);
-jest.mock('@/components/about/UpdateCard/UpdateCard', () => () => <div>UpdateCard</div>);
+jest.mock('@/components/about/AboutScreen', () => () => <div>AboutScreenMock</div>);
 
 beforeEach(() => {
 	jest.clearAllMocks();
@@ -243,6 +240,10 @@ describe('shell components and pages', () => {
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('analytics');
 
+		mockUseLocation.mockReturnValueOnce({ pathname: '/activity-diary' });
+		render(<ActivePageListener />);
+		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
+
 		mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
 		render(<ActivePageListener />);
 		expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
@@ -295,7 +296,7 @@ describe('shell components and pages', () => {
 
 		render(<AboutPage />);
 		expect(screen.getByTestId('about-layout')).toBeInTheDocument();
-		expect(screen.getByText('SystemInfoCard')).toBeInTheDocument();
+		expect(screen.getByText('AboutScreenMock')).toBeInTheDocument();
 
 		render(<AnalyticsPage />);
 		expect(screen.getAllByTestId('analytics-layout').length).toBeGreaterThan(0);
