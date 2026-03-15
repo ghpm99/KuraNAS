@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import FileProvider from './index';
 import { useFile } from './fileContext';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
@@ -24,14 +24,15 @@ const mockedApiGet = apiBase.get as jest.Mock;
 const mockedApiPost = apiBase.post as jest.Mock;
 const mockRefetch = jest.fn();
 
-function Consumer() {
-	const ctx = useFile();
+	function Consumer() {
+		const ctx = useFile();
 	return (
 		<div>
-			<span data-testid="files-count">{ctx.files.length}</span>
-			<span data-testid="selected-id">{ctx.selectedItem?.id ?? 'none'}</span>
-			<span data-testid="expanded">{ctx.expandedItems.join(',')}</span>
-			<button onClick={() => ctx.handleSelectItem(1)}>select-folder</button>
+				<span data-testid="files-count">{ctx.files.length}</span>
+				<span data-testid="selected-id">{ctx.selectedItem?.id ?? 'none'}</span>
+				<span data-testid="expanded">{ctx.expandedItems.join(',')}</span>
+				<button onClick={() => ctx.selectResolvedItem({ id: 3, type: 1, name: 'external', file_children: [] } as any)}>resolve</button>
+				<button onClick={() => ctx.handleSelectItem(1)}>select-folder</button>
 			<button onClick={() => ctx.handleSelectItem(2)}>select-file</button>
 			<button onClick={() => ctx.handleSelectItem(null)}>clear</button>
 			<button onClick={() => ctx.handleStarredItem(2)}>star</button>
@@ -69,19 +70,26 @@ describe('providers/fileProvider/index', () => {
 		}));
 	});
 
-	it('provides tree data and selection/expansion behavior', () => {
+	it('provides tree data and selection/expansion behavior', async () => {
 		render(
 			<FileProvider>
 				<Consumer />
 			</FileProvider>,
 		);
 
-		expect(screen.getByTestId('files-count')).toHaveTextContent('1');
-		expect(screen.getByTestId('selected-id')).toHaveTextContent('none');
-
-		act(() => {
-			screen.getByText('select-folder').click();
+		await waitFor(() => {
+			expect(screen.getByTestId('files-count')).toHaveTextContent('1');
+			expect(screen.getByTestId('selected-id')).toHaveTextContent('none');
 		});
+
+			act(() => {
+				screen.getByText('resolve').click();
+			});
+			expect(screen.getByTestId('selected-id')).toHaveTextContent('3');
+
+			act(() => {
+				screen.getByText('select-folder').click();
+			});
 		expect(screen.getByTestId('selected-id')).toHaveTextContent('1');
 		expect(screen.getByTestId('expanded')).toHaveTextContent('1');
 
@@ -103,6 +111,10 @@ describe('providers/fileProvider/index', () => {
 			</FileProvider>,
 		);
 
+		await waitFor(() => {
+			expect(screen.getByTestId('files-count')).toHaveTextContent('1');
+		});
+
 		await act(async () => {
 			screen.getByText('star').click();
 		});
@@ -117,6 +129,10 @@ describe('providers/fileProvider/index', () => {
 				<Consumer />
 			</FileProvider>,
 		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId('files-count')).toHaveTextContent('1');
+		});
 
 		let infiniteOptions = mockedUseInfiniteQuery.mock.calls[0][0];
 		await infiniteOptions.queryFn({ pageParam: 3 });

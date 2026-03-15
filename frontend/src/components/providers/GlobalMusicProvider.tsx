@@ -1,10 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { IMusicData, IMusicMetadata } from './musicProvider/musicProvider';
-import { updatePlayerState } from '@/service/playerState';
+import { getPlayerState, updatePlayerState } from '@/service/playerState';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { formatSize } from '@/utils';
-import type { MusicPlaybackContext } from '@/components/music/playbackContext';
+import { createPlaylistPlaybackContext, type MusicPlaybackContext } from '@/components/music/playbackContext';
+import { useSettings } from './settingsProvider/settingsContext';
+import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 
 type RepeatMode = 'none' | 'all' | 'one';
 
@@ -72,6 +74,7 @@ export const musicMetadata = (music: { format: string; size: number; metadata?: 
 const GlobalMusicContext = createContext<IGlobalMusicContext | undefined>(undefined);
 
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
+	const { settings, isLoading: isLoadingSettings } = useSettings();
 	const [queue, setQueue] = useState<IMusicData[]>([]);
 	const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
 	const [isPlaying, setIsPlaying] = useState(false);
@@ -85,6 +88,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hasHydratedQueueRef = useRef(false);
 
 	// Initialize audio element once
 	useEffect(() => {
@@ -115,6 +119,55 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	useEffect(() => {
+		if (isLoadingSettings || hasHydratedQueueRef.current) {
+			return;
+		}
+
+		hasHydratedQueueRef.current = true;
+		if (!settings.players.remember_music_queue) {
+			return;
+		}
+
+		let cancelled = false;
+
+		const hydrateQueue = async () => {
+			try {
+				const [playerState, nowPlayingPlaylist] = await Promise.all([
+					getPlayerState(),
+					getNowPlayingPlaylist(),
+				]);
+
+				if (!nowPlayingPlaylist.id || !playerState.current_file_id) {
+					return;
+				}
+
+				const playlistTracks = await getPlaylistTracks(nowPlayingPlaylist.id, 1, Math.max(nowPlayingPlaylist.track_count, 1));
+				if (cancelled) {
+					return;
+				}
+
+				const hydratedQueue = playlistTracks.items.map((item) => item.file);
+				const startIndex = hydratedQueue.findIndex((track) => track.id === playerState.current_file_id);
+				if (hydratedQueue.length === 0 || startIndex < 0) {
+					return;
+				}
+
+				setQueue(hydratedQueue);
+				setCurrentIndex(startIndex);
+				setPlaybackContext(createPlaylistPlaybackContext(nowPlayingPlaylist));
+			} catch {
+				// best effort hydration
+			}
+		};
+
+		void hydrateQueue();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [isLoadingSettings, settings.players.remember_music_queue]);
 
 	// Debounced sync to backend
 	const syncState = useCallback(

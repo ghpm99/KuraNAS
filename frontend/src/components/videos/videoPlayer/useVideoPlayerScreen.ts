@@ -9,6 +9,7 @@ import {
 	getVideoSectionMeta,
 } from '@/components/videos/navigation';
 import { buildVideoPlaylistDetail, type VideoDetailItem } from '@/components/videos/videoContent/useVideoPlaylistDetail';
+import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -51,6 +52,7 @@ const getPathname = (value?: string) => {
 
 export default function useVideoPlayerScreen() {
 	const { t } = useI18n();
+	const { settings } = useSettings();
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -79,7 +81,11 @@ export default function useVideoPlayerScreen() {
 		playlist,
 		playbackState,
 		onVideoEnded,
-	} = useVideoPlayer({ videoId, playlistId: locationState?.playlistId ?? null });
+		} = useVideoPlayer({
+			videoId,
+			playlistId: locationState?.playlistId ?? null,
+			persistProgress: settings.players.remember_video_progress,
+		});
 	const syncedRouteVideoIdRef = useRef<string | null>(null);
 
 	const fallbackContextRoute = useMemo(() => {
@@ -200,10 +206,10 @@ export default function useVideoPlayerScreen() {
 
 	const handlePlaybackEnded = useCallback(async () => {
 		await onVideoEnded();
-		if (hasNextVideo) {
+		if (settings.players.autoplay_next_video && hasNextVideo) {
 			await nextVideo();
 		}
-	}, [hasNextVideo, nextVideo, onVideoEnded]);
+	}, [hasNextVideo, nextVideo, onVideoEnded, settings.players.autoplay_next_video]);
 
 	useEffect(() => {
 		if (!videoId) {

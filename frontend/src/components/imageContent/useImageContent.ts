@@ -313,7 +313,7 @@ export const useImageContent = () => {
 
 	const handleCloseViewer = useCallback(() => {
 		closeViewer();
-		updateSearchParams({ image: null });
+		updateSearchParams({ image: null, imagePath: null });
 	}, [closeViewer, updateSearchParams]);
 
 	const handleToggleFavorite = useCallback(() => {
