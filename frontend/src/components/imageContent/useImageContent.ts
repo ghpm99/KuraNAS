@@ -1,15 +1,21 @@
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { appRoutes } from '@/app/routes';
 import { getImageSectionFromPath } from '@/components/images/navigation';
 import { useImage, type ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { useImageViewer } from '@/components/hooks/useImageViewer/useImageViewer';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { toggleStarredFile } from '@/service/files';
+import type { Pagination } from '@/types/pagination';
 import {
 	buildAutomaticAlbumCollections,
 	buildFolderCollections,
 	getCollectionTitleFromPath,
 	getImageDate,
+	getImageDirectoryPath,
 	matchesImageSearch,
 	matchesImageSection,
 	type AutomaticAlbumKey,
@@ -43,9 +49,30 @@ const selectionSearchParamMap = {
 	albums: 'album',
 } as const;
 
+type ImagePagination = Pagination<import('@/components/providers/imageProvider/imageProvider').IImageData>;
+type ImageQueryData = InfiniteData<ImagePagination, unknown>;
+type ToggleFavoriteVariables = { itemId: number; currentStarred: boolean };
+
+const updateImageStarredInCache = (queryData: ImageQueryData | undefined, itemId: number, starred: boolean) => {
+	if (!queryData) {
+		return queryData;
+	}
+
+	return {
+		...queryData,
+		pages: queryData.pages.map((page) => ({
+			...page,
+			items: page.items.map((item) => (item.id === itemId ? { ...item, starred } : item)),
+		})),
+	};
+};
+
 export const useImageContent = () => {
 	const { t } = useI18n();
+	const { enqueueSnackbar } = useSnackbar();
 	const location = useLocation();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { images, status, imageGroupBy, setImageGroupBy, fetchNextPage, hasNextPage, isFetchingNextPage } = useImage();
 	const [search, setSearch] = useState('');
@@ -197,6 +224,10 @@ export const useImageContent = () => {
 		increaseZoom,
 		decreaseZoom,
 		resetZoom,
+		showFilmstrip,
+		setShowFilmstrip,
+		isSlideshowPlaying,
+		toggleSlideshow,
 	} = useImageViewer(filteredImages);
 
 	const updateSearchParams = useCallback(
@@ -217,6 +248,36 @@ export const useImageContent = () => {
 
 	const requestedImageId = Number(searchParams.get('image') ?? '');
 	const activeImageDate = activeImage ? (imageDates.get(activeImage.id) ?? null) : null;
+	const activeFolderPath = activeImage ? getImageDirectoryPath(activeImage) : '';
+
+	const toggleFavoriteMutation = useMutation({
+		mutationFn: ({ itemId }: ToggleFavoriteVariables) => toggleStarredFile(itemId),
+		onMutate: async ({ itemId, currentStarred }) => {
+			await queryClient.cancelQueries({ queryKey: ['images'] });
+			const snapshots = queryClient.getQueriesData<ImageQueryData>({ queryKey: ['images'] });
+
+			queryClient.setQueriesData<ImageQueryData>({ queryKey: ['images'] }, (queryData) =>
+				updateImageStarredInCache(queryData, itemId, !currentStarred),
+			);
+
+			return { snapshots, currentStarred };
+		},
+		onSuccess: (_, __, context) => {
+			enqueueSnackbar(
+				context?.currentStarred ? t('IMAGES_VIEWER_FAVORITE_REMOVED') : t('IMAGES_VIEWER_FAVORITE_ADDED'),
+				{ variant: 'success' },
+			);
+		},
+		onError: (_error, _variables, context) => {
+			context?.snapshots.forEach(([queryKey, queryData]) => {
+				queryClient.setQueryData(queryKey, queryData);
+			});
+			enqueueSnackbar(t('IMAGES_VIEWER_FAVORITE_ERROR'), { variant: 'error' });
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({ queryKey: ['images'] });
+		},
+	});
 
 	const handleOpenImage = useCallback(
 		(imageId: number) => {
@@ -230,6 +291,34 @@ export const useImageContent = () => {
 		closeViewer();
 		updateSearchParams({ image: null });
 	}, [closeViewer, updateSearchParams]);
+
+	const handleToggleFavorite = useCallback(() => {
+		if (!activeImage || toggleFavoriteMutation.isPending) {
+			return;
+		}
+
+		toggleFavoriteMutation.mutate({
+			itemId: activeImage.id,
+			currentStarred: activeImage.starred,
+		});
+	}, [activeImage, toggleFavoriteMutation]);
+
+	const handleOpenFolder = useCallback(() => {
+		if (!activeFolderPath) {
+			return;
+		}
+
+		handleCloseViewer();
+
+		const nextSearchParams = new URLSearchParams({
+			path: activeFolderPath,
+		});
+
+		navigate({
+			pathname: appRoutes.files,
+			search: `?${nextSearchParams.toString()}`,
+		});
+	}, [activeFolderPath, handleCloseViewer, navigate]);
 
 	const handleSelectFolder = useCallback(
 		(folderId: string | null) => {
@@ -348,27 +437,35 @@ export const useImageContent = () => {
 		groupedImages,
 		handleCloseViewer,
 		handleOpenImage,
+		handleOpenFolder,
+		handleToggleFavorite,
 		handleSelectAlbum,
 		handleSelectFolder,
 		hasNextPage: Boolean(hasNextPage),
 		imageGroupBy,
 		increaseZoom,
+		isFavoritePending: toggleFavoriteMutation.isPending,
 		isFetchingNextPage,
+		isSlideshowPlaying,
 		loadMoreRef,
 		resetZoom,
 		search,
 		setImageGroupBy,
 		setSearch,
 		setShowDetails,
+		setShowFilmstrip,
 		showDetails,
+		showFilmstrip,
 		status,
 		summary,
 		title: titleBySection[activeSection],
+		toggleSlideshow,
 		viewMode,
 		zoom,
 		decreaseZoom,
 		lastVisibleImageId,
 		selectedAlbum,
 		selectedFolder,
+		activeFolderPath,
 	};
 };
