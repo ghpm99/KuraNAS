@@ -141,11 +141,11 @@ describe('music home data helpers', () => {
 				track({
 					id: 3,
 					last_interaction: '2026-03-12T10:00:00Z',
-					metadata: { ...track({}).metadata!, artist: 'Artist B', album: 'Album Y', year: undefined },
+					metadata: { ...track({}).metadata!, artist: 'Artist B', album: 'Album Y', year: 0 },
 				}),
 				track({
 					id: 4,
-					metadata: { ...track({}).metadata!, artist: 'Artist B', album: 'Album Y', year: undefined },
+					metadata: { ...track({}).metadata!, artist: 'Artist B', album: 'Album Y', year: 0 },
 				}),
 				track({
 					id: 5,

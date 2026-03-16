@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
 import FileContent from './fileContent';
+import type { FileData } from '../providers/fileProvider/fileContext';
 
 const mockUseFile = jest.fn();
 const mockOpenMediaItem = jest.fn();
@@ -30,6 +31,25 @@ jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar }: any) 
 ));
 jest.mock('./components/fileViewer/fileViewer', () => ({ file }: any) => <div>viewer:{file.name}</div>);
 
+const createFile = (overrides: Partial<FileData> = {}): FileData => ({
+	id: 1,
+	name: 'file.txt',
+	path: '/library/file.txt',
+	parent_path: '/library',
+	type: 2,
+	format: '.txt',
+	size: 1024,
+	updated_at: '2026-03-10T10:00:00Z',
+	created_at: '2026-03-10T10:00:00Z',
+	deleted_at: '',
+	last_interaction: '',
+	last_backup: '',
+	check_sum: '',
+	directory_content_count: 0,
+	starred: false,
+	...overrides,
+});
+
 describe('fileContent', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -55,8 +75,8 @@ describe('fileContent', () => {
 			handleStarredItem: rootHandleStarredItem,
 			selectedItem: null,
 			files: [
-				{ id: 1, type: 2, name: 'song', format: '.mp3', size: 1024, starred: false },
-				{ id: 4, type: 1, name: 'docs', directory_content_count: 1, starred: false },
+				createFile({ id: 1, name: 'song', format: '.mp3' }),
+				createFile({ id: 4, name: 'docs', path: '/library/docs', type: 1, format: '', directory_content_count: 1 }),
 			],
 		});
 		render(<FileContent />);
@@ -76,12 +96,18 @@ describe('fileContent', () => {
 			handleSelectItem,
 			handleStarredItem,
 			selectedItem: {
-				id: 2,
-				type: 1,
-				name: 'folder',
+				...createFile({ id: 2, name: 'folder', path: '/library/folder', type: 1, format: '' }),
 				file_children: [
-					{ id: 3, type: 2, name: 'child', format: '.txt', size: 50, starred: true },
-					{ id: 5, type: 1, name: 'subfolder', directory_content_count: 3, starred: false },
+					createFile({ id: 3, name: 'child', path: '/library/folder/child.txt', parent_path: '/library/folder', size: 50, starred: true }),
+					createFile({
+						id: 5,
+						name: 'subfolder',
+						path: '/library/folder/subfolder',
+						parent_path: '/library/folder',
+						type: 1,
+						format: '',
+						directory_content_count: 3,
+					}),
 				],
 			},
 			files: [],
@@ -100,7 +126,7 @@ describe('fileContent', () => {
 			status: 'success',
 			handleSelectItem: jest.fn(),
 			handleStarredItem: jest.fn(),
-			selectedItem: { id: 9, type: 2, name: 'report.pdf', format: '.pdf', size: 500 },
+			selectedItem: createFile({ id: 9, name: 'report.pdf', path: '/library/report.pdf', format: '.pdf', size: 500 }),
 			files: [],
 		});
 		render(<FileContent />);
@@ -117,7 +143,7 @@ describe('fileContent', () => {
 			selectedItem: null,
 			fileListFilter: 'all',
 			files: [
-				{ id: 1, type: 2, name: 'movie.mp4', format: '.mp4', size: 1024, starred: false },
+				createFile({ id: 1, name: 'movie.mp4', path: '/library/movie.mp4', format: '.mp4' }),
 			],
 		});
 
@@ -136,7 +162,7 @@ describe('fileContent', () => {
 			selectedItem: null,
 			fileListFilter: 'all',
 			files: [
-				{ id: 1, type: 2, name: 'song', format: '.mp3', size: 1024, starred: false },
+				createFile({ id: 1, name: 'song', path: '/library/song.mp3', format: '.mp3' }),
 			],
 		});
 
@@ -159,7 +185,7 @@ describe('fileContent', () => {
 			<FileContent
 				title='Favorites scope'
 				items={[
-					{ id: 7, type: 2, name: 'notes.txt', format: '.txt', size: 12, starred: true },
+					createFile({ id: 7, name: 'notes.txt', path: '/library/notes.txt', format: '.txt', size: 12, starred: true }),
 				]}
 				emptyStateMessage='EMPTY_FAVORITES'
 			/>,

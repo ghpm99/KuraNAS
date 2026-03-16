@@ -2,6 +2,7 @@ package worker
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -126,6 +127,39 @@ func TestUpdateCheckSumWorker_ErrorBranchesDoNotUpdateInvalidEntries(t *testing.
 	UpdateCheckSumWorker(&WorkerContext{FilesService: mock}, 2)
 	if updateCalls != 1 {
 		t.Fatalf("expected one update call (directory checksum still succeeds), got %d", updateCalls)
+	}
+}
+
+func TestUpdateCheckSumWorkerOrchestratorAndPayloadHelper(t *testing.T) {
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+
+	UpdateCheckSumWorker(nil, 1)
+	UpdateCheckSumWorker(&WorkerContext{}, 0)
+	UpdateCheckSumWorker(&WorkerContext{JobOrchestrator: orchestrator}, 11)
+
+	if len(repository.jobs) != 1 {
+		t.Fatalf("expected checksum job to be created, got %d", len(repository.jobs))
+	}
+
+	steps, err := repository.GetStepsByJobID(1)
+	if err != nil {
+		t.Fatalf("GetStepsByJobID returned error: %v", err)
+	}
+	if len(steps) != 1 || steps[0].Type != string(StepTypeChecksum) {
+		t.Fatalf("unexpected checksum steps: %+v", steps)
+	}
+
+	payload, err := marshalChecksumStepPayload(11)
+	if err != nil {
+		t.Fatalf("marshalChecksumStepPayload returned error: %v", err)
+	}
+	decoded := StepFilePayload{}
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal checksum payload: %v", err)
+	}
+	if decoded.FileID != 11 {
+		t.Fatalf("unexpected checksum payload: %+v", decoded)
 	}
 }
 

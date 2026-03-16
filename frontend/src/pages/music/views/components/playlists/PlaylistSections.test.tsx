@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
 import PlaylistDetailSection from './PlaylistDetailSection';
 import PlaylistListSection from './PlaylistListSection';
+import type { Playlist, PlaylistTrack } from '@/types/playlist';
 
 const mockUseGlobalMusic = jest.fn();
 const mockReplaceQueue = jest.fn();
@@ -33,7 +35,58 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	default: () => ({ t: (key: string) => key }),
 }));
 
-const playlist = {
+const createTrackFile = (
+	overrides: Omit<Partial<IMusicData>, 'metadata'> & { metadata?: Partial<NonNullable<IMusicData['metadata']>> } = {},
+): IMusicData => {
+	const metadata = {
+		id: 1,
+		fileId: 100,
+		path: '/music/track-1.mp3',
+		format: 'mp3',
+		title: 'track-1',
+		artist: 'Artist 1',
+		album: 'Album 1',
+		year: 2026,
+		genre: 'Pop',
+		track: 1,
+		disc: 1,
+		duration: 180,
+		bitrate: 320,
+		sampleRate: 44100,
+		channels: 2,
+		createdAt: '2026-03-10T10:00:00Z',
+		...overrides.metadata,
+	} as NonNullable<IMusicData['metadata']>;
+
+	return {
+		id: 100,
+		name: 'track-1',
+		path: '/music/track-1.mp3',
+		type: 2,
+		format: 'mp3',
+		size: 1000,
+		updated_at: '2026-03-10T10:00:00Z',
+		created_at: '2026-03-10T10:00:00Z',
+		deleted_at: '',
+		last_interaction: '',
+		last_backup: '',
+		check_sum: '',
+		directory_content_count: 0,
+		starred: false,
+		metadata,
+		...overrides,
+	} as IMusicData;
+};
+
+const createPlaylistTrack = (overrides: Partial<PlaylistTrack> & { file?: IMusicData } = {}): PlaylistTrack => ({
+	id: 10,
+	position: 1,
+	added_at: '2026-03-10T10:00:00Z',
+	file: createTrackFile(),
+	...overrides,
+});
+
+const playlist: Playlist = {
 	id: 1,
 	name: 'Roadtrip',
 	description: 'favorites',
@@ -56,31 +109,18 @@ const systemPlaylist = {
 	source_key: 'favorites',
 };
 
-const tracks = [
-	{
-		id: 10,
-		position: 1,
-		added_at: '',
-		file: {
-			id: 100,
-			name: 'track-1',
-			format: 'mp3',
-			size: 1000,
-			metadata: { artist: 'Artist 1', duration: 180 },
-		},
-	},
-	{
+const tracks: PlaylistTrack[] = [
+	createPlaylistTrack(),
+	createPlaylistTrack({
 		id: 11,
 		position: 2,
-		added_at: '',
-		file: {
+		file: createTrackFile({
 			id: 101,
 			name: 'track-2',
-			format: 'mp3',
-			size: 1000,
-			metadata: { artist: 'Artist 2', duration: 120 },
-		},
-	},
+			path: '/music/track-2.mp3',
+			metadata: { id: 2, fileId: 101, title: 'track-2', artist: 'Artist 2', duration: 120 },
+		}),
+	}),
 ];
 
 describe('playlist sections', () => {
@@ -291,15 +331,15 @@ describe('playlist sections', () => {
 		const onLoadMore = jest.fn();
 		const playlistWithoutDescription = { ...playlist, description: '' };
 		const trackWithoutDuration = {
-			...tracks[0],
+			...tracks[0]!,
 			file: {
-				...tracks[0].file,
+				...tracks[0]!.file,
 				metadata: {
-					...tracks[0].file.metadata,
-					duration: undefined,
+					...tracks[0]!.file.metadata!,
+					duration: 0,
 				},
 			},
-		};
+		} satisfies PlaylistTrack;
 
 		const { container, rerender } = render(
 			<PlaylistDetailSection

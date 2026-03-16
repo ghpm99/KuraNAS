@@ -51,7 +51,7 @@ describe('useVideoPlaylistDetail', () => {
 				source_path: '/clips',
 				is_hidden: false,
 				is_auto: true,
-				group_mode: 'classification',
+				group_mode: 'single',
 				classification: 'clip',
 				item_count: 2,
 				cover_video_id: null,

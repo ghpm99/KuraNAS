@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import ImageViewerModal from './ImageViewerModal';
 
 jest.mock('@/service/apiUrl', () => ({
@@ -60,31 +61,83 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	}),
 }));
 
-const createImage = (overrides: Record<string, unknown> = {}) => ({
-	id: 7,
-	name: 'Trip.jpg',
-	path: '/photos/travel/Trip.jpg',
-	format: '.jpg',
-	size: 2048,
-	starred: false,
-	created_at: '2026-03-10T10:00:00Z',
-	updated_at: '2026-03-10T10:00:00Z',
-	metadata: {
+const createImage = (
+	overrides: Omit<Partial<IImageData>, 'metadata'> & { metadata?: Partial<NonNullable<IImageData['metadata']>> } = {},
+): IImageData => {
+	const metadata = {
+		id: 7,
+		fileId: 7,
+		path: '/photos/travel/Trip.jpg',
+		format: 'jpg',
+		mode: 'RGB',
 		width: 1600,
 		height: 900,
+		dpi_x: 72,
+		dpi_y: 72,
+		x_resolution: 72,
+		y_resolution: 72,
+		resolution_unit: 2,
+		orientation: 1,
+		compression: 0,
+		photometric_interpretation: 0,
+		color_space: 1,
+		components_configuration: '',
+		icc_profile: '',
 		make: 'Sony',
 		model: 'A7',
 		lens_model: '24-70mm',
+		serial_number: '',
+		datetime: '2026-03-10T10:00:00Z',
+		datetime_original: '2026-03-10T10:00:00Z',
+		datetime_digitized: '',
+		subsec_time: '',
 		iso: 400,
+		shutter_speed: 0,
 		focal_length: 35,
 		f_number: 2.8,
+		aperture_value: 0,
+		brightness_value: 0,
+		exposure_bias: 0,
+		metering_mode: 0,
+		flash: 0,
+		white_balance: 0,
+		exposure_program: 0,
+		max_aperture_value: 0,
+		gps_latitude: 0,
+		gps_longitude: 0,
+		gps_altitude: 0,
+		gps_date: '',
+		gps_time: '',
 		exposure_time: 0.008,
+		user_comment: '',
+		copyright: '',
+		artist: '',
 		software: 'Photos App',
 		image_description: 'Trip',
 		classification: { category: 'photo', confidence: 0.95 },
-	},
-	...overrides,
-});
+		createdAt: '2026-03-10T10:00:00Z',
+		...overrides.metadata,
+	} as NonNullable<IImageData['metadata']>;
+
+	return {
+		id: 7,
+		name: 'Trip.jpg',
+		path: '/photos/travel/Trip.jpg',
+		type: 2,
+		format: '.jpg',
+		size: 2048,
+		deleted_at: '',
+		last_interaction: '',
+		last_backup: '',
+		check_sum: '',
+		directory_content_count: 0,
+		starred: false,
+		created_at: '2026-03-10T10:00:00Z',
+		updated_at: '2026-03-10T10:00:00Z',
+		metadata,
+		...overrides,
+	} as IImageData;
+};
 
 describe('ImageViewerModal', () => {
 	it('renders product actions, details, and filmstrip items', () => {
