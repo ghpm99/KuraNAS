@@ -32,8 +32,7 @@ export type FileContextType = {
 	isLoadingAccessData: boolean;
 	status: string;
 	selectedItem: FileData | null;
-	handleSelectItem: (itemId: number | null) => void;
-	selectResolvedItem: (item: FileData | null) => void;
+	handleSelectItem: (item: FileData | null) => void;
 	handleStarredItem: (itemId: number) => void;
 	uploadFiles: (files: FileList, targetPath?: string) => Promise<void>;
 	createFolder: (name: string, parentPath?: string) => Promise<void>;

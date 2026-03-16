@@ -9,12 +9,13 @@ export type FilesViewMode = 'grid' | 'list';
 export type BreadcrumbSegment = {
 	id: number | null;
 	label: string;
+	path: string | null;
 	isCurrent: boolean;
 };
 
 const useFilesExplorerScreen = () => {
 	const { t } = useI18n();
-	const { files, selectedItem, handleSelectItem, fileListFilter } = useFile();
+	const { files, selectedItem, fileListFilter } = useFile();
 	const [viewMode, setViewMode] = useState<FilesViewMode>('grid');
 	const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
 
@@ -43,9 +44,10 @@ const useFilesExplorerScreen = () => {
 	}, [files, selectedItem]);
 
 	const breadcrumbSegments = useMemo<BreadcrumbSegment[]>(() => {
-		const rootSegment = {
+		const rootSegment: BreadcrumbSegment = {
 			id: null,
 			label: t('FILES'),
+			path: null,
 			isCurrent: !selectedItem,
 		};
 
@@ -58,8 +60,9 @@ const useFilesExplorerScreen = () => {
 			return [
 				rootSegment,
 				{
-					id: selectedItem.type === FileType.File ? null : selectedItem.id,
+					id: selectedItem.id,
 					label: selectedItem.name,
+					path: selectedItem.path,
 					isCurrent: true,
 				},
 			];
@@ -70,6 +73,7 @@ const useFilesExplorerScreen = () => {
 			...trail.map((item, index) => ({
 				id: item.id,
 				label: item.name,
+				path: item.path,
 				isCurrent: index === trail.length - 1,
 			})),
 		];
@@ -90,7 +94,6 @@ const useFilesExplorerScreen = () => {
 		breadcrumbSegments,
 		contextLabel,
 		currentListTitle,
-		handleSelectItem,
 		itemCountLabel,
 		mobileTreeOpen,
 		openMobileTree: () => setMobileTreeOpen(true),

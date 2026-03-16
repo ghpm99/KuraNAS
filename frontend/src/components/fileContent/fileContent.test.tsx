@@ -85,7 +85,7 @@ describe('fileContent', () => {
 		expect(screen.getByText(/FOLDER - 1 ITEM/)).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'song' }));
 		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1, name: 'song' }));
-		expect(rootHandleSelectItem).toHaveBeenCalledWith(1);
+		expect(rootHandleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 		fireEvent.click(screen.getByRole('button', { name: 'star-song' }));
 		expect(rootHandleStarredItem).toHaveBeenCalledWith(1);
 
@@ -118,7 +118,7 @@ describe('fileContent', () => {
 		expect(screen.getByText(/FOLDER - 3 ITENS/)).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'child' }));
 		expect(mockOpenMediaItem).toHaveBeenCalledWith(expect.objectContaining({ id: 3, name: 'child' }));
-		expect(handleSelectItem).toHaveBeenCalledWith(3);
+		expect(handleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }));
 		fireEvent.click(screen.getByRole('button', { name: 'star-child' }));
 		expect(handleStarredItem).toHaveBeenCalledWith(3);
 

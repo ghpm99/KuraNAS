@@ -32,7 +32,7 @@ function AppContent() {
 			<Routes>
 				<Route path={appRoutes.root} element={<Navigate to={appRoutes.home} replace />} />
 				<Route path={appRoutes.home} element={<HomePage />} />
-				<Route path={appRoutes.files} element={<FilePage />} />
+				<Route path={`${appRoutes.files}/*`} element={<FilePage />} />
 				<Route path={appRoutes.favorites} element={<FavoritesPage />} />
 				<Route path={appRoutes.legacyFavorites} element={<Navigate to={appRoutes.favorites} replace />} />
 				<Route path={appRoutes.settings} element={<SettingsPage />} />

@@ -7,6 +7,8 @@ import Tabs from '@/components/tabs';
 import { Button, Drawer, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { FolderOpen, LayoutGrid, List, PanelLeft } from 'lucide-react';
 import { FileType } from '@/utils';
+import { useNavigate } from 'react-router-dom';
+import { appRoutes } from '@/app/routes';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 import styles from './FilesExplorerScreen.module.css';
 
@@ -16,7 +18,6 @@ const FilesExplorerScreen = () => {
 		breadcrumbSegments,
 		closeMobileTree,
 		contextLabel,
-		handleSelectItem,
 		itemCountLabel,
 		mobileTreeOpen,
 		openMobileTree,
@@ -24,6 +25,7 @@ const FilesExplorerScreen = () => {
 		setViewMode,
 		viewMode,
 	} = useFilesExplorerScreen();
+	const navigate = useNavigate();
 	const isFileSelected = selectedItem?.type === FileType.File;
 	const workspaceClassName = isFileSelected
 		? `${styles.workspace} ${styles.workspaceWithPreview}`
@@ -57,7 +59,12 @@ const FilesExplorerScreen = () => {
 												<button
 													type='button'
 													className={styles.breadcrumbButton}
-													onClick={() => handleSelectItem(segment.id)}
+													onClick={() => {
+														const url = segment.path
+															? `${appRoutes.files}${segment.path}`
+															: appRoutes.files;
+														navigate(url);
+													}}
 												>
 													{segment.label}
 												</button>
