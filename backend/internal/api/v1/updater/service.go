@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
+	"time"
 )
 
 const githubReleaseURL = "https://api.github.com/repos/ghpm99/KuraNAS/releases/latest"
@@ -21,26 +21,29 @@ var (
 	fetchLatestReleaseFunc = fetchLatestRelease
 	getAssetNameFunc       = getAssetName
 	downloadFileFunc       = downloadFile
-	extractBinaryFunc      = extractBinary
-	applyUpdateFunc        = applyUpdate
-	restartProcessFunc     = restartProcess
+	extractAllFunc         = extractAll
+	applyFullUpdateFunc    = applyFullUpdate
 	osExecutableFunc       = os.Executable
 	evalSymlinksFunc       = filepath.EvalSymlinks
 	osRenameFunc           = os.Rename
-	osOpenFunc             = os.Open
-	osCreateFunc           = os.Create
-	osRemoveFunc           = os.Remove
-	osChmodFunc            = os.Chmod
-	osStartProcessFunc     = os.StartProcess
-	osExitFunc             = os.Exit
-	syscallExecFunc        = syscall.Exec
+	osRemoveAllFunc        = os.RemoveAll
+	osMkdirAllFunc         = os.MkdirAll
 	runtimeGOOS            = runtime.GOOS
+
+	apiHTTPClient      = &http.Client{Timeout: 30 * time.Second}
+	downloadHTTPClient = &http.Client{Timeout: 10 * time.Minute}
 )
 
-type Service struct{}
+type Service struct {
+	shutdownFn func()
+}
 
 func NewService() *Service {
 	return &Service{}
+}
+
+func (s *Service) SetShutdownFn(fn func()) {
+	s.shutdownFn = fn
 }
 
 func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
@@ -100,31 +103,39 @@ func (s *Service) DownloadAndApply() error {
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
 
 	zipPath := filepath.Join(tmpDir, assetName)
 	if err := downloadFileFunc(downloadURL, zipPath); err != nil {
+		os.RemoveAll(tmpDir)
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
 	info, err := os.Stat(zipPath)
 	if err != nil {
+		os.RemoveAll(tmpDir)
 		return fmt.Errorf("failed to stat downloaded file: %w", err)
 	}
 	if info.Size() != expectedSize {
+		os.RemoveAll(tmpDir)
 		return fmt.Errorf("downloaded file size mismatch: expected %d, got %d", expectedSize, info.Size())
 	}
 
-	binaryPath, err := extractBinaryFunc(zipPath, tmpDir)
-	if err != nil {
-		return fmt.Errorf("failed to extract binary: %w", err)
+	extractDir := filepath.Join(tmpDir, "extracted")
+	if err := extractAllFunc(zipPath, extractDir); err != nil {
+		os.RemoveAll(tmpDir)
+		return fmt.Errorf("failed to extract update: %w", err)
 	}
 
-	if err := applyUpdateFunc(binaryPath); err != nil {
+	if err := applyFullUpdateFunc(extractDir); err != nil {
+		os.RemoveAll(tmpDir)
 		return fmt.Errorf("failed to apply update: %w", err)
 	}
 
-	go restartProcessFunc()
+	os.RemoveAll(tmpDir)
+
+	if s.shutdownFn != nil {
+		time.AfterFunc(2*time.Second, s.shutdownFn)
+	}
 
 	return nil
 }
@@ -137,7 +148,7 @@ func fetchLatestRelease() (GitHubRelease, error) {
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.Header.Set("User-Agent", "KuraNAS-Updater")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := apiHTTPClient.Do(req)
 	if err != nil {
 		return GitHubRelease{}, err
 	}
@@ -197,7 +208,7 @@ func parseSemVer(version string) [3]int {
 }
 
 func downloadFile(url, dest string) error {
-	resp, err := http.Get(url)
+	resp, err := downloadHTTPClient.Get(url)
 	if err != nil {
 		return err
 	}
@@ -217,84 +228,177 @@ func downloadFile(url, dest string) error {
 	return err
 }
 
-func extractBinary(zipPath, destDir string) (string, error) {
+// extractAll extracts all files from the zip archive into destDir.
+// It handles both Linux zips (with build/ prefix) and Windows zips (no prefix).
+// It includes zip-slip protection.
+func extractAll(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer r.Close()
 
+	prefix := detectZipPrefix(r.File)
+
+	for _, f := range r.File {
+		name := f.Name
+
+		if prefix != "" {
+			name = strings.TrimPrefix(name, prefix)
+			if name == "" {
+				continue
+			}
+		}
+
+		targetPath := filepath.Join(destDir, filepath.FromSlash(name))
+
+		if !strings.HasPrefix(filepath.Clean(targetPath), filepath.Clean(destDir)+string(os.PathSeparator)) {
+			return fmt.Errorf("zip-slip detected: %s", f.Name)
+		}
+
+		if f.FileInfo().IsDir() {
+			if err := osMkdirAllFunc(targetPath, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", targetPath, err)
+			}
+			continue
+		}
+
+		if err := osMkdirAllFunc(filepath.Dir(targetPath), 0755); err != nil {
+			return fmt.Errorf("failed to create parent directory for %s: %w", targetPath, err)
+		}
+
+		if err := extractFile(f, targetPath); err != nil {
+			return fmt.Errorf("failed to extract %s: %w", f.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// detectZipPrefix checks if all files in the zip share a common top-level directory prefix
+// (e.g. "build/"). Returns the prefix to strip, or empty string if no common prefix.
+func detectZipPrefix(files []*zip.File) string {
+	if len(files) == 0 {
+		return ""
+	}
+
+	var firstDir string
+	for _, f := range files {
+		parts := strings.SplitN(filepath.ToSlash(f.Name), "/", 2)
+		if len(parts) < 2 {
+			return ""
+		}
+		dir := parts[0] + "/"
+		if firstDir == "" {
+			firstDir = dir
+		} else if dir != firstDir {
+			return ""
+		}
+	}
+
+	return firstDir
+}
+
+func extractFile(f *zip.File, targetPath string) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	out, err := os.Create(targetPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, rc)
+	return err
+}
+
+// applyFullUpdate copies all extracted files to the installation directory.
+// For the binary, it uses the rename-to-.old trick (works on Windows even while running).
+// For other directories (dist, translations, scripts, icons), it replaces them in place.
+// The scripts/.venv directory is preserved if it exists.
+func applyFullUpdate(extractedDir string) error {
+	installDir, err := getInstallDir()
+	if err != nil {
+		return err
+	}
+
+	if err := applyBinaryUpdate(extractedDir, installDir); err != nil {
+		return err
+	}
+
+	assetDirs := []string{"dist", "icons", "translations", "scripts"}
+	for _, dir := range assetDirs {
+		srcDir := filepath.Join(extractedDir, dir)
+		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+			continue
+		}
+
+		dstDir := filepath.Join(installDir, dir)
+
+		if dir == "scripts" {
+			if err := updateScriptsDir(srcDir, dstDir); err != nil {
+				return fmt.Errorf("failed to update %s: %w", dir, err)
+			}
+			continue
+		}
+
+		if err := osRemoveAllFunc(dstDir); err != nil {
+			return fmt.Errorf("failed to remove old %s: %w", dir, err)
+		}
+		if err := copyDir(srcDir, dstDir); err != nil {
+			return fmt.Errorf("failed to copy new %s: %w", dir, err)
+		}
+	}
+
+	return nil
+}
+
+func getInstallDir() (string, error) {
+	exePath, err := osExecutableFunc()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	exePath, err = evalSymlinksFunc(exePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve symlinks: %w", err)
+	}
+
+	return filepath.Dir(exePath), nil
+}
+
+func applyBinaryUpdate(extractedDir, installDir string) error {
 	binaryName := "kuranas"
 	if runtimeGOOS == "windows" {
 		binaryName = "kuranas.exe"
 	}
 
-	for _, f := range r.File {
-		baseName := filepath.Base(f.Name)
-		if baseName == binaryName {
-			rc, err := f.Open()
-			if err != nil {
-				return "", err
-			}
-			defer rc.Close()
-
-			extractedPath := filepath.Join(destDir, binaryName)
-			out, err := os.Create(extractedPath)
-			if err != nil {
-				return "", err
-			}
-			defer out.Close()
-
-			if _, err := io.Copy(out, rc); err != nil {
-				return "", err
-			}
-
-			return extractedPath, nil
-		}
+	newBinaryPath := filepath.Join(extractedDir, binaryName)
+	if _, err := os.Stat(newBinaryPath); os.IsNotExist(err) {
+		return fmt.Errorf("new binary not found in extracted files: %s", binaryName)
 	}
 
-	return "", fmt.Errorf("binary %s not found in archive", binaryName)
-}
-
-func applyUpdate(newBinaryPath string) error {
-	currentPath, err := osExecutableFunc()
-	if err != nil {
-		return fmt.Errorf("failed to get current executable path: %w", err)
-	}
-
-	currentPath, err = evalSymlinksFunc(currentPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve symlinks: %w", err)
-	}
-
+	currentPath := filepath.Join(installDir, binaryName)
 	oldPath := currentPath + ".old"
+
+	// Remove previous .old if it exists
+	os.Remove(oldPath)
+
 	if err := osRenameFunc(currentPath, oldPath); err != nil {
 		return fmt.Errorf("failed to rename current binary: %w", err)
 	}
 
-	src, err := osOpenFunc(newBinaryPath)
-	if err != nil {
-		osRenameFunc(oldPath, currentPath)
-		return fmt.Errorf("failed to open new binary: %w", err)
-	}
-	defer src.Close()
-
-	dst, err := osCreateFunc(currentPath)
-	if err != nil {
-		osRenameFunc(oldPath, currentPath)
-		return fmt.Errorf("failed to create new binary: %w", err)
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		dst.Close()
-		osRemoveFunc(currentPath)
+	if err := copyFile(newBinaryPath, currentPath); err != nil {
 		osRenameFunc(oldPath, currentPath)
 		return fmt.Errorf("failed to copy new binary: %w", err)
 	}
 
 	if runtimeGOOS != "windows" {
-		if err := osChmodFunc(currentPath, 0755); err != nil {
+		if err := os.Chmod(currentPath, 0755); err != nil {
 			return fmt.Errorf("failed to set executable permissions: %w", err)
 		}
 	}
@@ -302,22 +406,77 @@ func applyUpdate(newBinaryPath string) error {
 	return nil
 }
 
-func restartProcess() {
-	execPath, err := osExecutableFunc()
-	if err != nil {
-		return
+// updateScriptsDir replaces the scripts directory while preserving .venv
+func updateScriptsDir(srcDir, dstDir string) error {
+	venvDir := filepath.Join(dstDir, ".venv")
+	venvBackup := filepath.Join(filepath.Dir(dstDir), ".venv-backup")
+
+	hasVenv := false
+	if _, err := os.Stat(venvDir); err == nil {
+		hasVenv = true
+		if err := osRenameFunc(venvDir, venvBackup); err != nil {
+			return fmt.Errorf("failed to backup .venv: %w", err)
+		}
 	}
 
-	if runtimeGOOS == "windows" {
-		proc, err := osStartProcessFunc(execPath, os.Args, &os.ProcAttr{
-			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
-		})
-		if err != nil {
-			return
+	if err := osRemoveAllFunc(dstDir); err != nil {
+		if hasVenv {
+			osRenameFunc(venvBackup, venvDir)
 		}
-		proc.Release()
-		osExitFunc(0)
-	} else {
-		syscallExecFunc(execPath, os.Args, os.Environ())
+		return fmt.Errorf("failed to remove old scripts: %w", err)
 	}
+
+	if err := copyDir(srcDir, dstDir); err != nil {
+		if hasVenv {
+			osMkdirAllFunc(dstDir, 0755)
+			osRenameFunc(venvBackup, venvDir)
+		}
+		return fmt.Errorf("failed to copy new scripts: %w", err)
+	}
+
+	if hasVenv {
+		if err := osRenameFunc(venvBackup, venvDir); err != nil {
+			return fmt.Errorf("failed to restore .venv: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(dst, relPath)
+
+		if info.IsDir() {
+			return osMkdirAllFunc(targetPath, 0755)
+		}
+
+		return copyFile(path, targetPath)
+	})
 }

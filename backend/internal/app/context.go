@@ -31,6 +31,7 @@ type AppContext struct {
 	Configuration *ConfigurationContext
 	Search        *SearchContext
 	UpdateHandler *updater.Handler
+	UpdateService *updater.Service
 }
 
 type FileContext struct {
@@ -113,6 +114,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Configuration: configurationContext,
 		Search:        searchContext,
 		UpdateHandler: updateHandler,
+		UpdateService: updateService,
 	}
 	return context
 }
