@@ -51,7 +51,7 @@ const FileContent = ({
 
 	const handleOpenItem = (file: FileData) => {
 		if (!openMediaItem(file)) {
-			handleSelectItem(file.id);
+			handleSelectItem(file);
 		}
 	};
 

@@ -195,7 +195,7 @@ export const useGlobalSearchProvider = () => {
 			label: item.name,
 			description: item.path,
 			meta: item.format,
-			onSelect: () => navigate({ pathname: appRoutes.files, search: `?path=${encodeURIComponent(item.path)}` }),
+			onSelect: () => navigate(`${appRoutes.files}${item.path}`),
 		}));
 		if (files.length > 0) {
 			nextSections.push({ id: 'files', title: t('GLOBAL_SEARCH_SECTION_FILES'), items: files });
@@ -206,7 +206,7 @@ export const useGlobalSearchProvider = () => {
 			kind: 'folder',
 			label: item.name,
 			description: item.path,
-			onSelect: () => navigate({ pathname: appRoutes.files, search: `?path=${encodeURIComponent(item.path)}` }),
+			onSelect: () => navigate(`${appRoutes.files}${item.path}`),
 		}));
 		if (folders.length > 0) {
 			nextSections.push({ id: 'folders', title: t('GLOBAL_SEARCH_SECTION_FOLDERS'), items: folders });

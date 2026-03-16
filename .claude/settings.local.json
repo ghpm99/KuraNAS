@@ -6,7 +6,8 @@
       "Bash(cd:*)",
       "Bash(yarn test:*)",
       "Bash(git status:*)",
-      "Bash(yarn lint:*)"
+      "Bash(yarn lint:*)",
+      "Bash(make:*)"
     ]
   }
 }

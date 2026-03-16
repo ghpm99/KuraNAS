@@ -71,7 +71,7 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
@@ -87,7 +87,8 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
-	path := c.DefaultQuery("path", config.AppConfig.EntryPoint)
+	rawPath := c.DefaultQuery("path", "")
+	path := config.ToAbsolutePath(rawPath)
 
 	filter := FileFilter{
 		Path: utils.Optional[string]{
@@ -109,7 +110,7 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
@@ -165,7 +166,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
@@ -248,7 +249,7 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
@@ -592,7 +593,11 @@ func (handler *Handler) GetTopFilesBySizeHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, topFiles)
+	responseFiles := make([]FileDto, len(topFiles))
+	for i, f := range topFiles {
+		responseFiles[i] = f.ToResponse()
+	}
+	c.JSON(http.StatusOK, responseFiles)
 }
 
 func (handler *Handler) GetDuplicateFilesHandler(c *gin.Context) {
@@ -645,7 +650,7 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetMusicHandler(c *gin.Context) {
@@ -668,7 +673,7 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
@@ -713,7 +718,7 @@ func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
@@ -758,7 +763,7 @@ func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
@@ -803,7 +808,7 @@ func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
@@ -935,7 +940,7 @@ func (handler *Handler) GetVideosHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, pagination)
+	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
 func (handler *Handler) StreamVideoHandler(c *gin.Context) {

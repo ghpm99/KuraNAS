@@ -4,6 +4,8 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
 import { Heart, LayoutGrid, List, Sparkles } from 'lucide-react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { appRoutes } from '@/app/routes';
 import useFavoritesScreen from './useFavoritesScreen';
 import styles from './FavoritesScreen.module.css';
 
@@ -17,13 +19,13 @@ const FavoritesScreen = () => {
 		currentTitle,
 		filterOptions,
 		filteredItems,
-		handleSelectItem,
 		itemCountLabel,
 		selectedItem,
 		setActiveFilter,
 		setViewMode,
 		viewMode,
 	} = useFavoritesScreen();
+	const navigate = useNavigate();
 	const isFileSelected = selectedItem?.type === FileType.File;
 	const workspaceClassName = isFileSelected
 		? `${styles.workspace} ${styles.workspaceWithPreview}`
@@ -70,7 +72,12 @@ const FavoritesScreen = () => {
 												<button
 													type='button'
 													className={styles.breadcrumbButton}
-													onClick={() => handleSelectItem(segment.id)}
+													onClick={() => {
+														const url = segment.path
+															? `${appRoutes.files}${segment.path}`
+															: appRoutes.favorites;
+														navigate(url);
+													}}
 												>
 													{segment.label}
 												</button>

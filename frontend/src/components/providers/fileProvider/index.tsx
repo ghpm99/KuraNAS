@@ -1,10 +1,13 @@
 import { FileType } from '@/utils';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { appRoutes } from '@/app/routes';
 import {
 	copyFilePath,
 	createFolderAtPath,
 	deleteFilePath,
+	getFileByPath,
 	getFilesTree,
 	getRecentAccessByFileId,
 	moveFilePath,
@@ -22,6 +25,23 @@ import {
 } from './fileContext';
 
 const pageSize = 200;
+const FILES_PREFIX = appRoutes.files;
+
+function extractFilePath(pathname: string): string {
+	if (!pathname.startsWith(FILES_PREFIX)) return '';
+	const rest = pathname.slice(FILES_PREFIX.length);
+	if (!rest || rest === '/') return '';
+	return decodeURIComponent(rest);
+}
+
+function buildFilesUrl(filePath: string): string {
+	if (!filePath) return FILES_PREFIX;
+	const encoded = filePath
+		.split('/')
+		.map((segment) => encodeURIComponent(segment))
+		.join('/');
+	return `${FILES_PREFIX}${encoded.startsWith('/') ? '' : '/'}${encoded}`;
+}
 
 const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
 	if (!itemId) return null;
@@ -52,12 +72,44 @@ const addChildrenToTree = (tree: FileData[], parentId: number, children?: FileDa
 	});
 };
 
+const findTrailByIdInTree = (nodes: FileData[], targetId: number): FileData[] | null => {
+	for (const node of nodes) {
+		if (node.id === targetId) {
+			return [node];
+		}
+		if (node.file_children?.length) {
+			const branch = findTrailByIdInTree(node.file_children, targetId);
+			if (branch) {
+				return [node, ...branch];
+			}
+		}
+	}
+	return null;
+};
+
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
-	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	// URL → path extraction
+	const currentFilePath = extractFilePath(location.pathname);
+
+	// Resolve URL path → FileData via API
+	const { data: resolvedItem } = useQuery({
+		queryKey: ['files-path', currentFilePath],
+		queryFn: () => getFileByPath(currentFilePath),
+		enabled: currentFilePath.length > 0,
+		staleTime: 30_000,
+	});
+
+	// selectedItemId is derived from URL resolution
+	const selectedItemId = currentFilePath ? (resolvedItem?.id ?? null) : null;
+
 	const [fileTree, setFileTree] = useState<FileData[]>([]);
-	const [expandedItems, setExpandedItems] = useState<number[]>([]);
 	const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
-	const [selectedItemSnapshot, setSelectedItemSnapshot] = useState<FileData | null>(null);
+
+	// Snapshot derived from resolvedItem — no state/effect needed
+	const selectedItemSnapshot = currentFilePath ? (resolvedItem ?? null) : null;
 
 	const queryParams = useMemo(
 		() => ({
@@ -77,22 +129,25 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 				category: fileListFilter,
 			}),
 		initialPageParam: 1,
-			getNextPageParam: (lastPage) => {
-				if (lastPage.pagination.hasNext) {
-					return lastPage.pagination.page + 1;
-				}
-				return undefined;
-			},
-			staleTime: 0,
-		});
+		getNextPageParam: (lastPage) => {
+			if (lastPage.pagination.hasNext) {
+				return lastPage.pagination.page + 1;
+			}
+			return undefined;
+		},
+		staleTime: 0,
+	});
 
-		const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
-			queryKey: ['filesRecent', 'tree', selectedItemId],
-			queryFn: async () => {
-				if (selectedItem?.type !== FileType.File || selectedItemId == null) return [];
+	const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
+		queryKey: ['filesRecent', 'tree', selectedItemId],
+		queryFn: async () => {
+			if (!selectedItemId) return [];
+			const fromTree = findItemInTree(fileTree, selectedItemId);
+			const item = fromTree ?? selectedItemSnapshot;
+			if (item?.type !== FileType.File) return [];
 
-				return getRecentAccessByFileId(selectedItemId);
-			},
+			return getRecentAccessByFileId(selectedItemId);
+		},
 		staleTime: 0,
 	});
 
@@ -156,27 +211,15 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		[refetch],
 	);
 
+	// Update file tree when data arrives (deferred to avoid cascading renders)
 	useEffect(() => {
 		if (!data) return;
 		const nextItems = data?.pages[0]?.items ?? [];
 		let cancelled = false;
 		if (selectedItemId) {
 			queueMicrotask(() => {
-				if (cancelled) {
-					return;
-				}
-
+				if (cancelled) return;
 				setFileTree((currentTree) => addChildrenToTree(currentTree, selectedItemId, nextItems));
-				setSelectedItemSnapshot((currentSnapshot) => {
-					if (!currentSnapshot || currentSnapshot.id !== selectedItemId || currentSnapshot.type !== FileType.Directory) {
-						return currentSnapshot;
-					}
-
-					return {
-						...currentSnapshot,
-						file_children: nextItems,
-					};
-				});
 			});
 			return () => {
 				cancelled = true;
@@ -192,31 +235,42 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		};
 	}, [data, selectedItemId]);
 
-		const selectedItem = findItemInTree(fileTree, selectedItemId) ?? selectedItemSnapshot;
+	// Compute expanded items from the selected item's trail in the tree (derived, not state)
+	const expandedItems = useMemo(() => {
+		if (!selectedItemId) return [];
+		const trail = findTrailByIdInTree(fileTree, selectedItemId);
+		if (trail && trail.length > 0) {
+			return trail.map((item) => item.id);
+		}
+		return [];
+	}, [selectedItemId, fileTree]);
 
+	// Build effective selected item: tree lookup → snapshot with children
+	const effectiveSelectedItem = useMemo(() => {
+		if (!selectedItemId) return null;
+
+		const fromTree = findItemInTree(fileTree, selectedItemId);
+		if (fromTree) return fromTree;
+
+		if (selectedItemSnapshot && selectedItemSnapshot.type === FileType.Directory && data) {
+			const nextItems = data.pages[0]?.items ?? [];
+			return { ...selectedItemSnapshot, file_children: nextItems };
+		}
+
+		return selectedItemSnapshot;
+	}, [selectedItemId, fileTree, selectedItemSnapshot, data]);
+
+	// Navigate via URL (push for browser history)
 	const handleSelectItem = useCallback(
-		(itemId: number | null) => {
-			if (itemId !== null && itemId === selectedItemId) {
-				setSelectedItemId(null);
-				setSelectedItemSnapshot(null);
+		(item: FileData | null) => {
+			if (!item) {
+				navigate(FILES_PREFIX);
 				return;
 			}
-			setSelectedItemId(itemId);
-			setSelectedItemSnapshot(null);
-			if (!itemId) return;
-			if (expandedItems.includes(itemId)) {
-				setExpandedItems((prev) => prev.filter((id) => id !== itemId));
-			} else {
-				setExpandedItems((prev) => [...prev, itemId]);
-			}
+			navigate(buildFilesUrl(item.path));
 		},
-		[expandedItems, selectedItemId],
+		[navigate],
 	);
-
-	const selectResolvedItem = useCallback((item: FileData | null) => {
-		setSelectedItemSnapshot(item);
-		setSelectedItemId(item?.id ?? null);
-	}, []);
 
 	const handleStarredItem = useCallback(
 		(itemId: number) => {
@@ -228,11 +282,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const contextValue: FileContextType = useMemo(
 		() => ({
 			files: fileTree || [],
-				status: status,
-				selectedItem,
-				handleSelectItem,
-				selectResolvedItem,
-				expandedItems,
+			status: status,
+			selectedItem: effectiveSelectedItem,
+			handleSelectItem,
+			expandedItems,
 			recentAccessFiles: fileAccessData || [],
 			isLoadingAccessData: isLoadingAccessData,
 			fileListFilter,
@@ -248,11 +301,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 		}),
 		[
 			fileTree,
-				status,
-				selectedItem,
-				handleSelectItem,
-				selectResolvedItem,
-				expandedItems,
+			status,
+			effectiveSelectedItem,
+			handleSelectItem,
+			expandedItems,
 			fileAccessData,
 			isLoadingAccessData,
 			fileListFilter,

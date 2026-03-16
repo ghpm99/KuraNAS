@@ -14,7 +14,6 @@ describe('providers/fileProvider/fileContext', () => {
 			status: 'success',
 			selectedItem: null,
 			handleSelectItem: jest.fn(),
-			selectResolvedItem: jest.fn(),
 			handleStarredItem: jest.fn(),
 			uploadFiles: jest.fn().mockResolvedValue(undefined),
 			createFolder: jest.fn().mockResolvedValue(undefined),

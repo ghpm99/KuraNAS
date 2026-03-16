@@ -52,7 +52,7 @@ describe('folderTree', () => {
 		});
 		render(<FolderTree />);
 		fireEvent.click(screen.getByText('Folder'));
-		expect(handleSelectItem).toHaveBeenCalledWith(1);
+		expect(handleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 		fireEvent.click(screen.getAllByText('FILES')[1] as HTMLElement);
 		expect(handleSelectItem).toHaveBeenCalledWith(null);
 	});

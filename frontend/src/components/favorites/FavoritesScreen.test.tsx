@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import FavoritesScreen from './FavoritesScreen';
 
 const mockUseFavoritesScreen = jest.fn();
-const mockHandleSelectItem = jest.fn();
 const mockSetActiveFilter = jest.fn();
 const mockSetViewMode = jest.fn();
 
@@ -36,8 +36,8 @@ describe('FavoritesScreen', () => {
 			activeFilter: 'all',
 			activeFilterLabel: 'FAVORITES_FILTER_ALL',
 			breadcrumbSegments: [
-				{ id: null, label: 'STARRED_FILES', isCurrent: false },
-				{ id: 10, label: 'Projects', isCurrent: true },
+				{ id: null, label: 'STARRED_FILES', path: null, isCurrent: false },
+				{ id: 10, label: 'Projects', path: '/projects', isCurrent: true },
 			],
 			contextPath: '/projects',
 			currentTitle: 'Projects',
@@ -48,7 +48,6 @@ describe('FavoritesScreen', () => {
 				{ value: 'media', label: 'FAVORITES_FILTER_MEDIA', count: 1 },
 			],
 			filteredItems: [{ id: 1, name: 'Invoice.pdf' }],
-			handleSelectItem: mockHandleSelectItem,
 			itemCountLabel: '3 ITENS',
 			selectedItem: null,
 			setActiveFilter: mockSetActiveFilter,
@@ -58,7 +57,7 @@ describe('FavoritesScreen', () => {
 	});
 
 	it('renders the dedicated favorites layout and delegates filter changes', () => {
-		render(<FavoritesScreen />);
+		render(<MemoryRouter><FavoritesScreen /></MemoryRouter>);
 
 		expect(screen.getByText('FAVORITES_PAGE_TITLE')).toBeInTheDocument();
 		expect(screen.getByText('FAVORITES_PAGE_DESCRIPTION')).toBeInTheDocument();
@@ -72,9 +71,6 @@ describe('FavoritesScreen', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'FILES_VIEW_LIST' }));
 		expect(mockSetViewMode).toHaveBeenCalledWith('list');
-
-		fireEvent.click(screen.getByRole('button', { name: 'STARRED_FILES' }));
-		expect(mockHandleSelectItem).toHaveBeenCalledWith(null);
 	});
 
 	it('shows the preview column when a file is selected', () => {
@@ -82,9 +78,9 @@ describe('FavoritesScreen', () => {
 			activeFilter: 'all',
 			activeFilterLabel: 'FAVORITES_FILTER_ALL',
 			breadcrumbSegments: [
-				{ id: null, label: 'STARRED_FILES', isCurrent: false },
-				{ id: 10, label: 'Projects', isCurrent: false },
-				{ id: 99, label: 'Invoice.pdf', isCurrent: true },
+				{ id: null, label: 'STARRED_FILES', path: null, isCurrent: false },
+				{ id: 10, label: 'Projects', path: '/projects', isCurrent: false },
+				{ id: 99, label: 'Invoice.pdf', path: '/projects/Invoice.pdf', isCurrent: true },
 			],
 			contextPath: '/projects',
 			currentTitle: 'Invoice.pdf',
@@ -95,7 +91,6 @@ describe('FavoritesScreen', () => {
 				{ value: 'media', label: 'FAVORITES_FILTER_MEDIA', count: 1 },
 			],
 			filteredItems: [],
-			handleSelectItem: mockHandleSelectItem,
 			itemCountLabel: '1 ITEM',
 			selectedItem: { id: 99, type: 2, name: 'Invoice.pdf' },
 			setActiveFilter: mockSetActiveFilter,
@@ -103,7 +98,7 @@ describe('FavoritesScreen', () => {
 			viewMode: 'grid',
 		});
 
-		render(<FavoritesScreen />);
+		render(<MemoryRouter><FavoritesScreen /></MemoryRouter>);
 
 		expect(screen.getByText('FileDetailsMock')).toBeInTheDocument();
 	});

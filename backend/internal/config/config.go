@@ -2,7 +2,9 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -50,6 +52,30 @@ func InitializeConfig() {
 		WorkerSchedulerPollMS:      parseEnvInt("WORKER_SCHEDULER_POLL_MS", 2000),
 		WorkerMaxConcurrentJobs:    parseEnvInt("WORKER_MAX_CONCURRENT_JOBS", 4),
 	}
+}
+
+// ToRelativePath strips the EntryPoint prefix from an absolute path,
+// returning a path relative to the entry point (e.g. "/imagens/fotos").
+func ToRelativePath(absolutePath string) string {
+	entryPoint := filepath.Clean(AppConfig.EntryPoint)
+	cleaned := filepath.Clean(absolutePath)
+	rel := strings.TrimPrefix(cleaned, entryPoint)
+	if rel == "" || rel == "." {
+		return "/"
+	}
+	if !strings.HasPrefix(rel, "/") {
+		rel = "/" + rel
+	}
+	return rel
+}
+
+// ToAbsolutePath prepends the EntryPoint to a relative path.
+func ToAbsolutePath(relativePath string) string {
+	entryPoint := filepath.Clean(AppConfig.EntryPoint)
+	if relativePath == "" || relativePath == "/" {
+		return entryPoint
+	}
+	return filepath.Join(entryPoint, relativePath)
 }
 
 func parseEnvInt(key string, fallback int) int {

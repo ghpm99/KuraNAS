@@ -107,7 +107,7 @@ describe('components/search/GlobalSearchProvider', () => {
 		fireEvent.click(screen.getByText('mix.mp3'));
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location-probe')).toHaveTextContent('/files?path=%2Fmusic%2Fmix.mp3');
+			expect(screen.getByTestId('location-probe')).toHaveTextContent('/files/music/mix.mp3');
 		});
 	});
 

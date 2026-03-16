@@ -39,7 +39,7 @@ const matchesFavoritesFilter = (filter: FavoritesFilter, file: FileData) => {
 
 const useFavoritesScreen = () => {
 	const { t } = useI18n();
-	const { files, selectedItem, handleSelectItem } = useFile();
+	const { files, selectedItem } = useFile();
 	const [activeFilter, setActiveFilter] = useState<FavoritesFilter>('all');
 	const [viewMode, setViewMode] = useState<FavoritesViewMode>('grid');
 
@@ -81,9 +81,10 @@ const useFavoritesScreen = () => {
 	);
 
 	const breadcrumbSegments = useMemo<BreadcrumbSegment[]>(() => {
-		const rootSegment = {
+		const rootSegment: BreadcrumbSegment = {
 			id: null,
 			label: t('STARRED_FILES'),
+			path: null,
 			isCurrent: !selectedItem,
 		};
 
@@ -96,8 +97,9 @@ const useFavoritesScreen = () => {
 			return [
 				rootSegment,
 				{
-					id: selectedItem.type === FileType.File ? null : selectedItem.id,
+					id: selectedItem.id,
 					label: selectedItem.name,
+					path: selectedItem.path,
 					isCurrent: true,
 				},
 			];
@@ -108,6 +110,7 @@ const useFavoritesScreen = () => {
 			...trail.map((item, index) => ({
 				id: item.id,
 				label: item.name,
+				path: item.path,
 				isCurrent: index === trail.length - 1,
 			})),
 		];
@@ -134,7 +137,6 @@ const useFavoritesScreen = () => {
 		currentTitle,
 		filterOptions,
 		filteredItems,
-		handleSelectItem,
 		itemCountLabel,
 		selectedItem,
 		setActiveFilter,

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import FilesExplorerScreen from './FilesExplorerScreen';
 
 const mockUseFile = jest.fn();
@@ -54,7 +55,7 @@ describe('FilesExplorerScreen', () => {
 	});
 
 	it('renders explorer structure and switches view mode', () => {
-		render(<FilesExplorerScreen />);
+		render(<MemoryRouter><FilesExplorerScreen /></MemoryRouter>);
 
 		expect(screen.getByText('FILES_PAGE_TITLE')).toBeInTheDocument();
 		expect(screen.getByText('FILES_PAGE_DESCRIPTION')).toBeInTheDocument();
@@ -80,7 +81,7 @@ describe('FilesExplorerScreen', () => {
 			},
 		});
 
-		render(<FilesExplorerScreen />);
+		render(<MemoryRouter><FilesExplorerScreen /></MemoryRouter>);
 
 		expect(screen.getByText('media')).toBeInTheDocument();
 		expect(screen.getAllByText('movie.mp4').length).toBeGreaterThan(0);
@@ -88,7 +89,7 @@ describe('FilesExplorerScreen', () => {
 	});
 
 	it('opens the tree drawer action', () => {
-		render(<FilesExplorerScreen />);
+		render(<MemoryRouter><FilesExplorerScreen /></MemoryRouter>);
 
 		fireEvent.click(screen.getByRole('button', { name: 'FILES_OPEN_TREE' }));
 		expect(screen.getByText('FolderTreeMock')).toBeInTheDocument();

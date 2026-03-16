@@ -82,7 +82,6 @@ jest.mock('@/components/fileDetails', () => () => <div>FileDetailsMock</div>);
 jest.mock('@/components/tabs', () => () => <div>TabsMock</div>);
 jest.mock('@/components/favorites/FavoritesScreen', () => () => <div>FavoritesScreenMock</div>);
 jest.mock('@/components/files/filesLayout', () => ({ children }: any) => <div data-testid='files-layout'>{children}</div>);
-jest.mock('@/components/files/FilePathSync', () => () => <div>FilePathSyncMock</div>);
 jest.mock('@/components/files/FilesExplorerScreen', () => () => <div>FilesExplorerScreenMock</div>);
 
 jest.mock('@/components/imageContent', () => () => <div>ImageContentMock</div>);
