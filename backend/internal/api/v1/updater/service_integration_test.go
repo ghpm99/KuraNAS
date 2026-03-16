@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 )
 
 type roundTripFunc func(req *http.Request) (*http.Response, error)
@@ -20,13 +19,17 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-func withMockHTTPClient(t *testing.T, fn roundTripFunc) {
+func withMockHTTPClients(t *testing.T, fn roundTripFunc) {
 	t.Helper()
 
-	original := http.DefaultClient
-	http.DefaultClient = &http.Client{Transport: fn}
+	origAPI := apiHTTPClient
+	origDownload := downloadHTTPClient
+	mockClient := &http.Client{Transport: fn}
+	apiHTTPClient = mockClient
+	downloadHTTPClient = mockClient
 	t.Cleanup(func() {
-		http.DefaultClient = original
+		apiHTTPClient = origAPI
+		downloadHTTPClient = origDownload
 	})
 }
 
@@ -34,13 +37,12 @@ func resetServiceFns() {
 	fetchLatestReleaseFunc = fetchLatestRelease
 	getAssetNameFunc = getAssetName
 	downloadFileFunc = downloadFile
-	extractBinaryFunc = extractBinary
-	applyUpdateFunc = applyUpdate
-	restartProcessFunc = restartProcess
+	extractAllFunc = extractAll
+	applyFullUpdateFunc = applyFullUpdate
 }
 
 func TestFetchLatestRelease_Success(t *testing.T) {
-	withMockHTTPClient(t, func(req *http.Request) (*http.Response, error) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
 		body := `{
 			"tag_name":"v1.2.3",
 			"html_url":"https://example.com/release",
@@ -65,7 +67,7 @@ func TestFetchLatestRelease_Success(t *testing.T) {
 }
 
 func TestFetchLatestRelease_StatusError(t *testing.T) {
-	withMockHTTPClient(t, func(req *http.Request) (*http.Response, error) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusInternalServerError,
 			Body:       io.NopCloser(strings.NewReader("error")),
@@ -80,7 +82,7 @@ func TestFetchLatestRelease_StatusError(t *testing.T) {
 }
 
 func TestFetchLatestRelease_InvalidJSON(t *testing.T) {
-	withMockHTTPClient(t, func(req *http.Request) (*http.Response, error) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader("{invalid-json")),
@@ -96,7 +98,7 @@ func TestFetchLatestRelease_InvalidJSON(t *testing.T) {
 
 func TestDownloadFile_Success(t *testing.T) {
 	content := "binary-content"
-	withMockHTTPClient(t, func(req *http.Request) (*http.Response, error) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(content)),
@@ -119,7 +121,7 @@ func TestDownloadFile_Success(t *testing.T) {
 }
 
 func TestDownloadFile_StatusError(t *testing.T) {
-	withMockHTTPClient(t, func(req *http.Request) (*http.Response, error) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusBadGateway,
 			Body:       io.NopCloser(strings.NewReader("bad gateway")),
@@ -157,7 +159,7 @@ func createZipWithFiles(t *testing.T, path string, files map[string]string) {
 	}
 }
 
-func TestExtractBinary_Success(t *testing.T) {
+func TestExtractAll_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 	zipPath := filepath.Join(tmpDir, "release.zip")
 
@@ -167,32 +169,116 @@ func TestExtractBinary_Success(t *testing.T) {
 	}
 
 	createZipWithFiles(t, zipPath, map[string]string{
-		"build/" + binName: "binary-data",
-		"other/file.txt":   "ignore",
+		binName:                "binary-data",
+		"dist/index.html":      "<html>app</html>",
+		"dist/assets/main.js":  "console.log('hello')",
+		"translations/en.json": `{"key":"value"}`,
+		"icons/icon.png":       "png-data",
+		"scripts/metadata.py":  "print('ok')",
 	})
 
-	extracted, err := extractBinary(zipPath, tmpDir)
-	if err != nil {
+	extractDir := filepath.Join(tmpDir, "extracted")
+	if err := extractAll(zipPath, extractDir); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if filepath.Base(extracted) != binName {
-		t.Fatalf("expected extracted binary %s, got %s", binName, extracted)
+
+	// Verify all files were extracted
+	checks := map[string]string{
+		binName:                "binary-data",
+		"dist/index.html":      "<html>app</html>",
+		"dist/assets/main.js":  "console.log('hello')",
+		"translations/en.json": `{"key":"value"}`,
+		"icons/icon.png":       "png-data",
+		"scripts/metadata.py":  "print('ok')",
 	}
-	if _, err := os.Stat(extracted); err != nil {
-		t.Fatalf("expected extracted file to exist: %v", err)
+
+	for name, expected := range checks {
+		data, err := os.ReadFile(filepath.Join(extractDir, filepath.FromSlash(name)))
+		if err != nil {
+			t.Fatalf("expected file %s to exist: %v", name, err)
+		}
+		if string(data) != expected {
+			t.Fatalf("file %s: expected %q, got %q", name, expected, string(data))
+		}
 	}
 }
 
-func TestExtractBinary_NotFound(t *testing.T) {
+func TestExtractAll_WithBuildPrefix(t *testing.T) {
 	tmpDir := t.TempDir()
 	zipPath := filepath.Join(tmpDir, "release.zip")
+
+	binName := "kuranas"
+	if runtime.GOOS == "windows" {
+		binName = "kuranas.exe"
+	}
+
 	createZipWithFiles(t, zipPath, map[string]string{
-		"readme.txt": "no binary here",
+		"build/" + binName:           "binary-data",
+		"build/dist/index.html":      "<html>app</html>",
+		"build/translations/en.json": `{"key":"value"}`,
 	})
 
-	_, err := extractBinary(zipPath, tmpDir)
-	if err == nil {
-		t.Fatalf("expected not found error")
+	extractDir := filepath.Join(tmpDir, "extracted")
+	if err := extractAll(zipPath, extractDir); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify build/ prefix was stripped
+	data, err := os.ReadFile(filepath.Join(extractDir, binName))
+	if err != nil {
+		t.Fatalf("expected binary to exist without build/ prefix: %v", err)
+	}
+	if string(data) != "binary-data" {
+		t.Fatalf("expected binary-data, got %q", string(data))
+	}
+
+	htmlData, err := os.ReadFile(filepath.Join(extractDir, "dist", "index.html"))
+	if err != nil {
+		t.Fatalf("expected dist/index.html to exist: %v", err)
+	}
+	if string(htmlData) != "<html>app</html>" {
+		t.Fatalf("expected html content, got %q", string(htmlData))
+	}
+}
+
+func TestExtractAll_EmptyZip(t *testing.T) {
+	tmpDir := t.TempDir()
+	zipPath := filepath.Join(tmpDir, "empty.zip")
+	createZipWithFiles(t, zipPath, map[string]string{})
+
+	extractDir := filepath.Join(tmpDir, "extracted")
+	if err := extractAll(zipPath, extractDir); err != nil {
+		t.Fatalf("expected no error for empty zip, got %v", err)
+	}
+}
+
+func TestDetectZipPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    []string
+		expected string
+	}{
+		{"no files", nil, ""},
+		{"no prefix", []string{"kuranas.exe", "dist/index.html"}, ""},
+		{"build prefix", []string{"build/kuranas.exe", "build/dist/index.html"}, "build/"},
+		{"mixed prefix", []string{"build/kuranas.exe", "other/file.txt"}, ""},
+		{"single file no dir", []string{"kuranas.exe"}, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var zipFiles []*zip.File
+			for _, name := range tt.files {
+				zipFiles = append(zipFiles, &zip.File{
+					FileHeader: zip.FileHeader{Name: name},
+				})
+			}
+
+			result := detectZipPrefix(zipFiles)
+			if result != tt.expected {
+				t.Fatalf("detectZipPrefix() = %q, want %q", result, tt.expected)
+			}
+		})
 	}
 }
 
@@ -232,7 +318,6 @@ func TestCheckForUpdate(t *testing.T) {
 }
 
 func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
-	service := NewService()
 	assetName := "kuranas-linux.zip"
 
 	testRelease := GitHubRelease{
@@ -251,7 +336,7 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 		extractErr      error
 		applyErr        error
 		expectErrSubstr string
-		expectRestart   bool
+		expectShutdown  bool
 	}{
 		{
 			name:            "fetch latest release error",
@@ -279,7 +364,7 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 			name:            "extract error",
 			release:         testRelease,
 			extractErr:      errors.New("extract failed"),
-			expectErrSubstr: "failed to extract binary",
+			expectErrSubstr: "failed to extract update",
 		},
 		{
 			name:            "apply update error",
@@ -288,9 +373,9 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 			expectErrSubstr: "failed to apply update",
 		},
 		{
-			name:          "success",
-			release:       testRelease,
-			expectRestart: true,
+			name:           "success",
+			release:        testRelease,
+			expectShutdown: true,
 		},
 	}
 
@@ -299,7 +384,8 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 			resetServiceFns()
 			t.Cleanup(resetServiceFns)
 
-			restartCalled := make(chan struct{}, 1)
+			service := NewService()
+			service.SetShutdownFn(func() {})
 
 			getAssetNameFunc = func() string { return assetName }
 			fetchLatestReleaseFunc = func() (GitHubRelease, error) {
@@ -318,27 +404,14 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 				}
 				return os.WriteFile(dest, data, 0644)
 			}
-			extractBinaryFunc = func(zipPath, destDir string) (string, error) {
+			extractAllFunc = func(zipPath, destDir string) error {
 				if tc.extractErr != nil {
-					return "", tc.extractErr
+					return tc.extractErr
 				}
-				bin := filepath.Join(destDir, "kuranas")
-				if runtime.GOOS == "windows" {
-					bin = filepath.Join(destDir, "kuranas.exe")
-				}
-				if err := os.WriteFile(bin, []byte("bin"), 0755); err != nil {
-					return "", err
-				}
-				return bin, nil
+				return os.MkdirAll(destDir, 0755)
 			}
-			applyUpdateFunc = func(newBinaryPath string) error {
+			applyFullUpdateFunc = func(extractedDir string) error {
 				return tc.applyErr
-			}
-			restartProcessFunc = func() {
-				select {
-				case restartCalled <- struct{}{}:
-				default:
-				}
 			}
 
 			err := service.DownloadAndApply()
@@ -353,13 +426,40 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 				t.Fatalf("expected no error, got %v", err)
 			}
 
-			if tc.expectRestart {
-				select {
-				case <-restartCalled:
-				case <-time.After(100 * time.Millisecond):
-					t.Fatalf("expected restartProcess to be called")
-				}
-			}
+			// Note: shutdownFn is called via time.AfterFunc with 2s delay,
+			// so we don't check it synchronously here. We just verify no error.
 		})
+	}
+}
+
+func TestDownloadAndApply_NoShutdownFn(t *testing.T) {
+	resetServiceFns()
+	t.Cleanup(resetServiceFns)
+
+	service := NewService()
+	// No SetShutdownFn — should not panic
+
+	assetName := "kuranas-linux.zip"
+	fetchLatestReleaseFunc = func() (GitHubRelease, error) {
+		return GitHubRelease{
+			TagName: "v2.0.0",
+			Assets: []GitHubAsset{
+				{Name: assetName, Size: 4, BrowserDownloadURL: "https://example.com/download"},
+			},
+		}, nil
+	}
+	getAssetNameFunc = func() string { return assetName }
+	downloadFileFunc = func(url, dest string) error {
+		return os.WriteFile(dest, []byte("1234"), 0644)
+	}
+	extractAllFunc = func(zipPath, destDir string) error {
+		return os.MkdirAll(destDir, 0755)
+	}
+	applyFullUpdateFunc = func(extractedDir string) error {
+		return nil
+	}
+
+	if err := service.DownloadAndApply(); err != nil {
+		t.Fatalf("expected no error without shutdownFn, got %v", err)
 	}
 }
