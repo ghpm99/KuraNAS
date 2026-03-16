@@ -2,12 +2,9 @@ package updater
 
 import (
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
-	"syscall"
 	"testing"
 )
 
@@ -15,24 +12,20 @@ func resetUpdaterOSFns() {
 	osExecutableFunc = os.Executable
 	evalSymlinksFunc = filepath.EvalSymlinks
 	osRenameFunc = os.Rename
-	osOpenFunc = os.Open
-	osCreateFunc = os.Create
-	osRemoveFunc = os.Remove
-	osChmodFunc = os.Chmod
-	osStartProcessFunc = os.StartProcess
-	osExitFunc = os.Exit
-	syscallExecFunc = syscall.Exec
+	osRemoveAllFunc = os.RemoveAll
+	osMkdirAllFunc = os.MkdirAll
 	runtimeGOOS = runtime.GOOS
 }
 
-func TestApplyUpdateErrorBranches(t *testing.T) {
+func TestGetInstallDirErrorBranches(t *testing.T) {
 	resetUpdaterOSFns()
 	t.Cleanup(resetUpdaterOSFns)
 
 	osExecutableFunc = func() (string, error) {
 		return "", errors.New("exec path error")
 	}
-	if err := applyUpdate("/tmp/new-bin"); err == nil || !strings.Contains(err.Error(), "failed to get current executable path") {
+	_, err := getInstallDir()
+	if err == nil || err.Error() != "failed to get executable path: exec path error" {
 		t.Fatalf("expected executable path error, got %v", err)
 	}
 
@@ -42,160 +35,243 @@ func TestApplyUpdateErrorBranches(t *testing.T) {
 	evalSymlinksFunc = func(path string) (string, error) {
 		return "", errors.New("symlink error")
 	}
-	if err := applyUpdate("/tmp/new-bin"); err == nil || !strings.Contains(err.Error(), "failed to resolve symlinks") {
+	_, err = getInstallDir()
+	if err == nil || err.Error() != "failed to resolve symlinks: symlink error" {
 		t.Fatalf("expected eval symlink error, got %v", err)
 	}
 }
 
-func TestApplyUpdateReplacesBinaryAndRollsBackOnOpenFailure(t *testing.T) {
+func TestApplyBinaryUpdateSuccess(t *testing.T) {
 	resetUpdaterOSFns()
 	t.Cleanup(resetUpdaterOSFns)
 
 	tmpDir := t.TempDir()
-	currentPath := filepath.Join(tmpDir, "current-bin")
-	newPath := filepath.Join(tmpDir, "new-bin")
+	installDir := filepath.Join(tmpDir, "install")
+	extractedDir := filepath.Join(tmpDir, "extracted")
+	os.MkdirAll(installDir, 0755)
+	os.MkdirAll(extractedDir, 0755)
 
-	if err := os.WriteFile(currentPath, []byte("old-content"), 0755); err != nil {
-		t.Fatalf("failed to create current binary: %v", err)
+	binName := "kuranas"
+	if runtime.GOOS == "windows" {
+		binName = "kuranas.exe"
 	}
-	if err := os.WriteFile(newPath, []byte("new-content"), 0755); err != nil {
-		t.Fatalf("failed to create new binary: %v", err)
+
+	currentBin := filepath.Join(installDir, binName)
+	newBin := filepath.Join(extractedDir, binName)
+
+	os.WriteFile(currentBin, []byte("old-binary"), 0755)
+	os.WriteFile(newBin, []byte("new-binary"), 0755)
+
+	if err := applyBinaryUpdate(extractedDir, installDir); err != nil {
+		t.Fatalf("expected success, got %v", err)
 	}
+
+	data, err := os.ReadFile(currentBin)
+	if err != nil {
+		t.Fatalf("failed to read binary: %v", err)
+	}
+	if string(data) != "new-binary" {
+		t.Fatalf("expected new-binary, got %q", string(data))
+	}
+
+	if _, err := os.Stat(currentBin + ".old"); err != nil {
+		t.Fatalf("expected .old backup to exist: %v", err)
+	}
+}
+
+func TestApplyBinaryUpdateMissingNewBinary(t *testing.T) {
+	resetUpdaterOSFns()
+	t.Cleanup(resetUpdaterOSFns)
+
+	extractedDir := t.TempDir()
+	installDir := t.TempDir()
+
+	if err := applyBinaryUpdate(extractedDir, installDir); err == nil {
+		t.Fatalf("expected error for missing new binary")
+	}
+}
+
+func TestApplyBinaryUpdateRenameError(t *testing.T) {
+	resetUpdaterOSFns()
+	t.Cleanup(resetUpdaterOSFns)
+
+	tmpDir := t.TempDir()
+	installDir := filepath.Join(tmpDir, "install")
+	extractedDir := filepath.Join(tmpDir, "extracted")
+	os.MkdirAll(installDir, 0755)
+	os.MkdirAll(extractedDir, 0755)
+
+	binName := "kuranas"
+	if runtime.GOOS == "windows" {
+		binName = "kuranas.exe"
+	}
+
+	os.WriteFile(filepath.Join(installDir, binName), []byte("old"), 0755)
+	os.WriteFile(filepath.Join(extractedDir, binName), []byte("new"), 0755)
+
+	osRenameFunc = func(oldpath, newpath string) error {
+		return errors.New("rename failed")
+	}
+
+	if err := applyBinaryUpdate(extractedDir, installDir); err == nil {
+		t.Fatalf("expected rename error")
+	}
+}
+
+func TestApplyBinaryUpdateCopyErrorRollsBack(t *testing.T) {
+	resetUpdaterOSFns()
+	t.Cleanup(resetUpdaterOSFns)
+
+	tmpDir := t.TempDir()
+	installDir := filepath.Join(tmpDir, "install")
+	extractedDir := filepath.Join(tmpDir, "extracted")
+	os.MkdirAll(installDir, 0755)
+	os.MkdirAll(extractedDir, 0755)
+
+	binName := "kuranas"
+	if runtime.GOOS == "windows" {
+		binName = "kuranas.exe"
+	}
+
+	currentBin := filepath.Join(installDir, binName)
+	os.WriteFile(currentBin, []byte("original"), 0755)
+	// Create new binary as a directory to force copy failure
+	os.MkdirAll(filepath.Join(extractedDir, binName), 0755)
+
+	err := applyBinaryUpdate(extractedDir, installDir)
+	if err == nil {
+		t.Fatalf("expected copy error")
+	}
+
+	// Check that rollback happened
+	data, _ := os.ReadFile(currentBin)
+	if string(data) != "original" {
+		t.Fatalf("expected rollback to restore original binary, got %q", string(data))
+	}
+}
+
+func TestUpdateScriptsDirPreservesVenv(t *testing.T) {
+	resetUpdaterOSFns()
+	t.Cleanup(resetUpdaterOSFns)
+
+	tmpDir := t.TempDir()
+	srcDir := filepath.Join(tmpDir, "src-scripts")
+	dstDir := filepath.Join(tmpDir, "dst-scripts")
+
+	os.MkdirAll(srcDir, 0755)
+	os.MkdirAll(dstDir, 0755)
+
+	// Create existing .venv
+	venvDir := filepath.Join(dstDir, ".venv")
+	os.MkdirAll(venvDir, 0755)
+	os.WriteFile(filepath.Join(venvDir, "python"), []byte("python-bin"), 0755)
+
+	// Create new script files
+	os.WriteFile(filepath.Join(srcDir, "script.py"), []byte("new-script"), 0644)
+
+	if err := updateScriptsDir(srcDir, dstDir); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+
+	// Verify new script exists
+	data, err := os.ReadFile(filepath.Join(dstDir, "script.py"))
+	if err != nil {
+		t.Fatalf("expected new script to exist: %v", err)
+	}
+	if string(data) != "new-script" {
+		t.Fatalf("expected new-script, got %q", string(data))
+	}
+
+	// Verify .venv was preserved
+	venvData, err := os.ReadFile(filepath.Join(venvDir, "python"))
+	if err != nil {
+		t.Fatalf("expected .venv to be preserved: %v", err)
+	}
+	if string(venvData) != "python-bin" {
+		t.Fatalf("expected python-bin in .venv, got %q", string(venvData))
+	}
+}
+
+func TestApplyFullUpdateCopiesAllAssets(t *testing.T) {
+	resetUpdaterOSFns()
+	t.Cleanup(resetUpdaterOSFns)
+
+	tmpDir := t.TempDir()
+	installDir := filepath.Join(tmpDir, "install")
+	extractedDir := filepath.Join(tmpDir, "extracted")
+
+	binName := "kuranas"
+	if runtime.GOOS == "windows" {
+		binName = "kuranas.exe"
+	}
+
+	// Setup install dir with old files
+	os.MkdirAll(filepath.Join(installDir, "dist"), 0755)
+	os.WriteFile(filepath.Join(installDir, "dist", "old.js"), []byte("old"), 0644)
+	os.WriteFile(filepath.Join(installDir, binName), []byte("old-bin"), 0755)
+
+	// Setup extracted dir with new files
+	os.MkdirAll(filepath.Join(extractedDir, "dist"), 0755)
+	os.MkdirAll(filepath.Join(extractedDir, "icons"), 0755)
+	os.MkdirAll(filepath.Join(extractedDir, "translations"), 0755)
+	os.WriteFile(filepath.Join(extractedDir, binName), []byte("new-bin"), 0755)
+	os.WriteFile(filepath.Join(extractedDir, "dist", "new.js"), []byte("new"), 0644)
+	os.WriteFile(filepath.Join(extractedDir, "icons", "icon.png"), []byte("icon"), 0644)
+	os.WriteFile(filepath.Join(extractedDir, "translations", "en.json"), []byte("{}"), 0644)
 
 	osExecutableFunc = func() (string, error) {
-		return currentPath, nil
+		return filepath.Join(installDir, binName), nil
 	}
 	evalSymlinksFunc = func(path string) (string, error) {
 		return path, nil
 	}
 
-	if err := applyUpdate(newPath); err != nil {
-		t.Fatalf("expected applyUpdate success, got %v", err)
-	}
-	data, err := os.ReadFile(currentPath)
-	if err != nil {
-		t.Fatalf("failed to read replaced binary: %v", err)
-	}
-	if string(data) != "new-content" {
-		t.Fatalf("unexpected replaced content: %q", string(data))
-	}
-	if _, err := os.Stat(currentPath + ".old"); err != nil {
-		t.Fatalf("expected old backup file to exist: %v", err)
+	if err := applyFullUpdate(extractedDir); err != nil {
+		t.Fatalf("expected success, got %v", err)
 	}
 
-	if err := os.WriteFile(currentPath, []byte("original"), 0755); err != nil {
-		t.Fatalf("failed to reset current binary: %v", err)
+	// Verify binary was updated
+	binData, _ := os.ReadFile(filepath.Join(installDir, binName))
+	if string(binData) != "new-bin" {
+		t.Fatalf("expected new-bin, got %q", string(binData))
 	}
-	if err := applyUpdate(filepath.Join(tmpDir, "missing-bin")); err == nil || !strings.Contains(err.Error(), "failed to open new binary") {
-		t.Fatalf("expected open new binary error, got %v", err)
+
+	// Verify old dist was replaced
+	if _, err := os.Stat(filepath.Join(installDir, "dist", "old.js")); !os.IsNotExist(err) {
+		t.Fatalf("expected old.js to be removed")
 	}
-	restored, err := os.ReadFile(currentPath)
-	if err != nil {
-		t.Fatalf("failed to read restored binary: %v", err)
+
+	// Verify new assets exist
+	newJS, _ := os.ReadFile(filepath.Join(installDir, "dist", "new.js"))
+	if string(newJS) != "new" {
+		t.Fatalf("expected new dist content")
 	}
-	if string(restored) != "original" {
-		t.Fatalf("expected rollback to keep original content, got %q", string(restored))
+
+	iconData, _ := os.ReadFile(filepath.Join(installDir, "icons", "icon.png"))
+	if string(iconData) != "icon" {
+		t.Fatalf("expected icon content")
+	}
+
+	transData, _ := os.ReadFile(filepath.Join(installDir, "translations", "en.json"))
+	if string(transData) != "{}" {
+		t.Fatalf("expected translation content")
 	}
 }
 
-func TestRestartProcessBranches(t *testing.T) {
-	resetUpdaterOSFns()
-	t.Cleanup(resetUpdaterOSFns)
-
-	osExecutableFunc = func() (string, error) {
-		return "", errors.New("path error")
-	}
-	restartProcess()
+func TestShutdownFnCalled(t *testing.T) {
+	service := NewService()
 
 	called := false
-	osExecutableFunc = func() (string, error) {
-		return "/tmp/kuranas", nil
-	}
-	runtimeGOOS = "linux"
-	syscallExecFunc = func(path string, args []string, env []string) error {
+	service.SetShutdownFn(func() {
 		called = true
-		if path != "/tmp/kuranas" {
-			t.Fatalf("unexpected exec path: %s", path)
-		}
-		return nil
+	})
+
+	if service.shutdownFn == nil {
+		t.Fatalf("expected shutdownFn to be set")
 	}
 
-	restartProcess()
+	service.shutdownFn()
 	if !called {
-		t.Fatalf("expected syscall exec to be called on linux branch")
-	}
-
-	startCalled := false
-	exitCalled := false
-	runtimeGOOS = "windows"
-	osStartProcessFunc = func(name string, argv []string, attr *os.ProcAttr) (*os.Process, error) {
-		startCalled = true
-		return &os.Process{}, nil
-	}
-	osExitFunc = func(code int) {
-		exitCalled = true
-	}
-	restartProcess()
-	if !startCalled || !exitCalled {
-		t.Fatalf("expected windows branch to start process and exit")
-	}
-}
-
-func TestApplyUpdateAdditionalErrorBranches(t *testing.T) {
-	resetUpdaterOSFns()
-	t.Cleanup(resetUpdaterOSFns)
-
-	tmpDir := t.TempDir()
-	currentPath := filepath.Join(tmpDir, "current-bin")
-	newPath := filepath.Join(tmpDir, "new-bin")
-
-	if err := os.WriteFile(currentPath, []byte("old"), 0755); err != nil {
-		t.Fatalf("failed to create current binary: %v", err)
-	}
-	if err := os.WriteFile(newPath, []byte("new"), 0755); err != nil {
-		t.Fatalf("failed to create new binary: %v", err)
-	}
-
-	osExecutableFunc = func() (string, error) { return currentPath, nil }
-	evalSymlinksFunc = func(path string) (string, error) { return path, nil }
-
-	osRenameFunc = func(oldpath, newpath string) error { return errors.New("rename failed") }
-	if err := applyUpdate(newPath); err == nil || !strings.Contains(err.Error(), "failed to rename current binary") {
-		t.Fatalf("expected rename error, got %v", err)
-	}
-	osRenameFunc = os.Rename
-
-	osCreateFunc = func(name string) (*os.File, error) { return nil, errors.New("create failed") }
-	if err := applyUpdate(newPath); err == nil || !strings.Contains(err.Error(), "failed to create new binary") {
-		t.Fatalf("expected create error, got %v", err)
-	}
-	osCreateFunc = os.Create
-
-	osCreateFunc = func(name string) (*os.File, error) {
-		f, err := os.Create(name)
-		if err != nil {
-			return nil, err
-		}
-		_ = f.Close()
-		return f, nil
-	}
-	if err := applyUpdate(newPath); err == nil || !strings.Contains(err.Error(), "failed to copy new binary") {
-		t.Fatalf("expected copy error, got %v", err)
-	}
-	osCreateFunc = os.Create
-
-	osOpenFunc = func(name string) (*os.File, error) {
-		return nil, io.EOF
-	}
-	if err := applyUpdate(newPath); err == nil || !strings.Contains(err.Error(), "failed to open new binary") {
-		t.Fatalf("expected open error, got %v", err)
-	}
-	osOpenFunc = os.Open
-
-	if runtime.GOOS != "windows" {
-		osChmodFunc = func(name string, mode os.FileMode) error { return errors.New("chmod failed") }
-		if err := applyUpdate(newPath); err == nil || !strings.Contains(err.Error(), "failed to set executable permissions") {
-			t.Fatalf("expected chmod error, got %v", err)
-		}
+		t.Fatalf("expected shutdownFn to be called")
 	}
 }

@@ -42,6 +42,14 @@ func (p *program) Start(s service.Service) error {
 
 	p.app = application
 
+	application.Context.UpdateService.SetShutdownFn(func() {
+		if p.logger != nil {
+			p.logger.Info("Update applied, stopping service for restart...")
+		}
+		application.Stop()
+		os.Exit(0)
+	})
+
 	go func() {
 
 		if err := application.Run(":8000", true); err != nil {
@@ -85,9 +93,14 @@ func main() {
 		Name:        "KuraNAS",
 		DisplayName: "KuraNAS Service",
 		Description: "Serviço do sistema KuraNAS.",
+		Option: service.KeyValue{
+			"OnFailure":              "restart",
+			"OnFailureDelayDuration": "5s",
+			"OnFailureResetPeriod":   10,
+		},
 	}
 
-	prg := &program{}
+	prg := &program{quit: make(chan struct{})}
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
 		log.Fatal(err)
