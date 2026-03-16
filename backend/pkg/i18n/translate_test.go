@@ -140,6 +140,50 @@ func TestGetPathFileTranslateByLangDefaultsAndFallbackMiss(t *testing.T) {
 	}
 }
 
+func TestGetPathFileTranslateByLangSanitizesLocale(t *testing.T) {
+	testCases := map[string]string{
+		" pt-BR ":            "pt-BR.json",
+		"../secrets":         "en-US.json",
+		`..\\secrets`:        "en-US.json",
+		"pt-BR/../../secret": "en-US.json",
+		"pt.BR":              "en-US.json",
+		"pt BR":              "en-US.json",
+	}
+
+	for locale, expectedFile := range testCases {
+		path := GetPathFileTranslateByLang(locale)
+		if got := filepath.Base(path); got != expectedFile {
+			t.Fatalf("expected %q for locale %q, got %q", expectedFile, locale, got)
+		}
+	}
+}
+
+func TestResolveTranslationFilePathKeepsFileWithinTranslationsDirectory(t *testing.T) {
+	testCases := map[string]string{
+		"pt-BR":              "pt-BR.json",
+		"../secrets":         "en-US.json",
+		"pt-BR/../../secret": "en-US.json",
+	}
+
+	baseDir, err := filepath.Abs(ResolveTranslationsPath())
+	if err != nil {
+		t.Fatalf("failed to resolve translations path: %v", err)
+	}
+
+	for locale, expectedFile := range testCases {
+		resolvedPath, err := resolveTranslationFilePath(locale)
+		if err != nil {
+			t.Fatalf("expected resolved path for locale %q, got error %v", locale, err)
+		}
+		if got := filepath.Base(resolvedPath); got != expectedFile {
+			t.Fatalf("expected %q for locale %q, got %q", expectedFile, locale, got)
+		}
+		if !isPathWithinDirectory(resolvedPath, baseDir) {
+			t.Fatalf("expected path %q to remain inside %q", resolvedPath, baseDir)
+		}
+	}
+}
+
 func TestResolveTranslationsPathPrefersConfiguredDirectoryAndRootTranslationsFallback(t *testing.T) {
 	previousWorkingDir, err := os.Getwd()
 	if err != nil {

@@ -7,27 +7,31 @@ import (
 	"nas-go/api/internal/config"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var translations map[string]string
 
+const defaultLocale = "en-US"
+
 func GetPathFileTranslate() string {
 	var lang = config.AppConfig.Lang
 
-	if lang == "" {
-		lang = "en-US"
+	filePath, err := resolveTranslationFilePath(lang)
+	if err == nil {
+		return filePath
 	}
 
-	return GetPathFileTranslateByLang(lang)
+	return filepath.Join(ResolveTranslationsPath(), defaultLocale+".json")
 }
 
 func GetPathFileTranslateByLang(lang string) string {
-	if lang == "" {
-		lang = "en-US"
+	filePath, err := resolveTranslationFilePath(lang)
+	if err == nil {
+		return filePath
 	}
 
-	translationsPath := ResolveTranslationsPath()
-	return fmt.Sprintf("%s%s.json", translationsPath, lang)
+	return filepath.Join(ResolveTranslationsPath(), defaultLocale+".json")
 }
 
 func ResolveTranslationsPath() string {
@@ -45,7 +49,10 @@ func ResolveTranslationsPath() string {
 }
 
 func LoadTranslations() error {
-	filePath := GetPathFileTranslate()
+	filePath, err := resolveTranslationFilePath(config.AppConfig.Lang)
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Open(filePath)
 	log.Println("Loading translations from: " + filePath)
@@ -82,6 +89,69 @@ func PrintTranslate(key string, args ...any) {
 
 func LogTranslate(key string, args ...any) {
 	log.Println(Translate(key, args...))
+}
+
+func resolveTranslationFilePath(lang string) (string, error) {
+	translationsPath, err := filepath.Abs(ResolveTranslationsPath())
+	if err != nil {
+		return "", fmt.Errorf("resolve translations directory: %w", err)
+	}
+
+	sanitizedLang := sanitizeLocale(lang)
+	filePath, err := filepath.Abs(filepath.Join(translationsPath, sanitizedLang+".json"))
+	if err != nil {
+		return "", fmt.Errorf("resolve translation file path: %w", err)
+	}
+
+	if !isPathWithinDirectory(filePath, translationsPath) {
+		return "", fmt.Errorf("translation file path escapes translations directory")
+	}
+
+	return filePath, nil
+}
+
+func sanitizeLocale(lang string) string {
+	trimmedLang := strings.TrimSpace(lang)
+	if trimmedLang == "" {
+		return defaultLocale
+	}
+
+	if strings.Contains(trimmedLang, "..") || strings.ContainsAny(trimmedLang, `/\`) {
+		return defaultLocale
+	}
+
+	for _, char := range trimmedLang {
+		if isLocaleCharacter(char) {
+			continue
+		}
+		return defaultLocale
+	}
+
+	return trimmedLang
+}
+
+func isLocaleCharacter(char rune) bool {
+	switch {
+	case char >= 'a' && char <= 'z':
+		return true
+	case char >= 'A' && char <= 'Z':
+		return true
+	case char >= '0' && char <= '9':
+		return true
+	case char == '-' || char == '_':
+		return true
+	default:
+		return false
+	}
+}
+
+func isPathWithinDirectory(path string, directory string) bool {
+	relativePath, err := filepath.Rel(directory, path)
+	if err != nil {
+		return false
+	}
+
+	return relativePath != ".." && !strings.HasPrefix(relativePath, ".."+string(os.PathSeparator))
 }
 
 func findFallbackTranslationsPath() (string, bool) {
