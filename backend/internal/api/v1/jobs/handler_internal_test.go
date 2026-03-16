@@ -139,4 +139,93 @@ func TestJobsHandler(t *testing.T) {
 			t.Fatalf("expected 200, got %d", w.Code)
 		}
 	})
+
+	t.Run("invalid params and service branches", func(t *testing.T) {
+		router := gin.New()
+
+		invalidHandler := NewHandler(&jobsHandlerServiceStub{})
+		router.GET("/jobs/:id", invalidHandler.GetJobByIDHandler)
+		router.GET("/jobs/:id/steps", invalidHandler.GetStepsByJobIDHandler)
+		router.POST("/jobs/:id/cancel", invalidHandler.CancelJobHandler)
+		router.GET("/jobs", invalidHandler.ListJobsHandler)
+
+		req := httptest.NewRequest(http.MethodGet, "/jobs/abc", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for invalid job id, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodGet, "/jobs/abc/steps", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for invalid steps job id, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodPost, "/jobs/abc/cancel", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for invalid cancel job id, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodGet, "/jobs?page=bad", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for invalid page, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodGet, "/jobs?page=1&page_size=bad", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for invalid page size, got %d", w.Code)
+		}
+	})
+
+	t.Run("service error mappings", func(t *testing.T) {
+		router := gin.New()
+		handler := NewHandler(&jobsHandlerServiceStub{
+			getJobByIDFn: func(id int) (JobDto, error) { return JobDto{}, errors.New("boom") },
+			listJobsFn: func(filter JobFilter, page int, pageSize int) (utils.PaginationResponse[JobDto], error) {
+				return utils.PaginationResponse[JobDto]{}, errors.New("boom")
+			},
+			getJobStepsByFn: func(jobID int) ([]StepDto, error) { return nil, ErrJobNotFound },
+			cancelJobFn:     func(jobID int) error { return ErrJobNotFound },
+		})
+		router.GET("/jobs/:id", handler.GetJobByIDHandler)
+		router.GET("/jobs", handler.ListJobsHandler)
+		router.GET("/jobs/:id/steps", handler.GetStepsByJobIDHandler)
+		router.POST("/jobs/:id/cancel", handler.CancelJobHandler)
+
+		req := httptest.NewRequest(http.MethodGet, "/jobs/9", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("expected 500 for get job error, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodGet, "/jobs?page=1&page_size=10&type=scan&priority=high", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("expected 500 for list jobs error, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodGet, "/jobs/9/steps", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected 404 for missing steps job, got %d", w.Code)
+		}
+
+		req = httptest.NewRequest(http.MethodPost, "/jobs/9/cancel", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected 404 for missing cancel job, got %d", w.Code)
+		}
+	})
 }
