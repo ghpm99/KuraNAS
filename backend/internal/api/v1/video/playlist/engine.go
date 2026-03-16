@@ -44,11 +44,11 @@ func NewPlaylistEngine() *PlaylistEngine {
 
 // BuildInput contem tudo que o engine precisa para gerar playlists.
 type BuildInput struct {
-	Videos          []VideoEntry
-	ClientID        string
-	PlaybackState   *PlaybackSnapshot
-	BehaviorEvents  []BehaviorEvent
-	Exclusions      map[int]map[int]bool // playlistID -> set[videoID]
+	Videos         []VideoEntry
+	ClientID       string
+	PlaybackState  *PlaybackSnapshot
+	BehaviorEvents []BehaviorEvent
+	Exclusions     map[int]map[int]bool // playlistID -> set[videoID]
 }
 
 // BuildResult contem o resultado do engine.

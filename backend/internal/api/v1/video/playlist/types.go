@@ -39,14 +39,14 @@ type VideoMeta struct {
 type VideoClassification string
 
 const (
-	ClassSeries  VideoClassification = "series"
-	ClassMovie   VideoClassification = "movie"
-	ClassAnime   VideoClassification = "anime"
-	ClassCourse  VideoClassification = "course"
+	ClassSeries   VideoClassification = "series"
+	ClassMovie    VideoClassification = "movie"
+	ClassAnime    VideoClassification = "anime"
+	ClassCourse   VideoClassification = "course"
 	ClassPersonal VideoClassification = "personal"
-	ClassClip    VideoClassification = "clip"
-	ClassMusic   VideoClassification = "music_video"
-	ClassProgram VideoClassification = "program"
+	ClassClip     VideoClassification = "clip"
+	ClassMusic    VideoClassification = "music_video"
+	ClassProgram  VideoClassification = "program"
 )
 
 type ClassifiedVideo struct {
@@ -118,18 +118,18 @@ type PlaylistCandidate struct {
 
 type BehaviorProfile struct {
 	// Taxas gerais
-	CompletionRate    float64 // % de videos que o usuario termina
-	AvgWatchDuration  float64 // duracao media assistida em segundos
-	AvgSessionLength  int     // quantos videos por sessao
+	CompletionRate   float64 // % de videos que o usuario termina
+	AvgWatchDuration float64 // duracao media assistida em segundos
+	AvgSessionLength int     // quantos videos por sessao
 
 	// Preferencias aprendidas
-	PreferredDurations DurationRange // faixa de duracao preferida
+	PreferredDurations DurationRange                   // faixa de duracao preferida
 	PreferredTypes     map[VideoClassification]float64 // tipo -> afinidade (0-1)
 	SkipPatterns       []SkipPattern
 
 	// Historico recente
-	RecentlyWatched  []int // IDs dos ultimos N videos assistidos
-	RecentlySkipped  []int
+	RecentlyWatched   []int // IDs dos ultimos N videos assistidos
+	RecentlySkipped   []int
 	RecentlyCompleted []int
 }
 

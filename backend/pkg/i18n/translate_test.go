@@ -82,3 +82,100 @@ func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
 		t.Fatalf("expected json decode error for invalid translation content")
 	}
 }
+
+func TestResolveTranslationsPathFallsBackToWorkspaceDirectory(t *testing.T) {
+	previousWorkingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(previousWorkingDir)
+	})
+
+	root := t.TempDir()
+	nested := filepath.Join(root, "workspace", "backend", "internal")
+	fallbackDir := filepath.Join(root, "workspace", "backend", "translations")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+	if err := os.MkdirAll(fallbackDir, 0755); err != nil {
+		t.Fatalf("failed to create fallback dir: %v", err)
+	}
+
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("Chdir failed: %v", err)
+	}
+
+	resolved := ResolveTranslationsPath()
+	if resolved != fallbackDir+string(os.PathSeparator) {
+		t.Fatalf("expected fallback translations path %q, got %q", fallbackDir+string(os.PathSeparator), resolved)
+	}
+
+	detectedPath, ok := findFallbackTranslationsPath()
+	if !ok || detectedPath != fallbackDir+string(os.PathSeparator) {
+		t.Fatalf("expected findFallbackTranslationsPath to resolve %q, got %q ok=%v", fallbackDir+string(os.PathSeparator), detectedPath, ok)
+	}
+}
+
+func TestGetPathFileTranslateByLangDefaultsAndFallbackMiss(t *testing.T) {
+	if path := GetPathFileTranslateByLang(""); path == "" || filepath.Base(path) != "en-US.json" {
+		t.Fatalf("expected default en-US translation file, got %q", path)
+	}
+
+	previousWorkingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(previousWorkingDir)
+	})
+
+	emptyRoot := t.TempDir()
+	if err := os.Chdir(emptyRoot); err != nil {
+		t.Fatalf("Chdir failed: %v", err)
+	}
+
+	if path, ok := findFallbackTranslationsPath(); ok || path != "" {
+		t.Fatalf("expected no fallback translations path, got %q ok=%v", path, ok)
+	}
+}
+
+func TestResolveTranslationsPathPrefersConfiguredDirectoryAndRootTranslationsFallback(t *testing.T) {
+	previousWorkingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(previousWorkingDir)
+	})
+
+	root := t.TempDir()
+	nested := filepath.Join(root, "workspace", "internal")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("Chdir root failed: %v", err)
+	}
+
+	configuredPath := config.GetBuildConfig("TranslationsPath")
+	if err := os.MkdirAll(configuredPath, 0755); err != nil {
+		t.Fatalf("failed to create configured translations dir: %v", err)
+	}
+	if resolved := ResolveTranslationsPath(); resolved != configuredPath {
+		t.Fatalf("expected configured translations path %q, got %q", configuredPath, resolved)
+	}
+
+	rootFallback := filepath.Join(root, "translations")
+	if err := os.MkdirAll(rootFallback, 0755); err != nil {
+		t.Fatalf("failed to create root fallback dir: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("Chdir nested failed: %v", err)
+	}
+
+	if detectedPath, ok := findFallbackTranslationsPath(); !ok || detectedPath != rootFallback+string(os.PathSeparator) {
+		t.Fatalf("expected root fallback path %q, got %q ok=%v", rootFallback+string(os.PathSeparator), detectedPath, ok)
+	}
+}

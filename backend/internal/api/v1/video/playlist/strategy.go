@@ -225,8 +225,8 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 // ---------------------------------------------------------------------------
 
 type RelatedContentStrategy struct {
-	MaxResults         int
-	DurationTolerance  float64 // percentual de tolerancia (0.3 = 30%)
+	MaxResults        int
+	DurationTolerance float64 // percentual de tolerancia (0.3 = 30%)
 }
 
 func NewRelatedContentStrategy() *RelatedContentStrategy {
@@ -522,14 +522,14 @@ func playlistTypeFor(class VideoClassification) string {
 
 func classificationDisplayName(class VideoClassification) string {
 	names := map[VideoClassification]string{
-		ClassSeries:  "Series",
-		ClassMovie:   "Filmes",
-		ClassAnime:   "Animes",
-		ClassCourse:  "Cursos",
+		ClassSeries:   "Series",
+		ClassMovie:    "Filmes",
+		ClassAnime:    "Animes",
+		ClassCourse:   "Cursos",
 		ClassPersonal: "Videos pessoais",
-		ClassClip:    "Clips",
-		ClassMusic:   "Videos musicais",
-		ClassProgram: "Programas",
+		ClassClip:     "Clips",
+		ClassMusic:    "Videos musicais",
+		ClassProgram:  "Programas",
 	}
 	if name, ok := names[class]; ok {
 		return name

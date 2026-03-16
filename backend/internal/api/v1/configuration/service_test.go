@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
@@ -41,6 +42,19 @@ func newConfigurationServiceForTest(t *testing.T, repo *serviceRepoMock) *Servic
 	t.Cleanup(func() { _ = db.Close() })
 	repo.db = database.NewDbContext(db)
 	return &Service{Repository: repo}
+}
+
+func TestNewServiceReturnsConfiguredImplementation(t *testing.T) {
+	repo := &serviceRepoMock{}
+
+	service := NewService(repo)
+	typedService, ok := service.(*Service)
+	if !ok {
+		t.Fatalf("expected *Service implementation, got %T", service)
+	}
+	if typedService.Repository != repo {
+		t.Fatalf("expected repository to be preserved")
+	}
 }
 
 func TestConfigurationServiceGetSettingsUsesDefaultsWhenMissing(t *testing.T) {
@@ -179,5 +193,38 @@ func TestConfigurationServiceGetTranslationFilePathFallsBackOnError(t *testing.T
 	}
 	if path == "" {
 		t.Fatalf("expected fallback translation path")
+	}
+}
+
+func TestConfigurationServiceApplyRuntimeSettingsUsesStoredLocale(t *testing.T) {
+	originalLang := config.AppConfig.Lang
+	t.Cleanup(func() {
+		config.AppConfig.Lang = originalLang
+	})
+	config.AppConfig.Lang = "pt-BR"
+
+	payload, err := json.Marshal(settingsState{
+		Language: languageSettingsState{
+			Current: "en-US",
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal stored settings: %v", err)
+	}
+
+	service := newConfigurationServiceForTest(t, &serviceRepoMock{
+		getSettingsDocumentFn: func(settingKey string) (string, error) {
+			if settingKey != settingsStorageKey {
+				t.Fatalf("unexpected setting key %s", settingKey)
+			}
+			return string(payload), nil
+		},
+	})
+
+	if err := service.ApplyRuntimeSettings(); err != nil {
+		t.Fatalf("ApplyRuntimeSettings returned error: %v", err)
+	}
+	if config.AppConfig.Lang != "en-US" {
+		t.Fatalf("expected runtime language to be updated, got %s", config.AppConfig.Lang)
 	}
 }

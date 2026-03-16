@@ -1,3 +1,4 @@
+import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import {
 	buildAutomaticAlbumCollections,
 	buildFolderCollections,
@@ -10,26 +11,86 @@ import {
 	matchesImageSection,
 } from './imageLibraryData';
 
-const createImage = (overrides: Record<string, any> = {}) => ({
-	id: 1,
-	name: 'image.jpg',
-	path: '/library/trips/image.jpg',
-	format: '.jpg',
-	size: 1024,
-	updated_at: '2026-03-01T10:00:00Z',
-	created_at: '2026-03-01T10:00:00Z',
-	metadata: {
+const createImage = (
+	overrides: Omit<Partial<IImageData>, 'metadata'> & { metadata?: Partial<NonNullable<IImageData['metadata']>> } = {},
+): IImageData => {
+	const metadata = {
+		id: 1,
+		fileId: 1,
+		path: '/library/trips/image.jpg',
+		format: 'jpg',
+		mode: 'RGB',
 		width: 2000,
 		height: 1200,
+		dpi_x: 72,
+		dpi_y: 72,
+		x_resolution: 72,
+		y_resolution: 72,
+		resolution_unit: 2,
+		orientation: 1,
+		compression: 0,
+		photometric_interpretation: 0,
+		color_space: 1,
+		components_configuration: '',
+		icc_profile: '',
+		make: '',
+		model: '',
+		software: '',
+		lens_model: '',
+		serial_number: '',
+		datetime: '2026-03-01T10:00:00Z',
 		datetime_original: '2026-03-01T10:00:00Z',
+		datetime_digitized: '',
+		subsec_time: '',
+		exposure_time: 0,
+		f_number: 0,
+		iso: 0,
+		shutter_speed: 0,
+		aperture_value: 0,
+		brightness_value: 0,
+		exposure_bias: 0,
+		metering_mode: 0,
+		flash: 0,
+		focal_length: 0,
+		white_balance: 0,
+		exposure_program: 0,
+		max_aperture_value: 0,
+		gps_latitude: 0,
+		gps_longitude: 0,
+		gps_altitude: 0,
+		gps_date: '',
+		gps_time: '',
+		image_description: '',
+		user_comment: '',
+		copyright: '',
+		artist: '',
 		classification: {
 			category: 'photo',
 			confidence: 0.98,
 		},
+		createdAt: '2026-03-01T10:00:00Z',
 		...overrides.metadata,
-	},
-	...overrides,
-});
+	} as NonNullable<IImageData['metadata']>;
+
+	return {
+		id: 1,
+		name: 'image.jpg',
+		path: '/library/trips/image.jpg',
+		type: 2,
+		format: '.jpg',
+		size: 1024,
+		updated_at: '2026-03-01T10:00:00Z',
+		created_at: '2026-03-01T10:00:00Z',
+		deleted_at: '',
+		last_interaction: '',
+		last_backup: '',
+		check_sum: '',
+		directory_content_count: 0,
+		starred: false,
+		metadata,
+		...overrides,
+	} as IImageData;
+};
 
 describe('imageLibraryData', () => {
 	it('derives image directory paths from file paths and folder paths', () => {

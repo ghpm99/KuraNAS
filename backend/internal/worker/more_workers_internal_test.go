@@ -172,6 +172,30 @@ func TestStartWorkersEnabledSchedulesScanTask(t *testing.T) {
 	}
 }
 
+func TestWorkerEnqueuesJobsWhenOrchestratorIsAvailable(t *testing.T) {
+	previousConfig := config.AppConfig
+	t.Cleanup(func() { config.AppConfig = previousConfig })
+
+	root := t.TempDir()
+	config.AppConfig.EntryPoint = root
+
+	repository := newFakeJobsRepository()
+	context := &WorkerContext{
+		Tasks:           make(chan utils.Task, 2),
+		JobOrchestrator: NewJobOrchestrator(repository, nil),
+	}
+
+	context.Tasks <- utils.Task{Type: utils.ScanFiles, Data: "scan"}
+	context.Tasks <- utils.Task{Type: utils.ScanDir, Data: root}
+	close(context.Tasks)
+
+	worker(1, context)
+
+	if len(repository.jobs) != 2 {
+		t.Fatalf("expected two enqueued fs_event jobs, got %d", len(repository.jobs))
+	}
+}
+
 func TestScanDirWorkerAndHelpers(t *testing.T) {
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "new.txt"), []byte("x"), 0644); err != nil {
