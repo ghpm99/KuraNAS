@@ -47,7 +47,7 @@ describe('useAboutScreen', () => {
     it('formats runtime details and handles copy feedback', async () => {
         const { result } = renderHook(() => useAboutScreen());
 
-        expect(result.current.runtimeDetails[4].value).toBe('invalid-date');
+        expect(result.current.runtimeDetails[4]?.value).toBe('invalid-date');
 
         mockClipboard.writeText.mockResolvedValue(undefined);
         await act(async () => {

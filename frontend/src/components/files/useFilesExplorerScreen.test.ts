@@ -89,7 +89,7 @@ describe('useFilesExplorerScreen', () => {
     it('returns files as currentItems when no selectedItem', () => {
         const { result } = renderHook(() => useFilesExplorerScreen());
         expect(result.current.breadcrumbSegments).toHaveLength(1);
-        expect(result.current.breadcrumbSegments[0].isCurrent).toBe(true);
+        expect(result.current.breadcrumbSegments[0]?.isCurrent).toBe(true);
     });
 
     it('returns file_children when selectedItem is a directory', () => {
@@ -163,9 +163,9 @@ describe('useFilesExplorerScreen', () => {
         const { result } = renderHook(() => useFilesExplorerScreen());
         // Should have root segment + fallback segment for orphan item
         expect(result.current.breadcrumbSegments).toHaveLength(2);
-        expect(result.current.breadcrumbSegments[1].id).toBe(999);
-        expect(result.current.breadcrumbSegments[1].label).toBe('orphan.txt');
-        expect(result.current.breadcrumbSegments[1].isCurrent).toBe(true);
+        expect(result.current.breadcrumbSegments[1]?.id).toBe(999);
+        expect(result.current.breadcrumbSegments[1]?.label).toBe('orphan.txt');
+        expect(result.current.breadcrumbSegments[1]?.isCurrent).toBe(true);
     });
 
     it('toggles mobileTreeOpen via openMobileTree and closeMobileTree', () => {

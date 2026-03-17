@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { type IMusicData } from '../musicProvider/musicProvider';
+import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
+import type { IMusicData } from './musicProvider/musicProvider';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
 
 const fakeSettings = {
@@ -111,14 +112,19 @@ describe('GlobalMusicProvider', () => {
         const trackC = createTrack(3);
 
         act(() => {
-            result.current.addToQueue(trackA, { playlistId: 10 });
+            result.current.addToQueue(
+                trackA,
+                createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
+            );
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
         expect(result.current.queue).toEqual([trackA]);
         expect(result.current.currentIndex).toBe(0);
-        expect(result.current.playbackContext).toEqual({ playlistId: 10 });
+        expect(result.current.playbackContext).toEqual(
+            createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
+        );
 
         act(() => {
             result.current.addToQueue(trackA);
@@ -130,7 +136,11 @@ describe('GlobalMusicProvider', () => {
         expect(result.current.queue).toHaveLength(2);
 
         act(() => {
-            result.current.replaceQueue([trackB, trackC], 1, { playlistId: 22 });
+            result.current.replaceQueue(
+                [trackB, trackC],
+                1,
+                createPlaylistPlaybackContext({ id: 22, name: 'Queue 22' })
+            );
         });
         expect(result.current.queue[1]).toEqual(trackC);
         expect(result.current.currentIndex).toBe(1);
@@ -419,21 +429,31 @@ describe('GlobalMusicProvider', () => {
         const { result } = renderHook(() => useGlobalMusic(), { wrapper });
 
         act(() => {
-            result.current.addToQueue(createTrack(1), { playlistId: 10 });
+            result.current.addToQueue(
+                createTrack(1),
+                createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
+            );
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
-        expect(result.current.playbackContext).toEqual({ playlistId: 10 });
+        expect(result.current.playbackContext).toEqual(
+            createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
+        );
 
         // Adding another track with a different context should NOT change playbackContext
         act(() => {
-            result.current.addToQueue(createTrack(2), { playlistId: 20 });
+            result.current.addToQueue(
+                createTrack(2),
+                createPlaylistPlaybackContext({ id: 20, name: 'Queue 20' })
+            );
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
-        expect(result.current.playbackContext).toEqual({ playlistId: 10 });
+        expect(result.current.playbackContext).toEqual(
+            createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
+        );
     });
 
     it('replaceQueue with empty array is a no-op', () => {

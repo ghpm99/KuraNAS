@@ -116,6 +116,11 @@ jest.mock('@/app/routes', () => ({
     getAnalyticsRoute: (section: string) => `/analytics/${section}`,
 }));
 
+const getRequired = <T,>(value: T | undefined): T => {
+    expect(value).toBeDefined();
+    return value as T;
+};
+
 describe('useGlobalSearchProvider', () => {
     let platformSpy: jest.SpyInstance;
 
@@ -279,7 +284,7 @@ describe('useGlobalSearchProvider', () => {
 
             const filesSection = result.current.sections.find((s) => s.id === 'files');
             expect(filesSection).toBeDefined();
-            const fileItem = filesSection!.items[0];
+            const fileItem = getRequired(filesSection?.items[0]);
             expect(fileItem.id).toBe('file-1');
             expect(fileItem.kind).toBe('file');
             expect(fileItem.label).toBe('FILE');
@@ -302,7 +307,7 @@ describe('useGlobalSearchProvider', () => {
 
             const foldersSection = result.current.sections.find((s) => s.id === 'folders');
             expect(foldersSection).toBeDefined();
-            const folderItem = foldersSection!.items[0];
+            const folderItem = getRequired(foldersSection?.items[0]);
             expect(folderItem.id).toBe('folder-2');
             expect(folderItem.kind).toBe('folder');
 
@@ -322,7 +327,7 @@ describe('useGlobalSearchProvider', () => {
 
             const artistsSection = result.current.sections.find((s) => s.id === 'artists');
             expect(artistsSection).toBeDefined();
-            const artistItem = artistsSection!.items[0];
+            const artistItem = getRequired(artistsSection?.items[0]);
             expect(artistItem.id).toBe('artist-artist-1');
             expect(artistItem.kind).toBe('artist');
             expect(artistItem.label).toBe('Artist');
@@ -346,7 +351,7 @@ describe('useGlobalSearchProvider', () => {
 
             const albumsSection = result.current.sections.find((s) => s.id === 'albums');
             expect(albumsSection).toBeDefined();
-            const albumItem = albumsSection!.items[0];
+            const albumItem = getRequired(albumsSection?.items[0]);
             expect(albumItem.id).toBe('album-album-1');
             expect(albumItem.kind).toBe('album');
             expect(albumItem.label).toBe('Album');
@@ -446,7 +451,7 @@ describe('useGlobalSearchProvider', () => {
 
             const videosSection = result.current.sections.find((s) => s.id === 'videos');
             expect(videosSection).toBeDefined();
-            const videoItem = videosSection!.items[0];
+            const videoItem = getRequired(videosSection?.items[0]);
             expect(videoItem.id).toBe('video-6');
             expect(videoItem.kind).toBe('video');
 
@@ -468,7 +473,7 @@ describe('useGlobalSearchProvider', () => {
 
             const imagesSection = result.current.sections.find((s) => s.id === 'images');
             expect(imagesSection).toBeDefined();
-            const imageItem = imagesSection!.items[0];
+            const imageItem = getRequired(imagesSection?.items[0]);
             expect(imageItem.id).toBe('image-7');
             expect(imageItem.kind).toBe('image');
             expect(imageItem.meta).toBe('Library');
@@ -506,7 +511,7 @@ describe('useGlobalSearchProvider', () => {
             });
 
             const imagesSection = result.current.sections.find((s) => s.id === 'images');
-            const imageItem = imagesSection!.items[0];
+            const imageItem = getRequired(imagesSection?.items[0]);
             expect(imageItem.meta).toBe('photos');
         });
 
@@ -651,7 +656,7 @@ describe('useGlobalSearchProvider', () => {
             }
 
             // Verify we're at the last item
-            const lastItem = result.current.sections.flatMap((s) => s.items)[totalItems - 1];
+            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
             expect(result.current.activeItemId).toBe(lastItem.id);
 
             // One more ArrowDown should wrap to first
@@ -661,7 +666,7 @@ describe('useGlobalSearchProvider', () => {
                     preventDefault: jest.fn(),
                 } as any);
             });
-            const firstItem = result.current.sections.flatMap((s) => s.items)[0];
+            const firstItem = getRequired(result.current.sections.flatMap((s) => s.items)[0]);
             expect(result.current.activeItemId).toBe(firstItem.id);
         });
 
@@ -683,7 +688,7 @@ describe('useGlobalSearchProvider', () => {
             });
             expect(event.preventDefault).toHaveBeenCalled();
 
-            const lastItem = result.current.sections.flatMap((s) => s.items)[totalItems - 1];
+            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
             expect(result.current.activeItemId).toBe(lastItem.id);
         });
 
@@ -730,7 +735,7 @@ describe('useGlobalSearchProvider', () => {
                 result.current.openSearch();
             });
 
-            const firstItem = result.current.sections[0].items[0];
+            const firstItem = getRequired(result.current.sections[0]?.items[0]);
             mockNavigate.mockClear();
 
             act(() => {
@@ -793,7 +798,7 @@ describe('useGlobalSearchProvider', () => {
                 result.current.setQuery('HOME');
             });
 
-            const firstItem = result.current.sections.flatMap((s) => s.items)[0];
+            const firstItem = getRequired(result.current.sections.flatMap((s) => s.items)[0]);
             expect(firstItem).toBeDefined();
             expect(result.current.activeItemId).toBe(firstItem.id);
         });
@@ -810,7 +815,7 @@ describe('useGlobalSearchProvider', () => {
             });
 
             expect(result.current.sections.length).toBe(1);
-            expect(result.current.sections[0].id).toBe('actions');
+            expect(result.current.sections[0]?.id).toBe('actions');
         });
     });
 

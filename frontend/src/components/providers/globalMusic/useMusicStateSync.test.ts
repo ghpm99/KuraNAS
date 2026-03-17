@@ -1,7 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import useMusicStateSync from './useMusicStateSync';
 import { updatePlayerState } from '@/service/playerState';
-import { type MusicPlaybackContext } from '@/components/music/playbackContext';
+import {
+    createPlaylistPlaybackContext,
+    type MusicPlaybackContext,
+} from '@/components/music/playbackContext';
 
 jest.mock('@/service/playerState', () => ({
     updatePlayerState: jest.fn(),
@@ -33,7 +36,7 @@ describe('useMusicStateSync', () => {
         volume: 0.6,
         shuffle: true,
         repeatMode: 'all',
-        playbackContext: { playlistId: 12, source: 'test' },
+        playbackContext: createPlaylistPlaybackContext({ id: 12, name: 'test' }),
         ...overrides,
     });
 

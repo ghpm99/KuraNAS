@@ -123,6 +123,11 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
     timeStyle: 'short',
 });
 
+const getSection = <T,>(value: T | undefined): T => {
+    expect(value).toBeDefined();
+    return value as T;
+};
+
 describe('useImageViewerModal', () => {
     it('returns detail sections with full metadata', () => {
         const activeImage = createImage();
@@ -141,7 +146,9 @@ describe('useImageViewerModal', () => {
         expect(result.current.folderPath).toBe('/photos/travel');
         expect(result.current.positionLabel).toBe('3 de 10');
 
-        const [librarySection, captureSection, deviceSection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
+        const captureSection = getSection(result.current.details[1]);
+        const deviceSection = getSection(result.current.details[2]);
 
         // Library section
         expect(librarySection.title).toBe('Biblioteca');
@@ -210,7 +217,9 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection, captureSection, deviceSection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
+        const captureSection = getSection(result.current.details[1]);
+        const deviceSection = getSection(result.current.details[2]);
 
         const dimensionsItem = librarySection.items.find((i) => i.label === 'Dimensoes');
         expect(dimensionsItem?.value).toBe('N/D');
@@ -247,7 +256,8 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection, , deviceSection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
+        const deviceSection = getSection(result.current.details[2]);
 
         const dimensionsItem = librarySection.items.find((i) => i.label === 'Dimensoes');
         expect(dimensionsItem?.value).toBe('N/D');
@@ -277,7 +287,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
         const categoryItem = librarySection.items.find((i) => i.label === 'Categoria');
         expect(categoryItem?.value).toBe('Captura');
         const confidenceItem = librarySection.items.find((i) => i.label === 'Confianca');
@@ -301,7 +311,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
         const categoryItem = librarySection.items.find((i) => i.label === 'Categoria');
         expect(categoryItem?.value).toBe('Outros');
     });
@@ -321,7 +331,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, , deviceSection] = result.current.details;
+        const deviceSection = getSection(result.current.details[2]);
         const exposureItem = deviceSection.items.find((i) => i.label === 'Exposicao');
         expect(exposureItem?.value).toBe('2s');
     });
@@ -341,7 +351,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, , deviceSection] = result.current.details;
+        const deviceSection = getSection(result.current.details[2]);
         const exposureItem = deviceSection.items.find((i) => i.label === 'Exposicao');
         expect(exposureItem?.value).toBe('1s');
     });
@@ -361,7 +371,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, , deviceSection] = result.current.details;
+        const deviceSection = getSection(result.current.details[2]);
         const focalItem = deviceSection.items.find((i) => i.label === 'Focal');
         expect(focalItem?.value).toBe('50.5mm');
         const apertureItem = deviceSection.items.find((i) => i.label === 'Abertura');
@@ -383,7 +393,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, , deviceSection] = result.current.details;
+        const deviceSection = getSection(result.current.details[2]);
         const cameraItem = deviceSection.items.find((i) => i.label === 'Camera');
         expect(cameraItem?.value).toBe('Canon');
     });
@@ -403,7 +413,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, , deviceSection] = result.current.details;
+        const deviceSection = getSection(result.current.details[2]);
         const cameraItem = deviceSection.items.find((i) => i.label === 'Camera');
         expect(cameraItem?.value).toBe('A7');
     });
@@ -421,7 +431,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [, captureSection] = result.current.details;
+        const captureSection = getSection(result.current.details[1]);
         const createdItem = captureSection.items.find((i) => i.label === 'Criado em');
         expect(createdItem?.value).toBe('N/D');
     });
@@ -439,7 +449,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
         const formatItem = librarySection.items.find((i) => i.label === 'Formato');
         expect(formatItem?.value).toBe('.png');
     });
@@ -459,7 +469,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
         const dimensionsItem = librarySection.items.find((i) => i.label === 'Dimensoes');
         expect(dimensionsItem?.value).toBe('N/D');
     });
@@ -479,7 +489,7 @@ describe('useImageViewerModal', () => {
             })
         );
 
-        const [librarySection] = result.current.details;
+        const librarySection = getSection(result.current.details[0]);
         const dimensionsItem = librarySection.items.find((i) => i.label === 'Dimensoes');
         expect(dimensionsItem?.value).toBe('N/D');
     });

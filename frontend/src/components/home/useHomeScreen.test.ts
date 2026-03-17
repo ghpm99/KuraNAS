@@ -233,7 +233,7 @@ describe('useHomeScreen', () => {
 
             const { result } = renderHook(() => useHomeScreen());
             expect(result.current.videoContinueItems).toHaveLength(2);
-            expect(result.current.videoContinueItems[0].video.id).toBe(1);
+            expect(result.current.videoContinueItems[0]?.video.id).toBe(1);
         });
 
         it('returns empty when no continue section exists', () => {

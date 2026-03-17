@@ -1,6 +1,5 @@
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { type ReactNode } from 'react';
 import {
     addChildrenToTree,
     buildFilesUrl,
@@ -40,17 +39,17 @@ const mockRenameFilePath = jest.fn<Promise<void>, [string, string]>();
 const mockDeleteFilePath = jest.fn<Promise<void>, [string]>();
 
 jest.mock('@/service/files', () => ({
-    getFileByPath: (...args: any[]) => mockGetFileByPath(...args),
-    getFilesTree: (...args: any[]) => mockGetFilesTree(...args),
-    getRecentAccessByFileId: (...args: any[]) => mockGetRecentAccessByFileId(...args),
-    toggleStarredFile: (...args: any[]) => mockToggleStarredFile(...args),
-    rescanFiles: (...args: any[]) => mockRescanFiles(...args),
-    uploadFilesToPath: (...args: any[]) => mockUploadFilesToPath(...args),
-    createFolderAtPath: (...args: any[]) => mockCreateFolderAtPath(...args),
-    moveFilePath: (...args: any[]) => mockMoveFilePath(...args),
-    copyFilePath: (...args: any[]) => mockCopyFilePath(...args),
-    renameFilePath: (...args: any[]) => mockRenameFilePath(...args),
-    deleteFilePath: (...args: any[]) => mockDeleteFilePath(...args),
+    getFileByPath: mockGetFileByPath,
+    getFilesTree: mockGetFilesTree,
+    getRecentAccessByFileId: mockGetRecentAccessByFileId,
+    toggleStarredFile: mockToggleStarredFile,
+    rescanFiles: mockRescanFiles,
+    uploadFilesToPath: mockUploadFilesToPath,
+    createFolderAtPath: mockCreateFolderAtPath,
+    moveFilePath: mockMoveFilePath,
+    copyFilePath: mockCopyFilePath,
+    renameFilePath: mockRenameFilePath,
+    deleteFilePath: mockDeleteFilePath,
 }));
 
 // Capture context from the provider
@@ -169,20 +168,22 @@ describe('fileProvider utilities', () => {
     it('adds children to the correct parent node', () => {
         const tree: FileData[] = [createNode(1), createNode(2)];
         const updated = addChildrenToTree(tree, 2, [createNode(6)]);
-        expect(updated[1].file_children?.[0].id).toBe(6);
+        expect(updated[1]?.file_children?.[0]?.id).toBe(6);
     });
 
     it('recurses into children when adding to a deeply nested parent', () => {
         const tree: FileData[] = [createNode(1, {}, [createNode(2, {}, [createNode(3)])])];
         const updated = addChildrenToTree(tree, 3, [createNode(10)]);
-        expect(updated[0].file_children?.[0].file_children?.[0].file_children?.[0].id).toBe(10);
+        expect(updated[0]?.file_children?.[0]?.file_children?.[0]?.file_children?.[0]?.id).toBe(
+            10
+        );
     });
 
     it('returns the node unchanged when parentId does not match and no children', () => {
         const tree: FileData[] = [createNode(1), createNode(2)];
         const updated = addChildrenToTree(tree, 99, [createNode(6)]);
-        expect(updated[0].file_children).toBeUndefined();
-        expect(updated[1].file_children).toBeUndefined();
+        expect(updated[0]?.file_children).toBeUndefined();
+        expect(updated[1]?.file_children).toBeUndefined();
     });
 
     it('builds the trail of nodes to a target id', () => {
@@ -257,7 +258,7 @@ describe('FileProvider', () => {
 
         renderProvider();
         await waitFor(() => expect(capturedContext!.files.length).toBe(2));
-        expect(capturedContext!.files[0].id).toBe(1);
+        expect(capturedContext!.files[0]?.id).toBe(1);
     });
 
     it('resolves selected item from URL path', async () => {
@@ -442,7 +443,7 @@ describe('FileProvider', () => {
 
         // Wait for the tree to load at root
         await waitFor(() => expect(capturedContext!.files.length).toBe(1));
-        expect(capturedContext!.files[0].id).toBe(10);
+        expect(capturedContext!.files[0]?.id).toBe(10);
 
         // Now navigate to a child path - mock the path resolution
         mockPathname = '/files/docs/sub';

@@ -260,7 +260,7 @@ describe('useImageContent', () => {
 
         expect(result.current.activeSection).toBe('captures');
         expect(result.current.filteredImages).toHaveLength(1);
-        expect(result.current.filteredImages[0].id).toBe(1);
+        expect(result.current.filteredImages[0]?.id).toBe(1);
     });
 
     it('returns photos section and filters to photo category', () => {
@@ -287,7 +287,7 @@ describe('useImageContent', () => {
 
         expect(result.current.activeSection).toBe('photos');
         expect(result.current.filteredImages).toHaveLength(1);
-        expect(result.current.filteredImages[0].id).toBe(2);
+        expect(result.current.filteredImages[0]?.id).toBe(2);
     });
 
     // ── Folders viewMode ─────────────────────────────────────────────
@@ -420,7 +420,7 @@ describe('useImageContent', () => {
         });
 
         expect(result.current.groupedImages.length).toBeGreaterThanOrEqual(1);
-        expect(result.current.groupedImages[0].label).toBe('.jpg');
+        expect(result.current.groupedImages[0]?.label).toBe('.jpg');
     });
 
     it('groups images by name using first letter', () => {
@@ -458,7 +458,7 @@ describe('useImageContent', () => {
         });
 
         expect(result.current.groupedImages.length).toBe(1);
-        expect(result.current.groupedImages[0].label).toBe('Sem data');
+        expect(result.current.groupedImages[0]?.label).toBe('Sem data');
     });
 
     it('groups images with no format into fallback label for type groupBy', () => {
@@ -472,7 +472,7 @@ describe('useImageContent', () => {
             wrapper: createWrapper(['/images']),
         });
 
-        expect(result.current.groupedImages[0].label).toBe('Sem formato');
+        expect(result.current.groupedImages[0]?.label).toBe('Sem formato');
     });
 
     it('groups images with empty name into # for name groupBy', () => {
@@ -486,7 +486,7 @@ describe('useImageContent', () => {
             wrapper: createWrapper(['/images']),
         });
 
-        expect(result.current.groupedImages[0].label).toContain('#');
+        expect(result.current.groupedImages[0]?.label).toContain('#');
     });
 
     // ── Search filtering ─────────────────────────────────────────────
@@ -509,7 +509,7 @@ describe('useImageContent', () => {
         });
 
         expect(result.current.filteredImages).toHaveLength(1);
-        expect(result.current.filteredImages[0].id).toBe(1);
+        expect(result.current.filteredImages[0]?.id).toBe(1);
     });
 
     it('filters folder cards by search term', () => {
@@ -530,7 +530,7 @@ describe('useImageContent', () => {
         });
 
         expect(result.current.filteredFolderCards.length).toBe(1);
-        expect(result.current.filteredFolderCards[0].title).toBe('travel');
+        expect(result.current.filteredFolderCards[0]?.title).toBe('travel');
     });
 
     it('filters album cards by search term', () => {
@@ -996,7 +996,7 @@ describe('useImageContent', () => {
         });
 
         expect(result.current.filteredFolderCards.length).toBe(1);
-        expect(result.current.filteredFolderCards[0].coverImageId).toBe(5);
+        expect(result.current.filteredFolderCards[0]?.coverImageId).toBe(5);
     });
 
     // ── album card coverImageId ──────────────────────────────────────
@@ -1053,7 +1053,7 @@ describe('useImageContent', () => {
             wrapper: createWrapper(['/images']),
         });
 
-        expect(result.current.groupedImages[0].label).toBe('Sem formato');
+        expect(result.current.groupedImages[0]?.label).toBe('Sem formato');
     });
 
     // ── requestedImagePath resolution ────────────────────────────────
