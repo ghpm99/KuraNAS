@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"nas-go/api/internal/api/v1/video/playlist"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func NewService(repository RepositoryInterface) ServiceInterface {
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
-	return s.Repository.GetDbContext().ExecTx(fn)
+	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
 // ---------------------------------------------------------------------------

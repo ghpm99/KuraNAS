@@ -7,8 +7,6 @@ import (
 	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type repoMock struct {
@@ -47,12 +45,7 @@ func (r *repoMock) GetSummary(dateReference time.Time) (DiarySummary, error) {
 
 func newServiceForTest(t *testing.T, mock *repoMock) *Service {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite in-memory db: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	mock.dbContext = database.NewDbContext(db)
+	mock.dbContext = database.NewDbContext(nil)
 	return &Service{Repository: mock}
 }
 
@@ -262,20 +255,14 @@ func TestCalculateDailyDurationAndLongestActivity(t *testing.T) {
 }
 
 func TestWithTransactionUsesDbContext(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	defer db.Close()
-
 	s := &Service{
 		Repository: &repoMock{
-			dbContext: database.NewDbContext(db),
+			dbContext: database.NewDbContext(nil),
 		},
 	}
 
 	called := false
-	err = s.withTransaction(func(tx *sql.Tx) error {
+	err := s.withTransaction(func(tx *sql.Tx) error {
 		called = true
 		return nil
 	})

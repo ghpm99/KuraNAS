@@ -11,9 +11,9 @@
         "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
         "lint": "eslint .",
         "preview": "vite preview",
-        "test": "jest",
-        "test:watch": "jest --watch",
-        "coverage": "jest --coverage"
+        "test": "jest --runInBand",
+        "test:watch": "jest --watch --runInBand",
+        "coverage": "jest --coverage --runInBand"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",

@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"fmt"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
@@ -18,7 +19,7 @@ func NewService(repository RepositoryInterface) ServiceInterface {
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
-	return s.Repository.GetDbContext().ExecTx(fn)
+	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
 func (s *Service) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {

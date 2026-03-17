@@ -55,6 +55,16 @@ jest.mock('@/components/search/useGlobalSearch', () => ({
     default: () => ({ openSearch: mockOpenSearch, shortcut: 'Ctrl+K' }),
 }));
 
+jest.mock('@/components/providers/notificationProvider/notificationContext', () => ({
+    useNotifications: () => ({
+        notifications: [],
+        unreadCount: 0,
+        markAllAsRead: jest.fn(),
+        markAsRead: jest.fn(),
+        refresh: jest.fn(),
+    }),
+}));
+
 jest.mock('react-router-dom', () => ({
     Link: ({ children, to }: any) => <a href={to}>{children}</a>,
     Outlet: () => <div>OutletMock</div>,
@@ -79,6 +89,7 @@ jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', (
 }));
 
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+    __esModule: true,
     useGlobalMusic: () => ({ hasQueue: true }),
     GlobalMusicProvider: ({ children }: any) => <div>{children}</div>,
 }));

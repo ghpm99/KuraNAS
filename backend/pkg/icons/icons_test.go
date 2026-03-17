@@ -13,6 +13,8 @@ import (
 func ensureIconFixtures(t *testing.T) {
 	t.Helper()
 
+	t.Setenv("ProgramFiles", filepath.Join(t.TempDir(), "ProgramFiles"))
+
 	iconsPath := config.GetBuildConfig("IconPath")
 	if iconsPath == "" {
 		t.Fatalf("expected icon path from build config")

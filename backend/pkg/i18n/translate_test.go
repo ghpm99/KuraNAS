@@ -7,7 +7,13 @@ import (
 	"testing"
 )
 
+func setProgramFilesRootForTest(t *testing.T) {
+	t.Helper()
+	t.Setenv("ProgramFiles", filepath.Join(t.TempDir(), "ProgramFiles"))
+}
+
 func TestGetPathFileTranslateAndLoadTranslations(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	config.AppConfig.Lang = ""
 	path := GetPathFileTranslate()
 	if path == "" {
@@ -46,6 +52,7 @@ func TestPrintAndLogTranslate(t *testing.T) {
 }
 
 func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	prevLang := config.AppConfig.Lang
 	t.Cleanup(func() { config.AppConfig.Lang = prevLang })
 
@@ -84,13 +91,14 @@ func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
 }
 
 func TestResolveTranslationsPathFallsBackToWorkspaceDirectory(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	previousWorkingDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Getwd failed: %v", err)
 	}
-	t.Cleanup(func() {
+	defer func() {
 		_ = os.Chdir(previousWorkingDir)
-	})
+	}()
 
 	root := t.TempDir()
 	nested := filepath.Join(root, "workspace", "backend", "internal")
@@ -118,6 +126,7 @@ func TestResolveTranslationsPathFallsBackToWorkspaceDirectory(t *testing.T) {
 }
 
 func TestGetPathFileTranslateByLangDefaultsAndFallbackMiss(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	if path := GetPathFileTranslateByLang(""); path == "" || filepath.Base(path) != "en-US.json" {
 		t.Fatalf("expected default en-US translation file, got %q", path)
 	}
@@ -126,9 +135,9 @@ func TestGetPathFileTranslateByLangDefaultsAndFallbackMiss(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Getwd failed: %v", err)
 	}
-	t.Cleanup(func() {
+	defer func() {
 		_ = os.Chdir(previousWorkingDir)
-	})
+	}()
 
 	emptyRoot := t.TempDir()
 	if err := os.Chdir(emptyRoot); err != nil {
@@ -141,6 +150,7 @@ func TestGetPathFileTranslateByLangDefaultsAndFallbackMiss(t *testing.T) {
 }
 
 func TestGetPathFileTranslateByLangSanitizesLocale(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	testCases := map[string]string{
 		" pt-BR ":            "pt-BR.json",
 		"../secrets":         "en-US.json",
@@ -159,6 +169,7 @@ func TestGetPathFileTranslateByLangSanitizesLocale(t *testing.T) {
 }
 
 func TestResolveTranslationFilePathKeepsFileWithinTranslationsDirectory(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	testCases := map[string]string{
 		"pt-BR":              "pt-BR.json",
 		"../secrets":         "en-US.json",
@@ -185,13 +196,14 @@ func TestResolveTranslationFilePathKeepsFileWithinTranslationsDirectory(t *testi
 }
 
 func TestResolveTranslationsPathPrefersConfiguredDirectoryAndRootTranslationsFallback(t *testing.T) {
+	setProgramFilesRootForTest(t)
 	previousWorkingDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Getwd failed: %v", err)
 	}
-	t.Cleanup(func() {
+	defer func() {
 		_ = os.Chdir(previousWorkingDir)
-	})
+	}()
 
 	root := t.TempDir()
 	nested := filepath.Join(root, "workspace", "internal")

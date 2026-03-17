@@ -3,6 +3,7 @@ package diary
 import (
 	"database/sql"
 	"errors"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"time"
 )
@@ -17,7 +18,7 @@ func NewService(repository RepositoryInterface, tasksChannel chan utils.Task) Se
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) (err error) {
-	return s.Repository.GetDbContext().ExecTx(fn)
+	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
 func (service *Service) CreateDiary(diaryDto DiaryDto) (diaryDtoResult DiaryDto, err error) {
