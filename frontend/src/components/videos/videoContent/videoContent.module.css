@@ -741,7 +741,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 64vh;
+    min-height: 50vh;
+    min-height: 50dvh;
     gap: 12px;
     text-align: center;
     color: var(--text-dim);

@@ -62,6 +62,7 @@
 .results {
     margin-top: var(--app-spacing-4);
     max-height: min(68vh, 620px);
+    max-height: min(68dvh, 620px);
     overflow-y: auto;
     padding-right: var(--app-spacing-1);
 }

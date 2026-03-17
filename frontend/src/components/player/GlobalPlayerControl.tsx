@@ -78,18 +78,18 @@ const GlobalPlayerControl = () => {
             <CardContent
                 sx={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 2fr 1fr',
+                    gridTemplateColumns: { xs: 'minmax(0, 1fr) auto', sm: '1fr 2fr 1fr' },
                     alignItems: 'center',
-                    gap: 2,
-                    p: 2,
+                    gap: { xs: 1, sm: 2 },
+                    p: { xs: 1, sm: 2 },
                 }}
             >
                 {/* Left: Track Info */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, minWidth: 0 }}>
                     <Box
                         sx={{
-                            width: 46,
-                            height: 46,
+                            width: { xs: 38, sm: 46 },
+                            height: { xs: 38, sm: 46 },
                             bgcolor: 'primary.dark',
                             borderRadius: 1.5,
                             display: 'flex',
@@ -128,7 +128,7 @@ const GlobalPlayerControl = () => {
                         )}
                     </Box>
                     <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
+                        <Typography variant="body2" fontWeight={600} noWrap sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                             {currentTrackTitle}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" noWrap component="div">
@@ -140,6 +140,7 @@ const GlobalPlayerControl = () => {
                                 color="text.secondary"
                                 noWrap
                                 component="div"
+                                sx={{ display: { xs: 'none', md: 'block' } }}
                             >
                                 {t('MUSIC_PLAYBACK_FROM', { context: playbackContextLabel })}
                             </Typography>
@@ -151,17 +152,17 @@ const GlobalPlayerControl = () => {
                 <Box
                     sx={{
                         display: 'flex',
-                        flexDirection: 'column',
+                        flexDirection: { xs: 'row', sm: 'column' },
                         alignItems: 'center',
                         gap: 0.5,
                     }}
                 >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 1 } }}>
                         <IconButton
                             onClick={toggleShuffle}
                             size="small"
                             aria-label="toggle shuffle"
-                            sx={{ opacity: shuffle ? 1 : 0.4 }}
+                            sx={{ opacity: shuffle ? 1 : 0.4, display: { xs: 'none', sm: 'inline-flex' } }}
                         >
                             <Shuffle size={16} />
                         </IconButton>
@@ -199,6 +200,7 @@ const GlobalPlayerControl = () => {
                             sx={{
                                 opacity: repeatMode !== 'none' ? 1 : 0.4,
                                 color: repeatMode !== 'none' ? 'primary.main' : undefined,
+                                display: { xs: 'none', sm: 'inline-flex' },
                             }}
                         >
                             <RepeatIcon size={16} />
@@ -206,7 +208,7 @@ const GlobalPlayerControl = () => {
                     </Box>
                     <Box
                         sx={{
-                            display: 'flex',
+                            display: { xs: 'none', sm: 'flex' },
                             alignItems: 'center',
                             gap: 1,
                             width: '100%',
@@ -248,7 +250,7 @@ const GlobalPlayerControl = () => {
                 {/* Right: Volume + Queue */}
                 <Box
                     sx={{
-                        display: 'flex',
+                        display: { xs: 'none', sm: 'flex' },
                         alignItems: 'center',
                         justifyContent: 'flex-end',
                         gap: 1,
@@ -267,7 +269,7 @@ const GlobalPlayerControl = () => {
                     >
                         <ListMusic size={18} />
                     </IconButton>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: 120 }}>
+                    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, width: 120 }}>
                         <IconButton
                             size="small"
                             onClick={() => setVolume(volume > 0 ? 0 : 0.7)}

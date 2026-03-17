@@ -18,10 +18,17 @@
 
 .domainContent {
     display: grid;
-    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
     gap: 20px;
     flex: 1;
     min-height: 0;
+}
+
+.sidebarArea {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
 }
 
 .contentArea {
@@ -34,6 +41,11 @@
 @media (max-width: 900px) {
     .domainContent {
         grid-template-columns: 1fr;
+    }
+
+    .sidebarArea {
+        overflow-y: visible;
+        overflow-x: hidden;
     }
 }
 

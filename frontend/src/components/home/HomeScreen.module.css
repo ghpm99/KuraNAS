@@ -514,18 +514,43 @@
 }
 
 @media (max-width: 1200px) {
-    .heroMetrics,
+    .videoPanel,
+    .statusPanel,
+    .panel {
+        grid-column: span 12;
+    }
+
+    .heroMetrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .actionsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .recentList {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .imageGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .videoList {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .heroMetrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .actionsGrid,
     .recentList,
     .imageGrid,
     .videoList {
         grid-template-columns: 1fr;
-    }
-
-    .videoPanel,
-    .statusPanel,
-    .panel {
-        grid-column: span 12;
     }
 }
 
