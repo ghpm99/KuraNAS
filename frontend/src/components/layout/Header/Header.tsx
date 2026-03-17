@@ -1,8 +1,9 @@
 import { Avatar, Drawer, IconButton } from '@mui/material';
-import { Bell, Clock3, Menu, Search } from 'lucide-react';
+import { Clock3, Menu, Search } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
 import useGlobalSearch from '@/components/search/useGlobalSearch';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import styles from './Header.module.css';
 import { useHeader } from './useHeader';
 
@@ -55,14 +56,7 @@ export default function Header({ showClock = false }: HeaderProps) {
                             </div>
                         )}
 
-                        <IconButton
-                            title={t('NOTIFICATIONS')}
-                            aria-label={t('NOTIFICATIONS')}
-                            size="small"
-                            className={styles.iconButton}
-                        >
-                            <Bell size={16} />
-                        </IconButton>
+                        <NotificationBell className={styles.iconButton} />
                         <Avatar src="/avatar.jpg" alt={t('AVATAR_ALT')} className={styles.avatar} />
                     </div>
                 </header>

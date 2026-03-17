@@ -3,9 +3,11 @@ package worker
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
@@ -13,14 +15,15 @@ import (
 )
 
 type WorkerContext struct {
-	Tasks           chan utils.Task
-	FilesService    files.ServiceInterface
-	VideoService    video.ServiceInterface
-	JobsRepository  jobs.RepositoryInterface
-	MetadataService files.MetadataRepositoryInterface
-	Logger          logger.LoggerServiceInterface
-	JobScheduler    *JobScheduler
-	JobOrchestrator *JobOrchestrator
+	Tasks               chan utils.Task
+	FilesService        files.ServiceInterface
+	VideoService        video.ServiceInterface
+	JobsRepository      jobs.RepositoryInterface
+	MetadataService     files.MetadataRepositoryInterface
+	Logger              logger.LoggerServiceInterface
+	NotificationService notifications.ServiceInterface
+	JobScheduler        *JobScheduler
+	JobOrchestrator     *JobOrchestrator
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -39,13 +42,44 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	}
 
 	go startWorkersScheduler(context)
+	go startNotificationCleanup(context)
 	startEntryPointWatcher(context)
+}
+
+func startNotificationCleanup(context *WorkerContext) {
+	if context == nil || context.NotificationService == nil {
+		return
+	}
+	for {
+		time.Sleep(1 * time.Hour)
+		if err := context.NotificationService.CleanupOldNotifications(); err != nil {
+			log.Printf("notification cleanup error: %v\n", err)
+		}
+	}
+}
+
+func emitNotification(context *WorkerContext, notifType string, title string, message string, groupKey string) {
+	if context == nil || context.NotificationService == nil {
+		return
+	}
+	_, err := context.NotificationService.GroupOrCreate(notifications.CreateNotificationDto{
+		Type:     notifType,
+		Title:    title,
+		Message:  message,
+		GroupKey: groupKey,
+	})
+	if err != nil {
+		log.Printf("failed to emit notification: %v\n", err)
+	}
 }
 
 func startWorkersScheduler(context *WorkerContext) {
 	if context != nil && context.JobOrchestrator != nil {
 		if err := enqueueStartupScanJob(context); err != nil {
 			log.Printf("failed to enqueue startup_scan job: %v\n", err)
+			emitNotification(context, "error", "Startup scan failed", err.Error(), "")
+		} else {
+			emitNotification(context, "info", "File scan started", "Startup file scan has been enqueued", "file_scan")
 		}
 		return
 	}
@@ -55,6 +89,7 @@ func startWorkersScheduler(context *WorkerContext) {
 		Type: utils.ScanFiles,
 		Data: "file scan",
 	}
+	emitNotification(context, "info", "File scan started", "File scan task has been enqueued", "file_scan")
 	log.Println("file scan task enqueued")
 }
 
@@ -138,6 +173,7 @@ func worker(id int, context *WorkerContext) {
 			if context != nil && context.JobOrchestrator != nil {
 				if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
 					log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
+					emitNotification(context, "error", "File scan failed", err.Error(), "")
 				}
 			} else {
 				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
@@ -148,6 +184,7 @@ func worker(id int, context *WorkerContext) {
 				if ok {
 					if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
 						log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
+						emitNotification(context, "error", "Directory scan failed", fmt.Sprintf("Failed to scan %s: %v", targetPath, err), "")
 					}
 				}
 			} else {

@@ -8,6 +8,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/music"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
@@ -30,6 +31,7 @@ type AppContext struct {
 	Analytics     *AnalyticsContext
 	Configuration *ConfigurationContext
 	Search        *SearchContext
+	Notifications *NotificationContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
 }
@@ -85,6 +87,12 @@ type SearchContext struct {
 	Repository search.RepositoryInterface
 }
 
+type NotificationContext struct {
+	Handler    *notifications.Handler
+	Service    notifications.ServiceInterface
+	Repository notifications.RepositoryInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -98,6 +106,7 @@ func NewContext(db *sql.DB) *AppContext {
 	analyticsContext := newAnalyticsContext(dbContext)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	searchContext := newSearchContext(dbContext)
+	notificationContext := newNotificationContext(dbContext)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
@@ -113,6 +122,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Analytics:     analyticsContext,
 		Configuration: configurationContext,
 		Search:        searchContext,
+		Notifications: notificationContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
 	}
@@ -200,6 +210,18 @@ func newConfigurationContext(dbContext *database.DbContext, loggerService logger
 	_ = service.ApplyRuntimeSettings()
 
 	return &ConfigurationContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newNotificationContext(dbContext *database.DbContext) *NotificationContext {
+	repository := notifications.NewRepository(dbContext)
+	service := notifications.NewService(repository)
+	handler := notifications.NewHandler(service)
+
+	return &NotificationContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
