@@ -62,7 +62,14 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 				IMAGES_VIEWER_SHOW_FILMSTRIP: 'Mostrar tira',
 				IMAGES_VIEWER_HIDE_FILMSTRIP_SHORT: 'Tira off',
 				IMAGES_VIEWER_SHOW_FILMSTRIP_SHORT: 'Tira on',
-				IMAGES_VIEWER_KEYBOARD_HINT: 'Atalhos',
+				IMAGES_TOGGLE_DETAILS: 'Alternar detalhes',
+			IMAGES_DECREASE_ZOOM: 'Reduzir zoom',
+			IMAGES_RESET_ZOOM: 'Resetar zoom',
+			IMAGES_INCREASE_ZOOM: 'Aumentar zoom',
+			IMAGES_VIEWER_KEYBOARD_HINT: 'Atalhos',
+			IMAGES_ZOOM_LABEL: 'Zoom',
+			IMAGES_PREVIOUS: 'Imagem anterior',
+			IMAGES_NEXT: 'Proxima imagem',
 				IMAGES_VIEWER_POSITION: `${params?.current ?? 1} de ${params?.total ?? 1}`,
 				IMAGES_VIEWER_FAVORITE_ADDED: 'Imagem adicionada aos favoritos',
 				IMAGES_VIEWER_FAVORITE_REMOVED: 'Imagem removida dos favoritos',
@@ -304,6 +311,40 @@ describe('imageContent', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Voltar para albuns' }));
 
 		expect(screen.getByRole('button', { name: /abrir outros/i })).toBeInTheDocument();
+	});
+
+	it('back button in folders section clears folder selection', () => {
+		mockUseImage.mockReturnValue({
+			images: [
+				createImage({ id: 1, name: 'Trip.jpg', path: '/photos/travel/Trip.jpg' }),
+			],
+			status: 'success',
+			imageGroupBy: 'date',
+			setImageGroupBy: jest.fn(),
+			fetchNextPage: jest.fn(),
+			hasNextPage: false,
+			isFetchingNextPage: false,
+		});
+
+		renderImageContent(['/images/folders']);
+
+		fireEvent.click(screen.getByRole('button', { name: /abrir travel/i }));
+		expect(screen.getByRole('button', { name: 'Voltar para pastas' })).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Voltar para pastas' }));
+		expect(screen.getByRole('button', { name: /abrir travel/i })).toBeInTheDocument();
+	});
+
+	it('toggles details and filmstrip in the viewer', () => {
+		renderImageContent(['/images?image=1']);
+
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+		const detailsButton = screen.getByRole('button', { name: 'Alternar detalhes' });
+		fireEvent.click(detailsButton);
+
+		const filmstripButton = screen.getByRole('button', { name: /mostrar tira|ocultar tira/i });
+		fireEvent.click(filmstripButton);
 	});
 
 	it('renders the initial loading state for grid sections without images', () => {

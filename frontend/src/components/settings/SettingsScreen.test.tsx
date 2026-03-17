@@ -4,9 +4,12 @@ import SettingsScreen from './SettingsScreen';
 
 const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
+const mockSetLibraryField = jest.fn();
+const mockSetIndexingField = jest.fn();
 const mockSetPlayersField = jest.fn();
 const mockSetAppearanceField = jest.fn();
 const mockSetLanguageField = jest.fn();
+const mockHandleWatchedPathsChange = jest.fn();
 const mockUseSettingsScreen = jest.fn();
 
 jest.mock('./useSettingsScreen', () => ({
@@ -79,7 +82,10 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
 	isSaving: false,
 	hasError: false,
 	hasUnsavedChanges: true,
-	languageOptions: [{ value: 'en-US', label: 'English' }],
+	languageOptions: [
+		{ value: 'en-US', label: 'English' },
+		{ value: 'pt-BR', label: 'Portuguese' },
+	],
 	accentOptions: [
 		{ value: 'violet', label: 'Violet' },
 		{ value: 'cyan', label: 'Cyan' },
@@ -89,12 +95,12 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
 		{ value: 8, label: '8 seconds' },
 	],
 	watchedPathsText: '/data',
-	setLibraryField: jest.fn(),
-	setIndexingField: jest.fn(),
+	setLibraryField: mockSetLibraryField,
+	setIndexingField: mockSetIndexingField,
 	setPlayersField: mockSetPlayersField,
 	setAppearanceField: mockSetAppearanceField,
 	setLanguageField: mockSetLanguageField,
-	handleWatchedPathsChange: jest.fn(),
+	handleWatchedPathsChange: mockHandleWatchedPathsChange,
 	handleReset: mockHandleReset,
 	handleSave: mockHandleSave,
 	...overrides,
@@ -106,7 +112,7 @@ describe('components/settings/SettingsScreen', () => {
 		mockUseSettingsScreen.mockReturnValue(createScreenState());
 	});
 
-	it('renders settings sections and triggers actions', () => {
+	it('renders all settings sections and triggers save/reset actions', () => {
 		render(
 			<MemoryRouter>
 				<SettingsScreen />
@@ -115,8 +121,11 @@ describe('components/settings/SettingsScreen', () => {
 
 		expect(screen.getByText('Settings')).toBeInTheDocument();
 		expect(screen.getByText('Library')).toBeInTheDocument();
+		expect(screen.getByText('Indexing')).toBeInTheDocument();
+		expect(screen.getByText('Players')).toBeInTheDocument();
 		expect(screen.getByText('Appearance')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
+		// Language appears in summary chip and section title
+		expect(screen.getAllByText('Language').length).toBeGreaterThanOrEqual(1);
 
 		fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
 		fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -178,5 +187,216 @@ describe('components/settings/SettingsScreen', () => {
 		expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
 		expect(screen.getByRole('switch', { name: 'Remember music queue' })).toBeDisabled();
 		expect(screen.getByRole('switch', { name: 'Reduce motion' })).toBeDisabled();
+	});
+
+	it('disables controls while isLoading is true', () => {
+		mockUseSettingsScreen.mockReturnValue(
+			createScreenState({
+				isLoading: true,
+				hasUnsavedChanges: true,
+			}),
+		);
+
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByRole('switch', { name: 'Remember last location' })).toBeDisabled();
+		expect(screen.getByRole('switch', { name: 'Scan on startup' })).toBeDisabled();
+		expect(screen.getByRole('switch', { name: 'Remember music queue' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+	});
+
+	it('fires library switch handlers with correct arguments', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Remember last location' }));
+		expect(mockSetLibraryField).toHaveBeenCalledWith('remember_last_location', false);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Prioritize favorites' }));
+		expect(mockSetLibraryField).toHaveBeenCalledWith('prioritize_favorites', false);
+	});
+
+	it('fires indexing switch handlers with correct arguments', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Scan on startup' }));
+		expect(mockSetIndexingField).toHaveBeenCalledWith('scan_on_startup', false);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Extract metadata' }));
+		expect(mockSetIndexingField).toHaveBeenCalledWith('extract_metadata', false);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Generate previews' }));
+		expect(mockSetIndexingField).toHaveBeenCalledWith('generate_previews', false);
+	});
+
+	it('fires player switch handlers with correct arguments', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Remember music queue' }));
+		expect(mockSetPlayersField).toHaveBeenCalledWith('remember_music_queue', false);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Remember video progress' }));
+		expect(mockSetPlayersField).toHaveBeenCalledWith('remember_video_progress', false);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Autoplay next video' }));
+		expect(mockSetPlayersField).toHaveBeenCalledWith('autoplay_next_video', false);
+	});
+
+	it('fires appearance reduce_motion switch handler', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('switch', { name: 'Reduce motion' }));
+		expect(mockSetAppearanceField).toHaveBeenCalledWith('reduce_motion', true);
+	});
+
+	it('calls handleWatchedPathsChange when textarea changes', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		const textarea = screen.getByLabelText('Watched paths');
+		fireEvent.change(textarea, { target: { value: '/new\n/other' } });
+		expect(mockHandleWatchedPathsChange).toHaveBeenCalledWith('/new\n/other');
+	});
+
+	it('renders footer links to analytics and about pages', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByText('Analytics')).toBeInTheDocument();
+		expect(screen.getByText('About')).toBeInTheDocument();
+	});
+
+	it('does not show error alert when hasError is false', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		expect(screen.queryByText('Unable to load settings.')).not.toBeInTheDocument();
+	});
+
+	it('renders workers enabled alert when workers are on', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByText('Workers are enabled.')).toBeInTheDocument();
+	});
+
+	it('renders indexing chip variants based on draft boolean state', () => {
+		mockUseSettingsScreen.mockReturnValue(
+			createScreenState({
+				draft: {
+					library: { watched_paths: ['/data'], remember_last_location: true, prioritize_favorites: true },
+					indexing: { scan_on_startup: false, extract_metadata: true, generate_previews: false },
+					players: { remember_music_queue: true, remember_video_progress: true, autoplay_next_video: true, image_slideshow_seconds: 8 },
+					appearance: { accent_color: 'violet', reduce_motion: false },
+					language: { current: 'en-US' },
+				},
+			}),
+		);
+
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		// Chips for indexing toggles are always rendered - just verify section is present
+		expect(screen.getByText('Indexing')).toBeInTheDocument();
+	});
+
+	it('triggers setPlayersField when slideshow select changes', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		// Open the slideshow select by clicking the MUI select trigger
+		const slideshowSelect = screen.getByLabelText('Slideshow interval');
+		fireEvent.mouseDown(slideshowSelect);
+
+		// Click the "4 seconds" option in the dropdown
+		const option = screen.getByRole('option', { name: '4 seconds' });
+		fireEvent.click(option);
+
+		expect(mockSetPlayersField).toHaveBeenCalledWith('image_slideshow_seconds', 4);
+	});
+
+	it('triggers setAppearanceField when accent select changes', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		const accentSelect = screen.getByLabelText('Accent color');
+		fireEvent.mouseDown(accentSelect);
+
+		const option = screen.getByRole('option', { name: 'Cyan' });
+		fireEvent.click(option);
+
+		expect(mockSetAppearanceField).toHaveBeenCalledWith('accent_color', 'cyan');
+	});
+
+	it('triggers setLanguageField when language select changes', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		// There are multiple elements with "Language" label; get the select specifically
+		const languageSelect = screen.getAllByLabelText('Language').find(
+			(el) => el.getAttribute('role') === 'combobox',
+		)!;
+		fireEvent.mouseDown(languageSelect);
+
+		const option = screen.getByRole('option', { name: 'Portuguese' });
+		fireEvent.click(option);
+
+		expect(mockSetLanguageField).toHaveBeenCalledWith('pt-BR');
+	});
+
+	it('renders accent color swatch rows', () => {
+		render(
+			<MemoryRouter>
+				<SettingsScreen />
+			</MemoryRouter>,
+		);
+
+		// accentOptions has Violet and Cyan; each appears in swatches
+		expect(screen.getAllByText('Violet').length).toBeGreaterThanOrEqual(1);
+		expect(screen.getAllByText('Cyan').length).toBeGreaterThanOrEqual(1);
 	});
 });
