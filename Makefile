@@ -56,6 +56,7 @@ test-frontend:
 	@echo "======== Frontend Build ========"
 	@cd $(FRONTEND_DIR) && yarn build
 	@echo "Frontend tests and build passed."
+	@cd $(FRONTEND_DIR) && yarn typecheck:test
 
 lint-backend:
 	@echo ""
