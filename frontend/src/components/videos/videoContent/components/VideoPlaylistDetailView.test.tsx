@@ -2,6 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
 import type { VideoPlaylistDto, VideoPlaylistItemDto } from '@/service/videoPlayback';
 
+const getRequired = <T,>(value: T | undefined): T => {
+    expect(value).toBeDefined();
+    return value as T;
+};
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
@@ -150,7 +155,7 @@ describe('VideoPlaylistDetailView', () => {
 
         // Click the main button for the first video
         const mainButtons = screen.getAllByText('Video 10');
-        fireEvent.click(mainButtons[0]);
+        fireEvent.click(getRequired(mainButtons[0]));
         expect(props.onOpenVideo).toHaveBeenCalledWith(10);
     });
 
@@ -204,7 +209,7 @@ describe('VideoPlaylistDetailView', () => {
             return btn.className.includes('iconBtnDanger');
         });
         expect(deleteButtons).toHaveLength(3);
-        fireEvent.click(deleteButtons[0]);
+        fireEvent.click(getRequired(deleteButtons[0]));
         expect(props.onRemoveVideo).toHaveBeenCalledWith(10);
     });
 
@@ -230,7 +235,7 @@ describe('VideoPlaylistDetailView', () => {
             );
         // Up buttons are at even indices (0, 2, 4), down at odd (1, 3, 5)
         // Click the second up button (index 1 item)
-        fireEvent.click(upButtons[2]); // third iconBtn is the second "up" button
+        fireEvent.click(getRequired(upButtons[2])); // third iconBtn is the second "up" button
         expect(props.onMoveItem).toHaveBeenCalledWith(1, -1);
     });
 
@@ -245,7 +250,7 @@ describe('VideoPlaylistDetailView', () => {
                 (btn) => btn.className.includes('iconBtn') && !btn.className.includes('Danger')
             );
         // First down button is actionButtons[1]
-        fireEvent.click(actionButtons[1]);
+        fireEvent.click(getRequired(actionButtons[1]));
         expect(props.onMoveItem).toHaveBeenCalledWith(0, 1);
     });
 
@@ -259,7 +264,7 @@ describe('VideoPlaylistDetailView', () => {
                 (btn) => btn.className.includes('iconBtn') && !btn.className.includes('Danger')
             );
         // First up button (index 0) should be disabled
-        expect(upButtons[0]).toBeDisabled();
+        expect(getRequired(upButtons[0])).toBeDisabled();
     });
 
     it('disables last item down button', () => {
@@ -273,7 +278,7 @@ describe('VideoPlaylistDetailView', () => {
             );
         // Last down button should be disabled (last item, index 2)
         // Buttons pattern per item: up, down. So index 5 is last down
-        expect(downButtons[5]).toBeDisabled();
+        expect(getRequired(downButtons[5])).toBeDisabled();
     });
 
     it('disables move buttons when isReordering is true', () => {
@@ -294,11 +299,11 @@ describe('VideoPlaylistDetailView', () => {
         // Hero image + 3 item thumbnails = 4 images total
         const images = screen.getAllByRole('img');
         expect(images).toHaveLength(4);
-        expect(images[1]).toHaveAttribute(
+        expect(getRequired(images[1])).toHaveAttribute(
             'src',
             'http://localhost:8000/api/v1/files/video-thumbnail/10?width=320&height=180'
         );
-        expect(images[2]).toHaveAttribute(
+        expect(getRequired(images[2])).toHaveAttribute(
             'src',
             'http://localhost:8000/api/v1/files/video-thumbnail/20?width=320&height=180'
         );

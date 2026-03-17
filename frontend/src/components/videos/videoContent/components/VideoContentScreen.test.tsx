@@ -1,9 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { VideoSection } from '@/app/routes';
-import type {
-    VideoContentContextData,
-    VideoPlaylistDto,
-} from '@/components/providers/videoContentProvider/videoContentProvider';
+import type { VideoPlaylistDto } from '@/service/videoPlayback';
+import type { VideoContentContextData } from '@/components/providers/videoContentProvider/videoContentProvider';
 
 const mockUseVideoContentProvider = jest.fn();
 
