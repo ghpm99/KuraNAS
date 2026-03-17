@@ -57,16 +57,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 await Promise.all([unreadQuery.refetch(), listQuery.refetch()]);
             },
         }),
-        [
-            unreadQuery.data,
-            unreadQuery.isLoading,
-            listQuery.data,
-            listQuery.isLoading,
-            markOneMutation,
-            markAllMutation,
-            unreadQuery,
-            listQuery,
-        ]
+        [markOneMutation, markAllMutation, unreadQuery, listQuery]
     );
 
     return <NotificationContextProvider value={value}>{children}</NotificationContextProvider>;

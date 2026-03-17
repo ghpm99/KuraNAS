@@ -1,6 +1,6 @@
 import { Badge, IconButton, Popover } from '@mui/material';
 import { Bell } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNotifications } from '@/components/providers/notificationProvider/notificationContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -12,18 +12,24 @@ interface NotificationBellProps {
 export default function NotificationBell({ className }: NotificationBellProps) {
     const { t } = useI18n();
     const { unreadCount } = useNotifications();
-    const [open, setOpen] = useState(false);
-    const anchorRef = useRef<HTMLButtonElement>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+    const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        setAnchorEl((prev) => (prev ? null : event.currentTarget));
+    }, []);
+
+    const handleClose = useCallback(() => {
+        setAnchorEl(null);
+    }, []);
 
     return (
         <>
             <IconButton
-                ref={anchorRef}
                 title={t('NOTIFICATIONS')}
                 aria-label={t('NOTIFICATIONS')}
                 size="small"
                 className={className}
-                onClick={() => setOpen((prev) => !prev)}
+                onClick={handleClick}
             >
                 <Badge
                     badgeContent={unreadCount}
@@ -42,9 +48,9 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                 </Badge>
             </IconButton>
             <Popover
-                open={open}
-                anchorEl={anchorRef.current}
-                onClose={() => setOpen(false)}
+                open={Boolean(anchorEl)}
+                anchorEl={anchorEl}
+                onClose={handleClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 slotProps={{
@@ -59,7 +65,7 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                     },
                 }}
             >
-                <NotificationDropdown onClose={() => setOpen(false)} />
+                <NotificationDropdown onClose={handleClose} />
             </Popover>
         </>
     );
