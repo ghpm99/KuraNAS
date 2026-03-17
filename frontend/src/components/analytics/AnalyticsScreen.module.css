@@ -81,3 +81,13 @@
         grid-column: span 12;
     }
 }
+
+@media (max-width: 640px) {
+    .grid {
+        gap: 12px;
+    }
+
+    .screen {
+        gap: 14px;
+    }
+}

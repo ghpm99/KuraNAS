@@ -38,3 +38,15 @@
     padding: 24px;
     overflow-y: auto;
 }
+
+@media (max-width: 640px) {
+    .content {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .content {
+        padding: 8px;
+    }
+}

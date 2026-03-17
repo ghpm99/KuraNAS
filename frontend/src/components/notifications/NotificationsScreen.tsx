@@ -67,8 +67,8 @@ export default function NotificationsScreen() {
     };
 
     return (
-        <Box sx={{ p: 3, maxWidth: 720, mx: 'auto' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 720, mx: 'auto' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     {t('NOTIFICATIONS')}
                 </Typography>
@@ -85,6 +85,8 @@ export default function NotificationsScreen() {
             <Tabs
                 value={activeTab}
                 onChange={(_, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
                 sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
             >
                 <Tab label={t('ALL')} value="all" />

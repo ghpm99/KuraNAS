@@ -28,7 +28,7 @@ export default function Header({ showClock = false }: HeaderProps) {
                             title={t('OPEN_NAVIGATION_MENU')}
                             aria-label={t('OPEN_NAVIGATION_MENU')}
                         >
-                            <Menu size={18} />
+                            <Menu size={22} />
                         </IconButton>
                         <button
                             type="button"

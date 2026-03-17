@@ -203,3 +203,37 @@
         align-items: flex-start;
     }
 }
+
+@media (max-width: 480px) {
+    .content {
+        gap: 16px;
+    }
+
+    .panel {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .panelTitle {
+        font-size: 1.2rem;
+    }
+
+    .metricGrid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .metricValue {
+        font-size: 1.5rem;
+    }
+
+    .cardGrid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .sectionCard {
+        padding: 14px;
+        border-radius: 14px;
+    }
+}

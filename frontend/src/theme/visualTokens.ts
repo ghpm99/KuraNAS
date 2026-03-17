@@ -54,6 +54,7 @@ export const visualTokens = {
     layout: {
         sidebarWidth: '300px',
         headerHeight: '80px',
+        headerHeightMobile: '56px',
     },
     motion: {
         fast: '160ms',
@@ -105,6 +106,7 @@ export const appCssVariables = {
     '--app-shadow-active-primary': visualTokens.shadow.activeGlowPrimary,
     '--app-shell-sidebar-width': visualTokens.layout.sidebarWidth,
     '--app-shell-header-height': visualTokens.layout.headerHeight,
+    '--app-shell-header-height-mobile': visualTokens.layout.headerHeightMobile,
     '--app-motion-fast': visualTokens.motion.fast,
     '--app-motion-base': visualTokens.motion.base,
 } as const;

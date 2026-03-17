@@ -31,14 +31,28 @@
     overflow-x: hidden;
 }
 
+@media (max-width: 900px) {
+    .domainContent {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px 10px 14px;
     }
+
+    .page {
+        gap: 14px;
+    }
+
+    .domainContent {
+        gap: 14px;
+    }
 }
 
-@media (max-width: 900px) {
-    .domainContent {
-        grid-template-columns: 1fr;
+@media (max-width: 480px) {
+    .container {
+        padding: 8px 6px 10px;
     }
 }

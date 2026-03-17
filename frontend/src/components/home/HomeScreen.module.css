@@ -548,4 +548,69 @@
     .panel {
         padding: var(--app-spacing-4);
     }
+
+    .videoHeroCard {
+        min-height: 200px;
+    }
+
+    .videoHeroImage {
+        min-height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page {
+        padding: var(--app-spacing-3);
+        gap: var(--app-spacing-4);
+    }
+
+    .hero {
+        padding: var(--app-spacing-4);
+    }
+
+    .heroTitle {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+    }
+
+    .metricCard {
+        padding: var(--app-spacing-3);
+    }
+
+    .actionCard {
+        padding: var(--app-spacing-3);
+    }
+
+    .actionIcon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .recentIcon {
+        min-width: 56px;
+        height: 56px;
+    }
+
+    .contentGrid {
+        gap: var(--app-spacing-3);
+    }
+
+    .panel {
+        padding: var(--app-spacing-3);
+    }
+
+    .videoHeroCard {
+        min-height: 160px;
+    }
+
+    .videoHeroImage {
+        min-height: 160px;
+    }
+
+    .imageCard {
+        min-height: 100px;
+    }
+
+    .imageCardImage {
+        min-height: 100px;
+    }
 }

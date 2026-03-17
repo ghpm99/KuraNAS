@@ -44,7 +44,7 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                         },
                     }}
                 >
-                    <Bell size={16} />
+                    <Bell size={20} />
                 </Badge>
             </IconButton>
             <Popover
