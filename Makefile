@@ -8,7 +8,7 @@ OUTPUT_DIR := build
 
 BACKEND_COVERAGE_MIN := 80
 
-.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend lint-frontend test-frontend lint-backend test-backend
+.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend lint-frontend test-frontend lint-backend test-backend release-main-ff
 
 all: frontend backend move deploy
 
@@ -96,3 +96,21 @@ deploy:
 	@echo "Calling local deploy..."
 	@$(MAKE) -f Makefile.local deploy
 	@echo "Local deploy complete."
+
+release-main-ff:
+	@echo ""
+	@echo "======== Release Main (fast-forward) ========"
+	@CURRENT_BRANCH=$$(git branch --show-current) && \
+	if [ -z "$$CURRENT_BRANCH" ]; then \
+		echo "FAILED: Could not determine current branch" && exit 1; \
+	fi && \
+	if ! git diff-index --quiet HEAD --; then \
+		echo "FAILED: Working tree has uncommitted changes" && exit 1; \
+	fi && \
+	git fetch origin && \
+	git checkout main && \
+	git pull --ff-only origin main && \
+	git merge --ff-only origin/develop && \
+	git push origin main && \
+	git checkout "$$CURRENT_BRANCH"
+	@echo "Main was fast-forwarded to origin/develop."
