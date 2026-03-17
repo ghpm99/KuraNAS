@@ -1,6 +1,10 @@
 import { appRoutes } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useAbout } from '@/components/providers/aboutProvider/AboutContext';
+import { applyUpdate, getUpdateStatus } from '@/service/update';
+import { UpdateStatus } from '@/types/update';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type AboutDetail = {
@@ -100,6 +104,46 @@ export const useAboutScreen = () => {
         [t]
     );
 
+    const { enqueueSnackbar } = useSnackbar();
+
+    const {
+        data: updateStatus,
+        isLoading: isCheckingUpdate,
+        isError: isUpdateError,
+    } = useQuery<UpdateStatus>({
+        queryKey: ['updateStatus'],
+        queryFn: getUpdateStatus,
+        refetchOnWindowFocus: false,
+    });
+
+    const { mutate: triggerUpdate, isPending: isApplyingUpdate } = useMutation({
+        mutationFn: applyUpdate,
+        onSuccess: () => {
+            enqueueSnackbar(t('UPDATE_APPLIED'), { variant: 'success' });
+        },
+        onError: () => {
+            enqueueSnackbar(t('ERROR_UPDATE_APPLY'), { variant: 'error' });
+        },
+    });
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes <= 0) return '-';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / Math.pow(1024, index)).toFixed(1)} ${units[index]}`;
+    };
+
+    const updateDetails = useMemo<AboutDetail[]>(() => {
+        if (!updateStatus) return [];
+        return [
+            { label: t('ABOUT_UPDATE_CURRENT'), value: updateStatus.current_version || '-' },
+            { label: t('ABOUT_UPDATE_LATEST'), value: updateStatus.latest_version || '-' },
+            { label: t('ABOUT_UPDATE_RELEASED'), value: updateStatus.release_date || '-' },
+            { label: t('ABOUT_UPDATE_ASSET'), value: updateStatus.asset_name || '-' },
+            { label: t('ABOUT_UPDATE_SIZE'), value: formatFileSize(updateStatus.asset_size) },
+        ];
+    }, [updateStatus, t]);
+
     const copyCommitHash = useCallback(async () => {
         if (!about.commit_hash) {
             return;
@@ -129,5 +173,11 @@ export const useAboutScreen = () => {
         tools,
         copied,
         copyCommitHash,
+        updateStatus,
+        updateDetails,
+        isCheckingUpdate,
+        isUpdateError,
+        isApplyingUpdate,
+        triggerUpdate,
     };
 };

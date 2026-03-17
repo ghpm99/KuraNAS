@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Button, Chip } from '@mui/material';
-import { Copy, ExternalLink } from 'lucide-react';
+import { Button, Chip, CircularProgress } from '@mui/material';
+import { Copy, Download, ExternalLink } from 'lucide-react';
 import styles from './AboutScreen.module.css';
 import { useAboutScreen } from './useAboutScreen';
 
@@ -14,6 +14,12 @@ const AboutScreen = () => {
         tools,
         copied,
         copyCommitHash,
+        updateStatus,
+        updateDetails,
+        isCheckingUpdate,
+        isUpdateError,
+        isApplyingUpdate,
+        triggerUpdate,
     } = useAboutScreen();
 
     return (
@@ -96,6 +102,88 @@ const AboutScreen = () => {
                             </div>
                         ))}
                     </dl>
+                </section>
+
+                <section className={`${styles.panel} ${styles.updatePanel}`}>
+                    <div className={styles.sectionHeader}>
+                        <div className={styles.updateHeaderRow}>
+                            <div>
+                                <h2 className={styles.sectionTitle}>
+                                    {t('ABOUT_SECTION_UPDATE_TITLE')}
+                                </h2>
+                                <p className={styles.sectionDescription}>
+                                    {t('ABOUT_SECTION_UPDATE_DESCRIPTION')}
+                                </p>
+                            </div>
+                            {!isCheckingUpdate && !isUpdateError && updateStatus && (
+                                <Chip
+                                    label={
+                                        updateStatus.update_available
+                                            ? t('ABOUT_UPDATE_AVAILABLE')
+                                            : t('ABOUT_UPDATE_UP_TO_DATE')
+                                    }
+                                    color={updateStatus.update_available ? 'warning' : 'success'}
+                                    variant="outlined"
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {isCheckingUpdate && (
+                        <div className={styles.updateLoading}>
+                            <CircularProgress size={24} />
+                        </div>
+                    )}
+
+                    {isUpdateError && (
+                        <p className={styles.updateError}>{t('ABOUT_UPDATE_CHECK_ERROR')}</p>
+                    )}
+
+                    {!isCheckingUpdate && !isUpdateError && updateStatus && (
+                        <>
+                            <dl className={styles.detailList}>
+                                {updateDetails.map((item) => (
+                                    <div key={item.label} className={styles.detailRow}>
+                                        <dt className={styles.detailLabel}>{item.label}</dt>
+                                        <dd className={styles.detailValue}>{item.value}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+
+                            {updateStatus.release_notes && (
+                                <div className={styles.releaseNotes}>
+                                    <h3 className={styles.detailLabel}>
+                                        {t('ABOUT_UPDATE_RELEASE_NOTES')}
+                                    </h3>
+                                    <p className={styles.detailValue}>
+                                        {updateStatus.release_notes}
+                                    </p>
+                                </div>
+                            )}
+
+                            {updateStatus.update_available && (
+                                <div className={styles.updateActions}>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        startIcon={
+                                            isApplyingUpdate ? (
+                                                <CircularProgress size={16} color="inherit" />
+                                            ) : (
+                                                <Download size={16} />
+                                            )
+                                        }
+                                        disabled={isApplyingUpdate}
+                                        onClick={() => triggerUpdate()}
+                                    >
+                                        {isApplyingUpdate
+                                            ? t('ABOUT_UPDATE_APPLYING')
+                                            : t('ABOUT_UPDATE_APPLY')}
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </section>
 
                 <section className={`${styles.panel} ${styles.toolsPanel}`}>
