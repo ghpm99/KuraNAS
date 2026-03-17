@@ -7,8 +7,6 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"testing"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type serviceRepoMock struct {
@@ -35,12 +33,7 @@ func (m *serviceRepoMock) UpsertSettingsDocument(tx *sql.Tx, settingKey string, 
 
 func newConfigurationServiceForTest(t *testing.T, repo *serviceRepoMock) *Service {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	repo.db = database.NewDbContext(db)
+	repo.db = database.NewDbContext(nil)
 	return &Service{Repository: repo}
 }
 

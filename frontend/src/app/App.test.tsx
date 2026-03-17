@@ -13,7 +13,31 @@ jest.mock('react-router-dom', () => ({
 jest.mock('@/components/providers/appProviders', () => ({ children }: any) => (
     <div data-testid="app-providers">{children}</div>
 ));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+    __esModule: true,
+    default: () => ({
+        t: (key: string) => key,
+    }),
+}));
+jest.mock('@/components/search/useGlobalSearch', () => ({
+    __esModule: true,
+    default: () => ({
+        openSearch: jest.fn(),
+        shortcut: 'Ctrl+K',
+    }),
+}));
+jest.mock('@/components/providers/notificationProvider/notificationContext', () => ({
+    useNotifications: () => ({
+        notifications: [],
+        unreadCount: 0,
+        markAllAsRead: jest.fn(),
+        markAsRead: jest.fn(),
+        refresh: jest.fn(),
+    }),
+}));
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+    __esModule: true,
+    useGlobalMusic: () => ({ hasQueue: true }),
     GlobalMusicProvider: ({ children }: any) => <div data-testid="music-providers">{children}</div>,
 }));
 jest.mock('@/components/player/GlobalPlayerControl', () => () => <div>GlobalPlayerControl</div>);
@@ -35,6 +59,7 @@ jest.mock('@/pages/music/views/ArtistsView', () => () => <div>ArtistsView</div>)
 jest.mock('@/pages/music/views/FoldersView', () => () => <div>FoldersView</div>);
 jest.mock('@/pages/music/views/GenresView', () => () => <div>GenresView</div>);
 jest.mock('@/pages/music/views/PlaylistsView', () => () => <div>PlaylistsView</div>);
+jest.mock('@/pages/notifications', () => () => <div>NotificationsPage</div>);
 jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);

@@ -14,19 +14,22 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
+
+func setProgramFilesForTest(t *testing.T) string {
+	t.Helper()
+
+	programFiles := filepath.Join(t.TempDir(), "ProgramFiles")
+	t.Setenv("ProgramFiles", programFiles)
+	return programFiles
+}
 
 func ensureTestIcons(t *testing.T) {
 	t.Helper()
 
-	testRoot := filepath.Join("etc", "kuranas")
-	t.Cleanup(func() {
-		_ = os.RemoveAll(testRoot)
-	})
+	setProgramFilesForTest(t)
 
-	iconDir := filepath.Join(testRoot, "icons")
+	iconDir := config.GetBuildConfig("IconPath")
 	if err := os.MkdirAll(iconDir, 0755); err != nil {
 		t.Fatalf("failed to create icon dir: %v", err)
 	}
@@ -269,12 +272,7 @@ func (m *metadataRepoMock) DeleteVideoMetadata(id int) error { return nil }
 
 func newFilesServiceForTest(t *testing.T, repo *filesRepoMock, metadata *metadataRepoMock) *Service {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	repo.db = database.NewDbContext(db)
+	repo.db = database.NewDbContext(nil)
 	return &Service{
 		Repository:         repo,
 		MetadataRepository: metadata,
@@ -284,13 +282,8 @@ func newFilesServiceForTest(t *testing.T, repo *filesRepoMock, metadata *metadat
 
 func newFilesJobsRepoMockForTest(t *testing.T) *filesJobsRepoMock {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
 	return &filesJobsRepoMock{
-		db: database.NewDbContext(db),
+		db: database.NewDbContext(nil),
 	}
 }
 
@@ -900,6 +893,7 @@ func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
 }
 
 func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
+	setProgramFilesForTest(t)
 	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
 	cacheFile := filepath.Join(cacheDir, "42_320.png")
@@ -949,6 +943,7 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 }
 
 func TestFileService_GetVideoThumbAndPreviewCacheHit(t *testing.T) {
+	setProgramFilesForTest(t)
 	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
 	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {

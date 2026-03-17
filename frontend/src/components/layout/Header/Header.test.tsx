@@ -23,6 +23,16 @@ jest.mock('@/components/search/useGlobalSearch', () => ({
     default: () => ({ openSearch: mockOpenSearch, shortcut: 'Ctrl+K' }),
 }));
 
+jest.mock('@/components/providers/notificationProvider/notificationContext', () => ({
+    useNotifications: () => ({
+        notifications: [],
+        unreadCount: 0,
+        markAllAsRead: jest.fn(),
+        markAsRead: jest.fn(),
+        refresh: jest.fn(),
+    }),
+}));
+
 describe('layout/Header', () => {
     beforeEach(() => {
         jest.useFakeTimers();

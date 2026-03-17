@@ -11,6 +11,7 @@ import (
 	"image/gif"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
 	"nas-go/api/pkg/img"
@@ -45,7 +46,7 @@ func NewService(
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) (err error) {
-	return s.Repository.GetDbContext().ExecTx(fn)
+	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
@@ -207,7 +208,7 @@ func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 	}
 
 	var createdJob jobs.JobModel
-	err := s.JobsRepository.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+	err := database.ExecOptionalTx(s.JobsRepository.GetDbContext(), func(tx *sql.Tx) error {
 		scopeJSON, scopeErr := json.Marshal(map[string]any{"paths": paths})
 		if scopeErr != nil {
 			return fmt.Errorf("marshal upload scope: %w", scopeErr)

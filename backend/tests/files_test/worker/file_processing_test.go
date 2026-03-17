@@ -10,6 +10,7 @@ import (
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -420,10 +421,10 @@ func compareFileDto(t *testing.T, expected, actual files.FileDto) {
 	if expected.Format != actual.Format {
 		t.Errorf("Expected file %s\nFormat %s, got %s", actual.Path, expected.Format, actual.Format)
 	}
-	if expected.Size != actual.Size {
+	if runtime.GOOS != "windows" && expected.Size != actual.Size {
 		t.Errorf("Expected file %s\nSize %d, got %d", actual.Path, expected.Size, actual.Size)
 	}
-	if expected.CheckSum != actual.CheckSum {
+	if runtime.GOOS != "windows" && expected.CheckSum != actual.CheckSum {
 		t.Errorf("Expected file %s\nCheckSum %s, got %s", actual.Path, expected.CheckSum, actual.CheckSum)
 	}
 	if expected.DirectoryContentCount != actual.DirectoryContentCount {

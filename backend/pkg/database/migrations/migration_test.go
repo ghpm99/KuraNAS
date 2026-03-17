@@ -8,17 +8,16 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-func openMigrationDB(t *testing.T) *sql.DB {
+func openMigrationDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("failed to open sqlite db: %v", err)
+		t.Fatalf("failed to open sqlmock db: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return db
+	return db, mock
 }
 
 func TestInitPanicsWhenDBIsNil(t *testing.T) {
@@ -31,45 +30,55 @@ func TestInitPanicsWhenDBIsNil(t *testing.T) {
 }
 
 func TestCreateMigrationDatabaseAndRecord(t *testing.T) {
-	db := openMigrationDB(t)
+	db, mock := openMigrationDB(t)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(createMigrationDatabaseQuery)).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec(regexp.QuoteMeta(insertMigrationQuery)).WithArgs("m001").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectRollback()
+
 	tx, err := db.Begin()
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback()
 
 	if err := createMigrationDatabase(tx); err != nil {
 		t.Fatalf("createMigrationDatabase returned error: %v", err)
 	}
 
-	var tableCount int
-	if err := tx.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name='migrations'`).Scan(&tableCount); err != nil {
-		t.Fatalf("failed to query migrations table: %v", err)
-	}
-	if tableCount != 1 {
-		t.Fatalf("expected migrations table to exist, got %d", tableCount)
-	}
-
 	if err := recordMigration(tx, "m001"); err != nil {
 		t.Fatalf("recordMigration returned error: %v", err)
 	}
+	_ = tx.Rollback()
 
-	var applied int
-	if err := tx.QueryRow(`SELECT count(*) FROM migrations`).Scan(&applied); err != nil {
-		t.Fatalf("failed to query applied migrations: %v", err)
-	}
-	if applied != 1 {
-		t.Fatalf("expected 1 applied migration, got %d", applied)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
 	}
 }
 
 func TestMigrationExistsAndRunMigration(t *testing.T) {
-	db := openMigrationDB(t)
+	db, mock := openMigrationDB(t)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(createMigrationDatabaseQuery)).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("test_migration").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec(regexp.QuoteMeta(`CREATE TABLE IF NOT EXISTS migration_target (id INTEGER)`)).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec(regexp.QuoteMeta(insertMigrationQuery)).
+		WithArgs("test_migration").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("test_migration").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("test_migration").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectRollback()
+
 	tx, err := db.Begin()
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback()
 
 	if err := createMigrationDatabase(tx); err != nil {
 		t.Fatalf("failed to create migration table: %v", err)
@@ -104,15 +113,24 @@ func TestMigrationExistsAndRunMigration(t *testing.T) {
 	if calls != 1 {
 		t.Fatalf("expected migration func to be skipped on second call, got %d", calls)
 	}
+	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
+	}
 }
 
 func TestDefaultMigrationFuncAndAddMigration(t *testing.T) {
-	db := openMigrationDB(t)
+	db, mock := openMigrationDB(t)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(`CREATE TABLE sample_table (id INTEGER)`)).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectRollback()
+
 	tx, err := db.Begin()
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback()
 
 	fn := defaultMigrationFunc(`CREATE TABLE sample_table (id INTEGER)`)
 	if err := fn(tx); err != nil {
@@ -128,6 +146,11 @@ func TestDefaultMigrationFuncAndAddMigration(t *testing.T) {
 	addMigration("one", fn)
 	if len(migrationList) != 1 {
 		t.Fatalf("expected 1 migration in list, got %d", len(migrationList))
+	}
+	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
 	}
 }
 
@@ -162,12 +185,18 @@ func TestInitMigrationListPopulatesEntries(t *testing.T) {
 }
 
 func TestRunMigrationPropagatesMigrationError(t *testing.T) {
-	db := openMigrationDB(t)
+	db, mock := openMigrationDB(t)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(createMigrationDatabaseQuery)).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(regexp.QuoteMeta(migrationExistsQuery)).
+		WithArgs("failing").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectRollback()
+
 	tx, err := db.Begin()
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback()
 
 	if err := createMigrationDatabase(tx); err != nil {
 		t.Fatalf("failed to create migration table: %v", err)
@@ -180,10 +209,16 @@ func TestRunMigrationPropagatesMigrationError(t *testing.T) {
 	if err == nil || err.Error() != expectedErr {
 		t.Fatalf("expected migration error %q, got %v", expectedErr, err)
 	}
+	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sql expectations: %v", err)
+	}
 }
 
 func TestInitPanicsWhenBeginTxFails(t *testing.T) {
-	db := openMigrationDB(t)
+	db, mock := openMigrationDB(t)
+	mock.ExpectClose()
 	_ = db.Close()
 
 	defer func() {

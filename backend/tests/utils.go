@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"log"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func ConfigInMemoryDatabase() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, _, err := sqlmock.New()
 	if err != nil {
-		log.Fatalf("Falha ao criar banco de dados em memória: %v", err)
+		log.Fatalf("Falha ao criar banco de dados em memoria: %v", err)
 	}
 
 	return db

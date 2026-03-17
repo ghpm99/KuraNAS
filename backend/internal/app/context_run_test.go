@@ -14,17 +14,10 @@ import (
 	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestNewContextBuildsAllDependencies(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	defer db.Close()
-
-	ctx := NewContext(db)
+	ctx := NewContext(nil)
 	if ctx == nil || ctx.DB == nil || ctx.Tasks == nil || ctx.Logger == nil {
 		t.Fatalf("expected fully initialized app context")
 	}
@@ -169,9 +162,10 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	newContextFn = func(db *sql.DB) *AppContext {
 		tasks := make(chan utils.Task, 1)
 		return &AppContext{
-			Tasks: &tasks,
-			Files: &FileContext{},
-			Video: &VideoContext{},
+			Tasks:         &tasks,
+			Files:         &FileContext{},
+			Video:         &VideoContext{},
+			Notifications: &NotificationContext{},
 		}
 	}
 	newRouterFn = func(opts ...gin.OptionFunc) *gin.Engine { return gin.New(opts...) }

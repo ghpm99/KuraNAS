@@ -207,7 +207,9 @@ func newConfigurationContext(dbContext *database.DbContext, loggerService logger
 	repository := configuration.NewRepository(dbContext)
 	service := configuration.NewService(repository)
 	handler := configuration.NewHandler(service, loggerService)
-	_ = service.ApplyRuntimeSettings()
+	if dbContext != nil && dbContext.GetDatabase() != nil {
+		_ = service.ApplyRuntimeSettings()
+	}
 
 	return &ConfigurationContext{
 		Handler:    handler,

@@ -9,12 +9,9 @@ import (
 	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
-var db, _ = sql.Open("sqlite3", ":memory:")
-var dbContext = database.NewDbContext(db)
+var dbContext = database.NewDbContext(nil)
 
 type MockRepository struct {
 	GetDiaryFunc      func(filter diary.DiaryFilter, page int, pageSize int) (utils.PaginationResponse[diary.DiaryModel], error)

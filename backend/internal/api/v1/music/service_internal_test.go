@@ -8,8 +8,6 @@ import (
 	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type musicRepoMock struct {
@@ -126,12 +124,7 @@ func (m *musicRepoMock) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, 
 
 func newMusicServiceForTest(t *testing.T, repo *musicRepoMock) *Service {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	repo.db = database.NewDbContext(db)
+	repo.db = database.NewDbContext(nil)
 	return &Service{Repository: repo}
 }
 
