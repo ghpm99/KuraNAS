@@ -61,7 +61,11 @@ lint-backend:
 	@echo ""
 	@echo "======== Backend Lint (gofmt) ========"
 	@cd $(BACKEND_DIR) && BADFILES=$$(gofmt -l . | while IFS= read -r f; do \
-		diff <(gofmt "$$f") <(tr -d '\r' < "$$f") >/dev/null 2>&1 || echo "$$f"; \
+		TMP_FMT=$$(mktemp) && TMP_SRC=$$(mktemp) && \
+		gofmt "$$f" > "$$TMP_FMT" && \
+		tr -d '\r' < "$$f" > "$$TMP_SRC" && \
+		if ! cmp -s "$$TMP_FMT" "$$TMP_SRC"; then echo "$$f"; fi; \
+		rm -f "$$TMP_FMT" "$$TMP_SRC"; \
 	done) && \
 	if [ -n "$$BADFILES" ]; then \
 		echo "gofmt check failed on:" && echo "$$BADFILES" && exit 1; \
