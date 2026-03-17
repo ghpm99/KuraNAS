@@ -4,50 +4,52 @@ import { Layout } from './Layout';
 const mockUseAppShell = jest.fn();
 const headerSpy = jest.fn();
 
-jest.mock('@/components/layout/AppShell/useAppShell', () => ({ useAppShell: () => mockUseAppShell() }));
+jest.mock('@/components/layout/AppShell/useAppShell', () => ({
+    useAppShell: () => mockUseAppShell(),
+}));
 
 jest.mock('../Header/Header', () => ({
-	__esModule: true,
-	default: (props: any) => {
-		headerSpy(props);
-		return <div data-testid='header'>header</div>;
-	},
+    __esModule: true,
+    default: (props: any) => {
+        headerSpy(props);
+        return <div data-testid="header">header</div>;
+    },
 }));
 
 jest.mock('../Sidebar/Sidebar', () => ({
-	__esModule: true,
-	default: () => <div data-testid='sidebar'>sidebar</div>,
+    __esModule: true,
+    default: () => <div data-testid="sidebar">sidebar</div>,
 }));
 
 describe('layout/Layout/Layout', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-	it('renders header, sidebar and body when queue is active', () => {
-		mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
+    it('renders header, sidebar and body when queue is active', () => {
+        mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
 
-		render(
-			<Layout>
-				<div>body</div>
-			</Layout>,
-		);
+        render(
+            <Layout>
+                <div>body</div>
+            </Layout>
+        );
 
-		expect(screen.getByTestId('header')).toBeInTheDocument();
-		expect(screen.getByTestId('sidebar')).toBeInTheDocument();
-		expect(screen.getByText('body')).toBeInTheDocument();
-		expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: true }));
-	});
+        expect(screen.getByTestId('header')).toBeInTheDocument();
+        expect(screen.getByTestId('sidebar')).toBeInTheDocument();
+        expect(screen.getByText('body')).toBeInTheDocument();
+        expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: true }));
+    });
 
-	it('renders without clock when shell does not request it', () => {
-		mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
+    it('renders without clock when shell does not request it', () => {
+        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
 
-		render(
-			<Layout>
-				<div>content</div>
-			</Layout>,
-		);
+        render(
+            <Layout>
+                <div>content</div>
+            </Layout>
+        );
 
-		expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: false }));
-	});
+        expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: false }));
+    });
 });

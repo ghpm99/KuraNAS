@@ -1,59 +1,64 @@
 .sidebar {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	min-height: 0;
-	padding: var(--app-spacing-6) var(--app-spacing-4) var(--app-spacing-4);
-	background:
-		radial-gradient(circle at top left, rgba(225, 29, 72, 0.12), transparent 38%),
-		linear-gradient(180deg, rgba(10, 16, 24, 0.96) 0%, rgba(7, 10, 16, 0.98) 100%);
-	border-right: 1px solid var(--app-color-border-subtle);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: var(--app-spacing-6) var(--app-spacing-4) var(--app-spacing-4);
+    background:
+        radial-gradient(circle at top left, rgba(225, 29, 72, 0.12), transparent 38%),
+        linear-gradient(180deg, rgba(10, 16, 24, 0.96) 0%, rgba(7, 10, 16, 0.98) 100%);
+    border-right: 1px solid var(--app-color-border-subtle);
 }
 
 .brand {
-	display: flex;
-	align-items: center;
-	gap: var(--app-spacing-3);
-	padding-bottom: var(--app-spacing-5);
-	margin-bottom: var(--app-spacing-4);
-	border-bottom: 1px solid var(--app-color-border-subtle);
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-3);
+    padding-bottom: var(--app-spacing-5);
+    margin-bottom: var(--app-spacing-4);
+    border-bottom: 1px solid var(--app-color-border-subtle);
 }
 
 .brandMark {
-	width: 14px;
-	height: 14px;
-	border-radius: 999px;
-	background:
-		radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.78), transparent 32%),
-		linear-gradient(135deg, var(--app-color-pink-accent) 0%, var(--app-color-primary) 52%, var(--app-color-cyan-accent) 100%);
-	box-shadow: 0 0 24px rgba(109, 93, 246, 0.3);
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.78), transparent 32%),
+        linear-gradient(
+            135deg,
+            var(--app-color-pink-accent) 0%,
+            var(--app-color-primary) 52%,
+            var(--app-color-cyan-accent) 100%
+        );
+    box-shadow: 0 0 24px rgba(109, 93, 246, 0.3);
 }
 
 .brandText {
-	min-width: 0;
+    min-width: 0;
 }
 
 .brandTitle {
-	margin: 0;
-	font-size: 1.125rem;
-	font-weight: 600;
-	color: var(--app-color-text-primary);
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--app-color-text-primary);
 }
 
 .navList {
-	padding: 0 !important;
+    padding: 0 !important;
 }
 
 .treeSection {
-	flex: 1;
-	min-height: 0;
-	margin-top: var(--app-spacing-4);
-	padding-top: var(--app-spacing-4);
-	border-top: 1px solid var(--app-color-border-subtle);
-	overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    margin-top: var(--app-spacing-4);
+    padding-top: var(--app-spacing-4);
+    border-top: 1px solid var(--app-color-border-subtle);
+    overflow-y: auto;
 }
 
 .mobile {
-	border-right: none;
-	padding: var(--app-spacing-5);
+    border-right: none;
+    padding: var(--app-spacing-5);
 }

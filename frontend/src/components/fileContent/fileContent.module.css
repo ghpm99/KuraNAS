@@ -1,112 +1,112 @@
 .fileContent {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
-	min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    min-width: 0;
 }
 
 .title {
-	margin: 0;
-	font-size: 1.1rem;
-	font-weight: 700;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .fileGrid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .fileList {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .listRow {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 12px;
-	align-items: center;
-	padding: 12px;
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .listButton {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-	min-width: 0;
-	border: none;
-	padding: 0;
-	background: transparent;
-	color: inherit;
-	cursor: pointer;
-	text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    border: none;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
 }
 
 .listThumbnail {
-	flex-shrink: 0;
-	width: 64px;
-	height: 64px;
-	border-radius: 14px;
-	object-fit: cover;
-	background: rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .listContent {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
 }
 
 .listTitle {
-	font-weight: 600;
+    font-weight: 600;
 }
 
 .listMetadata {
-	color: var(--app-color-text-secondary);
-	font-size: 0.88rem;
+    color: var(--app-color-text-secondary);
+    font-size: 0.88rem;
 }
 
 .listStarButton {
-	border: none;
-	padding: 8px;
-	background: transparent;
-	color: #fbbf24;
-	cursor: pointer;
-	font-size: 1.1rem;
+    border: none;
+    padding: 8px;
+    background: transparent;
+    color: #fbbf24;
+    cursor: pointer;
+    font-size: 1.1rem;
 }
 
 .emptyState {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 180px;
-	border: 1px dashed var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	color: var(--app-color-text-secondary);
-	text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    border: 1px dashed var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    color: var(--app-color-text-secondary);
+    text-align: center;
 }
 
 .previewContainer {
-	border-radius: var(--app-radius-lg);
-	overflow: hidden;
+    border-radius: var(--app-radius-lg);
+    overflow: hidden;
 }
 
 @media (max-width: 640px) {
-	.fileGrid {
-		grid-template-columns: minmax(0, 1fr);
-	}
+    .fileGrid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
-	.listRow {
-		grid-template-columns: minmax(0, 1fr);
-	}
+    .listRow {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
-	.listStarButton {
-		justify-self: end;
-	}
+    .listStarButton {
+        justify-self: end;
+    }
 }

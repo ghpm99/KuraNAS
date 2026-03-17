@@ -6,87 +6,126 @@ const mockReplaceQueue = jest.fn();
 const mockUseLocation = jest.fn();
 
 jest.mock('@/components/providers/GlobalMusicProvider', () => ({
-	useGlobalMusic: () => ({
-		replaceQueue: mockReplaceQueue,
-	}),
+    useGlobalMusic: () => ({
+        replaceQueue: mockReplaceQueue,
+    }),
 }));
 
 jest.mock('react-router-dom', () => ({
-	useNavigate: () => mockNavigate,
-	useLocation: () => mockUseLocation(),
+    useNavigate: () => mockNavigate,
+    useLocation: () => mockUseLocation(),
 }));
 
 describe('components/hooks/useMediaOpener', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-		mockUseLocation.mockReturnValue({
-			pathname: '/files',
-			search: '?filter=recent',
-		});
-	});
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockUseLocation.mockReturnValue({
+            pathname: '/files',
+            search: '?filter=recent',
+        });
+    });
 
-	it('routes image and video files to their dedicated viewers', () => {
-		const { result } = renderHook(() => useMediaOpener());
+    it('routes image and video files to their dedicated viewers', () => {
+        const { result } = renderHook(() => useMediaOpener());
 
-		expect(result.current.openMediaItem({ id: 4, name: 'cover.jpg', format: '.jpg' })).toBe(true);
-		expect(mockNavigate).toHaveBeenNthCalledWith(1, {
-			pathname: '/images',
-			search: '?image=4',
-		}, {
-			state: { from: '/files?filter=recent' },
-		});
+        expect(
+            result.current.openMediaItem({
+                id: 4,
+                name: 'cover.jpg',
+                format: '.jpg',
+            })
+        ).toBe(true);
+        expect(mockNavigate).toHaveBeenNthCalledWith(
+            1,
+            {
+                pathname: '/images',
+                search: '?image=4',
+            },
+            {
+                state: { from: '/files?filter=recent' },
+            }
+        );
 
-		expect(result.current.openMediaItem({ id: 9, name: 'episode.mp4', format: '.mp4' })).toBe(true);
-		expect(mockNavigate).toHaveBeenNthCalledWith(2, '/video/9', {
-			state: { from: '/files?filter=recent' },
-		});
-	});
+        expect(
+            result.current.openMediaItem({
+                id: 9,
+                name: 'episode.mp4',
+                format: '.mp4',
+            })
+        ).toBe(true);
+        expect(mockNavigate).toHaveBeenNthCalledWith(2, '/video/9', {
+            state: { from: '/files?filter=recent' },
+        });
+    });
 
-	it('keeps image path in the route and ignores directories', () => {
-		const { result } = renderHook(() => useMediaOpener());
+    it('keeps image path in the route and ignores directories', () => {
+        const { result } = renderHook(() => useMediaOpener());
 
-		expect(result.current.openMediaItem({ id: 10, name: 'detail.jpg', format: '.jpg', path: '/images/detail.jpg' })).toBe(true);
-		expect(mockNavigate).toHaveBeenCalledWith({
-			pathname: '/images',
-			search: '?image=10&imagePath=%2Fimages%2Fdetail.jpg',
-		}, {
-			state: { from: '/files?filter=recent' },
-		});
+        expect(
+            result.current.openMediaItem({
+                id: 10,
+                name: 'detail.jpg',
+                format: '.jpg',
+                path: '/images/detail.jpg',
+            })
+        ).toBe(true);
+        expect(mockNavigate).toHaveBeenCalledWith(
+            {
+                pathname: '/images',
+                search: '?image=10&imagePath=%2Fimages%2Fdetail.jpg',
+            },
+            {
+                state: { from: '/files?filter=recent' },
+            }
+        );
 
-		expect(result.current.openMediaItem({ id: 11, name: 'folder', format: '', type: 1 })).toBe(false);
-	});
+        expect(
+            result.current.openMediaItem({
+                id: 11,
+                name: 'folder',
+                format: '',
+                type: 1,
+            })
+        ).toBe(false);
+    });
 
-	it('sends audio files to the global player and ignores unsupported formats', () => {
-		const { result } = renderHook(() => useMediaOpener());
+    it('sends audio files to the global player and ignores unsupported formats', () => {
+        const { result } = renderHook(() => useMediaOpener());
 
-		expect(
-			result.current.openMediaItem({
-				id: 7,
-				name: 'song.mp3',
-				format: '.mp3',
-				path: '/music/song.mp3',
-				size: 1024,
-			}),
-		).toBe(true);
-		expect(mockReplaceQueue).toHaveBeenCalledWith(
-			[
-				expect.objectContaining({
-					id: 7,
-					name: 'song.mp3',
-					path: '/music/song.mp3',
-					format: '.mp3',
-				}),
-			],
-			0,
-			expect.objectContaining({
-				href: '/files?filter=recent',
-				labelKey: 'FILES',
-			}),
-		);
-		expect(mockNavigate).toHaveBeenCalledWith('/music', {
-			state: { from: '/files?filter=recent' },
-		});
+        expect(
+            result.current.openMediaItem({
+                id: 7,
+                name: 'song.mp3',
+                format: '.mp3',
+                path: '/music/song.mp3',
+                size: 1024,
+            })
+        ).toBe(true);
+        expect(mockReplaceQueue).toHaveBeenCalledWith(
+            [
+                expect.objectContaining({
+                    id: 7,
+                    name: 'song.mp3',
+                    path: '/music/song.mp3',
+                    format: '.mp3',
+                }),
+            ],
+            0,
+            expect.objectContaining({
+                href: '/files?filter=recent',
+                labelKey: 'FILES',
+            })
+        );
+        expect(mockNavigate).toHaveBeenCalledWith('/music', {
+            state: { from: '/files?filter=recent' },
+        });
 
-		expect(result.current.openMediaItem({ id: 8, name: 'notes.pdf', format: '.pdf' })).toBe(false);
-	});
+        expect(
+            result.current.openMediaItem({
+                id: 8,
+                name: 'notes.pdf',
+                format: '.pdf',
+            })
+        ).toBe(false);
+    });
 });

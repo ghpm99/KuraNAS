@@ -2,9 +2,9 @@ import { VideoContentProvider } from '@/components/providers/videoContentProvide
 import VideoContentScreen from './components/VideoContentScreen';
 
 export default function VideoContent() {
-	return (
-		<VideoContentProvider>
-			<VideoContentScreen />
-		</VideoContentProvider>
-	);
+    return (
+        <VideoContentProvider>
+            <VideoContentScreen />
+        </VideoContentProvider>
+    );
 }

@@ -1,4 +1,4 @@
 export type Optional<T> = {
-	Value: T;
-	HasValue: boolean;
+    Value: T;
+    HasValue: boolean;
 };

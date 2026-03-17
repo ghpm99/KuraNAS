@@ -1,55 +1,61 @@
-import { appRoutes, isAnalyticsRoute, isImageRoute, isMusicRoute, isVideoRoute } from '@/app/routes';
+import {
+    appRoutes,
+    isAnalyticsRoute,
+    isImageRoute,
+    isMusicRoute,
+    isVideoRoute,
+} from '@/app/routes';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { pages, useUI } from '../providers/uiProvider/uiContext';
 
 const getPageFromPath = (pathname: string): pages => {
-	if (isMusicRoute(pathname)) {
-		return 'music';
-	}
+    if (isMusicRoute(pathname)) {
+        return 'music';
+    }
 
-	if (isVideoRoute(pathname)) {
-		return 'videos';
-	}
+    if (isVideoRoute(pathname)) {
+        return 'videos';
+    }
 
-	if (isImageRoute(pathname)) {
-		return 'images';
-	}
+    if (isImageRoute(pathname)) {
+        return 'images';
+    }
 
-	if (isAnalyticsRoute(pathname)) {
-		return 'analytics';
-	}
+    if (isAnalyticsRoute(pathname)) {
+        return 'analytics';
+    }
 
-	switch (pathname) {
-		case appRoutes.home:
-			return 'home';
-		case appRoutes.files:
-			return 'files';
-		case appRoutes.favorites:
-		case appRoutes.legacyFavorites:
-			return 'favorites';
-			case appRoutes.settings:
-				return 'settings';
-			case appRoutes.activityDiary:
-			case appRoutes.legacyActivityDiary:
-				return 'unknown';
-		case appRoutes.about:
-			return 'about';
-		default:
-			return 'unknown';
-	}
+    switch (pathname) {
+        case appRoutes.home:
+            return 'home';
+        case appRoutes.files:
+            return 'files';
+        case appRoutes.favorites:
+        case appRoutes.legacyFavorites:
+            return 'favorites';
+        case appRoutes.settings:
+            return 'settings';
+        case appRoutes.activityDiary:
+        case appRoutes.legacyActivityDiary:
+            return 'unknown';
+        case appRoutes.about:
+            return 'about';
+        default:
+            return 'unknown';
+    }
 };
 
 const ActivePageListener = () => {
-	const location = useLocation();
+    const location = useLocation();
 
-	const { setActivePage } = useUI();
+    const { setActivePage } = useUI();
 
-	useEffect(() => {
-		setActivePage(getPageFromPath(location.pathname));
-	}, [location.pathname, setActivePage]);
+    useEffect(() => {
+        setActivePage(getPageFromPath(location.pathname));
+    }, [location.pathname, setActivePage]);
 
-	return null;
+    return null;
 };
 
 export default ActivePageListener;

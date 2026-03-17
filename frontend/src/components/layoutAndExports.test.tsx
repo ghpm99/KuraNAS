@@ -22,63 +22,69 @@ import ActivityListIndex from './activityDiary/ActivityList';
 import ActivitySummaryIndex from './activityDiary/ActivitySummary';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
-	__esModule: true,
-	default: () => ({ t: (key: string) => key }),
+    __esModule: true,
+    default: () => ({ t: (key: string) => key }),
 }));
 
 jest.mock('react-router-dom', () => ({
-	Link: ({ to, children, ...props }: any) => (
-		<a href={to} {...props}>
-			{children}
-		</a>
-	),
-	Outlet: () => <div>OutletMock</div>,
-	useLocation: () => ({ pathname: '/music/artists' }),
+    Link: ({ to, children, ...props }: any) => (
+        <a href={to} {...props}>
+            {children}
+        </a>
+    ),
+    Outlet: () => <div>OutletMock</div>,
+    useLocation: () => ({ pathname: '/music/artists' }),
 }));
 
 describe('layout wrappers and export indexes', () => {
-	it('executes wrapper layouts with children', () => {
-		const child = <span>child</span>;
+    it('executes wrapper layouts with children', () => {
+        const child = <span>child</span>;
 
-		expect((AboutLayout as any)({ children: child })).toBeTruthy();
-		expect((ActivityDiaryLayout as any)({ children: child })).toBeTruthy();
-		expect((FilesLayout as any)({ children: child })).toBeTruthy();
-		expect((ImagesLayout as any)({ children: child })).toBeTruthy();
-		expect((VideoLayout as any)({ children: child })).toBeTruthy();
-		expect((MusicLayout as any)({ children: child })).toBeTruthy();
-	});
+        expect((AboutLayout as any)({ children: child })).toBeTruthy();
+        expect((ActivityDiaryLayout as any)({ children: child })).toBeTruthy();
+        expect((FilesLayout as any)({ children: child })).toBeTruthy();
+        expect((ImagesLayout as any)({ children: child })).toBeTruthy();
+        expect((VideoLayout as any)({ children: child })).toBeTruthy();
+        expect((MusicLayout as any)({ children: child })).toBeTruthy();
+    });
 
-	it('renders music sidebar links', () => {
-		render(<MusicSidebar />);
-		expect(screen.getByRole('link', { name: /MUSIC_ARTISTS/i })).toHaveAttribute('href', '/music/artists');
-		expect(screen.getByRole('link', { name: /MUSIC_PLAYLISTS/i })).toHaveAttribute('href', '/music/playlists');
-	});
+    it('renders music sidebar links', () => {
+        render(<MusicSidebar />);
+        expect(screen.getByRole('link', { name: /MUSIC_ARTISTS/i })).toHaveAttribute(
+            'href',
+            '/music/artists'
+        );
+        expect(screen.getByRole('link', { name: /MUSIC_PLAYLISTS/i })).toHaveAttribute(
+            'href',
+            '/music/playlists'
+        );
+    });
 
-	it('renders nav item link and generic button', () => {
-		render(
-			<NavItem href='/images' icon={<span>icon</span>}>
-				Images
-			</NavItem>,
-		);
-		expect(screen.getByRole('link', { name: /Images/ })).toBeInTheDocument();
+    it('renders nav item link and generic button', () => {
+        render(
+            <NavItem href="/images" icon={<span>icon</span>}>
+                Images
+            </NavItem>
+        );
+        expect(screen.getByRole('link', { name: /Images/ })).toBeInTheDocument();
 
-		const onClick = jest.fn();
-		render(<Button onClick={onClick}>Run</Button>);
-		fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-		expect(onClick).toHaveBeenCalled();
-	});
+        const onClick = jest.fn();
+        render(<Button onClick={onClick}>Run</Button>);
+        fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+        expect(onClick).toHaveBeenCalled();
+    });
 
-	it('loads index exports', () => {
-		expect(ActionBarIndex).toBeDefined();
-		expect(TabsIndex).toBeDefined();
-		expect(FileCardIndex).toBeDefined();
-		expect(FileContentIndex).toBeDefined();
-		expect(FileDetailsIndex).toBeDefined();
-		expect(ImageContentIndex).toBeDefined();
-		expect(MusicContentIndex).toBeDefined();
-		expect(ActivityDiaryActionBarIndex).toBeDefined();
-		expect(ActivityDiaryFormIndex).toBeDefined();
-		expect(ActivityListIndex).toBeDefined();
-		expect(ActivitySummaryIndex).toBeDefined();
-	});
+    it('loads index exports', () => {
+        expect(ActionBarIndex).toBeDefined();
+        expect(TabsIndex).toBeDefined();
+        expect(FileCardIndex).toBeDefined();
+        expect(FileContentIndex).toBeDefined();
+        expect(FileDetailsIndex).toBeDefined();
+        expect(ImageContentIndex).toBeDefined();
+        expect(MusicContentIndex).toBeDefined();
+        expect(ActivityDiaryActionBarIndex).toBeDefined();
+        expect(ActivityDiaryFormIndex).toBeDefined();
+        expect(ActivityListIndex).toBeDefined();
+        expect(ActivitySummaryIndex).toBeDefined();
+    });
 });

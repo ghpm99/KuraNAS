@@ -3,15 +3,15 @@ import { getVideoSectionFromPath, videoNavigationItems } from '@/components/vide
 import { useLocation } from 'react-router-dom';
 
 export const useVideoNavigation = () => {
-	const location = useLocation();
-	const currentSection = getVideoSectionFromPath(location.pathname);
+    const location = useLocation();
+    const currentSection = getVideoSectionFromPath(location.pathname);
 
-	return {
-		currentSection,
-		items: videoNavigationItems.map((item) => ({
-			...item,
-			href: getVideoRoute(item.key),
-			isActive: item.key === currentSection,
-		})),
-	};
+    return {
+        currentSection,
+        items: videoNavigationItems.map((item) => ({
+            ...item,
+            href: getVideoRoute(item.key),
+            isActive: item.key === currentSection,
+        })),
+    };
 };

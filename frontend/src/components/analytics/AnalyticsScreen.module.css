@@ -1,83 +1,83 @@
 .screen {
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .intro {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .title {
-	margin: 0;
-	font-size: 20px;
-	font-weight: 600;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 .description {
-	margin: 0;
-	font-size: 14px;
-	line-height: 1.6;
-	color: var(--text-secondary, #b8c2d9);
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #b8c2d9);
 }
 
 .actions {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .grid {
-	display: grid;
-	grid-template-columns: repeat(12, minmax(0, 1fr));
-	gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
 }
 
 .span4 {
-	grid-column: span 4;
+    grid-column: span 4;
 }
 
 .span6 {
-	grid-column: span 6;
+    grid-column: span 6;
 }
 
 .span12 {
-	grid-column: span 12;
+    grid-column: span 12;
 }
 
 .inlineSummary {
-	margin-bottom: 16px;
+    margin-bottom: 16px;
 }
 
 .progress {
-	margin-top: 8px;
+    margin-top: 8px;
 }
 
 .statusHeader {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-bottom: 16px;
-	flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
 }
 
 .tableCellAction {
-	cursor: pointer;
+    cursor: pointer;
 }
 
 .footer {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 @media (max-width: 1200px) {
-	.span4,
-	.span6 {
-		grid-column: span 12;
-	}
+    .span4,
+    .span6 {
+        grid-column: span 12;
+    }
 }

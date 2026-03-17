@@ -1,53 +1,53 @@
 {
-	"compilerOptions": {
-		/* Arquivo de build incremental */
-		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "compilerOptions": {
+        /* Arquivo de build incremental */
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
-		/* Compilação e transpilação */
-		"target": "ES2015",
-		"module": "ESNext",
-		"lib": ["ES2015", "DOM", "DOM.Iterable"],
-		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
-		"isolatedModules": true,
-		"moduleDetection": "force",
-		"noEmit": true,
-		"jsx": "react-jsx",
-		"resolveJsonModule": true,
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"forceConsistentCasingInFileNames": true,
-		"skipLibCheck": true,
+        /* Compilação e transpilação */
+        "target": "ES2015",
+        "module": "ESNext",
+        "lib": ["ES2015", "DOM", "DOM.Iterable"],
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "isolatedModules": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
 
-		/* Caminhos e organização */
-		"baseUrl": "./",
-		"paths": {
-			"@/*": ["src/*"],
-			"@tests/*": ["tests/*"]
-		},
+        /* Caminhos e organização */
+        "baseUrl": "./",
+        "paths": {
+            "@/*": ["src/*"],
+            "@tests/*": ["tests/*"]
+        },
 
-		/* Verificações e qualidade de código */
-		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUncheckedIndexedAccess": true,
-		"noPropertyAccessFromIndexSignature": false,
-		"noUncheckedSideEffectImports": true,
+        /* Verificações e qualidade de código */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "noPropertyAccessFromIndexSignature": false,
+        "noUncheckedSideEffectImports": true,
 
-		/* Source Maps e Debugging */
-		"sourceMap": true,
-		"inlineSources": true
-	},
-	"include": ["src"],
-	"exclude": [
-		"dist",
-		"node_modules",
-		"**/*.test.ts",
-		"**/*.test.tsx",
-		"**/*.spec.ts",
-		"**/*.spec.tsx",
-		"**/*.test-d.ts"
-	],
-	"references": []
+        /* Source Maps e Debugging */
+        "sourceMap": true,
+        "inlineSources": true
+    },
+    "include": ["src"],
+    "exclude": [
+        "dist",
+        "node_modules",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/*.test-d.ts"
+    ],
+    "references": []
 }

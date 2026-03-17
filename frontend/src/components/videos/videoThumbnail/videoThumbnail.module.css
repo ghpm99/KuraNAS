@@ -1,149 +1,149 @@
 .card {
-	height: 100%;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	border-radius: 12px;
-	overflow: hidden;
-	background: #1a1a1a;
-	border: 1px solid #333;
+    height: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1a1a1a;
+    border: 1px solid #333;
 }
 
 .card:hover {
-	transform: translateY(-8px);
-	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-	border-color: #555;
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    border-color: #555;
 }
 
 .thumbnailContainer {
-	position: relative;
-	height: 160px;
-	overflow: hidden;
+    position: relative;
+    height: 160px;
+    overflow: hidden;
 }
 
 .thumbnailPlaceholder {
-	width: 100%;
-	height: 100%;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .thumbnailIcon {
-	color: rgba(255, 255, 255, 0.6);
-	transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
 }
 
 .playOverlay {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	background: rgba(0, 0, 0, 0.8);
-	color: white;
-	width: 56px;
-	height: 56px;
-	opacity: 0;
-	transition: all 0.3s ease;
-	border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    width: 56px;
+    height: 56px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    border-radius: 50%;
 }
 
 .card:hover .playOverlay {
-	opacity: 1;
-	transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
 }
 
 .card:hover .thumbnailIcon {
-	color: rgba(255, 255, 255, 0.9);
-	transform: scale(1.1);
+    color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.1);
 }
 
 .videoInfo {
-	padding: 16px;
-	background: #1a1a1a;
-	height: calc(100% - 160px);
-	display: flex;
-	flex-direction: column;
+    padding: 16px;
+    background: #1a1a1a;
+    height: calc(100% - 160px);
+    display: flex;
+    flex-direction: column;
 }
 
 .videoTitle {
-	font-weight: 600;
-	font-size: 14px;
-	line-height: 1.4;
-	margin-bottom: 8px;
-	color: white;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .metadataContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-grow: 1;
 }
 
 .metadataItem {
-	display: flex;
-	align-items: center;
-	gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .metadataIcon {
-	color: #888;
-	flex-shrink: 0;
+    color: #888;
+    flex-shrink: 0;
 }
 
 .metadataText {
-	color: #aaa;
-	font-size: 12px;
-	line-height: 1.2;
+    color: #aaa;
+    font-size: 12px;
+    line-height: 1.2;
 }
 
 .codecBadge {
-	background: rgba(25, 118, 210, 0.2);
-	border: 1px solid rgba(25, 118, 210, 0.3);
-	border-radius: 4px;
-	padding: 2px 6px;
-	align-self: flex-start;
-	margin-top: 4px;
+    background: rgba(25, 118, 210, 0.2);
+    border: 1px solid rgba(25, 118, 210, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    align-self: flex-start;
+    margin-top: 4px;
 }
 
 .codecText {
-	color: #1976d2;
-	font-size: 10px;
-	font-weight: 600;
-	letter-spacing: 0.5px;
+    color: #1976d2;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
 .fileSize {
-	color: #666;
-	font-size: 11px;
-	margin-top: auto;
-	padding-top: 8px;
-	border-top: 1px solid #333;
+    color: #666;
+    font-size: 11px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #333;
 }
 
 /* Responsive design */
 @media (max-width: 600px) {
-	.thumbnailContainer {
-		height: 120px;
-	}
+    .thumbnailContainer {
+        height: 120px;
+    }
 
-	.videoTitle {
-		font-size: 13px;
-	}
+    .videoTitle {
+        font-size: 13px;
+    }
 
-	.metadataText {
-		font-size: 11px;
-	}
+    .metadataText {
+        font-size: 11px;
+    }
 
-	.playOverlay {
-		width: 48px;
-		height: 48px;
-	}
+    .playOverlay {
+        width: 48px;
+        height: 48px;
+    }
 }

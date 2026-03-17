@@ -10,34 +10,37 @@ import GlobalSearchProvider from '../search/GlobalSearchProvider';
 import SettingsProvider from './settingsProvider';
 
 const queryClient = new QueryClient({
-	defaultOptions: {
-		queries: {
-			refetchOnWindowFocus: false,
-			refetchOnReconnect: false,
-			staleTime: 1000 * 60 * 5, // 5 minutes
-		},
-	},
+    defaultOptions: {
+        queries: {
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            staleTime: 1000 * 60 * 5, // 5 minutes
+        },
+    },
 });
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
-	return (
-		<QueryClientProvider client={queryClient}>
-			<StrictMode>
-				<I18nProvider>
-					<SettingsProvider>
-						<SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-							<ThemeProvider theme={appTheme}>
-								<CssBaseline />
-								<BrowserRouter>
-									<GlobalSearchProvider>{children}</GlobalSearchProvider>
-								</BrowserRouter>
-							</ThemeProvider>
-						</SnackbarProvider>
-					</SettingsProvider>
-				</I18nProvider>
-			</StrictMode>
-		</QueryClientProvider>
-	);
+    return (
+        <QueryClientProvider client={queryClient}>
+            <StrictMode>
+                <I18nProvider>
+                    <SettingsProvider>
+                        <SnackbarProvider
+                            maxSnack={3}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        >
+                            <ThemeProvider theme={appTheme}>
+                                <CssBaseline />
+                                <BrowserRouter>
+                                    <GlobalSearchProvider>{children}</GlobalSearchProvider>
+                                </BrowserRouter>
+                            </ThemeProvider>
+                        </SnackbarProvider>
+                    </SettingsProvider>
+                </I18nProvider>
+            </StrictMode>
+        </QueryClientProvider>
+    );
 };
 
 export default AppProviders;
