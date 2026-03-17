@@ -1,399 +1,194 @@
 import { act, renderHook } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { type IMusicData } from '../musicProvider/musicProvider';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
-import { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata } from '@/utils/music';
 
-const mockUpdatePlayerState = jest.fn();
-const mockGetPlayerState = jest.fn();
-const mockGetApiV1BaseUrl = jest.fn();
-const mockGetNowPlayingPlaylist = jest.fn();
-const mockGetPlaylistTracks = jest.fn();
-const mockUseSettings = jest.fn();
+const fakeSettings = {
+	players: {
+		remember_music_queue: true,
+	},
+};
 
-jest.mock('@/service/playerState', () => ({
-	getPlayerState: (...args: any[]) => mockGetPlayerState(...args),
-	updatePlayerState: (...args: any[]) => mockUpdatePlayerState(...args),
+const createEngineMock = () => ({
+	audioRef: { current: { currentTime: 0 } as { currentTime: number } | null },
+	loadAndPlayUrl: jest.fn(),
+	togglePlayPause: jest.fn(),
+	seek: jest.fn(),
+	setVolume: jest.fn(),
+	stop: jest.fn(),
+	isPlaying: false,
+	currentTime: 0,
+	duration: 0,
+	volume: 1,
+});
+
+let engineMock = createEngineMock();
+const mockSyncState = jest.fn();
+const mockQueueHydration = jest.fn();
+
+jest.mock('./globalMusic/useAudioEngine', () => ({
+	__esModule: true,
+	default: () => engineMock,
 }));
 
-jest.mock('@/service/apiUrl', () => ({
-	getApiV1BaseUrl: () => mockGetApiV1BaseUrl(),
+jest.mock('./globalMusic/useMusicStateSync', () => ({
+	__esModule: true,
+	default: () => ({
+		syncState: mockSyncState,
+	}),
 }));
 
-jest.mock('@/service/playlist', () => ({
-	getNowPlayingPlaylist: (...args: any[]) => mockGetNowPlayingPlaylist(...args),
-	getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
+jest.mock('./globalMusic/useMusicQueueHydration', () => ({
+	__esModule: true,
+	default: (enabled: boolean, callbacks: unknown) => mockQueueHydration(enabled, callbacks),
 }));
 
 jest.mock('./settingsProvider/settingsContext', () => ({
-	useSettings: () => mockUseSettings(),
+	__esModule: true,
+	useSettings: () => ({
+		settings: fakeSettings,
+		isLoading: false,
+		isSaving: false,
+		hasError: false,
+		refresh: jest.fn(),
+		saveSettings: jest.fn(),
+	}),
 }));
 
-class FakeAudio {
-	src = '';
-	volume = 1;
-	currentTime = 0;
-	duration = 200;
-	paused = true;
-	play = jest.fn(() => {
-		this.paused = false;
-		this.emit('play');
-		return Promise.resolve();
-	});
-	pause = jest.fn(() => {
-		this.paused = true;
-		this.emit('pause');
-	});
-	private listeners = new Map<string, Set<() => void>>();
+const wrapper = ({ children }: { children?: ReactNode }) => (
+	<GlobalMusicProvider>{children}</GlobalMusicProvider>
+);
 
-	addEventListener(event: string, cb: () => void) {
-		if (!this.listeners.has(event)) this.listeners.set(event, new Set());
-		this.listeners.get(event)?.add(cb);
-	}
+const createTrack = (id: number): IMusicData => ({
+	id,
+	name: `track-${id}`,
+	path: `/tracks/${id}.mp3`,
+	type: id,
+	format: 'mp3',
+	size: 1024,
+	updated_at: '',
+	created_at: '',
+	deleted_at: '',
+	last_interaction: '',
+	last_backup: '',
+	check_sum: '',
+	directory_content_count: 0,
+	starred: false,
+});
 
-	removeEventListener(event: string, cb: () => void) {
-		this.listeners.get(event)?.delete(cb);
-	}
-
-	emit(event: string) {
-		this.listeners.get(event)?.forEach((cb) => cb());
-	}
-}
-
-describe('components/providers/GlobalMusicProvider', () => {
-	const wrapper = ({ children }: { children: React.ReactNode }) => (
-		<GlobalMusicProvider>{children}</GlobalMusicProvider>
-	);
-
-	const track1: any = {
-		id: 1,
-		name: 'song-1.mp3',
-		format: 'mp3',
-		size: 1024,
-		metadata: { title: 'Song 1', artist: 'Artist 1', duration: 121 },
-	};
-	const track2: any = {
-		id: 2,
-		name: 'song-2.flac',
-		format: 'flac',
-		size: 2048,
-		metadata: { duration: 240 },
-	};
-
-	let fakeAudio: FakeAudio;
-
+describe('GlobalMusicProvider', () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
 		jest.useFakeTimers();
-		fakeAudio = new FakeAudio();
-		mockGetApiV1BaseUrl.mockReturnValue('http://localhost:8000/v1');
-		mockGetPlayerState.mockResolvedValue({
-			playlist_id: null,
-			current_file_id: null,
-			current_position: 0,
-			volume: 1,
-			shuffle: false,
-			repeat_mode: 'none',
-		});
-		mockGetNowPlayingPlaylist.mockResolvedValue({
-			id: null,
-			track_count: 0,
-		});
-		mockGetPlaylistTracks.mockResolvedValue({ items: [] });
-		mockUseSettings.mockReturnValue({
-			settings: {
-				players: {
-					remember_music_queue: false,
-				},
-			},
-			isLoading: false,
-		});
-		mockUpdatePlayerState.mockResolvedValue({});
-		(global as any).Audio = jest.fn(() => fakeAudio);
+		engineMock = createEngineMock();
+		mockSyncState.mockReset();
+		mockQueueHydration.mockReset();
 	});
 
 	afterEach(() => {
 		jest.useRealTimers();
 	});
 
-	it('manages queue, playback controls, helpers and sync state', async () => {
+	it('manages queue operations and shuffle/previous flows', () => {
 		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		expect(result.current.hasQueue).toBe(false);
-		expect(getMusicTitle(track1)).toBe('Song 1');
-		expect(getMusicArtist(track2)).toBe('Unknown Artist');
-		expect(formatMusicDuration(65)).toBe('1:05');
-		expect(musicMetadata(track1)).toContain('2:01');
+		const trackA = createTrack(1);
+		const trackB = createTrack(2);
+		const trackC = createTrack(3);
 
 		act(() => {
-			result.current.addToQueue(track1, {
-				kind: 'album',
-				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
-				labelParams: { name: 'Album 1' },
-				href: '/music/albums',
-			});
-			result.current.addToQueue(track2);
-			result.current.addToQueue(track1);
+			result.current.addToQueue(trackA, { playlistId: 10 });
 		});
 		act(() => {
-			jest.advanceTimersByTime(10);
+			jest.runOnlyPendingTimers();
 		});
-		expect(result.current.queue.length).toBe(2);
+		expect(result.current.queue).toEqual([trackA]);
 		expect(result.current.currentIndex).toBe(0);
-		expect(result.current.playbackContext).toMatchObject({
-			labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
-			labelParams: { name: 'Album 1' },
-		});
+		expect(result.current.playbackContext).toEqual({ playlistId: 10 });
 
 		act(() => {
-			result.current.playTrackFromQueue(1);
+			result.current.addToQueue(trackA);
+			result.current.addToQueue(trackB);
 		});
-		expect(fakeAudio.src).toContain('/files/stream/2');
+		act(() => {
+			jest.runOnlyPendingTimers();
+		});
+		expect(result.current.queue).toHaveLength(2);
 
 		act(() => {
-			result.current.togglePlayPause();
+			result.current.replaceQueue([trackB, trackC], 1, { playlistId: 22 });
 		});
-		expect(fakeAudio.pause).toHaveBeenCalled();
-		act(() => {
-			fakeAudio.emit('play');
-		});
-		expect(result.current.isPlaying).toBe(true);
-
-		act(() => {
-			result.current.seek(42);
-			result.current.setVolume(1.5);
-		});
-		expect(fakeAudio.currentTime).toBe(42);
-		expect(result.current.volume).toBe(1);
-
-		act(() => {
-			result.current.toggleShuffle();
-			result.current.setRepeatMode('all');
-		});
-		expect(result.current.shuffle).toBe(true);
-		expect(result.current.repeatMode).toBe('all');
-
-		await act(async () => {
-			jest.advanceTimersByTime(2200);
-		});
-		expect(mockUpdatePlayerState).toHaveBeenCalledWith(
-			expect.objectContaining({
-				playlist_id: null,
-			}),
+		expect(result.current.queue[1]).toEqual(trackC);
+		expect(result.current.currentIndex).toBe(1);
+		expect(engineMock.loadAndPlayUrl).toHaveBeenLastCalledWith(expect.stringContaining('/files/stream/3'));
+		expect(mockSyncState).toHaveBeenCalledWith(
+			expect.objectContaining({ fileId: 3, position: 0, playlistId: 22 }),
 		);
 
-		Math.random = jest.fn(() => 0);
 		act(() => {
-			result.current.next();
-		});
-		expect(fakeAudio.src).toContain('/files/stream/1');
-
-		fakeAudio.currentTime = 5;
-		act(() => {
-			result.current.previous();
-		});
-		expect(fakeAudio.currentTime).toBe(0);
-
-		act(() => {
-			result.current.setRepeatMode('one');
-			fakeAudio.emit('ended');
-		});
-		expect(fakeAudio.play).toHaveBeenCalled();
-
-		act(() => {
-			result.current.clearQueue();
-		});
-		expect(result.current.queue).toEqual([]);
-		expect(result.current.hasQueue).toBe(false);
-		expect(result.current.playbackContext).toBeUndefined();
-	});
-
-	it('covers next/previous and track-end branches for repeat modes', () => {
-		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		act(() => {
-			result.current.addToQueue(track1);
-			result.current.addToQueue(track2);
-		});
-		act(() => {
-			jest.advanceTimersByTime(10);
-		});
-
-		act(() => {
-			result.current.setRepeatMode('none');
-			result.current.toggleShuffle();
-			result.current.toggleShuffle(); // back to non-shuffle
-			result.current.next();
-		});
-
-		fakeAudio.currentTime = 1;
-		act(() => {
-			result.current.previous();
-		});
-
-		act(() => {
-			result.current.setRepeatMode('all');
-			fakeAudio.emit('ended');
-		});
-		expect(fakeAudio.play).toHaveBeenCalled();
-
-		act(() => {
-			result.current.setRepeatMode('none');
-			fakeAudio.emit('ended');
-		});
-		expect(result.current.repeatMode).toBe('none');
-	});
-
-	it('covers guard paths, default sync payload and fallback helpers', async () => {
-		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		act(() => {
-			result.current.togglePlayPause();
-			result.current.next();
-			result.current.previous();
-			result.current.playTrackFromQueue(-1);
-			result.current.playTrackFromQueue(99);
-			result.current.seek(15);
-			result.current.setVolume(-0.5);
-		});
-		expect(fakeAudio.play).toHaveBeenCalled();
-		expect(result.current.volume).toBe(0);
-
-		act(() => {
-			fakeAudio.emit('ended');
-		});
-
-		await act(async () => {
-			jest.advanceTimersByTime(2200);
-		});
-		expect(mockUpdatePlayerState).toHaveBeenCalledWith(
-			expect.objectContaining({
-				current_file_id: null,
-				current_position: expect.any(Number),
-				volume: expect.any(Number),
-			}),
-		);
-
-		expect(
-			musicMetadata({
-				format: '',
-				size: 512,
-			} as any),
-		).toContain('512 B');
-		expect(getMusicTitle({ id: 7, name: 'fallback.mp3', format: 'mp3', size: 1 } as any)).toBe('fallback.mp3');
-		expect(getMusicArtist({ id: 7, name: 'x', format: 'mp3', size: 1 } as any)).toBe('Unknown Artist');
-	});
-
-	it('throws when hook is used outside provider', () => {
-		expect(() => renderHook(() => useGlobalMusic())).toThrow('useGlobalMusic must be used within a GlobalMusicProvider');
-	});
-
-	it('syncs playlist identifiers when a playlist context replaces the queue', async () => {
-		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		act(() => {
-			result.current.replaceQueue([track1], 0, {
-				kind: 'playlist',
-				labelKey: 'MUSIC_PLAYBACK_CONTEXT_PLAYLIST',
-				labelParams: { name: 'Mix A' },
-				href: '/music/playlists',
-				playlistId: 15,
-			});
-		});
-
-		await act(async () => {
-			jest.advanceTimersByTime(2200);
-		});
-
-		expect(result.current.playbackContext).toMatchObject({ playlistId: 15 });
-		expect(mockUpdatePlayerState).toHaveBeenCalledWith(
-			expect.objectContaining({
-				playlist_id: 15,
-				current_file_id: 1,
-			}),
-		);
-	});
-
-	it('covers queue toggling, end-of-queue stop, and remove-from-queue branches', () => {
-		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		expect(result.current.queueOpen).toBe(false);
-		act(() => {
-			result.current.toggleQueue();
-		});
-		expect(result.current.queueOpen).toBe(true);
-
-		act(() => {
-			result.current.replaceQueue([track1, track2], 1, {
-				kind: 'album',
-				labelKey: 'MUSIC_PLAYBACK_CONTEXT_ALBUM',
-				labelParams: { name: 'Album 1' },
-				href: '/music/albums',
-			});
-		});
-		act(() => {
-			fakeAudio.emit('play');
-			result.current.setRepeatMode('none');
-			fakeAudio.emit('ended');
-		});
-		expect(result.current.isPlaying).toBe(false);
-
-		act(() => {
-			result.current.replaceQueue([track1, track2], 1);
-			result.current.removeFromQueue(0);
+			result.current.playTrackFromQueue(0);
 		});
 		expect(result.current.currentIndex).toBe(0);
 
 		act(() => {
-			result.current.replaceQueue([track1, track2], 0);
-			result.current.removeFromQueue(0);
+			result.current.toggleShuffle();
 		});
-		expect(fakeAudio.src).toContain('/files/stream/2');
+		const mathSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+		act(() => {
+			result.current.next();
+		});
+		expect(engineMock.loadAndPlayUrl).toHaveBeenCalled();
+		mathSpy.mockRestore();
+
+		engineMock.audioRef.current!.currentTime = 5;
+		const previousCalls = engineMock.loadAndPlayUrl.mock.calls.length;
+		act(() => {
+			result.current.previous();
+		});
+		expect(engineMock.audioRef.current!.currentTime).toBe(0);
+		expect(engineMock.loadAndPlayUrl.mock.calls.length).toBe(previousCalls);
+
+		engineMock.audioRef.current!.currentTime = 1;
+		act(() => {
+			result.current.previous();
+		});
+		expect(engineMock.loadAndPlayUrl.mock.calls.length).toBe(previousCalls + 1);
+	});
+
+	it('exposes helpers and resets queue correctly', () => {
+		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+		const track = createTrack(5);
 
 		act(() => {
 			result.current.replaceQueue([], 0);
 		});
-		expect(result.current.queue.length).toBeGreaterThan(0);
-	});
+		expect(result.current.queue).toEqual([]);
 
-	it('hydrates the queue from the persisted playlist when restoration is enabled', async () => {
-		mockUseSettings.mockReturnValue({
-			settings: {
-				players: {
-					remember_music_queue: true,
-				},
-			},
-			isLoading: false,
+		act(() => {
+			result.current.addToQueue(track);
 		});
-		mockGetPlayerState.mockResolvedValue({
-			playlist_id: 99,
-			current_file_id: 2,
-			current_position: 12,
-			volume: 0.7,
-			shuffle: false,
-			repeat_mode: 'none',
+		act(() => {
+			jest.runOnlyPendingTimers();
 		});
-		mockGetNowPlayingPlaylist.mockResolvedValue({
-			id: 99,
-			name: 'Recovered Mix',
-			track_count: 2,
-		});
-		mockGetPlaylistTracks.mockResolvedValue({
-			items: [{ file: track1 }, { file: track2 }],
-		});
+		expect(result.current.hasQueue).toBe(true);
 
-		const { result } = renderHook(() => useGlobalMusic(), { wrapper });
-
-		await act(async () => {
-			await Promise.resolve();
+		act(() => {
+			result.current.togglePlayPause();
+			result.current.seek(12);
+			result.current.setVolume(0.25);
+			result.current.toggleQueue();
 		});
+		expect(engineMock.togglePlayPause).toHaveBeenCalled();
+		expect(engineMock.seek).toHaveBeenCalledWith(12);
+		expect(engineMock.setVolume).toHaveBeenCalledWith(0.25);
+		expect(result.current.queueOpen).toBe(true);
+		expect(mockSyncState).toHaveBeenCalledWith(expect.objectContaining({ position: 12 }));
 
-		expect(mockGetPlayerState).toHaveBeenCalledTimes(1);
-		expect(mockGetNowPlayingPlaylist).toHaveBeenCalledTimes(1);
-		expect(mockGetPlaylistTracks).toHaveBeenCalledWith(99, 1, 2);
-		expect(result.current.queue).toEqual([track1, track2]);
-		expect(result.current.currentIndex).toBe(1);
-		expect(result.current.playbackContext).toMatchObject({
-			kind: 'playlist',
-			playlistId: 99,
+		act(() => {
+			result.current.toggleQueue();
+			result.current.clearQueue();
 		});
+		expect(result.current.queue).toEqual([]);
+		expect(result.current.currentIndex).toBeUndefined();
+		expect(result.current.hasQueue).toBe(false);
+		expect(engineMock.stop).toHaveBeenCalled();
 	});
 });

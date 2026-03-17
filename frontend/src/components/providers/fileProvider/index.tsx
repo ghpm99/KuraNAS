@@ -2,7 +2,6 @@ import { FileType } from '@/utils';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
 import {
 	copyFilePath,
 	createFolderAtPath,
@@ -23,69 +22,15 @@ import {
 	FileListCategoryType,
 	PaginationResponse,
 } from './fileContext';
+import {
+	addChildrenToTree,
+	buildFilesUrl,
+	extractFilePath,
+	findItemInTree,
+	findTrailByIdInTree,
+} from './fileProviderUtils';
 
 const pageSize = 200;
-const FILES_PREFIX = appRoutes.files;
-
-function extractFilePath(pathname: string): string {
-	if (!pathname.startsWith(FILES_PREFIX)) return '';
-	const rest = pathname.slice(FILES_PREFIX.length);
-	if (!rest || rest === '/') return '';
-	return decodeURIComponent(rest);
-}
-
-function buildFilesUrl(filePath: string): string {
-	if (!filePath) return FILES_PREFIX;
-	const encoded = filePath
-		.split('/')
-		.map((segment) => encodeURIComponent(segment))
-		.join('/');
-	return `${FILES_PREFIX}${encoded.startsWith('/') ? '' : '/'}${encoded}`;
-}
-
-const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
-	if (!itemId) return null;
-	for (const item of data) {
-		if (item.id === itemId) {
-			return item;
-		}
-		if (item?.file_children && item?.file_children?.length > 0) {
-			const itemChildren = findItemInTree(item?.file_children, itemId);
-			if (itemChildren) {
-				return itemChildren;
-			}
-		}
-	}
-
-	return null;
-};
-
-const addChildrenToTree = (tree: FileData[], parentId: number, children?: FileData[]): FileData[] => {
-	return tree.map((node) => {
-		if (node.id === parentId) {
-			return { ...node, file_children: children };
-		}
-		if (node.file_children) {
-			return { ...node, file_children: addChildrenToTree(node.file_children, parentId, children) };
-		}
-		return node;
-	});
-};
-
-const findTrailByIdInTree = (nodes: FileData[], targetId: number): FileData[] | null => {
-	for (const node of nodes) {
-		if (node.id === targetId) {
-			return [node];
-		}
-		if (node.file_children?.length) {
-			const branch = findTrailByIdInTree(node.file_children, targetId);
-			if (branch) {
-				return [node, ...branch];
-			}
-		}
-	}
-	return null;
-};
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const location = useLocation();
@@ -264,7 +209,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 	const handleSelectItem = useCallback(
 		(item: FileData | null) => {
 			if (!item) {
-				navigate(FILES_PREFIX);
+				navigate(buildFilesUrl(''));
 				return;
 			}
 			navigate(buildFilesUrl(item.path));
