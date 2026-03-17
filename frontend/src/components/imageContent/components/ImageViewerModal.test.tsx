@@ -217,4 +217,118 @@ describe('ImageViewerModal', () => {
 		expect(screen.getByRole('button', { name: 'Mostrar tira' })).toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /Abrir Trip\.jpg/i })).not.toBeInTheDocument();
 	});
+
+	it('calls onIncreaseZoom on wheel up (deltaY < 0) and onDecreaseZoom on wheel down (deltaY > 0)', () => {
+		const onIncreaseZoom = jest.fn();
+		const onDecreaseZoom = jest.fn();
+
+		render(
+			<ImageViewerModal
+				activeImage={createImage()}
+				activeIndex={0}
+				activeImageDate={new Date('2026-03-10T10:00:00Z')}
+				dateFormatter={new Intl.DateTimeFormat('pt-BR')}
+				filteredImages={[createImage()]}
+				zoom={1}
+				showDetails={false}
+				showFilmstrip={false}
+				isSlideshowPlaying={false}
+				isFavoritePending={false}
+				onToggleDetails={jest.fn()}
+				onToggleFilmstrip={jest.fn()}
+				onToggleSlideshow={jest.fn()}
+				onToggleFavorite={jest.fn()}
+				onOpenFolder={jest.fn()}
+				onDecreaseZoom={onDecreaseZoom}
+				onResetZoom={jest.fn()}
+				onIncreaseZoom={onIncreaseZoom}
+				onClose={jest.fn()}
+				onPrevious={jest.fn()}
+				onNext={jest.fn()}
+				onOpenImage={jest.fn()}
+			/>,
+		);
+
+		const stagePanel = screen.getByRole('button', { name: 'Imagem anterior' }).parentElement!;
+
+		fireEvent.wheel(stagePanel, { deltaY: -100 });
+		expect(onIncreaseZoom).toHaveBeenCalledTimes(1);
+		expect(onDecreaseZoom).not.toHaveBeenCalled();
+
+		onIncreaseZoom.mockClear();
+		fireEvent.wheel(stagePanel, { deltaY: 100 });
+		expect(onDecreaseZoom).toHaveBeenCalledTimes(1);
+		expect(onIncreaseZoom).not.toHaveBeenCalled();
+	});
+
+	it('renders filmstrip with non-active items and triggers onOpenImage', () => {
+		const onOpenImage = jest.fn();
+		const activeImage = createImage({ id: 7 });
+		const otherImage = createImage({ id: 8, name: 'Other.jpg' });
+
+		render(
+			<ImageViewerModal
+				activeImage={activeImage}
+				activeIndex={0}
+				activeImageDate={new Date('2026-03-10T10:00:00Z')}
+				dateFormatter={new Intl.DateTimeFormat('pt-BR')}
+				filteredImages={[activeImage, otherImage]}
+				zoom={1}
+				showDetails={false}
+				showFilmstrip
+				isSlideshowPlaying={false}
+				isFavoritePending={false}
+				onToggleDetails={jest.fn()}
+				onToggleFilmstrip={jest.fn()}
+				onToggleSlideshow={jest.fn()}
+				onToggleFavorite={jest.fn()}
+				onOpenFolder={jest.fn()}
+				onDecreaseZoom={jest.fn()}
+				onResetZoom={jest.fn()}
+				onIncreaseZoom={jest.fn()}
+				onClose={jest.fn()}
+				onPrevious={jest.fn()}
+				onNext={jest.fn()}
+				onOpenImage={onOpenImage}
+			/>,
+		);
+
+		const otherButton = screen.getByRole('button', { name: /Abrir Other\.jpg/i });
+		expect(otherButton).toBeInTheDocument();
+
+		fireEvent.click(otherButton);
+		expect(onOpenImage).toHaveBeenCalledWith(8);
+	});
+
+	it('disables slideshow button when only one image', () => {
+		render(
+			<ImageViewerModal
+				activeImage={createImage()}
+				activeIndex={0}
+				activeImageDate={null}
+				dateFormatter={new Intl.DateTimeFormat('pt-BR')}
+				filteredImages={[createImage()]}
+				zoom={1}
+				showDetails={false}
+				showFilmstrip={false}
+				isSlideshowPlaying={false}
+				isFavoritePending={false}
+				onToggleDetails={jest.fn()}
+				onToggleFilmstrip={jest.fn()}
+				onToggleSlideshow={jest.fn()}
+				onToggleFavorite={jest.fn()}
+				onOpenFolder={jest.fn()}
+				onDecreaseZoom={jest.fn()}
+				onResetZoom={jest.fn()}
+				onIncreaseZoom={jest.fn()}
+				onClose={jest.fn()}
+				onPrevious={jest.fn()}
+				onNext={jest.fn()}
+				onOpenImage={jest.fn()}
+			/>,
+		);
+
+		const slideshowButton = screen.getByRole('button', { name: 'Iniciar slideshow' });
+		expect(slideshowButton).toBeDisabled();
+	});
 });
