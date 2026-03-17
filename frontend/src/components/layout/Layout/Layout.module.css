@@ -1,40 +1,40 @@
 .layout {
-	display: grid;
-	grid-template-columns: 300px 1fr;
-	grid-template-rows: 80px auto;
-	grid-template-areas:
-		'logo gh'
-		'left-nav content-container';
-	height: 100vh;
-	background-color: var(--mui-palette-background-default, #0f0f13);
-	@media screen and (max-width: 900px) {
-		grid-template-columns: 1fr;
-		grid-template-areas:
-			'gh'
-			'content-container';
-	}
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: 80px auto;
+    grid-template-areas:
+        'logo gh'
+        'left-nav content-container';
+    height: 100vh;
+    background-color: var(--mui-palette-background-default, #0f0f13);
+    @media screen and (max-width: 900px) {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            'gh'
+            'content-container';
+    }
 }
 
 .sidebarHeader {
-	grid-area: logo;
-	background-color: #141419;
-	align-content: center;
-	text-align: center;
-	@media screen and (max-width: 900px) {
-		display: none;
-	}
+    grid-area: logo;
+    background-color: #141419;
+    align-content: center;
+    text-align: center;
+    @media screen and (max-width: 900px) {
+        display: none;
+    }
 }
 
 .mainContent {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	grid-area: content-container;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    grid-area: content-container;
 }
 
 .content {
-	flex: 1;
-	padding: 24px;
-	overflow-y: auto;
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
 }

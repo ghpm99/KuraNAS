@@ -8,21 +8,25 @@ import { useAnalyticsScreenState } from '@/components/analytics/useAnalyticsScre
 import styles from './AnalyticsContent.module.css';
 
 const AnalyticsContent = () => {
-	const state = useAnalyticsScreenState();
-	const { currentSection } = useAnalyticsNavigation();
+    const state = useAnalyticsScreenState();
+    const { currentSection } = useAnalyticsNavigation();
 
-	return (
-		<div className={styles.page}>
-			<AnalyticsDomainHeader />
-			<div className={styles.content}>
-				<AnalyticsSidebar />
-				<div className={styles.main}>
-					<AnalyticsToolbar state={state} />
-					{currentSection === 'library' ? <AnalyticsLibraryScreen state={state} /> : <AnalyticsOverviewScreen state={state} />}
-				</div>
-			</div>
-		</div>
-	);
+    return (
+        <div className={styles.page}>
+            <AnalyticsDomainHeader />
+            <div className={styles.content}>
+                <AnalyticsSidebar />
+                <div className={styles.main}>
+                    <AnalyticsToolbar state={state} />
+                    {currentSection === 'library' ? (
+                        <AnalyticsLibraryScreen state={state} />
+                    ) : (
+                        <AnalyticsOverviewScreen state={state} />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default AnalyticsContent;

@@ -3,28 +3,28 @@ import { getTranslations } from '@/service/configuration';
 import { I18nContextProvider, I18nContextType } from './i18nContext';
 
 const I18nProvider = ({ children }: { children: React.ReactNode }) => {
-	const { status, data } = useQuery({
-		queryKey: ['configuration'],
-		queryFn: getTranslations,
-	});
+    const { status, data } = useQuery({
+        queryKey: ['configuration'],
+        queryFn: getTranslations,
+    });
 
-	const t = (key: string, options?: Record<string, string>): string => {
-		if (status !== 'success' && !data) return key;
+    const t = (key: string, options?: Record<string, string>): string => {
+        if (status !== 'success' && !data) return key;
 
-		const translation = data[key];
-		if (translation) {
-			return Object.entries(options || {}).reduce((acc, [k, v]) => {
-				return acc.replace(`{{${k}}}`, v);
-			}, translation);
-		}
+        const translation = data[key];
+        if (translation) {
+            return Object.entries(options || {}).reduce((acc, [k, v]) => {
+                return acc.replace(`{{${k}}}`, v);
+            }, translation);
+        }
 
-		return key;
-	};
+        return key;
+    };
 
-	const contextValue: I18nContextType = {
-		t,
-	};
-	return <I18nContextProvider value={contextValue}>{children}</I18nContextProvider>;
+    const contextValue: I18nContextType = {
+        t,
+    };
+    return <I18nContextProvider value={contextValue}>{children}</I18nContextProvider>;
 };
 
 export default I18nProvider;

@@ -1,10 +1,10 @@
 import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
 
 export const useAppShell = () => {
-	const { hasQueue } = useGlobalMusic();
+    const { hasQueue } = useGlobalMusic();
 
-	return {
-		hasQueue,
-		showClock: false,
-	};
+    return {
+        hasQueue,
+        showClock: false,
+    };
 };

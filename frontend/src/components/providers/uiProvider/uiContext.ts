@@ -1,28 +1,28 @@
 import { createContext, useContext } from 'react';
 
 export type pages =
-	| 'home'
-	| 'files'
-	| 'favorites'
-	| 'images'
-	| 'music'
-	| 'videos'
-	| 'settings'
-	| 'analytics'
-	| 'about'
-	| 'unknown';
+    | 'home'
+    | 'files'
+    | 'favorites'
+    | 'images'
+    | 'music'
+    | 'videos'
+    | 'settings'
+    | 'analytics'
+    | 'about'
+    | 'unknown';
 
 interface UIContextType {
-	activePage: pages;
-	setActivePage: (page: pages) => void;
+    activePage: pages;
+    setActivePage: (page: pages) => void;
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function useUI() {
-	const context = useContext(UIContext);
-	if (context === undefined) {
-		throw new Error('useUI must be used within a UIProvider');
-	}
-	return context;
+    const context = useContext(UIContext);
+    if (context === undefined) {
+        throw new Error('useUI must be used within a UIProvider');
+    }
+    return context;
 }

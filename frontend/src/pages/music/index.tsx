@@ -5,16 +5,13 @@ import MusicContent from '@/components/musicContent';
 import MusicSidebar from '@/components/music/MusicSidebar';
 
 const MusicPage = () => {
-	return (
-		<MusicLayout>
-			<DomainPageLayout
-				header={<MusicDomainHeader />}
-				sidebar={<MusicSidebar />}
-			>
-				<MusicContent />
-			</DomainPageLayout>
-		</MusicLayout>
-	);
+    return (
+        <MusicLayout>
+            <DomainPageLayout header={<MusicDomainHeader />} sidebar={<MusicSidebar />}>
+                <MusicContent />
+            </DomainPageLayout>
+        </MusicLayout>
+    );
 };
 
 export default MusicPage;

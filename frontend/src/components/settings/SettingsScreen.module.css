@@ -1,145 +1,145 @@
 .content {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-6);
-	padding: var(--app-spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-6);
+    padding: var(--app-spacing-6);
 }
 
 .header {
-	display: flex;
-	justify-content: space-between;
-	gap: var(--app-spacing-4);
-	align-items: flex-start;
-	flex-wrap: wrap;
+    display: flex;
+    justify-content: space-between;
+    gap: var(--app-spacing-4);
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .intro {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
 }
 
 .title {
-	margin: 0;
-	font-size: 2rem;
-	font-weight: 700;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
 }
 
 .description {
-	margin: 0;
-	max-width: 720px;
-	color: var(--app-color-text-secondary);
+    margin: 0;
+    max-width: 720px;
+    color: var(--app-color-text-secondary);
 }
 
 .summary {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--app-spacing-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--app-spacing-3);
 }
 
 .grid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--app-spacing-5);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--app-spacing-5);
 }
 
 .panel {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
-	padding: var(--app-spacing-5);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: var(--app-background-panel);
-	box-shadow: var(--app-shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    padding: var(--app-spacing-5);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: var(--app-background-panel);
+    box-shadow: var(--app-shadow-card);
 }
 
 .panelHeader {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
 }
 
 .panelTitle {
-	margin: 0;
-	font-size: 1.05rem;
-	font-weight: 700;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
 }
 
 .panelDescription {
-	margin: 0;
-	color: var(--app-color-text-secondary);
+    margin: 0;
+    color: var(--app-color-text-secondary);
 }
 
 .hint {
-	margin: 0;
-	font-size: 0.92rem;
-	color: var(--app-color-text-muted);
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--app-color-text-muted);
 }
 
 .swatches {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
 }
 
 .swatchRow {
-	display: flex;
-	align-items: center;
-	gap: var(--app-spacing-3);
-	color: var(--app-color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-3);
+    color: var(--app-color-text-secondary);
 }
 
 .swatch {
-	width: 20px;
-	height: 20px;
-	border-radius: 50%;
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.03);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.03);
 }
 
 .swatchviolet {
-	background: #6d5df6;
+    background: #6d5df6;
 }
 
 .swatchcyan {
-	background: #06b6d4;
+    background: #06b6d4;
 }
 
 .swatchrose {
-	background: #e11d48;
+    background: #e11d48;
 }
 
 .footer {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: var(--app-spacing-4);
-	flex-wrap: wrap;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--app-spacing-4);
+    flex-wrap: wrap;
 }
 
 .links,
 .actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--app-spacing-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--app-spacing-3);
 }
 
 @media (max-width: 768px) {
-	.content {
-		padding: var(--app-spacing-4);
-	}
+    .content {
+        padding: var(--app-spacing-4);
+    }
 
-	.title {
-		font-size: 1.6rem;
-	}
+    .title {
+        font-size: 1.6rem;
+    }
 
-	.grid {
-		grid-template-columns: 1fr;
-	}
+    .grid {
+        grid-template-columns: 1fr;
+    }
 
-	.footer {
-		flex-direction: column;
-		align-items: stretch;
-	}
+    .footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

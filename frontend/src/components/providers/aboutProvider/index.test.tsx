@@ -5,123 +5,125 @@ import { useQuery } from '@tanstack/react-query';
 import { getAboutConfiguration } from '@/service/configuration';
 
 jest.mock('@/service/configuration', () => ({
-	getAboutConfiguration: jest.fn(),
+    getAboutConfiguration: jest.fn(),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
-	useQuery: jest.fn(),
+    useQuery: jest.fn(),
 }));
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
-	__esModule: true,
-	default: () => ({ t: (key: string) => (key === 'LOADING' ? 'Carregando' : key) }),
+    __esModule: true,
+    default: () => ({
+        t: (key: string) => (key === 'LOADING' ? 'Carregando' : key),
+    }),
 }));
 
 const mockedUseQuery = useQuery as jest.Mock;
 const mockedGetAboutConfiguration = getAboutConfiguration as jest.Mock;
 
 function Consumer() {
-	const about = useAbout();
-	return (
-		<div>
-			<span data-testid="version">{about.version}</span>
-			<span data-testid="uptime">{about.uptime}</span>
-		</div>
-	);
+    const about = useAbout();
+    return (
+        <div>
+            <span data-testid="version">{about.version}</span>
+            <span data-testid="uptime">{about.uptime}</span>
+        </div>
+    );
 }
 
 describe('providers/aboutProvider/index', () => {
-	beforeEach(() => {
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date('2025-01-01T00:00:10Z'));
-		jest.clearAllMocks();
-		mockedGetAboutConfiguration.mockResolvedValue({});
-	});
+    beforeEach(() => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2025-01-01T00:00:10Z'));
+        jest.clearAllMocks();
+        mockedGetAboutConfiguration.mockResolvedValue({});
+    });
 
-	afterEach(() => {
-		jest.useRealTimers();
-	});
+    afterEach(() => {
+        jest.useRealTimers();
+    });
 
-	it('uses loading text when startup time is missing', () => {
-		mockedUseQuery.mockReturnValue({
-			data: {
-				version: '1.0.0',
-				statup_time: '',
-			},
-		});
+    it('uses loading text when startup time is missing', () => {
+        mockedUseQuery.mockReturnValue({
+            data: {
+                version: '1.0.0',
+                statup_time: '',
+            },
+        });
 
-		render(
-			<AboutProvider>
-				<Consumer />
-			</AboutProvider>,
-		);
+        render(
+            <AboutProvider>
+                <Consumer />
+            </AboutProvider>
+        );
 
-		expect(screen.getByTestId('version')).toHaveTextContent('1.0.0');
-		expect(screen.getByTestId('uptime')).toHaveTextContent('Carregando');
-	});
+        expect(screen.getByTestId('version')).toHaveTextContent('1.0.0');
+        expect(screen.getByTestId('uptime')).toHaveTextContent('Carregando');
+    });
 
-	it('calculates uptime when startup time exists and updates over time', () => {
-		mockedUseQuery.mockReturnValue({
-			data: {
-				version: '2.0.0',
-				statup_time: '2025-01-01T00:00:00Z',
-			},
-		});
+    it('calculates uptime when startup time exists and updates over time', () => {
+        mockedUseQuery.mockReturnValue({
+            data: {
+                version: '2.0.0',
+                statup_time: '2025-01-01T00:00:00Z',
+            },
+        });
 
-		render(
-			<AboutProvider>
-				<Consumer />
-			</AboutProvider>,
-		);
+        render(
+            <AboutProvider>
+                <Consumer />
+            </AboutProvider>
+        );
 
-		expect(screen.getByTestId('version')).toHaveTextContent('2.0.0');
-		expect(screen.getByTestId('uptime').textContent).toMatch(/\d+s|\d+m/);
+        expect(screen.getByTestId('version')).toHaveTextContent('2.0.0');
+        expect(screen.getByTestId('uptime').textContent).toMatch(/\d+s|\d+m/);
 
-		act(() => {
-			jest.advanceTimersByTime(1200);
-		});
-		expect(screen.getByTestId('uptime').textContent).toMatch(/\d+s|\d+m/);
-	});
+        act(() => {
+            jest.advanceTimersByTime(1200);
+        });
+        expect(screen.getByTestId('uptime').textContent).toMatch(/\d+s|\d+m/);
+    });
 
-	it('falls back to initial context values when query data is absent', () => {
-		mockedUseQuery.mockReturnValue({ data: undefined });
+    it('falls back to initial context values when query data is absent', () => {
+        mockedUseQuery.mockReturnValue({ data: undefined });
 
-		render(
-			<AboutProvider>
-				<Consumer />
-			</AboutProvider>,
-		);
+        render(
+            <AboutProvider>
+                <Consumer />
+            </AboutProvider>
+        );
 
-		expect(screen.getByTestId('version')).toHaveTextContent('');
-		expect(screen.getByTestId('uptime')).toHaveTextContent('Carregando');
-	});
+        expect(screen.getByTestId('version')).toHaveTextContent('');
+        expect(screen.getByTestId('uptime')).toHaveTextContent('Carregando');
+    });
 
-	it('executes queryFn and returns API payload on success status', async () => {
-		mockedGetAboutConfiguration.mockResolvedValueOnce({ version: '3.0.0' });
-		mockedUseQuery.mockReturnValue({ data: undefined });
+    it('executes queryFn and returns API payload on success status', async () => {
+        mockedGetAboutConfiguration.mockResolvedValueOnce({ version: '3.0.0' });
+        mockedUseQuery.mockReturnValue({ data: undefined });
 
-		render(
-			<AboutProvider>
-				<Consumer />
-			</AboutProvider>,
-		);
+        render(
+            <AboutProvider>
+                <Consumer />
+            </AboutProvider>
+        );
 
-		const options = mockedUseQuery.mock.calls[0][0];
-		await expect(options.queryFn()).resolves.toEqual({ version: '3.0.0' });
-		expect(mockedGetAboutConfiguration).toHaveBeenCalled();
-	});
+        const options = mockedUseQuery.mock.calls[0][0];
+        await expect(options.queryFn()).resolves.toEqual({ version: '3.0.0' });
+        expect(mockedGetAboutConfiguration).toHaveBeenCalled();
+    });
 
-	it('propagates service errors from queryFn', async () => {
-		mockedGetAboutConfiguration.mockRejectedValueOnce(new Error('configuration failed'));
-		mockedUseQuery.mockReturnValue({ data: undefined });
+    it('propagates service errors from queryFn', async () => {
+        mockedGetAboutConfiguration.mockRejectedValueOnce(new Error('configuration failed'));
+        mockedUseQuery.mockReturnValue({ data: undefined });
 
-		render(
-			<AboutProvider>
-				<Consumer />
-			</AboutProvider>,
-		);
+        render(
+            <AboutProvider>
+                <Consumer />
+            </AboutProvider>
+        );
 
-		const options = mockedUseQuery.mock.calls[0][0];
-		await expect(options.queryFn()).rejects.toThrow('configuration failed');
-	});
+        const options = mockedUseQuery.mock.calls[0][0];
+        await expect(options.queryFn()).rejects.toThrow('configuration failed');
+    });
 });

@@ -1,356 +1,359 @@
 .page {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-6);
-	padding: var(--app-spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-6);
+    padding: var(--app-spacing-6);
 }
 
 .hero {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-5);
-	padding: clamp(24px, 3vw, 36px);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-xl);
-	box-shadow: var(--app-shadow-card);
-	background:
-		radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 34%),
-		radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 30%),
-		linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.82)),
-		var(--app-background-panel-elevated);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-5);
+    padding: clamp(24px, 3vw, 36px);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-xl);
+    box-shadow: var(--app-shadow-card);
+    background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.82)),
+        var(--app-background-panel-elevated);
 }
 
 .heroCopy {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-3);
-	max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+    max-width: 760px;
 }
 
 .heroEyebrow {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	width: fit-content;
-	padding: 8px 12px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.06);
-	color: var(--app-color-text-secondary);
-	font-size: 0.82rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--app-color-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
 .heroTitle {
-	margin: 0;
-	font-size: clamp(2rem, 3vw, 3rem);
-	line-height: 1.05;
+    margin: 0;
+    font-size: clamp(2rem, 3vw, 3rem);
+    line-height: 1.05;
 }
 
 .heroDescription {
-	margin: 0;
-	color: var(--app-color-text-secondary);
-	font-size: 1rem;
-	line-height: 1.6;
+    margin: 0;
+    color: var(--app-color-text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
 }
 
 .heroSearch {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-2);
-	max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+    max-width: 720px;
 }
 
 .searchMeta {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--app-spacing-3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-3);
 }
 
 .searchHint {
-	margin: 0;
-	color: var(--app-color-text-secondary);
-	font-size: 0.92rem;
+    margin: 0;
+    color: var(--app-color-text-secondary);
+    font-size: 0.92rem;
 }
 
 .heroMetrics {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .metricCard {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	padding: 18px 20px;
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: var(--app-radius-lg);
-	background: rgba(15, 23, 42, 0.38);
-	backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--app-radius-lg);
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(10px);
 }
 
 .metricLabel {
-	color: var(--app-color-text-secondary);
-	font-size: 0.82rem;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
+    color: var(--app-color-text-secondary);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .metricValue {
-	font-size: 1.1rem;
-	font-weight: 700;
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .metricHelp {
-	color: var(--app-color-text-secondary);
-	font-size: 0.92rem;
+    color: var(--app-color-text-secondary);
+    font-size: 0.92rem;
 }
 
 .actionsSection {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
 }
 
 .actionsGrid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .actionCard {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
-	padding: var(--app-spacing-5);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(10, 15, 28, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    padding: var(--app-spacing-5);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(10, 15, 28, 0.5);
 }
 
 .actionIcon {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 40px;
-	height: 40px;
-	border-radius: 12px;
-	background: rgba(255, 255, 255, 0.08);
-	color: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
 }
 
 .actionContent {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .actionTitle {
-	margin: 0;
-	font-size: 1rem;
-	font-weight: 600;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .actionDescription {
-	margin: 0;
-	color: var(--app-color-text-secondary);
-	line-height: 1.5;
+    margin: 0;
+    color: var(--app-color-text-secondary);
+    line-height: 1.5;
 }
 
 .contentGrid {
-	display: grid;
-	grid-template-columns: repeat(12, minmax(0, 1fr));
-	gap: var(--app-spacing-5);
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--app-spacing-5);
 }
 
 .panel {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
-	padding: var(--app-spacing-5);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-xl);
-	background:
-		linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.94)),
-		var(--app-background-panel);
-	box-shadow: var(--app-shadow-card);
-	grid-column: span 6;
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    padding: var(--app-spacing-5);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-xl);
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.94)),
+        var(--app-background-panel);
+    box-shadow: var(--app-shadow-card);
+    grid-column: span 6;
 }
 
 .videoPanel {
-	grid-column: span 8;
+    grid-column: span 8;
 }
 
 .statusPanel {
-	grid-column: span 4;
+    grid-column: span 4;
 }
 
 .sectionHeader {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--app-spacing-4);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--app-spacing-4);
 }
 
 .sectionTitle {
-	margin: 0;
-	font-size: 1.1rem;
-	font-weight: 700;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .sectionDescription {
-	margin: 8px 0 0;
-	color: var(--app-color-text-secondary);
-	line-height: 1.5;
+    margin: 8px 0 0;
+    color: var(--app-color-text-secondary);
+    line-height: 1.5;
 }
 
 .emptyState {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 120px;
-	padding: var(--app-spacing-4);
-	border: 1px dashed var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.02);
-	text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    padding: var(--app-spacing-4);
+    border: 1px dashed var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
 }
 
 .emptyTitle {
-	margin: 0;
-	color: var(--app-color-text-secondary);
+    margin: 0;
+    color: var(--app-color-text-secondary);
 }
 
 .recentList {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .imageGrid {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .imageCard {
-	position: relative;
-	overflow: hidden;
-	min-height: 132px;
-	padding: 0;
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.03);
-	cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    min-height: 132px;
+    padding: 0;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
 }
 
 .imageCardImage {
-	display: block;
-	width: 100%;
-	height: 100%;
-	min-height: 132px;
-	object-fit: cover;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 132px;
+    object-fit: cover;
 }
 
 .imageCardOverlay {
-	position: absolute;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	padding: var(--app-spacing-3);
-	background: linear-gradient(180deg, transparent 0%, rgba(10, 16, 24, 0.94) 100%);
-	color: var(--app-color-text-primary);
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--app-spacing-3);
+    background: linear-gradient(180deg, transparent 0%, rgba(10, 16, 24, 0.94) 100%);
+    color: var(--app-color-text-primary);
 }
 
 .imageCardOverlay strong,
 .imageCardOverlay span {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .imageCardOverlay span {
-	color: var(--app-color-text-secondary);
-	font-size: 0.82rem;
+    color: var(--app-color-text-secondary);
+    font-size: 0.82rem;
 }
 
 .recentCardButton {
-	display: block;
-	width: 100%;
-	padding: 0;
-	border: 0;
-	background: transparent;
-	text-align: left;
-	cursor: pointer;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
 }
 
 .recentCard {
-	display: flex;
-	align-items: flex-start;
-	gap: var(--app-spacing-3);
-	padding: var(--app-spacing-4);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.03);
-	color: inherit;
-	text-decoration: none;
-	transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--app-spacing-3);
+    padding: var(--app-spacing-4);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.03);
+    color: inherit;
+    text-decoration: none;
+    transition:
+        transform 120ms ease,
+        border-color 120ms ease,
+        background 120ms ease;
 }
 
 .recentCard:hover {
-	transform: translateY(-1px);
-	border-color: rgba(125, 211, 252, 0.4);
-	background: rgba(125, 211, 252, 0.08);
+    transform: translateY(-1px);
+    border-color: rgba(125, 211, 252, 0.4);
+    background: rgba(125, 211, 252, 0.08);
 }
 
 .recentCardButton:focus-visible .recentCard {
-	outline: 2px solid rgba(125, 211, 252, 0.9);
-	outline-offset: 2px;
+    outline: 2px solid rgba(125, 211, 252, 0.9);
+    outline-offset: 2px;
 }
 
 .recentIcon {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 74px;
-	height: 74px;
-	padding: 0 12px;
-	border-radius: 16px;
-	background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(249, 115, 22, 0.18));
-	color: #f8fafc;
-	font-size: 0.78rem;
-	font-weight: 700;
-	text-align: center;
-	word-break: break-word;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 74px;
+    height: 74px;
+    padding: 0 12px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(249, 115, 22, 0.18));
+    color: #f8fafc;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    word-break: break-word;
 }
 
 .recentContent {
-	display: flex;
-	flex: 1;
-	flex-direction: column;
-	gap: 8px;
-	min-width: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
 }
 
 .recentHeader {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--app-spacing-3);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--app-spacing-3);
 }
 
 .recentTitle {
-	margin: 0;
-	font-size: 0.98rem;
-	font-weight: 600;
-	word-break: break-word;
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    word-break: break-word;
 }
 
 .recentMeta,
@@ -358,191 +361,191 @@
 .mediaSubtitle,
 .videoCardMeta,
 .statusHelp {
-	margin: 0;
-	color: var(--app-color-text-secondary);
+    margin: 0;
+    color: var(--app-color-text-secondary);
 }
 
 .recentPath,
 .videoCardMeta {
-	font-size: 0.9rem;
-	word-break: break-word;
+    font-size: 0.9rem;
+    word-break: break-word;
 }
 
 .mediaCard {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
-	padding: var(--app-spacing-4);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    padding: var(--app-spacing-4);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .mediaHeader {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--app-spacing-3);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--app-spacing-3);
 }
 
 .mediaTitle {
-	margin: 0;
-	font-size: 1.08rem;
-	font-weight: 700;
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 700;
 }
 
 .mediaMeta {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--app-spacing-3);
-	color: var(--app-color-text-secondary);
-	font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-3);
+    color: var(--app-color-text-secondary);
+    font-size: 0.92rem;
 }
 
 .progress {
-	height: 8px !important;
-	border-radius: 999px;
+    height: 8px !important;
+    border-radius: 999px;
 }
 
 .videoStack {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
 }
 
 .videoHeroCard {
-	position: relative;
-	overflow: hidden;
-	border-radius: var(--app-radius-lg);
-	min-height: 260px;
-	border: 1px solid var(--app-color-border-subtle);
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--app-radius-lg);
+    min-height: 260px;
+    border: 1px solid var(--app-color-border-subtle);
 }
 
 .videoHeroImage {
-	width: 100%;
-	height: 100%;
-	min-height: 260px;
-	object-fit: cover;
-	display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 260px;
+    object-fit: cover;
+    display: block;
 }
 
 .videoHeroOverlay {
-	position: absolute;
-	inset: 0;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	padding: var(--app-spacing-5);
-	background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.94));
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: var(--app-spacing-5);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.94));
 }
 
 .videoHeroFooter {
-	display: flex;
-	flex-direction: column;
-	gap: var(--app-spacing-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
 }
 
 .videoList {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--app-spacing-4);
 }
 
 .videoCard {
-	display: flex;
-	flex-direction: column;
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	overflow: hidden;
-	background: rgba(255, 255, 255, 0.03);
-	color: inherit;
-	text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+    color: inherit;
+    text-decoration: none;
 }
 
 .videoCardImage {
-	width: 100%;
-	aspect-ratio: 16 / 9;
-	object-fit: cover;
-	display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
 }
 
 .videoCardBody {
-	display: flex;
-	flex: 1;
-	flex-direction: column;
-	gap: 10px;
-	padding: var(--app-spacing-4);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--app-spacing-4);
 }
 
 .videoCardTitle {
-	margin: 0;
-	font-size: 0.98rem;
-	font-weight: 600;
-	word-break: break-word;
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    word-break: break-word;
 }
 
 .statusGrid {
-	display: grid;
-	grid-template-columns: 1fr;
-	gap: var(--app-spacing-4);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--app-spacing-4);
 }
 
 .statusCard {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: var(--app-spacing-4);
-	border: 1px solid var(--app-color-border-subtle);
-	border-radius: var(--app-radius-lg);
-	background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--app-spacing-4);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .statusLabel {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--app-color-text-secondary);
-	font-size: 0.88rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--app-color-text-secondary);
+    font-size: 0.88rem;
 }
 
 .statusValue {
-	font-size: 1.1rem;
+    font-size: 1.1rem;
 }
 
 @media (max-width: 1200px) {
-	.heroMetrics,
-	.actionsGrid,
-	.recentList,
-	.imageGrid,
-	.videoList {
-		grid-template-columns: 1fr;
-	}
+    .heroMetrics,
+    .actionsGrid,
+    .recentList,
+    .imageGrid,
+    .videoList {
+        grid-template-columns: 1fr;
+    }
 
-	.videoPanel,
-	.statusPanel,
-	.panel {
-		grid-column: span 12;
-	}
+    .videoPanel,
+    .statusPanel,
+    .panel {
+        grid-column: span 12;
+    }
 }
 
 @media (max-width: 768px) {
-	.page {
-		padding: var(--app-spacing-4);
-	}
+    .page {
+        padding: var(--app-spacing-4);
+    }
 
-	.searchMeta,
-	.sectionHeader,
-	.mediaHeader,
-	.recentHeader,
-	.mediaMeta {
-		flex-direction: column;
-		align-items: flex-start;
-	}
+    .searchMeta,
+    .sectionHeader,
+    .mediaHeader,
+    .recentHeader,
+    .mediaMeta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-	.metricCard,
-	.actionCard,
-	.panel {
-		padding: var(--app-spacing-4);
-	}
+    .metricCard,
+    .actionCard,
+    .panel {
+        padding: var(--app-spacing-4);
+    }
 }

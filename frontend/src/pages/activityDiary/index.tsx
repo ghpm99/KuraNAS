@@ -6,16 +6,16 @@ import Summary from '@/components/activityDiary/ActivitySummary';
 import style from './activityDiary.module.css';
 
 const ActivityDiaryPage = () => {
-	return (
-		<ActivityDiaryLayout>
-			<div className={style['content']}>
-				<ActionBar />
-				<ActivityDiaryForm />
-				<Summary />
-				<List />
-			</div>
-		</ActivityDiaryLayout>
-	);
+    return (
+        <ActivityDiaryLayout>
+            <div className={style['content']}>
+                <ActionBar />
+                <ActivityDiaryForm />
+                <Summary />
+                <List />
+            </div>
+        </ActivityDiaryLayout>
+    );
 };
 
 export default ActivityDiaryPage;

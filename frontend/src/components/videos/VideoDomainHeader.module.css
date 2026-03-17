@@ -1,42 +1,42 @@
 .header {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 28px;
-	border-radius: 24px;
-	background:
-		radial-gradient(circle at top right, rgba(225, 29, 72, 0.22), transparent 32%),
-		linear-gradient(160deg, rgba(25, 25, 37, 0.96) 0%, rgba(14, 14, 22, 0.92) 100%);
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	box-shadow: 0 18px 40px rgba(5, 8, 18, 0.28);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at top right, rgba(225, 29, 72, 0.22), transparent 32%),
+        linear-gradient(160deg, rgba(25, 25, 37, 0.96) 0%, rgba(14, 14, 22, 0.92) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 40px rgba(5, 8, 18, 0.28);
 }
 
 .eyebrow {
-	font-size: 0.74rem;
-	font-weight: 700;
-	letter-spacing: 0.16em;
-	text-transform: uppercase;
-	color: rgba(255, 255, 255, 0.48);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.48);
 }
 
 .title {
-	margin: 0;
-	font-size: clamp(1.8rem, 2vw, 2.4rem);
-	font-weight: 700;
-	color: rgba(255, 255, 255, 0.96);
+    margin: 0;
+    font-size: clamp(1.8rem, 2vw, 2.4rem);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.96);
 }
 
 .description {
-	margin: 0;
-	max-width: 720px;
-	font-size: 0.95rem;
-	line-height: 1.6;
-	color: rgba(255, 255, 255, 0.68);
+    margin: 0;
+    max-width: 720px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.68);
 }
 
 @media (max-width: 900px) {
-	.header {
-		padding: 22px;
-		border-radius: 20px;
-	}
+    .header {
+        padding: 22px;
+        border-radius: 20px;
+    }
 }

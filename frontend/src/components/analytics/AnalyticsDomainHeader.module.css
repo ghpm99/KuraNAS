@@ -1,27 +1,27 @@
 .header {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .eyebrow {
-	font-size: 12px;
-	font-weight: 600;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--text-secondary, #b8c2d9);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #b8c2d9);
 }
 
 .title {
-	margin: 0;
-	font-size: clamp(28px, 4vw, 40px);
-	line-height: 1.05;
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.05;
 }
 
 .description {
-	margin: 0;
-	max-width: 760px;
-	font-size: 14px;
-	line-height: 1.6;
-	color: var(--text-secondary, #b8c2d9);
+    margin: 0;
+    max-width: 760px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #b8c2d9);
 }

@@ -39,30 +39,43 @@ yarn
 ## Scripts
 
 - Dev server:
+
 ```bash
 yarn dev
 ```
+
 - Build de produção:
+
 ```bash
 yarn build
 ```
+
 - Preview local do build:
+
 ```bash
 yarn preview
 ```
+
 - Lint:
+
 ```bash
 yarn lint
 ```
+
 - Testes:
+
 ```bash
 yarn test --watchAll=false
 ```
+
 - Cobertura:
+
 ```bash
 yarn coverage
 ```
+
 - Typecheck da configuração de testes:
+
 ```bash
 yarn typecheck:test
 ```
