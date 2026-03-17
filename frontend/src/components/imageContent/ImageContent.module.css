@@ -295,6 +295,39 @@
 
 @media (max-width: 560px) {
     .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .photoCard {
+        min-height: 140px;
+        border-radius: 10px;
+    }
+
+    .toolbar {
+        gap: 10px;
+    }
+
+    .toolbar h2 {
+        font-size: 1.1rem;
+    }
+
+    .search {
+        min-width: 100%;
+    }
+
+    .categoryPill {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+    }
+
+    .selectionSummary {
+        padding: 14px;
+    }
+}
+
+@media (max-width: 380px) {
+    .grid {
         grid-template-columns: minmax(0, 1fr);
     }
 }

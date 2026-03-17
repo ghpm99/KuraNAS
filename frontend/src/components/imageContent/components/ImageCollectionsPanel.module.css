@@ -116,3 +116,23 @@
     color: rgba(255, 255, 255, 0.62);
     line-height: 1.5;
 }
+
+@media (max-width: 480px) {
+    .grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+    }
+
+    .card {
+        border-radius: 14px;
+    }
+
+    .body {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .empty {
+        padding: 20px;
+    }
+}

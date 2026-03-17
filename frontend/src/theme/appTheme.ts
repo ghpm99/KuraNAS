@@ -93,6 +93,12 @@ export const appTheme = createTheme({
                     width: '10px',
                     height: '10px',
                 },
+                '@media (max-width: 640px)': {
+                    '*::-webkit-scrollbar': {
+                        width: '4px',
+                        height: '4px',
+                    },
+                },
                 '*::-webkit-scrollbar-track': {
                     backgroundColor: 'rgba(7, 10, 16, 0.26)',
                 },

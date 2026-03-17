@@ -786,4 +786,53 @@
     .allVideoItem {
         grid-template-columns: 1fr;
     }
+
+    .hero {
+        min-height: 240px;
+    }
+
+    .heroContent {
+        padding: 20px;
+    }
+
+    .heroTitle {
+        font-size: clamp(1.3rem, 4vw, 1.8rem);
+    }
+
+    .detailHeroActions {
+        flex-direction: column;
+    }
+
+    .actionBtnPrimary,
+    .actionBtn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .page {
+        padding: 0 0 20px;
+        gap: 14px;
+    }
+
+    .sectionBlock {
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .gridCards {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+
+    .catalogRail {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+
+    .hero {
+        min-height: 200px;
+        border-radius: 14px;
+    }
 }

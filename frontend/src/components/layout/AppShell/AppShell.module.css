@@ -34,6 +34,7 @@
 @media (max-width: 900px) {
     .shell {
         grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: var(--app-shell-header-height-mobile) minmax(0, 1fr);
         grid-template-areas:
             'header'
             'main';
@@ -45,5 +46,11 @@
 
     .mainPane {
         border-left: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .scrollAreaWithPlayer {
+        padding-bottom: calc(72px + var(--app-spacing-2));
     }
 }

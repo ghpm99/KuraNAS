@@ -212,4 +212,31 @@
     .contextActions {
         justify-content: flex-start;
     }
+
+    .hero {
+        padding: var(--app-spacing-3);
+    }
+
+    .heroTitle {
+        font-size: clamp(1.4rem, 5vw, 1.8rem);
+    }
+
+    .panel {
+        padding: var(--app-spacing-3);
+    }
+
+    .toolbarCard {
+        padding: var(--app-spacing-3);
+    }
+}
+
+@media (max-width: 480px) {
+    .page {
+        padding: 8px 6px 10px;
+    }
+
+    .breadcrumb {
+        gap: 4px;
+        font-size: 0.85rem;
+    }
 }

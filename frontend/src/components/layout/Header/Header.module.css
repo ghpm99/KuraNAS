@@ -135,21 +135,34 @@
     }
 
     .header {
-        padding: 0 var(--app-spacing-4);
+        padding: 0 var(--app-spacing-3);
+        gap: var(--app-spacing-3);
     }
 
     .menuButton {
         display: inline-flex !important;
+        width: 44px;
+        height: 44px;
     }
 
     .searchField {
         width: 100%;
     }
+
+    .iconButton {
+        width: 44px;
+        height: 44px;
+    }
 }
 
 @media (max-width: 640px) {
+    .header {
+        padding: 0 var(--app-spacing-2);
+        gap: var(--app-spacing-2);
+    }
+
     .searchField {
-        height: 40px;
+        height: 38px;
         padding: 0 var(--app-spacing-3);
     }
 
@@ -159,6 +172,10 @@
 
     .clock {
         display: none;
+    }
+
+    .actions {
+        gap: var(--app-spacing-1);
     }
 
     .avatar {

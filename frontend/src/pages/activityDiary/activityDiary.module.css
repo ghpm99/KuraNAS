@@ -1,6 +1,5 @@
 .content {
     display: grid;
-    /* grid-template-columns: 1fr min-content; */
     grid-template-rows: 80px min-content auto;
     grid-template-areas:
         'action-bar action-bar'
@@ -9,4 +8,25 @@
     gap: 16px;
     padding: 16px;
     overflow: auto;
+}
+
+@media (max-width: 768px) {
+    .content {
+        grid-template-rows: auto auto auto auto;
+        grid-template-areas:
+            'action-bar'
+            'form'
+            'summary'
+            'list';
+        grid-template-columns: 1fr;
+        padding: 10px;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .content {
+        padding: 8px 6px;
+        gap: 10px;
+    }
 }

@@ -99,14 +99,33 @@
 
 @media (max-width: 640px) {
     .fileGrid {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: var(--app-spacing-3);
     }
 
     .listRow {
         grid-template-columns: minmax(0, 1fr);
+        padding: 10px;
     }
 
     .listStarButton {
         justify-self: end;
+    }
+
+    .listThumbnail {
+        width: 52px;
+        height: 52px;
+        border-radius: 10px;
+    }
+
+    .listButton {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .fileGrid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: var(--app-spacing-2);
     }
 }
