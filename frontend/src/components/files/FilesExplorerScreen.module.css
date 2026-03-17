@@ -169,6 +169,7 @@
     position: sticky;
     top: var(--app-spacing-4);
     max-height: calc(100vh - 132px);
+    max-height: calc(100dvh - 132px);
     overflow: auto;
 }
 

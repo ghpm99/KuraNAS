@@ -12,7 +12,7 @@ const DomainPageLayout = ({ header, sidebar, children }: DomainPageLayoutProps) 
         <div className={styles.page}>
             {header}
             <div className={styles.domainContent}>
-                {sidebar}
+                <div className={styles.sidebarArea}>{sidebar}</div>
                 <div className={styles.contentArea}>{children}</div>
             </div>
         </div>
