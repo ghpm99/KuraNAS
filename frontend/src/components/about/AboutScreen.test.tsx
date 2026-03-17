@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider } from 'notistack';
 import AboutScreen from './AboutScreen';
 import {
     AboutContextProvider,
@@ -12,6 +14,24 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
         t: (key: string) => key,
     }),
 }));
+
+jest.mock('@/service/update', () => ({
+    getUpdateStatus: jest.fn().mockResolvedValue({
+        current_version: '2.4.0',
+        latest_version: '2.4.0',
+        update_available: false,
+        release_url: '',
+        release_date: '',
+        release_notes: '',
+        asset_name: '',
+        asset_size: 0,
+    }),
+    applyUpdate: jest.fn(),
+}));
+
+const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+});
 
 const aboutValue: AboutContextType = {
     version: '2.4.0',
@@ -42,14 +62,21 @@ describe('components/about/AboutScreen', () => {
         jest.useRealTimers();
     });
 
-    it('renders runtime, build details and technical tools', () => {
+    const renderAbout = () =>
         render(
-            <MemoryRouter>
-                <AboutContextProvider value={aboutValue}>
-                    <AboutScreen />
-                </AboutContextProvider>
-            </MemoryRouter>
+            <QueryClientProvider client={queryClient}>
+                <SnackbarProvider>
+                    <MemoryRouter>
+                        <AboutContextProvider value={aboutValue}>
+                            <AboutScreen />
+                        </AboutContextProvider>
+                    </MemoryRouter>
+                </SnackbarProvider>
+            </QueryClientProvider>
         );
+
+    it('renders runtime, build details and technical tools', () => {
+        renderAbout();
 
         expect(screen.getByRole('heading', { name: 'ABOUT_PAGE_TITLE' })).toBeInTheDocument();
         expect(screen.getByText('2.4.0')).toBeInTheDocument();
@@ -65,13 +92,7 @@ describe('components/about/AboutScreen', () => {
     });
 
     it('copies the commit hash and shows feedback', async () => {
-        render(
-            <MemoryRouter>
-                <AboutContextProvider value={aboutValue}>
-                    <AboutScreen />
-                </AboutContextProvider>
-            </MemoryRouter>
-        );
+        renderAbout();
 
         await act(async () => {
             fireEvent.click(screen.getByRole('button', { name: 'ABOUT_COPY_COMMIT' }));

@@ -125,6 +125,46 @@
     font-family: 'Roboto Mono', monospace;
 }
 
+.updatePanel {
+    grid-column: 1 / -1;
+}
+
+.updateHeaderRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.updateLoading {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+}
+
+.updateError {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--mui-palette-error-main, #f44336);
+}
+
+.releaseNotes {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.releaseNotes p {
+    margin-top: 8px;
+    white-space: pre-line;
+}
+
+.updateActions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
 .toolsGrid {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));

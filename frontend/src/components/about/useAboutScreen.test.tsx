@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { useAboutScreen } from './useAboutScreen';
+
 const mockClipboard = {
     writeText: jest.fn(),
 };
@@ -27,6 +28,26 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
         t: (key: string) => key,
+    }),
+}));
+
+const mockMutate = jest.fn();
+
+jest.mock('@tanstack/react-query', () => ({
+    useQuery: () => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+    }),
+    useMutation: () => ({
+        mutate: mockMutate,
+        isPending: false,
+    }),
+}));
+
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({
+        enqueueSnackbar: jest.fn(),
     }),
 }));
 
