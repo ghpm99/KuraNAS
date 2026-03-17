@@ -71,6 +71,9 @@ var AddImageClassificationColumnsQuery string
 //go:embed queries/0020_create_app_settings_table.sql
 var CreateAppSettingsTableQuery string
 
+//go:embed queries/0021_create_notifications_table.sql
+var CreateNotificationsTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -157,4 +160,9 @@ func workerMigrationList() {
 func configurationMigrationList() {
 	addMigration("0020_create_app_settings_table",
 		defaultMigrationFunc(CreateAppSettingsTableQuery))
+}
+
+func notificationsMigrationList() {
+	addMigration("0021_create_notifications_table",
+		defaultMigrationFunc(CreateNotificationsTableQuery))
 }

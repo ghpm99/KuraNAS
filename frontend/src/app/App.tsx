@@ -16,6 +16,7 @@ import FoldersView from '@/pages/music/views/FoldersView';
 import GenresView from '@/pages/music/views/GenresView';
 import PlaylistsView from '@/pages/music/views/PlaylistsView';
 import MusicHomeScreen from '@/components/music/MusicHomeScreen';
+import NotificationsPage from '@/pages/notifications';
 import SettingsPage from '@/pages/settings';
 import VideosPage from '@/pages/videos/videos';
 import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
@@ -46,6 +47,7 @@ function AppContent() {
                 />
                 <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
                 <Route path={appRoutes.about} element={<AboutPage />} />
+                <Route path={appRoutes.notifications} element={<NotificationsPage />} />
                 <Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
                 <Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
                     <Route index element={<MusicHomeScreen />} />

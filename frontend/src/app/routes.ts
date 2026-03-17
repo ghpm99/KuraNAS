@@ -13,6 +13,7 @@ export const appRoutes = {
     music: '/music',
     videos: '/videos',
     videoPlayerBase: '/video',
+    notifications: '/notifications',
 } as const;
 
 export const isVideoPlayerRoute = (pathname: string) =>

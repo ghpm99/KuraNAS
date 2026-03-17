@@ -60,11 +60,12 @@ func InitializeApp() (*Application, error) {
 	registerRoutesFn(router, appContext)
 
 	workerFileContext := &worker.WorkerContext{
-		FilesService:    appContext.Files.Service,
-		VideoService:    appContext.Video.Service,
-		MetadataService: appContext.Files.MetadataRepository,
-		Tasks:           *appContext.Tasks,
-		Logger:          appContext.Logger,
+		FilesService:        appContext.Files.Service,
+		VideoService:        appContext.Video.Service,
+		MetadataService:     appContext.Files.MetadataRepository,
+		Tasks:               *appContext.Tasks,
+		Logger:              appContext.Logger,
+		NotificationService: appContext.Notifications.Service,
 	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository

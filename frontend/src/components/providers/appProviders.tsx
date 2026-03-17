@@ -7,6 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { appTheme } from '@/theme/appTheme';
 import I18nProvider from '../i18n/provider';
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
+import NotificationProvider from './notificationProvider';
 import SettingsProvider from './settingsProvider';
 
 const queryClient = new QueryClient({
@@ -32,7 +33,9 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                             <ThemeProvider theme={appTheme}>
                                 <CssBaseline />
                                 <BrowserRouter>
-                                    <GlobalSearchProvider>{children}</GlobalSearchProvider>
+                                    <NotificationProvider>
+                                        <GlobalSearchProvider>{children}</GlobalSearchProvider>
+                                    </NotificationProvider>
                                 </BrowserRouter>
                             </ThemeProvider>
                         </SnackbarProvider>

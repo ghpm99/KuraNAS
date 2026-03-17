@@ -22,6 +22,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	RegisterSearchRoutes(routesV1, context)
+	RegisterNotificationRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -182,6 +183,19 @@ func RegisterJobsRoutes(router *gin.RouterGroup, context *AppContext) {
 	jobs.GET("", context.Jobs.Handler.ListJobsHandler)
 	jobs.GET("/:id/steps", context.Jobs.Handler.GetStepsByJobIDHandler)
 	jobs.POST("/:id/cancel", context.Jobs.Handler.CancelJobHandler)
+}
+
+func RegisterNotificationRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Notifications == nil || context.Notifications.Handler == nil {
+		return
+	}
+
+	notifs := router.Group("/notifications")
+	notifs.GET("", context.Notifications.Handler.ListNotificationsHandler)
+	notifs.GET("/unread-count", context.Notifications.Handler.GetUnreadCountHandler)
+	notifs.GET("/:id", context.Notifications.Handler.GetNotificationByIDHandler)
+	notifs.PUT("/:id/read", context.Notifications.Handler.MarkAsReadHandler)
+	notifs.PUT("/read-all", context.Notifications.Handler.MarkAllAsReadHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {
