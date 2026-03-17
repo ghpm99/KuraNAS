@@ -6,16 +6,16 @@ import (
 )
 
 type NotificationDto struct {
-	ID         int              `json:"id"`
-	Type       string           `json:"type"`
-	Title      string           `json:"title"`
-	Message    string           `json:"message"`
-	Metadata   any              `json:"metadata,omitempty"`
-	IsRead     bool             `json:"is_read"`
-	CreatedAt  time.Time        `json:"created_at"`
-	GroupKey   string           `json:"group_key,omitempty"`
-	GroupCount int              `json:"group_count"`
-	IsGrouped  bool             `json:"is_grouped"`
+	ID         int       `json:"id"`
+	Type       string    `json:"type"`
+	Title      string    `json:"title"`
+	Message    string    `json:"message"`
+	Metadata   any       `json:"metadata,omitempty"`
+	IsRead     bool      `json:"is_read"`
+	CreatedAt  time.Time `json:"created_at"`
+	GroupKey   string    `json:"group_key,omitempty"`
+	GroupCount int       `json:"group_count"`
+	IsGrouped  bool      `json:"is_grouped"`
 }
 
 type CreateNotificationDto struct {

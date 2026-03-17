@@ -305,6 +305,64 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 	}
 }
 
+func TestNormalizeGenreLabelAllBranches(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"r&b", "R&B"},
+		{"r & b", "R&B"},
+		{"rnb", "R&B"},
+		{"rhythm and blues", "R&B"},
+		{"r&b/soul", "R&B / Soul"},
+		{"rnb/soul", "R&B / Soul"},
+		{"rnb / soul", "R&B / Soul"},
+		{"soul/r&b", "R&B / Soul"},
+		{"hip hop", "Hip-Hop"},
+		{"hiphop", "Hip-Hop"},
+		{"hip-hop", "Hip-Hop"},
+		{"lo fi", "Lo-Fi"},
+		{"lofi", "Lo-Fi"},
+		{"lo-fi", "Lo-Fi"},
+		{"soundtrack", "Soundtrack"},
+		{"ost", "Soundtrack"},
+		{"", ""},
+		{"  ", ""},
+		{"rock", "Rock"},
+		{"indie pop", "Indie Pop"},
+		{"rock & roll", "Rock & Roll"},
+	}
+
+	for _, tc := range tests {
+		t.Run("input="+tc.input, func(t *testing.T) {
+			got := normalizeGenreLabel(tc.input)
+			if got != tc.want {
+				t.Fatalf("normalizeGenreLabel(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSortGenreTracksAllFields(t *testing.T) {
+	base := time.Date(2026, time.March, 10, 8, 0, 0, 0, time.UTC)
+	entries := []MusicLibraryIndexEntryModel{
+		catalogEntry(1, "Zebra", "Artist B", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
+		catalogEntry(2, "Alpha", "Artist A", "Album A", "Pop", "/m", "1", base, base, sql.NullTime{}, false),
+		catalogEntry(3, "Beta", "Artist A", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
+		catalogEntry(4, "Alpha", "Artist A", "Album B", "Pop", "/m", "1", base, base, sql.NullTime{}, false),
+		catalogEntry(5, "Alpha", "Artist A", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
+	}
+
+	sortGenreTracks(entries)
+
+	expected := []int{2, 5, 3, 4, 1}
+	for i, e := range entries {
+		if e.FileID != expected[i] {
+			t.Fatalf("position %d: expected fileID %d, got %d", i, expected[i], e.FileID)
+		}
+	}
+}
+
 func TestCatalogServiceErrorBranchesAndFallbacks(t *testing.T) {
 	errBoom := errors.New("boom")
 	repo := &musicRepoMock{

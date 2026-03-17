@@ -1,6 +1,7 @@
 package video
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -261,6 +262,42 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 			router.ServeHTTP(w, req)
 			if w.Code != tc.code {
 				t.Fatalf("expected status %d, got %d, body=%s", tc.code, w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestRespondVideoErrorBranches(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name string
+		err  error
+		code int
+	}{
+		{"sql.ErrNoRows", sql.ErrNoRows, http.StatusNotFound},
+		{"ErrPlaybackStateNotFound", ErrPlaybackStateNotFound, http.StatusNotFound},
+		{"ErrVideoNotInPlaylist", ErrVideoNotInPlaylist, http.StatusBadRequest},
+		{"ErrInvalidBehaviorEvent", ErrInvalidBehaviorEvent, http.StatusBadRequest},
+		{"ErrPlaylistNameRequired", ErrPlaylistNameRequired, http.StatusBadRequest},
+		{"ErrPlaylistReorderRequired", ErrPlaylistReorderRequired, http.StatusBadRequest},
+		{"ErrPlaybackNavigation", ErrPlaybackNavigation, http.StatusBadRequest},
+		{"ErrPlaylistWithoutItems", ErrPlaylistWithoutItems, http.StatusBadRequest},
+		{"ErrNoVideosForContext", ErrNoVideosForContext, http.StatusNotFound},
+		{"generic error", errors.New("unknown"), http.StatusInternalServerError},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			router := gin.New()
+			router.GET("/test", func(c *gin.Context) {
+				respondVideoError(c, tc.err)
+			})
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			if w.Code != tc.code {
+				t.Fatalf("expected %d, got %d", tc.code, w.Code)
 			}
 		})
 	}
