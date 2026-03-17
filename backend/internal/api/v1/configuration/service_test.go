@@ -221,3 +221,142 @@ func TestConfigurationServiceApplyRuntimeSettingsUsesStoredLocale(t *testing.T) 
 		t.Fatalf("expected runtime language to be updated, got %s", config.AppConfig.Lang)
 	}
 }
+
+func TestResolveLocaleAllBranches(t *testing.T) {
+	originalLang := config.AppConfig.Lang
+	t.Cleanup(func() {
+		config.AppConfig.Lang = originalLang
+	})
+
+	t.Run("uses value when available", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		got := resolveLocale("pt-BR", []string{"en-US", "pt-BR"})
+		if got != "pt-BR" {
+			t.Fatalf("expected pt-BR, got %s", got)
+		}
+	})
+
+	t.Run("falls back to config when value empty", func(t *testing.T) {
+		config.AppConfig.Lang = "pt-BR"
+		got := resolveLocale("", []string{"en-US", "pt-BR"})
+		if got != "pt-BR" {
+			t.Fatalf("expected pt-BR from config, got %s", got)
+		}
+	})
+
+	t.Run("falls back to default when both empty", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		got := resolveLocale("", []string{"en-US", "fr-FR"})
+		if got != "en-US" {
+			t.Fatalf("expected en-US default, got %s", got)
+		}
+	})
+
+	t.Run("returns value when no available locales", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		got := resolveLocale("ja-JP", nil)
+		if got != "ja-JP" {
+			t.Fatalf("expected ja-JP, got %s", got)
+		}
+	})
+
+	t.Run("falls back to default locale when value not in list", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		got := resolveLocale("ja-JP", []string{"fr-FR", "en-US"})
+		if got != "en-US" {
+			t.Fatalf("expected en-US fallback, got %s", got)
+		}
+	})
+
+	t.Run("returns first available when nothing matches", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		got := resolveLocale("ja-JP", []string{"fr-FR", "de-DE"})
+		if got != "fr-FR" {
+			t.Fatalf("expected first available fr-FR, got %s", got)
+		}
+	})
+}
+
+func TestSanitizePathsBranches(t *testing.T) {
+	t.Run("deduplicates and trims", func(t *testing.T) {
+		result := sanitizePaths([]string{" /a ", "/b", "/a", " "}, []string{"/default"})
+		if len(result) != 2 || result[0] != "/a" || result[1] != "/b" {
+			t.Fatalf("expected [/a /b], got %v", result)
+		}
+	})
+
+	t.Run("returns fallback when all empty", func(t *testing.T) {
+		result := sanitizePaths([]string{" ", ""}, []string{"/default"})
+		if len(result) != 1 || result[0] != "/default" {
+			t.Fatalf("expected [/default], got %v", result)
+		}
+	})
+
+	t.Run("returns fallback when nil", func(t *testing.T) {
+		result := sanitizePaths(nil, []string{"/d"})
+		if len(result) != 1 || result[0] != "/d" {
+			t.Fatalf("expected [/d], got %v", result)
+		}
+	})
+}
+
+func TestNormalizeSlideshowSeconds(t *testing.T) {
+	if got := normalizeSlideshowSeconds(8, 4); got != 8 {
+		t.Fatalf("expected 8, got %d", got)
+	}
+	if got := normalizeSlideshowSeconds(5, 4); got != 4 {
+		t.Fatalf("expected fallback 4, got %d", got)
+	}
+}
+
+func TestNormalizeAccentColor(t *testing.T) {
+	if got := normalizeAccentColor("cyan", "violet"); got != "cyan" {
+		t.Fatalf("expected cyan, got %s", got)
+	}
+	if got := normalizeAccentColor("blue", "violet"); got != "violet" {
+		t.Fatalf("expected fallback violet, got %s", got)
+	}
+}
+
+func TestValidateUpdateRequestBranches(t *testing.T) {
+	validRequest := UpdateSettingsRequest{
+		Appearance: AppearanceSettingsRequest{AccentColor: "violet"},
+		Players:    PlayerSettingsRequest{ImageSlideshowSeconds: 4},
+		Language:   LanguageSettingsRequest{Current: "en-US"},
+	}
+
+	t.Run("valid request", func(t *testing.T) {
+		err := validateUpdateRequest(validRequest, []string{"en-US"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("invalid accent color", func(t *testing.T) {
+		req := validRequest
+		req.Appearance.AccentColor = "red"
+		err := validateUpdateRequest(req, []string{"en-US"})
+		if !errors.Is(err, ErrInvalidSettingsRequest) {
+			t.Fatalf("expected ErrInvalidSettingsRequest, got %v", err)
+		}
+	})
+
+	t.Run("invalid slideshow seconds", func(t *testing.T) {
+		req := validRequest
+		req.Players.ImageSlideshowSeconds = 99
+		err := validateUpdateRequest(req, []string{"en-US"})
+		if !errors.Is(err, ErrInvalidSettingsRequest) {
+			t.Fatalf("expected ErrInvalidSettingsRequest, got %v", err)
+		}
+	})
+
+	t.Run("invalid locale", func(t *testing.T) {
+		config.AppConfig.Lang = ""
+		req := validRequest
+		req.Language.Current = "xx-XX"
+		err := validateUpdateRequest(req, []string{"en-US", "pt-BR"})
+		if !errors.Is(err, ErrInvalidSettingsRequest) {
+			t.Fatalf("expected ErrInvalidSettingsRequest, got %v", err)
+		}
+	})
+}

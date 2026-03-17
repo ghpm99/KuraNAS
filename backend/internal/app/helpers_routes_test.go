@@ -13,6 +13,8 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/music"
+	"nas-go/api/internal/api/v1/notifications"
+	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
@@ -29,6 +31,8 @@ func buildRouteContext() *AppContext {
 		Video:         &VideoContext{Handler: video.NewHandler(nil, nil)},
 		Analytics:     &AnalyticsContext{Handler: analytics.NewHandler(nil)},
 		Configuration: &ConfigurationContext{Handler: configuration.NewHandler(nil, nil)},
+		Search:        &SearchContext{Handler: search.NewHandler(nil)},
+		Notifications: &NotificationContext{Handler: notifications.NewHandler(nil)},
 		UpdateHandler: updater.NewHandler(updater.NewService(), nil),
 	}
 }
@@ -78,6 +82,12 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/v1/configuration/settings"},
 		{method: http.MethodPut, path: "/api/v1/configuration/settings"},
 		{method: http.MethodPost, path: "/api/v1/update/apply"},
+		{method: http.MethodGet, path: "/api/v1/search/global"},
+		{method: http.MethodGet, path: "/api/v1/notifications"},
+		{method: http.MethodGet, path: "/api/v1/notifications/unread-count"},
+		{method: http.MethodGet, path: "/api/v1/notifications/:id"},
+		{method: http.MethodPut, path: "/api/v1/notifications/:id/read"},
+		{method: http.MethodPut, path: "/api/v1/notifications/read-all"},
 	}
 	for _, check := range checks {
 		if !routeExists(routes, check.method, check.path) {
