@@ -1,35 +1,37 @@
+import { lazy, Suspense } from 'react';
 import AppProviders from '@/components/providers/appProviders';
 
 import { appRoutes, getMusicRoute, isVideoPlayerRoute } from '@/app/routes';
-import ActivityDiaryPage from '@/pages/activityDiary';
-import AnalyticsPage from '@/pages/analytics';
-import FavoritesPage from '@/pages/favorites';
-import FilePage from '@/pages/files';
-import HomePage from '@/pages/home';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import AboutPage from '@/pages/about';
-import ImagesPage from '@/pages/images';
-import MusicPage from '@/pages/music';
-import AlbumsView from '@/pages/music/views/AlbumsView';
-import ArtistsView from '@/pages/music/views/ArtistsView';
-import FoldersView from '@/pages/music/views/FoldersView';
-import GenresView from '@/pages/music/views/GenresView';
-import PlaylistsView from '@/pages/music/views/PlaylistsView';
-import MusicHomeScreen from '@/components/music/MusicHomeScreen';
-import NotificationsPage from '@/pages/notifications';
-import SettingsPage from '@/pages/settings';
-import VideosPage from '@/pages/videos/videos';
-import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
 import { GlobalMusicProvider } from '@/components/providers/GlobalMusicProvider';
 import GlobalPlayerControl from '@/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
+
+const HomePage = lazy(() => import('@/pages/home'));
+const FilePage = lazy(() => import('@/pages/files'));
+const FavoritesPage = lazy(() => import('@/pages/favorites'));
+const SettingsPage = lazy(() => import('@/pages/settings'));
+const ActivityDiaryPage = lazy(() => import('@/pages/activityDiary'));
+const AnalyticsPage = lazy(() => import('@/pages/analytics'));
+const AboutPage = lazy(() => import('@/pages/about'));
+const NotificationsPage = lazy(() => import('@/pages/notifications'));
+const ImagesPage = lazy(() => import('@/pages/images'));
+const MusicPage = lazy(() => import('@/pages/music'));
+const MusicHomeScreen = lazy(() => import('@/components/music/MusicHomeScreen'));
+const AlbumsView = lazy(() => import('@/pages/music/views/AlbumsView'));
+const ArtistsView = lazy(() => import('@/pages/music/views/ArtistsView'));
+const FoldersView = lazy(() => import('@/pages/music/views/FoldersView'));
+const GenresView = lazy(() => import('@/pages/music/views/GenresView'));
+const PlaylistsView = lazy(() => import('@/pages/music/views/PlaylistsView'));
+const VideosPage = lazy(() => import('@/pages/videos/videos'));
+const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function AppContent() {
     const location = useLocation();
     const hidePlayer = isVideoPlayerRoute(location.pathname);
 
     return (
-        <>
+        <Suspense>
             <Routes>
                 <Route path={appRoutes.root} element={<Navigate to={appRoutes.home} replace />} />
                 <Route path={appRoutes.home} element={<HomePage />} />
@@ -63,7 +65,7 @@ function AppContent() {
                 <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
             </Routes>
             {!hidePlayer && <GlobalPlayerControl />}
-        </>
+        </Suspense>
     );
 }
 

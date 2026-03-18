@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import Header from '@/components/layout/Header/Header';
 import { Layout } from '@/components/layout/Layout/Layout';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
@@ -28,6 +29,7 @@ const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockUseAnalyticsOverview = jest.fn();
 const mockOpenSearch = jest.fn();
+const mockOnOpenMobileMenu = jest.fn();
 
 jest.mock('@/components/providers/fileProvider/fileContext', () => ({
     __esModule: true,
@@ -236,18 +238,28 @@ beforeEach(() => {
 
 describe('shell components and pages', () => {
     it('renders header, layout and sidebar', () => {
-        render(<Header showClock />);
+        render(
+            <MemoryRouter>
+                <Header showClock onOpenMobileMenu={mockOnOpenMobileMenu} />
+            </MemoryRouter>
+        );
         expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
         expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
 
         render(
-            <Layout>
-                <div>child</div>
-            </Layout>
+            <MemoryRouter>
+                <Layout>
+                    <div>child</div>
+                </Layout>
+            </MemoryRouter>
         );
         expect(screen.getByText('child')).toBeInTheDocument();
 
-        render(<Sidebar />);
+        render(
+            <MemoryRouter>
+                <Sidebar />
+            </MemoryRouter>
+        );
         expect(screen.getAllByText('FolderTreeMock').length).toBeGreaterThan(0);
     });
 

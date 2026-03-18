@@ -1,8 +1,16 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { Layout } from './Layout';
 
 const mockUseAppShell = jest.fn();
 const headerSpy = jest.fn();
+
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+    __esModule: true,
+    default: () => ({
+        t: (key: string) => key,
+    }),
+}));
 
 jest.mock('@/components/layout/AppShell/useAppShell', () => ({
     useAppShell: () => mockUseAppShell(),
@@ -30,9 +38,11 @@ describe('layout/Layout/Layout', () => {
         mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
 
         render(
-            <Layout>
-                <div>body</div>
-            </Layout>
+            <MemoryRouter>
+                <Layout>
+                    <div>body</div>
+                </Layout>
+            </MemoryRouter>
         );
 
         expect(screen.getByTestId('header')).toBeInTheDocument();
@@ -45,9 +55,11 @@ describe('layout/Layout/Layout', () => {
         mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
 
         render(
-            <Layout>
-                <div>content</div>
-            </Layout>
+            <MemoryRouter>
+                <Layout>
+                    <div>content</div>
+                </Layout>
+            </MemoryRouter>
         );
 
         expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: false }));

@@ -65,20 +65,20 @@ jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);
 
 describe('App', () => {
-    it('shows global player when route is not video', () => {
+    it('shows global player when route is not video', async () => {
         mockUseLocation.mockReturnValue({ pathname: '/music' });
         render(<App />);
 
         expect(screen.getByTestId('app-providers')).toBeInTheDocument();
         expect(screen.getByTestId('music-providers')).toBeInTheDocument();
-        expect(screen.getByText('GlobalPlayerControl')).toBeInTheDocument();
+        expect(await screen.findByText('GlobalPlayerControl')).toBeInTheDocument();
     });
 
-    it('hides global player on video route', () => {
+    it('hides global player on video route', async () => {
         mockUseLocation.mockReturnValue({ pathname: '/video/22' });
         render(<App />);
 
+        expect(await screen.findByTestId('routes')).toBeInTheDocument();
         expect(screen.queryByText('GlobalPlayerControl')).not.toBeInTheDocument();
-        expect(screen.getByTestId('routes')).toBeInTheDocument();
     });
 });

@@ -34,18 +34,21 @@ jest.mock('@/components/providers/notificationProvider/notificationContext', () 
 }));
 
 describe('layout/Header', () => {
+    const mockOnOpenMobileMenu = jest.fn();
+
     beforeEach(() => {
         jest.useFakeTimers();
         jest.setSystemTime(new Date('2026-03-04T10:00:00.000Z'));
         mockOpenSearch.mockReset();
+        mockOnOpenMobileMenu.mockReset();
     });
 
     afterEach(() => {
         jest.useRealTimers();
     });
 
-    it('renders search, clock and mobile drawer', () => {
-        render(<Header showClock />);
+    it('renders search, clock and calls onOpenMobileMenu', () => {
+        render(<Header showClock onOpenMobileMenu={mockOnOpenMobileMenu} />);
         expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
         expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
         expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
@@ -54,15 +57,15 @@ describe('layout/Header', () => {
         expect(mockOpenSearch).toHaveBeenCalled();
 
         fireEvent.click(screen.getByLabelText('OPEN_NAVIGATION_MENU'));
-        expect(screen.getByText('SidebarMobile')).toBeInTheDocument();
+        expect(mockOnOpenMobileMenu).toHaveBeenCalled();
     });
 
     it('renders without clock by default', () => {
-        render(<Header />);
+        render(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
         expect(screen.queryByText(/\d{1,2}:\d{2}/)).not.toBeInTheDocument();
 
-        const { rerender } = render(<Header />);
-        rerender(<Header />);
+        const { rerender } = render(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
+        rerender(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
         expect(screen.queryByText(/\d{1,2}:\d{2}/)).not.toBeInTheDocument();
     });
 });
