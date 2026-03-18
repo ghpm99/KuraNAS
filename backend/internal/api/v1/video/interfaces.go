@@ -38,7 +38,7 @@ type RepositoryInterface interface {
 	GetUnassignedVideos(limit int) ([]VideoFileModel, error)
 	CheckVideoInPlaylist(playlistID int, videoID int) (bool, error)
 	UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error
-	ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
+	ReorderPlaylistItems(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
 	GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error)
 	GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error)

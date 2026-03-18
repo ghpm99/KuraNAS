@@ -11,6 +11,7 @@ import (
 	queries "nas-go/api/pkg/database/queries/video"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 )
 
 func newVideoRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
@@ -291,7 +292,7 @@ func TestVideoRepositoryWritePaths(t *testing.T) {
 		WithArgs(11, "new").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistItemQuery)).
-		WithArgs(11, 2, 0).
+		WithArgs(11, pq.Array([]int{2}), pq.Array([]int{0})).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
@@ -313,7 +314,7 @@ func TestVideoRepositoryWritePaths(t *testing.T) {
 		if err := repo.UpdatePlaylistName(tx, 11, "new"); err != nil {
 			return err
 		}
-		return repo.ReorderPlaylistItem(tx, 11, 2, 0)
+		return repo.ReorderPlaylistItems(tx, 11, []int{2}, []int{0})
 	})
 	if err != nil {
 		t.Fatalf("write operations failed: %v", err)
@@ -532,16 +533,39 @@ func TestVideoRepositoryWriteErrorBranches(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistItemQuery)).
-		WithArgs(11, 2, 0).
+		WithArgs(11, pq.Array([]int{2}), pq.Array([]int{0})).
 		WillReturnError(errors.New("reorder failed"))
 	tx, err = db.Begin()
 	if err != nil {
 		t.Fatalf("begin tx: %v", err)
 	}
-	if err := repo.ReorderPlaylistItem(tx, 11, 2, 0); err == nil {
-		t.Fatalf("expected ReorderPlaylistItem error")
+	if err := repo.ReorderPlaylistItems(tx, 11, []int{2}, []int{0}); err == nil {
+		t.Fatalf("expected ReorderPlaylistItems error")
 	}
 	_ = tx.Rollback()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestReorderPlaylistItems_BatchSwap(t *testing.T) {
+	repo, mock, db := newVideoRepoWithMock(t)
+	defer db.Close()
+
+	// Swap two items in a single batch call (videoID 10 → position 1, videoID 20 → position 0)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistItemQuery)).
+		WithArgs(5, pq.Array([]int{10, 20}), pq.Array([]int{1, 0})).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		return repo.ReorderPlaylistItems(tx, 5, []int{10, 20}, []int{1, 0})
+	})
+	if err != nil {
+		t.Fatalf("batch reorder swap failed: %v", err)
+	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)

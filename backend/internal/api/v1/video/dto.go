@@ -105,7 +105,7 @@ type UpdatePlaylistRequest struct {
 
 type ReorderPlaylistItemRequest struct {
 	VideoID    int `json:"video_id" binding:"required"`
-	OrderIndex int `json:"order_index" binding:"required"`
+	OrderIndex int `json:"order_index" binding:"min=0"`
 }
 
 type ReorderPlaylistRequest struct {
