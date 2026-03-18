@@ -23,49 +23,49 @@ describe('service/activityDiary', () => {
         jest.clearAllMocks();
     });
 
-    it('gets activity diary summary', async () => {
-        const payload = { totalEntries: 10, streak: 5 };
-        mockedApi.get.mockResolvedValue({ data: payload });
+    it.each([
+        {
+            name: 'gets activity diary summary',
+            fn: () => getActivityDiarySummary(),
+            method: 'get' as const,
+            url: '/diary/summary',
+            payload: undefined,
+            response: { totalEntries: 10, streak: 5 },
+        },
+        {
+            name: 'gets activity diary entries',
+            fn: () => getActivityDiaryEntries(),
+            method: 'get' as const,
+            url: '/diary/',
+            payload: undefined,
+            response: { items: [{ id: 1, name: 'Entry 1' }], total: 1 },
+        },
+        {
+            name: 'creates activity diary entry',
+            fn: () => createActivityDiaryEntry({ name: 'Workout', description: 'Leg day' }),
+            method: 'post' as const,
+            url: '/diary/',
+            payload: { name: 'Workout', description: 'Leg day' },
+            response: { id: 1, name: 'Workout', description: 'Leg day' },
+        },
+        {
+            name: 'duplicates activity diary entry',
+            fn: () => duplicateActivityDiaryEntry(1),
+            method: 'post' as const,
+            url: '/diary/copy',
+            payload: { ID: 1 },
+            response: { id: 2, name: 'Workout copy' },
+        },
+    ])('$name', async ({ fn, method, url, payload, response }) => {
+        mockedApi[method].mockResolvedValue({ data: response });
 
-        const result = await getActivityDiarySummary();
+        const result = await fn();
 
-        expect(mockedApi.get).toHaveBeenCalledWith('/diary/summary');
-        expect(result).toEqual(payload);
-    });
-
-    it('gets activity diary entries', async () => {
-        const payload = { items: [{ id: 1, name: 'Entry 1' }], total: 1 };
-        mockedApi.get.mockResolvedValue({ data: payload });
-
-        const result = await getActivityDiaryEntries();
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/diary/');
-        expect(result).toEqual(payload);
-    });
-
-    it('creates activity diary entry', async () => {
-        const entry = { id: 1, name: 'Workout', description: 'Leg day' };
-        mockedApi.post.mockResolvedValue({ data: entry });
-
-        const result = await createActivityDiaryEntry({
-            name: 'Workout',
-            description: 'Leg day',
-        });
-
-        expect(mockedApi.post).toHaveBeenCalledWith('/diary/', {
-            name: 'Workout',
-            description: 'Leg day',
-        });
-        expect(result).toEqual(entry);
-    });
-
-    it('duplicates activity diary entry', async () => {
-        const entry = { id: 2, name: 'Workout copy' };
-        mockedApi.post.mockResolvedValue({ data: entry });
-
-        const result = await duplicateActivityDiaryEntry(1);
-
-        expect(mockedApi.post).toHaveBeenCalledWith('/diary/copy', { ID: 1 });
-        expect(result).toEqual(entry);
+        if (payload) {
+            expect(mockedApi[method]).toHaveBeenCalledWith(url, payload);
+        } else {
+            expect(mockedApi[method]).toHaveBeenCalledWith(url);
+        }
+        expect(result).toEqual(response);
     });
 });

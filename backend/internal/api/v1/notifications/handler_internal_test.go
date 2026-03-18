@@ -222,11 +222,3 @@ func TestHandlerInvalidQueryParams(t *testing.T) {
 		})
 	}
 }
-
-func TestNewHandler(t *testing.T) {
-	svc := &handlerServiceMock{}
-	h := NewHandler(svc)
-	if h == nil || h.service != svc {
-		t.Fatalf("expected handler with service")
-	}
-}

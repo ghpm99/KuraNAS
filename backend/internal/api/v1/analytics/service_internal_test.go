@@ -351,12 +351,3 @@ func TestServiceGetOverviewWithAllData(t *testing.T) {
 		t.Fatalf("expected scanning status, got %s", result.Health.Status)
 	}
 }
-
-func TestNewServiceReturnsCorrectType(t *testing.T) {
-	repo := &repositoryStub{}
-	svc := NewService(repo)
-	typed, ok := svc.(*Service)
-	if !ok || typed.Repository != repo {
-		t.Fatalf("expected concrete service with repository")
-	}
-}

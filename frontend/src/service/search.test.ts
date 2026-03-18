@@ -1,65 +1,48 @@
-import { searchGlobal } from './search';
-import { apiBase } from '.';
-
 jest.mock('.', () => ({
     apiBase: {
         get: jest.fn(),
     },
 }));
 
+import { apiBase } from '.';
+import { searchGlobal } from './search';
+
 const mockedApiGet = apiBase.get as jest.Mock;
+
+const emptySearchResult = {
+    files: [],
+    folders: [],
+    artists: [],
+    albums: [],
+    playlists: [],
+    videos: [],
+    images: [],
+};
 
 describe('service/search', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('requests the global search endpoint with query and limit', async () => {
-        mockedApiGet.mockResolvedValue({
-            data: {
-                query: 'mix',
-                files: [],
-                folders: [],
-                artists: [],
-                albums: [],
-                playlists: [],
-                videos: [],
-                images: [],
-            },
-        });
+    it.each([
+        {
+            name: 'requests the global search endpoint with query and limit',
+            fn: () => searchGlobal('mix', 8),
+            params: { q: 'mix', limit: 8 },
+            response: { ...emptySearchResult, query: 'mix' },
+        },
+        {
+            name: 'uses the default per-section limit when omitted',
+            fn: () => searchGlobal(''),
+            params: { q: '', limit: 6 },
+            response: { ...emptySearchResult, query: '' },
+        },
+    ])('$name', async ({ fn, params, response }) => {
+        mockedApiGet.mockResolvedValue({ data: response });
 
-        const result = await searchGlobal('mix', 8);
+        const result = await fn();
 
-        expect(mockedApiGet).toHaveBeenCalledWith('/search/global', {
-            params: {
-                q: 'mix',
-                limit: 8,
-            },
-        });
-        expect(result.query).toBe('mix');
-    });
-
-    it('uses the default per-section limit when omitted', async () => {
-        mockedApiGet.mockResolvedValue({
-            data: {
-                query: '',
-                files: [],
-                folders: [],
-                artists: [],
-                albums: [],
-                playlists: [],
-                videos: [],
-                images: [],
-            },
-        });
-
-        await searchGlobal('');
-
-        expect(mockedApiGet).toHaveBeenCalledWith('/search/global', {
-            params: {
-                q: '',
-                limit: 6,
-            },
-        });
+        expect(mockedApiGet).toHaveBeenCalledWith('/search/global', { params });
+        expect(result).toEqual(response);
     });
 });

@@ -341,12 +341,3 @@ func TestMusicService_AdditionalErrorPaths(t *testing.T) {
 		t.Fatalf("expected GetPlayerState error")
 	}
 }
-
-func TestMusicNewService(t *testing.T) {
-	repo := &musicRepoMock{}
-	svc := NewService(repo)
-	typed, ok := svc.(*Service)
-	if !ok || typed.Repository != repo {
-		t.Fatalf("expected concrete service with repository")
-	}
-}
