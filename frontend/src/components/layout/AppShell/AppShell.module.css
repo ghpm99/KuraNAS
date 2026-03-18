@@ -49,13 +49,24 @@
         border-left: none;
     }
 
+    .scrollArea {
+        padding-bottom: calc(var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
+    }
+
     .scrollAreaWithPlayer {
-        padding-bottom: calc(80px + var(--app-spacing-3));
+        padding-bottom: calc(80px + var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
     }
 }
 
 @media (max-width: 640px) {
     .scrollAreaWithPlayer {
-        padding-bottom: calc(72px + var(--app-spacing-2));
+        padding-bottom: calc(72px + var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
     }
+}
+
+.drawerPaper {
+    width: var(--app-shell-sidebar-width);
+    background: var(--app-glass-medium-background);
+    backdrop-filter: var(--app-glass-medium-backdrop);
+    border-right: 1px solid var(--app-color-border-subtle);
 }
