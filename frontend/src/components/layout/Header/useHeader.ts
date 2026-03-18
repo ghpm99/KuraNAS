@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
 export const useHeader = (showClock: boolean) => {
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(() => new Date());
 
     useEffect(() => {
@@ -20,8 +19,5 @@ export const useHeader = (showClock: boolean) => {
 
     return {
         currentTime,
-        mobileOpen,
-        closeMobileMenu: () => setMobileOpen(false),
-        openMobileMenu: () => setMobileOpen(true),
     };
 };

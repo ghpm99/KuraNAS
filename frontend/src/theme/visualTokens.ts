@@ -50,15 +50,29 @@ export const visualTokens = {
         card: '0 8px 30px rgba(0, 0, 0, 0.24)',
         floating: '0 12px 40px rgba(0, 0, 0, 0.35)',
         activeGlowPrimary: '0 0 0 1px rgba(109, 93, 246, 0.6), 0 8px 30px rgba(109, 93, 246, 0.18)',
+        layered: '0 1px 2px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.1)',
+    },
+    glass: {
+        medium: {
+            background: 'rgba(18, 26, 41, 0.7)',
+            backdropFilter: 'blur(12px)',
+        },
+        strong: {
+            background: 'rgba(15, 22, 35, 0.85)',
+            backdropFilter: 'blur(16px)',
+        },
     },
     layout: {
         sidebarWidth: '300px',
+        sidebarWidthCollapsed: '80px',
         headerHeight: '80px',
         headerHeightMobile: '56px',
+        bottomNavHeight: '64px',
     },
     motion: {
         fast: '160ms',
         base: '220ms',
+        slow: '300ms',
     },
 } as const;
 
@@ -104,9 +118,17 @@ export const appCssVariables = {
     '--app-shadow-card': visualTokens.shadow.card,
     '--app-shadow-floating': visualTokens.shadow.floating,
     '--app-shadow-active-primary': visualTokens.shadow.activeGlowPrimary,
+    '--app-shadow-layered': visualTokens.shadow.layered,
+    '--app-glass-medium-background': visualTokens.glass.medium.background,
+    '--app-glass-medium-backdrop': visualTokens.glass.medium.backdropFilter,
+    '--app-glass-strong-background': visualTokens.glass.strong.background,
+    '--app-glass-strong-backdrop': visualTokens.glass.strong.backdropFilter,
     '--app-shell-sidebar-width': visualTokens.layout.sidebarWidth,
+    '--app-shell-sidebar-width-collapsed': visualTokens.layout.sidebarWidthCollapsed,
     '--app-shell-header-height': visualTokens.layout.headerHeight,
     '--app-shell-header-height-mobile': visualTokens.layout.headerHeightMobile,
+    '--app-shell-bottom-nav-height': visualTokens.layout.bottomNavHeight,
     '--app-motion-fast': visualTokens.motion.fast,
     '--app-motion-base': visualTokens.motion.base,
+    '--app-motion-slow': visualTokens.motion.slow,
 } as const;

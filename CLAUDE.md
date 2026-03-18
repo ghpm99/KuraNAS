@@ -91,3 +91,5 @@ Path alias: `@/` → `src/`
 **Frontend env var**: `VITE_API_URL` — points to the backend (e.g. `http://localhost:8000`). Configured in `.env`, `.env.development`, or `.env.production`.
 
 TanStack Query is configured with `staleTime: 5 minutes` and no refetch on window focus/reconnect.
+
+IMPORTANT: Read and follow all instructions in AGENTS.md before starting any task.
