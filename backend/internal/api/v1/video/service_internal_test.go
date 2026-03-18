@@ -36,7 +36,7 @@ type videoRepoMock struct {
 	removePlaylistVideoFn      func(tx *sql.Tx, playlistID int, videoID int) error
 	upsertPlaylistExclusionFn  func(tx *sql.Tx, playlistID int, videoID int) error
 	updatePlaylistNameFn       func(tx *sql.Tx, playlistID int, name string) error
-	reorderPlaylistItemFn      func(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error
+	reorderPlaylistItemsFn     func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	getAllVideosForGroupingFn  func() ([]VideoFileModel, error)
 	getAllVideosWithMetadataFn func() ([]VideoWithMetadataModel, error)
 	upsertAutoPlaylistFn       func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
@@ -223,9 +223,9 @@ func (m *videoRepoMock) UpdatePlaylistName(tx *sql.Tx, playlistID int, name stri
 	}
 	return nil
 }
-func (m *videoRepoMock) ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error {
-	if m.reorderPlaylistItemFn != nil {
-		return m.reorderPlaylistItemFn(tx, playlistID, videoID, orderIndex)
+func (m *videoRepoMock) ReorderPlaylistItems(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error {
+	if m.reorderPlaylistItemsFn != nil {
+		return m.reorderPlaylistItemsFn(tx, playlistID, videoIDs, orderIndices)
 	}
 	return nil
 }
@@ -334,7 +334,7 @@ func TestVideoServiceWrappersAndValidations(t *testing.T) {
 		removePlaylistVideoFn:     func(tx *sql.Tx, playlistID int, videoID int) error { return nil },
 		upsertPlaylistExclusionFn: func(tx *sql.Tx, playlistID int, videoID int) error { return nil },
 		updatePlaylistNameFn:      func(tx *sql.Tx, playlistID int, name string) error { return nil },
-		reorderPlaylistItemFn:     func(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error { return nil },
+		reorderPlaylistItemsFn:    func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error { return nil },
 	}
 	svc := newVideoServiceForTest(t, repo)
 
@@ -374,6 +374,36 @@ func TestVideoServiceWrappersAndValidations(t *testing.T) {
 	}
 	if err := svc.ReorderPlaylistItems(10, []ReorderPlaylistItemRequest{{VideoID: 1, OrderIndex: 0}, {VideoID: 2, OrderIndex: 0}}); err == nil {
 		t.Fatalf("expected duplicated order index reorder error")
+	}
+}
+
+func TestReorderPlaylistItems_SwapPassesCorrectArrays(t *testing.T) {
+	var capturedVideoIDs []int
+	var capturedOrderIndices []int
+
+	repo := &videoRepoMock{
+		reorderPlaylistItemsFn: func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error {
+			capturedVideoIDs = videoIDs
+			capturedOrderIndices = orderIndices
+			return nil
+		},
+	}
+	svc := newVideoServiceForTest(t, repo)
+
+	// Simulate swapping two items: video 5 moves to position 1, video 3 moves to position 0
+	items := []ReorderPlaylistItemRequest{
+		{VideoID: 5, OrderIndex: 0},
+		{VideoID: 3, OrderIndex: 1},
+	}
+	if err := svc.ReorderPlaylistItems(1, items); err != nil {
+		t.Fatalf("expected reorder success, err=%v", err)
+	}
+
+	if len(capturedVideoIDs) != 2 || capturedVideoIDs[0] != 5 || capturedVideoIDs[1] != 3 {
+		t.Fatalf("unexpected videoIDs: %v", capturedVideoIDs)
+	}
+	if len(capturedOrderIndices) != 2 || capturedOrderIndices[0] != 0 || capturedOrderIndices[1] != 1 {
+		t.Fatalf("unexpected orderIndices: %v", capturedOrderIndices)
 	}
 }
 

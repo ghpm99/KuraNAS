@@ -695,10 +695,10 @@ func (r *Repository) UpdatePlaylistName(tx *sql.Tx, playlistID int, name string)
 	return nil
 }
 
-func (r *Repository) ReorderPlaylistItem(tx *sql.Tx, playlistID int, videoID int, orderIndex int) error {
-	_, err := tx.Exec(queries.ReorderPlaylistItemQuery, playlistID, videoID, orderIndex)
+func (r *Repository) ReorderPlaylistItems(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error {
+	_, err := tx.Exec(queries.ReorderPlaylistItemQuery, playlistID, pq.Array(videoIDs), pq.Array(orderIndices))
 	if err != nil {
-		return fmt.Errorf("falha ao reordenar item da playlist: %w", err)
+		return fmt.Errorf("falha ao reordenar itens da playlist: %w", err)
 	}
 	return nil
 }

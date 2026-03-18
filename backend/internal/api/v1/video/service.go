@@ -608,13 +608,15 @@ func (s *Service) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistIt
 		seenOrder[item.OrderIndex] = true
 	}
 
+	videoIDs := make([]int, len(items))
+	orderIndices := make([]int, len(items))
+	for i, item := range items {
+		videoIDs[i] = item.VideoID
+		orderIndices[i] = item.OrderIndex
+	}
+
 	return s.withTransaction(func(tx *sql.Tx) error {
-		for _, item := range items {
-			if err := s.Repository.ReorderPlaylistItem(tx, playlistID, item.VideoID, item.OrderIndex); err != nil {
-				return err
-			}
-		}
-		return nil
+		return s.Repository.ReorderPlaylistItems(tx, playlistID, videoIDs, orderIndices)
 	})
 }
 
