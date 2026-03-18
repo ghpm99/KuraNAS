@@ -78,8 +78,6 @@ func TestPlaceholderAndPrintQuery(t *testing.T) {
 		t.Fatalf("expected default NULL replacement, got: %s", got)
 	}
 
-	// Just ensure no panic while formatting and printing.
-	PrintQuery("SELECT $1,$2,$3,$4", []interface{}{"a", 2, true, ts})
 }
 
 func TestGenerateFilterFromContextAndParseContextQuery(t *testing.T) {

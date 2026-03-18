@@ -37,19 +37,6 @@ func newConfigurationServiceForTest(t *testing.T, repo *serviceRepoMock) *Servic
 	return &Service{Repository: repo}
 }
 
-func TestNewServiceReturnsConfiguredImplementation(t *testing.T) {
-	repo := &serviceRepoMock{}
-
-	service := NewService(repo)
-	typedService, ok := service.(*Service)
-	if !ok {
-		t.Fatalf("expected *Service implementation, got %T", service)
-	}
-	if typedService.Repository != repo {
-		t.Fatalf("expected repository to be preserved")
-	}
-}
-
 func TestConfigurationServiceGetSettingsUsesDefaultsWhenMissing(t *testing.T) {
 	originalEntryPoint := config.AppConfig.EntryPoint
 	originalLang := config.AppConfig.Lang

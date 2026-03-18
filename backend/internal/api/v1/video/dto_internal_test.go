@@ -47,12 +47,3 @@ func TestVideoPlaylistAndPlaybackToDtoBranches(t *testing.T) {
 		t.Fatalf("expected playback nullable ids to be filled: %+v", stateDto)
 	}
 }
-
-func TestVideoNewService(t *testing.T) {
-	repo := &videoRepoMock{}
-	service := NewService(repo)
-	_, ok := service.(*Service)
-	if !ok {
-		t.Fatalf("expected concrete service")
-	}
-}

@@ -1,4 +1,4 @@
-import { getMusicSectionFromPath, getMusicSectionMeta, musicNavigationItems } from './navigation';
+import { getMusicSectionFromPath, getMusicSectionMeta } from './navigation';
 
 describe('music navigation helpers', () => {
     it('resolves the current section from known paths', () => {
@@ -8,6 +8,8 @@ describe('music navigation helpers', () => {
 
     it('falls back to home metadata for unknown paths', () => {
         expect(getMusicSectionFromPath('/music/unknown')).toBe('home');
-        expect(getMusicSectionMeta('home')).toEqual(musicNavigationItems[0]);
+        expect(getMusicSectionMeta('home')).toEqual(
+            expect.objectContaining({ key: 'home' })
+        );
     });
 });

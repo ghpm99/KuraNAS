@@ -264,81 +264,24 @@ describe('useAudioEngine', () => {
         expect(result.current.isPlaying).toBe(true);
     });
 
-    it('togglePlayPause does nothing when audioRef.current is null', async () => {
+    it('handles all operations gracefully when audioRef is null', async () => {
         const { result } = renderHook(() => useAudioEngine(() => {}));
         await act(async () => {
             await Promise.resolve();
             await Promise.resolve();
         });
 
-        // Forcefully set audioRef to null
         (result.current.audioRef as any).current = null;
 
-        // Should not throw
         act(() => {
             result.current.togglePlayPause();
-        });
-    });
-
-    it('loadAndPlayUrl does nothing when audioRef.current is null', async () => {
-        const { result } = renderHook(() => useAudioEngine(() => {}));
-        await act(async () => {
-            await Promise.resolve();
-            await Promise.resolve();
-        });
-
-        // Forcefully nullify the audio ref
-        (result.current.audioRef as any).current = null;
-
-        // Should not throw
-        act(() => {
             result.current.loadAndPlayUrl('http://example.com/test.mp3');
-        });
-    });
-
-    it('seek does nothing when audioRef.current is null', async () => {
-        const { result } = renderHook(() => useAudioEngine(() => {}));
-        await act(async () => {
-            await Promise.resolve();
-            await Promise.resolve();
-        });
-
-        (result.current.audioRef as any).current = null;
-
-        // Should not throw
-        act(() => {
             result.current.seek(10);
-        });
-    });
-
-    it('setVolume updates state but does not set audio.volume when audioRef is null', async () => {
-        const { result } = renderHook(() => useAudioEngine(() => {}));
-        await act(async () => {
-            await Promise.resolve();
-            await Promise.resolve();
-        });
-
-        (result.current.audioRef as any).current = null;
-
-        act(() => {
             result.current.setVolume(0.3);
-        });
-        expect(result.current.volume).toBe(0.3);
-    });
-
-    it('stop does nothing when audioRef.current is null', async () => {
-        const { result } = renderHook(() => useAudioEngine(() => {}));
-        await act(async () => {
-            await Promise.resolve();
-            await Promise.resolve();
-        });
-
-        (result.current.audioRef as any).current = null;
-
-        // Should not throw, and should still reset state
-        act(() => {
             result.current.stop();
         });
+
+        expect(result.current.volume).toBe(0.3);
         expect(result.current.isPlaying).toBe(false);
         expect(result.current.currentTime).toBe(0);
         expect(result.current.duration).toBe(0);

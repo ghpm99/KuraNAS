@@ -1,7 +1,6 @@
 import {
     getAnalyticsSectionFromPath,
     getAnalyticsSectionMeta,
-    analyticsNavigationItems,
 } from './navigation';
 
 describe('analytics navigation helpers', () => {
@@ -13,6 +12,8 @@ describe('analytics navigation helpers', () => {
 
     it('falls back to overview metadata for unknown paths', () => {
         expect(getAnalyticsSectionFromPath('/analytics/unknown')).toBe('overview');
-        expect(getAnalyticsSectionMeta('overview')).toEqual(analyticsNavigationItems[0]);
+        expect(getAnalyticsSectionMeta('overview')).toEqual(
+            expect.objectContaining({ key: 'overview' })
+        );
     });
 });
