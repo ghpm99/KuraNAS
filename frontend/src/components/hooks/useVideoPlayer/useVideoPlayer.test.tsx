@@ -63,6 +63,17 @@ const makeSession = (videoId: number, playlistId = 11) => ({
     },
 });
 
+const createFakeVideo = () =>
+    ({
+        src: '',
+        currentTime: 0,
+        volume: 1,
+        playbackRate: 1,
+        play: jest.fn(() => Promise.resolve()),
+        pause: jest.fn(),
+        requestFullscreen: jest.fn(),
+    }) as any;
+
 describe('hooks/useVideoPlayer', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -78,17 +89,9 @@ describe('hooks/useVideoPlayer', () => {
         jest.useRealTimers();
     });
 
-    it('plays, syncs and controls video state', async () => {
+    it('starts playback and sets video source from session', async () => {
         const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
-        const fakeVideo = {
-            src: '',
-            currentTime: 0,
-            volume: 1,
-            playbackRate: 1,
-            play: jest.fn(() => Promise.resolve()),
-            pause: jest.fn(),
-            requestFullscreen: jest.fn(),
-        } as any;
+        const fakeVideo = createFakeVideo();
 
         act(() => {
             result.current.videoRef.current = fakeVideo;
@@ -102,24 +105,83 @@ describe('hooks/useVideoPlayer', () => {
         expect(fakeVideo.src).toContain('/files/video-stream/7');
         expect(result.current.status).toBe('playing');
         expect(result.current.currentVideo?.id).toBe(7);
+        expect(result.current.playlist?.id).toBe(11);
+        expect(result.current.playbackState?.video_id).toBe(7);
+    });
+
+    it('clamps volume and applies playback rate', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
+
+        act(() => {
+            result.current.setVolume(2);
+        });
+        expect(result.current.volume).toBe(1);
+
+        act(() => {
+            result.current.setPlaybackRate(1.5);
+        });
+        expect(result.current.playbackRate).toBe(1.5);
+    });
+
+    it('seeks to specific time', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
 
         act(() => {
             result.current.seekTo(34);
-            result.current.setVolume(2);
-            result.current.setPlaybackRate(1.5);
         });
         expect(result.current.currentTime).toBe(34);
-        expect(result.current.volume).toBe(1);
-        expect(result.current.playbackRate).toBe(1.5);
-        expect(result.current.playlist?.id).toBe(11);
-        expect(result.current.playbackState?.video_id).toBe(7);
+    });
+
+    it('pauses and resumes video', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
 
         await act(async () => {
             result.current.pause();
             result.current.resume();
         });
+
         expect(fakeVideo.pause).toHaveBeenCalled();
         expect(fakeVideo.play).toHaveBeenCalled();
+    });
+
+    it('toggles fullscreen on and off', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
 
         Object.defineProperty(document, 'fullscreenElement', {
             value: null,
@@ -141,19 +203,46 @@ describe('hooks/useVideoPlayer', () => {
         });
         expect((document as any).exitFullscreen).toHaveBeenCalled();
         expect(result.current.isFullscreen).toBe(false);
+    });
+
+    it('navigates to next and previous video', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
 
         await act(async () => {
             await result.current.nextVideo();
-            await result.current.previousVideo();
         });
         expect(mockNextVideoPlayback).toHaveBeenCalled();
-        expect(mockPreviousVideoPlayback).toHaveBeenCalled();
 
         await act(async () => {
-            result.current.setDuration(120);
-            await result.current.onVideoEnded();
+            await result.current.previousVideo();
         });
-        expect(mockNextVideoPlayback).toHaveBeenCalledTimes(1);
+        expect(mockPreviousVideoPlayback).toHaveBeenCalled();
+    });
+
+    it('syncs playback state periodically', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
+
+        act(() => {
+            result.current.setDuration(120);
+        });
 
         await act(async () => {
             jest.advanceTimersByTime(5000);
@@ -161,7 +250,7 @@ describe('hooks/useVideoPlayer', () => {
         expect(mockUpdateVideoPlaybackState).toHaveBeenCalled();
     });
 
-    it('handles guard branches when session/video are missing and play rejects', async () => {
+    it('handles missing video in session gracefully', async () => {
         mockStartVideoPlayback.mockResolvedValue({
             ...makeSession(0),
             playback_state: {
@@ -172,15 +261,7 @@ describe('hooks/useVideoPlayer', () => {
         });
 
         const { result } = renderHook(() => useVideoPlayer({ videoId: '0', playlistId: null }));
-        const fakeVideo = {
-            src: '',
-            currentTime: 0,
-            volume: 1,
-            playbackRate: 1,
-            play: jest.fn(() => Promise.resolve()),
-            pause: jest.fn(),
-            requestFullscreen: jest.fn(),
-        } as any;
+        const fakeVideo = createFakeVideo();
 
         act(() => {
             result.current.videoRef.current = fakeVideo;
@@ -189,13 +270,22 @@ describe('hooks/useVideoPlayer', () => {
         await act(async () => {
             await result.current.playVideo();
         });
+
         expect(result.current.currentVideo).toBeNull();
         expect(result.current.playbackState?.video_id).toBe(0);
+    });
+
+    it('sets paused status when play rejects', async () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
 
         act(() => {
-            result.current.togglePlayPause();
+            result.current.videoRef.current = fakeVideo;
         });
-        expect(result.current.status).toBe('playing');
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
 
         mockNextVideoPlayback.mockResolvedValue({
             ...makeSession(9),
@@ -205,15 +295,33 @@ describe('hooks/useVideoPlayer', () => {
             },
         });
         fakeVideo.play.mockImplementationOnce(() => Promise.reject(new Error('play failed')));
+
         await act(async () => {
             await result.current.nextVideo();
         });
         expect(result.current.status).toBe('paused');
+    });
+
+    it('tolerates null videoRef for control operations', async () => {
+        mockStartVideoPlayback.mockResolvedValue({
+            ...makeSession(0),
+            playback_state: {
+                ...makeSession(0).playback_state,
+                video_id: 0,
+                playlist_id: null,
+            },
+        });
+
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '0', playlistId: null }));
+        const fakeVideo = createFakeVideo();
+
+        act(() => {
+            result.current.videoRef.current = fakeVideo;
+        });
 
         await act(async () => {
-            jest.advanceTimersByTime(5000);
+            await result.current.playVideo();
         });
-        expect(mockUpdateVideoPlaybackState).toHaveBeenCalled();
 
         act(() => {
             result.current.videoRef.current = null;

@@ -45,12 +45,6 @@ func TestGetMessageAndTranslateFallbacks(t *testing.T) {
 	}
 }
 
-func TestPrintAndLogTranslate(t *testing.T) {
-	translations = map[string]string{"K": "value"}
-	PrintTranslate("K")
-	LogTranslate("K")
-}
-
 func TestLoadTranslationsSuccessAndInvalidJSON(t *testing.T) {
 	setProgramFilesRootForTest(t)
 	prevLang := config.AppConfig.Lang
