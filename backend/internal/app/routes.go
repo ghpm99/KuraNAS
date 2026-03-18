@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
 	registerCorsRoutes(router, context)
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
@@ -199,13 +201,20 @@ func RegisterNotificationRoutes(router *gin.RouterGroup, context *AppContext) {
 }
 
 func registerReactRoutes(router *gin.Engine) {
-	router.Static("/assets", "./dist/assets")
+	router.Group("/assets", cacheControlMiddleware("public, max-age=31536000, immutable")).
+		Static("/", "./dist/assets")
 
 	router.NoRoute(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
 		c.File("./dist/index.html")
 	})
+}
 
-	router.Static("/frontend", "/dist")
+func cacheControlMiddleware(value string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", value)
+		c.Next()
+	}
 }
 
 func registerCorsRoutes(router *gin.Engine, context *AppContext) {

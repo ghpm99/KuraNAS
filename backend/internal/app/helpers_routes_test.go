@@ -142,7 +142,8 @@ func TestRegisterCorsRoutes(t *testing.T) {
 	}
 }
 
-func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *testing.T) {
+func setupDistDir(t *testing.T) {
+	t.Helper()
 	originalWD, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get cwd: %v", err)
@@ -165,6 +166,14 @@ func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *tes
 	if err := os.WriteFile(indexPath, indexContent, 0644); err != nil {
 		t.Fatalf("failed to write dist index: %v", err)
 	}
+	jsPath := filepath.Join(assetsDir, "vendor-mui-abc123.js")
+	if err := os.WriteFile(jsPath, []byte("console.log('mui')"), 0644); err != nil {
+		t.Fatalf("failed to write js asset: %v", err)
+	}
+}
+
+func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *testing.T) {
+	setupDistDir(t)
 
 	router := SetUpRouter()
 	registerReactRoutes(router)
@@ -177,5 +186,39 @@ func TestRegisterReactRoutes_NoRouteServesIndexAndAssetsRouteIsRegistered(t *tes
 	}
 	if body := w.Body.String(); body == "" {
 		t.Fatalf("expected index response body for NoRoute")
+	}
+}
+
+func TestRegisterReactRoutes_IndexHasNoCacheHeader(t *testing.T) {
+	setupDistDir(t)
+
+	router := SetUpRouter()
+	registerReactRoutes(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/some/route", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if got := w.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("expected Cache-Control 'no-cache' for index, got %q", got)
+	}
+}
+
+func TestRegisterReactRoutes_AssetsHaveImmutableCacheHeader(t *testing.T) {
+	setupDistDir(t)
+
+	router := SetUpRouter()
+	registerReactRoutes(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/assets/vendor-mui-abc123.js", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for asset, got %d", w.Code)
+	}
+	expected := "public, max-age=31536000, immutable"
+	if got := w.Header().Get("Cache-Control"); got != expected {
+		t.Fatalf("expected Cache-Control %q for assets, got %q", expected, got)
 	}
 }

@@ -67,13 +67,17 @@ jest.mock('@/components/providers/notificationProvider/notificationContext', () 
     }),
 }));
 
-jest.mock('react-router-dom', () => ({
-    Link: ({ children, to }: any) => <a href={to}>{children}</a>,
-    Outlet: () => <div>OutletMock</div>,
-    useLocation: () => mockUseLocation(),
-    useParams: () => mockUseParams(),
-    useNavigate: () => mockNavigate,
-}));
+jest.mock('react-router-dom', () => {
+    const actual = jest.requireActual('react-router-dom');
+    return {
+        ...actual,
+        Link: ({ children, to }: any) => <a href={to}>{children}</a>,
+        Outlet: () => <div>OutletMock</div>,
+        useLocation: () => mockUseLocation(),
+        useParams: () => mockUseParams(),
+        useNavigate: () => mockNavigate,
+    };
+});
 
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
     <div>FolderTreeMock</div>
