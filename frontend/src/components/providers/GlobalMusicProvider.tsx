@@ -4,6 +4,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { MusicPlaybackContext } from '@/components/music/playbackContext';
 import { useSettings } from './settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';
+import useMediaSession from './globalMusic/useMediaSession';
 import useMusicStateSync from './globalMusic/useMusicStateSync';
 import useMusicQueueHydration from './globalMusic/useMusicQueueHydration';
 
@@ -264,6 +265,19 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     const toggleQueue = useCallback(() => {
         setQueueOpen((prev) => !prev);
     }, []);
+
+    // --- Media session & wake lock ---
+    useMediaSession({
+        currentTrack,
+        isPlaying: engine.isPlaying,
+        onPlay: engine.togglePlayPause,
+        onPause: engine.togglePlayPause,
+        onNext: next,
+        onPrevious: previous,
+        onSeekTo: seek,
+        currentTime: engine.currentTime,
+        duration: engine.duration,
+    });
 
     // Sync settings changes to backend
     useEffect(() => {
