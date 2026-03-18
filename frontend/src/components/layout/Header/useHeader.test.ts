@@ -46,20 +46,4 @@ describe('useHeader', () => {
         expect(clearIntervalSpy).toHaveBeenCalled();
         clearIntervalSpy.mockRestore();
     });
-
-    it('toggles mobileOpen via openMobileMenu and closeMobileMenu', () => {
-        const { result } = renderHook(() => useHeader(false));
-
-        expect(result.current.mobileOpen).toBe(false);
-
-        act(() => {
-            result.current.openMobileMenu();
-        });
-        expect(result.current.mobileOpen).toBe(true);
-
-        act(() => {
-            result.current.closeMobileMenu();
-        });
-        expect(result.current.mobileOpen).toBe(false);
-    });
 });

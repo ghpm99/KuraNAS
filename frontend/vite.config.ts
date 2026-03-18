@@ -22,5 +22,27 @@ export default defineConfig(() => {
         define: {
             'process.env.VITE_API_URL': JSON.stringify(env ?? ''),
         },
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return;
+
+                        if (id.includes('@mui/x-charts') || id.includes('@mui/x-data-grid')) {
+                            return 'vendor-mui-x';
+                        }
+                        if (id.includes('@mui') || id.includes('@emotion')) {
+                            return 'vendor-mui';
+                        }
+                        if (id.includes('framer-motion')) {
+                            return 'vendor-motion';
+                        }
+                        if (id.includes('@tanstack')) {
+                            return 'vendor-query';
+                        }
+                    },
+                },
+            },
+        },
     };
 });
