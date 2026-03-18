@@ -5,10 +5,12 @@ BACKEND_DIR := backend
 DIST_DIR := $(FRONTEND_DIR)/dist
 OUTPUT_DIR := build
 
-
 BACKEND_COVERAGE_MIN := 80
+BACKEND_GO_CACHE_DIR := $(abspath .cache/go-build)
+BACKEND_GO_MOD_CACHE_DIR := $(abspath .cache/go-mod)
+BACKEND_GO_ENV := GOCACHE=$(BACKEND_GO_CACHE_DIR) GOMODCACHE=$(BACKEND_GO_MOD_CACHE_DIR)
 
-.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend lint-frontend test-frontend lint-backend test-backend release-main-ff
+.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend lint-frontend test-frontend lint-backend test-backend prepare-backend-go-cache release-main-ff
 
 all: frontend backend move deploy
 
@@ -42,6 +44,9 @@ ci-frontend: lint-frontend test-frontend
 
 ci-backend: lint-backend test-backend
 
+prepare-backend-go-cache:
+	@mkdir -p $(BACKEND_GO_CACHE_DIR) $(BACKEND_GO_MOD_CACHE_DIR)
+
 lint-frontend:
 	@echo ""
 	@echo "======== Frontend Lint ========"
@@ -59,9 +64,10 @@ test-frontend:
 	@cd $(FRONTEND_DIR) && yarn typecheck:test
 
 lint-backend:
+	@$(MAKE) prepare-backend-go-cache
 	@echo ""
 	@echo "======== Backend Lint (gofmt) ========"
-	@cd $(BACKEND_DIR) && BADFILES=$$(gofmt -l . | while IFS= read -r f; do \
+	@cd $(BACKEND_DIR) && BADFILES=$$(rg --files -g '*.go' | while IFS= read -r f; do \
 		TMP_FMT=$$(mktemp) && TMP_SRC=$$(mktemp) && \
 		gofmt "$$f" > "$$TMP_FMT" && \
 		tr -d '\r' < "$$f" > "$$TMP_SRC" && \
@@ -74,16 +80,17 @@ lint-backend:
 	@echo "gofmt passed."
 	@echo ""
 	@echo "======== Backend Lint (go vet) ========"
-	@cd $(BACKEND_DIR) && go vet ./...
+	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go vet ./...
 	@echo "go vet passed."
 
 test-backend:
+	@$(MAKE) prepare-backend-go-cache
 	@echo ""
 	@echo "======== Backend Tests + Coverage ========"
-	@cd $(BACKEND_DIR) && go test ./... -coverprofile=coverage.out
+	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go test ./... -coverprofile=coverage.out
 	@echo ""
 	@echo "======== Backend Coverage Threshold ========"
-	@cd $(BACKEND_DIR) && \
+	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) \
 		COVERAGE=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $$3); print $$3}'); \
 		echo "Backend coverage: $${COVERAGE}% (minimum: $(BACKEND_COVERAGE_MIN)%)"; \
 		awk -v c="$$COVERAGE" -v min="$(BACKEND_COVERAGE_MIN)" 'BEGIN { exit(c >= min ? 0 : 1) }' || \
