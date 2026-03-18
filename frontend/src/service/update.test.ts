@@ -18,23 +18,27 @@ describe('service/update', () => {
         jest.clearAllMocks();
     });
 
-    it('gets update status', async () => {
-        const payload = { status: 'idle', available: false };
-        mockedApi.get.mockResolvedValue({ data: payload });
+    it.each([
+        {
+            name: 'gets update status',
+            fn: () => getUpdateStatus(),
+            method: 'get' as const,
+            url: '/update/status',
+            response: { status: 'idle', available: false },
+        },
+        {
+            name: 'applies update',
+            fn: () => applyUpdate(),
+            method: 'post' as const,
+            url: '/update/apply',
+            response: { started: true },
+        },
+    ])('$name', async ({ fn, method, url, response }) => {
+        mockedApi[method].mockResolvedValue({ data: response });
 
-        const result = await getUpdateStatus();
+        const result = await fn();
 
-        expect(mockedApi.get).toHaveBeenCalledWith('/update/status');
-        expect(result).toEqual(payload);
-    });
-
-    it('applies update', async () => {
-        const payload = { started: true };
-        mockedApi.post.mockResolvedValue({ data: payload });
-
-        const result = await applyUpdate();
-
-        expect(mockedApi.post).toHaveBeenCalledWith('/update/apply');
-        expect(result).toEqual(payload);
+        expect(mockedApi[method]).toHaveBeenCalledWith(url);
+        expect(result).toEqual(response);
     });
 });

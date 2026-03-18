@@ -197,84 +197,59 @@ func TestOptionalAndPagination(t *testing.T) {
 	if p2.Pagination.HasNext {
 		t.Fatalf("expected has next false")
 	}
+
+	if (&Pagination{Page: 1}).GetHasPrev() {
+		t.Fatalf("expected false for first page")
+	}
+	if !(&Pagination{Page: 2}).GetHasPrev() {
+		t.Fatalf("expected true for page > 1")
+	}
 }
 
-func TestCalculateOffsetAndFormatType(t *testing.T) {
+func TestCalculateOffset(t *testing.T) {
 	if got := CalculateOffset(0, 0); got != 0 {
 		t.Fatalf("expected offset 0, got %d", got)
 	}
 	if got := CalculateOffset(3, 10); got != 20 {
 		t.Fatalf("expected offset 20, got %d", got)
 	}
+}
 
-	if got := GetFormatTypeByExtension(".MP3"); got.Type != FormatTypeAudio {
-		t.Fatalf("expected audio for .MP3")
+func TestGetFormatTypeByExtension(t *testing.T) {
+	cases := []struct {
+		ext      string
+		expected string
+	}{
+		{".MP3", FormatTypeAudio},
+		{".wav", FormatTypeAudio},
+		{".aac", FormatTypeAudio},
+		{".flac", FormatTypeAudio},
+		{".png", FormatTypeImage},
+		{".gif", FormatTypeImage},
+		{".svg", FormatTypeImage},
+		{".webp", FormatTypeImage},
+		{".webm", FormatTypeVideo},
+		{".ogg", FormatTypeVideo},
+		{".mov", FormatTypeVideo},
+		{".pdf", FormatTypeDocument},
+		{".txt", FormatTypeDocument},
+		{".html", FormatTypeDocument},
+		{".xml", FormatTypeDocument},
+		{".json", FormatTypeDocument},
+		{".csv", FormatTypeDocument},
+		{".zip", FormatTypeArchive},
+		{".rar", FormatTypeArchive},
+		{".7z", FormatTypeArchive},
+		{".tar", FormatTypeArchive},
+		{".gz", FormatTypeArchive},
+		{".unknown", FormatTypeUnknown},
 	}
-	if got := GetFormatTypeByExtension(".pdf"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .pdf")
-	}
-	if got := GetFormatTypeByExtension(".zip"); got.Type != FormatTypeArchive {
-		t.Fatalf("expected archive for .zip")
-	}
-	if got := GetFormatTypeByExtension(".unknown"); got.Type != FormatTypeUnknown {
-		t.Fatalf("expected unknown for unsupported extension")
-	}
-	if got := GetFormatTypeByExtension(".png"); got.Type != FormatTypeImage {
-		t.Fatalf("expected image for .png")
-	}
-	if got := GetFormatTypeByExtension(".gif"); got.Type != FormatTypeImage {
-		t.Fatalf("expected image for .gif")
-	}
-	if got := GetFormatTypeByExtension(".svg"); got.Type != FormatTypeImage {
-		t.Fatalf("expected image for .svg")
-	}
-	if got := GetFormatTypeByExtension(".webp"); got.Type != FormatTypeImage {
-		t.Fatalf("expected image for .webp")
-	}
-	if got := GetFormatTypeByExtension(".wav"); got.Type != FormatTypeAudio {
-		t.Fatalf("expected audio for .wav")
-	}
-	if got := GetFormatTypeByExtension(".aac"); got.Type != FormatTypeAudio {
-		t.Fatalf("expected audio for .aac")
-	}
-	if got := GetFormatTypeByExtension(".flac"); got.Type != FormatTypeAudio {
-		t.Fatalf("expected audio for .flac")
-	}
-	if got := GetFormatTypeByExtension(".webm"); got.Type != FormatTypeVideo {
-		t.Fatalf("expected video for .webm")
-	}
-	if got := GetFormatTypeByExtension(".ogg"); got.Type != FormatTypeVideo {
-		t.Fatalf("expected video for .ogg")
-	}
-	if got := GetFormatTypeByExtension(".mov"); got.Type != FormatTypeVideo {
-		t.Fatalf("expected video for .mov")
-	}
-	if got := GetFormatTypeByExtension(".txt"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .txt")
-	}
-	if got := GetFormatTypeByExtension(".html"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .html")
-	}
-	if got := GetFormatTypeByExtension(".xml"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .xml")
-	}
-	if got := GetFormatTypeByExtension(".json"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .json")
-	}
-	if got := GetFormatTypeByExtension(".csv"); got.Type != FormatTypeDocument {
-		t.Fatalf("expected document for .csv")
-	}
-	if got := GetFormatTypeByExtension(".rar"); got.Type != FormatTypeArchive {
-		t.Fatalf("expected archive for .rar")
-	}
-	if got := GetFormatTypeByExtension(".7z"); got.Type != FormatTypeArchive {
-		t.Fatalf("expected archive for .7z")
-	}
-	if got := GetFormatTypeByExtension(".tar"); got.Type != FormatTypeArchive {
-		t.Fatalf("expected archive for .tar")
-	}
-	if got := GetFormatTypeByExtension(".gz"); got.Type != FormatTypeArchive {
-		t.Fatalf("expected archive for .gz")
+	for _, tc := range cases {
+		t.Run(tc.ext, func(t *testing.T) {
+			if got := GetFormatTypeByExtension(tc.ext); got.Type != tc.expected {
+				t.Fatalf("expected %v for %s, got %v", tc.expected, tc.ext, got.Type)
+			}
+		})
 	}
 }
 

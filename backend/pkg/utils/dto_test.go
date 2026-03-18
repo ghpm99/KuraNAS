@@ -6,15 +6,6 @@ import (
 	"time"
 )
 
-func TestPaginationGetHasPrev(t *testing.T) {
-	if (&Pagination{Page: 1}).GetHasPrev() {
-		t.Fatalf("expected false for first page")
-	}
-	if !(&Pagination{Page: 2}).GetHasPrev() {
-		t.Fatalf("expected true for page > 1")
-	}
-}
-
 func TestOptionalGetSetAndEmpty(t *testing.T) {
 	var o Optional[int]
 	if !o.IsEmpty() {
