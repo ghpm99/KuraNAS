@@ -66,6 +66,7 @@ func InitializeApp() (*Application, error) {
 		Tasks:               *appContext.Tasks,
 		Logger:              appContext.Logger,
 		NotificationService: appContext.Notifications.Service,
+		AIService:           appContext.AI,
 	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository

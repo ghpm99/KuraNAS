@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"log"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
@@ -12,6 +13,9 @@ import (
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
+	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/providers/anthropic"
+	"nas-go/api/pkg/ai/providers/openai"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -22,6 +26,7 @@ var tasks = make(chan utils.Task, 100)
 type AppContext struct {
 	DB            *database.DbContext
 	Logger        logger.LoggerServiceInterface
+	AI            ai.ServiceInterface
 	Tasks         *chan utils.Task
 	Files         *FileContext
 	Jobs          *JobsContext
@@ -98,14 +103,15 @@ func NewContext(db *sql.DB) *AppContext {
 	dbContext := database.NewDbContext(db)
 
 	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
+	aiService := newAIService()
 	jobsContext := newJobsContext(dbContext)
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
-	videoContext := newVideoContext(dbContext, loggerService)
-	analyticsContext := newAnalyticsContext(dbContext)
+	videoContext := newVideoContext(dbContext, loggerService, aiService)
+	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
-	searchContext := newSearchContext(dbContext)
+	searchContext := newSearchContext(dbContext, aiService)
 	notificationContext := newNotificationContext(dbContext)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
@@ -113,6 +119,7 @@ func NewContext(db *sql.DB) *AppContext {
 	context := &AppContext{
 		DB:            dbContext,
 		Logger:        loggerService,
+		AI:            aiService,
 		Tasks:         &tasks,
 		Files:         fileContext,
 		Jobs:          jobsContext,
@@ -170,9 +177,9 @@ func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	}
 }
 
-func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *VideoContext {
+func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) *VideoContext {
 	repository := video.NewRepository(dbContext)
-	service := video.NewService(repository)
+	service := video.NewService(repository, aiService)
 	handler := video.NewHandler(service, logger)
 	return &VideoContext{
 		Handler:    handler,
@@ -192,9 +199,9 @@ func newDiaryContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	}
 }
 
-func newAnalyticsContext(dbContext *database.DbContext) *AnalyticsContext {
+func newAnalyticsContext(dbContext *database.DbContext, aiService ai.ServiceInterface) *AnalyticsContext {
 	repository := analytics.NewRepository(dbContext)
-	service := analytics.NewService(repository)
+	service := analytics.NewService(repository, aiService)
 	handler := analytics.NewHandler(service)
 	return &AnalyticsContext{
 		Handler:    handler,
@@ -230,9 +237,9 @@ func newNotificationContext(dbContext *database.DbContext) *NotificationContext 
 	}
 }
 
-func newSearchContext(dbContext *database.DbContext) *SearchContext {
+func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterface) *SearchContext {
 	repository := search.NewRepository(dbContext)
-	service := search.NewService(repository)
+	service := search.NewService(repository, aiService)
 	handler := search.NewHandler(service)
 
 	return &SearchContext{
@@ -240,4 +247,51 @@ func newSearchContext(dbContext *database.DbContext) *SearchContext {
 		Service:    service,
 		Repository: repository,
 	}
+}
+
+func newAIService() ai.ServiceInterface {
+	cfg := ai.LoadConfig()
+	if cfg.OpenAIAPIKey == "" && cfg.AnthropicAPIKey == "" {
+		log.Println("AI service disabled: no API keys configured")
+		return nil
+	}
+
+	router := ai.NewRouter()
+
+	var primary ai.Provider
+	var fallback ai.Provider
+
+	if cfg.OpenAIAPIKey != "" {
+		primary = openai.NewProvider(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIBaseURL, cfg.DefaultTimeout)
+		log.Printf("AI provider registered: openai (%s)\n", cfg.OpenAIModel)
+	}
+	if cfg.AnthropicAPIKey != "" {
+		provider := anthropic.NewProvider(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.DefaultTimeout)
+		if primary == nil {
+			primary = provider
+		} else {
+			fallback = provider
+		}
+		log.Printf("AI provider registered: anthropic (%s)\n", cfg.AnthropicModel)
+	}
+
+	taskTypes := []ai.TaskType{
+		ai.TaskClassification,
+		ai.TaskExtraction,
+		ai.TaskSummarization,
+		ai.TaskGeneration,
+		ai.TaskSimple,
+		ai.TaskComplex,
+	}
+
+	for _, taskType := range taskTypes {
+		if fallback != nil {
+			router.RegisterWithFallback(taskType, primary, fallback)
+		} else {
+			router.Register(taskType, primary)
+		}
+	}
+
+	log.Println("AI service enabled")
+	return ai.NewService(router, cfg)
 }

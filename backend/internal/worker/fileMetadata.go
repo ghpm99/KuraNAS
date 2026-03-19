@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/utils"
 	"sync"
 )
@@ -16,11 +17,12 @@ func StartMetadataWorker(
 	runner ScriptRunner,
 	monitorChannel chan<- ResultWorkerData,
 	workerGroup *sync.WaitGroup,
+	aiService ai.ServiceInterface,
 ) {
 	defer workerGroup.Done()
 
 	for unprocessedFile := range fileDtoChannel {
-		metadata, err := getMetadata(unprocessedFile, runner)
+		metadata, err := getMetadata(unprocessedFile, runner, aiService)
 
 		if err != nil {
 			log.Println(err)
@@ -37,12 +39,12 @@ func StartMetadataWorker(
 	}
 }
 
-func getMetadata(fileDto files.FileDto, runner ScriptRunner) (any, error) {
+func getMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
 
 	switch formatType.Type {
 	case utils.FormatTypeImage:
-		return getImageMetadata(fileDto, runner)
+		return getImageMetadata(fileDto, runner, aiService)
 	case utils.FormatTypeAudio:
 		return getAudioMetadata(fileDto, runner)
 	case utils.FormatTypeVideo:
@@ -52,7 +54,7 @@ func getMetadata(fileDto files.FileDto, runner ScriptRunner) (any, error) {
 	}
 }
 
-func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (files.ImageMetadataModel, error) {
+func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (files.ImageMetadataModel, error) {
 	metadata := files.ImageMetadataModel{
 		FileId: fileDto.ID,
 		Path:   fileDto.Path,
@@ -68,7 +70,7 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (files.ImageMe
 		return metadata, err
 	}
 
-	metadata.Classification = files.ClassifyImage(fileDto, metadata)
+	metadata.Classification = files.ClassifyImageWithAI(fileDto, metadata, aiService)
 
 	return metadata, nil
 }

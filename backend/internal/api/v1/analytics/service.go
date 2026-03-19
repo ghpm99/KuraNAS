@@ -1,10 +1,15 @@
 package analytics
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/ai"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -12,10 +17,11 @@ var ErrInvalidPeriod = errors.New("invalid analytics period")
 
 type Service struct {
 	Repository RepositoryInterface
+	AIService  ai.ServiceInterface
 }
 
-func NewService(repository RepositoryInterface) ServiceInterface {
-	return &Service{Repository: repository}
+func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
+	return &Service{Repository: repository, AIService: aiService}
 }
 
 func (s *Service) GetOverview(period string) (OverviewDto, error) {
@@ -79,8 +85,83 @@ func (s *Service) GetOverview(period string) (OverviewDto, error) {
 		},
 		Health: toHealthDto(data),
 	}
+	overview.Insights = s.generateInsights(overview)
 
 	return overview, nil
+}
+
+func (s *Service) generateInsights(overview OverviewDto) []string {
+	if s.AIService == nil {
+		return []string{}
+	}
+
+	summary := buildMetricsSummary(overview)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	resp, err := s.AIService.Execute(ctx, ai.Request{
+		TaskType:     ai.TaskSummarization,
+		SystemPrompt: "You are a storage analytics assistant for a personal NAS system. Provide actionable insights based on storage metrics. Respond ONLY with a JSON array of strings, no extra text. Write insights in the user's language (pt-BR).",
+		Prompt:       fmt.Sprintf("Analyze these NAS storage metrics and provide 3-5 actionable insights:\n\n%s\n\nRespond with JSON: [\"insight 1\", \"insight 2\", ...]", summary),
+		MaxTokens:    500,
+		Temperature:  0.3,
+	})
+	if err != nil {
+		log.Printf("AI insights generation failed: %v\n", err)
+		return []string{}
+	}
+
+	return parseInsightsResponse(resp.Content)
+}
+
+func buildMetricsSummary(overview OverviewDto) string {
+	var parts []string
+
+	if overview.Storage.TotalBytes > 0 {
+		usagePct := float64(overview.Storage.UsedBytes) / float64(overview.Storage.TotalBytes) * 100
+		parts = append(parts, fmt.Sprintf("Storage: %.1f%% used (%d bytes of %d bytes)", usagePct, overview.Storage.UsedBytes, overview.Storage.TotalBytes))
+	}
+	parts = append(parts, fmt.Sprintf("Growth: %d bytes in period %s", overview.Storage.GrowthBytes, overview.Period))
+	parts = append(parts, fmt.Sprintf("Files: %d total, %d added in period", overview.Counts.FilesTotal, overview.Counts.FilesAdded))
+	parts = append(parts, fmt.Sprintf("Folders: %d", overview.Counts.Folders))
+	parts = append(parts, fmt.Sprintf("Duplicates: %d groups, %d bytes reclaimable", overview.Duplicates.Groups, overview.Duplicates.ReclaimableSize))
+	parts = append(parts, fmt.Sprintf("Health: %s, errors 24h: %d", overview.Health.Status, overview.Health.ErrorsLast24h))
+
+	if len(overview.HotFolders) > 0 {
+		hotNames := make([]string, 0, len(overview.HotFolders))
+		for _, hf := range overview.HotFolders {
+			hotNames = append(hotNames, fmt.Sprintf("%s (%d new files)", hf.Path, hf.NewFiles))
+		}
+		parts = append(parts, fmt.Sprintf("Hot folders: %s", strings.Join(hotNames, ", ")))
+	}
+
+	parts = append(parts, fmt.Sprintf("Processing: %d metadata pending, %d failed", overview.Processing.MetadataPending, overview.Processing.MetadataFailed))
+
+	return strings.Join(parts, "\n")
+}
+
+func parseInsightsResponse(content string) []string {
+	content = strings.TrimSpace(content)
+
+	if strings.HasPrefix(content, "```") {
+		lines := strings.Split(content, "\n")
+		filtered := make([]string, 0, len(lines))
+		for _, line := range lines {
+			if !strings.HasPrefix(strings.TrimSpace(line), "```") {
+				filtered = append(filtered, line)
+			}
+		}
+		content = strings.Join(filtered, "\n")
+	}
+
+	var insights []string
+	if err := json.Unmarshal([]byte(content), &insights); err != nil {
+		log.Printf("AI insights parse error: %v\n", err)
+		return []string{}
+	}
+
+	return insights
 }
 
 func resolvePeriod(period string) (PeriodConfig, error) {

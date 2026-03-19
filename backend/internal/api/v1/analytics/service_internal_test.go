@@ -1,11 +1,13 @@
 package analytics
 
 import (
+	"context"
 	"database/sql"
+	"errors"
+	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/database"
 	"testing"
 	"time"
-
-	"nas-go/api/pkg/database"
 )
 
 type repositoryStub struct {
@@ -21,8 +23,16 @@ func (stub *repositoryStub) GetOverviewData(period PeriodConfig, limits Overview
 	return stub.response, stub.err
 }
 
+type analyticsAIMock struct {
+	executeFn func(ctx context.Context, req ai.Request) (ai.Response, error)
+}
+
+func (m *analyticsAIMock) Execute(ctx context.Context, req ai.Request) (ai.Response, error) {
+	return m.executeFn(ctx, req)
+}
+
 func TestServiceGetOverviewRejectsInvalidPeriod(t *testing.T) {
-	service := NewService(&repositoryStub{})
+	service := NewService(&repositoryStub{}, nil)
 	_, err := service.GetOverview("2d")
 	if err == nil {
 		t.Fatalf("expected invalid period error")
@@ -45,7 +55,7 @@ func TestServiceGetOverviewMapsHealthAndPeriod(t *testing.T) {
 		RecentErrors:   []LogErrorModel{{Name: "ScanFiles", Description: sql.NullString{String: "boom", Valid: true}, CreatedAt: now}},
 	}}
 
-	service := NewService(stub)
+	service := NewService(stub, nil)
 	result, err := service.GetOverview("30d")
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
@@ -67,6 +77,9 @@ func TestServiceGetOverviewMapsHealthAndPeriod(t *testing.T) {
 	}
 	if len(result.Health.RecentErrors) != 1 {
 		t.Fatalf("expected 1 recent error")
+	}
+	if result.Insights == nil {
+		t.Fatalf("expected non-nil insights slice")
 	}
 }
 
@@ -294,7 +307,7 @@ func TestToHealthDto(t *testing.T) {
 
 func TestServiceGetOverviewRepoError(t *testing.T) {
 	stub := &repositoryStub{err: sql.ErrNoRows}
-	service := NewService(stub)
+	service := NewService(stub, nil)
 	_, err := service.GetOverview("7d")
 	if err == nil {
 		t.Fatalf("expected error")
@@ -318,7 +331,7 @@ func TestServiceGetOverviewWithAllData(t *testing.T) {
 		HealthStatus: sql.NullString{String: "PENDING", Valid: true},
 	}}
 
-	service := NewService(stub)
+	service := NewService(stub, nil)
 	result, err := service.GetOverview("")
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
@@ -350,4 +363,100 @@ func TestServiceGetOverviewWithAllData(t *testing.T) {
 	if result.Health.Status != "scanning" {
 		t.Fatalf("expected scanning status, got %s", result.Health.Status)
 	}
+}
+
+func TestServiceGetOverviewWithAIInsights(t *testing.T) {
+	stub := &repositoryStub{response: OverviewDataModel{
+		StorageKpis: StorageKpisModel{UsedBytes: 500, FilesTotal: 100},
+	}}
+
+	aiMock := &analyticsAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			if req.TaskType != ai.TaskSummarization {
+				t.Fatalf("expected summarization task, got %s", req.TaskType)
+			}
+			return ai.Response{Content: `["Storage is healthy", "Consider removing duplicates"]`}, nil
+		},
+	}
+
+	service := NewService(stub, aiMock)
+	result, err := service.GetOverview("7d")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Insights) != 2 {
+		t.Fatalf("expected 2 insights, got %d", len(result.Insights))
+	}
+}
+
+func TestServiceGetOverviewAIErrorReturnsEmptyInsights(t *testing.T) {
+	stub := &repositoryStub{response: OverviewDataModel{
+		StorageKpis: StorageKpisModel{UsedBytes: 500, FilesTotal: 100},
+	}}
+
+	aiMock := &analyticsAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			return ai.Response{}, errors.New("timeout")
+		},
+	}
+
+	service := NewService(stub, aiMock)
+	result, err := service.GetOverview("7d")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Insights) != 0 {
+		t.Fatalf("expected empty insights on AI error, got %d", len(result.Insights))
+	}
+}
+
+func TestServiceGetOverviewNilAIReturnsEmptyInsights(t *testing.T) {
+	stub := &repositoryStub{response: OverviewDataModel{
+		StorageKpis: StorageKpisModel{UsedBytes: 500, FilesTotal: 100},
+	}}
+
+	service := NewService(stub, nil)
+	result, err := service.GetOverview("7d")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Insights) != 0 {
+		t.Fatalf("expected empty insights when AI is nil, got %d", len(result.Insights))
+	}
+}
+
+func TestBuildMetricsSummary(t *testing.T) {
+	overview := OverviewDto{
+		Period:  "7d",
+		Storage: StorageDto{TotalBytes: 1000, UsedBytes: 500, GrowthBytes: 50},
+		Counts:  CountsDto{FilesTotal: 100, FilesAdded: 10, Folders: 20},
+		Health:  HealthDto{Status: "ok", ErrorsLast24h: 0},
+	}
+	summary := buildMetricsSummary(overview)
+	if summary == "" {
+		t.Fatalf("expected non-empty summary")
+	}
+}
+
+func TestParseInsightsResponse(t *testing.T) {
+	t.Run("valid JSON", func(t *testing.T) {
+		result := parseInsightsResponse(`["insight 1", "insight 2"]`)
+		if len(result) != 2 {
+			t.Fatalf("expected 2 insights, got %d", len(result))
+		}
+	})
+
+	t.Run("invalid JSON returns empty", func(t *testing.T) {
+		result := parseInsightsResponse("not json")
+		if len(result) != 0 {
+			t.Fatalf("expected empty insights for invalid JSON")
+		}
+	})
+
+	t.Run("markdown code fence stripped", func(t *testing.T) {
+		result := parseInsightsResponse("```json\n[\"insight\"]\n```")
+		if len(result) != 1 {
+			t.Fatalf("expected 1 insight, got %d", len(result))
+		}
+	})
 }
