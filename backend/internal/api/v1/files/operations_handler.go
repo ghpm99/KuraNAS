@@ -5,32 +5,36 @@ import (
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 type createFolderRequest struct {
-	ParentPath string `json:"parent_path"`
-	Name       string `json:"name"`
+	ParentID *int   `json:"parent_id"`
+	Name     string `json:"name"`
 }
 
 type moveFileRequest struct {
-	SourcePath      string `json:"source_path"`
-	DestinationPath string `json:"destination_path"`
+	SourceID            int    `json:"source_id"`
+	DestinationFolderID *int   `json:"destination_folder_id"`
+	DestinationPath     string `json:"destination_path"`
 }
 
 type deleteFileRequest struct {
-	Path string `json:"path"`
+	ID int `json:"id"`
 }
 
-type renamePathRequest struct {
-	SourcePath string `json:"source_path"`
-	NewName    string `json:"new_name"`
+type renameFileRequest struct {
+	ID      int    `json:"id"`
+	NewName string `json:"new_name"`
 }
 
-type copyPathRequest struct {
-	SourcePath      string `json:"source_path"`
-	DestinationPath string `json:"destination_path"`
+type copyFileRequest struct {
+	SourceID            int    `json:"source_id"`
+	DestinationFolderID *int   `json:"destination_folder_id"`
+	DestinationPath     string `json:"destination_path"`
+	NewName             string `json:"new_name"`
 }
 
 func (handler *Handler) respondFileOperationError(c *gin.Context, loggerModel logger.LoggerModel, err error, fallbackKey string) {
@@ -61,7 +65,18 @@ func (handler *Handler) UploadFilesHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := handler.service.UploadFiles(c.PostForm("target_path"), form.File["files"])
+	var targetFolderID int
+	if raw := c.PostForm("target_folder_id"); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil {
+			handler.Logger.CompleteWithErrorLog(loggerModel, parseErr)
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_ID")})
+			return
+		}
+		targetFolderID = parsed
+	}
+
+	result, err := handler.service.UploadFiles(targetFolderID, form.File["files"])
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_UPLOAD_FAILED")
 		return
@@ -91,7 +106,7 @@ func (handler *Handler) CreateFolderHandler(c *gin.Context) {
 		return
 	}
 
-	createdPath, err := handler.service.CreateFolder(req.ParentPath, req.Name)
+	createdPath, err := handler.service.CreateFolder(req.ParentID, req.Name)
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_CREATE_FOLDER_FAILED")
 		return
@@ -117,7 +132,7 @@ func (handler *Handler) MoveFileHandler(c *gin.Context) {
 		return
 	}
 
-	destinationPath, err := handler.service.MovePath(req.SourcePath, req.DestinationPath)
+	destinationPath, err := handler.service.MoveFile(req.SourceID, req.DestinationFolderID, req.DestinationPath)
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_MOVE_FAILED")
 		return
@@ -127,9 +142,9 @@ func (handler *Handler) MoveFileHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("ACTION_MOVE_SUCCESS"), "path": destinationPath})
 }
 
-func (handler *Handler) DeletePathHandler(c *gin.Context) {
+func (handler *Handler) DeleteFileHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "DeletePath",
+		Name:        "DeleteFile",
 		Description: "Deleting file or folder from disk",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
@@ -143,7 +158,7 @@ func (handler *Handler) DeletePathHandler(c *gin.Context) {
 		return
 	}
 
-	if err := handler.service.DeletePath(req.Path); err != nil {
+	if err := handler.service.DeleteFileFromDisk(req.ID); err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_DELETE_FAILED")
 		return
 	}
@@ -152,23 +167,23 @@ func (handler *Handler) DeletePathHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("ACTION_DELETE_SUCCESS")})
 }
 
-func (handler *Handler) RenamePathHandler(c *gin.Context) {
+func (handler *Handler) RenameFileHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "RenamePath",
+		Name:        "RenameFile",
 		Description: "Renaming file or folder from disk",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	var req renamePathRequest
+	var req renameFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 
-	destinationPath, err := handler.service.RenamePath(req.SourcePath, req.NewName)
+	destinationPath, err := handler.service.RenameFile(req.ID, req.NewName)
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_RENAME_FAILED")
 		return
@@ -178,23 +193,23 @@ func (handler *Handler) RenamePathHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("ACTION_RENAME_SUCCESS"), "path": destinationPath})
 }
 
-func (handler *Handler) CopyPathHandler(c *gin.Context) {
+func (handler *Handler) CopyFileHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "CopyPath",
+		Name:        "CopyFile",
 		Description: "Copying file or folder",
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	var req copyPathRequest
+	var req copyFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 
-	destinationPath, err := handler.service.CopyPath(req.SourcePath, req.DestinationPath)
+	destinationPath, err := handler.service.CopyFile(req.SourceID, req.DestinationFolderID, req.DestinationPath, req.NewName)
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_COPY_FAILED")
 		return

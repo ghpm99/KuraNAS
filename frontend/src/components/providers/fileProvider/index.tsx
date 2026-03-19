@@ -3,17 +3,17 @@ import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-    copyFilePath,
-    createFolderAtPath,
-    deleteFilePath,
+    copyFile as copyFileService,
+    createFolder as createFolderService,
+    deleteFile as deleteFileService,
     getFileByPath,
     getFilesTree,
     getRecentAccessByFileId,
-    moveFilePath,
-    renameFilePath,
+    moveFile as moveFileService,
+    renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
     toggleStarredFile,
-    uploadFilesToPath,
+    uploadFiles as uploadFilesService,
 } from '@/service/files';
 import {
     FileContextProvider,
@@ -109,48 +109,48 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     }, [refetch]);
 
     const uploadFiles = useCallback(
-        async (files: FileList, targetPath?: string) => {
-            await uploadFilesToPath(files, targetPath);
+        async (files: FileList, targetFolderId?: number) => {
+            await uploadFilesService(files, targetFolderId);
             await refetch();
         },
         [refetch]
     );
 
     const createFolder = useCallback(
-        async (name: string, parentPath?: string) => {
-            await createFolderAtPath(name, parentPath);
+        async (name: string, parentId?: number) => {
+            await createFolderService(name, parentId);
             await refetch();
         },
         [refetch]
     );
 
-    const movePath = useCallback(
-        async (sourcePath: string, destinationPath: string) => {
-            await moveFilePath(sourcePath, destinationPath);
+    const moveFile = useCallback(
+        async (sourceId: number, destinationFolderId?: number, destinationPath?: string) => {
+            await moveFileService(sourceId, destinationFolderId, destinationPath);
             await refetch();
         },
         [refetch]
     );
 
-    const copyPath = useCallback(
-        async (sourcePath: string, destinationPath: string) => {
-            await copyFilePath(sourcePath, destinationPath);
+    const copyFile = useCallback(
+        async (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => {
+            await copyFileService(sourceId, destinationFolderId, destinationPath, newName);
             await refetch();
         },
         [refetch]
     );
 
-    const renamePath = useCallback(
-        async (sourcePath: string, newName: string) => {
-            await renameFilePath(sourcePath, newName);
+    const renameFile = useCallback(
+        async (id: number, newName: string) => {
+            await renameFileService(id, newName);
             await refetch();
         },
         [refetch]
     );
 
-    const deletePath = useCallback(
-        async (path: string) => {
-            await deleteFilePath(path);
+    const deleteFile = useCallback(
+        async (id: number) => {
+            await deleteFileService(id);
             await refetch();
         },
         [refetch]
@@ -240,10 +240,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             handleStarredItem,
             uploadFiles,
             createFolder,
-            movePath,
-            copyPath,
-            renamePath,
-            deletePath,
+            moveFile,
+            copyFile,
+            renameFile,
+            deleteFile,
             rescanFiles,
         }),
         [
@@ -258,10 +258,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             handleStarredItem,
             uploadFiles,
             createFolder,
-            movePath,
-            copyPath,
-            renamePath,
-            deletePath,
+            moveFile,
+            copyFile,
+            renameFile,
+            deleteFile,
             rescanFiles,
         ]
     );

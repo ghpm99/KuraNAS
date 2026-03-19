@@ -61,15 +61,15 @@ export const rescanFiles = async (): Promise<void> => {
     });
 };
 
-export const uploadFilesToPath = async (files: FileList, targetPath?: string): Promise<void> => {
+export const uploadFiles = async (files: FileList, targetFolderId?: number): Promise<void> => {
     const formData = new FormData();
 
     for (const file of Array.from(files)) {
         formData.append('files', file);
     }
 
-    if (targetPath) {
-        formData.append('target_path', targetPath);
+    if (targetFolderId !== undefined && targetFolderId > 0) {
+        formData.append('target_folder_id', String(targetFolderId));
     }
 
     await apiBase.post('/files/upload', formData, {
@@ -79,37 +79,49 @@ export const uploadFilesToPath = async (files: FileList, targetPath?: string): P
     });
 };
 
-export const createFolderAtPath = async (name: string, parentPath?: string): Promise<void> => {
+export const createFolder = async (name: string, parentId?: number): Promise<void> => {
     await apiBase.post('/files/folder', {
         name,
-        parent_path: parentPath,
+        parent_id: parentId ?? null,
     });
 };
 
-export const moveFilePath = async (sourcePath: string, destinationPath: string): Promise<void> => {
-    await apiBase.post('/files/move', {
-        source_path: sourcePath,
-        destination_path: destinationPath,
+export const deleteFile = async (id: number): Promise<void> => {
+    await apiBase.delete('/files/path', {
+        data: { id },
     });
 };
 
-export const copyFilePath = async (sourcePath: string, destinationPath: string): Promise<void> => {
-    await apiBase.post('/files/copy', {
-        source_path: sourcePath,
-        destination_path: destinationPath,
-    });
-};
-
-export const renameFilePath = async (sourcePath: string, newName: string): Promise<void> => {
+export const renameFile = async (id: number, newName: string): Promise<void> => {
     await apiBase.post('/files/rename', {
-        source_path: sourcePath,
+        id,
         new_name: newName,
     });
 };
 
-export const deleteFilePath = async (path: string): Promise<void> => {
-    await apiBase.delete('/files/path', {
-        data: { path },
+export const moveFile = async (
+    sourceId: number,
+    destinationFolderId?: number,
+    destinationPath?: string
+): Promise<void> => {
+    await apiBase.post('/files/move', {
+        source_id: sourceId,
+        destination_folder_id: destinationFolderId ?? null,
+        destination_path: destinationPath ?? '',
+    });
+};
+
+export const copyFile = async (
+    sourceId: number,
+    destinationFolderId?: number,
+    destinationPath?: string,
+    newName?: string
+): Promise<void> => {
+    await apiBase.post('/files/copy', {
+        source_id: sourceId,
+        destination_folder_id: destinationFolderId ?? null,
+        destination_path: destinationPath ?? '',
+        new_name: newName ?? '',
     });
 };
 

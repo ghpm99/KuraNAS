@@ -34,12 +34,12 @@ export type FileContextType = {
     selectedItem: FileData | null;
     handleSelectItem: (item: FileData | null) => void;
     handleStarredItem: (itemId: number) => void;
-    uploadFiles: (files: FileList, targetPath?: string) => Promise<void>;
-    createFolder: (name: string, parentPath?: string) => Promise<void>;
-    movePath: (sourcePath: string, destinationPath: string) => Promise<void>;
-    copyPath: (sourcePath: string, destinationPath: string) => Promise<void>;
-    renamePath: (sourcePath: string, newName: string) => Promise<void>;
-    deletePath: (path: string) => Promise<void>;
+    uploadFiles: (files: FileList, targetFolderId?: number) => Promise<void>;
+    createFolder: (name: string, parentId?: number) => Promise<void>;
+    moveFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string) => Promise<void>;
+    copyFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => Promise<void>;
+    renameFile: (id: number, newName: string) => Promise<void>;
+    deleteFile: (id: number) => Promise<void>;
     rescanFiles: () => Promise<void>;
     expandedItems: number[];
     fileListFilter: FileListCategoryType;

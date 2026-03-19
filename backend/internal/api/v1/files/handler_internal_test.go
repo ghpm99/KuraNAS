@@ -114,21 +114,21 @@ func (m *filesHandlerServiceMock) GetMusicByGenre(genre string, page int, pageSi
 func (m *filesHandlerServiceMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
 	return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{{Folder: "/m", TrackCount: 1}}}, nil
 }
-func (m *filesHandlerServiceMock) UploadFiles(targetPath string, files []*multipart.FileHeader) (UploadFilesResult, error) {
+func (m *filesHandlerServiceMock) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
 	return UploadFilesResult{}, nil
 }
-func (m *filesHandlerServiceMock) CreateFolder(parentPath string, name string) (string, error) {
+func (m *filesHandlerServiceMock) CreateFolder(parentID *int, name string) (string, error) {
 	return "", nil
 }
-func (m *filesHandlerServiceMock) MovePath(sourcePath string, destinationPath string) (string, error) {
-	return destinationPath, nil
+func (m *filesHandlerServiceMock) MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error) {
+	return "", nil
 }
-func (m *filesHandlerServiceMock) DeletePath(path string) error { return nil }
-func (m *filesHandlerServiceMock) RenamePath(sourcePath string, newName string) (string, error) {
-	return filepath.Join(filepath.Dir(sourcePath), newName), nil
+func (m *filesHandlerServiceMock) DeleteFileFromDisk(id int) error { return nil }
+func (m *filesHandlerServiceMock) RenameFile(id int, newName string) (string, error) {
+	return newName, nil
 }
-func (m *filesHandlerServiceMock) CopyPath(sourcePath string, destinationPath string) (string, error) {
-	return destinationPath, nil
+func (m *filesHandlerServiceMock) CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error) {
+	return "", nil
 }
 
 type filesRecentServiceMock struct{}

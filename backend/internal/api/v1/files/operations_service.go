@@ -1,6 +1,7 @@
 package files
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -38,6 +39,10 @@ func newFileOperationError(statusCode int, messageKey string, err error) *FileOp
 	}
 }
 
+func normalizePathSeparators(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
+}
+
 func resolvePathInEntryPoint(inputPath string) (string, error) {
 	entryPoint := strings.TrimSpace(config.AppConfig.EntryPoint)
 	if entryPoint == "" {
@@ -50,12 +55,12 @@ func resolvePathInEntryPoint(inputPath string) (string, error) {
 	}
 	entryPointClean := filepath.Clean(entryPointAbs)
 
-	candidate := strings.TrimSpace(inputPath)
+	candidate := normalizePathSeparators(strings.TrimSpace(inputPath))
 	if candidate == "" {
 		candidate = entryPointClean
 	}
 
-	if !filepath.IsAbs(candidate) {
+	if !filepath.IsAbs(candidate) || !strings.HasPrefix(filepath.Clean(candidate), entryPointClean) {
 		candidate = filepath.Join(entryPointClean, candidate)
 	}
 
@@ -76,10 +81,55 @@ func resolvePathInEntryPoint(inputPath string) (string, error) {
 	return candidateClean, nil
 }
 
-func (s *Service) UploadFiles(targetPath string, files []*multipart.FileHeader) (UploadFilesResult, error) {
-	resolvedTargetPath, err := resolvePathInEntryPoint(targetPath)
+// resolveTargetFolder resolves a folder from ID or creates from path.
+// If folderID is non-nil and > 0, looks up by ID and validates it's a directory.
+// If folderID is nil/0 and path is empty, returns entry point (root).
+// If folderID is nil/0 and path is non-empty, creates the folder chain and returns the path.
+func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (string, error) {
+	if folderID != nil && *folderID > 0 {
+		folder, err := s.GetFileById(*folderID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return "", newFileOperationError(http.StatusNotFound, "ERROR_FOLDER_NOT_FOUND", err)
+			}
+			return "", newFileOperationError(http.StatusInternalServerError, "ERROR_FILE_NOT_FOUND", err)
+		}
+		if folder.Type != Directory {
+			return "", newFileOperationError(http.StatusBadRequest, "ERROR_TARGET_NOT_DIRECTORY", fmt.Errorf("target is not a directory"))
+		}
+		resolved, err := resolvePathInEntryPoint(folder.Path)
+		if err != nil {
+			return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
+		}
+		return resolved, nil
+	}
+
+	trimmedPath := strings.TrimSpace(relativePath)
+	if trimmedPath == "" {
+		return resolvePathInEntryPoint("")
+	}
+
+	resolved, err := resolvePathInEntryPoint(trimmedPath)
 	if err != nil {
-		return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
+		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
+	}
+
+	if err := os.MkdirAll(resolved, 0755); err != nil {
+		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_CREATE_FOLDER_FAILED", err)
+	}
+
+	return resolved, nil
+}
+
+func (s *Service) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
+	var folderIDPtr *int
+	if targetFolderID > 0 {
+		folderIDPtr = &targetFolderID
+	}
+
+	resolvedTargetPath, err := s.resolveTargetFolder(folderIDPtr, "")
+	if err != nil {
+		return UploadFilesResult{}, err
 	}
 
 	stat, err := os.Stat(resolvedTargetPath)
@@ -147,7 +197,7 @@ func saveUploadedFile(fileHeader *multipart.FileHeader, destinationPath string) 
 	return err
 }
 
-func (s *Service) CreateFolder(parentPath string, name string) (string, error) {
+func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 	if strings.TrimSpace(name) == "" {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_FOLDER_NAME_REQUIRED", fmt.Errorf("empty folder name"))
 	}
@@ -155,9 +205,9 @@ func (s *Service) CreateFolder(parentPath string, name string) (string, error) {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_FOLDER_NAME_INVALID", fmt.Errorf("invalid folder name"))
 	}
 
-	resolvedParentPath, err := resolvePathInEntryPoint(parentPath)
+	resolvedParentPath, err := s.resolveTargetFolder(parentID, "")
 	if err != nil {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
+		return "", err
 	}
 
 	createdPath := filepath.Join(resolvedParentPath, name)
@@ -177,19 +227,31 @@ func (s *Service) CreateFolder(parentPath string, name string) (string, error) {
 	return createdPath, nil
 }
 
-func (s *Service) MovePath(sourcePath string, destinationPath string) (string, error) {
-	if strings.TrimSpace(sourcePath) == "" {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_MOVE_SOURCE_REQUIRED", fmt.Errorf("source path required"))
-	}
-	if strings.TrimSpace(destinationPath) == "" {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_MOVE_TARGET_REQUIRED", fmt.Errorf("destination path required"))
+func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error) {
+	if sourceID <= 0 {
+		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid source id"))
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(sourcePath)
+	sourceFile, err := s.GetFileById(sourceID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
+		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
+	}
+
+	resolvedSourcePath, err := resolvePathInEntryPoint(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
-	resolvedDestinationPath, err := resolvePathInEntryPoint(destinationPath)
+
+	resolvedDestDir, err := s.resolveTargetFolder(destinationFolderID, destinationPath)
+	if err != nil {
+		return "", err
+	}
+
+	resolvedDestPath := filepath.Join(resolvedDestDir, sourceFile.Name)
+	resolvedDestPath, err = resolvePathInEntryPoint(resolvedDestPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -199,16 +261,16 @@ func (s *Service) MovePath(sourcePath string, destinationPath string) (string, e
 		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	if _, err := os.Stat(resolvedDestinationPath); err == nil {
+	if _, err := os.Stat(resolvedDestPath); err == nil {
 		return "", newFileOperationError(
 			http.StatusConflict,
 			"ERROR_TARGET_ALREADY_EXISTS",
-			fmt.Errorf("destination exists: %s", resolvedDestinationPath),
+			fmt.Errorf("destination exists: %s", resolvedDestPath),
 		)
 	}
 
 	if sourceInfo.IsDir() {
-		relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestinationPath)
+		relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestPath)
 		if relErr == nil && relPath != "." && relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
 			return "", newFileOperationError(
 				http.StatusBadRequest,
@@ -218,24 +280,32 @@ func (s *Service) MovePath(sourcePath string, destinationPath string) (string, e
 		}
 	}
 
-	if err := os.Rename(resolvedSourcePath, resolvedDestinationPath); err != nil {
+	if err := os.Rename(resolvedSourcePath, resolvedDestPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
 	}
 
 	s.ScanDirTask(filepath.Dir(resolvedSourcePath))
-	if filepath.Dir(resolvedDestinationPath) != filepath.Dir(resolvedSourcePath) {
-		s.ScanDirTask(filepath.Dir(resolvedDestinationPath))
+	if filepath.Dir(resolvedDestPath) != filepath.Dir(resolvedSourcePath) {
+		s.ScanDirTask(filepath.Dir(resolvedDestPath))
 	}
 
-	return resolvedDestinationPath, nil
+	return resolvedDestPath, nil
 }
 
-func (s *Service) DeletePath(path string) error {
-	if strings.TrimSpace(path) == "" {
-		return newFileOperationError(http.StatusBadRequest, "ERROR_DELETE_PATH_REQUIRED", fmt.Errorf("path required"))
+func (s *Service) DeleteFileFromDisk(id int) error {
+	if id <= 0 {
+		return newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid file id"))
 	}
 
-	resolvedPath, err := resolvePathInEntryPoint(path)
+	file, err := s.GetFileById(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
+		return newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
+	}
+
+	resolvedPath, err := resolvePathInEntryPoint(file.Path)
 	if err != nil {
 		return newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -264,9 +334,9 @@ func (s *Service) DeletePath(path string) error {
 	return nil
 }
 
-func (s *Service) RenamePath(sourcePath string, newName string) (string, error) {
-	if strings.TrimSpace(sourcePath) == "" {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_RENAME_SOURCE_REQUIRED", fmt.Errorf("source path required"))
+func (s *Service) RenameFile(id int, newName string) (string, error) {
+	if id <= 0 {
+		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid file id"))
 	}
 
 	trimmedName := strings.TrimSpace(newName)
@@ -277,7 +347,15 @@ func (s *Service) RenamePath(sourcePath string, newName string) (string, error) 
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_RENAME_NAME_INVALID", fmt.Errorf("invalid new name"))
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(sourcePath)
+	file, err := s.GetFileById(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
+		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
+	}
+
+	resolvedSourcePath, err := resolvePathInEntryPoint(file.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -286,39 +364,56 @@ func (s *Service) RenamePath(sourcePath string, newName string) (string, error) 
 		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	destinationPath, err := resolvePathInEntryPoint(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
+	destPath, err := resolvePathInEntryPoint(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
-	if _, err := os.Stat(destinationPath); err == nil {
+	if _, err := os.Stat(destPath); err == nil {
 		return "", newFileOperationError(
 			http.StatusConflict,
 			"ERROR_TARGET_ALREADY_EXISTS",
-			fmt.Errorf("destination exists: %s", destinationPath),
+			fmt.Errorf("destination exists: %s", destPath),
 		)
 	}
 
-	if err := os.Rename(resolvedSourcePath, destinationPath); err != nil {
+	if err := os.Rename(resolvedSourcePath, destPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_RENAME_FAILED", err)
 	}
 
 	s.ScanDirTask(filepath.Dir(resolvedSourcePath))
-	return destinationPath, nil
+	return destPath, nil
 }
 
-func (s *Service) CopyPath(sourcePath string, destinationPath string) (string, error) {
-	if strings.TrimSpace(sourcePath) == "" {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_COPY_SOURCE_REQUIRED", fmt.Errorf("source path required"))
-	}
-	if strings.TrimSpace(destinationPath) == "" {
-		return "", newFileOperationError(http.StatusBadRequest, "ERROR_COPY_TARGET_REQUIRED", fmt.Errorf("destination path required"))
+func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error) {
+	if sourceID <= 0 {
+		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid source id"))
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(sourcePath)
+	sourceFile, err := s.GetFileById(sourceID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
+		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
+	}
+
+	resolvedSourcePath, err := resolvePathInEntryPoint(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
-	resolvedDestinationPath, err := resolvePathInEntryPoint(destinationPath)
+
+	resolvedDestDir, err := s.resolveTargetFolder(destinationFolderID, destinationPath)
+	if err != nil {
+		return "", err
+	}
+
+	fileName := strings.TrimSpace(newName)
+	if fileName == "" {
+		fileName = sourceFile.Name
+	}
+
+	resolvedDestPath := filepath.Join(resolvedDestDir, fileName)
+	resolvedDestPath, err = resolvePathInEntryPoint(resolvedDestPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -327,16 +422,16 @@ func (s *Service) CopyPath(sourcePath string, destinationPath string) (string, e
 	if err != nil {
 		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
-	if _, err := os.Stat(resolvedDestinationPath); err == nil {
+	if _, err := os.Stat(resolvedDestPath); err == nil {
 		return "", newFileOperationError(
 			http.StatusConflict,
 			"ERROR_TARGET_ALREADY_EXISTS",
-			fmt.Errorf("destination exists: %s", resolvedDestinationPath),
+			fmt.Errorf("destination exists: %s", resolvedDestPath),
 		)
 	}
 
 	if sourceInfo.IsDir() {
-		relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestinationPath)
+		relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestPath)
 		if relErr == nil && relPath != "." && relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
 			return "", newFileOperationError(
 				http.StatusBadRequest,
@@ -346,12 +441,12 @@ func (s *Service) CopyPath(sourcePath string, destinationPath string) (string, e
 		}
 	}
 
-	if err := copyPathRecursive(resolvedSourcePath, resolvedDestinationPath); err != nil {
+	if err := copyPathRecursive(resolvedSourcePath, resolvedDestPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_COPY_FAILED", err)
 	}
 
-	s.ScanDirTask(filepath.Dir(resolvedDestinationPath))
-	return resolvedDestinationPath, nil
+	s.ScanDirTask(filepath.Dir(resolvedDestPath))
+	return resolvedDestPath, nil
 }
 
 func copyPathRecursive(sourcePath string, destinationPath string) error {

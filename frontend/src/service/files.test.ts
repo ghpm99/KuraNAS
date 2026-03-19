@@ -13,12 +13,12 @@ import {
     getFileByPath,
     toggleStarredFile,
     rescanFiles,
-    uploadFilesToPath,
-    createFolderAtPath,
-    moveFilePath,
-    copyFilePath,
-    renameFilePath,
-    deleteFilePath,
+    uploadFiles,
+    createFolder,
+    moveFile,
+    copyFile,
+    renameFile,
+    deleteFile,
     downloadFileBlob,
     getMusicFiles,
     getImageFiles,
@@ -105,7 +105,7 @@ describe('service/files', () => {
         });
     });
 
-    it('uploads files with targetPath', async () => {
+    it('uploads files with targetFolderId', async () => {
         mockedApi.post.mockResolvedValue({});
 
         const file = new File(['content'], 'photo.jpg');
@@ -118,7 +118,7 @@ describe('service/files', () => {
             0: file,
         } as unknown as FileList;
 
-        await uploadFilesToPath(fileList, '/uploads');
+        await uploadFiles(fileList, 5);
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/upload', expect.any(FormData), {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -126,10 +126,10 @@ describe('service/files', () => {
 
         const formData: FormData = mockedApi.post.mock.calls[0][1];
         expect(formData.get('files')).toBeTruthy();
-        expect(formData.get('target_path')).toBe('/uploads');
+        expect(formData.get('target_folder_id')).toBe('5');
     });
 
-    it('uploads files without targetPath', async () => {
+    it('uploads files without targetFolderId', async () => {
         mockedApi.post.mockResolvedValue({});
 
         const file = new File(['content'], 'photo.jpg');
@@ -142,63 +142,102 @@ describe('service/files', () => {
             0: file,
         } as unknown as FileList;
 
-        await uploadFilesToPath(fileList);
+        await uploadFiles(fileList);
 
         const formData: FormData = mockedApi.post.mock.calls[0][1];
-        expect(formData.get('target_path')).toBeNull();
+        expect(formData.get('target_folder_id')).toBeNull();
     });
 
-    it('creates folder at path', async () => {
+    it('creates folder with parentId', async () => {
         mockedApi.post.mockResolvedValue({});
 
-        await createFolderAtPath('new-folder', '/docs');
+        await createFolder('new-folder', 10);
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/folder', {
             name: 'new-folder',
-            parent_path: '/docs',
+            parent_id: 10,
         });
     });
 
-    it('moves file path', async () => {
+    it('creates folder without parentId', async () => {
         mockedApi.post.mockResolvedValue({});
 
-        await moveFilePath('/a/b.txt', '/c/b.txt');
+        await createFolder('new-folder');
+
+        expect(mockedApi.post).toHaveBeenCalledWith('/files/folder', {
+            name: 'new-folder',
+            parent_id: null,
+        });
+    });
+
+    it('moves file by id', async () => {
+        mockedApi.post.mockResolvedValue({});
+
+        await moveFile(1, 2, '');
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/move', {
-            source_path: '/a/b.txt',
-            destination_path: '/c/b.txt',
+            source_id: 1,
+            destination_folder_id: 2,
+            destination_path: '',
         });
     });
 
-    it('copies file path', async () => {
+    it('moves file by path', async () => {
         mockedApi.post.mockResolvedValue({});
 
-        await copyFilePath('/a/b.txt', '/c/b.txt');
+        await moveFile(1, undefined, '/target/dir');
+
+        expect(mockedApi.post).toHaveBeenCalledWith('/files/move', {
+            source_id: 1,
+            destination_folder_id: null,
+            destination_path: '/target/dir',
+        });
+    });
+
+    it('copies file by id', async () => {
+        mockedApi.post.mockResolvedValue({});
+
+        await copyFile(1, 2, '', 'copy.txt');
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/copy', {
-            source_path: '/a/b.txt',
-            destination_path: '/c/b.txt',
+            source_id: 1,
+            destination_folder_id: 2,
+            destination_path: '',
+            new_name: 'copy.txt',
         });
     });
 
-    it('renames file path', async () => {
+    it('copies file by path', async () => {
         mockedApi.post.mockResolvedValue({});
 
-        await renameFilePath('/a/old.txt', 'new.txt');
+        await copyFile(1, undefined, '/target/dir');
+
+        expect(mockedApi.post).toHaveBeenCalledWith('/files/copy', {
+            source_id: 1,
+            destination_folder_id: null,
+            destination_path: '/target/dir',
+            new_name: '',
+        });
+    });
+
+    it('renames file by id', async () => {
+        mockedApi.post.mockResolvedValue({});
+
+        await renameFile(5, 'new.txt');
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/rename', {
-            source_path: '/a/old.txt',
+            id: 5,
             new_name: 'new.txt',
         });
     });
 
-    it('deletes file path', async () => {
+    it('deletes file by id', async () => {
         mockedApi.delete.mockResolvedValue({});
 
-        await deleteFilePath('/a/b.txt');
+        await deleteFile(42);
 
         expect(mockedApi.delete).toHaveBeenCalledWith('/files/path', {
-            data: { path: '/a/b.txt' },
+            data: { id: 42 },
         });
     });
 

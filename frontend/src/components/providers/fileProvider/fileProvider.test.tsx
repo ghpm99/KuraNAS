@@ -31,12 +31,12 @@ const mockGetFilesTree = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
 const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
-const mockUploadFilesToPath = jest.fn<Promise<void>, [FileList, string?]>();
-const mockCreateFolderAtPath = jest.fn<Promise<void>, [string, string?]>();
-const mockMoveFilePath = jest.fn<Promise<void>, [string, string]>();
-const mockCopyFilePath = jest.fn<Promise<void>, [string, string]>();
-const mockRenameFilePath = jest.fn<Promise<void>, [string, string]>();
-const mockDeleteFilePath = jest.fn<Promise<void>, [string]>();
+const mockUploadFiles = jest.fn<Promise<void>, [FileList, number?]>();
+const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
+const mockMoveFile = jest.fn<Promise<void>, [number, number?, string?]>();
+const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
+const mockRenameFile = jest.fn<Promise<void>, [number, string]>();
+const mockDeleteFile = jest.fn<Promise<void>, [number]>();
 
 jest.mock('@/service/files', () => ({
     getFileByPath: mockGetFileByPath,
@@ -44,12 +44,12 @@ jest.mock('@/service/files', () => ({
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     toggleStarredFile: mockToggleStarredFile,
     rescanFiles: mockRescanFiles,
-    uploadFilesToPath: mockUploadFilesToPath,
-    createFolderAtPath: mockCreateFolderAtPath,
-    moveFilePath: mockMoveFilePath,
-    copyFilePath: mockCopyFilePath,
-    renameFilePath: mockRenameFilePath,
-    deleteFilePath: mockDeleteFilePath,
+    uploadFiles: mockUploadFiles,
+    createFolder: mockCreateFolder,
+    moveFile: mockMoveFile,
+    copyFile: mockCopyFile,
+    renameFile: mockRenameFile,
+    deleteFile: mockDeleteFile,
 }));
 
 // Capture context from the provider
@@ -235,12 +235,12 @@ describe('FileProvider', () => {
         mockGetFileByPath.mockResolvedValue(null);
         mockToggleStarredFile.mockResolvedValue(undefined);
         mockRescanFiles.mockResolvedValue(undefined);
-        mockUploadFilesToPath.mockResolvedValue(undefined);
-        mockCreateFolderAtPath.mockResolvedValue(undefined);
-        mockMoveFilePath.mockResolvedValue(undefined);
-        mockCopyFilePath.mockResolvedValue(undefined);
-        mockRenameFilePath.mockResolvedValue(undefined);
-        mockDeleteFilePath.mockResolvedValue(undefined);
+        mockUploadFiles.mockResolvedValue(undefined);
+        mockCreateFolder.mockResolvedValue(undefined);
+        mockMoveFile.mockResolvedValue(undefined);
+        mockCopyFile.mockResolvedValue(undefined);
+        mockRenameFile.mockResolvedValue(undefined);
+        mockDeleteFile.mockResolvedValue(undefined);
     });
 
     it('renders children and provides context at root path', async () => {
@@ -319,50 +319,50 @@ describe('FileProvider', () => {
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
         await act(async () => {
-            await capturedContext!.createFolder('new-folder', '/parent');
+            await capturedContext!.createFolder('new-folder', 5);
         });
-        expect(mockCreateFolderAtPath).toHaveBeenCalledWith('new-folder', '/parent');
+        expect(mockCreateFolder).toHaveBeenCalledWith('new-folder', 5);
     });
 
-    it('deletePath calls service and refetches', async () => {
+    it('deleteFile calls service and refetches', async () => {
         mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
         renderProvider();
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
         await act(async () => {
-            await capturedContext!.deletePath('/old-file');
+            await capturedContext!.deleteFile(42);
         });
-        expect(mockDeleteFilePath).toHaveBeenCalledWith('/old-file');
+        expect(mockDeleteFile).toHaveBeenCalledWith(42);
     });
 
-    it('movePath calls service with correct args', async () => {
+    it('moveFile calls service with correct args', async () => {
         renderProvider();
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
         await act(async () => {
-            await capturedContext!.movePath('/src', '/dest');
+            await capturedContext!.moveFile(1, 2, '/dest');
         });
-        expect(mockMoveFilePath).toHaveBeenCalledWith('/src', '/dest');
+        expect(mockMoveFile).toHaveBeenCalledWith(1, 2, '/dest');
     });
 
-    it('copyPath calls service with correct args', async () => {
+    it('copyFile calls service with correct args', async () => {
         renderProvider();
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
         await act(async () => {
-            await capturedContext!.copyPath('/src', '/dest');
+            await capturedContext!.copyFile(1, 2, '/dest', 'copy.txt');
         });
-        expect(mockCopyFilePath).toHaveBeenCalledWith('/src', '/dest');
+        expect(mockCopyFile).toHaveBeenCalledWith(1, 2, '/dest', 'copy.txt');
     });
 
-    it('renamePath calls service with correct args', async () => {
+    it('renameFile calls service with correct args', async () => {
         renderProvider();
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
         await act(async () => {
-            await capturedContext!.renamePath('/old', 'new-name');
+            await capturedContext!.renameFile(5, 'new-name');
         });
-        expect(mockRenameFilePath).toHaveBeenCalledWith('/old', 'new-name');
+        expect(mockRenameFile).toHaveBeenCalledWith(5, 'new-name');
     });
 
     it('uploadFiles calls service with correct args', async () => {
@@ -371,9 +371,9 @@ describe('FileProvider', () => {
 
         const files = { length: 0, item: () => null } as unknown as FileList;
         await act(async () => {
-            await capturedContext!.uploadFiles(files, '/target');
+            await capturedContext!.uploadFiles(files, 10);
         });
-        expect(mockUploadFilesToPath).toHaveBeenCalledWith(files, '/target');
+        expect(mockUploadFiles).toHaveBeenCalledWith(files, 10);
     });
 
     it('rescanFiles calls service and refetches', async () => {
