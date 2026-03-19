@@ -27,16 +27,17 @@ import { useNavigate } from 'react-router-dom';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from 'notistack';
 import { downloadFileBlob } from '@/service/files';
+import FolderPicker, { type FolderPickerResult } from '@/components/folderPicker/folderPicker';
 
 export const ActionBar = () => {
     const {
         selectedItem,
         uploadFiles,
         createFolder,
-        movePath,
-        copyPath,
-        renamePath,
-        deletePath,
+        moveFile,
+        copyFile,
+        renameFile,
+        deleteFile,
         rescanFiles,
         fileListFilter,
     } = useFile();
@@ -48,8 +49,6 @@ export const ActionBar = () => {
         'createFolder' | 'move' | 'copy' | 'rename' | 'delete' | null
     >(null);
     const [folderName, setFolderName] = useState('');
-    const [moveTargetDir, setMoveTargetDir] = useState('');
-    const [copyDestinationPath, setCopyDestinationPath] = useState('');
     const [renameName, setRenameName] = useState('');
     const currentListTitle =
         fileListFilter === 'starred'
@@ -58,11 +57,10 @@ export const ActionBar = () => {
               ? t('RECENT_FILES')
               : t('FILES');
 
-    const currentDirectoryPath = selectedItem
-        ? selectedItem.type === FileType.Directory
-            ? selectedItem.path
-            : selectedItem.parent_path
-        : undefined;
+    const currentFolderId =
+        selectedItem && selectedItem.type === FileType.Directory
+            ? selectedItem.id
+            : undefined;
 
     const handleUploadClick = () => uploadInputRef.current?.click();
 
@@ -70,7 +68,7 @@ export const ActionBar = () => {
         const inputFiles = event.target.files;
         if (!inputFiles || inputFiles.length === 0) return;
         try {
-            await uploadFiles(inputFiles, currentDirectoryPath);
+            await uploadFiles(inputFiles, currentFolderId);
             enqueueSnackbar(t('ACTION_UPLOAD_SUCCESS'), { variant: 'success' });
         } catch {
             enqueueSnackbar(t('ERROR_UPLOAD_FAILED'), { variant: 'error' });
@@ -82,7 +80,7 @@ export const ActionBar = () => {
     const handleCreateFolder = async () => {
         if (folderName.trim() === '') return;
         try {
-            await createFolder(folderName.trim(), currentDirectoryPath);
+            await createFolder(folderName.trim(), currentFolderId);
             enqueueSnackbar(t('ACTION_CREATE_FOLDER_SUCCESS'), {
                 variant: 'success',
             });
@@ -93,12 +91,10 @@ export const ActionBar = () => {
         }
     };
 
-    const handleMoveSelected = async () => {
+    const handleMoveSelected = async (result: FolderPickerResult) => {
         if (!selectedItem) return;
-        if (moveTargetDir.trim() === '') return;
-        const destinationPath = `${moveTargetDir.trim().replace(/[\\/]+$/, '')}/${selectedItem.name}`;
         try {
-            await movePath(selectedItem.path, destinationPath);
+            await moveFile(selectedItem.id, result.folderId, result.path);
             enqueueSnackbar(t('ACTION_MOVE_SUCCESS'), { variant: 'success' });
             setOpenDialog(null);
         } catch {
@@ -109,7 +105,7 @@ export const ActionBar = () => {
     const handleDeleteSelected = async () => {
         if (!selectedItem) return;
         try {
-            await deletePath(selectedItem.path);
+            await deleteFile(selectedItem.id);
             enqueueSnackbar(t('ACTION_DELETE_SUCCESS'), { variant: 'success' });
             setOpenDialog(null);
         } catch {
@@ -117,11 +113,10 @@ export const ActionBar = () => {
         }
     };
 
-    const handleCopySelected = async () => {
+    const handleCopySelected = async (result: FolderPickerResult) => {
         if (!selectedItem) return;
-        if (copyDestinationPath.trim() === '') return;
         try {
-            await copyPath(selectedItem.path, copyDestinationPath.trim());
+            await copyFile(selectedItem.id, result.folderId, result.path);
             enqueueSnackbar(t('ACTION_COPY_SUCCESS'), { variant: 'success' });
             setOpenDialog(null);
         } catch {
@@ -133,7 +128,7 @@ export const ActionBar = () => {
         if (!selectedItem) return;
         if (renameName.trim() === '' || renameName.trim() === selectedItem.name) return;
         try {
-            await renamePath(selectedItem.path, renameName.trim());
+            await renameFile(selectedItem.id, renameName.trim());
             enqueueSnackbar(t('ACTION_RENAME_SUCCESS'), { variant: 'success' });
             setOpenDialog(null);
         } catch {
@@ -148,14 +143,11 @@ export const ActionBar = () => {
 
     const openMoveDialog = () => {
         if (!selectedItem) return;
-        setMoveTargetDir(selectedItem.parent_path);
         setOpenDialog('move');
     };
 
     const openCopyDialog = () => {
         if (!selectedItem) return;
-        const defaultTarget = `${selectedItem.parent_path.replace(/[\\/]+$/, '')}/${selectedItem.name}${t('COPY_SUFFIX')}`;
-        setCopyDestinationPath(defaultTarget);
         setOpenDialog('copy');
     };
 
@@ -316,62 +308,16 @@ export const ActionBar = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Dialog
+            <FolderPicker
                 open={openDialog === 'move'}
                 onClose={() => setOpenDialog(null)}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>{t('MOVE')}</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={t('PATH')}
-                        fullWidth
-                        value={moveTargetDir}
-                        onChange={(event) => setMoveTargetDir(event.target.value)}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
-                    <Button
-                        onClick={handleMoveSelected}
-                        variant="contained"
-                        disabled={moveTargetDir.trim() === ''}
-                    >
-                        {t('MOVE')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <Dialog
+                onSelect={handleMoveSelected}
+            />
+            <FolderPicker
                 open={openDialog === 'copy'}
                 onClose={() => setOpenDialog(null)}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>{t('COPY')}</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={t('PATH')}
-                        fullWidth
-                        value={copyDestinationPath}
-                        onChange={(event) => setCopyDestinationPath(event.target.value)}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
-                    <Button
-                        onClick={handleCopySelected}
-                        variant="contained"
-                        disabled={copyDestinationPath.trim() === ''}
-                    >
-                        {t('COPY')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSelect={handleCopySelected}
+            />
             <Dialog
                 open={openDialog === 'rename'}
                 onClose={() => setOpenDialog(null)}

@@ -7,14 +7,30 @@ const mockNavigate = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
 const mockDownloadFileBlob = jest.fn();
 
+// Mock FolderPicker — renders a minimal dialog with confirm/cancel buttons.
+// The confirm button calls onSelect with a result stored in mockFolderPickerResult.
+let mockFolderPickerResult = { folderId: 99 };
+jest.mock('@/components/folderPicker/folderPicker', () => ({
+    __esModule: true,
+    default: ({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (r: any) => void }) => {
+        if (!open) return null;
+        return (
+            <div role="dialog" aria-label="FOLDER_PICKER">
+                <button onClick={() => onSelect(mockFolderPickerResult)}>CONFIRM_PICKER</button>
+                <button onClick={onClose}>CANCEL_PICKER</button>
+            </div>
+        );
+    },
+}));
+
 const createFileContext = (overrides = {}) => ({
     selectedItem: null,
     uploadFiles: jest.fn(),
     createFolder: jest.fn().mockResolvedValue(undefined),
-    movePath: jest.fn().mockResolvedValue(undefined),
-    copyPath: jest.fn().mockResolvedValue(undefined),
-    renamePath: jest.fn().mockResolvedValue(undefined),
-    deletePath: jest.fn().mockResolvedValue(undefined),
+    moveFile: jest.fn().mockResolvedValue(undefined),
+    copyFile: jest.fn().mockResolvedValue(undefined),
+    renameFile: jest.fn().mockResolvedValue(undefined),
+    deleteFile: jest.fn().mockResolvedValue(undefined),
     rescanFiles: jest.fn(),
     fileListFilter: 'recent',
     ...overrides,
@@ -115,11 +131,11 @@ describe('components/actionBar', () => {
         });
     });
 
-    it('opens copy/rename/delete flows and downloads the selected file', async () => {
-        const movePath = jest.fn().mockResolvedValue(undefined);
-        const copyPath = jest.fn().mockResolvedValue(undefined);
-        const renamePath = jest.fn().mockResolvedValue(undefined);
-        const deletePath = jest.fn().mockResolvedValue(undefined);
+    it('opens move/copy/rename/delete flows and downloads the selected file', async () => {
+        const moveFile = jest.fn().mockResolvedValue(undefined);
+        const copyFile = jest.fn().mockResolvedValue(undefined);
+        const renameFile = jest.fn().mockResolvedValue(undefined);
+        const deleteFile = jest.fn().mockResolvedValue(undefined);
         Object.assign(URL, {
             createObjectURL: URL.createObjectURL ?? jest.fn(),
             revokeObjectURL: URL.revokeObjectURL ?? jest.fn(),
@@ -154,66 +170,63 @@ describe('components/actionBar', () => {
                     type: FileType.File,
                 },
                 fileListFilter: 'all',
-                movePath,
-                copyPath,
-                renamePath,
-                deletePath,
+                moveFile,
+                copyFile,
+                renameFile,
+                deleteFile,
             })
         );
 
         render(<ActionBar />);
 
+        // Move via FolderPicker
+        mockFolderPickerResult = { folderId: 20 };
         fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
-        let dialog = screen.getByRole('dialog');
-        expect(within(dialog).getByLabelText('PATH')).toHaveValue('/media');
-        fireEvent.change(within(dialog).getByLabelText('PATH'), {
-            target: { value: '/archive/' },
-        });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'MOVE' })[0]!);
+        fireEvent.click(screen.getByRole('button', { name: 'CONFIRM_PICKER' }));
         await waitFor(() => {
-            expect(movePath).toHaveBeenCalledWith('/media/movie.mp4', '/archive/movie.mp4');
+            expect(moveFile).toHaveBeenCalledWith(7, 20, undefined);
         });
         await waitFor(() => {
-            expect(screen.queryByRole('dialog', { name: 'MOVE' })).not.toBeInTheDocument();
+            expect(screen.queryByRole('dialog', { name: 'FOLDER_PICKER' })).not.toBeInTheDocument();
         });
 
+        // Copy via FolderPicker
+        mockFolderPickerResult = { folderId: 30 };
         fireEvent.click(screen.getByRole('button', { name: 'COPY' }));
-        dialog = screen.getByRole('dialog');
-        expect(within(dialog).getByLabelText('PATH')).toHaveValue('/media/movie.mp4_copy');
-        fireEvent.change(within(dialog).getByLabelText('PATH'), {
-            target: { value: '/target/movie.mp4' },
-        });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'COPY' })[0]!);
+        fireEvent.click(screen.getByRole('button', { name: 'CONFIRM_PICKER' }));
         await waitFor(() => {
-            expect(copyPath).toHaveBeenCalledWith('/media/movie.mp4', '/target/movie.mp4');
+            expect(copyFile).toHaveBeenCalledWith(7, 30, undefined);
         });
         await waitFor(() => {
-            expect(screen.queryByRole('dialog', { name: 'COPY' })).not.toBeInTheDocument();
+            expect(screen.queryByRole('dialog', { name: 'FOLDER_PICKER' })).not.toBeInTheDocument();
         });
 
+        // Rename
         fireEvent.click(screen.getByRole('button', { name: 'RENAME' }));
-        dialog = screen.getByRole('dialog');
+        let dialog = screen.getByRole('dialog');
         fireEvent.change(within(dialog).getByLabelText('NAME'), {
             target: { value: 'movie-new.mp4' },
         });
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'RENAME' })[0]!);
         await waitFor(() => {
-            expect(renamePath).toHaveBeenCalledWith('/media/movie.mp4', 'movie-new.mp4');
+            expect(renameFile).toHaveBeenCalledWith(7, 'movie-new.mp4');
         });
         await waitFor(() => {
             expect(screen.queryByRole('dialog', { name: 'RENAME' })).not.toBeInTheDocument();
         });
 
+        // Delete
         fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));
         dialog = screen.getByRole('dialog');
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'DELETE' })[0]!);
         await waitFor(() => {
-            expect(deletePath).toHaveBeenCalledWith('/media/movie.mp4');
+            expect(deleteFile).toHaveBeenCalledWith(7);
         });
         await waitFor(() => {
             expect(screen.queryByRole('dialog', { name: 'DELETE' })).not.toBeInTheDocument();
         });
 
+        // Download
         fireEvent.click(screen.getByRole('button', { name: 'DOWNLOAD' }));
         await waitFor(() => {
             expect(mockDownloadFileBlob).toHaveBeenCalledWith(7);
@@ -240,10 +253,10 @@ describe('components/actionBar', () => {
                 type: FileType.File,
             },
             createFolder: jest.fn().mockRejectedValue(error),
-            movePath: jest.fn().mockRejectedValue(error),
-            copyPath: jest.fn().mockRejectedValue(error),
-            renamePath: jest.fn().mockRejectedValue(error),
-            deletePath: jest.fn().mockRejectedValue(error),
+            moveFile: jest.fn().mockRejectedValue(error),
+            copyFile: jest.fn().mockRejectedValue(error),
+            renameFile: jest.fn().mockRejectedValue(error),
+            deleteFile: jest.fn().mockRejectedValue(error),
         });
 
         mockUseFile.mockReturnValue(context);
@@ -267,35 +280,23 @@ describe('components/actionBar', () => {
             expect(screen.queryByRole('dialog', { name: 'NEW_FOLDER' })).not.toBeInTheDocument()
         );
 
+        mockFolderPickerResult = { folderId: 10 };
         fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
-        dialog = screen.getByRole('dialog', { name: 'MOVE' });
-        fireEvent.change(within(dialog).getByLabelText('PATH'), {
-            target: { value: '/archive/' },
-        });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'MOVE' })[0]!);
-        await waitFor(() => expect(context.movePath).toHaveBeenCalled());
+        fireEvent.click(screen.getByRole('button', { name: 'CONFIRM_PICKER' }));
+        await waitFor(() => expect(context.moveFile).toHaveBeenCalled());
         await waitFor(() =>
             expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_MOVE_FAILED', {
                 variant: 'error',
             })
         );
-        fireEvent.click(within(dialog).getByRole('button', { name: 'ACTION_CANCEL' }));
-        await waitFor(() =>
-            expect(screen.queryByRole('dialog', { name: 'MOVE' })).not.toBeInTheDocument()
-        );
 
         fireEvent.click(screen.getByRole('button', { name: 'COPY' }));
-        dialog = screen.getByRole('dialog', { name: 'COPY' });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'COPY' })[0]!);
-        await waitFor(() => expect(context.copyPath).toHaveBeenCalled());
+        fireEvent.click(screen.getByRole('button', { name: 'CONFIRM_PICKER' }));
+        await waitFor(() => expect(context.copyFile).toHaveBeenCalled());
         await waitFor(() =>
             expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_COPY_FAILED', {
                 variant: 'error',
             })
-        );
-        fireEvent.click(within(dialog).getByRole('button', { name: 'ACTION_CANCEL' }));
-        await waitFor(() =>
-            expect(screen.queryByRole('dialog', { name: 'COPY' })).not.toBeInTheDocument()
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'RENAME' }));
@@ -304,7 +305,7 @@ describe('components/actionBar', () => {
             target: { value: 'movie-new.mp4' },
         });
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'RENAME' })[0]!);
-        await waitFor(() => expect(context.renamePath).toHaveBeenCalled());
+        await waitFor(() => expect(context.renameFile).toHaveBeenCalled());
         await waitFor(() =>
             expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_RENAME_FAILED', {
                 variant: 'error',
@@ -318,7 +319,7 @@ describe('components/actionBar', () => {
         fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));
         dialog = screen.getByRole('dialog', { name: 'DELETE' });
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'DELETE' })[0]!);
-        await waitFor(() => expect(context.deletePath).toHaveBeenCalled());
+        await waitFor(() => expect(context.deleteFile).toHaveBeenCalled());
         await waitFor(() =>
             expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_DELETE_FAILED', {
                 variant: 'error',
@@ -362,7 +363,7 @@ describe('components/actionBar', () => {
         expect(screen.getByText('FILES')).toBeInTheDocument();
     });
 
-    it('uses directory path as currentDirectoryPath when selectedItem is a directory', async () => {
+    it('uses directory id as currentFolderId when selectedItem is a directory', async () => {
         const createFolder = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(
             createFileContext({
@@ -387,7 +388,7 @@ describe('components/actionBar', () => {
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'NEW_FOLDER' })[0]!);
 
         await waitFor(() => {
-            expect(createFolder).toHaveBeenCalledWith('Sub', '/media/photos');
+            expect(createFolder).toHaveBeenCalledWith('Sub', 10);
         });
     });
 
@@ -530,7 +531,7 @@ describe('components/actionBar', () => {
     });
 
     it('does not rename when new name is same as current name', async () => {
-        const renamePath = jest.fn().mockResolvedValue(undefined);
+        const renameFile = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -540,7 +541,7 @@ describe('components/actionBar', () => {
                     parent_path: '/media',
                     type: FileType.File,
                 },
-                renamePath,
+                renameFile,
             })
         );
 
@@ -551,7 +552,7 @@ describe('components/actionBar', () => {
         // Name is pre-filled with 'movie.mp4', don't change it
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'RENAME' })[0]!);
 
-        expect(renamePath).not.toHaveBeenCalled();
+        expect(renameFile).not.toHaveBeenCalled();
     });
 
     it('shows download error snackbar when download fails', async () => {
@@ -579,7 +580,7 @@ describe('components/actionBar', () => {
         });
     });
 
-    it('uses parent_path as currentDirectoryPath when selectedItem is a file', async () => {
+    it('uses undefined as currentFolderId when selectedItem is a file', async () => {
         const createFolder = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(
             createFileContext({
@@ -604,7 +605,7 @@ describe('components/actionBar', () => {
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'NEW_FOLDER' })[0]!);
 
         await waitFor(() => {
-            expect(createFolder).toHaveBeenCalledWith('Sub', '/media');
+            expect(createFolder).toHaveBeenCalledWith('Sub', undefined);
         });
     });
 
@@ -625,8 +626,7 @@ describe('components/actionBar', () => {
         expect(screen.getByText('photos')).toBeInTheDocument();
     });
 
-    it('does not move when target directory is empty', async () => {
-        const movePath = jest.fn().mockResolvedValue(undefined);
+    it('closes move picker via cancel', async () => {
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -636,24 +636,21 @@ describe('components/actionBar', () => {
                     parent_path: '/media',
                     type: FileType.File,
                 },
-                movePath,
             })
         );
 
         render(<ActionBar />);
 
         fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
-        const dialog = screen.getByRole('dialog');
-        fireEvent.change(within(dialog).getByLabelText('PATH'), {
-            target: { value: '   ' },
-        });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'MOVE' })[0]!);
+        expect(screen.getByRole('dialog', { name: 'FOLDER_PICKER' })).toBeInTheDocument();
 
-        expect(movePath).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'CANCEL_PICKER' }));
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog', { name: 'FOLDER_PICKER' })).not.toBeInTheDocument();
+        });
     });
 
-    it('does not copy when destination path is empty', async () => {
-        const copyPath = jest.fn().mockResolvedValue(undefined);
+    it('closes copy picker via cancel', async () => {
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -663,24 +660,22 @@ describe('components/actionBar', () => {
                     parent_path: '/media',
                     type: FileType.File,
                 },
-                copyPath,
             })
         );
 
         render(<ActionBar />);
 
         fireEvent.click(screen.getByRole('button', { name: 'COPY' }));
-        const dialog = screen.getByRole('dialog');
-        fireEvent.change(within(dialog).getByLabelText('PATH'), {
-            target: { value: '   ' },
-        });
-        fireEvent.click(within(dialog).getAllByRole('button', { name: 'COPY' })[0]!);
+        expect(screen.getByRole('dialog', { name: 'FOLDER_PICKER' })).toBeInTheDocument();
 
-        expect(copyPath).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'CANCEL_PICKER' }));
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog', { name: 'FOLDER_PICKER' })).not.toBeInTheDocument();
+        });
     });
 
     it('does not rename when new name is empty', async () => {
-        const renamePath = jest.fn().mockResolvedValue(undefined);
+        const renameFile = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -690,7 +685,7 @@ describe('components/actionBar', () => {
                     parent_path: '/media',
                     type: FileType.File,
                 },
-                renamePath,
+                renameFile,
             })
         );
 
@@ -703,7 +698,7 @@ describe('components/actionBar', () => {
         });
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'RENAME' })[0]!);
 
-        expect(renamePath).not.toHaveBeenCalled();
+        expect(renameFile).not.toHaveBeenCalled();
     });
 
     it('closes create folder dialog via Escape key', async () => {
@@ -719,7 +714,7 @@ describe('components/actionBar', () => {
         });
     });
 
-    it('closes move dialog via Escape key', async () => {
+    it('opens move folder picker dialog', () => {
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -734,15 +729,10 @@ describe('components/actionBar', () => {
         render(<ActionBar />);
 
         fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-        await waitFor(() => {
-            expect(screen.queryByRole('dialog', { name: 'MOVE' })).not.toBeInTheDocument();
-        });
+        expect(screen.getByRole('dialog', { name: 'FOLDER_PICKER' })).toBeInTheDocument();
     });
 
-    it('closes copy dialog via Escape key', async () => {
+    it('opens copy folder picker dialog', () => {
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -757,12 +747,7 @@ describe('components/actionBar', () => {
         render(<ActionBar />);
 
         fireEvent.click(screen.getByRole('button', { name: 'COPY' }));
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-        await waitFor(() => {
-            expect(screen.queryByRole('dialog', { name: 'COPY' })).not.toBeInTheDocument();
-        });
+        expect(screen.getByRole('dialog', { name: 'FOLDER_PICKER' })).toBeInTheDocument();
     });
 
     it('closes rename dialog via Escape key', async () => {
@@ -811,7 +796,7 @@ describe('components/actionBar', () => {
         });
     });
 
-    it('uploads files with directory path when selectedItem is a directory', async () => {
+    it('uploads files with folder id when selectedItem is a directory', async () => {
         const uploadFiles = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(
             createFileContext({
@@ -833,7 +818,7 @@ describe('components/actionBar', () => {
         fireEvent.change(fileInput, { target: { files: [blob] } });
 
         await waitFor(() => {
-            expect(uploadFiles).toHaveBeenCalledWith([blob], '/media/photos');
+            expect(uploadFiles).toHaveBeenCalledWith([blob], 10);
         });
     });
 });

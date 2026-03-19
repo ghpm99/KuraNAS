@@ -64,12 +64,12 @@ type ServiceInterface interface {
 	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
 	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
-	UploadFiles(targetPath string, files []*multipart.FileHeader) (UploadFilesResult, error)
-	CreateFolder(parentPath string, name string) (string, error)
-	MovePath(sourcePath string, destinationPath string) (string, error)
-	DeletePath(path string) error
-	RenamePath(sourcePath string, newName string) (string, error)
-	CopyPath(sourcePath string, destinationPath string) (string, error)
+	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
+	CreateFolder(parentID *int, name string) (string, error)
+	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
+	DeleteFileFromDisk(id int) error
+	RenameFile(id int, newName string) (string, error)
+	CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error)
 }
 
 type RecentFileRepositoryInterface interface {
