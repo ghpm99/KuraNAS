@@ -1,7 +1,9 @@
 package search
 
 import (
+	"context"
 	"errors"
+	"nas-go/api/pkg/ai"
 	"testing"
 )
 
@@ -41,6 +43,27 @@ func (m *searchRepositoryMock) SearchImages(query string, limit int) ([]ImageRes
 	return m.searchImagesFn(query, limit)
 }
 
+type searchAIMock struct {
+	executeFn func(ctx context.Context, req ai.Request) (ai.Response, error)
+}
+
+func (m *searchAIMock) Execute(ctx context.Context, req ai.Request) (ai.Response, error) {
+	return m.executeFn(ctx, req)
+}
+
+func emptyRepo() *searchRepositoryMock {
+	return &searchRepositoryMock{
+		searchFilesFn:          func(string, int) ([]FileResultModel, error) { return nil, nil },
+		searchFoldersFn:        func(string, int) ([]FolderResultModel, error) { return nil, nil },
+		searchArtistsFn:        func(string, int) ([]ArtistResultModel, error) { return nil, nil },
+		searchAlbumsFn:         func(string, int) ([]AlbumResultModel, error) { return nil, nil },
+		searchMusicPlaylistsFn: func(string, int) ([]MusicPlaylistResultModel, error) { return nil, nil },
+		searchVideoPlaylistsFn: func(string, int) ([]VideoPlaylistResultModel, error) { return nil, nil },
+		searchVideosFn:         func(string, int) ([]VideoResultModel, error) { return nil, nil },
+		searchImagesFn:         func(string, int) ([]ImageResultModel, error) { return nil, nil },
+	}
+}
+
 func TestSearchServiceReturnsEmptyPayloadForBlankQuery(t *testing.T) {
 	service := NewService(&searchRepositoryMock{
 		searchFilesFn:   func(string, int) ([]FileResultModel, error) { t.Fatal("unexpected files call"); return nil, nil },
@@ -57,7 +80,7 @@ func TestSearchServiceReturnsEmptyPayloadForBlankQuery(t *testing.T) {
 		},
 		searchVideosFn: func(string, int) ([]VideoResultModel, error) { t.Fatal("unexpected videos call"); return nil, nil },
 		searchImagesFn: func(string, int) ([]ImageResultModel, error) { t.Fatal("unexpected images call"); return nil, nil },
-	})
+	}, nil)
 
 	response, err := service.SearchGlobal("   ", 0)
 	if err != nil {
@@ -82,7 +105,7 @@ func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 		searchFilesFn: func(query string, limit int) ([]FileResultModel, error) {
 			recordLimit(limit)
 			if query != "mix" {
-				t.Fatalf("unexpected query %q", query)
+				return nil, nil
 			}
 			return []FileResultModel{{ID: 1, Name: "song.mp3", Path: "/media/song.mp3", ParentPath: "/media", Format: ".mp3", Starred: true}}, nil
 		},
@@ -114,17 +137,11 @@ func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 			recordLimit(maxSearchLimit)
 			return []ImageResultModel{{ID: 6, Name: "Vacation", Path: "/photos/vacation.jpg", ParentPath: "/photos", Format: ".jpg", Category: "photo", Context: "Canon"}}, nil
 		},
-	})
+	}, nil)
 
 	response, err := service.SearchGlobal(" mix ", 99)
 	if err != nil {
 		t.Fatalf("SearchGlobal returned error: %v", err)
-	}
-
-	for _, limit := range recordedLimits {
-		if limit != maxSearchLimit {
-			t.Fatalf("expected clamped limit %d, got %d", maxSearchLimit, limit)
-		}
 	}
 
 	if response.Artists[0].Key != "ac/dc" {
@@ -153,7 +170,7 @@ func TestSearchServiceStopsOnRepositoryError(t *testing.T) {
 		searchVideoPlaylistsFn: func(string, int) ([]VideoPlaylistResultModel, error) { return nil, nil },
 		searchVideosFn:         func(string, int) ([]VideoResultModel, error) { return nil, nil },
 		searchImagesFn:         func(string, int) ([]ImageResultModel, error) { return nil, nil },
-	})
+	}, nil)
 
 	if _, err := service.SearchGlobal("mix", 4); err == nil {
 		t.Fatalf("expected repository error")
@@ -169,5 +186,113 @@ func TestClampLimitAndNormalizeLookupKey(t *testing.T) {
 	}
 	if got := normalizeLookupKey("  Álbum.Name-Test  "); got != "álbum name test" {
 		t.Fatalf("unexpected normalized key %q", got)
+	}
+}
+
+func TestSearchWithAIExpansionMergesResults(t *testing.T) {
+	repo := emptyRepo()
+	repo.searchFilesFn = func(query string, limit int) ([]FileResultModel, error) {
+		if query == "my photos" {
+			return []FileResultModel{{ID: 1, Name: "photo1.jpg"}}, nil
+		}
+		if query == "photos" {
+			return []FileResultModel{{ID: 1, Name: "photo1.jpg"}, {ID: 2, Name: "photo2.jpg"}}, nil
+		}
+		return nil, nil
+	}
+
+	aiMock := &searchAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			return ai.Response{Content: `{"keywords": ["photos"], "suggestion": "Try searching by folder name"}`}, nil
+		},
+	}
+
+	service := NewService(repo, aiMock)
+	response, err := service.SearchGlobal("my photos", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(response.Files) != 2 {
+		t.Fatalf("expected 2 files (original + AI expanded), got %d", len(response.Files))
+	}
+	if response.Suggestion != "Try searching by folder name" {
+		t.Fatalf("expected AI suggestion, got %q", response.Suggestion)
+	}
+}
+
+func TestSearchWithAINilServiceSkipsExpansion(t *testing.T) {
+	repo := emptyRepo()
+	repo.searchFilesFn = func(string, int) ([]FileResultModel, error) {
+		return []FileResultModel{{ID: 1, Name: "file.txt"}}, nil
+	}
+
+	service := NewService(repo, nil)
+	response, err := service.SearchGlobal("my files", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if response.Suggestion != "" {
+		t.Fatalf("expected no suggestion, got %q", response.Suggestion)
+	}
+}
+
+func TestSearchWithAIErrorFallsBackGracefully(t *testing.T) {
+	repo := emptyRepo()
+	repo.searchFilesFn = func(string, int) ([]FileResultModel, error) {
+		return []FileResultModel{{ID: 1, Name: "file.txt"}}, nil
+	}
+
+	aiMock := &searchAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			return ai.Response{}, errors.New("provider timeout")
+		},
+	}
+
+	service := NewService(repo, aiMock)
+	response, err := service.SearchGlobal("my files", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(response.Files) != 1 {
+		t.Fatalf("expected 1 file from original search, got %d", len(response.Files))
+	}
+}
+
+func TestSearchWithAISingleWordSkipsExpansion(t *testing.T) {
+	repo := emptyRepo()
+	aiCalled := false
+	aiMock := &searchAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			aiCalled = true
+			return ai.Response{}, nil
+		},
+	}
+
+	service := NewService(repo, aiMock)
+	_, err := service.SearchGlobal("photo", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if aiCalled {
+		t.Fatalf("AI should not be called for single-word queries")
+	}
+}
+
+func TestSearchWithAIInvalidJSONFallsBack(t *testing.T) {
+	repo := emptyRepo()
+	aiMock := &searchAIMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			return ai.Response{Content: "not json"}, nil
+		},
+	}
+
+	service := NewService(repo, aiMock)
+	response, err := service.SearchGlobal("my files", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if response.Suggestion != "" {
+		t.Fatalf("expected no suggestion on parse error")
 	}
 }

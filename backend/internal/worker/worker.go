@@ -10,6 +10,7 @@ import (
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
@@ -22,6 +23,7 @@ type WorkerContext struct {
 	MetadataService     files.MetadataRepositoryInterface
 	Logger              logger.LoggerServiceInterface
 	NotificationService notifications.ServiceInterface
+	AIService           ai.ServiceInterface
 	JobScheduler        *JobScheduler
 	JobOrchestrator     *JobOrchestrator
 }
@@ -176,7 +178,7 @@ func worker(id int, context *WorkerContext) {
 					emitNotification(context, "error", "File scan failed", err.Error(), "")
 				}
 			} else {
-				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger)
+				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, context.AIService)
 			}
 		case utils.ScanDir:
 			if context != nil && context.JobOrchestrator != nil {

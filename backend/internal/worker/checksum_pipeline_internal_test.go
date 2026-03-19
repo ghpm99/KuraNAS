@@ -181,7 +181,7 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 	})
 	defer SetPythonScriptRunnerForTesting(nil)
 
-	StartFileProcessingPipeline(mock, tasks, &pipelineLoggerMock{})
+	StartFileProcessingPipeline(mock, tasks, &pipelineLoggerMock{}, nil)
 
 	if len(mock.created) == 0 && len(mock.updated) == 0 {
 		t.Fatalf("expected pipeline to persist at least one file")

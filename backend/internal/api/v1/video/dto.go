@@ -68,9 +68,10 @@ type VideoCatalogItemDto struct {
 }
 
 type VideoCatalogSectionDto struct {
-	Key   string                `json:"key"`
-	Title string                `json:"title"`
-	Items []VideoCatalogItemDto `json:"items"`
+	Key         string                `json:"key"`
+	Title       string                `json:"title"`
+	Description string                `json:"description,omitempty"`
+	Items       []VideoCatalogItemDto `json:"items"`
 }
 
 type VideoHomeCatalogDto struct {

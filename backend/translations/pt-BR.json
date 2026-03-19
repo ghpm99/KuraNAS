@@ -774,5 +774,14 @@
 	"ERROR_GET_JOB_STEPS": "Falha ao consultar steps do job",
 	"ERROR_UPLOAD_JOB_CREATE": "Falha ao enfileirar job de processamento do upload",
 	"ERROR_JOB_CANCEL": "Falha ao cancelar job",
-	"ACTION_JOB_CANCEL_SUCCESS": "Job cancelado com sucesso"
+	"ACTION_JOB_CANCEL_SUCCESS": "Job cancelado com sucesso",
+	"AI_SEARCH_SUGGESTION": "Dica de busca por IA",
+	"AI_INSIGHTS_TITLE": "Insights gerados por IA",
+	"AI_CLASSIFICATION_DOCUMENT": "Documento",
+	"AI_CLASSIFICATION_RECEIPT": "Recibo",
+	"AI_CLASSIFICATION_LANDSCAPE": "Paisagem",
+	"AI_CLASSIFICATION_PORTRAIT": "Retrato",
+	"AI_CLASSIFICATION_MEME": "Meme",
+	"AI_CLASSIFICATION_ART": "Arte",
+	"AI_CLASSIFICATION_SCREENSHOT_APP": "Captura de aplicativo"
 }

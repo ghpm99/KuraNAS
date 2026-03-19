@@ -1,14 +1,15 @@
 package search
 
 type GlobalSearchResponseDto struct {
-	Query     string              `json:"query"`
-	Files     []FileResultDto     `json:"files"`
-	Folders   []FolderResultDto   `json:"folders"`
-	Artists   []ArtistResultDto   `json:"artists"`
-	Albums    []AlbumResultDto    `json:"albums"`
-	Playlists []PlaylistResultDto `json:"playlists"`
-	Videos    []VideoResultDto    `json:"videos"`
-	Images    []ImageResultDto    `json:"images"`
+	Query      string              `json:"query"`
+	Suggestion string              `json:"suggestion,omitempty"`
+	Files      []FileResultDto     `json:"files"`
+	Folders    []FolderResultDto   `json:"folders"`
+	Artists    []ArtistResultDto   `json:"artists"`
+	Albums     []AlbumResultDto    `json:"albums"`
+	Playlists  []PlaylistResultDto `json:"playlists"`
+	Videos     []VideoResultDto    `json:"videos"`
+	Images     []ImageResultDto    `json:"images"`
 }
 
 type FileResultDto struct {

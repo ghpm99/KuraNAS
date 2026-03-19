@@ -1,14 +1,31 @@
 package files
 
-import "strings"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"nas-go/api/pkg/ai"
+	"strings"
+	"time"
+)
 
 type ImageClassificationCategory string
 
 const (
-	ImageClassificationCategoryCapture ImageClassificationCategory = "capture"
-	ImageClassificationCategoryPhoto   ImageClassificationCategory = "photo"
-	ImageClassificationCategoryOther   ImageClassificationCategory = "other"
+	ImageClassificationCategoryCapture    ImageClassificationCategory = "capture"
+	ImageClassificationCategoryPhoto      ImageClassificationCategory = "photo"
+	ImageClassificationCategoryOther      ImageClassificationCategory = "other"
+	ImageClassificationCategoryDocument   ImageClassificationCategory = "document"
+	ImageClassificationCategoryReceipt    ImageClassificationCategory = "receipt"
+	ImageClassificationCategoryLandscape  ImageClassificationCategory = "landscape"
+	ImageClassificationCategoryPortrait   ImageClassificationCategory = "portrait"
+	ImageClassificationCategoryMeme       ImageClassificationCategory = "meme"
+	ImageClassificationCategoryArt        ImageClassificationCategory = "art"
+	ImageClassificationCategoryScreenshot ImageClassificationCategory = "screenshot_app"
 )
+
+const aiClassificationConfidenceThreshold = 0.70
 
 var screenshotKeywords = []string{
 	"screenshot",
@@ -61,6 +78,128 @@ func looksLikeCapture(file FileDto, metadata ImageMetadataModel) bool {
 	}
 
 	return false
+}
+
+var validAICategories = map[ImageClassificationCategory]bool{
+	ImageClassificationCategoryCapture:    true,
+	ImageClassificationCategoryPhoto:      true,
+	ImageClassificationCategoryOther:      true,
+	ImageClassificationCategoryDocument:   true,
+	ImageClassificationCategoryReceipt:    true,
+	ImageClassificationCategoryLandscape:  true,
+	ImageClassificationCategoryPortrait:   true,
+	ImageClassificationCategoryMeme:       true,
+	ImageClassificationCategoryArt:        true,
+	ImageClassificationCategoryScreenshot: true,
+}
+
+// ClassifyImageWithAI enhances classification with AI when heuristic confidence is low.
+// If aiService is nil or AI fails, it falls back to the heuristic ClassifyImage.
+func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai.ServiceInterface) ImageClassificationModel {
+	heuristic := ClassifyImage(file, metadata)
+
+	if aiService == nil {
+		return heuristic
+	}
+
+	if heuristic.Confidence >= aiClassificationConfidenceThreshold {
+		return heuristic
+	}
+
+	prompt := buildClassificationPrompt(file, metadata)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	resp, err := aiService.Execute(ctx, ai.Request{
+		TaskType:     ai.TaskClassification,
+		SystemPrompt: "You are an image classifier for a NAS file management system. Classify images into categories based on their metadata. Respond ONLY with a JSON object, no extra text.",
+		Prompt:       prompt,
+		MaxTokens:    100,
+		Temperature:  0.1,
+	})
+	if err != nil {
+		log.Printf("AI image classification failed, using heuristic: %v\n", err)
+		return heuristic
+	}
+
+	result, err := parseAIClassificationResponse(resp.Content)
+	if err != nil {
+		log.Printf("AI classification response parse error, using heuristic: %v\n", err)
+		return heuristic
+	}
+
+	return result
+}
+
+func buildClassificationPrompt(file FileDto, metadata ImageMetadataModel) string {
+	var parts []string
+	parts = append(parts, fmt.Sprintf("Filename: %s", file.Name))
+	parts = append(parts, fmt.Sprintf("Path: %s", file.Path))
+	parts = append(parts, fmt.Sprintf("Format: %s", file.Format))
+
+	if metadata.Width > 0 && metadata.Height > 0 {
+		parts = append(parts, fmt.Sprintf("Dimensions: %dx%d", metadata.Width, metadata.Height))
+	}
+	if metadata.Make != "" {
+		parts = append(parts, fmt.Sprintf("Camera: %s %s", metadata.Make, metadata.Model))
+	}
+	if metadata.Software != "" {
+		parts = append(parts, fmt.Sprintf("Software: %s", metadata.Software))
+	}
+	if metadata.ImageDescription != "" {
+		parts = append(parts, fmt.Sprintf("Description: %s", metadata.ImageDescription))
+	}
+
+	return fmt.Sprintf(
+		`Classify this image into one of: capture, photo, document, receipt, screenshot_app, landscape, portrait, meme, art, other.
+
+Image metadata:
+%s
+
+Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>}`,
+		strings.Join(parts, "\n"),
+	)
+}
+
+type aiClassificationResponse struct {
+	Category   string  `json:"category"`
+	Confidence float64 `json:"confidence"`
+}
+
+func parseAIClassificationResponse(content string) (ImageClassificationModel, error) {
+	content = strings.TrimSpace(content)
+
+	// Strip markdown code fences if present
+	if strings.HasPrefix(content, "```") {
+		lines := strings.Split(content, "\n")
+		filtered := make([]string, 0, len(lines))
+		for _, line := range lines {
+			if !strings.HasPrefix(strings.TrimSpace(line), "```") {
+				filtered = append(filtered, line)
+			}
+		}
+		content = strings.Join(filtered, "\n")
+	}
+
+	var resp aiClassificationResponse
+	if err := json.Unmarshal([]byte(content), &resp); err != nil {
+		return ImageClassificationModel{}, fmt.Errorf("invalid AI classification JSON: %w", err)
+	}
+
+	category := ImageClassificationCategory(strings.ToLower(resp.Category))
+	if !validAICategories[category] {
+		return ImageClassificationModel{}, fmt.Errorf("unknown AI category: %s", resp.Category)
+	}
+
+	confidence := resp.Confidence
+	if confidence <= 0 || confidence > 1 {
+		confidence = 0.75
+	}
+
+	return ImageClassificationModel{
+		Category:   category,
+		Confidence: confidence,
+	}, nil
 }
 
 func photoConfidence(file FileDto, metadata ImageMetadataModel) float64 {

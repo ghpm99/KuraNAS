@@ -774,5 +774,14 @@
 	"ERROR_GET_JOB_STEPS": "Failed to fetch job steps",
 	"ERROR_UPLOAD_JOB_CREATE": "Failed to enqueue upload processing job",
 	"ERROR_JOB_CANCEL": "Failed to cancel job",
-	"ACTION_JOB_CANCEL_SUCCESS": "Job canceled successfully"
+	"ACTION_JOB_CANCEL_SUCCESS": "Job canceled successfully",
+	"AI_SEARCH_SUGGESTION": "AI search suggestion",
+	"AI_INSIGHTS_TITLE": "AI-generated insights",
+	"AI_CLASSIFICATION_DOCUMENT": "Document",
+	"AI_CLASSIFICATION_RECEIPT": "Receipt",
+	"AI_CLASSIFICATION_LANDSCAPE": "Landscape",
+	"AI_CLASSIFICATION_PORTRAIT": "Portrait",
+	"AI_CLASSIFICATION_MEME": "Meme",
+	"AI_CLASSIFICATION_ART": "Art",
+	"AI_CLASSIFICATION_SCREENSHOT_APP": "App screenshot"
 }

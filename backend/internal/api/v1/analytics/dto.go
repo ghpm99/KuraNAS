@@ -17,6 +17,7 @@ type OverviewDto struct {
 	Library     LibraryDto           `json:"library"`
 	Processing  ProcessingDto        `json:"processing"`
 	Health      HealthDto            `json:"health"`
+	Insights    []string             `json:"insights"`
 }
 
 type StorageDto struct {

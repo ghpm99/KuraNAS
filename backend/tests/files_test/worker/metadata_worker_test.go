@@ -63,7 +63,7 @@ func TestStartMetadataWorker(t *testing.T) {
 	close(fileDtoChannel)
 
 	workerGroup.Add(1)
-	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup)
+	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup, nil)
 
 	var receivedFiles []files.FileDto
 	var wgReader sync.WaitGroup

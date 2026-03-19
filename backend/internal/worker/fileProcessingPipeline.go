@@ -4,6 +4,7 @@ import (
 	"log"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -37,7 +38,7 @@ func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, fi
 	pythonScriptRunner = runner
 }
 
-func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface) {
+func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) {
 
 	log.Println("starting file processing pipeline...")
 	logger, _ := Logger.CreateLog(logger.LoggerModel{
@@ -81,7 +82,7 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 	var metaWG sync.WaitGroup
 	for range 3 {
 		metaWG.Add(1)
-		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, monitorChannel, &metaWG)
+		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, monitorChannel, &metaWG, aiService)
 	}
 	go func() {
 		metaWG.Wait()

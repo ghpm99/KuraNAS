@@ -150,7 +150,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := getImageMetadata(files.FileDto{ID: 1, Path: "/img.png"}, runner)
+	imgMeta, err := getImageMetadata(files.FileDto{ID: 1, Path: "/img.png"}, runner, nil)
 	if err != nil || imgMeta.Format != "PNG" {
 		t.Fatalf("expected image metadata, err=%v", err)
 	}
@@ -166,7 +166,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 		t.Fatalf("expected video metadata, err=%v", err)
 	}
 
-	if meta, err := getMetadata(files.FileDto{Format: ".txt"}, runner); err != nil || meta != nil {
+	if meta, err := getMetadata(files.FileDto{Format: ".txt"}, runner, nil); err != nil || meta != nil {
 		t.Fatalf("expected nil metadata for unsupported format, got meta=%v err=%v", meta, err)
 	}
 
@@ -180,7 +180,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	close(in)
 
 	wg.Add(1)
-	go StartMetadataWorker(in, out, runner, monitor, &wg)
+	go StartMetadataWorker(in, out, runner, monitor, &wg, nil)
 	wg.Wait()
 	close(out)
 	close(monitor)
@@ -208,7 +208,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	errRunner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "", errors.New("runner failed")
 	}
-	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner); err == nil {
+	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner, nil); err == nil {
 		t.Fatalf("expected image metadata runner error")
 	}
 	if _, err := getAudioMetadata(files.FileDto{ID: 2, Path: "/err.mp3"}, errRunner); err == nil {
@@ -331,7 +331,7 @@ func TestMetadataWorkerErrorBranch(t *testing.T) {
 	in <- files.FileDto{ID: 10, Path: "/x.png", Format: ".png", Type: files.File}
 	close(in)
 	wg.Add(1)
-	go StartMetadataWorker(in, out, runner, monitor, &wg)
+	go StartMetadataWorker(in, out, runner, monitor, &wg, nil)
 	wg.Wait()
 	close(out)
 	close(monitor)
@@ -358,17 +358,17 @@ func TestGetMetadataDispatchByFormat(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner)
+	imgMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner, nil)
 	if err != nil || imgMeta == nil {
 		t.Fatalf("expected image metadata dispatch success, err=%v", err)
 	}
 
-	audioMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner)
+	audioMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner, nil)
 	if err != nil || audioMeta == nil {
 		t.Fatalf("expected audio metadata dispatch success, err=%v", err)
 	}
 
-	videoMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner)
+	videoMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner, nil)
 	if err != nil || videoMeta == nil {
 		t.Fatalf("expected video metadata dispatch success, err=%v", err)
 	}
