@@ -9,6 +9,7 @@ import (
 	"log"
 	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"strconv"
@@ -492,11 +493,11 @@ func (s *Service) enrichCatalogDescriptions(catalog *VideoHomeCatalogDto) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	prompt := fmt.Sprintf("Given these video catalog sections, generate a short contextual description (max 1 sentence each) for each section in pt-BR. Sections:\n%s\n\nRespond with JSON only: {\"continue\": \"...\", \"series\": \"...\", \"movies\": \"...\", \"personal\": \"...\", \"recent\": \"...\"}", strings.Join(parts, "\n"))
+	prompt := prompts.VideoCatalogDescriptionsUserPrompt(strings.Join(parts, "\n"))
 
 	resp, err := s.AIService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskGeneration,
-		SystemPrompt: "You generate short contextual descriptions for video catalog sections in a personal NAS system. Respond ONLY with JSON, no extra text. Write in pt-BR.",
+		SystemPrompt: prompts.VideoCatalogDescriptionsSystemPrompt(),
 		Prompt:       prompt,
 		MaxTokens:    300,
 		Temperature:  0.3,

@@ -8,6 +8,7 @@ import (
 	"log"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/prompts"
 	"sort"
 	"strings"
 	"time"
@@ -102,8 +103,8 @@ func (s *Service) generateInsights(overview OverviewDto) []string {
 
 	resp, err := s.AIService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskSummarization,
-		SystemPrompt: "You are a storage analytics assistant for a personal NAS system. Provide actionable insights based on storage metrics. Respond ONLY with a JSON array of strings, no extra text. Write insights in the user's language (pt-BR).",
-		Prompt:       fmt.Sprintf("Analyze these NAS storage metrics and provide 3-5 actionable insights:\n\n%s\n\nRespond with JSON: [\"insight 1\", \"insight 2\", ...]", summary),
+		SystemPrompt: prompts.AnalyticsInsightsSystemPrompt(),
+		Prompt:       prompts.AnalyticsInsightsUserPrompt(summary),
 		MaxTokens:    500,
 		Temperature:  0.3,
 	})

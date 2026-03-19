@@ -1,0 +1,6 @@
+Classify this image into one of: capture, photo, document, receipt, screenshot_app, landscape, portrait, meme, art, other.
+
+Image metadata:
+%s
+
+Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>}

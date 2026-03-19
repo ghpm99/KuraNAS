@@ -1,0 +1,5 @@
+Analyze these NAS storage metrics and provide 3-5 actionable insights:
+
+%s
+
+Respond with JSON: ["insight 1", "insight 2", ...]
