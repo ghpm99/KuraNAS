@@ -6,6 +6,7 @@ import (
 	"log"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/prompts"
 	"strings"
 	"time"
 )
@@ -132,11 +133,11 @@ func (s *Service) expandQueryWithAI(query string) ([]string, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	prompt := `Given the user search query for a file storage system, extract the most relevant search keywords and optionally provide a brief search suggestion. Query: '` + query + `'. Respond with JSON only: {"keywords": ["keyword1", "keyword2"], "suggestion": "optional tip"}`
+	prompt := prompts.SearchExtractionUserPrompt(query)
 
 	resp, err := s.AIService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskExtraction,
-		SystemPrompt: "You extract search keywords from natural language queries for a NAS file management system. Respond ONLY with JSON, no extra text.",
+		SystemPrompt: prompts.SearchExtractionSystemPrompt(),
 		Prompt:       prompt,
 		MaxTokens:    150,
 		Temperature:  0.1,

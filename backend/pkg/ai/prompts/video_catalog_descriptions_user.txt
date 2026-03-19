@@ -1,0 +1,4 @@
+Given these video catalog sections, generate a short contextual description (max 1 sentence each) for each section in pt-BR. Sections:
+%s
+
+Respond with JSON only: {"continue": "...", "series": "...", "movies": "...", "personal": "...", "recent": "..."}

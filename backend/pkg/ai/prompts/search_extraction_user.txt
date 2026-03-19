@@ -1,0 +1,1 @@
+Given the user search query for a file storage system, extract the most relevant search keywords and optionally provide a brief search suggestion. Query: '%s'. Respond with JSON only: {"keywords": ["keyword1", "keyword2"], "suggestion": "optional tip"}

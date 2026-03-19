@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/prompts"
 	"strings"
 	"time"
 )
@@ -112,7 +113,7 @@ func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai
 
 	resp, err := aiService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskClassification,
-		SystemPrompt: "You are an image classifier for a NAS file management system. Classify images into categories based on their metadata. Respond ONLY with a JSON object, no extra text.",
+		SystemPrompt: prompts.ImageClassificationSystemPrompt(),
 		Prompt:       prompt,
 		MaxTokens:    100,
 		Temperature:  0.1,
@@ -150,15 +151,7 @@ func buildClassificationPrompt(file FileDto, metadata ImageMetadataModel) string
 		parts = append(parts, fmt.Sprintf("Description: %s", metadata.ImageDescription))
 	}
 
-	return fmt.Sprintf(
-		`Classify this image into one of: capture, photo, document, receipt, screenshot_app, landscape, portrait, meme, art, other.
-
-Image metadata:
-%s
-
-Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>}`,
-		strings.Join(parts, "\n"),
-	)
+	return prompts.ImageClassificationUserPrompt(strings.Join(parts, "\n"))
 }
 
 type aiClassificationResponse struct {
