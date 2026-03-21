@@ -7,7 +7,7 @@ Serviço backend do KuraNAS, implementado em Go, responsável por API HTTP, pers
 - Go
 - Gin
 - `database/sql`
-- SQLite/PostgreSQL (configuração por ambiente)
+- PostgreSQL
 - Workers para processamento em background
 
 ## Estrutura
@@ -32,7 +32,7 @@ backend/
 └── Makefile
 ```
 
-## Execução
+## Execução e Build
 
 Modo desenvolvimento (tag `dev`, porta `8000`):
 
@@ -48,7 +48,7 @@ make -C backend build
 
 ## Testes
 
-Testes com tag `dev`:
+Testes com tag `dev` (suite do backend):
 
 ```bash
 make -C backend test
@@ -66,24 +66,99 @@ Cobertura geral recomendada:
 cd backend && go test ./... -cover
 ```
 
-## Configuração
+## Configuração de Ambiente
 
-O backend carrega variáveis a partir de `.env` e ambiente do sistema.
+O backend tenta carregar variáveis de um arquivo `.env` e, se não encontrar, usa o ambiente do sistema.
 
-Principais variáveis:
+Caminho esperado do `.env` por build:
 
-- `ENTRY_POINT`: diretório raiz monitorado para arquivos.
-- `LANGUAGE`: idioma padrão (`pt-BR`, `en-US`, etc.).
-- `ENABLE_WORKERS`: ativa/desativa workers (`true`/`false`).
-- `DB_PATH`: caminho do SQLite local.
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: configuração alternativa de banco relacional.
-- `ALLOWED_ORIGINS`: CORS (lista separada por vírgula).
-- `ENV`: ambiente de execução.
+- `dev`: `backend/.env`
+- Linux (release): `/etc/kuranas/.env`
+- Windows (release): `%ProgramFiles%/Kuranas/.env`
+
+Atualmente o projeto não possui `backend/.env.example`. Use a tabela abaixo como referência oficial.
+
+### Variáveis da aplicação
+
+| Variável | Obrigatória | Padrão | Observações |
+| --- | --- | --- | --- |
+| `ENTRY_POINT` | Sim | - | Diretório raiz monitorado pelo NAS. |
+| `LANGUAGE` | Sim | - | Idioma base (ex.: `pt-BR`, `en-US`). |
+| `ENABLE_WORKERS` | Não | `false` | Ativa workers em background quando `true`. |
+| `ENV` | Não | vazio | Nome do ambiente (`dev`, `test`, `prod` etc.). |
+| `DB_HOST` | Sim | - | Host do PostgreSQL. |
+| `DB_PORT` | Sim | - | Porta do PostgreSQL (ex.: `5432`). |
+| `DB_USER` | Sim | - | Usuário do banco. |
+| `DB_PASSWORD` | Sim | - | Senha do banco. |
+| `DB_NAME` | Sim | - | Nome do banco. |
+| `ALLOWED_ORIGINS` | Sim | - | Lista de origens CORS separadas por vírgula. |
+
+### Variáveis de workers (opcionais)
+
+| Variável | Padrão | Observações |
+| --- | --- | --- |
+| `WORKER_CONCURRENCY_CHECKSUM` | `3` | Concorrência para jobs de checksum. |
+| `WORKER_CONCURRENCY_METADATA` | `3` | Concorrência para extração de metadados. |
+| `WORKER_CONCURRENCY_THUMBNAIL` | `2` | Concorrência para thumbnails. |
+| `WORKER_RETRY_BACKOFF_MS` | `500` | Backoff de retry em milissegundos. |
+| `WORKER_SCHEDULER_POLL_MS` | `2000` | Intervalo do scheduler em milissegundos. |
+| `WORKER_MAX_CONCURRENT_JOBS` | `4` | Limite total de jobs concorrentes. |
+
+### Variáveis de IA (opcionais)
+
+Se nenhuma chave de IA for definida, o serviço de IA é desativado automaticamente.
+
+| Variável | Padrão | Observações |
+| --- | --- | --- |
+| `AI_OPENAI_API_KEY` | vazio | Chave da OpenAI. |
+| `AI_OPENAI_MODEL` | `gpt-4o-mini` | Modelo padrão OpenAI. |
+| `AI_OPENAI_BASE_URL` | `https://api.openai.com/v1` | URL base da OpenAI. |
+| `AI_ANTHROPIC_API_KEY` | vazio | Chave da Anthropic. |
+| `AI_ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Modelo padrão Anthropic. |
+| `AI_TIMEOUT_SECONDS` | `30` | Timeout das chamadas de IA. |
+| `AI_MAX_RETRIES` | `2` | Número de tentativas por chamada. |
+| `AI_RETRY_BACKOFF_MS` | `500` | Backoff entre retries. |
+
+### Exemplo de `backend/.env`
+
+```dotenv
+# App
+ENTRY_POINT=/mnt/storage
+LANGUAGE=pt-BR
+ENABLE_WORKERS=true
+ENV=dev
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+# PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=kuranas
+DB_PASSWORD=secret
+DB_NAME=kuranas
+
+# Worker tuning (opcional)
+WORKER_CONCURRENCY_CHECKSUM=3
+WORKER_CONCURRENCY_METADATA=3
+WORKER_CONCURRENCY_THUMBNAIL=2
+WORKER_RETRY_BACKOFF_MS=500
+WORKER_SCHEDULER_POLL_MS=2000
+WORKER_MAX_CONCURRENT_JOBS=4
+
+# IA (opcional)
+# AI_OPENAI_API_KEY=
+# AI_OPENAI_MODEL=gpt-4o-mini
+# AI_OPENAI_BASE_URL=https://api.openai.com/v1
+# AI_ANTHROPIC_API_KEY=
+# AI_ANTHROPIC_MODEL=claude-sonnet-4-20250514
+# AI_TIMEOUT_SECONDS=30
+# AI_MAX_RETRIES=2
+# AI_RETRY_BACKOFF_MS=500
+```
 
 ## API
 
 - Prefixo principal: `/api/v1`
-- Domínios existentes: `files`, `music`, `video`, `analytics`, `diary`, `configuration`, `update`
+- Domínios existentes: `files`, `music`, `video`, `analytics`, `diary`, `configuration`, `jobs`, `search`, `notifications`, `update`
 
 ## Banco, SQL e Migrations
 
@@ -103,7 +178,7 @@ Não alterar migrations antigas de forma incompatível; criar nova migration par
 
 Antes de alterar código backend, seguir:
 
-- `docs/standards/backend-standards.md`
+- `/docs/standards/backend-standards.md`
 
 Pontos obrigatórios:
 

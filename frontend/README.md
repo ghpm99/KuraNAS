@@ -38,63 +38,81 @@ yarn
 
 ## Scripts
 
-- Dev server:
+Dev server:
 
 ```bash
 yarn dev
 ```
 
-- Build de produção:
+Build de produção:
 
 ```bash
 yarn build
 ```
 
-- Preview local do build:
+Preview local do build:
 
 ```bash
 yarn preview
 ```
 
-- Lint:
+Lint:
 
 ```bash
 yarn lint
 ```
 
-- Testes:
+Testes:
 
 ```bash
 yarn test --watchAll=false
 ```
 
-- Cobertura:
+Teste em watch:
+
+```bash
+yarn test:watch
+```
+
+Cobertura:
 
 ```bash
 yarn coverage
 ```
 
-- Typecheck da configuração de testes:
+Typecheck da configuração de testes:
 
 ```bash
 yarn typecheck:test
 ```
 
+Format:
+
+```bash
+yarn format
+```
+
 ## Variáveis de Ambiente
 
-Arquivos padrão:
+Variável suportada:
 
-- `.env.development`
-- `.env.production`
+- `VITE_API_URL`: URL base da API (sem `/api/v1` no final).
 
-Variáveis usadas:
+Exemplo:
 
-- `VITE_API_URL`: URL base da API backend.
-- `VITE_DEBUG_MODE`: habilita flags de debug no ambiente de desenvolvimento.
+```dotenv
+VITE_API_URL=http://localhost:8000
+```
+
+Comportamento da URL base:
+
+- Se `globalThis.__KURANAS_API_URL__` existir em runtime, ela tem prioridade.
+- Senão, usa `VITE_API_URL`.
+- Sem variável, fallback para caminho relativo (`/api/v1`).
 
 ## API e i18n
 
-- O frontend consome a API via `src/service/index.ts` com base URL de `getApiV1BaseUrl()` (`src/service/apiUrl.ts`).
+- O frontend consome a API via `src/service/index.ts` usando `getApiV1BaseUrl()` (`src/service/apiUrl.ts`).
 - Textos visíveis devem vir de tradução via `useI18n()`.
 - Não adicionar texto hardcoded em componentes.
 - Novas mensagens devem ser adicionadas primeiro em `backend/translations` e consumidas por chave.
@@ -103,7 +121,7 @@ Variáveis usadas:
 
 Antes de alterar código frontend, siga:
 
-- `docs/standards/frontend-standards.md`
+- `/docs/standards/frontend-standards.md`
 
 Pontos obrigatórios:
 
