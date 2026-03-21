@@ -1,33 +1,33 @@
 # KuraNAS
 
-Sistema NAS pessoal com backend em Go e frontend em React, focado em gerenciamento de arquivos, mídia e monitoramento de uso.
+Sistema NAS pessoal com backend em Go e frontend em React para gerenciamento de arquivos, mídia e recursos de organização.
 
 ## Visão Geral
 
-- Backend: API HTTP, regras de negócio, acesso a banco, workers e i18n.
-- Frontend: SPA React + TypeScript consumindo API `/api/v1`.
-- Build integrado: geração de artefatos em `build/`.
+- Backend (`backend/`): API HTTP, regras de negócio, workers e i18n.
+- Frontend (`frontend/`): SPA React + TypeScript consumindo `/api/v1`.
+- Build integrado: empacotamento final em `build/`.
 
-## Estrutura do Repositório
+## Estrutura
 
 ```text
 .
-├── backend/            # API, workers, banco, i18n e scripts de backend
-├── frontend/           # Aplicação web React + Vite + TypeScript
-├── build/              # Saída de build integrada (gerado)
-├── docs/               # Padrões e documentação de engenharia
-├── Makefile            # Build integrado do projeto
+├── backend/            # API, workers, banco, i18n e scripts
+├── frontend/           # Aplicação web (Vite + React + TypeScript)
+├── docs/               # Padrões de engenharia
+├── build/              # Saída do build integrado (gerado)
+├── Makefile            # Pipeline local de build/qualidade
 └── AGENTS.md           # Regras de colaboração para agentes
 ```
 
 ## Pré-requisitos
 
-- Go (recomendado: 1.24+)
-- Node.js (recomendado: 20+)
+- Go 1.24+
+- Node.js 20+
 - Yarn 1.x
 - Make
 
-## Desenvolvimento
+## Setup Rápido (Desenvolvimento)
 
 1. Instale dependências do frontend:
 
@@ -35,13 +35,15 @@ Sistema NAS pessoal com backend em Go e frontend em React, focado em gerenciamen
 cd frontend && yarn
 ```
 
-2. Suba o backend em modo dev (porta `8000`):
+2. Configure variáveis do backend em `backend/.env` (detalhes completos em `backend/README.md`).
+
+3. Inicie o backend (modo `dev`, porta `8000`):
 
 ```bash
 make -C backend run
 ```
 
-3. Em outro terminal, suba o frontend:
+4. Em outro terminal, inicie o frontend:
 
 ```bash
 cd frontend && yarn dev
@@ -49,13 +51,13 @@ cd frontend && yarn dev
 
 ## Build Integrado
 
-Gera frontend + backend e organiza saída em `build/`:
+Gera frontend + backend e organiza artefatos em `build/`:
 
 ```bash
 make
 ```
 
-Limpar artefatos:
+Limpeza:
 
 ```bash
 make clean
@@ -63,37 +65,36 @@ make clean
 
 ## Testes e Qualidade
 
-- Backend cobertura geral:
+Backend:
+
 ```bash
 cd backend && go test ./... -cover
-```
-- Backend testes com tag `dev`:
-```bash
 make -C backend test
 ```
-- Frontend lint:
+
+Frontend:
+
 ```bash
 cd frontend && yarn lint
-```
-- Frontend testes:
-```bash
 cd frontend && yarn test --watchAll=false
-```
-- Frontend cobertura:
-```bash
 cd frontend && yarn coverage
 ```
 
-## Internacionalização (Obrigatória)
+Pipeline local completa:
 
-Este projeto usa JSON como fonte única de tradução.
+```bash
+make ci
+```
 
-- Não hardcode texto visível para usuário em backend ou frontend.
-- Novas chaves devem ser adicionadas em `backend/translations`.
-- O frontend consome traduções via endpoint de configuração do backend.
+## Internacionalização
+
+- Não hardcode texto visível para usuário.
+- Backend e frontend devem usar as mesmas chaves em `backend/translations`.
+- O frontend obtém traduções via endpoint de configuração do backend.
 
 ## Documentação por Módulo
 
-- Frontend: `frontend/README.md`
-- Backend: `backend/README.md`
-- Padrões: `docs/standards/frontend-standards.md` e `docs/standards/backend-standards.md`
+- [README do backend](/home/server/Documentos/Projetos/KuraNAS/backend/README.md)
+- [README do frontend](/home/server/Documentos/Projetos/KuraNAS/frontend/README.md)
+- [Padrão backend](/home/server/Documentos/Projetos/KuraNAS/docs/standards/backend-standards.md)
+- [Padrão frontend](/home/server/Documentos/Projetos/KuraNAS/docs/standards/frontend-standards.md)
