@@ -18,6 +18,7 @@ const createEngineMock = () => ({
         } as { currentTime: number; play: jest.Mock } | null,
     },
     loadAndPlayUrl: jest.fn(),
+    preloadUrl: jest.fn(),
     togglePlayPause: jest.fn(),
     seek: jest.fn(),
     setVolume: jest.fn(),
