@@ -266,6 +266,25 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         setQueueOpen((prev) => !prev);
     }, []);
 
+    // --- Preload next track for gapless background playback ---
+    useEffect(() => {
+        if (currentIndex === undefined || queue.length === 0 || shuffle) return;
+        let nextIndex: number;
+        if (repeatMode === 'one') {
+            nextIndex = currentIndex;
+        } else if (currentIndex + 1 < queue.length) {
+            nextIndex = currentIndex + 1;
+        } else if (repeatMode === 'all') {
+            nextIndex = 0;
+        } else {
+            return;
+        }
+        const nextTrack = queue[nextIndex];
+        if (nextTrack) {
+            engine.preloadUrl(buildStreamUrl(nextTrack.id));
+        }
+    }, [currentIndex, queue, shuffle, repeatMode, engine]);
+
     // --- Media session & wake lock ---
     useMediaSession({
         currentTrack,
