@@ -9,6 +9,7 @@ export interface AudioEngineState {
 export interface AudioEngine extends AudioEngineState {
     audioRef: React.RefObject<HTMLAudioElement | null>;
     loadAndPlayUrl: (url: string) => void;
+    preloadUrl: (url: string) => void;
     togglePlayPause: () => void;
     seek: (time: number) => void;
     setVolume: (volume: number) => void;
@@ -23,7 +24,10 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
     const [volume, setVolumeState] = useState(1);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
     const onTrackEndedRef = useRef(onTrackEnded);
+    // Guards against double-firing (onended + fallback interval)
+    const endedHandledRef = useRef(false);
 
     useEffect(() => {
         onTrackEndedRef.current = onTrackEnded;
@@ -34,33 +38,70 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         audio.volume = volume;
         audioRef.current = audio;
 
+        const preload = new Audio();
+        preload.preload = 'auto';
+        preloadAudioRef.current = preload;
+
         const onTimeUpdate = () => setCurrentTime(audio.currentTime);
         const onLoadedMetadata = () => setDuration(audio.duration);
-        const onEnded = () => onTrackEndedRef.current();
+        const onEnded = () => {
+            if (endedHandledRef.current) return;
+            endedHandledRef.current = true;
+            onTrackEndedRef.current();
+        };
         const onPause = () => setIsPlaying(false);
         const onPlay = () => setIsPlaying(true);
+        const onError = () => {
+            // If an error occurs mid-playback, attempt to advance to next track
+            if (audio.src && !endedHandledRef.current) {
+                endedHandledRef.current = true;
+                onTrackEndedRef.current();
+            }
+        };
 
         audio.addEventListener('timeupdate', onTimeUpdate);
         audio.addEventListener('loadedmetadata', onLoadedMetadata);
         audio.addEventListener('ended', onEnded);
         audio.addEventListener('pause', onPause);
         audio.addEventListener('play', onPlay);
+        audio.addEventListener('error', onError);
+
+        // Fallback: poll every 500ms for cases where `ended` doesn't fire in background
+        const fallbackInterval = setInterval(() => {
+            if (endedHandledRef.current) return;
+            if (!audio.src || audio.duration <= 0) return;
+            if (audio.ended) {
+                endedHandledRef.current = true;
+                onTrackEndedRef.current();
+            }
+        }, 500);
 
         return () => {
+            clearInterval(fallbackInterval);
             audio.removeEventListener('timeupdate', onTimeUpdate);
             audio.removeEventListener('loadedmetadata', onLoadedMetadata);
             audio.removeEventListener('ended', onEnded);
             audio.removeEventListener('pause', onPause);
             audio.removeEventListener('play', onPlay);
+            audio.removeEventListener('error', onError);
             audio.pause();
             audio.src = '';
+            preload.src = '';
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const preloadUrl = useCallback((url: string) => {
+        const preload = preloadAudioRef.current;
+        if (!preload || preload.src === url) return;
+        preload.src = url;
+        preload.load();
     }, []);
 
     const loadAndPlayUrl = useCallback((url: string) => {
         const audio = audioRef.current;
         if (!audio) return;
+        endedHandledRef.current = false;
         audio.src = url;
         audio.play().catch(() => {});
     }, []);
@@ -95,6 +136,7 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
             audio.pause();
             audio.src = '';
         }
+        endedHandledRef.current = false;
         setIsPlaying(false);
         setCurrentTime(0);
         setDuration(0);
@@ -107,6 +149,7 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         duration,
         volume,
         loadAndPlayUrl,
+        preloadUrl,
         togglePlayPause,
         seek,
         setVolume,
