@@ -2,16 +2,25 @@ import { act, renderHook } from '@testing-library/react';
 import useAudioEngine from './useAudioEngine';
 
 class MockAudio {
-    static lastInstance: MockAudio | null = null;
+    static instances: MockAudio[] = [];
+
     constructor() {
-        MockAudio.lastInstance = this;
+        MockAudio.instances.push(this);
     }
+
     src = '';
     currentTime = 0;
     duration = 0;
+    ended = false;
+    preload = 'none';
     paused = true;
     volume = 1;
+    load = jest.fn();
     listeners: Record<string, Function[]> = {};
+
+    static reset() {
+        MockAudio.instances = [];
+    }
 
     addEventListener(event: string, callback: Function) {
         this.listeners[event] = this.listeners[event] ?? [];
@@ -38,12 +47,19 @@ class MockAudio {
     }
 }
 
+const getMainAudio = () => MockAudio.instances[0]!;
+const getPreloadAudio = () => MockAudio.instances[1]!;
+
 describe('useAudioEngine', () => {
     let originalAudio: typeof Audio;
 
     beforeAll(() => {
         originalAudio = globalThis.Audio;
         (globalThis as any).Audio = MockAudio;
+    });
+
+    beforeEach(() => {
+        MockAudio.reset();
     });
 
     afterAll(() => {
@@ -59,7 +75,7 @@ describe('useAudioEngine', () => {
         act(() => {
             result.current.loadAndPlayUrl('http://example.com/test.mp3');
         });
-        expect(MockAudio.lastInstance?.src).toBe('http://example.com/test.mp3');
+        expect(getMainAudio().src).toBe('http://example.com/test.mp3');
 
         act(() => {
             result.current.setVolume(1.5);
@@ -81,7 +97,7 @@ describe('useAudioEngine', () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(MockAudio.lastInstance?.paused).toBe(true);
+        expect(getMainAudio().paused).toBe(true);
 
         act(() => {
             result.current.togglePlayPause();
@@ -89,7 +105,7 @@ describe('useAudioEngine', () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(MockAudio.lastInstance?.paused).toBe(false);
+        expect(getMainAudio().paused).toBe(false);
 
         act(() => {
             result.current.stop();
@@ -108,13 +124,13 @@ describe('useAudioEngine', () => {
         act(() => {
             result.current.loadAndPlayUrl('http://example.com/song.mp3');
         });
-        expect(MockAudio.lastInstance?.src).toBe('http://example.com/song.mp3');
+        expect(getMainAudio().src).toBe('http://example.com/song.mp3');
 
         act(() => {
             result.current.stop();
         });
-        expect(MockAudio.lastInstance?.src).toBe('');
-        expect(MockAudio.lastInstance?.paused).toBe(true);
+        expect(getMainAudio().src).toBe('');
+        expect(getMainAudio().paused).toBe(true);
         expect(result.current.isPlaying).toBe(false);
         expect(result.current.currentTime).toBe(0);
         expect(result.current.duration).toBe(0);
@@ -134,8 +150,8 @@ describe('useAudioEngine', () => {
             await Promise.resolve();
         });
 
-        expect(MockAudio.lastInstance?.src).toBe('http://example.com/track.mp3');
-        expect(MockAudio.lastInstance?.paused).toBe(false);
+        expect(getMainAudio().src).toBe('http://example.com/track.mp3');
+        expect(getMainAudio().paused).toBe(false);
         expect(result.current.isPlaying).toBe(true);
     });
 
@@ -150,19 +166,19 @@ describe('useAudioEngine', () => {
             result.current.setVolume(0.5);
         });
         expect(result.current.volume).toBe(0.5);
-        expect(MockAudio.lastInstance?.volume).toBe(0.5);
+        expect(getMainAudio().volume).toBe(0.5);
 
         act(() => {
             result.current.setVolume(2);
         });
         expect(result.current.volume).toBe(1);
-        expect(MockAudio.lastInstance?.volume).toBe(1);
+        expect(getMainAudio().volume).toBe(1);
 
         act(() => {
             result.current.setVolume(-0.5);
         });
         expect(result.current.volume).toBe(0);
-        expect(MockAudio.lastInstance?.volume).toBe(0);
+        expect(getMainAudio().volume).toBe(0);
     });
 
     it('seek sets currentTime on the audio element', async () => {
@@ -175,7 +191,7 @@ describe('useAudioEngine', () => {
         act(() => {
             result.current.seek(99);
         });
-        expect(MockAudio.lastInstance?.currentTime).toBe(99);
+        expect(getMainAudio().currentTime).toBe(99);
     });
 
     it('timeupdate event updates currentTime state', async () => {
@@ -185,7 +201,7 @@ describe('useAudioEngine', () => {
             await Promise.resolve();
         });
 
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.currentTime = 15.5;
             audio.trigger('timeupdate');
@@ -200,7 +216,7 @@ describe('useAudioEngine', () => {
             await Promise.resolve();
         });
 
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.duration = 240;
             audio.trigger('loadedmetadata');
@@ -216,7 +232,7 @@ describe('useAudioEngine', () => {
             await Promise.resolve();
         });
 
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.trigger('ended');
         });
@@ -230,7 +246,6 @@ describe('useAudioEngine', () => {
             await Promise.resolve();
         });
 
-        // First play, then pause
         act(() => {
             result.current.loadAndPlayUrl('http://example.com/test.mp3');
         });
@@ -239,7 +254,7 @@ describe('useAudioEngine', () => {
         });
         expect(result.current.isPlaying).toBe(true);
 
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.pause();
         });
@@ -254,7 +269,7 @@ describe('useAudioEngine', () => {
         });
 
         expect(result.current.isPlaying).toBe(false);
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.play();
         });
@@ -301,12 +316,79 @@ describe('useAudioEngine', () => {
 
         rerender({ cb: second });
 
-        const audio = MockAudio.lastInstance!;
+        const audio = getMainAudio();
         act(() => {
             audio.trigger('ended');
         });
 
         expect(first).not.toHaveBeenCalled();
         expect(second).toHaveBeenCalledTimes(1);
+    });
+
+    it('preloadUrl preloads once and ignores duplicate url', async () => {
+        const { result } = renderHook(() => useAudioEngine(() => {}));
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        const preloadAudio = getPreloadAudio();
+        act(() => {
+            result.current.preloadUrl('http://example.com/preload.mp3');
+        });
+
+        expect(preloadAudio.src).toBe('http://example.com/preload.mp3');
+        expect(preloadAudio.load).toHaveBeenCalledTimes(1);
+
+        act(() => {
+            result.current.preloadUrl('http://example.com/preload.mp3');
+        });
+        expect(preloadAudio.load).toHaveBeenCalledTimes(1);
+    });
+
+    it('error event triggers onTrackEnded once when source exists', async () => {
+        const onEnded = jest.fn();
+        const { result } = renderHook(() => useAudioEngine(onEnded));
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        act(() => {
+            result.current.loadAndPlayUrl('http://example.com/error.mp3');
+        });
+
+        const audio = getMainAudio();
+        act(() => {
+            audio.trigger('error');
+            audio.trigger('error');
+        });
+
+        expect(onEnded).toHaveBeenCalledTimes(1);
+    });
+
+    it('fallback interval advances when ended is true in background playback', async () => {
+        jest.useFakeTimers();
+        const onEnded = jest.fn();
+        const { result, unmount } = renderHook(() => useAudioEngine(onEnded));
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        const audio = getMainAudio();
+        act(() => {
+            result.current.loadAndPlayUrl('http://example.com/fallback.mp3');
+            audio.duration = 60;
+            audio.ended = true;
+        });
+
+        act(() => {
+            jest.advanceTimersByTime(500);
+        });
+
+        expect(onEnded).toHaveBeenCalledTimes(1);
+        unmount();
+        jest.useRealTimers();
     });
 });
