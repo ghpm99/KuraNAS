@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"nas-go/api/internal/api/v1/analytics"
@@ -88,11 +89,43 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/v1/notifications/:id"},
 		{method: http.MethodPut, path: "/api/v1/notifications/:id/read"},
 		{method: http.MethodPut, path: "/api/v1/notifications/read-all"},
+		{method: http.MethodGet, path: "/api-docs/openapi.json"},
+		{method: http.MethodGet, path: "/swagger/*any"},
 	}
 	for _, check := range checks {
 		if !routeExists(routes, check.method, check.path) {
 			t.Fatalf("expected route %s %s to exist", check.method, check.path)
 		}
+	}
+}
+
+func TestRegisterSwaggerRoutes(t *testing.T) {
+	router := SetUpRouter()
+	registerSwaggerRoutes(router)
+
+	specReq := httptest.NewRequest(http.MethodGet, "/api-docs/openapi.json", nil)
+	specWriter := httptest.NewRecorder()
+	router.ServeHTTP(specWriter, specReq)
+
+	if specWriter.Code != http.StatusOK {
+		t.Fatalf("expected openapi spec route to return 200, got %d", specWriter.Code)
+	}
+	if got := specWriter.Header().Get("Content-Type"); !strings.Contains(got, "application/json") {
+		t.Fatalf("expected openapi spec response as json, got %q", got)
+	}
+	if !strings.Contains(specWriter.Body.String(), "\"openapi\": \"3.0.3\"") {
+		t.Fatalf("expected openapi version in response body")
+	}
+
+	uiReq := httptest.NewRequest(http.MethodGet, "/swagger/index.html", nil)
+	uiWriter := httptest.NewRecorder()
+	router.ServeHTTP(uiWriter, uiReq)
+
+	if uiWriter.Code != http.StatusOK {
+		t.Fatalf("expected swagger ui route to return 200, got %d", uiWriter.Code)
+	}
+	if body := uiWriter.Body.String(); !strings.Contains(body, "Swagger UI") {
+		t.Fatalf("expected swagger ui html response")
 	}
 }
 
