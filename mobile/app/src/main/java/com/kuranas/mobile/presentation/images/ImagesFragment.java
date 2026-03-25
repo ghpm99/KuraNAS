@@ -134,7 +134,7 @@ public class ImagesFragment extends BaseFragment {
                                 adapter.updateItems(items);
                                 setState(ViewState.CONTENT);
                             } else {
-                                setEmptyMessage(t("images.empty"));
+                                setEmptyMessage(t("IMAGES_EMPTY_TITLE"));
                                 setState(ViewState.EMPTY);
                             }
                         } else {

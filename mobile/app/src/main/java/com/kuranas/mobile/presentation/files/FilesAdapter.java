@@ -97,7 +97,7 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         if (item.isDirectory()) {
             int count = item.getDirectoryContentCount();
             String itemsLabel = translations != null
-                    ? translations.t("files.items", "items")
+                    ? translations.t("DIRECTORY_CONTENT_COUNT", "items")
                     : "items";
             return count + " " + itemsLabel;
         }

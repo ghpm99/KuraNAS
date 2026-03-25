@@ -107,7 +107,7 @@ public class SearchFragment extends BaseFragment {
                     return;
                 }
                 if (result.isEmpty()) {
-                    setEmptyMessage(t("search.no_results"));
+                    setEmptyMessage(t("GLOBAL_SEARCH_EMPTY_TITLE"));
                     setState(ViewState.EMPTY);
                 } else {
                     adapter.setResults(result);

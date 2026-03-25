@@ -2,6 +2,8 @@ package com.kuranas.mobile.presentation.home;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,14 +22,22 @@ import com.kuranas.mobile.domain.repository.FileRepository;
 import com.kuranas.mobile.infra.cache.BitmapCache;
 import com.kuranas.mobile.infra.http.ApiCallback;
 import com.kuranas.mobile.presentation.base.BaseFragment;
-import com.kuranas.mobile.presentation.base.ViewState;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends BaseFragment {
 
+    private static final long CLOCK_UPDATE_INTERVAL_MS = 15000;
+
+    private TextView clockText;
+    private TextView dateText;
     private SwipeRefreshLayout swipeRefresh;
+    private View sectionRecent;
+    private View sectionStarred;
     private RecyclerView recentFilesList;
     private RecyclerView starredList;
     private TextView sectionRecentTitle;
@@ -40,6 +50,15 @@ public class HomeFragment extends BaseFragment {
     private BitmapCache bitmapCache;
     private String baseUrl;
 
+    private final Handler clockHandler = new Handler(Looper.getMainLooper());
+    private final Runnable clockRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateClock();
+            clockHandler.postDelayed(this, CLOCK_UPDATE_INTERVAL_MS);
+        }
+    };
+
     private boolean recentLoaded;
     private boolean starredLoaded;
 
@@ -47,30 +66,26 @@ public class HomeFragment extends BaseFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
-        initStateViews(root);
+        clockText = (TextView) root.findViewById(R.id.clock_text);
+        dateText = (TextView) root.findViewById(R.id.date_text);
+        swipeRefresh = (SwipeRefreshLayout) root.findViewById(R.id.swipe_refresh);
+        sectionRecent = root.findViewById(R.id.section_recent);
+        sectionStarred = root.findViewById(R.id.section_starred);
+        recentFilesList = (RecyclerView) root.findViewById(R.id.recent_files_list);
+        starredList = (RecyclerView) root.findViewById(R.id.starred_list);
+        sectionRecentTitle = (TextView) root.findViewById(R.id.section_recent_title);
+        sectionStarredTitle = (TextView) root.findViewById(R.id.section_starred_title);
+
+        sectionRecentTitle.setText(t("RECENT_FILES"));
+        sectionStarredTitle.setText(t("STARRED_FILES"));
 
         ServiceLocator locator = ServiceLocator.getInstance();
         fileRepository = locator.getFileRepository();
         bitmapCache = locator.getBitmapCache();
         baseUrl = locator.getHttpClient().getBaseUrl();
 
-        swipeRefresh = (SwipeRefreshLayout) root.findViewById(R.id.swipe_refresh);
-        recentFilesList = (RecyclerView) root.findViewById(R.id.recent_files_list);
-        starredList = (RecyclerView) root.findViewById(R.id.starred_list);
-        sectionRecentTitle = (TextView) root.findViewById(R.id.section_recent_title);
-        sectionStarredTitle = (TextView) root.findViewById(R.id.section_starred_title);
-
-        sectionRecentTitle.setText(t("home.recent_files"));
-        sectionStarredTitle.setText(t("home.starred"));
-
         setupRecyclerViews();
-
-        setRetryListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadData();
-            }
-        });
+        updateClock();
 
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -82,6 +97,27 @@ public class HomeFragment extends BaseFragment {
         loadData();
 
         return root;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateClock();
+        clockHandler.postDelayed(clockRunnable, CLOCK_UPDATE_INTERVAL_MS);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        clockHandler.removeCallbacks(clockRunnable);
+    }
+
+    private void updateClock() {
+        Calendar now = Calendar.getInstance();
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d 'de' MMMM", new Locale("pt", "BR"));
+        clockText.setText(timeFormat.format(now.getTime()));
+        dateText.setText(dateFormat.format(now.getTime()));
     }
 
     private void setupRecyclerViews() {
@@ -109,7 +145,6 @@ public class HomeFragment extends BaseFragment {
     private void loadData() {
         recentLoaded = false;
         starredLoaded = false;
-        setState(ViewState.LOADING);
 
         fileRepository.getFileTree(1, 10, new ApiCallback<PaginatedResult<FileItem>>() {
             @Override
@@ -120,11 +155,9 @@ public class HomeFragment extends BaseFragment {
                 List<FileItem> items = result.getItems();
                 if (items != null && !items.isEmpty()) {
                     recentAdapter.updateItems(items);
-                    sectionRecentTitle.setVisibility(View.VISIBLE);
-                    recentFilesList.setVisibility(View.VISIBLE);
+                    sectionRecent.setVisibility(View.VISIBLE);
                 } else {
-                    sectionRecentTitle.setVisibility(View.GONE);
-                    recentFilesList.setVisibility(View.GONE);
+                    sectionRecent.setVisibility(View.GONE);
                 }
                 recentLoaded = true;
                 checkLoadComplete();
@@ -135,9 +168,8 @@ public class HomeFragment extends BaseFragment {
                 if (!isAdded()) {
                     return;
                 }
+                sectionRecent.setVisibility(View.GONE);
                 recentLoaded = true;
-                sectionRecentTitle.setVisibility(View.GONE);
-                recentFilesList.setVisibility(View.GONE);
                 checkLoadComplete();
             }
         });
@@ -151,11 +183,9 @@ public class HomeFragment extends BaseFragment {
                 List<FileItem> items = result.getItems();
                 if (items != null && !items.isEmpty()) {
                     starredAdapter.updateItems(items);
-                    sectionStarredTitle.setVisibility(View.VISIBLE);
-                    starredList.setVisibility(View.VISIBLE);
+                    sectionStarred.setVisibility(View.VISIBLE);
                 } else {
-                    sectionStarredTitle.setVisibility(View.GONE);
-                    starredList.setVisibility(View.GONE);
+                    sectionStarred.setVisibility(View.GONE);
                 }
                 starredLoaded = true;
                 checkLoadComplete();
@@ -166,9 +196,8 @@ public class HomeFragment extends BaseFragment {
                 if (!isAdded()) {
                     return;
                 }
+                sectionStarred.setVisibility(View.GONE);
                 starredLoaded = true;
-                sectionStarredTitle.setVisibility(View.GONE);
-                starredList.setVisibility(View.GONE);
                 checkLoadComplete();
             }
         });
@@ -179,14 +208,6 @@ public class HomeFragment extends BaseFragment {
             return;
         }
         swipeRefresh.setRefreshing(false);
-        boolean hasRecent = recentAdapter.getItemCount() > 0;
-        boolean hasStarred = starredAdapter.getItemCount() > 0;
-        if (hasRecent || hasStarred) {
-            setState(ViewState.CONTENT);
-        } else {
-            setEmptyMessage(t("home.empty"));
-            setState(ViewState.EMPTY);
-        }
     }
 
     private void handleItemClick(FileItem item) {

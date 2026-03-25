@@ -1,5 +1,7 @@
 package com.kuranas.mobile.i18n;
 
+import android.content.Context;
+
 import com.kuranas.mobile.infra.http.HttpClient;
 import com.kuranas.mobile.infra.http.HttpResponse;
 import com.kuranas.mobile.infra.logging.AppLogger;
@@ -7,6 +9,10 @@ import com.kuranas.mobile.infra.logging.AppLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -14,6 +20,7 @@ import java.util.Map;
 public final class TranslationManager {
 
     private static final String LOG_TAG = "TranslationManager";
+    private static final String LOCAL_TRANSLATIONS_PATH = "translations/pt-BR.json";
 
     private final HttpClient httpClient;
     private volatile Map<String, String> translations;
@@ -25,18 +32,42 @@ public final class TranslationManager {
         this.loaded = false;
     }
 
+    public void loadLocalFallback(Context context) {
+        try {
+            InputStream is = context.getAssets().open(LOCAL_TRANSLATIONS_PATH);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            try {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                parseTranslations(sb.toString());
+                loaded = true;
+                AppLogger.i(LOG_TAG, "Loaded " + translations.size() + " local fallback translations");
+            } finally {
+                reader.close();
+                is.close();
+            }
+        } catch (IOException e) {
+            AppLogger.e(LOG_TAG, "Failed to load local fallback translations", e);
+        } catch (JSONException e) {
+            AppLogger.e(LOG_TAG, "Failed to parse local fallback translations", e);
+        }
+    }
+
     public void loadSync() {
         HttpResponse response = httpClient.getSync("/configuration/translation");
         if (response.isSuccessful()) {
             try {
                 parseTranslations(response.getBody());
                 loaded = true;
-                AppLogger.i(LOG_TAG, "Loaded " + translations.size() + " translations");
+                AppLogger.i(LOG_TAG, "Loaded " + translations.size() + " remote translations");
             } catch (JSONException e) {
                 AppLogger.e(LOG_TAG, "Failed to parse translations", e);
             }
         } else {
-            AppLogger.e(LOG_TAG, "Failed to load translations: " + response.getStatusCode());
+            AppLogger.w(LOG_TAG, "Failed to load remote translations (status " + response.getStatusCode() + "), using local fallback");
         }
     }
 
@@ -48,12 +79,12 @@ public final class TranslationManager {
                     try {
                         parseTranslations(response.getBody());
                         loaded = true;
-                        AppLogger.i(LOG_TAG, "Loaded " + translations.size() + " translations");
+                        AppLogger.i(LOG_TAG, "Loaded " + translations.size() + " remote translations");
                     } catch (JSONException e) {
                         AppLogger.e(LOG_TAG, "Failed to parse translations", e);
                     }
                 } else {
-                    AppLogger.e(LOG_TAG, "Failed to load translations: " + response.getStatusCode());
+                    AppLogger.w(LOG_TAG, "Failed to load remote translations (status " + response.getStatusCode() + "), using local fallback");
                 }
                 if (onComplete != null) {
                     onComplete.run();
