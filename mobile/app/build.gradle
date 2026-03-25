@@ -3,25 +3,36 @@ plugins {
 }
 
 android {
-    namespace 'com.example.kuranas'
+    namespace 'com.kuranas.mobile'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.kuranas"
+        applicationId "com.kuranas.mobile"
         minSdk 16
         targetSdk 35
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "API_BASE_URL", "\"http://192.168.1.100:8000/api/v1\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "API_BASE_URL", "\"http://192.168.1.100:8000/api/v1\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "API_BASE_URL", "\"http://192.168.1.100:8000/api/v1\""
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_7
         targetCompatibility JavaVersion.VERSION_7
@@ -30,7 +41,11 @@ android {
 
 dependencies {
     implementation libs.appcompat
+    implementation libs.recyclerview
+    implementation libs.swiperefreshlayout
+
     testImplementation libs.junit
+    testImplementation libs.mockito.core
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
 }

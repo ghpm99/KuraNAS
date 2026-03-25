@@ -1,4 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kuranas</string>
-    <string name="hello">Hello, KuraNAS!</string>
+    <string name="app_name">KuraNAS</string>
+    <string name="loading">…</string>
+    <string name="nav_open">Open navigation</string>
+    <string name="nav_close">Close navigation</string>
+    <string name="welcome">Welcome</string>
+    <string name="recent_files">Recent Files</string>
+    <string name="starred">Starred</string>
+    <string name="retry">Retry</string>
+    <string name="no_results">No results found</string>
+    <string name="empty_content">Nothing here yet</string>
+    <string name="search_hint">Search…</string>
+    <string name="language">Language</string>
+    <string name="about">About</string>
 </resources>

@@ -1,4 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kuranas" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.Kuranas" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:textColorPrimary">@color/on_primary</item>
+        <item name="android:textColorSecondary">@color/on_surface_secondary</item>
+    </style>
+
+    <style name="Theme.Kuranas.Fullscreen" parent="Theme.Kuranas">
+        <item name="android:windowFullscreen">true</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.Kuranas.Toolbar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:textColorPrimary">@color/on_primary</item>
+    </style>
+
+    <style name="Widget.Kuranas.Button" parent="Widget.AppCompat.Button">
+        <item name="android:background">@color/accent</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:paddingLeft">@dimen/spacing_md</item>
+        <item name="android:paddingRight">@dimen/spacing_md</item>
+    </style>
 </resources>
