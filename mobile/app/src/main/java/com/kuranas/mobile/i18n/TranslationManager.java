@@ -22,7 +22,9 @@ public final class TranslationManager {
     private static final String LOG_TAG = "TranslationManager";
     private static final String LOCAL_TRANSLATIONS_PATH = "translations/pt-BR.json";
 
-    private final HttpClient httpClient;
+    private static TranslationManager instance;
+
+    private HttpClient httpClient;
     private volatile Map<String, String> translations;
     private volatile boolean loaded;
 
@@ -30,6 +32,33 @@ public final class TranslationManager {
         this.httpClient = httpClient;
         this.translations = new HashMap<String, String>();
         this.loaded = false;
+    }
+
+    private TranslationManager() {
+        this.translations = new HashMap<String, String>();
+        this.loaded = false;
+    }
+
+    public static synchronized void initInstance(Context context) {
+        if (instance == null) {
+            instance = new TranslationManager();
+            instance.loadLocalFallback(context);
+        }
+    }
+
+    public static synchronized TranslationManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("TranslationManager not initialized. Call initInstance() first.");
+        }
+        return instance;
+    }
+
+    public void setHttpClient(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
+
+    public String get(String key) {
+        return t(key);
     }
 
     public void loadLocalFallback(Context context) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
@@ -27,9 +28,11 @@ var (
 )
 
 type Application struct {
-	Router  *gin.Engine
-	Context *AppContext
-	Server  *http.Server
+	Router        *gin.Engine
+	Context       *AppContext
+	Server        *http.Server
+	UDPListener   *discovery.UDPListener
+	MdnsRegistrar *discovery.MdnsRegistrar
 }
 
 func InitializeApp() (*Application, error) {
@@ -74,9 +77,21 @@ func InitializeApp() (*Application, error) {
 
 	startWorkersFn(workerFileContext, 200)
 
+	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
+	if err := udpListener.Start(); err != nil {
+		log.Printf("[APP] Failed to start UDP discovery listener: %v", err)
+	}
+
+	mdnsRegistrar := discovery.NewMdnsRegistrar(discovery.DefaultServiceName, 8000)
+	if err := mdnsRegistrar.Start(); err != nil {
+		log.Printf("[APP] Failed to start mDNS registrar: %v", err)
+	}
+
 	return &Application{
-		Router:  router,
-		Context: appContext,
+		Router:        router,
+		Context:       appContext,
+		UDPListener:   udpListener,
+		MdnsRegistrar: mdnsRegistrar,
 	}, nil
 }
 
@@ -102,6 +117,14 @@ func (app *Application) Run(addr string, enableGraceFul bool) error {
 func (app *Application) Stop() error {
 	if app == nil {
 		return nil
+	}
+
+	if app.UDPListener != nil {
+		app.UDPListener.Stop()
+	}
+
+	if app.MdnsRegistrar != nil {
+		app.MdnsRegistrar.Stop()
 	}
 
 	if app.Server == nil {

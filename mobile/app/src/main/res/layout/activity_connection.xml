@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="@dimen/spacing_lg"
+    android:background="@color/primary">
+
+    <ImageView
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:src="@mipmap/ic_launcher"
+        android:contentDescription="@string/app_name"
+        android:layout_marginBottom="@dimen/spacing_lg" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="24sp"
+        android:textColor="@color/on_primary"
+        android:layout_marginBottom="@dimen/spacing_lg" />
+
+    <ProgressBar
+        android:id="@+id/discovery_progress"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:indeterminate="true"
+        android:layout_marginBottom="@dimen/spacing_md" />
+
+    <TextView
+        android:id="@+id/discovery_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_body"
+        android:textColor="@color/on_surface_secondary"
+        android:layout_marginBottom="@dimen/spacing_lg" />
+
+    <LinearLayout
+        android:id="@+id/manual_input_section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/discovery_failed_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_body"
+            android:textColor="@color/error"
+            android:layout_marginBottom="@dimen/spacing_md" />
+
+        <EditText
+            android:id="@+id/server_address_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri"
+            android:textColor="@color/on_surface"
+            android:textColorHint="@color/on_surface_secondary"
+            android:background="@color/surface"
+            android:padding="@dimen/spacing_sm"
+            android:layout_marginBottom="@dimen/spacing_md" />
+
+        <Button
+            android:id="@+id/connect_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/accent"
+            android:textColor="@color/primary_dark"
+            android:layout_marginBottom="@dimen/spacing_sm" />
+
+        <Button
+            android:id="@+id/retry_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            android:textColor="@color/on_surface" />
+
+    </LinearLayout>
+
+</LinearLayout>

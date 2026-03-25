@@ -13,4 +13,6 @@
     <string name="search_hint">Search…</string>
     <string name="language">Language</string>
     <string name="about">About</string>
+    <string name="server">Server</string>
+    <string name="change_server">Change Server</string>
 </resources>

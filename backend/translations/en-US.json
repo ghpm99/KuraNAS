@@ -783,5 +783,18 @@
 	"AI_CLASSIFICATION_PORTRAIT": "Portrait",
 	"AI_CLASSIFICATION_MEME": "Meme",
 	"AI_CLASSIFICATION_ART": "Art",
-	"AI_CLASSIFICATION_SCREENSHOT_APP": "App screenshot"
+	"AI_CLASSIFICATION_SCREENSHOT_APP": "App screenshot",
+	"DISCOVERY_CHECKING_CACHE": "Checking cached server...",
+	"DISCOVERY_MDNS": "Searching for service on network...",
+	"DISCOVERY_UDP": "Sending discovery signal...",
+	"DISCOVERY_SCANNING": "Scanning local network...",
+	"DISCOVERY_FAILED": "Server not found",
+	"DISCOVERY_MANUAL_HINT": "Server address (e.g. 192.168.1.100)",
+	"DISCOVERY_CONNECT": "Connect",
+	"DISCOVERY_CONNECTING": "Connecting...",
+	"DISCOVERY_RETRY": "Try again",
+	"DISCOVERY_INVALID_ADDRESS": "Invalid address",
+	"DISCOVERY_SERVER_NOT_FOUND": "Server not found at this address",
+	"SETTINGS_SERVER": "Server",
+	"SETTINGS_CHANGE_SERVER": "Change server"
 }

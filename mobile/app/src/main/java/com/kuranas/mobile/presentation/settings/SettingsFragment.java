@@ -1,11 +1,13 @@
 package com.kuranas.mobile.presentation.settings;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -18,6 +20,8 @@ import com.kuranas.mobile.domain.model.AppSettings;
 import com.kuranas.mobile.domain.repository.ConfigRepository;
 import com.kuranas.mobile.i18n.TranslationManager;
 import com.kuranas.mobile.infra.http.ApiCallback;
+import com.kuranas.mobile.infra.preferences.ServerPreferences;
+import com.kuranas.mobile.presentation.connection.ConnectionActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +30,8 @@ public class SettingsFragment extends Fragment {
 
     private Spinner languageSpinner;
     private TextView aboutInfo;
+    private TextView serverUrlText;
+    private Button changeServerButton;
 
     private ConfigRepository configRepository;
     private TranslationManager translationManager;
@@ -44,8 +50,25 @@ public class SettingsFragment extends Fragment {
 
         languageSpinner = (Spinner) root.findViewById(R.id.language_spinner);
         aboutInfo = (TextView) root.findViewById(R.id.about_info);
+        serverUrlText = (TextView) root.findViewById(R.id.server_url_text);
+        changeServerButton = (Button) root.findViewById(R.id.change_server_button);
 
         aboutInfo.setText("KuraNAS Mobile v1.0.0");
+
+        ServerPreferences serverPreferences = new ServerPreferences(getActivity());
+        String serverUrl = serverPreferences.getServerUrl();
+        serverUrlText.setText(serverUrl != null ? serverUrl : "—");
+
+        changeServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ServerPreferences prefs = new ServerPreferences(getActivity());
+                prefs.clear();
+                Intent intent = new Intent(getActivity(), ConnectionActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+        });
 
         loadSettings();
 

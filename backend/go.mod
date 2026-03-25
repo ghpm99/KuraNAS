@@ -13,7 +13,9 @@ require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/gin-contrib/gzip v1.2.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
+	github.com/hashicorp/mdns v1.0.6 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/miekg/dns v1.1.55 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.55.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect

@@ -34,6 +34,38 @@
             android:layout_marginBottom="@dimen/spacing_md" />
 
         <TextView
+            android:id="@+id/server_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/server"
+            android:textSize="@dimen/text_subtitle"
+            android:textColor="@color/accent"
+            android:paddingBottom="@dimen/spacing_sm" />
+
+        <TextView
+            android:id="@+id/server_url_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_body"
+            android:textColor="@color/on_surface_secondary"
+            android:paddingBottom="@dimen/spacing_sm" />
+
+        <Button
+            android:id="@+id/change_server_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/change_server"
+            android:background="@color/surface"
+            android:textColor="@color/on_surface" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:layout_marginBottom="@dimen/spacing_md" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/about"

@@ -1,6 +1,5 @@
 package com.kuranas.mobile.app;
 
-import com.kuranas.mobile.BuildConfig;
 import com.kuranas.mobile.data.mapper.FileMapper;
 import com.kuranas.mobile.data.mapper.MusicMapper;
 import com.kuranas.mobile.data.mapper.SearchMapper;
@@ -45,10 +44,13 @@ public final class ServiceLocator {
     private final SearchRepository searchRepository;
     private final ConfigRepository configRepository;
 
-    private ServiceLocator() {
-        httpClient = new HttpClient(BuildConfig.API_BASE_URL);
-        translationManager = new TranslationManager(httpClient);
+    private ServiceLocator(String baseUrl) {
+        httpClient = new HttpClient(baseUrl);
         bitmapCache = new BitmapCache();
+
+        TranslationManager tm = TranslationManager.getInstance();
+        tm.setHttpClient(httpClient);
+        translationManager = tm;
 
         fileApi = new FileApi(httpClient);
         musicApi = new MusicApi(httpClient);
@@ -63,9 +65,16 @@ public final class ServiceLocator {
         configRepository = new ConfigRepositoryImpl(configApi);
     }
 
+    public static synchronized void initialize(String baseUrl) {
+        if (instance != null) {
+            instance.shutdown();
+        }
+        instance = new ServiceLocator(baseUrl);
+    }
+
     public static synchronized ServiceLocator getInstance() {
         if (instance == null) {
-            instance = new ServiceLocator();
+            throw new IllegalStateException("ServiceLocator not initialized. Call initialize() first.");
         }
         return instance;
     }
