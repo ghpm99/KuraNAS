@@ -15,6 +15,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
 	registerCorsRoutes(router, context)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	registerSwaggerRoutes(router)
 	routesV1 := router.Group("/api/v1")
 	RegisterFilesRoutes(routesV1, context)
 	RegisterDiaryRoutes(routesV1, context)
