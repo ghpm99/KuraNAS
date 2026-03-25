@@ -107,17 +107,35 @@ deploy:
 release-main-ff:
 	@echo ""
 	@echo "======== Release Main (fast-forward) ========"
-	@CURRENT_BRANCH=$$(git branch --show-current) && \
+	@CURRENT_BRANCH=$$(git branch --show-current); \
 	if [ -z "$$CURRENT_BRANCH" ]; then \
-		echo "FAILED: Could not determine current branch" && exit 1; \
-	fi && \
+		echo "FAILED: Could not determine current branch"; \
+		exit 1; \
+	fi; \
 	if ! git diff-index --quiet HEAD --; then \
-		echo "FAILED: Working tree has uncommitted changes" && exit 1; \
-	fi && \
-	git fetch origin && \
-	git checkout main && \
-	git pull --ff-only origin main && \
-	git merge --ff-only origin/develop && \
-	git push origin main && \
-	git checkout "$$CURRENT_BRANCH"
+		echo "FAILED: Working tree has uncommitted changes"; \
+		exit 1; \
+	fi; \
+	cleanup() { \
+		ACTIVE_BRANCH=$$(git branch --show-current); \
+		if [ -n "$$ACTIVE_BRANCH" ] && [ "$$ACTIVE_BRANCH" != "$$CURRENT_BRANCH" ]; then \
+			git checkout "$$CURRENT_BRANCH" >/dev/null 2>&1 || true; \
+		fi; \
+	}; \
+	trap cleanup EXIT; \
+	git fetch origin; \
+	git checkout main; \
+	git pull --ff-only origin main; \
+	if ! git merge-base --is-ancestor main origin/develop; then \
+		echo "FAILED: main and origin/develop diverged; fast-forward is not possible."; \
+		echo "Sync develop with main first, then retry:"; \
+		echo "  git checkout develop"; \
+		echo "  git pull --ff-only origin develop"; \
+		echo "  git merge origin/main"; \
+		echo "  git push origin develop"; \
+		echo "  make release-main-ff"; \
+		exit 1; \
+	fi; \
+	git merge --ff-only origin/develop; \
+	git push origin main
 	@echo "Main was fast-forwarded to origin/develop."
