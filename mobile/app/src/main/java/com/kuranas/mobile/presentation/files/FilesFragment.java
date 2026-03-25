@@ -139,7 +139,7 @@ public class FilesFragment extends BaseFragment {
                                 adapter.updateItems(items);
                                 setState(ViewState.CONTENT);
                             } else {
-                                setEmptyMessage(t("files.empty_folder"));
+                                setEmptyMessage(t("EMPTY_FILE_LIST"));
                                 setState(ViewState.EMPTY);
                             }
                         } else {

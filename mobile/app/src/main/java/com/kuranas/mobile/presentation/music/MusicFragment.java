@@ -153,7 +153,7 @@ public class MusicFragment extends BaseFragment {
                                 adapter.updateItems(items);
                                 setState(ViewState.CONTENT);
                             } else {
-                                setEmptyMessage(t("music.empty"));
+                                setEmptyMessage(t("MUSIC_PLAYLIST_EMPTY"));
                                 setState(ViewState.EMPTY);
                             }
                         } else {

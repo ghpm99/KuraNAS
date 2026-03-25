@@ -17,10 +17,12 @@ public class KuranasApp extends Application {
         ServiceLocator locator = ServiceLocator.getInstance();
         BaseFragment.setTranslationManager(locator.getTranslationManager());
 
+        locator.getTranslationManager().loadLocalFallback(this);
+
         locator.getTranslationManager().loadAsync(new Runnable() {
             @Override
             public void run() {
-                AppLogger.i(LOG_TAG, "Translations loaded");
+                AppLogger.i(LOG_TAG, "Remote translations loaded");
             }
         });
     }

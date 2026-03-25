@@ -130,7 +130,7 @@ public class VideoFragment extends BaseFragment {
                                 adapter.updateItems(items);
                                 setState(ViewState.CONTENT);
                             } else {
-                                setEmptyMessage(t("videos.empty"));
+                                setEmptyMessage(t("HOME_VIDEO_EMPTY"));
                                 setState(ViewState.EMPTY);
                             }
                         } else {
