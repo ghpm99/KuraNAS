@@ -106,7 +106,7 @@ deploy:
 
 release-main-ff:
 	@echo ""
-	@echo "======== Release Main (fast-forward) ========"
+	@echo "======== Release Main (automated sync + fast-forward) ========"
 	@CURRENT_BRANCH=$$(git branch --show-current); \
 	if [ -z "$$CURRENT_BRANCH" ]; then \
 		echo "FAILED: Could not determine current branch"; \
@@ -117,6 +117,9 @@ release-main-ff:
 		exit 1; \
 	fi; \
 	cleanup() { \
+		if git rev-parse --verify -q MERGE_HEAD >/dev/null; then \
+			git merge --abort >/dev/null 2>&1 || true; \
+		fi; \
 		ACTIVE_BRANCH=$$(git branch --show-current); \
 		if [ -n "$$ACTIVE_BRANCH" ] && [ "$$ACTIVE_BRANCH" != "$$CURRENT_BRANCH" ]; then \
 			git checkout "$$CURRENT_BRANCH" >/dev/null 2>&1 || true; \
@@ -124,18 +127,16 @@ release-main-ff:
 	}; \
 	trap cleanup EXIT; \
 	git fetch origin; \
-	git checkout main; \
-	git pull --ff-only origin main; \
-	if ! git merge-base --is-ancestor main origin/develop; then \
-		echo "FAILED: main and origin/develop diverged; fast-forward is not possible."; \
-		echo "Sync develop with main first, then retry:"; \
-		echo "  git checkout develop"; \
-		echo "  git pull --ff-only origin develop"; \
-		echo "  git merge origin/main"; \
-		echo "  git push origin develop"; \
-		echo "  make release-main-ff"; \
+	git checkout develop; \
+	git pull --ff-only origin develop; \
+	if ! git merge --no-edit origin/main; then \
+		echo "FAILED: Could not merge origin/main into develop automatically."; \
+		echo "Resolve conflicts in develop and retry."; \
 		exit 1; \
 	fi; \
+	git push origin develop; \
+	git checkout main; \
+	git pull --ff-only origin main; \
 	git merge --ff-only origin/develop; \
 	git push origin main
-	@echo "Main was fast-forwarded to origin/develop."
+	@echo "Develop and main were updated successfully."
