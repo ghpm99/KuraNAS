@@ -1,6 +1,7 @@
 package app
 
 import (
+	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterUpdateRoutes(routesV1, context)
 	RegisterSearchRoutes(routesV1, context)
 	RegisterNotificationRoutes(routesV1, context)
+	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
 }
 
@@ -198,6 +200,11 @@ func RegisterNotificationRoutes(router *gin.RouterGroup, context *AppContext) {
 	notifs.GET("/:id", context.Notifications.Handler.GetNotificationByIDHandler)
 	notifs.PUT("/:id/read", context.Notifications.Handler.MarkAsReadHandler)
 	notifs.PUT("/read-all", context.Notifications.Handler.MarkAllAsReadHandler)
+}
+
+func RegisterHealthRoutes(router *gin.RouterGroup) {
+	healthHandler := health.NewHandler()
+	router.GET("/health", healthHandler.GetHealthHandler)
 }
 
 func registerReactRoutes(router *gin.Engine) {

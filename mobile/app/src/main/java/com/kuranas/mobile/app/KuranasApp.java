@@ -2,6 +2,7 @@ package com.kuranas.mobile.app;
 
 import android.app.Application;
 
+import com.kuranas.mobile.i18n.TranslationManager;
 import com.kuranas.mobile.infra.logging.AppLogger;
 import com.kuranas.mobile.presentation.base.BaseFragment;
 
@@ -14,22 +15,17 @@ public class KuranasApp extends Application {
         super.onCreate();
         AppLogger.i(LOG_TAG, "Application starting");
 
-        ServiceLocator locator = ServiceLocator.getInstance();
-        BaseFragment.setTranslationManager(locator.getTranslationManager());
-
-        locator.getTranslationManager().loadLocalFallback(this);
-
-        locator.getTranslationManager().loadAsync(new Runnable() {
-            @Override
-            public void run() {
-                AppLogger.i(LOG_TAG, "Remote translations loaded");
-            }
-        });
+        TranslationManager.initInstance(this);
+        BaseFragment.setTranslationManager(TranslationManager.getInstance());
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        ServiceLocator.getInstance().shutdown();
+        try {
+            ServiceLocator.getInstance().shutdown();
+        } catch (IllegalStateException e) {
+            // ServiceLocator was never initialized
+        }
     }
 }

@@ -783,5 +783,18 @@
 	"AI_CLASSIFICATION_PORTRAIT": "Retrato",
 	"AI_CLASSIFICATION_MEME": "Meme",
 	"AI_CLASSIFICATION_ART": "Arte",
-	"AI_CLASSIFICATION_SCREENSHOT_APP": "Captura de aplicativo"
+	"AI_CLASSIFICATION_SCREENSHOT_APP": "Captura de aplicativo",
+	"DISCOVERY_CHECKING_CACHE": "Verificando servidor conhecido...",
+	"DISCOVERY_MDNS": "Procurando servico na rede...",
+	"DISCOVERY_UDP": "Enviando sinal de descoberta...",
+	"DISCOVERY_SCANNING": "Escaneando rede local...",
+	"DISCOVERY_FAILED": "Servidor nao encontrado",
+	"DISCOVERY_MANUAL_HINT": "Endereco do servidor (ex: 192.168.1.100)",
+	"DISCOVERY_CONNECT": "Conectar",
+	"DISCOVERY_CONNECTING": "Conectando...",
+	"DISCOVERY_RETRY": "Tentar novamente",
+	"DISCOVERY_INVALID_ADDRESS": "Endereco invalido",
+	"DISCOVERY_SERVER_NOT_FOUND": "Servidor nao encontrado neste endereco",
+	"SETTINGS_SERVER": "Servidor",
+	"SETTINGS_CHANGE_SERVER": "Alterar servidor"
 }
