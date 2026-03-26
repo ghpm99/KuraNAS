@@ -21,7 +21,8 @@ public class ImageViewerFragment extends Fragment {
 
     private static final String ARG_IMAGE_IDS = "image_ids";
     private static final String ARG_POSITION = "position";
-    private static final int IMAGE_SIZE = 1024;
+    private static final int IMAGE_WIDTH = 1024;
+    private static final int IMAGE_HEIGHT = 768;
 
     private ImageView imageView;
     private Button btnPrev;
@@ -103,9 +104,11 @@ public class ImageViewerFragment extends Fragment {
         }
 
         int imageId = imageIds.get(currentPosition).intValue();
-        String imageUrl = baseUrl + "/api/v1/files/blob/" + imageId;
+        String imageUrl = baseUrl + "/api/v1/files/thumbnail/" + imageId
+                + "?width=" + IMAGE_WIDTH
+                + "&height=" + IMAGE_HEIGHT;
 
-        BitmapLoaderTask.load(imageUrl, imageView, bitmapCache, IMAGE_SIZE, IMAGE_SIZE);
+        BitmapLoaderTask.load(imageUrl, imageView, bitmapCache, IMAGE_WIDTH, IMAGE_HEIGHT);
 
         String counterText = (currentPosition + 1) + " / " + imageIds.size();
         imageCounter.setText(counterText);
