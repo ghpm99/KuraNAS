@@ -498,6 +498,9 @@ func TestFilesHandlerStreamsAndErrorBranches(t *testing.T) {
 	if w.Code != http.StatusPartialContent {
 		t.Fatalf("expected partial content, got %d", w.Code)
 	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 0-5/26" {
+		t.Fatalf("unexpected audio content-range for closed range: %s", got)
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
 	req.Header.Set("Range", "bytes=0-10")
@@ -505,6 +508,31 @@ func TestFilesHandlerStreamsAndErrorBranches(t *testing.T) {
 	videoRouter.ServeHTTP(w, req)
 	if w.Code != http.StatusPartialContent {
 		t.Fatalf("expected partial content for video, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 0-10/36" {
+		t.Fatalf("unexpected video content-range for closed range: %s", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	req.Header.Set("Range", "bytes=0-")
+	w = httptest.NewRecorder()
+	audioRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("expected partial content for open-ended audio range, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 0-25/26" {
+		t.Fatalf("unexpected audio content-range for open-ended range: %s", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	req.Header.Set("Range", "bytes=-5")
+	w = httptest.NewRecorder()
+	audioRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("expected partial content for suffix audio range, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 21-25/26" {
+		t.Fatalf("unexpected audio content-range for suffix range: %s", got)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/files/thumbnail/1", nil)

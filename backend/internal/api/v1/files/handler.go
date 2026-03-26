@@ -874,37 +874,28 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Type", "audio/mpeg")
+	contentType := contentTypeByFormat(file.Format, "audio/mpeg")
+	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600")
 
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader != "" {
-		// Parse Range header: "bytes=0-1023"
-		ranges := strings.Split(rangeHeader, "=")
-		if len(ranges) == 2 && ranges[0] == "bytes" {
-			byteRange := strings.Split(ranges[1], "-")
-			if len(byteRange) == 2 {
-				start, _ := strconv.ParseInt(byteRange[0], 10, 64)
-				end, _ := strconv.ParseInt(byteRange[1], 10, 64)
+		start, end, ok := parseHTTPRange(rangeHeader, fileInfo.Size())
+		if ok {
+			c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
+			c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
+			c.Status(http.StatusPartialContent)
 
-				// Validação do range
-				if start >= 0 && end < fileInfo.Size() && start <= end {
-					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
-					c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
-					c.Status(http.StatusPartialContent)
-
-					audioFile.Seek(start, 0)
-					_, err := io.CopyN(c.Writer, audioFile, end-start+1)
-					if err != nil {
-						handler.Logger.CompleteWithErrorLog(loggerModel, err)
-						return
-					}
-
-					handler.Logger.CompleteWithSuccessLog(loggerModel)
-					return
-				}
+			audioFile.Seek(start, 0)
+			_, err := io.CopyN(c.Writer, audioFile, end-start+1)
+			if err != nil {
+				handler.Logger.CompleteWithErrorLog(loggerModel, err)
+				return
 			}
+
+			handler.Logger.CompleteWithSuccessLog(loggerModel)
+			return
 		}
 	}
 
@@ -983,37 +974,28 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Type", "video/mp4")
+	contentType := contentTypeByFormat(file.Format, "video/mp4")
+	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600")
 
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader != "" {
-		// Parse Range header: "bytes=0-1048576"
-		ranges := strings.Split(rangeHeader, "=")
-		if len(ranges) == 2 && ranges[0] == "bytes" {
-			byteRange := strings.Split(ranges[1], "-")
-			if len(byteRange) == 2 {
-				start, _ := strconv.ParseInt(byteRange[0], 10, 64)
-				end, _ := strconv.ParseInt(byteRange[1], 10, 64)
+		start, end, ok := parseHTTPRange(rangeHeader, fileInfo.Size())
+		if ok {
+			c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
+			c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
+			c.Status(http.StatusPartialContent)
 
-				// Validação do range
-				if start >= 0 && end < fileInfo.Size() && start <= end {
-					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
-					c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
-					c.Status(http.StatusPartialContent)
-
-					videoFile.Seek(start, 0)
-					_, err := io.CopyN(c.Writer, videoFile, end-start+1)
-					if err != nil {
-						handler.Logger.CompleteWithErrorLog(loggerModel, err)
-						return
-					}
-
-					handler.Logger.CompleteWithSuccessLog(loggerModel)
-					return
-				}
+			videoFile.Seek(start, 0)
+			_, err := io.CopyN(c.Writer, videoFile, end-start+1)
+			if err != nil {
+				handler.Logger.CompleteWithErrorLog(loggerModel, err)
+				return
 			}
+
+			handler.Logger.CompleteWithSuccessLog(loggerModel)
+			return
 		}
 	}
 
@@ -1027,4 +1009,89 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
+}
+
+func parseHTTPRange(rangeHeader string, fileSize int64) (int64, int64, bool) {
+	if fileSize <= 0 {
+		return 0, 0, false
+	}
+
+	parts := strings.SplitN(strings.TrimSpace(rangeHeader), "=", 2)
+	if len(parts) != 2 || parts[0] != "bytes" {
+		return 0, 0, false
+	}
+
+	rangeValue := strings.TrimSpace(parts[1])
+	if rangeValue == "" {
+		return 0, 0, false
+	}
+
+	// Only first range is supported.
+	if commaIndex := strings.Index(rangeValue, ","); commaIndex >= 0 {
+		rangeValue = strings.TrimSpace(rangeValue[:commaIndex])
+	}
+
+	bounds := strings.SplitN(rangeValue, "-", 2)
+	if len(bounds) != 2 {
+		return 0, 0, false
+	}
+
+	startText := strings.TrimSpace(bounds[0])
+	endText := strings.TrimSpace(bounds[1])
+
+	var start int64
+	var end int64
+	var err error
+
+	if startText == "" {
+		// Suffix byte range: bytes=-500
+		suffixLength, parseErr := strconv.ParseInt(endText, 10, 64)
+		if parseErr != nil || suffixLength <= 0 {
+			return 0, 0, false
+		}
+		if suffixLength > fileSize {
+			suffixLength = fileSize
+		}
+		start = fileSize - suffixLength
+		end = fileSize - 1
+	} else {
+		start, err = strconv.ParseInt(startText, 10, 64)
+		if err != nil || start < 0 || start >= fileSize {
+			return 0, 0, false
+		}
+
+		if endText == "" {
+			// Open ended range: bytes=500-
+			end = fileSize - 1
+		} else {
+			end, err = strconv.ParseInt(endText, 10, 64)
+			if err != nil {
+				return 0, 0, false
+			}
+			if end >= fileSize {
+				end = fileSize - 1
+			}
+		}
+	}
+
+	if end < start {
+		return 0, 0, false
+	}
+
+	return start, end, true
+}
+
+func contentTypeByFormat(format string, fallback string) string {
+	ext := strings.TrimSpace(format)
+	if ext == "" {
+		return fallback
+	}
+	if !strings.HasPrefix(ext, ".") {
+		ext = "." + ext
+	}
+	contentType := mime.TypeByExtension(strings.ToLower(ext))
+	if contentType == "" {
+		return fallback
+	}
+	return contentType
 }
