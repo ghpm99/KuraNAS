@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import com.kuranas.mobile.infra.cache.BitmapCache;
 import com.kuranas.mobile.infra.logging.AppLogger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
@@ -16,6 +17,7 @@ import java.net.URL;
 public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
 
     private static final String LOG_TAG = "BitmapLoaderTask";
+    private static final int BUFFER_SIZE = 4096;
 
     private final BitmapCache cache;
     private final WeakReference<ImageView> imageViewRef;
@@ -40,7 +42,6 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
 
         HttpURLConnection connection = null;
         InputStream inputStream = null;
-        InputStream sampleStream = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setConnectTimeout(10000);
@@ -55,29 +56,20 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
             }
 
             inputStream = connection.getInputStream();
+            byte[] imageBytes = readAllBytes(inputStream);
 
             BitmapFactory.Options boundsOptions = new BitmapFactory.Options();
             boundsOptions.inJustDecodeBounds = true;
-            BitmapFactory.decodeStream(inputStream, null, boundsOptions);
-
-            closeQuietly(inputStream);
-            connection.disconnect();
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, boundsOptions);
 
             int sampleSize = calculateInSampleSize(
                     boundsOptions.outWidth, boundsOptions.outHeight,
                     targetWidth, targetHeight);
 
-            connection = (HttpURLConnection) new URL(url).openConnection();
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(15000);
-            connection.setDoInput(true);
-            connection.connect();
-
-            sampleStream = connection.getInputStream();
-
             BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
             decodeOptions.inSampleSize = sampleSize;
-            Bitmap bitmap = BitmapFactory.decodeStream(sampleStream, null, decodeOptions);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(
+                    imageBytes, 0, imageBytes.length, decodeOptions);
 
             if (bitmap != null && cache != null) {
                 cache.put(url, bitmap);
@@ -89,7 +81,6 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
             return null;
         } finally {
             closeQuietly(inputStream);
-            closeQuietly(sampleStream);
             if (connection != null) {
                 connection.disconnect();
             }
@@ -124,6 +115,16 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
         BitmapLoaderTask task = new BitmapLoaderTask(cache, imageView,
                 targetWidth, targetHeight);
         task.execute(url);
+    }
+
+    private static byte[] readAllBytes(InputStream inputStream) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[BUFFER_SIZE];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(chunk)) != -1) {
+            buffer.write(chunk, 0, bytesRead);
+        }
+        return buffer.toByteArray();
     }
 
     private static int calculateInSampleSize(int rawWidth, int rawHeight,
