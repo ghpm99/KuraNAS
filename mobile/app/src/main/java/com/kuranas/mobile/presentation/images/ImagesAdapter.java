@@ -47,7 +47,7 @@ public class ImagesAdapter extends RecyclerView.Adapter<ImagesAdapter.ImageViewH
     public void onBindViewHolder(ImageViewHolder holder, final int position) {
         FileItem item = items.get(position);
 
-        String thumbnailUrl = baseUrl + "/files/thumbnail/" + item.getId();
+        String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + item.getId();
         holder.imageThumbnail.setImageResource(R.drawable.ic_image);
         BitmapLoaderTask.load(thumbnailUrl, holder.imageThumbnail, bitmapCache,
                 THUMBNAIL_SIZE, THUMBNAIL_SIZE);

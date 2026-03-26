@@ -120,7 +120,7 @@ public class ImagesFragment extends BaseFragment {
                 new ApiCallback<PaginatedResult<FileItem>>() {
                     @Override
                     public void onSuccess(PaginatedResult<FileItem> result) {
-                        if (!isAdded()) {
+                        if (!isUiReady()) {
                             return;
                         }
                         swipeRefresh.setRefreshing(false);
@@ -147,7 +147,7 @@ public class ImagesFragment extends BaseFragment {
 
                     @Override
                     public void onError(AppError error) {
-                        if (!isAdded()) {
+                        if (!isUiReady()) {
                             return;
                         }
                         swipeRefresh.setRefreshing(false);
@@ -158,6 +158,10 @@ public class ImagesFragment extends BaseFragment {
                         }
                     }
                 });
+    }
+
+    private boolean isUiReady() {
+        return isAdded() && getView() != null && swipeRefresh != null && adapter != null;
     }
 
     private void loadMoreImages() {

@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, VideoPlayerActivity.class);
         intent.putExtra("videoId", item.getId());
         intent.putExtra("videoName", item.getName());
-        intent.putExtra("streamUrl", baseUrl + "/files/video-stream/" + item.getId());
+        intent.putExtra("streamUrl", baseUrl + "/api/v1/files/video-stream/" + item.getId());
         startActivity(intent);
     }
 
@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, VideoPlayerActivity.class);
         intent.putExtra("videoId", video.getId());
         intent.putExtra("videoName", video.getName());
-        intent.putExtra("streamUrl", baseUrl + "/files/video-stream/" + video.getId());
+        intent.putExtra("streamUrl", baseUrl + "/api/v1/files/video-stream/" + video.getId());
         startActivity(intent);
     }
 

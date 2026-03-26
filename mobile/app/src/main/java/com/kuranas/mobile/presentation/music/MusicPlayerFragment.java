@@ -147,7 +147,7 @@ public class MusicPlayerFragment extends Fragment {
 
     private void startPlayback() {
         String streamUrl = ServiceLocator.getInstance().getHttpClient().getBaseUrl()
-                + "/files/stream/" + fileId;
+                + "/api/v1/files/stream/" + fileId;
 
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);

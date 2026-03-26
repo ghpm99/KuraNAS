@@ -117,7 +117,7 @@ public class VideoFragment extends BaseFragment {
                 new ApiCallback<PaginatedResult<VideoItem>>() {
                     @Override
                     public void onSuccess(PaginatedResult<VideoItem> result) {
-                        if (!isAdded()) {
+                        if (!isUiReady()) {
                             return;
                         }
                         swipeRefresh.setRefreshing(false);
@@ -142,7 +142,7 @@ public class VideoFragment extends BaseFragment {
 
                     @Override
                     public void onError(AppError error) {
-                        if (!isAdded()) {
+                        if (!isUiReady()) {
                             return;
                         }
                         swipeRefresh.setRefreshing(false);
@@ -155,6 +155,10 @@ public class VideoFragment extends BaseFragment {
                 });
     }
 
+    private boolean isUiReady() {
+        return isAdded() && getView() != null && swipeRefresh != null && adapter != null;
+    }
+
     private void loadMoreVideos() {
         currentPage++;
         loadVideos(false);
@@ -165,7 +169,7 @@ public class VideoFragment extends BaseFragment {
         intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_ID, video.getId());
         intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_NAME, video.getDisplayName());
         intent.putExtra(VideoPlayerActivity.EXTRA_STREAM_URL,
-                baseUrl + "/files/video-stream/" + video.getId());
+                baseUrl + "/api/v1/files/video-stream/" + video.getId());
         startActivity(intent);
     }
 }
