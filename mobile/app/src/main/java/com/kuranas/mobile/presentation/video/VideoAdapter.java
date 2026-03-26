@@ -53,7 +53,9 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         holder.videoInfo.setText(buildVideoInfo(video));
 
         holder.videoThumbnail.setImageResource(R.drawable.ic_video);
-        String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + video.getId();
+        String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + video.getId()
+                + "?width=" + THUMBNAIL_WIDTH
+                + "&height=" + THUMBNAIL_HEIGHT;
         BitmapLoaderTask.load(thumbnailUrl, holder.videoThumbnail, bitmapCache,
                 THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 

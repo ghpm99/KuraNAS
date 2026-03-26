@@ -57,7 +57,9 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         holder.fileIcon.setImageResource(getIconResource(item));
 
         if (item.isImage()) {
-            String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + item.getId();
+            String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + item.getId()
+                    + "?width=" + THUMBNAIL_SIZE
+                    + "&height=" + THUMBNAIL_SIZE;
             BitmapLoaderTask.load(thumbnailUrl, holder.fileIcon, bitmapCache,
                     THUMBNAIL_SIZE, THUMBNAIL_SIZE);
         }

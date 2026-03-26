@@ -9,7 +9,6 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 
-import androidx.core.view.GravityCompat;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,6 +40,7 @@ public class MainActivity extends AppCompatActivity
 
     private KioskManager kioskManager;
     private DrawerLayout drawerLayout;
+    private View navDrawer;
     private ListView navList;
     private int currentNavPosition = 0;
 
@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity
         kioskManager.engage();
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        navDrawer = findViewById(R.id.nav_drawer);
         navList = (ListView) findViewById(R.id.nav_list);
 
         setupNavDrawer();
@@ -136,8 +137,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawers();
+        if (drawerLayout != null && navDrawer != null && drawerLayout.isDrawerOpen(navDrawer)) {
+            drawerLayout.closeDrawer(navDrawer);
             return;
         }
 
