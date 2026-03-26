@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="100dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:layout_marginBottom="@dimen/spacing_md">
+    android:gravity="center_horizontal"
+    android:padding="@dimen/spacing_sm">
+
+    <ImageView
+        android:id="@+id/section_thumbnail"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/thumbnail" />
 
     <TextView
         android:id="@+id/section_title"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="@dimen/text_subtitle"
-        android:textColor="@color/accent"
-        android:paddingLeft="@dimen/spacing_md"
-        android:paddingRight="@dimen/spacing_md"
-        android:paddingTop="@dimen/spacing_sm"
-        android:paddingBottom="@dimen/spacing_sm" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/section_items"
-        android:layout_width="match_parent"
-        android:layout_height="100dp" />
+        android:textSize="@dimen/text_caption"
+        android:textColor="@color/on_surface"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/spacing_xs" />
 
 </LinearLayout>
