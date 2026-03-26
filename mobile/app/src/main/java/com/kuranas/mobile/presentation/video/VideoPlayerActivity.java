@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.kuranas.mobile.R;
 import com.kuranas.mobile.app.ServiceLocator;
+import com.kuranas.mobile.infra.kiosk.KioskManager;
 import com.kuranas.mobile.domain.error.AppError;
 import com.kuranas.mobile.domain.model.VideoPlaybackState;
 import com.kuranas.mobile.domain.repository.VideoRepository;
@@ -36,6 +37,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     private TextView videoTime;
     private TextView videoTitle;
 
+    private KioskManager kioskManager;
     private VideoRepository videoRepository;
     private Handler handler;
 
@@ -52,6 +54,9 @@ public class VideoPlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_player);
+
+        kioskManager = new KioskManager(this);
+        kioskManager.engage();
 
         ServiceLocator locator = ServiceLocator.getInstance();
         videoRepository = locator.getVideoRepository();
@@ -296,6 +301,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        kioskManager.engage();
         if (isPlaying) {
             videoView.start();
             startSeekBarUpdates();
