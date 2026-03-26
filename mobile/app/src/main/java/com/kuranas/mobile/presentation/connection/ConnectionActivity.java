@@ -25,6 +25,7 @@ import com.kuranas.mobile.infra.discovery.NsdDiscoveryStrategy;
 import com.kuranas.mobile.infra.discovery.ServerDiscovery;
 import com.kuranas.mobile.infra.discovery.ServerValidator;
 import com.kuranas.mobile.infra.discovery.UdpDiscoveryStrategy;
+import com.kuranas.mobile.infra.kiosk.KioskManager;
 import com.kuranas.mobile.infra.preferences.ServerPreferences;
 
 import java.util.Arrays;
@@ -44,6 +45,7 @@ public class ConnectionActivity extends AppCompatActivity {
     private Button connectButton;
     private Button retryButton;
 
+    private KioskManager kioskManager;
     private ServerDiscovery serverDiscovery;
     private ServerPreferences serverPreferences;
     private ServerValidator serverValidator;
@@ -57,6 +59,9 @@ public class ConnectionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connection);
+
+        kioskManager = new KioskManager(this);
+        kioskManager.engage();
 
         translationManager = TranslationManager.getInstance();
 
@@ -221,6 +226,17 @@ public class ConnectionActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Blocked: kiosk mode prevents leaving the app
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        kioskManager.engage();
     }
 
     @Override

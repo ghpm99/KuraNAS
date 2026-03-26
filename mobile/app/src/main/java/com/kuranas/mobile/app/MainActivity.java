@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.kuranas.mobile.R;
 import com.kuranas.mobile.domain.model.FileItem;
+import com.kuranas.mobile.infra.kiosk.KioskManager;
 import com.kuranas.mobile.domain.model.VideoItem;
 import com.kuranas.mobile.presentation.files.FilesFragment;
 import com.kuranas.mobile.presentation.home.HomeFragment;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity
         FilesFragment.FileNavigationHost,
         SearchFragment.SearchNavigationHost {
 
+    private KioskManager kioskManager;
     private DrawerLayout drawerLayout;
     private ListView navList;
     private int currentNavPosition = 0;
@@ -66,6 +68,9 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        kioskManager = new KioskManager(this);
+        kioskManager.engage();
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         navList = (ListView) findViewById(R.id.nav_list);
@@ -145,9 +150,14 @@ public class MainActivity extends AppCompatActivity
             getSupportFragmentManager().popBackStack();
             currentNavPosition = NAV_HOME;
             navList.setItemChecked(NAV_HOME, true);
-        } else {
-            super.onBackPressed();
         }
+        // Kiosk mode: do not call super.onBackPressed() — prevent leaving the app
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        kioskManager.engage();
     }
 
     // HomeFragment.NavigationHost
