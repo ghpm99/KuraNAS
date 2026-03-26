@@ -86,7 +86,7 @@ public final class TranslationManager {
     }
 
     public void loadSync() {
-        HttpResponse response = httpClient.getSync("/configuration/translation");
+        HttpResponse response = httpClient.getSync("/api/v1/configuration/translation");
         if (response.isSuccessful()) {
             try {
                 parseTranslations(response.getBody());
@@ -101,7 +101,7 @@ public final class TranslationManager {
     }
 
     public void loadAsync(final Runnable onComplete) {
-        httpClient.get("/configuration/translation", new HttpClient.Callback() {
+        httpClient.get("/api/v1/configuration/translation", new HttpClient.Callback() {
             @Override
             public void onResponse(HttpResponse response) {
                 if (response.isSuccessful()) {

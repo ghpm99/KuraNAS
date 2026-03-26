@@ -101,7 +101,7 @@ public class HomeSectionAdapter extends RecyclerView.Adapter<HomeSectionAdapter.
 
         HomeSectionViewHolder(View itemView) {
             super(itemView);
-            sectionThumbnail = (ImageView) itemView.findViewById(R.id.section_items);
+            sectionThumbnail = (ImageView) itemView.findViewById(R.id.section_thumbnail);
             sectionTitle = (TextView) itemView.findViewById(R.id.section_title);
         }
     }
