@@ -13,11 +13,13 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
 
 public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
 
     private static final String LOG_TAG = "BitmapLoaderTask";
     private static final int BUFFER_SIZE = 4096;
+    private static final int MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
     private final BitmapCache cache;
     private final WeakReference<ImageView> imageViewRef;
@@ -55,12 +57,25 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
                 return null;
             }
 
+            String contentType = connection.getContentType();
+            if (contentType == null || !contentType.toLowerCase(Locale.US).startsWith("image/")) {
+                AppLogger.w(LOG_TAG, "Unexpected content type (" + contentType + ") for " + url);
+                return null;
+            }
+
             inputStream = connection.getInputStream();
-            byte[] imageBytes = readAllBytes(inputStream);
+            byte[] imageBytes = readAllBytes(inputStream, MAX_IMAGE_BYTES);
+            if (imageBytes.length == 0) {
+                return null;
+            }
 
             BitmapFactory.Options boundsOptions = new BitmapFactory.Options();
             boundsOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, boundsOptions);
+            if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0) {
+                AppLogger.w(LOG_TAG, "Unable to decode image bounds for " + url);
+                return null;
+            }
 
             int sampleSize = calculateInSampleSize(
                     boundsOptions.outWidth, boundsOptions.outHeight,
@@ -68,6 +83,8 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
 
             BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
             decodeOptions.inSampleSize = sampleSize;
+            decodeOptions.inPreferredConfig = Bitmap.Config.RGB_565;
+            decodeOptions.inDither = true;
             Bitmap bitmap = BitmapFactory.decodeByteArray(
                     imageBytes, 0, imageBytes.length, decodeOptions);
 
@@ -118,10 +135,19 @@ public class BitmapLoaderTask extends AsyncTask<String, Void, Bitmap> {
     }
 
     private static byte[] readAllBytes(InputStream inputStream) throws Exception {
+        return readAllBytes(inputStream, -1);
+    }
+
+    private static byte[] readAllBytes(InputStream inputStream, int maxBytes) throws Exception {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] chunk = new byte[BUFFER_SIZE];
         int bytesRead;
+        int totalBytes = 0;
         while ((bytesRead = inputStream.read(chunk)) != -1) {
+            totalBytes += bytesRead;
+            if (maxBytes > 0 && totalBytes > maxBytes) {
+                throw new IllegalStateException("Image payload too large: " + totalBytes);
+            }
             buffer.write(chunk, 0, bytesRead);
         }
         return buffer.toByteArray();

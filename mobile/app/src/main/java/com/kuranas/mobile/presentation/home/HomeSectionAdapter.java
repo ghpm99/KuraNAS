@@ -52,7 +52,7 @@ public class HomeSectionAdapter extends RecyclerView.Adapter<HomeSectionAdapter.
 
         holder.sectionThumbnail.setImageResource(getIconResource(item));
         if (item.isImage() || item.isVideo()) {
-            String thumbnailUrl = baseUrl + "/files/thumbnail/" + item.getId();
+            String thumbnailUrl = baseUrl + "/api/v1/files/thumbnail/" + item.getId();
             BitmapLoaderTask.load(thumbnailUrl, holder.sectionThumbnail, bitmapCache,
                     THUMBNAIL_SIZE, THUMBNAIL_SIZE);
         }

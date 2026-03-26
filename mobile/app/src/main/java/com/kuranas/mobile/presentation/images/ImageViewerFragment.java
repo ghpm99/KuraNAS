@@ -103,7 +103,7 @@ public class ImageViewerFragment extends Fragment {
         }
 
         int imageId = imageIds.get(currentPosition).intValue();
-        String imageUrl = baseUrl + "/files/blob/" + imageId;
+        String imageUrl = baseUrl + "/api/v1/files/blob/" + imageId;
 
         BitmapLoaderTask.load(imageUrl, imageView, bitmapCache, IMAGE_SIZE, IMAGE_SIZE);
 
