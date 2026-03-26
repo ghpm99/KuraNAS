@@ -18,14 +18,11 @@ public final class MusicMapper {
     }
 
     public static Track trackFromJson(JSONObject json) throws JSONException {
-        int id = json.optInt("id", 0);
+        JSONObject file = resolveFileObject(json);
+
+        int id = json.optInt("id", file.optInt("id", 0));
         int position = json.optInt("position", 0);
         String addedAt = json.optString("added_at", "");
-
-        JSONObject file = json.optJSONObject("file");
-        if (file == null) {
-            file = new JSONObject();
-        }
 
         int fileId = file.optInt("id", 0);
         String name = file.optString("name", "");
@@ -47,8 +44,8 @@ public final class MusicMapper {
             album = metadata.optString("album", "");
             genre = metadata.optString("genre", "");
             year = metadata.optString("year", "");
-            trackNumber = metadata.optInt("track_number", 0);
-            durationSeconds = metadata.optDouble("length", 0.0);
+            trackNumber = parseTrackNumber(metadata);
+            durationSeconds = metadata.optDouble("length", metadata.optDouble("duration", 0.0));
             metadataFormat = metadata.optString("format", format);
         }
 
@@ -67,6 +64,28 @@ public final class MusicMapper {
                 metadataFormat,
                 addedAt
         );
+    }
+
+    private static JSONObject resolveFileObject(JSONObject json) {
+        JSONObject nestedFile = json.optJSONObject("file");
+        if (nestedFile != null) {
+            return nestedFile;
+        }
+        return json;
+    }
+
+    private static int parseTrackNumber(JSONObject metadata) {
+        String trackValue = metadata.optString("track_number", "0");
+        if (trackValue == null || trackValue.isEmpty()) {
+            return 0;
+        }
+        int slashIndex = trackValue.indexOf('/');
+        String normalized = slashIndex >= 0 ? trackValue.substring(0, slashIndex) : trackValue;
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException ignored) {
+            return metadata.optInt("track_number", 0);
+        }
     }
 
     public static PaginatedResult<Track> trackListFromJson(JSONObject json) throws JSONException {

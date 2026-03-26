@@ -96,6 +96,32 @@ public class MusicMapperTest {
     }
 
     @Test
+    public void trackFromJson_withDirectFileDto_mapsCorrectly() throws JSONException {
+        JSONObject metadata = new JSONObject();
+        metadata.put("title", "Direct Song");
+        metadata.put("artist", "Direct Artist");
+        metadata.put("track_number", "2/12");
+        metadata.put("duration", 187.0);
+
+        JSONObject json = new JSONObject();
+        json.put("id", 77);
+        json.put("name", "direct_song.mp3");
+        json.put("format", ".mp3");
+        json.put("metadata", metadata);
+
+        Track track = MusicMapper.trackFromJson(json);
+
+        assertEquals(77, track.getId());
+        assertEquals(77, track.getFileId());
+        assertEquals("direct_song.mp3", track.getName());
+        assertEquals("Direct Song", track.getTitle());
+        assertEquals("Direct Artist", track.getArtist());
+        assertEquals(2, track.getTrackNumber());
+        assertEquals(187.0, track.getDurationSeconds(), 0.001);
+        assertEquals(".mp3", track.getFormat());
+    }
+
+    @Test
     public void trackListFromJson_withItems_parsesPaginated() throws JSONException {
         JSONObject file1 = new JSONObject();
         file1.put("id", 10);
@@ -138,6 +164,40 @@ public class MusicMapperTest {
         assertEquals("song1.mp3", result.getItems().get(0).getName());
         assertEquals("song2.mp3", result.getItems().get(1).getName());
         assertFalse(result.hasNext());
+    }
+
+    @Test
+    public void trackListFromJson_withDirectFileItems_parsesPaginated() throws JSONException {
+        JSONObject metadata = new JSONObject();
+        metadata.put("title", "Library Song");
+        metadata.put("artist", "Library Artist");
+        metadata.put("length", 120.5);
+
+        JSONObject file = new JSONObject();
+        file.put("id", 11);
+        file.put("name", "library_song.mp3");
+        file.put("format", ".mp3");
+        file.put("metadata", metadata);
+
+        JSONArray items = new JSONArray();
+        items.put(file);
+
+        JSONObject pagination = new JSONObject();
+        pagination.put("page", 1);
+        pagination.put("page_size", 30);
+        pagination.put("has_next", false);
+        pagination.put("has_prev", false);
+
+        JSONObject json = new JSONObject();
+        json.put("items", items);
+        json.put("pagination", pagination);
+
+        PaginatedResult<Track> result = MusicMapper.trackListFromJson(json);
+
+        assertEquals(1, result.getItems().size());
+        assertEquals(11, result.getItems().get(0).getFileId());
+        assertEquals("Library Song", result.getItems().get(0).getTitle());
+        assertEquals("Library Artist", result.getItems().get(0).getArtist());
     }
 
     @Test
