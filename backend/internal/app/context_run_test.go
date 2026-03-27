@@ -3,6 +3,8 @@ package app
 import (
 	"database/sql"
 	"errors"
+	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/systemevent"
 	"net"
 	"net/http"
 	"strings"
@@ -108,6 +110,7 @@ func TestInitializeAppLoadConfigAndDatabaseErrors(t *testing.T) {
 	origNewRouter := newRouterFn
 	origRegisterRoutes := registerRoutesFn
 	origStartWorkers := startWorkersFn
+	origNewSystemEvent := newSystemEventFn
 	t.Cleanup(func() {
 		loadConfigFn = origLoadConfig
 		initializeConfigFn = origInitializeConfig
@@ -117,6 +120,7 @@ func TestInitializeAppLoadConfigAndDatabaseErrors(t *testing.T) {
 		newRouterFn = origNewRouter
 		registerRoutesFn = origRegisterRoutes
 		startWorkersFn = origStartWorkers
+		newSystemEventFn = origNewSystemEvent
 	})
 
 	loadConfigFn = func() error { return errors.New("load failed") }
@@ -142,6 +146,7 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	origNewRouter := newRouterFn
 	origRegisterRoutes := registerRoutesFn
 	origStartWorkers := startWorkersFn
+	origNewSystemEvent := newSystemEventFn
 	t.Cleanup(func() {
 		loadConfigFn = origLoadConfig
 		initializeConfigFn = origInitializeConfig
@@ -151,6 +156,7 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 		newRouterFn = origNewRouter
 		registerRoutesFn = origRegisterRoutes
 		startWorkersFn = origStartWorkers
+		newSystemEventFn = origNewSystemEvent
 	})
 
 	loadConfigFn = func() error { return nil }
@@ -173,6 +179,8 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	registerRoutesFn = func(router *gin.Engine, context *AppContext) { registerCalled = true }
 	workersCalled := false
 	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) { workersCalled = true }
+	systemEvents := &systemEventServiceSpy{}
+	newSystemEventFn = func(*database.DbContext) systemevent.ServiceInterface { return systemEvents }
 
 	config.AppConfig.Env = "production"
 	app, err := InitializeApp()
@@ -184,6 +192,9 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	}
 	if !registerCalled || !workersCalled {
 		t.Fatalf("expected routes and workers to be started")
+	}
+	if systemEvents.startupCalls != 1 {
+		t.Fatalf("expected startup event to be recorded once")
 	}
 
 	config.AppConfig.Env = "dev"
@@ -231,5 +242,104 @@ func TestApplicationRunAndStopSuccess(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatalf("Run did not return after Stop")
+	}
+}
+
+type systemEventServiceSpy struct {
+	startupCalls  int
+	shutdownCalls int
+	startupErr    error
+	shutdownErr   error
+}
+
+func (s *systemEventServiceSpy) RecordStartup() error {
+	s.startupCalls++
+	return s.startupErr
+}
+
+func (s *systemEventServiceSpy) RecordShutdown() error {
+	s.shutdownCalls++
+	return s.shutdownErr
+}
+
+func TestApplicationStopRecordsShutdownEvent(t *testing.T) {
+	spy := &systemEventServiceSpy{}
+	app := &Application{
+		Router:       gin.New(),
+		SystemEvents: spy,
+	}
+
+	if err := app.Stop(); err != nil {
+		t.Fatalf("expected Stop to succeed, got %v", err)
+	}
+
+	if spy.shutdownCalls != 1 {
+		t.Fatalf("expected shutdown event to be recorded once")
+	}
+}
+
+func TestInitializeAppStartupEventFailureDoesNotBreakInitialization(t *testing.T) {
+	origLoadConfig := loadConfigFn
+	origInitializeConfig := initializeConfigFn
+	origLoadTranslations := loadTranslationsFn
+	origConfigDatabase := configDatabaseFn
+	origNewContext := newContextFn
+	origNewRouter := newRouterFn
+	origRegisterRoutes := registerRoutesFn
+	origStartWorkers := startWorkersFn
+	origNewSystemEvent := newSystemEventFn
+	t.Cleanup(func() {
+		loadConfigFn = origLoadConfig
+		initializeConfigFn = origInitializeConfig
+		loadTranslationsFn = origLoadTranslations
+		configDatabaseFn = origConfigDatabase
+		newContextFn = origNewContext
+		newRouterFn = origNewRouter
+		registerRoutesFn = origRegisterRoutes
+		startWorkersFn = origStartWorkers
+		newSystemEventFn = origNewSystemEvent
+	})
+
+	loadConfigFn = func() error { return nil }
+	initializeConfigFn = func() {}
+	loadTranslationsFn = func() error { return nil }
+	configDatabaseFn = func() (*sql.DB, error) { return &sql.DB{}, nil }
+	newContextFn = func(db *sql.DB) *AppContext {
+		tasks := make(chan utils.Task, 1)
+		return &AppContext{
+			DB:            database.NewDbContext(db),
+			Tasks:         &tasks,
+			Files:         &FileContext{},
+			Video:         &VideoContext{},
+			Notifications: &NotificationContext{},
+		}
+	}
+	newRouterFn = func(opts ...gin.OptionFunc) *gin.Engine { return gin.New(opts...) }
+	registerRoutesFn = func(router *gin.Engine, context *AppContext) {}
+	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) {}
+	spy := &systemEventServiceSpy{startupErr: errors.New("startup log failed")}
+	newSystemEventFn = func(*database.DbContext) systemevent.ServiceInterface { return spy }
+
+	application, err := InitializeApp()
+	if err != nil || application == nil {
+		t.Fatalf("expected InitializeApp to succeed even if startup event logging fails, err=%v", err)
+	}
+	if spy.startupCalls != 1 {
+		t.Fatalf("expected startup event call once")
+	}
+}
+
+func TestApplicationStopIgnoresShutdownEventFailure(t *testing.T) {
+	spy := &systemEventServiceSpy{shutdownErr: errors.New("shutdown log failed")}
+	app := &Application{
+		Router:       gin.New(),
+		SystemEvents: spy,
+	}
+
+	if err := app.Stop(); err != nil {
+		t.Fatalf("expected Stop to succeed even when shutdown event fails, got %v", err)
+	}
+	if spy.shutdownCalls != 1 {
+		t.Fatalf("expected shutdown event call once")
 	}
 }

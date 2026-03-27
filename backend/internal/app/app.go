@@ -8,6 +8,7 @@ import (
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/systemevent"
 
 	"log"
 	"net/http"
@@ -25,6 +26,9 @@ var (
 	newRouterFn        = gin.Default
 	registerRoutesFn   = RegisterRoutes
 	startWorkersFn     = worker.StartWorkers
+	newSystemEventFn   = func(dbContext *database.DbContext) systemevent.ServiceInterface {
+		return systemevent.NewService(dbContext)
+	}
 )
 
 type Application struct {
@@ -33,6 +37,7 @@ type Application struct {
 	Server        *http.Server
 	UDPListener   *discovery.UDPListener
 	MdnsRegistrar *discovery.MdnsRegistrar
+	SystemEvents  systemevent.ServiceInterface
 }
 
 func InitializeApp() (*Application, error) {
@@ -57,6 +62,7 @@ func InitializeApp() (*Application, error) {
 	}
 
 	appContext := newContextFn(database)
+	systemEvents := newSystemEventFn(appContext.DB)
 
 	router := newRouterFn()
 
@@ -87,11 +93,16 @@ func InitializeApp() (*Application, error) {
 		log.Printf("[APP] Failed to start mDNS registrar: %v", err)
 	}
 
+	if err := systemEvents.RecordStartup(); err != nil {
+		log.Printf("[APP] Failed to record startup system event: %v", err)
+	}
+
 	return &Application{
 		Router:        router,
 		Context:       appContext,
 		UDPListener:   udpListener,
 		MdnsRegistrar: mdnsRegistrar,
+		SystemEvents:  systemEvents,
 	}, nil
 }
 
@@ -125,6 +136,12 @@ func (app *Application) Stop() error {
 
 	if app.MdnsRegistrar != nil {
 		app.MdnsRegistrar.Stop()
+	}
+
+	if app.SystemEvents != nil {
+		if err := app.SystemEvents.RecordShutdown(); err != nil {
+			log.Printf("[APP] Failed to record shutdown system event: %v", err)
+		}
 	}
 
 	if app.Server == nil {

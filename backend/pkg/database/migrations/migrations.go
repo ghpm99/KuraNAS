@@ -74,6 +74,9 @@ var CreateAppSettingsTableQuery string
 //go:embed queries/0021_create_notifications_table.sql
 var CreateNotificationsTableQuery string
 
+//go:embed queries/0022_create_system_event_log_table.sql
+var CreateSystemEventLogTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -165,4 +168,9 @@ func configurationMigrationList() {
 func notificationsMigrationList() {
 	addMigration("0021_create_notifications_table",
 		defaultMigrationFunc(CreateNotificationsTableQuery))
+}
+
+func systemEventMigrationList() {
+	addMigration("0022_create_system_event_log_table",
+		defaultMigrationFunc(CreateSystemEventLogTableQuery))
 }
