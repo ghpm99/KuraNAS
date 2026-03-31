@@ -24,6 +24,7 @@ const FoldersView = lazy(() => import('@/pages/music/views/FoldersView'));
 const GenresView = lazy(() => import('@/pages/music/views/GenresView'));
 const PlaylistsView = lazy(() => import('@/pages/music/views/PlaylistsView'));
 const VideosPage = lazy(() => import('@/pages/videos/videos'));
+const TakeoutPage = lazy(() => import('@/pages/takeout'));
 const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function AppContent() {
@@ -61,6 +62,7 @@ function AppContent() {
                     <Route path="*" element={<Navigate to={getMusicRoute('home')} replace />} />
                 </Route>
                 <Route path={`${appRoutes.videos}/*`} element={<VideosPage />} />
+                <Route path={appRoutes.takeout} element={<TakeoutPage />} />
                 <Route path={`${appRoutes.videoPlayerBase}/:id`} element={<VideoPlayerPage />} />
                 <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
             </Routes>

@@ -9,11 +9,12 @@ const (
 	JobTypeUploadProcess JobType = "upload_process"
 	JobTypeFSEvent       JobType = "fs_event"
 	JobTypeReindexFolder JobType = "reindex_folder"
+	JobTypeTakeoutImport JobType = "takeout_import"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport:
 		return true
 	default:
 		return false
@@ -31,11 +32,12 @@ const (
 	StepTypeThumbnail      StepType = "thumbnail"
 	StepTypePlaylistIndex  StepType = "playlist_index"
 	StepTypeMarkDeleted    StepType = "mark_deleted"
+	StepTypeTakeoutExtract StepType = "takeout_extract"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract:
 		return true
 	default:
 		return false

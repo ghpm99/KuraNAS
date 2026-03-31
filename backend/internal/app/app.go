@@ -63,11 +63,17 @@ func InitializeApp() (*Application, error) {
 
 	appContext := newContextFn(database)
 	systemEvents := newSystemEventFn(appContext.DB)
+	if appContext.Libraries != nil && appContext.Libraries.Service != nil {
+		if err := appContext.Libraries.Service.ResolveLibraries(); err != nil {
+			log.Printf("[APP] Failed to resolve libraries: %v", err)
+		}
+	}
 
 	router := newRouterFn()
 
 	registerRoutesFn(router, appContext)
 
+	var librariesService = appContext.Libraries
 	workerFileContext := &worker.WorkerContext{
 		FilesService:        appContext.Files.Service,
 		VideoService:        appContext.Video.Service,
@@ -76,6 +82,9 @@ func InitializeApp() (*Application, error) {
 		Logger:              appContext.Logger,
 		NotificationService: appContext.Notifications.Service,
 		AIService:           appContext.AI,
+	}
+	if librariesService != nil {
+		workerFileContext.LibrariesService = librariesService.Service
 	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository

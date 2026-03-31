@@ -7,6 +7,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
@@ -19,6 +20,7 @@ import (
 type WorkerContext struct {
 	Tasks               chan utils.Task
 	FilesService        files.ServiceInterface
+	LibrariesService    libraries.ServiceInterface
 	VideoService        video.ServiceInterface
 	JobsRepository      jobs.RepositoryInterface
 	MetadataService     files.MetadataRepositoryInterface

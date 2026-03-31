@@ -2,12 +2,14 @@ import { render, screen } from '@testing-library/react';
 import App from './App';
 
 const mockUseLocation = jest.fn();
+const mockNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
     Routes: ({ children }: any) => <div data-testid="routes">{children}</div>,
     Route: ({ element }: any) => <div>{element}</div>,
     Navigate: () => <div>Navigate</div>,
     useLocation: () => mockUseLocation(),
+    useNavigate: () => mockNavigate,
 }));
 
 jest.mock('@/components/providers/appProviders', () => ({ children }: any) => (
@@ -63,6 +65,7 @@ jest.mock('@/pages/notifications', () => () => <div>NotificationsPage</div>);
 jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);
+jest.mock('@/pages/takeout', () => () => <div>TakeoutPage</div>);
 
 describe('App', () => {
     it('shows global player when route is not video', async () => {

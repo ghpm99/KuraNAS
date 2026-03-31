@@ -9,9 +9,11 @@ import (
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/search"
+	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/ai"
@@ -39,6 +41,8 @@ type AppContext struct {
 	Search        *SearchContext
 	Notifications *NotificationContext
 	Captures      *CapturesContext
+	Libraries     *LibrariesContext
+	Takeout       *TakeoutContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
 }
@@ -106,6 +110,17 @@ type NotificationContext struct {
 	Repository notifications.RepositoryInterface
 }
 
+type LibrariesContext struct {
+	Handler    *libraries.Handler
+	Service    libraries.ServiceInterface
+	Repository libraries.RepositoryInterface
+}
+
+type TakeoutContext struct {
+	Handler *takeout.Handler
+	Service takeout.ServiceInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -122,6 +137,8 @@ func NewContext(db *sql.DB) *AppContext {
 	searchContext := newSearchContext(dbContext, aiService)
 	notificationContext := newNotificationContext(dbContext)
 	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service, notificationContext.Service)
+	librariesContext := newLibrariesContext(dbContext, loggerService)
+	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
@@ -140,6 +157,8 @@ func NewContext(db *sql.DB) *AppContext {
 		Search:        searchContext,
 		Notifications: notificationContext,
 		Captures:      capturesContext,
+		Libraries:     librariesContext,
+		Takeout:       takeoutContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
 	}
@@ -259,6 +278,21 @@ func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterfa
 	}
 }
 
+func newLibrariesContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+) *LibrariesContext {
+	repository := libraries.NewRepository(dbContext)
+	service := libraries.NewService(repository)
+	handler := libraries.NewHandler(service, loggerService)
+
+	return &LibrariesContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
 func newCapturesContext(
 	dbContext *database.DbContext,
 	loggerService logger.LoggerServiceInterface,
@@ -320,4 +354,19 @@ func newAIService() ai.ServiceInterface {
 
 	log.Println("AI service enabled")
 	return ai.NewService(router, cfg)
+}
+
+func newTakeoutContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+	libraryResolver takeout.LibraryResolverInterface,
+	jobsRepository jobs.RepositoryInterface,
+	notificationService notifications.ServiceInterface,
+) *TakeoutContext {
+	service := takeout.NewService(jobsRepository, libraryResolver, notificationService)
+	handler := takeout.NewHandler(service, loggerService)
+	return &TakeoutContext{
+		Handler: handler,
+		Service: service,
+	}
 }

@@ -1,0 +1,22 @@
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-5);
+	padding: var(--app-spacing-6);
+}
+
+.title {
+	margin: 0;
+	font-size: 1.8rem;
+}
+
+.description {
+	margin: 0;
+	color: var(--app-color-text-secondary);
+}
+
+.actions {
+	display: flex;
+	gap: var(--app-spacing-3);
+	flex-wrap: wrap;
+}

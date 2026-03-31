@@ -80,6 +80,9 @@ var CreateSystemEventLogTableQuery string
 //go:embed queries/0023_create_captures_table.sql
 var CreateCapturesTableQuery string
 
+//go:embed queries/0024_create_libraries_table.sql
+var CreateLibrariesTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -181,4 +184,9 @@ func systemEventMigrationList() {
 func capturesMigrationList() {
 	addMigration("0023_create_captures_table",
 		defaultMigrationFunc(CreateCapturesTableQuery))
+}
+
+func librariesMigrationList() {
+	addMigration("0024_create_libraries_table",
+		defaultMigrationFunc(CreateLibrariesTableQuery))
 }
