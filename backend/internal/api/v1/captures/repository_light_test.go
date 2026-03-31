@@ -231,7 +231,7 @@ func TestNewServiceReturnsNonNil(t *testing.T) {
 	repo, _, db := newCapturesRepoWithMock(t)
 	defer db.Close()
 
-	service := NewService(repo)
+	service := NewService(repo, nil)
 	if service == nil {
 		t.Fatal("expected non-nil service")
 	}

@@ -15,6 +15,10 @@ type RepositoryInterface interface {
 	DeleteCapture(transaction *sql.Tx, id int) error
 }
 
+type UploadJobDispatcherInterface interface {
+	CreateUploadProcessJob(paths []string) (int, error)
+}
+
 type ServiceInterface interface {
 	UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto) (CaptureDto, error)
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error)

@@ -121,7 +121,7 @@ func NewContext(db *sql.DB) *AppContext {
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	searchContext := newSearchContext(dbContext, aiService)
 	notificationContext := newNotificationContext(dbContext)
-	capturesContext := newCapturesContext(dbContext, loggerService)
+	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
@@ -259,9 +259,13 @@ func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterfa
 	}
 }
 
-func newCapturesContext(dbContext *database.DbContext, loggerService logger.LoggerServiceInterface) *CapturesContext {
+func newCapturesContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+	uploadJobDispatcher captures.UploadJobDispatcherInterface,
+) *CapturesContext {
 	repository := captures.NewRepository(dbContext)
-	service := captures.NewService(repository)
+	service := captures.NewService(repository, uploadJobDispatcher)
 	handler := captures.NewHandler(service, loggerService)
 	return &CapturesContext{
 		Handler:    handler,

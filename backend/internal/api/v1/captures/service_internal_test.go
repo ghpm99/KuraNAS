@@ -20,11 +20,22 @@ import (
 // ---------------------------------------------------------------------------
 
 type repoMock struct {
-	dbContext      *database.DbContext
+	dbContext     *database.DbContext
 	createFn      func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error)
 	getCapturesFn func(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
 	getByIDFn     func(id int) (CaptureModel, error)
 	deleteFn      func(tx *sql.Tx, id int) error
+}
+
+type uploadJobDispatcherMock struct {
+	createUploadProcessJobFn func(paths []string) (int, error)
+}
+
+func (m *uploadJobDispatcherMock) CreateUploadProcessJob(paths []string) (int, error) {
+	if m.createUploadProcessJobFn != nil {
+		return m.createUploadProcessJobFn(paths)
+	}
+	return 1, nil
 }
 
 func (r *repoMock) GetDbContext() *database.DbContext { return r.dbContext }
@@ -58,10 +69,13 @@ func (r *repoMock) DeleteCapture(tx *sql.Tx, id int) error {
 	return nil
 }
 
-func newServiceForTest(t *testing.T, mock *repoMock) *Service {
+func newServiceForTest(t *testing.T, mock *repoMock, uploadJobDispatcher UploadJobDispatcherInterface) *Service {
 	t.Helper()
 	mock.dbContext = database.NewDbContext(nil)
-	return &Service{Repository: mock}
+	return &Service{
+		Repository:          mock,
+		UploadJobDispatcher: uploadJobDispatcher,
+	}
 }
 
 func setEntryPointForTest(t *testing.T, dir string) {
@@ -106,7 +120,14 @@ func TestServiceUploadCapture(t *testing.T) {
 			return capture, nil
 		},
 	}
-	service := newServiceForTest(t, mock)
+	dispatchedPaths := []string{}
+	dispatcher := &uploadJobDispatcherMock{
+		createUploadProcessJobFn: func(paths []string) (int, error) {
+			dispatchedPaths = append(dispatchedPaths, paths...)
+			return 11, nil
+		},
+	}
+	service := newServiceForTest(t, mock, dispatcher)
 	file := buildTestFileHeader(t, "video.ts", "fake-ts-data")
 
 	dto := CreateCaptureDto{
@@ -135,6 +156,13 @@ func TestServiceUploadCapture(t *testing.T) {
 	if _, err := os.Stat(savedPath); os.IsNotExist(err) {
 		t.Fatal("expected file to be saved")
 	}
+
+	if len(dispatchedPaths) != 2 {
+		t.Fatalf("expected 2 dispatched paths, got %d", len(dispatchedPaths))
+	}
+	if dispatchedPaths[0] != captureDir || dispatchedPaths[1] != savedPath {
+		t.Fatalf("unexpected dispatched paths: %+v", dispatchedPaths)
+	}
 }
 
 func TestServiceUploadCaptureRepoError(t *testing.T) {
@@ -146,7 +174,7 @@ func TestServiceUploadCaptureRepoError(t *testing.T) {
 			return CaptureModel{}, errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 	file := buildTestFileHeader(t, "video.ts", "data")
 
 	dto := CreateCaptureDto{Name: "fail_test", MediaType: "hls"}
@@ -158,6 +186,36 @@ func TestServiceUploadCaptureRepoError(t *testing.T) {
 	savedPath := filepath.Join(dir, "capturas", "fail_test", "video.ts")
 	if _, err := os.Stat(savedPath); !os.IsNotExist(err) {
 		t.Fatal("expected file to be cleaned up on repo error")
+	}
+}
+
+func TestServiceUploadCaptureJobDispatchErrorRollsBack(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{
+		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			capture.ID = 88
+			return capture, nil
+		},
+	}
+	dispatcher := &uploadJobDispatcherMock{
+		createUploadProcessJobFn: func(paths []string) (int, error) {
+			return 0, errors.New("job enqueue failed")
+		},
+	}
+	service := newServiceForTest(t, mock, dispatcher)
+	file := buildTestFileHeader(t, "video.ts", "data")
+
+	dto := CreateCaptureDto{Name: "fail_dispatch", MediaType: "hls", MimeType: "video/mp2t"}
+	_, err := service.UploadCapture(file, dto)
+	if err == nil {
+		t.Fatal("expected error when job enqueue fails")
+	}
+
+	savedPath := filepath.Join(dir, "capturas", "fail_dispatch", "video.ts")
+	if _, statErr := os.Stat(savedPath); !os.IsNotExist(statErr) {
+		t.Fatal("expected saved file cleanup when job enqueue fails")
 	}
 }
 
@@ -174,7 +232,7 @@ func TestServiceGetCaptures(t *testing.T) {
 			}, nil
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	result, err := service.GetCaptures(CaptureFilter{}, 1, 10)
 	if err != nil {
@@ -191,7 +249,7 @@ func TestServiceGetCapturesError(t *testing.T) {
 			return utils.PaginationResponse[CaptureModel]{}, errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	_, err := service.GetCaptures(CaptureFilter{}, 1, 10)
 	if err == nil {
@@ -205,7 +263,7 @@ func TestServiceGetCaptureByID(t *testing.T) {
 			return CaptureModel{ID: id, Name: "found"}, nil
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	result, err := service.GetCaptureByID(5)
 	if err != nil {
@@ -222,7 +280,7 @@ func TestServiceGetCaptureByIDError(t *testing.T) {
 			return CaptureModel{}, errors.New("not found")
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	_, err := service.GetCaptureByID(99)
 	if err == nil {
@@ -240,7 +298,7 @@ func TestServiceDeleteCapture(t *testing.T) {
 			return CaptureModel{ID: id, FilePath: filePath}, nil
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	err := service.DeleteCapture(1)
 	if err != nil {
@@ -258,7 +316,7 @@ func TestServiceDeleteCaptureGetError(t *testing.T) {
 			return CaptureModel{}, errors.New("not found")
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	err := service.DeleteCapture(99)
 	if err == nil {
@@ -275,7 +333,7 @@ func TestServiceDeleteCaptureRepoError(t *testing.T) {
 			return errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock)
+	service := newServiceForTest(t, mock, nil)
 
 	err := service.DeleteCapture(1)
 	if err == nil {
