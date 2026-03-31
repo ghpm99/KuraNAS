@@ -18,8 +18,8 @@ import (
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
-	if len(executors) != 8 {
-		t.Fatalf("expected 8 step executors, got %d", len(executors))
+	if len(executors) != 9 {
+		t.Fatalf("expected 9 step executors, got %d", len(executors))
 	}
 
 	imagePlan, err := buildFileProcessingPlan(

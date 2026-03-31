@@ -1,0 +1,19 @@
+.dropZone {
+	border: 1px dashed var(--app-color-border-subtle);
+	border-radius: var(--app-radius-lg);
+	padding: var(--app-spacing-6);
+	text-align: center;
+	background: var(--app-background-panel);
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-3);
+	cursor: pointer;
+}
+
+.dropZone:hover {
+	border-color: var(--app-color-primary);
+}
+
+.input {
+	display: none;
+}

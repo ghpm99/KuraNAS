@@ -1,5 +1,5 @@
 import { appRoutes } from '@/app/routes';
-import { BookImage, House, Info, LayoutGrid, Music, Settings, Star, Videotape } from 'lucide-react';
+import { BookImage, House, Info, LayoutGrid, Music, Settings, Star, Upload, Videotape } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const analyticsIcon = (
@@ -37,6 +37,11 @@ export const navigationItems: NavigationItem[] = [
         href: appRoutes.videos,
         icon: <Videotape size={20} />,
         labelKey: 'NAV_VIDEOS',
+    },
+    {
+        href: appRoutes.takeout,
+        icon: <Upload size={20} />,
+        labelKey: 'NAV_TAKEOUT',
     },
     { href: appRoutes.analytics, icon: analyticsIcon, labelKey: 'ANALYTICS' },
     {

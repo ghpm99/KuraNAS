@@ -12,6 +12,7 @@ import {
     TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import LibrarySettingsSection from './LibrarySettingsSection';
 import useSettingsScreen from './useSettingsScreen';
 import styles from './SettingsScreen.module.css';
 
@@ -66,6 +67,8 @@ const SettingsScreen = () => {
             {hasError ? <Alert severity="error">{t('SETTINGS_LOAD_ERROR')}</Alert> : null}
 
             <div className={styles.grid}>
+                <LibrarySettingsSection className={styles.panel} />
+
                 <section className={styles.panel}>
                     <div className={styles.panelHeader}>
                         <h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_LIBRARY')}</h2>

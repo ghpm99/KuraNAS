@@ -6,12 +6,18 @@ func TestJobDomainValidation(t *testing.T) {
 	if !JobTypeStartupScan.IsValid() {
 		t.Fatalf("expected JobTypeStartupScan to be valid")
 	}
+	if !JobTypeTakeoutImport.IsValid() {
+		t.Fatalf("expected JobTypeTakeoutImport to be valid")
+	}
 	if JobType("invalid").IsValid() {
 		t.Fatalf("expected invalid job type to be rejected")
 	}
 
 	if !StepTypeChecksum.IsValid() {
 		t.Fatalf("expected StepTypeChecksum to be valid")
+	}
+	if !StepTypeTakeoutExtract.IsValid() {
+		t.Fatalf("expected StepTypeTakeoutExtract to be valid")
 	}
 	if StepType("invalid").IsValid() {
 		t.Fatalf("expected invalid step type to be rejected")

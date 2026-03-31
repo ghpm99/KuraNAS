@@ -28,6 +28,8 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterSearchRoutes(routesV1, context)
 	RegisterNotificationRoutes(routesV1, context)
 	RegisterCapturesRoutes(routesV1, context)
+	RegisterLibrariesRoutes(routesV1, context)
+	RegisterTakeoutRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
 }
@@ -217,6 +219,28 @@ func RegisterCapturesRoutes(router *gin.RouterGroup, context *AppContext) {
 	capturesGroup.GET("", context.Captures.Handler.GetCapturesHandler)
 	capturesGroup.GET("/:id", context.Captures.Handler.GetCaptureByIDHandler)
 	capturesGroup.DELETE("/:id", context.Captures.Handler.DeleteCaptureHandler)
+}
+
+func RegisterLibrariesRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Libraries == nil || context.Libraries.Handler == nil {
+		return
+	}
+
+	libraries := router.Group("/libraries")
+	libraries.GET("", context.Libraries.Handler.GetLibrariesHandler)
+	libraries.GET("/", context.Libraries.Handler.GetLibrariesHandler)
+	libraries.PUT("/:category", context.Libraries.Handler.UpdateLibraryHandler)
+}
+
+func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Takeout == nil || context.Takeout.Handler == nil {
+		return
+	}
+
+	takeoutRoutes := router.Group("/takeout")
+	takeoutRoutes.POST("/upload/init", context.Takeout.Handler.InitUploadHandler)
+	takeoutRoutes.POST("/upload/chunk", context.Takeout.Handler.UploadChunkHandler)
+	takeoutRoutes.POST("/upload/complete", context.Takeout.Handler.CompleteUploadHandler)
 }
 
 func RegisterHealthRoutes(router *gin.RouterGroup) {

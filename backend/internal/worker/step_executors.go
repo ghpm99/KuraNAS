@@ -48,6 +48,9 @@ func buildStepExecutors(context *WorkerContext) map[StepType]StepExecutor {
 	executors[StepTypeMarkDeleted] = func(step jobs.StepModel) error {
 		return executeMarkDeletedStep(context, step)
 	}
+	executors[StepTypeTakeoutExtract] = func(step jobs.StepModel) error {
+		return executeTakeoutExtractStep(context, step)
+	}
 
 	return executors
 }

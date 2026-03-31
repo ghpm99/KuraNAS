@@ -71,6 +71,7 @@ func initMigrationList() {
 	notificationsMigrationList()
 	systemEventMigrationList()
 	capturesMigrationList()
+	librariesMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {
