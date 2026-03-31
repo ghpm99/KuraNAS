@@ -15,11 +15,15 @@ import (
 )
 
 type Service struct {
-	Repository RepositoryInterface
+	Repository          RepositoryInterface
+	UploadJobDispatcher UploadJobDispatcherInterface
 }
 
-func NewService(repository RepositoryInterface) ServiceInterface {
-	return &Service{Repository: repository}
+func NewService(repository RepositoryInterface, uploadJobDispatcher UploadJobDispatcherInterface) ServiceInterface {
+	return &Service{
+		Repository:          repository,
+		UploadJobDispatcher: uploadJobDispatcher,
+	}
 }
 
 func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
@@ -60,6 +64,22 @@ func (s *Service) UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto
 	if err != nil {
 		os.Remove(destPath)
 		return CaptureDto{}, err
+	}
+
+	if s.UploadJobDispatcher != nil {
+		_, jobErr := s.UploadJobDispatcher.CreateUploadProcessJob([]string{captureDir, destPath})
+		if jobErr != nil {
+			cleanupErr := s.withTransaction(func(tx *sql.Tx) error {
+				return s.Repository.DeleteCapture(tx, result.ID)
+			})
+			_ = os.Remove(destPath)
+
+			if cleanupErr != nil {
+				return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue upload processing job: %w (cleanup failed: %v)", jobErr, cleanupErr)
+			}
+
+			return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue upload processing job: %w", jobErr)
+		}
 	}
 
 	return result.ToDto(), nil
