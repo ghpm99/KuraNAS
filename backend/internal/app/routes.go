@@ -27,6 +27,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterUpdateRoutes(routesV1, context)
 	RegisterSearchRoutes(routesV1, context)
 	RegisterNotificationRoutes(routesV1, context)
+	RegisterCapturesRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
 }
@@ -201,6 +202,18 @@ func RegisterNotificationRoutes(router *gin.RouterGroup, context *AppContext) {
 	notifs.GET("/:id", context.Notifications.Handler.GetNotificationByIDHandler)
 	notifs.PUT("/:id/read", context.Notifications.Handler.MarkAsReadHandler)
 	notifs.PUT("/read-all", context.Notifications.Handler.MarkAllAsReadHandler)
+}
+
+func RegisterCapturesRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Captures == nil || context.Captures.Handler == nil {
+		return
+	}
+
+	capturesGroup := router.Group("/captures")
+	capturesGroup.POST("/upload", context.Captures.Handler.UploadCaptureHandler)
+	capturesGroup.GET("", context.Captures.Handler.GetCapturesHandler)
+	capturesGroup.GET("/:id", context.Captures.Handler.GetCaptureByIDHandler)
+	capturesGroup.DELETE("/:id", context.Captures.Handler.DeleteCaptureHandler)
 }
 
 func RegisterHealthRoutes(router *gin.RouterGroup) {

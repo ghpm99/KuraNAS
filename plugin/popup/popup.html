@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=400" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <header class="popup-header">
+        <h1>KuraNAS Grabber</h1>
+        <div class="hybrid-controls" id="hybridControls">
+          <button id="btnArm" class="btn btn-arm" title="Armar modo hibrido">
+            Armar
+          </button>
+          <button
+            id="btnDisarm"
+            class="btn btn-disarm hidden"
+            title="Desarmar modo hibrido"
+          >
+            Desarmar
+          </button>
+          <button
+            id="btnStopNow"
+            class="btn btn-stop hidden"
+            title="Parar gravacao agora"
+          >
+            Parar
+          </button>
+          <span id="hybridStatus" class="hybrid-badge"></span>
+        </div>
+      </header>
+
+      <div class="detected-title-bar hidden" id="detectedTitle"></div>
+
+    <section id="mediaList" class="media-list">
+        <p class="empty-state" id="emptyState">
+          Nenhuma midia detectada nesta aba.
+        </p>
+      </section>
+
+      <!-- Quality Selection Modal -->
+      <div class="modal-overlay hidden" id="qualityModal">
+        <div class="modal">
+          <h2 id="modalTitle">Selecionar qualidade</h2>
+          <ul id="qualityList" class="quality-list"></ul>
+          <button id="btnCloseModal" class="btn btn-secondary">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <footer class="popup-footer">
+        <label class="server-label">
+          Servidor:
+          <input
+            type="text"
+            id="apiUrl"
+            placeholder="Auto (detecção por health-check)"
+            class="server-input"
+          />
+        </label>
+        <button id="btnSaveSettings" class="btn btn-small">Salvar</button>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
