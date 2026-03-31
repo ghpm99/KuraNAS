@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"mime/multipart"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
@@ -31,11 +32,22 @@ type uploadJobDispatcherMock struct {
 	createUploadProcessJobFn func(paths []string) (int, error)
 }
 
+type notificationServiceMock struct {
+	groupOrCreateFn func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error)
+}
+
 func (m *uploadJobDispatcherMock) CreateUploadProcessJob(paths []string) (int, error) {
 	if m.createUploadProcessJobFn != nil {
 		return m.createUploadProcessJobFn(paths)
 	}
 	return 1, nil
+}
+
+func (m *notificationServiceMock) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+	if m.groupOrCreateFn != nil {
+		return m.groupOrCreateFn(dto)
+	}
+	return notifications.NotificationDto{ID: 1}, nil
 }
 
 func (r *repoMock) GetDbContext() *database.DbContext { return r.dbContext }
@@ -69,12 +81,13 @@ func (r *repoMock) DeleteCapture(tx *sql.Tx, id int) error {
 	return nil
 }
 
-func newServiceForTest(t *testing.T, mock *repoMock, uploadJobDispatcher UploadJobDispatcherInterface) *Service {
+func newServiceForTest(t *testing.T, mock *repoMock, uploadJobDispatcher UploadJobDispatcherInterface, notificationService notificationServiceInterface) *Service {
 	t.Helper()
 	mock.dbContext = database.NewDbContext(nil)
 	return &Service{
 		Repository:          mock,
 		UploadJobDispatcher: uploadJobDispatcher,
+		NotificationService: notificationService,
 	}
 }
 
@@ -127,7 +140,7 @@ func TestServiceUploadCapture(t *testing.T) {
 			return 11, nil
 		},
 	}
-	service := newServiceForTest(t, mock, dispatcher)
+	service := newServiceForTest(t, mock, dispatcher, nil)
 	file := buildTestFileHeader(t, "video.ts", "fake-ts-data")
 
 	dto := CreateCaptureDto{
@@ -174,7 +187,7 @@ func TestServiceUploadCaptureRepoError(t *testing.T) {
 			return CaptureModel{}, errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 	file := buildTestFileHeader(t, "video.ts", "data")
 
 	dto := CreateCaptureDto{Name: "fail_test", MediaType: "hls"}
@@ -204,7 +217,7 @@ func TestServiceUploadCaptureJobDispatchErrorRollsBack(t *testing.T) {
 			return 0, errors.New("job enqueue failed")
 		},
 	}
-	service := newServiceForTest(t, mock, dispatcher)
+	service := newServiceForTest(t, mock, dispatcher, nil)
 	file := buildTestFileHeader(t, "video.ts", "data")
 
 	dto := CreateCaptureDto{Name: "fail_dispatch", MediaType: "hls", MimeType: "video/mp2t"}
@@ -216,6 +229,261 @@ func TestServiceUploadCaptureJobDispatchErrorRollsBack(t *testing.T) {
 	savedPath := filepath.Join(dir, "capturas", "fail_dispatch", "video.ts")
 	if _, statErr := os.Stat(savedPath); !os.IsNotExist(statErr) {
 		t.Fatal("expected saved file cleanup when job enqueue fails")
+	}
+}
+
+func TestServiceChunkedUploadLifecycle(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{
+		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			capture.ID = 9
+			return capture, nil
+		},
+	}
+	dispatchedPaths := []string{}
+	dispatcher := &uploadJobDispatcherMock{
+		createUploadProcessJobFn: func(paths []string) (int, error) {
+			dispatchedPaths = append(dispatchedPaths, paths...)
+			return 55, nil
+		},
+	}
+	service := newServiceForTest(t, mock, dispatcher, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:      "chunk_show",
+		MediaType: "recording",
+		MimeType:  "video/webm",
+		Size:      10,
+		FileName:  "recording.webm",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+	if initResult.UploadID == "" {
+		t.Fatal("expected upload id")
+	}
+
+	chunkA := buildTestFileHeader(t, "chunk_a.bin", "1234")
+	if err := service.UploadCaptureChunk(chunkA, UploadCaptureChunkDto{
+		UploadID: initResult.UploadID,
+		Offset:   0,
+	}); err != nil {
+		t.Fatalf("first chunk upload failed: %v", err)
+	}
+
+	chunkB := buildTestFileHeader(t, "chunk_b.bin", "567890")
+	if err := service.UploadCaptureChunk(chunkB, UploadCaptureChunkDto{
+		UploadID: initResult.UploadID,
+		Offset:   4,
+	}); err != nil {
+		t.Fatalf("second chunk upload failed: %v", err)
+	}
+
+	capture, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{
+		UploadID: initResult.UploadID,
+	})
+	if err != nil {
+		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
+	}
+	if capture.ID != 9 {
+		t.Fatalf("expected capture id 9, got %d", capture.ID)
+	}
+
+	expectedPath := filepath.Join(dir, "capturas", "chunk_show", "recording.webm")
+	data, readErr := os.ReadFile(expectedPath)
+	if readErr != nil {
+		t.Fatalf("failed to read finalized file: %v", readErr)
+	}
+	if string(data) != "1234567890" {
+		t.Fatalf("unexpected finalized content: %q", string(data))
+	}
+
+	if len(dispatchedPaths) != 2 {
+		t.Fatalf("expected 2 dispatched paths, got %d", len(dispatchedPaths))
+	}
+}
+
+func TestServiceInitCaptureUploadEmitsStartedNotification(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{}
+	notifs := make([]notifications.CreateNotificationDto, 0, 1)
+	notifService := &notificationServiceMock{
+		groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+			notifs = append(notifs, dto)
+			return notifications.NotificationDto{ID: len(notifs)}, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, notifService)
+
+	_, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:      "notify_start",
+		MediaType: "recording",
+		MimeType:  "video/webm",
+		Size:      0,
+		FileName:  "notify_start.webm",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	if len(notifs) != 1 {
+		t.Fatalf("expected 1 notification, got %d", len(notifs))
+	}
+	if notifs[0].Type != string(notifications.NotificationTypeInfo) {
+		t.Fatalf("expected info notification, got %s", notifs[0].Type)
+	}
+}
+
+func TestServiceCompleteCaptureUploadEmitsSuccessAndFailureNotifications(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		dir := t.TempDir()
+		setEntryPointForTest(t, dir)
+
+		mock := &repoMock{
+			createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+				capture.ID = 101
+				return capture, nil
+			},
+		}
+		notifs := make([]notifications.CreateNotificationDto, 0, 4)
+		notifService := &notificationServiceMock{
+			groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+				notifs = append(notifs, dto)
+				return notifications.NotificationDto{ID: len(notifs)}, nil
+			},
+		}
+		service := newServiceForTest(t, mock, nil, notifService)
+
+		initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+			Name:     "notify_success",
+			FileName: "notify_success.webm",
+			Size:     4,
+		})
+		if err != nil {
+			t.Fatalf("InitCaptureUpload returned error: %v", err)
+		}
+
+		chunk := buildTestFileHeader(t, "chunk.bin", "data")
+		if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{
+			UploadID: initResult.UploadID,
+			Offset:   0,
+		}); err != nil {
+			t.Fatalf("UploadCaptureChunk returned error: %v", err)
+		}
+
+		if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err != nil {
+			t.Fatalf("CompleteCaptureUpload returned error: %v", err)
+		}
+
+		if len(notifs) < 2 {
+			t.Fatalf("expected at least 2 notifications, got %d", len(notifs))
+		}
+		last := notifs[len(notifs)-1]
+		if last.Type != string(notifications.NotificationTypeSuccess) {
+			t.Fatalf("expected success notification, got %s", last.Type)
+		}
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		dir := t.TempDir()
+		setEntryPointForTest(t, dir)
+
+		mock := &repoMock{}
+		notifs := make([]notifications.CreateNotificationDto, 0, 4)
+		notifService := &notificationServiceMock{
+			groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+				notifs = append(notifs, dto)
+				return notifications.NotificationDto{ID: len(notifs)}, nil
+			},
+		}
+		service := newServiceForTest(t, mock, nil, notifService)
+
+		initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+			Name:     "notify_failure",
+			FileName: "notify_failure.webm",
+			Size:     10,
+		})
+		if err != nil {
+			t.Fatalf("InitCaptureUpload returned error: %v", err)
+		}
+
+		chunk := buildTestFileHeader(t, "chunk.bin", "12345")
+		if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{
+			UploadID: initResult.UploadID,
+			Offset:   0,
+		}); err != nil {
+			t.Fatalf("UploadCaptureChunk returned error: %v", err)
+		}
+
+		if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err == nil {
+			t.Fatal("expected complete upload error")
+		}
+
+		if len(notifs) < 2 {
+			t.Fatalf("expected at least 2 notifications, got %d", len(notifs))
+		}
+		last := notifs[len(notifs)-1]
+		if last.Type != string(notifications.NotificationTypeError) {
+			t.Fatalf("expected error notification, got %s", last.Type)
+		}
+	})
+}
+
+func TestServiceUploadCaptureChunkOffsetMismatch(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:     "offset_show",
+		FileName: "offset.webm",
+		Size:     4,
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
+	err = service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{
+		UploadID: initResult.UploadID,
+		Offset:   2,
+	})
+	if err == nil {
+		t.Fatal("expected offset mismatch error")
+	}
+}
+
+func TestServiceCompleteCaptureUploadIncomplete(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:     "incomplete_show",
+		FileName: "incomplete.webm",
+		Size:     10,
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "12345")
+	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{
+		UploadID: initResult.UploadID,
+		Offset:   0,
+	}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	_, err = service.CompleteCaptureUpload(CompleteCaptureUploadDto{
+		UploadID: initResult.UploadID,
+	})
+	if err == nil {
+		t.Fatal("expected incomplete upload error")
 	}
 }
 
@@ -232,7 +500,7 @@ func TestServiceGetCaptures(t *testing.T) {
 			}, nil
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	result, err := service.GetCaptures(CaptureFilter{}, 1, 10)
 	if err != nil {
@@ -249,7 +517,7 @@ func TestServiceGetCapturesError(t *testing.T) {
 			return utils.PaginationResponse[CaptureModel]{}, errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	_, err := service.GetCaptures(CaptureFilter{}, 1, 10)
 	if err == nil {
@@ -263,7 +531,7 @@ func TestServiceGetCaptureByID(t *testing.T) {
 			return CaptureModel{ID: id, Name: "found"}, nil
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	result, err := service.GetCaptureByID(5)
 	if err != nil {
@@ -280,7 +548,7 @@ func TestServiceGetCaptureByIDError(t *testing.T) {
 			return CaptureModel{}, errors.New("not found")
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	_, err := service.GetCaptureByID(99)
 	if err == nil {
@@ -298,7 +566,7 @@ func TestServiceDeleteCapture(t *testing.T) {
 			return CaptureModel{ID: id, FilePath: filePath}, nil
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	err := service.DeleteCapture(1)
 	if err != nil {
@@ -316,7 +584,7 @@ func TestServiceDeleteCaptureGetError(t *testing.T) {
 			return CaptureModel{}, errors.New("not found")
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	err := service.DeleteCapture(99)
 	if err == nil {
@@ -333,7 +601,7 @@ func TestServiceDeleteCaptureRepoError(t *testing.T) {
 			return errors.New("db error")
 		},
 	}
-	service := newServiceForTest(t, mock, nil)
+	service := newServiceForTest(t, mock, nil, nil)
 
 	err := service.DeleteCapture(1)
 	if err == nil {

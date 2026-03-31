@@ -7,14 +7,14 @@ const recordings = new Map();
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "offscreen_start_recording") {
-    startRecording(msg.tabId, msg.streamId);
+    startRecording(msg.tabId, msg.streamId, Boolean(msg.streamUpload));
   }
   if (msg.action === "offscreen_stop_recording") {
     stopRecording(msg.tabId);
   }
 });
 
-async function startRecording(tabId, streamId) {
+async function startRecording(tabId, streamId, streamUpload) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -40,20 +40,40 @@ async function startRecording(tabId, streamId) {
 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) {
+        if (streamUpload) {
+          chrome.runtime
+            .sendMessage({
+              action: "hybrid_recording_chunk",
+              tabId,
+              chunk: e.data,
+            })
+            .catch(() => {});
+          return;
+        }
+
         chunks.push(e.data);
       }
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: mimeType });
-      const url = URL.createObjectURL(blob);
+      if (streamUpload) {
+        chrome.runtime
+          .sendMessage({
+            action: "hybrid_recording_complete",
+            tabId,
+          })
+          .catch(() => {});
+      } else {
+        const blob = new Blob(chunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
 
-      chrome.runtime.sendMessage({
-        action: "hybrid_save_recording_blob",
-        tabId,
-        blobUrl: url,
-        name: `recording_${tabId}_${Date.now()}`,
-      });
+        chrome.runtime.sendMessage({
+          action: "hybrid_save_recording_blob",
+          tabId,
+          blobUrl: url,
+          name: `recording_${tabId}_${Date.now()}`,
+        });
+      }
 
       chrome.runtime.sendMessage({
         action: "hybrid_offscreen_stopped",
@@ -95,12 +115,12 @@ function stopRecording(tabId) {
   if (rec.recorder.state !== "inactive") {
     rec.recorder.stop();
   }
-  rec.stream.getTracks().forEach((track) => track.stop());
 }
 
 function cleanupRecording(tabId) {
   const rec = recordings.get(tabId);
   if (!rec) return;
+  rec.stream.getTracks().forEach((track) => track.stop());
   if (rec.url) {
     URL.revokeObjectURL(rec.url);
   }

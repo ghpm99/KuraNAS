@@ -23,6 +23,28 @@ type CreateCaptureDto struct {
 	Size      int64  `json:"size" form:"size"`
 }
 
+type InitCaptureUploadDto struct {
+	Name      string `json:"name" binding:"required"`
+	MediaType string `json:"media_type"`
+	MimeType  string `json:"mime_type"`
+	Size      int64  `json:"size"`
+	FileName  string `json:"file_name"`
+}
+
+type InitCaptureUploadResultDto struct {
+	UploadID  string `json:"upload_id"`
+	ChunkSize int64  `json:"chunk_size"`
+}
+
+type UploadCaptureChunkDto struct {
+	UploadID string `json:"upload_id" form:"upload_id" binding:"required"`
+	Offset   int64  `json:"offset" form:"offset"`
+}
+
+type CompleteCaptureUploadDto struct {
+	UploadID string `json:"upload_id" binding:"required"`
+}
+
 type CaptureFilter struct {
 	Name      utils.Optional[string]
 	MediaType utils.Optional[string]
