@@ -6,6 +6,7 @@ import (
 	"errors"
 	"mime/multipart"
 	"nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"os"
@@ -34,6 +35,15 @@ func (m *uploadDispatcherMock) CreateStep(tx *sql.Tx, step jobs.StepModel) (jobs
 	}
 	step.ID = 10
 	return step, nil
+}
+
+type notificationServiceMock struct {
+	called bool
+}
+
+func (m *notificationServiceMock) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+	m.called = true
+	return notifications.NotificationDto{ID: 1}, nil
 }
 
 func buildChunkHeader(t *testing.T, name string, content string) *multipart.FileHeader {
@@ -85,6 +95,13 @@ func TestInitUploadSuccess(t *testing.T) {
 	}
 	if result.UploadID == "" {
 		t.Fatalf("expected upload id")
+	}
+}
+
+func TestNewService(t *testing.T) {
+	result := NewService(&uploadDispatcherMock{db: database.NewDbContext(nil)}, nil, nil)
+	if result == nil {
+		t.Fatalf("expected non-nil service")
 	}
 }
 
@@ -297,5 +314,14 @@ func TestSaveAndLoadTakeoutSessionRoundTrip(t *testing.T) {
 	}
 	if loaded.UploadID != "abc" {
 		t.Fatalf("expected upload id abc")
+	}
+}
+
+func TestEmitImportStartedNotification(t *testing.T) {
+	mock := &notificationServiceMock{}
+	service := &Service{NotificationService: mock}
+	service.emitImportStartedNotification("takeout.zip", "u1")
+	if !mock.called {
+		t.Fatalf("expected notification call")
 	}
 }
