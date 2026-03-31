@@ -2,6 +2,7 @@ package captures
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"mime/multipart"
@@ -23,6 +24,18 @@ type capturesHandlerServiceMock struct{}
 
 func (m *capturesHandlerServiceMock) UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto) (CaptureDto, error) {
 	return CaptureDto{ID: 1, Name: dto.Name, FileName: file.Filename}, nil
+}
+
+func (m *capturesHandlerServiceMock) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUploadResultDto, error) {
+	return InitCaptureUploadResultDto{UploadID: "abc", ChunkSize: 1024}, nil
+}
+
+func (m *capturesHandlerServiceMock) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error {
+	return nil
+}
+
+func (m *capturesHandlerServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
+	return CaptureDto{ID: 1, Name: "done", FileName: "file.bin"}, nil
 }
 
 func (m *capturesHandlerServiceMock) GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error) {
@@ -47,6 +60,18 @@ type capturesHandlerErrServiceMock struct {
 
 func (m *capturesHandlerErrServiceMock) UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto) (CaptureDto, error) {
 	return CaptureDto{}, errors.New("upload failed")
+}
+
+func (m *capturesHandlerErrServiceMock) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUploadResultDto, error) {
+	return InitCaptureUploadResultDto{}, errors.New("init failed")
+}
+
+func (m *capturesHandlerErrServiceMock) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error {
+	return errors.New("chunk failed")
+}
+
+func (m *capturesHandlerErrServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
+	return CaptureDto{}, errors.New("complete failed")
 }
 
 func (m *capturesHandlerErrServiceMock) GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error) {
@@ -103,6 +128,40 @@ func buildMultipartUploadRequest(t *testing.T, path string, name string, include
 	return req
 }
 
+func buildJSONRequest(t *testing.T, method string, path string, payload any) *http.Request {
+	t.Helper()
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(method, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
+func buildChunkUploadRequest(t *testing.T, path string, uploadID string, offset int64, includeChunk bool) *http.Request {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	_ = writer.WriteField("upload_id", uploadID)
+	_ = writer.WriteField("offset", fmt.Sprintf("%d", offset))
+
+	if includeChunk {
+		part, err := writer.CreateFormFile("chunk", "chunk.bin")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _ = part.Write([]byte("chunk-data"))
+	}
+
+	_ = writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, path, body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req
+}
+
 // ---------------------------------------------------------------------------
 // Tests — Success paths
 // ---------------------------------------------------------------------------
@@ -113,6 +172,9 @@ func TestCapturesHandlerEndpoints(t *testing.T) {
 	router := gin.New()
 
 	router.POST("/captures/upload", handler.UploadCaptureHandler)
+	router.POST("/captures/upload/init", handler.InitCaptureUploadHandler)
+	router.POST("/captures/upload/chunk", handler.UploadCaptureChunkHandler)
+	router.POST("/captures/upload/complete", handler.CompleteCaptureUploadHandler)
 	router.GET("/captures", handler.GetCapturesHandler)
 	router.GET("/captures/:id", handler.GetCaptureByIDHandler)
 	router.DELETE("/captures/:id", handler.DeleteCaptureHandler)
@@ -132,6 +194,38 @@ func TestCapturesHandlerEndpoints(t *testing.T) {
 		router.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected %d, got %d", http.StatusOK, w.Code)
+		}
+	})
+
+	t.Run("InitCaptureUpload success", func(t *testing.T) {
+		req := buildJSONRequest(t, http.MethodPost, "/captures/upload/init", InitCaptureUploadDto{
+			Name: "my_video",
+			Size: 100,
+		})
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusCreated {
+			t.Fatalf("expected %d, got %d", http.StatusCreated, w.Code)
+		}
+	})
+
+	t.Run("UploadCaptureChunk success", func(t *testing.T) {
+		req := buildChunkUploadRequest(t, "/captures/upload/chunk", "abc", 0, true)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected %d, got %d", http.StatusOK, w.Code)
+		}
+	})
+
+	t.Run("CompleteCaptureUpload success", func(t *testing.T) {
+		req := buildJSONRequest(t, http.MethodPost, "/captures/upload/complete", CompleteCaptureUploadDto{
+			UploadID: "abc",
+		})
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusCreated {
+			t.Fatalf("expected %d, got %d", http.StatusCreated, w.Code)
 		}
 	})
 
@@ -173,6 +267,9 @@ func TestCapturesHandlerErrorResponses(t *testing.T) {
 	router := gin.New()
 
 	router.POST("/captures/upload", handler.UploadCaptureHandler)
+	router.POST("/captures/upload/init", handler.InitCaptureUploadHandler)
+	router.POST("/captures/upload/chunk", handler.UploadCaptureChunkHandler)
+	router.POST("/captures/upload/complete", handler.CompleteCaptureUploadHandler)
 	router.GET("/captures", handler.GetCapturesHandler)
 	router.GET("/captures/:id", handler.GetCaptureByIDHandler)
 	router.DELETE("/captures/:id", handler.DeleteCaptureHandler)
@@ -206,6 +303,35 @@ func TestCapturesHandlerErrorResponses(t *testing.T) {
 
 	t.Run("GetCaptures error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/captures", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("expected %d, got %d", http.StatusInternalServerError, w.Code)
+		}
+	})
+
+	t.Run("InitCaptureUpload error", func(t *testing.T) {
+		req := buildJSONRequest(t, http.MethodPost, "/captures/upload/init", InitCaptureUploadDto{Name: "x"})
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("expected %d, got %d", http.StatusInternalServerError, w.Code)
+		}
+	})
+
+	t.Run("UploadCaptureChunk no file", func(t *testing.T) {
+		req := buildChunkUploadRequest(t, "/captures/upload/chunk", "abc", 0, false)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected %d, got %d", http.StatusBadRequest, w.Code)
+		}
+	})
+
+	t.Run("CompleteCaptureUpload error", func(t *testing.T) {
+		req := buildJSONRequest(t, http.MethodPost, "/captures/upload/complete", CompleteCaptureUploadDto{
+			UploadID: "abc",
+		})
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 		if w.Code != http.StatusInternalServerError {

@@ -70,6 +70,105 @@ func (h *Handler) UploadCaptureHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 
+func (h *Handler) InitCaptureUploadHandler(c *gin.Context) {
+	loggerModel, _ := h.logService.CreateLog(logger.LoggerModel{
+		Name:        "InitCaptureUpload",
+		Description: "Initializing chunked capture upload",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	var dto InitCaptureUploadDto
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_NAME_REQUIRED")})
+		return
+	}
+
+	result, err := h.service.InitCaptureUpload(dto)
+	if err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusCreated, result)
+}
+
+func (h *Handler) UploadCaptureChunkHandler(c *gin.Context) {
+	loggerModel, _ := h.logService.CreateLog(logger.LoggerModel{
+		Name:        "UploadCaptureChunk",
+		Description: "Uploading chunk for media capture",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	file, err := c.FormFile("chunk")
+	if err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_NO_FILE")})
+		return
+	}
+
+	dto := UploadCaptureChunkDto{
+		UploadID: c.PostForm("upload_id"),
+	}
+	if dto.UploadID == "" {
+		h.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("upload_id is required"))
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+		return
+	}
+
+	if offsetStr := c.PostForm("offset"); offsetStr != "" {
+		parsed, parseErr := strconv.ParseInt(offsetStr, 10, 64)
+		if parseErr != nil {
+			h.logService.CompleteWithErrorLog(loggerModel, parseErr)
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+			return
+		}
+		dto.Offset = parsed
+	}
+
+	if err := h.service.UploadCaptureChunk(file, dto); err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"received": true})
+}
+
+func (h *Handler) CompleteCaptureUploadHandler(c *gin.Context) {
+	loggerModel, _ := h.logService.CreateLog(logger.LoggerModel{
+		Name:        "CompleteCaptureUpload",
+		Description: "Completing chunked media capture upload",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	var dto CompleteCaptureUploadDto
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+		return
+	}
+
+	result, err := h.service.CompleteCaptureUpload(dto)
+	if err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusCreated, result)
+}
+
 func (h *Handler) GetCapturesHandler(c *gin.Context) {
 	loggerModel, _ := h.logService.CreateLog(logger.LoggerModel{
 		Name:        "GetCaptures",

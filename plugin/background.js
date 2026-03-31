@@ -30,6 +30,8 @@ const MEDIA_CONTENT_TYPES = [
 
 const HYBRID_STABILITY_MS = 200;
 const HYBRID_STOP_GRACE_MS = 5000;
+const CAPTURE_UPLOAD_CHUNK_SIZE = 2 * 1024 * 1024;
+const CAPTURE_UPLOAD_MAX_RETRIES = 3;
 
 // ---------------------------------------------------------------------------
 // State
@@ -178,6 +180,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       handleOffscreenError(tabId, msg);
       break;
 
+    case "hybrid_recording_chunk":
+      handleHybridRecordingChunk(tabId, msg);
+      break;
+
+    case "hybrid_recording_complete":
+      handleHybridRecordingComplete(tabId);
+      break;
+
     case "hybrid_save_recording_blob":
       handleSaveRecordingBlob(msg);
       break;
@@ -264,6 +274,8 @@ function armHybrid(tabId) {
       stabilityTimer: null,
       graceTimer: null,
       lastSnapshot: null,
+      recording: false,
+      uploadSession: null,
     };
     hybridStates.set(tabId, state);
   } else {
@@ -291,6 +303,7 @@ function disarmHybrid(tabId) {
   if (state.recording) {
     stopOffscreenRecording(tabId);
   }
+  state.uploadSession = null;
 
   chrome.tabs
     .sendMessage(tabId, { action: "hybrid_monitor_stop" })
@@ -354,6 +367,7 @@ async function startHybridRecording(tabId) {
   broadcastHybridStatus(tabId);
 
   try {
+    await initHybridUploadSession(tabId);
     const streamId = await chrome.tabCapture.getMediaStreamId({
       targetTabId: tabId,
     });
@@ -362,8 +376,10 @@ async function startHybridRecording(tabId) {
       action: "offscreen_start_recording",
       tabId,
       streamId,
+      streamUpload: true,
     });
   } catch (err) {
+    state.uploadSession = null;
     state.recordingState = "ARMED";
     broadcastHybridStatus(tabId);
   }
@@ -413,8 +429,128 @@ function handleOffscreenError(tabId, msg) {
   const state = hybridStates.get(tabId);
   if (state) {
     state.recording = false;
+    state.uploadSession = null;
     state.recordingState = "ARMED";
     broadcastHybridStatus(tabId);
+  }
+}
+
+async function initHybridUploadSession(tabId) {
+  const state = hybridStates.get(tabId);
+  if (!state) {
+    throw new Error("Hybrid state not initialized");
+  }
+  if (state.uploadSession && state.uploadSession.uploadID) {
+    return state.uploadSession;
+  }
+
+  const apiUrl = await getApiBaseUrl();
+  const name = `recording_${tabId}_${Date.now()}`;
+  const mimeType = "video/webm";
+  const fileName = `${sanitizeFileName(name)}.webm`;
+
+  const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      media_type: "recording",
+      mime_type: mimeType,
+      size: 0,
+      file_name: fileName,
+    }),
+  });
+
+  if (!initResp.ok) {
+    const body = await initResp.text();
+    throw new Error(`Init hybrid upload failed (${initResp.status}): ${body}`);
+  }
+
+  const payload = await initResp.json();
+  if (!payload.upload_id) {
+    throw new Error("Invalid hybrid upload init response: upload_id is required");
+  }
+
+  state.uploadSession = {
+    apiUrl,
+    uploadID: payload.upload_id,
+    offset: 0,
+    chunkIndex: 0,
+    pending: Promise.resolve(),
+    failed: false,
+    completed: false,
+  };
+
+  return state.uploadSession;
+}
+
+function handleHybridRecordingChunk(tabId, msg) {
+  const state = hybridStates.get(tabId);
+  if (!state || !state.uploadSession || state.uploadSession.failed) return;
+
+  const chunkBlob = msg.chunk;
+  if (!chunkBlob || !chunkBlob.size) return;
+
+  const session = state.uploadSession;
+  session.pending = session.pending
+    .then(async () => {
+      if (session.failed || session.completed) return;
+      await uploadChunkWithRetry(
+        session.apiUrl,
+        session.uploadID,
+        chunkBlob,
+        session.offset,
+        session.chunkIndex
+      );
+      session.offset += chunkBlob.size;
+      session.chunkIndex += 1;
+    })
+    .catch((err) => {
+      session.failed = true;
+      chrome.runtime
+        .sendMessage({
+          action: "hybrid_upload_error",
+          tabId,
+          error: err && err.message ? err.message : "Chunk upload failed",
+        })
+        .catch(() => {});
+    });
+}
+
+async function handleHybridRecordingComplete(tabId) {
+  const state = hybridStates.get(tabId);
+  if (!state || !state.uploadSession) return;
+
+  const session = state.uploadSession;
+  try {
+    await session.pending;
+    if (session.failed || session.completed) {
+      state.uploadSession = null;
+      return;
+    }
+
+    const completeResp = await fetch(`${session.apiUrl}/captures/upload/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ upload_id: session.uploadID }),
+    });
+
+    if (!completeResp.ok) {
+      const body = await completeResp.text();
+      throw new Error(`Complete hybrid upload failed (${completeResp.status}): ${body}`);
+    }
+
+    session.completed = true;
+  } catch (err) {
+    chrome.runtime
+      .sendMessage({
+        action: "hybrid_upload_error",
+        tabId,
+        error: err && err.message ? err.message : "Complete upload failed",
+      })
+      .catch(() => {});
+  } finally {
+    state.uploadSession = null;
   }
 }
 
@@ -805,29 +941,105 @@ async function uploadBlobCapture(tabId, blobUrl, name) {
 // ---------------------------------------------------------------------------
 
 async function uploadToKuraNAS(blob, name, mediaType) {
-  const formData = new FormData();
   const ext = guessExtension(blob.type, mediaType);
   const fileName = `${sanitizeFileName(name)}.${ext}`;
-
-  formData.append("file", blob, fileName);
-  formData.append("name", name);
-  formData.append("media_type", mediaType);
-  formData.append("mime_type", blob.type || "application/octet-stream");
-  formData.append("size", String(blob.size));
-
   const apiUrl = await getApiBaseUrl();
+  return uploadCaptureChunked(apiUrl, blob, {
+    name,
+    mediaType,
+    mimeType: blob.type || "application/octet-stream",
+    fileName,
+  });
+}
 
-  const resp = await fetch(`${apiUrl}/captures/upload`, {
+async function uploadCaptureChunked(apiUrl, blob, metadata) {
+  const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: metadata.name,
+      media_type: metadata.mediaType,
+      mime_type: metadata.mimeType,
+      size: blob.size,
+      file_name: metadata.fileName,
+    }),
+  });
+
+  if (!initResp.ok) {
+    const body = await initResp.text();
+    throw new Error(`Init upload failed (${initResp.status}): ${body}`);
+  }
+
+  const initPayload = await initResp.json();
+  const uploadID = initPayload.upload_id;
+  const serverChunkSize = Number(initPayload.chunk_size || 0);
+  const chunkSize = serverChunkSize > 0 ? serverChunkSize : CAPTURE_UPLOAD_CHUNK_SIZE;
+  if (!uploadID) {
+    throw new Error("Invalid chunked upload init response: upload_id is required");
+  }
+
+  let offset = 0;
+  let chunkIndex = 0;
+
+  while (offset < blob.size) {
+    const chunkBlob = blob.slice(offset, offset + chunkSize);
+    await uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
+    offset += chunkBlob.size;
+    chunkIndex += 1;
+  }
+
+  const completeResp = await fetch(`${apiUrl}/captures/upload/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ upload_id: uploadID }),
+  });
+
+  if (!completeResp.ok) {
+    const body = await completeResp.text();
+    throw new Error(`Complete upload failed (${completeResp.status}): ${body}`);
+  }
+
+  return completeResp.json();
+}
+
+async function uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= CAPTURE_UPLOAD_MAX_RETRIES; attempt++) {
+    try {
+      await uploadChunk(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
+      return;
+    } catch (err) {
+      lastError = err;
+      if (attempt < CAPTURE_UPLOAD_MAX_RETRIES) {
+        await wait(200 * attempt);
+      }
+    }
+  }
+
+  throw lastError || new Error("chunk upload failed");
+}
+
+async function uploadChunk(apiUrl, uploadID, chunkBlob, offset, chunkIndex) {
+  const formData = new FormData();
+  formData.append("upload_id", uploadID);
+  formData.append("offset", String(offset));
+  formData.append("chunk_index", String(chunkIndex));
+  formData.append("chunk", chunkBlob, `chunk_${chunkIndex}`);
+
+  const response = await fetch(`${apiUrl}/captures/upload/chunk`, {
     method: "POST",
     body: formData,
   });
 
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Upload failed (${resp.status}): ${body}`);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Chunk upload failed (${response.status}): ${body}`);
   }
+}
 
-  return resp.json();
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function getApiBaseUrl() {

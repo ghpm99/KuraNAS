@@ -211,6 +211,9 @@ func RegisterCapturesRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	capturesGroup := router.Group("/captures")
 	capturesGroup.POST("/upload", context.Captures.Handler.UploadCaptureHandler)
+	capturesGroup.POST("/upload/init", context.Captures.Handler.InitCaptureUploadHandler)
+	capturesGroup.POST("/upload/chunk", context.Captures.Handler.UploadCaptureChunkHandler)
+	capturesGroup.POST("/upload/complete", context.Captures.Handler.CompleteCaptureUploadHandler)
 	capturesGroup.GET("", context.Captures.Handler.GetCapturesHandler)
 	capturesGroup.GET("/:id", context.Captures.Handler.GetCaptureByIDHandler)
 	capturesGroup.DELETE("/:id", context.Captures.Handler.DeleteCaptureHandler)

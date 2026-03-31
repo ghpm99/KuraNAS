@@ -802,5 +802,11 @@
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Failed to save capture",
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
-	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture"
+	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture",
+	"NOTIFICATION_CAPTURE_UPLOAD_STARTED_TITLE": "Recording started",
+	"NOTIFICATION_CAPTURE_UPLOAD_STARTED_MESSAGE": "Recording %s has started",
+	"NOTIFICATION_CAPTURE_UPLOAD_COMPLETED_TITLE": "Recording completed",
+	"NOTIFICATION_CAPTURE_UPLOAD_COMPLETED_MESSAGE": "Recording %s completed successfully",
+	"NOTIFICATION_CAPTURE_UPLOAD_FAILED_TITLE": "Recording failed",
+	"NOTIFICATION_CAPTURE_UPLOAD_FAILED_MESSAGE": "Could not complete recording %s"
 }

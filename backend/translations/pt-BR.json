@@ -802,5 +802,11 @@
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Falha ao salvar captura",
 	"ERROR_CAPTURE_NOT_FOUND": "Captura nao encontrada",
 	"ERROR_CAPTURE_LIST_FAILED": "Falha ao listar capturas",
-	"ERROR_CAPTURE_DELETE_FAILED": "Falha ao deletar captura"
+	"ERROR_CAPTURE_DELETE_FAILED": "Falha ao deletar captura",
+	"NOTIFICATION_CAPTURE_UPLOAD_STARTED_TITLE": "Gravacao iniciada",
+	"NOTIFICATION_CAPTURE_UPLOAD_STARTED_MESSAGE": "A gravacao %s foi iniciada",
+	"NOTIFICATION_CAPTURE_UPLOAD_COMPLETED_TITLE": "Gravacao finalizada",
+	"NOTIFICATION_CAPTURE_UPLOAD_COMPLETED_MESSAGE": "A gravacao %s foi concluida com sucesso",
+	"NOTIFICATION_CAPTURE_UPLOAD_FAILED_TITLE": "Falha na gravacao",
+	"NOTIFICATION_CAPTURE_UPLOAD_FAILED_MESSAGE": "Nao foi possivel finalizar a gravacao %s"
 }

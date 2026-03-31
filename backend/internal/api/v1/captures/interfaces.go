@@ -21,6 +21,9 @@ type UploadJobDispatcherInterface interface {
 
 type ServiceInterface interface {
 	UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto) (CaptureDto, error)
+	InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUploadResultDto, error)
+	UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error
+	CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error)
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error)
 	GetCaptureByID(id int) (CaptureDto, error)
 	DeleteCapture(id int) error
