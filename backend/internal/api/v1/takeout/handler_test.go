@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"mime/multipart"
+	"nas-go/api/pkg/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,6 +16,25 @@ type handlerServiceMock struct {
 	initFn     func(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error)
 	chunkFn    func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
 	completeFn func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
+}
+
+type handlerLoggerMock struct{}
+
+func (m *handlerLoggerMock) CreateLog(log logger.LoggerModel, object interface{}) (logger.LoggerModel, error) {
+	return log, nil
+}
+func (m *handlerLoggerMock) GetLogByID(id int) (logger.LoggerModel, error) {
+	return logger.LoggerModel{}, nil
+}
+func (m *handlerLoggerMock) GetLogs(page, pageSize int) ([]logger.LoggerModel, error) {
+	return nil, nil
+}
+func (m *handlerLoggerMock) UpdateLog(log logger.LoggerModel) error { return nil }
+func (m *handlerLoggerMock) CompleteWithSuccessLog(log logger.LoggerModel) error {
+	return nil
+}
+func (m *handlerLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error) error {
+	return nil
 }
 
 func (m *handlerServiceMock) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error) {
@@ -152,6 +172,38 @@ func TestTakeoutHandler(t *testing.T) {
 		handler.CompleteUploadHandler(ctx)
 		if rec.Code != http.StatusInternalServerError {
 			t.Fatalf("expected 500, got %d", rec.Code)
+		}
+	})
+
+	t.Run("UploadChunkHandler offset mismatch", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(rec)
+		ctx.Request = buildChunkRequest(t, "u1", "0", true)
+
+		handler := NewHandler(&handlerServiceMock{
+			chunkFn: func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error {
+				return ErrUploadOffsetMismatch
+			},
+		}, &handlerLoggerMock{})
+		handler.UploadChunkHandler(ctx)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", rec.Code)
+		}
+	})
+
+	t.Run("CompleteUploadHandler invalid zip", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(rec)
+		ctx.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/complete", `{"upload_id":"u1"}`)
+
+		handler := NewHandler(&handlerServiceMock{
+			completeFn: func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error) {
+				return TakeoutImportResultDto{}, ErrInvalidZipFile
+			},
+		}, &handlerLoggerMock{})
+		handler.CompleteUploadHandler(ctx)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", rec.Code)
 		}
 	})
 }
