@@ -11,6 +11,7 @@ import (
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
@@ -79,9 +80,21 @@ func startWorkersScheduler(context *WorkerContext) {
 	if context != nil && context.JobOrchestrator != nil {
 		if err := enqueueStartupScanJob(context); err != nil {
 			log.Printf("failed to enqueue startup_scan job: %v\n", err)
-			emitNotification(context, "error", "Startup scan failed", err.Error(), "")
+			emitNotification(
+				context,
+				"error",
+				i18n.GetMessage("NOTIFICATION_STARTUP_SCAN_FAILED_TITLE"),
+				err.Error(),
+				"",
+			)
 		} else {
-			emitNotification(context, "info", "File scan started", "Startup file scan has been enqueued", "file_scan")
+			emitNotification(
+				context,
+				"info",
+				i18n.GetMessage("NOTIFICATION_FILE_SCAN_STARTED_TITLE"),
+				i18n.GetMessage("NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE"),
+				"file_scan",
+			)
 		}
 		return
 	}
@@ -91,7 +104,13 @@ func startWorkersScheduler(context *WorkerContext) {
 		Type: utils.ScanFiles,
 		Data: "file scan",
 	}
-	emitNotification(context, "info", "File scan started", "File scan task has been enqueued", "file_scan")
+	emitNotification(
+		context,
+		"info",
+		i18n.GetMessage("NOTIFICATION_FILE_SCAN_STARTED_TITLE"),
+		i18n.GetMessage("NOTIFICATION_FILE_SCAN_TASK_ENQUEUED_MESSAGE"),
+		"file_scan",
+	)
 	log.Println("file scan task enqueued")
 }
 
@@ -175,7 +194,13 @@ func worker(id int, context *WorkerContext) {
 			if context != nil && context.JobOrchestrator != nil {
 				if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
 					log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
-					emitNotification(context, "error", "File scan failed", err.Error(), "")
+					emitNotification(
+						context,
+						"error",
+						i18n.GetMessage("NOTIFICATION_FILE_SCAN_FAILED_TITLE"),
+						err.Error(),
+						"",
+					)
 				}
 			} else {
 				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, context.AIService)
@@ -186,7 +211,13 @@ func worker(id int, context *WorkerContext) {
 				if ok {
 					if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
 						log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
-						emitNotification(context, "error", "Directory scan failed", fmt.Sprintf("Failed to scan %s: %v", targetPath, err), "")
+						emitNotification(
+							context,
+							"error",
+							i18n.GetMessage("NOTIFICATION_DIRECTORY_SCAN_FAILED_TITLE"),
+							i18n.Translate("NOTIFICATION_DIRECTORY_SCAN_FAILED_MESSAGE", targetPath, err),
+							"",
+						)
 					}
 				}
 			} else {
