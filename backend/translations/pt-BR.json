@@ -796,5 +796,11 @@
 	"DISCOVERY_INVALID_ADDRESS": "Endereco invalido",
 	"DISCOVERY_SERVER_NOT_FOUND": "Servidor nao encontrado neste endereco",
 	"SETTINGS_SERVER": "Servidor",
-	"SETTINGS_CHANGE_SERVER": "Alterar servidor"
+	"SETTINGS_CHANGE_SERVER": "Alterar servidor",
+	"ERROR_CAPTURE_NO_FILE": "Nenhum arquivo enviado para captura",
+	"ERROR_CAPTURE_NAME_REQUIRED": "Nome da captura e obrigatorio",
+	"ERROR_CAPTURE_UPLOAD_FAILED": "Falha ao salvar captura",
+	"ERROR_CAPTURE_NOT_FOUND": "Captura nao encontrada",
+	"ERROR_CAPTURE_LIST_FAILED": "Falha ao listar capturas",
+	"ERROR_CAPTURE_DELETE_FAILED": "Falha ao deletar captura"
 }

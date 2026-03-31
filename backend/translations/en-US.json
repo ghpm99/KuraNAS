@@ -796,5 +796,11 @@
 	"DISCOVERY_INVALID_ADDRESS": "Invalid address",
 	"DISCOVERY_SERVER_NOT_FOUND": "Server not found at this address",
 	"SETTINGS_SERVER": "Server",
-	"SETTINGS_CHANGE_SERVER": "Change server"
+	"SETTINGS_CHANGE_SERVER": "Change server",
+	"ERROR_CAPTURE_NO_FILE": "No file uploaded for capture",
+	"ERROR_CAPTURE_NAME_REQUIRED": "Capture name is required",
+	"ERROR_CAPTURE_UPLOAD_FAILED": "Failed to save capture",
+	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
+	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
+	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture"
 }

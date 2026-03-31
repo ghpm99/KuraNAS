@@ -70,6 +70,7 @@ func initMigrationList() {
 	configurationMigrationList()
 	notificationsMigrationList()
 	systemEventMigrationList()
+	capturesMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {

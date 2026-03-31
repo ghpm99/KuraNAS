@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"nas-go/api/internal/api/v1/analytics"
+	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/files"
@@ -37,8 +38,15 @@ type AppContext struct {
 	Configuration *ConfigurationContext
 	Search        *SearchContext
 	Notifications *NotificationContext
+	Captures      *CapturesContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
+}
+
+type CapturesContext struct {
+	Handler    *captures.Handler
+	Service    captures.ServiceInterface
+	Repository captures.RepositoryInterface
 }
 
 type FileContext struct {
@@ -113,6 +121,7 @@ func NewContext(db *sql.DB) *AppContext {
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	searchContext := newSearchContext(dbContext, aiService)
 	notificationContext := newNotificationContext(dbContext)
+	capturesContext := newCapturesContext(dbContext, loggerService)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 
@@ -130,6 +139,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Configuration: configurationContext,
 		Search:        searchContext,
 		Notifications: notificationContext,
+		Captures:      capturesContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
 	}
@@ -243,6 +253,17 @@ func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterfa
 	handler := search.NewHandler(service)
 
 	return &SearchContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newCapturesContext(dbContext *database.DbContext, loggerService logger.LoggerServiceInterface) *CapturesContext {
+	repository := captures.NewRepository(dbContext)
+	service := captures.NewService(repository)
+	handler := captures.NewHandler(service, loggerService)
+	return &CapturesContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
