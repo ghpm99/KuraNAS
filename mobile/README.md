@@ -19,9 +19,10 @@ mobile/
 │   │   ├── app/                    # Application, Activity raiz, ServiceLocator
 │   │   ├── data/                   # implementações de repository + mappers
 │   │   ├── domain/                 # entidades, portas e contratos
+│   │   ├── feature/                # ownership incremental por domínio (files/images/search/settings)
 │   │   ├── i18n/                   # TranslationManager
 │   │   ├── infra/                  # HTTP, cache, discovery, logging, preferences
-│   │   └── presentation/           # Fragments, Activities e adapters
+│   │   └── presentation/           # Fragments/Activities legados e comuns
 │   ├── src/main/res/               # layouts XML, drawables e resources
 │   └── src/main/assets/translations/
 ├── gradle/
@@ -77,5 +78,5 @@ Pontos obrigatórios:
 
 - preservar API 16;
 - manter Java/XML/AppCompat;
-- manter separação de responsabilidades entre apresentação, domínio e dados;
+- manter separação de responsabilidades entre apresentação, domínio e dados, incluindo `feature/<domain>/{presentation,domain,data}` onde já adotado;
 - executar `./gradlew test` e `./gradlew assembleDebug` nas alterações mobile.

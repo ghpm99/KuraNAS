@@ -1,6 +1,6 @@
 import FavoritesScreen from '@/components/favorites/FavoritesScreen';
-import FileListFilterSync from '@/components/files/FileListFilterSync';
-import FilesLayout from '@/components/files/filesLayout';
+import FileListFilterSync from '@/features/files/files/FileListFilterSync';
+import FilesLayout from '@/features/files/files/filesLayout';
 
 const FavoritesPage = () => {
     return (

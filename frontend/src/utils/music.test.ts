@@ -2,7 +2,7 @@ import { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata } fro
 import type {
     IMusicData,
     IMusicMetadata,
-} from '@/components/providers/musicProvider/musicProvider';
+} from '@/features/music/providers/musicProvider/musicProvider';
 
 const createTrack = (overrides: Partial<IMusicData> = {}): IMusicData => ({
     id: 1,

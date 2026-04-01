@@ -10,7 +10,7 @@ import ActivePageListener from '@/components/activePageListener';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Message from '@/components/ui/Message/Message';
-import FileCard from '@/components/fileCard/fileCard';
+import FileCard from '@/features/files/fileCard/fileCard';
 import AboutPage from '@/pages/about';
 import FavoritesPage from '@/pages/favorites';
 import FilesPage from '@/pages/files';
@@ -31,7 +31,7 @@ const mockUseAnalyticsOverview = jest.fn();
 const mockOpenSearch = jest.fn();
 const mockOnOpenMobileMenu = jest.fn();
 
-jest.mock('@/components/providers/fileProvider/fileContext', () => ({
+jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
     default: () => mockUseFile(),
 }));
@@ -94,21 +94,21 @@ jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', (
     useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
 }));
 
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     __esModule: true,
     useGlobalMusic: () => ({ hasQueue: true }),
     GlobalMusicProvider: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/actionBar', () => () => <div>ActionBarMock</div>);
-jest.mock('@/components/fileContent', () => () => <div>FileContentMock</div>);
-jest.mock('@/components/fileDetails', () => () => <div>FileDetailsMock</div>);
+jest.mock('@/features/files/fileContent', () => () => <div>FileContentMock</div>);
+jest.mock('@/features/files/fileDetails', () => () => <div>FileDetailsMock</div>);
 jest.mock('@/components/tabs', () => () => <div>TabsMock</div>);
 jest.mock('@/components/favorites/FavoritesScreen', () => () => <div>FavoritesScreenMock</div>);
-jest.mock('@/components/files/filesLayout', () => ({ children }: any) => (
+jest.mock('@/features/files/files/filesLayout', () => ({ children }: any) => (
     <div data-testid="files-layout">{children}</div>
 ));
-jest.mock('@/components/files/FilesExplorerScreen', () => () => <div>FilesExplorerScreenMock</div>);
+jest.mock('@/features/files/files/FilesExplorerScreen', () => () => <div>FilesExplorerScreenMock</div>);
 
 jest.mock('@/components/imageContent', () => () => <div>ImageContentMock</div>);
 jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => (
@@ -130,7 +130,7 @@ jest.mock('@/components/videos/VideoDomainHeader', () => () => <div>VideoDomainH
 jest.mock('@/components/videos/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
 jest.mock('@/components/videos/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
-jest.mock('@/components/videos/videoPlayer/VideoPlayerScreen', () => () => (
+jest.mock('@/features/videos/videoPlayer/VideoPlayerScreen', () => () => (
     <div>VideoPlayerScreenMock</div>
 ));
 

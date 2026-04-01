@@ -7,7 +7,7 @@ Extensão Chrome (Manifest V3) responsável por detectar e capturar mídia no na
 ```text
 plugin/
 ├── manifest.json
-├── background.js               # service worker principal (monolítico atual)
+├── background.js               # service worker de composição
 ├── content/
 │   ├── bridge.js
 │   ├── blob-interceptor.js
@@ -20,6 +20,9 @@ plugin/
 │   ├── recorder.html
 │   └── recorder.js
 ├── icons/
+├── src/
+│   ├── background/             # módulos de detecção, roteamento, upload/download e estado
+│   └── shared/                 # constantes e utilitários compartilhados
 └── tests/                      # testes unitários do stack plugin
 ```
 
@@ -55,8 +58,8 @@ cd plugin && npm test
 ## Diretrizes de Arquitetura
 
 - Não misturar nova feature com reorganização estrutural.
-- Manter comportamento funcional equivalente durante extrações de módulos.
-- Evoluir para ownership claro por contexto (`background`, `content`, `popup`, `offscreen`, `shared`).
+- Manter comportamento funcional equivalente durante refactors.
+- Preservar ownership por contexto (`background`, `content`, `popup`, `offscreen`, `shared`).
 - Garantir consistência entre `manifest.json` e caminhos reais dos scripts.
 
 ## i18n

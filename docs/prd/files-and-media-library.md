@@ -28,7 +28,7 @@
   * `backend/internal/api/v1/files/metadata_repository.go`
   * `backend/internal/api/v1/files/image_classification.go`
   * `frontend/src/service/files.ts`
-  * `frontend/src/components/providers/fileProvider/index.tsx`
+  * `frontend/src/features/files/providers/fileProvider/index.tsx`
   * `frontend/src/pages/files/index.tsx`
 
 ## 3. Architecture & Design
