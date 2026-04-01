@@ -856,5 +856,18 @@
 	"TAKEOUT_PROCESSING": "Processando importacao...",
 	"TAKEOUT_UPLOAD_COMPLETE": "Upload concluido, processamento iniciado",
 	"TAKEOUT_FILE_TYPE_ERROR": "Somente arquivos ZIP sao aceitos",
+	"SETTINGS_WATCH_FOLDER_SAVE_ERROR": "Falha ao salvar as configuracoes da pasta monitorada",
+	"WATCH_FOLDER_PATH_NOT_EXISTS": "O caminho da pasta monitorada nao existe",
+	"WATCH_FOLDER_PATH_IS_ENTRY_POINT": "A pasta monitorada nao pode ser o ponto de entrada nem uma subpasta dele",
+	"WATCH_FOLDER_PATH_ALREADY_WATCHED": "O caminho selecionado ja esta sendo monitorado",
+	"WATCH_FOLDER_NOT_FOUND": "Pasta monitorada nao encontrada",
+	"WATCH_FOLDER_CREATED": "Pasta monitorada criada: %s",
+	"WATCH_FOLDER_UPDATED": "Pasta monitorada atualizada: %s",
+	"WATCH_FOLDER_DELETED": "Pasta monitorada removida: %s",
+	"WATCH_FOLDER_SCAN_STARTED": "Varredura da pasta monitorada iniciada: %s",
+	"WATCH_FOLDER_SCAN_COMPLETED": "Varredura da pasta monitorada finalizada com %d arquivos: %s",
+	"WATCH_FOLDER_FILE_IMPORTED": "Importado da pasta monitorada: %s -> %s",
+	"NOTIFICATION_WATCH_IMPORT_TITLE": "Importacao de pasta monitorada",
+	"NOTIFICATION_WATCH_IMPORT_MESSAGE": "%d arquivos importados de %s",
 	"NAV_TAKEOUT": "Importar Takeout"
 }

@@ -83,6 +83,9 @@ var CreateCapturesTableQuery string
 //go:embed queries/0024_create_libraries_table.sql
 var CreateLibrariesTableQuery string
 
+//go:embed queries/0025_create_watch_folders_table.sql
+var CreateWatchFoldersTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -189,4 +192,9 @@ func capturesMigrationList() {
 func librariesMigrationList() {
 	addMigration("0024_create_libraries_table",
 		defaultMigrationFunc(CreateLibrariesTableQuery))
+}
+
+func watchFoldersMigrationList() {
+	addMigration("0025_create_watch_folders_table",
+		defaultMigrationFunc(CreateWatchFoldersTableQuery))
 }

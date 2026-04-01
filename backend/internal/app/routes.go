@@ -29,6 +29,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterNotificationRoutes(routesV1, context)
 	RegisterCapturesRoutes(routesV1, context)
 	RegisterLibrariesRoutes(routesV1, context)
+	RegisterWatchFoldersRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
@@ -230,6 +231,20 @@ func RegisterLibrariesRoutes(router *gin.RouterGroup, context *AppContext) {
 	libraries.GET("", context.Libraries.Handler.GetLibrariesHandler)
 	libraries.GET("/", context.Libraries.Handler.GetLibrariesHandler)
 	libraries.PUT("/:category", context.Libraries.Handler.UpdateLibraryHandler)
+}
+
+func RegisterWatchFoldersRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.WatchFolders == nil || context.WatchFolders.Handler == nil {
+		return
+	}
+
+	watchFolders := router.Group("/watch-folders")
+	watchFolders.GET("", context.WatchFolders.Handler.GetWatchFoldersHandler)
+	watchFolders.GET("/", context.WatchFolders.Handler.GetWatchFoldersHandler)
+	watchFolders.POST("", context.WatchFolders.Handler.CreateWatchFolderHandler)
+	watchFolders.POST("/", context.WatchFolders.Handler.CreateWatchFolderHandler)
+	watchFolders.PUT("/:id", context.WatchFolders.Handler.UpdateWatchFolderHandler)
+	watchFolders.DELETE("/:id", context.WatchFolders.Handler.DeleteWatchFolderHandler)
 }
 
 func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {

@@ -856,5 +856,18 @@
 	"TAKEOUT_PROCESSING": "Processing import...",
 	"TAKEOUT_UPLOAD_COMPLETE": "Upload complete, processing started",
 	"TAKEOUT_FILE_TYPE_ERROR": "Only ZIP files are accepted",
+	"SETTINGS_WATCH_FOLDER_SAVE_ERROR": "Failed to save watch folder settings",
+	"WATCH_FOLDER_PATH_NOT_EXISTS": "The watch folder path does not exist",
+	"WATCH_FOLDER_PATH_IS_ENTRY_POINT": "The watch folder path cannot be the entry point or inside it",
+	"WATCH_FOLDER_PATH_ALREADY_WATCHED": "The selected path is already being watched",
+	"WATCH_FOLDER_NOT_FOUND": "Watch folder not found",
+	"WATCH_FOLDER_CREATED": "Watch folder created: %s",
+	"WATCH_FOLDER_UPDATED": "Watch folder updated: %s",
+	"WATCH_FOLDER_DELETED": "Watch folder removed: %s",
+	"WATCH_FOLDER_SCAN_STARTED": "Watch folder scan started: %s",
+	"WATCH_FOLDER_SCAN_COMPLETED": "Watch folder scan finished with %d files: %s",
+	"WATCH_FOLDER_FILE_IMPORTED": "Imported from watch folder: %s -> %s",
+	"NOTIFICATION_WATCH_IMPORT_TITLE": "Watch folder import",
+	"NOTIFICATION_WATCH_IMPORT_MESSAGE": "%d files imported from %s",
 	"NAV_TAKEOUT": "Takeout Import"
 }
