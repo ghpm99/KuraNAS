@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import { buildMusicAlbumHighlights, buildMusicArtistHighlights } from './musicHomeData';
 
 const track = (overrides: Partial<IMusicData>): IMusicData =>

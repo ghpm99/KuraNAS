@@ -37,7 +37,7 @@ jest.mock('@/components/providers/notificationProvider/notificationContext', () 
         refresh: jest.fn(),
     }),
 }));
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     __esModule: true,
     useGlobalMusic: () => ({ hasQueue: true }),
     GlobalMusicProvider: ({ children }: any) => <div data-testid="music-providers">{children}</div>,
@@ -56,11 +56,11 @@ jest.mock('@/pages/about', () => () => <div>AboutPage</div>);
 jest.mock('@/pages/images', () => () => <div>ImagesPage</div>);
 jest.mock('@/pages/music', () => () => <div>MusicPage</div>);
 jest.mock('@/components/music/MusicHomeScreen', () => () => <div>MusicHomeScreen</div>);
-jest.mock('@/pages/music/views/AlbumsView', () => () => <div>AlbumsView</div>);
-jest.mock('@/pages/music/views/ArtistsView', () => () => <div>ArtistsView</div>);
-jest.mock('@/pages/music/views/FoldersView', () => () => <div>FoldersView</div>);
-jest.mock('@/pages/music/views/GenresView', () => () => <div>GenresView</div>);
-jest.mock('@/pages/music/views/PlaylistsView', () => () => <div>PlaylistsView</div>);
+jest.mock('@/features/music/views/AlbumsView', () => () => <div>AlbumsView</div>);
+jest.mock('@/features/music/views/ArtistsView', () => () => <div>ArtistsView</div>);
+jest.mock('@/features/music/views/FoldersView', () => () => <div>FoldersView</div>);
+jest.mock('@/features/music/views/GenresView', () => () => <div>GenresView</div>);
+jest.mock('@/features/music/views/PlaylistsView', () => () => <div>PlaylistsView</div>);
 jest.mock('@/pages/notifications', () => () => <div>NotificationsPage</div>);
 jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);

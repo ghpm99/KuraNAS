@@ -1,4 +1,4 @@
-import { MusicProvider } from '../providers/musicProvider/musicProvider';
+import { MusicProvider } from '@/features/music/providers/musicProvider/musicProvider';
 import Layout from '../layout/Layout';
 
 const MusicLayout = ({ children }: { children: React.ReactNode }) => {

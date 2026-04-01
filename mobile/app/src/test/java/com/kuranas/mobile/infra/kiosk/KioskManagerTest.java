@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -75,7 +76,7 @@ public class KioskManagerTest {
         listener.onSystemUiVisibilityChange(0);
 
         // Should re-apply fullscreen flags (once in engage + once from listener)
-        verify(decorView).setSystemUiVisibility(FULLSCREEN_FLAGS);
+        verify(decorView, times(2)).setSystemUiVisibility(FULLSCREEN_FLAGS);
     }
 
     @Test

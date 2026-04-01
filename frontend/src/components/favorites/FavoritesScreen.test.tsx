@@ -16,7 +16,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock('@/components/fileContent', () => ({ viewMode, title, emptyStateMessage }: any) => (
+jest.mock('@/features/files/fileContent', () => ({ viewMode, title, emptyStateMessage }: any) => (
     <div
         data-testid="favorites-file-content"
         data-view-mode={viewMode}
@@ -27,7 +27,7 @@ jest.mock('@/components/fileContent', () => ({ viewMode, title, emptyStateMessag
     </div>
 ));
 
-jest.mock('@/components/fileDetails', () => () => <div>FileDetailsMock</div>);
+jest.mock('@/features/files/fileDetails', () => () => <div>FileDetailsMock</div>);
 
 describe('FavoritesScreen', () => {
     beforeEach(() => {

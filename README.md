@@ -5,9 +5,9 @@ Sistema NAS pessoal com backend em Go e frontend em React para gerenciamento de 
 ## Visão Geral
 
 - Backend (`backend/`): API HTTP, regras de negócio, workers e i18n.
-- Frontend (`frontend/`): SPA React + TypeScript consumindo `/api/v1`.
-- Mobile (`mobile/`): aplicativo Android nativo (API 16) em Java + XML + AppCompat.
-- Plugin (`plugin/`): extensão Chrome MV3 para captura de mídia.
+- Frontend (`frontend/`): SPA React + TypeScript com estrutura `feature-first` para domínios críticos (`files`, `music`, `videos`).
+- Mobile (`mobile/`): aplicativo Android nativo (API 16) em Java + XML + AppCompat, com ownership incremental por feature.
+- Plugin (`plugin/`): extensão Chrome MV3 modularizada (`src/background`, `src/shared`) para captura de mídia.
 - Build integrado: empacotamento final em `build/`.
 
 ## Estrutura
@@ -18,7 +18,7 @@ Sistema NAS pessoal com backend em Go e frontend em React para gerenciamento de 
 ├── frontend/           # Aplicação web (Vite + React + TypeScript)
 ├── mobile/             # App Android (API 16, Java + XML + AppCompat)
 ├── plugin/             # Extensão Chrome (Manifest V3)
-├── docs/               # Padrões de engenharia
+├── docs/               # Padrões de engenharia e documentação funcional
 ├── build/              # Saída do build integrado (gerado)
 ├── Makefile            # Pipeline local de build/qualidade
 └── AGENTS.md           # Regras de colaboração para agentes
@@ -54,6 +54,38 @@ make -C backend run
 
 ```bash
 cd frontend && yarn dev
+```
+
+## Onboarding por Stack
+
+Backend:
+
+```bash
+cd backend && go test ./... -cover
+make -C backend run
+```
+
+Frontend:
+
+```bash
+cd frontend && yarn lint
+cd frontend && yarn test --watchAll=false
+cd frontend && yarn build
+```
+
+Mobile:
+
+```bash
+cd mobile && ./gradlew test
+cd mobile && ./gradlew assembleDebug
+```
+
+Plugin:
+
+```bash
+cd plugin && npm ci
+cd plugin && npm run lint
+cd plugin && npm test
 ```
 
 ## Build Integrado

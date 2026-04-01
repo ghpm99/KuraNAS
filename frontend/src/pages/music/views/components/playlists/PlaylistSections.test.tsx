@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
-import PlaylistDetailSection from './PlaylistDetailSection';
-import PlaylistListSection from './PlaylistListSection';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import PlaylistDetailSection from '@/features/music/views/components/playlists/PlaylistDetailSection';
+import PlaylistListSection from '@/features/music/views/components/playlists/PlaylistListSection';
 import type { Playlist, PlaylistTrack } from '@/types/playlist';
 
 const mockUseGlobalMusic = jest.fn();
 const mockReplaceQueue = jest.fn();
 const mockGetPlaylistTracks = jest.fn();
 
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
@@ -20,7 +20,7 @@ jest.mock('@/utils/music', () => ({
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
 
-jest.mock('@/components/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers', () => ({
+jest.mock('@/features/music/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers', () => ({
     usePlaylistTrackHandlers: () => ({
         getMusicTitle: (track: any) => track.name,
         getMusicArtist: (track: any) => track.metadata?.artist ?? 'artist',

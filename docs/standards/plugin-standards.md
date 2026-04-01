@@ -10,12 +10,12 @@ This document is the canonical source for browser extension implementation patte
 ## 1) Architecture and Scope
 - Plugin stack is Chrome Extension Manifest V3.
 - Keep extension behavior split by runtime context:
-- background service worker (`background.js` or `src/background/*` during migration),
+- background service worker (`background.js` + `src/background/*` para módulos de domínio),
 - content scripts (`content/*`),
 - popup UI (`popup/*`),
 - offscreen runtime (`offscreen/*`).
 - Do not mix UI behavior, network orchestration, and message routing into a single giant module when refactoring.
-- Migration target is modular ownership by domain (`background`, `content`, `popup`, `offscreen`, `shared`).
+- Maintain modular ownership by context (`background`, `content`, `popup`, `offscreen`, `shared`).
 
 ## 2) Modularization Rules
 - Extract pure constants/utilities first when breaking large files.
@@ -54,3 +54,4 @@ This document is the canonical source for browser extension implementation patte
 
 ## Change Log
 - 2026-04-01: Initial canonical plugin standards file created for reorganization governance (Batch 0.x).
+- 2026-04-01: Updated architecture section to reflect post-modularization baseline in Batch 4.x.

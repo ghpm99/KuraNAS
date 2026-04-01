@@ -26,8 +26,8 @@
   * `frontend/src/service/music.ts`
   * `frontend/src/service/playlist.ts`
   * `frontend/src/service/playerState.ts`
-  * `frontend/src/components/providers/GlobalMusicProvider.tsx`
-  * `frontend/src/components/providers/musicProvider/musicProvider.tsx`
+  * `frontend/src/features/music/providers/GlobalMusicProvider.tsx`
+  * `frontend/src/features/music/providers/musicProvider/musicProvider.tsx`
 
 ## 3. Architecture & Design
 

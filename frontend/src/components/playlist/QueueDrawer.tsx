@@ -9,7 +9,7 @@ import {
     Typography,
 } from '@mui/material';
 import { ListMusic, Play, Pause, Trash2, X } from 'lucide-react';
-import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 

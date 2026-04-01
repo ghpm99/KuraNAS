@@ -12,7 +12,7 @@ import {
     VolumeX,
 } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import '../playerControl/playerControl.css';
 

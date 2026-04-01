@@ -1,6 +1,6 @@
 import { Pagination } from '@/types/pagination';
 import { MusicAlbum, MusicArtist, MusicFolder, MusicGenre, MusicHomeCatalog } from '@/types/music';
-import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import { apiBase } from '.';
 
 export const getMusicHomeCatalog = async (limit: number) => {

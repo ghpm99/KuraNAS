@@ -1,7 +1,7 @@
-import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
-import type { FileData } from '@/components/providers/fileProvider/fileContext';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
+import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
-import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import { fetchAnalyticsOverview } from '@/service/analytics';
 import { getFilesTree, getImageFiles } from '@/service/files';
 import { getPlayerState } from '@/service/playerState';

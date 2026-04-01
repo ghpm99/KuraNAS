@@ -18,9 +18,11 @@ Aplicação web do KuraNAS construída com React + TypeScript + Vite.
 frontend/
 ├── src/
 │   ├── app/            # composição de rotas e inicialização da aplicação
-│   ├── components/     # componentes por domínio e providers
-│   ├── pages/          # páginas de rota (wrappers)
+│   ├── components/     # composição de tela, layout e domínios não migrados
+│   ├── features/       # ownership por domínio (files, music, videos)
+│   ├── pages/          # wrappers finos de rota
 │   ├── service/        # clientes e serviços de API
+│   ├── shared/         # utilitários compartilhados cross-feature
 │   ├── types/          # tipos compartilhados
 │   └── utils/          # utilitários
 ├── public/
@@ -125,6 +127,7 @@ Antes de alterar código frontend, siga:
 
 Pontos obrigatórios:
 
+- domínios `files/music/videos` devem evoluir prioritariamente em `src/features/*`;
 - lógica e chamadas HTTP em hooks/providers, não em componentes de render;
 - uso de alias `@/...`;
-- testes com cobertura mínima global de 80%.
+- testes com cobertura mínima global configurada em `jest.config.js` (90% lines/functions/statements e 89% branches).

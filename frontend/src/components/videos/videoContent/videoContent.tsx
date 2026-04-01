@@ -1,4 +1,4 @@
-import { VideoContentProvider } from '@/components/providers/videoContentProvider';
+import { VideoContentProvider } from '@/features/videos/providers/videoContentProvider';
 import VideoContentScreen from './components/VideoContentScreen';
 
 export default function VideoContent() {

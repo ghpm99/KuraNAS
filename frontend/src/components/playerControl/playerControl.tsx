@@ -1,7 +1,7 @@
 import { Box, Card, CardContent, IconButton, Slider, Typography } from '@mui/material';
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import './playerControl.css';
-import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const PlayerControl = () => {

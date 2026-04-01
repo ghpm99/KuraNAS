@@ -6,7 +6,7 @@ import {
     ListItemIcon,
     ListItemText,
 } from '@mui/material';
-import { useGlobalMusic } from '../providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle } from '@/utils/music';
 import styles from './playlist.module.css';
 import { Music, Play } from 'lucide-react';

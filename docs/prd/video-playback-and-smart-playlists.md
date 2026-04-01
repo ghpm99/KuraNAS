@@ -27,7 +27,7 @@
   * `backend/internal/api/v1/video/playlist/strategy.go`
   * `backend/internal/api/v1/video/playlist/scorer.go`
   * `frontend/src/service/videoPlayback.ts`
-  * `frontend/src/components/providers/videoContentProvider/videoContentProvider.tsx`
+  * `frontend/src/features/videos/providers/videoContentProvider/videoContentProvider.tsx`
   * `frontend/src/pages/videos/videos.tsx`
   * `frontend/src/pages/videoPlayer/videoPlayer.tsx`
 

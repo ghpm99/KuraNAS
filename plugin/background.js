@@ -2,36 +2,27 @@
  * KuraNAS Stream Grabber — Background Service Worker (MV3)
  * ======================================================================== */
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-const DEFAULT_KURANAS_API_BASE = "http://localhost:8000/api/v1";
-const DISCOVERY_HEALTH_SUFFIX = "/health";
-const DISCOVERY_REQUEST_TIMEOUT_MS = 1500;
-const DISCOVERY_TAB_HOST_LIMIT = 10;
-
-const MEDIA_PATTERNS = [
-  { regex: /\.m3u8(\?|$)/i, type: "hls" },
-  { regex: /\.mpd(\?|$)/i, type: "dash" },
-  { regex: /\.ts(\?|$)/i, type: "ts" },
-  { regex: /\.mp4(\?|$)/i, type: "mp4" },
-  { regex: /\.m4s(\?|$)/i, type: "m4s" },
-  { regex: /\.aac(\?|$)/i, type: "aac" },
-  { regex: /\.webm(\?|$)/i, type: "webm" },
-];
-
-const MEDIA_CONTENT_TYPES = [
-  { pattern: /mpegurl/i, type: "hls" },
-  { pattern: /dash\+xml/i, type: "dash" },
-  { pattern: /^video\//i, type: "video" },
-  { pattern: /^audio\//i, type: "audio" },
-];
-
-const HYBRID_STABILITY_MS = 200;
-const HYBRID_STOP_GRACE_MS = 5000;
-const CAPTURE_UPLOAD_CHUNK_SIZE = 2 * 1024 * 1024;
-const CAPTURE_UPLOAD_MAX_RETRIES = 3;
+import {
+  DEFAULT_KURANAS_API_BASE,
+  DISCOVERY_HEALTH_SUFFIX,
+  DISCOVERY_REQUEST_TIMEOUT_MS,
+  DISCOVERY_TAB_HOST_LIMIT,
+  HYBRID_STABILITY_MS,
+  HYBRID_STOP_GRACE_MS,
+  MEDIA_CONTENT_TYPES,
+  MEDIA_PATTERNS,
+} from "./src/shared/constants.js";
+import {
+  guessExtension,
+  resolveUrl,
+  sanitizeFileName,
+  wait,
+} from "./src/shared/utils.js";
+import { createMediaDetectionManager } from "./src/background/media-detection.js";
+import { routeRuntimeMessage } from "./src/background/message-router.js";
+import { createUploader } from "./src/background/uploader.js";
+import { createDownloader } from "./src/background/downloader.js";
+import { createHybridStateMachine } from "./src/background/hybrid-state.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -41,178 +32,103 @@ const detectedMedia = new Map();
 const hybridStates = new Map();
 const detectedTitles = new Map();
 
+const uploader = createUploader({
+  getApiBaseUrl,
+  guessExtension,
+  sanitizeFileName,
+  waitFn: wait,
+});
+const {
+  handleSaveRecordingBlob,
+  uploadBlobCapture,
+  uploadChunkWithRetry,
+  uploadToKuraNAS,
+} = uploader;
+
+const downloader = createDownloader({
+  resolveUrl,
+  uploadToKuraNAS,
+});
+const {
+  downloadDASH,
+  downloadDirect,
+  downloadHLS,
+} = downloader;
+
+const hybridStateMachine = createHybridStateMachine({
+  hybridStates,
+  broadcastHybridStatus,
+  initHybridUploadSession,
+  ensureOffscreen,
+  getMediaStreamId: (tabId) => chrome.tabCapture.getMediaStreamId({
+    targetTabId: tabId,
+  }),
+  sendRuntimeMessage: (message) => {
+    chrome.runtime.sendMessage(message).catch(() => {});
+  },
+  sendTabMessage: (tabId, message) => {
+    chrome.tabs.sendMessage(tabId, message).catch(() => {});
+  },
+  stopOffscreenRecording,
+  hybridStabilityMs: HYBRID_STABILITY_MS,
+  hybridStopGraceMs: HYBRID_STOP_GRACE_MS,
+});
+const {
+  armHybrid,
+  cleanupTab,
+  disarmHybrid,
+  getHybridStatus,
+  handleHybridVideoState,
+  handleOffscreenError,
+  handleOffscreenStarted,
+  handleOffscreenStopped,
+  stopHybridRecording,
+} = hybridStateMachine;
+
 // ---------------------------------------------------------------------------
 // 1. Media Detection via Network
 // ---------------------------------------------------------------------------
 
-function classifyByUrl(url) {
-  for (const { regex, type } of MEDIA_PATTERNS) {
-    if (regex.test(url)) return type;
-  }
-  return null;
-}
-
-function classifyByContentType(contentType) {
-  for (const { pattern, type } of MEDIA_CONTENT_TYPES) {
-    if (pattern.test(contentType)) return type;
-  }
-  return null;
-}
-
-function addMedia(tabId, item) {
-  if (!detectedMedia.has(tabId)) {
-    detectedMedia.set(tabId, []);
-  }
-
-  const list = detectedMedia.get(tabId);
-  const isDuplicate = list.some(
-    (m) => m.url === item.url && m.type === item.type
-  );
-  if (isDuplicate) return;
-
-  list.push(item);
-  updateBadge(tabId);
-
-  chrome.runtime.sendMessage({ action: "media_detected", tabId, item }).catch(
-    () => {}
-  );
-}
-
-function updateBadge(tabId) {
-  const list = detectedMedia.get(tabId) || [];
-  const text = list.length > 0 ? String(list.length) : "";
-  chrome.action.setBadgeText({ text, tabId }).catch(() => {});
-  chrome.action.setBadgeBackgroundColor({ color: "#4CAF50", tabId }).catch(
-    () => {}
-  );
-}
-
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    if (details.tabId < 0) return;
-    const type = classifyByUrl(details.url);
-    if (type) {
-      addMedia(details.tabId, {
-        url: details.url,
-        type,
-        source: "network",
-        timestamp: Date.now(),
-      });
-    }
-  },
-  { urls: ["<all_urls>"] }
-);
-
-chrome.webRequest.onHeadersReceived.addListener(
-  (details) => {
-    if (details.tabId < 0) return;
-    const ctHeader = (details.responseHeaders || []).find(
-      (h) => h.name.toLowerCase() === "content-type"
-    );
-    if (!ctHeader) return;
-
-    const type = classifyByContentType(ctHeader.value);
-    if (type) {
-      addMedia(details.tabId, {
-        url: details.url,
-        type,
-        source: "network",
-        timestamp: Date.now(),
-      });
-    }
-  },
-  { urls: ["<all_urls>"] },
-  ["responseHeaders"]
-);
+const mediaDetectionManager = createMediaDetectionManager({
+  chromeApi: chrome,
+  detectedMedia,
+  mediaPatterns: MEDIA_PATTERNS,
+  mediaContentTypes: MEDIA_CONTENT_TYPES,
+});
+const addMedia = mediaDetectionManager.addMedia;
+const updateBadge = mediaDetectionManager.updateBadge;
+mediaDetectionManager.registerNetworkListeners();
 
 // ---------------------------------------------------------------------------
 // 2. Message Router
 // ---------------------------------------------------------------------------
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  const tabId = sender.tab ? sender.tab.id : msg.tabId;
-
-  switch (msg.action) {
-    case "blob_detected":
-      handleBlobDetected(tabId, msg);
-      break;
-
-    case "title_detected":
-      handleTitleDetected(tabId, msg);
-      break;
-
-    case "get_title":
-      sendResponse(getTitleForTab(msg.tabId));
-      return false;
-
-    case "hybrid_video_state":
-      handleHybridVideoState(tabId, msg.snapshot);
-      break;
-
-    case "get_media":
-      sendResponse({ media: detectedMedia.get(msg.tabId) || [] });
-      return false;
-
-    case "hybrid_arm":
-      armHybrid(msg.tabId);
-      sendResponse({ ok: true });
-      return false;
-
-    case "hybrid_disarm":
-      disarmHybrid(msg.tabId);
-      sendResponse({ ok: true });
-      return false;
-
-    case "hybrid_stop_now":
-      stopHybridRecording(msg.tabId);
-      sendResponse({ ok: true });
-      return false;
-
-    case "hybrid_offscreen_started":
-      handleOffscreenStarted(tabId, msg);
-      break;
-
-    case "hybrid_offscreen_stopped":
-      handleOffscreenStopped(tabId, msg);
-      break;
-
-    case "hybrid_offscreen_error":
-      handleOffscreenError(tabId, msg);
-      break;
-
-    case "hybrid_recording_chunk":
-      handleHybridRecordingChunk(tabId, msg);
-      break;
-
-    case "hybrid_recording_complete":
-      handleHybridRecordingComplete(tabId);
-      break;
-
-    case "hybrid_save_recording_blob":
-      handleSaveRecordingBlob(msg);
-      break;
-
-    case "download_hls":
-      downloadHLS(msg.url, msg.name).then(sendResponse);
-      return true;
-
-    case "download_dash":
-      downloadDASH(msg.url, msg.name).then(sendResponse);
-      return true;
-
-    case "download_direct":
-      downloadDirect(msg.url, msg.name).then(sendResponse);
-      return true;
-
-    case "upload_blob_capture":
-      uploadBlobCapture(msg.tabId, msg.blobUrl, msg.name).then(sendResponse);
-      return true;
-
-    case "get_hybrid_status":
-      sendResponse(getHybridStatus(msg.tabId));
-      return false;
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntimeMessage(
+  msg,
+  sender,
+  sendResponse,
+  {
+    armHybrid,
+    disarmHybrid,
+    downloadDASH,
+    downloadDirect,
+    downloadHLS,
+    getDetectedMedia: (tabId) => detectedMedia.get(tabId) || [],
+    getHybridStatus,
+    getTitleForTab,
+    handleBlobDetected,
+    handleHybridRecordingChunk,
+    handleHybridRecordingComplete,
+    handleHybridVideoState,
+    handleOffscreenError,
+    handleOffscreenStarted,
+    handleOffscreenStopped,
+    handleSaveRecordingBlob,
+    handleTitleDetected,
+    stopHybridRecording,
+    uploadBlobCapture,
   }
-});
+));
 
 // ---------------------------------------------------------------------------
 // 3. Blob Detection
@@ -254,185 +170,10 @@ function getTitleForTab(tabId) {
 // 4. Hybrid State Machine
 // ---------------------------------------------------------------------------
 
-function getHybridStatus(tabId) {
-  const state = hybridStates.get(tabId);
-  if (!state) return { armed: false, state: "IDLE" };
-  return {
-    armed: state.armed,
-    state: state.recordingState,
-    monitorEnabled: state.monitorEnabled,
-  };
-}
-
-function armHybrid(tabId) {
-  let state = hybridStates.get(tabId);
-  if (!state) {
-    state = {
-      armed: true,
-      monitorEnabled: true,
-      recordingState: "ARMED",
-      stabilityTimer: null,
-      graceTimer: null,
-      lastSnapshot: null,
-      recording: false,
-      uploadSession: null,
-    };
-    hybridStates.set(tabId, state);
-  } else {
-    state.armed = true;
-    state.monitorEnabled = true;
-    state.recordingState = "ARMED";
-  }
-
-  chrome.tabs
-    .sendMessage(tabId, { action: "hybrid_monitor_start" })
-    .catch(() => {});
-  broadcastHybridStatus(tabId);
-}
-
-function disarmHybrid(tabId) {
-  const state = hybridStates.get(tabId);
-  if (!state) return;
-
-  clearTimeout(state.stabilityTimer);
-  clearTimeout(state.graceTimer);
-  state.armed = false;
-  state.monitorEnabled = false;
-  state.recordingState = "IDLE";
-
-  if (state.recording) {
-    stopOffscreenRecording(tabId);
-  }
-  state.uploadSession = null;
-
-  chrome.tabs
-    .sendMessage(tabId, { action: "hybrid_monitor_stop" })
-    .catch(() => {});
-  broadcastHybridStatus(tabId);
-}
-
-function handleHybridVideoState(tabId, snapshot) {
-  const state = hybridStates.get(tabId);
-  if (!state || !state.armed) return;
-
-  state.lastSnapshot = snapshot;
-
-  const shouldRecord =
-    snapshot.hasVideo &&
-    snapshot.isPlaying &&
-    snapshot.isFullscreen &&
-    !snapshot.isEnded;
-
-  if (state.recordingState === "ARMED") {
-    if (shouldRecord) {
-      clearTimeout(state.stabilityTimer);
-      state.stabilityTimer = setTimeout(() => {
-        if (state.armed && state.recordingState === "ARMED") {
-          startHybridRecording(tabId);
-        }
-      }, HYBRID_STABILITY_MS);
-    } else {
-      clearTimeout(state.stabilityTimer);
-    }
-  } else if (state.recordingState === "RECORDING") {
-    if (snapshot.isEnded) {
-      clearTimeout(state.graceTimer);
-      stopHybridRecording(tabId);
-    } else if (!shouldRecord) {
-      if (!state.graceTimer) {
-        state.graceTimer = setTimeout(() => {
-          if (state.recordingState === "RECORDING") {
-            stopHybridRecording(tabId);
-          }
-        }, HYBRID_STOP_GRACE_MS);
-      }
-    } else {
-      clearTimeout(state.graceTimer);
-      state.graceTimer = null;
-    }
-  }
-
-  if (state.lastUrl && snapshot.url !== state.lastUrl) {
-    if (state.recordingState === "RECORDING") {
-      stopHybridRecording(tabId);
-    }
-  }
-  state.lastUrl = snapshot.url;
-}
-
-async function startHybridRecording(tabId) {
-  const state = hybridStates.get(tabId);
-  if (!state) return;
-  state.recordingState = "RECORDING";
-  broadcastHybridStatus(tabId);
-
-  try {
-    await initHybridUploadSession(tabId);
-    const streamId = await chrome.tabCapture.getMediaStreamId({
-      targetTabId: tabId,
-    });
-    await ensureOffscreen();
-    chrome.runtime.sendMessage({
-      action: "offscreen_start_recording",
-      tabId,
-      streamId,
-      streamUpload: true,
-    });
-  } catch (err) {
-    state.uploadSession = null;
-    state.recordingState = "ARMED";
-    broadcastHybridStatus(tabId);
-  }
-}
-
-function stopHybridRecording(tabId) {
-  const state = hybridStates.get(tabId);
-  if (!state) return;
-
-  clearTimeout(state.stabilityTimer);
-  clearTimeout(state.graceTimer);
-  state.graceTimer = null;
-  state.recordingState = "STOPPED";
-  broadcastHybridStatus(tabId);
-
-  stopOffscreenRecording(tabId);
-
-  setTimeout(() => {
-    if (state.armed) {
-      state.recordingState = "ARMED";
-      broadcastHybridStatus(tabId);
-    }
-  }, 1000);
-}
-
 function stopOffscreenRecording(tabId) {
   chrome.runtime
     .sendMessage({ action: "offscreen_stop_recording", tabId })
     .catch(() => {});
-}
-
-function handleOffscreenStarted(tabId) {
-  const state = hybridStates.get(tabId);
-  if (state) {
-    state.recording = true;
-  }
-}
-
-function handleOffscreenStopped(tabId) {
-  const state = hybridStates.get(tabId);
-  if (state) {
-    state.recording = false;
-  }
-}
-
-function handleOffscreenError(tabId, msg) {
-  const state = hybridStates.get(tabId);
-  if (state) {
-    state.recording = false;
-    state.uploadSession = null;
-    state.recordingState = "ARMED";
-    broadcastHybridStatus(tabId);
-  }
 }
 
 async function initHybridUploadSession(tabId) {
@@ -591,456 +332,6 @@ async function ensureOffscreen() {
 // ---------------------------------------------------------------------------
 // 6. Save Recording Blob → Upload to KuraNAS
 // ---------------------------------------------------------------------------
-
-async function handleSaveRecordingBlob(msg) {
-  try {
-    const response = await fetch(msg.blobUrl);
-    const blob = await response.blob();
-
-    const name = msg.name || `recording_${Date.now()}`;
-    await uploadToKuraNAS(blob, name, "recording");
-  } catch (err) {
-    // Blob URL may have been revoked
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 7. HLS Download & Upload
-// ---------------------------------------------------------------------------
-
-async function downloadHLS(manifestUrl, name) {
-  try {
-    const resp = await fetch(manifestUrl);
-    const text = await resp.text();
-
-    if (text.includes("#EXT-X-STREAM-INF")) {
-      return parseHLSMasterPlaylist(text, manifestUrl);
-    }
-
-    return await downloadHLSMediaPlaylist(text, manifestUrl, name);
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-function parseHLSMasterPlaylist(text, baseUrl) {
-  const lines = text.split("\n");
-  const variants = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line.startsWith("#EXT-X-STREAM-INF:")) continue;
-
-    const attrs = line.substring(18);
-    const bandwidthMatch = attrs.match(/BANDWIDTH=(\d+)/);
-    const resolutionMatch = attrs.match(/RESOLUTION=([^\s,]+)/);
-    const codecsMatch = attrs.match(/CODECS="([^"]+)"/);
-
-    const nextLine = (lines[i + 1] || "").trim();
-    if (!nextLine || nextLine.startsWith("#")) continue;
-
-    variants.push({
-      url: resolveUrl(baseUrl, nextLine),
-      bandwidth: bandwidthMatch ? parseInt(bandwidthMatch[1], 10) : 0,
-      resolution: resolutionMatch ? resolutionMatch[1] : "",
-      codecs: codecsMatch ? codecsMatch[1] : "",
-    });
-    i++;
-  }
-
-  return { type: "master", variants };
-}
-
-async function downloadHLSMediaPlaylist(text, baseUrl, name) {
-  const lines = text.split("\n");
-  const segmentUrls = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    segmentUrls.push(resolveUrl(baseUrl, trimmed));
-  }
-
-  const chunks = [];
-  let totalSize = 0;
-
-  for (const url of segmentUrls) {
-    const resp = await fetch(url);
-    const buf = await resp.arrayBuffer();
-    chunks.push(new Uint8Array(buf));
-    totalSize += buf.byteLength;
-  }
-
-  const merged = new Uint8Array(totalSize);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  const blob = new Blob([merged], { type: "video/mp2t" });
-  const captureName = name || `stream_hls_${Date.now()}`;
-
-  await uploadToKuraNAS(blob, captureName, "hls");
-  return { ok: true, name: captureName };
-}
-
-// ---------------------------------------------------------------------------
-// 8. DASH Download & Upload
-// ---------------------------------------------------------------------------
-
-async function downloadDASH(manifestUrl, name) {
-  try {
-    const resp = await fetch(manifestUrl);
-    const text = await resp.text();
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "application/xml");
-    const representations = [];
-
-    doc.querySelectorAll("Representation").forEach((rep) => {
-      const adaptationSet = rep.closest("AdaptationSet");
-      const mimeType = rep.getAttribute("mimeType") ||
-        (adaptationSet ? adaptationSet.getAttribute("mimeType") : "") || "";
-
-      representations.push({
-        id: rep.getAttribute("id") || "",
-        bandwidth: parseInt(rep.getAttribute("bandwidth") || "0", 10),
-        width: parseInt(rep.getAttribute("width") || "0", 10),
-        height: parseInt(rep.getAttribute("height") || "0", 10),
-        codecs: rep.getAttribute("codecs") || "",
-        mimeType,
-        manifestUrl,
-      });
-    });
-
-    if (representations.length > 1) {
-      return { type: "dash_manifest", representations };
-    }
-
-    if (representations.length === 1) {
-      return await downloadDASHRepresentation(
-        manifestUrl,
-        text,
-        representations[0].id,
-        name
-      );
-    }
-
-    return { error: "No representations found" };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-async function downloadDASHRepresentation(manifestUrl, manifestText, repId, name) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(manifestText, "application/xml");
-  const rep = repId
-    ? doc.querySelector(`Representation[id="${repId}"]`)
-    : doc.querySelector("Representation");
-
-  if (!rep) return { error: "Representation not found" };
-
-  const segmentUrls = collectDASHSegmentUrls(rep, manifestUrl);
-
-  const chunks = [];
-  let totalSize = 0;
-
-  for (const url of segmentUrls) {
-    const resp = await fetch(url);
-    const buf = await resp.arrayBuffer();
-    chunks.push(new Uint8Array(buf));
-    totalSize += buf.byteLength;
-  }
-
-  const merged = new Uint8Array(totalSize);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  const mimeType = rep.getAttribute("mimeType") || "video/mp4";
-  const ext = mimeType.includes("audio") ? "m4a" : "mp4";
-  const blob = new Blob([merged], { type: mimeType });
-  const captureName = name || `stream_dash_${Date.now()}`;
-
-  await uploadToKuraNAS(blob, captureName, "dash");
-  return { ok: true, name: captureName, ext };
-}
-
-function collectDASHSegmentUrls(rep, manifestUrl) {
-  const urls = [];
-  const adaptationSet = rep.closest("AdaptationSet");
-  const period = rep.closest("Period");
-
-  const segTemplate =
-    rep.querySelector("SegmentTemplate") ||
-    (adaptationSet ? adaptationSet.querySelector("SegmentTemplate") : null);
-
-  if (segTemplate) {
-    const timeline = segTemplate.querySelector("SegmentTimeline");
-    const initTemplate = segTemplate.getAttribute("initialization") || "";
-    const mediaTemplate = segTemplate.getAttribute("media") || "";
-    const startNumber = parseInt(
-      segTemplate.getAttribute("startNumber") || "1",
-      10
-    );
-    const timescale = parseInt(
-      segTemplate.getAttribute("timescale") || "1",
-      10
-    );
-    const repId = rep.getAttribute("id") || "";
-    const bandwidth = rep.getAttribute("bandwidth") || "";
-
-    if (initTemplate) {
-      urls.push(
-        resolveUrl(
-          manifestUrl,
-          expandDASHTemplate(initTemplate, repId, bandwidth, 0, 0)
-        )
-      );
-    }
-
-    if (timeline) {
-      let number = startNumber;
-      let time = 0;
-      const entries = timeline.querySelectorAll("S");
-
-      for (const s of entries) {
-        const t = s.getAttribute("t");
-        if (t !== null) time = parseInt(t, 10);
-        const d = parseInt(s.getAttribute("d") || "0", 10);
-        const r = parseInt(s.getAttribute("r") || "0", 10);
-
-        for (let i = 0; i <= r; i++) {
-          urls.push(
-            resolveUrl(
-              manifestUrl,
-              expandDASHTemplate(mediaTemplate, repId, bandwidth, number, time)
-            )
-          );
-          number++;
-          time += d;
-        }
-      }
-    } else {
-      const duration = parseFloat(
-        segTemplate.getAttribute("duration") || "0"
-      );
-      const periodDuration = parseDuration(
-        (period ? period.getAttribute("duration") : null) || ""
-      );
-      if (duration > 0 && periodDuration > 0) {
-        const segCount = Math.ceil(
-          (periodDuration * timescale) / duration
-        );
-        for (let i = 0; i < segCount; i++) {
-          urls.push(
-            resolveUrl(
-              manifestUrl,
-              expandDASHTemplate(
-                mediaTemplate,
-                repId,
-                bandwidth,
-                startNumber + i,
-                i * duration
-              )
-            )
-          );
-        }
-      }
-    }
-  } else {
-    const segList =
-      rep.querySelector("SegmentList") ||
-      (adaptationSet ? adaptationSet.querySelector("SegmentList") : null);
-
-    if (segList) {
-      const init = segList.querySelector("Initialization");
-      if (init) {
-        urls.push(resolveUrl(manifestUrl, init.getAttribute("sourceURL")));
-      }
-      segList.querySelectorAll("SegmentURL").forEach((seg) => {
-        urls.push(resolveUrl(manifestUrl, seg.getAttribute("media")));
-      });
-    } else {
-      const baseUrl = rep.querySelector("BaseURL") ||
-        (adaptationSet ? adaptationSet.querySelector("BaseURL") : null);
-      if (baseUrl) {
-        urls.push(resolveUrl(manifestUrl, baseUrl.textContent.trim()));
-      }
-    }
-  }
-
-  return urls;
-}
-
-function expandDASHTemplate(template, repId, bandwidth, number, time) {
-  let result = template;
-  result = result.replace(/\$RepresentationID\$/g, repId);
-  result = result.replace(/\$Bandwidth\$/g, bandwidth);
-  result = result.replace(/\$Time\$/g, String(time));
-
-  result = result.replace(/\$Number(%(\d+)d)?\$/g, (_, fmt, width) => {
-    if (width) return String(number).padStart(parseInt(width, 10), "0");
-    return String(number);
-  });
-
-  return result;
-}
-
-function parseDuration(iso) {
-  if (!iso) return 0;
-  const m = iso.match(
-    /PT(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?/
-  );
-  if (!m) return 0;
-  return (
-    (parseFloat(m[1] || "0") * 3600) +
-    (parseFloat(m[2] || "0") * 60) +
-    parseFloat(m[3] || "0")
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 9. Direct Download & Upload
-// ---------------------------------------------------------------------------
-
-async function downloadDirect(url, name) {
-  try {
-    const resp = await fetch(url);
-    const blob = await resp.blob();
-    const captureName = name || `direct_${Date.now()}`;
-    await uploadToKuraNAS(blob, captureName, "direct");
-    return { ok: true, name: captureName };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 10. Blob Capture Upload
-// ---------------------------------------------------------------------------
-
-async function uploadBlobCapture(tabId, blobUrl, name) {
-  try {
-    const resp = await fetch(blobUrl);
-    const blob = await resp.blob();
-    const captureName = name || `blob_${Date.now()}`;
-    await uploadToKuraNAS(blob, captureName, "blob");
-    return { ok: true, name: captureName };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 11. Upload to KuraNAS Backend
-// ---------------------------------------------------------------------------
-
-async function uploadToKuraNAS(blob, name, mediaType) {
-  const ext = guessExtension(blob.type, mediaType);
-  const fileName = `${sanitizeFileName(name)}.${ext}`;
-  const apiUrl = await getApiBaseUrl();
-  return uploadCaptureChunked(apiUrl, blob, {
-    name,
-    mediaType,
-    mimeType: blob.type || "application/octet-stream",
-    fileName,
-  });
-}
-
-async function uploadCaptureChunked(apiUrl, blob, metadata) {
-  const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: metadata.name,
-      media_type: metadata.mediaType,
-      mime_type: metadata.mimeType,
-      size: blob.size,
-      file_name: metadata.fileName,
-    }),
-  });
-
-  if (!initResp.ok) {
-    const body = await initResp.text();
-    throw new Error(`Init upload failed (${initResp.status}): ${body}`);
-  }
-
-  const initPayload = await initResp.json();
-  const uploadID = initPayload.upload_id;
-  const serverChunkSize = Number(initPayload.chunk_size || 0);
-  const chunkSize = serverChunkSize > 0 ? serverChunkSize : CAPTURE_UPLOAD_CHUNK_SIZE;
-  if (!uploadID) {
-    throw new Error("Invalid chunked upload init response: upload_id is required");
-  }
-
-  let offset = 0;
-  let chunkIndex = 0;
-
-  while (offset < blob.size) {
-    const chunkBlob = blob.slice(offset, offset + chunkSize);
-    await uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
-    offset += chunkBlob.size;
-    chunkIndex += 1;
-  }
-
-  const completeResp = await fetch(`${apiUrl}/captures/upload/complete`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ upload_id: uploadID }),
-  });
-
-  if (!completeResp.ok) {
-    const body = await completeResp.text();
-    throw new Error(`Complete upload failed (${completeResp.status}): ${body}`);
-  }
-
-  return completeResp.json();
-}
-
-async function uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex) {
-  let lastError = null;
-
-  for (let attempt = 1; attempt <= CAPTURE_UPLOAD_MAX_RETRIES; attempt++) {
-    try {
-      await uploadChunk(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
-      return;
-    } catch (err) {
-      lastError = err;
-      if (attempt < CAPTURE_UPLOAD_MAX_RETRIES) {
-        await wait(200 * attempt);
-      }
-    }
-  }
-
-  throw lastError || new Error("chunk upload failed");
-}
-
-async function uploadChunk(apiUrl, uploadID, chunkBlob, offset, chunkIndex) {
-  const formData = new FormData();
-  formData.append("upload_id", uploadID);
-  formData.append("offset", String(offset));
-  formData.append("chunk_index", String(chunkIndex));
-  formData.append("chunk", chunkBlob, `chunk_${chunkIndex}`);
-
-  const response = await fetch(`${apiUrl}/captures/upload/chunk`, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Chunk upload failed (${response.status}): ${body}`);
-  }
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function getApiBaseUrl() {
   const configured = await getConfiguredApiBaseUrl();
@@ -1226,41 +517,6 @@ async function fetchWithTimeout(url, options, timeoutMs) {
   }
 }
 
-function sanitizeFileName(name) {
-  return name
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
-    .replace(/\s+/g, "_")
-    .substring(0, 200);
-}
-
-function guessExtension(mimeType, mediaType) {
-  if (mimeType) {
-    if (mimeType.includes("mp2t")) return "ts";
-    if (mimeType.includes("mp4")) return "mp4";
-    if (mimeType.includes("webm")) return "webm";
-    if (mimeType.includes("m4a") || mimeType.includes("x-m4a")) return "m4a";
-    if (mimeType.includes("aac")) return "aac";
-    if (mimeType.includes("mpeg") && mimeType.includes("audio")) return "mp3";
-  }
-  if (mediaType === "hls") return "ts";
-  if (mediaType === "dash") return "mp4";
-  return "bin";
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function resolveUrl(base, relative) {
-  if (!relative) return base;
-  try {
-    return new URL(relative, base).href;
-  } catch {
-    const basePath = base.substring(0, base.lastIndexOf("/") + 1);
-    return basePath + relative;
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Tab Cleanup
 // ---------------------------------------------------------------------------
@@ -1268,15 +524,7 @@ function resolveUrl(base, relative) {
 chrome.tabs.onRemoved.addListener((tabId) => {
   detectedMedia.delete(tabId);
   detectedTitles.delete(tabId);
-  const state = hybridStates.get(tabId);
-  if (state) {
-    clearTimeout(state.stabilityTimer);
-    clearTimeout(state.graceTimer);
-    if (state.recording) {
-      stopOffscreenRecording(tabId);
-    }
-    hybridStates.delete(tabId);
-  }
+  cleanupTab(tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {

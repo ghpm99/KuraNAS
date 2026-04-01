@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { Folder } from 'lucide-react';
 import { getFilesTree } from '@/service/files';
-import { FileData } from '@/components/providers/fileProvider/fileContext';
+import { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
 

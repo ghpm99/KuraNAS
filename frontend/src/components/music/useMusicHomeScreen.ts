@@ -4,7 +4,7 @@ import {
     createArtistPlaybackContext,
     createPlaylistPlaybackContext,
 } from '@/components/music/playbackContext';
-import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import { getPlaylistTracks } from '@/service/playlist';
 import { getMusicByAlbum, getMusicByArtist, getMusicHomeCatalog } from '@/service/music';

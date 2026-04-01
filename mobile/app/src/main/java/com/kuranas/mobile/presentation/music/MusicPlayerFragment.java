@@ -28,7 +28,7 @@ public class MusicPlayerFragment extends Fragment {
     private static final String ARG_FILE_ID = "file_id";
     private static final String ARG_TITLE = "title";
     private static final String ARG_ARTIST = "artist";
-    private static final long UPDATE_INTERVAL_MS = 1000;
+    private static final String LEGACY_ARG_FILE_ID = "fileId";
 
     private ImageView albumArt;
     private TextView trackTitle;
@@ -40,16 +40,7 @@ public class MusicPlayerFragment extends Fragment {
     private ImageButton btnPlayPause;
     private ImageButton btnNext;
 
-    private MediaPlayer mediaPlayer;
-    private Handler handler;
-    private Runnable updateRunnable;
-    private MusicRepository musicRepository;
-
-    private int fileId;
-    private String title;
-    private String artist;
-    private boolean isPrepared;
-    private boolean isUserSeeking;
+    private MusicPlayerController controller;
 
     public static MusicPlayerFragment newInstance(int fileId, String title, String artist) {
         MusicPlayerFragment fragment = new MusicPlayerFragment();
@@ -66,9 +57,22 @@ public class MusicPlayerFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_music_player, container, false);
 
         ServiceLocator locator = ServiceLocator.getInstance();
-        musicRepository = locator.getMusicRepository();
-        handler = new Handler();
+        bindViews(root);
 
+        controller = new MusicPlayerController(
+                new FragmentViewContract(),
+                new MediaPlayerAudioEngine(new MediaPlayer()),
+                new RepositoryAdapter(locator.getMusicRepository()),
+                new HandlerScheduler(new Handler())
+        );
+
+        setupControls();
+        controller.start(locator.getHttpClient().getBaseUrl(), extractPlayerState(getArguments()));
+
+        return root;
+    }
+
+    private void bindViews(View root) {
         albumArt = (ImageView) root.findViewById(R.id.album_art);
         trackTitle = (TextView) root.findViewById(R.id.track_title);
         trackArtist = (TextView) root.findViewById(R.id.track_artist);
@@ -78,40 +82,38 @@ public class MusicPlayerFragment extends Fragment {
         btnPrevious = (ImageButton) root.findViewById(R.id.btn_previous);
         btnPlayPause = (ImageButton) root.findViewById(R.id.btn_play_pause);
         btnNext = (ImageButton) root.findViewById(R.id.btn_next);
+    }
 
-        Bundle args = getArguments();
+    private MusicPlayerController.PlayerState extractPlayerState(Bundle args) {
+        int fileId = 0;
+        String title = "";
+        String artist = "";
+
         if (args != null) {
-            fileId = args.getInt(ARG_FILE_ID, 0);
-            title = args.getString(ARG_TITLE, "");
-            artist = args.getString(ARG_ARTIST, "");
+            fileId = args.getInt(ARG_FILE_ID, args.getInt(LEGACY_ARG_FILE_ID, 0));
+            title = defaultString(args.getString(ARG_TITLE, ""));
+            artist = defaultString(args.getString(ARG_ARTIST, ""));
         }
 
-        trackTitle.setText(title);
-        trackArtist.setText(artist);
+        return new MusicPlayerController.PlayerState(fileId, title, artist);
+    }
 
-        albumArt.setImageResource(R.drawable.ic_music);
-
-        setupControls();
-        startPlayback();
-
-        return root;
+    private String defaultString(String value) {
+        return value == null ? "" : value;
     }
 
     private void setupControls() {
         btnPlayPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                togglePlayPause();
+                controller.onPlayPauseClicked();
             }
         });
 
         btnPrevious.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mediaPlayer != null && isPrepared) {
-                    mediaPlayer.seekTo(0);
-                    updateSeekBar();
-                }
+                controller.onPreviousClicked();
             }
         });
 
@@ -125,171 +127,233 @@ public class MusicPlayerFragment extends Fragment {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && mediaPlayer != null && isPrepared) {
-                    currentTime.setText(formatTime(progress));
-                }
+                controller.onSeekProgressChanged(progress, fromUser);
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                isUserSeeking = true;
+                controller.onSeekStartTracking();
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                isUserSeeking = false;
-                if (mediaPlayer != null && isPrepared) {
-                    mediaPlayer.seekTo(seekBar.getProgress());
-                }
+                controller.onSeekStopTracking(seekBar.getProgress());
             }
         });
-    }
-
-    private void startPlayback() {
-        String streamUrl = ServiceLocator.getInstance().getHttpClient().getBaseUrl()
-                + "/api/v1/files/stream/" + fileId;
-
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-        try {
-            mediaPlayer.setDataSource(streamUrl);
-        } catch (IOException e) {
-            return;
-        }
-
-        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                isPrepared = true;
-                int duration = mp.getDuration();
-                seekBar.setMax(duration);
-                totalTime.setText(formatTime(duration));
-                mp.start();
-                btnPlayPause.setImageResource(R.drawable.ic_pause);
-                startSeekBarUpdates();
-            }
-        });
-
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                btnPlayPause.setImageResource(R.drawable.ic_play);
-                stopSeekBarUpdates();
-                savePlayerState();
-            }
-        });
-
-        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
-                isPrepared = false;
-                return true;
-            }
-        });
-
-        mediaPlayer.prepareAsync();
-    }
-
-    private void togglePlayPause() {
-        if (mediaPlayer == null || !isPrepared) {
-            return;
-        }
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-            btnPlayPause.setImageResource(R.drawable.ic_play);
-            stopSeekBarUpdates();
-            savePlayerState();
-        } else {
-            mediaPlayer.start();
-            btnPlayPause.setImageResource(R.drawable.ic_pause);
-            startSeekBarUpdates();
-        }
-    }
-
-    private void startSeekBarUpdates() {
-        updateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                updateSeekBar();
-                handler.postDelayed(this, UPDATE_INTERVAL_MS);
-            }
-        };
-        handler.post(updateRunnable);
-    }
-
-    private void stopSeekBarUpdates() {
-        if (handler != null && updateRunnable != null) {
-            handler.removeCallbacks(updateRunnable);
-        }
-    }
-
-    private void updateSeekBar() {
-        if (mediaPlayer != null && isPrepared && !isUserSeeking) {
-            int position = mediaPlayer.getCurrentPosition();
-            seekBar.setProgress(position);
-            currentTime.setText(formatTime(position));
-        }
-    }
-
-    private void savePlayerState() {
-        if (mediaPlayer == null || !isPrepared) {
-            return;
-        }
-        double positionSeconds = mediaPlayer.getCurrentPosition() / 1000.0;
-        musicRepository.updatePlayerState(0, fileId, positionSeconds,
-                new ApiCallback<MusicPlayerState>() {
-                    @Override
-                    public void onSuccess(MusicPlayerState result) {
-                        // State saved
-                    }
-
-                    @Override
-                    public void onError(AppError error) {
-                        // Silent failure
-                    }
-                });
-    }
-
-    private String formatTime(int millis) {
-        int totalSeconds = millis / 1000;
-        int minutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
-        return String.format("%d:%02d", minutes, seconds);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mediaPlayer != null && isPrepared && mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-            btnPlayPause.setImageResource(R.drawable.ic_play);
-            stopSeekBarUpdates();
-            savePlayerState();
+        if (controller != null) {
+            controller.onPause();
         }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (mediaPlayer != null && isPrepared) {
-            mediaPlayer.start();
-            btnPlayPause.setImageResource(R.drawable.ic_pause);
-            startSeekBarUpdates();
+        if (controller != null) {
+            controller.onResume();
         }
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        stopSeekBarUpdates();
-        if (mediaPlayer != null) {
-            if (isPrepared) {
-                savePlayerState();
-            }
+        if (controller != null) {
+            controller.onDestroy();
+            controller = null;
+        }
+    }
+
+    private final class FragmentViewContract implements MusicPlayerController.ViewContract {
+
+        @Override
+        public void setTrackTitle(String title) {
+            trackTitle.setText(title);
+        }
+
+        @Override
+        public void setTrackArtist(String artist) {
+            trackArtist.setText(artist);
+        }
+
+        @Override
+        public void setDefaultAlbumArt() {
+            albumArt.setImageResource(R.drawable.ic_music);
+        }
+
+        @Override
+        public void setSeekMax(int max) {
+            seekBar.setMax(max);
+        }
+
+        @Override
+        public void setSeekProgress(int progress) {
+            seekBar.setProgress(progress);
+        }
+
+        @Override
+        public void setCurrentTimeText(String text) {
+            currentTime.setText(text);
+        }
+
+        @Override
+        public void setTotalTimeText(String text) {
+            totalTime.setText(text);
+        }
+
+        @Override
+        public void setPlayPausePlaying(boolean playing) {
+            btnPlayPause.setImageResource(playing ? R.drawable.ic_pause : R.drawable.ic_play);
+        }
+    }
+
+    private static final class MediaPlayerAudioEngine implements MusicPlayerController.AudioEngine {
+
+        private final MediaPlayer mediaPlayer;
+
+        private MediaPlayerAudioEngine(MediaPlayer mediaPlayer) {
+            this.mediaPlayer = mediaPlayer;
+        }
+
+        @Override
+        public void setAudioStreamTypeMusic() {
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        }
+
+        @Override
+        public void setDataSource(String streamUrl) throws IOException {
+            mediaPlayer.setDataSource(streamUrl);
+        }
+
+        @Override
+        public void setOnPrepared(final Runnable runnable) {
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    runnable.run();
+                }
+            });
+        }
+
+        @Override
+        public void setOnCompletion(final Runnable runnable) {
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    runnable.run();
+                }
+            });
+        }
+
+        @Override
+        public void setOnError(final ErrorCallback callback) {
+            mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    return callback.onError(what, extra);
+                }
+            });
+        }
+
+        @Override
+        public void prepareAsync() {
+            mediaPlayer.prepareAsync();
+        }
+
+        @Override
+        public boolean isPlaying() {
+            return mediaPlayer.isPlaying();
+        }
+
+        @Override
+        public void start() {
+            mediaPlayer.start();
+        }
+
+        @Override
+        public void pause() {
+            mediaPlayer.pause();
+        }
+
+        @Override
+        public void seekTo(int positionMs) {
+            mediaPlayer.seekTo(positionMs);
+        }
+
+        @Override
+        public int getDuration() {
+            return mediaPlayer.getDuration();
+        }
+
+        @Override
+        public int getCurrentPosition() {
+            return mediaPlayer.getCurrentPosition();
+        }
+
+        @Override
+        public void release() {
             mediaPlayer.release();
-            mediaPlayer = null;
-            isPrepared = false;
+        }
+    }
+
+    private static final class RepositoryAdapter implements MusicPlayerController.PlayerStateRepository {
+
+        private final MusicRepository musicRepository;
+
+        private RepositoryAdapter(MusicRepository musicRepository) {
+            this.musicRepository = musicRepository;
+        }
+
+        @Override
+        public void updatePlayerState(int playlistId, int fileId, double positionSeconds) {
+            musicRepository.updatePlayerState(
+                    playlistId,
+                    fileId,
+                    positionSeconds,
+                    new ApiCallback<MusicPlayerState>() {
+                        @Override
+                        public void onSuccess(MusicPlayerState result) {
+                            // Silent success
+                        }
+
+                        @Override
+                        public void onError(AppError error) {
+                            // Silent failure
+                        }
+                    }
+            );
+        }
+    }
+
+    private static final class HandlerScheduler implements MusicPlayerController.Scheduler {
+
+        private final Handler handler;
+
+        private HandlerScheduler(Handler handler) {
+            this.handler = handler;
+        }
+
+        @Override
+        public void post(Runnable runnable) {
+            handler.post(runnable);
+        }
+
+        @Override
+        public void postDelayed(Runnable runnable, long delayMs) {
+            handler.postDelayed(runnable, delayMs);
+        }
+
+        @Override
+        public void removeCallbacks(Runnable runnable) {
+            handler.removeCallbacks(runnable);
+        }
+
+        @Override
+        public void clear() {
+            handler.removeCallbacksAndMessages(null);
         }
     }
 }

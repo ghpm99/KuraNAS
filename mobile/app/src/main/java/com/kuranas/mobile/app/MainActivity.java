@@ -8,7 +8,6 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
-
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,16 +17,16 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.kuranas.mobile.R;
 import com.kuranas.mobile.domain.model.FileItem;
+import com.kuranas.mobile.feature.files.presentation.FilesFragment;
+import com.kuranas.mobile.feature.images.presentation.ImagesFragment;
+import com.kuranas.mobile.feature.search.presentation.SearchFragment;
+import com.kuranas.mobile.feature.settings.presentation.SettingsFragment;
 import com.kuranas.mobile.infra.kiosk.KioskManager;
 import com.kuranas.mobile.domain.model.VideoItem;
-import com.kuranas.mobile.presentation.files.FilesFragment;
 import com.kuranas.mobile.presentation.home.HomeFragment;
 import com.kuranas.mobile.presentation.images.ImageViewerFragment;
-import com.kuranas.mobile.presentation.images.ImagesFragment;
 import com.kuranas.mobile.presentation.music.MusicFragment;
 import com.kuranas.mobile.presentation.music.MusicPlayerFragment;
-import com.kuranas.mobile.presentation.search.SearchFragment;
-import com.kuranas.mobile.presentation.settings.SettingsFragment;
 import com.kuranas.mobile.presentation.video.VideoFragment;
 import com.kuranas.mobile.presentation.video.VideoPlayerActivity;
 
@@ -35,22 +34,15 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
         implements HomeFragment.NavigationHost,
-        FilesFragment.FileNavigationHost,
-        SearchFragment.SearchNavigationHost {
+        com.kuranas.mobile.presentation.files.FilesFragment.FileNavigationHost,
+        com.kuranas.mobile.presentation.search.SearchFragment.SearchNavigationHost {
 
+    private final MainNavigationCoordinator navigationCoordinator = new MainNavigationCoordinator();
     private KioskManager kioskManager;
     private DrawerLayout drawerLayout;
     private View navDrawer;
     private ListView navList;
     private int currentNavPosition = 0;
-
-    private static final int NAV_HOME = 0;
-    private static final int NAV_FILES = 1;
-    private static final int NAV_IMAGES = 2;
-    private static final int NAV_MUSIC = 3;
-    private static final int NAV_VIDEOS = 4;
-    private static final int NAV_SEARCH = 5;
-    private static final int NAV_SETTINGS = 6;
 
     private final int[] navIcons = {
             R.drawable.ic_home,
@@ -62,9 +54,7 @@ public class MainActivity extends AppCompatActivity
             R.drawable.ic_settings
     };
 
-    private final String[] navLabels = {
-            "Home", "Files", "Images", "Music", "Videos", "Search", "Settings"
-    };
+    private String[] navLabels;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,12 +67,25 @@ public class MainActivity extends AppCompatActivity
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         navDrawer = findViewById(R.id.nav_drawer);
         navList = (ListView) findViewById(R.id.nav_list);
+        navLabels = buildNavLabels();
 
         setupNavDrawer();
 
         if (savedInstanceState == null) {
-            navigateTo(NAV_HOME);
+            navigateTo(MainNavigationCoordinator.NAV_HOME);
         }
+    }
+
+    private String[] buildNavLabels() {
+        return new String[]{
+                getString(R.string.nav_home),
+                getString(R.string.nav_files),
+                getString(R.string.nav_images),
+                getString(R.string.nav_music),
+                getString(R.string.nav_videos),
+                getString(R.string.nav_search),
+                getString(R.string.nav_settings)
+        };
     }
 
     private void setupNavDrawer() {
@@ -97,64 +100,76 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void navigateTo(int position) {
-        currentNavPosition = position;
-        Fragment fragment;
-
-        switch (position) {
-            case NAV_FILES:
-                fragment = new FilesFragment();
-                break;
-            case NAV_IMAGES:
-                fragment = new ImagesFragment();
-                break;
-            case NAV_MUSIC:
-                fragment = new MusicFragment();
-                break;
-            case NAV_VIDEOS:
-                fragment = new VideoFragment();
-                break;
-            case NAV_SEARCH:
-                fragment = new SearchFragment();
-                break;
-            case NAV_SETTINGS:
-                fragment = new SettingsFragment();
-                break;
-            case NAV_HOME:
-            default:
-                fragment = new HomeFragment();
-                break;
-        }
+        MainNavigationCoordinator.NavigationInstruction instruction =
+                navigationCoordinator.resolveNavigation(position);
+        currentNavPosition = instruction.getSelectedPosition();
+        Fragment fragment = createFragmentForDestination(instruction.getDestination());
 
         FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
         tx.replace(R.id.content_frame, fragment);
-        if (position != NAV_HOME) {
+        if (instruction.shouldAddToBackStack()) {
             tx.addToBackStack(null);
         }
         tx.commit();
 
-        navList.setItemChecked(position, true);
+        navList.setItemChecked(instruction.getSelectedPosition(), true);
+    }
+
+    private Fragment createFragmentForDestination(MainNavigationCoordinator.Destination destination) {
+        switch (destination) {
+            case FILES:
+                return new FilesFragment();
+            case IMAGES:
+                return new ImagesFragment();
+            case MUSIC:
+                return new MusicFragment();
+            case VIDEOS:
+                return new VideoFragment();
+            case SEARCH:
+                return new SearchFragment();
+            case SETTINGS:
+                return new SettingsFragment();
+            case HOME:
+            default:
+                return new HomeFragment();
+        }
     }
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout != null && navDrawer != null && drawerLayout.isDrawerOpen(navDrawer)) {
-            drawerLayout.closeDrawer(navDrawer);
-            return;
-        }
-
         Fragment current = getSupportFragmentManager().findFragmentById(R.id.content_frame);
+        boolean filesHandledBackNavigation = false;
         if (current instanceof FilesFragment) {
-            if (((FilesFragment) current).handleBackNavigation()) {
-                return;
-            }
+            filesHandledBackNavigation = ((FilesFragment) current).handleBackNavigation();
         }
 
-        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            getSupportFragmentManager().popBackStack();
-            currentNavPosition = NAV_HOME;
-            navList.setItemChecked(NAV_HOME, true);
+        boolean isDrawerOpen =
+                drawerLayout != null && navDrawer != null && drawerLayout.isDrawerOpen(navDrawer);
+        MainNavigationCoordinator.BackPressDecision decision = navigationCoordinator.resolveBackPress(
+                isDrawerOpen,
+                filesHandledBackNavigation,
+                getSupportFragmentManager().getBackStackEntryCount()
+        );
+
+        switch (decision.getAction()) {
+            case CLOSE_DRAWER:
+                if (drawerLayout != null && navDrawer != null) {
+                    drawerLayout.closeDrawer(navDrawer);
+                }
+                return;
+            case CONSUMED:
+                return;
+            case POP_BACK_STACK:
+                getSupportFragmentManager().popBackStack();
+                if (decision.shouldUpdateSelection()) {
+                    currentNavPosition = decision.getSelectedPosition();
+                    navList.setItemChecked(currentNavPosition, true);
+                }
+                return;
+            case NO_OP:
+            default:
+                return;
         }
-        // Kiosk mode: do not call super.onBackPressed() — prevent leaving the app
     }
 
     @Override
