@@ -16,6 +16,7 @@ import (
 	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
+	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/providers/anthropic"
 	"nas-go/api/pkg/ai/providers/openai"
@@ -42,6 +43,7 @@ type AppContext struct {
 	Notifications *NotificationContext
 	Captures      *CapturesContext
 	Libraries     *LibrariesContext
+	WatchFolders  *WatchFoldersContext
 	Takeout       *TakeoutContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
@@ -116,6 +118,12 @@ type LibrariesContext struct {
 	Repository libraries.RepositoryInterface
 }
 
+type WatchFoldersContext struct {
+	Handler    *watchfolders.Handler
+	Service    watchfolders.ServiceInterface
+	Repository watchfolders.RepositoryInterface
+}
+
 type TakeoutContext struct {
 	Handler *takeout.Handler
 	Service takeout.ServiceInterface
@@ -138,6 +146,7 @@ func NewContext(db *sql.DB) *AppContext {
 	notificationContext := newNotificationContext(dbContext)
 	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service, notificationContext.Service)
 	librariesContext := newLibrariesContext(dbContext, loggerService)
+	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
@@ -158,6 +167,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Notifications: notificationContext,
 		Captures:      capturesContext,
 		Libraries:     librariesContext,
+		WatchFolders:  watchFoldersContext,
 		Takeout:       takeoutContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
@@ -287,6 +297,21 @@ func newLibrariesContext(
 	handler := libraries.NewHandler(service, loggerService)
 
 	return &LibrariesContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newWatchFoldersContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+) *WatchFoldersContext {
+	repository := watchfolders.NewRepository(dbContext)
+	service := watchfolders.NewService(repository)
+	handler := watchfolders.NewHandler(service, loggerService)
+
+	return &WatchFoldersContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
