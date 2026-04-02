@@ -38,3 +38,4 @@ bin/
 
 backend/thumbnails/
 backend/scripts/logs/
+plugin/node_modules/
