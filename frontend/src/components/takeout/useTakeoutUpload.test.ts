@@ -66,4 +66,72 @@ describe('components/takeout/useTakeoutUpload', () => {
 		expect(result.current.state).toBe('idle');
 		expect(result.current.fileName).toBe('');
 	});
+
+	it('does nothing when startUpload is called without a file', async () => {
+		const { result } = renderHook(() => useTakeoutUpload());
+
+		await act(async () => {
+			await result.current.startUpload();
+		});
+
+		expect(initTakeoutUploadMock).not.toHaveBeenCalled();
+		expect(result.current.state).toBe('idle');
+	});
+
+	it('sets error state on upload failure', async () => {
+		initTakeoutUploadMock.mockRejectedValue(new Error('network'));
+
+		const { result } = renderHook(() => useTakeoutUpload());
+		const file = new File(['hello'], 'takeout.zip', { type: 'application/zip' });
+
+		act(() => {
+			result.current.selectFile(file);
+		});
+
+		await act(async () => {
+			await result.current.startUpload();
+		});
+
+		expect(result.current.state).toBe('error');
+		expect(result.current.errorMessage).toBe('TAKEOUT_IMPORT_FAILED');
+	});
+
+	it('returns empty progressMessage when no file selected', () => {
+		const { result } = renderHook(() => useTakeoutUpload());
+		expect(result.current.progressMessage).toBe('');
+	});
+
+	it('accepts zip file and moves to selecting state', () => {
+		const { result } = renderHook(() => useTakeoutUpload());
+		const file = new File(['data'], 'archive.zip', { type: 'application/zip' });
+
+		act(() => {
+			result.current.selectFile(file);
+		});
+
+		expect(result.current.state).toBe('selecting');
+		expect(result.current.fileName).toBe('archive.zip');
+	});
+
+	it('formats progress message with large file sizes', async () => {
+		const largeContent = new Uint8Array(2048);
+		const file = new File([largeContent], 'big.zip', { type: 'application/zip' });
+
+		initTakeoutUploadMock.mockResolvedValue({ upload_id: 'u2', chunk_size: 1024 });
+		uploadTakeoutChunkMock.mockResolvedValue({ received: true });
+		completeTakeoutUploadMock.mockResolvedValue({ job_id: 22, message: 'ok' });
+
+		const { result } = renderHook(() => useTakeoutUpload());
+
+		act(() => {
+			result.current.selectFile(file);
+		});
+
+		await act(async () => {
+			await result.current.startUpload();
+		});
+
+		expect(result.current.state).toBe('done');
+		expect(uploadTakeoutChunkMock).toHaveBeenCalledTimes(2);
+	});
 });

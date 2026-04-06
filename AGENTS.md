@@ -1,6 +1,11 @@
 # Repository Guidelines
 
+## Project Overview
+
+KuraNAS is a personal NAS (Network Attached Storage) system with a Go backend and React/TypeScript frontend. The backend serves the frontend as a SPA and exposes a REST API at `/api/v1`.
+
 ## Project Structure & Module Organization
+
 `backend/` contains the Go API and worker pipeline. Main entrypoint is `backend/cmd/nas/main.go`; HTTP modules live under `backend/internal/api/v1`; shared infrastructure is in `backend/pkg` (database, i18n, utils, media helpers). SQL migrations and query files are in `backend/pkg/database/migrations` and `backend/pkg/database/queries`.
 
 `frontend/` is a Vite + React + TypeScript app. Core UI code is in `frontend/src/components`, route-level pages in `frontend/src/pages`, API clients in `frontend/src/service`, and shared types/utilities in `frontend/src/types` and `frontend/src/utils`.
@@ -9,21 +14,103 @@
 
 `build/`, `frontend/dist/`, and `frontend/coverage/` are generated artifacts.
 
-## Build, Test, and Development Commands
-- `make`: builds frontend and backend, then assembles distributable files under `build/`.
-- `make clean`: removes build artifacts.
-- `make -C backend run`: runs backend in dev mode with build metadata flags.
-- `cd backend && go test ./... -cover`: runs all backend tests with coverage.
-- `make -C backend test`: runs file-scanning tests (`-tags=dev`).
-- `cd frontend && yarn dev`: starts Vite dev server.
-- `cd frontend && yarn build`: type-checks and builds production assets.
-- `cd frontend && yarn lint`: runs ESLint.
-- `cd frontend && yarn test --watchAll=false` or `yarn coverage`: runs Jest tests/coverage.
+## Architecture
 
-- `cd mobile && ./gradlew assembleDebug`: builds the debug APK.
-- `cd mobile && ./gradlew assembleRelease`: builds the release APK.
-- `cd mobile && ./gradlew test`: runs unit tests.
-- `cd mobile && ./gradlew connectedAndroidTest`: runs instrumented tests on a connected device/emulator.
+### Backend (`backend/`)
+
+**Module**: `nas-go/api`
+**Framework**: Gin (HTTP router), PostgreSQL (production database)
+**Entry point**: `cmd/nas/main.go`
+
+Layered architecture per domain: **Repository → Service → Handler**
+
+- `internal/api/v1/` — HTTP handlers organized by domain: `files/`, `diary/`, `configuration/`
+- `internal/app/` — Application bootstrap: `app.go` (init), `context.go` (dependency wiring), `routes.go` (route registration)
+- `internal/config/` — Config loaded from `.env` via godotenv; build-tag-based path resolution
+- `internal/worker/` — Background goroutine pool (200 workers) for async file processing tasks
+- `pkg/database/` — DB connection, migrations, `DbContext` wrapper
+- `pkg/logger/`, `pkg/i18n/`, `pkg/utils/` — Shared packages
+
+**Build tags** determine path resolution at compile time:
+- `dev` — paths relative to project root (for local development)
+- `windows` — paths under `%ProgramFiles%\Kuranas\`
+- `linux` — paths under `/etc/kuranas/`
+
+**File processing pipeline** (worker): Directory walk → DTO conversion → Metadata extraction → Checksum computation → Database persistence. Each stage is a set of goroutines communicating over channels. Python scripts in `scripts/` handle audio/image/video metadata extraction.
+
+**Backend env vars** (`.env` in `backend/`):
+- `ENTRY_POINT` — root directory to scan for files
+- `LANGUAGE` — locale (e.g. `pt-BR`)
+- `ENABLE_WORKERS` — set to `"true"` to enable background file scanning
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` — PostgreSQL connection
+
+### Frontend (`frontend/`)
+
+**Stack**: React 19, TypeScript, Vite, MUI (Material UI), TanStack Query, React Router v7
+
+- `src/app/App.tsx` — Root routing (React Router `<Routes>`)
+- `src/components/providers/appProviders.tsx` — Global provider tree: QueryClient, I18n, Snackbar, MUI dark theme, BrowserRouter
+- `src/components/hooks/` — Feature-specific context providers (file, music, video, image, etc.) used as hook-based state managers
+- `src/service/index.ts` — Axios instance configured with `VITE_API_URL` base URL (`/api/v1`)
+- `src/pages/` — Page-level components (files, music, videos, images, analytics, etc.)
+
+Path alias: `@/` → `src/`
+
+**Frontend env var**: `VITE_API_URL` — points to the backend (e.g. `http://localhost:8000`). Configured in `.env`, `.env.development`, or `.env.production`.
+
+TanStack Query is configured with `staleTime: 5 minutes` and no refetch on window focus/reconnect.
+
+## Build, Test, and Development Commands
+
+### Backend (run from `backend/`)
+
+```bash
+make -C backend run          # Run in dev mode (resolves paths relative to project root)
+make -C backend test         # Run tests (-tags=dev)
+make -C backend build        # Build (cross-compiles to Windows exe via mingw)
+```
+
+Backend tests use the `-tags=dev` build tag, which affects path resolution.
+
+#### Run a single backend test file
+
+```bash
+cd backend && go test -tags=dev -v ./tests/files_test/...
+cd backend && go test -tags=dev -v ./tests/diary_test/...
+```
+
+#### All backend tests with coverage
+
+```bash
+cd backend && go test ./... -cover
+```
+
+### Frontend (run from `frontend/`)
+
+```bash
+yarn dev           # Start Vite dev server (uses .env.development)
+yarn test          # Run Jest tests
+yarn test:watch    # Run Jest in watch mode
+yarn lint          # Run ESLint
+yarn build         # TypeScript check + Vite build
+yarn coverage      # Run Jest with coverage report
+```
+
+### Mobile (run from `mobile/`)
+
+```bash
+./gradlew assembleDebug          # Build debug APK
+./gradlew assembleRelease        # Build release APK
+./gradlew test                   # Run unit tests
+./gradlew connectedAndroidTest   # Run instrumented tests on connected device/emulator
+```
+
+### Full production build
+
+```bash
+make               # Builds frontend + backend, moves artifacts to build/
+make clean         # Remove build artifacts
+```
 
 ## Coding Style & Naming Conventions
 Go code must be `gofmt`-clean and pass `go vet` (enforced in CI). Use lowercase package names, `CamelCase` exported identifiers, and keep feature code grouped by API domain under `internal/api/v1/<feature>`.
@@ -56,7 +143,7 @@ This project uses a single i18n source of truth based on JSON `key:value` transl
 - Any new feature or change that introduces/updates visible text must include the corresponding i18n JSON updates.
 
 ## Testing Guidelines
-Frontend tests run on Jest + Testing Library (`jsdom`) with global minimum coverage thresholds of 80% for branches/functions/lines/statements. Backend tests use Go’s `testing` package; place tests as `*_test.go` alongside package code or under `backend/tests`.
+Frontend tests run on Jest + Testing Library (`jsdom`) with global minimum coverage thresholds of 80% for branches/functions/lines/statements. Backend tests use Go's `testing` package; place tests as `*_test.go` alongside package code or under `backend/tests`.
 
 ## Commit & Pull Request Guidelines
 Use Conventional Commit style seen in history, e.g. `feat(images): ...`, `fix(ui): ...`, `refactor(frontend): ...`. Keep subject lines imperative and scoped.
@@ -81,3 +168,16 @@ If there is a conflict between existing code and this standards file, follow the
 
 ## Mobile Standards (Persistent Reference)
 The mobile app targets **Android 4.1.2 (API 16)** on the **Samsung Galaxy Tab 2 7.0 (GT-P3110)**. The mandatory stack is **Java + XML Views + AppCompat**. Kotlin and Jetpack Compose are forbidden — Compose requires API 21+, and Kotlin adds unnecessary runtime overhead and potential Dalvik incompatibilities on API 16. All Android API calls and libraries must be compatible with API level 16. Validate device-specific constraints (screen size 1024×600, 7" form factor, hardware capabilities) when making layout or feature decisions.
+
+## Task Management Protocol
+Development planning docs live at `/home/server/Documentos/docs/kuranas/`.
+Structure: `analysis/` (large research) → `decisions/` (refined, <100 lines) → `tasks/` (executable, <80 lines).
+
+- `tasks/backlog.md` is the single source of truth for task ordering.
+- Only ONE task can be in `tasks/active/` per project at a time.
+- Always update `backlog.md` AND `index.md` when changing task status.
+- Task files are self-contained: include all context needed to execute.
+- Never modify `analysis/` or `decisions/` files during task execution.
+- When completing a task, add completion date and summary to the Done section.
+- Start work: `/task-next`. Finish work: `/task-done`.
+- Do NOT read `analysis/` or `decisions/` unless explicitly creating new tasks.
