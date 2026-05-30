@@ -1,0 +1,212 @@
+package com.kuranas.android.feature.files.ui
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.core.ui.components.EmptyView
+import com.kuranas.android.core.ui.components.ErrorView
+import com.kuranas.android.core.ui.components.FileSizeText
+import com.kuranas.android.core.ui.components.GlassLevel
+import com.kuranas.android.core.ui.components.KNHeader
+import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.core.ui.components.glass
+import com.kuranas.android.feature.files.data.FileItemDto
+import com.kuranas.android.ui.theme.StatusNegative
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilesScreen(
+    onOpenImage: (String) -> Unit,
+    onOpenVideo: (String) -> Unit,
+    onPlayAudio: (String) -> Unit,
+    viewModel: FilesViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var newFolderName by remember { mutableStateOf("") }
+
+    Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.toggleCreateFolderDialog(true) },
+                containerColor = MaterialTheme.colorScheme.primary,
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Nova pasta")
+            }
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
+            KNHeader(
+                title = if (state.breadcrumb.isEmpty()) "Arquivos" else state.breadcrumb.last().first,
+                leadingIcon = if (state.breadcrumb.isNotEmpty()) Icons.AutoMirrored.Filled.ArrowBack else null,
+                onLeadingClick = viewModel::navigateUp,
+            )
+
+            if (state.breadcrumb.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+                    item { Text("Raiz", style = MaterialTheme.typography.bodySmall, modifier = Modifier.clickable { viewModel.loadRoot() }) }
+                    items(state.breadcrumb) { (name, _) ->
+                        Text(" / $name", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            when {
+                state.isLoading -> LoadingView()
+                state.error != null -> ErrorView(state.error!!, onRetry = viewModel::loadRoot)
+                state.files.isEmpty() -> EmptyView("Pasta vazia")
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(state.files, key = { it.id }) { file ->
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { value ->
+                                if (value == SwipeToDismissBoxValue.EndToStart) {
+                                    viewModel.deleteFile(file)
+                                    true
+                                } else false
+                            }
+                        )
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                Row(
+                                    modifier = Modifier.fillMaxSize().glass(GlassLevel.Strong).padding(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Deletar", tint = StatusNegative)
+                                }
+                            },
+                        ) {
+                            FileListItem(
+                                file = file,
+                                onClick = {
+                                    when {
+                                        file.isDir -> viewModel.openFolder(file)
+                                        file.mimeType.startsWith("image/") -> onOpenImage(file.id)
+                                        file.mimeType.startsWith("video/") -> onOpenVideo(file.id)
+                                        file.mimeType.startsWith("audio/") -> onPlayAudio(file.id)
+                                    }
+                                },
+                                onStar = { viewModel.starFile(file) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (state.showCreateFolderDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleCreateFolderDialog(false) },
+            title = { Text("Nova pasta") },
+            text = {
+                OutlinedTextField(
+                    value = newFolderName,
+                    onValueChange = { newFolderName = it },
+                    label = { Text("Nome da pasta") },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.createFolder(newFolderName)
+                    newFolderName = ""
+                }) { Text("Criar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleCreateFolderDialog(false) }) { Text("Cancelar") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glass(GlassLevel.Light, radius = 12.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            imageVector = fileIcon(file),
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = if (file.isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(file.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (!file.isDir) FileSizeText(file.size)
+        }
+        IconButton(onClick = onStar, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = if (file.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = null,
+                tint = if (file.isStarred) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+private fun fileIcon(file: FileItemDto): ImageVector = when {
+    file.isDir -> Icons.Default.Folder
+    file.mimeType.startsWith("image/") -> Icons.Default.Image
+    file.mimeType.startsWith("video/") -> Icons.Default.VideoFile
+    file.mimeType.startsWith("audio/") -> Icons.Default.AudioFile
+    else -> Icons.Default.InsertDriveFile
+}
