@@ -12,15 +12,15 @@ import javax.inject.Singleton
 class FilesRepository @Inject constructor(private val api: FilesApi) {
 
     suspend fun getRootFiles(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getRootFiles().files
+        api.getRootFiles().items
     }
 
     suspend fun getChildrenById(id: String): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getChildrenById(id).files
+        api.getChildrenById(id).items
     }
 
     suspend fun getImages(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getImages().files
+        api.getImages().items
     }
 
     suspend fun createFolder(name: String, parentId: String?): AppResult<FileItemDto> = safeApiCall {

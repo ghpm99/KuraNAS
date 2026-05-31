@@ -47,7 +47,7 @@ fun TrackListItem(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    track.name,
+                    track.title,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -61,7 +61,7 @@ fun TrackListItem(
                 )
             }
         }
-        track.duration?.let { seconds ->
+        track.durationSeconds?.let { seconds ->
             Text(
                 formatDuration(seconds),
                 style = MaterialTheme.typography.bodySmall,

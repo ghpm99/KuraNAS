@@ -16,11 +16,11 @@ class VideoRepository @Inject constructor(
     private val serverStore: ServerStore,
 ) {
     suspend fun getHomeCatalog(): AppResult<VideoHomeCatalogDto> = safeApiCall { api.getHomeCatalog() }
-    suspend fun getLibraryVideos(): AppResult<List<VideoItemDto>> = safeApiCall { api.getLibraryVideos().files }
+    suspend fun getLibraryVideos(): AppResult<List<VideoItemDto>> = safeApiCall { api.getLibraryVideos().items }
     suspend fun getPlaylists(): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylists() }
     suspend fun getPlaylistById(id: Int): AppResult<VideoPlaylistDto> = safeApiCall { api.getPlaylistById(id) }
     suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
-        api.startPlayback(StartPlaybackRequest(videoId, playlistId))
+        api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId))
     }
     suspend fun nextVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.nextVideo() }
     suspend fun previousVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.previousVideo() }
