@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  KuraNAS conecta a servidores self-hosted na LAN, normalmente via HTTP simples
+  (http://192.168.x.x:porta). O Android bloqueia tráfego cleartext por padrão
+  a partir da API 28, então é necessário permiti-lo explicitamente.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
