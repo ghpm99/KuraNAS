@@ -18,7 +18,7 @@ class ImagesRepository @Inject constructor(
     private val serverStore: ServerStore,
 ) {
     suspend fun getImages(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getImages().files
+        api.getImages().items
     }
 
     suspend fun getThumbnailUrl(id: String): String {

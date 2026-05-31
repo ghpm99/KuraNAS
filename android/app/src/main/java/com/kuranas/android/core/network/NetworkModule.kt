@@ -10,6 +10,8 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -23,6 +25,24 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    private const val DEFAULT_PORT = 8000
+
+    /**
+     * Converte o que o usuário digitou (ex.: "192.168.18.7:8000", "192.168.18.7",
+     * "http://host:8000/") numa [HttpUrl] válida. Retorna null em vez de lançar
+     * quando o valor é inválido — o interceptor NÃO pode lançar (derruba o app).
+     */
+    private fun parseServerUrl(raw: String): HttpUrl? {
+        val trimmed = raw.trim().trimEnd('/')
+        if (trimmed.isEmpty()) return null
+        val withScheme = if (trimmed.contains("://")) trimmed else "http://$trimmed"
+        val parsed = withScheme.toHttpUrlOrNull() ?: return null
+        // Sem porta explícita → assume a porta padrão do servidor (8000), não a 80.
+        val authority = withScheme.substringAfter("://").substringBefore("/")
+        val hasExplicitPort = authority.substringAfterLast(']').contains(":")
+        return if (hasExplicitPort) parsed else parsed.newBuilder().port(DEFAULT_PORT).build()
+    }
+
     @Provides
     @Singleton
     fun provideJson(): Json = Json {
@@ -35,7 +55,7 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
             else HttpLoggingInterceptor.Level.NONE
         }
 
@@ -44,15 +64,16 @@ object NetworkModule {
     fun provideServerInterceptor(serverStore: ServerStore): Interceptor =
         Interceptor { chain ->
             val original: Request = chain.request()
-            val serverUrl = runBlocking { serverStore.serverUrl.first() }
-            if (serverUrl == null) {
+            val base = runBlocking { serverStore.serverUrl.first() }?.let { parseServerUrl(it) }
+            if (base == null) {
+                // Sem servidor configurado (ou valor inválido): segue sem reescrever.
+                // Não lançar daqui — exceção no interceptor derruba o app.
                 chain.proceed(original)
             } else {
-                val originalUrl = original.url
-                val newUrl = originalUrl.newBuilder()
-                    .scheme(if (serverUrl.startsWith("https") ) "https" else "http")
-                    .host(serverUrl.removePrefix("http://").removePrefix("https://").substringBefore(":").substringBefore("/"))
-                    .port(serverUrl.substringAfterLast(":").trimEnd('/').toIntOrNull() ?: 8000)
+                val newUrl = original.url.newBuilder()
+                    .scheme(base.scheme)
+                    .host(base.host)
+                    .port(base.port)
                     .build()
                 chain.proceed(original.newBuilder().url(newUrl).build())
             }

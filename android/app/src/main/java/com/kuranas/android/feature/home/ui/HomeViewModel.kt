@@ -10,7 +10,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,13 +30,9 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     fun load() {
         viewModelScope.launch {
             _state.value = HomeUiState.Loading
-            val statsResult = repository.getStats()
-            val recentResult = repository.getRecentFiles()
-            _state.value = when {
-                statsResult is AppResult.Success && recentResult is AppResult.Success ->
-                    HomeUiState.Success(statsResult.data, recentResult.data)
-                statsResult is AppResult.Error -> HomeUiState.Error(statsResult.message)
-                else -> HomeUiState.Error("Falha ao carregar dados")
+            _state.value = when (val result = repository.getHomeData()) {
+                is AppResult.Success -> HomeUiState.Success(result.data.stats, result.data.recentFiles)
+                is AppResult.Error -> HomeUiState.Error(result.message)
             }
         }
     }

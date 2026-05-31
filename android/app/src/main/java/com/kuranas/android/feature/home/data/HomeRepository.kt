@@ -19,24 +19,28 @@ data class HomeStats(
     val totalImages: Long,
 )
 
+data class HomeData(
+    val stats: HomeStats,
+    val recentFiles: List<RecentFileDto>,
+)
+
 class HomeRepository @Inject constructor(private val api: HomeApi) {
 
-    suspend fun getStats(): AppResult<HomeStats> = safeApiCall {
+    suspend fun getHomeData(): AppResult<HomeData> = safeApiCall {
         val space = api.getTotalSpaceUsed()
         val overview = api.getAnalyticsOverview()
         val dirs = api.getTotalDirectories()
-        HomeStats(
+        fun typeCount(vararg names: String): Long =
+            overview.types.firstOrNull { it.type in names }?.count ?: 0
+        val stats = HomeStats(
             totalSpaceUsed = space.totalSpaceUsed,
-            totalFiles = overview.totalFiles,
+            totalFiles = overview.counts.filesTotal,
             totalDirectories = dirs.total,
-            totalMusic = overview.totalMusic,
-            totalVideos = overview.totalVideos,
-            totalImages = overview.totalImages,
+            totalMusic = typeCount("audio", "music"),
+            totalVideos = typeCount("video"),
+            totalImages = typeCount("image", "images"),
         )
-    }
-
-    suspend fun getRecentFiles(): AppResult<List<RecentFileDto>> = safeApiCall {
-        api.getRecentFiles()
+        HomeData(stats, overview.recentFiles)
     }
 }
 

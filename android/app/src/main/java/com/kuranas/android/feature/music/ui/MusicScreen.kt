@@ -96,12 +96,12 @@ fun MusicScreen(
 private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
     if (artists.isEmpty()) { EmptyView("Nenhum artista encontrado"); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        items(artists, key = { it.name }) { artist ->
+        items(artists, key = { it.key }) { artist ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .glass(GlassLevel.Flat, radius = 12.dp)
-                    .clickable { onOpen(artist.name) }
+                    .clickable { onOpen(artist.key) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -109,8 +109,8 @@ private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Column {
-                        Text(artist.name, style = MaterialTheme.typography.bodyMedium)
-                        Text("${artist.count} faixas", style = MaterialTheme.typography.bodySmall)
+                        Text(artist.artist, style = MaterialTheme.typography.bodyMedium)
+                        Text("${artist.trackCount} faixas", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -123,12 +123,12 @@ private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
 private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
     if (albums.isEmpty()) { EmptyView("Nenhum álbum encontrado"); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        items(albums, key = { it.name }) { album ->
+        items(albums, key = { it.key }) { album ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .glass(GlassLevel.Flat, radius = 12.dp)
-                    .clickable { onOpen(album.name) }
+                    .clickable { onOpen(album.key) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -136,11 +136,11 @@ private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Album, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                     Column {
-                        Text(album.name, style = MaterialTheme.typography.bodyMedium)
-                        Text(album.artist ?: "Artista desconhecido", style = MaterialTheme.typography.bodySmall)
+                        Text(album.album, style = MaterialTheme.typography.bodyMedium)
+                        Text(album.artist.ifBlank { "Artista desconhecido" }, style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Text("${album.count}", style = MaterialTheme.typography.bodySmall)
+                Text("${album.trackCount}", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -164,7 +164,7 @@ private fun PlaylistsList(playlists: List<PlaylistDto>, onOpen: (Int) -> Unit) {
                     Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Text(playlist.name, style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("${playlist.count} faixas", style = MaterialTheme.typography.bodySmall)
+                Text("${playlist.trackCount} faixas", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
