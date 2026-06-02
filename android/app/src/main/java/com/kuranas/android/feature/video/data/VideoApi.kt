@@ -37,20 +37,30 @@ interface VideoApi {
     suspend fun removeVideoFromPlaylist(@Path("id") id: Int, @Path("videoId") videoId: String)
 
     @POST("api/v1/video/playback/start")
-    suspend fun startPlayback(@Body body: StartPlaybackRequest): PlaybackStateDto
+    suspend fun startPlayback(@Body body: StartPlaybackRequest): PlaybackSessionDto
 
     @GET("api/v1/video/playback/state")
-    suspend fun getPlaybackState(): PlaybackStateDto
+    suspend fun getPlaybackState(): PlaybackSessionDto
 
     @PUT("api/v1/video/playback/state")
     suspend fun updatePlaybackState(@Body body: UpdatePlaybackRequest)
 
     @POST("api/v1/video/playback/next")
-    suspend fun nextVideo(): PlaybackStateDto
+    suspend fun nextVideo(): PlaybackSessionDto
 
     @POST("api/v1/video/playback/previous")
-    suspend fun previousVideo(): PlaybackStateDto
+    suspend fun previousVideo(): PlaybackSessionDto
 }
+
+/**
+ * Espelha video.PlaybackSessionDto — o que os handlers de playback realmente
+ * devolvem: `{ playlist, playback_state }`. O estado em si está em [playbackState].
+ */
+@Serializable
+data class PlaybackSessionDto(
+    val playlist: VideoPlaylistDto = VideoPlaylistDto(),
+    @SerialName("playback_state") val playbackState: PlaybackStateDto = PlaybackStateDto(),
+)
 
 /** Espelha video.VideoFileDto. Props computadas preservam a API da UI. */
 @Serializable

@@ -22,7 +22,7 @@ interface HomeApi {
 data class SpaceUsedDto(@SerialName("total_space_used") val totalSpaceUsed: Long = 0)
 
 @Serializable
-data class TotalDto(val total: Long = 0)
+data class TotalDto(@SerialName("total_files") val total: Long = 0)
 
 @Serializable
 data class TotalDirectoryDto(@SerialName("total_directory") val total: Long = 0)

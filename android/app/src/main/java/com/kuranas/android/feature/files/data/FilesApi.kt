@@ -95,10 +95,19 @@ data class FileItemDto(
 
 @Serializable
 data class DuplicateFilesDto(
-    val files: List<FileItemDto> = emptyList(),
+    val files: List<DuplicateFileDto> = emptyList(),
     val total: Int = 0,
     @SerialName("total_size") val totalSize: Long = 0,
     val pagination: PaginationDto = PaginationDto(),
+)
+
+/** Espelha files.DuplicateFileDto: um grupo de cópias do mesmo arquivo. */
+@Serializable
+data class DuplicateFileDto(
+    val name: String = "",
+    val size: Long = 0,
+    val copies: Int = 0,
+    val paths: List<String> = emptyList(),
 )
 
 @Serializable

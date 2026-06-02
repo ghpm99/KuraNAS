@@ -20,10 +20,11 @@ class VideoRepository @Inject constructor(
     suspend fun getPlaylists(): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylists() }
     suspend fun getPlaylistById(id: Int): AppResult<VideoPlaylistDto> = safeApiCall { api.getPlaylistById(id) }
     suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
-        api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId))
+        api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId)).playbackState
     }
-    suspend fun nextVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.nextVideo() }
-    suspend fun previousVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.previousVideo() }
+    suspend fun getPlaybackState(): AppResult<PlaybackStateDto> = safeApiCall { api.getPlaybackState().playbackState }
+    suspend fun nextVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.nextVideo().playbackState }
+    suspend fun previousVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.previousVideo().playbackState }
 
     suspend fun streamUrl(videoId: String): String {
         val base = serverStore.serverUrl.first() ?: ""
