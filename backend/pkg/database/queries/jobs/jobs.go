@@ -36,3 +36,6 @@ var RecoverInterruptedStepsQuery string
 
 //go:embed recover_interrupted_jobs.sql
 var RecoverInterruptedJobsQuery string
+
+//go:embed has_pending_job_for_path.sql
+var HasPendingJobForPathQuery string

@@ -62,6 +62,19 @@ func (r *Repository) CreateJob(tx *sql.Tx, job JobModel) (JobModel, error) {
 	return job, nil
 }
 
+// HasPendingJobForPath reports whether a queued/running job already exists for
+// the given file path, used to skip creating duplicate processing jobs.
+func (r *Repository) HasPendingJobForPath(path string) (bool, error) {
+	var exists bool
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.HasPendingJobForPathQuery, path).Scan(&exists)
+	})
+	if err != nil {
+		return false, fmt.Errorf("HasPendingJobForPath: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *Repository) CreateStep(tx *sql.Tx, step StepModel) (StepModel, error) {
 	var startedAt sql.NullTime
 	var endedAt sql.NullTime

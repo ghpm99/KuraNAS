@@ -16,6 +16,54 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
+// TestCreateJobSkipsDuplicatePendingPath verifies idempotency: a second job for
+// a file that already has a pending job is skipped, so ~30k files cannot explode
+// into millions of duplicate jobs.
+func TestCreateJobSkipsDuplicatePendingPath(t *testing.T) {
+	repo := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, nil)
+
+	plan := PlannedJob{
+		Type:     JobTypeFSEvent,
+		Priority: JobPriorityLow,
+		Scope:    JobScope{Path: "/data/a.jpg"},
+		Steps: []PlannedStep{
+			{Key: "persist", Type: StepTypePersist, MaxAttempts: 1},
+		},
+	}
+
+	id1, err := orchestrator.CreateJob(plan)
+	if err != nil {
+		t.Fatalf("first CreateJob error: %v", err)
+	}
+	if id1 == 0 {
+		t.Fatalf("expected first job to be created")
+	}
+
+	id2, err := orchestrator.CreateJob(plan)
+	if err != nil {
+		t.Fatalf("second CreateJob error: %v", err)
+	}
+	if id2 != 0 {
+		t.Fatalf("expected duplicate to be skipped, got id %d", id2)
+	}
+
+	if len(repo.jobs) != 1 {
+		t.Fatalf("expected exactly 1 job, got %d", len(repo.jobs))
+	}
+
+	// A different path is not deduped.
+	other := plan
+	other.Scope = JobScope{Path: "/data/b.jpg"}
+	id3, err := orchestrator.CreateJob(other)
+	if err != nil {
+		t.Fatalf("CreateJob for other path error: %v", err)
+	}
+	if id3 == 0 {
+		t.Fatalf("expected job for a different path to be created")
+	}
+}
+
 // TestRecoverInterruptedWork verifies that jobs/steps stranded in 'running' are
 // reset to 'queued' on recovery so the scheduler can reprocess them.
 func TestRecoverInterruptedWork(t *testing.T) {
@@ -278,6 +326,28 @@ func (r *fakeJobsRepository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempt
 
 	r.steps[stepID] = step
 	return true, nil
+}
+
+func (r *fakeJobsRepository) HasPendingJobForPath(path string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if path == "" {
+		return false, nil
+	}
+	for _, job := range r.jobs {
+		if job.Status != string(JobStatusQueued) && job.Status != string(JobStatusRunning) {
+			continue
+		}
+		var scope JobScope
+		if len(job.Scope) > 0 {
+			_ = json.Unmarshal(job.Scope, &scope)
+		}
+		if scope.Path == path {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (r *fakeJobsRepository) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {

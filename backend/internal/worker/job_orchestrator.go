@@ -3,10 +3,27 @@ package worker
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
+
+	"github.com/lib/pq"
 )
+
+// errJobAlreadyPending is an internal sentinel meaning a concurrent insert won
+// the race for a file that already has a pending job; the duplicate is skipped.
+var errJobAlreadyPending = errors.New("job already pending for path")
+
+// isPendingPathConflict reports whether the error is a unique-violation from the
+// partial index that enforces one pending job per file path (Postgres 23505).
+func isPendingPathConflict(err error) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "23505"
+	}
+	return false
+}
 
 type PlannedStep struct {
 	Key         string
@@ -41,6 +58,19 @@ func (o *JobOrchestrator) CreateJob(plan PlannedJob) (int, error) {
 		return 0, fmt.Errorf("job orchestrator repository is required")
 	}
 
+	// Idempotency: if this file already has a pending job, queueing the same work
+	// again is pointless — the existing job will process the file's current state.
+	// This is what keeps ~30k files from exploding into millions of jobs.
+	if plan.Scope.Path != "" {
+		pending, pendingErr := o.repository.HasPendingJobForPath(plan.Scope.Path)
+		if pendingErr != nil {
+			return 0, fmt.Errorf("check pending job for %q: %w", plan.Scope.Path, pendingErr)
+		}
+		if pending {
+			return 0, nil
+		}
+	}
+
 	var createdJob jobs.JobModel
 
 	err := o.withTx(func(tx *sql.Tx) error {
@@ -58,6 +88,11 @@ func (o *JobOrchestrator) CreateJob(plan PlannedJob) (int, error) {
 			LastError:       "",
 		})
 		if createErr != nil {
+			// Lost the race against a concurrent insert (folder watcher + diff):
+			// the unique index rejected the duplicate. Treat as a no-op skip.
+			if isPendingPathConflict(createErr) {
+				return errJobAlreadyPending
+			}
 			return fmt.Errorf("create job: %w", createErr)
 		}
 		createdJob = created
@@ -103,6 +138,9 @@ func (o *JobOrchestrator) CreateJob(plan PlannedJob) (int, error) {
 
 		return nil
 	})
+	if errors.Is(err, errJobAlreadyPending) {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, err
 	}
