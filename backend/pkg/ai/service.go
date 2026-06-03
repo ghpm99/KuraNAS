@@ -35,14 +35,20 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 
 	resp, err := s.executeWithRetry(ctx, route.Primary, req)
-	if err != nil && route.Fallback != nil {
-		resp, err = s.executeWithRetry(ctx, route.Fallback, req)
-		if err != nil {
-			return Response{}, fmt.Errorf("fallback provider %s failed: %w", route.Fallback.Name(), err)
-		}
+	if err == nil {
+		return resp, nil
 	}
 
-	return resp, err
+	lastErr := err
+	for _, fallback := range route.Fallbacks {
+		resp, err = s.executeWithRetry(ctx, fallback, req)
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = fmt.Errorf("fallback provider %s failed: %w", fallback.Name(), err)
+	}
+
+	return Response{}, lastErr
 }
 
 func (s *Service) executeWithRetry(ctx context.Context, provider Provider, req Request) (Response, error) {
