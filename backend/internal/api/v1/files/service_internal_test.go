@@ -321,8 +321,14 @@ func TestFileService_GetAndFind(t *testing.T) {
 	if _, err := s.GetFileByNameAndPath("none", "/tmp/none"); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows, got %v", err)
 	}
-	if _, err := s.GetFileByNameAndPath("multi", "/tmp/multi"); err == nil {
-		t.Fatalf("expected multi-file error")
+	// Múltiplas linhas (arquivo recriado deixa a antiga soft-deleted convivendo
+	// com a nova): pickActiveFile prefere a linha ativa em vez de dar erro.
+	multi, err := s.GetFileByNameAndPath("multi", "/tmp/multi")
+	if err != nil {
+		t.Fatalf("expected active file, got error %v", err)
+	}
+	if multi.ID != 1 {
+		t.Fatalf("expected active file id 1, got %d", multi.ID)
 	}
 	file, err := s.GetFileByNameAndPath("one", "/tmp/one")
 	if err != nil || file.ID == 0 {
@@ -1101,8 +1107,13 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		if _, err := s.GetFileById(10); !errors.Is(err, sql.ErrNoRows) {
 			t.Fatalf("expected sql.ErrNoRows, got %v", err)
 		}
-		if _, err := s.GetFileById(11); err == nil {
-			t.Fatalf("expected multiple rows error")
+		// Múltiplas linhas: retorna a ativa (id 1) em vez de erro.
+		multi, err := s.GetFileById(11)
+		if err != nil {
+			t.Fatalf("expected active file, got error %v", err)
+		}
+		if multi.ID != 1 {
+			t.Fatalf("expected active file id 1, got %d", multi.ID)
 		}
 	})
 
@@ -1230,6 +1241,49 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		}, true)
 		if err == nil {
 			t.Fatalf("expected DeleteFile not-found error")
+		}
+	})
+}
+
+// TestPickActiveFile exercita diretamente a função pura de resolução, sem mocks:
+// 0 linhas -> ErrNoRows; 1 linha -> ela; várias -> prefere a linha não deletada
+// (arquivo recriado deixa a antiga soft-deleted); todas deletadas -> a primeira.
+func TestPickActiveFile(t *testing.T) {
+	deleted := func(id int) FileDto {
+		return FileDto{ID: id, DeletedAt: utils.Optional[time.Time]{HasValue: true, Value: time.Now()}}
+	}
+	active := func(id int) FileDto {
+		return FileDto{ID: id}
+	}
+
+	t.Run("no rows returns ErrNoRows", func(t *testing.T) {
+		if _, err := pickActiveFile(nil); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("expected sql.ErrNoRows, got %v", err)
+		}
+	})
+
+	t.Run("single row returns it", func(t *testing.T) {
+		got, err := pickActiveFile([]FileDto{active(7)})
+		if err != nil || got.ID != 7 {
+			t.Fatalf("expected id 7 no error, got %d err=%v", got.ID, err)
+		}
+	})
+
+	t.Run("multiple prefers the active row over the soft-deleted one", func(t *testing.T) {
+		// itens chegam ordenados por id DESC; a linha nova (ativa) pode vir depois da antiga deletada.
+		got, err := pickActiveFile([]FileDto{deleted(2), active(1)})
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		if got.ID != 1 {
+			t.Fatalf("expected active id 1, got %d", got.ID)
+		}
+	})
+
+	t.Run("multiple all deleted falls back to the first", func(t *testing.T) {
+		got, err := pickActiveFile([]FileDto{deleted(9), deleted(8)})
+		if err != nil || got.ID != 9 {
+			t.Fatalf("expected first id 9 no error, got %d err=%v", got.ID, err)
 		}
 	})
 }
