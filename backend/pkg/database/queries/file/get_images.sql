@@ -64,6 +64,7 @@ SELECT
     im.artist,
     im.classification_category,
     im.classification_confidence,
+    im.classification_suggested_name,
     im.created_at
 FROM
     home_file hf

@@ -23,6 +23,10 @@ type Request struct {
 	MaxTokens    int
 	Temperature  float64
 	Metadata     map[string]string
+	// Images holds base64-encoded image data for multimodal (vision) requests.
+	// Providers that support vision attach them to the user message; others
+	// ignore them and fall back to a text-only request.
+	Images []string
 }
 
 // Response is the standardized output from AI operations,

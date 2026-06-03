@@ -95,6 +95,9 @@ var WorkerStepTimeoutTrackingQuery string
 //go:embed queries/0028_dedupe_pending_jobs_idempotency.sql
 var DedupePendingJobsIdempotencyQuery string
 
+//go:embed queries/0029_add_image_suggested_name.sql
+var AddImageSuggestedNameQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -135,6 +138,9 @@ func fileMigrationList() {
 
 	addMigration("0019_add_image_classification_columns",
 		defaultMigrationFunc(AddImageClassificationColumnsQuery))
+
+	addMigration("0029_add_image_suggested_name",
+		defaultMigrationFunc(AddImageSuggestedNameQuery))
 
 }
 

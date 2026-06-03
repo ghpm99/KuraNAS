@@ -2,14 +2,28 @@ package files
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
+	"nas-go/api/pkg/img"
+	"regexp"
 	"strings"
 	"time"
 )
+
+// visionMaxDimension caps the longest edge of the image sent to the AI. A
+// downscaled copy is enough for recognition and keeps the base64 payload (and
+// inference time) small.
+const visionMaxDimension = 768
+
+// suggestedNameSanitizer keeps suggested filenames filesystem-safe.
+var suggestedNameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
+
+// multiUnderscore collapses runs of underscores into a single one.
+var multiUnderscore = regexp.MustCompile(`_+`)
 
 type ImageClassificationCategory string
 
@@ -108,15 +122,21 @@ func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai
 	}
 
 	prompt := buildClassificationPrompt(file, metadata)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
+
+	// Send a downscaled copy of the image so a vision model (e.g. gemma3) can
+	// classify and name it from the actual content. If encoding fails we still
+	// run a text-only request rather than dropping AI entirely.
+	images := encodeImageForAI(file.Path)
 
 	resp, err := aiService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskClassification,
 		SystemPrompt: prompts.ImageClassificationSystemPrompt(),
 		Prompt:       prompt,
-		MaxTokens:    100,
+		MaxTokens:    200,
 		Temperature:  0.1,
+		Images:       images,
 	})
 	if err != nil {
 		log.Printf("AI image classification failed, using heuristic: %v\n", err)
@@ -130,6 +150,45 @@ func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai
 	}
 
 	return result
+}
+
+// encodeImageForAI loads an image, downscales it and returns it as a one-element
+// slice of base64 PNG data ready for a multimodal request. Returns nil on any
+// failure so the caller degrades to a text-only request.
+func encodeImageForAI(path string) []string {
+	if path == "" {
+		return nil
+	}
+	src, _, err := img.OpenImageFromFile(path)
+	if err != nil {
+		log.Printf("AI vision: failed to open image %q: %v\n", path, err)
+		return nil
+	}
+	resized := img.Thumbnail(src, visionMaxDimension, visionMaxDimension)
+	encoded, err := img.EncodePNG(resized)
+	if err != nil {
+		log.Printf("AI vision: failed to encode image %q: %v\n", path, err)
+		return nil
+	}
+	return []string{base64.StdEncoding.EncodeToString(encoded)}
+}
+
+// sanitizeSuggestedName makes an AI-proposed filename filesystem-safe: keeps
+// alphanumerics, dashes and underscores, collapses the rest, and bounds length.
+func sanitizeSuggestedName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	name = strings.ReplaceAll(name, " ", "_")
+	name = suggestedNameSanitizer.ReplaceAllString(name, "_")
+	name = multiUnderscore.ReplaceAllString(name, "_")
+	name = strings.Trim(name, "_-")
+	if len(name) > 80 {
+		name = name[:80]
+		name = strings.Trim(name, "_-")
+	}
+	return name
 }
 
 func buildClassificationPrompt(file FileDto, metadata ImageMetadataModel) string {
@@ -155,8 +214,9 @@ func buildClassificationPrompt(file FileDto, metadata ImageMetadataModel) string
 }
 
 type aiClassificationResponse struct {
-	Category   string  `json:"category"`
-	Confidence float64 `json:"confidence"`
+	Category      string  `json:"category"`
+	Confidence    float64 `json:"confidence"`
+	SuggestedName string  `json:"suggested_name"`
 }
 
 func parseAIClassificationResponse(content string) (ImageClassificationModel, error) {
@@ -190,8 +250,9 @@ func parseAIClassificationResponse(content string) (ImageClassificationModel, er
 	}
 
 	return ImageClassificationModel{
-		Category:   category,
-		Confidence: confidence,
+		Category:      category,
+		Confidence:    confidence,
+		SuggestedName: sanitizeSuggestedName(resp.SuggestedName),
 	}, nil
 }
 

@@ -332,6 +332,7 @@ func (r *Repository) GetImages(page int, pageSize int, groupBy ImageGroupBy) (ut
 				&metadata.Artist,
 				&metadata.Classification.Category,
 				&metadata.Classification.Confidence,
+				&metadata.Classification.SuggestedName,
 				&metadata.CreatedAt,
 			); err != nil {
 				return err

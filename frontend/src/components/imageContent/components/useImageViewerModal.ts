@@ -79,6 +79,7 @@ export const useImageViewerModal = ({
             typeof confidenceValue === 'number'
                 ? `${Math.round(confidenceValue * 100)}%`
                 : t('COMMON_NOT_AVAILABLE');
+        const suggestedName = activeImage.metadata?.classification?.suggested_name?.trim();
 
         const details: ViewerDetailSection[] = [
             {
@@ -99,6 +100,9 @@ export const useImageViewerModal = ({
                     { label: t('IMAGES_DETAIL_DIMENSIONS'), value: resolution },
                     { label: t('IMAGES_DETAIL_CATEGORY'), value: t(classificationKey) },
                     { label: t('IMAGES_DETAIL_CONFIDENCE'), value: confidenceLabel },
+                    ...(suggestedName
+                        ? [{ label: t('IMAGES_DETAIL_SUGGESTED_NAME'), value: suggestedName }]
+                        : []),
                 ],
             },
             {

@@ -15,6 +15,7 @@ export type PersistedImageCategory = 'capture' | 'photo' | 'other';
 export interface IImageClassification {
     category: PersistedImageCategory;
     confidence: number;
+    suggested_name?: string;
 }
 
 export interface IImageMetadata {
