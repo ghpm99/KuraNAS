@@ -13,6 +13,10 @@ type Config struct {
 	OpenAIBaseURL   string
 	AnthropicAPIKey string
 	AnthropicModel  string
+	OllamaEnabled   bool
+	OllamaBaseURL   string
+	OllamaModel     string
+	OllamaKeepAlive string
 	DefaultTimeout  time.Duration
 	MaxRetries      int
 	RetryBackoffMS  int
@@ -26,6 +30,10 @@ func LoadConfig() Config {
 		OpenAIBaseURL:   envOrDefault("AI_OPENAI_BASE_URL", "https://api.openai.com/v1"),
 		AnthropicAPIKey: os.Getenv("AI_ANTHROPIC_API_KEY"),
 		AnthropicModel:  envOrDefault("AI_ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
+		OllamaEnabled:   envBoolOrDefault("AI_OLLAMA_ENABLED", false),
+		OllamaBaseURL:   envOrDefault("AI_OLLAMA_BASE_URL", "http://localhost:11434"),
+		OllamaModel:     envOrDefault("AI_OLLAMA_MODEL", "llama3.1"),
+		OllamaKeepAlive: envOrDefault("AI_OLLAMA_KEEP_ALIVE", "5m"),
 		DefaultTimeout:  time.Duration(envIntOrDefault("AI_TIMEOUT_SECONDS", 30)) * time.Second,
 		MaxRetries:      envIntOrDefault("AI_MAX_RETRIES", 2),
 		RetryBackoffMS:  envIntOrDefault("AI_RETRY_BACKOFF_MS", 500),
@@ -46,6 +54,18 @@ func envIntOrDefault(key string, fallback int) int {
 	}
 	parsed, err := strconv.Atoi(v)
 	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}
+
+func envBoolOrDefault(key string, fallback bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(v)
+	if err != nil {
 		return fallback
 	}
 	return parsed

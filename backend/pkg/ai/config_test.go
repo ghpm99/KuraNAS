@@ -14,8 +14,25 @@ func TestLoadConfigDefaults(t *testing.T) {
 	os.Unsetenv("AI_TIMEOUT_SECONDS")
 	os.Unsetenv("AI_MAX_RETRIES")
 	os.Unsetenv("AI_RETRY_BACKOFF_MS")
+	os.Unsetenv("AI_OLLAMA_ENABLED")
+	os.Unsetenv("AI_OLLAMA_BASE_URL")
+	os.Unsetenv("AI_OLLAMA_MODEL")
+	os.Unsetenv("AI_OLLAMA_KEEP_ALIVE")
 
 	cfg := LoadConfig()
+
+	if cfg.OllamaEnabled {
+		t.Fatalf("expected Ollama disabled by default")
+	}
+	if cfg.OllamaBaseURL != "http://localhost:11434" {
+		t.Fatalf("expected default Ollama base URL, got %s", cfg.OllamaBaseURL)
+	}
+	if cfg.OllamaModel != "llama3.1" {
+		t.Fatalf("expected default Ollama model llama3.1, got %s", cfg.OllamaModel)
+	}
+	if cfg.OllamaKeepAlive != "5m" {
+		t.Fatalf("expected default Ollama keep_alive 5m, got %s", cfg.OllamaKeepAlive)
+	}
 
 	if cfg.OpenAIModel != "gpt-4o-mini" {
 		t.Fatalf("expected default model gpt-4o-mini, got %s", cfg.OpenAIModel)
@@ -43,9 +60,25 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv("AI_ANTHROPIC_API_KEY", "ant-test")
 	t.Setenv("AI_TIMEOUT_SECONDS", "60")
 	t.Setenv("AI_MAX_RETRIES", "5")
+	t.Setenv("AI_OLLAMA_ENABLED", "true")
+	t.Setenv("AI_OLLAMA_BASE_URL", "http://nas.local:11434")
+	t.Setenv("AI_OLLAMA_MODEL", "qwen2.5")
+	t.Setenv("AI_OLLAMA_KEEP_ALIVE", "30m")
 
 	cfg := LoadConfig()
 
+	if !cfg.OllamaEnabled {
+		t.Fatalf("expected Ollama enabled")
+	}
+	if cfg.OllamaBaseURL != "http://nas.local:11434" {
+		t.Fatalf("expected custom Ollama base URL, got %s", cfg.OllamaBaseURL)
+	}
+	if cfg.OllamaModel != "qwen2.5" {
+		t.Fatalf("expected qwen2.5, got %s", cfg.OllamaModel)
+	}
+	if cfg.OllamaKeepAlive != "30m" {
+		t.Fatalf("expected 30m keep_alive, got %s", cfg.OllamaKeepAlive)
+	}
 	if cfg.OpenAIAPIKey != "sk-test" {
 		t.Fatalf("expected sk-test, got %s", cfg.OpenAIAPIKey)
 	}
