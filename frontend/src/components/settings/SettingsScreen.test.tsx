@@ -22,6 +22,11 @@ jest.mock('./LibrarySettingsSection', () => ({
 	default: () => <div>Library Paths Section</div>,
 }));
 
+jest.mock('./AIProvidersSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>AI Providers Section</div>,
+}));
+
 const createScreenState = (overrides: Record<string, any> = {}) => ({
     t: (key: string, params?: Record<string, string>) => {
         const map: Record<string, string> = {
