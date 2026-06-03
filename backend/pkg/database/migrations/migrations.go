@@ -92,6 +92,9 @@ var CreateWatchFoldersTableQuery string
 //go:embed queries/0027_worker_step_timeout_tracking.sql
 var WorkerStepTimeoutTrackingQuery string
 
+//go:embed queries/0028_dedupe_pending_jobs_idempotency.sql
+var DedupePendingJobsIdempotencyQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -176,6 +179,9 @@ func workerMigrationList() {
 
 	addMigration("0027_worker_step_timeout_tracking",
 		defaultMigrationFunc(WorkerStepTimeoutTrackingQuery))
+
+	addMigration("0028_dedupe_pending_jobs_idempotency",
+		defaultMigrationFunc(DedupePendingJobsIdempotencyQuery))
 }
 
 func configurationMigrationList() {

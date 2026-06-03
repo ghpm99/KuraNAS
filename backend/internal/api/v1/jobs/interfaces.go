@@ -20,6 +20,7 @@ type RepositoryInterface interface {
 	DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error)
 	RequeueJob(tx *sql.Tx, jobID int) (bool, error)
 	RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error)
+	HasPendingJobForPath(path string) (bool, error)
 }
 
 type ServiceInterface interface {

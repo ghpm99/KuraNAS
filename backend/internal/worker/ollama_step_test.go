@@ -44,6 +44,7 @@ func (r *progressJobsRepo) RequeueJob(tx *sql.Tx, jobID int) (bool, error) { ret
 func (r *progressJobsRepo) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {
 	return 0, 0, nil
 }
+func (r *progressJobsRepo) HasPendingJobForPath(path string) (bool, error) { return false, nil }
 
 func TestExecuteOllamaPullStepReportsProgress(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
