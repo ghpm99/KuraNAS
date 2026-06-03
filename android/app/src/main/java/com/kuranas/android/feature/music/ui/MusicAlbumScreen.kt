@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 
@@ -24,7 +23,6 @@ fun MusicAlbumScreen(
     albumKey: String,
     onNavigateBack: () -> Unit,
     onPlayTrack: () -> Unit,
-    playerViewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
     val viewModel: MusicAlbumViewModel = hiltViewModel()
     LaunchedEffect(albumKey) { viewModel.load(albumKey) }
@@ -38,7 +36,7 @@ fun MusicAlbumScreen(
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(tracks ?: emptyList(), key = { it.id }) { track ->
                     TrackListItem(track = track, onClick = {
-                        playerViewModel.playTrack(track, tracks ?: emptyList())
+                        viewModel.play(track)
                         onPlayTrack()
                     })
                 }

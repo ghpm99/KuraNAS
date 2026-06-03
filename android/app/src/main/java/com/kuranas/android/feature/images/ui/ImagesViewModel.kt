@@ -15,6 +15,7 @@ import javax.inject.Inject
 
 data class ImagesUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val images: List<FileItemDto> = emptyList(),
     val error: String? = null,
     val serverBaseUrl: String = "",
@@ -34,6 +35,17 @@ class ImagesViewModel @Inject constructor(private val repository: ImagesReposito
             when (val r = repository.getImages()) {
                 is AppResult.Success -> _state.update { it.copy(isLoading = false, images = r.data) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
+            }
+        }
+    }
+
+    /** Recarrega mantendo a grade visível (pull-to-refresh / refetch ao retomar). */
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true, error = null) }
+            when (val r = repository.getImages()) {
+                is AppResult.Success -> _state.update { it.copy(isRefreshing = false, images = r.data) }
+                is AppResult.Error -> _state.update { it.copy(isRefreshing = false, error = r.message) }
             }
         }
     }

@@ -17,6 +17,7 @@ import javax.inject.Inject
 
 data class VideoUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val catalog: VideoHomeCatalogDto? = null,
     val error: String? = null,
 )
@@ -29,12 +30,15 @@ class VideoViewModel @Inject constructor(private val repository: VideoRepository
 
     init { load() }
 
-    fun load() {
+    /** Recarrega o catálogo exibindo o indicador de pull-to-refresh (sem spinner de tela cheia). */
+    fun refresh() = load(refreshing = true)
+
+    fun load(refreshing: Boolean = false) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = !refreshing, isRefreshing = refreshing, error = null) }
             when (val r = repository.getHomeCatalog()) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, catalog = r.data) }
-                is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, isRefreshing = false, catalog = r.data) }
+                is AppResult.Error -> _state.update { it.copy(isLoading = false, isRefreshing = false, error = r.message) }
             }
         }
     }

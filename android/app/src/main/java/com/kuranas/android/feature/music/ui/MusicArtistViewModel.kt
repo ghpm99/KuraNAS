@@ -7,12 +7,16 @@ import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.TrackDto
+import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MusicArtistViewModel @Inject constructor(val repository: MusicRepository) : ViewModel() {
+class MusicArtistViewModel @Inject constructor(
+    val repository: MusicRepository,
+    private val player: PlayerConnection,
+) : ViewModel() {
     private val _tracks = mutableStateOf<List<TrackDto>?>(null)
     val tracks: State<List<TrackDto>?> = _tracks
 
@@ -24,4 +28,6 @@ class MusicArtistViewModel @Inject constructor(val repository: MusicRepository) 
             }
         }
     }
+
+    fun play(track: TrackDto) = player.play(track, _tracks.value ?: emptyList())
 }

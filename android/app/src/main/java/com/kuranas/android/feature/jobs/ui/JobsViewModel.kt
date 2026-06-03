@@ -41,13 +41,13 @@ class JobsViewModel @Inject constructor(private val api: JobsApi) : ViewModel() 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             when (val r = safeApiCall { api.listJobs() }) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, jobs = r.data) }
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, jobs = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
             }
         }
     }
 
-    fun cancelJob(id: String) {
+    fun cancelJob(id: Int) {
         viewModelScope.launch {
             safeApiCall { api.cancelJob(id) }
             load()
