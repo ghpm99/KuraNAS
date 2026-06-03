@@ -23,7 +23,6 @@ fun MusicPlaylistScreen(
     playlistId: Int,
     onNavigateBack: () -> Unit,
     onPlayTrack: () -> Unit,
-    playerViewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
     val viewModel: MusicPlaylistViewModel = hiltViewModel()
     LaunchedEffect(playlistId) { viewModel.load(playlistId) }
@@ -37,7 +36,7 @@ fun MusicPlaylistScreen(
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(tracks ?: emptyList(), key = { it.id }) { track ->
                     TrackListItem(track = track, onClick = {
-                        playerViewModel.playTrack(track, tracks ?: emptyList())
+                        viewModel.play(track)
                         onPlayTrack()
                     })
                 }

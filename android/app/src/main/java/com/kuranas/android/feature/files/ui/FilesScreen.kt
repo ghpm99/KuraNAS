@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -33,15 +36,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +51,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
@@ -58,7 +62,6 @@ import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.files.data.FileItemDto
-import com.kuranas.android.ui.theme.StatusNegative
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,13 +69,22 @@ fun FilesScreen(
     onOpenImage: (String) -> Unit,
     onOpenVideo: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
+    onOpenFile: (String, String) -> Unit,
     viewModel: FilesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var newFolderName by remember { mutableStateOf("") }
 
+    // Recarrega a pasta atual ao retomar a tela (voltar de outra tela / background),
+    // pulando o primeiro ON_RESUME pra não duplicar o load do init.
+    var firstResume by rememberSaveable { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (firstResume) firstResume = false else viewModel.refresh()
+    }
+
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.toggleCreateFolderDialog(true) },
@@ -98,6 +110,11 @@ fun FilesScreen(
                 }
             }
 
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
             when {
                 state.isLoading -> LoadingView()
                 state.error != null -> ErrorView(state.error!!, onRetry = viewModel::loadRoot)
@@ -107,41 +124,22 @@ fun FilesScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     items(state.files, key = { it.id }) { file ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    viewModel.deleteFile(file)
-                                    true
-                                } else false
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = {
-                                Row(
-                                    modifier = Modifier.fillMaxSize().glass(GlassLevel.Strong).padding(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Deletar", tint = StatusNegative)
+                        FileListItem(
+                            file = file,
+                            onClick = {
+                                when {
+                                    file.isDir -> viewModel.openFolder(file)
+                                    file.mimeType.startsWith("image/") -> onOpenImage(file.id)
+                                    file.mimeType.startsWith("video/") -> onOpenVideo(file.id)
+                                    file.mimeType.startsWith("audio/") -> onPlayAudio(file.id)
+                                    else -> onOpenFile(file.id, file.name)
                                 }
                             },
-                        ) {
-                            FileListItem(
-                                file = file,
-                                onClick = {
-                                    when {
-                                        file.isDir -> viewModel.openFolder(file)
-                                        file.mimeType.startsWith("image/") -> onOpenImage(file.id)
-                                        file.mimeType.startsWith("video/") -> onOpenVideo(file.id)
-                                        file.mimeType.startsWith("audio/") -> onPlayAudio(file.id)
-                                    }
-                                },
-                                onStar = { viewModel.starFile(file) },
-                            )
-                        }
+                            onStar = { viewModel.starFile(file) },
+                        )
                     }
                 }
+            }
             }
         }
     }

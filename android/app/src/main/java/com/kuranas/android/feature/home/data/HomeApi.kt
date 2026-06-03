@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.home.data
 
+import com.kuranas.android.core.network.mimeTypeForFormat
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
@@ -22,7 +23,7 @@ interface HomeApi {
 data class SpaceUsedDto(@SerialName("total_space_used") val totalSpaceUsed: Long = 0)
 
 @Serializable
-data class TotalDto(val total: Long = 0)
+data class TotalDto(@SerialName("total_files") val total: Long = 0)
 
 @Serializable
 data class TotalDirectoryDto(@SerialName("total_directory") val total: Long = 0)
@@ -40,7 +41,7 @@ data class RecentFileDto(
     @SerialName("updated_at") val updatedAt: String = "",
 ) {
     val size: Long get() = sizeBytes
-    val mimeType: String get() = format
+    val mimeType: String get() = mimeTypeForFormat(format)
 }
 
 @Serializable

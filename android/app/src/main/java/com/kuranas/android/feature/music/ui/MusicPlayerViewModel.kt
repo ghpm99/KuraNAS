@@ -1,130 +1,53 @@
 package com.kuranas.android.feature.music.ui
 
-import android.content.ComponentName
-import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
-import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.MoreExecutors
 import com.kuranas.android.feature.music.data.MusicRepository
-import com.kuranas.android.feature.music.data.PlayerStateDto
 import com.kuranas.android.feature.music.data.TrackDto
+import com.kuranas.android.feature.music.playback.NowPlayingState
+import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class PlayerUiState(
-    val currentTrack: TrackDto? = null,
-    val isPlaying: Boolean = false,
-    val position: Long = 0L,
-    val duration: Long = 0L,
-    val shuffle: Boolean = false,
-    val repeatMode: Int = Player.REPEAT_MODE_OFF,
-    val queue: List<TrackDto> = emptyList(),
-)
-
+/**
+ * VM fino: o estado e o controle vivem no [PlayerConnection] (@Singleton), compartilhado
+ * por mini-player, player completo e listas. Antes a lógica de MediaController ficava aqui
+ * com escopo de tela, então o player abria sem saber o que tocar.
+ *
+ * Quando a tela é aberta a partir de Arquivos/Início/Busca, a rota traz um `trackId`: aqui
+ * resolvemos a faixa e iniciamos a reprodução. Antes esses fluxos só navegavam para o
+ * player sem nunca chamar play(), então a tela abria vazia e nada tocava.
+ */
 @HiltViewModel
 class MusicPlayerViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val player: PlayerConnection,
     private val repository: MusicRepository,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(PlayerUiState())
-    val state: StateFlow<PlayerUiState> = _state.asStateFlow()
-
-    private var controllerFuture: ListenableFuture<MediaController>? = null
-    private var controller: MediaController? = null
+    val state: StateFlow<NowPlayingState> = player.state
 
     init {
-        connectToService()
-        loadPlayerState()
-    }
-
-    private fun connectToService() {
-        val token = SessionToken(context, ComponentName(context, MusicPlaybackService::class.java))
-        controllerFuture = MediaController.Builder(context, token).buildAsync()
-        controllerFuture?.addListener({
-            controller = controllerFuture?.get()
-            controller?.addListener(playerListener)
-        }, MoreExecutors.directExecutor())
-    }
-
-    private val playerListener = object : Player.Listener {
-        override fun onIsPlayingChanged(isPlaying: Boolean) {
-            _state.update { it.copy(isPlaying = isPlaying) }
-        }
-        override fun onPlaybackStateChanged(state: Int) {
-            controller?.let { c ->
-                _state.update { it.copy(duration = c.duration.coerceAtLeast(0)) }
+        val trackId = savedStateHandle.get<Int>("trackId") ?: -1
+        // Só dispara se veio um id explícito e não é a faixa que já está tocando (evita
+        // reiniciar ao reabrir o player pelo mini-player).
+        if (trackId > 0 && player.state.value.currentTrack?.id != trackId) {
+            viewModelScope.launch {
+                val track = repository.getTrackById(trackId)
+                player.play(track, listOf(track))
             }
         }
     }
 
-    fun playTrack(track: TrackDto, queue: List<TrackDto> = emptyList()) {
-        viewModelScope.launch {
-            val url = repository.streamUrl(track.id)
-            val items = if (queue.isEmpty()) listOf(track) else queue
-            val mediaItems = items.map { MediaItem.fromUri(repository.streamUrl(it.id)) }
-            val startIndex = items.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
-            controller?.apply {
-                setMediaItems(mediaItems, startIndex, 0L)
-                prepare()
-                play()
-            }
-            _state.update { it.copy(currentTrack = track, queue = items, isPlaying = true) }
-        }
-    }
-
-    fun togglePlayPause() {
-        controller?.let { if (it.isPlaying) it.pause() else it.play() }
-    }
-
-    fun next() { controller?.seekToNextMediaItem() }
-    fun previous() { controller?.seekToPreviousMediaItem() }
-
-    fun seekTo(position: Long) {
-        controller?.seekTo(position)
-        _state.update { it.copy(position = position) }
-    }
-
-    fun toggleShuffle() {
-        val newShuffle = !_state.value.shuffle
-        controller?.shuffleModeEnabled = newShuffle
-        _state.update { it.copy(shuffle = newShuffle) }
-    }
-
-    fun toggleRepeat() {
-        val newMode = when (_state.value.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
-        }
-        controller?.repeatMode = newMode
-        _state.update { it.copy(repeatMode = newMode) }
-    }
-
-    fun updatePosition() {
-        controller?.let { c -> _state.update { it.copy(position = c.currentPosition.coerceAtLeast(0)) } }
-    }
-
-    private fun loadPlayerState() {
-        viewModelScope.launch {
-            repository.getPlayerState()
-        }
-    }
-
-    override fun onCleared() {
-        controller?.removeListener(playerListener)
-        MediaController.releaseFuture(controllerFuture ?: return)
-        super.onCleared()
-    }
+    fun play(track: TrackDto, context: List<TrackDto>) = player.play(track, context)
+    fun togglePlayPause() = player.togglePlayPause()
+    fun next() = player.next()
+    fun previous() = player.previous()
+    fun seekTo(positionMs: Long) = player.seekTo(positionMs)
+    fun toggleShuffle() = player.toggleShuffle()
+    fun toggleRepeat() = player.cycleRepeat()
+    fun skipToQueueItem(index: Int) = player.skipToQueueItem(index)
 }

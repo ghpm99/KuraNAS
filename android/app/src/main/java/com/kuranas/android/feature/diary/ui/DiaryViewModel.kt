@@ -40,7 +40,7 @@ class DiaryViewModel @Inject constructor(private val api: DiaryApi) : ViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             when (val r = safeApiCall { api.getDiary() }) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, entries = r.data) }
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, entries = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
             }
         }
@@ -48,15 +48,16 @@ class DiaryViewModel @Inject constructor(private val api: DiaryApi) : ViewModel(
 
     fun createEntry(title: String, content: String) {
         viewModelScope.launch {
-            safeApiCall { api.createEntry(CreateDiaryRequest(title, content)) }
+            safeApiCall { api.createEntry(CreateDiaryRequest(name = title, description = content)) }
             _state.update { it.copy(showCreateDialog = false) }
             load()
         }
     }
 
+    // O backend só persiste o nome da atividade neste endpoint (campo de formulário `data`).
     fun updateEntry(id: Int, title: String, content: String) {
         viewModelScope.launch {
-            safeApiCall { api.updateEntry(id, CreateDiaryRequest(title, content)) }
+            safeApiCall { api.updateEntry(id, title) }
             _state.update { it.copy(editingEntry = null) }
             load()
         }

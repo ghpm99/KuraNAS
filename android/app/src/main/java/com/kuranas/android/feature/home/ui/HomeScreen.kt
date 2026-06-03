@@ -19,16 +19,23 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.FileSizeText
@@ -37,6 +44,7 @@ import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onOpenMenu: () -> Unit,
@@ -44,9 +52,21 @@ fun HomeScreen(
     onOpenMusic: () -> Unit,
     onOpenVideo: () -> Unit,
     onOpenImages: () -> Unit,
+    onOpenImage: (String) -> Unit,
+    onOpenVideoFile: (String) -> Unit,
+    onPlayAudio: (String) -> Unit,
+    onOpenFile: (String, String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    // Recarrega ao retomar a tela (voltar de outra tela / do background),
+    // pulando o primeiro ON_RESUME pra não duplicar o load do init.
+    var firstResume by rememberSaveable { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (firstResume) firstResume = false else viewModel.refresh()
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
@@ -54,6 +74,11 @@ fun HomeScreen(
             leadingIcon = Icons.Default.Menu,
             onLeadingClick = onOpenMenu,
         )
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         when (val s = state) {
             is HomeUiState.Loading -> LoadingView()
             is HomeUiState.Error -> ErrorView(s.message, onRetry = viewModel::load)
@@ -83,11 +108,24 @@ fun HomeScreen(
                             Text("Acessados recentemente", style = MaterialTheme.typography.titleMedium)
                         }
                         items(s.recentFiles.take(10)) { file ->
-                            RecentFileItem(name = file.name, size = file.size, mimeType = file.mimeType)
+                            RecentFileItem(
+                                name = file.name,
+                                size = file.size,
+                                mimeType = file.mimeType,
+                                onClick = {
+                                    when {
+                                        file.mimeType.startsWith("image/") -> onOpenImage(file.id.toString())
+                                        file.mimeType.startsWith("video/") -> onOpenVideoFile(file.id.toString())
+                                        file.mimeType.startsWith("audio/") -> onPlayAudio(file.id.toString())
+                                        else -> onOpenFile(file.id.toString(), file.name)
+                                    }
+                                },
+                            )
                         }
                     }
                 }
             }
+        }
         }
     }
 }
@@ -124,11 +162,12 @@ private fun QuickAccessItem(label: String, icon: ImageVector, modifier: Modifier
 }
 
 @Composable
-private fun RecentFileItem(name: String, size: Long, mimeType: String) {
+private fun RecentFileItem(name: String, size: Long, mimeType: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .glass(GlassLevel.Flat, radius = 12.dp)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

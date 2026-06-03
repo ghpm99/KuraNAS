@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MusicArtistViewModel @Inject constructor(
-    val repository: MusicRepository,
+class MusicFolderViewModel @Inject constructor(
+    private val repository: MusicRepository,
     private val player: PlayerConnection,
 ) : ViewModel() {
     private val _tracks = mutableStateOf<List<TrackDto>?>(null)
@@ -22,7 +22,7 @@ class MusicArtistViewModel @Inject constructor(
 
     fun load(key: String) {
         viewModelScope.launch {
-            when (val r = repository.getTracksByArtist(key)) {
+            when (val r = repository.getTracksByFolder(key)) {
                 is AppResult.Success -> _tracks.value = r.data
                 is AppResult.Error -> _tracks.value = emptyList()
             }

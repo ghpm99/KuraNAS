@@ -37,7 +37,7 @@ class NotificationsViewModel @Inject constructor(private val api: NotificationsA
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             when (val r = safeApiCall { api.listNotifications() }) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, notifications = r.data) }
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, notifications = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
             }
         }
