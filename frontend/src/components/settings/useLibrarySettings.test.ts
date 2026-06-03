@@ -54,10 +54,12 @@ describe('components/settings/useLibrarySettings', () => {
 
 	it('exposes ordered libraries and category labels', () => {
 		const { result } = renderHook(() => useLibrarySettings());
+		const firstLibrary = result.current.libraries[0];
 
 		expect(result.current.libraries).toHaveLength(4);
-		expect(result.current.libraries[0].category).toBe('images');
-		expect(result.current.libraries[0].path).toBe('/data/Imagens');
+		expect(firstLibrary).toBeDefined();
+		expect(firstLibrary?.category).toBe('images');
+		expect(firstLibrary?.path).toBe('/data/Imagens');
 		expect(result.current.getCategoryLabel('videos')).toBe('LIBRARY_VIDEOS');
 	});
 
@@ -68,7 +70,9 @@ describe('components/settings/useLibrarySettings', () => {
 			result.current.setPath('documents', '/data/Documentos');
 		});
 
-		expect(result.current.libraries[3].path).toBe('/data/Documentos');
+		const documentsLibrary = result.current.libraries[3];
+		expect(documentsLibrary).toBeDefined();
+		expect(documentsLibrary?.path).toBe('/data/Documentos');
 	});
 
 	it('saves category and shows success snackbar', async () => {

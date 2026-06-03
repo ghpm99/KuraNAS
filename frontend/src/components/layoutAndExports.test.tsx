@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import AboutLayout from './about/aboutLayout';
 import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
-import FilesLayout from './files/filesLayout';
+import FilesLayout from '@/features/files/files/filesLayout';
 import ImagesLayout from './images/imagesLayout';
 import VideoLayout from './videos/videoLayout';
 import MusicLayout from './music/musicLayout';

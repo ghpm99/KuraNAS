@@ -31,6 +31,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterLibrariesRoutes(routesV1, context)
 	RegisterAIProvidersRoutes(routesV1, context)
 	RegisterOllamaRoutes(routesV1, context)
+	RegisterWatchFoldersRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
@@ -255,6 +256,20 @@ func RegisterOllamaRoutes(router *gin.RouterGroup, context *AppContext) {
 	ollamaGroup.GET("/models", context.Ollama.Handler.ListModelsHandler)
 	ollamaGroup.POST("/models/pull", context.Ollama.Handler.PullModelHandler)
 	ollamaGroup.DELETE("/models/:name", context.Ollama.Handler.DeleteModelHandler)
+}
+
+func RegisterWatchFoldersRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.WatchFolders == nil || context.WatchFolders.Handler == nil {
+		return
+	}
+
+	watchFolders := router.Group("/watch-folders")
+	watchFolders.GET("", context.WatchFolders.Handler.GetWatchFoldersHandler)
+	watchFolders.GET("/", context.WatchFolders.Handler.GetWatchFoldersHandler)
+	watchFolders.POST("", context.WatchFolders.Handler.CreateWatchFolderHandler)
+	watchFolders.POST("/", context.WatchFolders.Handler.CreateWatchFolderHandler)
+	watchFolders.PUT("/:id", context.WatchFolders.Handler.UpdateWatchFolderHandler)
+	watchFolders.DELETE("/:id", context.WatchFolders.Handler.DeleteWatchFolderHandler)
 }
 
 func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {

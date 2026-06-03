@@ -38,6 +38,9 @@ func TestNewContextBuildsAllDependencies(t *testing.T) {
 	if ctx.Configuration == nil || ctx.Configuration.Handler == nil || ctx.Configuration.Service == nil || ctx.UpdateHandler == nil || ctx.UpdateService == nil {
 		t.Fatalf("expected configuration context, update handler and update service initialized")
 	}
+	if ctx.WatchFolders == nil || ctx.WatchFolders.Handler == nil || ctx.WatchFolders.Service == nil {
+		t.Fatalf("expected watch folders context initialized")
+	}
 }
 
 func TestApplicationRunAndStopGuards(t *testing.T) {
@@ -110,6 +113,7 @@ func TestInitializeAppLoadConfigAndDatabaseErrors(t *testing.T) {
 	origNewRouter := newRouterFn
 	origRegisterRoutes := registerRoutesFn
 	origStartWorkers := startWorkersFn
+	origNewFolderWatcher := newFolderWatcherFn
 	origNewSystemEvent := newSystemEventFn
 	t.Cleanup(func() {
 		loadConfigFn = origLoadConfig
@@ -120,6 +124,7 @@ func TestInitializeAppLoadConfigAndDatabaseErrors(t *testing.T) {
 		newRouterFn = origNewRouter
 		registerRoutesFn = origRegisterRoutes
 		startWorkersFn = origStartWorkers
+		newFolderWatcherFn = origNewFolderWatcher
 		newSystemEventFn = origNewSystemEvent
 	})
 
@@ -146,6 +151,7 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	origNewRouter := newRouterFn
 	origRegisterRoutes := registerRoutesFn
 	origStartWorkers := startWorkersFn
+	origNewFolderWatcher := newFolderWatcherFn
 	origNewSystemEvent := newSystemEventFn
 	t.Cleanup(func() {
 		loadConfigFn = origLoadConfig
@@ -156,6 +162,7 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 		newRouterFn = origNewRouter
 		registerRoutesFn = origRegisterRoutes
 		startWorkersFn = origStartWorkers
+		newFolderWatcherFn = origNewFolderWatcher
 		newSystemEventFn = origNewSystemEvent
 	})
 
@@ -179,6 +186,8 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	registerRoutesFn = func(router *gin.Engine, context *AppContext) { registerCalled = true }
 	workersCalled := false
 	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) { workersCalled = true }
+	folderWatcher := &folderWatcherSpy{}
+	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface { return folderWatcher }
 	systemEvents := &systemEventServiceSpy{}
 	newSystemEventFn = func(*database.DbContext) systemevent.ServiceInterface { return systemEvents }
 
@@ -193,6 +202,9 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	if !registerCalled || !workersCalled {
 		t.Fatalf("expected routes and workers to be started")
 	}
+	if folderWatcher.startCalls != 1 {
+		t.Fatalf("expected folder watcher start once, got %d", folderWatcher.startCalls)
+	}
 	if systemEvents.startupCalls != 1 {
 		t.Fatalf("expected startup event to be recorded once")
 	}
@@ -203,6 +215,9 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	}
 	if gin.Mode() != gin.DebugMode {
 		t.Fatalf("expected debug mode for non-production env")
+	}
+	if folderWatcher.startCalls != 2 {
+		t.Fatalf("expected folder watcher start twice, got %d", folderWatcher.startCalls)
 	}
 }
 
@@ -262,11 +277,26 @@ func (s *systemEventServiceSpy) RecordShutdown() error {
 	return s.shutdownErr
 }
 
+type folderWatcherSpy struct {
+	startCalls int
+	stopCalls  int
+}
+
+func (s *folderWatcherSpy) Start() {
+	s.startCalls++
+}
+
+func (s *folderWatcherSpy) Stop() {
+	s.stopCalls++
+}
+
 func TestApplicationStopRecordsShutdownEvent(t *testing.T) {
 	spy := &systemEventServiceSpy{}
+	watcherSpy := &folderWatcherSpy{}
 	app := &Application{
-		Router:       gin.New(),
-		SystemEvents: spy,
+		Router:        gin.New(),
+		FolderWatcher: watcherSpy,
+		SystemEvents:  spy,
 	}
 
 	if err := app.Stop(); err != nil {
@@ -275,6 +305,9 @@ func TestApplicationStopRecordsShutdownEvent(t *testing.T) {
 
 	if spy.shutdownCalls != 1 {
 		t.Fatalf("expected shutdown event to be recorded once")
+	}
+	if watcherSpy.stopCalls != 1 {
+		t.Fatalf("expected folder watcher stop once")
 	}
 }
 
@@ -287,6 +320,7 @@ func TestInitializeAppStartupEventFailureDoesNotBreakInitialization(t *testing.T
 	origNewRouter := newRouterFn
 	origRegisterRoutes := registerRoutesFn
 	origStartWorkers := startWorkersFn
+	origNewFolderWatcher := newFolderWatcherFn
 	origNewSystemEvent := newSystemEventFn
 	t.Cleanup(func() {
 		loadConfigFn = origLoadConfig
@@ -297,6 +331,7 @@ func TestInitializeAppStartupEventFailureDoesNotBreakInitialization(t *testing.T
 		newRouterFn = origNewRouter
 		registerRoutesFn = origRegisterRoutes
 		startWorkersFn = origStartWorkers
+		newFolderWatcherFn = origNewFolderWatcher
 		newSystemEventFn = origNewSystemEvent
 	})
 
@@ -317,6 +352,7 @@ func TestInitializeAppStartupEventFailureDoesNotBreakInitialization(t *testing.T
 	newRouterFn = func(opts ...gin.OptionFunc) *gin.Engine { return gin.New(opts...) }
 	registerRoutesFn = func(router *gin.Engine, context *AppContext) {}
 	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) {}
+	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface { return nil }
 	spy := &systemEventServiceSpy{startupErr: errors.New("startup log failed")}
 	newSystemEventFn = func(*database.DbContext) systemevent.ServiceInterface { return spy }
 

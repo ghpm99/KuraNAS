@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import AllTracksView from './AllTracksView';
-import ArtistsView from './ArtistsView';
-import AlbumsView from './AlbumsView';
-import GenresView from './GenresView';
-import FoldersView from './FoldersView';
+import AllTracksView from '@/features/music/views/AllTracksView';
+import ArtistsView from '@/features/music/views/ArtistsView';
+import AlbumsView from '@/features/music/views/AlbumsView';
+import GenresView from '@/features/music/views/GenresView';
+import FoldersView from '@/features/music/views/FoldersView';
 
 const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
@@ -20,10 +20,10 @@ const mockGetMusicFolders = jest.fn();
 const mockGetMusicByFolder = jest.fn();
 const mockReplaceQueue = jest.fn();
 
-jest.mock('@/components/providers/musicProvider/musicProvider', () => ({
+jest.mock('@/features/music/providers/musicProvider/musicProvider', () => ({
     useMusic: () => mockUseMusic(),
 }));
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 jest.mock('@/utils/music', () => ({

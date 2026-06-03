@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/discovery"
+	"nas-go/api/internal/watcher"
 	"nas-go/api/internal/worker"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
@@ -26,10 +28,35 @@ var (
 	newRouterFn        = gin.Default
 	registerRoutesFn   = RegisterRoutes
 	startWorkersFn     = worker.StartWorkers
-	newSystemEventFn   = func(dbContext *database.DbContext) systemevent.ServiceInterface {
+	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface {
+		if context == nil ||
+			context.WatchFolders == nil || context.WatchFolders.Service == nil ||
+			context.Libraries == nil || context.Libraries.Service == nil ||
+			context.Files == nil || context.Files.Service == nil {
+			return nil
+		}
+
+		var notificationService notifications.ServiceInterface
+		if context.Notifications != nil {
+			notificationService = context.Notifications.Service
+		}
+		return watcher.NewFolderWatcher(
+			context.WatchFolders.Service,
+			context.Libraries.Service,
+			context.Files.Service,
+			notificationService,
+			60*time.Second,
+		)
+	}
+	newSystemEventFn = func(dbContext *database.DbContext) systemevent.ServiceInterface {
 		return systemevent.NewService(dbContext)
 	}
 )
+
+type FolderWatcherInterface interface {
+	Start()
+	Stop()
+}
 
 type Application struct {
 	Router        *gin.Engine
@@ -37,6 +64,7 @@ type Application struct {
 	Server        *http.Server
 	UDPListener   *discovery.UDPListener
 	MdnsRegistrar *discovery.MdnsRegistrar
+	FolderWatcher FolderWatcherInterface
 	SystemEvents  systemevent.ServiceInterface
 }
 
@@ -92,6 +120,11 @@ func InitializeApp() (*Application, error) {
 
 	startWorkersFn(workerFileContext, 200)
 
+	folderWatcher := newFolderWatcherFn(appContext)
+	if folderWatcher != nil {
+		folderWatcher.Start()
+	}
+
 	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
 	if err := udpListener.Start(); err != nil {
 		log.Printf("[APP] Failed to start UDP discovery listener: %v", err)
@@ -111,6 +144,7 @@ func InitializeApp() (*Application, error) {
 		Context:       appContext,
 		UDPListener:   udpListener,
 		MdnsRegistrar: mdnsRegistrar,
+		FolderWatcher: folderWatcher,
 		SystemEvents:  systemEvents,
 	}, nil
 }
@@ -151,6 +185,10 @@ func (app *Application) Stop() error {
 		if err := app.SystemEvents.RecordShutdown(); err != nil {
 			log.Printf("[APP] Failed to record shutdown system event: %v", err)
 		}
+	}
+
+	if app.FolderWatcher != nil {
+		app.FolderWatcher.Stop()
 	}
 
 	if app.Server == nil {

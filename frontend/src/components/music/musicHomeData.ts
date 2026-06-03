@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 
 export interface MusicArtistHighlight {
     artist: string;

@@ -1,9 +1,9 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import useFile, { type FileData } from '@/components/providers/fileProvider/fileContext';
+import useFile, { type FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { FileType, getFileTypeInfo } from '@/utils';
 import { useMemo, useState } from 'react';
-import type { BreadcrumbSegment } from '@/components/files/useFilesExplorerScreen';
-import { findTrailById } from '@/components/files/fileNavigation';
+import type { BreadcrumbSegment } from '@/features/files/files/useFilesExplorerScreen';
+import { findTrailById } from '@/features/files/files/fileNavigation';
 
 export type FavoritesFilter = 'all' | 'folders' | 'files' | 'media';
 export type FavoritesViewMode = 'grid' | 'list';

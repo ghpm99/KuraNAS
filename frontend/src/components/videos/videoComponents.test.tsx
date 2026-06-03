@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
-import VideoControls from './videoControls/videoControls';
-import VideoSettings from './videoSettings/videoSettings';
-import VideoProgressBar from './videoProgressBar/videoProgressBar';
+import VideoControls from '@/features/videos/videoControls/videoControls';
+import VideoSettings from '@/features/videos/videoSettings/videoSettings';
+import VideoProgressBar from '@/features/videos/videoProgressBar/videoProgressBar';
 import VideoThumbnail from './videoThumbnail/videoThumbnail';
-import VideoPlayer from './videoPlayer/videoPlayer';
+import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,

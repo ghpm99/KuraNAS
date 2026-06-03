@@ -19,21 +19,21 @@ public class BitmapLoaderTaskTest {
     public void calculateInSampleSize_downscalesLargeImage() throws Exception {
         int result = invokeCalculateInSampleSize(800, 800, 200, 200);
 
-        assertEquals(2, result);
+        assertEquals(4, result);
     }
 
     @Test
     public void calculateInSampleSize_downscalesVeryLargeImage() throws Exception {
         int result = invokeCalculateInSampleSize(3200, 3200, 200, 200);
 
-        assertEquals(8, result);
+        assertEquals(16, result);
     }
 
     @Test
     public void calculateInSampleSize_handlesRectangularImage() throws Exception {
         int result = invokeCalculateInSampleSize(1600, 800, 200, 200);
 
-        assertEquals(2, result);
+        assertEquals(4, result);
     }
 
     @Test

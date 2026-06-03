@@ -1,6 +1,6 @@
 import { CircularProgress, Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useVideoContentProvider } from '@/components/providers/videoContentProvider';
+import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoHomeScreen from './VideoHomeScreen';

@@ -6,7 +6,7 @@ jest.mock('@tanstack/react-query', () => ({
     useQuery: jest.fn(),
 }));
 
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: jest.fn(),
 }));
 
@@ -34,7 +34,7 @@ jest.mock('@/service/videoPlayback', () => ({
 }));
 
 const mockedUseQuery = useQuery as jest.Mock;
-const mockedUseGlobalMusic = jest.requireMock('@/components/providers/GlobalMusicProvider')
+const mockedUseGlobalMusic = jest.requireMock('@/features/music/providers/GlobalMusicProvider')
     .useGlobalMusic as jest.Mock;
 
 const defaultGlobalMusic = () => ({

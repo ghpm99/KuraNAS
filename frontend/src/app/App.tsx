@@ -3,7 +3,7 @@ import AppProviders from '@/components/providers/appProviders';
 
 import { appRoutes, getMusicRoute, isVideoPlayerRoute } from '@/app/routes';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { GlobalMusicProvider } from '@/components/providers/GlobalMusicProvider';
+import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import GlobalPlayerControl from '@/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
@@ -18,11 +18,11 @@ const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const ImagesPage = lazy(() => import('@/pages/images'));
 const MusicPage = lazy(() => import('@/pages/music'));
 const MusicHomeScreen = lazy(() => import('@/components/music/MusicHomeScreen'));
-const AlbumsView = lazy(() => import('@/pages/music/views/AlbumsView'));
-const ArtistsView = lazy(() => import('@/pages/music/views/ArtistsView'));
-const FoldersView = lazy(() => import('@/pages/music/views/FoldersView'));
-const GenresView = lazy(() => import('@/pages/music/views/GenresView'));
-const PlaylistsView = lazy(() => import('@/pages/music/views/PlaylistsView'));
+const AlbumsView = lazy(() => import('@/features/music/views/AlbumsView'));
+const ArtistsView = lazy(() => import('@/features/music/views/ArtistsView'));
+const FoldersView = lazy(() => import('@/features/music/views/FoldersView'));
+const GenresView = lazy(() => import('@/features/music/views/GenresView'));
+const PlaylistsView = lazy(() => import('@/features/music/views/PlaylistsView'));
 const VideosPage = lazy(() => import('@/pages/videos/videos'));
 const TakeoutPage = lazy(() => import('@/pages/takeout'));
 const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));

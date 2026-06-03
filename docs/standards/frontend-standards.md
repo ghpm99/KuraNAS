@@ -9,7 +9,9 @@ This document is the canonical source for frontend implementation patterns in th
 
 ## 1) Architecture
 - Stack is `React + TypeScript + Vite`, with route composition in `src/app/App.tsx`.
-- Keep route-level files in `src/pages/*` and keep page wrappers thin; business behavior should live in `src/components/*` and `src/components/providers/*`.
+- Keep route-level files in `src/pages/*` and keep page wrappers thin.
+- For `files`, `music`, and `videos`, business behavior must live in `src/features/<domain>/*` (providers/hooks/views/components).
+- Keep `src/components/*` focused on shared UI composition, layout, and domains not yet migrated to feature-first ownership.
 - Keep feature boundaries explicit: each major domain (`files`, `music`, `videos`, `analytics`, `activityDiary`, `about`, `images`) owns its components, provider/hooks, and tests.
 - Use path alias imports (`@/...`) for internal modules instead of deep relative traversals.
 - All system logic and data-fetching logic must be implemented in hooks/providers, not in render components.
@@ -94,3 +96,4 @@ This document is the canonical source for frontend implementation patterns in th
 - 2026-03-05: Initial canonical frontend standards file created.
 - 2026-03-05: First populated version based on current frontend implementation.
 - 2026-03-05: Rules tightened: logic/HTTP only in hooks/providers, component abstraction (`.module.css` + `use*` + view), CSS Modules as default, and mandatory reuse of existing/MUI components.
+- 2026-04-01: Updated architecture guidance to reflect feature-first ownership for `files`, `music`, and `videos`.

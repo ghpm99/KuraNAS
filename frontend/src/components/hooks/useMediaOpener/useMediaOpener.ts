@@ -1,11 +1,11 @@
 import { appRoutes } from '@/app/routes';
 import { createRouteMusicPlaybackContext } from '@/components/music/playbackContext';
-import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { IImageMetadata } from '@/components/providers/imageProvider/imageProvider';
 import type {
     IMusicData,
     IMusicMetadata,
-} from '@/components/providers/musicProvider/musicProvider';
+} from '@/features/music/providers/musicProvider/musicProvider';
 import { FileType, getFileTypeInfo } from '@/utils';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

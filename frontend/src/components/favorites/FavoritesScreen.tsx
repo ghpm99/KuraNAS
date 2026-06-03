@@ -1,5 +1,5 @@
-import FileContent from '@/components/fileContent';
-import FileDetails from '@/components/fileDetails';
+import FileContent from '@/features/files/fileContent';
+import FileDetails from '@/features/files/fileDetails';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
 import { Heart, LayoutGrid, List, Sparkles } from 'lucide-react';

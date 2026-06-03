@@ -856,7 +856,6 @@
 	"TAKEOUT_PROCESSING": "Processing import...",
 	"TAKEOUT_UPLOAD_COMPLETE": "Upload complete, processing started",
 	"TAKEOUT_FILE_TYPE_ERROR": "Only ZIP files are accepted",
-	"NAV_TAKEOUT": "Takeout Import",
 	"AI_PROVIDERS_TITLE": "AI Providers",
 	"AI_PROVIDERS_DESCRIPTION": "Enable AI providers and choose their models. When more than one is enabled they are tried in priority order as a fallback chain.",
 	"AI_PROVIDERS_FALLBACK_HINT": "Lower priority runs first. API keys for cloud providers are read from the server environment and never stored here.",
@@ -886,5 +885,19 @@
 	"AI_OLLAMA_DELETE_MODEL": "Delete",
 	"AI_OLLAMA_MODEL_DELETED": "Model deleted",
 	"AI_OLLAMA_MODEL_DELETE_ERROR": "Failed to delete model",
-	"AI_OLLAMA_NO_MODELS": "No models installed yet"
+	"AI_OLLAMA_NO_MODELS": "No models installed yet",
+	"SETTINGS_WATCH_FOLDER_SAVE_ERROR": "Failed to save watch folder settings",
+	"WATCH_FOLDER_PATH_NOT_EXISTS": "The watch folder path does not exist",
+	"WATCH_FOLDER_PATH_IS_ENTRY_POINT": "The watch folder path cannot be the entry point or inside it",
+	"WATCH_FOLDER_PATH_ALREADY_WATCHED": "The selected path is already being watched",
+	"WATCH_FOLDER_NOT_FOUND": "Watch folder not found",
+	"WATCH_FOLDER_CREATED": "Watch folder created: %s",
+	"WATCH_FOLDER_UPDATED": "Watch folder updated: %s",
+	"WATCH_FOLDER_DELETED": "Watch folder removed: %s",
+	"WATCH_FOLDER_SCAN_STARTED": "Watch folder scan started: %s",
+	"WATCH_FOLDER_SCAN_COMPLETED": "Watch folder scan finished with %d files: %s",
+	"WATCH_FOLDER_FILE_IMPORTED": "Imported from watch folder: %s -> %s",
+	"NOTIFICATION_WATCH_IMPORT_TITLE": "Watch folder import",
+	"NOTIFICATION_WATCH_IMPORT_MESSAGE": "%d files imported from %s",
+	"NAV_TAKEOUT": "Takeout Import"
 }

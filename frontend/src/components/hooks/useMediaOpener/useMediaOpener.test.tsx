@@ -5,7 +5,7 @@ const mockNavigate = jest.fn();
 const mockReplaceQueue = jest.fn();
 const mockUseLocation = jest.fn();
 
-jest.mock('@/components/providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => ({
         replaceQueue: mockReplaceQueue,
     }),

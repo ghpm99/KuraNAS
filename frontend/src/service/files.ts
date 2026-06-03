@@ -3,9 +3,9 @@ import type {
     FileListCategoryType,
     PaginationResponse as FilePaginationResponse,
     RecentAccessFile,
-} from '@/components/providers/fileProvider/fileContext';
+} from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
-import type { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
 

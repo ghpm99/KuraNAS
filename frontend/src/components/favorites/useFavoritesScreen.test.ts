@@ -3,7 +3,7 @@ import useFavoritesScreen from './useFavoritesScreen';
 
 const mockUseFile = jest.fn();
 
-jest.mock('@/components/providers/fileProvider/fileContext', () => ({
+jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
     default: () => mockUseFile(),
 }));

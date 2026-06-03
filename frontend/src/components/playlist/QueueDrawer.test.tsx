@@ -7,7 +7,7 @@ const mockPlayTrackFromQueue = jest.fn();
 const mockRemoveFromQueue = jest.fn();
 const mockClearQueue = jest.fn();
 
-jest.mock('../providers/GlobalMusicProvider', () => ({
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
