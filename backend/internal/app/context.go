@@ -417,10 +417,20 @@ func providerTimeout(model aiproviders.ProviderModel, cfg ai.Config) time.Durati
 	return cfg.DefaultTimeout
 }
 
+// withProviderRetry wraps a provider with its own persisted retry policy, so
+// each provider's timeout/retry tuning (from the ai_providers table) is applied
+// independently.
+func withProviderRetry(provider ai.Provider, model aiproviders.ProviderModel) ai.Provider {
+	backoff := time.Duration(model.Params.RetryBackoffMS) * time.Millisecond
+	return ai.WithRetry(provider, model.Params.MaxRetries, backoff)
+}
+
 // buildAIServiceFromModels constructs the provider chain from persisted
-// configuration. Providers are already ordered by priority; the first enabled
-// one becomes primary and the rest are fallbacks. Cloud providers are skipped
-// when their API key (env-only) is missing. Returns nil when nothing is enabled.
+// configuration. Operational tuning (model, base_url, timeout, retries) comes
+// from the ai_providers table; only the API keys come from the environment.
+// Providers are already ordered by priority; the first enabled one becomes
+// primary and the rest are fallbacks. Cloud providers are skipped when their
+// API key is missing. Returns nil when nothing is enabled.
 func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config) ai.ServiceInterface {
 	var providers []ai.Provider
 
@@ -435,21 +445,24 @@ func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config)
 			if keepAlive == "" {
 				keepAlive = cfg.OllamaKeepAlive
 			}
-			providers = append(providers, ollama.NewProvider(model.BaseURL, model.Model, keepAlive, providerTimeout(model, cfg)))
+			base := ollama.NewProvider(model.BaseURL, model.Model, keepAlive, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
 			log.Printf("AI provider enabled: ollama (%s @ %s)\n", model.Model, model.BaseURL)
 		case aiproviders.ProviderOpenAI:
 			if cfg.OpenAIAPIKey == "" {
 				log.Println("AI provider openai enabled but no API key configured; skipping")
 				continue
 			}
-			providers = append(providers, openai.NewProvider(cfg.OpenAIAPIKey, model.Model, model.BaseURL, providerTimeout(model, cfg)))
+			base := openai.NewProvider(cfg.OpenAIAPIKey, model.Model, model.BaseURL, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
 			log.Printf("AI provider enabled: openai (%s)\n", model.Model)
 		case aiproviders.ProviderAnthropic:
 			if cfg.AnthropicAPIKey == "" {
 				log.Println("AI provider anthropic enabled but no API key configured; skipping")
 				continue
 			}
-			providers = append(providers, anthropic.NewProvider(cfg.AnthropicAPIKey, model.Model, providerTimeout(model, cfg)))
+			base := anthropic.NewProvider(cfg.AnthropicAPIKey, model.Model, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
 			log.Printf("AI provider enabled: anthropic (%s)\n", model.Model)
 		}
 	}
@@ -465,7 +478,7 @@ func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config)
 	}
 
 	log.Printf("AI service enabled with %d provider(s)\n", len(providers))
-	return ai.NewService(router, cfg)
+	return ai.NewService(router)
 }
 
 func newTakeoutContext(

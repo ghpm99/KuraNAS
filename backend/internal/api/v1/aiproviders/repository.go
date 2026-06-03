@@ -87,7 +87,7 @@ func (r *Repository) InsertIfAbsent(model ProviderModel) error {
 		return fmt.Errorf("InsertIfAbsent encode params: %w", err)
 	}
 
-	err = r.DbContext.QueryTx(func(tx *sql.Tx) error {
+	err = r.DbContext.ExecTx(func(tx *sql.Tx) error {
 		_, execErr := tx.Exec(
 			queries.InsertAIProviderIfAbsentQuery,
 			string(model.Name),
@@ -114,7 +114,7 @@ func (r *Repository) Update(model ProviderModel) (ProviderModel, error) {
 	}
 
 	var updated ProviderModel
-	err = r.DbContext.QueryTx(func(tx *sql.Tx) error {
+	err = r.DbContext.ExecTx(func(tx *sql.Tx) error {
 		var scanErr error
 		updated, scanErr = scanProvider(tx.QueryRow(
 			queries.UpdateAIProviderQuery,
