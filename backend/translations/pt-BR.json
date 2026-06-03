@@ -809,6 +809,8 @@
 	"NOTIFICATION_FILE_SCAN_STARTED_TITLE": "Varredura de arquivos iniciada",
 	"NOTIFICATION_FILE_SCAN_COMPLETED_TITLE": "Varredura de arquivos concluida",
 	"NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE": "%d arquivos identificados para processamento",
+	"NOTIFICATION_WORKER_RECOVERY_TITLE": "Trabalhos interrompidos retomados",
+	"NOTIFICATION_WORKER_RECOVERY_MESSAGE": "%d trabalho(s) interrompido(s) voltaram para a fila apos reinicio",
 	"NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE": "A varredura de arquivos na inicializacao foi enfileirada",
 	"NOTIFICATION_FILE_SCAN_TASK_ENQUEUED_MESSAGE": "A tarefa de varredura de arquivos foi enfileirada",
 	"NOTIFICATION_FILE_SCAN_FAILED_TITLE": "Falha na varredura de arquivos",
