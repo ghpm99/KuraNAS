@@ -90,7 +90,7 @@ describe('components/settings/AIProvidersSettingsSection', () => {
 		render(<AIProvidersSettingsSection />);
 
 		const saveButtons = screen.getAllByText('AI_PROVIDERS_SAVE');
-		fireEvent.click(saveButtons[0]);
+		fireEvent.click(saveButtons[0]!);
 
 		expect(baseHook.saveProvider).toHaveBeenCalledWith('ollama');
 	});
@@ -200,22 +200,22 @@ describe('components/settings/AIProvidersSettingsSection', () => {
 	it('edits provider fields and params through the inputs', () => {
 		const { container } = render(<AIProvidersSettingsSection />);
 
-		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_MODEL')[0], {
+		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_MODEL')[0]!, {
 			target: { value: 'qwen2.5' },
 		});
 		expect(baseHook.setField).toHaveBeenCalledWith('ollama', 'model', 'qwen2.5');
 
-		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_BASE_URL')[0], {
+		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_BASE_URL')[0]!, {
 			target: { value: 'http://nas:11434' },
 		});
 		expect(baseHook.setField).toHaveBeenCalledWith('ollama', 'base_url', 'http://nas:11434');
 
-		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_PRIORITY')[0], {
+		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_PRIORITY')[0]!, {
 			target: { value: '3' },
 		});
 		expect(baseHook.setField).toHaveBeenCalledWith('ollama', 'priority', 3);
 
-		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_TIMEOUT')[0], {
+		fireEvent.change(screen.getAllByLabelText('AI_PROVIDERS_TIMEOUT')[0]!, {
 			target: { value: '300' },
 		});
 		expect(baseHook.setParam).toHaveBeenCalledWith('ollama', 'timeout_seconds', 300);
@@ -227,7 +227,7 @@ describe('components/settings/AIProvidersSettingsSection', () => {
 
 		// ollama starts enabled, so clicking its switch toggles it off
 		const switches = container.querySelectorAll('input[type="checkbox"]');
-		fireEvent.click(switches[0]);
+		fireEvent.click(switches[0]!);
 		expect(baseHook.toggleEnabled).toHaveBeenCalledWith('ollama', false);
 	});
 });
