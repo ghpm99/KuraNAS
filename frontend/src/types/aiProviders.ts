@@ -3,6 +3,8 @@ export type AIProviderName = 'ollama' | 'openai' | 'anthropic';
 export type AIProviderParams = {
 	keep_alive?: string;
 	timeout_seconds?: number;
+	max_retries?: number;
+	retry_backoff_ms?: number;
 };
 
 export type AIProviderDto = {

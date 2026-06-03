@@ -79,6 +79,27 @@ const useAIProvidersSettings = () => {
 		[]
 	);
 
+	const setParam = useCallback(
+		<K extends keyof AIProviderDto['params']>(
+			name: AIProviderName,
+			field: K,
+			value: AIProviderDto['params'][K]
+		) => {
+			setEdits((current) => {
+				const base = providersQuery.data?.find((provider) => provider.name === name);
+				const currentParams = current[name]?.params ?? base?.params ?? {};
+				return {
+					...current,
+					[name]: {
+						...current[name],
+						params: { ...currentParams, [field]: value },
+					},
+				};
+			});
+		},
+		[providersQuery.data]
+	);
+
 	const persist = useCallback(
 		async (provider: AIProviderDto, successKey: string) => {
 			try {
@@ -165,6 +186,7 @@ const useAIProvidersSettings = () => {
 		ollamaLoading: ollamaQuery.isLoading,
 		toggleEnabled,
 		setField,
+		setParam,
 		saveProvider,
 		pullModelName,
 		setPullModelName,
