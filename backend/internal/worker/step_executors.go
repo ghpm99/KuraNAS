@@ -12,6 +12,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
 
@@ -366,6 +367,7 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		return ErrStepSkipped
 	}
 
+	enqueued := 0
 	for _, changedPath := range changedPaths {
 		fileInfo, statErr := os.Stat(changedPath)
 		if statErr != nil {
@@ -390,6 +392,17 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		if createErr != nil {
 			return createErr
 		}
+		enqueued++
+	}
+
+	if enqueued > 0 {
+		emitNotification(
+			context,
+			"info",
+			i18n.GetMessage("NOTIFICATION_FILE_SCAN_COMPLETED_TITLE"),
+			i18n.Translate("NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE", enqueued),
+			"",
+		)
 	}
 
 	return nil
