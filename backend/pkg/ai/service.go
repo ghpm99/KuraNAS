@@ -2,26 +2,19 @@ package ai
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
 )
 
-// Service orchestrates AI requests by resolving the appropriate provider
-// via the Router and handling retry/fallback logic.
+// Service orchestrates AI requests by resolving the appropriate provider chain
+// via the Router and walking it (primary then fallbacks). Retry/timeout policy
+// is owned per provider (see WithRetry), not by the Service.
 type Service struct {
-	router     *Router
-	maxRetries int
-	backoff    time.Duration
+	router *Router
 }
 
-// NewService creates an AI service with the given router and config.
-func NewService(router *Router, cfg Config) ServiceInterface {
-	return &Service{
-		router:     router,
-		maxRetries: cfg.MaxRetries,
-		backoff:    time.Duration(cfg.RetryBackoffMS) * time.Millisecond,
-	}
+// NewService creates an AI service for the given router.
+func NewService(router *Router) ServiceInterface {
+	return &Service{router: router}
 }
 
 func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
@@ -34,44 +27,19 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 		return Response{}, err
 	}
 
-	resp, err := s.executeWithRetry(ctx, route.Primary, req)
-	if err != nil && route.Fallback != nil {
-		resp, err = s.executeWithRetry(ctx, route.Fallback, req)
-		if err != nil {
-			return Response{}, fmt.Errorf("fallback provider %s failed: %w", route.Fallback.Name(), err)
-		}
+	resp, err := route.Primary.Complete(ctx, req)
+	if err == nil {
+		return resp, nil
 	}
 
-	return resp, err
-}
-
-func (s *Service) executeWithRetry(ctx context.Context, provider Provider, req Request) (Response, error) {
-	var lastErr error
-
-	for attempt := 0; attempt <= s.maxRetries; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return Response{}, fmt.Errorf("%w: %v", ErrProviderTimeout, ctx.Err())
-			case <-time.After(s.backoff * time.Duration(attempt)):
-			}
-		}
-
-		resp, err := provider.Complete(ctx, req)
+	lastErr := err
+	for _, fallback := range route.Fallbacks {
+		resp, err = fallback.Complete(ctx, req)
 		if err == nil {
 			return resp, nil
 		}
-
-		lastErr = err
-
-		if !isRetryable(err) {
-			return Response{}, err
-		}
+		lastErr = fmt.Errorf("fallback provider %s failed: %w", fallback.Name(), err)
 	}
 
-	return Response{}, fmt.Errorf("%w: %v", ErrAllAttemptsFailed, lastErr)
-}
-
-func isRetryable(err error) bool {
-	return errors.Is(err, ErrProviderTimeout) || errors.Is(err, ErrProviderRateLimit)
+	return Response{}, lastErr
 }

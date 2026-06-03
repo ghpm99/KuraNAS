@@ -2,10 +2,10 @@ package ai
 
 import "fmt"
 
-// Route binds a task type to a primary provider and an optional fallback.
+// Route binds a task type to a primary provider and an ordered list of fallbacks.
 type Route struct {
-	Primary  Provider
-	Fallback Provider
+	Primary   Provider
+	Fallbacks []Provider
 }
 
 // Router implements the Strategy pattern, mapping each TaskType
@@ -26,9 +26,18 @@ func (r *Router) Register(taskType TaskType, primary Provider) {
 	r.routes[taskType] = Route{Primary: primary}
 }
 
-// RegisterWithFallback maps a task type to a primary provider and a fallback.
+// RegisterWithFallback maps a task type to a primary provider and a single fallback.
 func (r *Router) RegisterWithFallback(taskType TaskType, primary, fallback Provider) {
-	r.routes[taskType] = Route{Primary: primary, Fallback: fallback}
+	r.routes[taskType] = Route{Primary: primary, Fallbacks: []Provider{fallback}}
+}
+
+// RegisterChain maps a task type to an ordered chain of providers: the first
+// is the primary and the remaining ones are tried, in order, as fallbacks.
+func (r *Router) RegisterChain(taskType TaskType, providers ...Provider) {
+	if len(providers) == 0 {
+		return
+	}
+	r.routes[taskType] = Route{Primary: providers[0], Fallbacks: providers[1:]}
 }
 
 // Resolve returns the route for the given task type.

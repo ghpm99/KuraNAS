@@ -51,6 +51,9 @@ func buildStepExecutors(context *WorkerContext) map[StepType]StepExecutor {
 	executors[StepTypeTakeoutExtract] = func(step jobs.StepModel) error {
 		return executeTakeoutExtractStep(context, step)
 	}
+	executors[StepTypeOllamaPull] = func(step jobs.StepModel) error {
+		return executeOllamaPullStep(context, step)
+	}
 
 	return executors
 }
