@@ -74,6 +74,7 @@ export interface AnalyticsOverview {
         metadata_failed: number;
         thumbnail_pending: number;
         thumbnail_failed: number;
+        recurring_timeouts: number;
     };
     health: {
         status: 'ok' | 'scanning' | 'error';

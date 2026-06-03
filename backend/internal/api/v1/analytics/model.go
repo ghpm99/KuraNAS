@@ -102,10 +102,11 @@ type LibrarySummaryModel struct {
 }
 
 type ProcessingSummaryModel struct {
-	MetadataPending  int64
-	MetadataFailed   int64
-	ThumbnailPending int64
-	ThumbnailFailed  int64
+	MetadataPending   int64
+	MetadataFailed    int64
+	ThumbnailPending  int64
+	ThumbnailFailed   int64
+	RecurringTimeouts int64
 }
 
 type LogErrorModel struct {

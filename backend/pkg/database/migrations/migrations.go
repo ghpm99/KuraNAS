@@ -89,6 +89,9 @@ var CreateAIProvidersTableQuery string
 //go:embed queries/0026_create_watch_folders_table.sql
 var CreateWatchFoldersTableQuery string
 
+//go:embed queries/0027_worker_step_timeout_tracking.sql
+var WorkerStepTimeoutTrackingQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -170,6 +173,9 @@ func videoMigrationList() {
 func workerMigrationList() {
 	addMigration("0016_create_worker_job_tables",
 		defaultMigrationFunc(CreateWorkerJobTablesQuery))
+
+	addMigration("0027_worker_step_timeout_tracking",
+		defaultMigrationFunc(WorkerStepTimeoutTrackingQuery))
 }
 
 func configurationMigrationList() {

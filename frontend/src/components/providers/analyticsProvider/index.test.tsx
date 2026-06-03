@@ -73,6 +73,7 @@ describe('providers/analyticsProvider', () => {
                     metadata_failed: 0,
                     thumbnail_pending: 2,
                     thumbnail_failed: 0,
+                    recurring_timeouts: 0,
                 },
                 health: {
                     status: 'ok',

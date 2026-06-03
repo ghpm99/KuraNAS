@@ -27,6 +27,7 @@ type AppConfigStruct struct {
 	WorkerRetryBackoffMS       int
 	WorkerSchedulerPollMS      int
 	WorkerMaxConcurrentJobs    int
+	WorkerStepTimeoutSeconds   int
 }
 
 var AppConfig AppConfigStruct
@@ -51,6 +52,7 @@ func InitializeConfig() {
 		WorkerRetryBackoffMS:       parseEnvInt("WORKER_RETRY_BACKOFF_MS", 500),
 		WorkerSchedulerPollMS:      parseEnvInt("WORKER_SCHEDULER_POLL_MS", 2000),
 		WorkerMaxConcurrentJobs:    parseEnvInt("WORKER_MAX_CONCURRENT_JOBS", 4),
+		WorkerStepTimeoutSeconds:   parseEnvInt("WORKER_STEP_TIMEOUT_SECONDS", 120),
 	}
 }
 

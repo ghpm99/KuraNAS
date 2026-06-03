@@ -14,5 +14,5 @@ WHERE
     ($1::boolean OR status = $2)
     AND ($3::boolean OR type = $4)
     AND ($5::boolean OR priority = $6)
-ORDER BY created_at DESC
+ORDER BY COALESCE(next_attempt_at, created_at) ASC
 LIMIT $7 OFFSET $8;

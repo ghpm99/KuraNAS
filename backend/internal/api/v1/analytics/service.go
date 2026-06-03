@@ -79,10 +79,11 @@ func (s *Service) GetOverview(period string) (OverviewDto, error) {
 			ImageClassified:   data.LibrarySummary.ImageClassified,
 		},
 		Processing: ProcessingDto{
-			MetadataPending:  data.Processing.MetadataPending,
-			MetadataFailed:   data.Processing.MetadataFailed,
-			ThumbnailPending: data.Processing.ThumbnailPending,
-			ThumbnailFailed:  data.Processing.ThumbnailFailed,
+			MetadataPending:   data.Processing.MetadataPending,
+			MetadataFailed:    data.Processing.MetadataFailed,
+			ThumbnailPending:  data.Processing.ThumbnailPending,
+			ThumbnailFailed:   data.Processing.ThumbnailFailed,
+			RecurringTimeouts: data.Processing.RecurringTimeouts,
 		},
 		Health: toHealthDto(data),
 	}

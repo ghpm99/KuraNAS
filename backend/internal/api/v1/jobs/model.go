@@ -13,20 +13,22 @@ type JobModel struct {
 	EndedAt         *time.Time
 	CancelRequested bool
 	LastError       string
+	NextAttemptAt   *time.Time
 }
 
 type StepModel struct {
-	ID          int
-	JobID       int
-	Type        string
-	Status      string
-	DependsOn   []byte
-	Attempts    int
-	MaxAttempts int
-	LastError   string
-	Progress    int
-	Payload     []byte
-	CreatedAt   time.Time
-	StartedAt   *time.Time
-	EndedAt     *time.Time
+	ID           int
+	JobID        int
+	Type         string
+	Status       string
+	DependsOn    []byte
+	Attempts     int
+	MaxAttempts  int
+	LastError    string
+	Progress     int
+	Payload      []byte
+	CreatedAt    time.Time
+	StartedAt    *time.Time
+	EndedAt      *time.Time
+	TimeoutCount int
 }

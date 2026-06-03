@@ -17,6 +17,8 @@ type RepositoryInterface interface {
 	GetStepsByJobID(jobID int) ([]StepModel, error)
 	UpdateJobExecution(tx *sql.Tx, jobID int, status string, startedAt *time.Time, endedAt *time.Time, cancelRequested *bool, lastError *string) (bool, error)
 	UpdateStepExecution(tx *sql.Tx, stepID int, status string, progress int, attempts int, startedAt *time.Time, endedAt *time.Time, lastError *string) (bool, error)
+	DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error)
+	RequeueJob(tx *sql.Tx, jobID int) (bool, error)
 }
 
 type ServiceInterface interface {

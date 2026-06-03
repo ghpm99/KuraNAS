@@ -450,6 +450,8 @@
 	"ANALYTICS_MEDIA_COVERAGE": "Cobertura de metadata por mídia",
 	"ANALYTICS_PROCESSING_QUEUE": "Fila de processamento",
 	"ANALYTICS_PROCESSING_FAILURES": "Falhas de processamento",
+	"ANALYTICS_RECURRING_TIMEOUTS": "Arquivos em timeout recorrente",
+	"ANALYTICS_RECURRING_TIMEOUTS_HELP": "Arquivos que voltaram para o fim da fila 3+ vezes por timeout. Um numero que sobe indica arquivo lento ou corrompido que precisa de atencao.",
 	"ANALYTICS_ITEMS_INDEXED": "Itens enriquecidos",
 	"ANALYTICS_PENDING": "Pendentes",
 	"ANALYTICS_FAILED": "Falhas",

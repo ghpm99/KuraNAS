@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,60 @@ import (
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
+
+// TestProcessJobDefersOnTimeout verifies that a step timing out does not fail
+// the job: the step returns to the queue with timeout_count bumped and the job
+// is sent to the back of the line (queued + next_attempt_at set), never failed.
+func TestProcessJobDefersOnTimeout(t *testing.T) {
+	repo := newFakeJobsRepository()
+	scheduler := NewJobScheduler(repo, map[StepType]StepExecutor{
+		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+			return context.DeadlineExceeded
+		},
+	})
+
+	orchestrator := NewJobOrchestrator(repo, scheduler)
+	jobID, err := orchestrator.CreateJob(PlannedJob{
+		Type:     JobTypeStartupScan,
+		Priority: JobPriorityLow,
+		Scope:    JobScope{Root: "/data"},
+		Steps: []PlannedStep{
+			{Key: "scan", Type: StepTypeScanFilesystem, MaxAttempts: 1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected create job error: %v", err)
+	}
+
+	if err := scheduler.processJob(jobID); err != nil {
+		t.Fatalf("processJob returned error: %v", err)
+	}
+
+	job, err := repo.GetJobByID(jobID)
+	if err != nil {
+		t.Fatalf("GetJobByID returned error: %v", err)
+	}
+	if job.Status != string(JobStatusQueued) {
+		t.Fatalf("expected job requeued, got %s", job.Status)
+	}
+	if job.NextAttemptAt == nil {
+		t.Fatalf("expected next_attempt_at set to send job to back of queue")
+	}
+
+	steps, err := repo.GetStepsByJobID(jobID)
+	if err != nil {
+		t.Fatalf("GetStepsByJobID returned error: %v", err)
+	}
+	if len(steps) != 1 {
+		t.Fatalf("expected 1 step, got %d", len(steps))
+	}
+	if steps[0].Status != string(StepStatusQueued) {
+		t.Fatalf("expected step requeued, got %s", steps[0].Status)
+	}
+	if steps[0].TimeoutCount != 1 {
+		t.Fatalf("expected timeout_count=1, got %d", steps[0].TimeoutCount)
+	}
+}
 
 type fakeJobsRepository struct {
 	jobsapi.RepositoryInterface
@@ -167,6 +222,44 @@ func (r *fakeJobsRepository) UpdateStepExecution(tx *sql.Tx, stepID int, status 
 	}
 
 	r.steps[stepID] = step
+	return true, nil
+}
+
+func (r *fakeJobsRepository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	step, exists := r.steps[stepID]
+	if !exists {
+		return false, nil
+	}
+
+	step.Status = string(StepStatusQueued)
+	step.Attempts = attempts
+	step.TimeoutCount++
+	step.StartedAt = nil
+	step.LastError = lastError
+
+	r.steps[stepID] = step
+	return true, nil
+}
+
+func (r *fakeJobsRepository) RequeueJob(tx *sql.Tx, jobID int) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	job, exists := r.jobs[jobID]
+	if !exists {
+		return false, nil
+	}
+
+	job.Status = string(JobStatusQueued)
+	job.StartedAt = nil
+	job.EndedAt = nil
+	now := time.Now()
+	job.NextAttemptAt = &now
+
+	r.jobs[jobID] = job
 	return true, nil
 }
 

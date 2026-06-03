@@ -31,6 +31,7 @@ const mockOverview: AnalyticsOverview = {
         metadata_failed: 0,
         thumbnail_pending: 0,
         thumbnail_failed: 0,
+        recurring_timeouts: 0,
     },
     health: {
         status: 'ok',
