@@ -10,11 +10,12 @@ const (
 	JobTypeFSEvent       JobType = "fs_event"
 	JobTypeReindexFolder JobType = "reindex_folder"
 	JobTypeTakeoutImport JobType = "takeout_import"
+	JobTypeOllamaPull    JobType = "ollama_pull"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull:
 		return true
 	default:
 		return false
@@ -33,11 +34,12 @@ const (
 	StepTypePlaylistIndex  StepType = "playlist_index"
 	StepTypeMarkDeleted    StepType = "mark_deleted"
 	StepTypeTakeoutExtract StepType = "takeout_extract"
+	StepTypeOllamaPull     StepType = "ollama_model_pull"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull:
 		return true
 	default:
 		return false
