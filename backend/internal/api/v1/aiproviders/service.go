@@ -96,7 +96,28 @@ func (s *Service) EnsureDefaults() error {
 	return nil
 }
 
+// defaultOllamaTimeoutSeconds is intentionally higher than the cloud default:
+// local inference (especially the first request after a model is loaded) is
+// considerably slower than a hosted API.
+const defaultOllamaTimeoutSeconds = 120
+
 func (s *Service) defaultModels() []ProviderModel {
+	cloudTimeout := int(s.config.DefaultTimeout.Seconds())
+	if cloudTimeout <= 0 {
+		cloudTimeout = 30
+	}
+
+	baseParams := func(timeoutSeconds int) ProviderParams {
+		return ProviderParams{
+			TimeoutSeconds: timeoutSeconds,
+			MaxRetries:     s.config.MaxRetries,
+			RetryBackoffMS: s.config.RetryBackoffMS,
+		}
+	}
+
+	ollamaParams := baseParams(defaultOllamaTimeoutSeconds)
+	ollamaParams.KeepAlive = s.config.OllamaKeepAlive
+
 	return []ProviderModel{
 		{
 			Name:     ProviderOllama,
@@ -104,7 +125,7 @@ func (s *Service) defaultModels() []ProviderModel {
 			Model:    s.config.OllamaModel,
 			BaseURL:  s.config.OllamaBaseURL,
 			Priority: 0,
-			Params:   ProviderParams{KeepAlive: s.config.OllamaKeepAlive},
+			Params:   ollamaParams,
 		},
 		{
 			Name:     ProviderOpenAI,
@@ -112,6 +133,7 @@ func (s *Service) defaultModels() []ProviderModel {
 			Model:    s.config.OpenAIModel,
 			BaseURL:  s.config.OpenAIBaseURL,
 			Priority: 1,
+			Params:   baseParams(cloudTimeout),
 		},
 		{
 			Name:     ProviderAnthropic,
@@ -119,6 +141,7 @@ func (s *Service) defaultModels() []ProviderModel {
 			Model:    s.config.AnthropicModel,
 			BaseURL:  "",
 			Priority: 2,
+			Params:   baseParams(cloudTimeout),
 		},
 	}
 }

@@ -32,10 +32,15 @@ func (n ProviderName) RequiresAPIKey() bool {
 	return n == ProviderOpenAI || n == ProviderAnthropic
 }
 
-// ProviderParams holds optional, provider-specific tuning persisted as JSON.
+// ProviderParams holds provider-specific operational tuning persisted as JSON.
+// These values live in the table and are the source of truth at runtime — for
+// example a local Ollama provider typically needs a much larger timeout than a
+// cloud provider.
 type ProviderParams struct {
 	KeepAlive      string `json:"keep_alive,omitempty"`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
+	MaxRetries     int    `json:"max_retries,omitempty"`
+	RetryBackoffMS int    `json:"retry_backoff_ms,omitempty"`
 }
 
 // ProviderModel mirrors a row in the ai_providers table. The API key is never

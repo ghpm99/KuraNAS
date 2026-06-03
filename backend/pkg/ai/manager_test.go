@@ -21,7 +21,7 @@ func TestManagerExecuteWithoutInner(t *testing.T) {
 func TestManagerSwapAndExecute(t *testing.T) {
 	router := NewRouter()
 	router.Register(TaskSimple, &providerMock{name: "p"})
-	svc := NewService(router, Config{MaxRetries: 0})
+	svc := NewService(router)
 
 	m := NewManager(nil)
 	m.Swap(svc)
@@ -42,7 +42,7 @@ func TestManagerSwapAndExecute(t *testing.T) {
 func TestManagerSwapToNilDisables(t *testing.T) {
 	router := NewRouter()
 	router.Register(TaskSimple, &providerMock{name: "p"})
-	m := NewManager(NewService(router, Config{}))
+	m := NewManager(NewService(router))
 
 	m.Swap(nil)
 	if m.Enabled() {
