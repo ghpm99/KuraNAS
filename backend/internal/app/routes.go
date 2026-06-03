@@ -29,6 +29,8 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterNotificationRoutes(routesV1, context)
 	RegisterCapturesRoutes(routesV1, context)
 	RegisterLibrariesRoutes(routesV1, context)
+	RegisterAIProvidersRoutes(routesV1, context)
+	RegisterOllamaRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
@@ -230,6 +232,29 @@ func RegisterLibrariesRoutes(router *gin.RouterGroup, context *AppContext) {
 	libraries.GET("", context.Libraries.Handler.GetLibrariesHandler)
 	libraries.GET("/", context.Libraries.Handler.GetLibrariesHandler)
 	libraries.PUT("/:category", context.Libraries.Handler.UpdateLibraryHandler)
+}
+
+func RegisterAIProvidersRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.AIProviders == nil || context.AIProviders.Handler == nil {
+		return
+	}
+
+	providers := router.Group("/ai/providers")
+	providers.GET("", context.AIProviders.Handler.GetProvidersHandler)
+	providers.GET("/", context.AIProviders.Handler.GetProvidersHandler)
+	providers.PUT("/:name", context.AIProviders.Handler.UpdateProviderHandler)
+}
+
+func RegisterOllamaRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Ollama == nil || context.Ollama.Handler == nil {
+		return
+	}
+
+	ollamaGroup := router.Group("/ai/ollama")
+	ollamaGroup.GET("/status", context.Ollama.Handler.GetStatusHandler)
+	ollamaGroup.GET("/models", context.Ollama.Handler.ListModelsHandler)
+	ollamaGroup.POST("/models/pull", context.Ollama.Handler.PullModelHandler)
+	ollamaGroup.DELETE("/models/:name", context.Ollama.Handler.DeleteModelHandler)
 }
 
 func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {
