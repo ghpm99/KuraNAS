@@ -51,12 +51,19 @@ data class SearchFileDto(
     val mimeType: String get() = mimeTypeForFormat(format)
 }
 
-/** Grupos de catálogo retornados na busca (artists/albums/playlists). */
+/**
+ * Grupos de catálogo retornados na busca. Artists/albums usam `key`+`track_count`;
+ * playlists usam `id`+`count`. [displayCount] resolve a contagem certa para a UI.
+ */
 @Serializable
 data class SearchGroupDto(
     val key: String = "",
+    val id: Int = 0,
     val name: String = "",
     val artist: String = "",
     val album: String = "",
     @SerialName("track_count") val trackCount: Int = 0,
-)
+    val count: Int = 0,
+) {
+    val displayCount: Int get() = if (trackCount > 0) trackCount else count
+}

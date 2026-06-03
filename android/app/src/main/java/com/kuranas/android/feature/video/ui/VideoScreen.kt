@@ -19,9 +19,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.video.data.VideoItemDto
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoScreen(
     onPlayVideo: (String) -> Unit,
@@ -52,13 +55,18 @@ fun VideoScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(title = "Vídeos")
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         when {
             state.isLoading -> LoadingView()
             state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
             state.catalog == null -> EmptyView("Nenhum vídeo encontrado")
             else -> {
                 val catalog = state.catalog!!
-                LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                     if (catalog.recentVideos.isNotEmpty()) {
                         item {
                             Text("Recentes", style = MaterialTheme.typography.titleMedium)
@@ -90,6 +98,7 @@ fun VideoScreen(
                     }
                 }
             }
+        }
         }
     }
 }

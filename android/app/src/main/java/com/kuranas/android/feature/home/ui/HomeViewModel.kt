@@ -25,6 +25,9 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     private val _state = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init { load() }
 
     fun load() {
@@ -34,6 +37,25 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
                 is AppResult.Success -> HomeUiState.Success(result.data.stats, result.data.recentFiles)
                 is AppResult.Error -> HomeUiState.Error(result.message)
             }
+        }
+    }
+
+    /**
+     * Recarrega sem voltar ao estado de Loading (mantém o conteúdo atual na tela
+     * enquanto busca). Usado pelo pull-to-refresh e pelo refetch ao retomar a tela.
+     */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            when (val result = repository.getHomeData()) {
+                is AppResult.Success ->
+                    _state.value = HomeUiState.Success(result.data.stats, result.data.recentFiles)
+                is AppResult.Error ->
+                    if (_state.value !is HomeUiState.Success) {
+                        _state.value = HomeUiState.Error(result.message)
+                    }
+            }
+            _isRefreshing.value = false
         }
     }
 }

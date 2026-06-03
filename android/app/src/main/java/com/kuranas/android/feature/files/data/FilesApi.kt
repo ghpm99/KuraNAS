@@ -7,9 +7,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -38,30 +39,36 @@ interface FilesApi {
     @GET("api/v1/files/duplicate-files")
     suspend fun getDuplicateFiles(): DuplicateFilesDto
 
+    // O part do arquivo deve se chamar `files` e o id da pasta destino é
+    // `target_folder_id`; o handler responde 202 com { message, uploaded, job_id }.
     @Multipart
     @POST("api/v1/files/upload")
     suspend fun uploadFile(
         @Part file: MultipartBody.Part,
-        @Part("folder_id") folderId: RequestBody,
-    ): FileItemDto
+        @Part("target_folder_id") targetFolderId: RequestBody,
+    )
 
     @POST("api/v1/files/folder")
-    suspend fun createFolder(@Body body: CreateFolderRequest): FileItemDto
+    suspend fun createFolder(@Body body: CreateFolderRequest)
 
     @POST("api/v1/files/rename")
-    suspend fun renameFile(@Body body: RenameRequest): FileItemDto
+    suspend fun renameFile(@Body body: RenameRequest)
 
     @POST("api/v1/files/move")
     suspend fun moveFile(@Body body: MoveRequest)
 
     @POST("api/v1/files/copy")
-    suspend fun copyFile(@Body body: MoveRequest)
+    suspend fun copyFile(@Body body: CopyRequest)
 
-    @DELETE("api/v1/files/path")
-    suspend fun deleteFile(@Query("path") path: String)
+    // DELETE com corpo JSON { id }, como o handler espera (não query param).
+    @HTTP(method = "DELETE", path = "api/v1/files/path", hasBody = true)
+    suspend fun deleteFile(@Body body: DeleteFileRequest)
 
     @POST("api/v1/files/starred/{id}")
     suspend fun starFile(@Path("id") id: String)
+
+    @GET("api/v1/files/blob/{id}")
+    suspend fun getBlob(@Path("id") id: String): ResponseBody
 }
 
 /**
@@ -111,10 +118,25 @@ data class DuplicateFileDto(
 )
 
 @Serializable
-data class CreateFolderRequest(val name: String, @SerialName("parent_id") val parentId: String? = null)
+data class CreateFolderRequest(val name: String, @SerialName("parent_id") val parentId: Int? = null)
 
 @Serializable
-data class RenameRequest(val id: String, val name: String)
+data class RenameRequest(val id: Int, @SerialName("new_name") val newName: String)
 
 @Serializable
-data class MoveRequest(val id: String, @SerialName("target_id") val targetId: String)
+data class MoveRequest(
+    @SerialName("source_id") val sourceId: Int,
+    @SerialName("destination_folder_id") val destinationFolderId: Int? = null,
+    @SerialName("destination_path") val destinationPath: String = "",
+)
+
+@Serializable
+data class CopyRequest(
+    @SerialName("source_id") val sourceId: Int,
+    @SerialName("destination_folder_id") val destinationFolderId: Int? = null,
+    @SerialName("destination_path") val destinationPath: String = "",
+    @SerialName("new_name") val newName: String = "",
+)
+
+@Serializable
+data class DeleteFileRequest(val id: Int)

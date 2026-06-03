@@ -15,25 +15,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 
 @Composable
-fun MusicAlbumScreen(
-    albumKey: String,
+fun MusicFolderScreen(
+    folderKey: String,
     onNavigateBack: () -> Unit,
     onPlayTrack: () -> Unit,
 ) {
-    val viewModel: MusicAlbumViewModel = hiltViewModel()
-    LaunchedEffect(albumKey) { viewModel.load(albumKey) }
+    val viewModel: MusicFolderViewModel = hiltViewModel()
+    LaunchedEffect(folderKey) { viewModel.load(folderKey) }
     val tracks by viewModel.tracks
 
+    val title = folderKey.trimEnd('/').substringAfterLast('/').ifBlank { folderKey }
+
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = albumKey, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
-        if (tracks == null) {
-            LoadingView()
-        } else {
-            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        KNHeader(title = title, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
+        when {
+            tracks == null -> LoadingView()
+            tracks.isNullOrEmpty() -> EmptyView("Nenhuma faixa nesta pasta")
+            else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(tracks ?: emptyList(), key = { it.id }) { track ->
                     TrackListItem(track = track, onClick = {
                         viewModel.play(track)

@@ -88,7 +88,7 @@ data class LanguageSettingsDto(
 
 @Serializable
 data class UpdateStatusDto(
-    @SerialName("has_update") val hasUpdate: Boolean = false,
+    @SerialName("update_available") val hasUpdate: Boolean = false,
     @SerialName("current_version") val currentVersion: String = "",
     @SerialName("latest_version") val latestVersion: String? = null,
 )
