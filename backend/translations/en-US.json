@@ -899,5 +899,7 @@
 	"WATCH_FOLDER_FILE_IMPORTED": "Imported from watch folder: %s -> %s",
 	"NOTIFICATION_WATCH_IMPORT_TITLE": "Watch folder import",
 	"NOTIFICATION_WATCH_IMPORT_MESSAGE": "%d files imported from %s",
+	"NOTIFICATION_WATCH_FILE_DETECTED_TITLE": "New file detected",
+	"NOTIFICATION_WATCH_FILE_DETECTED_MESSAGE": "\"%s\" detected in %s - processing",
 	"NAV_TAKEOUT": "Takeout Import"
 }

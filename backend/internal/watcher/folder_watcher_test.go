@@ -57,11 +57,23 @@ func (f *fakeFilesSvc) CreateUploadProcessJob(paths []string) (int, error) {
 type fakeNotifSvc struct {
 	notifications.ServiceInterface
 	count int
+	dtos  []notifications.CreateNotificationDto
 }
 
 func (f *fakeNotifSvc) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
 	f.count++
+	f.dtos = append(f.dtos, dto)
 	return notifications.NotificationDto{}, nil
+}
+
+func (f *fakeNotifSvc) countByType(notifType notifications.NotificationType) int {
+	total := 0
+	for _, dto := range f.dtos {
+		if dto.Type == string(notifType) {
+			total++
+		}
+	}
+	return total
 }
 
 func TestFolderWatcherScanOnceImportsAndEnqueues(t *testing.T) {
@@ -105,9 +117,31 @@ func TestFolderWatcherScanOnceImportsAndEnqueues(t *testing.T) {
 	if wfSvc.lastScanID != 7 {
 		t.Fatalf("expected last scan update for folder 7, got %d", wfSvc.lastScanID)
 	}
-	// Notificação de importação emitida.
-	if nSvc.count != 1 {
-		t.Fatalf("expected 1 import notification, got %d", nSvc.count)
+	// Uma notificação "arquivo novo detectado" (info) por arquivo, com o nome do arquivo.
+	if got := nSvc.countByType(notifications.NotificationTypeInfo); got != 2 {
+		t.Fatalf("expected 2 file-detected notifications, got %d", got)
+	}
+	detectedFiles := map[string]bool{}
+	for _, dto := range nSvc.dtos {
+		if dto.Type != string(notifications.NotificationTypeInfo) {
+			continue
+		}
+		// Ungrouped: cada uma deve preservar o nome individual do arquivo.
+		if dto.GroupKey != "" {
+			t.Fatalf("file-detected notification should be ungrouped, got group key %q", dto.GroupKey)
+		}
+		if meta, ok := dto.Metadata.(map[string]any); ok {
+			if name, ok := meta["file_name"].(string); ok {
+				detectedFiles[name] = true
+			}
+		}
+	}
+	if !detectedFiles["a.jpg"] || !detectedFiles["b.mp4"] {
+		t.Fatalf("expected detected notifications for a.jpg and b.mp4, got %v", detectedFiles)
+	}
+	// E uma notificação de resumo de importação (success).
+	if got := nSvc.countByType(notifications.NotificationTypeSuccess); got != 1 {
+		t.Fatalf("expected 1 import summary notification, got %d", got)
 	}
 }
 

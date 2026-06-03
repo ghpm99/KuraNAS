@@ -899,5 +899,7 @@
 	"WATCH_FOLDER_FILE_IMPORTED": "Importado da pasta monitorada: %s -> %s",
 	"NOTIFICATION_WATCH_IMPORT_TITLE": "Importacao de pasta monitorada",
 	"NOTIFICATION_WATCH_IMPORT_MESSAGE": "%d arquivos importados de %s",
+	"NOTIFICATION_WATCH_FILE_DETECTED_TITLE": "Arquivo novo detectado",
+	"NOTIFICATION_WATCH_FILE_DETECTED_MESSAGE": "\"%s\" identificado em %s - processando",
 	"NAV_TAKEOUT": "Importar Takeout"
 }
