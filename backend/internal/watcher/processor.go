@@ -37,6 +37,7 @@ func (fw *FolderWatcher) ProcessScannedFiles(watchFolder watchfolders.WatchFolde
 		}
 
 		imported++
+		fw.emitFileDetectedNotification(watchFolder, filepath.Base(targetPath))
 		log.Println(i18n.Translate("WATCH_FOLDER_FILE_IMPORTED", scannedFile.SourcePath, targetPath))
 	}
 
@@ -46,11 +47,35 @@ func (fw *FolderWatcher) ProcessScannedFiles(watchFolder watchfolders.WatchFolde
 	return imported, nil
 }
 
-func (fw *FolderWatcher) emitFolderImportedNotification(watchFolder watchfolders.WatchFolderModel, importedCount int) {
-	if fw.notification == nil || importedCount <= 0 {
+// emitFileDetectedNotification fires an individual notification the moment a new
+// file is detected in a watch folder and its processing job is dispatched, so the
+// user knows the system saw their upload and is about to process it. It is
+// intentionally ungrouped (empty GroupKey) so each file keeps its own filename.
+func (fw *FolderWatcher) emitFileDetectedNotification(watchFolder watchfolders.WatchFolderModel, fileName string) {
+	if fw.notification == nil || strings.TrimSpace(fileName) == "" {
 		return
 	}
 
+	label := fw.watchFolderLabel(watchFolder)
+
+	_, err := fw.notification.GroupOrCreate(notifications.CreateNotificationDto{
+		Type:    string(notifications.NotificationTypeInfo),
+		Title:   i18n.GetMessage("NOTIFICATION_WATCH_FILE_DETECTED_TITLE"),
+		Message: i18n.Translate("NOTIFICATION_WATCH_FILE_DETECTED_MESSAGE", fileName, label),
+		Metadata: map[string]any{
+			"event":       "watch_folder_file_detected",
+			"watch_id":    watchFolder.ID,
+			"watch_path":  watchFolder.Path,
+			"watch_label": watchFolder.Label,
+			"file_name":   fileName,
+		},
+	})
+	if err != nil {
+		log.Printf("[watcher] emit file detected notification: %v", err)
+	}
+}
+
+func (fw *FolderWatcher) watchFolderLabel(watchFolder watchfolders.WatchFolderModel) string {
 	label := watchFolder.Label
 	if strings.TrimSpace(label) == "" {
 		label = filepath.Base(watchFolder.Path)
@@ -58,6 +83,15 @@ func (fw *FolderWatcher) emitFolderImportedNotification(watchFolder watchfolders
 	if strings.TrimSpace(label) == "" {
 		label = watchFolder.Path
 	}
+	return label
+}
+
+func (fw *FolderWatcher) emitFolderImportedNotification(watchFolder watchfolders.WatchFolderModel, importedCount int) {
+	if fw.notification == nil || importedCount <= 0 {
+		return
+	}
+
+	label := fw.watchFolderLabel(watchFolder)
 
 	_, err := fw.notification.GroupOrCreate(notifications.CreateNotificationDto{
 		Type:     string(notifications.NotificationTypeSuccess),
