@@ -36,6 +36,7 @@ const AIProvidersSettingsSection = ({ className = '' }: AIProvidersSettingsSecti
 		ollamaLoading,
 		toggleEnabled,
 		setField,
+		setParam,
 		saveProvider,
 		pullModelName,
 		setPullModelName,
@@ -119,6 +120,33 @@ const AIProvidersSettingsSection = ({ className = '' }: AIProvidersSettingsSecti
 					>
 						{t('AI_PROVIDERS_SAVE')}
 					</Button>
+				</div>
+
+				<div className={styles.fields}>
+					<TextField
+						size="small"
+						type="number"
+						label={t('AI_PROVIDERS_TIMEOUT')}
+						value={String(provider.params.timeout_seconds ?? '')}
+						onChange={(event) =>
+							setParam(provider.name, 'timeout_seconds', Number(event.target.value) || 0)
+						}
+						disabled={isSaving}
+						helperText={provider.name === 'ollama' ? t('AI_PROVIDERS_TIMEOUT_HINT') : undefined}
+					/>
+					{provider.name === 'ollama' ? (
+						<TextField
+							size="small"
+							label={t('AI_PROVIDERS_KEEP_ALIVE')}
+							value={provider.params.keep_alive ?? ''}
+							onChange={(event) => setParam(provider.name, 'keep_alive', event.target.value)}
+							disabled={isSaving}
+						/>
+					) : (
+						<span />
+					)}
+					<span />
+					<span />
 				</div>
 			</div>
 		);
