@@ -12,6 +12,7 @@ import {
     TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import AIProvidersSettingsSection from './AIProvidersSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import useSettingsScreen from './useSettingsScreen';
 import styles from './SettingsScreen.module.css';
@@ -68,6 +69,8 @@ const SettingsScreen = () => {
 
             <div className={styles.grid}>
                 <LibrarySettingsSection className={styles.panel} />
+
+                <AIProvidersSettingsSection className={styles.panel} />
 
                 <section className={styles.panel}>
                     <div className={styles.panelHeader}>
