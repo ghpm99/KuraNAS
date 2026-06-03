@@ -9,4 +9,5 @@ var (
 	ErrProviderRateLimit = errors.New("provider rate limit exceeded")
 	ErrProviderAuth      = errors.New("provider authentication failed")
 	ErrAllAttemptsFailed = errors.New("all retry attempts failed")
+	ErrServiceUnavailable = errors.New("ai service has no enabled providers")
 )

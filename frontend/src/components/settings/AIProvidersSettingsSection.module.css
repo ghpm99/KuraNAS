@@ -1,0 +1,99 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-4);
+}
+
+.header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-2);
+}
+
+.title {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 700;
+}
+
+.description {
+	margin: 0;
+	color: var(--app-color-text-secondary);
+}
+
+.provider {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-3);
+	padding: var(--app-spacing-3);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 12px;
+}
+
+.providerHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--app-spacing-2);
+}
+
+.providerName {
+	display: flex;
+	align-items: center;
+	gap: var(--app-spacing-2);
+	font-weight: 600;
+	text-transform: capitalize;
+}
+
+.fields {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) 96px auto;
+	align-items: center;
+	gap: var(--app-spacing-3);
+}
+
+.ollamaPanel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-3);
+	padding-top: var(--app-spacing-2);
+	border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.pullRow {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: var(--app-spacing-3);
+}
+
+.modelRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--app-spacing-2);
+	padding: var(--app-spacing-2) 0;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modelMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.modelName {
+	font-weight: 600;
+}
+
+.modelDetail {
+	font-size: 0.8rem;
+	color: var(--app-color-text-secondary);
+}
+
+@media (max-width: 768px) {
+	.fields,
+	.pullRow {
+		grid-template-columns: 1fr;
+	}
+}

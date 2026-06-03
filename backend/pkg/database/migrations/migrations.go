@@ -83,6 +83,9 @@ var CreateCapturesTableQuery string
 //go:embed queries/0024_create_libraries_table.sql
 var CreateLibrariesTableQuery string
 
+//go:embed queries/0025_create_ai_providers_table.sql
+var CreateAIProvidersTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -189,4 +192,9 @@ func capturesMigrationList() {
 func librariesMigrationList() {
 	addMigration("0024_create_libraries_table",
 		defaultMigrationFunc(CreateLibrariesTableQuery))
+}
+
+func aiProvidersMigrationList() {
+	addMigration("0025_create_ai_providers_table",
+		defaultMigrationFunc(CreateAIProvidersTableQuery))
 }

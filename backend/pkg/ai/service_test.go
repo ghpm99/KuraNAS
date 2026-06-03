@@ -4,15 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 )
-
-func newTestConfig() Config {
-	return Config{
-		MaxRetries:     1,
-		RetryBackoffMS: 10,
-	}
-}
 
 func TestServiceExecuteSuccess(t *testing.T) {
 	provider := &providerMock{
@@ -28,7 +20,7 @@ func TestServiceExecuteSuccess(t *testing.T) {
 
 	router := NewRouter()
 	router.Register(TaskGeneration, provider)
-	service := NewService(router, newTestConfig())
+	service := NewService(router)
 
 	resp, err := service.Execute(context.Background(), Request{
 		TaskType: TaskGeneration,
@@ -47,7 +39,7 @@ func TestServiceExecuteSuccess(t *testing.T) {
 
 func TestServiceExecuteEmptyPrompt(t *testing.T) {
 	router := NewRouter()
-	service := NewService(router, newTestConfig())
+	service := NewService(router)
 
 	_, err := service.Execute(context.Background(), Request{
 		TaskType: TaskGeneration,
@@ -60,7 +52,7 @@ func TestServiceExecuteEmptyPrompt(t *testing.T) {
 
 func TestServiceExecuteNoProvider(t *testing.T) {
 	router := NewRouter()
-	service := NewService(router, newTestConfig())
+	service := NewService(router)
 
 	_, err := service.Execute(context.Background(), Request{
 		TaskType: TaskGeneration,
@@ -68,114 +60,6 @@ func TestServiceExecuteNoProvider(t *testing.T) {
 	})
 	if !errors.Is(err, ErrNoProviderForTask) {
 		t.Fatalf("expected ErrNoProviderForTask, got %v", err)
-	}
-}
-
-func TestServiceExecuteRetryOnTimeout(t *testing.T) {
-	callCount := 0
-	provider := &providerMock{
-		name: "retry-test",
-		completeFn: func(ctx context.Context, req Request) (Response, error) {
-			callCount++
-			if callCount < 2 {
-				return Response{}, ErrProviderTimeout
-			}
-			return Response{Content: "success", Provider: "retry-test"}, nil
-		},
-	}
-
-	router := NewRouter()
-	router.Register(TaskSimple, provider)
-	service := NewService(router, newTestConfig())
-
-	resp, err := service.Execute(context.Background(), Request{
-		TaskType: TaskSimple,
-		Prompt:   "retry me",
-	})
-	if err != nil {
-		t.Fatalf("expected success after retry, got %v", err)
-	}
-	if resp.Content != "success" {
-		t.Fatalf("expected 'success', got %s", resp.Content)
-	}
-	if callCount != 2 {
-		t.Fatalf("expected 2 calls, got %d", callCount)
-	}
-}
-
-func TestServiceExecuteRetryOnRateLimit(t *testing.T) {
-	callCount := 0
-	provider := &providerMock{
-		name: "rate-limit-test",
-		completeFn: func(ctx context.Context, req Request) (Response, error) {
-			callCount++
-			if callCount < 2 {
-				return Response{}, ErrProviderRateLimit
-			}
-			return Response{Content: "ok", Provider: "rate-limit-test"}, nil
-		},
-	}
-
-	router := NewRouter()
-	router.Register(TaskSimple, provider)
-	service := NewService(router, newTestConfig())
-
-	resp, err := service.Execute(context.Background(), Request{
-		TaskType: TaskSimple,
-		Prompt:   "test",
-	})
-	if err != nil {
-		t.Fatalf("expected success after retry, got %v", err)
-	}
-	if resp.Content != "ok" {
-		t.Fatalf("expected 'ok', got %s", resp.Content)
-	}
-}
-
-func TestServiceExecuteNoRetryOnAuthError(t *testing.T) {
-	callCount := 0
-	provider := &providerMock{
-		name: "auth-fail",
-		completeFn: func(ctx context.Context, req Request) (Response, error) {
-			callCount++
-			return Response{}, ErrProviderAuth
-		},
-	}
-
-	router := NewRouter()
-	router.Register(TaskSimple, provider)
-	service := NewService(router, newTestConfig())
-
-	_, err := service.Execute(context.Background(), Request{
-		TaskType: TaskSimple,
-		Prompt:   "test",
-	})
-	if !errors.Is(err, ErrProviderAuth) {
-		t.Fatalf("expected ErrProviderAuth, got %v", err)
-	}
-	if callCount != 1 {
-		t.Fatalf("expected 1 call (no retry on auth error), got %d", callCount)
-	}
-}
-
-func TestServiceExecuteAllRetriesFailed(t *testing.T) {
-	provider := &providerMock{
-		name: "always-timeout",
-		completeFn: func(ctx context.Context, req Request) (Response, error) {
-			return Response{}, ErrProviderTimeout
-		},
-	}
-
-	router := NewRouter()
-	router.Register(TaskSimple, provider)
-	service := NewService(router, newTestConfig())
-
-	_, err := service.Execute(context.Background(), Request{
-		TaskType: TaskSimple,
-		Prompt:   "test",
-	})
-	if !errors.Is(err, ErrAllAttemptsFailed) {
-		t.Fatalf("expected ErrAllAttemptsFailed, got %v", err)
 	}
 }
 
@@ -195,7 +79,7 @@ func TestServiceExecuteFallback(t *testing.T) {
 
 	router := NewRouter()
 	router.RegisterWithFallback(TaskComplex, primary, fallback)
-	service := NewService(router, newTestConfig())
+	service := NewService(router)
 
 	resp, err := service.Execute(context.Background(), Request{
 		TaskType: TaskComplex,
@@ -225,7 +109,7 @@ func TestServiceExecuteFallbackAlsoFails(t *testing.T) {
 
 	router := NewRouter()
 	router.RegisterWithFallback(TaskComplex, primary, fallback)
-	service := NewService(router, newTestConfig())
+	service := NewService(router)
 
 	_, err := service.Execute(context.Background(), Request{
 		TaskType: TaskComplex,
@@ -236,28 +120,57 @@ func TestServiceExecuteFallbackAlsoFails(t *testing.T) {
 	}
 }
 
-func TestServiceExecuteContextCancelled(t *testing.T) {
-	provider := &providerMock{
-		name: "slow",
-		completeFn: func(ctx context.Context, req Request) (Response, error) {
-			return Response{}, ErrProviderTimeout
-		},
+func TestServiceExecuteChainFallback(t *testing.T) {
+	calls := []string{}
+	makeProvider := func(name string, fail bool) *providerMock {
+		return &providerMock{
+			name: name,
+			completeFn: func(ctx context.Context, req Request) (Response, error) {
+				calls = append(calls, name)
+				if fail {
+					return Response{}, errors.New(name + " down")
+				}
+				return Response{Content: "ok", Provider: name}, nil
+			},
+		}
+	}
+
+	primary := makeProvider("primary", true)
+	fb1 := makeProvider("fb1", true)
+	fb2 := makeProvider("fb2", false)
+
+	router := NewRouter()
+	router.RegisterChain(TaskComplex, primary, fb1, fb2)
+	service := NewService(router)
+
+	resp, err := service.Execute(context.Background(), Request{TaskType: TaskComplex, Prompt: "test"})
+	if err != nil {
+		t.Fatalf("expected chain to succeed on fb2, got %v", err)
+	}
+	if resp.Provider != "fb2" {
+		t.Fatalf("expected fb2 provider, got %s", resp.Provider)
+	}
+	if len(calls) != 3 {
+		t.Fatalf("expected all 3 providers tried in order, got %v", calls)
+	}
+}
+
+func TestServiceExecuteChainAllFail(t *testing.T) {
+	makeProvider := func(name string) *providerMock {
+		return &providerMock{
+			name: name,
+			completeFn: func(ctx context.Context, req Request) (Response, error) {
+				return Response{}, errors.New(name + " down")
+			},
+		}
 	}
 
 	router := NewRouter()
-	router.Register(TaskSimple, provider)
-	cfg := newTestConfig()
-	cfg.RetryBackoffMS = 500
-	service := NewService(router, cfg)
+	router.RegisterChain(TaskComplex, makeProvider("p"), makeProvider("fb1"), makeProvider("fb2"))
+	service := NewService(router)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-
-	_, err := service.Execute(ctx, Request{
-		TaskType: TaskSimple,
-		Prompt:   "test",
-	})
+	_, err := service.Execute(context.Background(), Request{TaskType: TaskComplex, Prompt: "test"})
 	if err == nil {
-		t.Fatalf("expected error on cancelled context")
+		t.Fatalf("expected error when every provider in the chain fails")
 	}
 }

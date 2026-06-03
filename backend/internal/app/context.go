@@ -3,6 +3,10 @@ package app
 import (
 	"database/sql"
 	"log"
+	"strings"
+	"time"
+
+	"nas-go/api/internal/api/v1/aiproviders"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
@@ -12,12 +16,14 @@ import (
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/notifications"
+	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/providers/anthropic"
+	"nas-go/api/pkg/ai/providers/ollama"
 	"nas-go/api/pkg/ai/providers/openai"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
@@ -30,6 +36,8 @@ type AppContext struct {
 	DB            *database.DbContext
 	Logger        logger.LoggerServiceInterface
 	AI            ai.ServiceInterface
+	AIProviders   *AIProvidersContext
+	Ollama        *OllamaContext
 	Tasks         *chan utils.Task
 	Files         *FileContext
 	Jobs          *JobsContext
@@ -121,13 +129,25 @@ type TakeoutContext struct {
 	Service takeout.ServiceInterface
 }
 
+type AIProvidersContext struct {
+	Handler    *aiproviders.Handler
+	Service    aiproviders.ServiceInterface
+	Repository aiproviders.RepositoryInterface
+}
+
+type OllamaContext struct {
+	Handler *ollamamgmt.Handler
+	Service ollamamgmt.ServiceInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
 
 	loggerService := logger.NewLoggerService(logger.NewLoggerRepository(dbContext))
-	aiService := newAIService()
+	aiService, aiProvidersContext := newAIStack(dbContext)
 	jobsContext := newJobsContext(dbContext)
+	ollamaContext := newOllamaContext(aiProvidersContext.Service, jobsContext.Repository)
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService)
@@ -146,6 +166,8 @@ func NewContext(db *sql.DB) *AppContext {
 		DB:            dbContext,
 		Logger:        loggerService,
 		AI:            aiService,
+		AIProviders:   aiProvidersContext,
+		Ollama:        ollamaContext,
 		Tasks:         &tasks,
 		Files:         fileContext,
 		Jobs:          jobsContext,
@@ -309,33 +331,76 @@ func newCapturesContext(
 	}
 }
 
-func newAIService() ai.ServiceInterface {
+// newAIStack wires the persisted provider configuration to a hot-swappable
+// AI service. The returned ai.ServiceInterface is an *ai.Manager: editing a
+// provider through the API rebuilds the underlying router without a restart.
+func newAIStack(dbContext *database.DbContext) (ai.ServiceInterface, *AIProvidersContext) {
 	cfg := ai.LoadConfig()
-	if cfg.OpenAIAPIKey == "" && cfg.AnthropicAPIKey == "" {
-		log.Println("AI service disabled: no API keys configured")
-		return nil
-	}
 
-	router := ai.NewRouter()
+	repository := aiproviders.NewRepository(dbContext)
+	service := aiproviders.NewService(repository, cfg)
 
-	var primary ai.Provider
-	var fallback ai.Provider
+	manager := ai.NewManager(nil)
 
-	if cfg.OpenAIAPIKey != "" {
-		primary = openai.NewProvider(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIBaseURL, cfg.DefaultTimeout)
-		log.Printf("AI provider registered: openai (%s)\n", cfg.OpenAIModel)
-	}
-	if cfg.AnthropicAPIKey != "" {
-		provider := anthropic.NewProvider(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.DefaultTimeout)
-		if primary == nil {
-			primary = provider
-		} else {
-			fallback = provider
+	if dbContext != nil && dbContext.GetDatabase() != nil {
+		if err := service.EnsureDefaults(); err != nil {
+			log.Printf("AI providers: failed to seed defaults: %v\n", err)
 		}
-		log.Printf("AI provider registered: anthropic (%s)\n", cfg.AnthropicModel)
 	}
 
-	taskTypes := []ai.TaskType{
+	rebuild := func() {
+		models, err := service.GetProviderModels()
+		if err != nil {
+			log.Printf("AI providers: failed to load configuration: %v\n", err)
+			return
+		}
+		manager.Swap(buildAIServiceFromModels(models, cfg))
+	}
+
+	if dbContext != nil && dbContext.GetDatabase() != nil {
+		rebuild()
+	}
+	service.SetOnChange(rebuild)
+
+	handler := aiproviders.NewHandler(service)
+
+	return manager, &AIProvidersContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+// newOllamaContext builds the Ollama management module. The daemon base URL is
+// resolved dynamically from the persisted provider configuration so changes
+// made through the UI take effect without a restart.
+func newOllamaContext(aiProvidersService aiproviders.ServiceInterface, jobsRepository jobs.RepositoryInterface) *OllamaContext {
+	fallbackBaseURL := ai.LoadConfig().OllamaBaseURL
+
+	resolver := func() string {
+		if aiProvidersService != nil {
+			if models, err := aiProvidersService.GetProviderModels(); err == nil {
+				for _, model := range models {
+					if model.Name == aiproviders.ProviderOllama && strings.TrimSpace(model.BaseURL) != "" {
+						return model.BaseURL
+					}
+				}
+			}
+		}
+		return fallbackBaseURL
+	}
+
+	service := ollamamgmt.NewService(resolver, jobsRepository)
+	handler := ollamamgmt.NewHandler(service)
+
+	return &OllamaContext{
+		Handler: handler,
+		Service: service,
+	}
+}
+
+func aiTaskTypes() []ai.TaskType {
+	return []ai.TaskType{
 		ai.TaskClassification,
 		ai.TaskExtraction,
 		ai.TaskSummarization,
@@ -343,17 +408,77 @@ func newAIService() ai.ServiceInterface {
 		ai.TaskSimple,
 		ai.TaskComplex,
 	}
+}
 
-	for _, taskType := range taskTypes {
-		if fallback != nil {
-			router.RegisterWithFallback(taskType, primary, fallback)
-		} else {
-			router.Register(taskType, primary)
+func providerTimeout(model aiproviders.ProviderModel, cfg ai.Config) time.Duration {
+	if model.Params.TimeoutSeconds > 0 {
+		return time.Duration(model.Params.TimeoutSeconds) * time.Second
+	}
+	return cfg.DefaultTimeout
+}
+
+// withProviderRetry wraps a provider with its own persisted retry policy, so
+// each provider's timeout/retry tuning (from the ai_providers table) is applied
+// independently.
+func withProviderRetry(provider ai.Provider, model aiproviders.ProviderModel) ai.Provider {
+	backoff := time.Duration(model.Params.RetryBackoffMS) * time.Millisecond
+	return ai.WithRetry(provider, model.Params.MaxRetries, backoff)
+}
+
+// buildAIServiceFromModels constructs the provider chain from persisted
+// configuration. Operational tuning (model, base_url, timeout, retries) comes
+// from the ai_providers table; only the API keys come from the environment.
+// Providers are already ordered by priority; the first enabled one becomes
+// primary and the rest are fallbacks. Cloud providers are skipped when their
+// API key is missing. Returns nil when nothing is enabled.
+func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config) ai.ServiceInterface {
+	var providers []ai.Provider
+
+	for _, model := range models {
+		if !model.Enabled {
+			continue
+		}
+
+		switch model.Name {
+		case aiproviders.ProviderOllama:
+			keepAlive := model.Params.KeepAlive
+			if keepAlive == "" {
+				keepAlive = cfg.OllamaKeepAlive
+			}
+			base := ollama.NewProvider(model.BaseURL, model.Model, keepAlive, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
+			log.Printf("AI provider enabled: ollama (%s @ %s)\n", model.Model, model.BaseURL)
+		case aiproviders.ProviderOpenAI:
+			if cfg.OpenAIAPIKey == "" {
+				log.Println("AI provider openai enabled but no API key configured; skipping")
+				continue
+			}
+			base := openai.NewProvider(cfg.OpenAIAPIKey, model.Model, model.BaseURL, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
+			log.Printf("AI provider enabled: openai (%s)\n", model.Model)
+		case aiproviders.ProviderAnthropic:
+			if cfg.AnthropicAPIKey == "" {
+				log.Println("AI provider anthropic enabled but no API key configured; skipping")
+				continue
+			}
+			base := anthropic.NewProvider(cfg.AnthropicAPIKey, model.Model, providerTimeout(model, cfg))
+			providers = append(providers, withProviderRetry(base, model))
+			log.Printf("AI provider enabled: anthropic (%s)\n", model.Model)
 		}
 	}
 
-	log.Println("AI service enabled")
-	return ai.NewService(router, cfg)
+	if len(providers) == 0 {
+		log.Println("AI service has no enabled providers")
+		return nil
+	}
+
+	router := ai.NewRouter()
+	for _, taskType := range aiTaskTypes() {
+		router.RegisterChain(taskType, providers...)
+	}
+
+	log.Printf("AI service enabled with %d provider(s)\n", len(providers))
+	return ai.NewService(router)
 }
 
 func newTakeoutContext(
