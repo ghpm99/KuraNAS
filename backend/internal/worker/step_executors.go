@@ -345,7 +345,13 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		}
 
 		sameSize := existing.Size == info.Size()
-		sameModTime := !existing.UpdatedAt.IsZero() && existing.UpdatedAt.UnixNano() == info.ModTime().UnixNano()
+		// home_file.updated_at is TIMESTAMPTZ (microsecond precision in Postgres),
+		// while filesystem ModTime has nanosecond precision. Comparing UnixNano()
+		// directly always mismatches after a DB round-trip, flagging every file as
+		// changed on every scan and re-enqueuing the whole library indefinitely.
+		// Truncate both sides to second precision before comparing.
+		sameModTime := !existing.UpdatedAt.IsZero() &&
+			existing.UpdatedAt.Truncate(time.Second).Equal(info.ModTime().Truncate(time.Second))
 		if !sameSize || !sameModTime {
 			changedPaths = append(changedPaths, path)
 		}
