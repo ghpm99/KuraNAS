@@ -18,6 +18,35 @@ func TestProviderName(t *testing.T) {
 	}
 }
 
+func TestProviderForwardsImages(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req chatRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		userMsg := req.Messages[len(req.Messages)-1]
+		if len(userMsg.Images) != 1 || userMsg.Images[0] != "base64data" {
+			t.Fatalf("expected image forwarded on user message, got %+v", userMsg.Images)
+		}
+		json.NewEncoder(w).Encode(chatResponse{
+			Model:   "gemma3",
+			Message: chatMessage{Role: "assistant", Content: "ok"},
+			Done:    true,
+		})
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "gemma3", "5m", 5*time.Second)
+	_, err := provider.Complete(context.Background(), ai.Request{
+		TaskType: ai.TaskClassification,
+		Prompt:   "describe",
+		Images:   []string{"base64data"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestProviderCompleteSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/chat" {

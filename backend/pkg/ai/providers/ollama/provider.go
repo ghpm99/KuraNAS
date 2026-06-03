@@ -12,8 +12,9 @@ import (
 )
 
 type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string   `json:"role"`
+	Content string   `json:"content"`
+	Images  []string `json:"images,omitempty"`
 }
 
 type chatOptions struct {
@@ -136,7 +137,9 @@ func buildMessages(req ai.Request) []chatMessage {
 	if req.SystemPrompt != "" {
 		messages = append(messages, chatMessage{Role: "system", Content: req.SystemPrompt})
 	}
-	messages = append(messages, chatMessage{Role: "user", Content: req.Prompt})
+	// Ollama's /api/chat accepts base64 images on the user message for
+	// multimodal models (e.g. gemma3, llava); text-only models ignore them.
+	messages = append(messages, chatMessage{Role: "user", Content: req.Prompt, Images: req.Images})
 	return messages
 }
 

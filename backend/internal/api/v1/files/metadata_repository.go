@@ -75,6 +75,7 @@ func (r *MetadataRepository) GetImageMetadataByID(id int) (ImageMetadataModel, e
 			&metadata.Artist,
 			&metadata.Classification.Category,
 			&metadata.Classification.Confidence,
+			&metadata.Classification.SuggestedName,
 			&metadata.CreatedAt,
 		); err != nil {
 			return err
@@ -143,6 +144,7 @@ func (r *MetadataRepository) UpsertImageMetadata(tx *sql.Tx, metadata ImageMetad
 		metadata.Artist,
 		metadata.Classification.Category,
 		metadata.Classification.Confidence,
+		metadata.Classification.SuggestedName,
 		time.Now(),
 	}
 

@@ -29,7 +29,7 @@ func TestSystemPromptsAreEmbedded(t *testing.T) {
 		{
 			name:      "image classification",
 			prompt:    ImageClassificationSystemPrompt(),
-			mustMatch: "image classifier",
+			mustMatch: "image analyst",
 		},
 	}
 

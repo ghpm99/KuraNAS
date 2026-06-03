@@ -50,6 +50,7 @@ SELECT
     artist,
     classification_category,
     classification_confidence,
+    classification_suggested_name,
     created_at
 FROM
     image_metadata

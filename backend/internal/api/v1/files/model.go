@@ -163,8 +163,9 @@ type ImageMetadataModel struct {
 }
 
 type ImageClassificationModel struct {
-	Category   ImageClassificationCategory `json:"category"`
-	Confidence float64                     `json:"confidence"`
+	Category      ImageClassificationCategory `json:"category"`
+	Confidence    float64                     `json:"confidence"`
+	SuggestedName string                      `json:"suggested_name"`
 }
 
 type AudioMetadataModel struct {

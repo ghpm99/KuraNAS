@@ -1,6 +1,8 @@
 Classify this image into one of: capture, photo, document, receipt, screenshot_app, landscape, portrait, meme, art, other.
 
+Look at the image if one is attached. Identify the main subject (people, characters, objects, place, text) and propose a short descriptive filename for it.
+
 Image metadata:
 %s
 
-Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>}
+Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>, "suggested_name": "<short_descriptive_name_no_extension>"}

@@ -50,6 +50,7 @@ INSERT INTO
         artist,
         classification_category,
         classification_confidence,
+        classification_suggested_name,
         created_at
     )
 VALUES
@@ -104,7 +105,8 @@ VALUES
         $48,
         $49,
         $50,
-        $51
+        $51,
+        $52
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
@@ -156,7 +158,8 @@ SET
     copyright = EXCLUDED.copyright,
     artist = EXCLUDED.artist,
     classification_category = EXCLUDED.classification_category,
-    classification_confidence = EXCLUDED.classification_confidence
+    classification_confidence = EXCLUDED.classification_confidence,
+    classification_suggested_name = EXCLUDED.classification_suggested_name
 RETURNING
     id,
     created_at;

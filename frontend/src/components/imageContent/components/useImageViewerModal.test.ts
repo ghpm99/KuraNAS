@@ -18,6 +18,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 IMAGES_DETAIL_DIMENSIONS: 'Dimensoes',
                 IMAGES_DETAIL_CATEGORY: 'Categoria',
                 IMAGES_DETAIL_CONFIDENCE: 'Confianca',
+                IMAGES_DETAIL_SUGGESTED_NAME: 'Nome sugerido',
                 IMAGES_DETAIL_DATE: 'Data',
                 IMAGES_DETAIL_CREATED: 'Criado em',
                 IMAGES_DETAIL_SOFTWARE: 'Software',
@@ -314,6 +315,54 @@ describe('useImageViewerModal', () => {
         const librarySection = getSection(result.current.details[0]);
         const categoryItem = librarySection.items.find((i) => i.label === 'Categoria');
         expect(categoryItem?.value).toBe('Outros');
+    });
+
+    it('shows the AI suggested name when present', () => {
+        const activeImage = createImage({
+            metadata: {
+                classification: {
+                    category: 'other',
+                    confidence: 0.5,
+                    suggested_name: 'rikka_takanashi',
+                },
+            },
+        });
+
+        const { result } = renderHook(() =>
+            useImageViewerModal({
+                activeImage,
+                activeImageDate: null,
+                activeIndex: 0,
+                totalImages: 1,
+                dateFormatter,
+            })
+        );
+
+        const librarySection = getSection(result.current.details[0]);
+        const suggestedItem = librarySection.items.find((i) => i.label === 'Nome sugerido');
+        expect(suggestedItem?.value).toBe('rikka_takanashi');
+    });
+
+    it('omits the suggested name item when absent', () => {
+        const activeImage = createImage({
+            metadata: {
+                classification: { category: 'other', confidence: 0.5 },
+            },
+        });
+
+        const { result } = renderHook(() =>
+            useImageViewerModal({
+                activeImage,
+                activeImageDate: null,
+                activeIndex: 0,
+                totalImages: 1,
+                dateFormatter,
+            })
+        );
+
+        const librarySection = getSection(result.current.details[0]);
+        const suggestedItem = librarySection.items.find((i) => i.label === 'Nome sugerido');
+        expect(suggestedItem).toBeUndefined();
     });
 
     it('formats exposure time >= 1 as plain seconds', () => {

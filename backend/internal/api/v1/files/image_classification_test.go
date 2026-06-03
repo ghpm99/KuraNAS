@@ -2,10 +2,83 @@ package files
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"image"
+	"image/color"
+	"image/png"
 	"nas-go/api/pkg/ai"
+	"os"
+	"path/filepath"
 	"testing"
 )
+
+func TestSanitizeSuggestedName(t *testing.T) {
+	cases := map[string]string{
+		"":                  "",
+		"   ":               "",
+		"Rikka Takanashi":   "Rikka_Takanashi",
+		"beach: sunset!!!":  "beach_sunset",
+		"  _weird--name_  ": "weird--name",
+		"a/b\\c*d":          "a_b_c_d",
+	}
+	for input, want := range cases {
+		if got := sanitizeSuggestedName(input); got != want {
+			t.Errorf("sanitizeSuggestedName(%q) = %q, want %q", input, got, want)
+		}
+	}
+
+	long := make([]byte, 200)
+	for i := range long {
+		long[i] = 'a'
+	}
+	if got := sanitizeSuggestedName(string(long)); len(got) > 80 {
+		t.Errorf("expected suggested name capped at 80, got len %d", len(got))
+	}
+}
+
+func TestEncodeImageForAI(t *testing.T) {
+	if encodeImageForAI("") != nil {
+		t.Fatalf("expected nil for empty path")
+	}
+	if encodeImageForAI("/does/not/exist.png") != nil {
+		t.Fatalf("expected nil for missing file")
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tiny.png")
+	rgba := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	rgba.Set(0, 0, color.RGBA{R: 255, A: 255})
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create png: %v", err)
+	}
+	if err := png.Encode(f, rgba); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	f.Close()
+
+	images := encodeImageForAI(path)
+	if len(images) != 1 {
+		t.Fatalf("expected 1 encoded image, got %d", len(images))
+	}
+	if _, err := base64.StdEncoding.DecodeString(images[0]); err != nil {
+		t.Fatalf("expected valid base64, got error: %v", err)
+	}
+}
+
+func TestParseAIClassificationResponseSuggestedName(t *testing.T) {
+	result, err := parseAIClassificationResponse(`{"category":"art","confidence":0.9,"suggested_name":"Rikka Takanashi"}`)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if result.Category != ImageClassificationCategoryArt {
+		t.Fatalf("expected art category, got %s", result.Category)
+	}
+	if result.SuggestedName != "Rikka_Takanashi" {
+		t.Fatalf("expected sanitized suggested name, got %q", result.SuggestedName)
+	}
+}
 
 type aiServiceMock struct {
 	executeFn func(ctx context.Context, req ai.Request) (ai.Response, error)
