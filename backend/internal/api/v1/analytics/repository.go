@@ -147,6 +147,7 @@ func (r *Repository) GetOverviewData(period PeriodConfig, limits OverviewLimits)
 			&result.Processing.MetadataFailed,
 			&result.Processing.ThumbnailPending,
 			&result.Processing.ThumbnailFailed,
+			&result.Processing.RecurringTimeouts,
 		); err != nil {
 			return err
 		}

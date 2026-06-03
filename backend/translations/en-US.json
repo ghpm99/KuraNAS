@@ -450,6 +450,8 @@
 	"ANALYTICS_MEDIA_COVERAGE": "Metadata coverage by media",
 	"ANALYTICS_PROCESSING_QUEUE": "Processing queue",
 	"ANALYTICS_PROCESSING_FAILURES": "Processing failures",
+	"ANALYTICS_RECURRING_TIMEOUTS": "Files in recurring timeout",
+	"ANALYTICS_RECURRING_TIMEOUTS_HELP": "Files sent to the back of the queue 3+ times due to timeout. A climbing number means a slow or corrupted file that needs attention.",
 	"ANALYTICS_ITEMS_INDEXED": "Enriched items",
 	"ANALYTICS_PENDING": "Pending",
 	"ANALYTICS_FAILED": "Failed",

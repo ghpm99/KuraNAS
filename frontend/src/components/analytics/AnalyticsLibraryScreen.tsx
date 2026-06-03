@@ -82,6 +82,13 @@ const AnalyticsLibraryScreen = ({ state }: AnalyticsLibraryScreenProps) => {
                         helpText={`${t('ANALYTICS_ERRORS_24H')}: ${(data?.health.errors_last_24h ?? 0).toLocaleString()}`}
                     />
                 </div>
+                <div className={styles.span4}>
+                    <AnalyticsKpiCard
+                        title={t('ANALYTICS_RECURRING_TIMEOUTS')}
+                        value={(data?.processing.recurring_timeouts ?? 0).toLocaleString()}
+                        helpText={t('ANALYTICS_RECURRING_TIMEOUTS_HELP')}
+                    />
+                </div>
                 <div className={styles.span6}>
                     <AnalyticsSection
                         title={t('ANALYTICS_MEDIA_COVERAGE')}

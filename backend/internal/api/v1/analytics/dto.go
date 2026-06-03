@@ -99,10 +99,11 @@ type LibraryDto struct {
 }
 
 type ProcessingDto struct {
-	MetadataPending  int64 `json:"metadata_pending"`
-	MetadataFailed   int64 `json:"metadata_failed"`
-	ThumbnailPending int64 `json:"thumbnail_pending"`
-	ThumbnailFailed  int64 `json:"thumbnail_failed"`
+	MetadataPending   int64 `json:"metadata_pending"`
+	MetadataFailed    int64 `json:"metadata_failed"`
+	ThumbnailPending  int64 `json:"thumbnail_pending"`
+	ThumbnailFailed   int64 `json:"thumbnail_failed"`
+	RecurringTimeouts int64 `json:"recurring_timeouts"`
 }
 
 type HealthDto struct {

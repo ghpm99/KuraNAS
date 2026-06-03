@@ -37,6 +37,10 @@ func (r *progressJobsRepo) UpdateStepExecution(tx *sql.Tx, stepID int, status st
 	r.progress = append(r.progress, progress)
 	return true, nil
 }
+func (r *progressJobsRepo) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error) {
+	return true, nil
+}
+func (r *progressJobsRepo) RequeueJob(tx *sql.Tx, jobID int) (bool, error) { return true, nil }
 
 func TestExecuteOllamaPullStepReportsProgress(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

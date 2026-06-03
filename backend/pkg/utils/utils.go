@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -292,9 +293,23 @@ func RunPythonScript(scriptName ScriptType, arg ...string) (string, error) {
 
 	pythonExec := config.GetBuildConfig("PythonScript")
 
-	cmd := exec.Command(pythonExec, args...)
+	// Bound the external process so a single hanging script can never freeze the
+	// worker slot indefinitely. On timeout the process is killed and the error
+	// wraps context.DeadlineExceeded, which the scheduler detects to send the
+	// job to the back of the queue instead of failing it.
+	timeout := time.Duration(config.AppConfig.WorkerStepTimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = 120 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, pythonExec, args...)
 
 	output, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("script python %s excedeu o timeout de %s: %w", scriptName, timeout, context.DeadlineExceeded)
+	}
 	if err != nil {
 		return "", fmt.Errorf("erro ao executar script python: %v, output: %s", err, string(output))
 	}

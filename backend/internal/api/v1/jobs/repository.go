@@ -335,3 +335,38 @@ func (r *Repository) UpdateStepExecution(
 
 	return affectedRows == 1, nil
 }
+
+// DeferStepForTimeout returns a step to the queue after a timeout without
+// consuming its retry budget (attempts is reset to the pre-run value) and bumps
+// timeout_count, which is the signal tracked for files stuck in recurring
+// timeouts.
+func (r *Repository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error) {
+	result, err := tx.Exec(queries.DeferStepTimeoutQuery, stepID, attempts, lastError)
+	if err != nil {
+		return false, fmt.Errorf("DeferStepForTimeout: %w", err)
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("DeferStepForTimeout rows affected: %w", err)
+	}
+
+	return affectedRows == 1, nil
+}
+
+// RequeueJob sends a job back to the tail of the queue by marking it queued and
+// setting next_attempt_at to now, so FIFO ordering picks it up after everything
+// already waiting.
+func (r *Repository) RequeueJob(tx *sql.Tx, jobID int) (bool, error) {
+	result, err := tx.Exec(queries.RequeueJobQuery, jobID)
+	if err != nil {
+		return false, fmt.Errorf("RequeueJob: %w", err)
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("RequeueJob rows affected: %w", err)
+	}
+
+	return affectedRows == 1, nil
+}

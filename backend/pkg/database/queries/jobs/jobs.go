@@ -24,3 +24,9 @@ var UpdateJobExecutionQuery string
 
 //go:embed update_step_execution.sql
 var UpdateStepExecutionQuery string
+
+//go:embed defer_step_timeout.sql
+var DeferStepTimeoutQuery string
+
+//go:embed requeue_job.sql
+var RequeueJobQuery string

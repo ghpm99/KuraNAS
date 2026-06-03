@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -507,6 +508,17 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 	return data, nil
 }
 
+// ffmpegTimeout bounds ffmpeg invocations so a corrupt or stalled media file
+// cannot hang the request/worker indefinitely; on timeout the caller falls back
+// to a placeholder icon.
+func ffmpegTimeout() time.Duration {
+	timeout := time.Duration(config.AppConfig.WorkerStepTimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = 120 * time.Second
+	}
+	return timeout
+}
+
 func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	if width <= 0 {
 		width = 320
@@ -533,7 +545,10 @@ func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte,
 		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 	}
 
-	ffmpegErr := exec.Command(
+	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
+	defer ffmpegCancel()
+	ffmpegErr := exec.CommandContext(
+		ffmpegCtx,
 		"ffmpeg",
 		"-hide_banner",
 		"-loglevel", "error",
@@ -588,7 +603,10 @@ func (s *Service) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte
 	}
 
 	// Curta prévia animada: ~2.5s, baixa taxa de frames para performance de cache e rede local.
-	ffmpegErr := exec.Command(
+	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
+	defer ffmpegCancel()
+	ffmpegErr := exec.CommandContext(
+		ffmpegCtx,
 		"ffmpeg",
 		"-hide_banner",
 		"-loglevel", "error",

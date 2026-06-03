@@ -83,6 +83,7 @@ const createOverview = (overrides?: Partial<AnalyticsOverview>): AnalyticsOvervi
         metadata_failed: 1,
         thumbnail_pending: 0,
         thumbnail_failed: 2,
+        recurring_timeouts: 0,
     },
     health: {
         status: 'ok',

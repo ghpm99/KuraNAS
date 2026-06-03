@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,10 @@ import (
 )
 
 var ErrStepSkipped = errors.New("step skipped")
+
+// errStepDeferred signals that a step timed out and the whole job was sent to
+// the back of the queue. It is an internal control value, not a failure.
+var errStepDeferred = errors.New("step deferred to back of queue")
 
 type StepExecutor func(step jobs.StepModel) error
 
@@ -197,6 +202,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 	}
 
 	var firstStepErr error
+	deferred := false
 
 	for {
 		canceled, cancelErr := s.cancelIfRequested(jobID)
@@ -246,9 +252,13 @@ func (s *JobScheduler) processJob(jobID int) error {
 
 		if len(readySteps) == 1 {
 			if err := s.executeStep(readySteps[0]); err != nil {
-				log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, readySteps[0].ID, readySteps[0].Type, err)
-				if firstStepErr == nil {
-					firstStepErr = err
+				if errors.Is(err, errStepDeferred) {
+					deferred = true
+				} else {
+					log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, readySteps[0].ID, readySteps[0].Type, err)
+					if firstStepErr == nil {
+						firstStepErr = err
+					}
 				}
 			}
 		} else {
@@ -259,6 +269,12 @@ func (s *JobScheduler) processJob(jobID int) error {
 				go func(step jobs.StepModel) {
 					defer wg.Done()
 					if err := s.executeStep(step); err != nil {
+						if errors.Is(err, errStepDeferred) {
+							errMu.Lock()
+							deferred = true
+							errMu.Unlock()
+							return
+						}
 						log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, step.ID, step.Type, err)
 						errMu.Lock()
 						if firstStepErr == nil {
@@ -270,6 +286,18 @@ func (s *JobScheduler) processJob(jobID int) error {
 			}
 			wg.Wait()
 		}
+
+		if deferred {
+			break
+		}
+	}
+
+	if deferred {
+		if _, err := s.requeueJob(jobID); err != nil {
+			return err
+		}
+		log.Printf("[job=%d] adiado por timeout: voltou para o fim da fila\n", jobID)
+		return nil
 	}
 
 	canceled, err = s.cancelIfRequested(jobID)
@@ -345,6 +373,18 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		return err
 	}
 
+	// Timeout: don't fail the step. Return it to the queue (without consuming the
+	// retry budget) and bump timeout_count, then signal the job to go to the back
+	// of the line so the next file gets a turn — like stepping out of the picolé
+	// line to think about the flavor. Recurring offenders surface in analytics.
+	if errors.Is(runErr, context.DeadlineExceeded) {
+		if _, deferErr := s.deferStepForTimeout(step.ID, step.Attempts, runErr.Error()); deferErr != nil {
+			return deferErr
+		}
+		log.Printf("[job=%d step=%d type=%s] timeout: voltando para o fim da fila\n", step.JobID, step.ID, step.Type)
+		return errStepDeferred
+	}
+
 	if step.Attempts+1 < step.MaxAttempts {
 		runErrMessage := runErr.Error()
 		_, updateErr := s.updateStepExecution(step.ID, string(StepStatusQueued), step.Progress, step.Attempts+1, nil, nil, &runErrMessage)
@@ -383,6 +423,26 @@ func (s *JobScheduler) updateStepExecution(stepID int, status string, progress i
 		updated, err := s.repository.UpdateStepExecution(tx, stepID, status, progress, attempts, startedAt, endedAt, lastError)
 		if err != nil {
 			return false, fmt.Errorf("update step %d execution: %w", stepID, err)
+		}
+		return updated, nil
+	})
+}
+
+func (s *JobScheduler) deferStepForTimeout(stepID int, attempts int, lastError string) (bool, error) {
+	return s.withTx(func(tx *sql.Tx) (bool, error) {
+		updated, err := s.repository.DeferStepForTimeout(tx, stepID, attempts, lastError)
+		if err != nil {
+			return false, fmt.Errorf("defer step %d for timeout: %w", stepID, err)
+		}
+		return updated, nil
+	})
+}
+
+func (s *JobScheduler) requeueJob(jobID int) (bool, error) {
+	return s.withTx(func(tx *sql.Tx) (bool, error) {
+		updated, err := s.repository.RequeueJob(tx, jobID)
+		if err != nil {
+			return false, fmt.Errorf("requeue job %d: %w", jobID, err)
 		}
 		return updated, nil
 	})

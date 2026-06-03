@@ -103,6 +103,7 @@ describe('AnalyticsContent', () => {
                     metadata_failed: 0,
                     thumbnail_pending: 2,
                     thumbnail_failed: 1,
+                    recurring_timeouts: 0,
                 },
                 health: {
                     status: 'ok',
