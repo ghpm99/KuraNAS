@@ -41,6 +41,9 @@ func (r *progressJobsRepo) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts 
 	return true, nil
 }
 func (r *progressJobsRepo) RequeueJob(tx *sql.Tx, jobID int) (bool, error) { return true, nil }
+func (r *progressJobsRepo) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {
+	return 0, 0, nil
+}
 
 func TestExecuteOllamaPullStepReportsProgress(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

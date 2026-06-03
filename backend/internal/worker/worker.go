@@ -39,6 +39,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	if context != nil && context.JobsRepository != nil {
 		context.JobScheduler = NewJobScheduler(context.JobsRepository, buildStepExecutors(context))
 		context.JobOrchestrator = NewJobOrchestrator(context.JobsRepository, context.JobScheduler)
+		recoverInterruptedWork(context)
 		context.JobScheduler.Start()
 	}
 
@@ -49,6 +50,33 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	go startWorkersScheduler(context)
 	go startNotificationCleanup(context)
 	startEntryPointWatcher(context)
+}
+
+// recoverInterruptedWork revives jobs/steps left in 'running' by a previous
+// process that stopped mid-execution. Without this they would stay orphaned
+// forever, since the scheduler only picks up 'queued' work.
+func recoverInterruptedWork(context *WorkerContext) {
+	if context == nil || context.JobScheduler == nil {
+		return
+	}
+
+	jobsReset, stepsReset, err := context.JobScheduler.RecoverInterruptedWork()
+	if err != nil {
+		log.Printf("[recovery] failed to reset interrupted work: %v\n", err)
+		return
+	}
+	if jobsReset == 0 && stepsReset == 0 {
+		return
+	}
+
+	log.Printf("[recovery] reset %d running job(s) and %d running step(s) to queued\n", jobsReset, stepsReset)
+	emitNotification(
+		context,
+		"info",
+		i18n.GetMessage("NOTIFICATION_WORKER_RECOVERY_TITLE"),
+		i18n.Translate("NOTIFICATION_WORKER_RECOVERY_MESSAGE", jobsReset),
+		"",
+	)
 }
 
 func startNotificationCleanup(context *WorkerContext) {

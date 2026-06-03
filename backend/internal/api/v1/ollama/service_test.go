@@ -40,6 +40,13 @@ func (r *fakeJobsRepo) UpdateJobExecution(tx *sql.Tx, jobID int, status string, 
 func (r *fakeJobsRepo) UpdateStepExecution(tx *sql.Tx, stepID int, status string, progress int, attempts int, startedAt *time.Time, endedAt *time.Time, lastError *string) (bool, error) {
 	return true, nil
 }
+func (r *fakeJobsRepo) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, lastError string) (bool, error) {
+	return true, nil
+}
+func (r *fakeJobsRepo) RequeueJob(tx *sql.Tx, jobID int) (bool, error) { return true, nil }
+func (r *fakeJobsRepo) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {
+	return 0, 0, nil
+}
 
 func staticBaseURL(url string) func() string {
 	return func() string { return url }

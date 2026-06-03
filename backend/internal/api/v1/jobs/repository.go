@@ -354,6 +354,32 @@ func (r *Repository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempts int, l
 	return affectedRows == 1, nil
 }
 
+// RecoverInterruptedWork resets jobs and steps stranded in 'running' (e.g. the
+// process stopped mid-execution) back to 'queued' so the scheduler reprocesses
+// them. Returns the number of jobs and steps reset. Run once on startup, before
+// the scheduler begins polling.
+func (r *Repository) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {
+	stepResult, err := tx.Exec(queries.RecoverInterruptedStepsQuery)
+	if err != nil {
+		return 0, 0, fmt.Errorf("RecoverInterruptedWork steps: %w", err)
+	}
+	stepsReset, err := stepResult.RowsAffected()
+	if err != nil {
+		return 0, 0, fmt.Errorf("RecoverInterruptedWork steps affected: %w", err)
+	}
+
+	jobResult, err := tx.Exec(queries.RecoverInterruptedJobsQuery)
+	if err != nil {
+		return 0, 0, fmt.Errorf("RecoverInterruptedWork jobs: %w", err)
+	}
+	jobsReset, err := jobResult.RowsAffected()
+	if err != nil {
+		return 0, 0, fmt.Errorf("RecoverInterruptedWork jobs affected: %w", err)
+	}
+
+	return jobsReset, stepsReset, nil
+}
+
 // RequeueJob sends a job back to the tail of the queue by marking it queued and
 // setting next_attempt_at to now, so FIFO ordering picks it up after everything
 // already waiting.

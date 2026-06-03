@@ -438,6 +438,22 @@ func (s *JobScheduler) deferStepForTimeout(stepID int, attempts int, lastError s
 	})
 }
 
+// RecoverInterruptedWork resets jobs/steps stranded in 'running' back to
+// 'queued'. Call once on startup before Start() so orphaned work from a previous
+// run is reprocessed. Returns the number of jobs and steps reset.
+func (s *JobScheduler) RecoverInterruptedWork() (int64, int64, error) {
+	var jobsReset, stepsReset int64
+	_, err := s.withTx(func(tx *sql.Tx) (bool, error) {
+		j, st, recoverErr := s.repository.RecoverInterruptedWork(tx)
+		if recoverErr != nil {
+			return false, recoverErr
+		}
+		jobsReset, stepsReset = j, st
+		return false, nil
+	})
+	return jobsReset, stepsReset, err
+}
+
 func (s *JobScheduler) requeueJob(jobID int) (bool, error) {
 	return s.withTx(func(tx *sql.Tx) (bool, error) {
 		updated, err := s.repository.RequeueJob(tx, jobID)

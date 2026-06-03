@@ -16,6 +16,42 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
+// TestRecoverInterruptedWork verifies that jobs/steps stranded in 'running' are
+// reset to 'queued' on recovery so the scheduler can reprocess them.
+func TestRecoverInterruptedWork(t *testing.T) {
+	repo := newFakeJobsRepository()
+	scheduler := NewJobScheduler(repo, map[StepType]StepExecutor{})
+
+	repo.jobs[1] = jobsapi.JobModel{ID: 1, Status: string(JobStatusRunning)}
+	repo.jobs[2] = jobsapi.JobModel{ID: 2, Status: string(JobStatusCompleted)}
+	repo.steps[10] = jobsapi.StepModel{ID: 10, JobID: 1, Status: string(StepStatusRunning)}
+	repo.steps[11] = jobsapi.StepModel{ID: 11, JobID: 1, Status: string(StepStatusCompleted)}
+
+	jobsReset, stepsReset, err := scheduler.RecoverInterruptedWork()
+	if err != nil {
+		t.Fatalf("RecoverInterruptedWork returned error: %v", err)
+	}
+	if jobsReset != 1 {
+		t.Fatalf("expected 1 job reset, got %d", jobsReset)
+	}
+	if stepsReset != 1 {
+		t.Fatalf("expected 1 step reset, got %d", stepsReset)
+	}
+
+	if repo.jobs[1].Status != string(JobStatusQueued) {
+		t.Fatalf("expected running job requeued, got %s", repo.jobs[1].Status)
+	}
+	if repo.jobs[2].Status != string(JobStatusCompleted) {
+		t.Fatalf("completed job must be untouched, got %s", repo.jobs[2].Status)
+	}
+	if repo.steps[10].Status != string(StepStatusQueued) {
+		t.Fatalf("expected running step requeued, got %s", repo.steps[10].Status)
+	}
+	if repo.steps[11].Status != string(StepStatusCompleted) {
+		t.Fatalf("completed step must be untouched, got %s", repo.steps[11].Status)
+	}
+}
+
 // TestProcessJobDefersOnTimeout verifies that a step timing out does not fail
 // the job: the step returns to the queue with timeout_count bumped and the job
 // is sent to the back of the line (queued + next_attempt_at set), never failed.
@@ -242,6 +278,30 @@ func (r *fakeJobsRepository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempt
 
 	r.steps[stepID] = step
 	return true, nil
+}
+
+func (r *fakeJobsRepository) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var jobsReset, stepsReset int64
+	for id, step := range r.steps {
+		if step.Status == string(StepStatusRunning) {
+			step.Status = string(StepStatusQueued)
+			step.StartedAt = nil
+			r.steps[id] = step
+			stepsReset++
+		}
+	}
+	for id, job := range r.jobs {
+		if job.Status == string(JobStatusRunning) {
+			job.Status = string(JobStatusQueued)
+			job.StartedAt = nil
+			r.jobs[id] = job
+			jobsReset++
+		}
+	}
+	return jobsReset, stepsReset, nil
 }
 
 func (r *fakeJobsRepository) RequeueJob(tx *sql.Tx, jobID int) (bool, error) {

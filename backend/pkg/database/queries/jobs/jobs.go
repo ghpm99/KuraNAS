@@ -30,3 +30,9 @@ var DeferStepTimeoutQuery string
 
 //go:embed requeue_job.sql
 var RequeueJobQuery string
+
+//go:embed recover_interrupted_steps.sql
+var RecoverInterruptedStepsQuery string
+
+//go:embed recover_interrupted_jobs.sql
+var RecoverInterruptedJobsQuery string
