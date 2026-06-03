@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.home.data
 
+import com.kuranas.android.core.network.mimeTypeForFormat
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
@@ -40,7 +41,7 @@ data class RecentFileDto(
     @SerialName("updated_at") val updatedAt: String = "",
 ) {
     val size: Long get() = sizeBytes
-    val mimeType: String get() = format
+    val mimeType: String get() = mimeTypeForFormat(format)
 }
 
 @Serializable

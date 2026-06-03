@@ -15,6 +15,7 @@ import javax.inject.Inject
 
 data class FilesUiState(
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val files: List<FileItemDto> = emptyList(),
     val breadcrumb: List<Pair<String, String>> = emptyList(),
     val error: String? = null,
@@ -75,7 +76,7 @@ class FilesViewModel @Inject constructor(private val repository: FilesRepository
 
     fun deleteFile(file: FileItemDto) {
         viewModelScope.launch {
-            repository.deleteFile(file.path)
+            repository.deleteFile(file.id)
             refreshCurrent()
         }
     }
@@ -104,6 +105,23 @@ class FilesViewModel @Inject constructor(private val repository: FilesRepository
             when (val r = repository.getChildrenById(crumb.last().second)) {
                 is AppResult.Success -> _state.update { it.copy(files = r.data) }
                 is AppResult.Error -> _state.update { it.copy(error = r.message) }
+            }
+        }
+    }
+
+    /**
+     * Recarrega a pasta atual mantendo a lista visível (sem spinner de tela cheia).
+     * Usado pelo pull-to-refresh e pelo refetch ao retomar a tela.
+     */
+    fun refresh() {
+        val crumb = _state.value.breadcrumb
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true, error = null) }
+            val result = if (crumb.isEmpty()) repository.getRootFiles()
+            else repository.getChildrenById(crumb.last().second)
+            when (result) {
+                is AppResult.Success -> _state.update { it.copy(isRefreshing = false, files = result.data) }
+                is AppResult.Error -> _state.update { it.copy(isRefreshing = false, error = result.message) }
             }
         }
     }

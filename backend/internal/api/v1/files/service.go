@@ -120,15 +120,7 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 	if err != nil {
 		return FileDto{}, fmt.Errorf("error fetching files: %w", err)
 	}
-	switch len(pagination.Items) {
-	case 0:
-		return FileDto{}, sql.ErrNoRows
-	case 1:
-		return pagination.Items[0], nil
-	default:
-		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
-	}
-
+	return pickActiveFile(pagination.Items)
 }
 
 func (s *Service) GetFileById(id int) (FileDto, error) {
@@ -140,15 +132,29 @@ func (s *Service) GetFileById(id int) (FileDto, error) {
 	if err != nil {
 		return FileDto{}, fmt.Errorf("error fetching file: %w", err)
 	}
-	switch len(pagination.Items) {
+	return pickActiveFile(pagination.Items)
+}
+
+// pickActiveFile resolve buscas que podem casar mais de uma linha. Um arquivo recriado
+// no mesmo caminho deixa a linha soft-deleted antiga convivendo com a nova, então a
+// busca por name+path retorna 2 registros. Antes isso virava erro e travava os jobs de
+// metadata/thumbnail/checksum (deixando arquivos sem miniatura); agora preferimos a
+// linha ativa (não deletada) — os itens já chegam ordenados por id DESC, então pegamos
+// a mais recente.
+func pickActiveFile(items []FileDto) (FileDto, error) {
+	switch len(items) {
 	case 0:
 		return FileDto{}, sql.ErrNoRows
 	case 1:
-		return pagination.Items[0], nil
+		return items[0], nil
 	default:
-		return FileDto{}, fmt.Errorf("multiple files found with the same name and path")
+		for _, f := range items {
+			if !f.DeletedAt.HasValue {
+				return f, nil
+			}
+		}
+		return items[0], nil
 	}
-
 }
 
 func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {

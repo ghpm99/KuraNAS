@@ -1,6 +1,9 @@
 package com.kuranas.android.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.DrawerValue
@@ -9,7 +12,9 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -21,12 +26,15 @@ import com.kuranas.android.core.server.ServerState
 import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
 import com.kuranas.android.feature.diary.ui.DiaryScreen
+import com.kuranas.android.feature.files.ui.FileViewerScreen
 import com.kuranas.android.feature.files.ui.FilesScreen
 import com.kuranas.android.feature.home.ui.HomeScreen
 import com.kuranas.android.feature.images.ui.ImageViewerScreen
 import com.kuranas.android.feature.images.ui.ImagesScreen
+import com.kuranas.android.feature.music.ui.MiniPlayer
 import com.kuranas.android.feature.music.ui.MusicAlbumScreen
 import com.kuranas.android.feature.music.ui.MusicArtistScreen
+import com.kuranas.android.feature.music.ui.MusicFolderScreen
 import com.kuranas.android.feature.music.ui.MusicPlayerScreen
 import com.kuranas.android.feature.music.ui.MusicPlaylistScreen
 import com.kuranas.android.feature.music.ui.MusicScreen
@@ -62,8 +70,24 @@ private fun AuthenticatedApp() {
     NavHost(navController = navController, startDestination = ROUTE_HOME, modifier = Modifier.fillMaxSize()) {
         composable(ROUTE_HOME) { AppPagerHost(navController) }
 
-        composable(AppRoute.MUSIC_PLAYER) {
+        composable(
+            route = AppRoute.MUSIC_PLAYER_ROUTE,
+            arguments = listOf(navArgument("trackId") { type = NavType.IntType; defaultValue = -1 }),
+        ) {
             MusicPlayerScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(
+            route = AppRoute.FILE_DETAIL,
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            FileViewerScreen(
+                fileId = it.arguments?.getString("id") ?: "",
+                fileName = it.arguments?.getString("name") ?: "",
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(
             route = AppRoute.VIDEO_PLAYER,
@@ -99,6 +123,16 @@ private fun AuthenticatedApp() {
         ) {
             MusicAlbumScreen(
                 albumKey = it.arguments?.getString("key") ?: "",
+                onNavigateBack = { navController.popBackStack() },
+                onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+            )
+        }
+        composable(
+            route = AppRoute.MUSIC_FOLDER,
+            arguments = listOf(navArgument("key") { type = NavType.StringType }),
+        ) {
+            MusicFolderScreen(
+                folderKey = it.arguments?.getString("key") ?: "",
                 onNavigateBack = { navController.popBackStack() },
                 onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
             )
@@ -154,6 +188,7 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
             )
         },
     ) {
+        Box(Modifier.fillMaxSize()) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -166,17 +201,23 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                     onOpenMusic = { goToPage(SwipePage.MUSIC) },
                     onOpenVideo = { goToPage(SwipePage.VIDEO) },
                     onOpenImages = { goToPage(SwipePage.IMAGES) },
+                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
+                    onOpenVideoFile = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
+                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
                 )
                 SwipePage.FILES -> FilesScreen(
                     onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
                     onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                    onPlayAudio = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
+                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
                 )
                 SwipePage.MUSIC -> MusicScreen(
                     onOpenPlayer = { navController.navigate(AppRoute.MUSIC_PLAYER) },
                     onOpenArtist = { key -> navController.navigate(AppRoute.musicArtist(key)) },
                     onOpenAlbum = { key -> navController.navigate(AppRoute.musicAlbum(key)) },
                     onOpenPlaylist = { id -> navController.navigate(AppRoute.musicPlaylist(id)) },
+                    onOpenFolder = { key -> navController.navigate(AppRoute.musicFolder(key)) },
                 )
                 SwipePage.VIDEO -> VideoScreen(
                     onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
@@ -187,13 +228,21 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                 )
                 SwipePage.SEARCH -> SearchScreen(
                     onOpenFile = { id -> navController.navigate(AppRoute.fileDetail(id)) },
-                    onPlayAudio = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
                     onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
                 )
                 SwipePage.DIARY -> DiaryScreen()
                 SwipePage.NOTIFICATIONS -> NotificationsScreen()
                 SwipePage.SETTINGS -> SettingsScreen()
             }
+        }
+            MiniPlayer(
+                onExpand = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+            )
         }
     }
 }

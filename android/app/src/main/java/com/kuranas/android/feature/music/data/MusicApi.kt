@@ -39,6 +39,9 @@ interface MusicApi {
     @GET("api/v1/music/library/folders")
     suspend fun getFolders(): PageDto<FolderDto>
 
+    @GET("api/v1/music/library/folders/{key}/tracks")
+    suspend fun getTracksByFolder(@Path("key") key: String): PageDto<TrackDto>
+
     // Playlists
     @GET("api/v1/music/playlists/")
     suspend fun getPlaylists(): PageDto<PlaylistDto>
