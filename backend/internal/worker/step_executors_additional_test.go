@@ -12,9 +12,21 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
+
+type fakeWorkerNotifSvc struct {
+	notifications.ServiceInterface
+	dtos []notifications.CreateNotificationDto
+}
+
+func (f *fakeWorkerNotifSvc) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+	f.dtos = append(f.dtos, dto)
+	return notifications.NotificationDto{}, nil
+}
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
@@ -199,8 +211,9 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	}
 
 	diffPayload, _ := marshalPayload(StepFilePayload{Path: root})
+	notifSvc := &fakeWorkerNotifSvc{}
 	err = executeDiffAgainstDBStep(
-		&WorkerContext{FilesService: filesService, JobOrchestrator: orchestrator},
+		&WorkerContext{FilesService: filesService, JobOrchestrator: orchestrator, NotificationService: notifSvc},
 		jobs.StepModel{Payload: diffPayload},
 	)
 	if err != nil {
@@ -208,6 +221,17 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	}
 	if len(repository.jobs) != 2 {
 		t.Fatalf("expected two created jobs for changed files, got %d", len(repository.jobs))
+	}
+	// A scan that identified files to process emits a single completion
+	// notification (info) reporting that files were enqueued.
+	if len(notifSvc.dtos) != 1 {
+		t.Fatalf("expected one scan-completed notification, got %d", len(notifSvc.dtos))
+	}
+	if notifSvc.dtos[0].Type != "info" {
+		t.Fatalf("expected info notification, got %q", notifSvc.dtos[0].Type)
+	}
+	if notifSvc.dtos[0].Title != i18n.GetMessage("NOTIFICATION_FILE_SCAN_COMPLETED_TITLE") {
+		t.Fatalf("unexpected notification title %q", notifSvc.dtos[0].Title)
 	}
 
 	errBoom := errors.New("list failed")

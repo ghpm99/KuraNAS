@@ -805,6 +805,8 @@
 	"ERROR_CAPTURE_DELETE_FAILED": "Falha ao deletar captura",
 	"NOTIFICATION_STARTUP_SCAN_FAILED_TITLE": "Falha na varredura ao iniciar",
 	"NOTIFICATION_FILE_SCAN_STARTED_TITLE": "Varredura de arquivos iniciada",
+	"NOTIFICATION_FILE_SCAN_COMPLETED_TITLE": "Varredura de arquivos concluida",
+	"NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE": "%d arquivos identificados para processamento",
 	"NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE": "A varredura de arquivos na inicializacao foi enfileirada",
 	"NOTIFICATION_FILE_SCAN_TASK_ENQUEUED_MESSAGE": "A tarefa de varredura de arquivos foi enfileirada",
 	"NOTIFICATION_FILE_SCAN_FAILED_TITLE": "Falha na varredura de arquivos",

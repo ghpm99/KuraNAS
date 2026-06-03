@@ -805,6 +805,8 @@
 	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture",
 	"NOTIFICATION_STARTUP_SCAN_FAILED_TITLE": "Startup scan failed",
 	"NOTIFICATION_FILE_SCAN_STARTED_TITLE": "File scan started",
+	"NOTIFICATION_FILE_SCAN_COMPLETED_TITLE": "File scan completed",
+	"NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE": "%d files identified for processing",
 	"NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE": "Startup file scan has been enqueued",
 	"NOTIFICATION_FILE_SCAN_TASK_ENQUEUED_MESSAGE": "File scan task has been enqueued",
 	"NOTIFICATION_FILE_SCAN_FAILED_TITLE": "File scan failed",
