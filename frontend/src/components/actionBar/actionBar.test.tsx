@@ -36,7 +36,7 @@ const createFileContext = (overrides = {}) => ({
     ...overrides,
 });
 
-jest.mock('../providers/fileProvider/fileContext', () => ({
+jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
     default: () => mockUseFile(),
 }));

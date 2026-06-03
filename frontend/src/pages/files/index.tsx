@@ -1,6 +1,6 @@
-import FilesExplorerScreen from '@/components/files/FilesExplorerScreen';
-import FileListFilterSync from '@/components/files/FileListFilterSync';
-import FilesLayout from '@/components/files/filesLayout';
+import FilesExplorerScreen from '@/features/files/files/FilesExplorerScreen';
+import FileListFilterSync from '@/features/files/files/FileListFilterSync';
+import FilesLayout from '@/features/files/files/filesLayout';
 
 const FilePage = () => {
     return (

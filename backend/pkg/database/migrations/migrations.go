@@ -86,6 +86,9 @@ var CreateLibrariesTableQuery string
 //go:embed queries/0025_create_ai_providers_table.sql
 var CreateAIProvidersTableQuery string
 
+//go:embed queries/0026_create_watch_folders_table.sql
+var CreateWatchFoldersTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -197,4 +200,9 @@ func librariesMigrationList() {
 func aiProvidersMigrationList() {
 	addMigration("0025_create_ai_providers_table",
 		defaultMigrationFunc(CreateAIProvidersTableQuery))
+}
+
+func watchFoldersMigrationList() {
+	addMigration("0026_create_watch_folders_table",
+		defaultMigrationFunc(CreateWatchFoldersTableQuery))
 }

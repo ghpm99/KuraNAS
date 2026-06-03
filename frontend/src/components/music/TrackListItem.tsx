@@ -1,8 +1,8 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
 import { ListPlus, Pause, Play } from 'lucide-react';
-import { useGlobalMusic } from '@/components/providers/GlobalMusicProvider';
+import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
-import { IMusicData } from '@/components/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 
 interface TrackListItemProps {
     track: IMusicData;

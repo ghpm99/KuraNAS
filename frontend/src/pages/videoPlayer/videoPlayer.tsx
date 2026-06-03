@@ -1,4 +1,4 @@
-import VideoPlayerScreen from '@/components/videos/videoPlayer/VideoPlayerScreen';
+import VideoPlayerScreen from '@/features/videos/videoPlayer/VideoPlayerScreen';
 
 const VideoPlayerPage = () => {
     return <VideoPlayerScreen />;

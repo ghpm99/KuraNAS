@@ -73,6 +73,7 @@ func initMigrationList() {
 	capturesMigrationList()
 	librariesMigrationList()
 	aiProvidersMigrationList()
+	watchFoldersMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {

@@ -10,7 +10,7 @@ import {
     Upload,
 } from 'lucide-react';
 import useI18n from '../i18n/provider/i18nContext';
-import useFile from '../providers/fileProvider/fileContext';
+import useFile from '@/features/files/providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import {
     Box,

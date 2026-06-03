@@ -66,7 +66,7 @@ public class MusicMapperTest {
         Track track = MusicMapper.trackFromJson(json);
 
         assertEquals(7, track.getId());
-        assertEquals(0, track.getFileId());
+        assertEquals(7, track.getFileId());
         assertEquals(1, track.getPosition());
         assertEquals("", track.getName());
         assertEquals("", track.getTitle());

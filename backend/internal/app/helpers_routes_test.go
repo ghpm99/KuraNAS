@@ -18,6 +18,7 @@ import (
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
+	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/internal/config"
 
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,7 @@ func buildRouteContext() *AppContext {
 		Configuration: &ConfigurationContext{Handler: configuration.NewHandler(nil, nil)},
 		Search:        &SearchContext{Handler: search.NewHandler(nil)},
 		Notifications: &NotificationContext{Handler: notifications.NewHandler(nil)},
+		WatchFolders:  &WatchFoldersContext{Handler: watchfolders.NewHandler(nil, nil)},
 		UpdateHandler: updater.NewHandler(updater.NewService(), nil),
 	}
 }
@@ -89,6 +91,7 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/v1/notifications/:id"},
 		{method: http.MethodPut, path: "/api/v1/notifications/:id/read"},
 		{method: http.MethodPut, path: "/api/v1/notifications/read-all"},
+		{method: http.MethodGet, path: "/api/v1/watch-folders"},
 		{method: http.MethodGet, path: "/api-docs/openapi.json"},
 		{method: http.MethodGet, path: "/swagger/*any"},
 	}

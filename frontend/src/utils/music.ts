@@ -1,7 +1,7 @@
 import type {
     IMusicData,
     IMusicMetadata,
-} from '@/components/providers/musicProvider/musicProvider';
+} from '@/features/music/providers/musicProvider/musicProvider';
 import { formatSize } from '@/utils';
 
 export const getMusicTitle = (music: IMusicData): string => {
