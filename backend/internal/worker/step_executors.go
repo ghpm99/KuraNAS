@@ -55,6 +55,9 @@ func buildStepExecutors(context *WorkerContext) map[StepType]StepExecutor {
 	executors[StepTypeOllamaPull] = func(step jobs.StepModel) error {
 		return executeOllamaPullStep(context, step)
 	}
+	executors[StepTypeAIPlaylistCluster] = func(step jobs.StepModel) error {
+		return executeAIPlaylistClusterStep(context, step)
+	}
 
 	return executors
 }

@@ -8,6 +8,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
@@ -22,6 +23,7 @@ type WorkerContext struct {
 	FilesService        files.ServiceInterface
 	LibrariesService    libraries.ServiceInterface
 	VideoService        video.ServiceInterface
+	MusicService        music.ServiceInterface
 	JobsRepository      jobs.RepositoryInterface
 	MetadataService     files.MetadataRepositoryInterface
 	Logger              logger.LoggerServiceInterface
@@ -126,6 +128,10 @@ func startWorkersScheduler(context *WorkerContext) {
 				"file_scan",
 			)
 		}
+
+		if err := enqueueAIPlaylistClusterJob(context); err != nil {
+			log.Printf("failed to enqueue ai_playlist_cluster job: %v\n", err)
+		}
 		return
 	}
 
@@ -161,6 +167,36 @@ func enqueueStartupScanJob(context *WorkerContext) error {
 	}
 
 	log.Printf("startup_scan job enqueued id=%d\n", jobID)
+	return nil
+}
+
+// enqueueAIPlaylistClusterJob schedules a low-priority background job that
+// (re)builds the AI-curated music playlists. It is a no-op when the worker has
+// no music service or job orchestrator wired in. RebuildAIClusters is itself
+// idempotent, so an occasional duplicate enqueue (e.g. a fast restart) is safe.
+func enqueueAIPlaylistClusterJob(context *WorkerContext) error {
+	if context == nil || context.JobOrchestrator == nil || context.MusicService == nil {
+		return nil
+	}
+
+	plan := PlannedJob{
+		Type:     JobTypeAIPlaylistCluster,
+		Priority: JobPriorityLow,
+		Steps: []PlannedStep{
+			{
+				Key:         "ai_playlist_cluster",
+				Type:        StepTypeAIPlaylistCluster,
+				MaxAttempts: 1,
+			},
+		},
+	}
+
+	jobID, err := context.JobOrchestrator.CreateJob(plan)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("ai_playlist_cluster job enqueued id=%d\n", jobID)
 	return nil
 }
 
