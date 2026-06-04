@@ -3,6 +3,7 @@ package updater
 import (
 	"archive/zip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"nas-go/api/api"
@@ -16,6 +17,11 @@ import (
 )
 
 const githubReleaseURL = "https://api.github.com/repos/ghpm99/KuraNAS/releases/latest"
+
+// errReleaseNotFound signals that GitHub has no published release for the repo
+// (HTTP 404). This is not a server error: it means there is simply nothing to
+// update to, so callers can report "up to date" instead of failing.
+var errReleaseNotFound = errors.New("no published release found")
 
 var (
 	fetchLatestReleaseFunc = fetchLatestRelease
@@ -49,6 +55,12 @@ func (s *Service) SetShutdownFn(fn func()) {
 func (s *Service) CheckForUpdate() (UpdateStatusDto, error) {
 	release, err := fetchLatestReleaseFunc()
 	if err != nil {
+		if errors.Is(err, errReleaseNotFound) {
+			return UpdateStatusDto{
+				CurrentVersion:  api.Version,
+				UpdateAvailable: false,
+			}, nil
+		}
 		return UpdateStatusDto{}, fmt.Errorf("failed to fetch latest release: %w", err)
 	}
 
@@ -153,6 +165,10 @@ func fetchLatestRelease() (GitHubRelease, error) {
 		return GitHubRelease{}, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return GitHubRelease{}, errReleaseNotFound
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return GitHubRelease{}, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)

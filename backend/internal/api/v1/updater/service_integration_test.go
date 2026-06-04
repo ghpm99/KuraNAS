@@ -96,6 +96,43 @@ func TestFetchLatestRelease_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestFetchLatestRelease_NotFound(t *testing.T) {
+	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       io.NopCloser(strings.NewReader(`{"message":"Not Found"}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	_, err := fetchLatestRelease()
+	if !errors.Is(err, errReleaseNotFound) {
+		t.Fatalf("expected errReleaseNotFound, got %v", err)
+	}
+}
+
+func TestCheckForUpdate_NoRelease(t *testing.T) {
+	service := NewService()
+
+	resetServiceFns()
+	t.Cleanup(resetServiceFns)
+
+	fetchLatestReleaseFunc = func() (GitHubRelease, error) {
+		return GitHubRelease{}, errReleaseNotFound
+	}
+
+	result, err := service.CheckForUpdate()
+	if err != nil {
+		t.Fatalf("expected no error when no release exists, got %v", err)
+	}
+	if result.UpdateAvailable {
+		t.Fatalf("expected no update available when no release exists")
+	}
+	if result.CurrentVersion == "" {
+		t.Fatalf("expected current version to be set")
+	}
+}
+
 func TestDownloadFile_Success(t *testing.T) {
 	content := "binary-content"
 	withMockHTTPClients(t, func(req *http.Request) (*http.Response, error) {
