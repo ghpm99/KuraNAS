@@ -92,6 +92,32 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 	return paginationResponse, nil
 }
 
+// GetFileStatByPath returns the size and last-known modification time of the
+// active (non-deleted) file at the given absolute path. The second return value
+// reports whether such a row exists. It runs a single indexed lookup so the
+// diff scan can compare one file at a time without batch-loading the table.
+func (r *Repository) GetFileStatByPath(path string) (FileStat, bool, error) {
+	var stat FileStat
+	found := false
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		scanErr := tx.QueryRow(queries.GetFileStatByPathQuery, path).Scan(&stat.Size, &stat.UpdatedAt)
+		if scanErr != nil {
+			if errors.Is(scanErr, sql.ErrNoRows) {
+				return nil
+			}
+			return scanErr
+		}
+		found = true
+		return nil
+	})
+	if err != nil {
+		return FileStat{}, false, fmt.Errorf("GetFileStatByPath: %w", err)
+	}
+
+	return stat, found, nil
+}
+
 func (r *Repository) CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error) {
 
 	fail := func(err error) (FileModel, error) {

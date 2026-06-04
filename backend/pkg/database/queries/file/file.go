@@ -10,6 +10,9 @@ var InsertFileQuery string
 //go:embed get_files.sql
 var GetFilesQuery string
 
+//go:embed get_file_stat_by_path.sql
+var GetFileStatByPathQuery string
+
 //go:embed update_file.sql
 var UpdateFileQuery string
 

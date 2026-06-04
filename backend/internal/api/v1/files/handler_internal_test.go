@@ -42,6 +42,9 @@ func (m *filesHandlerServiceMock) GetFiles(filter FileFilter, page int, pageSize
 		},
 	}, nil
 }
+func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool, error) {
+	return FileStat{}, false, nil
+}
 func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { return true, nil }
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)               {}

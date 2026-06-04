@@ -189,24 +189,17 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	repository := newFakeJobsRepository()
 	orchestrator := NewJobOrchestrator(repository, nil)
 	filesService := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-			switch filter.PathPrefix.Value {
-			case root:
-				return utils.PaginationResponse[files.FileDto]{
-					Items: []files.FileDto{
-						{
-							ID:        1,
-							Name:      "same.txt",
-							Path:      unchangedPath,
-							Size:      unchangedInfo.Size(),
-							UpdatedAt: unchangedInfo.ModTime(),
-						},
-					},
-					Pagination: utils.Pagination{Page: page, PageSize: pageSize},
-				}, nil
-			default:
-				return utils.PaginationResponse[files.FileDto]{}, nil
+		getFileStatByPathFn: func(path string) (files.FileStat, bool, error) {
+			// Only the unchanged file is known to the DB with a matching
+			// size + mtime; the other two paths are new, so they must be
+			// enqueued for processing.
+			if path == unchangedPath {
+				return files.FileStat{
+					Size:      unchangedInfo.Size(),
+					UpdatedAt: unchangedInfo.ModTime(),
+				}, true, nil
 			}
+			return files.FileStat{}, false, nil
 		},
 	}
 
@@ -234,12 +227,31 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 		t.Fatalf("unexpected notification title %q", notifSvc.dtos[0].Title)
 	}
 
+	// Running the scan again must NOT re-enqueue the files that already have a
+	// pending job: idempotency skips them, so no new jobs are created and the
+	// step reports nothing to process (ErrStepSkipped) instead of re-counting
+	// every candidate. This is what keeps the pipeline from being flooded with
+	// the same files on every startup.
+	notifSvc.dtos = nil
+	if err := executeDiffAgainstDBStep(
+		&WorkerContext{FilesService: filesService, JobOrchestrator: orchestrator, NotificationService: notifSvc},
+		jobs.StepModel{Payload: diffPayload},
+	); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected second scan to skip (no new files), got %v", err)
+	}
+	if len(repository.jobs) != 2 {
+		t.Fatalf("expected no additional jobs on second scan, got %d", len(repository.jobs))
+	}
+	if len(notifSvc.dtos) != 0 {
+		t.Fatalf("expected no completion notification on second scan, got %d", len(notifSvc.dtos))
+	}
+
 	errBoom := errors.New("list failed")
 	if err := executeDiffAgainstDBStep(
 		&WorkerContext{
 			FilesService: &workerFilesServiceMock{
-				getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-					return utils.PaginationResponse[files.FileDto]{}, errBoom
+				getFileStatByPathFn: func(path string) (files.FileStat, bool, error) {
+					return files.FileStat{}, false, errBoom
 				},
 			},
 			JobOrchestrator: orchestrator,

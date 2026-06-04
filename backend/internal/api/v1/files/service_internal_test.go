@@ -67,6 +67,7 @@ type filesRepoMock struct {
 
 	createFileFn               func(transaction *sql.Tx, file FileModel) (FileModel, error)
 	getFilesFn                 func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getFileStatByPathFn        func(path string) (FileStat, bool, error)
 	updateFileFn               func(transaction *sql.Tx, file FileModel) (bool, error)
 	getDirectoryContentCountFn func(fileId int, parentPath string) (int, error)
 	getCountByTypeFn           func(fileType FileType) (int, error)
@@ -98,6 +99,12 @@ func (m *filesRepoMock) GetFiles(filter FileFilter, page int, pageSize int) (uti
 		return m.getFilesFn(filter, page, pageSize)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetFileStatByPath(path string) (FileStat, bool, error) {
+	if m.getFileStatByPathFn != nil {
+		return m.getFileStatByPathFn(path)
+	}
+	return FileStat{}, false, nil
 }
 func (m *filesRepoMock) UpdateFile(transaction *sql.Tx, file FileModel) (bool, error) {
 	if m.updateFileFn != nil {
