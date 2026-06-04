@@ -347,3 +347,124 @@ func TestValidateUpdateRequestBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestConfigurationServiceGetSettingsDefaultsAIImageClassificationEnabled(t *testing.T) {
+	service := newConfigurationServiceForTest(t, &serviceRepoMock{
+		getSettingsDocumentFn: func(string) (string, error) {
+			return "", sql.ErrNoRows
+		},
+	})
+
+	settings, err := service.GetSettings()
+	if err != nil {
+		t.Fatalf("GetSettings returned error: %v", err)
+	}
+	if !settings.AI.ImageClassification {
+		t.Fatalf("expected AI image classification enabled by default")
+	}
+}
+
+func TestConfigurationServiceUpdateSettingsPersistsAIToggle(t *testing.T) {
+	originalLang := config.AppConfig.Lang
+	t.Cleanup(func() { config.AppConfig.Lang = originalLang })
+	config.AppConfig.Lang = "en-US"
+
+	var storedPayload string
+	service := newConfigurationServiceForTest(t, &serviceRepoMock{
+		upsertSettingsFn: func(_ *sql.Tx, _ string, payload string) error {
+			storedPayload = payload
+			return nil
+		},
+	})
+
+	settings, err := service.UpdateSettings(UpdateSettingsRequest{
+		AI:         AISettingsRequest{ImageClassification: false},
+		Players:    PlayerSettingsRequest{ImageSlideshowSeconds: 4},
+		Appearance: AppearanceSettingsRequest{AccentColor: "violet"},
+		Language:   LanguageSettingsRequest{Current: "en-US"},
+	})
+	if err != nil {
+		t.Fatalf("UpdateSettings returned error: %v", err)
+	}
+	if settings.AI.ImageClassification {
+		t.Fatalf("expected AI image classification to be disabled after update")
+	}
+
+	var stored settingsState
+	if err := json.Unmarshal([]byte(storedPayload), &stored); err != nil {
+		t.Fatalf("failed to unmarshal stored payload: %v", err)
+	}
+	if stored.AI.ImageClassification == nil || *stored.AI.ImageClassification {
+		t.Fatalf("expected persisted AI toggle to be false")
+	}
+}
+
+func TestConfigurationServiceIsAIImageClassificationEnabled(t *testing.T) {
+	t.Run("defaults to enabled when document missing", func(t *testing.T) {
+		service := newConfigurationServiceForTest(t, &serviceRepoMock{
+			getSettingsDocumentFn: func(string) (string, error) { return "", sql.ErrNoRows },
+		})
+		enabled, err := service.IsAIImageClassificationEnabled()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !enabled {
+			t.Fatalf("expected enabled by default")
+		}
+	})
+
+	t.Run("defaults to enabled when AI section absent", func(t *testing.T) {
+		payload, _ := json.Marshal(settingsState{})
+		service := newConfigurationServiceForTest(t, &serviceRepoMock{
+			getSettingsDocumentFn: func(string) (string, error) { return string(payload), nil },
+		})
+		enabled, err := service.IsAIImageClassificationEnabled()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !enabled {
+			t.Fatalf("expected enabled when AI section absent")
+		}
+	})
+
+	t.Run("returns stored false", func(t *testing.T) {
+		disabled := false
+		payload, _ := json.Marshal(settingsState{AI: aiSettingsState{ImageClassification: &disabled}})
+		service := newConfigurationServiceForTest(t, &serviceRepoMock{
+			getSettingsDocumentFn: func(string) (string, error) { return string(payload), nil },
+		})
+		enabled, err := service.IsAIImageClassificationEnabled()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if enabled {
+			t.Fatalf("expected disabled when stored false")
+		}
+	})
+
+	t.Run("propagates read error but fails open", func(t *testing.T) {
+		service := newConfigurationServiceForTest(t, &serviceRepoMock{
+			getSettingsDocumentFn: func(string) (string, error) { return "", errors.New("boom") },
+		})
+		enabled, err := service.IsAIImageClassificationEnabled()
+		if err == nil {
+			t.Fatalf("expected error to be propagated")
+		}
+		if !enabled {
+			t.Fatalf("expected fail-open (enabled) on read error")
+		}
+	})
+
+	t.Run("propagates unmarshal error but fails open", func(t *testing.T) {
+		service := newConfigurationServiceForTest(t, &serviceRepoMock{
+			getSettingsDocumentFn: func(string) (string, error) { return "{invalid", nil },
+		})
+		enabled, err := service.IsAIImageClassificationEnabled()
+		if err == nil {
+			t.Fatalf("expected error to be propagated")
+		}
+		if !enabled {
+			t.Fatalf("expected fail-open (enabled) on unmarshal error")
+		}
+	})
+}

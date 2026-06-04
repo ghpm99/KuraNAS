@@ -71,6 +71,10 @@ func (m *serviceMock) ApplyRuntimeSettings() error {
 	return nil
 }
 
+func (m *serviceMock) IsAIImageClassificationEnabled() (bool, error) {
+	return true, nil
+}
+
 func newTestContext(method string, body *bytes.Buffer) (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()

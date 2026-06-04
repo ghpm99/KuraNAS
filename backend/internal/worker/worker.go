@@ -18,6 +18,12 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
+// AISettingsReader exposes only the AI feature toggles the worker needs, so the
+// worker depends on a tiny capability instead of the whole configuration service.
+type AISettingsReader interface {
+	IsAIImageClassificationEnabled() (bool, error)
+}
+
 type WorkerContext struct {
 	Tasks               chan utils.Task
 	FilesService        files.ServiceInterface
@@ -29,8 +35,32 @@ type WorkerContext struct {
 	Logger              logger.LoggerServiceInterface
 	NotificationService notifications.ServiceInterface
 	AIService           ai.ServiceInterface
+	AISettings          AISettingsReader
 	JobScheduler        *JobScheduler
 	JobOrchestrator     *JobOrchestrator
+}
+
+// aiServiceForImageClassification returns the AI service only when image
+// classification is enabled in Settings; otherwise nil, which makes the
+// classifier fall back to its heuristic. When the toggle cannot be read it fails
+// open (keeps AI on) so a transient config read error never silently disables AI.
+func aiServiceForImageClassification(context *WorkerContext) ai.ServiceInterface {
+	if context == nil || context.AIService == nil || context.AISettings == nil {
+		if context == nil {
+			return nil
+		}
+		return context.AIService
+	}
+
+	enabled, err := context.AISettings.IsAIImageClassificationEnabled()
+	if err != nil {
+		log.Printf("[metadata] could not read AI image classification setting, keeping it enabled: %v\n", err)
+		return context.AIService
+	}
+	if !enabled {
+		return nil
+	}
+	return context.AIService
 }
 
 func StartWorkers(context *WorkerContext, numWorkers int) {
@@ -269,7 +299,7 @@ func worker(id int, context *WorkerContext) {
 					)
 				}
 			} else {
-				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, context.AIService)
+				go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, aiServiceForImageClassification(context))
 			}
 		case utils.ScanDir:
 			if context != nil && context.JobOrchestrator != nil {

@@ -137,7 +137,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 
-	metadata, err := getMetadata(fileDto, pythonScriptRunner, context.AIService)
+	metadata, err := getMetadata(fileDto, pythonScriptRunner, aiServiceForImageClassification(context))
 	if err != nil {
 		return err
 	}
