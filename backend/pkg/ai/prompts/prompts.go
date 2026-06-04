@@ -36,6 +36,9 @@ var musicArtistClustersSystemPrompt string
 //go:embed music_artist_clusters_user.txt
 var musicArtistClustersUserPromptTemplate string
 
+//go:embed assistant_chat_system.txt
+var assistantChatSystemPrompt string
+
 func SearchExtractionSystemPrompt() string {
 	return strings.TrimSpace(searchExtractionSystemPrompt)
 }
@@ -74,4 +77,8 @@ func MusicArtistClustersSystemPrompt() string {
 
 func MusicArtistClustersUserPrompt(maxNewClusters int, existingClusters string, artists string) string {
 	return fmt.Sprintf(strings.TrimSpace(musicArtistClustersUserPromptTemplate), maxNewClusters, existingClusters, artists)
+}
+
+func AssistantChatSystemPrompt() string {
+	return strings.TrimSpace(assistantChatSystemPrompt)
 }
