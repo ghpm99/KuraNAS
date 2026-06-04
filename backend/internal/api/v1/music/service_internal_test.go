@@ -28,6 +28,13 @@ type musicRepoMock struct {
 	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibraryIndexFn      func() ([]MusicLibraryIndexEntryModel, error)
 	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
+
+	getArtistClustersFn          func() ([]ArtistClusterModel, error)
+	upsertArtistClusterFn        func(tx *sql.Tx, cluster ArtistClusterModel) error
+	deleteArtistClustersExceptFn func(tx *sql.Tx, artistKeys []string) error
+	getAIPlaylistsFn             func() ([]PlaylistModel, error)
+	createAIPlaylistFn           func(tx *sql.Tx, name string, description string) (PlaylistModel, error)
+	replacePlaylistTracksFn      func(tx *sql.Tx, playlistID int, fileIDs []int) error
 }
 
 func (m *musicRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -120,6 +127,42 @@ func (m *musicRepoMock) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, 
 		return m.getLibraryFilesByIDsFn(fileIDs)
 	}
 	return []files.FileModel{}, nil
+}
+func (m *musicRepoMock) GetArtistClusters() ([]ArtistClusterModel, error) {
+	if m.getArtistClustersFn != nil {
+		return m.getArtistClustersFn()
+	}
+	return []ArtistClusterModel{}, nil
+}
+func (m *musicRepoMock) UpsertArtistCluster(tx *sql.Tx, cluster ArtistClusterModel) error {
+	if m.upsertArtistClusterFn != nil {
+		return m.upsertArtistClusterFn(tx, cluster)
+	}
+	return nil
+}
+func (m *musicRepoMock) DeleteArtistClustersExcept(tx *sql.Tx, artistKeys []string) error {
+	if m.deleteArtistClustersExceptFn != nil {
+		return m.deleteArtistClustersExceptFn(tx, artistKeys)
+	}
+	return nil
+}
+func (m *musicRepoMock) GetAIPlaylists() ([]PlaylistModel, error) {
+	if m.getAIPlaylistsFn != nil {
+		return m.getAIPlaylistsFn()
+	}
+	return []PlaylistModel{}, nil
+}
+func (m *musicRepoMock) CreateAIPlaylist(tx *sql.Tx, name string, description string) (PlaylistModel, error) {
+	if m.createAIPlaylistFn != nil {
+		return m.createAIPlaylistFn(tx, name, description)
+	}
+	return PlaylistModel{}, nil
+}
+func (m *musicRepoMock) ReplacePlaylistTracks(tx *sql.Tx, playlistID int, fileIDs []int) error {
+	if m.replacePlaylistTracksFn != nil {
+		return m.replacePlaylistTracksFn(tx, playlistID, fileIDs)
+	}
+	return nil
 }
 
 func newMusicServiceForTest(t *testing.T, repo *musicRepoMock) *Service {

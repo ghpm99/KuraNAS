@@ -48,3 +48,24 @@ var GetLibraryIndexEntriesQuery string
 
 //go:embed get_library_files_by_ids.sql
 var GetLibraryFilesByIDsQuery string
+
+//go:embed get_artist_clusters.sql
+var GetArtistClustersQuery string
+
+//go:embed upsert_artist_cluster.sql
+var UpsertArtistClusterQuery string
+
+//go:embed delete_artist_clusters_except.sql
+var DeleteArtistClustersExceptQuery string
+
+//go:embed get_ai_playlists.sql
+var GetAIPlaylistsQuery string
+
+//go:embed create_ai_playlist.sql
+var CreateAIPlaylistQuery string
+
+//go:embed clear_playlist_tracks.sql
+var ClearPlaylistTracksQuery string
+
+//go:embed insert_playlist_tracks.sql
+var InsertPlaylistTracksQuery string

@@ -10,4 +10,6 @@ SELECT
 FROM
     playlist p
 WHERE
-    p.id = $1;
+    p.is_ai_generated = TRUE
+ORDER BY
+    p.name;

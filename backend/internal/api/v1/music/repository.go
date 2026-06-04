@@ -104,7 +104,7 @@ func (r *Repository) GetPlaylists(page int, pageSize int) (utils.PaginationRespo
 			if err := rows.Scan(
 				&playlist.ID, &playlist.Name, &playlist.Description,
 				&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-				&playlist.TrackCount,
+				&playlist.TrackCount, &playlist.IsAIGenerated,
 			); err != nil {
 				return err
 			}
@@ -222,7 +222,7 @@ func (r *Repository) GetPlaylistByID(id int) (PlaylistModel, error) {
 		return row.Scan(
 			&playlist.ID, &playlist.Name, &playlist.Description,
 			&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-			&playlist.TrackCount,
+			&playlist.TrackCount, &playlist.IsAIGenerated,
 		)
 	})
 
@@ -396,7 +396,7 @@ func (r *Repository) GetNowPlaying() (PlaylistModel, error) {
 		return row.Scan(
 			&playlist.ID, &playlist.Name, &playlist.Description,
 			&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-			&playlist.TrackCount,
+			&playlist.TrackCount, &playlist.IsAIGenerated,
 		)
 	})
 
@@ -439,4 +439,114 @@ func (r *Repository) UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (Play
 	}
 
 	return state, nil
+}
+
+func (r *Repository) GetArtistClusters() ([]ArtistClusterModel, error) {
+	results := []ArtistClusterModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetArtistClustersQuery)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var cluster ArtistClusterModel
+			if err := rows.Scan(&cluster.ArtistKey, &cluster.Artist, &cluster.ClusterName); err != nil {
+				return err
+			}
+			results = append(results, cluster)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar clusters de artistas: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) UpsertArtistCluster(tx *sql.Tx, cluster ArtistClusterModel) error {
+	_, err := tx.Exec(queries.UpsertArtistClusterQuery, cluster.ArtistKey, cluster.Artist, cluster.ClusterName)
+	if err != nil {
+		return fmt.Errorf("falha ao salvar cluster de artista: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) DeleteArtistClustersExcept(tx *sql.Tx, artistKeys []string) error {
+	_, err := tx.Exec(queries.DeleteArtistClustersExceptQuery, pq.Array(artistKeys))
+	if err != nil {
+		return fmt.Errorf("falha ao podar clusters de artistas: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) GetAIPlaylists() ([]PlaylistModel, error) {
+	results := []PlaylistModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetAIPlaylistsQuery)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var playlist PlaylistModel
+			if err := rows.Scan(
+				&playlist.ID, &playlist.Name, &playlist.Description,
+				&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
+				&playlist.TrackCount, &playlist.IsAIGenerated,
+			); err != nil {
+				return err
+			}
+			results = append(results, playlist)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar playlists geradas por IA: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) CreateAIPlaylist(tx *sql.Tx, name string, description string) (PlaylistModel, error) {
+	playlist := PlaylistModel{
+		Name:          name,
+		Description:   description,
+		IsAIGenerated: true,
+	}
+
+	err := tx.QueryRow(queries.CreateAIPlaylistQuery, name, description).Scan(
+		&playlist.ID, &playlist.CreatedAt, &playlist.UpdatedAt,
+	)
+	if err != nil {
+		return playlist, fmt.Errorf("falha ao criar playlist de IA: %w", err)
+	}
+
+	return playlist, nil
+}
+
+// ReplacePlaylistTracks atomically swaps the tracks of a playlist for the given
+// ordered file IDs. Used to keep AI playlists in sync with the current library
+// without duplicating rows or leaving stale tracks behind.
+func (r *Repository) ReplacePlaylistTracks(tx *sql.Tx, playlistID int, fileIDs []int) error {
+	if _, err := tx.Exec(queries.ClearPlaylistTracksQuery, playlistID); err != nil {
+		return fmt.Errorf("falha ao limpar tracks da playlist: %w", err)
+	}
+
+	if len(fileIDs) == 0 {
+		return nil
+	}
+
+	if _, err := tx.Exec(queries.InsertPlaylistTracksQuery, playlistID, pq.Array(fileIDs)); err != nil {
+		return fmt.Errorf("falha ao inserir tracks da playlist: %w", err)
+	}
+
+	return nil
 }

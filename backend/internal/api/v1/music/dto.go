@@ -7,16 +7,17 @@ import (
 )
 
 type PlaylistDto struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	IsSystem    bool      `json:"is_system"`
-	IsAuto      bool      `json:"is_auto"`
-	Kind        string    `json:"kind"`
-	SourceKey   string    `json:"source_key"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	TrackCount  int       `json:"track_count"`
+	ID            int       `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	IsSystem      bool      `json:"is_system"`
+	IsAuto        bool      `json:"is_auto"`
+	IsAIGenerated bool      `json:"is_ai_generated"`
+	Kind          string    `json:"kind"`
+	SourceKey     string    `json:"source_key"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	TrackCount    int       `json:"track_count"`
 }
 
 type PlaylistTrackDto struct {
@@ -93,21 +94,25 @@ func (m *PlayerStateModel) ToDto() PlayerStateDto {
 
 func (m *PlaylistModel) ToDto() PlaylistDto {
 	kind := PlaylistKindManual
-	if m.IsSystem {
+	switch {
+	case m.IsAIGenerated:
+		kind = PlaylistKindAI
+	case m.IsSystem:
 		kind = PlaylistKindSystem
 	}
 
 	return PlaylistDto{
-		ID:          m.ID,
-		Name:        m.Name,
-		Description: m.Description,
-		IsSystem:    m.IsSystem,
-		IsAuto:      false,
-		Kind:        kind,
-		SourceKey:   "",
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
-		TrackCount:  m.TrackCount,
+		ID:            m.ID,
+		Name:          m.Name,
+		Description:   m.Description,
+		IsSystem:      m.IsSystem,
+		IsAuto:        false,
+		IsAIGenerated: m.IsAIGenerated,
+		Kind:          kind,
+		SourceKey:     "",
+		CreatedAt:     m.CreatedAt,
+		UpdatedAt:     m.UpdatedAt,
+		TrackCount:    m.TrackCount,
 	}
 }
 
