@@ -30,6 +30,12 @@ var imageClassificationSystemPrompt string
 //go:embed image_classification_user.txt
 var imageClassificationUserPromptTemplate string
 
+//go:embed music_artist_clusters_system.txt
+var musicArtistClustersSystemPrompt string
+
+//go:embed music_artist_clusters_user.txt
+var musicArtistClustersUserPromptTemplate string
+
 func SearchExtractionSystemPrompt() string {
 	return strings.TrimSpace(searchExtractionSystemPrompt)
 }
@@ -60,4 +66,12 @@ func ImageClassificationSystemPrompt() string {
 
 func ImageClassificationUserPrompt(metadata string) string {
 	return fmt.Sprintf(strings.TrimSpace(imageClassificationUserPromptTemplate), metadata)
+}
+
+func MusicArtistClustersSystemPrompt() string {
+	return strings.TrimSpace(musicArtistClustersSystemPrompt)
+}
+
+func MusicArtistClustersUserPrompt(maxNewClusters int, existingClusters string, artists string) string {
+	return fmt.Sprintf(strings.TrimSpace(musicArtistClustersUserPromptTemplate), maxNewClusters, existingClusters, artists)
 }
