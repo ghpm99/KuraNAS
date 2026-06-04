@@ -11,4 +11,6 @@ var (
 	ErrInvalidConversation = errors.New("assistant: invalid conversation")
 	// ErrEmptyResponse means the model returned no usable content.
 	ErrEmptyResponse = errors.New("assistant: empty response from model")
+	// ErrConversationNotFound means the referenced conversation does not exist.
+	ErrConversationNotFound = errors.New("assistant: conversation not found")
 )

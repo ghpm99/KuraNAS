@@ -6,24 +6,51 @@ const (
 	RoleAssistant = "assistant"
 )
 
-// ChatMessageDto is a single turn in the conversation. The client holds the
-// full history and sends it on every request; this first iteration does not
-// persist conversations.
+// ChatMessageDto is a single turn returned in a chat reply.
 type ChatMessageDto struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// ChatRequestDto is the body of POST /assistant/chat. Messages are ordered
-// oldest-first and the last one must be from the user.
+// ChatRequestDto is the body of the chat endpoints. The client sends the new
+// user message and, on a follow-up turn, the conversation it belongs to; the
+// backend loads the prior history from storage.
 type ChatRequestDto struct {
-	Messages []ChatMessageDto `json:"messages"`
+	ConversationID int    `json:"conversation_id,omitempty"`
+	Message        string `json:"message"`
 }
 
-// ChatResponseDto is the assistant's reply plus traceability of which
-// model/provider produced it.
+// ChatResponseDto is the assistant's reply plus the conversation it was stored
+// in and traceability of which model/provider produced it.
 type ChatResponseDto struct {
-	Message  ChatMessageDto `json:"message"`
-	Model    string         `json:"model"`
-	Provider string         `json:"provider"`
+	ConversationID int            `json:"conversation_id"`
+	Message        ChatMessageDto `json:"message"`
+	Model          string         `json:"model"`
+	Provider       string         `json:"provider"`
+}
+
+// ConversationDto is a stored conversation in the transport shape.
+type ConversationDto struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// MessageDto is a stored message in the transport shape.
+type MessageDto struct {
+	ID        int    `json:"id"`
+	Role      string `json:"role"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+}
+
+// StreamDeltaDto is the payload of a streaming `delta` event.
+type StreamDeltaDto struct {
+	Content string `json:"content"`
+}
+
+// StreamErrorDto is the payload of a streaming `error` event.
+type StreamErrorDto struct {
+	Error string `json:"error"`
 }

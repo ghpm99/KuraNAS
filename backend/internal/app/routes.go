@@ -282,6 +282,10 @@ func RegisterAssistantRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	assistantGroup := router.Group("/assistant")
 	assistantGroup.POST("/chat", context.Assistant.Handler.ChatHandler)
+	assistantGroup.POST("/chat/stream", context.Assistant.Handler.ChatStreamHandler)
+	assistantGroup.GET("/conversations", context.Assistant.Handler.ListConversationsHandler)
+	assistantGroup.GET("/conversations/:id/messages", context.Assistant.Handler.GetMessagesHandler)
+	assistantGroup.DELETE("/conversations/:id", context.Assistant.Handler.DeleteConversationHandler)
 }
 
 func RegisterWatchFoldersRoutes(router *gin.RouterGroup, context *AppContext) {

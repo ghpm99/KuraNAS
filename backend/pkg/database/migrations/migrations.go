@@ -101,6 +101,9 @@ var DedupePendingJobsIdempotencyQuery string
 //go:embed queries/0029_add_image_suggested_name.sql
 var AddImageSuggestedNameQuery string
 
+//go:embed queries/0031_create_assistant_tables.sql
+var CreateAssistantTablesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -229,4 +232,9 @@ func aiProvidersMigrationList() {
 func watchFoldersMigrationList() {
 	addMigration("0026_create_watch_folders_table",
 		defaultMigrationFunc(CreateWatchFoldersTableQuery))
+}
+
+func assistantMigrationList() {
+	addMigration("0031_create_assistant_tables",
+		defaultMigrationFunc(CreateAssistantTablesQuery))
 }
