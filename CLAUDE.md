@@ -20,6 +20,8 @@ Each app has its own build system and its own `CLAUDE.md` with stack-specific de
 
 **All changes are committed directly to the `develop` branch.** Do not create extra branches unless explicitly asked. `develop` is the integration branch; `make release-main-ff` fast-forwards `main` from it.
 
+**Always split work into logical commits** — one coherent change per commit (e.g. backend / frontend / android / docs separately), never one giant mixed commit. **Do not add a `Co-Authored-By` trailer** to commit messages.
+
 ## Root build & quality gates (root `Makefile`)
 
 - `make ci` — every gate (frontend + backend). Run before committing.
@@ -33,5 +35,7 @@ Each app has its own build system and its own `CLAUDE.md` with stack-specific de
 ## The HTTP contract is the integration point
 
 Because the apps are otherwise decoupled, a change to a backend route or DTO shape can break the frontend, both Android apps, and the plugin at once. When changing anything under `backend/internal/api/v1/`, check the consumers: frontend `src/service/*.ts`, the Android `feature/*/data` layers, and `plugin/src/background/uploader.js` (captures endpoints).
+
+**Keep endpoints small.** One endpoint owns one piece of information and returns the smallest meaningful payload, via handler → service → repository with small functions and one optimized `.sql` per query. Do not build fat aggregate responses — the `analytics` feature (one endpoint per concern: `/analytics/storage`, `/analytics/types`, `/analytics/duplicates`, …, composed client-side) is the reference shape; never reintroduce an aggregate "overview" endpoint. Full rule in `backend/CLAUDE.md` → "Endpoint granularity & response shape".
 </content>
 </invoke>

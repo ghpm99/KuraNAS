@@ -34,6 +34,15 @@ Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs
 
 Each feature defines `RepositoryInterface`, `ServiceInterface`, and any collaborator interfaces in `interfaces.go`. Handlers depend on the service interface; services on the repository interface — that is the mocking boundary. Repository tests use `github.com/DATA-DOG/go-sqlmock`. `*Model` is the DB shape, `*Dto` is the API/transport shape, and **conversion happens in the service layer**. Repositories are the only layer touching the DB; handlers only parse/validate requests and shape responses.
 
+## Endpoint granularity & response shape (mandatory rule)
+
+Every endpoint follows **handler → service → repository**, built from **small, single-purpose functions**, and **returns the smallest meaningful payload** — one endpoint owns one piece of information.
+
+- **One resource per endpoint.** Do not aggregate unrelated data into a single "overview"/"dashboard" response. Each distinct concern (storage KPIs, type distribution, recent files, duplicates, processing queue, …) is its own route, its own handler, its own service method, its own repository method, and its own `.sql` file.
+- **One small, optimized query per repository call.** No god-query and no fan-out of many queries behind a single endpoint. Each `.sql` file under `pkg/database/queries/<domain>/` answers exactly one question and stays small.
+- **Why:** a fat response makes the app feel slow (the client waits for everything to render anything), couples consumers to fields they don't use, and means one broken detail takes the whole endpoint down and is hard to isolate. Small endpoints fail in isolation, are individually cacheable, and let the frontend load progressively.
+- **Reference implementation:** the `analytics` feature is the canonical example. It used to expose one fat `GET /analytics/overview` returning a giant `OverviewDto` from ~12 SQL calls; it is now split into one endpoint per concern — `/analytics/storage`, `/analytics/timeseries`, `/analytics/types`, `/analytics/extensions`, `/analytics/recent-files`, `/analytics/top-folders`, `/analytics/hot-folders`, `/analytics/duplicates`, `/analytics/duplicates/groups`, `/analytics/library`, `/analytics/processing`, `/analytics/health`, `/analytics/insights` — each with its own handler/service/repository method and a single `.sql`. Follow this shape; never reintroduce an aggregate "overview" endpoint. The frontend composes these slices in `analyticsProvider` via independent queries, so each one loads/fails on its own.
+
 ## Database
 
 - PostgreSQL via `lib/pq`; connection from `DB_*` env vars (`pkg/database`).
