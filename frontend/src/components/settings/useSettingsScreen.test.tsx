@@ -42,6 +42,9 @@ jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
                 extract_metadata: true,
                 generate_previews: true,
             },
+            ai: {
+                image_classification: true,
+            },
             players: {
                 remember_music_queue: true,
                 remember_video_progress: true,
@@ -163,6 +166,15 @@ describe('components/settings/useSettingsScreen', () => {
             result.current.setIndexingField('generate_previews', false);
         });
         expect(result.current.draft.indexing.generate_previews).toBe(false);
+    });
+
+    it('setAIField updates AI fields in draft', () => {
+        const { result } = renderHook(() => useSettingsScreen());
+
+        act(() => {
+            result.current.setAIField('image_classification', false);
+        });
+        expect(result.current.draft.ai.image_classification).toBe(false);
     });
 
     it('setPlayersField updates players fields in draft', () => {

@@ -40,6 +40,9 @@ const fullSettings = (overrides: Record<string, any> = {}) => ({
         extract_metadata: true,
         generate_previews: true,
     },
+    ai: {
+        image_classification: true,
+    },
     players: {
         remember_music_queue: true,
         remember_video_progress: true,
@@ -116,6 +119,9 @@ describe('components/providers/settingsProvider', () => {
                     scan_on_startup: false,
                     extract_metadata: true,
                     generate_previews: false,
+                },
+                ai: {
+                    image_classification: false,
                 },
                 players: {
                     remember_music_queue: false,
@@ -267,6 +273,9 @@ describe('components/providers/settingsProvider', () => {
                     scan_on_startup: true,
                     extract_metadata: true,
                     generate_previews: true,
+                },
+                ai: {
+                    image_classification: true,
                 },
                 players: {
                     remember_music_queue: true,
