@@ -15,8 +15,14 @@ interface HomeApi {
     @GET("api/v1/files/total-directory")
     suspend fun getTotalDirectories(): TotalDirectoryDto
 
-    @GET("api/v1/analytics/overview")
-    suspend fun getAnalyticsOverview(): AnalyticsOverviewDto
+    @GET("api/v1/analytics/storage")
+    suspend fun getAnalyticsStorage(): AnalyticsStorageStatsDto
+
+    @GET("api/v1/analytics/types")
+    suspend fun getAnalyticsTypes(): List<AnalyticsTypeDto>
+
+    @GET("api/v1/analytics/recent-files")
+    suspend fun getAnalyticsRecentFiles(): List<RecentFileDto>
 }
 
 @Serializable
@@ -28,7 +34,7 @@ data class TotalDto(@SerialName("total_files") val total: Long = 0)
 @Serializable
 data class TotalDirectoryDto(@SerialName("total_directory") val total: Long = 0)
 
-/** Espelha analytics.RecentFileDto (campo `recent_files` do /analytics/overview). */
+/** Espelha analytics.RecentFileDto (resposta de /analytics/recent-files). */
 @Serializable
 data class RecentFileDto(
     val id: Int = 0,
@@ -44,12 +50,11 @@ data class RecentFileDto(
     val mimeType: String get() = mimeTypeForFormat(format)
 }
 
+/** Resposta de /analytics/storage: KPIs de storage + contagens. */
 @Serializable
-data class AnalyticsOverviewDto(
+data class AnalyticsStorageStatsDto(
     val storage: AnalyticsStorageDto = AnalyticsStorageDto(),
     val counts: AnalyticsCountsDto = AnalyticsCountsDto(),
-    val types: List<AnalyticsTypeDto> = emptyList(),
-    @SerialName("recent_files") val recentFiles: List<RecentFileDto> = emptyList(),
 )
 
 @Serializable
