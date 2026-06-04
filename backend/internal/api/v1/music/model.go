@@ -18,13 +18,24 @@ type PlayerStateModel struct {
 }
 
 type PlaylistModel struct {
-	ID          int
-	Name        string
-	Description string
-	IsSystem    bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	TrackCount  int
+	ID            int
+	Name          string
+	Description   string
+	IsSystem      bool
+	IsAIGenerated bool
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	TrackCount    int
+}
+
+// ArtistClusterModel is the persisted assignment of one artist to one
+// AI-generated playlist category. It is the source of truth the worker rebuilds
+// the AI playlists from, and lets clustering stay incremental (only new artists
+// are sent to the model).
+type ArtistClusterModel struct {
+	ArtistKey   string
+	Artist      string
+	ClusterName string
 }
 
 type PlaylistTrackModel struct {

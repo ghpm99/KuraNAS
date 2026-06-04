@@ -5,7 +5,8 @@ SELECT
     p.is_system,
     p.created_at,
     p.updated_at,
-    (SELECT COUNT(*) FROM playlist_track pt WHERE pt.playlist_id = p.id) AS track_count
+    (SELECT COUNT(*) FROM playlist_track pt WHERE pt.playlist_id = p.id) AS track_count,
+    p.is_ai_generated
 FROM
     playlist p
 WHERE

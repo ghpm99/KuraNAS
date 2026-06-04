@@ -43,8 +43,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count"}).
-			AddRow(1, "p", "d", false, now, now, 3))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
+			AddRow(1, "p", "d", false, now, now, 3, false))
 	mock.ExpectRollback()
 	playlists, err := repo.GetPlaylists(1, 10)
 	if err != nil || len(playlists.Items) != 1 {
@@ -54,8 +54,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistByIDQuery)).
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count"}).
-			AddRow(1, "p", "d", false, now, now, 3))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
+			AddRow(1, "p", "d", false, now, now, 3, false))
 	mock.ExpectRollback()
 	if p, err := repo.GetPlaylistByID(1); err != nil || p.ID != 1 {
 		t.Fatalf("GetPlaylistByID failed p=%+v err=%v", p, err)
@@ -63,8 +63,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetNowPlayingQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count"}).
-			AddRow(2, "now", "queue", true, now, now, 1))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
+			AddRow(2, "now", "queue", true, now, now, 1, false))
 	mock.ExpectRollback()
 	if p, err := repo.GetNowPlaying(); err != nil || p.ID != 2 {
 		t.Fatalf("GetNowPlaying failed p=%+v err=%v", p, err)
@@ -193,6 +193,89 @@ func TestMusicRepositoryWritePaths(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("UpsertPlayerState failed: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestMusicRepositoryArtistClustersAndAIPlaylists(t *testing.T) {
+	repo, mock, db := newMusicRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	// Read the persisted artist -> cluster mapping.
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetArtistClustersQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"artist_key", "artist", "cluster_name"}).
+			AddRow("the beatles", "The Beatles", "Classic Rock"))
+	mock.ExpectRollback()
+	clusters, err := repo.GetArtistClusters()
+	if err != nil || len(clusters) != 1 || clusters[0].ClusterName != "Classic Rock" {
+		t.Fatalf("GetArtistClusters failed: %+v err=%v", clusters, err)
+	}
+
+	// List materialized AI playlists.
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAIPlaylistsQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
+			AddRow(7, "Classic Rock", "", false, now, now, 12, true))
+	mock.ExpectRollback()
+	aiPlaylists, err := repo.GetAIPlaylists()
+	if err != nil || len(aiPlaylists) != 1 || !aiPlaylists[0].IsAIGenerated {
+		t.Fatalf("GetAIPlaylists failed: %+v err=%v", aiPlaylists, err)
+	}
+
+	// Write paths inside a single transaction: upsert, prune, create, replace.
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpsertArtistClusterQuery)).
+		WithArgs("the beatles", "The Beatles", "Classic Rock").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteArtistClustersExceptQuery)).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CreateAIPlaylistQuery)).
+		WithArgs("Classic Rock", "").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(7, now, now))
+	mock.ExpectExec(regexp.QuoteMeta(queries.ClearPlaylistTracksQuery)).
+		WithArgs(7).
+		WillReturnResult(sqlmock.NewResult(0, 5))
+	mock.ExpectExec(regexp.QuoteMeta(queries.InsertPlaylistTracksQuery)).
+		WithArgs(7, sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+
+	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		if err := repo.UpsertArtistCluster(tx, ArtistClusterModel{ArtistKey: "the beatles", Artist: "The Beatles", ClusterName: "Classic Rock"}); err != nil {
+			return err
+		}
+		if err := repo.DeleteArtistClustersExcept(tx, []string{"the beatles"}); err != nil {
+			return err
+		}
+		created, err := repo.CreateAIPlaylist(tx, "Classic Rock", "")
+		if err != nil {
+			return err
+		}
+		if created.ID != 7 || !created.IsAIGenerated {
+			t.Fatalf("unexpected created AI playlist: %+v", created)
+		}
+		return repo.ReplacePlaylistTracks(tx, 7, []int{20, 21})
+	})
+	if err != nil {
+		t.Fatalf("cluster write paths failed: %v", err)
+	}
+
+	// ReplacePlaylistTracks with no files only clears, never inserts.
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.ClearPlaylistTracksQuery)).
+		WithArgs(7).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		return repo.ReplacePlaylistTracks(tx, 7, nil)
+	})
+	if err != nil {
+		t.Fatalf("empty ReplacePlaylistTracks failed: %v", err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

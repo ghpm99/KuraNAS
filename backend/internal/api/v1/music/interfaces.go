@@ -24,6 +24,12 @@ type RepositoryInterface interface {
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error)
 	GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error)
+	GetArtistClusters() ([]ArtistClusterModel, error)
+	UpsertArtistCluster(tx *sql.Tx, cluster ArtistClusterModel) error
+	DeleteArtistClustersExcept(tx *sql.Tx, artistKeys []string) error
+	GetAIPlaylists() ([]PlaylistModel, error)
+	CreateAIPlaylist(tx *sql.Tx, name string, description string) (PlaylistModel, error)
+	ReplacePlaylistTracks(tx *sql.Tx, playlistID int, fileIDs []int) error
 }
 
 type ServiceInterface interface {

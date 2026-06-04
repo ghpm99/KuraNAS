@@ -50,6 +50,9 @@ var CreatePlaylistTrackTableQuery string
 //go:embed queries/0013_create_player_state_table.sql
 var CreatePlayerStateTableQuery string
 
+//go:embed queries/0030_create_music_artist_clusters_table.sql
+var CreateMusicArtistClustersTableQuery string
+
 //go:embed queries/0014_create_video_playback_tables.sql
 var CreateVideoPlaybackTablesQuery string
 
@@ -163,6 +166,9 @@ func musicMigrationList() {
 
 	addMigration("0013_create_player_state_table",
 		defaultMigrationFunc(CreatePlayerStateTableQuery))
+
+	addMigration("0030_create_music_artist_clusters_table",
+		defaultMigrationFunc(CreateMusicArtistClustersTableQuery))
 }
 
 func videoMigrationList() {

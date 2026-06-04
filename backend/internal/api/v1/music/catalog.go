@@ -15,6 +15,7 @@ const (
 	PlaylistKindManual    = "manual"
 	PlaylistKindSystem    = "system"
 	PlaylistKindAutomatic = "automatic"
+	PlaylistKindAI        = "ai"
 )
 
 const (
