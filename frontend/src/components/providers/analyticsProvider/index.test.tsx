@@ -21,6 +21,55 @@ const createQueryClient = () =>
         },
     });
 
+const routeResponse = (url: string) => {
+    switch (url) {
+        case '/analytics/storage':
+            return {
+                data: {
+                    storage: { total_bytes: 1000, used_bytes: 500, free_bytes: 500, growth_bytes: 10 },
+                    counts: { files_total: 12, files_added: 2, folders: 4 },
+                },
+            };
+        case '/analytics/duplicates':
+            return { data: { groups: 0, files: 0, reclaimable_size: 0 } };
+        case '/analytics/library':
+            return {
+                data: {
+                    categorized_media: 6,
+                    audio_with_metadata: 2,
+                    video_with_metadata: 2,
+                    image_with_metadata: 2,
+                    image_classified: 2,
+                },
+            };
+        case '/analytics/processing':
+            return {
+                data: {
+                    metadata_pending: 1,
+                    metadata_failed: 0,
+                    thumbnail_pending: 2,
+                    thumbnail_failed: 0,
+                    recurring_timeouts: 0,
+                },
+            };
+        case '/analytics/health':
+            return {
+                data: {
+                    status: 'ok',
+                    last_scan_at: '',
+                    last_scan_seconds: 0,
+                    indexed_files: 12,
+                    errors_last_24h: 0,
+                    recent_errors: [],
+                },
+            };
+        default:
+            // timeseries, types, extensions, recent-files, top-folders,
+            // hot-folders, duplicates/groups all return arrays.
+            return { data: [] };
+    }
+};
+
 const Consumer = () => {
     const { period, loading, error, data, setPeriod, refresh } = useAnalyticsOverview();
     return (
@@ -38,56 +87,10 @@ const Consumer = () => {
 describe('providers/analyticsProvider', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockedApiGet.mockResolvedValue({
-            data: {
-                period: '7d',
-                generated_at: new Date().toISOString(),
-                storage: {
-                    total_bytes: 1000,
-                    used_bytes: 500,
-                    free_bytes: 500,
-                    growth_bytes: 10,
-                },
-                counts: { files_total: 12, files_added: 2, folders: 4 },
-                time_series: [],
-                types: [],
-                extensions: [],
-                hot_folders: [],
-                top_folders: [],
-                recent_files: [],
-                duplicates: {
-                    groups: 0,
-                    files: 0,
-                    reclaimable_size: 0,
-                    top_groups: [],
-                },
-                library: {
-                    categorized_media: 6,
-                    audio_with_metadata: 2,
-                    video_with_metadata: 2,
-                    image_with_metadata: 2,
-                    image_classified: 2,
-                },
-                processing: {
-                    metadata_pending: 1,
-                    metadata_failed: 0,
-                    thumbnail_pending: 2,
-                    thumbnail_failed: 0,
-                    recurring_timeouts: 0,
-                },
-                health: {
-                    status: 'ok',
-                    last_scan_at: '',
-                    last_scan_seconds: 0,
-                    indexed_files: 12,
-                    errors_last_24h: 0,
-                    recent_errors: [],
-                },
-            },
-        });
+        mockedApiGet.mockImplementation((url: string) => Promise.resolve(routeResponse(url)));
     });
 
-    it('loads default period and updates when period changes', async () => {
+    it('loads default period and composes data from slice endpoints', async () => {
         const queryClient = createQueryClient();
         render(
             <QueryClientProvider client={queryClient}>
@@ -106,13 +109,18 @@ describe('providers/analyticsProvider', () => {
         });
 
         await waitFor(() => expect(screen.getByTestId('period')).toHaveTextContent('30d'));
-        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/overview', {
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/storage', {
             params: { period: '30d' },
         });
     });
 
-    it('exposes error key when request fails', async () => {
-        mockedApiGet.mockRejectedValueOnce(new Error('network'));
+    it('exposes error key when the storage slice fails', async () => {
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/analytics/storage') {
+                return Promise.reject(new Error('network'));
+            }
+            return Promise.resolve(routeResponse(url));
+        });
         const queryClient = createQueryClient();
         render(
             <QueryClientProvider client={queryClient}>

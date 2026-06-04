@@ -1,62 +1,49 @@
 import { render, screen, renderHook, act } from '@testing-library/react';
 import { AnalyticsProvider } from './index';
 import { useAnalyticsOverview } from './analyticsContext';
-import type { AnalyticsOverview } from '@/types/analytics';
-const mockOverview: AnalyticsOverview = {
-    period: '7d',
-    generated_at: '2026-03-16T11:50:00Z',
-    storage: {
-        total_bytes: 1000,
-        used_bytes: 400,
-        free_bytes: 600,
-        growth_bytes: 50,
-    },
+
+const storageData = {
+    storage: { total_bytes: 1000, used_bytes: 400, free_bytes: 600, growth_bytes: 50 },
     counts: { files_total: 200, files_added: 15, folders: 10 },
-    time_series: [],
-    types: [],
-    extensions: [],
-    hot_folders: [],
-    top_folders: [],
-    recent_files: [],
-    duplicates: { groups: 0, files: 0, reclaimable_size: 0, top_groups: [] },
-    library: {
-        categorized_media: 0,
-        audio_with_metadata: 0,
-        video_with_metadata: 0,
-        image_with_metadata: 0,
-        image_classified: 0,
-    },
-    processing: {
-        metadata_pending: 0,
-        metadata_failed: 0,
-        thumbnail_pending: 0,
-        thumbnail_failed: 0,
-        recurring_timeouts: 0,
-    },
-    health: {
-        status: 'ok',
-        last_scan_at: '',
-        last_scan_seconds: 0,
-        indexed_files: 0,
-        errors_last_24h: 0,
-        recent_errors: [],
-    },
 };
 
-let mockQueryFn: jest.Mock;
-let lastQueryOpts: any;
+let lastQueriesArg: any;
+const refetchSpy = jest.fn().mockResolvedValue({});
+
+// Controls per-query state for the 12 slice queries the provider issues.
+let mode: 'loaded' | 'loading' | 'storage-error' = 'loaded';
 
 jest.mock('@tanstack/react-query', () => ({
-    useQuery: (opts: any) => {
-        lastQueryOpts = opts;
-        const data = mockQueryFn ? mockQueryFn(opts) : undefined;
-        return {
-            data: data ?? null,
-            isLoading: data === undefined,
-            isFetching: false,
-            isError: data === null && mockQueryFn === undefined,
-            refetch: jest.fn().mockResolvedValue({ data: mockOverview }),
-        };
+    useQueries: (arg: any) => {
+        lastQueriesArg = arg;
+        return arg.queries.map((_query: any, index: number) => {
+            const isStorage = index === 0;
+            if (mode === 'loading') {
+                return {
+                    data: undefined,
+                    isLoading: true,
+                    isError: false,
+                    dataUpdatedAt: 0,
+                    refetch: refetchSpy,
+                };
+            }
+            if (mode === 'storage-error' && isStorage) {
+                return {
+                    data: undefined,
+                    isLoading: false,
+                    isError: true,
+                    dataUpdatedAt: 0,
+                    refetch: refetchSpy,
+                };
+            }
+            return {
+                data: isStorage ? storageData : [],
+                isLoading: false,
+                isError: false,
+                dataUpdatedAt: 1_700_000_000_000,
+                refetch: refetchSpy,
+            };
+        });
     },
 }));
 
@@ -68,6 +55,7 @@ function ConsumerComponent() {
             <span data-testid="loading">{String(ctx.loading)}</span>
             <span data-testid="error">{ctx.error || 'none'}</span>
             <span data-testid="has-data">{ctx.data ? 'yes' : 'no'}</span>
+            <span data-testid="files">{ctx.data?.counts.files_total ?? 0}</span>
             <button data-testid="refresh" onClick={() => void ctx.refresh()}>
                 Refresh
             </button>
@@ -81,12 +69,11 @@ function ConsumerComponent() {
 describe('AnalyticsProvider', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        lastQueryOpts = undefined;
+        lastQueriesArg = undefined;
+        mode = 'loaded';
     });
 
-    it('provides default period and data to children', () => {
-        mockQueryFn = jest.fn().mockReturnValue(mockOverview);
-
+    it('composes overview data from slice queries', () => {
         render(
             <AnalyticsProvider>
                 <ConsumerComponent />
@@ -95,24 +82,22 @@ describe('AnalyticsProvider', () => {
 
         expect(screen.getByTestId('period').textContent).toBe('7d');
         expect(screen.getByTestId('has-data').textContent).toBe('yes');
+        expect(screen.getByTestId('files').textContent).toBe('200');
         expect(screen.getByTestId('error').textContent).toBe('none');
     });
 
-    it('uses the correct query key with period', () => {
-        mockQueryFn = jest.fn().mockReturnValue(mockOverview);
-
+    it('keys the period-dependent queries with the current period', () => {
         render(
             <AnalyticsProvider>
                 <ConsumerComponent />
             </AnalyticsProvider>
         );
 
-        expect(lastQueryOpts.queryKey).toEqual(['analytics-overview', '7d']);
+        expect(lastQueriesArg.queries[0].queryKey).toEqual(['analytics', 'storage', '7d']);
     });
 
-    it('sets loading true when data is not yet available', () => {
-        mockQueryFn = jest.fn().mockReturnValue(undefined);
-
+    it('reports loading while slices resolve', () => {
+        mode = 'loading';
         render(
             <AnalyticsProvider>
                 <ConsumerComponent />
@@ -120,28 +105,22 @@ describe('AnalyticsProvider', () => {
         );
 
         expect(screen.getByTestId('loading').textContent).toBe('true');
+        expect(screen.getByTestId('has-data').textContent).toBe('no');
     });
 
-    it('provides error string when query fails', () => {
-        mockQueryFn = undefined as any;
-        expect(mockQueryFn).toBeUndefined();
+    it('surfaces an error key when the storage slice fails', () => {
+        mode = 'storage-error';
+        render(
+            <AnalyticsProvider>
+                <ConsumerComponent />
+            </AnalyticsProvider>
+        );
+
+        expect(screen.getByTestId('error').textContent).toBe('ANALYTICS_ERROR_LOAD_BLOCK');
+        expect(screen.getByTestId('has-data').textContent).toBe('no');
     });
 
-    it('calls refetch when refresh is invoked', () => {
-        const mockRefetch = jest.fn().mockResolvedValue({ data: mockOverview });
-
-        jest.mock('@tanstack/react-query', () => ({
-            useQuery: () => ({
-                data: mockOverview,
-                isLoading: false,
-                isFetching: false,
-                isError: false,
-                refetch: mockRefetch,
-            }),
-        }));
-
-        mockQueryFn = jest.fn().mockReturnValue(mockOverview);
-
+    it('refreshes every slice and updates the period', () => {
         render(
             <AnalyticsProvider>
                 <ConsumerComponent />
@@ -151,42 +130,13 @@ describe('AnalyticsProvider', () => {
         act(() => {
             screen.getByTestId('refresh').click();
         });
-
-        // The refresh function wraps refetch; verify it doesn't throw
-        expect(screen.getByTestId('has-data').textContent).toBe('yes');
-    });
-
-    it('provides null data as default when query returns undefined', () => {
-        mockQueryFn = jest.fn().mockReturnValue(undefined);
-
-        render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
-        );
-
-        // data defaults to null via `data = null`
-        expect(screen.getByTestId('has-data').textContent).toBe('no');
-    });
-
-    it('query key changes when period changes via setPeriod', () => {
-        mockQueryFn = jest.fn().mockReturnValue(mockOverview);
-
-        render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
-        );
-
-        const firstKey = [...lastQueryOpts.queryKey];
-        expect(firstKey).toEqual(['analytics-overview', '7d']);
+        expect(refetchSpy).toHaveBeenCalled();
 
         act(() => {
             screen.getByTestId('set-period').click();
         });
-
-        expect(lastQueryOpts.queryKey).toEqual(['analytics-overview', '30d']);
         expect(screen.getByTestId('period').textContent).toBe('30d');
+        expect(lastQueriesArg.queries[0].queryKey).toEqual(['analytics', 'storage', '30d']);
     });
 });
 
