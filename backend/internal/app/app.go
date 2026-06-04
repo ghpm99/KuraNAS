@@ -114,6 +114,9 @@ func InitializeApp() (*Application, error) {
 	if librariesService != nil {
 		workerFileContext.LibrariesService = librariesService.Service
 	}
+	if appContext.Music != nil {
+		workerFileContext.MusicService = appContext.Music.Service
+	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository
 	}

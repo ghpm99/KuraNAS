@@ -30,8 +30,8 @@ func (f *fakeWorkerNotifSvc) GroupOrCreate(dto notifications.CreateNotificationD
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
-	if len(executors) != 10 {
-		t.Fatalf("expected 10 step executors, got %d", len(executors))
+	if len(executors) != 11 {
+		t.Fatalf("expected 11 step executors, got %d", len(executors))
 	}
 
 	imagePlan, err := buildFileProcessingPlan(

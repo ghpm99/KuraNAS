@@ -5,17 +5,18 @@ import "time"
 type JobType string
 
 const (
-	JobTypeStartupScan   JobType = "startup_scan"
-	JobTypeUploadProcess JobType = "upload_process"
-	JobTypeFSEvent       JobType = "fs_event"
-	JobTypeReindexFolder JobType = "reindex_folder"
-	JobTypeTakeoutImport JobType = "takeout_import"
-	JobTypeOllamaPull    JobType = "ollama_pull"
+	JobTypeStartupScan       JobType = "startup_scan"
+	JobTypeUploadProcess     JobType = "upload_process"
+	JobTypeFSEvent           JobType = "fs_event"
+	JobTypeReindexFolder     JobType = "reindex_folder"
+	JobTypeTakeoutImport     JobType = "takeout_import"
+	JobTypeOllamaPull        JobType = "ollama_pull"
+	JobTypeAIPlaylistCluster JobType = "ai_playlist_cluster"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster:
 		return true
 	default:
 		return false
@@ -25,21 +26,22 @@ func (t JobType) IsValid() bool {
 type StepType string
 
 const (
-	StepTypeScanFilesystem StepType = "scan_filesystem"
-	StepTypeDiffAgainstDB  StepType = "diff_against_db"
-	StepTypeMetadata       StepType = "metadata"
-	StepTypeChecksum       StepType = "checksum"
-	StepTypePersist        StepType = "persist"
-	StepTypeThumbnail      StepType = "thumbnail"
-	StepTypePlaylistIndex  StepType = "playlist_index"
-	StepTypeMarkDeleted    StepType = "mark_deleted"
-	StepTypeTakeoutExtract StepType = "takeout_extract"
-	StepTypeOllamaPull     StepType = "ollama_model_pull"
+	StepTypeScanFilesystem    StepType = "scan_filesystem"
+	StepTypeDiffAgainstDB     StepType = "diff_against_db"
+	StepTypeMetadata          StepType = "metadata"
+	StepTypeChecksum          StepType = "checksum"
+	StepTypePersist           StepType = "persist"
+	StepTypeThumbnail         StepType = "thumbnail"
+	StepTypePlaylistIndex     StepType = "playlist_index"
+	StepTypeMarkDeleted       StepType = "mark_deleted"
+	StepTypeTakeoutExtract    StepType = "takeout_extract"
+	StepTypeOllamaPull        StepType = "ollama_model_pull"
+	StepTypeAIPlaylistCluster StepType = "ai_playlist_cluster"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster:
 		return true
 	default:
 		return false
