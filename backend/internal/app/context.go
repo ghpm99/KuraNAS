@@ -158,7 +158,7 @@ func NewContext(db *sql.DB) *AppContext {
 	ollamaContext := newOllamaContext(aiProvidersContext.Service, jobsContext.Repository)
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
-	musicContext := newMusicContext(dbContext, loggerService)
+	musicContext := newMusicContext(dbContext, loggerService, aiService)
 	videoContext := newVideoContext(dbContext, loggerService, aiService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
@@ -227,9 +227,9 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 	}
 }
 
-func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *MusicContext {
+func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) *MusicContext {
 	repository := music.NewRepository(dbContext)
-	service := music.NewService(repository)
+	service := music.NewService(repository, aiService)
 	handler := music.NewHandler(service, logger)
 	return &MusicContext{
 		Handler:    handler,

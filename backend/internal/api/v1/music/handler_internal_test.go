@@ -1,6 +1,7 @@
 package music
 
 import (
+	"context"
 	"errors"
 	"nas-go/api/internal/api/v1/files"
 	"net/http"
@@ -83,6 +84,9 @@ func (m *musicHandlerServiceMock) GetPlayerState(clientID string) (PlayerStateDt
 }
 func (m *musicHandlerServiceMock) UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error) {
 	return PlayerStateDto{ID: 1, ClientID: clientID}, nil
+}
+func (m *musicHandlerServiceMock) RebuildAIClusters(ctx context.Context) error {
+	return nil
 }
 
 type musicHandlerErrServiceMock struct {

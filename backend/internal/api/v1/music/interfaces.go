@@ -1,6 +1,7 @@
 package music
 
 import (
+	"context"
 	"database/sql"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
@@ -56,4 +57,5 @@ type ServiceInterface interface {
 	GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetPlayerState(clientID string) (PlayerStateDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
+	RebuildAIClusters(ctx context.Context) error
 }

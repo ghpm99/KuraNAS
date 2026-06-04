@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"fmt"
+	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -10,11 +11,13 @@ import (
 
 type Service struct {
 	Repository RepositoryInterface
+	AIService  ai.ServiceInterface
 }
 
-func NewService(repository RepositoryInterface) ServiceInterface {
+func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
 	return &Service{
 		Repository: repository,
+		AIService:  aiService,
 	}
 }
 
