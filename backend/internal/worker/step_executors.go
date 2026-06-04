@@ -307,27 +307,18 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		return ErrStepSkipped
 	}
 
-	// Batch-load all known files under root to avoid N+1 queries (Fix 5)
-	knownFiles := map[string]files.FileDto{}
-	filter := files.FileFilter{
-		PathPrefix: utils.Optional[string]{HasValue: true, Value: root},
-	}
-	page := 1
-	for {
-		result, listErr := context.FilesService.GetFiles(filter, page, 500)
-		if listErr != nil {
-			return fmt.Errorf("batch load files under %q: %w", root, listErr)
-		}
-		for _, f := range result.Items {
-			knownFiles[f.Path] = f
-		}
-		if !result.Pagination.HasNext {
-			break
-		}
-		page++
-	}
-
-	changedPaths := []string{}
+	// Walk the tree and ask the DB about one file at a time. The database is
+	// indexed by path and exists to be queried — so we do a small lookup per
+	// file instead of loading the entire home_file table into a map in memory
+	// (which does not scale past a few tens of thousands of files). A file is
+	// enqueued only when it is genuinely new or its size/mtime changed.
+	//
+	// enqueued counts files that actually entered the processing pipeline as a
+	// result of THIS scan. CreateJob returns id 0 (no error) when idempotency
+	// skips a file that already has a pending job — those are not counted, so
+	// the completion notification reflects the real number of files sent to the
+	// pipeline rather than every candidate seen.
+	enqueued := 0
 	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			log.Printf("[diff] skipping inaccessible path %q: %v\n", path, walkErr)
@@ -342,22 +333,45 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 
-		existing, exists := knownFiles[path]
-		if !exists {
-			changedPaths = append(changedPaths, path)
+		stat, exists, statErr := context.FilesService.GetFileStatByPath(path)
+		if statErr != nil {
+			return fmt.Errorf("lookup file stat for %q: %w", path, statErr)
+		}
+
+		if exists {
+			sameSize := stat.Size == info.Size()
+			// home_file.updated_at is TIMESTAMPTZ (microsecond precision in Postgres),
+			// while filesystem ModTime has nanosecond precision. Comparing the raw
+			// values always mismatches after a DB round-trip, flagging every file as
+			// changed on every scan and re-enqueuing the whole library indefinitely.
+			// Truncate both sides to second precision before comparing.
+			sameModTime := !stat.UpdatedAt.IsZero() &&
+				stat.UpdatedAt.Truncate(time.Second).Equal(info.ModTime().Truncate(time.Second))
+			if sameSize && sameModTime {
+				return nil
+			}
+		}
+
+		fileDto := files.FileDto{
+			Path:       path,
+			ParentPath: filepath.Dir(path),
+		}
+		if parseErr := fileDto.ParseFileInfoToFileDto(info); parseErr != nil {
 			return nil
 		}
 
-		sameSize := existing.Size == info.Size()
-		// home_file.updated_at is TIMESTAMPTZ (microsecond precision in Postgres),
-		// while filesystem ModTime has nanosecond precision. Comparing UnixNano()
-		// directly always mismatches after a DB round-trip, flagging every file as
-		// changed on every scan and re-enqueuing the whole library indefinitely.
-		// Truncate both sides to second precision before comparing.
-		sameModTime := !existing.UpdatedAt.IsZero() &&
-			existing.UpdatedAt.Truncate(time.Second).Equal(info.ModTime().Truncate(time.Second))
-		if !sameSize || !sameModTime {
-			changedPaths = append(changedPaths, path)
+		plan, planErr := buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityLow)
+		if planErr != nil {
+			log.Printf("[diff] skipping file %q: %v\n", path, planErr)
+			return nil
+		}
+
+		jobID, createErr := context.JobOrchestrator.CreateJob(plan)
+		if createErr != nil {
+			return createErr
+		}
+		if jobID > 0 {
+			enqueued++
 		}
 
 		return nil
@@ -366,47 +380,17 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 		return walkErr
 	}
 
-	if len(changedPaths) == 0 {
+	if enqueued == 0 {
 		return ErrStepSkipped
 	}
 
-	enqueued := 0
-	for _, changedPath := range changedPaths {
-		fileInfo, statErr := os.Stat(changedPath)
-		if statErr != nil {
-			continue
-		}
-
-		fileDto := files.FileDto{
-			Path:       changedPath,
-			ParentPath: filepath.Dir(changedPath),
-		}
-		if parseErr := fileDto.ParseFileInfoToFileDto(fileInfo); parseErr != nil {
-			continue
-		}
-
-		plan, planErr := buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityLow)
-		if planErr != nil {
-			log.Printf("[diff] skipping file %q: %v\n", changedPath, planErr)
-			continue
-		}
-
-		_, createErr := context.JobOrchestrator.CreateJob(plan)
-		if createErr != nil {
-			return createErr
-		}
-		enqueued++
-	}
-
-	if enqueued > 0 {
-		emitNotification(
-			context,
-			"info",
-			i18n.GetMessage("NOTIFICATION_FILE_SCAN_COMPLETED_TITLE"),
-			i18n.Translate("NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE", enqueued),
-			"",
-		)
-	}
+	emitNotification(
+		context,
+		"info",
+		i18n.GetMessage("NOTIFICATION_FILE_SCAN_COMPLETED_TITLE"),
+		i18n.Translate("NOTIFICATION_FILE_SCAN_COMPLETED_MESSAGE", enqueued),
+		"",
+	)
 
 	return nil
 }

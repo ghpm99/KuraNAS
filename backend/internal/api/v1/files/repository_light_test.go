@@ -169,6 +169,75 @@ func TestRepositoryCreateUpdateAndGetFiles(t *testing.T) {
 	}
 }
 
+func TestRepositoryGetFileStatByPath(t *testing.T) {
+	now := time.Now()
+
+	t.Run("found", func(t *testing.T) {
+		repo, mock, db := newRepoWithMock(t)
+		defer db.Close()
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(queries.GetFileStatByPathQuery)).
+			WithArgs("/tmp/f").
+			WillReturnRows(sqlmock.NewRows([]string{"size", "updated_at"}).AddRow(int64(42), now))
+		mock.ExpectRollback()
+
+		stat, found, err := repo.GetFileStatByPath("/tmp/f")
+		if err != nil {
+			t.Fatalf("GetFileStatByPath failed: %v", err)
+		}
+		if !found {
+			t.Fatalf("expected found=true")
+		}
+		if stat.Size != 42 || !stat.UpdatedAt.Equal(now) {
+			t.Fatalf("unexpected stat: %+v", stat)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		repo, mock, db := newRepoWithMock(t)
+		defer db.Close()
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(queries.GetFileStatByPathQuery)).
+			WithArgs("/tmp/missing").
+			WillReturnError(sql.ErrNoRows)
+		mock.ExpectRollback()
+
+		stat, found, err := repo.GetFileStatByPath("/tmp/missing")
+		if err != nil {
+			t.Fatalf("expected no error for missing row, got %v", err)
+		}
+		if found {
+			t.Fatalf("expected found=false")
+		}
+		if stat.Size != 0 || !stat.UpdatedAt.IsZero() {
+			t.Fatalf("expected zero stat, got %+v", stat)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet sqlmock expectations: %v", err)
+		}
+	})
+
+	t.Run("query error", func(t *testing.T) {
+		repo, mock, db := newRepoWithMock(t)
+		defer db.Close()
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(queries.GetFileStatByPathQuery)).
+			WithArgs("/tmp/boom").
+			WillReturnError(errors.New("boom"))
+		mock.ExpectRollback()
+
+		if _, _, err := repo.GetFileStatByPath("/tmp/boom"); err == nil {
+			t.Fatalf("expected error from failing query")
+		}
+	})
+}
+
 func TestRepositoryMusicAggregatesLight(t *testing.T) {
 	repo, mock, db := newRepoWithMock(t)
 	defer db.Close()

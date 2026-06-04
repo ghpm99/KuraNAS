@@ -19,6 +19,7 @@ import (
 type workerFilesServiceMock struct {
 	files.ServiceInterface
 	getFilesFn          func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	getFileStatByPathFn func(path string) (files.FileStat, bool, error)
 	createFileFn        func(fileDto files.FileDto) (files.FileDto, error)
 	updateFileFn        func(file files.FileDto) (bool, error)
 	updateCheckSumFn    func(fileID int) error
@@ -34,6 +35,12 @@ func (m *workerFilesServiceMock) GetFiles(filter files.FileFilter, page int, pag
 		return m.getFilesFn(filter, page, pageSize)
 	}
 	return utils.PaginationResponse[files.FileDto]{}, nil
+}
+func (m *workerFilesServiceMock) GetFileStatByPath(path string) (files.FileStat, bool, error) {
+	if m.getFileStatByPathFn != nil {
+		return m.getFileStatByPathFn(path)
+	}
+	return files.FileStat{}, false, nil
 }
 func (m *workerFilesServiceMock) CreateFile(fileDto files.FileDto) (files.FileDto, error) {
 	if m.createFileFn != nil {

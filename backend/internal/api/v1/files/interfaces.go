@@ -11,6 +11,7 @@ type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetFileStatByPath(path string) (FileStat, bool, error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
 	GetCountByType(fileType FileType) (int, error)
@@ -35,6 +36,7 @@ type ServiceInterface interface {
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	GetFileById(id int) (FileDto, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetFileStatByPath(path string) (FileStat, bool, error)
 	UpdateFile(file FileDto) (result bool, err error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)

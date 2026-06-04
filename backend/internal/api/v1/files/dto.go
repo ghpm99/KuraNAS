@@ -195,6 +195,15 @@ func ParseImageGroupBy(value string) (ImageGroupBy, error) {
 	}
 }
 
+// FileStat is the smallest projection of a persisted file needed to decide
+// whether it changed on disk: size + last-known modification time. It exists so
+// the startup/diff scan can ask the DB about one file at a time (indexed lookup
+// by path) instead of loading the whole table into memory.
+type FileStat struct {
+	Size      int64
+	UpdatedAt time.Time
+}
+
 type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]

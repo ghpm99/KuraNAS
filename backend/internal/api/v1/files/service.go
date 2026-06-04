@@ -79,6 +79,12 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 	return
 }
 
+// GetFileStatByPath exposes the lightweight per-path lookup used by the diff
+// scan to decide whether a file on disk changed since it was last indexed.
+func (s *Service) GetFileStatByPath(path string) (FileStat, bool, error) {
+	return s.Repository.GetFileStatByPath(path)
+}
+
 func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 
 	filesModel, err := s.Repository.GetFiles(filter, page, pageSize)
