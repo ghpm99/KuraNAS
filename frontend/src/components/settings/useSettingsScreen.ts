@@ -23,6 +23,9 @@ const buildDraftFromSettings = (
         extract_metadata: settings.indexing.extract_metadata,
         generate_previews: settings.indexing.generate_previews,
     },
+    ai: {
+        image_classification: settings.ai.image_classification,
+    },
     players: {
         remember_music_queue: settings.players.remember_music_queue,
         remember_video_progress: settings.players.remember_video_progress,
@@ -143,6 +146,22 @@ const useSettingsScreen = () => {
         []
     );
 
+    const setAIField = useCallback(
+        <Key extends keyof UpdateSettingsConfigurationRequest['ai']>(
+            field: Key,
+            value: UpdateSettingsConfigurationRequest['ai'][Key]
+        ) => {
+            setDraft((current) => ({
+                ...current,
+                ai: {
+                    ...current.ai,
+                    [field]: value,
+                },
+            }));
+        },
+        []
+    );
+
     const setPlayersField = useCallback(
         <Key extends keyof UpdateSettingsConfigurationRequest['players']>(
             field: Key,
@@ -218,6 +237,7 @@ const useSettingsScreen = () => {
         watchedPathsText,
         setLibraryField,
         setIndexingField,
+        setAIField,
         setPlayersField,
         setAppearanceField,
         setLanguageField,

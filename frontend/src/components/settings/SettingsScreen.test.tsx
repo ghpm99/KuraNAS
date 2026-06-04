@@ -6,6 +6,7 @@ const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
 const mockSetLibraryField = jest.fn();
 const mockSetIndexingField = jest.fn();
+const mockSetAIField = jest.fn();
 const mockSetPlayersField = jest.fn();
 const mockSetAppearanceField = jest.fn();
 const mockSetLanguageField = jest.fn();
@@ -51,6 +52,10 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             SETTINGS_INDEXING_GENERATE_PREVIEWS: 'Generate previews',
             SETTINGS_INDEXING_WORKERS_ON: 'Workers are enabled.',
             SETTINGS_INDEXING_WORKERS_OFF: 'Workers are disabled.',
+            SETTINGS_SECTION_AI: 'Artificial Intelligence',
+            SETTINGS_SECTION_AI_DESCRIPTION: 'AI usage controls.',
+            SETTINGS_AI_IMAGE_CLASSIFICATION: 'Classify images with AI',
+            SETTINGS_AI_IMAGE_CLASSIFICATION_HELP: 'Heuristic-only when disabled.',
             SETTINGS_SECTION_PLAYERS: 'Players',
             SETTINGS_SECTION_PLAYERS_DESCRIPTION: 'Playback behavior.',
             SETTINGS_PLAYERS_REMEMBER_MUSIC_QUEUE: 'Remember music queue',
@@ -102,6 +107,9 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             extract_metadata: true,
             generate_previews: true,
         },
+        ai: {
+            image_classification: true,
+        },
         players: {
             remember_music_queue: true,
             remember_video_progress: true,
@@ -130,6 +138,7 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
     watchedPathsText: '/data',
     setLibraryField: mockSetLibraryField,
     setIndexingField: mockSetIndexingField,
+    setAIField: mockSetAIField,
     setPlayersField: mockSetPlayersField,
     setAppearanceField: mockSetAppearanceField,
     setLanguageField: mockSetLanguageField,
@@ -194,6 +203,9 @@ describe('components/settings/SettingsScreen', () => {
                         scan_on_startup: false,
                         extract_metadata: false,
                         generate_previews: false,
+                    },
+                    ai: {
+                        image_classification: false,
                     },
                     players: {
                         remember_music_queue: false,
@@ -297,6 +309,17 @@ describe('components/settings/SettingsScreen', () => {
         expect(mockSetIndexingField).toHaveBeenCalledWith('generate_previews', false);
     });
 
+    it('fires the AI image classification switch handler with correct arguments', () => {
+        render(
+            <MemoryRouter>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('switch', { name: 'Classify images with AI' }));
+        expect(mockSetAIField).toHaveBeenCalledWith('image_classification', false);
+    });
+
     it('fires player switch handlers with correct arguments', () => {
         render(
             <MemoryRouter>
@@ -381,6 +404,9 @@ describe('components/settings/SettingsScreen', () => {
                         scan_on_startup: false,
                         extract_metadata: true,
                         generate_previews: false,
+                    },
+                    ai: {
+                        image_classification: false,
                     },
                     players: {
                         remember_music_queue: true,

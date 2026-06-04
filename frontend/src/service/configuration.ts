@@ -14,6 +14,9 @@ export type SettingsConfiguration = {
         extract_metadata: boolean;
         generate_previews: boolean;
     };
+    ai: {
+        image_classification: boolean;
+    };
     players: {
         remember_music_queue: boolean;
         remember_video_progress: boolean;
@@ -40,6 +43,9 @@ export type UpdateSettingsConfigurationRequest = {
         scan_on_startup: boolean;
         extract_metadata: boolean;
         generate_previews: boolean;
+    };
+    ai: {
+        image_classification: boolean;
     };
     players: {
         remember_music_queue: boolean;

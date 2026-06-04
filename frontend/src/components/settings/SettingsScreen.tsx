@@ -32,6 +32,7 @@ const SettingsScreen = () => {
         watchedPathsText,
         setLibraryField,
         setIndexingField,
+        setAIField,
         setPlayersField,
         setAppearanceField,
         setLanguageField,
@@ -187,6 +188,34 @@ const SettingsScreen = () => {
                             ? t('SETTINGS_INDEXING_WORKERS_ON')
                             : t('SETTINGS_INDEXING_WORKERS_OFF')}
                     </Alert>
+                </section>
+
+                <section className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_AI')}</h2>
+                        <p className={styles.panelDescription}>
+                            {t('SETTINGS_SECTION_AI_DESCRIPTION')}
+                        </p>
+                    </div>
+                    <div className={styles.summary}>
+                        <Chip
+                            label={t('SETTINGS_AI_IMAGE_CLASSIFICATION')}
+                            variant={draft.ai.image_classification ? 'filled' : 'outlined'}
+                        />
+                    </div>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={draft.ai.image_classification}
+                                onChange={(_, checked) =>
+                                    setAIField('image_classification', checked)
+                                }
+                                disabled={disableActions}
+                            />
+                        }
+                        label={t('SETTINGS_AI_IMAGE_CLASSIFICATION')}
+                    />
+                    <Alert severity="info">{t('SETTINGS_AI_IMAGE_CLASSIFICATION_HELP')}</Alert>
                 </section>
 
                 <section className={styles.panel}>

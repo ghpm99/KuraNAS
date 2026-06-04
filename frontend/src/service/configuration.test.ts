@@ -29,6 +29,9 @@ const settingsRequest = {
         extract_metadata: true,
         generate_previews: true,
     },
+    ai: {
+        image_classification: true,
+    },
     players: {
         remember_music_queue: true,
         remember_video_progress: true,
