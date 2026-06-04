@@ -180,8 +180,24 @@ func RegisterSearchRoutes(router *gin.RouterGroup, context *AppContext) {
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Analytics == nil || context.Analytics.Handler == nil {
+		return
+	}
+	handler := context.Analytics.Handler
 	analytics := router.Group("/analytics")
-	analytics.GET("/overview", context.Analytics.Handler.GetOverviewHandler)
+	analytics.GET("/storage", handler.GetStorageHandler)
+	analytics.GET("/timeseries", handler.GetTimeSeriesHandler)
+	analytics.GET("/types", handler.GetTypesHandler)
+	analytics.GET("/extensions", handler.GetExtensionsHandler)
+	analytics.GET("/recent-files", handler.GetRecentFilesHandler)
+	analytics.GET("/top-folders", handler.GetTopFoldersHandler)
+	analytics.GET("/hot-folders", handler.GetHotFoldersHandler)
+	analytics.GET("/duplicates", handler.GetDuplicatesHandler)
+	analytics.GET("/duplicates/groups", handler.GetDuplicateGroupsHandler)
+	analytics.GET("/library", handler.GetLibraryHandler)
+	analytics.GET("/processing", handler.GetProcessingHandler)
+	analytics.GET("/health", handler.GetHealthHandler)
+	analytics.GET("/insights", handler.GetInsightsHandler)
 }
 
 func RegisterJobsRoutes(router *gin.RouterGroup, context *AppContext) {
