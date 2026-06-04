@@ -1,7 +1,10 @@
 package app
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -24,6 +27,7 @@ import (
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/ai/agent"
 	"nas-go/api/pkg/ai/providers/anthropic"
 	"nas-go/api/pkg/ai/providers/ollama"
 	"nas-go/api/pkg/ai/providers/openai"
@@ -151,8 +155,9 @@ type OllamaContext struct {
 }
 
 type AssistantContext struct {
-	Handler *assistant.Handler
-	Service assistant.ServiceInterface
+	Handler    *assistant.Handler
+	Service    assistant.ServiceInterface
+	Repository assistant.RepositoryInterface
 }
 
 func NewContext(db *sql.DB) *AppContext {
@@ -177,7 +182,8 @@ func NewContext(db *sql.DB) *AppContext {
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
-	assistantContext := newAssistantContext(aiService)
+	assistantAgent := buildAssistantAgent(aiService, searchContext.Service)
+	assistantContext := newAssistantContext(dbContext, aiService, assistantAgent)
 
 	context := &AppContext{
 		DB:            dbContext,
@@ -206,16 +212,87 @@ func NewContext(db *sql.DB) *AppContext {
 	return context
 }
 
-// newAssistantContext builds the conversational chat module. It depends only on
-// the hot-swappable AI service; this first iteration has no repository (no
-// persistence) and no tools.
-func newAssistantContext(aiService ai.ServiceInterface) *AssistantContext {
-	service := assistant.NewService(aiService)
+// newAssistantContext builds the conversational chat module: the hot-swappable
+// AI service, a repository persisting conversations/history, and the tool-calling
+// agent.
+func newAssistantContext(dbContext *database.DbContext, aiService ai.ServiceInterface, assistantAgent assistant.AgentInterface) *AssistantContext {
+	repository := assistant.NewRepository(dbContext)
+	service := assistant.NewService(aiService, repository, assistantAgent)
 	handler := assistant.NewHandler(service)
 	return &AssistantContext{
-		Handler: handler,
-		Service: service,
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
 	}
+}
+
+// buildAssistantAgent wires the tool registry. Tool handlers are constructed here
+// (the composition root) so the generic agent package stays free of feature
+// dependencies. Today it exposes one read-only tool: file search.
+func buildAssistantAgent(aiService ai.ServiceInterface, searchService search.ServiceInterface) assistant.AgentInterface {
+	registry := agent.NewRegistry()
+	registry.Register(buildSearchTool(searchService))
+	return agent.NewAgent(aiService, registry)
+}
+
+func buildSearchTool(searchService search.ServiceInterface) agent.Tool {
+	return agent.Tool{
+		Name:        "buscar_arquivos",
+		Description: "Busca arquivos, pastas, músicas, vídeos e imagens no NAS a partir de um termo de busca.",
+		Parameters:  json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Termo de busca, ex.: nome do arquivo ou assunto"}},"required":["query"]}`),
+		Keywords: []string{
+			"arquivo", "arquivos", "busca", "buscar", "procur", "acha", "achar", "encontr",
+			"pasta", "foto", "fotos", "imagem", "imagens", "pdf", "documento", "documentos",
+			"música", "musica", "músicas", "musicas", "vídeo", "video", "vídeos", "videos",
+		},
+		Handler: func(ctx context.Context, args json.RawMessage) (string, error) {
+			var parsed struct {
+				Query string `json:"query"`
+			}
+			if err := json.Unmarshal(args, &parsed); err != nil {
+				return "", fmt.Errorf("argumentos inválidos: %w", err)
+			}
+			query := strings.TrimSpace(parsed.Query)
+			if query == "" {
+				return "Nenhum termo de busca informado.", nil
+			}
+			result, err := searchService.SearchGlobal(query, 5)
+			if err != nil {
+				return "", err
+			}
+			return formatSearchResults(query, result), nil
+		},
+	}
+}
+
+func formatSearchResults(query string, result search.GlobalSearchResponseDto) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Resultados para %q:\n", query)
+	total := 0
+	for _, f := range result.Files {
+		fmt.Fprintf(&b, "- Arquivo: %s (%s)\n", f.Name, f.Path)
+		total++
+	}
+	for _, f := range result.Folders {
+		fmt.Fprintf(&b, "- Pasta: %s (%s)\n", f.Name, f.Path)
+		total++
+	}
+	for _, v := range result.Videos {
+		fmt.Fprintf(&b, "- Vídeo: %s (%s)\n", v.Name, v.Path)
+		total++
+	}
+	for _, img := range result.Images {
+		fmt.Fprintf(&b, "- Imagem: %s (%s)\n", img.Name, img.Path)
+		total++
+	}
+	for _, a := range result.Artists {
+		fmt.Fprintf(&b, "- Artista: %s (%d faixas)\n", a.Artist, a.TrackCount)
+		total++
+	}
+	if total == 0 {
+		return fmt.Sprintf("Nenhum resultado encontrado para %q.", query)
+	}
+	return b.String()
 }
 
 func newJobsContext(dbContext *database.DbContext) *JobsContext {
