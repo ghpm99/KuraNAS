@@ -2,7 +2,11 @@ import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
-import { fetchAnalyticsOverview } from '@/service/analytics';
+import {
+    fetchAnalyticsHealth,
+    fetchAnalyticsRecentFiles,
+    fetchAnalyticsStorage,
+} from '@/service/analytics';
 import { getFilesTree, getImageFiles } from '@/service/files';
 import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
@@ -20,6 +24,7 @@ const nowPlayingPageSize = 200;
 const videoHomeLimit = 12;
 const homeFavoritesLimit = 6;
 const homeImagesLimit = 6;
+const homeRecentFilesLimit = 6;
 
 const clampProgress = (value: number) => {
     if (!Number.isFinite(value)) {
@@ -58,8 +63,21 @@ const useHomeScreen = () => {
     const { queue, currentTrack, currentTime, duration, isPlaying } = useGlobalMusic();
 
     const analyticsQuery = useQuery({
-        queryKey: ['home', 'analytics-overview', homeAnalyticsPeriod],
-        queryFn: () => fetchAnalyticsOverview(homeAnalyticsPeriod),
+        queryKey: ['home', 'analytics', homeAnalyticsPeriod],
+        queryFn: async () => {
+            const [storageStats, health, recentFiles] = await Promise.all([
+                fetchAnalyticsStorage(homeAnalyticsPeriod),
+                fetchAnalyticsHealth(),
+                fetchAnalyticsRecentFiles(homeRecentFilesLimit),
+            ]);
+            return {
+                storage: storageStats.storage,
+                counts: storageStats.counts,
+                health,
+                recent_files: recentFiles,
+            };
+        },
+        retry: false,
     });
     const favoritesQuery = useQuery({
         queryKey: ['home', 'favorites'],
@@ -105,7 +123,7 @@ const useHomeScreen = () => {
         retry: false,
     });
 
-    const recentFiles = analyticsQuery.data?.recent_files?.slice(0, 6) ?? [];
+    const recentFiles = analyticsQuery.data?.recent_files?.slice(0, homeRecentFilesLimit) ?? [];
     const favoriteItems = favoritesQuery.data?.items?.slice(0, homeFavoritesLimit) ?? [];
     const recentImages = imagesQuery.data?.items?.slice(0, homeImagesLimit) ?? [];
 
@@ -197,7 +215,13 @@ const useHomeScreen = () => {
         videoContinueItems,
         videoResume,
         musicResume,
-        analytics: analyticsQuery.data,
+        analytics: analyticsQuery.data
+            ? {
+                  storage: analyticsQuery.data.storage,
+                  counts: analyticsQuery.data.counts,
+                  health: analyticsQuery.data.health,
+              }
+            : null,
         isAnalyticsLoading: analyticsQuery.isLoading,
         isFavoritesLoading: favoritesQuery.isLoading,
         isImagesLoading: imagesQuery.isLoading,

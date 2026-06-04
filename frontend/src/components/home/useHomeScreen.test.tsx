@@ -11,7 +11,9 @@ jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
 }));
 
 jest.mock('@/service/analytics', () => ({
-    fetchAnalyticsOverview: jest.fn(() => Promise.resolve({})),
+    fetchAnalyticsStorage: jest.fn(() => Promise.resolve({ storage: {}, counts: {} })),
+    fetchAnalyticsHealth: jest.fn(() => Promise.resolve({})),
+    fetchAnalyticsRecentFiles: jest.fn(() => Promise.resolve([])),
 }));
 
 jest.mock('@/service/playerState', () => ({
@@ -79,8 +81,13 @@ describe('components/home/useHomeScreen', () => {
         const nowPlayingOptions = mockedUseQuery.mock.calls[6][0];
         const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
 
-        expect(analyticsOptions.queryKey).toEqual(['home', 'analytics-overview', '30d']);
-        await expect(analyticsOptions.queryFn()).resolves.toEqual({});
+        expect(analyticsOptions.queryKey).toEqual(['home', 'analytics', '30d']);
+        await expect(analyticsOptions.queryFn()).resolves.toEqual({
+            storage: {},
+            counts: {},
+            health: {},
+            recent_files: [],
+        });
 
         expect(favoritesOptions.queryKey).toEqual(['home', 'favorites']);
         expect(imagesOptions.queryKey).toEqual(['home', 'images']);
