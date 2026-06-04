@@ -28,19 +28,21 @@ class HomeRepository @Inject constructor(private val api: HomeApi) {
 
     suspend fun getHomeData(): AppResult<HomeData> = safeApiCall {
         val space = api.getTotalSpaceUsed()
-        val overview = api.getAnalyticsOverview()
+        val storage = api.getAnalyticsStorage()
+        val types = api.getAnalyticsTypes()
+        val recentFiles = api.getAnalyticsRecentFiles()
         val dirs = api.getTotalDirectories()
         fun typeCount(vararg names: String): Long =
-            overview.types.firstOrNull { it.type in names }?.count ?: 0
+            types.firstOrNull { it.type in names }?.count ?: 0
         val stats = HomeStats(
             totalSpaceUsed = space.totalSpaceUsed,
-            totalFiles = overview.counts.filesTotal,
+            totalFiles = storage.counts.filesTotal,
             totalDirectories = dirs.total,
             totalMusic = typeCount("audio", "music"),
             totalVideos = typeCount("video"),
             totalImages = typeCount("image", "images"),
         )
-        HomeData(stats, overview.recentFiles)
+        HomeData(stats, recentFiles)
     }
 }
 
