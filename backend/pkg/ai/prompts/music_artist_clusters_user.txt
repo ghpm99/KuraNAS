@@ -1,0 +1,8 @@
+Assign each artist below to a coherent playlist category based on its musical style and era, not on a broad label. The bracketed tag is a weak genre hint; trust your own knowledge of the artist when it conflicts. Keep distinct scenes apart (for example classic rock, symphonic metal and country are different categories). Prefer reusing an existing category; create at most %d new categories.
+
+Existing categories: %s
+
+Artists:
+%s
+
+Respond with JSON only: {"clusters":[{"name":"Category name","artists":["Artist A","Artist B"]}]}
