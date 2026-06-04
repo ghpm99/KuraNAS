@@ -34,10 +34,10 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">KuraNAS</h3>
+<h3 align="center">KuraNAS Android</h3>
 
   <p align="center">
-    Sistema NAS pessoal com backend em Go e frontend em React para gerenciamento de arquivos, mídia e organização.
+    App Android moderno do KuraNAS em Kotlin + Jetpack Compose, com Media3 e arquitetura por feature.
     <br />
     <a href="https://github.com/ghpm99/KuraNAS"><strong>Explore the docs »</strong></a>
     <br />
@@ -83,29 +83,15 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-KuraNAS é um sistema NAS (Network Attached Storage) pessoal com backend em Go e frontend em
-React/TypeScript. O backend serve o frontend como SPA e expõe uma API REST em `/api/v1`.
+App Android moderno do KuraNAS, escrito em **Kotlin** com **Jetpack Compose** e
+**Material 3**. Consome a API REST do backend (`/api/v1`) e inclui reprodução de mídia
+via **Media3 (ExoPlayer)**, incluindo HLS.
 
-O repositório é um monorepo com os seguintes módulos:
+Diferente do módulo `mobile/` (legado, Java/XML para API 16), este módulo (`android/`)
+tem `minSdk 33`, `targetSdk 36` e `applicationId` `com.kuranas.android`.
 
-- **Backend** (`backend/`): API HTTP, regras de negócio, workers e i18n.
-- **Frontend** (`frontend/`): SPA React + TypeScript, estrutura `feature-first` para domínios críticos (`files`, `music`, `videos`).
-- **Mobile** (`mobile/`): app Android nativo (API 16) em Java + XML + AppCompat, com ownership incremental por feature.
-- **Plugin** (`plugin/`): extensão Chrome MV3 modularizada (`src/background`, `src/shared`) para captura de mídia.
-- **Build integrado**: empacotamento final em `build/`.
-
-### Estrutura
-
-```text
-.
-├── backend/            # API, workers, banco, i18n e scripts
-├── frontend/           # Aplicação web (Vite + React + TypeScript)
-├── mobile/             # App Android (API 16, Java + XML + AppCompat)
-├── plugin/             # Extensão Chrome (Manifest V3)
-├── docs/               # Padrões de engenharia e documentação funcional
-├── build/              # Saída do build integrado (gerado)
-└── Makefile            # Pipeline local de build/qualidade
-```
+Domínios cobertos por feature: `connection`, `diary`, `files`, `home`, `images`, `jobs`,
+`music`, `notifications`, `search`, `settings`, `video`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -113,12 +99,11 @@ O repositório é um monorepo com os seguintes módulos:
 
 ### Built With
 
-* [![Go][Go.dev]][Go-url]
-* [![Gin][Gin.com]][Gin-url]
-* [![PostgreSQL][Postgres.org]][Postgres-url]
-* [![React][React.js]][React-url]
-* [![TypeScript][TypeScript.org]][TypeScript-url]
-* [![Vite][Vite.dev]][Vite-url]
+* [![Kotlin][Kotlin.com]][Kotlin-url]
+* [![Jetpack Compose][Compose.dev]][Compose-url]
+* [![Hilt][Hilt.dev]][Hilt-url]
+* [![Retrofit][Retrofit.com]][Retrofit-url]
+* [![Media3][Media3.dev]][Media3-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -127,17 +112,14 @@ O repositório é um monorepo com os seguintes módulos:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Setup rápido para desenvolvimento local (backend + frontend).
+Como compilar e instalar o app Android moderno.
 
 ### Prerequisites
 
-* Go 1.24+
-* Node.js 20+
-* npm 10+
-* Yarn 1.x
-* Make
-* JDK 17+
-* Android SDK + Build Tools para `compileSdk 35` (apenas para o módulo mobile)
+* JDK 17
+* Android SDK com `compileSdk 36` instalado
+* `local.properties` com `sdk.dir` apontando para o Android SDK
+* Dispositivo/emulador com Android 13+ (`minSdk 33`)
 
 ### Installation
 
@@ -145,18 +127,13 @@ Setup rápido para desenvolvimento local (backend + frontend).
    ```sh
    git clone https://github.com/ghpm99/KuraNAS.git
    ```
-2. Instale as dependências do frontend
+2. Gere o APK de debug
    ```sh
-   cd frontend && yarn
+   cd android && ./gradlew assembleDebug
    ```
-3. Configure as variáveis do backend em `backend/.env` (detalhes em [`backend/README.md`](backend/README.md))
-4. Inicie o backend (modo `dev`, porta `8000`)
+3. Instale em um dispositivo conectado
    ```sh
-   make -C backend run
-   ```
-5. Em outro terminal, inicie o frontend
-   ```sh
-   cd frontend && yarn dev
+   cd android && ./gradlew installDebug
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -166,74 +143,46 @@ Setup rápido para desenvolvimento local (backend + frontend).
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-### Build Integrado
+### Estrutura
 
-Gera frontend + backend e organiza artefatos em `build/`:
-
-```bash
-make
+```text
+android/
+├── app/
+│   └── src/main/java/com/kuranas/android/
+│       ├── core/           # infraestrutura compartilhada (rede, DI, base)
+│       ├── feature/        # ownership por domínio (files, music, video, images, ...)
+│       ├── navigation/     # grafo de navegação Compose
+│       └── ui/             # tema, componentes e design system
+├── gradle/
+│   └── libs.versions.toml  # version catalog
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradle.properties
 ```
 
-Limpeza:
+### Stack técnico
 
-```bash
-make clean
-```
+| Área | Tecnologia |
+| --- | --- |
+| Linguagem | Kotlin |
+| UI | Jetpack Compose + Material 3 |
+| DI | Hilt |
+| Navegação | Navigation Compose |
+| HTTP | Retrofit + kotlinx.serialization |
+| Concorrência | Kotlin Coroutines |
+| Persistência local | DataStore Preferences + Security Crypto |
+| Imagens | Coil |
+| Mídia | Media3 (ExoPlayer, UI, Session, HLS) |
 
-### Onboarding por Stack
+### Comandos
 
-Backend:
-
-```bash
-cd backend && go test ./... -cover
-make -C backend run
-```
-
-Frontend:
-
-```bash
-cd frontend && yarn lint
-cd frontend && yarn test --watchAll=false
-cd frontend && yarn build
-```
-
-Mobile:
-
-```bash
-cd mobile && ./gradlew test
-cd mobile && ./gradlew assembleDebug
-```
-
-Plugin:
-
-```bash
-cd plugin && npm ci
-cd plugin && npm run lint
-cd plugin && npm test
-```
-
-Pipeline local completa:
-
-```bash
-make ci
-```
-
-### Internacionalização
-
-- Não hardcode texto visível para usuário.
-- Backend e frontend devem usar as mesmas chaves em `backend/translations`.
-- O frontend obtém traduções via endpoint de configuração do backend.
-
-### Documentação por Módulo
-
-- [README do backend](backend/README.md)
-- [README do frontend](frontend/README.md)
-- [README do mobile](mobile/README.md)
-- [README do plugin](plugin/README.md)
-- [Padrão backend](docs/standards/backend-standards.md)
-- [Padrão frontend](docs/standards/frontend-standards.md)
-- [Padrão mobile](docs/standards/mobile-standards.md)
-- [Padrão plugin](docs/standards/plugin-standards.md)
+| Comando | Descrição |
+| --- | --- |
+| `./gradlew assembleDebug` | Build debug |
+| `./gradlew assembleRelease` | Build release |
+| `./gradlew installDebug` | Instala o APK debug no dispositivo conectado |
+| `./gradlew test` | Testes unitários |
+| `./gradlew connectedAndroidTest` | Testes instrumentados |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -242,9 +191,9 @@ make ci
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Pipeline de ingestão de mídia (Library Paths, importadores, watch)
-- [ ] Documentação OpenAPI da API `/api/v1`
-- [ ] Elevar cobertura de testes nas stacks
+- [ ] Fila/mini-player e reprodução em segundo plano (Música)
+- [ ] Ampliar cobertura de testes por feature
+- [ ] Refinar design system (glassmorphism navy/blue)
 
 See the [open issues](https://github.com/ghpm99/KuraNAS/issues) for a full list of proposed features (and known issues).
 
@@ -257,7 +206,8 @@ See the [open issues](https://github.com/ghpm99/KuraNAS/issues) for a full list 
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-Consulte o README e os padrões do módulo correspondente em `docs/standards/` antes de alterar código.
+Mantenha a arquitetura por feature (`feature/<domain>`), Compose + Material 3, e injeção via Hilt.
+Rode `./gradlew test` e `./gradlew assembleDebug` antes de abrir o PR.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feat/AmazingFeature`)
@@ -298,9 +248,9 @@ Project Link: [https://github.com/ghpm99/KuraNAS](https://github.com/ghpm99/Kura
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* [Go](https://go.dev/)
-* [React](https://react.dev/)
-* [Vite](https://vite.dev/)
+* [Jetpack Compose](https://developer.android.com/jetpack/compose)
+* [Media3](https://developer.android.com/media/media3)
+* [Hilt](https://dagger.dev/hilt/)
 * [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 * [Img Shields](https://shields.io)
 
@@ -324,15 +274,13 @@ Project Link: [https://github.com/ghpm99/KuraNAS](https://github.com/ghpm99/Kura
 [linkedin-url]: https://linkedin.com/in/linkedin_username
 [product-screenshot]: images/screenshot.png
 <!-- Shields.io badges. You can a comprehensive list with many more badges at: https://github.com/inttter/md-badges -->
-[Go.dev]: https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white
-[Go-url]: https://go.dev/
-[Gin.com]: https://img.shields.io/badge/Gin-008ECF?style=for-the-badge&logo=gin&logoColor=white
-[Gin-url]: https://gin-gonic.com/
-[Postgres.org]: https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white
-[Postgres-url]: https://www.postgresql.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://react.dev/
-[TypeScript.org]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
-[TypeScript-url]: https://www.typescriptlang.org/
-[Vite.dev]: https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white
-[Vite-url]: https://vite.dev/
+[Kotlin.com]: https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white
+[Kotlin-url]: https://kotlinlang.org/
+[Compose.dev]: https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white
+[Compose-url]: https://developer.android.com/jetpack/compose
+[Hilt.dev]: https://img.shields.io/badge/Hilt-2196F3?style=for-the-badge&logo=android&logoColor=white
+[Hilt-url]: https://dagger.dev/hilt/
+[Retrofit.com]: https://img.shields.io/badge/Retrofit-48B983?style=for-the-badge&logo=square&logoColor=white
+[Retrofit-url]: https://square.github.io/retrofit/
+[Media3.dev]: https://img.shields.io/badge/Media3-3DDC84?style=for-the-badge&logo=android&logoColor=white
+[Media3-url]: https://developer.android.com/media/media3
