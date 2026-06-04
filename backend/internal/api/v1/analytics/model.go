@@ -10,25 +10,6 @@ type PeriodConfig struct {
 	Interval string
 }
 
-type OverviewDataModel struct {
-	StorageKpis      StorageKpisModel
-	TimeSeries       []StorageTimeSeriesModel
-	Types            []TypeDistributionModel
-	Extensions       []ExtensionDistributionModel
-	HotFolders       []FolderHotModel
-	TopFolders       []FolderUsageModel
-	RecentFiles      []RecentFileModel
-	Duplicates       DuplicatesSummaryModel
-	TopDuplicateSets []DuplicateGroupModel
-	LibrarySummary   LibrarySummaryModel
-	Processing       ProcessingSummaryModel
-	HealthStatus     sql.NullString
-	LastScanStart    sql.NullTime
-	LastScanEnd      sql.NullTime
-	ErrorsLast24h    int64
-	RecentErrors     []LogErrorModel
-}
-
 type StorageKpisModel struct {
 	UsedBytes    int64
 	GrowthBytes  int64
@@ -113,4 +94,13 @@ type LogErrorModel struct {
 	Name        string
 	Description sql.NullString
 	CreatedAt   time.Time
+}
+
+type HealthModel struct {
+	Status        sql.NullString
+	LastScanStart sql.NullTime
+	LastScanEnd   sql.NullTime
+	IndexedFiles  int64
+	ErrorsLast24h int64
+	RecentErrors  []LogErrorModel
 }

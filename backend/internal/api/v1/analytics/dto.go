@@ -1,23 +1,8 @@
 package analytics
 
-import "time"
-
-type OverviewDto struct {
-	Period      string               `json:"period"`
-	GeneratedAt time.Time            `json:"generated_at"`
-	Storage     StorageDto           `json:"storage"`
-	Counts      CountsDto            `json:"counts"`
-	TimeSeries  []TimeSeriesPointDto `json:"time_series"`
-	Types       []TypeBreakdownDto   `json:"types"`
-	Extensions  []ExtensionDto       `json:"extensions"`
-	HotFolders  []HotFolderDto       `json:"hot_folders"`
-	TopFolders  []FolderUsageDto     `json:"top_folders"`
-	RecentFiles []RecentFileDto      `json:"recent_files"`
-	Duplicates  DuplicatesDto        `json:"duplicates"`
-	Library     LibraryDto           `json:"library"`
-	Processing  ProcessingDto        `json:"processing"`
-	Health      HealthDto            `json:"health"`
-	Insights    []string             `json:"insights"`
+type StorageStatsDto struct {
+	Storage StorageDto `json:"storage"`
+	Counts  CountsDto  `json:"counts"`
 }
 
 type StorageDto struct {
@@ -75,11 +60,10 @@ type RecentFileDto struct {
 	UpdatedAt  string `json:"updated_at"`
 }
 
-type DuplicatesDto struct {
-	Groups          int64               `json:"groups"`
-	Files           int64               `json:"files"`
-	ReclaimableSize int64               `json:"reclaimable_size"`
-	TopGroups       []DuplicateGroupDto `json:"top_groups"`
+type DuplicatesSummaryDto struct {
+	Groups          int64 `json:"groups"`
+	Files           int64 `json:"files"`
+	ReclaimableSize int64 `json:"reclaimable_size"`
 }
 
 type DuplicateGroupDto struct {

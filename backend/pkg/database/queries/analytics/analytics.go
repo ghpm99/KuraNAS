@@ -43,3 +43,6 @@ var IndexErrorsRecentQuery string
 
 //go:embed index_errors_latest.sql
 var IndexErrorsLatestQuery string
+
+//go:embed index_files_total.sql
+var IndexFilesTotalQuery string

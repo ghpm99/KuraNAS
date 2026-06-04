@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,80 +26,184 @@ func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) S
 	return &Service{Repository: repository, AIService: aiService}
 }
 
-func (s *Service) GetOverview(period string) (OverviewDto, error) {
+func (s *Service) GetStorage(period string) (StorageStatsDto, error) {
 	periodConfig, err := resolvePeriod(period)
 	if err != nil {
-		return OverviewDto{}, err
+		return StorageStatsDto{}, err
 	}
 
-	data, err := s.Repository.GetOverviewData(periodConfig, OverviewLimits{
-		RecentFiles:    50,
-		TopExtensions:  12,
-		TopFolders:     20,
-		TopHotFolders:  3,
-		TopDuplicates:  20,
-		RecentLogError: 5,
-	})
+	kpis, err := s.Repository.GetStorageKpis(periodConfig)
 	if err != nil {
-		return OverviewDto{}, err
+		return StorageStatsDto{}, err
 	}
 
-	totalBytes, freeBytes := getFileSystemStorage(data.StorageKpis.UsedBytes)
+	totalBytes, freeBytes := getFileSystemStorage(kpis.UsedBytes)
 
-	overview := OverviewDto{
-		Period:      periodConfig.Label,
-		GeneratedAt: time.Now().UTC(),
+	return StorageStatsDto{
 		Storage: StorageDto{
 			TotalBytes:  totalBytes,
-			UsedBytes:   data.StorageKpis.UsedBytes,
+			UsedBytes:   kpis.UsedBytes,
 			FreeBytes:   freeBytes,
-			GrowthBytes: data.StorageKpis.GrowthBytes,
+			GrowthBytes: kpis.GrowthBytes,
 		},
 		Counts: CountsDto{
-			FilesTotal: data.StorageKpis.FilesTotal,
-			FilesAdded: data.StorageKpis.FilesAdded,
-			Folders:    data.StorageKpis.FoldersTotal,
+			FilesTotal: kpis.FilesTotal,
+			FilesAdded: kpis.FilesAdded,
+			Folders:    kpis.FoldersTotal,
 		},
-		TimeSeries:  toTimeSeriesDto(data.TimeSeries),
-		Types:       toTypeBreakdownDto(data.Types),
-		Extensions:  toExtensionDto(data.Extensions),
-		HotFolders:  toHotFolderDto(data.HotFolders),
-		TopFolders:  toFolderUsageDto(data.TopFolders),
-		RecentFiles: toRecentFilesDto(data.RecentFiles),
-		Duplicates: DuplicatesDto{
-			Groups:          data.Duplicates.GroupsTotal,
-			Files:           data.Duplicates.FilesTotal,
-			ReclaimableSize: data.Duplicates.ReclaimableBytes,
-			TopGroups:       toDuplicateGroupDto(data.TopDuplicateSets),
-		},
-		Library: LibraryDto{
-			CategorizedMedia:  data.LibrarySummary.CategorizedMedia,
-			AudioWithMetadata: data.LibrarySummary.AudioWithMetadata,
-			VideoWithMetadata: data.LibrarySummary.VideoWithMetadata,
-			ImageWithMetadata: data.LibrarySummary.ImageWithMetadata,
-			ImageClassified:   data.LibrarySummary.ImageClassified,
-		},
-		Processing: ProcessingDto{
-			MetadataPending:   data.Processing.MetadataPending,
-			MetadataFailed:    data.Processing.MetadataFailed,
-			ThumbnailPending:  data.Processing.ThumbnailPending,
-			ThumbnailFailed:   data.Processing.ThumbnailFailed,
-			RecurringTimeouts: data.Processing.RecurringTimeouts,
-		},
-		Health: toHealthDto(data),
-	}
-	overview.Insights = s.generateInsights(overview)
-
-	return overview, nil
+	}, nil
 }
 
-func (s *Service) generateInsights(overview OverviewDto) []string {
-	if s.AIService == nil {
-		return []string{}
+func (s *Service) GetTimeSeries(period string) ([]TimeSeriesPointDto, error) {
+	periodConfig, err := resolvePeriod(period)
+	if err != nil {
+		return nil, err
+	}
+	models, err := s.Repository.GetStorageTimeSeries(periodConfig)
+	if err != nil {
+		return nil, err
+	}
+	return toTimeSeriesDto(models), nil
+}
+
+func (s *Service) GetTypes() ([]TypeBreakdownDto, error) {
+	models, err := s.Repository.GetTypeDistribution()
+	if err != nil {
+		return nil, err
+	}
+	return toTypeBreakdownDto(models), nil
+}
+
+func (s *Service) GetExtensions(limit int) ([]ExtensionDto, error) {
+	models, err := s.Repository.GetExtensionDistribution(limit)
+	if err != nil {
+		return nil, err
+	}
+	return toExtensionDto(models), nil
+}
+
+func (s *Service) GetRecentFiles(limit int) ([]RecentFileDto, error) {
+	models, err := s.Repository.GetRecentFiles(limit)
+	if err != nil {
+		return nil, err
+	}
+	return toRecentFilesDto(models), nil
+}
+
+func (s *Service) GetTopFolders(limit int) ([]FolderUsageDto, error) {
+	models, err := s.Repository.GetTopFolders(limit)
+	if err != nil {
+		return nil, err
+	}
+	return toFolderUsageDto(models), nil
+}
+
+func (s *Service) GetHotFolders(period string, limit int) ([]HotFolderDto, error) {
+	periodConfig, err := resolvePeriod(period)
+	if err != nil {
+		return nil, err
+	}
+	models, err := s.Repository.GetHotFolders(periodConfig, limit)
+	if err != nil {
+		return nil, err
+	}
+	return toHotFolderDto(models), nil
+}
+
+func (s *Service) GetDuplicatesSummary() (DuplicatesSummaryDto, error) {
+	model, err := s.Repository.GetDuplicatesSummary()
+	if err != nil {
+		return DuplicatesSummaryDto{}, err
+	}
+	return DuplicatesSummaryDto{
+		Groups:          model.GroupsTotal,
+		Files:           model.FilesTotal,
+		ReclaimableSize: model.ReclaimableBytes,
+	}, nil
+}
+
+func (s *Service) GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
+	models, err := s.Repository.GetDuplicateGroups(limit)
+	if err != nil {
+		return nil, err
+	}
+	return toDuplicateGroupDto(models), nil
+}
+
+func (s *Service) GetLibrary() (LibraryDto, error) {
+	model, err := s.Repository.GetLibrarySummary()
+	if err != nil {
+		return LibraryDto{}, err
+	}
+	return LibraryDto{
+		CategorizedMedia:  model.CategorizedMedia,
+		AudioWithMetadata: model.AudioWithMetadata,
+		VideoWithMetadata: model.VideoWithMetadata,
+		ImageWithMetadata: model.ImageWithMetadata,
+		ImageClassified:   model.ImageClassified,
+	}, nil
+}
+
+func (s *Service) GetProcessing() (ProcessingDto, error) {
+	model, err := s.Repository.GetProcessingSummary()
+	if err != nil {
+		return ProcessingDto{}, err
+	}
+	return ProcessingDto{
+		MetadataPending:   model.MetadataPending,
+		MetadataFailed:    model.MetadataFailed,
+		ThumbnailPending:  model.ThumbnailPending,
+		ThumbnailFailed:   model.ThumbnailFailed,
+		RecurringTimeouts: model.RecurringTimeouts,
+	}, nil
+}
+
+func (s *Service) GetHealth() (HealthDto, error) {
+	model, err := s.Repository.GetHealth()
+	if err != nil {
+		return HealthDto{}, err
+	}
+	return toHealthDto(model), nil
+}
+
+func (s *Service) GetInsights(period string) ([]string, error) {
+	periodConfig, err := resolvePeriod(period)
+	if err != nil {
+		return nil, err
 	}
 
-	summary := buildMetricsSummary(overview)
+	if s.AIService == nil {
+		return []string{}, nil
+	}
 
+	kpis, err := s.Repository.GetStorageKpis(periodConfig)
+	if err != nil {
+		return nil, err
+	}
+	duplicates, err := s.Repository.GetDuplicatesSummary()
+	if err != nil {
+		return nil, err
+	}
+	processing, err := s.Repository.GetProcessingSummary()
+	if err != nil {
+		return nil, err
+	}
+	health, err := s.Repository.GetHealth()
+	if err != nil {
+		return nil, err
+	}
+	hotFolders, err := s.Repository.GetHotFolders(periodConfig, 3)
+	if err != nil {
+		return nil, err
+	}
+
+	totalBytes, _ := getFileSystemStorage(kpis.UsedBytes)
+	summary := buildMetricsSummary(periodConfig.Label, totalBytes, kpis, duplicates, processing, health, hotFolders)
+
+	return s.generateInsights(summary), nil
+}
+
+func (s *Service) generateInsights(summary string) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -117,28 +222,36 @@ func (s *Service) generateInsights(overview OverviewDto) []string {
 	return parseInsightsResponse(resp.Content)
 }
 
-func buildMetricsSummary(overview OverviewDto) string {
+func buildMetricsSummary(
+	periodLabel string,
+	totalBytes int64,
+	kpis StorageKpisModel,
+	duplicates DuplicatesSummaryModel,
+	processing ProcessingSummaryModel,
+	health HealthModel,
+	hotFolders []FolderHotModel,
+) string {
 	var parts []string
 
-	if overview.Storage.TotalBytes > 0 {
-		usagePct := float64(overview.Storage.UsedBytes) / float64(overview.Storage.TotalBytes) * 100
-		parts = append(parts, fmt.Sprintf("Storage: %.1f%% used (%d bytes of %d bytes)", usagePct, overview.Storage.UsedBytes, overview.Storage.TotalBytes))
+	if totalBytes > 0 {
+		usagePct := float64(kpis.UsedBytes) / float64(totalBytes) * 100
+		parts = append(parts, fmt.Sprintf("Storage: %.1f%% used (%d bytes of %d bytes)", usagePct, kpis.UsedBytes, totalBytes))
 	}
-	parts = append(parts, fmt.Sprintf("Growth: %d bytes in period %s", overview.Storage.GrowthBytes, overview.Period))
-	parts = append(parts, fmt.Sprintf("Files: %d total, %d added in period", overview.Counts.FilesTotal, overview.Counts.FilesAdded))
-	parts = append(parts, fmt.Sprintf("Folders: %d", overview.Counts.Folders))
-	parts = append(parts, fmt.Sprintf("Duplicates: %d groups, %d bytes reclaimable", overview.Duplicates.Groups, overview.Duplicates.ReclaimableSize))
-	parts = append(parts, fmt.Sprintf("Health: %s, errors 24h: %d", overview.Health.Status, overview.Health.ErrorsLast24h))
+	parts = append(parts, fmt.Sprintf("Growth: %d bytes in period %s", kpis.GrowthBytes, periodLabel))
+	parts = append(parts, fmt.Sprintf("Files: %d total, %d added in period", kpis.FilesTotal, kpis.FilesAdded))
+	parts = append(parts, fmt.Sprintf("Folders: %d", kpis.FoldersTotal))
+	parts = append(parts, fmt.Sprintf("Duplicates: %d groups, %d bytes reclaimable", duplicates.GroupsTotal, duplicates.ReclaimableBytes))
+	parts = append(parts, fmt.Sprintf("Health: %s, errors 24h: %d", resolveHealthStatus(health.Status), health.ErrorsLast24h))
 
-	if len(overview.HotFolders) > 0 {
-		hotNames := make([]string, 0, len(overview.HotFolders))
-		for _, hf := range overview.HotFolders {
-			hotNames = append(hotNames, fmt.Sprintf("%s (%d new files)", hf.Path, hf.NewFiles))
+	if len(hotFolders) > 0 {
+		hotNames := make([]string, 0, len(hotFolders))
+		for _, hf := range hotFolders {
+			hotNames = append(hotNames, fmt.Sprintf("%s (%d new files)", hf.ParentPath, hf.NewFiles))
 		}
 		parts = append(parts, fmt.Sprintf("Hot folders: %s", strings.Join(hotNames, ", ")))
 	}
 
-	parts = append(parts, fmt.Sprintf("Processing: %d metadata pending, %d failed", overview.Processing.MetadataPending, overview.Processing.MetadataFailed))
+	parts = append(parts, fmt.Sprintf("Processing: %d metadata pending, %d failed", processing.MetadataPending, processing.MetadataFailed))
 
 	return strings.Join(parts, "\n")
 }
@@ -191,6 +304,20 @@ func getFileSystemStorage(usedBytes int64) (int64, int64) {
 		return usedBytes, freeBytes
 	}
 	return totalBytes, freeBytes
+}
+
+func resolveHealthStatus(status sql.NullString) string {
+	if !status.Valid {
+		return "ok"
+	}
+	switch status.String {
+	case "PENDING":
+		return "scanning"
+	case "FAILED":
+		return "error"
+	default:
+		return "ok"
+	}
 }
 
 func toTimeSeriesDto(models []StorageTimeSeriesModel) []TimeSeriesPointDto {
@@ -272,33 +399,21 @@ func toDuplicateGroupDto(models []DuplicateGroupModel) []DuplicateGroupDto {
 	return response
 }
 
-func toHealthDto(data OverviewDataModel) HealthDto {
-	status := "ok"
-	if data.HealthStatus.Valid {
-		switch data.HealthStatus.String {
-		case "PENDING":
-			status = "scanning"
-		case "FAILED":
-			status = "error"
-		default:
-			status = "ok"
-		}
-	}
-
+func toHealthDto(model HealthModel) HealthDto {
 	lastScanAt := ""
 	lastScanSeconds := int64(0)
-	if data.LastScanStart.Valid {
-		lastScanAt = data.LastScanStart.Time.Format(time.RFC3339)
+	if model.LastScanStart.Valid {
+		lastScanAt = model.LastScanStart.Time.Format(time.RFC3339)
 	}
-	if data.LastScanStart.Valid && data.LastScanEnd.Valid {
-		lastScanSeconds = int64(data.LastScanEnd.Time.Sub(data.LastScanStart.Time).Seconds())
+	if model.LastScanStart.Valid && model.LastScanEnd.Valid {
+		lastScanSeconds = int64(model.LastScanEnd.Time.Sub(model.LastScanStart.Time).Seconds())
 	}
 
-	errorsList := make([]string, 0, len(data.RecentErrors))
-	sort.SliceStable(data.RecentErrors, func(i, j int) bool {
-		return data.RecentErrors[i].CreatedAt.After(data.RecentErrors[j].CreatedAt)
+	errorsList := make([]string, 0, len(model.RecentErrors))
+	sort.SliceStable(model.RecentErrors, func(i, j int) bool {
+		return model.RecentErrors[i].CreatedAt.After(model.RecentErrors[j].CreatedAt)
 	})
-	for _, item := range data.RecentErrors {
+	for _, item := range model.RecentErrors {
 		description := item.Name
 		if item.Description.Valid && item.Description.String != "" {
 			description = fmt.Sprintf("%s: %s", item.Name, item.Description.String)
@@ -307,11 +422,11 @@ func toHealthDto(data OverviewDataModel) HealthDto {
 	}
 
 	return HealthDto{
-		Status:          status,
+		Status:          resolveHealthStatus(model.Status),
 		LastScanAt:      lastScanAt,
 		LastScanSeconds: lastScanSeconds,
-		IndexedFiles:    data.StorageKpis.FilesTotal,
-		ErrorsLast24h:   data.ErrorsLast24h,
+		IndexedFiles:    model.IndexedFiles,
+		ErrorsLast24h:   model.ErrorsLast24h,
 		RecentErrors:    errorsList,
 	}
 }
