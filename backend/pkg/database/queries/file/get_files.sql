@@ -30,7 +30,10 @@ WHERE
     )
     AND (
         $7
-        OR hf.path LIKE $8 || '%'
+        -- Literal prefix match. Do NOT use `LIKE $8 || '%'`: PostgreSQL treats
+        -- '\' as the LIKE escape character, so Windows paths (e.g. D:\Folder)
+        -- silently match nothing, which broke the startup scan / mark_deleted.
+        OR starts_with(hf.path, $8)
     )
     AND (
         $9
