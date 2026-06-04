@@ -11,7 +11,6 @@ import (
 	"nas-go/api/pkg/img"
 	"regexp"
 	"strings"
-	"time"
 )
 
 // visionMaxDimension caps the longest edge of the image sent to the AI. A
@@ -122,8 +121,9 @@ func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai
 	}
 
 	prompt := buildClassificationPrompt(file, metadata)
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	// No cap here: each provider's configured timeout (http.Client.Timeout,
+	// editable at runtime via Settings → AI Providers) bounds the request.
+	ctx := context.Background()
 
 	// Send a downscaled copy of the image so a vision model (e.g. gemma3) can
 	// classify and name it from the actual content. If encoding fails we still
