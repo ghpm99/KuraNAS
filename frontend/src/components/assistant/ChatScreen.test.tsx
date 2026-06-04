@@ -13,15 +13,25 @@ jest.mock('./useAssistantChat', () => ({
     default: () => mockUseAssistantChat(),
 }));
 
+jest.mock('./ConversationSidebar', () => ({
+    __esModule: true,
+    default: () => <div data-testid="conversation-sidebar" />,
+}));
+
 import ChatScreen from './ChatScreen';
 
 const baseState = {
+    conversations: [],
+    conversationId: null,
     messages: [],
     input: '',
     isLoading: false,
     hasError: false,
     setInput: jest.fn(),
     send: jest.fn(),
+    selectConversation: jest.fn(),
+    newConversation: jest.fn(),
+    removeConversation: jest.fn(),
 };
 
 describe('components/assistant/ChatScreen', () => {
@@ -53,8 +63,15 @@ describe('components/assistant/ChatScreen', () => {
         expect(screen.queryByText('ASSISTANT_EMPTY')).not.toBeInTheDocument();
     });
 
-    it('shows the thinking indicator while loading', () => {
-        mockUseAssistantChat.mockReturnValue({ ...baseState, isLoading: true });
+    it('shows the thinking indicator inside a pending assistant bubble', () => {
+        mockUseAssistantChat.mockReturnValue({
+            ...baseState,
+            isLoading: true,
+            messages: [
+                { role: 'user', content: 'oi' },
+                { role: 'assistant', content: '' },
+            ],
+        });
 
         render(<ChatScreen />);
 

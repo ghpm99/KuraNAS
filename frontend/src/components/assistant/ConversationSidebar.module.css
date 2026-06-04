@@ -1,0 +1,42 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 260px;
+    min-width: 220px;
+    height: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    border-right: 1px solid rgba(127, 127, 127, 0.2);
+    overflow-y: auto;
+}
+
+.newButton {
+    text-transform: none;
+}
+
+.empty {
+    opacity: 0.6;
+    font-size: 0.85rem;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item {
+    border-radius: 8px;
+    gap: 8px;
+}
+
+.title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
