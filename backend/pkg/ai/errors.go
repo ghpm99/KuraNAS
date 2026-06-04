@@ -10,4 +10,7 @@ var (
 	ErrProviderAuth       = errors.New("provider authentication failed")
 	ErrAllAttemptsFailed  = errors.New("all retry attempts failed")
 	ErrServiceUnavailable = errors.New("ai service has no enabled providers")
+	// ErrStreamingUnsupported means the active provider cannot stream; callers
+	// should fall back to a non-streaming Execute.
+	ErrStreamingUnsupported = errors.New("provider does not support streaming")
 )

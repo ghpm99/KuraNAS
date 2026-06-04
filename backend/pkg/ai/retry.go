@@ -55,6 +55,16 @@ func (p *retryProvider) Complete(ctx context.Context, req Request) (Response, er
 	return Response{}, fmt.Errorf("%w: %v", ErrAllAttemptsFailed, lastErr)
 }
 
+// CompleteStream forwards streaming to the wrapped provider when it supports it.
+// Streaming is attempted once (no mid-stream retry), since partial output cannot
+// be safely replayed; non-streaming calls keep their full retry behaviour.
+func (p *retryProvider) CompleteStream(ctx context.Context, req Request, onChunk StreamFunc) (Response, error) {
+	if streamer, ok := p.inner.(StreamingProvider); ok {
+		return streamer.CompleteStream(ctx, req, onChunk)
+	}
+	return Response{}, ErrStreamingUnsupported
+}
+
 func isRetryable(err error) bool {
 	return errors.Is(err, ErrProviderTimeout) || errors.Is(err, ErrProviderRateLimit)
 }

@@ -1,6 +1,9 @@
 package ai
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // TaskType determines which provider/model strategy to use for a given request.
 type TaskType string
@@ -27,6 +30,24 @@ type Request struct {
 	// Providers that support vision attach them to the user message; others
 	// ignore them and fall back to a text-only request.
 	Images []string
+	// Tools, when set, are offered to the model for function calling. Providers
+	// that support tools advertise them and surface any requests in
+	// Response.ToolCalls; providers that do not simply ignore the field.
+	Tools []ToolDefinition
+}
+
+// ToolDefinition describes a callable function exposed to the model. Parameters
+// is a JSON Schema object describing the arguments.
+type ToolDefinition struct {
+	Name        string
+	Description string
+	Parameters  json.RawMessage
+}
+
+// ToolCall is a model's request to invoke a tool with the given JSON arguments.
+type ToolCall struct {
+	Name      string
+	Arguments json.RawMessage
 }
 
 // Response is the standardized output from AI operations,
@@ -37,6 +58,9 @@ type Response struct {
 	Provider   string
 	TokensUsed TokenUsage
 	Duration   time.Duration
+	// ToolCalls holds any function-call requests the model made instead of (or
+	// alongside) a textual answer.
+	ToolCalls []ToolCall
 }
 
 // TokenUsage tracks token consumption for cost/observability purposes.
