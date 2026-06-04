@@ -8,6 +8,7 @@ import (
 
 	"nas-go/api/internal/api/v1/aiproviders"
 	"nas-go/api/internal/api/v1/analytics"
+	"nas-go/api/internal/api/v1/assistant"
 	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
@@ -37,6 +38,7 @@ type AppContext struct {
 	DB            *database.DbContext
 	Logger        logger.LoggerServiceInterface
 	AI            ai.ServiceInterface
+	Assistant     *AssistantContext
 	AIProviders   *AIProvidersContext
 	Ollama        *OllamaContext
 	Tasks         *chan utils.Task
@@ -148,6 +150,11 @@ type OllamaContext struct {
 	Service ollamamgmt.ServiceInterface
 }
 
+type AssistantContext struct {
+	Handler *assistant.Handler
+	Service assistant.ServiceInterface
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -170,11 +177,13 @@ func NewContext(db *sql.DB) *AppContext {
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
+	assistantContext := newAssistantContext(aiService)
 
 	context := &AppContext{
 		DB:            dbContext,
 		Logger:        loggerService,
 		AI:            aiService,
+		Assistant:     assistantContext,
 		AIProviders:   aiProvidersContext,
 		Ollama:        ollamaContext,
 		Tasks:         &tasks,
@@ -195,6 +204,18 @@ func NewContext(db *sql.DB) *AppContext {
 		UpdateService: updateService,
 	}
 	return context
+}
+
+// newAssistantContext builds the conversational chat module. It depends only on
+// the hot-swappable AI service; this first iteration has no repository (no
+// persistence) and no tools.
+func newAssistantContext(aiService ai.ServiceInterface) *AssistantContext {
+	service := assistant.NewService(aiService)
+	handler := assistant.NewHandler(service)
+	return &AssistantContext{
+		Handler: handler,
+		Service: service,
+	}
 }
 
 func newJobsContext(dbContext *database.DbContext) *JobsContext {

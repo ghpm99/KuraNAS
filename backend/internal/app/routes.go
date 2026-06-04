@@ -31,6 +31,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterLibrariesRoutes(routesV1, context)
 	RegisterAIProvidersRoutes(routesV1, context)
 	RegisterOllamaRoutes(routesV1, context)
+	RegisterAssistantRoutes(routesV1, context)
 	RegisterWatchFoldersRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
@@ -272,6 +273,15 @@ func RegisterOllamaRoutes(router *gin.RouterGroup, context *AppContext) {
 	ollamaGroup.GET("/models", context.Ollama.Handler.ListModelsHandler)
 	ollamaGroup.POST("/models/pull", context.Ollama.Handler.PullModelHandler)
 	ollamaGroup.DELETE("/models/:name", context.Ollama.Handler.DeleteModelHandler)
+}
+
+func RegisterAssistantRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Assistant == nil || context.Assistant.Handler == nil {
+		return
+	}
+
+	assistantGroup := router.Group("/assistant")
+	assistantGroup.POST("/chat", context.Assistant.Handler.ChatHandler)
 }
 
 func RegisterWatchFoldersRoutes(router *gin.RouterGroup, context *AppContext) {
