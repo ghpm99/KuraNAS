@@ -47,3 +47,31 @@ func (m *Manager) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 	return inner.Execute(ctx, req)
 }
+
+// ExecuteStream forwards to the inner service's streaming capability when it has
+// one; otherwise it falls back to Execute and emits the whole answer as a single
+// chunk, keeping a uniform streaming contract for callers.
+func (m *Manager) ExecuteStream(ctx context.Context, req Request, onChunk StreamFunc) (Response, error) {
+	m.mu.RLock()
+	inner := m.inner
+	m.mu.RUnlock()
+
+	if inner == nil {
+		return Response{}, ErrServiceUnavailable
+	}
+
+	if streamer, ok := inner.(StreamingServiceInterface); ok {
+		return streamer.ExecuteStream(ctx, req, onChunk)
+	}
+
+	resp, err := inner.Execute(ctx, req)
+	if err != nil {
+		return Response{}, err
+	}
+	if resp.Content != "" {
+		if cbErr := onChunk(resp.Content); cbErr != nil {
+			return Response{}, cbErr
+		}
+	}
+	return resp, nil
+}

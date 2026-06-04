@@ -1,6 +1,7 @@
 package ollama
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,9 +13,30 @@ import (
 )
 
 type chatMessage struct {
-	Role    string   `json:"role"`
-	Content string   `json:"content"`
-	Images  []string `json:"images,omitempty"`
+	Role      string         `json:"role"`
+	Content   string         `json:"content"`
+	Images    []string       `json:"images,omitempty"`
+	ToolCalls []chatToolCall `json:"tool_calls,omitempty"`
+}
+
+type chatToolCall struct {
+	Function chatToolCallFunction `json:"function"`
+}
+
+type chatToolCallFunction struct {
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
+}
+
+type chatTool struct {
+	Type     string           `json:"type"`
+	Function chatToolFunction `json:"function"`
+}
+
+type chatToolFunction struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Parameters  json.RawMessage `json:"parameters,omitempty"`
 }
 
 type chatOptions struct {
@@ -29,6 +51,7 @@ type chatRequest struct {
 	Format    string        `json:"format,omitempty"`
 	KeepAlive string        `json:"keep_alive,omitempty"`
 	Options   *chatOptions  `json:"options,omitempty"`
+	Tools     []chatTool    `json:"tools,omitempty"`
 }
 
 type chatResponse struct {
@@ -74,8 +97,11 @@ func (p *Provider) Complete(ctx context.Context, req ai.Request) (ai.Response, e
 		Stream:    false,
 		KeepAlive: p.keepAlive,
 		Options:   buildOptions(req),
+		Tools:     buildTools(req),
 	}
-	if wantsJSON(req.TaskType) {
+	// Structured output (format=json) is incompatible with tool calling; only
+	// request it when no tools are advertised.
+	if len(body.Tools) == 0 && wantsJSON(req.TaskType) {
 		body.Format = "json"
 	}
 
@@ -115,18 +141,150 @@ func (p *Provider) Complete(ctx context.Context, req ai.Request) (ai.Response, e
 	if chatResp.Error != "" {
 		return ai.Response{}, fmt.Errorf("ollama: model error: %s", chatResp.Error)
 	}
-	if chatResp.Message.Content == "" {
+
+	toolCalls := mapToolCalls(chatResp.Message.ToolCalls)
+	if chatResp.Message.Content == "" && len(toolCalls) == 0 {
 		return ai.Response{}, fmt.Errorf("ollama: empty response from model")
 	}
 
 	return ai.Response{
-		Content:  chatResp.Message.Content,
-		Model:    chatResp.Model,
-		Provider: "ollama",
+		Content:   chatResp.Message.Content,
+		Model:     chatResp.Model,
+		Provider:  "ollama",
+		ToolCalls: toolCalls,
 		TokensUsed: ai.TokenUsage{
 			PromptTokens:     chatResp.PromptEvalCount,
 			CompletionTokens: chatResp.EvalCount,
 			TotalTokens:      chatResp.PromptEvalCount + chatResp.EvalCount,
+		},
+		Duration: time.Since(start),
+	}, nil
+}
+
+func buildTools(req ai.Request) []chatTool {
+	if len(req.Tools) == 0 {
+		return nil
+	}
+	tools := make([]chatTool, 0, len(req.Tools))
+	for _, tool := range req.Tools {
+		tools = append(tools, chatTool{
+			Type: "function",
+			Function: chatToolFunction{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  tool.Parameters,
+			},
+		})
+	}
+	return tools
+}
+
+func mapToolCalls(calls []chatToolCall) []ai.ToolCall {
+	if len(calls) == 0 {
+		return nil
+	}
+	out := make([]ai.ToolCall, 0, len(calls))
+	for _, call := range calls {
+		out = append(out, ai.ToolCall{
+			Name:      call.Function.Name,
+			Arguments: call.Function.Arguments,
+		})
+	}
+	return out
+}
+
+// CompleteStream calls the Ollama daemon with stream=true and forwards each
+// content delta through onChunk as the model produces it, accumulating the full
+// text and token counts for the returned Response.
+func (p *Provider) CompleteStream(ctx context.Context, req ai.Request, onChunk ai.StreamFunc) (ai.Response, error) {
+	start := time.Now()
+
+	body := chatRequest{
+		Model:     p.model,
+		Messages:  buildMessages(req),
+		Stream:    true,
+		KeepAlive: p.keepAlive,
+		Options:   buildOptions(req),
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return ai.Response{}, fmt.Errorf("ollama: failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/api/chat", bytes.NewReader(jsonBody))
+	if err != nil {
+		return ai.Response{}, fmt.Errorf("ollama: failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := p.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ai.Response{}, fmt.Errorf("%w: %v", ai.ErrProviderTimeout, err)
+		}
+		return ai.Response{}, fmt.Errorf("ollama: request failed: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(httpResp.Body)
+		return ai.Response{}, mapHTTPError(httpResp.StatusCode, respBody)
+	}
+
+	var (
+		builder    bytes.Buffer
+		model      = p.model
+		promptEval int
+		evalCount  int
+	)
+
+	scanner := bufio.NewScanner(httpResp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
+
+		var chunk chatResponse
+		if err := json.Unmarshal(line, &chunk); err != nil {
+			return ai.Response{}, fmt.Errorf("ollama: failed to parse stream chunk: %w", err)
+		}
+		if chunk.Error != "" {
+			return ai.Response{}, fmt.Errorf("ollama: model error: %s", chunk.Error)
+		}
+		if chunk.Model != "" {
+			model = chunk.Model
+		}
+		if chunk.Message.Content != "" {
+			builder.WriteString(chunk.Message.Content)
+			if cbErr := onChunk(chunk.Message.Content); cbErr != nil {
+				return ai.Response{}, cbErr
+			}
+		}
+		if chunk.Done {
+			promptEval = chunk.PromptEvalCount
+			evalCount = chunk.EvalCount
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return ai.Response{}, fmt.Errorf("ollama: failed to read stream: %w", err)
+	}
+
+	content := builder.String()
+	if content == "" {
+		return ai.Response{}, fmt.Errorf("ollama: empty response from model")
+	}
+
+	return ai.Response{
+		Content:  content,
+		Model:    model,
+		Provider: "ollama",
+		TokensUsed: ai.TokenUsage{
+			PromptTokens:     promptEval,
+			CompletionTokens: evalCount,
+			TotalTokens:      promptEval + evalCount,
 		},
 		Duration: time.Since(start),
 	}, nil

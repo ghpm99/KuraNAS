@@ -294,3 +294,122 @@ func TestMapHTTPError(t *testing.T) {
 		t.Fatalf("expected error for 500 with unparsable body")
 	}
 }
+
+func TestCompleteStreamSuccess(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req chatRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if !req.Stream {
+			t.Fatalf("expected stream=true")
+		}
+		enc := json.NewEncoder(w)
+		enc.Encode(chatResponse{Model: "llama3.1", Message: chatMessage{Role: "assistant", Content: "Olá"}})
+		enc.Encode(chatResponse{Model: "llama3.1", Message: chatMessage{Role: "assistant", Content: ", mundo"}})
+		enc.Encode(chatResponse{Model: "llama3.1", Done: true, PromptEvalCount: 3, EvalCount: 5})
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "llama3.1", "5m", 5*time.Second)
+
+	var chunks []string
+	resp, err := provider.CompleteStream(context.Background(), ai.Request{TaskType: ai.TaskGeneration, Prompt: "oi"}, func(chunk string) error {
+		chunks = append(chunks, chunk)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(chunks) != 2 || chunks[0] != "Olá" || chunks[1] != ", mundo" {
+		t.Fatalf("unexpected chunks: %v", chunks)
+	}
+	if resp.Content != "Olá, mundo" {
+		t.Fatalf("expected accumulated content, got %q", resp.Content)
+	}
+	if resp.TokensUsed.TotalTokens != 8 {
+		t.Fatalf("expected token totals, got %+v", resp.TokensUsed)
+	}
+}
+
+func TestCompleteStreamHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"boom"}`))
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "llama3.1", "5m", 5*time.Second)
+	_, err := provider.CompleteStream(context.Background(), ai.Request{TaskType: ai.TaskGeneration, Prompt: "oi"}, func(string) error { return nil })
+	if err == nil {
+		t.Fatalf("expected error for non-2xx status")
+	}
+}
+
+func TestCompleteStreamModelError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(chatResponse{Error: "model exploded"})
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "llama3.1", "5m", 5*time.Second)
+	_, err := provider.CompleteStream(context.Background(), ai.Request{TaskType: ai.TaskGeneration, Prompt: "oi"}, func(string) error { return nil })
+	if err == nil {
+		t.Fatalf("expected model error")
+	}
+}
+
+func TestCompleteStreamCallbackError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(chatResponse{Message: chatMessage{Content: "hi"}})
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "llama3.1", "5m", 5*time.Second)
+	sentinel := errors.New("stop")
+	_, err := provider.CompleteStream(context.Background(), ai.Request{TaskType: ai.TaskGeneration, Prompt: "oi"}, func(string) error { return sentinel })
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("expected callback error to propagate, got %v", err)
+	}
+}
+
+func TestCompleteWithToolsParsesToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req chatRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if len(req.Tools) != 1 || req.Tools[0].Function.Name != "buscar" {
+			t.Fatalf("expected tool advertised, got %+v", req.Tools)
+		}
+		if req.Format == "json" {
+			t.Fatalf("format json must be disabled when tools are present")
+		}
+		json.NewEncoder(w).Encode(chatResponse{
+			Model: "llama3.1",
+			Message: chatMessage{
+				Role: "assistant",
+				ToolCalls: []chatToolCall{
+					{Function: chatToolCallFunction{Name: "buscar", Arguments: json.RawMessage(`{"query":"ipva"}`)}},
+				},
+			},
+			Done: true,
+		})
+	}))
+	defer server.Close()
+
+	provider := NewProvider(server.URL, "llama3.1", "5m", 5*time.Second)
+	resp, err := provider.Complete(context.Background(), ai.Request{
+		TaskType: ai.TaskClassification, // would normally request json format
+		Prompt:   "procura ipva",
+		Tools: []ai.ToolDefinition{
+			{Name: "buscar", Description: "busca", Parameters: json.RawMessage(`{"type":"object"}`)},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.ToolCalls) != 1 || resp.ToolCalls[0].Name != "buscar" {
+		t.Fatalf("expected parsed tool call, got %+v", resp.ToolCalls)
+	}
+}
