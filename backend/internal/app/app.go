@@ -120,6 +120,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository
 	}
+	if appContext.Configuration != nil {
+		workerFileContext.AISettings = appContext.Configuration.Service
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

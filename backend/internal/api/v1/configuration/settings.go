@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	settingsStorageKey = "system_preferences"
-	defaultLocale      = "en-US"
-	defaultAccentColor = "violet"
+	settingsStorageKey           = "system_preferences"
+	defaultLocale                = "en-US"
+	defaultAccentColor           = "violet"
+	defaultAIImageClassification = true
 )
 
 var allowedSlideshowSeconds = map[int]struct{}{
@@ -27,6 +28,7 @@ var allowedAccentColors = map[string]struct{}{
 type SettingsDto struct {
 	Library    LibrarySettingsDto    `json:"library"`
 	Indexing   IndexingSettingsDto   `json:"indexing"`
+	AI         AISettingsDto         `json:"ai"`
 	Players    PlayerSettingsDto     `json:"players"`
 	Appearance AppearanceSettingsDto `json:"appearance"`
 	Language   LanguageSettingsDto   `json:"language"`
@@ -44,6 +46,12 @@ type IndexingSettingsDto struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+}
+
+// AISettingsDto toggles AI usage per feature so heavy/expensive AI work can be
+// disabled without removing providers. Each field gates one concrete feature.
+type AISettingsDto struct {
+	ImageClassification bool `json:"image_classification"`
 }
 
 type PlayerSettingsDto struct {
@@ -66,6 +74,7 @@ type LanguageSettingsDto struct {
 type UpdateSettingsRequest struct {
 	Library    LibrarySettingsRequest    `json:"library"`
 	Indexing   IndexingSettingsRequest   `json:"indexing"`
+	AI         AISettingsRequest         `json:"ai"`
 	Players    PlayerSettingsRequest     `json:"players"`
 	Appearance AppearanceSettingsRequest `json:"appearance"`
 	Language   LanguageSettingsRequest   `json:"language"`
@@ -81,6 +90,10 @@ type IndexingSettingsRequest struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+}
+
+type AISettingsRequest struct {
+	ImageClassification bool `json:"image_classification"`
 }
 
 type PlayerSettingsRequest struct {
@@ -102,6 +115,7 @@ type LanguageSettingsRequest struct {
 type settingsState struct {
 	Library    librarySettingsState    `json:"library"`
 	Indexing   indexingSettingsState   `json:"indexing"`
+	AI         aiSettingsState         `json:"ai"`
 	Players    playerSettingsState     `json:"players"`
 	Appearance appearanceSettingsState `json:"appearance"`
 	Language   languageSettingsState   `json:"language"`
@@ -117,6 +131,13 @@ type indexingSettingsState struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+}
+
+// aiSettingsState stores AI toggles as pointers so an absent field in a document
+// persisted before the section existed resolves to the safe default (enabled),
+// instead of the bool zero value (disabled).
+type aiSettingsState struct {
+	ImageClassification *bool `json:"image_classification,omitempty"`
 }
 
 type playerSettingsState struct {
@@ -153,6 +174,9 @@ func buildDefaultSettings(availableLocales []string) settingsState {
 			ExtractMetadata:  true,
 			GeneratePreviews: true,
 		},
+		AI: aiSettingsState{
+			ImageClassification: boolPtr(defaultAIImageClassification),
+		},
 		Players: playerSettingsState{
 			RememberMusicQueue:    true,
 			RememberVideoProgress: true,
@@ -177,6 +201,7 @@ func normalizeState(candidate settingsState, defaults settingsState, availableLo
 	normalized.Indexing.ScanOnStartup = candidate.Indexing.ScanOnStartup
 	normalized.Indexing.ExtractMetadata = candidate.Indexing.ExtractMetadata
 	normalized.Indexing.GeneratePreviews = candidate.Indexing.GeneratePreviews
+	normalized.AI.ImageClassification = resolveBoolPtr(candidate.AI.ImageClassification, defaults.AI.ImageClassification)
 	normalized.Players.RememberMusicQueue = candidate.Players.RememberMusicQueue
 	normalized.Players.RememberVideoProgress = candidate.Players.RememberVideoProgress
 	normalized.Players.AutoplayNextVideo = candidate.Players.AutoplayNextVideo
@@ -198,6 +223,9 @@ func (request UpdateSettingsRequest) toState() settingsState {
 			ScanOnStartup:    request.Indexing.ScanOnStartup,
 			ExtractMetadata:  request.Indexing.ExtractMetadata,
 			GeneratePreviews: request.Indexing.GeneratePreviews,
+		},
+		AI: aiSettingsState{
+			ImageClassification: boolPtr(request.AI.ImageClassification),
 		},
 		Players: playerSettingsState{
 			RememberMusicQueue:    request.Players.RememberMusicQueue,
@@ -228,6 +256,9 @@ func (state settingsState) toDto(availableLocales []string) SettingsDto {
 			ScanOnStartup:    state.Indexing.ScanOnStartup,
 			ExtractMetadata:  state.Indexing.ExtractMetadata,
 			GeneratePreviews: state.Indexing.GeneratePreviews,
+		},
+		AI: AISettingsDto{
+			ImageClassification: derefBool(state.AI.ImageClassification, defaultAIImageClassification),
 		},
 		Players: PlayerSettingsDto{
 			RememberMusicQueue:    state.Players.RememberMusicQueue,
@@ -279,6 +310,24 @@ func normalizeSlideshowSeconds(value int, fallback int) int {
 func normalizeAccentColor(value string, fallback string) string {
 	if _, ok := allowedAccentColors[value]; ok {
 		return value
+	}
+	return fallback
+}
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
+func derefBool(value *bool, fallback bool) bool {
+	if value == nil {
+		return fallback
+	}
+	return *value
+}
+
+func resolveBoolPtr(candidate *bool, fallback *bool) *bool {
+	if candidate != nil {
+		return candidate
 	}
 	return fallback
 }

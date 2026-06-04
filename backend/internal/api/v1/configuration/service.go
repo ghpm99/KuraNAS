@@ -20,6 +20,7 @@ type ServiceInterface interface {
 	UpdateSettings(request UpdateSettingsRequest) (SettingsDto, error)
 	GetTranslationFilePath() (string, error)
 	ApplyRuntimeSettings() error
+	IsAIImageClassificationEnabled() (bool, error)
 }
 
 type Service struct {
@@ -88,6 +89,27 @@ func (s *Service) ApplyRuntimeSettings() error {
 		return err
 	}
 	return applyRuntimeLanguage(settings.Language.Current)
+}
+
+// IsAIImageClassificationEnabled reports whether the worker may call AI to
+// classify images. It reads only the stored document (a single indexed lookup,
+// no translation listing) so it stays cheap enough to consult per file. A
+// missing document or missing AI section resolves to the safe default (enabled).
+func (s *Service) IsAIImageClassificationEnabled() (bool, error) {
+	payload, err := s.Repository.GetSettingsDocument(settingsStorageKey)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return defaultAIImageClassification, nil
+		}
+		return defaultAIImageClassification, fmt.Errorf("falha ao carregar configuracoes de IA: %w", err)
+	}
+
+	var stored settingsState
+	if err := json.Unmarshal([]byte(payload), &stored); err != nil {
+		return defaultAIImageClassification, fmt.Errorf("falha ao desserializar configuracoes de IA: %w", err)
+	}
+
+	return derefBool(stored.AI.ImageClassification, defaultAIImageClassification), nil
 }
 
 func (s *Service) loadState() (settingsState, []string, error) {
