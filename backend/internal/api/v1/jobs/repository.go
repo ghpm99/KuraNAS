@@ -22,6 +22,17 @@ func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
+// nullableJSON maps an empty/nil byte slice to a SQL NULL instead of letting
+// lib/pq encode it as the empty string "", which a JSON column rejects with
+// "invalid input syntax for type json". Steps without a payload (e.g.
+// ai_playlist_cluster) rely on this to persist payload/depends_on as NULL.
+func nullableJSON(raw []byte) any {
+	if len(raw) == 0 {
+		return nil
+	}
+	return raw
+}
+
 func (r *Repository) CreateJob(tx *sql.Tx, job JobModel) (JobModel, error) {
 	var startedAt sql.NullTime
 	var endedAt sql.NullTime
@@ -84,12 +95,12 @@ func (r *Repository) CreateStep(tx *sql.Tx, step StepModel) (StepModel, error) {
 		step.JobID,
 		step.Type,
 		step.Status,
-		step.DependsOn,
+		nullableJSON(step.DependsOn),
 		step.Attempts,
 		step.MaxAttempts,
 		step.LastError,
 		step.Progress,
-		step.Payload,
+		nullableJSON(step.Payload),
 	).Scan(
 		&step.ID,
 		&step.JobID,
