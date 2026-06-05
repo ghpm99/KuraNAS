@@ -91,10 +91,10 @@ export default function NotificationsScreen() {
             >
                 <Tab label={t('ALL')} value="all" />
                 <Tab label={t('UNREAD')} value="unread" />
-                <Tab label="Info" value="info" />
-                <Tab label="Success" value="success" />
-                <Tab label="Warning" value="warning" />
-                <Tab label="Error" value="error" />
+                <Tab label={t('NOTIFICATION_TYPE_INFO')} value="info" />
+                <Tab label={t('NOTIFICATION_TYPE_SUCCESS')} value="success" />
+                <Tab label={t('NOTIFICATION_TYPE_WARNING')} value="warning" />
+                <Tab label={t('NOTIFICATION_TYPE_ERROR')} value="error" />
             </Tabs>
 
             {isLoading ? (

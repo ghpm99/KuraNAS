@@ -161,17 +161,17 @@ const GlobalPlayerControl = () => {
                         <IconButton
                             onClick={toggleShuffle}
                             size="small"
-                            aria-label="toggle shuffle"
+                            aria-label={t('PLAYER_ARIA_SHUFFLE')}
                             sx={{ opacity: shuffle ? 1 : 0.4, display: { xs: 'none', sm: 'inline-flex' } }}
                         >
                             <Shuffle size={16} />
                         </IconButton>
-                        <IconButton onClick={previous} size="small" aria-label="previous track">
+                        <IconButton onClick={previous} size="small" aria-label={t('PLAYER_ARIA_PREVIOUS')}>
                             <SkipBack size={18} />
                         </IconButton>
                         <IconButton
                             onClick={togglePlayPause}
-                            aria-label={isPlaying ? 'pause playback' : 'play playback'}
+                            aria-label={isPlaying ? t('PLAYER_ARIA_PAUSE') : t('PLAYER_ARIA_PLAY')}
                             sx={{
                                 bgcolor: 'white',
                                 color: 'black',
@@ -190,13 +190,13 @@ const GlobalPlayerControl = () => {
                                 <Play size={18} style={{ marginLeft: 2 }} />
                             )}
                         </IconButton>
-                        <IconButton onClick={next} size="small" aria-label="next track">
+                        <IconButton onClick={next} size="small" aria-label={t('PLAYER_ARIA_NEXT')}>
                             <SkipForward size={18} />
                         </IconButton>
                         <IconButton
                             onClick={cycleRepeatMode}
                             size="small"
-                            aria-label="change repeat mode"
+                            aria-label={t('PLAYER_ARIA_REPEAT')}
                             sx={{
                                 opacity: repeatMode !== 'none' ? 1 : 0.4,
                                 color: repeatMode !== 'none' ? 'primary.main' : undefined,
@@ -223,7 +223,7 @@ const GlobalPlayerControl = () => {
                         </Typography>
                         <Slider
                             size="small"
-                            aria-label="seek playback"
+                            aria-label={t('PLAYER_ARIA_SEEK')}
                             value={safeCurrentTime}
                             max={safeDuration || 100}
                             onChange={(_, value) => seek(value as number)}
@@ -259,7 +259,7 @@ const GlobalPlayerControl = () => {
                     <IconButton
                         size="small"
                         onClick={toggleQueue}
-                        aria-label="toggle queue"
+                        aria-label={t('PLAYER_ARIA_QUEUE')}
                         sx={{
                             color: queueOpen ? 'primary.main' : 'text.secondary',
                             '&:hover': {
@@ -273,13 +273,13 @@ const GlobalPlayerControl = () => {
                         <IconButton
                             size="small"
                             onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
-                            aria-label={volume === 0 ? 'unmute volume' : 'mute volume'}
+                            aria-label={volume === 0 ? t('PLAYER_ARIA_UNMUTE') : t('PLAYER_ARIA_MUTE')}
                         >
                             {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
                         </IconButton>
                         <Slider
                             size="small"
-                            aria-label="set volume"
+                            aria-label={t('PLAYER_ARIA_VOLUME')}
                             value={volume}
                             max={1}
                             step={0.01}
