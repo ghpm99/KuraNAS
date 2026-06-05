@@ -98,3 +98,14 @@ type HealthDto struct {
 	ErrorsLast24h   int64    `json:"errors_last_24h"`
 	RecentErrors    []string `json:"recent_errors"`
 }
+
+// AIUsageDto is a live pulse of AI activity since the process started: how many
+// requests were made, how many succeeded/failed, tokens consumed and average
+// latency. Counters are in-memory and reset on restart.
+type AIUsageDto struct {
+	Total        uint64 `json:"total"`
+	Success      uint64 `json:"success"`
+	Failure      uint64 `json:"failure"`
+	TotalTokens  uint64 `json:"total_tokens"`
+	AvgLatencyMs int64  `json:"avg_latency_ms"`
+}

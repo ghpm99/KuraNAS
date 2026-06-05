@@ -166,6 +166,19 @@ func (s *Service) GetHealth() (HealthDto, error) {
 	return toHealthDto(model), nil
 }
 
+// GetAIUsage returns the live AI usage counters. They are process-level
+// in-memory metrics from pkg/ai, not a DB query, so there is no repository call.
+func (s *Service) GetAIUsage() (AIUsageDto, error) {
+	m := ai.UsageMetrics()
+	return AIUsageDto{
+		Total:        m.Total,
+		Success:      m.Success,
+		Failure:      m.Failure,
+		TotalTokens:  m.TotalTokens,
+		AvgLatencyMs: m.AvgLatencyMs,
+	}, nil
+}
+
 func (s *Service) GetInsights(period string) ([]string, error) {
 	periodConfig, err := resolvePeriod(period)
 	if err != nil {

@@ -37,6 +37,7 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 		applog.Debug("ai request completed",
 			"task", string(req.TaskType), "provider", route.Primary.Name(),
 			"latency_ms", time.Since(started).Milliseconds())
+		recordUsage(true, time.Since(started), resp.TokensUsed.TotalTokens)
 		return resp, nil
 	}
 	applog.Warn("ai provider failed, trying fallbacks",
@@ -45,12 +46,12 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 
 	lastErr := err
 	for _, fallback := range route.Fallbacks {
-		fbStart := time.Now()
 		resp, err = fallback.Complete(ctx, req)
 		if err == nil {
 			applog.Debug("ai request completed via fallback",
 				"task", string(req.TaskType), "provider", fallback.Name(),
-				"latency_ms", time.Since(fbStart).Milliseconds())
+				"latency_ms", time.Since(started).Milliseconds())
+			recordUsage(true, time.Since(started), resp.TokensUsed.TotalTokens)
 			return resp, nil
 		}
 		applog.Warn("ai fallback provider failed",
@@ -60,6 +61,7 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 
 	applog.Error("ai request failed on all providers",
 		"task", string(req.TaskType), "error", lastErr.Error())
+	recordUsage(false, time.Since(started), 0)
 	return Response{}, lastErr
 }
 

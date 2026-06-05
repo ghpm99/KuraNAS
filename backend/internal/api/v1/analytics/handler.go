@@ -100,6 +100,11 @@ func (handler *Handler) GetHealthHandler(c *gin.Context) {
 	handler.respond(c, result, err)
 }
 
+func (handler *Handler) GetAIUsageHandler(c *gin.Context) {
+	result, err := handler.service.GetAIUsage()
+	handler.respond(c, result, err)
+}
+
 func (handler *Handler) GetInsightsHandler(c *gin.Context) {
 	result, err := handler.service.GetInsights(c.DefaultQuery("period", "7d"))
 	handler.respond(c, gin.H{"insights": result}, err)
