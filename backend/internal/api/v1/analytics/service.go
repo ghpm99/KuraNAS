@@ -306,14 +306,19 @@ func getFileSystemStorage(usedBytes int64) (int64, int64) {
 	return totalBytes, freeBytes
 }
 
+// resolveHealthStatus maps the last scan job's worker_job status to the three
+// states the dashboard renders. A failed or partially failed scan must surface
+// as "error" — the old mapping read the legacy `log` table's uppercase values
+// and silently fell through to "ok", which is why a broken pipeline looked
+// healthy.
 func resolveHealthStatus(status sql.NullString) string {
 	if !status.Valid {
 		return "ok"
 	}
 	switch status.String {
-	case "PENDING":
+	case "queued", "running":
 		return "scanning"
-	case "FAILED":
+	case "failed", "partial_fail":
 		return "error"
 	default:
 		return "ok"
