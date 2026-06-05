@@ -440,6 +440,20 @@ func TestResolvePeriodAllBranches(t *testing.T) {
 	}
 }
 
+func TestServiceGetAIUsageMapsSnapshot(t *testing.T) {
+	ai.ResetUsageMetrics()
+	t.Cleanup(ai.ResetUsageMetrics)
+
+	service := NewService(&repositoryStub{}, nil)
+	result, err := service.GetAIUsage()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Total != 0 || result.Success != 0 || result.Failure != 0 || result.AvgLatencyMs != 0 {
+		t.Fatalf("expected zeroed usage after reset, got %+v", result)
+	}
+}
+
 func TestResolveHealthStatus(t *testing.T) {
 	if resolveHealthStatus(sql.NullString{Valid: false}) != "ok" {
 		t.Fatalf("expected ok for invalid")

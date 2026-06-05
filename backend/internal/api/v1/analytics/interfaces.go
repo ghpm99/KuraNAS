@@ -31,5 +31,6 @@ type ServiceInterface interface {
 	GetLibrary() (LibraryDto, error)
 	GetProcessing() (ProcessingDto, error)
 	GetHealth() (HealthDto, error)
+	GetAIUsage() (AIUsageDto, error)
 	GetInsights(period string) ([]string, error)
 }
