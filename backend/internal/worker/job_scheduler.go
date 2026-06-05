@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"time"
@@ -70,8 +69,42 @@ func (s *JobScheduler) Start() {
 	}
 
 	s.started = true
-	s.stopWg.Add(1)
+	s.stopWg.Add(2)
 	go s.runLoop()
+	go s.runHeartbeat()
+}
+
+// runHeartbeat emits a periodic liveness record so a frozen scheduler is
+// visible in the forensic log: if the heartbeat stops, the loop is stuck.
+// Counts are read from the scheduler's in-memory state (cheap, no DB) and show
+// running jobs, free slots and queue backlog — enough to tell "idle" from
+// "wedged with work piled up".
+func (s *JobScheduler) runHeartbeat() {
+	defer s.stopWg.Done()
+
+	interval := time.Duration(config.AppConfig.WorkerHeartbeatSeconds) * time.Second
+	if interval <= 0 {
+		interval = 60 * time.Second
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.stopCh:
+			return
+		case <-ticker.C:
+			s.mu.Lock()
+			tracked := len(s.queued)
+			s.mu.Unlock()
+			applog.Info("scheduler heartbeat",
+				"running", len(s.jobSem),
+				"slots", cap(s.jobSem),
+				"queue_depth", len(s.queue),
+				"tracked", tracked,
+			)
+		}
+	}
 }
 
 // runLoop owns the scheduler loop's lifetime: it runs loop() under panic
@@ -88,7 +121,7 @@ func (s *JobScheduler) runLoop() {
 		case <-s.stopCh:
 			return
 		default:
-			log.Printf("[scheduler] loop restarting after panic\n")
+			applog.Warn("scheduler loop restarting after panic")
 		}
 	}
 }
@@ -231,6 +264,12 @@ func (s *JobScheduler) processJob(jobID int) error {
 		return err
 	}
 
+	jobType := ""
+	if jobModel, jobErr := s.repository.GetJobByID(jobID); jobErr == nil {
+		jobType = jobModel.Type
+	}
+	applog.Info("job started", "job_id", jobID, "type", jobType)
+
 	var firstStepErr error
 	deferred := false
 
@@ -284,11 +323,9 @@ func (s *JobScheduler) processJob(jobID int) error {
 			if err := s.executeStep(readySteps[0]); err != nil {
 				if errors.Is(err, errStepDeferred) {
 					deferred = true
-				} else {
-					log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, readySteps[0].ID, readySteps[0].Type, err)
-					if firstStepErr == nil {
-						firstStepErr = err
-					}
+				} else if firstStepErr == nil {
+					// executeStep already logged the failure with full context.
+					firstStepErr = err
 				}
 			}
 		} else {
@@ -305,7 +342,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 							errMu.Unlock()
 							return
 						}
-						log.Printf("[job=%d step=%d type=%s] step error: %v\n", jobID, step.ID, step.Type, err)
+						// executeStep already logged the failure with full context.
 						errMu.Lock()
 						if firstStepErr == nil {
 							firstStepErr = err
@@ -326,7 +363,8 @@ func (s *JobScheduler) processJob(jobID int) error {
 		if _, err := s.requeueJob(jobID); err != nil {
 			return err
 		}
-		log.Printf("[job=%d] adiado por timeout: voltou para o fim da fila\n", jobID)
+		applog.Warn("job deferred to back of queue after step timeout",
+			"job_id", jobID, "type", jobType, "duration_ms", time.Since(now).Milliseconds())
 		return nil
 	}
 
@@ -357,7 +395,48 @@ func (s *JobScheduler) processJob(jobID int) error {
 		return err
 	}
 
+	logJobFinished(jobID, jobType, status, finished.Sub(now), finalSteps, lastError)
+
 	return nil
+}
+
+// logJobFinished records the job outcome forensically: a failed or partially
+// failed job lands at ERROR (so it surfaces on a grep for failures), a healthy
+// one at INFO, both carrying duration and a per-status step breakdown.
+func logJobFinished(jobID int, jobType string, status JobStatus, duration time.Duration, steps []jobs.StepModel, lastError *string) {
+	completed, failed, skipped, canceled := 0, 0, 0, 0
+	for _, step := range steps {
+		switch StepStatus(step.Status) {
+		case StepStatusCompleted:
+			completed++
+		case StepStatusFailed:
+			failed++
+		case StepStatusSkipped:
+			skipped++
+		case StepStatusCanceled:
+			canceled++
+		}
+	}
+
+	args := []any{
+		"job_id", jobID,
+		"type", jobType,
+		"status", string(status),
+		"duration_ms", duration.Milliseconds(),
+		"steps_completed", completed,
+		"steps_failed", failed,
+		"steps_skipped", skipped,
+		"steps_canceled", canceled,
+	}
+	if lastError != nil {
+		args = append(args, "error", *lastError)
+	}
+
+	if status == JobStatusFailed || status == JobStatusPartialFail {
+		applog.Error("job finished", args...)
+		return
+	}
+	applog.Info("job finished", args...)
 }
 
 func (s *JobScheduler) executeStep(step jobs.StepModel) error {
@@ -382,6 +461,9 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		return err
 	}
 
+	applog.Debug("step started",
+		"job_id", step.JobID, "step_id", step.ID, "type", step.Type, "attempt", step.Attempts+1)
+
 	var runErr error
 	if executor == nil {
 		runErr = fmt.Errorf("step executor is not configured for type %q", step.Type)
@@ -392,13 +474,18 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		}
 	}
 	ended := time.Now()
+	durationMs := ended.Sub(started).Milliseconds()
 
 	if runErr == nil {
+		applog.Debug("step completed",
+			"job_id", step.JobID, "step_id", step.ID, "type", step.Type, "duration_ms", durationMs)
 		_, err = s.updateStepExecution(step.ID, string(StepStatusCompleted), 100, step.Attempts+1, nil, &ended, nil)
 		return err
 	}
 
 	if errors.Is(runErr, ErrStepSkipped) {
+		applog.Debug("step skipped",
+			"job_id", step.JobID, "step_id", step.ID, "type", step.Type)
 		_, err = s.updateStepExecution(step.ID, string(StepStatusSkipped), 100, step.Attempts+1, nil, &ended, nil)
 		return err
 	}
@@ -411,7 +498,8 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		if _, deferErr := s.deferStepForTimeout(step.ID, step.Attempts, runErr.Error()); deferErr != nil {
 			return deferErr
 		}
-		log.Printf("[job=%d step=%d type=%s] timeout: voltando para o fim da fila\n", step.JobID, step.ID, step.Type)
+		applog.Warn("step timed out, requeued at back of line",
+			"job_id", step.JobID, "step_id", step.ID, "type", step.Type, "duration_ms", durationMs)
 		return errStepDeferred
 	}
 
@@ -421,6 +509,9 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		if updateErr != nil {
 			return updateErr
 		}
+		applog.Warn("step failed, retry scheduled",
+			"job_id", step.JobID, "step_id", step.ID, "type", step.Type,
+			"attempt", step.Attempts+1, "max_attempts", step.MaxAttempts, "error", runErrMessage)
 		// Apply retry backoff (Fix 3)
 		backoff := time.Duration(config.AppConfig.WorkerRetryBackoffMS) * time.Millisecond * time.Duration(step.Attempts+1)
 		if backoff > 0 {
@@ -435,6 +526,9 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		return updateErr
 	}
 
+	applog.Error("step failed permanently",
+		"job_id", step.JobID, "step_id", step.ID, "type", step.Type,
+		"attempts", step.Attempts+1, "error", runErrMessage)
 	return runErr
 }
 

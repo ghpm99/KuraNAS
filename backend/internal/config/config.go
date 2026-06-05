@@ -28,6 +28,7 @@ type AppConfigStruct struct {
 	WorkerSchedulerPollMS      int
 	WorkerMaxConcurrentJobs    int
 	WorkerStepTimeoutSeconds   int
+	WorkerHeartbeatSeconds     int
 	LogLevel                   string
 	LogMaxSizeMB               int
 	LogMaxBackups              int
@@ -57,6 +58,7 @@ func InitializeConfig() {
 		WorkerSchedulerPollMS:      parseEnvInt("WORKER_SCHEDULER_POLL_MS", 2000),
 		WorkerMaxConcurrentJobs:    parseEnvInt("WORKER_MAX_CONCURRENT_JOBS", 4),
 		WorkerStepTimeoutSeconds:   parseEnvInt("WORKER_STEP_TIMEOUT_SECONDS", 120),
+		WorkerHeartbeatSeconds:     parseEnvInt("WORKER_HEARTBEAT_SECONDS", 60),
 		LogLevel:                   os.Getenv("LOG_LEVEL"),
 		LogMaxSizeMB:               parseEnvInt("LOG_MAX_SIZE_MB", 50),
 		LogMaxBackups:              parseEnvInt("LOG_MAX_BACKUPS", 10),

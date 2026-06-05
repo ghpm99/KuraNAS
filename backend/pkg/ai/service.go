@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"nas-go/api/pkg/applog"
 )
 
 // Service orchestrates AI requests by resolving the appropriate provider chain
@@ -28,20 +31,35 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 		return Response{}, err
 	}
 
+	started := time.Now()
 	resp, err := route.Primary.Complete(ctx, req)
 	if err == nil {
+		applog.Debug("ai request completed",
+			"task", string(req.TaskType), "provider", route.Primary.Name(),
+			"latency_ms", time.Since(started).Milliseconds())
 		return resp, nil
 	}
+	applog.Warn("ai provider failed, trying fallbacks",
+		"task", string(req.TaskType), "provider", route.Primary.Name(),
+		"latency_ms", time.Since(started).Milliseconds(), "error", err.Error())
 
 	lastErr := err
 	for _, fallback := range route.Fallbacks {
+		fbStart := time.Now()
 		resp, err = fallback.Complete(ctx, req)
 		if err == nil {
+			applog.Debug("ai request completed via fallback",
+				"task", string(req.TaskType), "provider", fallback.Name(),
+				"latency_ms", time.Since(fbStart).Milliseconds())
 			return resp, nil
 		}
+		applog.Warn("ai fallback provider failed",
+			"task", string(req.TaskType), "provider", fallback.Name(), "error", err.Error())
 		lastErr = fmt.Errorf("fallback provider %s failed: %w", fallback.Name(), err)
 	}
 
+	applog.Error("ai request failed on all providers",
+		"task", string(req.TaskType), "error", lastErr.Error())
 	return Response{}, lastErr
 }
 
