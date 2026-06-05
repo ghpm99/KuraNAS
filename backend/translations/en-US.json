@@ -950,5 +950,22 @@
 	"ERROR_AI_PROVIDERS_LOAD": "Could not load AI providers",
 	"ERROR_AI_PROVIDER_INVALID_NAME": "Invalid provider name",
 	"ERROR_AI_PROVIDER_NOT_FOUND": "Provider not found",
-	"ERROR_AI_PROVIDER_UPDATE": "Could not update the AI provider"
+	"ERROR_AI_PROVIDER_UPDATE": "Could not update the AI provider",
+	"SOMETHING_WENT_WRONG": "Something went wrong",
+	"TRY_AGAIN": "Try again",
+	"NOTIFICATION_TYPE_INFO": "Info",
+	"NOTIFICATION_TYPE_SUCCESS": "Success",
+	"NOTIFICATION_TYPE_WARNING": "Warning",
+	"NOTIFICATION_TYPE_ERROR": "Error",
+	"PLAYER_ARIA_SHUFFLE": "Toggle shuffle",
+	"PLAYER_ARIA_PREVIOUS": "Previous track",
+	"PLAYER_ARIA_NEXT": "Next track",
+	"PLAYER_ARIA_REPEAT": "Change repeat mode",
+	"PLAYER_ARIA_SEEK": "Seek playback",
+	"PLAYER_ARIA_QUEUE": "Toggle queue",
+	"PLAYER_ARIA_VOLUME": "Set volume",
+	"PLAYER_ARIA_PLAY": "Play playback",
+	"PLAYER_ARIA_PAUSE": "Pause playback",
+	"PLAYER_ARIA_MUTE": "Mute volume",
+	"PLAYER_ARIA_UNMUTE": "Unmute volume"
 }
