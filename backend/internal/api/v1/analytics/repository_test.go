@@ -269,7 +269,7 @@ func TestRepositoryGetHealth(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.IndexHealthStatusQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"status", "start", "end"}).
-			AddRow("FAILED", now.Add(-time.Minute), now))
+			AddRow("failed", now.Add(-time.Minute), now))
 	mock.ExpectQuery(regexp.QuoteMeta(queries.IndexFilesTotalQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(42))
 	mock.ExpectQuery(regexp.QuoteMeta(queries.IndexErrorsRecentQuery)).

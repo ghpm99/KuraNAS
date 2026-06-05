@@ -311,7 +311,7 @@ func TestServiceGetProcessing(t *testing.T) {
 func TestServiceGetHealth(t *testing.T) {
 	now := time.Now()
 	stub := &repositoryStub{health: HealthModel{
-		Status:        sql.NullString{String: "FAILED", Valid: true},
+		Status:        sql.NullString{String: "failed", Valid: true},
 		LastScanStart: sql.NullTime{Time: now.Add(-2 * time.Minute), Valid: true},
 		LastScanEnd:   sql.NullTime{Time: now.Add(-1 * time.Minute), Valid: true},
 		IndexedFiles:  42,
@@ -444,14 +444,20 @@ func TestResolveHealthStatus(t *testing.T) {
 	if resolveHealthStatus(sql.NullString{Valid: false}) != "ok" {
 		t.Fatalf("expected ok for invalid")
 	}
-	if resolveHealthStatus(sql.NullString{String: "PENDING", Valid: true}) != "scanning" {
-		t.Fatalf("expected scanning for PENDING")
+	if resolveHealthStatus(sql.NullString{String: "running", Valid: true}) != "scanning" {
+		t.Fatalf("expected scanning for running")
 	}
-	if resolveHealthStatus(sql.NullString{String: "FAILED", Valid: true}) != "error" {
-		t.Fatalf("expected error for FAILED")
+	if resolveHealthStatus(sql.NullString{String: "queued", Valid: true}) != "scanning" {
+		t.Fatalf("expected scanning for queued")
 	}
-	if resolveHealthStatus(sql.NullString{String: "COMPLETED", Valid: true}) != "ok" {
-		t.Fatalf("expected ok for unknown")
+	if resolveHealthStatus(sql.NullString{String: "failed", Valid: true}) != "error" {
+		t.Fatalf("expected error for failed")
+	}
+	if resolveHealthStatus(sql.NullString{String: "partial_fail", Valid: true}) != "error" {
+		t.Fatalf("expected error for partial_fail")
+	}
+	if resolveHealthStatus(sql.NullString{String: "completed", Valid: true}) != "ok" {
+		t.Fatalf("expected ok for completed")
 	}
 }
 
