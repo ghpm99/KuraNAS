@@ -15,12 +15,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.kuranas.android.R
 
 @Composable
 fun VideoPlayerScreen(
@@ -59,7 +61,7 @@ fun VideoPlayerScreen(
             onClick = onNavigateBack,
             modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
         }
     }
 }

@@ -22,9 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -39,14 +41,14 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = hiltViewModel()) {
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
-            title = "Notificações",
+            title = stringResource(R.string.nav_notifications),
             trailingIcon = Icons.Default.DoneAll,
             onTrailingClick = viewModel::markAllAsRead,
         )
         when {
             state.isLoading -> LoadingView()
             state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
-            state.notifications.isEmpty() -> EmptyView("Nenhuma notificação", icon = Icons.Default.NotificationsNone)
+            state.notifications.isEmpty() -> EmptyView(stringResource(R.string.notifications_empty), icon = Icons.Default.NotificationsNone)
             else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(state.notifications, key = { it.id }) { notification ->
                     NotificationItem(notification = notification, onRead = { viewModel.markAsRead(notification.id) })

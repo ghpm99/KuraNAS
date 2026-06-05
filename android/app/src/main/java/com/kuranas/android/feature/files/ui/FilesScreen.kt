@@ -48,12 +48,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.FileSizeText
@@ -90,22 +92,22 @@ fun FilesScreen(
                 onClick = { viewModel.toggleCreateFolderDialog(true) },
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Nova pasta")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.files_new_folder))
             }
         },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             KNHeader(
-                title = if (state.breadcrumb.isEmpty()) "Arquivos" else state.breadcrumb.last().first,
+                title = if (state.breadcrumb.isEmpty()) stringResource(R.string.nav_files) else state.breadcrumb.last().first,
                 leadingIcon = if (state.breadcrumb.isNotEmpty()) Icons.AutoMirrored.Filled.ArrowBack else null,
                 onLeadingClick = viewModel::navigateUp,
             )
 
             if (state.breadcrumb.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-                    item { Text("Raiz", style = MaterialTheme.typography.bodySmall, modifier = Modifier.clickable { viewModel.loadRoot() }) }
+                    item { Text(stringResource(R.string.files_root), style = MaterialTheme.typography.bodySmall, modifier = Modifier.clickable { viewModel.loadRoot() }) }
                     items(state.breadcrumb) { (name, _) ->
-                        Text(" / $name", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.files_breadcrumb_segment, name), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -118,7 +120,7 @@ fun FilesScreen(
             when {
                 state.isLoading -> LoadingView()
                 state.error != null -> ErrorView(state.error!!, onRetry = viewModel::loadRoot)
-                state.files.isEmpty() -> EmptyView("Pasta vazia")
+                state.files.isEmpty() -> EmptyView(stringResource(R.string.files_empty_folder))
                 else -> LazyColumn(
                     contentPadding = PaddingValues(bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -147,12 +149,12 @@ fun FilesScreen(
     if (state.showCreateFolderDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.toggleCreateFolderDialog(false) },
-            title = { Text("Nova pasta") },
+            title = { Text(stringResource(R.string.files_new_folder)) },
             text = {
                 OutlinedTextField(
                     value = newFolderName,
                     onValueChange = { newFolderName = it },
-                    label = { Text("Nome da pasta") },
+                    label = { Text(stringResource(R.string.files_folder_name_label)) },
                     singleLine = true,
                 )
             },
@@ -160,10 +162,10 @@ fun FilesScreen(
                 TextButton(onClick = {
                     viewModel.createFolder(newFolderName)
                     newFolderName = ""
-                }) { Text("Criar") }
+                }) { Text(stringResource(R.string.action_create)) }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.toggleCreateFolderDialog(false) }) { Text("Cancelar") }
+                TextButton(onClick = { viewModel.toggleCreateFolderDialog(false) }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }

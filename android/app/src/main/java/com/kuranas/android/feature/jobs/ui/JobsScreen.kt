@@ -28,9 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -47,11 +49,11 @@ fun JobsScreen(viewModel: JobsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Jobs", trailingIcon = Icons.Default.Refresh, onTrailingClick = viewModel::load)
+        KNHeader(title = stringResource(R.string.jobs_title), trailingIcon = Icons.Default.Refresh, onTrailingClick = viewModel::load)
         when {
             state.isLoading -> LoadingView()
             state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
-            state.jobs.isEmpty() -> EmptyView("Nenhum job encontrado")
+            state.jobs.isEmpty() -> EmptyView(stringResource(R.string.jobs_empty))
             else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.jobs, key = { it.id }) { job ->
                     JobCard(job = job, onCancel = { viewModel.cancelJob(job.id) })
@@ -94,14 +96,14 @@ private fun JobCard(job: JobDto, onCancel: () -> Unit) {
             }
             if (job.status in listOf("running", "pending")) {
                 IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Cancel, contentDescription = "Cancelar", modifier = Modifier.size(18.dp), tint = StatusNegative)
+                    Icon(Icons.Default.Cancel, contentDescription = stringResource(R.string.action_cancel), modifier = Modifier.size(18.dp), tint = StatusNegative)
                 }
             }
         }
         if (job.status == "running") {
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(progress = { job.progress }, modifier = Modifier.fillMaxWidth())
-            Text("${(job.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.job_progress_percent, (job.progress * 100).toInt()), style = MaterialTheme.typography.bodySmall)
         }
         job.error?.let { err ->
             Spacer(Modifier.height(4.dp))

@@ -1,5 +1,6 @@
 package com.kuranas.android.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Folder
@@ -11,17 +12,18 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.kuranas.android.R
 
-enum class SwipePage(val label: String, val icon: ImageVector) {
-    HOME("Início", Icons.Filled.Home),
-    FILES("Arquivos", Icons.Filled.Folder),
-    MUSIC("Música", Icons.Filled.MusicNote),
-    VIDEO("Vídeos", Icons.Filled.VideoLibrary),
-    IMAGES("Imagens", Icons.Filled.PhotoLibrary),
-    SEARCH("Busca", Icons.Filled.Search),
-    DIARY("Diário", Icons.Filled.Book),
-    NOTIFICATIONS("Notificações", Icons.Filled.Notifications),
-    SETTINGS("Config", Icons.Filled.Settings),
+enum class SwipePage(@StringRes val labelRes: Int, val icon: ImageVector) {
+    HOME(R.string.nav_home, Icons.Filled.Home),
+    FILES(R.string.nav_files, Icons.Filled.Folder),
+    MUSIC(R.string.nav_music, Icons.Filled.MusicNote),
+    VIDEO(R.string.nav_videos, Icons.Filled.VideoLibrary),
+    IMAGES(R.string.nav_images, Icons.Filled.PhotoLibrary),
+    SEARCH(R.string.nav_search, Icons.Filled.Search),
+    DIARY(R.string.nav_diary, Icons.Filled.Book),
+    NOTIFICATIONS(R.string.nav_notifications, Icons.Filled.Notifications),
+    SETTINGS(R.string.nav_settings, Icons.Filled.Settings),
 }
 
 object AppRoute {

@@ -27,9 +27,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -56,7 +59,7 @@ fun MusicScreen(
     val tabs = MusicTab.entries
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Música")
+        KNHeader(title = stringResource(R.string.nav_music))
         ScrollableTabRow(
             selectedTabIndex = state.tab.ordinal,
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -68,11 +71,11 @@ fun MusicScreen(
                     text = {
                         Text(
                             when (tab) {
-                                MusicTab.TRACKS -> "Faixas"
-                                MusicTab.ARTISTS -> "Artistas"
-                                MusicTab.ALBUMS -> "Álbuns"
-                                MusicTab.PLAYLISTS -> "Playlists"
-                                MusicTab.FOLDERS -> "Pastas"
+                                MusicTab.TRACKS -> stringResource(R.string.music_tab_tracks)
+                                MusicTab.ARTISTS -> stringResource(R.string.music_tab_artists)
+                                MusicTab.ALBUMS -> stringResource(R.string.music_tab_albums)
+                                MusicTab.PLAYLISTS -> stringResource(R.string.music_tab_playlists)
+                                MusicTab.FOLDERS -> stringResource(R.string.music_tab_folders)
                             }
                         )
                     },
@@ -105,7 +108,7 @@ fun MusicScreen(
 
 @Composable
 private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
-    if (artists.isEmpty()) { EmptyView("Nenhum artista encontrado"); return }
+    if (artists.isEmpty()) { EmptyView(stringResource(R.string.music_no_artists)); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(artists, key = { it.key }) { artist ->
             Row(
@@ -121,7 +124,7 @@ private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Column {
                         Text(artist.artist, style = MaterialTheme.typography.bodyMedium)
-                        Text("${artist.trackCount} faixas", style = MaterialTheme.typography.bodySmall)
+                        Text(pluralStringResource(R.plurals.music_track_count, artist.trackCount, artist.trackCount), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -132,7 +135,7 @@ private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
 
 @Composable
 private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
-    if (albums.isEmpty()) { EmptyView("Nenhum álbum encontrado"); return }
+    if (albums.isEmpty()) { EmptyView(stringResource(R.string.music_no_albums)); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(albums, key = { it.key }) { album ->
             Row(
@@ -148,7 +151,7 @@ private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
                     Icon(Icons.Default.Album, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                     Column {
                         Text(album.album, style = MaterialTheme.typography.bodyMedium)
-                        Text(album.artist.ifBlank { "Artista desconhecido" }, style = MaterialTheme.typography.bodySmall)
+                        Text(album.artist.ifBlank { stringResource(R.string.music_unknown_artist) }, style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Text("${album.trackCount}", style = MaterialTheme.typography.bodySmall)
@@ -159,7 +162,7 @@ private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
 
 @Composable
 private fun TracksList(tracks: List<TrackDto>, onPlay: (TrackDto) -> Unit) {
-    if (tracks.isEmpty()) { EmptyView("Nenhuma faixa"); return }
+    if (tracks.isEmpty()) { EmptyView(stringResource(R.string.music_no_tracks)); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(tracks, key = { it.id }) { track ->
             TrackListItem(track = track, onClick = { onPlay(track) })
@@ -169,7 +172,7 @@ private fun TracksList(tracks: List<TrackDto>, onPlay: (TrackDto) -> Unit) {
 
 @Composable
 private fun FoldersList(folders: List<FolderDto>, onOpen: (String) -> Unit) {
-    if (folders.isEmpty()) { EmptyView("Nenhuma pasta com música"); return }
+    if (folders.isEmpty()) { EmptyView(stringResource(R.string.music_no_folders)); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(folders, key = { it.folder }) { folder ->
             Row(
@@ -188,7 +191,7 @@ private fun FoldersList(folders: List<FolderDto>, onOpen: (String) -> Unit) {
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                Text("${folder.trackCount} faixas", style = MaterialTheme.typography.bodySmall)
+                Text(pluralStringResource(R.plurals.music_track_count, folder.trackCount, folder.trackCount), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -196,7 +199,7 @@ private fun FoldersList(folders: List<FolderDto>, onOpen: (String) -> Unit) {
 
 @Composable
 private fun PlaylistsList(playlists: List<PlaylistDto>, onOpen: (Int) -> Unit) {
-    if (playlists.isEmpty()) { EmptyView("Nenhuma playlist"); return }
+    if (playlists.isEmpty()) { EmptyView(stringResource(R.string.music_no_playlists)); return }
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(playlists, key = { it.id }) { playlist ->
             Row(
@@ -212,7 +215,7 @@ private fun PlaylistsList(playlists: List<PlaylistDto>, onOpen: (Int) -> Unit) {
                     Icon(Icons.Default.PlaylistPlay, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Text(playlist.name, style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("${playlist.trackCount} faixas", style = MaterialTheme.typography.bodySmall)
+                Text(pluralStringResource(R.plurals.music_track_count, playlist.trackCount, playlist.trackCount), style = MaterialTheme.typography.bodySmall)
             }
         }
     }

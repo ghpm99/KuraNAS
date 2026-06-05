@@ -37,11 +37,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.discovery.DiscoveredServer
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.glass
@@ -70,8 +72,8 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(16.dp))
-        Text("KuraNAS", style = MaterialTheme.typography.headlineLarge)
-        Text("Conectar ao servidor", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.connection_connect_to_server), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(32.dp))
 
         Row(
@@ -79,7 +81,7 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Servidores na rede", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.connection_servers_on_network), style = MaterialTheme.typography.titleMedium)
             if (state.isDiscovering) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp).rotate(rotation),
@@ -87,14 +89,14 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
                 )
             } else {
                 IconButton(onClick = viewModel::startDiscovery) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Buscar novamente")
+                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_search_again))
                 }
             }
         }
 
         if (state.discovered.isEmpty() && !state.isDiscovering) {
             Text(
-                "Nenhum servidor encontrado na rede local",
+                stringResource(R.string.connection_no_servers_found),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(vertical = 8.dp),
             )
@@ -107,14 +109,14 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
         }
 
         Spacer(Modifier.height(24.dp))
-        Text("Ou conectar manualmente", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.connection_or_connect_manually), style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = state.manualUrl,
             onValueChange = viewModel::onManualUrlChange,
-            label = { Text("Endereço do servidor") },
-            placeholder = { Text("192.168.1.100:8000") },
+            label = { Text(stringResource(R.string.connection_server_address_label)) },
+            placeholder = { Text(stringResource(R.string.connection_server_address_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
@@ -129,7 +131,7 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
         Button(onClick = viewModel::connectManual, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(8.dp))
-            Text("Conectar")
+            Text(stringResource(R.string.action_connect))
         }
     }
 }

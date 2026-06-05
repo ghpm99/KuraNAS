@@ -24,9 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -46,7 +48,7 @@ fun VideoPlaylistScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
-            title = playlist?.name ?: "Playlist",
+            title = playlist?.name ?: stringResource(R.string.playlist_title),
             leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
             onLeadingClick = onNavigateBack,
         )
@@ -89,6 +91,6 @@ private fun VideoListItem(video: VideoItemDto, thumbnailUrl: String, onClick: ()
                 .clip(RoundedCornerShape(8.dp)),
         )
         Text(video.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2)
-        Icon(Icons.Default.PlayArrow, contentDescription = "Tocar", tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.cd_play), tint = MaterialTheme.colorScheme.primary)
     }
 }

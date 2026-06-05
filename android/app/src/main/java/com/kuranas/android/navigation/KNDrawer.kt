@@ -19,7 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.ui.theme.BgCanvas
@@ -37,20 +39,20 @@ fun KNDrawer(
     ) {
         Column(modifier = Modifier.padding(vertical = 24.dp)) {
             Text(
-                "KuraNAS",
+                stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Navegação",
+                stringResource(R.string.drawer_section_navigation),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
             SwipePage.entries.forEachIndexed { index, page ->
                 NavigationDrawerItem(
                     icon = { Icon(page.icon, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                    label = { Text(page.label) },
+                    label = { Text(stringResource(page.labelRes)) },
                     selected = current == index,
                     onClick = { onSelect(index) },
                     modifier = Modifier.padding(horizontal = 12.dp),
@@ -72,7 +74,7 @@ fun KNDrawer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Esquecer servidor",
+                    stringResource(R.string.action_forget_server),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
