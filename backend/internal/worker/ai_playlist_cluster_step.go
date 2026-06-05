@@ -4,6 +4,7 @@ import (
 	"context"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/config"
 )
 
 // executeAIPlaylistClusterStep rebuilds the AI-curated music playlists by asking
@@ -15,5 +16,10 @@ func executeAIPlaylistClusterStep(workerContext *WorkerContext, _ jobs.StepModel
 		return ErrStepSkipped
 	}
 
-	return workerContext.MusicService.RebuildAIClusters(context.Background())
+	// Hard backstop so a stalled local model can never freeze the worker slot;
+	// the AI provider's own HTTP timeout is runtime-editable and may be 0.
+	ctx, cancel := context.WithTimeout(context.Background(), config.StepTimeout())
+	defer cancel()
+
+	return workerContext.MusicService.RebuildAIClusters(ctx)
 }
