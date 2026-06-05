@@ -64,6 +64,19 @@ func InitializeConfig() {
 	}
 }
 
+// StepTimeout is the hard ceiling a single worker step may run before it is
+// abandoned, derived from WORKER_STEP_TIMEOUT_SECONDS (default 120s). It is the
+// backstop for external and AI calls whose own timeout may be misconfigured —
+// e.g. an AI provider HTTP timeout set to 0 (infinite) at runtime — so a single
+// stuck step can never freeze a worker slot forever.
+func StepTimeout() time.Duration {
+	timeout := time.Duration(AppConfig.WorkerStepTimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = 120 * time.Second
+	}
+	return timeout
+}
+
 // ToRelativePath strips the EntryPoint prefix from an absolute path,
 // returning a path relative to the entry point (e.g. "/imagens/fotos").
 func ToRelativePath(absolutePath string) string {

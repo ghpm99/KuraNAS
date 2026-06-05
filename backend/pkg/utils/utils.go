@@ -297,10 +297,7 @@ func RunPythonScript(scriptName ScriptType, arg ...string) (string, error) {
 	// worker slot indefinitely. On timeout the process is killed and the error
 	// wraps context.DeadlineExceeded, which the scheduler detects to send the
 	// job to the back of the queue instead of failing it.
-	timeout := time.Duration(config.AppConfig.WorkerStepTimeoutSeconds) * time.Second
-	if timeout <= 0 {
-		timeout = 120 * time.Second
-	}
+	timeout := config.StepTimeout()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

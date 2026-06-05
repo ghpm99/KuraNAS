@@ -518,11 +518,7 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 // cannot hang the request/worker indefinitely; on timeout the caller falls back
 // to a placeholder icon.
 func ffmpegTimeout() time.Duration {
-	timeout := time.Duration(config.AppConfig.WorkerStepTimeoutSeconds) * time.Second
-	if timeout <= 0 {
-		timeout = 120 * time.Second
-	}
-	return timeout
+	return config.StepTimeout()
 }
 
 func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
