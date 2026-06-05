@@ -950,5 +950,22 @@
 	"ERROR_AI_PROVIDERS_LOAD": "Não foi possível carregar os provedores de IA",
 	"ERROR_AI_PROVIDER_INVALID_NAME": "Nome de provedor inválido",
 	"ERROR_AI_PROVIDER_NOT_FOUND": "Provedor não encontrado",
-	"ERROR_AI_PROVIDER_UPDATE": "Não foi possível atualizar o provedor de IA"
+	"ERROR_AI_PROVIDER_UPDATE": "Não foi possível atualizar o provedor de IA",
+	"SOMETHING_WENT_WRONG": "Algo deu errado",
+	"TRY_AGAIN": "Tentar novamente",
+	"NOTIFICATION_TYPE_INFO": "Informação",
+	"NOTIFICATION_TYPE_SUCCESS": "Sucesso",
+	"NOTIFICATION_TYPE_WARNING": "Aviso",
+	"NOTIFICATION_TYPE_ERROR": "Erro",
+	"PLAYER_ARIA_SHUFFLE": "Alternar modo aleatório",
+	"PLAYER_ARIA_PREVIOUS": "Faixa anterior",
+	"PLAYER_ARIA_NEXT": "Próxima faixa",
+	"PLAYER_ARIA_REPEAT": "Alterar modo de repetição",
+	"PLAYER_ARIA_SEEK": "Buscar na reprodução",
+	"PLAYER_ARIA_QUEUE": "Alternar fila",
+	"PLAYER_ARIA_VOLUME": "Ajustar volume",
+	"PLAYER_ARIA_PLAY": "Reproduzir",
+	"PLAYER_ARIA_PAUSE": "Pausar",
+	"PLAYER_ARIA_MUTE": "Silenciar",
+	"PLAYER_ARIA_UNMUTE": "Ativar som"
 }
