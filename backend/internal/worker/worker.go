@@ -104,31 +104,48 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 // depending on the systemevent package. Descriptions are localized labels, not
 // error text — the forensic file log holds the details.
 func wireSchedulerObservers(context *WorkerContext) {
-	if context == nil || context.JobScheduler == nil || context.SystemEvents == nil {
+	if context == nil || context.JobScheduler == nil {
 		return
 	}
 
-	recorder := context.SystemEvents
 	context.JobScheduler.SetOnJobFinished(func(jobID int, jobType string, status JobStatus) {
 		switch status {
 		case JobStatusFailed, JobStatusPartialFail:
-			if err := recorder.RecordEvent(
-				systemevent.EventTypeJobFailed,
-				i18n.Translate("SYSTEM_EVENT_JOB_FAILED", jobID, jobType, string(status)),
-			); err != nil {
-				applog.Warn("failed to record job failed event", "job_id", jobID, "error", err.Error())
-			}
+			recordSystemEvent(context, systemevent.EventTypeJobFailed,
+				i18n.Translate("SYSTEM_EVENT_JOB_FAILED", jobID, jobType, string(status)))
+			// Notify the operator so a failed job is visible without reading the
+			// dashboard; grouped so a burst of failures collapses into one badge.
+			emitNotification(context, "error",
+				i18n.GetMessage("NOTIFICATION_JOB_FAILED_TITLE"),
+				i18n.Translate("NOTIFICATION_JOB_FAILED_MESSAGE", jobType),
+				"job_failed")
 		case JobStatusCompleted:
 			if jobType == string(JobTypeStartupScan) || jobType == string(JobTypeReindexFolder) {
-				if err := recorder.RecordEvent(
-					systemevent.EventTypeScanCompleted,
-					i18n.Translate("SYSTEM_EVENT_SCAN_COMPLETED", jobID),
-				); err != nil {
-					applog.Warn("failed to record scan completed event", "job_id", jobID, "error", err.Error())
-				}
+				recordSystemEvent(context, systemevent.EventTypeScanCompleted,
+					i18n.Translate("SYSTEM_EVENT_SCAN_COMPLETED", jobID))
 			}
 		}
 	})
+
+	context.JobScheduler.SetOnStall(func(runningJobs int) {
+		// The scheduler already logged the stall forensically; surface it to the
+		// operator too, since a frozen pipeline produces no other signal.
+		emitNotification(context, "error",
+			i18n.GetMessage("NOTIFICATION_SCHEDULER_STALL_TITLE"),
+			i18n.Translate("NOTIFICATION_SCHEDULER_STALL_MESSAGE", runningJobs),
+			"scheduler_stall")
+	})
+}
+
+// recordSystemEvent writes an audit/health event when a recorder is wired,
+// logging (not failing) on error — observability must never break the worker.
+func recordSystemEvent(context *WorkerContext, eventType systemevent.EventType, description string) {
+	if context == nil || context.SystemEvents == nil {
+		return
+	}
+	if err := context.SystemEvents.RecordEvent(eventType, description); err != nil {
+		applog.Warn("failed to record system event", "event", string(eventType), "error", err.Error())
+	}
 }
 
 // recoverInterruptedWork revives jobs/steps left in 'running' by a previous
