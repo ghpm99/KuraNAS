@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/img"
@@ -122,19 +121,16 @@ func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai
 	}
 
 	prompt := buildClassificationPrompt(file, metadata)
-	// Hard backstop above the provider's own HTTP timeout (editable at runtime
-	// via Settings → AI Providers and possibly 0 = infinite): a single stuck
-	// classification must never freeze the worker slot, exactly like the
-	// ffmpeg/python steps are bounded.
-	ctx, cancel := context.WithTimeout(context.Background(), config.StepTimeout())
-	defer cancel()
 
 	// Send a downscaled copy of the image so a vision model (e.g. gemma3) can
 	// classify and name it from the actual content. If encoding fails we still
 	// run a text-only request rather than dropping AI entirely.
 	images := encodeImageForAI(file.Path)
 
-	resp, err := aiService.Execute(ctx, ai.Request{
+	// No per-request deadline: how long the model may take is bounded solely by
+	// the provider's HTTP timeout, configured at runtime in the ai_providers
+	// table. Vision models are slow, so a hardcoded ceiling only fought it.
+	resp, err := aiService.Execute(context.Background(), ai.Request{
 		TaskType:     ai.TaskClassification,
 		SystemPrompt: prompts.ImageClassificationSystemPrompt(),
 		Prompt:       prompt,

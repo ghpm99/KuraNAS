@@ -4,7 +4,6 @@ import (
 	"context"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
-	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/systemevent"
 )
@@ -18,12 +17,10 @@ func executeAIPlaylistClusterStep(workerContext *WorkerContext, _ jobs.StepModel
 		return ErrStepSkipped
 	}
 
-	// Hard backstop so a stalled local model can never freeze the worker slot;
-	// the AI provider's own HTTP timeout is runtime-editable and may be 0.
-	ctx, cancel := context.WithTimeout(context.Background(), config.StepTimeout())
-	defer cancel()
-
-	err := workerContext.MusicService.RebuildAIClusters(ctx)
+	// The AI provider's own HTTP timeout (runtime-editable in the ai_providers
+	// table) is the single bound on how long the model may take, so we don't
+	// impose a tighter deadline here that would just fight that config.
+	err := workerContext.MusicService.RebuildAIClusters(context.Background())
 	if err != nil && workerContext.SystemEvents != nil {
 		// Record an audit marker (no error text — that lives in the forensic
 		// file log) so a silently unreachable AI provider surfaces on the

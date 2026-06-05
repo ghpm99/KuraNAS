@@ -34,8 +34,9 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 	started := time.Now()
 	resp, err := route.Primary.Complete(ctx, req)
 	if err == nil {
-		applog.Debug("ai request completed",
+		applog.Info("ai request completed",
 			"task", string(req.TaskType), "provider", route.Primary.Name(),
+			"model", resp.Model, "tokens", resp.TokensUsed.TotalTokens,
 			"latency_ms", time.Since(started).Milliseconds())
 		recordUsage(true, time.Since(started), resp.TokensUsed.TotalTokens)
 		return resp, nil
@@ -48,8 +49,9 @@ func (s *Service) Execute(ctx context.Context, req Request) (Response, error) {
 	for _, fallback := range route.Fallbacks {
 		resp, err = fallback.Complete(ctx, req)
 		if err == nil {
-			applog.Debug("ai request completed via fallback",
+			applog.Info("ai request completed via fallback",
 				"task", string(req.TaskType), "provider", fallback.Name(),
+				"model", resp.Model, "tokens", resp.TokensUsed.TotalTokens,
 				"latency_ms", time.Since(started).Milliseconds())
 			recordUsage(true, time.Since(started), resp.TokensUsed.TotalTokens)
 			return resp, nil
