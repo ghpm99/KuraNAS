@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"nas-go/api/pkg/applog"
 )
 
 const (
@@ -46,7 +48,7 @@ func (l *UDPListener) Start() error {
 	}
 
 	l.conn = conn
-	go l.listen()
+	applog.GoRestart("udp-discovery", l.listen)
 
 	log.Printf("[DISCOVERY] UDP listener started on port %d", l.port)
 	return nil
