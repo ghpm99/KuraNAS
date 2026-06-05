@@ -84,14 +84,14 @@ describe('GlobalPlayerControl', () => {
     it('shows animated bars and pause button when playing', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), isPlaying: true });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('pause playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PAUSE')).toBeInTheDocument();
     });
 
     // Branch: isPlaying false => Volume2 icon + Play icon + play aria-label
     it('shows volume icon and play button when paused', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), isPlaying: false });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('play playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PLAY')).toBeInTheDocument();
     });
 
     // Branch: getMusicTitle uses metadata.title when present
@@ -186,7 +186,7 @@ describe('GlobalPlayerControl', () => {
         // safeCurrentTime = 0, but formatTime(Infinity) for display
         // currentTime display: formatTime(Infinity) => isNaN(Infinity) is false, so Math.floor(Infinity/60) => Infinity
         // Actually Infinity is not NaN but not finite, so safeCurrentTime = 0
-        expect(screen.getByLabelText('seek playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_SEEK')).toBeInTheDocument();
     });
 
     // Branch: Number.isFinite(duration) && duration > 0 => use duration; else 0
@@ -230,7 +230,7 @@ describe('GlobalPlayerControl', () => {
         });
         render(<GlobalPlayerControl />);
         // safeDuration = 0 because duration <= 0
-        const seekSlider = screen.getByLabelText('seek playback');
+        const seekSlider = screen.getByLabelText('PLAYER_ARIA_SEEK');
         // max should be safeDuration || 100 = 100
         expect(seekSlider).toBeInTheDocument();
     });
@@ -243,7 +243,7 @@ describe('GlobalPlayerControl', () => {
             duration: 0,
         });
         render(<GlobalPlayerControl />);
-        const seekSlider = screen.getByLabelText('seek playback');
+        const seekSlider = screen.getByLabelText('PLAYER_ARIA_SEEK');
         expect(seekSlider).toHaveAttribute('aria-valuemax', '100');
     });
 
@@ -254,7 +254,7 @@ describe('GlobalPlayerControl', () => {
             duration: 200,
         });
         render(<GlobalPlayerControl />);
-        const seekSlider = screen.getByLabelText('seek playback');
+        const seekSlider = screen.getByLabelText('PLAYER_ARIA_SEEK');
         expect(seekSlider).toHaveAttribute('aria-valuemax', '200');
     });
 
@@ -262,14 +262,14 @@ describe('GlobalPlayerControl', () => {
     it('shows muted state when volume is 0', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), volume: 0 });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('unmute volume')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_UNMUTE')).toBeInTheDocument();
     });
 
     // Branch: volume > 0 => Volume2 icon + "mute volume" aria-label
     it('shows unmuted state when volume > 0', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), volume: 0.5 });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('mute volume')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_MUTE')).toBeInTheDocument();
     });
 
     // Branch: mute button click: volume > 0 => set to 0
@@ -277,7 +277,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), volume: 0.8 };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('mute volume'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_MUTE'));
         expect(api.setVolume).toHaveBeenCalledWith(0);
     });
 
@@ -286,7 +286,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), volume: 0 };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('unmute volume'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_UNMUTE'));
         expect(api.setVolume).toHaveBeenCalledWith(0.7);
     });
 
@@ -294,49 +294,49 @@ describe('GlobalPlayerControl', () => {
     it('renders shuffle button with full opacity when shuffle is true', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), shuffle: true });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('toggle shuffle')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_SHUFFLE')).toBeInTheDocument();
     });
 
     // Branch: shuffle false => opacity 0.4
     it('renders shuffle button with reduced opacity when shuffle is false', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), shuffle: false });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('toggle shuffle')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_SHUFFLE')).toBeInTheDocument();
     });
 
     // Branch: repeatMode === 'one' => Repeat1 icon
     it('renders Repeat1 icon when repeatMode is one', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), repeatMode: 'one' });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('change repeat mode')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_REPEAT')).toBeInTheDocument();
     });
 
     // Branch: repeatMode !== 'one' => Repeat icon
     it('renders Repeat icon when repeatMode is not one', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), repeatMode: 'none' });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('change repeat mode')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_REPEAT')).toBeInTheDocument();
     });
 
     // Branch: repeatMode !== 'none' => opacity 1, primary color
     it('renders repeat button with full opacity when repeatMode is all', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), repeatMode: 'all' });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('change repeat mode')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_REPEAT')).toBeInTheDocument();
     });
 
     // Branch: queueOpen true => primary color
     it('renders queue button with primary color when queueOpen is true', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), queueOpen: true });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('toggle queue')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_QUEUE')).toBeInTheDocument();
     });
 
     // Branch: queueOpen false => secondary color
     it('renders queue button with secondary color when queueOpen is false', () => {
         mockUseGlobalMusic.mockReturnValue({ ...baseApi(), queueOpen: false });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('toggle queue')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_QUEUE')).toBeInTheDocument();
     });
 
     // cycleRepeatMode: none -> all
@@ -344,7 +344,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), repeatMode: 'none' };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api.setRepeatMode).toHaveBeenCalledWith('all');
     });
 
@@ -353,7 +353,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), repeatMode: 'all' };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api.setRepeatMode).toHaveBeenCalledWith('one');
     });
 
@@ -362,7 +362,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), repeatMode: 'one' };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api.setRepeatMode).toHaveBeenCalledWith('none');
     });
 
@@ -371,7 +371,7 @@ describe('GlobalPlayerControl', () => {
         const api = { ...baseApi(), repeatMode: 'unknown-mode' };
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api.setRepeatMode).toHaveBeenCalledWith('none');
     });
 
@@ -380,7 +380,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('play playback'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_PLAY'));
         expect(api.togglePlayPause).toHaveBeenCalled();
     });
 
@@ -388,7 +388,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('next track'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_NEXT'));
         expect(api.next).toHaveBeenCalled();
     });
 
@@ -396,7 +396,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('previous track'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_PREVIOUS'));
         expect(api.previous).toHaveBeenCalled();
     });
 
@@ -404,7 +404,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('toggle shuffle'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_SHUFFLE'));
         expect(api.toggleShuffle).toHaveBeenCalled();
     });
 
@@ -412,7 +412,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('toggle queue'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_QUEUE'));
         expect(api.toggleQueue).toHaveBeenCalled();
     });
 
@@ -421,7 +421,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        const seekSlider = screen.getByLabelText('seek playback');
+        const seekSlider = screen.getByLabelText('PLAYER_ARIA_SEEK');
         fireEvent.change(seekSlider, { target: { value: '50' } });
         expect(api.seek).toHaveBeenCalledWith(50);
     });
@@ -430,7 +430,7 @@ describe('GlobalPlayerControl', () => {
         const api = baseApi();
         mockUseGlobalMusic.mockReturnValue(api);
         render(<GlobalPlayerControl />);
-        const volumeSlider = screen.getByLabelText('set volume');
+        const volumeSlider = screen.getByLabelText('PLAYER_ARIA_VOLUME');
         fireEvent.change(volumeSlider, { target: { value: '0.3' } });
         expect(api.setVolume).toHaveBeenCalledWith(0.3);
     });
@@ -515,7 +515,7 @@ describe('GlobalPlayerControl', () => {
             currentTrack: { metadata: {} },
         });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('play playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PLAY')).toBeInTheDocument();
     });
 
     it('falls back to empty string when getMusicTitle is undefined, no metadata at all', () => {
@@ -525,7 +525,7 @@ describe('GlobalPlayerControl', () => {
             currentTrack: { name: '' },
         });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('play playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PLAY')).toBeInTheDocument();
     });
 
     it('falls back through all branches when getMusicTitle undefined and metadata.title is empty', () => {
@@ -579,7 +579,7 @@ describe('GlobalPlayerControl', () => {
             currentTrack: { name: 'Song' },
         });
         render(<GlobalPlayerControl />);
-        expect(screen.getByLabelText('play playback')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PLAY')).toBeInTheDocument();
     });
 
     // Ensure nextMode fallback: (currentIdx + 1) % modes.length uses ?? modes[0]
@@ -587,19 +587,19 @@ describe('GlobalPlayerControl', () => {
         const api1 = { ...baseApi(), repeatMode: 'none' };
         mockUseGlobalMusic.mockReturnValue(api1);
         const { rerender } = render(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api1.setRepeatMode).toHaveBeenCalledWith('all');
 
         const api2 = { ...baseApi(), repeatMode: 'all' };
         mockUseGlobalMusic.mockReturnValue(api2);
         rerender(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api2.setRepeatMode).toHaveBeenCalledWith('one');
 
         const api3 = { ...baseApi(), repeatMode: 'one' };
         mockUseGlobalMusic.mockReturnValue(api3);
         rerender(<GlobalPlayerControl />);
-        fireEvent.click(screen.getByLabelText('change repeat mode'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api3.setRepeatMode).toHaveBeenCalledWith('none');
     });
 });

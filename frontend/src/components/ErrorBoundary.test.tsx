@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 
+// No i18n mock and no provider wrapper: useI18n() is resilient outside an
+// I18nProvider (it echoes the key), so the real hook drives the fallback UI
+// here and the assertions match the raw translation keys.
 const ThrowingChild = ({ shouldThrow }: { shouldThrow: boolean }) => {
     if (shouldThrow) {
         throw new Error('boom');
@@ -49,7 +52,7 @@ describe('components/ErrorBoundary', () => {
     it('shows the fallback UI and can recover after reset', () => {
         render(<RecoverableHarness />);
 
-        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+        expect(screen.getByText('SOMETHING_WENT_WRONG')).toBeInTheDocument();
         expect(screen.getByText('boom')).toBeInTheDocument();
         expect(consoleErrorSpy).toHaveBeenCalledWith(
             'ErrorBoundary caught:',
@@ -58,7 +61,7 @@ describe('components/ErrorBoundary', () => {
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Recover' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
 
         expect(screen.getByText('Recovered child')).toBeInTheDocument();
     });
