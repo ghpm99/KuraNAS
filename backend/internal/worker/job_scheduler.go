@@ -13,6 +13,7 @@ import (
 
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/applog"
 )
 
 var ErrStepSkipped = errors.New("step skipped")
@@ -70,7 +71,26 @@ func (s *JobScheduler) Start() {
 
 	s.started = true
 	s.stopWg.Add(1)
-	go s.loop()
+	go s.runLoop()
+}
+
+// runLoop owns the scheduler loop's lifetime: it runs loop() under panic
+// recovery and restarts it if it panics, so a single bad iteration cannot
+// permanently freeze job scheduling. It returns (releasing stopWg) only on a
+// normal stop via stopCh.
+func (s *JobScheduler) runLoop() {
+	defer s.stopWg.Done()
+	for {
+		if !applog.RunGuarded("scheduler-loop", s.loop) {
+			return
+		}
+		select {
+		case <-s.stopCh:
+			return
+		default:
+			log.Printf("[scheduler] loop restarting after panic\n")
+		}
+	}
 }
 
 func (s *JobScheduler) Stop() {
@@ -112,7 +132,6 @@ func (s *JobScheduler) Enqueue(jobID int) bool {
 }
 
 func (s *JobScheduler) loop() {
-	defer s.stopWg.Done()
 	pollInterval := time.Duration(config.AppConfig.WorkerSchedulerPollMS) * time.Millisecond
 	if pollInterval <= 0 {
 		pollInterval = 2 * time.Second
@@ -134,9 +153,14 @@ func (s *JobScheduler) loop() {
 			go func(id int) {
 				defer s.jobWg.Done()
 				defer func() { <-s.jobSem }()
-				if err := s.processJob(id); err != nil {
-					log.Printf("[job=%d] processJob error: %v\n", id, err)
-				}
+				// Recover so a panic inside a step executor is logged with its
+				// stack and only fails this job, instead of crashing the whole
+				// process (which would also leak the jobSem slot via os.Exit).
+				applog.Recover(fmt.Sprintf("job-%d", id), func() {
+					if err := s.processJob(id); err != nil {
+						applog.Error("processJob error", "job_id", id, "error", err.Error())
+					}
+				})
 			}(jobID)
 		case <-pollTicker.C:
 			s.scheduleQueuedJobs()

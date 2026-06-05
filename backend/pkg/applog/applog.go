@@ -160,6 +160,13 @@ func GoRestart(name string, fn func()) {
 	}()
 }
 
+// RunGuarded runs fn under panic recovery and reports whether it panicked
+// (true) or returned normally (false). Callers that own a goroutine's lifetime
+// (e.g. a loop they must restart) use this instead of Recover.
+func RunGuarded(name string, fn func()) bool {
+	return runGuarded(name, fn)
+}
+
 // runGuarded runs fn and reports whether it panicked (true) or returned
 // normally (false).
 func runGuarded(name string, fn func()) (panicked bool) {

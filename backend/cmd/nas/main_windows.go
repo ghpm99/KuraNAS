@@ -51,8 +51,7 @@ func (p *program) Start(s service.Service) error {
 		os.Exit(0)
 	})
 
-	go func() {
-
+	applog.Go("http-server", func() {
 		if err := application.Run(":8000", true); err != nil {
 			if p.logger != nil {
 				p.logger.Errorf("Erro ao executar servidor: %v", err)
@@ -63,7 +62,7 @@ func (p *program) Start(s service.Service) error {
 		if p.logger != nil {
 			p.logger.Info("Serviço KuraNAS finalizado.")
 		}
-	}()
+	})
 
 	if p.logger != nil {
 		p.logger.Info("KuraNAS iniciado na porta 8000")

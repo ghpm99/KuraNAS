@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/watchfolders"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"sync"
 	"time"
@@ -59,7 +60,7 @@ func (fw *FolderWatcher) Start() {
 	fw.running = true
 	fw.mu.Unlock()
 
-	go fw.loop()
+	applog.GoRestart("folder-watcher", fw.loop)
 }
 
 func (fw *FolderWatcher) Stop() {
