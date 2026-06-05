@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common actions -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_create">Criar</string>
+    <string name="action_connect">Conectar</string>
+    <string name="action_retry">Tentar novamente</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_forget">Esquecer</string>
+    <string name="action_forget_server">Esquecer servidor</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Início</string>
+    <string name="nav_files">Arquivos</string>
+    <string name="nav_music">Música</string>
+    <string name="nav_videos">Vídeos</string>
+    <string name="nav_images">Imagens</string>
+    <string name="nav_search">Busca</string>
+    <string name="nav_diary">Diário</string>
+    <string name="nav_notifications">Notificações</string>
+    <string name="nav_settings">Config</string>
+    <string name="drawer_section_navigation">Navegação</string>
+
+    <!-- Connection -->
+    <string name="connection_connect_to_server">Conectar ao servidor</string>
+    <string name="connection_servers_on_network">Servidores na rede</string>
+    <string name="connection_no_servers_found">Nenhum servidor encontrado na rede local</string>
+    <string name="connection_or_connect_manually">Ou conectar manualmente</string>
+    <string name="connection_server_address_label">Endereço do servidor</string>
+    <string name="connection_server_address_placeholder">192.168.1.100:8000</string>
+    <string name="connection_discovery_failed">Falha na descoberta automática</string>
+    <string name="connection_invalid_address">Insira um endereço válido</string>
+    <string name="cd_search_again">Buscar novamente</string>
+
+    <!-- Diary -->
+    <string name="diary_new_entry">Nova entrada</string>
+    <string name="diary_edit_entry">Editar entrada</string>
+    <string name="diary_title_label">Título</string>
+    <string name="diary_content_label">Conteúdo</string>
+
+    <!-- Files -->
+    <string name="files_root">Raiz</string>
+    <string name="files_breadcrumb_segment">" / %1$s"</string>
+    <string name="files_new_folder">Nova pasta</string>
+    <string name="files_folder_name_label">Nome da pasta</string>
+    <string name="files_empty_folder">Pasta vazia</string>
+    <string name="file_not_found">Arquivo não encontrado</string>
+
+    <!-- File viewer -->
+    <string name="file_viewer_title">Arquivo</string>
+    <string name="file_details">Detalhes</string>
+    <string name="file_hide_details">Ocultar detalhes</string>
+    <string name="file_downloading">Baixando…</string>
+    <string name="file_download">Baixar</string>
+    <string name="file_info">Informações</string>
+    <string name="file_field_name">Nome</string>
+    <string name="file_field_path">Caminho</string>
+    <string name="file_field_format">Formato</string>
+    <string name="file_field_type">Tipo</string>
+    <string name="file_type_file">Arquivo</string>
+    <string name="file_type_folder">Pasta</string>
+    <string name="file_field_size">Tamanho</string>
+    <string name="file_field_created">Criado em</string>
+    <string name="file_field_updated">Atualizado em</string>
+    <string name="file_field_content_type">Tipo de conteúdo</string>
+    <string name="file_content_type_text">texto</string>
+    <string name="file_content_type_binary">binário</string>
+    <string name="file_large_preview">Arquivo grande — exibindo apenas o início.</string>
+    <string name="file_preview_unavailable">Pré-visualização não disponível para este tipo de arquivo.</string>
+    <string name="file_save_hint">Use \"Baixar\" para salvar no dispositivo.</string>
+    <string name="file_saved_to_downloads">Salvo em Downloads/%1$s</string>
+    <string name="file_save_failed">Falha ao salvar o arquivo</string>
+    <string name="file_download_failed">Falha no download: %1$s</string>
+
+    <!-- Home -->
+    <string name="home_recently_accessed">Acessados recentemente</string>
+    <string name="home_quick_access">Acesso rápido</string>
+    <string name="home_storage">Armazenamento</string>
+    <plurals name="home_file_count">
+        <item quantity="one">%1$d arquivo</item>
+        <item quantity="other">%1$d arquivos</item>
+    </plurals>
+
+    <!-- Jobs -->
+    <string name="jobs_title">Jobs</string>
+    <string name="jobs_empty">Nenhum job encontrado</string>
+    <string name="job_progress_percent">%1$d%%</string>
+
+    <!-- Music -->
+    <string name="playlist_title">Playlist</string>
+    <plurals name="music_track_count">
+        <item quantity="one">%1$d faixa</item>
+        <item quantity="other">%1$d faixas</item>
+    </plurals>
+    <string name="music_unknown_artist">Artista desconhecido</string>
+    <string name="music_no_artists">Nenhum artista encontrado</string>
+    <string name="music_no_albums">Nenhum álbum encontrado</string>
+    <string name="music_no_tracks">Nenhuma faixa</string>
+    <string name="music_no_folders">Nenhuma pasta com música</string>
+    <string name="music_no_playlists">Nenhuma playlist</string>
+    <string name="music_no_track">Nenhuma música</string>
+    <string name="music_folder_empty">Nenhuma faixa nesta pasta</string>
+    <string name="music_up_next">Próximas músicas</string>
+    <string name="music_tab_tracks">Faixas</string>
+    <string name="music_tab_artists">Artistas</string>
+    <string name="music_tab_albums">Álbuns</string>
+    <string name="music_tab_playlists">Playlists</string>
+    <string name="music_tab_folders">Pastas</string>
+    <string name="cd_shuffle">Aleatório</string>
+    <string name="cd_previous">Anterior</string>
+    <string name="cd_next">Próxima</string>
+    <string name="cd_repeat">Repetir</string>
+    <string name="cd_play">Tocar</string>
+    <string name="cd_pause">Pausar</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Buscar arquivos, músicas, vídeos…</string>
+    <string name="search_no_results">Nenhum resultado para \"%1$s\"</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_server">Servidor</string>
+    <string name="settings_connected">Conectado</string>
+    <string name="settings_about_server">Sobre o servidor</string>
+    <string name="settings_version">Versão: %1$s</string>
+    <string name="settings_platform">Plataforma: %1$s</string>
+    <string name="settings_uptime">Uptime: %1$s</string>
+    <string name="settings_update_available">Atualização disponível</string>
+    <string name="settings_update_detail">v%1$s disponível (atual: v%2$s)</string>
+    <string name="settings_forget_dialog_title">Esquecer servidor?</string>
+    <string name="settings_forget_dialog_text">O endereço do servidor será removido e você precisará reconectar.</string>
+
+    <!-- Video -->
+    <string name="video_recent">Recentes</string>
+    <string name="video_playlists">Playlists</string>
+    <string name="video_empty">Nenhum vídeo encontrado</string>
+    <plurals name="video_count">
+        <item quantity="one">%1$d vídeo</item>
+        <item quantity="other">%1$d vídeos</item>
+    </plurals>
+
+    <!-- Images -->
+    <string name="images_empty">Nenhuma imagem encontrada</string>
+
+    <!-- Notifications -->
+    <string name="notifications_empty">Nenhuma notificação</string>
+</resources>
