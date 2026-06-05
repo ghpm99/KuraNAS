@@ -10,8 +10,12 @@ const DisplayTimeLayout = "02/01/2006 15:04:05"
 type EventType string
 
 const (
-	EventTypeStartup  EventType = "STARTUP"
-	EventTypeShutdown EventType = "SHUTDOWN"
+	EventTypeStartup               EventType = "STARTUP"
+	EventTypeShutdown              EventType = "SHUTDOWN"
+	EventTypeWorkerPoolStarted     EventType = "WORKER_POOL_STARTED"
+	EventTypeScanCompleted         EventType = "SCAN_COMPLETED"
+	EventTypeJobFailed             EventType = "JOB_FAILED"
+	EventTypeAIProviderUnavailable EventType = "AI_PROVIDER_UNAVAILABLE"
 )
 
 type EventModel struct {

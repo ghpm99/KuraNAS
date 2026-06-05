@@ -16,6 +16,7 @@ import (
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/systemevent"
 	"nas-go/api/pkg/utils"
 )
 
@@ -37,6 +38,7 @@ type WorkerContext struct {
 	NotificationService notifications.ServiceInterface
 	AIService           ai.ServiceInterface
 	AISettings          AISettingsReader
+	SystemEvents        systemevent.ServiceInterface
 	JobScheduler        *JobScheduler
 	JobOrchestrator     *JobOrchestrator
 }
@@ -72,6 +74,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	if context != nil && context.JobsRepository != nil {
 		context.JobScheduler = NewJobScheduler(context.JobsRepository, buildStepExecutors(context))
 		context.JobOrchestrator = NewJobOrchestrator(context.JobsRepository, context.JobScheduler)
+		wireSchedulerObservers(context)
 		recoverInterruptedWork(context)
 		context.JobScheduler.Start()
 	}
@@ -84,6 +87,48 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	applog.Go("workers-scheduler", func() { startWorkersScheduler(context) })
 	applog.Go("notification-cleanup", func() { startNotificationCleanup(context) })
 	startEntryPointWatcher(context)
+
+	if context != nil && context.SystemEvents != nil {
+		if err := context.SystemEvents.RecordEvent(
+			systemevent.EventTypeWorkerPoolStarted,
+			i18n.Translate("SYSTEM_EVENT_WORKER_POOL_STARTED", numWorkers),
+		); err != nil {
+			applog.Warn("failed to record worker pool started event", "error", err.Error())
+		}
+	}
+}
+
+// wireSchedulerObservers connects the scheduler's job-finished hook to the
+// audit/health log so failed jobs and completed scans show up in
+// system_event_log (the source the dashboard reads), without the scheduler
+// depending on the systemevent package. Descriptions are localized labels, not
+// error text — the forensic file log holds the details.
+func wireSchedulerObservers(context *WorkerContext) {
+	if context == nil || context.JobScheduler == nil || context.SystemEvents == nil {
+		return
+	}
+
+	recorder := context.SystemEvents
+	context.JobScheduler.SetOnJobFinished(func(jobID int, jobType string, status JobStatus) {
+		switch status {
+		case JobStatusFailed, JobStatusPartialFail:
+			if err := recorder.RecordEvent(
+				systemevent.EventTypeJobFailed,
+				i18n.Translate("SYSTEM_EVENT_JOB_FAILED", jobID, jobType, string(status)),
+			); err != nil {
+				applog.Warn("failed to record job failed event", "job_id", jobID, "error", err.Error())
+			}
+		case JobStatusCompleted:
+			if jobType == string(JobTypeStartupScan) || jobType == string(JobTypeReindexFolder) {
+				if err := recorder.RecordEvent(
+					systemevent.EventTypeScanCompleted,
+					i18n.Translate("SYSTEM_EVENT_SCAN_COMPLETED", jobID),
+				); err != nil {
+					applog.Warn("failed to record scan completed event", "job_id", jobID, "error", err.Error())
+				}
+			}
+		}
+	})
 }
 
 // recoverInterruptedWork revives jobs/steps left in 'running' by a previous

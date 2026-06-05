@@ -37,6 +37,18 @@ type JobScheduler struct {
 
 	jobSem chan struct{}
 	jobWg  sync.WaitGroup
+
+	// onJobFinished, when set, is called once a job reaches a terminal status in
+	// the normal finish path. It lets the composition root record audit/health
+	// events and emit notifications without the scheduler depending on those
+	// packages. Set it before Start(); it is read from job goroutines.
+	onJobFinished func(jobID int, jobType string, status JobStatus)
+}
+
+// SetOnJobFinished registers a callback invoked when a job finishes with a
+// terminal status. Call before Start().
+func (s *JobScheduler) SetOnJobFinished(fn func(jobID int, jobType string, status JobStatus)) {
+	s.onJobFinished = fn
 }
 
 func NewJobScheduler(repository jobs.RepositoryInterface, executors map[StepType]StepExecutor) *JobScheduler {
@@ -396,6 +408,10 @@ func (s *JobScheduler) processJob(jobID int) error {
 	}
 
 	logJobFinished(jobID, jobType, status, finished.Sub(now), finalSteps, lastError)
+
+	if s.onJobFinished != nil {
+		s.onJobFinished(jobID, jobType, status)
+	}
 
 	return nil
 }
