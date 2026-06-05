@@ -6,6 +6,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kuranas.android.R
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FileContent
 import com.kuranas.android.feature.files.data.FileItemDto
@@ -70,11 +71,11 @@ class FileViewerViewModel @Inject constructor(
                         )
                     }
                     _messages.emit(
-                        if (saved.isSuccess) "Salvo em Downloads/${fileName.ifBlank { "arquivo_$fileId" }}"
-                        else "Falha ao salvar o arquivo",
+                        if (saved.isSuccess) context.getString(R.string.file_saved_to_downloads, fileName.ifBlank { "arquivo_$fileId" })
+                        else context.getString(R.string.file_save_failed),
                     )
                 }
-                is AppResult.Error -> _messages.emit("Falha no download: ${result.message}")
+                is AppResult.Error -> _messages.emit(context.getString(R.string.file_download_failed, result.message))
             }
             _downloading.value = false
         }

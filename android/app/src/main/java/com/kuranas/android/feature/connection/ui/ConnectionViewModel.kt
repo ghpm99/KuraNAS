@@ -1,11 +1,14 @@
 package com.kuranas.android.feature.connection.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kuranas.android.R
 import com.kuranas.android.core.discovery.DiscoveredServer
 import com.kuranas.android.core.discovery.NsdDiscovery
 import com.kuranas.android.core.server.ServerStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +27,7 @@ data class ConnectionUiState(
 class ConnectionViewModel @Inject constructor(
     private val nsdDiscovery: NsdDiscovery,
     private val serverStore: ServerStore,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConnectionUiState())
@@ -41,7 +45,7 @@ class ConnectionViewModel @Inject constructor(
                     _state.update { it.copy(discovered = it.discovered + server) }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = "Falha na descoberta automática", isDiscovering = false) }
+                _state.update { it.copy(error = context.getString(R.string.connection_discovery_failed), isDiscovering = false) }
             }
         }
     }
@@ -59,7 +63,7 @@ class ConnectionViewModel @Inject constructor(
     fun connectManual() {
         val url = _state.value.manualUrl.trim()
         if (url.isEmpty()) {
-            _state.update { it.copy(error = "Insira um endereço válido") }
+            _state.update { it.copy(error = context.getString(R.string.connection_invalid_address)) }
             return
         }
         val normalized = if (url.startsWith("http")) url else "http://$url"

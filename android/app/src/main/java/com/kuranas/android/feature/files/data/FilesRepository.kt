@@ -1,15 +1,21 @@
 package com.kuranas.android.feature.files.data
 
+import android.content.Context
+import com.kuranas.android.R
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-class FilesRepository @Inject constructor(private val api: FilesApi) {
+class FilesRepository @Inject constructor(
+    private val api: FilesApi,
+    @ApplicationContext private val context: Context,
+) {
 
     suspend fun getRootFiles(): AppResult<List<FileItemDto>> = safeApiCall {
         api.getRootFiles().items
@@ -47,7 +53,7 @@ class FilesRepository @Inject constructor(private val api: FilesApi) {
         val items = api.getChildrenById(id).items
         items.firstOrNull { it.id == id }
             ?: items.firstOrNull()
-            ?: throw NoSuchElementException("Arquivo não encontrado")
+            ?: throw NoSuchElementException(context.getString(R.string.file_not_found))
     }
 
     /** Baixa os bytes brutos do arquivo (pra salvar no dispositivo). */
@@ -79,7 +85,7 @@ class FilesRepository @Inject constructor(private val api: FilesApi) {
             )
         } else {
             FileContent.Unsupported(
-                contentType = contentType.ifBlank { "binário" },
+                contentType = contentType.ifBlank { context.getString(R.string.file_content_type_binary) },
                 size = bytes.size.toLong(),
             )
         }
