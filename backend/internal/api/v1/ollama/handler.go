@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/i18n"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +24,7 @@ func (h *Handler) GetStatusHandler(c *gin.Context) {
 func (h *Handler) ListModelsHandler(c *gin.Context) {
 	models, err := h.service.ListModels(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reach Ollama daemon"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_DAEMON_UNREACHABLE")})
 		return
 	}
 	c.JSON(http.StatusOK, models)
@@ -31,7 +33,7 @@ func (h *Handler) ListModelsHandler(c *gin.Context) {
 func (h *Handler) PullModelHandler(c *gin.Context) {
 	var request PullModelRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "model name is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_MODEL_NAME_REQUIRED")})
 		return
 	}
 
@@ -39,11 +41,11 @@ func (h *Handler) PullModelHandler(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidModelName):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "model name is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_MODEL_NAME_REQUIRED")})
 		case errors.Is(err, ErrJobsUnavailable):
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "jobs subsystem is not available"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_JOBS_UNAVAILABLE")})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue model download"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_ENQUEUE_DOWNLOAD")})
 		}
 		return
 	}
@@ -56,11 +58,11 @@ func (h *Handler) DeleteModelHandler(c *gin.Context) {
 	if err := h.service.DeleteModel(c.Request.Context(), name); err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidModelName):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "model name is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_MODEL_NAME_REQUIRED")})
 		case errors.Is(err, ErrModelNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "model not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_MODEL_NOT_FOUND")})
 		default:
-			c.JSON(http.StatusBadGateway, gin.H{"error": "failed to delete model"})
+			c.JSON(http.StatusBadGateway, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_DELETE_MODEL")})
 		}
 		return
 	}

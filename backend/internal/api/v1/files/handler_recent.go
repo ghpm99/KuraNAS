@@ -3,6 +3,7 @@ package files
 import (
 	"net/http"
 
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -25,7 +26,7 @@ func (handler *Handler) GetRecentFilesHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -53,7 +54,7 @@ func (handler *Handler) GetRecentAccessByFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -81,7 +82,7 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -91,7 +92,7 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
