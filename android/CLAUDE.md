@@ -31,4 +31,8 @@ This is the key thing to understand before touching networking (`core/network/Ne
 OkHttp timeouts: connect 30s, read/write 60s. `HttpLoggingInterceptor` logs bodies only when `BuildConfig.DEBUG`.
 
 The shared API plumbing (`AppResult`, `SafeApiCall`, `PageDto`, `MimeType`) lives in `core/network/`; feature `data` layers build on it.
+
+## User-facing text goes through i18n (mandatory)
+
+No literal string may reach a Composable the user sees. Use `stringResource(R.string.key)` (and `pluralStringResource` / formatted args where needed); add the term to `app/src/main/res/values/strings.xml` (plus `values-en`, `values-pt-rBR` as locales are added — Android picks by device locale). The existing literal `Text("…")` call sites are debt to migrate as screens are touched. **Backend messages** (`AppResult` errors surfaced from `SafeApiCall`) are already translated server-side — display them as received; do **not** add a parallel `strings.xml` entry for them. So each screen mixes app-owned text (`strings.xml`) with server text (verbatim) — this "mix simples" is intentional. Full cross-app rule in the root `CLAUDE.md` → "No user-facing literal strings".
 </content>

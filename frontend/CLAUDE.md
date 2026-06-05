@@ -32,6 +32,10 @@ All service modules use the shared axios instance `apiBase` (`src/service/index.
 - Other dirs: `src/pages/<page>/`, `src/components/` (shared UI), `src/service/`, `src/types/`, `src/theme/`, `src/shared/`, `src/utils/`, `src/config/`.
 - Path alias `@` → `src` (configured in both `vite.config.ts` and `jest.config.js`'s `moduleNameMapper`).
 
+## User-facing text goes through i18n (mandatory)
+
+No hard-coded literal may reach the screen — labels, buttons, placeholders, empty/loading states, toasts, error/warning messages. Use `const { t } = useI18n()` and `t("KEY", { var })` (`{{var}}` interpolation); add the term to the backend translation JSON (`backend/translations/*.json`, served to the app via `/translations`). **Exception:** messages returned by the backend (e.g. an axios `error.response.data.error`) arrive **already translated** — render them as-is; don't wrap them in `t()` or duplicate the string as a frontend key. Full cross-app rule in the root `CLAUDE.md` → "No user-facing literal strings".
+
 ## Stack notes
 
 - MUI v7 (`@mui/material`, `x-charts`, `x-data-grid`), TanStack Query, `react-router-dom` v7, axios, framer-motion, notistack, lucide-react.

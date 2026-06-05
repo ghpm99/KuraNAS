@@ -43,6 +43,10 @@ Every endpoint follows **handler → service → repository**, built from **smal
 - **Why:** a fat response makes the app feel slow (the client waits for everything to render anything), couples consumers to fields they don't use, and means one broken detail takes the whole endpoint down and is hard to isolate. Small endpoints fail in isolation, are individually cacheable, and let the frontend load progressively.
 - **Reference implementation:** the `analytics` feature is the canonical example. It used to expose one fat `GET /analytics/overview` returning a giant `OverviewDto` from ~12 SQL calls; it is now split into one endpoint per concern — `/analytics/storage`, `/analytics/timeseries`, `/analytics/types`, `/analytics/extensions`, `/analytics/recent-files`, `/analytics/top-folders`, `/analytics/hot-folders`, `/analytics/duplicates`, `/analytics/duplicates/groups`, `/analytics/library`, `/analytics/processing`, `/analytics/health`, `/analytics/insights` — each with its own handler/service/repository method and a single `.sql`. Follow this shape; never reintroduce an aggregate "overview" endpoint. The frontend composes these slices in `analyticsProvider` via independent queries, so each one loads/fails on its own.
 
+## User-facing text goes through i18n (mandatory)
+
+Any string that can reach a user — API `error`/message fields, notification titles/bodies, user-facing logged events — must come from `pkg/i18n`: `i18n.GetMessage("KEY")` (static) or `i18n.Translate("KEY", args…)` (with `%s`/`%d` placeholders), with the term added to **both** `translations/pt-BR.json` and `translations/en-US.json`. The active locale is the `LANGUAGE` env, loaded once at boot. **Never return `gin.H{"error": err.Error()}`** — that leaks a raw, untranslated Go error to the client; map it to an i18n key instead. Clients receive the already-translated text and render it verbatim. Full cross-app rule in the root `CLAUDE.md` → "No user-facing literal strings".
+
 ## Database
 
 - PostgreSQL via `lib/pq`; connection from `DB_*` env vars (`pkg/database`).

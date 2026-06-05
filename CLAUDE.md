@@ -37,5 +37,24 @@ Each app has its own build system and its own `CLAUDE.md` with stack-specific de
 Because the apps are otherwise decoupled, a change to a backend route or DTO shape can break the frontend, both Android apps, and the plugin at once. When changing anything under `backend/internal/api/v1/`, check the consumers: frontend `src/service/*.ts`, the Android `feature/*/data` layers, and `plugin/src/background/uploader.js` (captures endpoints).
 
 **Keep endpoints small.** One endpoint owns one piece of information and returns the smallest meaningful payload, via handler → service → repository with small functions and one optimized `.sql` per query. Do not build fat aggregate responses — the `analytics` feature (one endpoint per concern: `/analytics/storage`, `/analytics/types`, `/analytics/duplicates`, …, composed client-side) is the reference shape; never reintroduce an aggregate "overview" endpoint. Full rule in `backend/CLAUDE.md` → "Endpoint granularity & response shape".
+
+## No user-facing literal strings — i18n is mandatory
+
+**Every string a user can see must come from the app's i18n layer, never a hard-coded literal.** This covers labels, buttons, titles, placeholders, empty/loading states, toasts, and error/warning messages alike. Add the term to the translation catalog and reference it by key — never type the visible text inline.
+
+Each app resolves text its own way:
+
+| App | Mechanism | Keys live in |
+|---|---|---|
+| `backend/` | `i18n.GetMessage(key)` / `i18n.Translate(key, args…)` | `backend/translations/{pt-BR,en-US}.json` |
+| `frontend/` | `useI18n().t(key, {var})` (`{{var}}` interpolation) | the same backend JSON, fetched via `/translations` (`getTranslations`) |
+| `android/` | `stringResource(R.string.key)` | `app/src/main/res/values*/strings.xml` |
+| `mobile/` | `TranslationManager` by key | `app/src/main/assets/translations/*.json` |
+
+**Backend-originated messages are translated once, at the source, and shown as-is.** The backend resolves the string server-side (single locale from the `LANGUAGE` env) and returns the final text in `{"error": "..."}`. Clients display that text directly — they do **not** re-translate it and must **not** invent a parallel client string for it. So every client screen is a *mix*: its own static text goes through the client i18n, while server messages are rendered verbatim. We deliberately accept that the app and server may briefly be in different languages (decided: "mix simples").
+
+Anti-patterns to fix on sight: a literal in JSX/Compose/Go that reaches the screen; `gin.H{"error": err.Error()}` (leaks an untranslated raw Go error — wrap it in an i18n key instead).
+
+Plugin (`plugin/`) is **not yet** under this rule — revisit if/when it grows real user-facing UI.
 </content>
 </invoke>
