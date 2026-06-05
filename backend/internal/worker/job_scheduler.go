@@ -148,7 +148,13 @@ func (s *JobScheduler) loop() {
 			delete(s.queued, jobID)
 			s.mu.Unlock()
 
-			s.jobSem <- struct{}{}
+			// Acquire a job slot, but stay responsive to Stop() while all slots
+			// are busy: a stuck job must never make the loop deaf to shutdown.
+			select {
+			case s.jobSem <- struct{}{}:
+			case <-s.stopCh:
+				return
+			}
 			s.jobWg.Add(1)
 			go func(id int) {
 				defer s.jobWg.Done()
