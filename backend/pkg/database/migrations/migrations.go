@@ -104,6 +104,9 @@ var AddImageSuggestedNameQuery string
 //go:embed queries/0031_create_assistant_tables.sql
 var CreateAssistantTablesQuery string
 
+//go:embed queries/0032_extend_system_event_type_check.sql
+var ExtendSystemEventTypeCheckQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -212,6 +215,9 @@ func notificationsMigrationList() {
 func systemEventMigrationList() {
 	addMigration("0022_create_system_event_log_table",
 		defaultMigrationFunc(CreateSystemEventLogTableQuery))
+
+	addMigration("0032_extend_system_event_type_check",
+		defaultMigrationFunc(ExtendSystemEventTypeCheckQuery))
 }
 
 func capturesMigrationList() {
