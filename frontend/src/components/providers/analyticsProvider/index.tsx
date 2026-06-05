@@ -1,4 +1,5 @@
 import {
+    fetchAnalyticsAIUsage,
     fetchAnalyticsDuplicateGroups,
     fetchAnalyticsDuplicates,
     fetchAnalyticsExtensions,
@@ -36,6 +37,7 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
             { queryKey: ['analytics', 'library'], queryFn: () => fetchAnalyticsLibrary(), retry: false },
             { queryKey: ['analytics', 'processing'], queryFn: () => fetchAnalyticsProcessing(), retry: false },
             { queryKey: ['analytics', 'health'], queryFn: () => fetchAnalyticsHealth(), retry: false },
+            { queryKey: ['analytics', 'ai-usage'], queryFn: () => fetchAnalyticsAIUsage(), retry: false },
         ],
     });
 
@@ -52,6 +54,7 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
         libraryQuery,
         processingQuery,
         healthQuery,
+        aiUsageQuery,
     ] = results;
 
     const value = useMemo(() => {
@@ -99,6 +102,13 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
                       indexed_files: 0,
                       errors_last_24h: 0,
                       recent_errors: [],
+                  },
+                  ai_usage: aiUsageQuery.data ?? {
+                      total: 0,
+                      success: 0,
+                      failure: 0,
+                      total_tokens: 0,
+                      avg_latency_ms: 0,
                   },
               }
             : null;

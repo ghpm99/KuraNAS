@@ -104,6 +104,16 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                         helpText={t('ANALYTICS_KPI_INDEX_HELP')}
                     />
                 </div>
+                <div className={styles.span4}>
+                    <AnalyticsKpiCard
+                        title={t('ANALYTICS_KPI_AI_USAGE')}
+                        value={(data?.ai_usage?.total ?? 0).toLocaleString()}
+                        helpText={t('ANALYTICS_KPI_AI_USAGE_HELP', {
+                            failures: String(data?.ai_usage?.failure ?? 0),
+                            latency: String(data?.ai_usage?.avg_latency_ms ?? 0),
+                        })}
+                    />
+                </div>
             </div>
 
             <div className={styles.grid}>

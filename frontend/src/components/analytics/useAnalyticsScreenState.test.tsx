@@ -71,6 +71,13 @@ const createOverview = (overrides?: Partial<AnalyticsOverview>): AnalyticsOvervi
         errors_last_24h: 0,
         recent_errors: [],
     },
+    ai_usage: {
+        total: 0,
+        success: 0,
+        failure: 0,
+        total_tokens: 0,
+        avg_latency_ms: 0,
+    },
     ...overrides,
 });
 

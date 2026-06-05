@@ -431,6 +431,8 @@
 	"ANALYTICS_KPI_DUPLICATES": "Duplicate groups",
 	"ANALYTICS_KPI_INDEX_STATUS": "Index status",
 	"ANALYTICS_KPI_INDEX_HELP": "Catalog/indexer health",
+	"ANALYTICS_KPI_AI_USAGE": "AI requests",
+	"ANALYTICS_KPI_AI_USAGE_HELP": "{{failures}} failures · avg {{latency}}ms",
 	"ANALYTICS_STORAGE_TREND": "Storage usage trend",
 	"ANALYTICS_STORAGE_BY_CATEGORY": "Usage by category",
 	"ANALYTICS_TOP_FOLDERS": "Top folders by size",
