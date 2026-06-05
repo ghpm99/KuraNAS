@@ -7,6 +7,7 @@ import (
 	"context"
 	"log"
 	"nas-go/api/internal/app"
+	"nas-go/api/pkg/applog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,12 @@ import (
 )
 
 func main() {
+	applog.Setup(applog.Options{
+		Writer:    os.Stdout,
+		Level:     applog.ParseLevel(os.Getenv("LOG_LEVEL")),
+		AddSource: true,
+	})
+
 	log.Println("[MAIN][DEV] Iniciando Kuranas")
 
 	application, err := app.InitializeApp()

@@ -8,6 +8,7 @@ import (
 	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/watcher"
 	"nas-go/api/internal/worker"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/systemevent"
@@ -73,6 +74,10 @@ func InitializeApp() (*Application, error) {
 		return nil, err
 	}
 	initializeConfigFn()
+
+	// Re-apply the log level now that the .env LOG_LEVEL is loaded (the early
+	// file logger was installed before config, using only OS env vars).
+	applog.SetLevel(applog.ParseLevel(config.AppConfig.LogLevel))
 
 	if err := loadTranslationsFn(); err != nil {
 		return nil, err
