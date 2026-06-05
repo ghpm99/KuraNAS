@@ -28,7 +28,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="KuraNAS"
+                android:text="@string/app_name"
                 android:textSize="@dimen/text_headline"
                 android:textColor="@color/accent"
                 android:gravity="center" />

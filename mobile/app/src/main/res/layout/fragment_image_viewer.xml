@@ -25,7 +25,8 @@
             android:id="@+id/btn_prev"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="&lt;"
+            android:text="@string/image_previous_arrow"
+            android:contentDescription="@string/image_previous"
             android:textColor="@color/white" />
 
         <TextView
@@ -41,7 +42,8 @@
             android:id="@+id/btn_next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="&gt;"
+            android:text="@string/image_next_arrow"
+            android:contentDescription="@string/image_next"
             android:textColor="@color/white" />
 
     </LinearLayout>

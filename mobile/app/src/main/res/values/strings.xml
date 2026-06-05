@@ -23,4 +23,8 @@
     <string name="server">Server</string>
     <string name="change_server">Change Server</string>
     <string name="thumbnail">Thumbnail</string>
+    <string name="image_previous_arrow">&lt;</string>
+    <string name="image_next_arrow">&gt;</string>
+    <string name="image_previous">Previous image</string>
+    <string name="image_next">Next image</string>
 </resources>
