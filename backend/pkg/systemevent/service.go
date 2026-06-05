@@ -38,6 +38,14 @@ func (s *Service) RecordShutdown() error {
 	return s.recordEvent(EventTypeShutdown, shutdownDescription)
 }
 
+// RecordEvent persists an arbitrary audit/health event (worker pool started,
+// scan completed, job failed, AI provider unavailable). The description is an
+// already-resolved, localized label — never a raw error or stack, which belong
+// in the forensic file log, not in the DB.
+func (s *Service) RecordEvent(eventType EventType, description string) error {
+	return s.recordEvent(eventType, description)
+}
+
 func (s *Service) recordEvent(eventType EventType, description string) error {
 	if s == nil || s.repository == nil || s.repository.GetDbContext() == nil {
 		return fmt.Errorf("system event service is not configured")

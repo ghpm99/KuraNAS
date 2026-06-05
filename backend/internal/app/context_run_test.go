@@ -263,6 +263,7 @@ func TestApplicationRunAndStopSuccess(t *testing.T) {
 type systemEventServiceSpy struct {
 	startupCalls  int
 	shutdownCalls int
+	eventCalls    int
 	startupErr    error
 	shutdownErr   error
 }
@@ -275,6 +276,11 @@ func (s *systemEventServiceSpy) RecordStartup() error {
 func (s *systemEventServiceSpy) RecordShutdown() error {
 	s.shutdownCalls++
 	return s.shutdownErr
+}
+
+func (s *systemEventServiceSpy) RecordEvent(systemevent.EventType, string) error {
+	s.eventCalls++
+	return nil
 }
 
 type folderWatcherSpy struct {

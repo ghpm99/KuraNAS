@@ -115,6 +115,7 @@ func InitializeApp() (*Application, error) {
 		Logger:              appContext.Logger,
 		NotificationService: appContext.Notifications.Service,
 		AIService:           appContext.AI,
+		SystemEvents:        systemEvents,
 	}
 	if librariesService != nil {
 		workerFileContext.LibrariesService = librariesService.Service

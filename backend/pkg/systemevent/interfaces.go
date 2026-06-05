@@ -13,4 +13,5 @@ type RepositoryInterface interface {
 type ServiceInterface interface {
 	RecordStartup() error
 	RecordShutdown() error
+	RecordEvent(eventType EventType, description string) error
 }
