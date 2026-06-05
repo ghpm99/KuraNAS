@@ -6,15 +6,10 @@ import (
 	"log"
 	"sort"
 	"strings"
-	"time"
 
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 )
-
-// clusterAITimeout bounds a single clustering request so a stuck local model
-// cannot stall the whole rebuild.
-const clusterAITimeout = 60 * time.Second
 
 // RebuildAIClusters regenerates the AI-curated playlists from the music library.
 // It clusters only artists not seen before (incremental, so the model is asked
@@ -98,16 +93,17 @@ func (s *Service) clusterArtists(ctx context.Context, unclustered []artistCluste
 }
 
 func (s *Service) clusterBatch(ctx context.Context, batch []artistClusterInput, existingNames []string) ([]clusterAssignment, error) {
-	reqCtx, cancel := context.WithTimeout(ctx, clusterAITimeout)
-	defer cancel()
-
+	// No per-request deadline here: the single source of truth for how long an
+	// AI call may take is the provider's own HTTP timeout, configured at runtime
+	// in the ai_providers table (Settings → AI Providers). Local/cloud models are
+	// slow, so a hardcoded ceiling here only fought that config.
 	prompt := prompts.MusicArtistClustersUserPrompt(
 		defaultMaxNewClustersPerBatch,
 		formatExistingClusters(existingNames),
 		formatArtistsForPrompt(batch),
 	)
 
-	resp, err := s.AIService.Execute(reqCtx, ai.Request{
+	resp, err := s.AIService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskClassification,
 		SystemPrompt: prompts.MusicArtistClustersSystemPrompt(),
 		Prompt:       prompt,
