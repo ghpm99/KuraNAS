@@ -21,12 +21,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.KNHeader
@@ -46,7 +48,7 @@ fun ImagesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Imagens")
+        KNHeader(title = stringResource(R.string.nav_images))
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -55,7 +57,7 @@ fun ImagesScreen(
             when {
                 state.isLoading -> LoadingView()
                 state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
-                state.images.isEmpty() -> EmptyView("Nenhuma imagem encontrada")
+                state.images.isEmpty() -> EmptyView(stringResource(R.string.images_empty))
                 else -> LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 120.dp),
                     contentPadding = PaddingValues(bottom = 24.dp),

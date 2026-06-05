@@ -30,11 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -54,7 +57,7 @@ fun VideoScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Vídeos")
+        KNHeader(title = stringResource(R.string.nav_videos))
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -63,13 +66,13 @@ fun VideoScreen(
         when {
             state.isLoading -> LoadingView()
             state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
-            state.catalog == null -> EmptyView("Nenhum vídeo encontrado")
+            state.catalog == null -> EmptyView(stringResource(R.string.video_empty))
             else -> {
                 val catalog = state.catalog!!
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                     if (catalog.recentVideos.isNotEmpty()) {
                         item {
-                            Text("Recentes", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.video_recent), style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(8.dp))
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 items(catalog.recentVideos) { video ->
@@ -84,7 +87,7 @@ fun VideoScreen(
                         }
                     }
                     if (catalog.playlists.isNotEmpty()) {
-                        item { Text("Playlists", style = MaterialTheme.typography.titleMedium) }
+                        item { Text(stringResource(R.string.video_playlists), style = MaterialTheme.typography.titleMedium) }
                         items(catalog.playlists, key = { it.id }) { playlist ->
                             PlaylistRow(
                                 playlist = playlist,
@@ -141,7 +144,7 @@ private fun PlaylistRow(
         ) {
             Text(playlist.name, style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${playlist.count} vídeos", style = MaterialTheme.typography.bodySmall)
+                Text(pluralStringResource(R.plurals.video_count, playlist.count, playlist.count), style = MaterialTheme.typography.bodySmall)
                 Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp))
             }
         }

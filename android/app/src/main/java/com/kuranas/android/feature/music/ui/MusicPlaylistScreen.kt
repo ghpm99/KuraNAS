@@ -13,8 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 
@@ -29,7 +31,7 @@ fun MusicPlaylistScreen(
     val tracks by viewModel.tracks
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Playlist", leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
+        KNHeader(title = stringResource(R.string.playlist_title), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
         if (tracks == null) {
             LoadingView()
         } else {

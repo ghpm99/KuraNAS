@@ -31,9 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -47,7 +49,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showForgetDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Configurações")
+        KNHeader(title = stringResource(R.string.settings_title))
 
         if (state.isLoading) {
             LoadingView()
@@ -59,14 +61,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 Column(modifier = Modifier.fillMaxWidth().glass(GlassLevel.Light).padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Default.Cloud, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Text("Servidor", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_server), style = MaterialTheme.typography.titleMedium)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(state.currentServerUrl, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Default.Circle, contentDescription = null, modifier = Modifier.size(8.dp), tint = StatusPositive)
-                        Text("Conectado", style = MaterialTheme.typography.bodySmall, color = StatusPositive)
+                        Text(stringResource(R.string.settings_connected), style = MaterialTheme.typography.bodySmall, color = StatusPositive)
                     }
                 }
             }
@@ -76,12 +78,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     Column(modifier = Modifier.fillMaxWidth().glass(GlassLevel.Flat).padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                            Text("Sobre o servidor", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.settings_about_server), style = MaterialTheme.typography.titleMedium)
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Versão: ${about.version}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Plataforma: ${about.platform}", style = MaterialTheme.typography.bodySmall)
-                        Text("Uptime: ${about.uptime}", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.settings_version, about.version), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_platform, about.platform), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.settings_uptime, about.uptime), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -92,10 +94,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         Column(modifier = Modifier.fillMaxWidth().glass(GlassLevel.Strong).padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Default.Update, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Text("Atualização disponível", style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.settings_update_available), style = MaterialTheme.typography.titleMedium)
                             }
                             Spacer(Modifier.height(4.dp))
-                            Text("v${update.latestVersion} disponível (atual: v${update.currentVersion})", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.settings_update_detail, update.latestVersion.orEmpty(), update.currentVersion.orEmpty()), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -109,7 +111,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 ) {
                     Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text("Esquecer servidor")
+                    Text(stringResource(R.string.action_forget_server))
                 }
             }
         }
@@ -118,12 +120,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     if (showForgetDialog) {
         AlertDialog(
             onDismissRequest = { showForgetDialog = false },
-            title = { Text("Esquecer servidor?") },
-            text = { Text("O endereço do servidor será removido e você precisará reconectar.") },
+            title = { Text(stringResource(R.string.settings_forget_dialog_title)) },
+            text = { Text(stringResource(R.string.settings_forget_dialog_text)) },
             confirmButton = {
-                TextButton(onClick = { viewModel.forgetServer(); showForgetDialog = false }) { Text("Esquecer") }
+                TextButton(onClick = { viewModel.forgetServer(); showForgetDialog = false }) { Text(stringResource(R.string.action_forget)) }
             },
-            dismissButton = { TextButton(onClick = { showForgetDialog = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { showForgetDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }

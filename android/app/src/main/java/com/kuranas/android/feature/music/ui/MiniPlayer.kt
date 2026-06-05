@@ -24,11 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.glass
 
@@ -78,7 +80,7 @@ fun MiniPlayer(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = track.artist ?: "Artista desconhecido",
+                text = track.artist ?: stringResource(R.string.music_unknown_artist),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -89,14 +91,14 @@ fun MiniPlayer(
         IconButton(onClick = viewModel::togglePlayPause) {
             Icon(
                 imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (state.isPlaying) "Pausar" else "Tocar",
+                contentDescription = if (state.isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
         IconButton(onClick = viewModel::next) {
             Icon(
                 Icons.Default.SkipNext,
-                contentDescription = "Próxima",
+                contentDescription = stringResource(R.string.cd_next),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }

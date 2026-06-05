@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kuranas.android.R
 
 @Composable
 fun LoadingView(modifier: Modifier = Modifier) {
@@ -49,7 +51,7 @@ fun ErrorView(
         Text(message, style = MaterialTheme.typography.bodyMedium)
         if (onRetry != null) {
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onRetry) { Text("Tentar novamente") }
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
         }
     }
 }

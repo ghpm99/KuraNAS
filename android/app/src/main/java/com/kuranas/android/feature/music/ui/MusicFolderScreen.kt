@@ -13,8 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -35,7 +37,7 @@ fun MusicFolderScreen(
         KNHeader(title = title, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
         when {
             tracks == null -> LoadingView()
-            tracks.isNullOrEmpty() -> EmptyView("Nenhuma faixa nesta pasta")
+            tracks.isNullOrEmpty() -> EmptyView(stringResource(R.string.music_folder_empty))
             else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(tracks ?: emptyList(), key = { it.id }) { track ->
                     TrackListItem(track = track, onClick = {

@@ -28,9 +28,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -47,11 +49,11 @@ fun SearchScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = "Busca")
+        KNHeader(title = stringResource(R.string.nav_search))
         TextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
-            placeholder = { Text("Buscar arquivos, músicas, vídeos...") },
+            placeholder = { Text(stringResource(R.string.search_placeholder)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             colors = TextFieldDefaults.colors(
@@ -67,7 +69,7 @@ fun SearchScreen(
                 val results = state.results!!
                 LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (results.files.isNotEmpty()) {
-                        item { Text("Arquivos", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
+                        item { Text(stringResource(R.string.nav_files), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
                         items(results.files) { file ->
                             SearchResultItem(file = file, onClick = {
                                 when {
@@ -79,19 +81,19 @@ fun SearchScreen(
                         }
                     }
                     if (results.music.isNotEmpty()) {
-                        item { Text("Música", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
+                        item { Text(stringResource(R.string.nav_music), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
                         items(results.music) { file ->
                             SearchResultItem(file = file, onClick = { onPlayAudio(file.id) })
                         }
                     }
                     if (results.videos.isNotEmpty()) {
-                        item { Text("Vídeos", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
+                        item { Text(stringResource(R.string.nav_videos), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp)) }
                         items(results.videos) { file ->
                             SearchResultItem(file = file, onClick = { onPlayVideo(file.id) })
                         }
                     }
                     if (results.total == 0) {
-                        item { Text("Nenhum resultado para \"${state.query}\"", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 16.dp)) }
+                        item { Text(stringResource(R.string.search_no_results, state.query), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 16.dp)) }
                     }
                 }
             }

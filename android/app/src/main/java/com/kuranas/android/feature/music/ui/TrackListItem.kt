@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.music.data.TrackDto
@@ -53,7 +55,7 @@ fun TrackListItem(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    track.artist ?: "Artista desconhecido",
+                    track.artist ?: stringResource(R.string.music_unknown_artist),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

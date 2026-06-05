@@ -32,11 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.FileSizeText
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -70,7 +73,7 @@ fun HomeScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
-            title = "Início",
+            title = stringResource(R.string.nav_home),
             leadingIcon = Icons.Default.Menu,
             onLeadingClick = onOpenMenu,
         )
@@ -94,18 +97,18 @@ fun HomeScreen(
                         )
                     }
                     item {
-                        Text("Acesso rápido", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
+                        Text(stringResource(R.string.home_quick_access), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            QuickAccessItem("Arquivos", Icons.Default.Folder, Modifier.weight(1f), onOpenFiles)
-                            QuickAccessItem("Música", Icons.Default.MusicNote, Modifier.weight(1f), onOpenMusic)
-                            QuickAccessItem("Vídeos", Icons.Default.VideoLibrary, Modifier.weight(1f), onOpenVideo)
-                            QuickAccessItem("Imagens", Icons.Default.Photo, Modifier.weight(1f), onOpenImages)
+                            QuickAccessItem(stringResource(R.string.nav_files), Icons.Default.Folder, Modifier.weight(1f), onOpenFiles)
+                            QuickAccessItem(stringResource(R.string.nav_music), Icons.Default.MusicNote, Modifier.weight(1f), onOpenMusic)
+                            QuickAccessItem(stringResource(R.string.nav_videos), Icons.Default.VideoLibrary, Modifier.weight(1f), onOpenVideo)
+                            QuickAccessItem(stringResource(R.string.nav_images), Icons.Default.Photo, Modifier.weight(1f), onOpenImages)
                         }
                     }
                     if (s.recentFiles.isNotEmpty()) {
                         item {
                             Spacer(Modifier.height(4.dp))
-                            Text("Acessados recentemente", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.home_recently_accessed), style = MaterialTheme.typography.titleMedium)
                         }
                         items(s.recentFiles.take(10)) { file ->
                             RecentFileItem(
@@ -138,10 +141,13 @@ private fun StatsCard(spaceUsed: Long, totalFiles: Long) {
             .glass(GlassLevel.Strong)
             .padding(20.dp),
     ) {
-        Text("Armazenamento", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.home_storage), style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.height(4.dp))
         FileSizeText(spaceUsed, style = MaterialTheme.typography.headlineMedium)
-        Text("$totalFiles arquivos", style = MaterialTheme.typography.bodySmall)
+        Text(
+            pluralStringResource(R.plurals.home_file_count, totalFiles.toInt(), totalFiles),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

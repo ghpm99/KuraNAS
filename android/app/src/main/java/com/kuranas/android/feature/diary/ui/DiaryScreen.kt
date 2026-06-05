@@ -33,9 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
@@ -56,11 +58,11 @@ fun DiaryScreen(viewModel: DiaryViewModel = hiltViewModel()) {
             FloatingActionButton(
                 onClick = { viewModel.toggleCreateDialog(true) },
                 containerColor = MaterialTheme.colorScheme.primary,
-            ) { Icon(Icons.Default.Add, contentDescription = "Nova entrada") }
+            ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.diary_new_entry)) }
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
-            KNHeader(title = "Diário")
+            KNHeader(title = stringResource(R.string.nav_diary))
             when {
                 state.isLoading -> LoadingView()
                 state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
@@ -76,17 +78,17 @@ fun DiaryScreen(viewModel: DiaryViewModel = hiltViewModel()) {
     if (state.showCreateDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.toggleCreateDialog(false) },
-            title = { Text("Nova entrada") },
+            title = { Text(stringResource(R.string.diary_new_entry)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text("Conteúdo") }, minLines = 4, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(stringResource(R.string.diary_title_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text(stringResource(R.string.diary_content_label)) }, minLines = 4, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.createEntry(title, content); title = ""; content = "" }) { Text("Criar") }
+                TextButton(onClick = { viewModel.createEntry(title, content); title = ""; content = "" }) { Text(stringResource(R.string.action_create)) }
             },
-            dismissButton = { TextButton(onClick = { viewModel.toggleCreateDialog(false) }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { viewModel.toggleCreateDialog(false) }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 
@@ -95,17 +97,17 @@ fun DiaryScreen(viewModel: DiaryViewModel = hiltViewModel()) {
         var editContent by remember(entry.id) { mutableStateOf(entry.content) }
         AlertDialog(
             onDismissRequest = { viewModel.setEditingEntry(null) },
-            title = { Text("Editar entrada") },
+            title = { Text(stringResource(R.string.diary_edit_entry)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text("Título") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = editContent, onValueChange = { editContent = it }, label = { Text("Conteúdo") }, minLines = 4, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text(stringResource(R.string.diary_title_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editContent, onValueChange = { editContent = it }, label = { Text(stringResource(R.string.diary_content_label)) }, minLines = 4, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.updateEntry(entry.id, editTitle, editContent) }) { Text("Salvar") }
+                TextButton(onClick = { viewModel.updateEntry(entry.id, editTitle, editContent) }) { Text(stringResource(R.string.action_save)) }
             },
-            dismissButton = { TextButton(onClick = { viewModel.setEditingEntry(null) }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { viewModel.setEditingEntry(null) }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }

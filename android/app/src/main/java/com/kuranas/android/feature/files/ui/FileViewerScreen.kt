@@ -31,10 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.FileSizeText
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -64,7 +66,7 @@ fun FileViewerScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
-            title = fileName.ifBlank { "Arquivo" },
+            title = fileName.ifBlank { stringResource(R.string.file_viewer_title) },
             leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
             onLeadingClick = onNavigateBack,
         )
@@ -112,7 +114,7 @@ private fun ActionsRow(
         TextButton(onClick = onToggleInfo) {
             Icon(Icons.Default.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(6.dp))
-            Text(if (showInfo) "Ocultar detalhes" else "Detalhes")
+            Text(if (showInfo) stringResource(R.string.file_hide_details) else stringResource(R.string.file_details))
         }
         OutlinedButton(onClick = onDownload, enabled = !downloading) {
             if (downloading) {
@@ -121,7 +123,7 @@ private fun ActionsRow(
                 Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.size(6.dp))
-            Text(if (downloading) "Baixando…" else "Baixar")
+            Text(if (downloading) stringResource(R.string.file_downloading) else stringResource(R.string.file_download))
         }
     }
 }
@@ -135,23 +137,23 @@ private fun InfoCard(info: FileItemDto?, content: FileContent) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("Informações", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.file_info), style = MaterialTheme.typography.titleSmall)
         if (info != null) {
-            InfoRow("Nome", info.name)
-            InfoRow("Caminho", info.path.ifBlank { info.parentPath })
-            InfoRow("Formato", info.format.ifBlank { "—" })
-            InfoRow("Tipo", if (info.isDir) "Pasta" else "Arquivo")
-            InfoLine("Tamanho") { FileSizeText(info.size) }
-            if (info.createdAt.isNotBlank()) InfoRow("Criado em", formatDate(info.createdAt))
-            if (info.updatedAt.isNotBlank()) InfoRow("Atualizado em", formatDate(info.updatedAt))
+            InfoRow(stringResource(R.string.file_field_name), info.name)
+            InfoRow(stringResource(R.string.file_field_path), info.path.ifBlank { info.parentPath })
+            InfoRow(stringResource(R.string.file_field_format), info.format.ifBlank { "—" })
+            InfoRow(stringResource(R.string.file_field_type), if (info.isDir) stringResource(R.string.file_type_folder) else stringResource(R.string.file_type_file))
+            InfoLine(stringResource(R.string.file_field_size)) { FileSizeText(info.size) }
+            if (info.createdAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_created), formatDate(info.createdAt))
+            if (info.updatedAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_updated), formatDate(info.updatedAt))
         } else {
             // Sem metadados — mostra o que dá pra inferir do conteúdo baixado.
             when (content) {
                 is FileContent.Unsupported -> {
-                    InfoRow("Tipo de conteúdo", content.contentType)
-                    InfoLine("Tamanho") { FileSizeText(content.size) }
+                    InfoRow(stringResource(R.string.file_field_content_type), content.contentType)
+                    InfoLine(stringResource(R.string.file_field_size)) { FileSizeText(content.size) }
                 }
-                is FileContent.Text -> InfoRow("Tipo de conteúdo", "texto")
+                is FileContent.Text -> InfoRow(stringResource(R.string.file_field_content_type), stringResource(R.string.file_content_type_text))
             }
         }
     }
@@ -190,7 +192,7 @@ private fun TextContent(content: FileContent.Text) {
     ) {
         if (content.truncated) {
             Text(
-                "Arquivo grande — exibindo apenas o início.",
+                stringResource(R.string.file_large_preview),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -219,10 +221,10 @@ private fun UnsupportedContent(content: FileContent.Unsupported) {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Pré-visualização não disponível para este tipo de arquivo.",
+            stringResource(R.string.file_preview_unavailable),
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(4.dp))
-        Text("Use \"Baixar\" para salvar no dispositivo.", style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.file_save_hint), style = MaterialTheme.typography.bodySmall)
     }
 }

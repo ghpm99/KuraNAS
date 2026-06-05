@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
+import com.kuranas.android.R
 
 @Composable
 fun MusicPlayerScreen(
@@ -57,7 +59,7 @@ fun MusicPlayerScreen(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Voltar",
+                    contentDescription = stringResource(R.string.action_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -82,7 +84,7 @@ fun MusicPlayerScreen(
 
         Spacer(Modifier.height(24.dp))
         Text(
-            text = state.currentTrack?.title ?: "Nenhuma música",
+            text = state.currentTrack?.title ?: stringResource(R.string.music_no_track),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -116,14 +118,14 @@ fun MusicPlayerScreen(
             IconButton(onClick = viewModel::toggleShuffle) {
                 Icon(
                     Icons.Default.Shuffle,
-                    contentDescription = "Aleatório",
+                    contentDescription = stringResource(R.string.cd_shuffle),
                     tint = if (state.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             IconButton(onClick = viewModel::previous, modifier = Modifier.size(48.dp)) {
                 Icon(
                     Icons.Default.SkipPrevious,
-                    contentDescription = "Anterior",
+                    contentDescription = stringResource(R.string.cd_previous),
                     modifier = Modifier.size(36.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -131,7 +133,7 @@ fun MusicPlayerScreen(
             IconButton(onClick = viewModel::togglePlayPause, modifier = Modifier.size(64.dp)) {
                 Icon(
                     imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (state.isPlaying) "Pausar" else "Tocar",
+                    contentDescription = if (state.isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -139,7 +141,7 @@ fun MusicPlayerScreen(
             IconButton(onClick = viewModel::next, modifier = Modifier.size(48.dp)) {
                 Icon(
                     Icons.Default.SkipNext,
-                    contentDescription = "Próxima",
+                    contentDescription = stringResource(R.string.cd_next),
                     modifier = Modifier.size(36.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -147,7 +149,7 @@ fun MusicPlayerScreen(
             IconButton(onClick = viewModel::toggleRepeat) {
                 Icon(
                     imageVector = if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    contentDescription = "Repetir",
+                    contentDescription = stringResource(R.string.cd_repeat),
                     tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -157,7 +159,7 @@ fun MusicPlayerScreen(
         val upNext = state.upNext
         if (upNext.isNotEmpty()) {
             Text(
-                text = "Próximas músicas",
+                text = stringResource(R.string.music_up_next),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             )
