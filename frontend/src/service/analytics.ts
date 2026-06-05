@@ -1,5 +1,6 @@
 import { apiBase } from './index';
 import {
+    AIUsage,
     AnalyticsPeriod,
     DuplicateGroup,
     DuplicatesSummary,
@@ -95,5 +96,10 @@ export const fetchAnalyticsProcessing = async (): Promise<ProcessingStats> => {
 
 export const fetchAnalyticsHealth = async (): Promise<HealthStatus> => {
     const response = await apiBase.get<HealthStatus>('/analytics/health');
+    return response.data;
+};
+
+export const fetchAnalyticsAIUsage = async (): Promise<AIUsage> => {
+    const response = await apiBase.get<AIUsage>('/analytics/ai-usage');
     return response.data;
 };

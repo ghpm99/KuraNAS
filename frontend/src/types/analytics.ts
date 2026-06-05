@@ -99,6 +99,14 @@ export interface HealthStatus {
     recent_errors: string[];
 }
 
+export interface AIUsage {
+    total: number;
+    success: number;
+    failure: number;
+    total_tokens: number;
+    avg_latency_ms: number;
+}
+
 export interface AnalyticsDuplicates extends DuplicatesSummary {
     top_groups: DuplicateGroup[];
 }
@@ -118,4 +126,5 @@ export interface AnalyticsOverview {
     library: LibraryStats;
     processing: ProcessingStats;
     health: HealthStatus;
+    ai_usage: AIUsage;
 }

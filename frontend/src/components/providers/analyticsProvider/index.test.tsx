@@ -63,6 +63,16 @@ const routeResponse = (url: string) => {
                     recent_errors: [],
                 },
             };
+        case '/analytics/ai-usage':
+            return {
+                data: {
+                    total: 5,
+                    success: 4,
+                    failure: 1,
+                    total_tokens: 100,
+                    avg_latency_ms: 120,
+                },
+            };
         default:
             // timeseries, types, extensions, recent-files, top-folders,
             // hot-folders, duplicates/groups all return arrays.

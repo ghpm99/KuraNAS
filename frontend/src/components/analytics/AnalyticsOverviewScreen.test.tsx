@@ -93,6 +93,13 @@ const createOverview = (overrides?: Partial<AnalyticsOverview>): AnalyticsOvervi
         errors_last_24h: 0,
         recent_errors: [],
     },
+    ai_usage: {
+        total: 42,
+        success: 40,
+        failure: 2,
+        total_tokens: 1000,
+        avg_latency_ms: 150,
+    },
     ...overrides,
 });
 
@@ -131,7 +138,7 @@ describe('AnalyticsOverviewScreen', () => {
         mockNavigate.mockReset();
     });
 
-    it('renders all 6 KPI cards', () => {
+    it('renders all 7 KPI cards', () => {
         const state = createState();
         render(<AnalyticsOverviewScreen state={state} />);
 
@@ -141,6 +148,12 @@ describe('AnalyticsOverviewScreen', () => {
         expect(screen.getByText('ANALYTICS_KPI_HOT_FOLDERS')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_KPI_DUPLICATES')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_KPI_INDEX_STATUS')).toBeInTheDocument();
+        expect(screen.getByText('ANALYTICS_KPI_AI_USAGE')).toBeInTheDocument();
+        // value + interpolated help text (failures/latency) render.
+        expect(screen.getByText('42')).toBeInTheDocument();
+        expect(
+            screen.getByText('ANALYTICS_KPI_AI_USAGE_HELP failures=2 latency=150')
+        ).toBeInTheDocument();
     });
 
     it('renders storage KPI with formatted bytes', () => {

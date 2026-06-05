@@ -217,6 +217,13 @@ beforeEach(() => {
                 last_scan_seconds: 30,
                 recent_errors: ['none'],
             },
+            ai_usage: {
+                total: 0,
+                success: 0,
+                failure: 0,
+                total_tokens: 0,
+                avg_latency_ms: 0,
+            },
             time_series: [{ date: '2026-01-01', used_bytes: 1024 }],
             types: [{ type: 'video', count: 1, bytes: 1024 }],
             top_folders: [
