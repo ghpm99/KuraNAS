@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -16,6 +17,10 @@ import (
 )
 
 var ErrStepSkipped = errors.New("step skipped")
+
+// stallHeartbeats is how many consecutive all-slots-busy / nothing-finishing
+// heartbeats must pass before the scheduler is declared stalled.
+const stallHeartbeats = 3
 
 // errStepDeferred signals that a step timed out and the whole job was sent to
 // the back of the queue. It is an internal control value, not a failure.
@@ -43,12 +48,27 @@ type JobScheduler struct {
 	// events and emit notifications without the scheduler depending on those
 	// packages. Set it before Start(); it is read from job goroutines.
 	onJobFinished func(jobID int, jobType string, status JobStatus)
+
+	// onStall, when set, is called once per stall episode when every job slot
+	// has been busy with no job finishing across several heartbeats — the
+	// silent-freeze signature. Set it before Start().
+	onStall func(runningJobs int)
+
+	// finishedJobs counts terminal job finishes; the heartbeat watches it to
+	// tell "busy but progressing" from "wedged". Accessed atomically.
+	finishedJobs int64
 }
 
 // SetOnJobFinished registers a callback invoked when a job finishes with a
 // terminal status. Call before Start().
 func (s *JobScheduler) SetOnJobFinished(fn func(jobID int, jobType string, status JobStatus)) {
 	s.onJobFinished = fn
+}
+
+// SetOnStall registers a callback invoked when the scheduler looks frozen (all
+// slots busy, nothing finishing). Call before Start().
+func (s *JobScheduler) SetOnStall(fn func(runningJobs int)) {
+	s.onStall = fn
 }
 
 func NewJobScheduler(repository jobs.RepositoryInterface, executors map[StepType]StepExecutor) *JobScheduler {
@@ -101,6 +121,9 @@ func (s *JobScheduler) runHeartbeat() {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	var stallTicks int
+	lastFinished := atomic.LoadInt64(&s.finishedJobs)
+
 	for {
 		select {
 		case <-s.stopCh:
@@ -109,12 +132,35 @@ func (s *JobScheduler) runHeartbeat() {
 			s.mu.Lock()
 			tracked := len(s.queued)
 			s.mu.Unlock()
+
+			running := len(s.jobSem)
+			slots := cap(s.jobSem)
+			finished := atomic.LoadInt64(&s.finishedJobs)
+
 			applog.Info("scheduler heartbeat",
-				"running", len(s.jobSem),
-				"slots", cap(s.jobSem),
+				"running", running,
+				"slots", slots,
 				"queue_depth", len(s.queue),
 				"tracked", tracked,
 			)
+
+			// Stall = every slot busy and no job finished since last tick. After
+			// stallHeartbeats consecutive such ticks, raise the alarm once.
+			if slots > 0 && running >= slots && finished == lastFinished {
+				stallTicks++
+			} else {
+				stallTicks = 0
+			}
+			lastFinished = finished
+
+			if stallTicks == stallHeartbeats {
+				applog.Error("scheduler appears stalled",
+					"running", running, "slots", slots, "queue_depth", len(s.queue),
+					"heartbeats", stallTicks)
+				if s.onStall != nil {
+					s.onStall(running)
+				}
+			}
 		}
 	}
 }
@@ -409,6 +455,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 
 	logJobFinished(jobID, jobType, status, finished.Sub(now), finalSteps, lastError)
 
+	atomic.AddInt64(&s.finishedJobs, 1)
 	if s.onJobFinished != nil {
 		s.onJobFinished(jobID, jobType, status)
 	}
