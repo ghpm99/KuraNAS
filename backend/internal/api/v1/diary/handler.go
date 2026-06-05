@@ -37,7 +37,7 @@ func (handler *Handler) CreateDiaryHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&diaryDto); err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 	startTime := time.Now()
@@ -53,7 +53,7 @@ func (handler *Handler) CreateDiaryHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -75,7 +75,7 @@ func (handler *Handler) DuplicateDiaryHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&diaryId); err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 
@@ -86,7 +86,7 @@ func (handler *Handler) DuplicateDiaryHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -116,7 +116,7 @@ func (handler *Handler) GetDiaryHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -152,13 +152,13 @@ func (handler *Handler) UpdateDiaryHandler(c *gin.Context) {
 	updated, err := handler.service.UpdateDiary(diaryDto)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 	if !updated {
 		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_DIARY_NOT_FOUND"))
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_DIARY_NOT_FOUND")})
 		return
 	}
 
@@ -179,7 +179,7 @@ func (handler *Handler) GetSummaryHandler(c *gin.Context) {
 	summary, err := handler.service.GetSummary()
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 

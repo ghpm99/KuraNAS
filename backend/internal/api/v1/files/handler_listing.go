@@ -42,7 +42,7 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -81,7 +81,7 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -118,13 +118,13 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 	if len(file.Items) == 0 {
 		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -137,7 +137,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -196,7 +196,7 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 		fileParent, err := handler.service.GetFileById(fileParentId)
 		if err != nil {
 			handler.Logger.CompleteWithErrorLog(loggerModel, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 			return
 		}
 		if fileParent.ID != 0 {
@@ -220,7 +220,7 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -240,7 +240,7 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 
@@ -248,7 +248,7 @@ func (handler *Handler) GetImagesHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -271,7 +271,7 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -293,7 +293,7 @@ func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicArtists(page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -316,7 +316,7 @@ func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicByArtist(artist, page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -338,7 +338,7 @@ func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicAlbums(page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -361,7 +361,7 @@ func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicByAlbum(album, page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -383,7 +383,7 @@ func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicGenres(page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -406,7 +406,7 @@ func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicByGenre(genre, page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -428,7 +428,7 @@ func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
 	pagination, err := handler.service.GetMusicFolders(page, pageSize)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 

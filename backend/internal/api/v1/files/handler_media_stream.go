@@ -40,7 +40,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -52,7 +52,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 		if errors.Is(err, ErrFileMissingDisk) {
 			httpStatus = http.StatusNotFound
 		}
-		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		c.JSON(httpStatus, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -78,7 +78,7 @@ func (handler *Handler) GetVideoThumbnailHandler(c *gin.Context) {
 	file, err := handler.service.GetFileById(id)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -89,7 +89,7 @@ func (handler *Handler) GetVideoThumbnailHandler(c *gin.Context) {
 		if errors.Is(err, ErrFileMissingDisk) {
 			httpStatus = http.StatusNotFound
 		}
-		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		c.JSON(httpStatus, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -115,7 +115,7 @@ func (handler *Handler) GetVideoPreviewHandler(c *gin.Context) {
 	file, err := handler.service.GetFileById(id)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -126,7 +126,7 @@ func (handler *Handler) GetVideoPreviewHandler(c *gin.Context) {
 		if errors.Is(err, ErrFileMissingDisk) {
 			httpStatus = http.StatusNotFound
 		}
-		c.JSON(httpStatus, gin.H{"error": err.Error()})
+		c.JSON(httpStatus, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -156,7 +156,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -180,7 +180,7 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	file, err := handler.service.GetFileById(id)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -194,7 +194,7 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	audioFile, err := os.Open(file.Path)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 	defer audioFile.Close()
@@ -202,7 +202,7 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	fileInfo, err := audioFile.Stat()
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -258,7 +258,7 @@ func (handler *Handler) GetVideosHandler(c *gin.Context) {
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
@@ -280,7 +280,7 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 	file, err := handler.service.GetFileById(id)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
@@ -294,7 +294,7 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 	videoFile, err := os.Open(file.Path)
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 	defer videoFile.Close()
@@ -302,7 +302,7 @@ func (handler *Handler) StreamVideoHandler(c *gin.Context) {
 	fileInfo, err := videoFile.Stat()
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
