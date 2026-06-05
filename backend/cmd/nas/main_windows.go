@@ -6,9 +6,10 @@ package main
 import (
 	"log"
 	"nas-go/api/internal/app"
+	"nas-go/api/pkg/applog"
 	"os"
 	"path/filepath"
-	"time"
+	"strconv"
 
 	"github.com/kardianos/service"
 )
@@ -171,24 +172,44 @@ func setupFileLogger() {
 	exeDir := filepath.Dir(exePath)
 	logDir := filepath.Join(exeDir, "log")
 
-	err = os.MkdirAll(logDir, os.ModePerm)
+	// The file logger is installed before the .env is loaded, so logging knobs
+	// come from the real OS environment here; the level is re-applied from the
+	// loaded config once InitializeApp runs.
+	rotating, err := applog.NewRotatingFile(applog.RotateConfig{
+		Dir:        logDir,
+		Prefix:     "kuranas-",
+		MaxSizeMB:  envIntOrDefault("LOG_MAX_SIZE_MB", 50),
+		MaxBackups: envIntOrDefault("LOG_MAX_BACKUPS", 10),
+		MaxAgeDays: envIntOrDefault("LOG_MAX_AGE_DAYS", 30),
+	})
 	if err != nil {
-		log.Println("Erro ao criar diretório de log:", err)
+		log.Println("Erro ao iniciar arquivo de log:", err)
 		return
 	}
 
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	logFileName := "kuranas-" + timestamp + ".log"
-	logFile := filepath.Join(logDir, logFileName)
+	applog.Setup(applog.Options{
+		Writer:    rotating,
+		Level:     applog.ParseLevel(os.Getenv("LOG_LEVEL")),
+		AddSource: true,
+	})
 
-	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Println("Erro ao abrir arquivo de log:", err)
-		return
+	// Capture runtime panic/fatal stack traces (written straight to the OS
+	// stderr handle) into the forensic file too.
+	if err := applog.RedirectStderr(rotating.File()); err != nil {
+		applog.Warn("could not redirect stderr to log file", "error", err.Error())
 	}
 
-	log.SetOutput(file)
-	log.SetFlags(log.LstdFlags | log.LUTC)
+	applog.Info("forensic log started", "dir", logDir)
+}
 
-	log.Println("Arquivo de log iniciado:", logFile)
+func envIntOrDefault(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
 }
