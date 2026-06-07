@@ -16,6 +16,8 @@ const (
 	EventTypeScanCompleted         EventType = "SCAN_COMPLETED"
 	EventTypeJobFailed             EventType = "JOB_FAILED"
 	EventTypeAIProviderUnavailable EventType = "AI_PROVIDER_UNAVAILABLE"
+	EventTypeOllamaDaemonStarted   EventType = "OLLAMA_DAEMON_STARTED"
+	EventTypeOllamaDaemonDown      EventType = "OLLAMA_DAEMON_UNREACHABLE"
 )
 
 type EventModel struct {

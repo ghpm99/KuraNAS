@@ -107,6 +107,9 @@ var CreateAssistantTablesQuery string
 //go:embed queries/0032_extend_system_event_type_check.sql
 var ExtendSystemEventTypeCheckQuery string
 
+//go:embed queries/0033_extend_system_event_type_check_ollama.sql
+var ExtendSystemEventTypeCheckOllamaQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -218,6 +221,9 @@ func systemEventMigrationList() {
 
 	addMigration("0032_extend_system_event_type_check",
 		defaultMigrationFunc(ExtendSystemEventTypeCheckQuery))
+
+	addMigration("0033_extend_system_event_type_check_ollama",
+		defaultMigrationFunc(ExtendSystemEventTypeCheckOllamaQuery))
 }
 
 func capturesMigrationList() {
