@@ -845,6 +845,8 @@
 	"SYSTEM_EVENT_SCAN_COMPLETED": "Varredura concluida (job %d)",
 	"SYSTEM_EVENT_JOB_FAILED": "Job %d (%s) terminou com status %s",
 	"SYSTEM_EVENT_AI_PROVIDER_UNAVAILABLE": "Provedor de IA indisponivel",
+	"SYSTEM_EVENT_OLLAMA_DAEMON_STARTED": "Daemon do Ollama iniciado automaticamente",
+	"SYSTEM_EVENT_OLLAMA_DAEMON_UNREACHABLE": "Daemon do Ollama inalcancavel e nao pode ser iniciado",
 	"NOTIFICATION_JOB_FAILED_TITLE": "Falha no processamento",
 	"NOTIFICATION_JOB_FAILED_MESSAGE": "Um job de %s nao terminou com sucesso. Verifique o log para detalhes.",
 	"NOTIFICATION_SCHEDULER_STALL_TITLE": "Processamento parece travado",

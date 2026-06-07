@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"nas-go/api/internal/api/v1/notifications"
+	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/watcher"
@@ -151,6 +152,8 @@ func InitializeApp() (*Application, error) {
 		log.Printf("[APP] Failed to record startup system event: %v", err)
 	}
 
+	startOllamaDaemon(appContext, systemEvents)
+
 	return &Application{
 		Router:        router,
 		Context:       appContext,
@@ -159,6 +162,59 @@ func InitializeApp() (*Application, error) {
 		FolderWatcher: folderWatcher,
 		SystemEvents:  systemEvents,
 	}, nil
+}
+
+// startOllamaDaemon verifies (and, when needed and possible, spawns) the local
+// Ollama daemon at boot. It runs in a background goroutine so it never delays
+// ListenAndServe, and degrades gracefully — exactly like the UDP/mDNS startup:
+// any failure is logged/recorded and the server keeps booting.
+func startOllamaDaemon(appContext *AppContext, systemEvents systemevent.ServiceInterface) {
+	if appContext == nil || appContext.Ollama == nil || appContext.Ollama.Daemon == nil {
+		return
+	}
+	daemon := appContext.Ollama.Daemon
+
+	applog.Go("ollama-autostart", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+
+		outcome, err := daemon.EnsureRunning(ctx)
+		if err != nil {
+			applog.Warn("ollama autostart failed", "outcome", string(outcome), "error", err.Error())
+		}
+		applyOllamaOutcome(systemEvents, outcome)
+	})
+}
+
+// applyOllamaOutcome maps a daemon lifecycle outcome to logs and observability
+// events. Split out from the goroutine so the mapping is deterministically
+// testable without spawning processes.
+func applyOllamaOutcome(systemEvents systemevent.ServiceInterface, outcome ollamamgmt.EnsureOutcome) {
+	switch outcome {
+	case ollamamgmt.OutcomeStarted:
+		applog.Info("ollama daemon started automatically")
+		recordEvent(systemEvents, systemevent.EventTypeOllamaDaemonStarted,
+			i18n.GetMessage("SYSTEM_EVENT_OLLAMA_DAEMON_STARTED"))
+	case ollamamgmt.OutcomeAlreadyRunning:
+		applog.Info("ollama daemon already running")
+	case ollamamgmt.OutcomeBinaryMissing:
+		applog.Info("ollama autostart skipped: binary not found (assuming remote daemon)")
+	case ollamamgmt.OutcomeUnreachable:
+		applog.Warn("ollama daemon unreachable and could not be started")
+		recordEvent(systemEvents, systemevent.EventTypeOllamaDaemonDown,
+			i18n.GetMessage("SYSTEM_EVENT_OLLAMA_DAEMON_UNREACHABLE"))
+	case ollamamgmt.OutcomeDisabled:
+		// Provider off — nothing to do.
+	}
+}
+
+func recordEvent(systemEvents systemevent.ServiceInterface, eventType systemevent.EventType, description string) {
+	if systemEvents == nil {
+		return
+	}
+	if err := systemEvents.RecordEvent(eventType, description); err != nil {
+		applog.Warn("failed to record system event", "event", string(eventType), "error", err.Error())
+	}
 }
 
 func (app *Application) Run(addr string, enableGraceFul bool) error {
