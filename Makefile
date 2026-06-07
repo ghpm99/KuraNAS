@@ -4,6 +4,7 @@ FRONTEND_DIR := frontend
 BACKEND_DIR := backend
 DIST_DIR := $(FRONTEND_DIR)/dist
 OUTPUT_DIR := build
+DOWNLOADS_DIR := downloads
 
 BACKEND_COVERAGE_MIN := 80
 BACKEND_GO_CACHE_DIR := $(abspath .cache/go-build)
@@ -27,6 +28,10 @@ move:
 	@mv $(BACKEND_DIR)/kuranas $(OUTPUT_DIR)
 	@cp -r $(BACKEND_DIR)/icons $(OUTPUT_DIR)
 	@cp -r $(BACKEND_DIR)/translations $(OUTPUT_DIR)
+	@if [ -d "$(DOWNLOADS_DIR)" ]; then \
+		echo "Bundling client apps from $(DOWNLOADS_DIR)/..."; \
+		cp -r $(DOWNLOADS_DIR) $(OUTPUT_DIR); \
+	fi
 	@echo "Files moved."
 
 clean:
