@@ -15,6 +15,7 @@ import (
 	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
+	"nas-go/api/internal/api/v1/distribution"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
@@ -59,8 +60,15 @@ type AppContext struct {
 	Libraries     *LibrariesContext
 	WatchFolders  *WatchFoldersContext
 	Takeout       *TakeoutContext
+	Distribution  *DistributionContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
+}
+
+type DistributionContext struct {
+	Handler    *distribution.Handler
+	Service    distribution.ServiceInterface
+	Repository distribution.RepositoryInterface
 }
 
 type CapturesContext struct {
@@ -181,6 +189,7 @@ func NewContext(db *sql.DB) *AppContext {
 	librariesContext := newLibrariesContext(dbContext, loggerService)
 	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
+	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 	assistantAgent := buildAssistantAgent(aiService, searchContext.Service)
@@ -207,6 +216,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Libraries:     librariesContext,
 		WatchFolders:  watchFoldersContext,
 		Takeout:       takeoutContext,
+		Distribution:  distributionContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
 	}
@@ -642,5 +652,25 @@ func newTakeoutContext(
 	return &TakeoutContext{
 		Handler: handler,
 		Service: service,
+	}
+}
+
+// distributionDownloadsDir is where pre-built client apps (APKs, the browser
+// extension zip) and their manifest.json are shipped, next to ./dist. CI builds
+// the artifacts and the updater syncs this directory in place; the server only
+// hosts them, it never builds them.
+const distributionDownloadsDir = "./downloads"
+
+// newDistributionContext wires the client-app download catalog. It is
+// filesystem-backed (no DB): a missing downloads/ directory simply yields an
+// empty catalog, so the dev server, which ships no artifacts, degrades cleanly.
+func newDistributionContext() *DistributionContext {
+	repository := distribution.NewRepository(distributionDownloadsDir)
+	service := distribution.NewService(repository)
+	handler := distribution.NewHandler(service)
+	return &DistributionContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
 	}
 }

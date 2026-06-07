@@ -28,7 +28,9 @@ The same code compiles for three targets via build tags; `cmd/nas/` and `interna
 
 To add a feature: a package under `internal/api/v1/<feature>/` (`handler.go`, `service.go`, `repository.go`, `interfaces.go`, `model.go`, `dto.go`), a `new<Feature>Context` in `context.go`, and a `Register<Feature>Routes` in `routes.go`.
 
-Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs`, `configuration`, `search`, `notifications`, `captures`, `libraries`, `watchfolders`, `takeout`, `aiproviders`, `ollama`, `updater`, `health`.
+Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs`, `configuration`, `search`, `notifications`, `captures`, `libraries`, `watchfolders`, `takeout`, `aiproviders`, `ollama`, `updater`, `distribution`, `health`.
+
+`distribution` is filesystem-backed (no DB): it serves pre-built client apps (Android APKs, the browser-extension zip) from a `./downloads/` directory described by `downloads/manifest.json` — `GET /api/v1/downloads` lists them, `GET /api/v1/downloads/:id` streams one. Artifacts are built by `scripts/build-downloads.sh` (CI/maintainer, never the server), bundled into `build/` by the root `make move`, and synced in place by the `updater`. A missing `downloads/` directory simply yields an empty catalog.
 
 ## Layering & testing seams
 
