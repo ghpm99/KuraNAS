@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import {
     BookImage,
+    DownloadCloud,
     House,
     Info,
     LayoutGrid,
@@ -58,6 +59,11 @@ export const navigationItems: NavigationItem[] = [
         href: appRoutes.takeout,
         icon: <Upload size={20} />,
         labelKey: 'NAV_TAKEOUT',
+    },
+    {
+        href: appRoutes.downloads,
+        icon: <DownloadCloud size={20} />,
+        labelKey: 'NAV_DOWNLOADS',
     },
     { href: appRoutes.analytics, icon: analyticsIcon, labelKey: 'ANALYTICS' },
     {

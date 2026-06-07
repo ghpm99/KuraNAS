@@ -14,6 +14,7 @@ export const appRoutes = {
     videos: '/videos',
     assistant: '/assistant',
     takeout: '/takeout',
+    downloads: '/downloads',
     videoPlayerBase: '/video',
     notifications: '/notifications',
 } as const;
