@@ -23,7 +23,7 @@ The same build talks to the bundled backend (same origin) or a remote dev server
 3. `process.env.VITE_API_URL` (for Jest/Node),
 4. empty → `getApiV1BaseUrl()` falls back to same-origin `/api/v1`.
 
-All service modules use the shared axios instance `apiBase` (`src/service/index.ts`), built on that base URL. There is **one service module per API domain** under `src/service/` (`files`, `music`, `playlist`, `videoPlayback`, `analytics`, `jobs`, `notifications`, `libraries`, `takeout`, `aiProviders`, `ollama`, `configuration`, `search`, `activityDiary`, `playerState`, `update`). These mirror the backend routes — keep them in sync when backend DTOs change.
+All service modules use the shared axios instance `apiBase` (`src/service/index.ts`), built on that base URL. There is **one service module per API domain** under `src/service/` (`files`, `music`, `playlist`, `videoPlayback`, `analytics`, `jobs`, `notifications`, `libraries`, `takeout`, `aiProviders`, `ollama`, `configuration`, `search`, `activityDiary`, `playerState`, `update`, `downloads`). These mirror the backend routes — keep them in sync when backend DTOs change.
 
 ## App structure
 

@@ -66,6 +66,7 @@ jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);
 jest.mock('@/pages/takeout', () => () => <div>TakeoutPage</div>);
+jest.mock('@/pages/downloads', () => () => <div>DownloadsPage</div>);
 
 describe('App', () => {
     it('shows global player when route is not video', async () => {
