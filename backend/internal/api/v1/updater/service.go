@@ -334,7 +334,7 @@ func extractFile(f *zip.File, targetPath string) error {
 
 // applyFullUpdate copies all extracted files to the installation directory.
 // For the binary, it uses the rename-to-.old trick (works on Windows even while running).
-// For other directories (dist, translations, scripts, icons), it replaces them in place.
+// For other directories (dist, translations, scripts, icons, downloads), it replaces them in place.
 // The scripts/.venv directory is preserved if it exists.
 func applyFullUpdate(extractedDir string) error {
 	installDir, err := getInstallDir()
@@ -346,7 +346,7 @@ func applyFullUpdate(extractedDir string) error {
 		return err
 	}
 
-	assetDirs := []string{"dist", "icons", "translations", "scripts"}
+	assetDirs := []string{"dist", "icons", "translations", "scripts", "downloads"}
 	for _, dir := range assetDirs {
 		srcDir := filepath.Join(extractedDir, dir)
 		if _, err := os.Stat(srcDir); os.IsNotExist(err) {

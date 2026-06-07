@@ -34,6 +34,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterAssistantRoutes(routesV1, context)
 	RegisterWatchFoldersRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
+	RegisterDistributionRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	registerReactRoutes(router)
 }
@@ -312,6 +313,17 @@ func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {
 	takeoutRoutes.POST("/upload/init", context.Takeout.Handler.InitUploadHandler)
 	takeoutRoutes.POST("/upload/chunk", context.Takeout.Handler.UploadChunkHandler)
 	takeoutRoutes.POST("/upload/complete", context.Takeout.Handler.CompleteUploadHandler)
+}
+
+func RegisterDistributionRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Distribution == nil || context.Distribution.Handler == nil {
+		return
+	}
+
+	downloads := router.Group("/downloads")
+	downloads.GET("", context.Distribution.Handler.GetDownloadsHandler)
+	downloads.GET("/", context.Distribution.Handler.GetDownloadsHandler)
+	downloads.GET("/:id", context.Distribution.Handler.DownloadFileHandler)
 }
 
 func RegisterHealthRoutes(router *gin.RouterGroup) {
