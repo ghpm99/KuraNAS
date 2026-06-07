@@ -39,3 +39,6 @@ bin/
 backend/thumbnails/
 backend/scripts/logs/
 plugin/node_modules/
+
+# Built client apps (APKs, plugin zip) + manifest, assembled by scripts/build-downloads.sh
+/downloads/
