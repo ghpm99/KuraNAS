@@ -152,6 +152,7 @@ type AIProvidersContext struct {
 type OllamaContext struct {
 	Handler *ollamamgmt.Handler
 	Service ollamamgmt.ServiceInterface
+	Daemon  *ollamamgmt.DaemonManager
 }
 
 type AssistantContext struct {
@@ -498,7 +499,8 @@ func newAIStack(dbContext *database.DbContext) (ai.ServiceInterface, *AIProvider
 // resolved dynamically from the persisted provider configuration so changes
 // made through the UI take effect without a restart.
 func newOllamaContext(aiProvidersService aiproviders.ServiceInterface, jobsRepository jobs.RepositoryInterface) *OllamaContext {
-	fallbackBaseURL := ai.LoadConfig().OllamaBaseURL
+	cfg := ai.LoadConfig()
+	fallbackBaseURL := cfg.OllamaBaseURL
 
 	resolver := func() string {
 		if aiProvidersService != nil {
@@ -513,12 +515,36 @@ func newOllamaContext(aiProvidersService aiproviders.ServiceInterface, jobsRepos
 		return fallbackBaseURL
 	}
 
+	// enabled reads the live provider config so the autostart only fires when the
+	// operator actually turned Ollama on (matches buildAIServiceFromModels).
+	enabled := func() bool {
+		if aiProvidersService == nil {
+			return false
+		}
+		models, err := aiProvidersService.GetProviderModels()
+		if err != nil {
+			return false
+		}
+		for _, model := range models {
+			if model.Name == aiproviders.ProviderOllama {
+				return model.Enabled
+			}
+		}
+		return false
+	}
+
 	service := ollamamgmt.NewService(resolver, jobsRepository)
 	handler := ollamamgmt.NewHandler(service)
+	daemon := ollamamgmt.NewDaemonManager(ollamamgmt.DaemonConfig{
+		Autostart:    cfg.OllamaAutostart,
+		Binary:       cfg.OllamaBinary,
+		StartTimeout: cfg.OllamaStartTimeout,
+	}, resolver, enabled)
 
 	return &OllamaContext{
 		Handler: handler,
 		Service: service,
+		Daemon:  daemon,
 	}
 }
 

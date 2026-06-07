@@ -845,6 +845,8 @@
 	"SYSTEM_EVENT_SCAN_COMPLETED": "Scan completed (job %d)",
 	"SYSTEM_EVENT_JOB_FAILED": "Job %d (%s) ended with status %s",
 	"SYSTEM_EVENT_AI_PROVIDER_UNAVAILABLE": "AI provider unavailable",
+	"SYSTEM_EVENT_OLLAMA_DAEMON_STARTED": "Ollama daemon started automatically",
+	"SYSTEM_EVENT_OLLAMA_DAEMON_UNREACHABLE": "Ollama daemon unreachable and could not be started",
 	"NOTIFICATION_JOB_FAILED_TITLE": "Processing job failed",
 	"NOTIFICATION_JOB_FAILED_MESSAGE": "A %s job did not finish successfully. Check the log for details.",
 	"NOTIFICATION_SCHEDULER_STALL_TITLE": "Processing appears stalled",
