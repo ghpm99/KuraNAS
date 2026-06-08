@@ -109,7 +109,7 @@ deploy:
 	@$(MAKE) -f Makefile.local deploy
 	@echo "Local deploy complete."
 
-release-main-ff:
+release-main-ff-old:
 	@echo ""
 	@echo "======== Release Main (automated sync + fast-forward) ========"
 	@CURRENT_BRANCH=$$(git branch --show-current); \
@@ -145,3 +145,18 @@ release-main-ff:
 	git merge --ff-only origin/develop; \
 	git push origin main
 	@echo "Develop and main were updated successfully."
+
+release-main-ff:
+	@echo ""
+	@echo "======== Sync main with develop (fast-forward) ========"
+	@if ! git diff-index --quiet HEAD -- || ! git diff --cached --quiet; then \
+		echo "FAILED: Working tree has uncommitted changes" && exit 1; \
+	fi
+	git fetch origin
+	git checkout main
+	git pull --ff-only origin main
+	git merge --ff-only origin/develop
+	git push origin main
+	git checkout develop
+	@echo ""
+	@echo "Done: main and develop point to the same commit. Auto Tag cuts the tag on push."
