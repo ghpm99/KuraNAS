@@ -13,6 +13,7 @@
 # Usage:
 #   scripts/build-downloads.sh                 # build everything it can find
 #   SKIP_GRADLE=1 scripts/build-downloads.sh   # only (re)zip the plugin + manifest
+#   GRADLE_VARIANT=release scripts/build-downloads.sh  # once a keystore exists
 #
 # Requires: bash, zip, sha256sum (coreutils). Android builds also require the
 # Android SDK + a working ./gradlew in android/ and mobile/.
@@ -27,6 +28,12 @@ ANDROID_MIN_OS="${ANDROID_MIN_OS:-Android 13}"
 MOBILE_VERSION="${MOBILE_VERSION:-1.0.0}"
 MOBILE_MIN_OS="${MOBILE_MIN_OS:-Android 4.1}"
 PLUGIN_VERSION="${PLUGIN_VERSION:-1.0.0}"
+
+# GRADLE_VARIANT selects the build type. Default `debug` because it is signed
+# with the Android debug key and installs on a device out of the box; a
+# `release` APK is unsigned without a keystore and won't install. Switch to
+# `release` only once a signing config exists.
+GRADLE_VARIANT="${GRADLE_VARIANT:-debug}"
 
 rm -rf "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
@@ -53,10 +60,15 @@ build_gradle_apk() {
         echo "  (SKIP_GRADLE=1) reusing existing ${out_name} if present"
         return
     fi
-    echo "  building ${module_dir} release APK..."
-    ( cd "${ROOT_DIR}/${module_dir}" && ./gradlew --no-daemon assembleRelease )
+    local task variant_dir
+    case "${GRADLE_VARIANT}" in
+        release) task="assembleRelease"; variant_dir="release" ;;
+        *)       task="assembleDebug";   variant_dir="debug" ;;
+    esac
+    echo "  building ${module_dir} ${GRADLE_VARIANT} APK..."
+    ( cd "${ROOT_DIR}/${module_dir}" && ./gradlew --no-daemon "${task}" )
     local apk
-    apk="$(find "${ROOT_DIR}/${module_dir}/app/build/outputs/apk/release" -name '*.apk' | head -n1 || true)"
+    apk="$(find "${ROOT_DIR}/${module_dir}/app/build/outputs/apk/${variant_dir}" -name '*.apk' | head -n1 || true)"
     [ -n "${apk}" ] && cp "${apk}" "${OUT_DIR}/${out_name}"
 }
 
