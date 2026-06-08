@@ -189,14 +189,27 @@ func getAssetName() string {
 	return "kuranas-linux.zip"
 }
 
-// compareVersions compares two SemVer version strings (without "v" prefix).
-// Returns -1 if a < b, 0 if a == b, 1 if a > b.
-// Non-numeric versions (e.g. "dev") are treated as 0.0.0.
+// compareVersions compares two dot-separated version strings (without the "v"
+// prefix). It supports both legacy 3-segment SemVer ("1.2.3") and the new
+// 4-segment CalVer4 ("26.1.2.3") tags simultaneously.
+//
+// A tag with more segments is always considered newer than one with fewer, so
+// any CalVer4 tag wins over any legacy SemVer tag (the migration is monotonic
+// forward). When both have the same number of segments they are compared
+// segment by segment. Returns -1 if a < b, 0 if a == b, 1 if a > b.
+// Non-numeric versions (e.g. "dev") are treated as the oldest possible.
 func compareVersions(a, b string) int {
-	aParts := parseSemVer(a)
-	bParts := parseSemVer(b)
+	aParts := parseVersion(a)
+	bParts := parseVersion(b)
 
-	for i := 0; i < 3; i++ {
+	if len(aParts) != len(bParts) {
+		if len(aParts) < len(bParts) {
+			return -1
+		}
+		return 1
+	}
+
+	for i := range aParts {
 		if aParts[i] < bParts[i] {
 			return -1
 		}
@@ -207,16 +220,17 @@ func compareVersions(a, b string) int {
 	return 0
 }
 
-func parseSemVer(version string) [3]int {
-	var parts [3]int
-	segments := strings.SplitN(version, ".", 3)
+// parseVersion splits a version into its numeric segments, preserving how many
+// there are (3 for SemVer, 4 for CalVer4) so compareVersions can rank schemes.
+// A version that is not purely numeric (e.g. "dev") collapses to a single 0
+// segment, which compares older than any real release of either scheme.
+func parseVersion(version string) []int {
+	segments := strings.Split(version, ".")
+	parts := make([]int, len(segments))
 	for i, seg := range segments {
-		if i >= 3 {
-			break
-		}
 		n, err := strconv.Atoi(seg)
 		if err != nil {
-			return [3]int{0, 0, 0}
+			return []int{0}
 		}
 		parts[i] = n
 	}
