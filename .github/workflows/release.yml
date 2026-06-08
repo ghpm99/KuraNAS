@@ -1,13 +1,19 @@
 name: Release Build
 
+# Pipeline única de release: calcula a versão (sem criar nada), roda os gates,
+# builda os artefatos e — só se tudo passar — cria a tag anotada e publica a
+# GitHub Release. A lógica de versão/tag/notas vem das composite actions
+# compartilhadas em ghpm99/ghpm99 (@v2); aqui só orquestramos a ordem
+# versão → build → tag → release, sem rodar nada duas vezes.
+
 on:
-  workflow_run:
-    workflows:
-      - Auto Tag Main
-    types:
-      - completed
+  push:
     branches:
       - main
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -22,48 +28,32 @@ env:
   BACKEND_COVERAGE_MIN: '80'
 
 jobs:
-  resolve-tag:
-    name: Resolve tag from auto-tag workflow
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  version:
+    name: Resolve next version
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.resolve.outputs.tag_name }}
-      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+      released: ${{ steps.ver.outputs.released }}
+      tag: ${{ steps.ver.outputs.tag }}
+      last_tag: ${{ steps.ver.outputs.last-tag }}
     steps:
-      - name: Checkout full history
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Resolve semantic tag on workflow commit
-        id: resolve
-        shell: bash
-        run: |
-          TARGET_SHA="${{ github.event.workflow_run.head_sha }}"
-          git fetch --force --tags
-
-          TAGS=$(git tag --points-at "$TARGET_SHA" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
-          if [ -z "$TAGS" ]; then
-            echo "No semantic tag found on commit $TARGET_SHA."
-            exit 1
-          fi
-
-          TAG_NAME=$(printf '%s\n' "$TAGS" | sort -V | tail -n 1)
-          echo "Resolved tag: $TAG_NAME for commit: $TARGET_SHA"
-          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+      - id: ver
+        uses: ghpm99/ghpm99/.github/actions/calcular-versao@v2
+        with:
+          version-scheme: calver4
 
   lint-frontend:
     name: Lint Frontend
     runs-on: ubuntu-latest
-    needs: resolve-tag
+    needs: version
+    if: needs.version.outputs.released == 'true'
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -75,14 +65,12 @@ jobs:
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
-    needs: [resolve-tag, lint-frontend]
+    needs: lint-frontend
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -95,14 +83,13 @@ jobs:
   lint-backend:
     name: Lint Backend
     runs-on: ubuntu-latest
-    needs: resolve-tag
+    needs: version
+    if: needs.version.outputs.released == 'true'
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -112,14 +99,12 @@ jobs:
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
-    needs: [resolve-tag, lint-backend]
+    needs: lint-backend
     defaults:
       run:
         working-directory: ${{ env.BACKEND_DIR }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -134,12 +119,10 @@ jobs:
   build-downloads:
     name: Build client apps (Android + plugin)
     runs-on: ubuntu-latest
-    needs: [resolve-tag, test-backend, test-frontend]
+    needs: [version, test-backend, test-frontend]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -152,7 +135,7 @@ jobs:
         # on /downloads matches the running backend. GRADLE_VARIANT defaults to
         # debug (installable without a keystore); switch once signing exists.
         env:
-          TAG: ${{ needs.resolve-tag.outputs.tag_name }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           VERSION="${TAG#v}"
           ANDROID_VERSION="$VERSION" \
@@ -169,12 +152,10 @@ jobs:
   build-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
-    needs: [resolve-tag, test-backend, test-frontend, build-downloads]
+    needs: [version, test-backend, test-frontend, build-downloads]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
 
       - name: Download client apps bundle
         uses: actions/download-artifact@v4
@@ -211,7 +192,7 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
-          go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.resolve-tag.outputs.tag_name }}' -X 'nas-go/api/api.CommitHash=${{ needs.resolve-tag.outputs.commit_sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=linux -o kuranas ./cmd/nas/main.go
+          go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.version.outputs.tag }}' -X 'nas-go/api/api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=linux -o kuranas ./cmd/nas/main.go
 
       - name: Prepare build directory
         run: |
@@ -235,12 +216,10 @@ jobs:
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
-    needs: [resolve-tag, test-backend, test-frontend, build-downloads]
+    needs: [version, test-backend, test-frontend, build-downloads]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
 
       - name: Download client apps bundle
         uses: actions/download-artifact@v4
@@ -276,7 +255,7 @@ jobs:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
-        run: go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.resolve-tag.outputs.tag_name }}' -X 'nas-go/api/api.CommitHash=${{ needs.resolve-tag.outputs.commit_sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=windows -o kuranas.exe ./cmd/nas
+        run: go build -ldflags "-X 'nas-go/api/api.Version=${{ needs.version.outputs.tag }}' -X 'nas-go/api/api.CommitHash=${{ github.sha }}' -X 'nas-go/api/api.GoVersion=${{ env.GO_VERSION }}' -X 'nas-go/api/api.NodeVersion=${{ env.NODE_VERSION }}'" -tags=windows -o kuranas.exe ./cmd/nas
 
       - name: Prepare build directory
         shell: bash
@@ -300,14 +279,12 @@ jobs:
 
   release:
     name: Release build artifacts
-    needs: [resolve-tag, build-linux, build-windows]
+    needs: [version, build-linux, build-windows]
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout (histórico p/ notas)
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve-tag.outputs.commit_sha }}
           fetch-depth: 0
 
       - name: Download artifacts
@@ -316,37 +293,24 @@ jobs:
           pattern: kuranas-*
           merge-multiple: true
 
-      - name: Gerar notas da release
-        shell: bash
-        env:
-          TAG: ${{ needs.resolve-tag.outputs.tag_name }}
-        run: |
-          set -euo pipefail
-          PREV="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname \
-            | grep -v "^${TAG}$" | head -n1 || true)"
-          RANGE="$TAG"
-          [ -n "$PREV" ] && RANGE="${PREV}..${TAG}"
-          NOTES="$RUNNER_TEMP/notes.md"
-          section () {
-            local title="$1" regex="$2" body
-            body="$(git log "$RANGE" --format='%s|%h' \
-              | awk -F'|' -v re="$regex" '$1 ~ re {printf "- %s (%s)\n", $1, $2}')"
-            [ -n "$body" ] && printf '### %s\n\n%s\n\n' "$title" "$body" >> "$NOTES"
-          }
-          { echo "## $TAG ($(date +%F))"; echo; } > "$NOTES"
-          section "Breaking Changes" '^[a-z]+(\([^)]+\))?!:'
-          section "Features"         '^feat(\([^)]+\))?:'
-          section "Fixes"            '^fix(\([^)]+\))?:'
-          section "Manutenção"       '^(refactor|perf|docs|test|build|chore|style|ci|revert)(\([^)]+\))?:'
-          [ "$(wc -l < "$NOTES")" -le 2 ] && echo "Release $TAG" >> "$NOTES"
-          echo "NOTES_PATH=$NOTES" >> "$GITHUB_ENV"
+      - name: Criar e empurrar a tag
+        uses: ghpm99/ghpm99/.github/actions/criar-tag@v2
+        with:
+          tag: ${{ needs.version.outputs.tag }}
 
-      - name: Create GitHub Release
+      - name: Gerar notas da release
+        id: notes
+        uses: ghpm99/ghpm99/.github/actions/gerar-notas@v2
+        with:
+          tag: ${{ needs.version.outputs.tag }}
+          last-tag: ${{ needs.version.outputs.last_tag }}
+
+      - name: Criar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ needs.resolve-tag.outputs.tag_name }}
-          tag_name: ${{ needs.resolve-tag.outputs.tag_name }}
-          body_path: ${{ env.NOTES_PATH }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: ${{ needs.version.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.notes-path }}
           files: |
             kuranas-linux.zip
             kuranas-windows.zip

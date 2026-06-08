@@ -10,7 +10,7 @@ on:
 
 jobs:
   preview:
-    uses: ghpm99/ghpm99/.github/workflows/auto-tag.yml@v1
+    uses: ghpm99/ghpm99/.github/workflows/auto-tag.yml@v2
     with:
       version-scheme: calver4
       dry-run: true
