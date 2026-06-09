@@ -38,7 +38,7 @@ Fases ordenadas do menor risco ao maior. Cada uma termina **verde no `make ci-ba
 
 | Fase | Arquivo | Escopo | Risco | Status |
 |---|---|---|---|---|
-| 0 | [phase-0-naming-conventions.md](phase-0-naming-conventions.md) | nomes `snake_case` + regra no CLAUDE.md | mínimo | ✅ CLAUDE.md feito / ⬜ renomes |
+| 0 | [phase-0-naming-conventions.md](phase-0-naming-conventions.md) | nomes `snake_case` + regra no CLAUDE.md | mínimo | ✅ concluída (2026-06-09) |
 | 1 | [phase-1-worker-split.md](phase-1-worker-split.md) | `worker/` → job/engine/steps/scan | médio | ⬜ |
 | 2 | [phase-2-image-extension.md](phase-2-image-extension.md) | criar `image/` (extrair de files) | baixo | ⬜ |
 | 3 | [phase-3-music-extension.md](phase-3-music-extension.md) | mover música de files → `music/` | médio | ⬜ |
