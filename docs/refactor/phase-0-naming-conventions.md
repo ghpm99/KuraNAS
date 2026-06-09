@@ -1,6 +1,8 @@
 # Fase 0 — Convenção de nomes + regra no CLAUDE.md
 
-**Risco:** mínimo · **Pré-requisito:** nenhum · **Bloqueia:** nada (mas deve vir primeiro)
+**Risco:** mínimo · **Pré-requisito:** nenhum · **Status:** ✅ concluída (2026-06-09)
+
+> Renomeados 10 arquivos para `snake_case` (8 em `internal/worker/` + `pkg/database/dbContext.go`/`dbContext_test.go`). `make ci-backend` verde, cobertura 81%.
 
 ## Objetivo
 
