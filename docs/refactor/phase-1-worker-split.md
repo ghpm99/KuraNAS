@@ -4,45 +4,60 @@
 
 ## Objetivo
 
-Separar o pacote único `worker` (38 arquivos, tudo no mesmo nível) em sub-pacotes por responsabilidade: `job`, `engine`, `steps`, `scan`. E consolidar o watcher duplicado.
+Separar o pacote único `worker` (38 arquivos, tudo no mesmo nível) em sub-pacotes por responsabilidade, para que abrir a pasta diga o que é cada coisa.
 
-## Por quê
+## ⚠️ Achados do recon (2026-06-09) — o plano original foi revisado
 
-- Hoje `worker` junta três coisas distintas no mesmo nível: o **motor** (pool/orquestrador/scheduler), os **steps** de job, e a **pipeline de scan** de arquivo. Abrir a pasta não diz o que é o quê.
-- Existe `internal/worker/watcher.go` **e** o pacote `internal/watcher/` — duplicação que confunde.
-- O blast radius é pequeno (só `app.go` + 1 teste importam `worker`), então é seguro reorganizar agora.
+Ao inspecionar o acoplamento real, **dois pontos do plano inicial não se sustentam**:
 
-## O que precisa ser feito
+1. **São 3 pacotes, não 4.** `engine/` e `steps/` separados **geram ciclo de import**:
+   - `WorkerContext` (struct central em `worker.go`) referencia `*JobScheduler` e `*JobOrchestrator` (tipos do engine).
+   - **Todos** os step executors recebem `*WorkerContext` (→ dependem do engine).
+   - Mas `buildStepExecutors` (engine) referencia esses steps (→ engine depende deles).
+   - Resultado: `engine ↔ steps` é mutuamente dependente. Separá-los exigiria um refactor de interfaces (steps deixarem de receber `WorkerContext` e passarem a receber dependências estreitas) — fora do escopo de uma fase de **organização**. Portanto os steps ficam **dentro de `engine/`** como arquivos `step_*.go` (agrupamento visual por nome, não por pacote).
+
+2. **A consolidação do watcher sai do escopo.** `internal/worker/watcher.go` (`startEntryPointWatcher`, observa o `ENTRY_POINT`) é **acoplado ao `WorkerContext`**; `internal/watcher/` é o **FolderWatcher** (observa watch-folders do usuário, move para bibliotecas). **Não são duplicados.** Mesclá-los arrastaria `WorkerContext` para dentro de `internal/watcher/`. Então o entry-point watcher **fica em `engine/`** e `internal/watcher/` permanece intocado.
+
+### Verificações que embasam isso
+
+- `worker/scan/` (pipeline) **não usa `WorkerContext` nem tipos de job** → pacote limpo. Depende de files/video/ai/logger/utils.
+- `engine` chama funções de `scan` (`StartFileProcessingPipeline`, `getMetadata`, `getCheckSum`, `CreateThumbnailWorker`, `GenerateVideoPlaylistsWorker`, `UpdateFileRecord`, `createFileRecord`, `ScanDirWorker`) → direção única `engine → scan`.
+- Extrair `job/` implica prefixar **~278 referências** a tipos/constantes de job (`JobType*`, `StepType*`, `JobPriority*`, `JobStatus*`, `StepStatus*`, `JobScope`, `PlannedJob/Step`) com `job.` em **13 arquivos**. Mecânico e guiado pelo compilador, mas é volume. (As structs genéricas `Job`/`Step` têm 0 usos externos → sem risco de replace ambíguo.)
+- Extrair `scan/` implica **exportar 4 símbolos** que o engine usa hoje sem qualificar: `getMetadata`→`GetMetadata`, `getCheckSum`→`GetCheckSum`, `createFileRecord`→`CreateFileRecord`, `pythonScriptRunner`→`PythonScriptRunner` (+ `SetPythonScriptRunnerForTesting` já exportado). Os tipos `FileWalk`/`ResultWorkerData` permanecem internos ao `scan`.
+
+## O que precisa ser feito (plano revisado: 3 pacotes)
 
 ### Sub-pacotes-alvo
 
-| Sub-pacote | Recebe (fonte) |
-|---|---|
-| `worker/job/` | `job_domain.go` (+`job_domain_test.go`) — enums/tipos de Job/Step. **Pacote neutro: `engine` e `steps` importam daqui, ele não importa ninguém → sem ciclo.** |
-| `worker/engine/` | `worker.go`, `job_orchestrator.go`, `job_scheduler.go`, `step_executors.go` (+ testes: `workers_internal_test.go`, `more_workers_internal_test.go`, `job_orchestrator_scheduler_test.go`, `job_scheduler_loop_test.go`, `scheduler_observers_test.go`, `step_executors_test.go`, `step_executors_additional_test.go`) |
-| `worker/steps/` | `checksum.go` (+`checksum_pipeline_internal_test.go`), `thumbnail.go`, `takeout_step.go`, `takeout_step_payload.go` (+`takeout_step_test.go`), `ollama_step.go` (+`ollama_step_test.go`), `ai_playlist_cluster_step.go` (+`ai_playlist_cluster_step_test.go`), `diff_step_pg_integration_test.go`, `mark_deleted_pg_integration_test.go`, `ai_settings_gate_test.go` |
-| `worker/scan/` | pipeline de arquivo: `directory_walker.go`, `dir.go`, `file_checksum.go`, `file_metadata.go`, `file_database_persistence.go`, `file_dto_converter.go`, `file_processing_pipeline.go`, `file_result_monitor.go`, `files.go`, `video_playlist.go` |
+| Sub-pacote | Recebe (fonte) | Depende de |
+|---|---|---|
+| `worker/job/` | `job_domain.go` (+`job_domain_test.go`) — enums/tipos de Job/Step. **Pacote folha, não importa ninguém.** | — |
+| `worker/scan/` | pipeline de arquivo: `directory_walker.go`, `dir.go`, `file_checksum.go`, `file_metadata.go`, `file_database_persistence.go`, `file_dto_converter.go`, `file_processing_pipeline.go`, `file_result_monitor.go`, `files.go`, `video_playlist.go`, `thumbnail.go` (+ testes internos) | files, video, ai, logger, utils |
+| `worker/engine/` | `worker.go`, `job_orchestrator.go`, `job_scheduler.go`, `step_executors.go`, e os steps acoplados ao `WorkerContext`: `checksum.go`, `ollama_step.go`, `takeout_step.go`, `takeout_step_payload.go`, `ai_playlist_cluster_step.go`, `watcher.go` (entry-point) (+ todos os testes do engine) | `job`, `scan` |
 
-### Passos
+### Execução incremental (cada passo = 1 commit, CI verde)
 
-1. Criar `worker/job/` primeiro (pacote folha, sem dependências internas).
-2. Mover `engine`, depois `steps`, depois `scan` — corrigindo imports a cada passo.
-3. Ajustar `internal/app/app.go` (que chama `StartWorkers` etc.) e `context_run_test.go` para os novos paths.
-4. **Consolidar o watcher:** mover/mesclar `worker/watcher.go` (+`watcher_test.go`) para `internal/watcher/`, eliminando a duplicação. Conferir quem registra o poll de 60s em `app.go`.
+A ordem importa para manter compilável a cada commit:
+
+1. **`worker/scan/`** (maior ganho visual, contido): mover os 11 arquivos da pipeline; exportar os 4 símbolos; ajustar as ~10 chamadas no engine para `scan.X`. Deixa `job_domain` + engine no `worker` raiz por ora.
+2. **`worker/job/`**: mover `job_domain.go`; prefixar as ~278 referências com `job.` nos arquivos do engine (compilador como rede de segurança).
+3. **`worker/engine/`**: mover o restante para `engine/`; ajustar `internal/app/app.go` (`worker.StartWorkers`→`engine.StartWorkers`, `worker.WorkerContext`→`engine.WorkerContext`) e `context_run_test.go`.
+
+> Pode-se parar após o passo 1 e já ter a maior parte do ganho. Os passos 2–3 são incrementos opcionais de polimento.
 
 ### Cuidados
 
-- `worker/scan/` importa `internal/api/v1/files` (usa `files.FileModel` e conversões) — direção válida, mantém.
-- Vigiar **ciclos de import** ao separar `engine` ↔ `steps`: o que ambos compartilham (tipos de job) tem que estar em `job/`. Se aparecer ciclo, é sinal de que falta empurrar um tipo para `job/`.
+- `worker/scan/` importa `internal/api/v1/files` (usa `files.FileModel`/conversões) — direção válida.
+- Atenção ao nome: o novo pacote `worker/job` (singular) coexiste com `internal/api/v1/jobs` (plural, já importado como `jobs`). São distintos; conferir os imports em cada arquivo do engine.
 
 ## Resultado esperado
 
-- `internal/worker/` com 4 sub-pacotes coesos, cada um com responsabilidade óbvia.
-- Watcher num lugar só (`internal/watcher/`).
+- `internal/worker/` com sub-pacotes coesos (`job/`, `scan/`, `engine/`); steps como `step_*.go` dentro de `engine/`.
+- `internal/watcher/` intocado (decisão registrada: não consolidar).
 - Comportamento idêntico (mesmos workers, mesmos jobs/steps).
 
 ## Critério de aceite
 
-- `make ci-backend` verde (testes de worker incluídos).
+- `make ci-backend` verde a cada passo (testes de worker incluídos).
 - `go vet ./...` sem ciclos.
-- Subir o servidor e confirmar que workers iniciam (`ENABLE_WORKERS`) e o watcher roda.
+- Subir o servidor e confirmar que workers iniciam (`ENABLE_WORKERS`) e o entry-point watcher roda.
