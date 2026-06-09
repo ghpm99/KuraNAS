@@ -26,7 +26,7 @@ The same code compiles for three targets via build tags; `cmd/nas/` and `interna
 - `internal/app/app.go` — `InitializeApp()` loads config/translations, opens the DB, builds the context, registers routes, then starts: a pool of **200** workers (`StartWorkers`), the folder watcher (60s poll), a UDP discovery listener, and an mDNS registrar (all on port 8000). Returns an `Application` you `Run()`/`Stop()`.
 - `internal/app/routes.go` — `RegisterRoutes` mounts every feature under `/api/v1`, plus CORS (origins from `ALLOWED_ORIGINS`, `AllowCredentials: true`), gzip, Swagger, and the SPA fallback: `/assets` served static with immutable cache, `NoRoute → ./dist/index.html`. **This is why the backend serves the frontend.** Route registrars are nil-guarded — a missing feature context skips its routes rather than panicking.
 
-To add a feature: a package under `internal/api/v1/<feature>/` (`handler.go`, `service.go`, `repository.go`, `interfaces.go`, `model.go`, `dto.go`), a `new<Feature>Context` in `context.go`, and a `Register<Feature>Routes` in `routes.go`.
+To add a feature: a package under `internal/api/v1/<feature>/` (`handler.go`, `service.go`, `repository.go`, `interfaces.go`, `model.go`, `dto.go` — `snake_case`, see "Domain package organization" below), a `new<Feature>Context` in `context.go`, and a `Register<Feature>Routes` in `routes.go`.
 
 Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs`, `configuration`, `search`, `notifications`, `captures`, `libraries`, `watchfolders`, `takeout`, `aiproviders`, `ollama`, `updater`, `distribution`, `health`.
 
@@ -35,6 +35,21 @@ Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs
 ## Layering & testing seams
 
 Each feature defines `RepositoryInterface`, `ServiceInterface`, and any collaborator interfaces in `interfaces.go`. Handlers depend on the service interface; services on the repository interface — that is the mocking boundary. Repository tests use `github.com/DATA-DOG/go-sqlmock`. `*Model` is the DB shape, `*Dto` is the API/transport shape, and **conversion happens in the service layer**. Repositories are the only layer touching the DB; handlers only parse/validate requests and shape responses.
+
+## Domain package organization — generic file core + type extensions (canonical)
+
+Domains live as **sibling packages** under `internal/api/v1/<domain>/`, organized **by domain noun, never by layer** — there is no `handlers/`/`services/`/`repositories/` package; layer is a *filename prefix*, not a folder.
+
+The file/media domains follow a **supertype → extension** shape mirroring the data model (one `files` table + per-type complement tables):
+
+- **`files/` is the generic core (supertype).** It owns `FileModel`/`FileDto` and only generic behavior: CRUD, tree, listing, operations (upload/move/copy/rename/delete), recent, reports, generic blob/thumbnail. **It must not import `image`/`music`/`video` or encode type-specific concepts.**
+- **`image/`, `music/`, `video/` are extensions (subtypes).** Each owns its complement table + specialized logic and **imports `files`** to read the base record. Dependency is one-directional (`extension → files`, never the reverse); a cycle here means the modeling is wrong.
+- **A package is not the owner of a table.** An extension repository freely `JOIN`s the `files` table; its queries live under `pkg/database/queries/<domain>/`. "Everything is a file in the DB" is a *data* fact, not a reason to put type-specific behavior in `files`.
+- **Cross-type composition** (a screen mixing files + per-type data) happens **at the edge** — frontend, or a handler allowed to import several domains — never by the core reaching into extensions. This is the same principle as the small-endpoint rule below.
+
+**File naming inside a package:** `snake_case`, grouped by responsibility prefix so files self-sort — `handler*.go`, `service*.go`, `repository*.go`, `model.go`, `dto.go`, `interfaces.go`, `*_test.go` (tests live beside code; Go requires it). A package may legitimately hold many files (cf. stdlib `net/http`) **as long as it is one cohesive domain**; when it grows a second `service`/`repository` for a *distinct* concern, that concern is a separate domain — extract it.
+
+> Migration in progress: `files/` currently still contains image/music/video code being carved into the extensions above, and `worker/` is being split. Phase-by-phase plan and status live in `docs/refactor/`.
 
 ## Endpoint granularity & response shape (mandatory rule)
 
@@ -64,6 +79,8 @@ Two coexisting execution models, both started by `StartWorkers` (gated by `ENABL
    - Job types: `startup_scan`, `upload_process`, `fs_event`, `reindex_folder`, `takeout_import`, `ollama_pull`.
    - Step types: `scan_filesystem`, `diff_against_db`, `metadata`, `checksum`, `persist`, `thumbnail`, `playlist_index`, `mark_deleted`, `takeout_extract`, `ollama_model_pull`.
    - Steps carry `DependsOn` and `MaxAttempts`; jobs/steps have priority (`low`/`normal`/`high`, weighted) and status enums.
+
+**Package layout (canonical, migration in progress — see `docs/refactor/`):** split by responsibility into sub-packages — `worker/job/` (enums/types; the neutral package both others import, so no cycle), `worker/engine/` (pool, orchestrator, scheduler, step executors), `worker/steps/` (one file per job step), `worker/scan/` (the filesystem scan/index pipeline). Files are `snake_case`. The folder watcher is consolidated under `internal/watcher/`.
 
 ## AI subsystem (`pkg/ai`) — hot-swappable
 
