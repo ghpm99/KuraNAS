@@ -38,6 +38,17 @@ Because the apps are otherwise decoupled, a change to a backend route or DTO sha
 
 **Keep endpoints small.** One endpoint owns one piece of information and returns the smallest meaningful payload, via handler → service → repository with small functions and one optimized `.sql` per query. Do not build fat aggregate responses — the `analytics` feature (one endpoint per concern: `/analytics/storage`, `/analytics/types`, `/analytics/duplicates`, …, composed client-side) is the reference shape; never reintroduce an aggregate "overview" endpoint. Full rule in `backend/CLAUDE.md` → "Endpoint granularity & response shape".
 
+## Backend domains: a generic file core + type extensions
+
+Backend domains live as sibling packages under `backend/internal/api/v1/<domain>/`, **organized by domain, never by layer** (no `handlers/`/`services/` packages — layer is a *filename prefix*, not a folder). The file/media domains use a **supertype → extension** shape that mirrors the DB (one `files` table + per-type complement tables):
+
+- `files/` is the **generic core** — it owns `FileModel`/`FileDto` and only generic behavior (CRUD, tree, listing, operations, recent, reports, generic blob/thumbnail) and **must not import** `image/`/`music/`/`video/` or know type-specific concepts.
+- `image/`, `music/`, `video/` are **extensions** — each owns its complement table + specialized logic and **imports `files`**. Dependency flows one way (`extension → files`); a cycle means the modeling is wrong.
+- **A package does not own a table.** Extensions freely `JOIN` the `files` table. "Everything is a file in the DB" is a data fact, not a reason to pile type logic into `files`.
+- Cross-type screens **compose at the edge** (frontend, or a handler that may import several domains), never by the core reaching into extensions.
+
+Full rule + migration status in `backend/CLAUDE.md` → "Domain package organization" and `docs/refactor/`.
+
 ## No user-facing literal strings — i18n is mandatory
 
 **Every string a user can see must come from the app's i18n layer, never a hard-coded literal.** This covers labels, buttons, titles, placeholders, empty/loading states, toasts, and error/warning messages alike. Add the term to the translation catalog and reference it by key — never type the visible text inline.
