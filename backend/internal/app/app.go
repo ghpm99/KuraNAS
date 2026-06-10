@@ -8,7 +8,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/watcher"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/engine"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
@@ -29,7 +29,7 @@ var (
 	newContextFn       = NewContext
 	newRouterFn        = gin.Default
 	registerRoutesFn   = RegisterRoutes
-	startWorkersFn     = worker.StartWorkers
+	startWorkersFn     = engine.StartWorkers
 	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface {
 		if context == nil ||
 			context.WatchFolders == nil || context.WatchFolders.Service == nil ||
@@ -108,7 +108,7 @@ func InitializeApp() (*Application, error) {
 	registerRoutesFn(router, appContext)
 
 	var librariesService = appContext.Libraries
-	workerFileContext := &worker.WorkerContext{
+	workerFileContext := &engine.WorkerContext{
 		FilesService:        appContext.Files.Service,
 		VideoService:        appContext.Video.Service,
 		MetadataService:     appContext.Files.MetadataRepository,
