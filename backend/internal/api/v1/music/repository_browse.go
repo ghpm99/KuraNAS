@@ -7,8 +7,8 @@ import (
 	"time"
 
 	files "nas-go/api/internal/api/v1/files"
-	queries "nas-go/api/pkg/database/queries/music"
 	"nas-go/api/pkg/database"
+	queries "nas-go/api/pkg/database/queries/music"
 	"nas-go/api/pkg/utils"
 
 	"github.com/lib/pq"
