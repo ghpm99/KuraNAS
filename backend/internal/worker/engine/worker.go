@@ -30,21 +30,22 @@ type AISettingsReader interface {
 }
 
 type WorkerContext struct {
-	Tasks               chan utils.Task
-	FilesService        files.ServiceInterface
-	LibrariesService    libraries.ServiceInterface
-	VideoService        video.ServiceInterface
-	MusicService        music.ServiceInterface
-	JobsRepository      jobs.RepositoryInterface
-	MetadataService     files.MetadataRepositoryInterface
-	ImageRepository     imagedom.RepositoryInterface
-	Logger              logger.LoggerServiceInterface
-	NotificationService notifications.ServiceInterface
-	AIService           ai.ServiceInterface
-	AISettings          AISettingsReader
-	SystemEvents        systemevent.ServiceInterface
-	JobScheduler        *JobScheduler
-	JobOrchestrator     *JobOrchestrator
+	Tasks                   chan utils.Task
+	FilesService            files.ServiceInterface
+	LibrariesService        libraries.ServiceInterface
+	VideoService            video.ServiceInterface
+	MusicService            music.ServiceInterface
+	JobsRepository          jobs.RepositoryInterface
+	MetadataService         files.MetadataRepositoryInterface
+	ImageRepository         imagedom.RepositoryInterface
+	AudioMetadataRepository music.AudioMetadataRepositoryInterface
+	Logger                  logger.LoggerServiceInterface
+	NotificationService     notifications.ServiceInterface
+	AIService               ai.ServiceInterface
+	AISettings              AISettingsReader
+	SystemEvents            systemevent.ServiceInterface
+	JobScheduler            *JobScheduler
+	JobOrchestrator         *JobOrchestrator
 }
 
 // aiServiceForImageClassification returns the AI service only when image

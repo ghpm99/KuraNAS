@@ -126,6 +126,7 @@ func InitializeApp() (*Application, error) {
 	}
 	if appContext.Music != nil {
 		workerFileContext.MusicService = appContext.Music.Service
+		workerFileContext.AudioMetadataRepository = appContext.Music.AudioMetadataRepository
 	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository

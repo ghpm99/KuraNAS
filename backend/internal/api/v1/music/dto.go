@@ -134,7 +134,7 @@ func (m *PlaylistTrackModel) ToDto() (PlaylistTrackDto, error) {
 		Starred:         m.FileStarred,
 	}
 
-	fileModel.Metadata = files.AudioMetadataModel{
+	fileModel.Metadata = AudioMetadataModel{
 		ID:                  m.MetadataID,
 		FileId:              m.MetadataFileId,
 		Path:                m.MetadataPath,
@@ -176,6 +176,53 @@ func (m *PlaylistTrackModel) ToDto() (PlaylistTrackDto, error) {
 		AddedAt:  m.AddedAt,
 		File:     fileDto,
 	}, nil
+}
+
+// MusicArtistDto is the browse/navigation shape for an artist entry.
+type MusicArtistDto struct {
+	Artist     string `json:"artist"`
+	TrackCount int    `json:"track_count"`
+	AlbumCount int    `json:"album_count"`
+}
+
+// MusicAlbumDto is the browse/navigation shape for an album entry.
+type MusicAlbumDto struct {
+	Album      string `json:"album"`
+	Artist     string `json:"artist"`
+	Year       string `json:"year"`
+	TrackCount int    `json:"track_count"`
+}
+
+// MusicGenreDto is the browse/navigation shape for a genre entry.
+type MusicGenreDto struct {
+	Genre      string `json:"genre"`
+	TrackCount int    `json:"track_count"`
+}
+
+// MusicFolderDto is the browse/navigation shape for a folder entry.
+type MusicFolderDto struct {
+	Folder     string `json:"folder"`
+	TrackCount int    `json:"track_count"`
+}
+
+// IMusicMetadata is the API transport shape for audio metadata.
+type IMusicMetadata struct {
+	ID         int    `json:"id"`
+	FileId     int    `json:"file_id"`
+	Path       string `json:"path"`
+	Format     string `json:"format"`
+	Title      string `json:"title"`
+	Artist     string `json:"artist"`
+	Album      string `json:"album"`
+	Year       int    `json:"year"`
+	Genre      string `json:"genre"`
+	Track      int    `json:"track"`
+	Disc       int    `json:"disc"`
+	Duration   int    `json:"duration"`
+	Bitrate    int    `json:"bitrate"`
+	SampleRate int    `json:"sample_rate"`
+	Channels   int    `json:"channels"`
+	CreatedAt  string `json:"created_at"`
 }
 
 func ParsePlaylistPaginationToDto(pagination *utils.PaginationResponse[PlaylistModel]) utils.PaginationResponse[PlaylistDto] {

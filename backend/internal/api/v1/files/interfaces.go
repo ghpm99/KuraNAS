@@ -19,15 +19,7 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
-	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
-	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
-	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 }
 
 type ServiceInterface interface {
@@ -52,18 +44,10 @@ type ServiceInterface interface {
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
-	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	CheckFileExists(fileId int) bool
 	CheckFileExistsByPath(path string) bool
 	DeleteFile(file FileDto, bySystem bool) error
-	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
-	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
-	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
-	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
 	CreateFolder(parentID *int, name string) (string, error)
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
@@ -88,9 +72,6 @@ type RecentFileServiceInterface interface {
 }
 
 type MetadataRepositoryInterface interface {
-	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
-	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
-	DeleteAudioMetadata(id int) error
 	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
 	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 	DeleteVideoMetadata(id int) error

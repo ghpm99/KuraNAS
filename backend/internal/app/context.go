@@ -107,9 +107,10 @@ type DiaryContext struct {
 }
 
 type MusicContext struct {
-	Handler    *music.Handler
-	Service    music.ServiceInterface
-	Repository music.RepositoryInterface
+	Handler                 *music.Handler
+	Service                 music.ServiceInterface
+	Repository              music.RepositoryInterface
+	AudioMetadataRepository music.AudioMetadataRepositoryInterface
 }
 
 type VideoContext struct {
@@ -188,7 +189,7 @@ func NewContext(db *sql.DB) *AppContext {
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	imageContext := newImageContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
-	musicContext := newMusicContext(dbContext, loggerService, aiService)
+	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service)
 	videoContext := newVideoContext(dbContext, loggerService, aiService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
@@ -357,14 +358,16 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	}
 }
 
-func newMusicContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) *MusicContext {
+func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface) *MusicContext {
 	repository := music.NewRepository(dbContext)
+	audioMetadataRepository := music.NewAudioMetadataRepository(dbContext)
 	service := music.NewService(repository, aiService)
-	handler := music.NewHandler(service, logger)
+	handler := music.NewHandler(service, filesService, loggerSvc)
 	return &MusicContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:                 handler,
+		Service:                 service,
+		Repository:              repository,
+		AudioMetadataRepository: audioMetadataRepository,
 	}
 }
 

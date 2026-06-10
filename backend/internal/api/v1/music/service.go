@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"fmt"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
@@ -255,4 +256,54 @@ func (s *Service) UpdatePlayerState(clientID string, req UpdatePlayerStateReques
 	result.RepeatMode = req.RepeatMode
 
 	return result.ToDto(), nil
+}
+
+// --- Browse service methods (moved from files) ---
+
+func (s *Service) GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	filesModel, err := s.Repository.GetMusic(page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+	return files.ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	return s.Repository.GetMusicArtists(page, pageSize)
+}
+
+func (s *Service) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByArtist(artist, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+	return files.ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	return s.Repository.GetMusicAlbums(page, pageSize)
+}
+
+func (s *Service) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByAlbum(album, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+	return files.ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	return s.Repository.GetMusicGenres(page, pageSize)
+}
+
+func (s *Service) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	filesModel, err := s.Repository.GetMusicByGenre(genre, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+	return files.ParsePaginationToDto(&filesModel)
+}
+
+func (s *Service) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	return s.Repository.GetMusicFolders(page, pageSize)
 }

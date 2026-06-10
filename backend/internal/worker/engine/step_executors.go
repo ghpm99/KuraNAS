@@ -14,6 +14,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -167,6 +168,23 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 			})
 			if upsertErr != nil {
 				return fmt.Errorf("metadata step: upsert image metadata: %w", upsertErr)
+			}
+		}
+		return nil
+	}
+
+	// Audio metadata is owned by the music domain. Persist it directly via the
+	// music audio-metadata repository so files never imports music.
+	if audioMeta, ok := metadata.(musicdom.AudioMetadataModel); ok {
+		audioMeta.FileId = fileDto.ID
+		if context.AudioMetadataRepository != nil {
+			dbCtx := context.AudioMetadataRepository.GetDbContext()
+			upsertErr := dbCtx.ExecTx(func(tx *sql.Tx) error {
+				_, err := context.AudioMetadataRepository.UpsertAudioMetadata(tx, audioMeta)
+				return err
+			})
+			if upsertErr != nil {
+				return fmt.Errorf("metadata step: upsert audio metadata: %w", upsertErr)
 			}
 		}
 		return nil

@@ -31,6 +31,23 @@ type RepositoryInterface interface {
 	GetAIPlaylists() ([]PlaylistModel, error)
 	CreateAIPlaylist(tx *sql.Tx, name string, description string) (PlaylistModel, error)
 	ReplacePlaylistTracks(tx *sql.Tx, playlistID int, fileIDs []int) error
+	// Browse queries (moved from files)
+	GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
+}
+
+// AudioMetadataRepositoryInterface is the write-side for audio complement metadata.
+type AudioMetadataRepositoryInterface interface {
+	GetDbContext() *database.DbContext
+	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
+	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
+	DeleteAudioMetadata(id int) error
 }
 
 type ServiceInterface interface {
@@ -58,4 +75,13 @@ type ServiceInterface interface {
 	GetPlayerState(clientID string) (PlayerStateDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 	RebuildAIClusters(ctx context.Context) error
+	// Browse methods (moved from files)
+	GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 }

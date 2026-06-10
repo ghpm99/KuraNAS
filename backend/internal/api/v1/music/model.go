@@ -5,6 +5,40 @@ import (
 	"time"
 )
 
+// AudioMetadataModel is the DB shape of audio-specific metadata stored in the
+// audio_metadata complement table. It mirrors files.AudioMetadataModel but lives
+// here so the music extension owns its own complement table and files never
+// imports music.
+type AudioMetadataModel struct {
+	ID                  int
+	FileId              int
+	Path                string
+	Mime                string  `json:"mime"`
+	Length              float64 `json:"length"`
+	Bitrate             int     `json:"bitrate"`
+	SampleRate          int     `json:"sample_rate"`
+	Channels            int     `json:"channels"`
+	BitrateMode         int     `json:"bitrate_mode"`
+	EncoderInfo         string  `json:"encoder_info"`
+	BitDepth            int     `json:"bit_depth"`
+	Title               string  `json:"title"`
+	Artist              string  `json:"artist"`
+	Album               string  `json:"album"`
+	AlbumArtist         string  `json:"album_artist"`
+	TrackNumber         string  `json:"track_number"`
+	Genre               string  `json:"genre"`
+	Composer            string  `json:"composer"`
+	Year                string  `json:"year"`
+	RecordingDate       string  `json:"recording_date"`
+	Encoder             string  `json:"encoder"`
+	Publisher           string  `json:"publisher"`
+	OriginalReleaseDate string  `json:"original_release_date"`
+	OriginalArtist      string  `json:"original_artist"`
+	Lyricist            string  `json:"lyricist"`
+	Lyrics              string  `json:"lyrics"`
+	CreatedAt           time.Time
+}
+
 type PlayerStateModel struct {
 	ID              int
 	ClientID        string
