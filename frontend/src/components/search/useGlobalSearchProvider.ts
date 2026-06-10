@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
-import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/components/videos/navigation';
+import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/features/videos/components/navigation';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { searchGlobal } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';

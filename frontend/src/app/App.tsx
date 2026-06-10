@@ -4,7 +4,7 @@ import AppProviders from '@/components/providers/appProviders';
 import { appRoutes, getMusicRoute, isVideoPlayerRoute } from '@/app/routes';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
-import GlobalPlayerControl from '@/components/player/GlobalPlayerControl';
+import GlobalPlayerControl from '@/features/music/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 const HomePage = lazy(() => import('@/pages/home'));
@@ -17,7 +17,7 @@ const AboutPage = lazy(() => import('@/pages/about'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const ImagesPage = lazy(() => import('@/pages/images'));
 const MusicPage = lazy(() => import('@/pages/music'));
-const MusicHomeScreen = lazy(() => import('@/components/music/MusicHomeScreen'));
+const MusicHomeScreen = lazy(() => import('@/features/music/components/MusicHomeScreen'));
 const AlbumsView = lazy(() => import('@/features/music/views/AlbumsView'));
 const ArtistsView = lazy(() => import('@/features/music/views/ArtistsView'));
 const FoldersView = lazy(() => import('@/features/music/views/FoldersView'));

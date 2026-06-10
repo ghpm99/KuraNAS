@@ -115,20 +115,20 @@ jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => (
     <div data-testid="images-layout">{children}</div>
 ));
 
-jest.mock('@/components/music/musicLayout', () => ({ children }: any) => (
+jest.mock('@/features/music/components/musicLayout', () => ({ children }: any) => (
     <div data-testid="music-layout">{children}</div>
 ));
-jest.mock('@/components/music/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
-jest.mock('@/components/musicContent', () => () => <div>MusicContentMock</div>);
+jest.mock('@/features/music/components/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
+jest.mock('@/features/music/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 jest.mock('@/components/settings/SettingsScreen', () => () => <div>SETTINGS_PAGE_TITLE</div>);
 
-jest.mock('@/components/videos/videoLayout', () => ({ children }: any) => (
+jest.mock('@/features/videos/components/videoLayout', () => ({ children }: any) => (
     <div data-testid="video-layout">{children}</div>
 ));
-jest.mock('@/components/videos/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
-jest.mock('@/components/videos/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
-jest.mock('@/components/videos/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
+jest.mock('@/features/videos/components/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
+jest.mock('@/features/videos/components/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
+jest.mock('@/features/videos/components/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
 jest.mock('@/features/videos/videoPlayer/VideoPlayerScreen', () => () => (
     <div>VideoPlayerScreenMock</div>

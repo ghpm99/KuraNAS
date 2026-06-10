@@ -8,11 +8,11 @@ import {
     Typography,
 } from '@mui/material';
 import { ListMusic, Pause, Play, Trash2 } from 'lucide-react';
-import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
+import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlaylistTrackHandlers } from '@/features/music/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers';
-import CategoryHeader from '@/components/music/CategoryHeader';
+import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { formatMusicDuration } from '@/utils/music';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 

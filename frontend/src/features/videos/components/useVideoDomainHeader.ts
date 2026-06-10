@@ -1,5 +1,5 @@
-import { getVideoSectionMeta } from '@/components/videos/navigation';
-import { useVideoNavigation } from '@/components/videos/useVideoNavigation';
+import { getVideoSectionMeta } from '@/features/videos/components/navigation';
+import { useVideoNavigation } from '@/features/videos/components/useVideoNavigation';
 
 export const useVideoDomainHeader = () => {
     const { currentSection } = useVideoNavigation();

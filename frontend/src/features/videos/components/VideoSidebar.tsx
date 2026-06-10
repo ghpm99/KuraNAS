@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useMusicNavigation } from '@/components/music/useMusicNavigation';
-import styles from './MusicSidebar.module.css';
+import { useVideoNavigation } from '@/features/videos/components/useVideoNavigation';
+import styles from './VideoSidebar.module.css';
 
-const MusicSidebar = () => {
+const VideoSidebar = () => {
     const { t } = useI18n();
-    const { items } = useMusicNavigation();
+    const { items } = useVideoNavigation();
 
     return (
-        <nav className={styles.nav} aria-label={t('MUSIC_NAVIGATION_LABEL')}>
-            <p className={styles.label}>{t('MUSIC_NAVIGATION_LABEL')}</p>
+        <nav className={styles.nav} aria-label={t('VIDEO_NAVIGATION_LABEL')}>
+            <p className={styles.label}>{t('VIDEO_NAVIGATION_LABEL')}</p>
             <div className={styles.list}>
                 {items.map((item) => (
                     <Link
@@ -28,4 +28,4 @@ const MusicSidebar = () => {
     );
 };
 
-export default MusicSidebar;
+export default VideoSidebar;

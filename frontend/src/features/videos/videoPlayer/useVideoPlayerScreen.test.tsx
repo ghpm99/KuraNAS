@@ -172,7 +172,7 @@ const buildPlayerState = (overrides?: Partial<any>) => ({
     ...overrides,
 });
 
-describe('components/videos/videoPlayer/useVideoPlayerScreen', () => {
+describe('features/videos/videoPlayer/useVideoPlayerScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockSearchParams.delete('playlist');

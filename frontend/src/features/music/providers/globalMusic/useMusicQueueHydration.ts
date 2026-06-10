@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { IMusicData } from '../musicProvider/musicProvider';
-import type { MusicPlaybackContext } from '@/components/music/playbackContext';
-import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
+import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
+import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 

@@ -21,7 +21,7 @@ import {
     getVideoDetailSlugFromPath,
     getVideoSectionForPlaylist,
     getVideoSectionFromPath,
-} from '@/components/videos/navigation';
+} from '@/features/videos/components/navigation';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

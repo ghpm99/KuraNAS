@@ -1,5 +1,5 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useVideoDomainHeader } from '@/components/videos/useVideoDomainHeader';
+import { useVideoDomainHeader } from '@/features/videos/components/useVideoDomainHeader';
 import styles from './VideoDomainHeader.module.css';
 
 const VideoDomainHeader = () => {

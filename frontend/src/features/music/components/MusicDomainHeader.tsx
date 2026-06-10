@@ -1,5 +1,5 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useMusicDomainHeader } from '@/components/music/useMusicDomainHeader';
+import { useMusicDomainHeader } from '@/features/music/components/useMusicDomainHeader';
 import styles from './MusicDomainHeader.module.css';
 
 const MusicDomainHeader = () => {

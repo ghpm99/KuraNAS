@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { IMusicData } from './musicProvider/musicProvider';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
-import type { MusicPlaybackContext } from '@/components/music/playbackContext';
+import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';
 import useMediaSession from './globalMusic/useMediaSession';

@@ -101,7 +101,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-describe('components/videos/videoPlayer/VideoPlayerScreen', () => {
+describe('features/videos/videoPlayer/VideoPlayerScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockUseVideoPlayerScreen.mockReturnValue(buildScreenState());

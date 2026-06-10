@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
+import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import type { IMusicData } from './musicProvider/musicProvider';
 import { GlobalMusicProvider, useGlobalMusic } from './GlobalMusicProvider';
 

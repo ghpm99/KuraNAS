@@ -1,5 +1,5 @@
-import { getMusicSectionMeta } from '@/components/music/navigation';
-import { useMusicNavigation } from '@/components/music/useMusicNavigation';
+import { getMusicSectionMeta } from '@/features/music/components/navigation';
+import { useMusicNavigation } from '@/features/music/components/useMusicNavigation';
 
 export const useMusicDomainHeader = () => {
     const { currentSection } = useMusicNavigation();

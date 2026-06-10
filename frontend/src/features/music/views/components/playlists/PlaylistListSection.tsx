@@ -11,7 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import { ListMusic, Play, Plus, Trash2 } from 'lucide-react';
-import { createPlaylistPlaybackContext } from '@/components/music/playbackContext';
+import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';

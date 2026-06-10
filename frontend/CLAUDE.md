@@ -28,8 +28,8 @@ All service modules use the shared axios instance `apiBase` (`src/service/index.
 ## App structure
 
 - `src/app/App.tsx` — route table, **all pages lazy-loaded**, wrapped `AppProviders → ErrorBoundary → GlobalMusicProvider`, with a persistent `GlobalPlayerControl` mini-player (hidden on the video-player route). Route paths live in `src/app/routes`.
-- Heavier domains live under `src/features/{files,music,videos}/` with their own providers/views (e.g. `features/music/providers/GlobalMusicProvider`, `features/music/views/*`).
-- Other dirs: `src/pages/<page>/`, `src/components/` (shared UI), `src/service/`, `src/types/`, `src/theme/`, `src/shared/`, `src/utils/`, `src/config/`.
+- Heavier domains live under `src/features/{files,music,videos}/` and own **all** their domain UI (providers, views, components — e.g. `features/music/providers/GlobalMusicProvider`, `features/music/components/player/GlobalPlayerControl`). A domain's code never lives under `src/components/`.
+- Other dirs: `src/pages/<page>/` (route shells), `src/components/` (**shared/cross-domain UI only** — layout, tabs, search, settings…), `src/service/`, `src/types/`, `src/theme/`, `src/shared/`, `src/utils/`, `src/config/`.
 - Path alias `@` → `src` (configured in both `vite.config.ts` and `jest.config.js`'s `moduleNameMapper`).
 
 ## User-facing text goes through i18n (mandatory)

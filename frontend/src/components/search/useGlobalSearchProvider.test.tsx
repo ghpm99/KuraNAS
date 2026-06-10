@@ -92,7 +92,7 @@ jest.mock('@tanstack/react-query', () => ({
 const mockGetVideoSectionForPlaylist = jest.fn().mockReturnValue('series');
 const mockGetVideoDetailRoute = jest.fn().mockReturnValue('/videos/series/video-playlist');
 
-jest.mock('@/components/videos/navigation', () => ({
+jest.mock('@/features/videos/components/navigation', () => ({
     getVideoDetailRoute: (...args: unknown[]) => mockGetVideoDetailRoute(...args),
     getVideoSectionForPlaylist: (...args: unknown[]) => mockGetVideoSectionForPlaylist(...args),
 }));

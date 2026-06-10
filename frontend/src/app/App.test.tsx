@@ -42,7 +42,7 @@ jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => ({ hasQueue: true }),
     GlobalMusicProvider: ({ children }: any) => <div data-testid="music-providers">{children}</div>,
 }));
-jest.mock('@/components/player/GlobalPlayerControl', () => () => <div>GlobalPlayerControl</div>);
+jest.mock('@/features/music/components/player/GlobalPlayerControl', () => () => <div>GlobalPlayerControl</div>);
 jest.mock('@/components/ErrorBoundary', () => ({ children }: any) => (
     <div data-testid="error-boundary">{children}</div>
 ));
@@ -55,7 +55,7 @@ jest.mock('@/pages/home', () => () => <div>HomePage</div>);
 jest.mock('@/pages/about', () => () => <div>AboutPage</div>);
 jest.mock('@/pages/images', () => () => <div>ImagesPage</div>);
 jest.mock('@/pages/music', () => () => <div>MusicPage</div>);
-jest.mock('@/components/music/MusicHomeScreen', () => () => <div>MusicHomeScreen</div>);
+jest.mock('@/features/music/components/MusicHomeScreen', () => () => <div>MusicHomeScreen</div>);
 jest.mock('@/features/music/views/AlbumsView', () => () => <div>AlbumsView</div>);
 jest.mock('@/features/music/views/ArtistsView', () => () => <div>ArtistsView</div>);
 jest.mock('@/features/music/views/FoldersView', () => () => <div>FoldersView</div>);

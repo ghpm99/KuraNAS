@@ -1,5 +1,5 @@
 import { appRoutes } from '@/app/routes';
-import { createRouteMusicPlaybackContext } from '@/components/music/playbackContext';
+import { createRouteMusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { IImageMetadata } from '@/components/providers/imageProvider/imageProvider';
 import type {
