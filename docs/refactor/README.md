@@ -40,7 +40,7 @@ Fases ordenadas do menor risco ao maior. Cada uma termina **verde no `make ci-ba
 |---|---|---|---|---|
 | 0 | [phase-0-naming-conventions.md](phase-0-naming-conventions.md) | nomes `snake_case` + regra no CLAUDE.md | mínimo | ✅ concluída (2026-06-09) |
 | 1 | [phase-1-worker-split.md](phase-1-worker-split.md) | `worker/` → job/engine/steps/scan | médio | ✅ concluída (2026-06-09) |
-| 2 | [phase-2-image-extension.md](phase-2-image-extension.md) | criar `image/` (extrair de files) | baixo | ⬜ |
+| 2 | [phase-2-image-extension.md](phase-2-image-extension.md) | criar `image/` (extrair de files) | baixo | ✅ concluída (2026-06-09) |
 | 3 | [phase-3-music-extension.md](phase-3-music-extension.md) | mover música de files → `music/` | médio | ⬜ |
 | 4 | [phase-4-video-extension.md](phase-4-video-extension.md) | mover vídeo de files → `video/` | médio | ⬜ |
 | 5 | [phase-5-files-core-cleanup.md](phase-5-files-core-cleanup.md) | arrumar núcleo `files` por arquivo | baixo | ⬜ |

@@ -1,5 +1,7 @@
 # Fase 2 — Criar a extensão `image/`
 
+**Status:** ✅ concluída (2026-06-09)
+
 **Risco:** baixo · **Pré-requisito:** Fases 0–1 · **Natureza:** extração nova (pacote não existe ainda)
 
 ## Objetivo
