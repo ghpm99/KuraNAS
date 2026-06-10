@@ -24,7 +24,7 @@ func (r *Repository) GetDbContext() *database.DbContext {
 }
 
 func scanMusicFile(rows *sql.Rows, file *files.FileModel) error {
-	var metadata files.AudioMetadataModel
+	var metadata AudioMetadataModel
 
 	if err := rows.Scan(
 		&file.ID, &file.Name, &file.Path, &file.ParentPath,

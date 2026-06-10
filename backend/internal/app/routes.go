@@ -71,19 +71,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Image != nil {
 		files.GET("/images", context.Image.Handler.GetImagesHandler)
 	}
-	files.GET("/music", context.Files.Handler.GetMusicHandler)
 	files.GET("/videos", context.Files.Handler.GetVideosHandler)
-	files.GET("/stream/:id", context.Files.Handler.StreamAudioHandler)
 	files.GET("/video-stream/:id", context.Files.Handler.StreamVideoHandler)
-
-	music := files.Group("/music")
-	music.GET("/artists", context.Files.Handler.GetMusicArtistsHandler)
-	music.GET("/artists/:name", context.Files.Handler.GetMusicByArtistHandler)
-	music.GET("/albums", context.Files.Handler.GetMusicAlbumsHandler)
-	music.GET("/albums/:name", context.Files.Handler.GetMusicByAlbumHandler)
-	music.GET("/genres", context.Files.Handler.GetMusicGenresHandler)
-	music.GET("/genres/:name", context.Files.Handler.GetMusicByGenreHandler)
-	music.GET("/folders", context.Files.Handler.GetMusicFoldersHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -98,6 +87,20 @@ func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
 }
 
 func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
+	// Legacy file-browse routes for music — same paths as before, now served by music handler.
+	// These must be registered on the /files group so the paths stay identical for all clients.
+	filesGroup := router.Group("/files")
+	filesGroup.GET("/music", context.Music.Handler.GetMusicHandler)
+	filesGroup.GET("/stream/:id", context.Music.Handler.StreamAudioHandler)
+	musicBrowse := filesGroup.Group("/music")
+	musicBrowse.GET("/artists", context.Music.Handler.GetMusicArtistsHandler)
+	musicBrowse.GET("/artists/:name", context.Music.Handler.GetMusicByArtistHandler)
+	musicBrowse.GET("/albums", context.Music.Handler.GetMusicAlbumsHandler)
+	musicBrowse.GET("/albums/:name", context.Music.Handler.GetMusicByAlbumHandler)
+	musicBrowse.GET("/genres", context.Music.Handler.GetMusicGenresHandler)
+	musicBrowse.GET("/genres/:name", context.Music.Handler.GetMusicByGenreHandler)
+	musicBrowse.GET("/folders", context.Music.Handler.GetMusicFoldersHandler)
+
 	playlists := router.Group("/music/playlists")
 	library := router.Group("/music/library")
 

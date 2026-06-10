@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"errors"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -12,14 +13,26 @@ import (
 )
 
 type Handler struct {
-	service    ServiceInterface
-	logService logger.LoggerServiceInterface
+	service      ServiceInterface
+	filesService files.ServiceInterface
+	logService   logger.LoggerServiceInterface
 }
 
-func NewHandler(musicService ServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
+func NewHandler(musicService ServiceInterface, filesService files.ServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
 	return &Handler{
-		service:    musicService,
-		logService: loggerService,
+		service:      musicService,
+		filesService: filesService,
+		logService:   loggerService,
+	}
+}
+
+func logEntry(name, description string, c *gin.Context) logger.LoggerModel {
+	return logger.LoggerModel{
+		Name:        name,
+		Description: description,
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
 	}
 }
 

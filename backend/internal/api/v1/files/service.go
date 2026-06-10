@@ -765,15 +765,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	var err error
 
 	switch m := fileDto.Metadata.(type) {
-	case AudioMetadataModel:
-		m.FileId = fileDto.ID
-		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
-		if upsertErr != nil {
-			err = upsertErr
-			break
-		}
-		fileDto.Metadata = upsertedMetadata
-
 	case VideoMetadataModel:
 		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
@@ -790,21 +781,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	return fileDto, err
 }
 
-func (s *Service) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetMusic(page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	paginationResponse, err := ParsePaginationToDto(&filesModel)
-
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	return paginationResponse, nil
-}
-
 func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	filesModel, err := s.Repository.GetVideos(page, pageSize)
 	if err != nil {
@@ -818,46 +794,6 @@ func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[Fi
 	}
 
 	return paginationResponse, nil
-}
-
-func (s *Service) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
-	return s.Repository.GetMusicArtists(page, pageSize)
-}
-
-func (s *Service) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetMusicByArtist(artist, page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-	return ParsePaginationToDto(&filesModel)
-}
-
-func (s *Service) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
-	return s.Repository.GetMusicAlbums(page, pageSize)
-}
-
-func (s *Service) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetMusicByAlbum(album, page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-	return ParsePaginationToDto(&filesModel)
-}
-
-func (s *Service) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
-	return s.Repository.GetMusicGenres(page, pageSize)
-}
-
-func (s *Service) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetMusicByGenre(genre, page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-	return ParsePaginationToDto(&filesModel)
-}
-
-func (s *Service) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
-	return s.Repository.GetMusicFolders(page, pageSize)
 }
 
 func (s *Service) CheckFileExists(fileId int) bool {
