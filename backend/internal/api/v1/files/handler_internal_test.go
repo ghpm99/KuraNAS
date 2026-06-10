@@ -84,9 +84,6 @@ func (m *filesHandlerServiceMock) GetDuplicateFiles(page int, pageSize int) (Dup
 func (m *filesHandlerServiceMock) UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error) {
 	return file, nil
 }
-func (m *filesHandlerServiceMock) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error) {
-	return utils.PaginationResponse[FileDto]{Items: []FileDto{{ID: 1}}}, nil
-}
 func (m *filesHandlerServiceMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return utils.PaginationResponse[FileDto]{Items: []FileDto{{ID: 1}}}, nil
 }
@@ -157,7 +154,6 @@ type filesHandlerServiceFuncMock struct {
 	getReportSizeByFmtFn func() ([]SizeReportDto, error)
 	getTopFilesBySizeFn  func(limit int) ([]FileDto, error)
 	getDuplicateFilesFn  func(page int, pageSize int) (DuplicateFileReportDto, error)
-	getImagesFn          func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error)
 	getMusicFn           func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getVideosFn          func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getMusicArtistsFn    func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
@@ -228,12 +224,6 @@ func (m *filesHandlerServiceFuncMock) GetDuplicateFiles(page int, pageSize int) 
 		return m.getDuplicateFilesFn(page, pageSize)
 	}
 	return m.filesHandlerServiceMock.GetDuplicateFiles(page, pageSize)
-}
-func (m *filesHandlerServiceFuncMock) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error) {
-	if m.getImagesFn != nil {
-		return m.getImagesFn(page, pageSize, groupBy)
-	}
-	return m.filesHandlerServiceMock.GetImages(page, pageSize, groupBy)
 }
 func (m *filesHandlerServiceFuncMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	if m.getMusicFn != nil {
@@ -349,7 +339,6 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/report-size-by-format", handler.GetReportSizeByFormatHandler)
 	router.GET("/files/top-files-by-size", handler.GetTopFilesBySizeHandler)
 	router.GET("/files/duplicate-files", handler.GetDuplicateFilesHandler)
-	router.GET("/files/images", handler.GetImagesHandler)
 	router.GET("/files/music", handler.GetMusicHandler)
 	router.GET("/files/videos", handler.GetVideosHandler)
 	router.GET("/files/music/artists", handler.GetMusicArtistsHandler)
@@ -392,7 +381,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodGet, path: "/files/report-size-by-format", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/top-files-by-size?limit=3", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/duplicate-files", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/images", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/music", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/videos", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/music/artists", code: http.StatusOK},
@@ -645,9 +633,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		getDuplicateFilesFn: func(page int, pageSize int) (DuplicateFileReportDto, error) {
 			return DuplicateFileReportDto{}, errBoom
 		},
-		getImagesFn: func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error) {
-			return utils.PaginationResponse[FileDto]{}, errBoom
-		},
 		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 			return utils.PaginationResponse[FileDto]{}, errBoom
 		},
@@ -706,8 +691,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		{method: http.MethodGet, path: "/files/report-size-by-format", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/top-files-by-size?limit=5", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/duplicate-files", code: http.StatusInternalServerError},
-		{method: http.MethodGet, path: "/files/images", code: http.StatusInternalServerError},
-		{method: http.MethodGet, path: "/files/images?group_by=invalid", code: http.StatusBadRequest},
 		{method: http.MethodGet, path: "/files/music", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/videos", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/music/artists", code: http.StatusInternalServerError},

@@ -284,14 +284,6 @@ func TestRepositoryMediaQueriesScanErrorPaths(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(getImagesQueryByGroup(ImageGroupByDate))).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectRollback()
-	if _, err := repo.GetImages(1, 10, ImageGroupByDate); err == nil {
-		t.Fatalf("expected GetImages scan error")
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectRollback()
@@ -397,13 +389,6 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 	now := time.Now()
 	fileType := int(File)
 
-	imageValues := []driver.Value{
-		1, "img", "/tmp/img.jpg", "/tmp", ".jpg", int64(10), now, now, nil, nil, fileType, "sum", nil, false,
-		2, 1, "/tmp/img.jpg", "jpeg", "RGB", 10, 10, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 6.0, 2.0, 1.0, "cfg", "icc",
-		"mk", "mdl", "sw", "lens", "ser", "dt", "dto", "dtd", "sub", 1.0, 2.8, 100.0, 1.0, 2.0, 0.0, 3.0, 0.0, 50.0,
-		0.0, 1.0, 2.8, 1.8, -23.0, -46.0, 800.0, "2026:01:01", "12:00:00", "desc", "comment", "copy", "artist", "photo", 0.88, "suggested", now,
-	}
-
 	audioValues := []driver.Value{
 		3, "song", "/tmp/song.mp3", "/tmp", ".mp3", int64(20), now, now, nil, nil, fileType, "sum2", nil, true,
 		4, 3, "/tmp/song.mp3", "audio/mpeg", 123.4, 320, 44100, 2, 1, "enc", 16, "title", "artist", "album",
@@ -414,22 +399,6 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 		5, "video", "/tmp/video.mp4", "/tmp", ".mp4", int64(30), now, now, nil, nil, fileType, "sum3", nil, false,
 		6, 5, "/tmp/video.mp4", "mp4", "30", "60.0", 1920, 1080, 30.0, 1800, "1000000", "h264", "H.264", "yuv420p",
 		40, "High", "16:9", "aac", 2, "48000", "192000", now,
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(getImagesQueryByGroup(ImageGroupByDate))).
-		WillReturnRows(sqlmock.NewRows(numberedCols(len(imageValues))).AddRow(imageValues...))
-	mock.ExpectRollback()
-	images, err := repo.GetImages(1, 10, ImageGroupByDate)
-	if err != nil || len(images.Items) != 1 {
-		t.Fatalf("GetImages failed len=%d err=%v", len(images.Items), err)
-	}
-	metadata, ok := images.Items[0].Metadata.(ImageMetadataModel)
-	if !ok {
-		t.Fatalf("expected image metadata model, got %T", images.Items[0].Metadata)
-	}
-	if metadata.Classification.Category != ImageClassificationCategoryPhoto {
-		t.Fatalf("expected classification from query, got %+v", metadata.Classification)
 	}
 
 	mock.ExpectBegin()

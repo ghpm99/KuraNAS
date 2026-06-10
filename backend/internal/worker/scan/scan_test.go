@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -274,7 +275,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	runner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		switch scriptType {
 		case utils.ImageMetadata:
-			b, _ := json.Marshal(files.ImageMetadataModel{Format: "PNG", Path: filePath})
+			b, _ := json.Marshal(imagedom.MetadataModel{Format: "PNG", Path: filePath})
 			return string(b), nil
 		case utils.AudioMetadata:
 			b, _ := json.Marshal(files.AudioMetadataModel{Mime: "mp3", Path: filePath})
@@ -291,7 +292,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	if err != nil || imgMeta.Format != "PNG" {
 		t.Fatalf("expected image metadata, err=%v", err)
 	}
-	if imgMeta.Classification.Category != files.ImageClassificationCategoryOther {
+	if imgMeta.Classification.Category != imagedom.ClassificationCategoryOther {
 		t.Fatalf("expected default image classification, got %s", imgMeta.Classification.Category)
 	}
 	audioMeta, err := getAudioMetadata(files.FileDto{ID: 1, Path: "/a.mp3"}, runner)
@@ -325,11 +326,11 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 			if item.Metadata == nil {
 				t.Fatalf("expected metadata for png")
 			}
-			metadata, ok := item.Metadata.(files.ImageMetadataModel)
+			metadata, ok := item.Metadata.(imagedom.MetadataModel)
 			if !ok {
 				t.Fatalf("expected image metadata model, got %T", item.Metadata)
 			}
-			if metadata.Classification.Category != files.ImageClassificationCategoryOther {
+			if metadata.Classification.Category != imagedom.ClassificationCategoryOther {
 				t.Fatalf("expected classified image metadata, got %s", metadata.Classification.Category)
 			}
 		}

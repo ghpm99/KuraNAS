@@ -19,7 +19,6 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
@@ -53,7 +52,6 @@ type ServiceInterface interface {
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
-	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	CheckFileExists(fileId int) bool
@@ -90,9 +88,6 @@ type RecentFileServiceInterface interface {
 }
 
 type MetadataRepositoryInterface interface {
-	GetImageMetadataByID(id int) (ImageMetadataModel, error)
-	UpsertImageMetadata(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error)
-	DeleteImageMetadata(id int) error
 	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
 	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	DeleteAudioMetadata(id int) error

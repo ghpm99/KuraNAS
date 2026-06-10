@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
@@ -151,6 +152,23 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 	// but persistence will happen in a dedicated step.
 	if fileDto.ID <= 0 {
 		log.Printf("[metadata] metadata extracted but file not persisted yet, skipping update (path=%s)\n", fileDto.Path)
+		return nil
+	}
+
+	// Image metadata is owned by the image domain. Persist it directly via the
+	// image repository so files never imports image (one-directional dependency).
+	if imgMeta, ok := metadata.(imagedom.MetadataModel); ok {
+		imgMeta.FileId = fileDto.ID
+		if context.ImageRepository != nil {
+			dbCtx := context.ImageRepository.GetDbContext()
+			upsertErr := dbCtx.ExecTx(func(tx *sql.Tx) error {
+				_, err := context.ImageRepository.UpsertImageMetadata(tx, imgMeta)
+				return err
+			})
+			if upsertErr != nil {
+				return fmt.Errorf("metadata step: upsert image metadata: %w", upsertErr)
+			}
+		}
 		return nil
 	}
 

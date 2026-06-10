@@ -75,7 +75,6 @@ type filesRepoMock struct {
 	getReportSizeByFormatFn    func() ([]SizeReportModel, error)
 	getTopFilesBySizeFn        func(limit int) ([]FileModel, error)
 	getDuplicateFilesFn        func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	getImagesFn                func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error)
 	getMusicFn                 func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getVideosFn                func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getMusicArtistsFn          func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
@@ -148,12 +147,6 @@ func (m *filesRepoMock) GetDuplicateFiles(page int, pageSize int) (utils.Paginat
 	}
 	return utils.PaginationResponse[DuplicateFilesModel]{Items: []DuplicateFilesModel{}}, nil
 }
-func (m *filesRepoMock) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
-	if m.getImagesFn != nil {
-		return m.getImagesFn(page, pageSize, groupBy)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
 func (m *filesRepoMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getMusicFn != nil {
 		return m.getMusicFn(page, pageSize)
@@ -210,7 +203,6 @@ func (m *filesRepoMock) GetMusicFolders(page int, pageSize int) (utils.Paginatio
 }
 
 type metadataRepoMock struct {
-	upsertImageFn func(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error)
 	upsertAudioFn func(transaction *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	upsertVideoFn func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 }
@@ -246,16 +238,6 @@ func (m *filesJobsRepoMock) CreateStep(tx *sql.Tx, step jobsapi.StepModel) (jobs
 	return step, nil
 }
 
-func (m *metadataRepoMock) GetImageMetadataByID(id int) (ImageMetadataModel, error) {
-	return ImageMetadataModel{}, nil
-}
-func (m *metadataRepoMock) UpsertImageMetadata(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error) {
-	if m.upsertImageFn != nil {
-		return m.upsertImageFn(transaction, metadata)
-	}
-	return metadata, nil
-}
-func (m *metadataRepoMock) DeleteImageMetadata(id int) error { return nil }
 func (m *metadataRepoMock) GetAudioMetadataByID(id int) (AudioMetadataModel, error) {
 	return AudioMetadataModel{}, nil
 }
@@ -443,10 +425,6 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 		},
 	}
 	metadata := &metadataRepoMock{
-		upsertImageFn: func(transaction *sql.Tx, m ImageMetadataModel) (ImageMetadataModel, error) {
-			m.Path = "img"
-			return m, nil
-		},
 		upsertAudioFn: func(transaction *sql.Tx, m AudioMetadataModel) (AudioMetadataModel, error) {
 			m.Path = "aud"
 			return m, nil
@@ -477,7 +455,6 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 		Path:       "/tmp/f",
 		ParentPath: "/tmp",
 		Type:       File,
-		Metadata:   ImageMetadataModel{},
 	})
 	if err != nil || !ok {
 		t.Fatalf("expected update success, ok=%v err=%v", ok, err)
@@ -582,9 +559,6 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 				},
 			}, nil
 		},
-		getImagesFn: func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "i", File)}}, nil
-		},
 		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(2, "m", File)}}, nil
 		},
@@ -638,9 +612,6 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 		t.Fatalf("expected duplicates report, err=%v", err)
 	}
 
-	if _, err := s.GetImages(1, 10, ImageGroupByDate); err != nil {
-		t.Fatalf("expected images success, err=%v", err)
-	}
 	if _, err := s.GetMusic(1, 10); err != nil {
 		t.Fatalf("expected music success, err=%v", err)
 	}
@@ -1005,9 +976,6 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("update failed")
 		},
-		getImagesFn: func(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("images failed")
-		},
 		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, errors.New("music failed")
 		},
@@ -1023,11 +991,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, errors.New("genre failed")
 		},
-	}, &metadataRepoMock{
-		upsertImageFn: func(transaction *sql.Tx, metadata ImageMetadataModel) (ImageMetadataModel, error) {
-			return ImageMetadataModel{}, errors.New("upsert image failed")
-		},
-	})
+	}, &metadataRepoMock{})
 
 	if _, err := s.GetFiles(FileFilter{}, 1, 10); err == nil {
 		t.Fatalf("expected GetFiles error")
@@ -1037,13 +1001,6 @@ func TestFileService_ErrorBranches(t *testing.T) {
 	}
 	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected UpdateFile error")
-	}
-	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File, Metadata: ImageMetadataModel{}}); err == nil {
-		t.Fatalf("expected UpdateFile metadata error")
-	}
-
-	if _, err := s.GetImages(1, 10, ImageGroupByDate); err == nil {
-		t.Fatalf("expected GetImages error")
 	}
 	if _, err := s.GetMusic(1, 10); err == nil {
 		t.Fatalf("expected GetMusic error")

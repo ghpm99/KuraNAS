@@ -1,4 +1,4 @@
-package files
+package image
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/img"
@@ -24,19 +25,20 @@ var suggestedNameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
 // multiUnderscore collapses runs of underscores into a single one.
 var multiUnderscore = regexp.MustCompile(`_+`)
 
-type ImageClassificationCategory string
+// ClassificationCategory is the type for an image classification category.
+type ClassificationCategory string
 
 const (
-	ImageClassificationCategoryCapture    ImageClassificationCategory = "capture"
-	ImageClassificationCategoryPhoto      ImageClassificationCategory = "photo"
-	ImageClassificationCategoryOther      ImageClassificationCategory = "other"
-	ImageClassificationCategoryDocument   ImageClassificationCategory = "document"
-	ImageClassificationCategoryReceipt    ImageClassificationCategory = "receipt"
-	ImageClassificationCategoryLandscape  ImageClassificationCategory = "landscape"
-	ImageClassificationCategoryPortrait   ImageClassificationCategory = "portrait"
-	ImageClassificationCategoryMeme       ImageClassificationCategory = "meme"
-	ImageClassificationCategoryArt        ImageClassificationCategory = "art"
-	ImageClassificationCategoryScreenshot ImageClassificationCategory = "screenshot_app"
+	ClassificationCategoryCapture    ClassificationCategory = "capture"
+	ClassificationCategoryPhoto      ClassificationCategory = "photo"
+	ClassificationCategoryOther      ClassificationCategory = "other"
+	ClassificationCategoryDocument   ClassificationCategory = "document"
+	ClassificationCategoryReceipt    ClassificationCategory = "receipt"
+	ClassificationCategoryLandscape  ClassificationCategory = "landscape"
+	ClassificationCategoryPortrait   ClassificationCategory = "portrait"
+	ClassificationCategoryMeme       ClassificationCategory = "meme"
+	ClassificationCategoryArt        ClassificationCategory = "art"
+	ClassificationCategoryScreenshot ClassificationCategory = "screenshot_app"
 )
 
 const aiClassificationConfidenceThreshold = 0.70
@@ -56,28 +58,30 @@ var photoPathHints = []string{
 	"/pictures/",
 }
 
-func ClassifyImage(file FileDto, metadata ImageMetadataModel) ImageClassificationModel {
+// ClassifyImage returns a heuristic classification for an image based on
+// file metadata (EXIF fields, filename, path). It does not call the AI.
+func ClassifyImage(file files.FileDto, metadata MetadataModel) ClassificationModel {
 	if looksLikeCapture(file, metadata) {
-		return ImageClassificationModel{
-			Category:   ImageClassificationCategoryCapture,
+		return ClassificationModel{
+			Category:   ClassificationCategoryCapture,
 			Confidence: 0.98,
 		}
 	}
 
 	if confidence := photoConfidence(file, metadata); confidence > 0 {
-		return ImageClassificationModel{
-			Category:   ImageClassificationCategoryPhoto,
+		return ClassificationModel{
+			Category:   ClassificationCategoryPhoto,
 			Confidence: confidence,
 		}
 	}
 
-	return ImageClassificationModel{
-		Category:   ImageClassificationCategoryOther,
+	return ClassificationModel{
+		Category:   ClassificationCategoryOther,
 		Confidence: 0.35,
 	}
 }
 
-func looksLikeCapture(file FileDto, metadata ImageMetadataModel) bool {
+func looksLikeCapture(file files.FileDto, metadata MetadataModel) bool {
 	sample := strings.ToLower(strings.Join([]string{
 		file.Name,
 		file.Path,
@@ -94,22 +98,22 @@ func looksLikeCapture(file FileDto, metadata ImageMetadataModel) bool {
 	return false
 }
 
-var validAICategories = map[ImageClassificationCategory]bool{
-	ImageClassificationCategoryCapture:    true,
-	ImageClassificationCategoryPhoto:      true,
-	ImageClassificationCategoryOther:      true,
-	ImageClassificationCategoryDocument:   true,
-	ImageClassificationCategoryReceipt:    true,
-	ImageClassificationCategoryLandscape:  true,
-	ImageClassificationCategoryPortrait:   true,
-	ImageClassificationCategoryMeme:       true,
-	ImageClassificationCategoryArt:        true,
-	ImageClassificationCategoryScreenshot: true,
+var validAICategories = map[ClassificationCategory]bool{
+	ClassificationCategoryCapture:    true,
+	ClassificationCategoryPhoto:      true,
+	ClassificationCategoryOther:      true,
+	ClassificationCategoryDocument:   true,
+	ClassificationCategoryReceipt:    true,
+	ClassificationCategoryLandscape:  true,
+	ClassificationCategoryPortrait:   true,
+	ClassificationCategoryMeme:       true,
+	ClassificationCategoryArt:        true,
+	ClassificationCategoryScreenshot: true,
 }
 
 // ClassifyImageWithAI enhances classification with AI when heuristic confidence is low.
 // If aiService is nil or AI fails, it falls back to the heuristic ClassifyImage.
-func ClassifyImageWithAI(file FileDto, metadata ImageMetadataModel, aiService ai.ServiceInterface) ImageClassificationModel {
+func ClassifyImageWithAI(file files.FileDto, metadata MetadataModel, aiService ai.ServiceInterface) ClassificationModel {
 	heuristic := ClassifyImage(file, metadata)
 
 	if aiService == nil {
@@ -191,7 +195,7 @@ func sanitizeSuggestedName(name string) string {
 	return name
 }
 
-func buildClassificationPrompt(file FileDto, metadata ImageMetadataModel) string {
+func buildClassificationPrompt(file files.FileDto, metadata MetadataModel) string {
 	var parts []string
 	parts = append(parts, fmt.Sprintf("Filename: %s", file.Name))
 	parts = append(parts, fmt.Sprintf("Path: %s", file.Path))
@@ -219,7 +223,7 @@ type aiClassificationResponse struct {
 	SuggestedName string  `json:"suggested_name"`
 }
 
-func parseAIClassificationResponse(content string) (ImageClassificationModel, error) {
+func parseAIClassificationResponse(content string) (ClassificationModel, error) {
 	content = strings.TrimSpace(content)
 
 	// Strip markdown code fences if present
@@ -236,12 +240,12 @@ func parseAIClassificationResponse(content string) (ImageClassificationModel, er
 
 	var resp aiClassificationResponse
 	if err := json.Unmarshal([]byte(content), &resp); err != nil {
-		return ImageClassificationModel{}, fmt.Errorf("invalid AI classification JSON: %w", err)
+		return ClassificationModel{}, fmt.Errorf("invalid AI classification JSON: %w", err)
 	}
 
-	category := ImageClassificationCategory(strings.ToLower(resp.Category))
+	category := ClassificationCategory(strings.ToLower(resp.Category))
 	if !validAICategories[category] {
-		return ImageClassificationModel{}, fmt.Errorf("unknown AI category: %s", resp.Category)
+		return ClassificationModel{}, fmt.Errorf("unknown AI category: %s", resp.Category)
 	}
 
 	confidence := resp.Confidence
@@ -249,14 +253,14 @@ func parseAIClassificationResponse(content string) (ImageClassificationModel, er
 		confidence = 0.75
 	}
 
-	return ImageClassificationModel{
+	return ClassificationModel{
 		Category:      category,
 		Confidence:    confidence,
 		SuggestedName: sanitizeSuggestedName(resp.SuggestedName),
 	}, nil
 }
 
-func photoConfidence(file FileDto, metadata ImageMetadataModel) float64 {
+func photoConfidence(file files.FileDto, metadata MetadataModel) float64 {
 	evidence := 0
 
 	if metadata.Make != "" || metadata.Model != "" {

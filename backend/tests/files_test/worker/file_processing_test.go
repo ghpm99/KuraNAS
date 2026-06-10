@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
@@ -102,7 +103,7 @@ var expectedUpdateFiles = []files.FileDto{
 		Format:     ".png",
 		Size:       2285478,
 		CheckSum:   "e4b1e13fedd469166660cd153fbe44c5a874f263216181455c31233e297f241a",
-		Metadata: files.ImageMetadataModel{
+		Metadata: imagedom.MetadataModel{
 			ID:                0,
 			FileId:            0,
 			Path:              filepath.Join(testDir, "image", "ai-generated-8610368_1280.png"),
@@ -152,8 +153,8 @@ var expectedUpdateFiles = []files.FileDto{
 			UserComment:       "",
 			Copyright:         "",
 			Artist:            "",
-			Classification: files.ImageClassificationModel{
-				Category:   files.ImageClassificationCategoryOther,
+			Classification: imagedom.ClassificationModel{
+				Category:   imagedom.ClassificationCategoryOther,
 				Confidence: 0.35,
 			},
 		},
@@ -165,7 +166,7 @@ var expectedUpdateFiles = []files.FileDto{
 		Format:     ".png",
 		Size:       3180838,
 		CheckSum:   "6712dab1ff55592ef8052a362c005e6d82c50e594bec315e4f437c327d052bcc",
-		Metadata: files.ImageMetadataModel{
+		Metadata: imagedom.MetadataModel{
 			ID:                0,
 			FileId:            0,
 			Path:              filepath.Join(testDir, "image", "ChatGPT Image 28 de mar. de 2025, 20_45_52.png"),
@@ -215,8 +216,8 @@ var expectedUpdateFiles = []files.FileDto{
 			UserComment:       "",
 			Copyright:         "",
 			Artist:            "",
-			Classification: files.ImageClassificationModel{
-				Category:   files.ImageClassificationCategoryOther,
+			Classification: imagedom.ClassificationModel{
+				Category:   imagedom.ClassificationCategoryOther,
 				Confidence: 0.35,
 			},
 		},
@@ -350,7 +351,7 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 func mockPipelineScriptRunner(scriptType utils.ScriptType, filePath string) (string, error) {
 	switch scriptType {
 	case utils.ImageMetadata:
-		metadata := files.ImageMetadataModel{
+		metadata := imagedom.MetadataModel{
 			Path:   filePath,
 			Format: "PNG",
 			Mode:   "RGB",
@@ -448,8 +449,8 @@ func compareMetadata(t *testing.T, expected, actual any) {
 	}
 
 	switch expected := expected.(type) {
-	case files.ImageMetadataModel:
-		actualMetadata, ok := actual.(files.ImageMetadataModel)
+	case imagedom.MetadataModel:
+		actualMetadata, ok := actual.(imagedom.MetadataModel)
 		if !ok {
 			t.Errorf("Expected ImageMetadataModel, got %T", actual)
 			return

@@ -227,35 +227,6 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
-func (handler *Handler) GetImagesHandler(c *gin.Context) {
-	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetFilesTree",
-		Description: "Fetching files with filter",
-		Level:       logger.LogLevelInfo,
-		Status:      logger.LogStatusPending,
-		IPAddress:   c.ClientIP(),
-	}, nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
-	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
-		return
-	}
-
-	pagination, err := handler.service.GetImages(page, pageSize, groupBy)
-
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
-		return
-	}
-
-	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
-}
-
 func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
 		Name:        "GetMusic",

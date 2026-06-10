@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/utils"
 	"sync"
@@ -54,8 +55,8 @@ func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.Servic
 	}
 }
 
-func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (files.ImageMetadataModel, error) {
-	metadata := files.ImageMetadataModel{
+func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (imagedom.MetadataModel, error) {
+	metadata := imagedom.MetadataModel{
 		FileId: fileDto.ID,
 		Path:   fileDto.Path,
 	}
@@ -70,7 +71,7 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.S
 		return metadata, err
 	}
 
-	metadata.Classification = files.ClassifyImageWithAI(fileDto, metadata, aiService)
+	metadata.Classification = imagedom.ClassifyImageWithAI(fileDto, metadata, aiService)
 
 	return metadata, nil
 }
