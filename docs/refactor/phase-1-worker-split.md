@@ -1,5 +1,7 @@
 # Fase 1 — Quebrar `internal/worker` em sub-pacotes
 
+**Status: ✅ concluída (2026-06-09)**
+
 **Risco:** médio · **Pré-requisito:** Fase 0 · **Importadores externos:** só `internal/app/app.go` e `internal/app/context_run_test.go`
 
 ## Objetivo
