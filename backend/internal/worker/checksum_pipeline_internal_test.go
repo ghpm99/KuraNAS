@@ -11,6 +11,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
@@ -176,12 +177,12 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 	mock := &pipelineFilesServiceMock{}
 	tasks := make(chan utils.Task, 4)
 
-	SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
+	scan.SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "{}", nil
 	})
-	defer SetPythonScriptRunnerForTesting(nil)
+	defer scan.SetPythonScriptRunnerForTesting(nil)
 
-	StartFileProcessingPipeline(mock, tasks, &pipelineLoggerMock{}, nil)
+	scan.StartFileProcessingPipeline(mock, tasks, &pipelineLoggerMock{}, nil)
 
 	if len(mock.created) == 0 && len(mock.updated) == 0 {
 		t.Fatalf("expected pipeline to persist at least one file")

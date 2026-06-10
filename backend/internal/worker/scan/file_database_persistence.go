@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"database/sql"
@@ -41,7 +41,7 @@ func StartDatabasePersistenceWorker(
 			_, err = UpdateFileRecord(service, finalizedFile, existingRecord)
 			persistedFileID = existingRecord.ID
 		} else {
-			createdFile, createErr := createFileRecord(service, finalizedFile)
+			createdFile, createErr := CreateFileRecord(service, finalizedFile)
 			err = createErr
 			persistedFileID = createdFile.ID
 		}
@@ -55,7 +55,7 @@ func StartDatabasePersistenceWorker(
 			continue
 		}
 
-		enqueueVideoThumbnailTask(tasks, finalizedFile, persistedFileID)
+		EnqueueVideoThumbnailTask(tasks, finalizedFile, persistedFileID)
 
 		monitorChannel <- ResultWorkerData{
 			Path:    finalizedFile.Path,
@@ -65,7 +65,7 @@ func StartDatabasePersistenceWorker(
 	}
 }
 
-func enqueueVideoThumbnailTask(tasks chan utils.Task, finalizedFile files.FileDto, fileID int) {
+func EnqueueVideoThumbnailTask(tasks chan utils.Task, finalizedFile files.FileDto, fileID int) {
 	if tasks == nil || fileID <= 0 || finalizedFile.Type != files.File {
 		return
 	}
@@ -87,7 +87,7 @@ func enqueueVideoThumbnailTask(tasks chan utils.Task, finalizedFile files.FileDt
 	}
 }
 
-func createFileRecord(service files.ServiceInterface, finalizedFile files.FileDto) (files.FileDto, error) {
+func CreateFileRecord(service files.ServiceInterface, finalizedFile files.FileDto) (files.FileDto, error) {
 	return service.CreateFile(finalizedFile)
 }
 

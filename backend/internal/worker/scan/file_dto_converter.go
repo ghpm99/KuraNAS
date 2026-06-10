@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"nas-go/api/internal/api/v1/files"

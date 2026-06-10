@@ -1,7 +1,7 @@
 package worker_test
 
 import (
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/scan"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,12 +15,12 @@ func TestStartDirectoryWalker(t *testing.T) {
 		t.Fatalf("O diretório de teste '%s' não existe. Por favor, crie-o com os arquivos de teste.", testDirectory)
 	}
 
-	fileWalkChannel := make(chan worker.FileWalk, 10)
-	monitorChannel := make(chan worker.ResultWorkerData, 5)
+	fileWalkChannel := make(chan scan.FileWalk, 10)
+	monitorChannel := make(chan scan.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 	workerGroup.Add(1)
 
-	go worker.StartDirectoryWalker(testDirectory, fileWalkChannel, monitorChannel, &workerGroup)
+	go scan.StartDirectoryWalker(testDirectory, fileWalkChannel, monitorChannel, &workerGroup)
 
 	var receivedPaths []string
 

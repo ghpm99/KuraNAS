@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"database/sql"
@@ -64,11 +64,11 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 		}
 
 		if fileDtoError == nil {
-			err = updateFileDto(service, fileDto, func(err error) error {
+			err = UpdateFileDto(service, fileDto, func(err error) error {
 				return fail(path, err)
 			})
 		} else {
-			fileDto, err = createFileDto(service, path, fileDto, func(err error) error {
+			fileDto, err = CreateFileDto(service, path, fileDto, func(err error) error {
 				return fail(path, err)
 			})
 		}
@@ -95,7 +95,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 		i18n.LogTranslate("SCAN_FILES_SUCCESS")
 	}
 
-	deletedFilesCount := findFilesDeleted(service)
+	deletedFilesCount := FindFilesDeleted(service)
 	Logger.CompleteWithSuccessLog(logger)
 	log.Printf(
 		"%d Arquivos processados com sucesso. %d Arquivos falharam no processamento. %d Arquivos deletados",
@@ -105,7 +105,7 @@ func ScanFilesWorker(service files.ServiceInterface, Logger logger.LoggerService
 	)
 }
 
-func updateFileDto(service files.ServiceInterface, fileDto files.FileDto, failCallback failCallback) error {
+func UpdateFileDto(service files.ServiceInterface, fileDto files.FileDto, failCallback failCallback) error {
 	fileDto.DeletedAt = utils.Optional[time.Time]{
 		HasValue: false,
 	}
@@ -124,7 +124,7 @@ func updateFileDto(service files.ServiceInterface, fileDto files.FileDto, failCa
 	return nil
 }
 
-func createFileDto(service files.ServiceInterface, path string, fileDto files.FileDto, failCallback failCallback) (files.FileDto, error) {
+func CreateFileDto(service files.ServiceInterface, path string, fileDto files.FileDto, failCallback failCallback) (files.FileDto, error) {
 	fileDto.Path = path
 	fileDto.ParentPath = filepath.Dir(path)
 
@@ -138,7 +138,7 @@ func createFileDto(service files.ServiceInterface, path string, fileDto files.Fi
 	return fileCreated, nil
 }
 
-func fileExists(path string) bool {
+func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false
@@ -146,7 +146,7 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func findFilesDeleted(service files.ServiceInterface) int {
+func FindFilesDeleted(service files.ServiceInterface) int {
 	var deletedFilesCount = 0
 	var currentPage = 1
 	var pagination, error = service.GetFiles(files.FileFilter{
@@ -160,7 +160,7 @@ func findFilesDeleted(service files.ServiceInterface) int {
 	}
 	for {
 		for _, file := range pagination.Items {
-			if !fileExists(file.Path) {
+			if !FileExists(file.Path) {
 				i18n.LogTranslate("FILE_DONT_EXIST", file.ID, file.Name)
 				file.DeletedAt = utils.Optional[time.Time]{
 					HasValue: true,

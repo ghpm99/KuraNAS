@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"log"
@@ -23,19 +23,19 @@ type ResultWorkerData struct {
 	Error   string
 }
 
-var pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+var PythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
 	return utils.RunPythonScript(scriptType, filePath)
 }
 
 func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, filePath string) (string, error)) {
 	if runner == nil {
-		pythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+		PythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
 			return utils.RunPythonScript(scriptType, filePath)
 		}
 		return
 	}
 
-	pythonScriptRunner = runner
+	PythonScriptRunner = runner
 }
 
 func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan utils.Task, Logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) {
@@ -82,7 +82,7 @@ func StartFileProcessingPipeline(service files.ServiceInterface, tasks chan util
 	var metaWG sync.WaitGroup
 	for range 3 {
 		metaWG.Add(1)
-		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, pythonScriptRunner, monitorChannel, &metaWG, aiService)
+		go StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, PythonScriptRunner, monitorChannel, &metaWG, aiService)
 	}
 	go func() {
 		metaWG.Wait()

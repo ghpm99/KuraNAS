@@ -14,6 +14,7 @@ import (
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
@@ -135,11 +136,11 @@ func TestResolveFileDtoForStepAndMetadataStepSuccess(t *testing.T) {
 		t.Fatalf("resolveFileDtoForStep path returned %+v err=%v", parsed, err)
 	}
 
-	SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
+	scan.SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
 		payload, _ := json.Marshal(files.ImageMetadataModel{Path: filePath, Format: "jpg"})
 		return string(payload), nil
 	})
-	defer SetPythonScriptRunnerForTesting(nil)
+	defer scan.SetPythonScriptRunnerForTesting(nil)
 
 	updated := 0
 	filesService := &workerFilesServiceMock{

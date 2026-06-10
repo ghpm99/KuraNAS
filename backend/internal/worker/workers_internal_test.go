@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ func TestGetCheckSum(t *testing.T) {
 	file := files.FileDto{Type: files.File, Path: "/tmp/a"}
 	dir := files.FileDto{Type: files.Directory, Path: "/tmp/d"}
 
-	fileHash, err := getCheckSum(
+	fileHash, err := scan.GetCheckSum(
 		file,
 		func(path string) (string, error) { return "file-hash", nil },
 		func(path string) (string, error) { return "dir-hash", nil },
@@ -25,7 +26,7 @@ func TestGetCheckSum(t *testing.T) {
 		t.Fatalf("expected file hash, got %q err=%v", fileHash, err)
 	}
 
-	dirHash, err := getCheckSum(
+	dirHash, err := scan.GetCheckSum(
 		dir,
 		func(path string) (string, error) { return "file-hash", nil },
 		func(path string) (string, error) { return "dir-hash", nil },
@@ -34,7 +35,7 @@ func TestGetCheckSum(t *testing.T) {
 		t.Fatalf("expected dir hash, got %q err=%v", dirHash, err)
 	}
 
-	_, err = getCheckSum(
+	_, err = scan.GetCheckSum(
 		files.FileDto{Type: files.FileType(99), Path: "/tmp/x"},
 		func(path string) (string, error) { return "", nil },
 		func(path string) (string, error) { return "", nil },
@@ -47,7 +48,7 @@ func TestGetCheckSum(t *testing.T) {
 func TestStartChecksumWorker(t *testing.T) {
 	in := make(chan files.FileDto, 3)
 	out := make(chan files.FileDto, 3)
-	monitor := make(chan ResultWorkerData, 3)
+	monitor := make(chan scan.ResultWorkerData, 3)
 	var wg sync.WaitGroup
 
 	in <- files.FileDto{ID: 1, Type: files.File, Path: "/tmp/file"}
@@ -56,7 +57,7 @@ func TestStartChecksumWorker(t *testing.T) {
 	close(in)
 
 	wg.Add(1)
-	go StartChecksumWorker(
+	go scan.StartChecksumWorker(
 		in,
 		out,
 		func(path string) (string, error) { return "fh", nil },
@@ -101,18 +102,13 @@ func TestDtoConverterAndMonitor(t *testing.T) {
 		t.Fatalf("failed to stat temp file: %v", err)
 	}
 
-	dto := convertToDto(FileWalk{Path: filePath, Info: info})
-	if dto.Path != filePath || dto.Name == "" {
-		t.Fatalf("unexpected dto conversion result: %+v", dto)
-	}
-
-	in := make(chan FileWalk, 1)
+	in := make(chan scan.FileWalk, 1)
 	out := make(chan files.FileDto, 1)
 	var wg sync.WaitGroup
-	in <- FileWalk{Path: filePath, Info: info}
+	in <- scan.FileWalk{Path: filePath, Info: info}
 	close(in)
 	wg.Add(1)
-	go StartDtoConverterWorker(in, out, &wg)
+	go scan.StartDtoConverterWorker(in, out, &wg)
 	wg.Wait()
 	close(out)
 
@@ -124,12 +120,12 @@ func TestDtoConverterAndMonitor(t *testing.T) {
 		t.Fatalf("expected one dto from converter")
 	}
 
-	monitor := make(chan ResultWorkerData, 2)
-	monitor <- ResultWorkerData{Path: "ok", Success: true}
-	monitor <- ResultWorkerData{Path: "err", Success: false, Error: "boom"}
+	monitor := make(chan scan.ResultWorkerData, 2)
+	monitor <- scan.ResultWorkerData{Path: "ok", Success: true}
+	monitor <- scan.ResultWorkerData{Path: "err", Success: false, Error: "boom"}
 	close(monitor)
 	wg.Add(1)
-	go StartResultMonitorWorker(monitor, &wg)
+	go scan.StartResultMonitorWorker(monitor, &wg)
 	wg.Wait()
 }
 
@@ -150,29 +146,43 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := getImageMetadata(files.FileDto{ID: 1, Path: "/img.png"}, runner, nil)
-	if err != nil || imgMeta.Format != "PNG" {
+	imgMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/img.png", Format: ".png"}, runner, nil)
+	if err != nil || imgMeta == nil {
 		t.Fatalf("expected image metadata, err=%v", err)
 	}
-	if imgMeta.Classification.Category != files.ImageClassificationCategoryOther {
-		t.Fatalf("expected default image classification, got %s", imgMeta.Classification.Category)
+	imgMetaTyped, ok := imgMeta.(files.ImageMetadataModel)
+	if !ok || imgMetaTyped.Format != "PNG" {
+		t.Fatalf("expected image metadata model with PNG, err=%v", err)
 	}
-	audioMeta, err := getAudioMetadata(files.FileDto{ID: 1, Path: "/a.mp3"}, runner)
-	if err != nil || audioMeta.Mime != "mp3" {
-		t.Fatalf("expected audio metadata, err=%v", err)
-	}
-	videoMeta, err := getVideoMetadata(files.FileDto{ID: 1, Path: "/v.mp4"}, runner)
-	if err != nil || videoMeta.FormatName != "mp4" {
-		t.Fatalf("expected video metadata, err=%v", err)
+	if imgMetaTyped.Classification.Category != files.ImageClassificationCategoryOther {
+		t.Fatalf("expected default image classification, got %s", imgMetaTyped.Classification.Category)
 	}
 
-	if meta, err := getMetadata(files.FileDto{Format: ".txt"}, runner, nil); err != nil || meta != nil {
+	audioMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/a.mp3", Format: ".mp3"}, runner, nil)
+	if err != nil || audioMeta == nil {
+		t.Fatalf("expected audio metadata, err=%v", err)
+	}
+	audioMetaTyped, ok := audioMeta.(files.AudioMetadataModel)
+	if !ok || audioMetaTyped.Mime != "mp3" {
+		t.Fatalf("expected audio metadata model")
+	}
+
+	videoMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/v.mp4", Format: ".mp4"}, runner, nil)
+	if err != nil || videoMeta == nil {
+		t.Fatalf("expected video metadata, err=%v", err)
+	}
+	videoMetaTyped, ok := videoMeta.(files.VideoMetadataModel)
+	if !ok || videoMetaTyped.FormatName != "mp4" {
+		t.Fatalf("expected video metadata model")
+	}
+
+	if meta, err := scan.GetMetadata(files.FileDto{Format: ".txt"}, runner, nil); err != nil || meta != nil {
 		t.Fatalf("expected nil metadata for unsupported format, got meta=%v err=%v", meta, err)
 	}
 
 	in := make(chan files.FileDto, 2)
 	out := make(chan files.FileDto, 2)
-	monitor := make(chan ResultWorkerData, 2)
+	monitor := make(chan scan.ResultWorkerData, 2)
 	var wg sync.WaitGroup
 
 	in <- files.FileDto{ID: 1, Path: "/x.png", Format: ".png", Type: files.File}
@@ -180,7 +190,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	close(in)
 
 	wg.Add(1)
-	go StartMetadataWorker(in, out, runner, monitor, &wg, nil)
+	go scan.StartMetadataWorker(in, out, runner, monitor, &wg, nil)
 	wg.Wait()
 	close(out)
 	close(monitor)
@@ -208,23 +218,23 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	errRunner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "", errors.New("runner failed")
 	}
-	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner, nil); err == nil {
+	if _, err := scan.GetMetadata(files.FileDto{ID: 2, Path: "/err.png", Format: ".png"}, errRunner, nil); err == nil {
 		t.Fatalf("expected image metadata runner error")
 	}
-	if _, err := getAudioMetadata(files.FileDto{ID: 2, Path: "/err.mp3"}, errRunner); err == nil {
+	if _, err := scan.GetMetadata(files.FileDto{ID: 2, Path: "/err.mp3", Format: ".mp3"}, errRunner, nil); err == nil {
 		t.Fatalf("expected audio metadata runner error")
 	}
-	if _, err := getVideoMetadata(files.FileDto{ID: 2, Path: "/err.mp4"}, errRunner); err == nil {
+	if _, err := scan.GetMetadata(files.FileDto{ID: 2, Path: "/err.mp4", Format: ".mp4"}, errRunner, nil); err == nil {
 		t.Fatalf("expected video metadata runner error")
 	}
-	if _, err := getAudioMetadata(files.FileDto{ID: 3, Path: "/bad.mp3"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
+	if _, err := scan.GetMetadata(files.FileDto{ID: 3, Path: "/bad.mp3", Format: ".mp3"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "{invalid-json", nil
-	}); err == nil {
+	}, nil); err == nil {
 		t.Fatalf("expected audio metadata json parse error")
 	}
-	if _, err := getVideoMetadata(files.FileDto{ID: 3, Path: "/bad.mp4"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
+	if _, err := scan.GetMetadata(files.FileDto{ID: 3, Path: "/bad.mp4", Format: ".mp4"}, func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "{invalid-json", nil
-	}); err == nil {
+	}, nil); err == nil {
 		t.Fatalf("expected video metadata json parse error")
 	}
 }
@@ -236,12 +246,12 @@ func TestStartDirectoryWalker(t *testing.T) {
 		t.Fatalf("failed to write file: %v", err)
 	}
 
-	fileWalkChannel := make(chan FileWalk, 10)
-	monitor := make(chan ResultWorkerData, 10)
+	fileWalkChannel := make(chan scan.FileWalk, 10)
+	monitor := make(chan scan.ResultWorkerData, 10)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go StartDirectoryWalker(tmpDir, fileWalkChannel, monitor, &wg)
+	go scan.StartDirectoryWalker(tmpDir, fileWalkChannel, monitor, &wg)
 	wg.Wait()
 
 	// Walk succeeded: should have at least root and one file.
@@ -255,10 +265,10 @@ func TestStartDirectoryWalker(t *testing.T) {
 	}
 
 	// Non-existing folder path should still return cleanly.
-	errCh := make(chan FileWalk, 1)
-	monErr := make(chan ResultWorkerData, 2)
+	errCh := make(chan scan.FileWalk, 1)
+	monErr := make(chan scan.ResultWorkerData, 2)
 	wg.Add(1)
-	go StartDirectoryWalker(filepath.Join(tmpDir, "missing"), errCh, monErr, &wg)
+	go scan.StartDirectoryWalker(filepath.Join(tmpDir, "missing"), errCh, monErr, &wg)
 	wg.Wait()
 	close(errCh)
 	close(monErr)
@@ -297,12 +307,12 @@ func TestStartDirectoryWalkerPermissionDenied(t *testing.T) {
 		_ = os.Chmod(restrictedDir, 0700)
 	})
 
-	fileWalkChannel := make(chan FileWalk, 10)
-	monitor := make(chan ResultWorkerData, 10)
+	fileWalkChannel := make(chan scan.FileWalk, 10)
+	monitor := make(chan scan.ResultWorkerData, 10)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go StartDirectoryWalker(tmpDir, fileWalkChannel, monitor, &wg)
+	go scan.StartDirectoryWalker(tmpDir, fileWalkChannel, monitor, &wg)
 	wg.Wait()
 	close(fileWalkChannel)
 	close(monitor)
@@ -325,13 +335,13 @@ func TestMetadataWorkerErrorBranch(t *testing.T) {
 	}
 	in := make(chan files.FileDto, 1)
 	out := make(chan files.FileDto, 1)
-	monitor := make(chan ResultWorkerData, 1)
+	monitor := make(chan scan.ResultWorkerData, 1)
 	var wg sync.WaitGroup
 
 	in <- files.FileDto{ID: 10, Path: "/x.png", Format: ".png", Type: files.File}
 	close(in)
 	wg.Add(1)
-	go StartMetadataWorker(in, out, runner, monitor, &wg, nil)
+	go scan.StartMetadataWorker(in, out, runner, monitor, &wg, nil)
 	wg.Wait()
 	close(out)
 	close(monitor)
@@ -358,17 +368,17 @@ func TestGetMetadataDispatchByFormat(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner, nil)
+	imgMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner, nil)
 	if err != nil || imgMeta == nil {
 		t.Fatalf("expected image metadata dispatch success, err=%v", err)
 	}
 
-	audioMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner, nil)
+	audioMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner, nil)
 	if err != nil || audioMeta == nil {
 		t.Fatalf("expected audio metadata dispatch success, err=%v", err)
 	}
 
-	videoMeta, err := getMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner, nil)
+	videoMeta, err := scan.GetMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner, nil)
 	if err != nil || videoMeta == nil {
 		t.Fatalf("expected video metadata dispatch success, err=%v", err)
 	}

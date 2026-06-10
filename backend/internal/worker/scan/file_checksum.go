@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ func StartChecksumWorker(
 	defer workerGroup.Done()
 
 	for fileToProcess := range metadataProcessedChannel {
-		checksum, err := getCheckSum(fileToProcess, getFileChecksum, getDirectorysum)
+		checksum, err := GetCheckSum(fileToProcess, getFileChecksum, getDirectorysum)
 
 		if err != nil {
 			log.Printf("Erro ao gerar checksum: %v\n", err)
@@ -34,7 +34,7 @@ func StartChecksumWorker(
 	}
 }
 
-func getCheckSum(fileDto files.FileDto,
+func GetCheckSum(fileDto files.FileDto,
 	getFileChecksum func(path string) (string, error),
 	getDirectoryChecksum func(dirPath string) (string, error),
 ) (string, error) {

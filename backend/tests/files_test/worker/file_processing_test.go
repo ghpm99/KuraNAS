@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"path/filepath"
@@ -312,11 +312,11 @@ func TestStartFileProcessingPipeline(t *testing.T) {
 		newFilesList: []string{"teste3.xml", "teste1.txt"},
 	}
 	mockLog := &mockLogger{}
-	worker.SetPythonScriptRunnerForTesting(mockPipelineScriptRunner)
-	defer worker.SetPythonScriptRunnerForTesting(nil)
+	scan.SetPythonScriptRunnerForTesting(mockPipelineScriptRunner)
+	defer scan.SetPythonScriptRunnerForTesting(nil)
 
 	fmt.Println("Starting file processing pipeline...")
-	worker.StartFileProcessingPipeline(mockSvc, nil, mockLog, nil)
+	scan.StartFileProcessingPipeline(mockSvc, nil, mockLog, nil)
 	fmt.Println("File processing pipeline started.")
 
 	if mockSvc.createFiles == nil && mockSvc.updateFiles == nil {
