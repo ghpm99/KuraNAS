@@ -190,26 +190,26 @@ func (r *Repository) DeleteImageMetadata(id int) error {
 	return nil
 }
 
-func imageOrderByClause(groupBy files.ImageGroupBy) string {
+func imageOrderByClause(groupBy ImageGroupBy) string {
 	switch groupBy {
-	case files.ImageGroupByType:
+	case ImageGroupByType:
 		return `COALESCE(NULLIF(hf.format, ''), 'zzzz') ASC, hf.name ASC, hf.id DESC`
-	case files.ImageGroupByName:
+	case ImageGroupByName:
 		return `hf.name ASC, hf.id DESC`
-	case files.ImageGroupByDate:
+	case ImageGroupByDate:
 		fallthrough
 	default:
 		return `COALESCE(NULLIF(im.datetime_original, ''), NULLIF(im.datetime, ''), to_char(hf.created_at, 'YYYY:MM:DD HH24:MI:SS')) DESC, hf.id DESC`
 	}
 }
 
-func getImagesQueryByGroup(groupBy files.ImageGroupBy) string {
+func getImagesQueryByGroup(groupBy ImageGroupBy) string {
 	return strings.Replace(queries.GetImagesQuery, "{{ORDER_BY}}", imageOrderByClause(groupBy), 1)
 }
 
 // GetImages returns a paginated list of image files joined with their metadata.
 // It JOINs home_file (owned by files) and image_metadata (owned here).
-func (r *Repository) GetImages(page int, pageSize int, groupBy files.ImageGroupBy) (utils.PaginationResponse[files.FileModel], error) {
+func (r *Repository) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[files.FileModel], error) {
 	paginationResponse := utils.PaginationResponse[files.FileModel]{
 		Items: []files.FileModel{},
 		Pagination: utils.Pagination{

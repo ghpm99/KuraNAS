@@ -38,7 +38,7 @@ func (h *Handler) GetImagesHandler(c *gin.Context) {
 
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
-	groupBy, err := files.ParseImageGroupBy(c.DefaultQuery("group_by", string(files.ImageGroupByDate)))
+	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})

@@ -19,7 +19,7 @@ func NewService(repository RepositoryInterface) ServiceInterface {
 }
 
 // GetImages returns a paginated, grouped list of image files with metadata.
-func (s *Service) GetImages(page int, pageSize int, groupBy files.ImageGroupBy) (utils.PaginationResponse[files.FileDto], error) {
+func (s *Service) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[files.FileDto], error) {
 	filesModel, err := s.Repository.GetImages(page, pageSize, groupBy)
 	if err != nil {
 		return utils.PaginationResponse[files.FileDto]{}, fmt.Errorf("GetImages: %w", err)

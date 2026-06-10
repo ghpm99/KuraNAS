@@ -2,16 +2,14 @@ package files
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"mime"
-	"net/http"
-	"strings"
-
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
 )
 
 func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
