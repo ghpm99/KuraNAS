@@ -85,14 +85,14 @@ lint-backend:
 	@echo "gofmt passed."
 	@echo ""
 	@echo "======== Backend Lint (go vet) ========"
-	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go vet ./...
+	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go vet -tags=dev ./...
 	@echo "go vet passed."
 
 test-backend:
 	@$(MAKE) prepare-backend-go-cache
 	@echo ""
 	@echo "======== Backend Tests + Coverage ========"
-	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go test ./... -coverprofile=coverage.out
+	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) go test -tags=dev ./... -coverprofile=coverage.out
 	@echo ""
 	@echo "======== Backend Coverage Threshold ========"
 	@cd $(BACKEND_DIR) && $(BACKEND_GO_ENV) \
