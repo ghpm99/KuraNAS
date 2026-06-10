@@ -80,7 +80,7 @@ Two coexisting execution models, both started by `StartWorkers` (gated by `ENABL
    - Step types: `scan_filesystem`, `diff_against_db`, `metadata`, `checksum`, `persist`, `thumbnail`, `playlist_index`, `mark_deleted`, `takeout_extract`, `ollama_model_pull`.
    - Steps carry `DependsOn` and `MaxAttempts`; jobs/steps have priority (`low`/`normal`/`high`, weighted) and status enums.
 
-**Package layout (canonical, migration in progress — see `docs/refactor/`):** split by responsibility into sub-packages — `worker/job/` (enums/types; the neutral package both others import, so no cycle), `worker/engine/` (pool, orchestrator, scheduler, step executors), `worker/steps/` (one file per job step), `worker/scan/` (the filesystem scan/index pipeline). Files are `snake_case`. The folder watcher is consolidated under `internal/watcher/`.
+**Package layout (canonical):** split by responsibility into **three** sub-packages — `worker/job/` (enums/types; the neutral package the others import, so no cycle), `worker/engine/` (pool, orchestrator, scheduler, step executors **and the step implementations as `step_*.go` files** — a separate `steps/` package would create an `engine ↔ steps` import cycle, see `docs/refactor/phase-1-worker-split.md`), `worker/scan/` (the filesystem scan/index pipeline). Files are `snake_case`. The folder watcher is consolidated under `internal/watcher/`.
 
 ## AI subsystem (`pkg/ai`) — hot-swappable
 
