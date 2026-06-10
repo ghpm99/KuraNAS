@@ -765,15 +765,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	var err error
 
 	switch m := fileDto.Metadata.(type) {
-	case ImageMetadataModel:
-		m.FileId = fileDto.ID
-		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertImageMetadata(tx, m)
-		if upsertErr != nil {
-			err = upsertErr
-			break
-		}
-		fileDto.Metadata = upsertedMetadata
-
 	case AudioMetadataModel:
 		m.FileId = fileDto.ID
 		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertAudioMetadata(tx, m)
@@ -797,21 +788,6 @@ func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
 	}
 
 	return fileDto, err
-}
-
-func (s *Service) GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetImages(page, pageSize, groupBy)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	paginationResponse, err := ParsePaginationToDto(&filesModel)
-
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	return paginationResponse, nil
 }
 
 func (s *Service) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {

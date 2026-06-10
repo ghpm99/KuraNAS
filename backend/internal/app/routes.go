@@ -68,7 +68,9 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/report-size-by-format", context.Files.Handler.GetReportSizeByFormatHandler)
 	files.GET("/top-files-by-size", context.Files.Handler.GetTopFilesBySizeHandler)
 	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
-	files.GET("/images", context.Files.Handler.GetImagesHandler)
+	if context.Image != nil {
+		files.GET("/images", context.Image.Handler.GetImagesHandler)
+	}
 	files.GET("/music", context.Files.Handler.GetMusicHandler)
 	files.GET("/videos", context.Files.Handler.GetVideosHandler)
 	files.GET("/stream/:id", context.Files.Handler.StreamAudioHandler)

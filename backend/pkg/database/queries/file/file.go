@@ -49,15 +49,6 @@ var TopFilesBySizeQuery string
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
 
-//go:embed upsert_image_metadata.sql
-var UpsertImageMetadataQuery string
-
-//go:embed get_image_metadata_by_id.sql
-var GetImageMetadataByIDQuery string
-
-//go:embed delete_image_metadata.sql
-var DeleteImageMetadataQuery string
-
 //go:embed get_audio_metadata_by_id.sql
 var GetAudioMetadataByIDQuery string
 
@@ -75,9 +66,6 @@ var UpsertVideoMetadataQuery string
 
 //go:embed delete_video_metadata.sql
 var DeleteVideoMetadataQuery string
-
-//go:embed get_images.sql
-var GetImagesQuery string
 
 //go:embed get_music.sql
 var GetMusicQuery string

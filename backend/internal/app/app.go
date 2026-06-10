@@ -118,6 +118,9 @@ func InitializeApp() (*Application, error) {
 		AIService:           appContext.AI,
 		SystemEvents:        systemEvents,
 	}
+	if appContext.Image != nil {
+		workerFileContext.ImageRepository = appContext.Image.Repository
+	}
 	if librariesService != nil {
 		workerFileContext.LibrariesService = librariesService.Service
 	}

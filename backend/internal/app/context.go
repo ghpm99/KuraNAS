@@ -17,6 +17,7 @@ import (
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/distribution"
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
@@ -48,6 +49,7 @@ type AppContext struct {
 	Ollama        *OllamaContext
 	Tasks         *chan utils.Task
 	Files         *FileContext
+	Image         *ImageContext
 	Jobs          *JobsContext
 	Diary         *DiaryContext
 	Music         *MusicContext
@@ -84,6 +86,12 @@ type FileContext struct {
 	Repository           files.RepositoryInterface
 	RecentFileRepository files.RecentFileRepositoryInterface
 	MetadataRepository   files.MetadataRepositoryInterface
+}
+
+type ImageContext struct {
+	Handler    *imagedom.Handler
+	Service    imagedom.ServiceInterface
+	Repository imagedom.RepositoryInterface
 }
 
 type JobsContext struct {
@@ -178,6 +186,7 @@ func NewContext(db *sql.DB) *AppContext {
 	jobsContext := newJobsContext(dbContext)
 	ollamaContext := newOllamaContext(aiProvidersContext.Service, jobsContext.Repository)
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
+	imageContext := newImageContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService, aiService)
 	videoContext := newVideoContext(dbContext, loggerService, aiService)
@@ -204,6 +213,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Ollama:        ollamaContext,
 		Tasks:         &tasks,
 		Files:         fileContext,
+		Image:         imageContext,
 		Jobs:          jobsContext,
 		Diary:         diaryContext,
 		Music:         musicContext,
@@ -333,6 +343,17 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 		Repository:           repository,
 		RecentFileRepository: recentFileRepository,
 		MetadataRepository:   metadataRepository,
+	}
+}
+
+func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *ImageContext {
+	repository := imagedom.NewRepository(dbContext)
+	service := imagedom.NewService(repository)
+	handler := imagedom.NewHandler(service, logger)
+	return &ImageContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
 	}
 }
 

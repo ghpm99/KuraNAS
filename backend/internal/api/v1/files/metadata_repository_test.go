@@ -11,7 +11,7 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/file"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 func newMetadataRepoWithMock(t *testing.T) (*MetadataRepository, sqlmock.Sqlmock, *sql.DB) {
@@ -30,33 +30,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 
 	if repo == nil || repo.Db == nil {
 		t.Fatalf("expected initialized metadata repository")
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageMetadataByIDQuery)).
-		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "file_id", "path", "format", "mode", "width", "height", "dpi_x", "dpi_y", "x_resolution",
-			"y_resolution", "resolution_unit", "orientation", "compression", "photometric", "color_space",
-			"components_configuration", "icc_profile", "make", "model", "software", "lens_model", "serial_number",
-			"datetime", "datetime_original", "datetime_digitized", "subsec_time", "exposure_time", "f_number", "iso",
-			"shutter_speed", "aperture_value", "brightness_value", "exposure_bias", "metering_mode", "flash", "focal_length",
-			"white_balance", "exposure_program", "max_aperture_value", "gps_latitude", "gps_longitude", "gps_altitude",
-			"gps_date", "gps_time", "image_description", "user_comment", "copyright", "artist",
-			"classification_category", "classification_confidence", "classification_suggested_name", "created_at",
-		}).AddRow(
-			1, 10, "/i.jpg", "jpeg", "rgb", 100, 80, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 1.0, 2.0, 1.0,
-			"cfg", "icc", "mk", "md", "sw", "lens", "sn", "2026", "2026", "2026", "1", 0.1, 2.8, 200.0,
-			3.0, 2.0, 1.0, 0.0, 5.0, 0.0, 35.0, 0.0, 1.0, 2.0, -23.5, -46.6, 700.0, "2026-01-01",
-			"12:00:00", "desc", "comment", "cpr", "art", "photo", 0.91, "rikka", now,
-		))
-	mock.ExpectRollback()
-	imageMeta, err := repo.GetImageMetadataByID(1)
-	if err != nil || imageMeta.ID != 1 {
-		t.Fatalf("GetImageMetadataByID failed meta=%+v err=%v", imageMeta, err)
-	}
-	if imageMeta.Classification.Category != ImageClassificationCategoryPhoto {
-		t.Fatalf("expected persisted classification, got %+v", imageMeta.Classification)
 	}
 
 	mock.ExpectBegin()
@@ -92,24 +65,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	videoMeta, err := repo.GetVideoMetadataByID(3)
 	if err != nil || videoMeta.FileId != 30 {
 		t.Fatalf("GetVideoMetadataByID failed meta=%+v err=%v", videoMeta, err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertImageMetadataQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(11, now))
-	mock.ExpectCommit()
-	err = repo.Db.ExecTx(func(tx *sql.Tx) error {
-		upserted, err := repo.UpsertImageMetadata(tx, ImageMetadataModel{FileId: 10, Path: "/i.jpg"})
-		if err != nil {
-			return err
-		}
-		if upserted.ID != 11 {
-			t.Fatalf("expected image metadata ID 11")
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("UpsertImageMetadata failed: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -149,15 +104,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteImageMetadataQuery)).
-		WithArgs(11).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-	if err := repo.DeleteImageMetadata(11); err != nil {
-		t.Fatalf("DeleteImageMetadata failed: %v", err)
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteAudioMetadataQuery)).
 		WithArgs(22).
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -188,21 +134,11 @@ func TestMetadataRepositoryErrorPaths(t *testing.T) {
 	execErr := errors.New("exec failed")
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageMetadataByIDQuery)).
-		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}))
-	mock.ExpectRollback()
-	_, err := repo.GetImageMetadataByID(1)
-	if err == nil || !strings.Contains(err.Error(), "falha ao obter metadados da imagem") {
-		t.Fatalf("expected wrapped image error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAudioMetadataByIDQuery)).
 		WithArgs(1).
 		WillReturnError(scanErr)
 	mock.ExpectRollback()
-	_, err = repo.GetAudioMetadataByID(1)
+	_, err := repo.GetAudioMetadataByID(1)
 	if err == nil || !strings.Contains(err.Error(), "falha ao obter metadados de audio") {
 		t.Fatalf("expected wrapped audio error, got: %v", err)
 	}
@@ -215,18 +151,6 @@ func TestMetadataRepositoryErrorPaths(t *testing.T) {
 	_, err = repo.GetVideoMetadataByID(1)
 	if err == nil || !strings.Contains(err.Error(), "falha ao obter metadados do vídeo") {
 		t.Fatalf("expected wrapped video error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertImageMetadataQuery)).
-		WillReturnError(scanErr)
-	mock.ExpectRollback()
-	err = repo.Db.ExecTx(func(tx *sql.Tx) error {
-		_, err := repo.UpsertImageMetadata(tx, ImageMetadataModel{})
-		return err
-	})
-	if !errors.Is(err, scanErr) {
-		t.Fatalf("expected raw upsert image error, got: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -251,16 +175,6 @@ func TestMetadataRepositoryErrorPaths(t *testing.T) {
 	})
 	if !errors.Is(err, scanErr) {
 		t.Fatalf("expected raw upsert video error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteImageMetadataQuery)).
-		WithArgs(1).
-		WillReturnError(execErr)
-	mock.ExpectRollback()
-	err = repo.DeleteImageMetadata(1)
-	if err == nil || !strings.Contains(err.Error(), "falha ao deletar metadados da imagem") {
-		t.Fatalf("expected wrapped delete image error, got: %v", err)
 	}
 
 	mock.ExpectBegin()

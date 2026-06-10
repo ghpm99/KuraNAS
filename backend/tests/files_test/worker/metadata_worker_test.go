@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/utils"
 	"sync"
@@ -16,7 +17,7 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 		if filePath == "/test/image_with_error.jpg" {
 			return "", errors.New("erro de script")
 		}
-		imgMetadata := files.ImageMetadataModel{
+		imgMetadata := imagedom.MetadataModel{
 			Format: "JPEG",
 			Width:  800,
 			Height: 600,
@@ -86,7 +87,7 @@ func TestStartMetadataWorker(t *testing.T) {
 	for _, file := range receivedFiles {
 		switch file.ID {
 		case 1:
-			imgMetadata, ok := file.Metadata.(files.ImageMetadataModel)
+			imgMetadata, ok := file.Metadata.(imagedom.MetadataModel)
 			if !ok || imgMetadata.Format != "JPEG" {
 				t.Errorf("Metadados de imagem incorretos para o arquivo %s", file.Name)
 			}

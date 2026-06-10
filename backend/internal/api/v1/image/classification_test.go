@@ -1,4 +1,4 @@
-package files
+package image
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/ai"
 	"os"
 	"path/filepath"
@@ -72,7 +73,7 @@ func TestParseAIClassificationResponseSuggestedName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
-	if result.Category != ImageClassificationCategoryArt {
+	if result.Category != ClassificationCategoryArt {
 		t.Fatalf("expected art category, got %s", result.Category)
 	}
 	if result.SuggestedName != "Rikka_Takanashi" {
@@ -91,27 +92,27 @@ func (m *aiServiceMock) Execute(ctx context.Context, req ai.Request) (ai.Respons
 func TestClassifyImage(t *testing.T) {
 	tests := []struct {
 		name     string
-		file     FileDto
-		metadata ImageMetadataModel
-		category ImageClassificationCategory
+		file     files.FileDto
+		metadata MetadataModel
+		category ClassificationCategory
 		minScore float64
 	}{
 		{
 			name: "detects capture from filename",
-			file: FileDto{
+			file: files.FileDto{
 				Name: "Screenshot_2026-03-14.png",
 				Path: "/library/screens/Screenshot_2026-03-14.png",
 			},
-			category: ImageClassificationCategoryCapture,
+			category: ClassificationCategoryCapture,
 			minScore: 0.9,
 		},
 		{
 			name: "detects photo from exif evidence",
-			file: FileDto{
+			file: files.FileDto{
 				Name: "IMG_0001.jpg",
 				Path: "/storage/DCIM/Camera/IMG_0001.jpg",
 			},
-			metadata: ImageMetadataModel{
+			metadata: MetadataModel{
 				Make:             "Sony",
 				Model:            "A7",
 				LensModel:        "FE 35mm",
@@ -119,16 +120,16 @@ func TestClassifyImage(t *testing.T) {
 				ISO:              200,
 				FocalLength:      35,
 			},
-			category: ImageClassificationCategoryPhoto,
+			category: ClassificationCategoryPhoto,
 			minScore: 0.8,
 		},
 		{
 			name: "falls back to other",
-			file: FileDto{
+			file: files.FileDto{
 				Name: "wallpaper.png",
 				Path: "/downloads/wallpaper.png",
 			},
-			category: ImageClassificationCategoryOther,
+			category: ClassificationCategoryOther,
 			minScore: 0.3,
 		},
 	}
@@ -147,15 +148,15 @@ func TestClassifyImage(t *testing.T) {
 }
 
 func TestClassifyImageWithAI_NilServiceUsesHeuristic(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, nil)
-	if result.Category != ImageClassificationCategoryOther {
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	result := ClassifyImageWithAI(file, MetadataModel{}, nil)
+	if result.Category != ClassificationCategoryOther {
 		t.Fatalf("expected other category, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_HighConfidenceSkipsAI(t *testing.T) {
-	file := FileDto{
+	file := files.FileDto{
 		Name: "Screenshot_2026-03-14.png",
 		Path: "/library/screens/Screenshot_2026-03-14.png",
 	}
@@ -165,14 +166,14 @@ func TestClassifyImageWithAI_HighConfidenceSkipsAI(t *testing.T) {
 			return ai.Response{}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryCapture {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryCapture {
 		t.Fatalf("expected capture, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			if req.TaskType != ai.TaskClassification {
@@ -181,8 +182,8 @@ func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
 			return ai.Response{Content: `{"category": "landscape", "confidence": 0.85}`}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryLandscape {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryLandscape {
 		t.Fatalf("expected landscape, got %s", result.Category)
 	}
 	if result.Confidence != 0.85 {
@@ -191,66 +192,66 @@ func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
 }
 
 func TestClassifyImageWithAI_AIErrorFallsBackToHeuristic(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			return ai.Response{}, errors.New("provider timeout")
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryOther {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryOther {
 		t.Fatalf("expected fallback to other, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_InvalidJSONFallsBackToHeuristic(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			return ai.Response{Content: "not json"}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryOther {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryOther {
 		t.Fatalf("expected fallback to other, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_UnknownCategoryFallsBackToHeuristic(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			return ai.Response{Content: `{"category": "unknown_cat", "confidence": 0.9}`}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryOther {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryOther {
 		t.Fatalf("expected fallback to other, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_MarkdownCodeFenceStripped(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			return ai.Response{Content: "```json\n{\"category\": \"meme\", \"confidence\": 0.80}\n```"}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryMeme {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryMeme {
 		t.Fatalf("expected meme, got %s", result.Category)
 	}
 }
 
 func TestClassifyImageWithAI_InvalidConfidenceDefaultsTo075(t *testing.T) {
-	file := FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
 			return ai.Response{Content: `{"category": "art", "confidence": -1}`}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, ImageMetadataModel{}, mock)
-	if result.Category != ImageClassificationCategoryArt {
+	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
+	if result.Category != ClassificationCategoryArt {
 		t.Fatalf("expected art, got %s", result.Category)
 	}
 	if result.Confidence != 0.75 {
@@ -259,8 +260,8 @@ func TestClassifyImageWithAI_InvalidConfidenceDefaultsTo075(t *testing.T) {
 }
 
 func TestBuildClassificationPrompt(t *testing.T) {
-	file := FileDto{Name: "photo.jpg", Path: "/photos/photo.jpg", Format: ".jpg"}
-	metadata := ImageMetadataModel{
+	file := files.FileDto{Name: "photo.jpg", Path: "/photos/photo.jpg", Format: ".jpg"}
+	metadata := MetadataModel{
 		Width:            4000,
 		Height:           3000,
 		Make:             "Canon",
@@ -269,13 +270,13 @@ func TestBuildClassificationPrompt(t *testing.T) {
 		ImageDescription: "A sunset",
 	}
 	prompt := buildClassificationPrompt(file, metadata)
-	if !contains(prompt, "Filename: photo.jpg") {
+	if !containsStr(prompt, "Filename: photo.jpg") {
 		t.Fatalf("expected filename in prompt")
 	}
-	if !contains(prompt, "4000x3000") {
+	if !containsStr(prompt, "4000x3000") {
 		t.Fatalf("expected dimensions in prompt")
 	}
-	if !contains(prompt, "Canon EOS R5") {
+	if !containsStr(prompt, "Canon EOS R5") {
 		t.Fatalf("expected camera in prompt")
 	}
 }
@@ -291,10 +292,6 @@ func TestParseAIClassificationResponse_AllValidCategories(t *testing.T) {
 			t.Fatalf("expected %s, got %s", cat, result.Category)
 		}
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && containsStr(s, substr)
 }
 
 func containsStr(s, substr string) bool {

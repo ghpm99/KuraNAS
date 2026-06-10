@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
@@ -36,6 +37,7 @@ type WorkerContext struct {
 	MusicService        music.ServiceInterface
 	JobsRepository      jobs.RepositoryInterface
 	MetadataService     files.MetadataRepositoryInterface
+	ImageRepository     imagedom.RepositoryInterface
 	Logger              logger.LoggerServiceInterface
 	NotificationService notifications.ServiceInterface
 	AIService           ai.ServiceInterface

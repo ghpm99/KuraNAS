@@ -12,12 +12,16 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
+	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 type fakeWorkerNotifSvc struct {
@@ -28,6 +32,35 @@ type fakeWorkerNotifSvc struct {
 func (f *fakeWorkerNotifSvc) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
 	f.dtos = append(f.dtos, dto)
 	return notifications.NotificationDto{}, nil
+}
+
+type fakeEngineImageRepository struct {
+	imagedom.RepositoryInterface
+	dbCtx    *database.DbContext
+	mock     sqlmock.Sqlmock
+	upsertFn func(tx *sql.Tx, m imagedom.MetadataModel) (imagedom.MetadataModel, error)
+}
+
+func newFakeEngineImageRepository(upsertFn func(tx *sql.Tx, m imagedom.MetadataModel) (imagedom.MetadataModel, error)) *fakeEngineImageRepository {
+	db, mock, _ := sqlmock.New()
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	return &fakeEngineImageRepository{
+		dbCtx:    database.NewDbContext(db),
+		mock:     mock,
+		upsertFn: upsertFn,
+	}
+}
+
+func (f *fakeEngineImageRepository) GetDbContext() *database.DbContext {
+	return f.dbCtx
+}
+
+func (f *fakeEngineImageRepository) UpsertImageMetadata(tx *sql.Tx, m imagedom.MetadataModel) (imagedom.MetadataModel, error) {
+	if f.upsertFn != nil {
+		return f.upsertFn(tx, m)
+	}
+	return m, nil
 }
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
@@ -138,21 +171,17 @@ func TestResolveFileDtoForStepAndMetadataStepSuccess(t *testing.T) {
 	}
 
 	scan.SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
-		payload, _ := json.Marshal(files.ImageMetadataModel{Path: filePath, Format: "jpg"})
+		payload, _ := json.Marshal(imagedom.MetadataModel{Path: filePath, Format: "jpg"})
 		return string(payload), nil
 	})
 	defer scan.SetPythonScriptRunnerForTesting(nil)
 
-	updated := 0
-	filesService := &workerFilesServiceMock{
-		updateFileFn: func(file files.FileDto) (bool, error) {
-			updated++
-			if file.Metadata == nil {
-				t.Fatalf("expected metadata on updated file")
-			}
-			return true, nil
-		},
-	}
+	upserted := 0
+	fakeImageRepo := newFakeEngineImageRepository(func(tx *sql.Tx, m imagedom.MetadataModel) (imagedom.MetadataModel, error) {
+		upserted++
+		return m, nil
+	})
+	filesService := &workerFilesServiceMock{}
 	payload, _ := marshalPayload(StepFilePayload{
 		File: &files.FileDto{
 			ID:         10,
@@ -163,11 +192,11 @@ func TestResolveFileDtoForStepAndMetadataStepSuccess(t *testing.T) {
 			Type:       files.File,
 		},
 	})
-	if err := executeMetadataStep(&WorkerContext{FilesService: filesService}, jobs.StepModel{Payload: payload}); err != nil {
+	if err := executeMetadataStep(&WorkerContext{FilesService: filesService, ImageRepository: fakeImageRepo}, jobs.StepModel{Payload: payload}); err != nil {
 		t.Fatalf("executeMetadataStep returned error: %v", err)
 	}
-	if updated != 1 {
-		t.Fatalf("expected metadata update, got %d updates", updated)
+	if upserted != 1 {
+		t.Fatalf("expected image metadata upsert, got %d upserts", upserted)
 	}
 }
 
