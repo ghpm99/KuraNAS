@@ -11,7 +11,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-describe('components/analyticsV2', () => {
+describe('components/analytics', () => {
     it('renders translated empty and error states', () => {
         render(
             <>

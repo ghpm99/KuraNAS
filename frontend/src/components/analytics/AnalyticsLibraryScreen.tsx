@@ -1,6 +1,6 @@
 import { appRoutes } from '@/app/routes';
-import AnalyticsKpiCard from '@/components/analyticsV2/AnalyticsKpiCard';
-import AnalyticsSection from '@/components/analyticsV2/AnalyticsSection';
+import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
+import AnalyticsSection from '@/components/analytics/AnalyticsSection';
 import { type AnalyticsScreenState } from '@/components/analytics/useAnalyticsScreenState';
 import {
     Box,

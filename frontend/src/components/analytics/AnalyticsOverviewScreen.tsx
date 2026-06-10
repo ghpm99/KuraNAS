@@ -1,8 +1,8 @@
 import { appRoutes } from '@/app/routes';
 import Button from '@/components/ui/Button/Button';
-import AnalyticsChartCard from '@/components/analyticsV2/AnalyticsChartCard';
-import AnalyticsKpiCard from '@/components/analyticsV2/AnalyticsKpiCard';
-import AnalyticsSection from '@/components/analyticsV2/AnalyticsSection';
+import AnalyticsChartCard from '@/components/analytics/AnalyticsChartCard';
+import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
+import AnalyticsSection from '@/components/analytics/AnalyticsSection';
 import { type AnalyticsScreenState } from '@/components/analytics/useAnalyticsScreenState';
 import {
     Box,
