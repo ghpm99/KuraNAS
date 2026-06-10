@@ -13,10 +13,10 @@ type RepositoryInterface interface {
 	GetImageMetadataByID(id int) (MetadataModel, error)
 	UpsertImageMetadata(tx *sql.Tx, metadata MetadataModel) (MetadataModel, error)
 	DeleteImageMetadata(id int) error
-	GetImages(page int, pageSize int, groupBy files.ImageGroupBy) (utils.PaginationResponse[files.FileModel], error)
+	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[files.FileModel], error)
 }
 
 // ServiceInterface is the business-logic contract for the image domain.
 type ServiceInterface interface {
-	GetImages(page int, pageSize int, groupBy files.ImageGroupBy) (utils.PaginationResponse[files.FileDto], error)
+	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[files.FileDto], error)
 }

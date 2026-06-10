@@ -156,26 +156,6 @@ const (
 	StarredCategory FileCategory = "starred"
 )
 
-type ImageGroupBy string
-
-const (
-	ImageGroupByDate ImageGroupBy = "date"
-	ImageGroupByType ImageGroupBy = "type"
-	ImageGroupByName ImageGroupBy = "name"
-)
-
-func ParseImageGroupBy(value string) (ImageGroupBy, error) {
-	groupBy := ImageGroupBy(value)
-	switch groupBy {
-	case "", ImageGroupByDate:
-		return ImageGroupByDate, nil
-	case ImageGroupByType, ImageGroupByName:
-		return groupBy, nil
-	default:
-		return "", fmt.Errorf("invalid image group_by: %s", value)
-	}
-}
-
 // FileStat is the smallest projection of a persisted file needed to decide
 // whether it changed on disk: size + last-known modification time. It exists so
 // the startup/diff scan can ask the DB about one file at a time (indexed lookup
