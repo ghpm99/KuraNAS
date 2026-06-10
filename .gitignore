@@ -42,3 +42,7 @@ plugin/node_modules/
 
 # Built client apps (APKs, plugin zip) + manifest, assembled by scripts/build-downloads.sh
 /downloads/
+
+# Test artifacts: thumbnail/icon caches written by Go tests using the
+# production-relative path (etc/kuranas) inside package directories
+backend/internal/**/etc/
