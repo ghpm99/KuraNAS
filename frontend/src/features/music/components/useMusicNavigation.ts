@@ -1,5 +1,5 @@
 import { getMusicRoute } from '@/app/routes';
-import { getMusicSectionFromPath, musicNavigationItems } from '@/components/music/navigation';
+import { getMusicSectionFromPath, musicNavigationItems } from '@/features/music/components/navigation';
 import { useLocation } from 'react-router-dom';
 
 export const useMusicNavigation = () => {

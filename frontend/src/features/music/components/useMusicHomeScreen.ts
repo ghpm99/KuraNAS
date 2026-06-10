@@ -3,7 +3,7 @@ import {
     createAlbumPlaybackContext,
     createArtistPlaybackContext,
     createPlaylistPlaybackContext,
-} from '@/components/music/playbackContext';
+} from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import { getPlaylistTracks } from '@/service/playlist';

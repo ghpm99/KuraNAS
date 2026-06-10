@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { updatePlayerState } from '@/service/playerState';
-import type { MusicPlaybackContext } from '@/components/music/playbackContext';
+import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 
 const SYNC_DEBOUNCE_MS = 2000;
 

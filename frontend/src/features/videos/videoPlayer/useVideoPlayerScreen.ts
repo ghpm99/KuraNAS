@@ -7,11 +7,11 @@ import {
     getVideoSectionForPlaylist,
     getVideoSectionFromPath,
     getVideoSectionMeta,
-} from '@/components/videos/navigation';
+} from '@/features/videos/components/navigation';
 import {
     buildVideoPlaylistDetail,
     type VideoDetailItem,
-} from '@/components/videos/videoContent/useVideoPlaylistDetail';
+} from '@/features/videos/components/videoContent/useVideoPlaylistDetail';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';

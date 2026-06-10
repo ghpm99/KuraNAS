@@ -1,10 +1,10 @@
 import { Box, CircularProgress, IconButton, List, Typography } from '@mui/material';
 import { Play, Shuffle } from 'lucide-react';
-import { createAllTracksPlaybackContext } from '@/components/music/playbackContext';
+import { createAllTracksPlaybackContext } from '@/features/music/components/playbackContext';
 import { useMusic } from '@/features/music/providers/musicProvider/musicProvider';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import AddToPlaylistMenu from '@/components/music/AddToPlaylistMenu';
-import TrackListItem from '@/components/music/TrackListItem';
+import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
+import TrackListItem from '@/features/music/components/TrackListItem';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useState } from 'react';
 

@@ -49,7 +49,7 @@ jest.mock('@/service/music', () => ({
     getMusicByFolder: (...args: any[]) => mockGetMusicByFolder(...args),
 }));
 
-jest.mock('@/components/music/AddToPlaylistMenu', () => (props: any) => (
+jest.mock('@/features/music/components/AddToPlaylistMenu', () => (props: any) => (
     <div>
         <span>AddToPlaylistMenu-{String(props.fileId)}</span>
         <span>MenuAnchor-{props.anchorEl ? 'open' : 'closed'}</span>

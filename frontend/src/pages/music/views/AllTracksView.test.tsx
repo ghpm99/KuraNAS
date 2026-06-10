@@ -19,7 +19,7 @@ jest.mock('@/utils/music', () => ({
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
 
-jest.mock('@/components/music/AddToPlaylistMenu', () => (props: any) => (
+jest.mock('@/features/music/components/AddToPlaylistMenu', () => (props: any) => (
     <div>
         <span>AddToPlaylistMenu-{String(props.fileId)}</span>
         <span>MenuAnchor-{props.anchorEl ? 'open' : 'closed'}</span>

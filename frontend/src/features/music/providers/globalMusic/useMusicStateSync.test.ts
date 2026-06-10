@@ -4,7 +4,7 @@ import { updatePlayerState } from '@/service/playerState';
 import {
     createPlaylistPlaybackContext,
     type MusicPlaybackContext,
-} from '@/components/music/playbackContext';
+} from '@/features/music/components/playbackContext';
 
 jest.mock('@/service/playerState', () => ({
     updatePlayerState: jest.fn(),

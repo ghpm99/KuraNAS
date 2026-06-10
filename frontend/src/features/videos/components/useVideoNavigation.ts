@@ -1,5 +1,5 @@
 import { getVideoRoute } from '@/app/routes';
-import { getVideoSectionFromPath, videoNavigationItems } from '@/components/videos/navigation';
+import { getVideoSectionFromPath, videoNavigationItems } from '@/features/videos/components/navigation';
 import { useLocation } from 'react-router-dom';
 
 export const useVideoNavigation = () => {

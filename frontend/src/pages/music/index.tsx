@@ -1,8 +1,8 @@
 import DomainPageLayout from '@/components/layout/DomainPageLayout';
-import MusicDomainHeader from '@/components/music/MusicDomainHeader';
-import MusicLayout from '@/components/music/musicLayout';
-import MusicContent from '@/components/musicContent';
-import MusicSidebar from '@/components/music/MusicSidebar';
+import MusicDomainHeader from '@/features/music/components/MusicDomainHeader';
+import MusicLayout from '@/features/music/components/musicLayout';
+import MusicContent from '@/features/music/components/musicContent';
+import MusicSidebar from '@/features/music/components/MusicSidebar';
 
 const MusicPage = () => {
     return (

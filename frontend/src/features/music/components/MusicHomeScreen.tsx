@@ -2,7 +2,7 @@ import { Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { getMusicRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useMusicHomeScreen } from '@/components/music/useMusicHomeScreen';
+import { useMusicHomeScreen } from '@/features/music/components/useMusicHomeScreen';
 import styles from './MusicHomeScreen.module.css';
 
 const MusicHomeScreen = () => {

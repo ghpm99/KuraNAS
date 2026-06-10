@@ -3,9 +3,9 @@ import AboutLayout from './about/aboutLayout';
 import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
 import FilesLayout from '@/features/files/files/filesLayout';
 import ImagesLayout from './images/imagesLayout';
-import VideoLayout from './videos/videoLayout';
-import MusicLayout from './music/musicLayout';
-import MusicSidebar from './music/MusicSidebar';
+import VideoLayout from '@/features/videos/components/videoLayout';
+import MusicLayout from '@/features/music/components/musicLayout';
+import MusicSidebar from '@/features/music/components/MusicSidebar';
 import NavItem from './layout/Sidebar/components/navItem';
 import Button from './ui/Button/Button';
 
