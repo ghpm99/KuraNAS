@@ -1,23 +1,29 @@
-package files
+package video
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
-	"nas-go/api/pkg/database"
-	queries "nas-go/api/pkg/database/queries/file"
 	"time"
+
+	"nas-go/api/pkg/database"
+	queries "nas-go/api/pkg/database/queries/video"
 )
 
-type MetadataRepository struct {
+// VideoMetadataRepository is the write-side for the video_metadata complement table.
+type VideoMetadataRepository struct {
 	Db *database.DbContext
 }
 
-func NewMetadataRepository(db *database.DbContext) *MetadataRepository {
-	return &MetadataRepository{Db: db}
+func NewVideoMetadataRepository(db *database.DbContext) *VideoMetadataRepository {
+	return &VideoMetadataRepository{Db: db}
 }
 
-func (r *MetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
+func (r *VideoMetadataRepository) GetDbContext() *database.DbContext {
+	return r.Db
+}
+
+func (r *VideoMetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
 	var metadata VideoMetadataModel
 
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
@@ -58,7 +64,7 @@ func (r *MetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, e
 	return metadata, nil
 }
 
-func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
+func (r *VideoMetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
 	var id int
 	var createdAt time.Time
 
@@ -86,9 +92,7 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 		time.Now(),
 	}
 
-	var row *sql.Row
-
-	row = tx.QueryRow(queries.UpsertVideoMetadataQuery, args...)
+	row := tx.QueryRow(queries.UpsertVideoMetadataQuery, args...)
 
 	err := row.Scan(&id, &createdAt)
 	if err != nil {
@@ -101,7 +105,7 @@ func (r *MetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetad
 	return metadata, nil
 }
 
-func (r *MetadataRepository) DeleteVideoMetadata(id int) error {
+func (r *VideoMetadataRepository) DeleteVideoMetadata(id int) error {
 	err := r.Db.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(queries.DeleteVideoMetadataQuery, id)
 		if err != nil {

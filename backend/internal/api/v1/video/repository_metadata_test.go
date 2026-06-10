@@ -1,4 +1,4 @@
-package files
+package video
 
 import (
 	"database/sql"
@@ -9,27 +9,27 @@ import (
 	"time"
 
 	"nas-go/api/pkg/database"
-	queries "nas-go/api/pkg/database/queries/file"
+	queries "nas-go/api/pkg/database/queries/video"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
-func newMetadataRepoWithMock(t *testing.T) (*MetadataRepository, sqlmock.Sqlmock, *sql.DB) {
+func newVideoMetadataRepoWithMock(t *testing.T) (*VideoMetadataRepository, sqlmock.Sqlmock, *sql.DB) {
 	t.Helper()
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create sqlmock: %v", err)
 	}
-	return NewMetadataRepository(database.NewDbContext(db)), mock, db
+	return NewVideoMetadataRepository(database.NewDbContext(db)), mock, db
 }
 
-func TestMetadataRepositorySuccessPaths(t *testing.T) {
-	repo, mock, db := newMetadataRepoWithMock(t)
+func TestVideoMetadataRepositorySuccessPaths(t *testing.T) {
+	repo, mock, db := newVideoMetadataRepoWithMock(t)
 	defer db.Close()
 	now := time.Now()
 
-	if repo == nil || repo.Db == nil {
-		t.Fatalf("expected initialized metadata repository")
+	if repo == nil || repo.GetDbContext() == nil {
+		t.Fatalf("expected initialized video metadata repository")
 	}
 
 	mock.ExpectBegin()
@@ -81,8 +81,8 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	}
 }
 
-func TestMetadataRepositoryErrorPaths(t *testing.T) {
-	repo, mock, db := newMetadataRepoWithMock(t)
+func TestVideoMetadataRepositoryErrorPaths(t *testing.T) {
+	repo, mock, db := newVideoMetadataRepoWithMock(t)
 	defer db.Close()
 
 	scanErr := errors.New("scan failed")

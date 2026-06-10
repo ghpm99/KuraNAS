@@ -1,15 +1,10 @@
 package files
 
 import (
-	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/color/palette"
-	"image/draw"
-	"image/gif"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
@@ -18,7 +13,6 @@ import (
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -26,23 +20,20 @@ import (
 )
 
 type Service struct {
-	Repository         RepositoryInterface
-	MetadataRepository MetadataRepositoryInterface
-	JobsRepository     jobs.RepositoryInterface
-	Tasks              chan utils.Task
+	Repository     RepositoryInterface
+	JobsRepository jobs.RepositoryInterface
+	Tasks          chan utils.Task
 }
 
 func NewService(
 	repository RepositoryInterface,
-	metadataRepository MetadataRepositoryInterface,
 	jobsRepository jobs.RepositoryInterface,
 	tasksChannel chan utils.Task,
 ) ServiceInterface {
 	return &Service{
-		Repository:         repository,
-		MetadataRepository: metadataRepository,
-		JobsRepository:     jobsRepository,
-		Tasks:              tasksChannel,
+		Repository:     repository,
+		JobsRepository: jobsRepository,
+		Tasks:          tasksChannel,
 	}
 }
 
@@ -63,12 +54,6 @@ func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
 			return
 		}
 		fileDto.ID = result.ID
-
-		metadata, err := s.UpsertMetadata(tx, fileDto)
-		if err != nil {
-			return
-		}
-		fileDtoResult.Metadata = metadata
 
 		fileDtoResult, err = result.ToDto()
 		return
@@ -171,20 +156,7 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 			return
 		}
 		result, err = service.Repository.UpdateFile(tx, fileModel)
-
-		if err != nil {
-			return
-		}
-
-		if fileDto.Metadata != nil {
-			_, err = service.UpsertMetadata(tx, fileDto)
-		}
-
-		if err != nil {
-			return
-		}
 		return
-
 	})
 
 	return
@@ -514,139 +486,6 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 	return data, nil
 }
 
-// ffmpegTimeout bounds ffmpeg invocations so a corrupt or stalled media file
-// cannot hang the request/worker indefinitely; on timeout the caller falls back
-// to a placeholder icon.
-func ffmpegTimeout() time.Duration {
-	return config.StepTimeout()
-}
-
-func (s *Service) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	if width <= 0 {
-		width = 320
-	}
-	if height <= 0 {
-		height = 180
-	}
-	if width > 2048 {
-		width = 2048
-	}
-	if height > 2048 {
-		height = 2048
-	}
-
-	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
-	_ = os.MkdirAll(cacheDir, 0755)
-	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d.png", fileDto.ID, width, height))
-
-	if data, err := os.ReadFile(cachePath); err == nil {
-		return data, nil
-	}
-
-	if !s.CheckFileExistsByPath(fileDto.Path) {
-		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
-	}
-
-	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
-	defer ffmpegCancel()
-	ffmpegErr := exec.CommandContext(
-		ffmpegCtx,
-		"ffmpeg",
-		"-hide_banner",
-		"-loglevel", "error",
-		"-y",
-		"-ss", "00:00:03",
-		"-i", fileDto.Path,
-		"-frames:v", "1",
-		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
-		cachePath,
-	).Run()
-
-	if ffmpegErr == nil {
-		if data, err := os.ReadFile(cachePath); err == nil {
-			return data, nil
-		}
-	}
-
-	iconImg, _ := icons.Mp4Icon()
-	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
-	fallback, err := img.EncodePNG(thumb)
-	if err != nil {
-		return nil, err
-	}
-	_ = os.WriteFile(cachePath, fallback, 0644)
-	return fallback, nil
-}
-
-func (s *Service) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error) {
-	if width <= 0 {
-		width = 320
-	}
-	if height <= 0 {
-		height = 180
-	}
-	if width > 1024 {
-		width = 1024
-	}
-	if height > 1024 {
-		height = 1024
-	}
-
-	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
-	_ = os.MkdirAll(cacheDir, 0755)
-	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_preview.gif", fileDto.ID, width, height))
-
-	if data, err := os.ReadFile(cachePath); err == nil {
-		return data, nil
-	}
-
-	if !s.CheckFileExistsByPath(fileDto.Path) {
-		return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
-	}
-
-	// Curta prévia animada: ~2.5s, baixa taxa de frames para performance de cache e rede local.
-	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
-	defer ffmpegCancel()
-	ffmpegErr := exec.CommandContext(
-		ffmpegCtx,
-		"ffmpeg",
-		"-hide_banner",
-		"-loglevel", "error",
-		"-y",
-		"-ss", "00:00:03",
-		"-t", "2.5",
-		"-i", fileDto.Path,
-		"-vf", fmt.Sprintf("fps=4,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
-		"-loop", "0",
-		cachePath,
-	).Run()
-
-	if ffmpegErr == nil {
-		if data, err := os.ReadFile(cachePath); err == nil {
-			return data, nil
-		}
-	}
-
-	iconImg, _ := icons.Mp4Icon()
-	thumb := img.Thumbnail(iconImg, uint(width), uint(height))
-
-	paletted := image.NewPaletted(thumb.Bounds(), palette.Plan9)
-	draw.FloydSteinberg.Draw(paletted, thumb.Bounds(), thumb, image.Point{})
-
-	g := &gif.GIF{
-		Image:     []*image.Paletted{paletted},
-		Delay:     []int{120},
-		LoopCount: 0,
-	}
-	var buf bytes.Buffer
-	if err := gif.EncodeAll(&buf, g); err != nil {
-		return nil, err
-	}
-	fallback := buf.Bytes()
-	_ = os.WriteFile(cachePath, fallback, 0644)
-	return fallback, nil
-}
-
 func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 
 	file, err := s.GetFileById(fileId)
@@ -759,41 +598,6 @@ func (s *Service) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReport
 	}
 
 	return report, nil
-}
-
-func (s *Service) UpsertMetadata(tx *sql.Tx, fileDto FileDto) (FileDto, error) {
-	var err error
-
-	switch m := fileDto.Metadata.(type) {
-	case VideoMetadataModel:
-		m.FileId = fileDto.ID
-		upsertedMetadata, upsertErr := s.MetadataRepository.UpsertVideoMetadata(tx, m)
-		if upsertErr != nil {
-			err = upsertErr
-			break
-		}
-		fileDto.Metadata = upsertedMetadata
-
-	default:
-		return fileDto, nil
-	}
-
-	return fileDto, err
-}
-
-func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	filesModel, err := s.Repository.GetVideos(page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	paginationResponse, err := ParsePaginationToDto(&filesModel)
-
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	return paginationResponse, nil
 }
 
 func (s *Service) CheckFileExists(fileId int) bool {

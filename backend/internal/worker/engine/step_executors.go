@@ -1,12 +1,12 @@
 package engine
 
 import (
-	"nas-go/api/internal/worker/job"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"nas-go/api/internal/worker/job"
 	"os"
 	"path/filepath"
 	"time"
@@ -15,6 +15,7 @@ import (
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
 	musicdom "nas-go/api/internal/api/v1/music"
+	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -190,6 +191,23 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 		return nil
 	}
 
+	// Video metadata is owned by the video domain. Persist it directly via the
+	// video metadata repository so files never imports video.
+	if videoMeta, ok := metadata.(videodom.VideoMetadataModel); ok {
+		videoMeta.FileId = fileDto.ID
+		if context.VideoMetadataRepository != nil {
+			dbCtx := context.VideoMetadataRepository.GetDbContext()
+			upsertErr := dbCtx.ExecTx(func(tx *sql.Tx) error {
+				_, err := context.VideoMetadataRepository.UpsertVideoMetadata(tx, videoMeta)
+				return err
+			})
+			if upsertErr != nil {
+				return fmt.Errorf("metadata step: upsert video metadata: %w", upsertErr)
+			}
+		}
+		return nil
+	}
+
 	fileDto.Metadata = metadata
 	updated, err := context.FilesService.UpdateFile(fileDto)
 	if err != nil {
@@ -288,7 +306,7 @@ func executeThumbnailStep(context *WorkerContext, step jobs.StepModel) error {
 		return ErrStepSkipped
 	}
 
-	scan.CreateThumbnailWorker(context.FilesService, fileDto.ID, context.Logger)
+	scan.CreateThumbnailWorker(context.FilesService, context.VideoService, fileDto.ID, context.Logger)
 	return nil
 }
 

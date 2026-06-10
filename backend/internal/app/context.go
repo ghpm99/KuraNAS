@@ -85,7 +85,6 @@ type FileContext struct {
 	RecentFileService    files.RecentFileServiceInterface
 	Repository           files.RepositoryInterface
 	RecentFileRepository files.RecentFileRepositoryInterface
-	MetadataRepository   files.MetadataRepositoryInterface
 }
 
 type ImageContext struct {
@@ -114,9 +113,10 @@ type MusicContext struct {
 }
 
 type VideoContext struct {
-	Handler    *video.Handler
-	Service    video.ServiceInterface
-	Repository video.RepositoryInterface
+	Handler            *video.Handler
+	Service            video.ServiceInterface
+	Repository         video.RepositoryInterface
+	MetadataRepository video.VideoMetadataRepositoryInterface
 }
 
 type AnalyticsContext struct {
@@ -190,7 +190,7 @@ func NewContext(db *sql.DB) *AppContext {
 	imageContext := newImageContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service)
-	videoContext := newVideoContext(dbContext, loggerService, aiService)
+	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	searchContext := newSearchContext(dbContext, aiService)
@@ -332,8 +332,7 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 	repository := files.NewRepository(dbContext)
 	recentFileRepository := files.NewRecentFileRepository(dbContext)
 
-	metadataRepository := files.NewMetadataRepository(dbContext)
-	service := files.NewService(repository, metadataRepository, jobsRepository, tasks)
+	service := files.NewService(repository, jobsRepository, tasks)
 	recentFileService := files.NewRecentFileService(recentFileRepository)
 
 	handler := files.NewHandler(service, recentFileService, logger)
@@ -343,7 +342,6 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 		RecentFileService:    recentFileService,
 		Repository:           repository,
 		RecentFileRepository: recentFileRepository,
-		MetadataRepository:   metadataRepository,
 	}
 }
 
@@ -371,14 +369,16 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	}
 }
 
-func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface) *VideoContext {
+func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface) *VideoContext {
 	repository := video.NewRepository(dbContext)
+	metadataRepository := video.NewVideoMetadataRepository(dbContext)
 	service := video.NewService(repository, aiService)
-	handler := video.NewHandler(service, logger)
+	handler := video.NewHandler(service, filesService, logger)
 	return &VideoContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:            handler,
+		Service:            service,
+		Repository:         repository,
+		MetadataRepository: metadataRepository,
 	}
 }
 

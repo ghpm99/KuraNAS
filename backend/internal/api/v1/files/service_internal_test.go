@@ -75,7 +75,6 @@ type filesRepoMock struct {
 	getReportSizeByFormatFn    func() ([]SizeReportModel, error)
 	getTopFilesBySizeFn        func(limit int) ([]FileModel, error)
 	getDuplicateFilesFn        func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	getVideosFn                func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 }
 
 func (m *filesRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -139,16 +138,6 @@ func (m *filesRepoMock) GetDuplicateFiles(page int, pageSize int) (utils.Paginat
 	}
 	return utils.PaginationResponse[DuplicateFilesModel]{Items: []DuplicateFilesModel{}}, nil
 }
-func (m *filesRepoMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getVideosFn != nil {
-		return m.getVideosFn(page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-
-type metadataRepoMock struct {
-	upsertVideoFn func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
-}
 
 type filesJobsRepoMock struct {
 	jobsapi.RepositoryInterface
@@ -181,24 +170,12 @@ func (m *filesJobsRepoMock) CreateStep(tx *sql.Tx, step jobsapi.StepModel) (jobs
 	return step, nil
 }
 
-func (m *metadataRepoMock) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
-	return VideoMetadataModel{}, nil
-}
-func (m *metadataRepoMock) UpsertVideoMetadata(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
-	if m.upsertVideoFn != nil {
-		return m.upsertVideoFn(transaction, metadata)
-	}
-	return metadata, nil
-}
-func (m *metadataRepoMock) DeleteVideoMetadata(id int) error { return nil }
-
-func newFilesServiceForTest(t *testing.T, repo *filesRepoMock, metadata *metadataRepoMock) *Service {
+func newFilesServiceForTest(t *testing.T, repo *filesRepoMock) *Service {
 	t.Helper()
 	repo.db = database.NewDbContext(nil)
 	return &Service{
-		Repository:         repo,
-		MetadataRepository: metadata,
-		Tasks:              make(chan utils.Task, 4),
+		Repository: repo,
+		Tasks:      make(chan utils.Task, 4),
 	}
 }
 
@@ -238,7 +215,7 @@ func TestFileService_GetAndFind(t *testing.T) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "one", File)}}, nil
 		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	if _, err := s.GetFileByNameAndPath("none", "/tmp/none"); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows, got %v", err)
@@ -270,7 +247,7 @@ func TestFileService_CreateUploadProcessJob(t *testing.T) {
 	}
 
 	jobsRepo := newFilesJobsRepoMockForTest(t)
-	service := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	service := newFilesServiceForTest(t, &filesRepoMock{})
 	service.JobsRepository = jobsRepo
 
 	jobID, err := service.CreateUploadProcessJob([]string{filePath})
@@ -333,7 +310,7 @@ func TestFileService_GetFilesAndDirectoryCount(t *testing.T) {
 			return 0, errors.New("not directory")
 		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	result, err := s.GetFiles(FileFilter{}, 1, 10)
 	if err != nil {
@@ -357,13 +334,7 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 			return true, nil
 		},
 	}
-	metadata := &metadataRepoMock{
-		upsertVideoFn: func(transaction *sql.Tx, m VideoMetadataModel) (VideoMetadataModel, error) {
-			m.Path = "vid"
-			return m, nil
-		},
-	}
-	s := newFilesServiceForTest(t, repo, metadata)
+	s := newFilesServiceForTest(t, repo)
 
 	file, err := s.CreateFile(FileDto{
 		Name:       "f",
@@ -389,12 +360,6 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 		t.Fatalf("expected update success, ok=%v err=%v", ok, err)
 	}
 
-	if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: VideoMetadataModel{}}); err != nil {
-		t.Fatalf("expected video upsert success: %v", err)
-	}
-	if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: "unknown"}); err != nil {
-		t.Fatalf("expected unknown metadata type to be ignored: %v", err)
-	}
 }
 
 func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
@@ -406,7 +371,7 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(10, "blob.txt", File)}}, nil
 		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	s.ScanFilesTask("x")
 	s.ScanDirTask("/tmp")
@@ -485,11 +450,8 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 				},
 			}, nil
 		},
-		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(3, "v", File)}}, nil
-		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	if total, _ := s.GetTotalSpaceUsed(); total != 1000 {
 		t.Fatalf("expected total space 1000")
@@ -514,9 +476,6 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 		t.Fatalf("expected duplicates report, err=%v", err)
 	}
 
-	if _, err := s.GetVideos(1, 10); err != nil {
-		t.Fatalf("expected videos success, err=%v", err)
-	}
 }
 
 func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
@@ -527,7 +486,7 @@ func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 			}, nil
 		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	alreadyDeleted := FileDto{
 		ID:        1,
@@ -622,7 +581,7 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 		},
 	}
-	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, repo)
 
 	if err := s.UpdateCheckSum(1); err != nil {
 		t.Fatalf("expected file checksum update success, got %v", err)
@@ -671,24 +630,9 @@ drainLoop:
 		t.Fatalf("expected GetFileThumbnail to fail on missing file with nil data")
 	}
 
-	if _, err := s.GetVideoThumbnail(FileDto{
-		ID:   6,
-		Path: filepath.Join(tmpDir, "missing.mp4"),
-		Type: File,
-	}, 320, 180); err == nil {
-		t.Fatalf("expected missing video thumbnail error")
-	}
-
-	if _, err := s.GetVideoPreviewGif(FileDto{
-		ID:   7,
-		Path: filepath.Join(tmpDir, "missing.mp4"),
-		Type: File,
-	}, 320, 180); err == nil {
-		t.Fatalf("expected missing video preview error")
-	}
 }
 
-func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
+func TestFileService_ThumbnailFallbacks(t *testing.T) {
 	ensureTestIcons(t)
 
 	tmpDir := t.TempDir()
@@ -697,12 +641,7 @@ func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	fakeVideo := filepath.Join(tmpDir, "video.mp4")
-	if err := os.WriteFile(fakeVideo, []byte("not-a-real-video"), 0644); err != nil {
-		t.Fatalf("failed to create fake video file: %v", err)
-	}
-
-	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, &filesRepoMock{})
 
 	dirThumb, err := s.GetFileThumbnail(FileDto{
 		ID:   101,
@@ -729,34 +668,11 @@ func TestFileService_ThumbnailAndVideoFallbacks(t *testing.T) {
 		t.Fatalf("expected non-empty file thumbnail")
 	}
 
-	videoThumb, err := s.GetVideoThumbnail(FileDto{
-		ID:   103,
-		Path: fakeVideo,
-		Type: File,
-	}, -1, -1)
-	if err != nil {
-		t.Fatalf("expected video thumbnail fallback success, got %v", err)
-	}
-	if len(videoThumb) == 0 {
-		t.Fatalf("expected non-empty video thumbnail fallback")
-	}
-
-	previewGif, err := s.GetVideoPreviewGif(FileDto{
-		ID:   104,
-		Path: fakeVideo,
-		Type: File,
-	}, -1, -1)
-	if err != nil {
-		t.Fatalf("expected video preview fallback success, got %v", err)
-	}
-	if len(previewGif) == 0 {
-		t.Fatalf("expected non-empty video preview fallback")
-	}
 }
 
 func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	setProgramFilesForTest(t)
-	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
+	s := newFilesServiceForTest(t, &filesRepoMock{})
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
 	cacheFile := filepath.Join(cacheDir, "42_320.png")
 	cached := []byte("cached-png")
@@ -788,7 +704,7 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("update failure")
 		},
-	}, &metadataRepoMock{})
+	})
 
 	_, err := s.GetFileThumbnail(FileDto{
 		ID:     99,
@@ -804,45 +720,6 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 	}
 }
 
-func TestFileService_GetVideoThumbAndPreviewCacheHit(t *testing.T) {
-	setProgramFilesForTest(t)
-	s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{})
-	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		t.Fatalf("failed to create video cache dir: %v", err)
-	}
-
-	thumbPath := filepath.Join(cacheDir, "501_320x180.png")
-	thumbBytes := []byte("cached-video-thumb")
-	if err := os.WriteFile(thumbPath, thumbBytes, 0644); err != nil {
-		t.Fatalf("failed to write thumb cache: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Remove(thumbPath) })
-
-	thumb, err := s.GetVideoThumbnail(FileDto{ID: 501, Path: "/missing.mp4", Type: File}, 320, 180)
-	if err != nil {
-		t.Fatalf("expected video thumbnail cache hit, got %v", err)
-	}
-	if string(thumb) != string(thumbBytes) {
-		t.Fatalf("expected cached thumbnail bytes")
-	}
-
-	previewPath := filepath.Join(cacheDir, "502_320x180_preview.gif")
-	previewBytes := []byte("cached-video-preview")
-	if err := os.WriteFile(previewPath, previewBytes, 0644); err != nil {
-		t.Fatalf("failed to write preview cache: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Remove(previewPath) })
-
-	preview, err := s.GetVideoPreviewGif(FileDto{ID: 502, Path: "/missing.mp4", Type: File}, 320, 180)
-	if err != nil {
-		t.Fatalf("expected video preview cache hit, got %v", err)
-	}
-	if string(preview) != string(previewBytes) {
-		t.Fatalf("expected cached preview bytes")
-	}
-}
-
 func TestFileService_ErrorBranches(t *testing.T) {
 	s := newFilesServiceForTest(t, &filesRepoMock{
 		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
@@ -854,10 +731,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("update failed")
 		},
-		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("videos failed")
-		},
-	}, &metadataRepoMock{})
+	})
 
 	if _, err := s.GetFiles(FileFilter{}, 1, 10); err == nil {
 		t.Fatalf("expected GetFiles error")
@@ -868,9 +742,6 @@ func TestFileService_ErrorBranches(t *testing.T) {
 	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected UpdateFile error")
 	}
-	if _, err := s.GetVideos(1, 10); err == nil {
-		t.Fatalf("expected GetVideos error")
-	}
 }
 
 func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
@@ -880,7 +751,7 @@ func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
 				Items: []FileModel{sampleModel(999, "missing.bin", File)},
 			}, nil
 		},
-	}, &metadataRepoMock{})
+	})
 
 	if _, err := s.GetFileBlobById(999); err == nil {
 		t.Fatalf("expected GetFileBlobById read error")
@@ -898,7 +769,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
 				return 0, errors.New("count failed")
 			},
-		}, &metadataRepoMock{})
+		})
 
 		out, err := s.GetFiles(FileFilter{}, 1, 10)
 		if err != nil {
@@ -920,7 +791,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 					sampleModel(2, "b", File),
 				}}, nil
 			},
-		}, &metadataRepoMock{})
+		})
 
 		if _, err := s.GetFileById(10); !errors.Is(err, sql.ErrNoRows) {
 			t.Fatalf("expected sql.ErrNoRows, got %v", err)
@@ -956,7 +827,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 					}},
 				}, nil
 			},
-		}, &metadataRepoMock{})
+		})
 
 		if err := s.UpdateCheckSum(1); err != nil {
 			t.Fatalf("expected UpdateCheckSum success, got %v", err)
@@ -977,7 +848,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 				return utils.PaginationResponse[FileModel]{}, errors.New("repository down")
 			},
-		}, &metadataRepoMock{})
+		})
 
 		if err := s.UpdateCheckSum(1); err == nil {
 			t.Fatalf("expected UpdateCheckSum to propagate fetch error")
@@ -989,22 +860,10 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			getReportSizeByFormatFn: func() ([]SizeReportModel, error) {
 				return nil, errors.New("report failed")
 			},
-		}, &metadataRepoMock{})
+		})
 
 		if _, err := s.GetReportSizeByFormat(); err == nil {
 			t.Fatalf("expected report error")
-		}
-	})
-
-	t.Run("UpsertMetadata video errors", func(t *testing.T) {
-		s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{
-			upsertVideoFn: func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
-				return VideoMetadataModel{}, errors.New("video metadata failed")
-			},
-		})
-
-		if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: VideoMetadataModel{}}); err == nil {
-			t.Fatalf("expected video metadata error")
 		}
 	})
 
@@ -1013,7 +872,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 				return utils.PaginationResponse[FileModel]{}, errors.New("query failed")
 			},
-		}, &metadataRepoMock{})
+		})
 
 		if s.CheckFileExists(10) {
 			t.Fatalf("expected CheckFileExists false on repository error")
@@ -1025,7 +884,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 				return false, errors.New("update failed")
 			},
-		}, &metadataRepoMock{})
+		})
 
 		err := sErr.DeleteFile(FileDto{
 			ID:              1,
@@ -1042,7 +901,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 				return false, nil
 			},
-		}, &metadataRepoMock{})
+		})
 
 		err = sFalse.DeleteFile(FileDto{
 			ID:              2,

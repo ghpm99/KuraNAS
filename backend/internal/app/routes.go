@@ -51,8 +51,6 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
-	files.GET("/video-thumbnail/:id", context.Files.Handler.GetVideoThumbnailHandler)
-	files.GET("/video-preview/:id", context.Files.Handler.GetVideoPreviewHandler)
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/upload", context.Files.Handler.UploadFilesHandler)
@@ -71,8 +69,6 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Image != nil {
 		files.GET("/images", context.Image.Handler.GetImagesHandler)
 	}
-	files.GET("/videos", context.Files.Handler.GetVideosHandler)
-	files.GET("/video-stream/:id", context.Files.Handler.StreamVideoHandler)
 }
 
 func RegisterDiaryRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -143,6 +139,14 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 }
 
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
+	// Browse/streaming endpoints moved from the files domain — paths unchanged
+	// (/files/...) to preserve the HTTP contract; only the owner changed.
+	filesGroup := router.Group("/files")
+	filesGroup.GET("/videos", context.Video.Handler.GetVideosHandler)
+	filesGroup.GET("/video-stream/:id", context.Video.Handler.StreamVideoHandler)
+	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
+	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)
+
 	playback := router.Group("/video/playback")
 	catalog := router.Group("/video/catalog")
 	library := router.Group("/video/library")

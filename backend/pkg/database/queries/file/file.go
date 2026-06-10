@@ -49,14 +49,3 @@ var TopFilesBySizeQuery string
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
 
-//go:embed get_video_metadata_by_id.sql
-var GetVideoMetadataByIDQuery string
-
-//go:embed upsert_video_metadata.sql
-var UpsertVideoMetadataQuery string
-
-//go:embed delete_video_metadata.sql
-var DeleteVideoMetadataQuery string
-
-//go:embed get_videos.sql
-var GetVideosQuery string

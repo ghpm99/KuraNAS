@@ -117,7 +117,7 @@ func newTestServiceWithFileRecords(t *testing.T, entryPoint string, records []Fi
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 		},
 	}
-	service := newFilesServiceForTest(t, repo, &metadataRepoMock{})
+	service := newFilesServiceForTest(t, repo)
 	service.JobsRepository = newFilesJobsRepoMockForTest(t)
 	return service
 }

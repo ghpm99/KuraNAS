@@ -111,7 +111,6 @@ func InitializeApp() (*Application, error) {
 	workerFileContext := &engine.WorkerContext{
 		FilesService:        appContext.Files.Service,
 		VideoService:        appContext.Video.Service,
-		MetadataService:     appContext.Files.MetadataRepository,
 		Tasks:               *appContext.Tasks,
 		Logger:              appContext.Logger,
 		NotificationService: appContext.Notifications.Service,
@@ -127,6 +126,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Music != nil {
 		workerFileContext.MusicService = appContext.Music.Service
 		workerFileContext.AudioMetadataRepository = appContext.Music.AudioMetadataRepository
+	}
+	if appContext.Video != nil {
+		workerFileContext.VideoMetadataRepository = appContext.Video.MetadataRepository
 	}
 	if appContext.Jobs != nil {
 		workerFileContext.JobsRepository = appContext.Jobs.Repository

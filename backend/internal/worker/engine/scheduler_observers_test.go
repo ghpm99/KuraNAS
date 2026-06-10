@@ -1,8 +1,8 @@
 package engine
 
 import (
-	jobdomain "nas-go/api/internal/worker/job"
 	"errors"
+	jobdomain "nas-go/api/internal/worker/job"
 	"testing"
 
 	jobsapi "nas-go/api/internal/api/v1/jobs"

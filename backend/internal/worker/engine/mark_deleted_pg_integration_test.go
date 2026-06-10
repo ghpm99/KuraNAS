@@ -55,7 +55,7 @@ func TestMarkDeletedStep_DetectsMissingFiles_Postgres(t *testing.T) {
 	truncateWorkerAndFiles(t, dbCtx)
 
 	root := t.TempDir()
-	filesSvc := files.NewService(files.NewRepository(dbCtx), nil, jobs.NewRepository(dbCtx), nil)
+	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)
 	workerCtx := &WorkerContext{FilesService: filesSvc}
 
 	presentPath := filepath.Join(root, "present.txt")
@@ -93,7 +93,7 @@ func TestMarkDeletedStep_SoftDeletesMissingFileWithWindowsPath_Postgres(t *testi
 	dbCtx := tests.NewPostgresDB(t, "kuranas_worker_it")
 	truncateWorkerAndFiles(t, dbCtx)
 
-	filesSvc := files.NewService(files.NewRepository(dbCtx), nil, jobs.NewRepository(dbCtx), nil)
+	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)
 	workerCtx := &WorkerContext{FilesService: filesSvc}
 
 	winRoot := `D:\Pasta`

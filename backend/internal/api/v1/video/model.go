@@ -90,3 +90,30 @@ type VideoWithMetadataModel struct {
 	MetaAudioCodec      sql.NullString
 	MetaAudioSampleRate sql.NullString
 }
+
+// VideoMetadataModel is the video_metadata complement table for a files row.
+// Moved from the files core: the video extension owns this table.
+type VideoMetadataModel struct {
+	ID              int
+	FileId          int
+	Path            string
+	FormatName      string  `json:"format_name"`
+	Size            string  `json:"size"`
+	Duration        string  `json:"duration"`
+	Width           int     `json:"width"`
+	Height          int     `json:"height"`
+	FrameRate       float64 `json:"frame_rate"`
+	NbFrames        int     `json:"nb_frames"`
+	BitRate         string  `json:"bit_rate"`
+	CodecName       string  `json:"codec_name"`
+	CodecLongName   string  `json:"codec_long_name"`
+	PixFmt          string  `json:"pix_fmt"`
+	Level           int     `json:"level"`
+	Profile         string  `json:"profile"`
+	AspectRatio     string  `json:"aspect_ratio"`
+	AudioCodec      string  `json:"audio_codec"`
+	AudioChannels   int     `json:"audio_channels"`
+	AudioSampleRate string  `json:"audio_sample_rate"`
+	AudioBitRate    string  `json:"audio_bit_rate"`
+	CreatedAt       time.Time
+}

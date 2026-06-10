@@ -7,6 +7,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
+	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
@@ -375,7 +376,7 @@ func mockPipelineScriptRunner(scriptType utils.ScriptType, filePath string) (str
 		})
 		return string(jsonBytes), nil
 	case utils.VideoMetadata:
-		jsonBytes, _ := json.Marshal(files.VideoMetadataModel{
+		jsonBytes, _ := json.Marshal(videodom.VideoMetadataModel{
 			Path: filePath,
 		})
 		return string(jsonBytes), nil
@@ -468,8 +469,8 @@ func compareMetadata(t *testing.T, expected, actual any) {
 		if expected != actualMetadata {
 			t.Errorf("Audio metadata mismatch: expected %v, got %v", expected, actualMetadata)
 		}
-	case files.VideoMetadataModel:
-		actualMetadata, ok := actual.(files.VideoMetadataModel)
+	case videodom.VideoMetadataModel:
+		actualMetadata, ok := actual.(videodom.VideoMetadataModel)
 		if !ok {
 			t.Errorf("Expected VideoMetadataModel, got %T", actual)
 			return

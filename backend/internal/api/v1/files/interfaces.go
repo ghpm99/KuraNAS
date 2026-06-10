@@ -19,7 +19,6 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 }
 
 type ServiceInterface interface {
@@ -34,8 +33,6 @@ type ServiceInterface interface {
 	UpdateCheckSum(fileId int) error
 	CreateUploadProcessJob(paths []string) (int, error)
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
-	GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error)
-	GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int, error)
 	GetTotalFiles() (int, error)
@@ -43,8 +40,6 @@ type ServiceInterface interface {
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
-	UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error)
-	GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	CheckFileExists(fileId int) bool
 	CheckFileExistsByPath(path string) bool
 	DeleteFile(file FileDto, bySystem bool) error
@@ -69,10 +64,4 @@ type RecentFileServiceInterface interface {
 	GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error)
 	DeleteRecentFile(ip string, fileID int) error
 	GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error)
-}
-
-type MetadataRepositoryInterface interface {
-	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
-	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
-	DeleteVideoMetadata(id int) error
 }

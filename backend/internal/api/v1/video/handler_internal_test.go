@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -71,6 +72,15 @@ func (m *videoHandlerServiceMock) ReorderPlaylistItems(playlistID int, items []R
 func (m *videoHandlerServiceMock) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error {
 	return nil
 }
+func (m *videoHandlerServiceMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
+}
+func (m *videoHandlerServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
+	return []byte("png"), nil
+}
+func (m *videoHandlerServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
+	return []byte("gif"), nil
+}
 
 type videoHandlerErrServiceMock struct {
 	videoHandlerServiceMock
@@ -130,12 +140,29 @@ func (m *videoHandlerErrServiceMock) ReorderPlaylistItems(playlistID int, items 
 func (m *videoHandlerErrServiceMock) TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error {
 	return errors.New("track failed")
 }
+func (m *videoHandlerErrServiceMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("videos failed")
+}
+func (m *videoHandlerErrServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
+	return nil, files.ErrFileMissingDisk
+}
+func (m *videoHandlerErrServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
+	return nil, errors.New("preview failed")
+}
 
 type videoLoggerMock struct{ logger.LoggerServiceInterface }
 
+func (m *videoLoggerMock) CreateLog(log logger.LoggerModel, object interface{}) (logger.LoggerModel, error) {
+	return logger.LoggerModel{}, nil
+}
+func (m *videoLoggerMock) CompleteWithSuccessLog(log logger.LoggerModel) error { return nil }
+func (m *videoLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error) error {
+	return nil
+}
+
 func TestVideoHandlerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
 	router := gin.New()
 
 	router.POST("/video/playback/start", handler.StartPlaybackHandler)
@@ -200,7 +227,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 
 func TestVideoHandlerErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
 	router := gin.New()
 
 	router.POST("/video/playback/start", handler.StartPlaybackHandler)

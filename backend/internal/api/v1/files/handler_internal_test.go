@@ -1,12 +1,10 @@
 package files
 
 import (
-	"database/sql"
 	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -55,12 +53,6 @@ func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, e
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
 }
-func (m *filesHandlerServiceMock) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	return []byte("png"), nil
-}
-func (m *filesHandlerServiceMock) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error) {
-	return []byte("gif"), nil
-}
 func (m *filesHandlerServiceMock) GetFileBlobById(fileId int) (FileBlob, error) {
 	return FileBlob{ID: fileId, Blob: []byte("data"), Format: ".txt"}, nil
 }
@@ -80,12 +72,6 @@ func (m *filesHandlerServiceMock) GetDuplicateFiles(page int, pageSize int) (Dup
 			Page: page, PageSize: pageSize,
 		},
 	}, nil
-}
-func (m *filesHandlerServiceMock) UpsertMetadata(tx *sql.Tx, file FileDto) (FileDto, error) {
-	return file, nil
-}
-func (m *filesHandlerServiceMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	return utils.PaginationResponse[FileDto]{Items: []FileDto{{ID: 1}}}, nil
 }
 func (m *filesHandlerServiceMock) CheckFileExists(fileId int) bool              { return false }
 func (m *filesHandlerServiceMock) CheckFileExistsByPath(path string) bool       { return false }
@@ -130,7 +116,6 @@ type filesHandlerServiceFuncMock struct {
 	getReportSizeByFmtFn func() ([]SizeReportDto, error)
 	getTopFilesBySizeFn  func(limit int) ([]FileDto, error)
 	getDuplicateFilesFn  func(page int, pageSize int) (DuplicateFileReportDto, error)
-	getVideosFn          func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 }
 
 func (m *filesHandlerServiceFuncMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
@@ -193,12 +178,6 @@ func (m *filesHandlerServiceFuncMock) GetDuplicateFiles(page int, pageSize int) 
 	}
 	return m.filesHandlerServiceMock.GetDuplicateFiles(page, pageSize)
 }
-func (m *filesHandlerServiceFuncMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	if m.getVideosFn != nil {
-		return m.getVideosFn(page, pageSize)
-	}
-	return m.filesHandlerServiceMock.GetVideos(page, pageSize)
-}
 
 type filesRecentServiceFuncMock struct {
 	filesRecentServiceMock
@@ -247,8 +226,6 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.POST("/files/update", handler.UpdateFilesHandler)
 	router.GET("/files/tree", handler.GetFilesTreeHandler)
 	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
-	router.GET("/files/video-thumbnail/:id", handler.GetVideoThumbnailHandler)
-	router.GET("/files/video-preview/:id", handler.GetVideoPreviewHandler)
 	router.GET("/files/blob/:id", handler.GetBlobFileHandler)
 	router.GET("/files/recent", handler.GetRecentFilesHandler)
 	router.GET("/files/recent/:id", handler.GetRecentAccessByFileHandler)
@@ -259,8 +236,6 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/report-size-by-format", handler.GetReportSizeByFormatHandler)
 	router.GET("/files/top-files-by-size", handler.GetTopFilesBySizeHandler)
 	router.GET("/files/duplicate-files", handler.GetDuplicateFilesHandler)
-	router.GET("/files/videos", handler.GetVideosHandler)
-	router.GET("/files/video-stream/:id", handler.StreamVideoHandler)
 	return router
 }
 
@@ -280,8 +255,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodPost, path: "/files/update", body: "data=/tmp", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/video-thumbnail/1", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/video-preview/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/blob/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusOK},
@@ -292,8 +265,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodGet, path: "/files/report-size-by-format", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/top-files-by-size?limit=3", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/duplicate-files", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/videos", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/video-stream/1", code: http.StatusNotFound},
 	}
 
 	for _, tc := range tests {
@@ -350,89 +321,19 @@ func (m *filesStreamServiceMock) GetFileThumbnail(fileDto FileDto, width, height
 	return nil, ErrFileMissingDisk
 }
 
-func (m *filesStreamServiceMock) GetVideoThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	return nil, ErrFileMissingDisk
-}
-
-func (m *filesStreamServiceMock) GetVideoPreviewGif(fileDto FileDto, width, height int) ([]byte, error) {
-	return nil, errors.New("preview failed")
-}
-
-func TestFilesHandlerStreamsAndErrorBranches(t *testing.T) {
+func TestFilesHandlerThumbnailMissingSource(t *testing.T) {
 	tmpDir := t.TempDir()
-	videoPath := filepath.Join(tmpDir, "v.mp4")
-	if err := os.WriteFile(videoPath, []byte("0123456789abcdefghijklmnopqrstuvwxyz"), 0644); err != nil {
-		t.Fatalf("failed to create video file: %v", err)
-	}
+	service := &filesStreamServiceMock{filePath: filepath.Join(tmpDir, "f.txt"), format: ".txt"}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
 
-	videoService := &filesStreamServiceMock{filePath: videoPath, format: ".mp4"}
-	videoHandler := NewHandler(videoService, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
 
-	videoRouter := gin.New()
-	videoRouter.GET("/files/video-stream/:id", videoHandler.StreamVideoHandler)
-	videoRouter.GET("/files/thumbnail/:id", videoHandler.GetFileThumbnailHandler)
-	videoRouter.GET("/files/video-thumbnail/:id", videoHandler.GetVideoThumbnailHandler)
-	videoRouter.GET("/files/video-preview/:id", videoHandler.GetVideoPreviewHandler)
-
-	req := httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
-	req.Header.Set("Range", "bytes=0-10")
+	req := httptest.NewRequest(http.MethodGet, "/files/thumbnail/1", nil)
 	w := httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusPartialContent {
-		t.Fatalf("expected partial content for video, got %d", w.Code)
-	}
-	if got := w.Header().Get("Content-Range"); got != "bytes 0-10/36" {
-		t.Fatalf("unexpected video content-range for closed range: %s", got)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
-	req.Header.Set("Range", "bytes=0-")
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusPartialContent {
-		t.Fatalf("expected partial content for open-ended video range, got %d", w.Code)
-	}
-	if got := w.Header().Get("Content-Range"); got != "bytes 0-35/36" {
-		t.Fatalf("unexpected video content-range for open-ended range: %s", got)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
-	req.Header.Set("Range", "bytes=-5")
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusPartialContent {
-		t.Fatalf("expected partial content for suffix video range, got %d", w.Code)
-	}
-	if got := w.Header().Get("Content-Range"); got != "bytes 31-35/36" {
-		t.Fatalf("unexpected video content-range for suffix range: %s", got)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/thumbnail/1", nil)
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 for missing thumbnail source, got %d", w.Code)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/video-thumbnail/1", nil)
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("expected 404 for missing video thumbnail source, got %d", w.Code)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/video-preview/1", nil)
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500 for video preview generic error, got %d", w.Code)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/files/video-stream/1", nil)
-	w = httptest.NewRecorder()
-	videoRouter.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected full video stream 200 without range, got %d", w.Code)
 	}
 }
 
@@ -507,9 +408,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		getDuplicateFilesFn: func(page int, pageSize int) (DuplicateFileReportDto, error) {
 			return DuplicateFileReportDto{}, errBoom
 		},
-		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-			return utils.PaginationResponse[FileDto]{}, errBoom
-		},
 	}
 	recentService := &filesRecentServiceFuncMock{
 		getRecentFilesFn: func(page int, pageSize int) ([]RecentFileDto, error) {
@@ -541,11 +439,7 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		{method: http.MethodGet, path: "/files/report-size-by-format", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/top-files-by-size?limit=5", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/duplicate-files", code: http.StatusInternalServerError},
-		{method: http.MethodGet, path: "/files/videos", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusBadRequest},
-		{method: http.MethodGet, path: "/files/video-thumbnail/1", code: http.StatusBadRequest},
-		{method: http.MethodGet, path: "/files/video-preview/1", code: http.StatusBadRequest},
-		{method: http.MethodGet, path: "/files/video-stream/1", code: http.StatusNotFound},
 	}
 
 	for _, tc := range tests {

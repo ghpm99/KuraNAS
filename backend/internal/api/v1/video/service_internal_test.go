@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
@@ -21,7 +22,8 @@ func (m *videoAIMock) Execute(ctx context.Context, req ai.Request) (ai.Response,
 }
 
 type videoRepoMock struct {
-	db *database.DbContext
+	getVideosFn func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	db          *database.DbContext
 
 	getVideoFileByIDFn         func(id int) (VideoFileModel, error)
 	getVideosByParentPathFn    func(parentPath string) ([]VideoFileModel, error)
@@ -59,6 +61,12 @@ type videoRepoMock struct {
 }
 
 func (m *videoRepoMock) GetDbContext() *database.DbContext { return m.db }
+func (m *videoRepoMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getVideosFn != nil {
+		return m.getVideosFn(page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
 func (m *videoRepoMock) GetVideoFileByID(id int) (VideoFileModel, error) {
 	if m.getVideoFileByIDFn != nil {
 		return m.getVideoFileByIDFn(id)
