@@ -1,4 +1,4 @@
-package worker
+package engine
 
 type TakeoutStepPayload struct {
 	ZipPath  string `json:"zip_path"`

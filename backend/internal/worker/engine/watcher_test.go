@@ -1,4 +1,4 @@
-package worker
+package engine
 
 import (
 	"os"

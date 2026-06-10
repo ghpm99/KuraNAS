@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/config"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/engine"
 	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -185,7 +185,7 @@ func TestInitializeAppSuccessAndModeSelection(t *testing.T) {
 	registerCalled := false
 	registerRoutesFn = func(router *gin.Engine, context *AppContext) { registerCalled = true }
 	workersCalled := false
-	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) { workersCalled = true }
+	startWorkersFn = func(context *engine.WorkerContext, numWorkers int) { workersCalled = true }
 	folderWatcher := &folderWatcherSpy{}
 	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface { return folderWatcher }
 	systemEvents := &systemEventServiceSpy{}
@@ -357,7 +357,7 @@ func TestInitializeAppStartupEventFailureDoesNotBreakInitialization(t *testing.T
 	}
 	newRouterFn = func(opts ...gin.OptionFunc) *gin.Engine { return gin.New(opts...) }
 	registerRoutesFn = func(router *gin.Engine, context *AppContext) {}
-	startWorkersFn = func(context *worker.WorkerContext, numWorkers int) {}
+	startWorkersFn = func(context *engine.WorkerContext, numWorkers int) {}
 	newFolderWatcherFn = func(context *AppContext) FolderWatcherInterface { return nil }
 	spy := &systemEventServiceSpy{startupErr: errors.New("startup log failed")}
 	newSystemEventFn = func(*database.DbContext) systemevent.ServiceInterface { return spy }

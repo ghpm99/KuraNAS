@@ -1,4 +1,4 @@
-package worker
+package engine
 
 import (
 	"database/sql"
@@ -21,8 +21,8 @@ func diffFixtureScanDir(t *testing.T) string {
 	if !ok {
 		t.Fatalf("cannot resolve caller path")
 	}
-	// this file: backend/internal/worker/ -> up 2 -> backend/
-	backendRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
+	// this file: backend/internal/worker/engine/ -> up 3 -> backend/
+	backendRoot := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
 	dir := filepath.Join(backendRoot, "tests", "files_test", "worker", "testscan")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
