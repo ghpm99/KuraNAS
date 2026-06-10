@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"nas-go/api/pkg/utils"
-	"nas-go/api/tests"
+	"nas-go/api/internal/testutil"
 )
 
 // fixtureScanDir resolves the real fixture folder shipped in the repo
@@ -75,7 +75,7 @@ func insertFileRow(t *testing.T, repo *Repository, name, path, parent string, si
 //   - the PathPrefix filter now finds the backslash-path row;
 //   - the exact-match lookup (GetFileStatByPath) finds it with intact data.
 func TestPostgres_PathPrefixMatchesWindowsPaths(t *testing.T) {
-	ctx := tests.NewPostgresDB(t, "kuranas_files_it")
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
 	repo := NewRepository(ctx)
 	truncateHomeFile(t, repo)
 
@@ -121,7 +121,7 @@ func TestPostgres_PathPrefixMatchesWindowsPaths(t *testing.T) {
 // exactly the signal executeDiffAgainstDBStep uses to SKIP a file, so it proves
 // already-processed, untouched files are not re-sent to the pipeline.
 func TestPostgres_GetFileStatByPath_RecognizesUnchangedFixtureFiles(t *testing.T) {
-	ctx := tests.NewPostgresDB(t, "kuranas_files_it")
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
 	repo := NewRepository(ctx)
 	truncateHomeFile(t, repo)
 

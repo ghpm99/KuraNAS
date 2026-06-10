@@ -1,4 +1,4 @@
-package worker_test
+package scan_test
 
 import (
 	"nas-go/api/internal/worker/scan"
@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const testDirectory = "testscan"
+const testDirectory = "testdata/testscan"
 
 func TestStartDirectoryWalker(t *testing.T) {
 	if _, err := os.Stat(testDirectory); os.IsNotExist(err) {

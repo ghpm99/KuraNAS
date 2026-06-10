@@ -1,4 +1,4 @@
-package worker_test
+package scan_test
 
 import (
 	"io/fs"

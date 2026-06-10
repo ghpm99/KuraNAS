@@ -12,7 +12,7 @@ import (
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
-	"nas-go/api/tests"
+	"nas-go/api/internal/testutil"
 )
 
 func diffFixtureScanDir(t *testing.T) string {
@@ -68,7 +68,7 @@ func truncateWorkerAndFiles(t *testing.T, ctx *database.DbContext) {
 // This is the end-to-end proof for the original complaint: files that were
 // already processed and not modified must not be pushed back onto the pipeline.
 func TestDiffStep_DoesNotReenqueueUnchangedFiles_Postgres(t *testing.T) {
-	dbCtx := tests.NewPostgresDB(t, "kuranas_worker_it")
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
 	truncateWorkerAndFiles(t, dbCtx)
 
 	prevEntryPoint := config.AppConfig.EntryPoint
