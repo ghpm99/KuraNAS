@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
+	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/utils"
 	"sync"
@@ -26,7 +27,7 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 		jsonBytes, _ := json.Marshal(imgMetadata)
 		return string(jsonBytes), nil
 	case utils.VideoMetadata:
-		videoMetadata := files.VideoMetadataModel{
+		videoMetadata := videodom.VideoMetadataModel{
 			FormatName: "mp4",
 			Duration:   "120",
 			Width:      1920,
@@ -93,7 +94,7 @@ func TestStartMetadataWorker(t *testing.T) {
 				t.Errorf("Metadados de imagem incorretos para o arquivo %s", file.Name)
 			}
 		case 2:
-			videoMetadata, ok := file.Metadata.(files.VideoMetadataModel)
+			videoMetadata, ok := file.Metadata.(videodom.VideoMetadataModel)
 			if !ok || videoMetadata.FormatName != "mp4" {
 				t.Errorf("Metadados de vídeo incorretos para o arquivo %s", file.Name)
 			}

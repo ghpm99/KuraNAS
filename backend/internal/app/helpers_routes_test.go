@@ -30,7 +30,7 @@ func buildRouteContext() *AppContext {
 		Jobs:          &JobsContext{Handler: jobs.NewHandler(nil)},
 		Diary:         &DiaryContext{Handler: diary.NewHandler(nil, nil)},
 		Music:         &MusicContext{Handler: music.NewHandler(nil, nil, nil)},
-		Video:         &VideoContext{Handler: video.NewHandler(nil, nil)},
+		Video:         &VideoContext{Handler: video.NewHandler(nil, nil, nil)},
 		Analytics:     &AnalyticsContext{Handler: analytics.NewHandler(nil)},
 		Configuration: &ConfigurationContext{Handler: configuration.NewHandler(nil, nil)},
 		Search:        &SearchContext{Handler: search.NewHandler(nil)},

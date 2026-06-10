@@ -1,19 +1,21 @@
-package files
+package video
 
 import (
 	"database/sql"
 	"fmt"
 
-	queries "nas-go/api/pkg/database/queries/file"
+	files "nas-go/api/internal/api/v1/files"
+	queries "nas-go/api/pkg/database/queries/video"
 	"nas-go/api/pkg/utils"
 
 	"github.com/lib/pq"
 )
 
-func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-
-	paginationResponse := utils.PaginationResponse[FileModel]{
-		Items: []FileModel{},
+// GetVideos lists video files joined with their metadata complement.
+// Moved from the files core; serves GET /files/videos with the same shape.
+func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	paginationResponse := utils.PaginationResponse[files.FileModel]{
+		Items: []files.FileModel{},
 		Pagination: utils.Pagination{
 			Page:     page,
 			PageSize: pageSize,
@@ -29,17 +31,14 @@ func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse
 	}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(
-			queries.GetVideosQuery,
-			args...,
-		)
+		rows, err := tx.Query(queries.GetVideosQuery, args...)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 
 		for rows.Next() {
-			var file FileModel
+			var file files.FileModel
 			var metadata VideoMetadataModel
 
 			if err := rows.Scan(

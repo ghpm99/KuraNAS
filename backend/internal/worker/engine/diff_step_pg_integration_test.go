@@ -79,7 +79,7 @@ func TestDiffStep_DoesNotReenqueueUnchangedFiles_Postgres(t *testing.T) {
 
 	filesRepo := files.NewRepository(dbCtx)
 	jobsRepo := jobs.NewRepository(dbCtx)
-	filesSvc := files.NewService(filesRepo, nil, jobsRepo, nil)
+	filesSvc := files.NewService(filesRepo, jobsRepo, nil)
 	orchestrator := NewJobOrchestrator(jobsRepo, nil)
 
 	workerCtx := &WorkerContext{

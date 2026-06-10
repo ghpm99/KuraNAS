@@ -3,6 +3,7 @@ package video
 import (
 	"database/sql"
 	"errors"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -12,12 +13,13 @@ import (
 )
 
 type Handler struct {
-	service    ServiceInterface
-	logService logger.LoggerServiceInterface
+	service      ServiceInterface
+	filesService files.ServiceInterface
+	logService   logger.LoggerServiceInterface
 }
 
-func NewHandler(service ServiceInterface, logService logger.LoggerServiceInterface) *Handler {
-	return &Handler{service: service, logService: logService}
+func NewHandler(service ServiceInterface, filesService files.ServiceInterface, logService logger.LoggerServiceInterface) *Handler {
+	return &Handler{service: service, filesService: filesService, logService: logService}
 }
 
 func respondVideoError(c *gin.Context, err error) {

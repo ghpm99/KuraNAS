@@ -283,4 +283,3 @@ type DuplicateFileReportDto struct {
 	TotalSize  int64              `json:"total_size"`
 	Pagination utils.Pagination   `json:"pagination"`
 }
-

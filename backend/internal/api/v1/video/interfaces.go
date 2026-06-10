@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
@@ -42,6 +43,16 @@ type RepositoryInterface interface {
 	InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
 	GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error)
 	GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error)
+	// Browse query (moved from files)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+}
+
+// VideoMetadataRepositoryInterface is the write-side for the video_metadata complement table.
+type VideoMetadataRepositoryInterface interface {
+	GetDbContext() *database.DbContext
+	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
+	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
+	DeleteVideoMetadata(id int) error
 }
 
 type ServiceInterface interface {
@@ -63,4 +74,8 @@ type ServiceInterface interface {
 	UpdatePlaylistName(playlistID int, name string) error
 	ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error
 	TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error
+	// Browse/streaming support (moved from files)
+	GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error)
+	GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error)
 }

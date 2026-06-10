@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"nas-go/api/internal/worker/job"
 	"fmt"
 	"log"
+	"nas-go/api/internal/worker/job"
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
@@ -36,7 +36,7 @@ type WorkerContext struct {
 	VideoService            video.ServiceInterface
 	MusicService            music.ServiceInterface
 	JobsRepository          jobs.RepositoryInterface
-	MetadataService         files.MetadataRepositoryInterface
+	VideoMetadataRepository video.VideoMetadataRepositoryInterface
 	ImageRepository         imagedom.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
 	Logger                  logger.LoggerServiceInterface
@@ -401,7 +401,7 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 	case utils.UpdateCheckSum:
 		UpdateCheckSumWorker(context, task.Data)
 	case utils.CreateThumbnail:
-		scan.CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+		scan.CreateThumbnailWorker(context.FilesService, context.VideoService, task.Data, context.Logger)
 	case utils.GenerateVideoPlaylists:
 		scan.GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 	default:

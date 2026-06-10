@@ -108,3 +108,15 @@ var GetAllVideosWithMetadataQuery string
 
 //go:embed get_library_videos.sql
 var GetLibraryVideosQuery string
+
+//go:embed get_videos.sql
+var GetVideosQuery string
+
+//go:embed get_video_metadata_by_id.sql
+var GetVideoMetadataByIDQuery string
+
+//go:embed upsert_video_metadata.sql
+var UpsertVideoMetadataQuery string
+
+//go:embed delete_video_metadata.sql
+var DeleteVideoMetadataQuery string

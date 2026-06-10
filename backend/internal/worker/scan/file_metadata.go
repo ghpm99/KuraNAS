@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
+	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/utils"
 	"sync"
@@ -96,8 +97,8 @@ func getAudioMetadata(fileDto files.FileDto, runner ScriptRunner) (musicdom.Audi
 	return metadata, nil
 }
 
-func getVideoMetadata(fileDto files.FileDto, runner ScriptRunner) (files.VideoMetadataModel, error) {
-	metadata := files.VideoMetadataModel{
+func getVideoMetadata(fileDto files.FileDto, runner ScriptRunner) (videodom.VideoMetadataModel, error) {
+	metadata := videodom.VideoMetadataModel{
 		FileId: fileDto.ID,
 		Path:   fileDto.Path,
 	}

@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"nas-go/api/internal/worker/job"
 	"encoding/json"
 	"log"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/worker/job"
 )
 
 func UpdateCheckSumWorker(context *WorkerContext, data any) {

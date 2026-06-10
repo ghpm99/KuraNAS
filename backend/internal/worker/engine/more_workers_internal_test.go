@@ -79,22 +79,25 @@ func (m *workerFilesServiceMock) GetFileThumbnail(fileDto files.FileDto, width, 
 	}
 	return []byte("thumb"), nil
 }
-func (m *workerFilesServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
+
+type workerVideoServiceMock struct {
+	video.ServiceInterface
+	rebuildFn       func() error
+	getVideoThumbFn func(fileDto files.FileDto, width, height int) ([]byte, error)
+	getVideoGifFn   func(fileDto files.FileDto, width, height int) ([]byte, error)
+}
+
+func (m *workerVideoServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
 	if m.getVideoThumbFn != nil {
 		return m.getVideoThumbFn(fileDto, width, height)
 	}
 	return []byte("thumb"), nil
 }
-func (m *workerFilesServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
+func (m *workerVideoServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
 	if m.getVideoGifFn != nil {
 		return m.getVideoGifFn(fileDto, width, height)
 	}
 	return []byte("gif"), nil
-}
-
-type workerVideoServiceMock struct {
-	video.ServiceInterface
-	rebuildFn func() error
 }
 
 func (m *workerVideoServiceMock) RebuildSmartPlaylists() error {
@@ -684,6 +687,12 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			}
 			return files.FileDto{ID: 2, Type: files.File, Format: ".jpg"}, nil
 		},
+		getFileThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
+			imageCalls++
+			return []byte("i"), nil
+		},
+	}
+	thumbVideoSvc := &workerVideoServiceMock{
 		getVideoThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
 			videoCalls++
 			return []byte("v"), nil
@@ -692,15 +701,11 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			videoCalls++
 			return []byte("g"), nil
 		},
-		getFileThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
-			imageCalls++
-			return []byte("i"), nil
-		},
 	}
 
-	scan.CreateThumbnailWorker(svc, "bad", &workerLoggerMock{})
-	scan.CreateThumbnailWorker(svc, 1, &workerLoggerMock{})
-	scan.CreateThumbnailWorker(svc, 2, &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, thumbVideoSvc, "bad", &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, thumbVideoSvc, 1, &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, thumbVideoSvc, 2, &workerLoggerMock{})
 	if videoCalls != 2 || imageCalls != 1 {
 		t.Fatalf("unexpected thumbnail calls, video=%d image=%d", videoCalls, imageCalls)
 	}
@@ -728,12 +733,18 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			return files.FileDto{}, errors.New("missing")
 		},
-	}, 100, &workerLoggerMock{})
+	}, nil, 100, &workerLoggerMock{})
 	scan.CreateThumbnailWorker(&workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			return files.FileDto{ID: 10, Type: files.Directory, Format: ".mp4"}, nil
 		},
-	}, 10, &workerLoggerMock{})
+	}, nil, 10, &workerLoggerMock{})
+	// Video file without a video service: skips gracefully.
+	scan.CreateThumbnailWorker(&workerFilesServiceMock{
+		getFileByIDFn: func(id int) (files.FileDto, error) {
+			return files.FileDto{ID: 11, Type: files.File, Format: ".mp4"}, nil
+		},
+	}, nil, 11, &workerLoggerMock{})
 }
 
 func TestDatabasePersistenceWorker(t *testing.T) {
