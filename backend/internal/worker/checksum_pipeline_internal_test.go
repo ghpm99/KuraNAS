@@ -1,6 +1,7 @@
 package worker
 
 import (
+	jobdomain "nas-go/api/internal/worker/job"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -147,7 +148,7 @@ func TestUpdateCheckSumWorkerOrchestratorAndPayloadHelper(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetStepsByJobID returned error: %v", err)
 	}
-	if len(steps) != 1 || steps[0].Type != string(StepTypeChecksum) {
+	if len(steps) != 1 || steps[0].Type != string(jobdomain.StepTypeChecksum) {
 		t.Fatalf("unexpected checksum steps: %+v", steps)
 	}
 

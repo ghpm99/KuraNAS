@@ -1,6 +1,7 @@
 package worker
 
 import (
+	jobdomain "nas-go/api/internal/worker/job"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -37,33 +38,33 @@ func TestBuildStepExecutorsAndPlans(t *testing.T) {
 
 	imagePlan, err := buildFileProcessingPlan(
 		files.FileDto{Path: "/tmp/image.jpg", Format: ".jpg"},
-		JobTypeFSEvent,
-		JobPriorityLow,
+		jobdomain.JobTypeFSEvent,
+		jobdomain.JobPriorityLow,
 	)
 	if err != nil {
 		t.Fatalf("buildFileProcessingPlan image error: %v", err)
 	}
-	if len(imagePlan.Steps) != 4 || imagePlan.Steps[3].Type != StepTypeThumbnail {
+	if len(imagePlan.Steps) != 4 || imagePlan.Steps[3].Type != jobdomain.StepTypeThumbnail {
 		t.Fatalf("unexpected image plan: %+v", imagePlan)
 	}
 
 	videoPlan, err := buildFileProcessingPlan(
 		files.FileDto{Path: "/tmp/video.mp4", Format: ".mp4"},
-		JobTypeFSEvent,
-		JobPriorityLow,
+		jobdomain.JobTypeFSEvent,
+		jobdomain.JobPriorityLow,
 	)
 	if err != nil {
 		t.Fatalf("buildFileProcessingPlan video error: %v", err)
 	}
-	if len(videoPlan.Steps) != 5 || videoPlan.Steps[4].Type != StepTypePlaylistIndex {
+	if len(videoPlan.Steps) != 5 || videoPlan.Steps[4].Type != jobdomain.StepTypePlaylistIndex {
 		t.Fatalf("unexpected video plan: %+v", videoPlan)
 	}
 
-	scanPlan, err := buildScanPlan("/data", JobTypeStartupScan, JobPriorityNormal)
+	scanPlan, err := buildScanPlan("/data", jobdomain.JobTypeStartupScan, jobdomain.JobPriorityNormal)
 	if err != nil {
 		t.Fatalf("buildScanPlan error: %v", err)
 	}
-	if len(scanPlan.Steps) != 3 || scanPlan.Steps[0].Type != StepTypeScanFilesystem || scanPlan.Steps[1].Type != StepTypeDiffAgainstDB || scanPlan.Steps[2].Type != StepTypeMarkDeleted {
+	if len(scanPlan.Steps) != 3 || scanPlan.Steps[0].Type != jobdomain.StepTypeScanFilesystem || scanPlan.Steps[1].Type != jobdomain.StepTypeDiffAgainstDB || scanPlan.Steps[2].Type != jobdomain.StepTypeMarkDeleted {
 		t.Fatalf("unexpected scan plan: %+v", scanPlan)
 	}
 
@@ -325,14 +326,14 @@ func TestWorkerEnqueueHelpers(t *testing.T) {
 		t.Fatalf("expected startup scan job, got %d jobs", len(repository.jobs))
 	}
 
-	if err := enqueueFilesystemEventJob(context, root, JobPriorityHigh); err != nil {
+	if err := enqueueFilesystemEventJob(context, root, jobdomain.JobPriorityHigh); err != nil {
 		t.Fatalf("enqueueFilesystemEventJob returned error: %v", err)
 	}
 	if len(repository.jobs) != 2 {
 		t.Fatalf("expected two queued jobs, got %d", len(repository.jobs))
 	}
 
-	if err := enqueueFilesystemEventJob(context, "", JobPriorityLow); err != nil {
+	if err := enqueueFilesystemEventJob(context, "", jobdomain.JobPriorityLow); err != nil {
 		t.Fatalf("expected empty root enqueue to be ignored, got %v", err)
 	}
 
@@ -341,7 +342,7 @@ func TestWorkerEnqueueHelpers(t *testing.T) {
 		t.Fatalf("expected persisted step payloads")
 	}
 
-	if _, err := buildScanPlan("", JobTypeStartupScan, JobPriorityLow); err != nil {
+	if _, err := buildScanPlan("", jobdomain.JobTypeStartupScan, jobdomain.JobPriorityLow); err != nil {
 		t.Fatalf("buildScanPlan should allow empty roots, got %v", err)
 	}
 

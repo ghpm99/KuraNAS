@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"bufio"
 	"bytes"
 	"context"
@@ -116,7 +117,7 @@ func reportPullProgress(context *WorkerContext, step jobs.StepModel, pct int) {
 		return
 	}
 	_ = database.ExecOptionalTx(context.JobsRepository.GetDbContext(), func(tx *sql.Tx) error {
-		_, err := context.JobsRepository.UpdateStepExecution(tx, step.ID, string(StepStatusRunning), pct, step.Attempts+1, nil, nil, nil)
+		_, err := context.JobsRepository.UpdateStepExecution(tx, step.ID, string(job.StepStatusRunning), pct, step.Attempts+1, nil, nil, nil)
 		return err
 	})
 }

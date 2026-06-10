@@ -1,6 +1,7 @@
 package worker
 
 import (
+	jobdomain "nas-go/api/internal/worker/job"
 	"testing"
 	"time"
 
@@ -17,25 +18,25 @@ func TestJobSchedulerStartLoopAndStop(t *testing.T) {
 
 	repository := newFakeJobsRepository()
 	executed := make(chan int, 1)
-	scheduler := NewJobScheduler(repository, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+	scheduler := NewJobScheduler(repository, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
 			executed <- step.JobID
 			return nil
 		},
 	})
 
 	job, err := repository.CreateJob(nil, jobsapi.JobModel{
-		Type:     string(JobTypeStartupScan),
-		Priority: string(JobPriorityLow),
-		Status:   string(JobStatusQueued),
+		Type:     string(jobdomain.JobTypeStartupScan),
+		Priority: string(jobdomain.JobPriorityLow),
+		Status:   string(jobdomain.JobStatusQueued),
 	})
 	if err != nil {
 		t.Fatalf("CreateJob returned error: %v", err)
 	}
 	if _, err := repository.CreateStep(nil, jobsapi.StepModel{
 		JobID:       job.ID,
-		Type:        string(StepTypeScanFilesystem),
-		Status:      string(StepStatusQueued),
+		Type:        string(jobdomain.StepTypeScanFilesystem),
+		Status:      string(jobdomain.StepStatusQueued),
 		MaxAttempts: 1,
 	}); err != nil {
 		t.Fatalf("CreateStep returned error: %v", err)
@@ -68,17 +69,17 @@ func TestJobSchedulerStartLoopAndStop(t *testing.T) {
 
 func TestJobSchedulerScheduleQueuedJobsQueuesRepositoryJobs(t *testing.T) {
 	repository := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repository, map[StepType]StepExecutor{})
+	scheduler := NewJobScheduler(repository, map[jobdomain.StepType]StepExecutor{})
 
 	high, _ := repository.CreateJob(nil, jobsapi.JobModel{
-		Type:     string(JobTypeStartupScan),
-		Priority: string(JobPriorityHigh),
-		Status:   string(JobStatusQueued),
+		Type:     string(jobdomain.JobTypeStartupScan),
+		Priority: string(jobdomain.JobPriorityHigh),
+		Status:   string(jobdomain.JobStatusQueued),
 	})
 	_, _ = repository.CreateStep(nil, jobsapi.StepModel{
 		JobID:       high.ID,
-		Type:        string(StepTypeScanFilesystem),
-		Status:      string(StepStatusQueued),
+		Type:        string(jobdomain.StepTypeScanFilesystem),
+		Status:      string(jobdomain.StepStatusQueued),
 		MaxAttempts: 1,
 	})
 

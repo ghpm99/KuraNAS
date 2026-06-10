@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"encoding/json"
 	"log"
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -29,15 +30,15 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 			return
 		}
 		if _, err := context.JobOrchestrator.CreateJob(PlannedJob{
-			Type:     JobTypeFSEvent,
-			Priority: JobPriorityNormal,
-			Scope: JobScope{
+			Type:     job.JobTypeFSEvent,
+			Priority: job.JobPriorityNormal,
+			Scope: job.JobScope{
 				FileID: &fileId,
 			},
 			Steps: []PlannedStep{
 				{
 					Key:         "checksum",
-					Type:        StepTypeChecksum,
+					Type:        job.StepTypeChecksum,
 					MaxAttempts: 1,
 					Payload:     checksumPayload,
 				},
@@ -62,7 +63,7 @@ func UpdateCheckSumWorker(context *WorkerContext, data any) {
 	}
 
 	if err := executeChecksumStep(context, jobs.StepModel{
-		Type:    string(StepTypeChecksum),
+		Type:    string(job.StepTypeChecksum),
 		Payload: payload,
 	}); err != nil {
 		log.Printf("UpdateCheckSumWorker: checksum step error: %v\n", err)
