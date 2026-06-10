@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"nas-go/api/pkg/database"
-	queries "nas-go/api/pkg/database/queries/watch_folders"
+	queries "nas-go/api/pkg/database/queries/watchfolders"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )

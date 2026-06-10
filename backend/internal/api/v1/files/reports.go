@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	queries "nas-go/api/pkg/database/queries/file"
+	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
