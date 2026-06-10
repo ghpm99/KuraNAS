@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"context"
 	"errors"
 	"testing"
@@ -70,9 +71,9 @@ func TestEnqueueAIPlaylistClusterJobCreatesJob(t *testing.T) {
 	if len(repo.jobs) != 1 {
 		t.Fatalf("expected exactly one job enqueued, got %d", len(repo.jobs))
 	}
-	for _, job := range repo.jobs {
-		if job.Type != string(JobTypeAIPlaylistCluster) {
-			t.Fatalf("expected job type %q, got %q", JobTypeAIPlaylistCluster, job.Type)
+	for _, j := range repo.jobs {
+		if j.Type != string(job.JobTypeAIPlaylistCluster) {
+			t.Fatalf("expected job type %q, got %q", job.JobTypeAIPlaylistCluster, j.Type)
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	jobdomain "nas-go/api/internal/worker/job"
 	"errors"
 	"testing"
 
@@ -22,28 +23,28 @@ func (r *recordingSystemEvents) RecordEvent(eventType systemevent.EventType, _ s
 
 func TestJobSchedulerOnJobFinishedFiresWithFailedStatus(t *testing.T) {
 	repository := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repository, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(jobsapi.StepModel) error {
+	scheduler := NewJobScheduler(repository, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(jobsapi.StepModel) error {
 			return errors.New("boom")
 		},
 	})
 
 	var gotID int
 	var gotType string
-	var gotStatus JobStatus
-	scheduler.SetOnJobFinished(func(jobID int, jobType string, status JobStatus) {
+	var gotStatus jobdomain.JobStatus
+	scheduler.SetOnJobFinished(func(jobID int, jobType string, status jobdomain.JobStatus) {
 		gotID, gotType, gotStatus = jobID, jobType, status
 	})
 
 	job, _ := repository.CreateJob(nil, jobsapi.JobModel{
-		Type:     string(JobTypeStartupScan),
-		Priority: string(JobPriorityLow),
-		Status:   string(JobStatusQueued),
+		Type:     string(jobdomain.JobTypeStartupScan),
+		Priority: string(jobdomain.JobPriorityLow),
+		Status:   string(jobdomain.JobStatusQueued),
 	})
 	_, _ = repository.CreateStep(nil, jobsapi.StepModel{
 		JobID:       job.ID,
-		Type:        string(StepTypeScanFilesystem),
-		Status:      string(StepStatusQueued),
+		Type:        string(jobdomain.StepTypeScanFilesystem),
+		Status:      string(jobdomain.StepStatusQueued),
 		MaxAttempts: 1,
 	})
 
@@ -54,17 +55,17 @@ func TestJobSchedulerOnJobFinishedFiresWithFailedStatus(t *testing.T) {
 	if gotID != job.ID {
 		t.Fatalf("expected hook job id %d, got %d", job.ID, gotID)
 	}
-	if gotType != string(JobTypeStartupScan) {
+	if gotType != string(jobdomain.JobTypeStartupScan) {
 		t.Fatalf("expected hook job type startup_scan, got %s", gotType)
 	}
-	if gotStatus != JobStatusFailed {
+	if gotStatus != jobdomain.JobStatusFailed {
 		t.Fatalf("expected hook status failed, got %s", gotStatus)
 	}
 }
 
 func TestWireSchedulerObserversRecordsAndNotifies(t *testing.T) {
 	repository := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repository, map[StepType]StepExecutor{})
+	scheduler := NewJobScheduler(repository, map[jobdomain.StepType]StepExecutor{})
 	events := &recordingSystemEvents{}
 	notifier := &fakeWorkerNotifSvc{}
 	context := &WorkerContext{
@@ -79,8 +80,8 @@ func TestWireSchedulerObserversRecordsAndNotifies(t *testing.T) {
 		t.Fatalf("expected both observers to be wired")
 	}
 
-	scheduler.onJobFinished(1, string(JobTypeStartupScan), JobStatusCompleted)
-	scheduler.onJobFinished(2, string(JobTypeUploadProcess), JobStatusFailed)
+	scheduler.onJobFinished(1, string(jobdomain.JobTypeStartupScan), jobdomain.JobStatusCompleted)
+	scheduler.onJobFinished(2, string(jobdomain.JobTypeUploadProcess), jobdomain.JobStatusFailed)
 	scheduler.onStall(4)
 
 	if len(events.events) != 2 {
@@ -112,9 +113,9 @@ func TestWireSchedulerObserversNilSafe(t *testing.T) {
 
 	// Scheduler but no recorders: hook still wired, invoking it is a no-op.
 	repository := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repository, map[StepType]StepExecutor{})
+	scheduler := NewJobScheduler(repository, map[jobdomain.StepType]StepExecutor{})
 	context := &WorkerContext{JobScheduler: scheduler}
 	wireSchedulerObservers(context)
-	scheduler.onJobFinished(1, string(JobTypeStartupScan), JobStatusFailed)
+	scheduler.onJobFinished(1, string(jobdomain.JobTypeStartupScan), jobdomain.JobStatusFailed)
 	scheduler.onStall(2)
 }

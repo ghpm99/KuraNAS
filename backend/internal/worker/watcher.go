@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"log"
 	"os"
 	"path/filepath"
@@ -60,7 +61,7 @@ func startEntryPointWatcher(context *WorkerContext) {
 func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed []string, currentSnapshot map[string]fileSnapshot) {
 	// If too many changes, fall back to a full scan job
 	if len(changed) > watcherMaxIndividualJobs {
-		if err := enqueueFilesystemEventJob(context, entryPoint, JobPriorityNormal); err != nil {
+		if err := enqueueFilesystemEventJob(context, entryPoint, job.JobPriorityNormal); err != nil {
 			log.Printf("[watcher] failed to enqueue full fs_event job: %v\n", err)
 		}
 		return
@@ -77,13 +78,13 @@ func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed [
 				continue
 			}
 			if _, err := context.JobOrchestrator.CreateJob(PlannedJob{
-				Type:     JobTypeFSEvent,
-				Priority: JobPriorityNormal,
-				Scope:    JobScope{Path: path},
+				Type:     job.JobTypeFSEvent,
+				Priority: job.JobPriorityNormal,
+				Scope:    job.JobScope{Path: path},
 				Steps: []PlannedStep{
 					{
 						Key:         "mark_deleted",
-						Type:        StepTypeMarkDeleted,
+						Type:        job.StepTypeMarkDeleted,
 						MaxAttempts: 1,
 						Payload:     payload,
 					},
@@ -113,7 +114,7 @@ func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed [
 			continue
 		}
 
-		plan, planErr := buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityNormal)
+		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityNormal)
 		if planErr != nil {
 			log.Printf("[watcher] failed to build plan for %q: %v\n", path, planErr)
 			continue

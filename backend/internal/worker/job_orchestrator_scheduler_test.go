@@ -1,6 +1,7 @@
 package worker
 
 import (
+	jobdomain "nas-go/api/internal/worker/job"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -24,11 +25,11 @@ func TestCreateJobSkipsDuplicatePendingPath(t *testing.T) {
 	orchestrator := NewJobOrchestrator(repo, nil)
 
 	plan := PlannedJob{
-		Type:     JobTypeFSEvent,
-		Priority: JobPriorityLow,
-		Scope:    JobScope{Path: "/data/a.jpg"},
+		Type:     jobdomain.JobTypeFSEvent,
+		Priority: jobdomain.JobPriorityLow,
+		Scope:    jobdomain.JobScope{Path: "/data/a.jpg"},
 		Steps: []PlannedStep{
-			{Key: "persist", Type: StepTypePersist, MaxAttempts: 1},
+			{Key: "persist", Type: jobdomain.StepTypePersist, MaxAttempts: 1},
 		},
 	}
 
@@ -54,7 +55,7 @@ func TestCreateJobSkipsDuplicatePendingPath(t *testing.T) {
 
 	// A different path is not deduped.
 	other := plan
-	other.Scope = JobScope{Path: "/data/b.jpg"}
+	other.Scope = jobdomain.JobScope{Path: "/data/b.jpg"}
 	id3, err := orchestrator.CreateJob(other)
 	if err != nil {
 		t.Fatalf("CreateJob for other path error: %v", err)
@@ -68,12 +69,12 @@ func TestCreateJobSkipsDuplicatePendingPath(t *testing.T) {
 // reset to 'queued' on recovery so the scheduler can reprocess them.
 func TestRecoverInterruptedWork(t *testing.T) {
 	repo := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repo, map[StepType]StepExecutor{})
+	scheduler := NewJobScheduler(repo, map[jobdomain.StepType]StepExecutor{})
 
-	repo.jobs[1] = jobsapi.JobModel{ID: 1, Status: string(JobStatusRunning)}
-	repo.jobs[2] = jobsapi.JobModel{ID: 2, Status: string(JobStatusCompleted)}
-	repo.steps[10] = jobsapi.StepModel{ID: 10, JobID: 1, Status: string(StepStatusRunning)}
-	repo.steps[11] = jobsapi.StepModel{ID: 11, JobID: 1, Status: string(StepStatusCompleted)}
+	repo.jobs[1] = jobsapi.JobModel{ID: 1, Status: string(jobdomain.JobStatusRunning)}
+	repo.jobs[2] = jobsapi.JobModel{ID: 2, Status: string(jobdomain.JobStatusCompleted)}
+	repo.steps[10] = jobsapi.StepModel{ID: 10, JobID: 1, Status: string(jobdomain.StepStatusRunning)}
+	repo.steps[11] = jobsapi.StepModel{ID: 11, JobID: 1, Status: string(jobdomain.StepStatusCompleted)}
 
 	jobsReset, stepsReset, err := scheduler.RecoverInterruptedWork()
 	if err != nil {
@@ -86,16 +87,16 @@ func TestRecoverInterruptedWork(t *testing.T) {
 		t.Fatalf("expected 1 step reset, got %d", stepsReset)
 	}
 
-	if repo.jobs[1].Status != string(JobStatusQueued) {
+	if repo.jobs[1].Status != string(jobdomain.JobStatusQueued) {
 		t.Fatalf("expected running job requeued, got %s", repo.jobs[1].Status)
 	}
-	if repo.jobs[2].Status != string(JobStatusCompleted) {
+	if repo.jobs[2].Status != string(jobdomain.JobStatusCompleted) {
 		t.Fatalf("completed job must be untouched, got %s", repo.jobs[2].Status)
 	}
-	if repo.steps[10].Status != string(StepStatusQueued) {
+	if repo.steps[10].Status != string(jobdomain.StepStatusQueued) {
 		t.Fatalf("expected running step requeued, got %s", repo.steps[10].Status)
 	}
-	if repo.steps[11].Status != string(StepStatusCompleted) {
+	if repo.steps[11].Status != string(jobdomain.StepStatusCompleted) {
 		t.Fatalf("completed step must be untouched, got %s", repo.steps[11].Status)
 	}
 }
@@ -105,19 +106,19 @@ func TestRecoverInterruptedWork(t *testing.T) {
 // is sent to the back of the line (queued + next_attempt_at set), never failed.
 func TestProcessJobDefersOnTimeout(t *testing.T) {
 	repo := newFakeJobsRepository()
-	scheduler := NewJobScheduler(repo, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+	scheduler := NewJobScheduler(repo, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
 			return context.DeadlineExceeded
 		},
 	})
 
 	orchestrator := NewJobOrchestrator(repo, scheduler)
 	jobID, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
-		Scope:    JobScope{Root: "/data"},
+		Type:     jobdomain.JobTypeStartupScan,
+		Priority: jobdomain.JobPriorityLow,
+		Scope:    jobdomain.JobScope{Root: "/data"},
 		Steps: []PlannedStep{
-			{Key: "scan", Type: StepTypeScanFilesystem, MaxAttempts: 1},
+			{Key: "scan", Type: jobdomain.StepTypeScanFilesystem, MaxAttempts: 1},
 		},
 	})
 	if err != nil {
@@ -132,7 +133,7 @@ func TestProcessJobDefersOnTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJobByID returned error: %v", err)
 	}
-	if job.Status != string(JobStatusQueued) {
+	if job.Status != string(jobdomain.JobStatusQueued) {
 		t.Fatalf("expected job requeued, got %s", job.Status)
 	}
 	if job.NextAttemptAt == nil {
@@ -146,7 +147,7 @@ func TestProcessJobDefersOnTimeout(t *testing.T) {
 	if len(steps) != 1 {
 		t.Fatalf("expected 1 step, got %d", len(steps))
 	}
-	if steps[0].Status != string(StepStatusQueued) {
+	if steps[0].Status != string(jobdomain.StepStatusQueued) {
 		t.Fatalf("expected step requeued, got %s", steps[0].Status)
 	}
 	if steps[0].TimeoutCount != 1 {
@@ -318,7 +319,7 @@ func (r *fakeJobsRepository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempt
 		return false, nil
 	}
 
-	step.Status = string(StepStatusQueued)
+	step.Status = string(jobdomain.StepStatusQueued)
 	step.Attempts = attempts
 	step.TimeoutCount++
 	step.StartedAt = nil
@@ -336,10 +337,10 @@ func (r *fakeJobsRepository) HasPendingJobForPath(path string) (bool, error) {
 		return false, nil
 	}
 	for _, job := range r.jobs {
-		if job.Status != string(JobStatusQueued) && job.Status != string(JobStatusRunning) {
+		if job.Status != string(jobdomain.JobStatusQueued) && job.Status != string(jobdomain.JobStatusRunning) {
 			continue
 		}
-		var scope JobScope
+		var scope jobdomain.JobScope
 		if len(job.Scope) > 0 {
 			_ = json.Unmarshal(job.Scope, &scope)
 		}
@@ -356,16 +357,16 @@ func (r *fakeJobsRepository) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, e
 
 	var jobsReset, stepsReset int64
 	for id, step := range r.steps {
-		if step.Status == string(StepStatusRunning) {
-			step.Status = string(StepStatusQueued)
+		if step.Status == string(jobdomain.StepStatusRunning) {
+			step.Status = string(jobdomain.StepStatusQueued)
 			step.StartedAt = nil
 			r.steps[id] = step
 			stepsReset++
 		}
 	}
 	for id, job := range r.jobs {
-		if job.Status == string(JobStatusRunning) {
-			job.Status = string(JobStatusQueued)
+		if job.Status == string(jobdomain.JobStatusRunning) {
+			job.Status = string(jobdomain.JobStatusQueued)
 			job.StartedAt = nil
 			r.jobs[id] = job
 			jobsReset++
@@ -383,7 +384,7 @@ func (r *fakeJobsRepository) RequeueJob(tx *sql.Tx, jobID int) (bool, error) {
 		return false, nil
 	}
 
-	job.Status = string(JobStatusQueued)
+	job.Status = string(jobdomain.JobStatusQueued)
 	job.StartedAt = nil
 	job.EndedAt = nil
 	now := time.Now()
@@ -396,31 +397,31 @@ func (r *fakeJobsRepository) RequeueJob(tx *sql.Tx, jobID int) (bool, error) {
 func TestJobOrchestratorCreateAndSchedule(t *testing.T) {
 	fakeRepository := newFakeJobsRepository()
 
-	var executed []StepType
-	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
-			executed = append(executed, StepType(step.Type))
+	var executed []jobdomain.StepType
+	scheduler := NewJobScheduler(fakeRepository, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+			executed = append(executed, jobdomain.StepType(step.Type))
 			return nil
 		},
-		StepTypeChecksum: func(step jobsapi.StepModel) error {
-			executed = append(executed, StepType(step.Type))
+		jobdomain.StepTypeChecksum: func(step jobsapi.StepModel) error {
+			executed = append(executed, jobdomain.StepType(step.Type))
 			return nil
 		},
 	})
 
 	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
 	jobID, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
-		Scope:    JobScope{Root: "/data"},
+		Type:     jobdomain.JobTypeStartupScan,
+		Priority: jobdomain.JobPriorityLow,
+		Scope:    jobdomain.JobScope{Root: "/data"},
 		Steps: []PlannedStep{
 			{
 				Key:  "scan",
-				Type: StepTypeScanFilesystem,
+				Type: jobdomain.StepTypeScanFilesystem,
 			},
 			{
 				Key:       "checksum",
-				Type:      StepTypeChecksum,
+				Type:      jobdomain.StepTypeChecksum,
 				DependsOn: []string{"scan"},
 			},
 		},
@@ -437,7 +438,7 @@ func TestJobOrchestratorCreateAndSchedule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJobByID returned error: %v", err)
 	}
-	if job.Status != string(JobStatusCompleted) {
+	if job.Status != string(jobdomain.JobStatusCompleted) {
 		t.Fatalf("expected completed job, got %s", job.Status)
 	}
 
@@ -449,7 +450,7 @@ func TestJobOrchestratorCreateAndSchedule(t *testing.T) {
 		t.Fatalf("expected 2 steps, got %d", len(steps))
 	}
 
-	expectedOrder := []StepType{StepTypeScanFilesystem, StepTypeChecksum}
+	expectedOrder := []jobdomain.StepType{jobdomain.StepTypeScanFilesystem, jobdomain.StepTypeChecksum}
 	if len(executed) != len(expectedOrder) {
 		t.Fatalf("unexpected execution count. expected=%d got=%d", len(expectedOrder), len(executed))
 	}
@@ -473,12 +474,12 @@ func TestJobOrchestratorValidatesInvalidDependencies(t *testing.T) {
 	orchestrator := NewJobOrchestrator(fakeRepository, NewJobScheduler(fakeRepository, nil))
 
 	_, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
+		Type:     jobdomain.JobTypeStartupScan,
+		Priority: jobdomain.JobPriorityLow,
 		Steps: []PlannedStep{
 			{
 				Key:       "checksum",
-				Type:      StepTypeChecksum,
+				Type:      jobdomain.StepTypeChecksum,
 				DependsOn: []string{"scan"},
 			},
 		},
@@ -491,27 +492,27 @@ func TestJobOrchestratorValidatesInvalidDependencies(t *testing.T) {
 func TestJobSchedulerMarksPartialFailure(t *testing.T) {
 	fakeRepository := newFakeJobsRepository()
 
-	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+	scheduler := NewJobScheduler(fakeRepository, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
 			return nil
 		},
-		StepTypeChecksum: func(step jobsapi.StepModel) error {
+		jobdomain.StepTypeChecksum: func(step jobsapi.StepModel) error {
 			return errors.New("checksum failed")
 		},
 	})
 
 	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
 	jobID, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
+		Type:     jobdomain.JobTypeStartupScan,
+		Priority: jobdomain.JobPriorityLow,
 		Steps: []PlannedStep{
 			{
 				Key:  "scan",
-				Type: StepTypeScanFilesystem,
+				Type: jobdomain.StepTypeScanFilesystem,
 			},
 			{
 				Key:       "checksum",
-				Type:      StepTypeChecksum,
+				Type:      jobdomain.StepTypeChecksum,
 				DependsOn: []string{"scan"},
 			},
 		},
@@ -528,23 +529,23 @@ func TestJobSchedulerMarksPartialFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJobByID returned error: %v", err)
 	}
-	if job.Status != string(JobStatusPartialFail) {
+	if job.Status != string(jobdomain.JobStatusPartialFail) {
 		t.Fatalf("expected partial_fail status, got %s", job.Status)
 	}
 }
 
 func TestJobSchedulerFailsStepWhenExecutorMissing(t *testing.T) {
 	fakeRepository := newFakeJobsRepository()
-	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{})
+	scheduler := NewJobScheduler(fakeRepository, map[jobdomain.StepType]StepExecutor{})
 	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
 
 	jobID, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeFSEvent,
-		Priority: JobPriorityNormal,
+		Type:     jobdomain.JobTypeFSEvent,
+		Priority: jobdomain.JobPriorityNormal,
 		Steps: []PlannedStep{
 			{
 				Key:  "checksum",
-				Type: StepTypeChecksum,
+				Type: jobdomain.StepTypeChecksum,
 			},
 		},
 	})
@@ -560,7 +561,7 @@ func TestJobSchedulerFailsStepWhenExecutorMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJobByID returned error: %v", err)
 	}
-	if job.Status != string(JobStatusFailed) {
+	if job.Status != string(jobdomain.JobStatusFailed) {
 		t.Fatalf("expected failed job, got %s", job.Status)
 	}
 
@@ -571,7 +572,7 @@ func TestJobSchedulerFailsStepWhenExecutorMissing(t *testing.T) {
 	if len(steps) != 1 {
 		t.Fatalf("expected one step, got %d", len(steps))
 	}
-	if steps[0].Status != string(StepStatusFailed) {
+	if steps[0].Status != string(jobdomain.StepStatusFailed) {
 		t.Fatalf("expected failed step, got %s", steps[0].Status)
 	}
 	if !strings.Contains(steps[0].LastError, "not configured") {
@@ -583,8 +584,8 @@ func TestJobSchedulerKeepsCanceledStatusWhenCancellationIsRequestedDuringExecuti
 	fakeRepository := newFakeJobsRepository()
 	jobID := 0
 
-	scheduler := NewJobScheduler(fakeRepository, map[StepType]StepExecutor{
-		StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
+	scheduler := NewJobScheduler(fakeRepository, map[jobdomain.StepType]StepExecutor{
+		jobdomain.StepTypeScanFilesystem: func(step jobsapi.StepModel) error {
 			fakeRepository.mu.Lock()
 			job := fakeRepository.jobs[jobID]
 			job.CancelRequested = true
@@ -592,23 +593,23 @@ func TestJobSchedulerKeepsCanceledStatusWhenCancellationIsRequestedDuringExecuti
 			fakeRepository.mu.Unlock()
 			return nil
 		},
-		StepTypeChecksum: func(step jobsapi.StepModel) error {
+		jobdomain.StepTypeChecksum: func(step jobsapi.StepModel) error {
 			return nil
 		},
 	})
 
 	orchestrator := NewJobOrchestrator(fakeRepository, scheduler)
 	createdJobID, err := orchestrator.CreateJob(PlannedJob{
-		Type:     JobTypeStartupScan,
-		Priority: JobPriorityLow,
+		Type:     jobdomain.JobTypeStartupScan,
+		Priority: jobdomain.JobPriorityLow,
 		Steps: []PlannedStep{
 			{
 				Key:  "scan",
-				Type: StepTypeScanFilesystem,
+				Type: jobdomain.StepTypeScanFilesystem,
 			},
 			{
 				Key:       "checksum",
-				Type:      StepTypeChecksum,
+				Type:      jobdomain.StepTypeChecksum,
 				DependsOn: []string{"scan"},
 			},
 		},
@@ -626,7 +627,7 @@ func TestJobSchedulerKeepsCanceledStatusWhenCancellationIsRequestedDuringExecuti
 	if err != nil {
 		t.Fatalf("GetJobByID returned error: %v", err)
 	}
-	if job.Status != string(JobStatusCanceled) {
+	if job.Status != string(jobdomain.JobStatusCanceled) {
 		t.Fatalf("expected canceled job, got %s", job.Status)
 	}
 
@@ -637,10 +638,10 @@ func TestJobSchedulerKeepsCanceledStatusWhenCancellationIsRequestedDuringExecuti
 	if len(steps) != 2 {
 		t.Fatalf("expected two steps, got %d", len(steps))
 	}
-	if steps[0].Status != string(StepStatusCompleted) {
+	if steps[0].Status != string(jobdomain.StepStatusCompleted) {
 		t.Fatalf("expected first step completed, got %s", steps[0].Status)
 	}
-	if steps[1].Status != string(StepStatusCanceled) {
+	if steps[1].Status != string(jobdomain.StepStatusCanceled) {
 		t.Fatalf("expected queued dependent step canceled, got %s", steps[1].Status)
 	}
 }

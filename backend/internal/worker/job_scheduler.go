@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -30,7 +31,7 @@ type StepExecutor func(step jobs.StepModel) error
 
 type JobScheduler struct {
 	repository jobs.RepositoryInterface
-	executors  map[StepType]StepExecutor
+	executors  map[job.StepType]StepExecutor
 
 	queue   chan int
 	queued  map[int]struct{}
@@ -38,7 +39,7 @@ type JobScheduler struct {
 	stopWg  sync.WaitGroup
 	started bool
 	mu      sync.Mutex
-	stepSem map[StepType]chan struct{}
+	stepSem map[job.StepType]chan struct{}
 
 	jobSem chan struct{}
 	jobWg  sync.WaitGroup
@@ -47,7 +48,7 @@ type JobScheduler struct {
 	// the normal finish path. It lets the composition root record audit/health
 	// events and emit notifications without the scheduler depending on those
 	// packages. Set it before Start(); it is read from job goroutines.
-	onJobFinished func(jobID int, jobType string, status JobStatus)
+	onJobFinished func(jobID int, jobType string, status job.JobStatus)
 
 	// onStall, when set, is called once per stall episode when every job slot
 	// has been busy with no job finishing across several heartbeats — the
@@ -61,7 +62,7 @@ type JobScheduler struct {
 
 // SetOnJobFinished registers a callback invoked when a job finishes with a
 // terminal status. Call before Start().
-func (s *JobScheduler) SetOnJobFinished(fn func(jobID int, jobType string, status JobStatus)) {
+func (s *JobScheduler) SetOnJobFinished(fn func(jobID int, jobType string, status job.JobStatus)) {
 	s.onJobFinished = fn
 }
 
@@ -71,9 +72,9 @@ func (s *JobScheduler) SetOnStall(fn func(runningJobs int)) {
 	s.onStall = fn
 }
 
-func NewJobScheduler(repository jobs.RepositoryInterface, executors map[StepType]StepExecutor) *JobScheduler {
+func NewJobScheduler(repository jobs.RepositoryInterface, executors map[job.StepType]StepExecutor) *JobScheduler {
 	if executors == nil {
-		executors = map[StepType]StepExecutor{}
+		executors = map[job.StepType]StepExecutor{}
 	}
 
 	maxJobs := config.AppConfig.WorkerMaxConcurrentJobs
@@ -271,13 +272,13 @@ func (s *JobScheduler) scheduleQueuedJobs() {
 	}
 
 	priorities := []string{
-		string(JobPriorityHigh),
-		string(JobPriorityNormal),
-		string(JobPriorityLow),
+		string(job.JobPriorityHigh),
+		string(job.JobPriorityNormal),
+		string(job.JobPriorityLow),
 	}
 	for _, priority := range priorities {
 		filter := jobs.JobFilter{}
-		filter.Status.Set(string(JobStatusQueued))
+		filter.Status.Set(string(job.JobStatusQueued))
 		filter.Priority.Set(priority)
 
 		page := 1
@@ -318,7 +319,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 	}
 
 	now := time.Now()
-	if _, err := s.updateJobExecution(jobID, string(JobStatusRunning), &now, nil, nil, nil); err != nil {
+	if _, err := s.updateJobExecution(jobID, string(job.JobStatusRunning), &now, nil, nil, nil); err != nil {
 		return err
 	}
 
@@ -362,7 +363,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 
 		readySteps := []jobs.StepModel{}
 		for _, step := range steps {
-			if step.Status != string(StepStatusQueued) {
+			if step.Status != string(job.StepStatusQueued) {
 				continue
 			}
 			if stepDependenciesSatisfied(step.ID, parsedDeps, statusByID) {
@@ -443,7 +444,7 @@ func (s *JobScheduler) processJob(jobID int) error {
 	finished := time.Now()
 
 	var lastError *string
-	if firstStepErr != nil && status != JobStatusCompleted {
+	if firstStepErr != nil && status != job.JobStatusCompleted {
 		errMsg := firstStepErr.Error()
 		lastError = &errMsg
 	}
@@ -466,17 +467,17 @@ func (s *JobScheduler) processJob(jobID int) error {
 // logJobFinished records the job outcome forensically: a failed or partially
 // failed job lands at ERROR (so it surfaces on a grep for failures), a healthy
 // one at INFO, both carrying duration and a per-status step breakdown.
-func logJobFinished(jobID int, jobType string, status JobStatus, duration time.Duration, steps []jobs.StepModel, lastError *string) {
+func logJobFinished(jobID int, jobType string, status job.JobStatus, duration time.Duration, steps []jobs.StepModel, lastError *string) {
 	completed, failed, skipped, canceled := 0, 0, 0, 0
 	for _, step := range steps {
-		switch StepStatus(step.Status) {
-		case StepStatusCompleted:
+		switch job.StepStatus(step.Status) {
+		case job.StepStatusCompleted:
 			completed++
-		case StepStatusFailed:
+		case job.StepStatusFailed:
 			failed++
-		case StepStatusSkipped:
+		case job.StepStatusSkipped:
 			skipped++
-		case StepStatusCanceled:
+		case job.StepStatusCanceled:
 			canceled++
 		}
 	}
@@ -495,7 +496,7 @@ func logJobFinished(jobID int, jobType string, status JobStatus, duration time.D
 		args = append(args, "error", *lastError)
 	}
 
-	if status == JobStatusFailed || status == JobStatusPartialFail {
+	if status == job.JobStatusFailed || status == job.JobStatusPartialFail {
 		applog.Error("job finished", args...)
 		return
 	}
@@ -507,16 +508,16 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		step.MaxAttempts = 1
 	}
 
-	executor := s.executors[StepType(step.Type)]
+	executor := s.executors[job.StepType(step.Type)]
 
 	// Acquire semaphore before marking as running (Fix 2)
 	var release func()
 	if executor != nil {
-		release = s.acquireStepSemaphore(StepType(step.Type))
+		release = s.acquireStepSemaphore(job.StepType(step.Type))
 	}
 
 	started := time.Now()
-	_, err := s.updateStepExecution(step.ID, string(StepStatusRunning), step.Progress, step.Attempts+1, &started, nil, nil)
+	_, err := s.updateStepExecution(step.ID, string(job.StepStatusRunning), step.Progress, step.Attempts+1, &started, nil, nil)
 	if err != nil {
 		if release != nil {
 			release()
@@ -542,14 +543,14 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 	if runErr == nil {
 		applog.Debug("step completed",
 			"job_id", step.JobID, "step_id", step.ID, "type", step.Type, "duration_ms", durationMs)
-		_, err = s.updateStepExecution(step.ID, string(StepStatusCompleted), 100, step.Attempts+1, nil, &ended, nil)
+		_, err = s.updateStepExecution(step.ID, string(job.StepStatusCompleted), 100, step.Attempts+1, nil, &ended, nil)
 		return err
 	}
 
 	if errors.Is(runErr, ErrStepSkipped) {
 		applog.Debug("step skipped",
 			"job_id", step.JobID, "step_id", step.ID, "type", step.Type)
-		_, err = s.updateStepExecution(step.ID, string(StepStatusSkipped), 100, step.Attempts+1, nil, &ended, nil)
+		_, err = s.updateStepExecution(step.ID, string(job.StepStatusSkipped), 100, step.Attempts+1, nil, &ended, nil)
 		return err
 	}
 
@@ -568,7 +569,7 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 
 	if step.Attempts+1 < step.MaxAttempts {
 		runErrMessage := runErr.Error()
-		_, updateErr := s.updateStepExecution(step.ID, string(StepStatusQueued), step.Progress, step.Attempts+1, nil, nil, &runErrMessage)
+		_, updateErr := s.updateStepExecution(step.ID, string(job.StepStatusQueued), step.Progress, step.Attempts+1, nil, nil, &runErrMessage)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -584,7 +585,7 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 	}
 
 	runErrMessage := runErr.Error()
-	_, updateErr := s.updateStepExecution(step.ID, string(StepStatusFailed), step.Progress, step.Attempts+1, nil, &ended, &runErrMessage)
+	_, updateErr := s.updateStepExecution(step.ID, string(job.StepStatusFailed), step.Progress, step.Attempts+1, nil, &ended, &runErrMessage)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -658,12 +659,12 @@ func (s *JobScheduler) cancelQueuedSteps(jobID int) error {
 	}
 
 	for _, step := range steps {
-		if step.Status != string(StepStatusQueued) {
+		if step.Status != string(job.StepStatusQueued) {
 			continue
 		}
 
 		ended := time.Now()
-		if _, updateErr := s.updateStepExecution(step.ID, string(StepStatusCanceled), step.Progress, step.Attempts, nil, &ended, nil); updateErr != nil {
+		if _, updateErr := s.updateStepExecution(step.ID, string(job.StepStatusCanceled), step.Progress, step.Attempts, nil, &ended, nil); updateErr != nil {
 			return updateErr
 		}
 	}
@@ -676,12 +677,12 @@ func (s *JobScheduler) cancelIfRequested(jobID int) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("load job %d before cancellation check: %w", jobID, err)
 	}
-	if !jobModel.CancelRequested && jobModel.Status != string(JobStatusCanceled) {
+	if !jobModel.CancelRequested && jobModel.Status != string(job.JobStatusCanceled) {
 		return false, nil
 	}
 
 	endedAt := time.Now()
-	if _, err := s.updateJobExecution(jobID, string(JobStatusCanceled), nil, &endedAt, nil, nil); err != nil {
+	if _, err := s.updateJobExecution(jobID, string(job.JobStatusCanceled), nil, &endedAt, nil, nil); err != nil {
 		return false, err
 	}
 	if err := s.cancelQueuedSteps(jobID); err != nil {
@@ -756,7 +757,7 @@ func stepDependenciesSatisfied(stepID int, parsedDeps map[int][]int, statusByID 
 		if !exists {
 			return false
 		}
-		if depStatus != string(StepStatusCompleted) && depStatus != string(StepStatusSkipped) {
+		if depStatus != string(job.StepStatusCompleted) && depStatus != string(job.StepStatusSkipped) {
 			return false
 		}
 	}
@@ -765,17 +766,17 @@ func stepDependenciesSatisfied(stepID int, parsedDeps map[int][]int, statusByID 
 }
 
 func stepStatusTerminal(status string) bool {
-	switch StepStatus(status) {
-	case StepStatusCompleted, StepStatusFailed, StepStatusCanceled, StepStatusSkipped:
+	switch job.StepStatus(status) {
+	case job.StepStatusCompleted, job.StepStatusFailed, job.StepStatusCanceled, job.StepStatusSkipped:
 		return true
 	default:
 		return false
 	}
 }
 
-func resolveJobStatus(steps []jobs.StepModel) JobStatus {
+func resolveJobStatus(steps []jobs.StepModel) job.JobStatus {
 	if len(steps) == 0 {
-		return JobStatusCompleted
+		return job.JobStatusCompleted
 	}
 
 	hasFailed := false
@@ -783,14 +784,14 @@ func resolveJobStatus(steps []jobs.StepModel) JobStatus {
 	allCanceled := true
 
 	for _, step := range steps {
-		switch StepStatus(step.Status) {
-		case StepStatusFailed:
+		switch job.StepStatus(step.Status) {
+		case job.StepStatusFailed:
 			hasFailed = true
 			allCanceled = false
-		case StepStatusCompleted, StepStatusSkipped:
+		case job.StepStatusCompleted, job.StepStatusSkipped:
 			hasSucceeded = true
 			allCanceled = false
-		case StepStatusCanceled:
+		case job.StepStatusCanceled:
 			// remains allCanceled = true
 		default:
 			allCanceled = false
@@ -798,19 +799,19 @@ func resolveJobStatus(steps []jobs.StepModel) JobStatus {
 	}
 
 	if allCanceled {
-		return JobStatusCanceled
+		return job.JobStatusCanceled
 	}
 	if hasFailed && hasSucceeded {
-		return JobStatusPartialFail
+		return job.JobStatusPartialFail
 	}
 	if hasFailed {
-		return JobStatusFailed
+		return job.JobStatusFailed
 	}
 
-	return JobStatusCompleted
+	return job.JobStatusCompleted
 }
 
-func buildStepSemaphoreMap() map[StepType]chan struct{} {
+func buildStepSemaphoreMap() map[job.StepType]chan struct{} {
 	checksumLimit := config.AppConfig.WorkerConcurrencyChecksum
 	if checksumLimit <= 0 {
 		checksumLimit = 3
@@ -824,14 +825,14 @@ func buildStepSemaphoreMap() map[StepType]chan struct{} {
 		thumbnailLimit = 2
 	}
 
-	return map[StepType]chan struct{}{
-		StepTypeChecksum:  make(chan struct{}, checksumLimit),
-		StepTypeMetadata:  make(chan struct{}, metadataLimit),
-		StepTypeThumbnail: make(chan struct{}, thumbnailLimit),
+	return map[job.StepType]chan struct{}{
+		job.StepTypeChecksum:  make(chan struct{}, checksumLimit),
+		job.StepTypeMetadata:  make(chan struct{}, metadataLimit),
+		job.StepTypeThumbnail: make(chan struct{}, thumbnailLimit),
 	}
 }
 
-func (s *JobScheduler) acquireStepSemaphore(stepType StepType) func() {
+func (s *JobScheduler) acquireStepSemaphore(stepType job.StepType) func() {
 	sem, exists := s.stepSem[stepType]
 	if !exists || sem == nil {
 		return nil

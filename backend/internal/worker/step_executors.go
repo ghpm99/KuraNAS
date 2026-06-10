@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -23,40 +24,40 @@ type StepFilePayload struct {
 	File   *files.FileDto `json:"file,omitempty"`
 }
 
-func buildStepExecutors(context *WorkerContext) map[StepType]StepExecutor {
-	executors := map[StepType]StepExecutor{}
+func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
+	executors := map[job.StepType]StepExecutor{}
 
-	executors[StepTypeMetadata] = func(step jobs.StepModel) error {
+	executors[job.StepTypeMetadata] = func(step jobs.StepModel) error {
 		return executeMetadataStep(context, step)
 	}
-	executors[StepTypeScanFilesystem] = func(step jobs.StepModel) error {
+	executors[job.StepTypeScanFilesystem] = func(step jobs.StepModel) error {
 		return executeScanFilesystemStep(context, step)
 	}
-	executors[StepTypeDiffAgainstDB] = func(step jobs.StepModel) error {
+	executors[job.StepTypeDiffAgainstDB] = func(step jobs.StepModel) error {
 		return executeDiffAgainstDBStep(context, step)
 	}
-	executors[StepTypeChecksum] = func(step jobs.StepModel) error {
+	executors[job.StepTypeChecksum] = func(step jobs.StepModel) error {
 		return executeChecksumStep(context, step)
 	}
-	executors[StepTypePersist] = func(step jobs.StepModel) error {
+	executors[job.StepTypePersist] = func(step jobs.StepModel) error {
 		return executePersistStep(context, step)
 	}
-	executors[StepTypeThumbnail] = func(step jobs.StepModel) error {
+	executors[job.StepTypeThumbnail] = func(step jobs.StepModel) error {
 		return executeThumbnailStep(context, step)
 	}
-	executors[StepTypePlaylistIndex] = func(step jobs.StepModel) error {
+	executors[job.StepTypePlaylistIndex] = func(step jobs.StepModel) error {
 		return executePlaylistIndexStep(context, step)
 	}
-	executors[StepTypeMarkDeleted] = func(step jobs.StepModel) error {
+	executors[job.StepTypeMarkDeleted] = func(step jobs.StepModel) error {
 		return executeMarkDeletedStep(context, step)
 	}
-	executors[StepTypeTakeoutExtract] = func(step jobs.StepModel) error {
+	executors[job.StepTypeTakeoutExtract] = func(step jobs.StepModel) error {
 		return executeTakeoutExtractStep(context, step)
 	}
-	executors[StepTypeOllamaPull] = func(step jobs.StepModel) error {
+	executors[job.StepTypeOllamaPull] = func(step jobs.StepModel) error {
 		return executeOllamaPullStep(context, step)
 	}
-	executors[StepTypeAIPlaylistCluster] = func(step jobs.StepModel) error {
+	executors[job.StepTypeAIPlaylistCluster] = func(step jobs.StepModel) error {
 		return executeAIPlaylistClusterStep(context, step)
 	}
 
@@ -361,7 +362,7 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 
-		plan, planErr := buildFileProcessingPlan(fileDto, JobTypeFSEvent, JobPriorityLow)
+		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityLow)
 		if planErr != nil {
 			log.Printf("[diff] skipping file %q: %v\n", path, planErr)
 			return nil
@@ -467,7 +468,7 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 	return nil
 }
 
-func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority JobPriority) (PlannedJob, error) {
+func buildFileProcessingPlan(fileDto files.FileDto, jobType job.JobType, priority job.JobPriority) (PlannedJob, error) {
 	persistPayload, err := marshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 		File: &fileDto,
@@ -485,20 +486,20 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 	steps := []PlannedStep{
 		{
 			Key:         "persist",
-			Type:        StepTypePersist,
+			Type:        job.StepTypePersist,
 			MaxAttempts: 3,
 			Payload:     persistPayload,
 		},
 		{
 			Key:         "metadata",
-			Type:        StepTypeMetadata,
+			Type:        job.StepTypeMetadata,
 			DependsOn:   []string{"persist"},
 			MaxAttempts: 3,
 			Payload:     commonPayload,
 		},
 		{
 			Key:         "checksum",
-			Type:        StepTypeChecksum,
+			Type:        job.StepTypeChecksum,
 			DependsOn:   []string{"persist"},
 			MaxAttempts: 3,
 			Payload:     commonPayload,
@@ -509,7 +510,7 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 	if formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo {
 		steps = append(steps, PlannedStep{
 			Key:         "thumbnail",
-			Type:        StepTypeThumbnail,
+			Type:        job.StepTypeThumbnail,
 			DependsOn:   []string{"persist"},
 			MaxAttempts: 3,
 			Payload:     commonPayload,
@@ -518,7 +519,7 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 	if formatType.Type == utils.FormatTypeVideo {
 		steps = append(steps, PlannedStep{
 			Key:         "playlist_index",
-			Type:        StepTypePlaylistIndex,
+			Type:        job.StepTypePlaylistIndex,
 			DependsOn:   []string{"persist"},
 			MaxAttempts: 3,
 			Payload:     commonPayload,
@@ -528,7 +529,7 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType JobType, priority Jo
 	return PlannedJob{
 		Type:     jobType,
 		Priority: priority,
-		Scope: JobScope{
+		Scope: job.JobScope{
 			Path: fileDto.Path,
 		},
 		Steps: steps,

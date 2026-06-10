@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"fmt"
 	"log"
 	"time"
@@ -109,9 +110,9 @@ func wireSchedulerObservers(context *WorkerContext) {
 		return
 	}
 
-	context.JobScheduler.SetOnJobFinished(func(jobID int, jobType string, status JobStatus) {
+	context.JobScheduler.SetOnJobFinished(func(jobID int, jobType string, status job.JobStatus) {
 		switch status {
-		case JobStatusFailed, JobStatusPartialFail:
+		case job.JobStatusFailed, job.JobStatusPartialFail:
 			recordSystemEvent(context, systemevent.EventTypeJobFailed,
 				i18n.Translate("SYSTEM_EVENT_JOB_FAILED", jobID, jobType, string(status)))
 			// Notify the operator so a failed job is visible without reading the
@@ -120,8 +121,8 @@ func wireSchedulerObservers(context *WorkerContext) {
 				i18n.GetMessage("NOTIFICATION_JOB_FAILED_TITLE"),
 				i18n.Translate("NOTIFICATION_JOB_FAILED_MESSAGE", jobType),
 				"job_failed")
-		case JobStatusCompleted:
-			if jobType == string(JobTypeStartupScan) || jobType == string(JobTypeReindexFolder) {
+		case job.JobStatusCompleted:
+			if jobType == string(job.JobTypeStartupScan) || jobType == string(job.JobTypeReindexFolder) {
 				recordSystemEvent(context, systemevent.EventTypeScanCompleted,
 					i18n.Translate("SYSTEM_EVENT_SCAN_COMPLETED", jobID))
 			}
@@ -251,7 +252,7 @@ func enqueueStartupScanJob(context *WorkerContext) error {
 		return nil
 	}
 
-	plan, planErr := buildScanPlan(rootPath, JobTypeStartupScan, JobPriorityLow)
+	plan, planErr := buildScanPlan(rootPath, job.JobTypeStartupScan, job.JobPriorityLow)
 	if planErr != nil {
 		return planErr
 	}
@@ -275,12 +276,12 @@ func enqueueAIPlaylistClusterJob(context *WorkerContext) error {
 	}
 
 	plan := PlannedJob{
-		Type:     JobTypeAIPlaylistCluster,
-		Priority: JobPriorityLow,
+		Type:     job.JobTypeAIPlaylistCluster,
+		Priority: job.JobPriorityLow,
 		Steps: []PlannedStep{
 			{
 				Key:         "ai_playlist_cluster",
-				Type:        StepTypeAIPlaylistCluster,
+				Type:        job.StepTypeAIPlaylistCluster,
 				MaxAttempts: 1,
 			},
 		},
@@ -295,7 +296,7 @@ func enqueueAIPlaylistClusterJob(context *WorkerContext) error {
 	return nil
 }
 
-func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority JobPriority) error {
+func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority job.JobPriority) error {
 	if context == nil || context.JobOrchestrator == nil {
 		return nil
 	}
@@ -303,7 +304,7 @@ func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority
 		return nil
 	}
 
-	plan, planErr := buildScanPlan(rootPath, JobTypeFSEvent, priority)
+	plan, planErr := buildScanPlan(rootPath, job.JobTypeFSEvent, priority)
 	if planErr != nil {
 		return planErr
 	}
@@ -312,7 +313,7 @@ func enqueueFilesystemEventJob(context *WorkerContext, rootPath string, priority
 	return err
 }
 
-func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) (PlannedJob, error) {
+func buildScanPlan(rootPath string, jobType job.JobType, priority job.JobPriority) (PlannedJob, error) {
 	payload, err := marshalPayload(StepFilePayload{Path: rootPath})
 	if err != nil {
 		return PlannedJob{}, fmt.Errorf("marshal scan payload: %w", err)
@@ -320,24 +321,24 @@ func buildScanPlan(rootPath string, jobType JobType, priority JobPriority) (Plan
 	return PlannedJob{
 		Type:     jobType,
 		Priority: priority,
-		Scope:    JobScope{Root: rootPath},
+		Scope:    job.JobScope{Root: rootPath},
 		Steps: []PlannedStep{
 			{
 				Key:         "scan_filesystem",
-				Type:        StepTypeScanFilesystem,
+				Type:        job.StepTypeScanFilesystem,
 				MaxAttempts: 1,
 				Payload:     payload,
 			},
 			{
 				Key:         "diff_against_db",
-				Type:        StepTypeDiffAgainstDB,
+				Type:        job.StepTypeDiffAgainstDB,
 				DependsOn:   []string{"scan_filesystem"},
 				MaxAttempts: 1,
 				Payload:     payload,
 			},
 			{
 				Key:         "mark_deleted",
-				Type:        StepTypeMarkDeleted,
+				Type:        job.StepTypeMarkDeleted,
 				DependsOn:   []string{"diff_against_db"},
 				MaxAttempts: 1,
 				Payload:     payload,
@@ -363,7 +364,7 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 	switch task.Type {
 	case utils.ScanFiles:
 		if context != nil && context.JobOrchestrator != nil {
-			if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, JobPriorityLow); err != nil {
+			if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, job.JobPriorityLow); err != nil {
 				log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
 				emitNotification(
 					context,
@@ -380,7 +381,7 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 		if context != nil && context.JobOrchestrator != nil {
 			targetPath, ok := task.Data.(string)
 			if ok {
-				if err := enqueueFilesystemEventJob(context, targetPath, JobPriorityNormal); err != nil {
+				if err := enqueueFilesystemEventJob(context, targetPath, job.JobPriorityNormal); err != nil {
 					log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
 					emitNotification(
 						context,

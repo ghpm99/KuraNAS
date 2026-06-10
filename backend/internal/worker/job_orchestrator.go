@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"nas-go/api/internal/worker/job"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -27,16 +28,16 @@ func isPendingPathConflict(err error) bool {
 
 type PlannedStep struct {
 	Key         string
-	Type        StepType
+	Type        job.StepType
 	DependsOn   []string
 	Payload     []byte
 	MaxAttempts int
 }
 
 type PlannedJob struct {
-	Type     JobType
-	Priority JobPriority
-	Scope    JobScope
+	Type     job.JobType
+	Priority job.JobPriority
+	Scope    job.JobScope
 	Steps    []PlannedStep
 }
 
@@ -83,7 +84,7 @@ func (o *JobOrchestrator) CreateJob(plan PlannedJob) (int, error) {
 			Type:            string(plan.Type),
 			Priority:        string(plan.Priority),
 			Scope:           scopeJSON,
-			Status:          string(JobStatusQueued),
+			Status:          string(job.JobStatusQueued),
 			CancelRequested: false,
 			LastError:       "",
 		})
@@ -121,7 +122,7 @@ func (o *JobOrchestrator) CreateJob(plan PlannedJob) (int, error) {
 			createdStep, createStepErr := o.repository.CreateStep(tx, jobs.StepModel{
 				JobID:       createdJob.ID,
 				Type:        string(step.Type),
-				Status:      string(StepStatusQueued),
+				Status:      string(job.StepStatusQueued),
 				DependsOn:   dependsOnJSON,
 				Attempts:    0,
 				MaxAttempts: maxAttempts,
