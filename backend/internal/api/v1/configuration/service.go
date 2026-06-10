@@ -15,14 +15,6 @@ import (
 
 var ErrInvalidSettingsRequest = errors.New("invalid settings request")
 
-type ServiceInterface interface {
-	GetSettings() (SettingsDto, error)
-	UpdateSettings(request UpdateSettingsRequest) (SettingsDto, error)
-	GetTranslationFilePath() (string, error)
-	ApplyRuntimeSettings() error
-	IsAIImageClassificationEnabled() (bool, error)
-}
-
 type Service struct {
 	Repository RepositoryInterface
 }

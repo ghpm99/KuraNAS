@@ -10,7 +10,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/pkg/database"
-	"nas-go/api/tests"
+	"nas-go/api/internal/testutil"
 )
 
 func insertHomeFile(t *testing.T, dbCtx *database.DbContext, name, path, parent string) {
@@ -51,7 +51,7 @@ func isMarkedDeleted(t *testing.T, dbCtx *database.DbContext, path string) bool 
 // the rows and mark_deleted correctly flags the file that no longer exists on
 // disk while leaving the present one active.
 func TestMarkDeletedStep_DetectsMissingFiles_Postgres(t *testing.T) {
-	dbCtx := tests.NewPostgresDB(t, "kuranas_worker_it")
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
 	truncateWorkerAndFiles(t, dbCtx)
 
 	root := t.TempDir()
@@ -90,7 +90,7 @@ func TestMarkDeletedStep_DetectsMissingFiles_Postgres(t *testing.T) {
 // escape character, so the prefix matches ZERO rows, the missing file is never
 // identified, and this test FAILS — which is precisely the bug reproduced.
 func TestMarkDeletedStep_SoftDeletesMissingFileWithWindowsPath_Postgres(t *testing.T) {
-	dbCtx := tests.NewPostgresDB(t, "kuranas_worker_it")
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
 	truncateWorkerAndFiles(t, dbCtx)
 
 	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)

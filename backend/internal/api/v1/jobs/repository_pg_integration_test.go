@@ -6,7 +6,7 @@ import (
 
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/pkg/database"
-	"nas-go/api/tests"
+	"nas-go/api/internal/testutil"
 )
 
 func truncateWorkerTables(t *testing.T, ctx *database.DbContext) {
@@ -28,7 +28,7 @@ func truncateWorkerTables(t *testing.T, ctx *database.DbContext) {
 // the payload JSON column rejects "" as invalid JSON. The expected behaviour is
 // that a payload-less step persists with payload (and depends_on) as NULL.
 func TestCreateStepWithoutPayload_Postgres(t *testing.T) {
-	dbCtx := tests.NewPostgresDB(t, "kuranas_jobs_it")
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_jobs_it")
 	truncateWorkerTables(t, dbCtx)
 
 	repo := jobs.NewRepository(dbCtx)

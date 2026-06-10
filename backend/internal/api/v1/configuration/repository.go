@@ -7,12 +7,6 @@ import (
 	queries "nas-go/api/pkg/database/queries/configuration"
 )
 
-type RepositoryInterface interface {
-	GetDbContext() *database.DbContext
-	GetSettingsDocument(settingKey string) (string, error)
-	UpsertSettingsDocument(tx *sql.Tx, settingKey string, payload string) error
-}
-
 type Repository struct {
 	DbContext *database.DbContext
 }

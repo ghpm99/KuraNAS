@@ -1,4 +1,4 @@
-package worker_test
+package scan_test
 
 import (
 	"database/sql"
@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	testDir                  = "testscan"
+	testDir                  = "testdata/testscan"
 	expectedCreateFilesCount = 2
 	expectedUpdateFilesCount = 10
 )
@@ -47,7 +47,7 @@ var expectedCreateFiles = []files.FileDto{
 
 var expectedUpdateFiles = []files.FileDto{
 	{
-		Name:       testDir,
+		Name:       filepath.Base(testDir),
 		Path:       filepath.Join(testDir),
 		ParentPath: testDir,
 		Type:       files.Directory,
