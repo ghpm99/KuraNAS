@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/utils"
 	"sync"
 	"testing"
@@ -47,7 +47,7 @@ func mockScriptRunner(scriptType utils.ScriptType, filePath string) (string, err
 func TestStartMetadataWorker(t *testing.T) {
 	fileDtoChannel := make(chan files.FileDto, 5)
 	metadataProcessedChannel := make(chan files.FileDto, 5)
-	monitorChannel := make(chan worker.ResultWorkerData, 5)
+	monitorChannel := make(chan scan.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 
 	testFiles := []files.FileDto{
@@ -63,7 +63,7 @@ func TestStartMetadataWorker(t *testing.T) {
 	close(fileDtoChannel)
 
 	workerGroup.Add(1)
-	go worker.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup, nil)
+	go scan.StartMetadataWorker(fileDtoChannel, metadataProcessedChannel, mockScriptRunner, monitorChannel, &workerGroup, nil)
 
 	var receivedFiles []files.FileDto
 	var wgReader sync.WaitGroup

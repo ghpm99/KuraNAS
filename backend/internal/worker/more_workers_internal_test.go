@@ -12,6 +12,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
@@ -228,16 +229,16 @@ func TestScanDirWorkerAndHelpers(t *testing.T) {
 		},
 	}
 
-	ScanDirWorker(svc, 123) // invalid input branch
-	ScanDirWorker(svc, tmpDir)
+	scan.ScanDirWorker(svc, 123) // invalid input branch
+	scan.ScanDirWorker(svc, tmpDir)
 	if created == 0 {
 		t.Fatalf("expected at least one create operation, created=%d updated=%d", created, updated)
 	}
 
-	if !fileExists(filepath.Join(tmpDir, "new.txt")) {
+	if !scan.FileExists(filepath.Join(tmpDir, "new.txt")) {
 		t.Fatalf("expected fileExists true for existing file")
 	}
-	if fileExists(filepath.Join(tmpDir, "missing.txt")) {
+	if scan.FileExists(filepath.Join(tmpDir, "missing.txt")) {
 		t.Fatalf("expected fileExists false for missing file")
 	}
 }
@@ -249,8 +250,8 @@ func TestScanDirWorkerErrorBranches(t *testing.T) {
 		},
 	}
 
-	ScanDirWorker(svc, filepath.Join(t.TempDir(), "missing")) // read dir error
-	ScanDirWorker(svc, t.TempDir())                           // get files error
+	scan.ScanDirWorker(svc, filepath.Join(t.TempDir(), "missing")) // read dir error
+	scan.ScanDirWorker(svc, t.TempDir())                           // get files error
 }
 
 func TestScanFilesWorker(t *testing.T) {
@@ -290,7 +291,7 @@ func TestScanFilesWorker(t *testing.T) {
 		},
 	}
 
-	ScanFilesWorker(svc, logSvc)
+	scan.ScanFilesWorker(svc, logSvc)
 
 	if createCalls == 0 {
 		t.Fatalf("expected create calls > 0")
@@ -335,7 +336,7 @@ func TestScanFilesWorker_UsesRepositoryErrorInFailureCallback(t *testing.T) {
 		},
 	}
 
-	ScanFilesWorker(svc, logSvc)
+	scan.ScanFilesWorker(svc, logSvc)
 
 	if !errors.Is(receivedErr, expectedErr) {
 		t.Fatalf("expected failure callback to receive repository error, got %v", receivedErr)
@@ -374,7 +375,7 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 		}
 		logSvc := &workerLoggerMock{}
 
-		ScanFilesWorker(svc, logSvc)
+		scan.ScanFilesWorker(svc, logSvc)
 		if updated == 0 {
 			t.Fatalf("expected update path to be used")
 		}
@@ -399,7 +400,7 @@ func TestScanFilesWorker_UpdatePathAndWalkError(t *testing.T) {
 			},
 		}
 
-		ScanFilesWorker(svc, &workerLoggerMock{})
+		scan.ScanFilesWorker(svc, &workerLoggerMock{})
 	})
 }
 
@@ -432,7 +433,7 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 			},
 		}
 		logSvc := &workerLoggerMock{}
-		ScanFilesWorker(svc, logSvc)
+		scan.ScanFilesWorker(svc, logSvc)
 		if checksumCalls != 0 {
 			t.Fatalf("expected no checksum calls on create failure, got %d", checksumCalls)
 		}
@@ -466,7 +467,7 @@ func TestScanFilesWorker_CreateAndUpdateFailuresDoNotAdvanceChecksum(t *testing.
 			},
 		}
 		logSvc := &workerLoggerMock{}
-		ScanFilesWorker(svc, logSvc)
+		scan.ScanFilesWorker(svc, logSvc)
 		if checksumCalls != 0 {
 			t.Fatalf("expected no checksum calls when update fails, got %d", checksumCalls)
 		}
@@ -488,17 +489,17 @@ func TestCreateAndUpdateFileDtoHelpers(t *testing.T) {
 		return err
 	}
 
-	created, err := createFileDto(svc, "/tmp/a.txt", files.FileDto{Name: "a.txt"}, fail)
+	created, err := scan.CreateFileDto(svc, "/tmp/a.txt", files.FileDto{Name: "a.txt"}, fail)
 	if err != nil || created.ID != 10 {
 		t.Fatalf("createFileDto failed, created=%+v err=%v", created, err)
 	}
 
-	ok, err := UpdateFileRecord(svc, files.FileDto{Name: "a", Format: ".txt"}, files.FileDto{ID: 1})
+	ok, err := scan.UpdateFileRecord(svc, files.FileDto{Name: "a", Format: ".txt"}, files.FileDto{ID: 1})
 	if err != nil || !ok {
 		t.Fatalf("UpdateFileRecord failed, ok=%v err=%v", ok, err)
 	}
 
-	if err := updateFileDto(svc, files.FileDto{ID: 1}, fail); err != nil {
+	if err := scan.UpdateFileDto(svc, files.FileDto{ID: 1}, fail); err != nil {
 		t.Fatalf("updateFileDto returned error: %v", err)
 	}
 }
@@ -520,7 +521,7 @@ func TestCreateAndUpdateFileDtoHelpers_ErrorPaths(t *testing.T) {
 		}
 		return nil
 	}
-	if _, err := createFileDto(createSvc, "/tmp/a.txt", files.FileDto{Name: "a.txt"}, fail); !errors.Is(err, expectedCreateErr) {
+	if _, err := scan.CreateFileDto(createSvc, "/tmp/a.txt", files.FileDto{Name: "a.txt"}, fail); !errors.Is(err, expectedCreateErr) {
 		t.Fatalf("expected create error to propagate, got %v", err)
 	}
 	if createFailCalled != 1 {
@@ -540,7 +541,7 @@ func TestCreateAndUpdateFileDtoHelpers_ErrorPaths(t *testing.T) {
 		}
 		return nil
 	}
-	if err := updateFileDto(updateSvcErr, files.FileDto{ID: 1}, updateFail); !errors.Is(err, expectedUpdateErr) {
+	if err := scan.UpdateFileDto(updateSvcErr, files.FileDto{ID: 1}, updateFail); !errors.Is(err, expectedUpdateErr) {
 		t.Fatalf("expected update error to propagate, got %v", err)
 	}
 	if updateFailCalled != 1 {
@@ -560,7 +561,7 @@ func TestCreateAndUpdateFileDtoHelpers_ErrorPaths(t *testing.T) {
 		}
 		return nil
 	}
-	err := updateFileDto(updateSvcFalse, files.FileDto{ID: 1}, notUpdatedFail)
+	err := scan.UpdateFileDto(updateSvcFalse, files.FileDto{ID: 1}, notUpdatedFail)
 	if err == nil || err.Error() != "file was not updated" {
 		t.Fatalf("expected not-updated error propagation, got %v", err)
 	}
@@ -608,7 +609,7 @@ func TestFindFilesDeleted(t *testing.T) {
 		},
 	}
 
-	deleted := findFilesDeleted(svc)
+	deleted := scan.FindFilesDeleted(svc)
 	if deleted != 1 {
 		t.Fatalf("expected 1 deleted file, got %d", deleted)
 	}
@@ -661,7 +662,7 @@ func TestFindFilesDeleted_CountsOnlySuccessfulUpdatesAndKeepsDeletedFilterOnPagi
 		},
 	}
 
-	deleted := findFilesDeleted(svc)
+	deleted := scan.FindFilesDeleted(svc)
 	if pageCalls < 2 {
 		t.Fatalf("expected at least two pagination calls, got %d", pageCalls)
 	}
@@ -697,14 +698,14 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 		},
 	}
 
-	CreateThumbnailWorker(svc, "bad", &workerLoggerMock{})
-	CreateThumbnailWorker(svc, 1, &workerLoggerMock{})
-	CreateThumbnailWorker(svc, 2, &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, "bad", &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, 1, &workerLoggerMock{})
+	scan.CreateThumbnailWorker(svc, 2, &workerLoggerMock{})
 	if videoCalls != 2 || imageCalls != 1 {
 		t.Fatalf("unexpected thumbnail calls, video=%d image=%d", videoCalls, imageCalls)
 	}
 
-	GenerateVideoPlaylistsWorker(nil, &workerLoggerMock{})
+	scan.GenerateVideoPlaylistsWorker(nil, &workerLoggerMock{})
 	playlistCalls := 0
 	videoSvc := &workerVideoServiceMock{
 		rebuildFn: func() error {
@@ -712,7 +713,7 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			return nil
 		},
 	}
-	GenerateVideoPlaylistsWorker(videoSvc, &workerLoggerMock{})
+	scan.GenerateVideoPlaylistsWorker(videoSvc, &workerLoggerMock{})
 	if playlistCalls != 1 {
 		t.Fatalf("expected one rebuild call, got %d", playlistCalls)
 	}
@@ -722,13 +723,13 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			return errors.New("rebuild failed")
 		},
 	}
-	GenerateVideoPlaylistsWorker(errVideoSvc, &workerLoggerMock{})
-	CreateThumbnailWorker(&workerFilesServiceMock{
+	scan.GenerateVideoPlaylistsWorker(errVideoSvc, &workerLoggerMock{})
+	scan.CreateThumbnailWorker(&workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			return files.FileDto{}, errors.New("missing")
 		},
 	}, 100, &workerLoggerMock{})
-	CreateThumbnailWorker(&workerFilesServiceMock{
+	scan.CreateThumbnailWorker(&workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			return files.FileDto{ID: 10, Type: files.Directory, Format: ".mp4"}, nil
 		},
@@ -758,7 +759,7 @@ func TestDatabasePersistenceWorker(t *testing.T) {
 	}
 
 	in := make(chan files.FileDto, 2)
-	monitor := make(chan ResultWorkerData, 2)
+	monitor := make(chan scan.ResultWorkerData, 2)
 	tasks := make(chan utils.Task, 2)
 	in <- files.FileDto{Name: "new.mp4", Path: "/x/new.mp4", Type: files.File, Format: ".mp4", UpdatedAt: now}
 	in <- files.FileDto{Name: "existing.mp4", Path: "/x/existing.mp4", Type: files.File, Format: ".mp4", UpdatedAt: now}
@@ -768,7 +769,7 @@ func TestDatabasePersistenceWorker(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		StartDatabasePersistenceWorker(svc, tasks, in, monitor, &wg)
+		scan.StartDatabasePersistenceWorker(svc, tasks, in, monitor, &wg)
 		close(done)
 	}()
 	<-done
@@ -816,7 +817,7 @@ func TestDatabasePersistenceWorkerErrorPathsAndTaskGuards(t *testing.T) {
 	}
 
 	in := make(chan files.FileDto, 3)
-	monitor := make(chan ResultWorkerData, 3)
+	monitor := make(chan scan.ResultWorkerData, 3)
 	tasks := make(chan utils.Task, 1)
 	tasks <- utils.Task{Type: utils.ScanFiles, Data: "fill"} // fill queue to hit default branch in enqueue
 
@@ -827,7 +828,7 @@ func TestDatabasePersistenceWorkerErrorPathsAndTaskGuards(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	StartDatabasePersistenceWorker(svc, tasks, in, monitor, &wg)
+	scan.StartDatabasePersistenceWorker(svc, tasks, in, monitor, &wg)
 	close(monitor)
 
 	errorCount := 0
@@ -841,9 +842,9 @@ func TestDatabasePersistenceWorkerErrorPathsAndTaskGuards(t *testing.T) {
 	}
 
 	localTasks := make(chan utils.Task, 1)
-	enqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.Directory, Format: ".mp4"}, 1)
-	enqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.File, Format: ".txt"}, 1)
-	enqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.File, Format: ".mp4"}, 0)
+	scan.EnqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.Directory, Format: ".mp4"}, 1)
+	scan.EnqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.File, Format: ".txt"}, 1)
+	scan.EnqueueVideoThumbnailTask(localTasks, files.FileDto{Type: files.File, Format: ".mp4"}, 0)
 	if len(localTasks) != 0 {
 		t.Fatalf("expected no tasks enqueued for invalid guards")
 	}

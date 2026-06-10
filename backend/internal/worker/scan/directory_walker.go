@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"errors"

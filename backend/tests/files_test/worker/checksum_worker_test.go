@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/scan"
 	"sync"
 	"testing"
 )
@@ -17,7 +17,7 @@ func MockChecksum(path string) (string, error) {
 func TestStartChecksumWorker(t *testing.T) {
 	metadataProcessedChannel := make(chan files.FileDto, 5)
 	checksumCompletedChannel := make(chan files.FileDto, 5)
-	monitorChannel := make(chan worker.ResultWorkerData, 5)
+	monitorChannel := make(chan scan.ResultWorkerData, 5)
 	var workerGroup sync.WaitGroup
 
 	testFiles := []files.FileDto{
@@ -44,7 +44,7 @@ func TestStartChecksumWorker(t *testing.T) {
 	close(metadataProcessedChannel)
 
 	workerGroup.Add(1)
-	go worker.StartChecksumWorker(
+	go scan.StartChecksumWorker(
 		metadataProcessedChannel,
 		checksumCompletedChannel,
 		MockChecksum,

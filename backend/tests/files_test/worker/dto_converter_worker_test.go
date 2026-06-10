@@ -3,7 +3,7 @@ package worker_test
 import (
 	"io/fs"
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/worker"
+	"nas-go/api/internal/worker/scan"
 	"os"
 	"sync"
 	"testing"
@@ -26,11 +26,11 @@ func (mfi MockFileInfo) IsDir() bool        { return mfi.isDir }
 func (mfi MockFileInfo) Sys() interface{}   { return nil }
 
 func TestStartDtoConverterWorker(t *testing.T) {
-	fileWalkChannel := make(chan worker.FileWalk, 5)
+	fileWalkChannel := make(chan scan.FileWalk, 5)
 	fileDtoChannel := make(chan files.FileDto, 5)
 	var workerGroup sync.WaitGroup
 
-	testFileWalks := []worker.FileWalk{
+	testFileWalks := []scan.FileWalk{
 		{
 			Path: "/test/file1.txt",
 			Info: MockFileInfo{
@@ -58,7 +58,7 @@ func TestStartDtoConverterWorker(t *testing.T) {
 	close(fileWalkChannel)
 
 	workerGroup.Add(1)
-	go worker.StartDtoConverterWorker(fileWalkChannel, fileDtoChannel, &workerGroup)
+	go scan.StartDtoConverterWorker(fileWalkChannel, fileDtoChannel, &workerGroup)
 
 	var receivedDtos []files.FileDto
 	var wgReader sync.WaitGroup

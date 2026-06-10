@@ -12,6 +12,7 @@ import (
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
@@ -373,7 +374,7 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 				)
 			}
 		} else {
-			go StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, aiServiceForImageClassification(context))
+			go scan.StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, aiServiceForImageClassification(context))
 		}
 	case utils.ScanDir:
 		if context != nil && context.JobOrchestrator != nil {
@@ -391,14 +392,14 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 				}
 			}
 		} else {
-			go ScanDirWorker(context.FilesService, task.Data)
+			go scan.ScanDirWorker(context.FilesService, task.Data)
 		}
 	case utils.UpdateCheckSum:
 		UpdateCheckSumWorker(context, task.Data)
 	case utils.CreateThumbnail:
-		CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
+		scan.CreateThumbnailWorker(context.FilesService, task.Data, context.Logger)
 	case utils.GenerateVideoPlaylists:
-		GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
+		scan.GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 	default:
 		log.Printf("worker %d: unknown task type %v\n", id, task.Type)
 	}

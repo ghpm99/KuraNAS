@@ -12,6 +12,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
@@ -137,7 +138,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 
-	metadata, err := getMetadata(fileDto, pythonScriptRunner, aiServiceForImageClassification(context))
+	metadata, err := scan.GetMetadata(fileDto, scan.PythonScriptRunner, aiServiceForImageClassification(context))
 	if err != nil {
 		return err
 	}
@@ -179,7 +180,7 @@ func executeChecksumStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 
-	checksum, err := getCheckSum(fileDto, utils.GetFileChecksum, utils.GetDirectoryChecksum)
+	checksum, err := scan.GetCheckSum(fileDto, utils.GetFileChecksum, utils.GetDirectoryChecksum)
 	if err != nil {
 		return err
 	}
@@ -222,13 +223,13 @@ func executePersistStep(context *WorkerContext, step jobs.StepModel) error {
 	existingRecord, err := context.FilesService.GetFileByNameAndPath(fileDto.Name, fileDto.Path)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			_, createErr := createFileRecord(context.FilesService, fileDto)
+			_, createErr := scan.CreateFileRecord(context.FilesService, fileDto)
 			return createErr
 		}
 		return err
 	}
 
-	_, err = UpdateFileRecord(context.FilesService, fileDto, existingRecord)
+	_, err = scan.UpdateFileRecord(context.FilesService, fileDto, existingRecord)
 	return err
 }
 
@@ -250,7 +251,7 @@ func executeThumbnailStep(context *WorkerContext, step jobs.StepModel) error {
 		return ErrStepSkipped
 	}
 
-	CreateThumbnailWorker(context.FilesService, fileDto.ID, context.Logger)
+	scan.CreateThumbnailWorker(context.FilesService, fileDto.ID, context.Logger)
 	return nil
 }
 
@@ -261,7 +262,7 @@ func executePlaylistIndexStep(context *WorkerContext, step jobs.StepModel) error
 		return fmt.Errorf("video service is required for playlist index step")
 	}
 
-	GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
+	scan.GenerateVideoPlaylistsWorker(context.VideoService, context.Logger)
 	return nil
 }
 

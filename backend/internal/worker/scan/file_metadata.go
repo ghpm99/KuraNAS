@@ -1,4 +1,4 @@
-package worker
+package scan
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func StartMetadataWorker(
 	defer workerGroup.Done()
 
 	for unprocessedFile := range fileDtoChannel {
-		metadata, err := getMetadata(unprocessedFile, runner, aiService)
+		metadata, err := GetMetadata(unprocessedFile, runner, aiService)
 
 		if err != nil {
 			log.Println(err)
@@ -39,7 +39,7 @@ func StartMetadataWorker(
 	}
 }
 
-func getMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {
+func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
 
 	switch formatType.Type {
