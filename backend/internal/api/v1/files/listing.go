@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"nas-go/api/internal/config"
-	queries "nas-go/api/pkg/database/queries/file"
+	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"

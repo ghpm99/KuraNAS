@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"nas-go/api/pkg/database"
-	queries "nas-go/api/pkg/database/queries/watch_folders"
+	queries "nas-go/api/pkg/database/queries/watchfolders"
 	"time"
 )
 

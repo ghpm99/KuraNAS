@@ -68,7 +68,7 @@ Any string that can reach a user — API `error`/message fields, notification ti
 
 - PostgreSQL via `lib/pq`; connection from `DB_*` env vars (`pkg/database`).
 - `pkg/database/dbContext.go` — `DbContext` wraps `*sql.DB` with `ExecTx`/`QueryTx` transaction helpers; repositories receive a `*DbContext`.
-- **SQL is never inline.** Each query is a `.sql` file under `pkg/database/queries/<domain>/`, embedded into a sibling `<domain>.go` via `//go:embed` into an exported `var`. Add a query by dropping a `.sql` file + a `//go:embed` line. Domains today: `aiproviders`, `analytics`, `captures`, `configuration`, `diary`, `file`, `jobs`, `libraries`, `log`, `music`, `notifications`, `search`, `systemevent`, `video`, `watch_folders`.
+- **SQL is never inline.** Each query is a `.sql` file under `pkg/database/queries/<domain>/`, embedded into a sibling `<domain>.go` via `//go:embed` into an exported `var`. Add a query by dropping a `.sql` file + a `//go:embed` line. Domains today: `aiproviders`, `analytics`, `assistant`, `captures`, `configuration`, `diary`, `files`, `image`, `jobs`, `libraries`, `log`, `music`, `notifications`, `search`, `systemevent`, `video`, `watchfolders`. The directory name matches the feature package name exactly.
 - Migrations: numbered `.sql` files in `pkg/database/migrations/queries/`, applied on startup. Schema changes go here, never as ad-hoc DDL.
 
 ## Worker subsystem (`internal/worker`)

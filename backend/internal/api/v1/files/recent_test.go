@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"nas-go/api/pkg/database"
-	queries "nas-go/api/pkg/database/queries/file"
+	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/utils"
 
 	"github.com/DATA-DOG/go-sqlmock"
