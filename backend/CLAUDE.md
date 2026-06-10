@@ -49,7 +49,7 @@ The file/media domains follow a **supertype → extension** shape mirroring the 
 
 **File naming inside a package:** `snake_case`, grouped by responsibility prefix so files self-sort — `handler*.go`, `service*.go`, `repository*.go`, `model.go`, `dto.go`, `interfaces.go`, `*_test.go` (tests live beside code; Go requires it). A package may legitimately hold many files (cf. stdlib `net/http`) **as long as it is one cohesive domain**; when it grows a second `service`/`repository` for a *distinct* concern, that concern is a separate domain — extract it.
 
-> Migration in progress: `files/` currently still contains image/music/video code being carved into the extensions above, and `worker/` is being split. Phase-by-phase plan and status live in `docs/refactor/`.
+> The extraction of `image/`/`music/`/`video/` out of `files/` and the `worker/` split are **complete** (2026-06-10). The phase-by-phase record lives in `docs/refactor/`.
 
 ## Endpoint granularity & response shape (mandatory rule)
 

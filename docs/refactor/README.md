@@ -43,7 +43,9 @@ Fases ordenadas do menor risco ao maior. Cada uma termina **verde no `make ci-ba
 | 2 | [phase-2-image-extension.md](phase-2-image-extension.md) | criar `image/` (extrair de files) | baixo | ✅ concluída (2026-06-09) |
 | 3 | [phase-3-music-extension.md](phase-3-music-extension.md) | mover música de files → `music/` | médio | ✅ concluída (2026-06-10) |
 | 4 | [phase-4-video-extension.md](phase-4-video-extension.md) | mover vídeo de files → `video/` | médio | ✅ concluída (2026-06-10) |
-| 5 | [phase-5-files-core-cleanup.md](phase-5-files-core-cleanup.md) | arrumar núcleo `files` por arquivo | baixo | ⬜ |
+| 5 | [phase-5-files-core-cleanup.md](phase-5-files-core-cleanup.md) | arrumar núcleo `files` por arquivo | baixo | ✅ concluída (2026-06-10) |
+
+> **Refatoração concluída** (2026-06-10): todas as fases verdes no `make ci`. A regra resultante vive nos `CLAUDE.md`; estes docs ficam como registro do caminho.
 
 ## Decisão registrada
 
