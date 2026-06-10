@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"nas-go/api/internal/config"
 	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -18,7 +17,7 @@ import (
 )
 
 func (handler *Handler) GetMusicHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusic", "Fetching music files", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusic", "Fetching music files", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
@@ -34,7 +33,7 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicArtists", "Fetching music artists", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicArtists", "Fetching music artists", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 
@@ -50,7 +49,7 @@ func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByArtist", "Fetching music by artist", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByArtist", "Fetching music by artist", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 	artist := c.Param("name")
@@ -67,7 +66,7 @@ func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicAlbums", "Fetching music albums", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicAlbums", "Fetching music albums", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 
@@ -83,7 +82,7 @@ func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByAlbum", "Fetching music by album", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByAlbum", "Fetching music by album", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 	album := c.Param("name")
@@ -100,7 +99,7 @@ func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicGenres", "Fetching music genres", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicGenres", "Fetching music genres", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 
@@ -116,7 +115,7 @@ func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByGenre", "Fetching music by genre", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByGenre", "Fetching music by genre", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 	genre := c.Param("name")
@@ -133,7 +132,7 @@ func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicFolders", "Fetching music folders", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicFolders", "Fetching music folders", c), nil)
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
 
@@ -151,7 +150,7 @@ func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
 // StreamAudioHandler streams audio files with HTTP Range support.
 // Served at GET /files/stream/:id — path unchanged, now owned by music.
 func (handler *Handler) StreamAudioHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("StreamAudio", "Streaming audio file", c))
+	loggerModel, _ := handler.logService.CreateLog(logEntry("StreamAudio", "Streaming audio file", c), nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
 
@@ -219,13 +218,6 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	}
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
-}
-
-// ToAbsolutePath adapts relative path strings to absolute for display; uses
-// config.ToRelativePath via files.FileDto.ToResponse already called by
-// ParsePaginationToResponse.
-func toAbsolutePath(path string) string {
-	return config.ToAbsolutePath(path)
 }
 
 func parseHTTPRange(rangeHeader string, fileSize int64) (int64, int64, bool) {

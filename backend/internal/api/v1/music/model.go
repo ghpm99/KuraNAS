@@ -6,7 +6,7 @@ import (
 )
 
 // AudioMetadataModel is the DB shape of audio-specific metadata stored in the
-// audio_metadata complement table. It mirrors files.AudioMetadataModel but lives
+// audio_metadata complement table. It lives
 // here so the music extension owns its own complement table and files never
 // imports music.
 type AudioMetadataModel struct {

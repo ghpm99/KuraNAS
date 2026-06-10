@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/logger"
@@ -228,7 +229,7 @@ var expectedUpdateFiles = []files.FileDto{
 		ParentPath: testDir,
 		Format:     ".mp3",
 		CheckSum:   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-		Metadata: files.AudioMetadataModel{
+		Metadata: musicdom.AudioMetadataModel{
 			ID:                  0,
 			FileId:              0,
 			Path:                filepath.Join(testDir, "testepasta", "teste4.mp3"),
@@ -369,7 +370,7 @@ func mockPipelineScriptRunner(scriptType utils.ScriptType, filePath string) (str
 		jsonBytes, _ := json.Marshal(metadata)
 		return string(jsonBytes), nil
 	case utils.AudioMetadata:
-		jsonBytes, _ := json.Marshal(files.AudioMetadataModel{
+		jsonBytes, _ := json.Marshal(musicdom.AudioMetadataModel{
 			Path: filePath,
 		})
 		return string(jsonBytes), nil
@@ -458,8 +459,8 @@ func compareMetadata(t *testing.T, expected, actual any) {
 		if expected != actualMetadata {
 			t.Errorf("Image metadata mismatch: expected %v, got %v", expected, actualMetadata)
 		}
-	case files.AudioMetadataModel:
-		actualMetadata, ok := actual.(files.AudioMetadataModel)
+	case musicdom.AudioMetadataModel:
+		actualMetadata, ok := actual.(musicdom.AudioMetadataModel)
 		if !ok {
 			t.Errorf("Expected AudioMetadataModel, got %T", actual)
 			return

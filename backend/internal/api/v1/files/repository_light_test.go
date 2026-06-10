@@ -238,82 +238,9 @@ func TestRepositoryGetFileStatByPath(t *testing.T) {
 	})
 }
 
-func TestRepositoryMusicAggregatesLight(t *testing.T) {
-	repo, mock, db := newRepoWithMock(t)
-	defer db.Close()
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicArtistsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"artist", "track_count", "album_count"}).AddRow("a", 1, 1))
-	mock.ExpectRollback()
-	if out, err := repo.GetMusicArtists(1, 10); err != nil || len(out.Items) != 1 {
-		t.Fatalf("GetMusicArtists failed len=%d err=%v", len(out.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicAlbumsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"album", "artist", "year", "track_count"}).AddRow("al", "ar", "2025", 3))
-	mock.ExpectRollback()
-	if out, err := repo.GetMusicAlbums(1, 10); err != nil || len(out.Items) != 1 {
-		t.Fatalf("GetMusicAlbums failed len=%d err=%v", len(out.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicGenresQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"genre", "track_count"}).AddRow("rock", 3))
-	mock.ExpectRollback()
-	if out, err := repo.GetMusicGenres(1, 10); err != nil || len(out.Items) != 1 {
-		t.Fatalf("GetMusicGenres failed len=%d err=%v", len(out.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicFoldersQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"folder", "track_count"}).AddRow("/music", 3))
-	mock.ExpectRollback()
-	if out, err := repo.GetMusicFolders(1, 10); err != nil || len(out.Items) != 1 {
-		t.Fatalf("GetMusicFolders failed len=%d err=%v", len(out.Items), err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sqlmock expectations: %v", err)
-	}
-}
-
 func TestRepositoryMediaQueriesScanErrorPaths(t *testing.T) {
 	repo, mock, db := newRepoWithMock(t)
 	defer db.Close()
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectRollback()
-	if _, err := repo.GetMusic(1, 10); err == nil {
-		t.Fatalf("expected GetMusic scan error")
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByArtistQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectRollback()
-	if _, err := repo.GetMusicByArtist("artist", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByArtist scan error")
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByAlbumQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectRollback()
-	if _, err := repo.GetMusicByAlbum("album", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByAlbum scan error")
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByGenreQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectRollback()
-	if _, err := repo.GetMusicByGenre("genre", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByGenre scan error")
-	}
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideosQuery)).
@@ -389,52 +316,10 @@ func TestRepositoryMediaQueriesSuccessPaths(t *testing.T) {
 	now := time.Now()
 	fileType := int(File)
 
-	audioValues := []driver.Value{
-		3, "song", "/tmp/song.mp3", "/tmp", ".mp3", int64(20), now, now, nil, nil, fileType, "sum2", nil, true,
-		4, 3, "/tmp/song.mp3", "audio/mpeg", 123.4, 320, 44100, 2, 1, "enc", 16, "title", "artist", "album",
-		"albumArtist", "1", "rock", "composer", "2026", "2026-01-01", "lame", "pub", "2025-12-01", "orig", "lyr", "text", now,
-	}
-
 	videoValues := []driver.Value{
 		5, "video", "/tmp/video.mp4", "/tmp", ".mp4", int64(30), now, now, nil, nil, fileType, "sum3", nil, false,
 		6, 5, "/tmp/video.mp4", "mp4", "30", "60.0", 1920, 1080, 30.0, 1800, "1000000", "h264", "H.264", "yuv420p",
 		40, "High", "16:9", "aac", 2, "48000", "192000", now,
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicQuery)).
-		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
-	mock.ExpectRollback()
-	music, err := repo.GetMusic(1, 10)
-	if err != nil || len(music.Items) != 1 {
-		t.Fatalf("GetMusic failed len=%d err=%v", len(music.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByArtistQuery)).
-		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
-	mock.ExpectRollback()
-	byArtist, err := repo.GetMusicByArtist("artist", 1, 10)
-	if err != nil || len(byArtist.Items) != 1 {
-		t.Fatalf("GetMusicByArtist failed len=%d err=%v", len(byArtist.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByAlbumQuery)).
-		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
-	mock.ExpectRollback()
-	byAlbum, err := repo.GetMusicByAlbum("album", 1, 10)
-	if err != nil || len(byAlbum.Items) != 1 {
-		t.Fatalf("GetMusicByAlbum failed len=%d err=%v", len(byAlbum.Items), err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetMusicByGenreQuery)).
-		WillReturnRows(sqlmock.NewRows(numberedCols(len(audioValues))).AddRow(audioValues...))
-	mock.ExpectRollback()
-	byGenre, err := repo.GetMusicByGenre("rock", 1, 10)
-	if err != nil || len(byGenre.Items) != 1 {
-		t.Fatalf("GetMusicByGenre failed len=%d err=%v", len(byGenre.Items), err)
 	}
 
 	mock.ExpectBegin()

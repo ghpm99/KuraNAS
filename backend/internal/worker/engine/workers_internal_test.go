@@ -5,6 +5,7 @@ import (
 	"errors"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/utils"
 	"os"
@@ -137,7 +138,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 			b, _ := json.Marshal(imagedom.MetadataModel{Format: "PNG", Path: filePath})
 			return string(b), nil
 		case utils.AudioMetadata:
-			b, _ := json.Marshal(files.AudioMetadataModel{Mime: "mp3", Path: filePath})
+			b, _ := json.Marshal(musicdom.AudioMetadataModel{Mime: "mp3", Path: filePath})
 			return string(b), nil
 		case utils.VideoMetadata:
 			b, _ := json.Marshal(files.VideoMetadataModel{FormatName: "mp4", Path: filePath})
@@ -163,7 +164,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 	if err != nil || audioMeta == nil {
 		t.Fatalf("expected audio metadata, err=%v", err)
 	}
-	audioMetaTyped, ok := audioMeta.(files.AudioMetadataModel)
+	audioMetaTyped, ok := audioMeta.(musicdom.AudioMetadataModel)
 	if !ok || audioMetaTyped.Mime != "mp3" {
 		t.Fatalf("expected audio metadata model")
 	}

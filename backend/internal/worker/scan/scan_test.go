@@ -13,6 +13,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -278,7 +279,7 @@ func TestMetadataWorkerAndHelpers(t *testing.T) {
 			b, _ := json.Marshal(imagedom.MetadataModel{Format: "PNG", Path: filePath})
 			return string(b), nil
 		case utils.AudioMetadata:
-			b, _ := json.Marshal(files.AudioMetadataModel{Mime: "mp3", Path: filePath})
+			b, _ := json.Marshal(musicdom.AudioMetadataModel{Mime: "mp3", Path: filePath})
 			return string(b), nil
 		case utils.VideoMetadata:
 			b, _ := json.Marshal(files.VideoMetadataModel{FormatName: "mp4", Path: filePath})
