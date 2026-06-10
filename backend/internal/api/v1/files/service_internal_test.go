@@ -75,15 +75,7 @@ type filesRepoMock struct {
 	getReportSizeByFormatFn    func() ([]SizeReportModel, error)
 	getTopFilesBySizeFn        func(limit int) ([]FileModel, error)
 	getDuplicateFilesFn        func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
-	getMusicFn                 func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getVideosFn                func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getMusicArtistsFn          func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
-	getMusicByArtistFn         func(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getMusicAlbumsFn           func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
-	getMusicByAlbumFn          func(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getMusicGenresFn           func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
-	getMusicByGenreFn          func(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getMusicFoldersFn          func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
 }
 
 func (m *filesRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -147,63 +139,14 @@ func (m *filesRepoMock) GetDuplicateFiles(page int, pageSize int) (utils.Paginat
 	}
 	return utils.PaginationResponse[DuplicateFilesModel]{Items: []DuplicateFilesModel{}}, nil
 }
-func (m *filesRepoMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getMusicFn != nil {
-		return m.getMusicFn(page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
 func (m *filesRepoMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getVideosFn != nil {
 		return m.getVideosFn(page, pageSize)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
-func (m *filesRepoMock) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
-	if m.getMusicArtistsFn != nil {
-		return m.getMusicArtistsFn(page, pageSize)
-	}
-	return utils.PaginationResponse[MusicArtistDto]{Items: []MusicArtistDto{}}, nil
-}
-func (m *filesRepoMock) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getMusicByArtistFn != nil {
-		return m.getMusicByArtistFn(artist, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-func (m *filesRepoMock) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
-	if m.getMusicAlbumsFn != nil {
-		return m.getMusicAlbumsFn(page, pageSize)
-	}
-	return utils.PaginationResponse[MusicAlbumDto]{Items: []MusicAlbumDto{}}, nil
-}
-func (m *filesRepoMock) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getMusicByAlbumFn != nil {
-		return m.getMusicByAlbumFn(album, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-func (m *filesRepoMock) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
-	if m.getMusicGenresFn != nil {
-		return m.getMusicGenresFn(page, pageSize)
-	}
-	return utils.PaginationResponse[MusicGenreDto]{Items: []MusicGenreDto{}}, nil
-}
-func (m *filesRepoMock) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getMusicByGenreFn != nil {
-		return m.getMusicByGenreFn(genre, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-func (m *filesRepoMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
-	if m.getMusicFoldersFn != nil {
-		return m.getMusicFoldersFn(page, pageSize)
-	}
-	return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{}}, nil
-}
 
 type metadataRepoMock struct {
-	upsertAudioFn func(transaction *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	upsertVideoFn func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 }
 
@@ -238,16 +181,6 @@ func (m *filesJobsRepoMock) CreateStep(tx *sql.Tx, step jobsapi.StepModel) (jobs
 	return step, nil
 }
 
-func (m *metadataRepoMock) GetAudioMetadataByID(id int) (AudioMetadataModel, error) {
-	return AudioMetadataModel{}, nil
-}
-func (m *metadataRepoMock) UpsertAudioMetadata(transaction *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
-	if m.upsertAudioFn != nil {
-		return m.upsertAudioFn(transaction, metadata)
-	}
-	return metadata, nil
-}
-func (m *metadataRepoMock) DeleteAudioMetadata(id int) error { return nil }
 func (m *metadataRepoMock) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
 	return VideoMetadataModel{}, nil
 }
@@ -425,10 +358,6 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 		},
 	}
 	metadata := &metadataRepoMock{
-		upsertAudioFn: func(transaction *sql.Tx, m AudioMetadataModel) (AudioMetadataModel, error) {
-			m.Path = "aud"
-			return m, nil
-		},
 		upsertVideoFn: func(transaction *sql.Tx, m VideoMetadataModel) (VideoMetadataModel, error) {
 			m.Path = "vid"
 			return m, nil
@@ -460,9 +389,6 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 		t.Fatalf("expected update success, ok=%v err=%v", ok, err)
 	}
 
-	if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: AudioMetadataModel{}}); err != nil {
-		t.Fatalf("expected audio upsert success: %v", err)
-	}
 	if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: VideoMetadataModel{}}); err != nil {
 		t.Fatalf("expected video upsert success: %v", err)
 	}
@@ -559,32 +485,8 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 				},
 			}, nil
 		},
-		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(2, "m", File)}}, nil
-		},
 		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(3, "v", File)}}, nil
-		},
-		getMusicArtistsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
-			return utils.PaginationResponse[MusicArtistDto]{Items: []MusicArtistDto{{Artist: "a"}}}, nil
-		},
-		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(4, "ma", File)}}, nil
-		},
-		getMusicAlbumsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
-			return utils.PaginationResponse[MusicAlbumDto]{Items: []MusicAlbumDto{{Album: "al"}}}, nil
-		},
-		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(5, "mb", File)}}, nil
-		},
-		getMusicGenresFn: func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
-			return utils.PaginationResponse[MusicGenreDto]{Items: []MusicGenreDto{{Genre: "g"}}}, nil
-		},
-		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(6, "mg", File)}}, nil
-		},
-		getMusicFoldersFn: func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
-			return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{{Folder: "f"}}}, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo, &metadataRepoMock{})
@@ -612,32 +514,8 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 		t.Fatalf("expected duplicates report, err=%v", err)
 	}
 
-	if _, err := s.GetMusic(1, 10); err != nil {
-		t.Fatalf("expected music success, err=%v", err)
-	}
 	if _, err := s.GetVideos(1, 10); err != nil {
 		t.Fatalf("expected videos success, err=%v", err)
-	}
-	if _, err := s.GetMusicArtists(1, 10); err != nil {
-		t.Fatalf("expected artists success, err=%v", err)
-	}
-	if _, err := s.GetMusicByArtist("a", 1, 10); err != nil {
-		t.Fatalf("expected music by artist success, err=%v", err)
-	}
-	if _, err := s.GetMusicAlbums(1, 10); err != nil {
-		t.Fatalf("expected albums success, err=%v", err)
-	}
-	if _, err := s.GetMusicByAlbum("x", 1, 10); err != nil {
-		t.Fatalf("expected by album success, err=%v", err)
-	}
-	if _, err := s.GetMusicGenres(1, 10); err != nil {
-		t.Fatalf("expected genres success, err=%v", err)
-	}
-	if _, err := s.GetMusicByGenre("g", 1, 10); err != nil {
-		t.Fatalf("expected by genre success, err=%v", err)
-	}
-	if _, err := s.GetMusicFolders(1, 10); err != nil {
-		t.Fatalf("expected folders success, err=%v", err)
 	}
 }
 
@@ -976,20 +854,8 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("update failed")
 		},
-		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("music failed")
-		},
 		getVideosFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, errors.New("videos failed")
-		},
-		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("artist failed")
-		},
-		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("album failed")
-		},
-		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("genre failed")
 		},
 	}, &metadataRepoMock{})
 
@@ -1002,20 +868,8 @@ func TestFileService_ErrorBranches(t *testing.T) {
 	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected UpdateFile error")
 	}
-	if _, err := s.GetMusic(1, 10); err == nil {
-		t.Fatalf("expected GetMusic error")
-	}
 	if _, err := s.GetVideos(1, 10); err == nil {
 		t.Fatalf("expected GetVideos error")
-	}
-	if _, err := s.GetMusicByArtist("a", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByArtist error")
-	}
-	if _, err := s.GetMusicByAlbum("a", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByAlbum error")
-	}
-	if _, err := s.GetMusicByGenre("a", 1, 10); err == nil {
-		t.Fatalf("expected GetMusicByGenre error")
 	}
 }
 
@@ -1142,19 +996,13 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("UpsertMetadata audio and video errors", func(t *testing.T) {
+	t.Run("UpsertMetadata video errors", func(t *testing.T) {
 		s := newFilesServiceForTest(t, &filesRepoMock{}, &metadataRepoMock{
-			upsertAudioFn: func(transaction *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
-				return AudioMetadataModel{}, errors.New("audio metadata failed")
-			},
 			upsertVideoFn: func(transaction *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
 				return VideoMetadataModel{}, errors.New("video metadata failed")
 			},
 		})
 
-		if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: AudioMetadataModel{}}); err == nil {
-			t.Fatalf("expected audio metadata error")
-		}
 		if _, err := s.UpsertMetadata(nil, FileDto{ID: 1, Metadata: VideoMetadataModel{}}); err == nil {
 			t.Fatalf("expected video metadata error")
 		}

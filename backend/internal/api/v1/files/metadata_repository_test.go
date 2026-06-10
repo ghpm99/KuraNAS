@@ -33,24 +33,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAudioMetadataByIDQuery)).
-		WithArgs(2).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "file_id", "path", "mime", "length", "bitrate", "sample_rate", "channels", "bitrate_mode", "encoder_info",
-			"bit_depth", "title", "artist", "album", "album_artist", "track_number", "genre", "composer", "year",
-			"recording_date", "encoder", "publisher", "original_release_date", "original_artist", "lyricist", "lyrics", "created_at",
-		}).AddRow(
-			2, 20, "/a.mp3", "audio/mpeg", 120.0, 320, 44100, 2, 1, "enc", 16, "title", "artist", "album",
-			"album artist", "1", "genre", "composer", "2026", "2026-01-01", "encoder", "publisher", "2025-01-01",
-			"original", "lyricist", "lyrics", now,
-		))
-	mock.ExpectRollback()
-	audioMeta, err := repo.GetAudioMetadataByID(2)
-	if err != nil || audioMeta.ID != 2 {
-		t.Fatalf("GetAudioMetadataByID failed meta=%+v err=%v", audioMeta, err)
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoMetadataByIDQuery)).
 		WithArgs(3).
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -65,24 +47,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	videoMeta, err := repo.GetVideoMetadataByID(3)
 	if err != nil || videoMeta.FileId != 30 {
 		t.Fatalf("GetVideoMetadataByID failed meta=%+v err=%v", videoMeta, err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertAudioMetadataQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(22, now))
-	mock.ExpectCommit()
-	err = repo.Db.ExecTx(func(tx *sql.Tx) error {
-		upserted, err := repo.UpsertAudioMetadata(tx, AudioMetadataModel{FileId: 20, Path: "/a.mp3"})
-		if err != nil {
-			return err
-		}
-		if upserted.ID != 22 {
-			t.Fatalf("expected audio metadata ID 22")
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("UpsertAudioMetadata failed: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -101,15 +65,6 @@ func TestMetadataRepositorySuccessPaths(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("UpsertVideoMetadata failed: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteAudioMetadataQuery)).
-		WithArgs(22).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-	if err := repo.DeleteAudioMetadata(22); err != nil {
-		t.Fatalf("DeleteAudioMetadata failed: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -134,35 +89,13 @@ func TestMetadataRepositoryErrorPaths(t *testing.T) {
 	execErr := errors.New("exec failed")
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAudioMetadataByIDQuery)).
-		WithArgs(1).
-		WillReturnError(scanErr)
-	mock.ExpectRollback()
-	_, err := repo.GetAudioMetadataByID(1)
-	if err == nil || !strings.Contains(err.Error(), "falha ao obter metadados de audio") {
-		t.Fatalf("expected wrapped audio error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoMetadataByIDQuery)).
 		WithArgs(1).
 		WillReturnError(scanErr)
 	mock.ExpectRollback()
-	_, err = repo.GetVideoMetadataByID(1)
+	_, err := repo.GetVideoMetadataByID(1)
 	if err == nil || !strings.Contains(err.Error(), "falha ao obter metadados do vídeo") {
 		t.Fatalf("expected wrapped video error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertAudioMetadataQuery)).
-		WillReturnError(scanErr)
-	mock.ExpectRollback()
-	err = repo.Db.ExecTx(func(tx *sql.Tx) error {
-		_, err := repo.UpsertAudioMetadata(tx, AudioMetadataModel{})
-		return err
-	})
-	if !errors.Is(err, scanErr) {
-		t.Fatalf("expected raw upsert audio error, got: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -175,16 +108,6 @@ func TestMetadataRepositoryErrorPaths(t *testing.T) {
 	})
 	if !errors.Is(err, scanErr) {
 		t.Fatalf("expected raw upsert video error, got: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteAudioMetadataQuery)).
-		WithArgs(1).
-		WillReturnError(execErr)
-	mock.ExpectRollback()
-	err = repo.DeleteAudioMetadata(1)
-	if err == nil || !strings.Contains(err.Error(), "falha ao deletar metadados de audio") {
-		t.Fatalf("expected wrapped delete audio error, got: %v", err)
 	}
 
 	mock.ExpectBegin()

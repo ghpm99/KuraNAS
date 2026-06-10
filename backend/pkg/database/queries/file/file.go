@@ -49,15 +49,6 @@ var TopFilesBySizeQuery string
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
 
-//go:embed get_audio_metadata_by_id.sql
-var GetAudioMetadataByIDQuery string
-
-//go:embed upsert_audio_metadata.sql
-var UpsertAudioMetadataQuery string
-
-//go:embed delete_audio_metadata.sql
-var DeleteAudioMetadataQuery string
-
 //go:embed get_video_metadata_by_id.sql
 var GetVideoMetadataByIDQuery string
 
@@ -67,29 +58,5 @@ var UpsertVideoMetadataQuery string
 //go:embed delete_video_metadata.sql
 var DeleteVideoMetadataQuery string
 
-//go:embed get_music.sql
-var GetMusicQuery string
-
 //go:embed get_videos.sql
 var GetVideosQuery string
-
-//go:embed get_music_artists.sql
-var GetMusicArtistsQuery string
-
-//go:embed get_music_by_artist.sql
-var GetMusicByArtistQuery string
-
-//go:embed get_music_albums.sql
-var GetMusicAlbumsQuery string
-
-//go:embed get_music_by_album.sql
-var GetMusicByAlbumQuery string
-
-//go:embed get_music_genres.sql
-var GetMusicGenresQuery string
-
-//go:embed get_music_by_genre.sql
-var GetMusicByGenreQuery string
-
-//go:embed get_music_folders.sql
-var GetMusicFoldersQuery string

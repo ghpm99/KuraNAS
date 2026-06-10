@@ -29,6 +29,15 @@ type musicRepoMock struct {
 	getLibraryIndexFn      func() ([]MusicLibraryIndexEntryModel, error)
 	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
 
+	getMusicFn         func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getMusicArtistsFn  func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
+	getMusicByArtistFn func(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getMusicAlbumsFn   func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error)
+	getMusicByAlbumFn  func(album string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getMusicGenresFn   func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error)
+	getMusicByGenreFn  func(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getMusicFoldersFn  func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error)
+
 	getArtistClustersFn          func() ([]ArtistClusterModel, error)
 	upsertArtistClusterFn        func(tx *sql.Tx, cluster ArtistClusterModel) error
 	deleteArtistClustersExceptFn func(tx *sql.Tx, artistKeys []string) error
@@ -127,6 +136,54 @@ func (m *musicRepoMock) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, 
 		return m.getLibraryFilesByIDsFn(fileIDs)
 	}
 	return []files.FileModel{}, nil
+}
+func (m *musicRepoMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getMusicFn != nil {
+		return m.getMusicFn(page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	if m.getMusicArtistsFn != nil {
+		return m.getMusicArtistsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicArtistDto]{Items: []MusicArtistDto{}}, nil
+}
+func (m *musicRepoMock) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getMusicByArtistFn != nil {
+		return m.getMusicByArtistFn(artist, page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	if m.getMusicAlbumsFn != nil {
+		return m.getMusicAlbumsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicAlbumDto]{Items: []MusicAlbumDto{}}, nil
+}
+func (m *musicRepoMock) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getMusicByAlbumFn != nil {
+		return m.getMusicByAlbumFn(album, page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	if m.getMusicGenresFn != nil {
+		return m.getMusicGenresFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicGenreDto]{Items: []MusicGenreDto{}}, nil
+}
+func (m *musicRepoMock) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.getMusicByGenreFn != nil {
+		return m.getMusicByGenreFn(genre, page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	if m.getMusicFoldersFn != nil {
+		return m.getMusicFoldersFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{}}, nil
 }
 func (m *musicRepoMock) GetArtistClusters() ([]ArtistClusterModel, error) {
 	if m.getArtistClustersFn != nil {
@@ -382,5 +439,95 @@ func TestMusicService_AdditionalErrorPaths(t *testing.T) {
 	}
 	if _, err := svc.GetPlayerState("c1"); err == nil {
 		t.Fatalf("expected GetPlayerState error")
+	}
+}
+
+func TestMusicService_BrowseMethods(t *testing.T) {
+	now := time.Now()
+	track := files.FileModel{
+		ID: 1, Name: "song.mp3", Path: "/m/song.mp3", ParentPath: "/m",
+		Format: ".mp3", Type: files.File, CreatedAt: now, UpdatedAt: now,
+	}
+	s := newMusicServiceForTest(t, &musicRepoMock{
+		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{track}}, nil
+		},
+		getMusicArtistsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+			return utils.PaginationResponse[MusicArtistDto]{Items: []MusicArtistDto{{Artist: "a"}}}, nil
+		},
+		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{track}}, nil
+		},
+		getMusicAlbumsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+			return utils.PaginationResponse[MusicAlbumDto]{Items: []MusicAlbumDto{{Album: "al"}}}, nil
+		},
+		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{track}}, nil
+		},
+		getMusicGenresFn: func(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+			return utils.PaginationResponse[MusicGenreDto]{Items: []MusicGenreDto{{Genre: "g"}}}, nil
+		},
+		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{track}}, nil
+		},
+		getMusicFoldersFn: func(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+			return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{{Folder: "/m"}}}, nil
+		},
+	})
+
+	if out, err := s.GetMusic(1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusic failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicArtists(1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicArtists failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicByArtist("a", 1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicByArtist failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicAlbums(1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicAlbums failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicByAlbum("al", 1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicByAlbum failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicGenres(1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicGenres failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicByGenre("g", 1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicByGenre failed len=%d err=%v", len(out.Items), err)
+	}
+	if out, err := s.GetMusicFolders(1, 10); err != nil || len(out.Items) != 1 {
+		t.Fatalf("GetMusicFolders failed len=%d err=%v", len(out.Items), err)
+	}
+}
+
+func TestMusicService_BrowseMethodErrors(t *testing.T) {
+	errBoom := errors.New("boom")
+	s := newMusicServiceForTest(t, &musicRepoMock{
+		getMusicFn: func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{}, errBoom
+		},
+		getMusicByArtistFn: func(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{}, errBoom
+		},
+		getMusicByAlbumFn: func(album string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{}, errBoom
+		},
+		getMusicByGenreFn: func(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+			return utils.PaginationResponse[files.FileModel]{}, errBoom
+		},
+	})
+
+	if _, err := s.GetMusic(1, 10); err == nil {
+		t.Fatalf("expected GetMusic error")
+	}
+	if _, err := s.GetMusicByArtist("a", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByArtist error")
+	}
+	if _, err := s.GetMusicByAlbum("a", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByAlbum error")
+	}
+	if _, err := s.GetMusicByGenre("g", 1, 10); err == nil {
+		t.Fatalf("expected GetMusicByGenre error")
 	}
 }

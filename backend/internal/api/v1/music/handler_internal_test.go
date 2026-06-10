@@ -6,6 +6,8 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -88,6 +90,30 @@ func (m *musicHandlerServiceMock) UpdatePlayerState(clientID string, req UpdateP
 func (m *musicHandlerServiceMock) RebuildAIClusters(ctx context.Context) error {
 	return nil
 }
+func (m *musicHandlerServiceMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	return utils.PaginationResponse[MusicArtistDto]{Items: []MusicArtistDto{{Artist: "a", TrackCount: 1, AlbumCount: 1}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{Name: artist}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	return utils.PaginationResponse[MusicAlbumDto]{Items: []MusicAlbumDto{{Album: "x", Artist: "a", Year: "2025", TrackCount: 1}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{Name: album}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	return utils.PaginationResponse[MusicGenreDto]{Items: []MusicGenreDto{{Genre: "g", TrackCount: 1}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{Name: genre}}}, nil
+}
+func (m *musicHandlerServiceMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	return utils.PaginationResponse[MusicFolderDto]{Items: []MusicFolderDto{{Folder: "/m", TrackCount: 1}}}, nil
+}
 
 type musicHandlerErrServiceMock struct {
 	musicHandlerServiceMock
@@ -157,6 +183,30 @@ func (m *musicHandlerErrServiceMock) GetPlayerState(clientID string) (PlayerStat
 func (m *musicHandlerErrServiceMock) UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error) {
 	return PlayerStateDto{}, errors.New("update state error")
 }
+func (m *musicHandlerErrServiceMock) GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("music error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error) {
+	return utils.PaginationResponse[MusicArtistDto]{}, errors.New("artists error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicByArtist(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("by artist error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumDto], error) {
+	return utils.PaginationResponse[MusicAlbumDto]{}, errors.New("albums error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicByAlbum(album string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("by album error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreDto], error) {
+	return utils.PaginationResponse[MusicGenreDto]{}, errors.New("genres error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicByGenre(genre string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("by genre error")
+}
+func (m *musicHandlerErrServiceMock) GetMusicFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderDto], error) {
+	return utils.PaginationResponse[MusicFolderDto]{}, errors.New("folders error")
+}
 
 type musicLoggerMock struct{ logger.LoggerServiceInterface }
 
@@ -170,7 +220,7 @@ func (m *musicLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error
 
 func TestMusicHandlerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&musicHandlerServiceMock{}, &musicLoggerMock{})
+	handler := NewHandler(&musicHandlerServiceMock{}, nil, &musicLoggerMock{})
 	router := gin.New()
 
 	router.GET("/music/playlists", handler.GetPlaylistsHandler)
@@ -186,6 +236,14 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
 	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
+	router.GET("/files/music", handler.GetMusicHandler)
+	router.GET("/files/music/artists", handler.GetMusicArtistsHandler)
+	router.GET("/files/music/artists/:name", handler.GetMusicByArtistHandler)
+	router.GET("/files/music/albums", handler.GetMusicAlbumsHandler)
+	router.GET("/files/music/albums/:name", handler.GetMusicByAlbumHandler)
+	router.GET("/files/music/genres", handler.GetMusicGenresHandler)
+	router.GET("/files/music/genres/:name", handler.GetMusicByGenreHandler)
+	router.GET("/files/music/folders", handler.GetMusicFoldersHandler)
 
 	tests := []struct {
 		method string
@@ -194,6 +252,14 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 		code   int
 	}{
 		{http.MethodGet, "/music/playlists", "", http.StatusOK},
+		{http.MethodGet, "/files/music", "", http.StatusOK},
+		{http.MethodGet, "/files/music/artists", "", http.StatusOK},
+		{http.MethodGet, "/files/music/artists/n1", "", http.StatusOK},
+		{http.MethodGet, "/files/music/albums", "", http.StatusOK},
+		{http.MethodGet, "/files/music/albums/a1", "", http.StatusOK},
+		{http.MethodGet, "/files/music/genres", "", http.StatusOK},
+		{http.MethodGet, "/files/music/genres/g1", "", http.StatusOK},
+		{http.MethodGet, "/files/music/folders", "", http.StatusOK},
 		{http.MethodGet, "/music/playlists/1", "", http.StatusOK},
 		{http.MethodPost, "/music/playlists", `{"name":"n"}`, http.StatusCreated},
 		{http.MethodPut, "/music/playlists/1", `{"name":"n2"}`, http.StatusOK},
@@ -227,7 +293,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 
 func TestMusicHandlerErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&musicHandlerErrServiceMock{}, &musicLoggerMock{})
+	handler := NewHandler(&musicHandlerErrServiceMock{}, nil, &musicLoggerMock{})
 	router := gin.New()
 
 	router.GET("/music/playlists", handler.GetPlaylistsHandler)
@@ -242,6 +308,14 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
 	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
+	router.GET("/files/music", handler.GetMusicHandler)
+	router.GET("/files/music/artists", handler.GetMusicArtistsHandler)
+	router.GET("/files/music/artists/:name", handler.GetMusicByArtistHandler)
+	router.GET("/files/music/albums", handler.GetMusicAlbumsHandler)
+	router.GET("/files/music/albums/:name", handler.GetMusicByAlbumHandler)
+	router.GET("/files/music/genres", handler.GetMusicGenresHandler)
+	router.GET("/files/music/genres/:name", handler.GetMusicByGenreHandler)
+	router.GET("/files/music/folders", handler.GetMusicFoldersHandler)
 
 	tests := []struct {
 		method string
@@ -250,6 +324,14 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 		code   int
 	}{
 		{http.MethodGet, "/music/playlists", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/artists", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/artists/x", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/albums", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/albums/x", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/genres", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/genres/x", "", http.StatusInternalServerError},
+		{http.MethodGet, "/files/music/folders", "", http.StatusInternalServerError},
 		{http.MethodPost, "/music/playlists", `{"name":"x"}`, http.StatusInternalServerError},
 		{http.MethodPut, "/music/playlists/1", `{"name":"x"}`, http.StatusInternalServerError},
 		{http.MethodDelete, "/music/playlists/1", "", http.StatusInternalServerError},
@@ -279,5 +361,147 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 				t.Fatalf("expected %d, got %d, body=%s", tc.code, w.Code, w.Body.String())
 			}
 		})
+	}
+}
+
+type musicStreamFilesServiceMock struct {
+	files.ServiceInterface
+	filePath string
+	format   string
+}
+
+func (m *musicStreamFilesServiceMock) GetFileById(id int) (files.FileDto, error) {
+	if m.filePath == "" {
+		return files.FileDto{}, errors.New("not found")
+	}
+	return files.FileDto{
+		ID:     id,
+		Name:   "stream",
+		Path:   m.filePath,
+		Format: m.format,
+		Type:   files.File,
+	}, nil
+}
+
+func (m *musicStreamFilesServiceMock) CheckFileExistsByPath(path string) bool {
+	return path == m.filePath
+}
+
+func TestMusicHandlerStreamAudio(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	tmpDir := t.TempDir()
+	audioPath := filepath.Join(tmpDir, "a.mp3")
+	if err := os.WriteFile(audioPath, []byte("abcdefghijklmnopqrstuvwxyz"), 0644); err != nil {
+		t.Fatalf("failed to create audio file: %v", err)
+	}
+
+	filesService := &musicStreamFilesServiceMock{filePath: audioPath, format: ".mp3"}
+	handler := NewHandler(&musicHandlerServiceMock{}, filesService, &musicLoggerMock{})
+
+	router := gin.New()
+	router.GET("/files/stream/:id", handler.StreamAudioHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	req.Header.Set("Range", "bytes=0-5")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("expected partial content, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 0-5/26" {
+		t.Fatalf("unexpected content-range for closed range: %s", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	req.Header.Set("Range", "bytes=0-")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("expected partial content for open-ended range, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 0-25/26" {
+		t.Fatalf("unexpected content-range for open-ended range: %s", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	req.Header.Set("Range", "bytes=-5")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("expected partial content for suffix range, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Range"); got != "bytes 21-25/26" {
+		t.Fatalf("unexpected content-range for suffix range: %s", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected full stream 200 without range, got %d", w.Code)
+	}
+
+	missingService := &musicStreamFilesServiceMock{filePath: filepath.Join(tmpDir, "missing.mp3"), format: ".mp3"}
+	missingHandler := NewHandler(&musicHandlerServiceMock{}, missingService, &musicLoggerMock{})
+	missingRouter := gin.New()
+	missingRouter.GET("/files/stream/:id", missingHandler.StreamAudioHandler)
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	w = httptest.NewRecorder()
+	missingRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 for unopenable file, got %d", w.Code)
+	}
+
+	notFoundService := &musicStreamFilesServiceMock{}
+	notFoundHandler := NewHandler(&musicHandlerServiceMock{}, notFoundService, &musicLoggerMock{})
+	notFoundRouter := gin.New()
+	notFoundRouter.GET("/files/stream/:id", notFoundHandler.StreamAudioHandler)
+
+	req = httptest.NewRequest(http.MethodGet, "/files/stream/1", nil)
+	w = httptest.NewRecorder()
+	notFoundRouter.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing file record, got %d", w.Code)
+	}
+}
+
+func TestParseHTTPRangeAndContentType(t *testing.T) {
+	if _, _, ok := parseHTTPRange("bytes=0-5", 0); ok {
+		t.Fatalf("expected invalid range for empty file")
+	}
+	if _, _, ok := parseHTTPRange("items=0-5", 100); ok {
+		t.Fatalf("expected invalid range for wrong unit")
+	}
+	if _, _, ok := parseHTTPRange("bytes=", 100); ok {
+		t.Fatalf("expected invalid range for empty value")
+	}
+	if _, _, ok := parseHTTPRange("bytes=abc-5", 100); ok {
+		t.Fatalf("expected invalid range for bad start")
+	}
+	if _, _, ok := parseHTTPRange("bytes=5-abc", 100); ok {
+		t.Fatalf("expected invalid range for bad end")
+	}
+	if _, _, ok := parseHTTPRange("bytes=50-10", 100); ok {
+		t.Fatalf("expected invalid range for inverted bounds")
+	}
+	if start, end, ok := parseHTTPRange("bytes=0-5,10-20", 100); !ok || start != 0 || end != 5 {
+		t.Fatalf("expected first range only, got start=%d end=%d ok=%v", start, end, ok)
+	}
+	if start, end, ok := parseHTTPRange("bytes=-200", 100); !ok || start != 0 || end != 99 {
+		t.Fatalf("expected clamped suffix range, got start=%d end=%d ok=%v", start, end, ok)
+	}
+	if start, end, ok := parseHTTPRange("bytes=10-500", 100); !ok || start != 10 || end != 99 {
+		t.Fatalf("expected clamped end, got start=%d end=%d ok=%v", start, end, ok)
+	}
+
+	if got := contentTypeByFormat("", "audio/mpeg"); got != "audio/mpeg" {
+		t.Fatalf("expected fallback for empty format, got %s", got)
+	}
+	if got := contentTypeByFormat(".mp3", "application/octet-stream"); got == "application/octet-stream" {
+		t.Fatalf("expected resolved content type for .mp3")
+	}
+	if got := contentTypeByFormat("zzz", "audio/mpeg"); got != "audio/mpeg" {
+		t.Fatalf("expected fallback for unknown format, got %s", got)
 	}
 }

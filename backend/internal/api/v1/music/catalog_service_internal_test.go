@@ -51,7 +51,7 @@ func musicFileModel(id int, name string, parentPath string) files.FileModel {
 		Size:       1024,
 		CreatedAt:  now,
 		UpdatedAt:  now,
-		Metadata: files.AudioMetadataModel{
+		Metadata: AudioMetadataModel{
 			ID:        id,
 			FileId:    id,
 			Path:      parentPath + "/" + name,
