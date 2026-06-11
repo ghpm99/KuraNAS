@@ -19,6 +19,12 @@ var UpdateFileQuery string
 //go:embed get_children_count.sql
 var GetChildrenCountQuery string
 
+//go:embed update_descendant_paths.sql
+var UpdateDescendantPathsQuery string
+
+//go:embed mark_deleted_subtree.sql
+var MarkDeletedSubtreeQuery string
+
 //go:embed delete_old_recent_files.sql
 var DeleteOldRecentFilesQuery string
 

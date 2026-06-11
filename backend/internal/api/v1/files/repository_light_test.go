@@ -3,6 +3,7 @@ package files
 import (
 	"database/sql"
 	"errors"
+	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
@@ -152,6 +153,56 @@ func TestRepositoryCreateUpdateAndGetFiles(t *testing.T) {
 	out, err := repo.GetFiles(FileFilter{}, 1, 10)
 	if err != nil || len(out.Items) != 1 {
 		t.Fatalf("GetFiles failed len=%d err=%v", len(out.Items), err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestRepositoryUpdateDescendantPathsAndMarkDeletedSubtree(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	separator := string(filepath.Separator)
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateDescendantPathsQuery)).
+		WithArgs("/tmp/old", "/tmp/new", "/tmp/old"+separator).
+		WillReturnResult(sqlmock.NewResult(0, 3))
+	mock.ExpectCommit()
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		affected, err := repo.UpdateDescendantPaths(tx, "/tmp/old", "/tmp/new")
+		if err != nil {
+			return err
+		}
+		if affected != 3 {
+			t.Fatalf("expected 3 affected rows, got %d", affected)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("UpdateDescendantPaths failed: %v", err)
+	}
+
+	deletedAt := time.Now()
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.MarkDeletedSubtreeQuery)).
+		WithArgs("/tmp/gone", deletedAt, "/tmp/gone"+separator).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		affected, err := repo.MarkDeletedSubtree(tx, "/tmp/gone", deletedAt)
+		if err != nil {
+			return err
+		}
+		if affected != 2 {
+			t.Fatalf("expected 2 affected rows, got %d", affected)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("MarkDeletedSubtree failed: %v", err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
