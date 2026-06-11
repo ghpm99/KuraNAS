@@ -28,7 +28,7 @@ Regras invariantes:
 | 03 | [Debounce do watcher perde eventos](03-debounce-watcher-perde-eventos.md) | bug | P1 | — | ✅ concluída (2026-06-11) | |
 | 04 | [Whitelist de IPs](04-whitelist-de-ips.md) | segurança | P0 | — | ✅ concluída (2026-06-11) | decisão: sem autenticação |
 | 05 | [Operações atualizam banco sincronamente](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | 01, 02 | ✅ concluída (2026-06-11) | |
-| 06 | [Watcher por eventos (fsnotify)](06-watcher-por-eventos-fsnotify.md) | performance | P2 | 01, 03 | em execução | |
+| 06 | [Watcher por eventos (fsnotify)](06-watcher-por-eventos-fsnotify.md) | performance | P2 | 01, 03 | 🚫 bloqueada | código pronto e CI verde; falta só validação manual no Windows (dono) |
 | 07 | [Remover pipeline legado](07-remover-pipeline-legado.md) | dívida técnica | P2 | 01 | pendente | legado guarda o único exemplo de indexação de dirs |
 | 08 | [Decompor get_files query](08-decompor-get-files-query.md) | dívida técnica | P2 | 02 | pendente | |
 | 09 | [Lixeira](09-lixeira.md) | feature | P2 | 02, 05 | pendente | |
