@@ -12,6 +12,12 @@ type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetFileByID(id int) (FileModel, bool, error)
+	GetFilesByNameAndPath(name string, path string, limit int) ([]FileModel, error)
+	GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetActiveFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetActiveFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetFileStatByPath(path string) (FileStat, bool, error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
