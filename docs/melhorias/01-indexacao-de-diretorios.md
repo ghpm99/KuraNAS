@@ -37,12 +37,12 @@ Toda pasta existente no disco sob o `ENTRY_POINT` tem uma linha correspondente (
 
 ## Critérios de aceite
 
-- [ ] Criar uma pasta no disco (fora da UI) dentro do `ENTRY_POINT` → ela aparece na aba de arquivos no próximo ciclo do watcher, com o conteúdo navegável.
-- [ ] Criar uma pasta pela UI (`CreateFolder`) → ela aparece na árvore sem reiniciar o servidor.
-- [ ] Mover uma pasta pela UI → ela aparece no destino e some da origem na árvore.
-- [ ] Reproduzir o cenário original (pasta nova com músicas) → pasta e arquivos visíveis na aba de arquivos **e** na aba de músicas.
-- [ ] Após um boot em base existente, pastas que faltavam ganham linha (backfill via `startup_scan`).
-- [ ] Testes de integração cobrindo diff e watcher com diretórios; `make ci-backend` verde (cobertura ≥ 80%).
+- [x] Criar uma pasta no disco (fora da UI) dentro do `ENTRY_POINT` → ela aparece na aba de arquivos no próximo ciclo do watcher, com o conteúdo navegável. *(watcher persiste a linha do diretório; `TestDispatchWatcherChangesPersistsDirectories`)*
+- [x] Criar uma pasta pela UI (`CreateFolder`) → ela aparece na árvore sem reiniciar o servidor. *(`ScanDirTask` → diff agora indexa diretórios; `TestExecuteDiffAgainstDBStepIndexesDirectories`)*
+- [x] Mover uma pasta pela UI → ela aparece no destino e some da origem na árvore. *(diff cria a linha nova / revive soft-deleted, `mark_deleted` cobre a origem; cenário 3 do teste pg + testes de mark_deleted)*
+- [x] Reproduzir o cenário original (pasta nova com músicas) → pasta e arquivos visíveis na aba de arquivos **e** na aba de músicas. *(`TestDiffStep_IndexesDirectories_Postgres` reproduz `musicas/album novo/track.mp3` contra Postgres real; aba de músicas deriva de `parent_path` e não muda)*
+- [x] Após um boot em base existente, pastas que faltavam ganham linha (backfill via `startup_scan`). *(cenário 1 do mesmo teste: arquivos indexados sem linhas de pasta → diff faz o backfill)*
+- [x] Testes de integração cobrindo diff e watcher com diretórios; `make ci-backend` verde (cobertura ≥ 80%). *(executados contra Postgres 18 local em 2026-06-11; ci-backend verde com 80.0%)*
 
 ## Fora de escopo
 

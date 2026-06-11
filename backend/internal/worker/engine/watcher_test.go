@@ -1,9 +1,14 @@
 package engine
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/utils"
 )
 
 func snapshotsChanged(previous map[string]fileSnapshot, current map[string]fileSnapshot) bool {
@@ -108,5 +113,76 @@ func TestCollectEntryPointSnapshotAndDispatchWatcherChanges(t *testing.T) {
 	dispatchWatcherChanges(context, root, overflow, snapshot)
 	if len(repository.jobs) != 3 {
 		t.Fatalf("expected fallback full-scan job, got %d jobs", len(repository.jobs))
+	}
+}
+
+func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
+	root := t.TempDir()
+	nestedDir := filepath.Join(root, "nested")
+	deepDir := filepath.Join(nestedDir, "deep")
+	movedDir := filepath.Join(root, "moved")
+	for _, dir := range []string{deepDir, movedDir} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatalf("MkdirAll failed: %v", err)
+		}
+	}
+
+	snapshot := collectEntryPointSnapshot(root)
+
+	created := []files.FileDto{}
+	updated := []files.FileDto{}
+	filesService := &workerFilesServiceMock{
+		getFileByNamePathFn: func(name, path string) (files.FileDto, error) {
+			// movedDir still has a soft-deleted row from before the move.
+			if path == movedDir {
+				return files.FileDto{
+					ID:        7,
+					Name:      name,
+					Path:      path,
+					Type:      files.Directory,
+					DeletedAt: utils.Optional[time.Time]{HasValue: true, Value: time.Now()},
+				}, nil
+			}
+			return files.FileDto{}, sql.ErrNoRows
+		},
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			created = append(created, fileDto)
+			return fileDto, nil
+		},
+		updateFileFn: func(fileDto files.FileDto) (bool, error) {
+			updated = append(updated, fileDto)
+			return true, nil
+		},
+	}
+
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+	context := &WorkerContext{JobOrchestrator: orchestrator, FilesService: filesService}
+
+	dispatchWatcherChanges(
+		context,
+		root,
+		[]string{root, nestedDir, deepDir, movedDir},
+		snapshot,
+	)
+
+	if len(repository.jobs) != 0 {
+		t.Fatalf("directories must not enqueue processing jobs, got %d", len(repository.jobs))
+	}
+
+	if len(created) != 2 {
+		t.Fatalf("expected 2 directory rows created (nested + deep), got %+v", created)
+	}
+	for _, fileDto := range created {
+		if fileDto.Type != files.Directory {
+			t.Fatalf("expected directory type for %q, got %v", fileDto.Path, fileDto.Type)
+		}
+		if fileDto.Path == root {
+			t.Fatalf("entry point itself must not get a row")
+		}
+	}
+
+	if len(updated) != 1 || updated[0].ID != 7 || updated[0].DeletedAt.HasValue {
+		t.Fatalf("expected soft-deleted directory row to be revived, got %+v", updated)
 	}
 }

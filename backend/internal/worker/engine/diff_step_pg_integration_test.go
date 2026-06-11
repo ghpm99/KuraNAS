@@ -11,8 +11,8 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
-	"nas-go/api/pkg/database"
 	"nas-go/api/internal/testutil"
+	"nas-go/api/pkg/database"
 )
 
 func diffFixtureScanDir(t *testing.T) string {
@@ -141,5 +141,119 @@ func TestDiffStep_DoesNotReenqueueUnchangedFiles_Postgres(t *testing.T) {
 	}
 	if jobs := countWorkerJobs(t, dbCtx); jobs != 1 {
 		t.Fatalf("expected exactly 1 job after touching a single file, got %d", jobs)
+	}
+}
+
+// activeRowsByPath returns (count of rows, count of active rows, type of the
+// newest active row) for a path, straight from home_file.
+func activeRowsByPath(t *testing.T, ctx *database.DbContext, path string) (total int, active int, fileType int) {
+	t.Helper()
+	err := ctx.QueryTx(func(tx *sql.Tx) error {
+		if scanErr := tx.QueryRow(
+			"SELECT count(*), count(*) FILTER (WHERE deleted_at IS NULL) FROM home_file WHERE path = $1",
+			path,
+		).Scan(&total, &active); scanErr != nil {
+			return scanErr
+		}
+		if active == 0 {
+			return nil
+		}
+		return tx.QueryRow(
+			"SELECT type FROM home_file WHERE path = $1 AND deleted_at IS NULL ORDER BY id DESC LIMIT 1",
+			path,
+		).Scan(&fileType)
+	})
+	if err != nil {
+		t.Fatalf("query rows for %q: %v", path, err)
+	}
+	return total, active, fileType
+}
+
+// TestDiffStep_IndexesDirectories_Postgres proves the diff step now creates
+// home_file rows for directories — the root cause of folders being invisible
+// in the files tab. It simulates an existing install (files indexed, folders
+// never were) and asserts the startup-scan diff backfills the folder rows,
+// idempotently, without ever giving the entry point itself a row.
+func TestDiffStep_IndexesDirectories_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	prevEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = prevEntryPoint })
+
+	root := t.TempDir()
+	config.AppConfig.EntryPoint = root
+
+	// Nested tree: a new folder inside the music folder, full of files —
+	// the original complaint's shape.
+	musicDir := filepath.Join(root, "musicas")
+	albumDir := filepath.Join(musicDir, "album novo")
+	if err := os.MkdirAll(albumDir, 0o755); err != nil {
+		t.Fatalf("mkdir fixture tree: %v", err)
+	}
+	song := filepath.Join(albumDir, "track.mp3")
+	if err := os.WriteFile(song, []byte("audio"), 0o644); err != nil {
+		t.Fatalf("write fixture file: %v", err)
+	}
+
+	filesRepo := files.NewRepository(dbCtx)
+	jobsRepo := jobs.NewRepository(dbCtx)
+	filesSvc := files.NewService(filesRepo, jobsRepo, nil)
+	orchestrator := NewJobOrchestrator(jobsRepo, nil)
+
+	workerCtx := &WorkerContext{
+		FilesService:    filesSvc,
+		JobOrchestrator: orchestrator,
+	}
+
+	diffPayload, _ := marshalPayload(StepFilePayload{Path: root})
+
+	// (1) Backfill: the scan walks the tree and creates one active row per
+	// directory, parents included, while the file goes through the pipeline.
+	if err := executeDiffAgainstDBStep(workerCtx, jobs.StepModel{Payload: diffPayload}); err != nil {
+		t.Fatalf("diff over new tree returned error: %v", err)
+	}
+	for _, dir := range []string{musicDir, albumDir} {
+		total, active, fileType := activeRowsByPath(t, dbCtx, dir)
+		if total != 1 || active != 1 {
+			t.Fatalf("expected exactly 1 active row for %q, got total=%d active=%d", dir, total, active)
+		}
+		if fileType != int(files.Directory) {
+			t.Fatalf("expected directory type for %q, got %d", dir, fileType)
+		}
+	}
+	if total, _, _ := activeRowsByPath(t, dbCtx, root); total != 0 {
+		t.Fatalf("entry point must not get a home_file row, got %d", total)
+	}
+
+	// (2) Idempotency: a second scan must not duplicate directory rows.
+	err := executeDiffAgainstDBStep(workerCtx, jobs.StepModel{Payload: diffPayload})
+	if err != nil && err != ErrStepSkipped {
+		t.Fatalf("second diff returned error: %v", err)
+	}
+	for _, dir := range []string{musicDir, albumDir} {
+		total, _, _ := activeRowsByPath(t, dbCtx, dir)
+		if total != 1 {
+			t.Fatalf("expected second scan to keep 1 row for %q, got %d", dir, total)
+		}
+	}
+
+	// (3) Revive: a directory whose row was soft-deleted (e.g. moved away and
+	// back) is reactivated by the next scan instead of duplicated.
+	markErr := dbCtx.ExecTx(func(tx *sql.Tx) error {
+		_, e := tx.Exec("UPDATE home_file SET deleted_at = now() WHERE path = $1", albumDir)
+		return e
+	})
+	if markErr != nil {
+		t.Fatalf("soft-delete album dir row: %v", markErr)
+	}
+
+	err = executeDiffAgainstDBStep(workerCtx, jobs.StepModel{Payload: diffPayload})
+	if err != nil && err != ErrStepSkipped {
+		t.Fatalf("diff after soft delete returned error: %v", err)
+	}
+	total, active, _ := activeRowsByPath(t, dbCtx, albumDir)
+	if total != 1 || active != 1 {
+		t.Fatalf("expected soft-deleted directory row revived without duplicate, got total=%d active=%d", total, active)
 	}
 }
