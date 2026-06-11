@@ -189,6 +189,51 @@ func TestWatcherVanishedPathYieldsMarkDeletedNotPersist(t *testing.T) {
 	}
 }
 
+func TestStartEntryPointWatcherWithoutEntryPointIsNoop(t *testing.T) {
+	previous := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = previous })
+
+	config.AppConfig.EntryPoint = ""
+	startEntryPointWatcher(&WorkerContext{})
+}
+
+func TestWatcherDispatchLoopDeliversNativeEventsAsJobs(t *testing.T) {
+	root := t.TempDir()
+
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+	context := &WorkerContext{JobOrchestrator: orchestrator}
+
+	watcher, err := newRecursiveWatcher(root, nil)
+	if err != nil {
+		t.Fatalf("newRecursiveWatcher: %v", err)
+	}
+	defer watcher.Close()
+
+	go watcherDispatchLoop(context, root, watcher)
+
+	filePath := filepath.Join(root, "incoming.jpg")
+	if err := os.WriteFile(filePath, []byte("image"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	// Event → batcher → debounced flush → fs_event job, end to end.
+	deadline := time.After(5 * time.Second)
+	for {
+		repository.mu.Lock()
+		jobsCount := len(repository.jobs)
+		repository.mu.Unlock()
+		if jobsCount >= 1 {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatalf("expected a job dispatched from native watcher event")
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
 func TestReconcileIntervalIsConfigurableWithSaneDefault(t *testing.T) {
 	previous := config.AppConfig.WatcherReconcileHours
 	t.Cleanup(func() { config.AppConfig.WatcherReconcileHours = previous })

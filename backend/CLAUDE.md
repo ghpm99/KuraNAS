@@ -73,12 +73,12 @@ Any string that can reach a user — API `error`/message fields, notification ti
 
 ## Worker subsystem (`internal/worker`)
 
-Two coexisting execution models, both started by `StartWorkers` (gated by `ENABLE_WORKERS`):
-1. **Legacy task channel** — `chan utils.Task` consumed by the worker pool.
-2. **Job/Step orchestrator (preferred)** — persists a DAG of jobs and steps to `worker_job*` tables. Enumerated in `job_domain.go`, each with an `IsValid()` guard:
+Started by `StartWorkers` (gated by `ENABLE_WORKERS`). The **Job/Step orchestrator is the only indexing pipeline** — `JobsRepository` is mandatory; without it `StartWorkers` logs an explicit error and refuses to start (no silent fallback; the legacy channel-based scan pipeline was removed in task 07 of `docs/melhorias/`). It persists a DAG of jobs and steps to `worker_job*` tables. Enumerated in `job_domain.go`, each with an `IsValid()` guard:
    - Job types: `startup_scan`, `upload_process`, `fs_event`, `reindex_folder`, `takeout_import`, `ollama_pull`.
    - Step types: `scan_filesystem`, `diff_against_db`, `metadata`, `checksum`, `persist`, `thumbnail`, `playlist_index`, `mark_deleted`, `takeout_extract`, `ollama_model_pull`.
    - Steps carry `DependsOn` and `MaxAttempts`; jobs/steps have priority (`low`/`normal`/`high`, weighted) and status enums.
+
+The task channel (`chan utils.Task`) still exists, but only for auxiliary work: `UpdateCheckSum`, `CreateThumbnail`, `GenerateVideoPlaylists`. `ScanFiles`/`ScanDir` tasks are translated by the pool into `fs_event` jobs. The entry-point watcher uses OS-native filesystem events (`fsnotify` via `recursive_watcher.go`) with a debounced dispatch and a low-frequency full reconciliation (`WATCHER_RECONCILE_HOURS`, default 24h); watcher errors/overflow automatically enqueue a full `fs_event` reconciliation.
 
 **Package layout (canonical):** split by responsibility into **three** sub-packages — `worker/job/` (enums/types; the neutral package the others import, so no cycle), `worker/engine/` (pool, orchestrator, scheduler, step executors **and the step implementations as `step_*.go` files** — a separate `steps/` package would create an `engine ↔ steps` import cycle, see `docs/refactor/phase-1-worker-split.md`), `worker/scan/` (the filesystem scan/index pipeline). Files are `snake_case`. The folder watcher is consolidated under `internal/watcher/`.
 
