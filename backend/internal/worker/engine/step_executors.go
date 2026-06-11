@@ -16,6 +16,7 @@ import (
 	jobs "nas-go/api/internal/api/v1/jobs"
 	musicdom "nas-go/api/internal/api/v1/music"
 	videodom "nas-go/api/internal/api/v1/video"
+	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -381,6 +382,29 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 		if d.IsDir() {
+			// Directories need a home_file row to be navigable in the tree,
+			// but have nothing to extract — a direct upsert replaces the full
+			// processing plan. The entry point itself stays implicit: the tree
+			// lists its children by parent_path.
+			if path == config.AppConfig.EntryPoint {
+				return nil
+			}
+
+			_, dirExists, dirStatErr := context.FilesService.GetFileStatByPath(path)
+			if dirStatErr != nil {
+				return fmt.Errorf("lookup directory stat for %q: %w", path, dirStatErr)
+			}
+			if dirExists {
+				return nil
+			}
+
+			dirInfo, dirInfoErr := d.Info()
+			if dirInfoErr != nil {
+				return nil
+			}
+			if persistErr := persistDirectoryRow(context.FilesService, path, dirInfo); persistErr != nil {
+				return fmt.Errorf("persist directory row for %q: %w", path, persistErr)
+			}
 			return nil
 		}
 

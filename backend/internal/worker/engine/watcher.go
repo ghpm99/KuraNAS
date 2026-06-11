@@ -95,8 +95,20 @@ func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed [
 			continue
 		}
 
-		// Skip directories
+		// New or renamed directory — persist its row directly so it becomes
+		// navigable in the tree; directories have no processing plan. The
+		// entry point itself stays implicit (the tree lists its children).
 		if snap.IsDir {
+			if path == entryPoint || context.FilesService == nil {
+				continue
+			}
+			info, statErr := os.Stat(path)
+			if statErr != nil {
+				continue
+			}
+			if err := persistDirectoryRow(context.FilesService, path, info); err != nil {
+				log.Printf("[watcher] failed to persist directory row for %q: %v\n", path, err)
+			}
 			continue
 		}
 

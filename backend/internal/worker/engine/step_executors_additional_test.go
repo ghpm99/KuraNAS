@@ -200,6 +200,71 @@ func TestResolveFileDtoForStepAndMetadataStepSuccess(t *testing.T) {
 	}
 }
 
+func TestExecuteDiffAgainstDBStepIndexesDirectories(t *testing.T) {
+	prevEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = prevEntryPoint })
+
+	root := t.TempDir()
+	config.AppConfig.EntryPoint = root
+
+	knownDir := filepath.Join(root, "known")
+	newDir := filepath.Join(root, "musicas")
+	newNestedDir := filepath.Join(newDir, "album novo")
+	for _, dir := range []string{knownDir, newNestedDir} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatalf("MkdirAll %s failed: %v", dir, err)
+		}
+	}
+
+	created := []files.FileDto{}
+	filesService := &workerFilesServiceMock{
+		getFileStatByPathFn: func(path string) (files.FileStat, bool, error) {
+			// Only knownDir already has an active row in the DB.
+			return files.FileStat{}, path == knownDir, nil
+		},
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			created = append(created, fileDto)
+			return fileDto, nil
+		},
+	}
+
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+
+	diffPayload, _ := marshalPayload(StepFilePayload{Path: root})
+	err := executeDiffAgainstDBStep(
+		&WorkerContext{FilesService: filesService, JobOrchestrator: orchestrator},
+		jobs.StepModel{Payload: diffPayload},
+	)
+	// Directories are upserted inline, not enqueued — with no files in the
+	// tree the step reports nothing sent to the pipeline.
+	if !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected ErrStepSkipped for a files-free tree, got %v", err)
+	}
+	if len(repository.jobs) != 0 {
+		t.Fatalf("directories must not enqueue processing jobs, got %d", len(repository.jobs))
+	}
+
+	if len(created) != 2 {
+		t.Fatalf("expected rows created for the 2 missing directories, got %+v", created)
+	}
+	createdPaths := map[string]files.FileType{}
+	for _, fileDto := range created {
+		createdPaths[fileDto.Path] = fileDto.Type
+	}
+	for _, dir := range []string{newDir, newNestedDir} {
+		if createdPaths[dir] != files.Directory {
+			t.Fatalf("expected directory row for %q, got %+v", dir, createdPaths)
+		}
+	}
+	if _, ok := createdPaths[root]; ok {
+		t.Fatalf("entry point itself must not get a row")
+	}
+	if _, ok := createdPaths[knownDir]; ok {
+		t.Fatalf("directory with an existing active row must not be recreated")
+	}
+}
+
 func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	root := t.TempDir()
 	unchangedPath := filepath.Join(root, "same.txt")
