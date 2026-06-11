@@ -48,4 +48,3 @@ var TopFilesBySizeQuery string
 
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
-

@@ -9,8 +9,8 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
-	"nas-go/api/pkg/database"
 	"nas-go/api/internal/testutil"
+	"nas-go/api/pkg/database"
 )
 
 func insertHomeFile(t *testing.T, dbCtx *database.DbContext, name, path, parent string) {
