@@ -76,13 +76,19 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 		return
 	}
 
-	if context != nil && context.JobsRepository != nil {
-		context.JobScheduler = NewJobScheduler(context.JobsRepository, buildStepExecutors(context))
-		context.JobOrchestrator = NewJobOrchestrator(context.JobsRepository, context.JobScheduler)
-		wireSchedulerObservers(context)
-		recoverInterruptedWork(context)
-		context.JobScheduler.Start()
+	// The job orchestrator is the only indexing pipeline; without a jobs
+	// repository there is nothing to degrade to, so refuse to start instead
+	// of silently running a crippled worker subsystem.
+	if context == nil || context.JobsRepository == nil {
+		log.Println("[workers] ERROR: JobsRepository is required; worker subsystem NOT started")
+		return
 	}
+
+	context.JobScheduler = NewJobScheduler(context.JobsRepository, buildStepExecutors(context))
+	context.JobOrchestrator = NewJobOrchestrator(context.JobsRepository, context.JobScheduler)
+	wireSchedulerObservers(context)
+	recoverInterruptedWork(context)
+	context.JobScheduler.Start()
 
 	for i := range numWorkers {
 		workerID := i
@@ -208,45 +214,33 @@ func emitNotification(context *WorkerContext, notifType string, title string, me
 }
 
 func startWorkersScheduler(context *WorkerContext) {
-	if context != nil && context.JobOrchestrator != nil {
-		if err := enqueueStartupScanJob(context); err != nil {
-			log.Printf("failed to enqueue startup_scan job: %v\n", err)
-			emitNotification(
-				context,
-				"error",
-				i18n.GetMessage("NOTIFICATION_STARTUP_SCAN_FAILED_TITLE"),
-				err.Error(),
-				"",
-			)
-		} else {
-			emitNotification(
-				context,
-				"info",
-				i18n.GetMessage("NOTIFICATION_FILE_SCAN_STARTED_TITLE"),
-				i18n.GetMessage("NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE"),
-				"file_scan",
-			)
-		}
-
-		if err := enqueueAIPlaylistClusterJob(context); err != nil {
-			log.Printf("failed to enqueue ai_playlist_cluster job: %v\n", err)
-		}
+	if context == nil || context.JobOrchestrator == nil {
+		log.Println("[workers] ERROR: job orchestrator unavailable; startup scan NOT enqueued")
 		return
 	}
 
-	log.Println("enqueuing file scan task")
-	context.Tasks <- utils.Task{
-		Type: utils.ScanFiles,
-		Data: "file scan",
+	if err := enqueueStartupScanJob(context); err != nil {
+		log.Printf("failed to enqueue startup_scan job: %v\n", err)
+		emitNotification(
+			context,
+			"error",
+			i18n.GetMessage("NOTIFICATION_STARTUP_SCAN_FAILED_TITLE"),
+			err.Error(),
+			"",
+		)
+	} else {
+		emitNotification(
+			context,
+			"info",
+			i18n.GetMessage("NOTIFICATION_FILE_SCAN_STARTED_TITLE"),
+			i18n.GetMessage("NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE"),
+			"file_scan",
+		)
 	}
-	emitNotification(
-		context,
-		"info",
-		i18n.GetMessage("NOTIFICATION_FILE_SCAN_STARTED_TITLE"),
-		i18n.GetMessage("NOTIFICATION_FILE_SCAN_TASK_ENQUEUED_MESSAGE"),
-		"file_scan",
-	)
-	log.Println("file scan task enqueued")
+
+	if err := enqueueAIPlaylistClusterJob(context); err != nil {
+		log.Printf("failed to enqueue ai_playlist_cluster job: %v\n", err)
+	}
 }
 
 func enqueueStartupScanJob(context *WorkerContext) error {
@@ -366,37 +360,37 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 
 	switch task.Type {
 	case utils.ScanFiles:
-		if context != nil && context.JobOrchestrator != nil {
-			if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, job.JobPriorityLow); err != nil {
-				log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
+		if context == nil || context.JobOrchestrator == nil {
+			log.Printf("worker %d: job orchestrator unavailable; ScanFiles task dropped\n", id)
+			return
+		}
+		if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, job.JobPriorityLow); err != nil {
+			log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
+			emitNotification(
+				context,
+				"error",
+				i18n.GetMessage("NOTIFICATION_FILE_SCAN_FAILED_TITLE"),
+				err.Error(),
+				"",
+			)
+		}
+	case utils.ScanDir:
+		if context == nil || context.JobOrchestrator == nil {
+			log.Printf("worker %d: job orchestrator unavailable; ScanDir task dropped\n", id)
+			return
+		}
+		targetPath, ok := task.Data.(string)
+		if ok {
+			if err := enqueueFilesystemEventJob(context, targetPath, job.JobPriorityNormal); err != nil {
+				log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
 				emitNotification(
 					context,
 					"error",
-					i18n.GetMessage("NOTIFICATION_FILE_SCAN_FAILED_TITLE"),
-					err.Error(),
+					i18n.GetMessage("NOTIFICATION_DIRECTORY_SCAN_FAILED_TITLE"),
+					i18n.Translate("NOTIFICATION_DIRECTORY_SCAN_FAILED_MESSAGE", targetPath, err),
 					"",
 				)
 			}
-		} else {
-			go scan.StartFileProcessingPipeline(context.FilesService, context.Tasks, context.Logger, aiServiceForImageClassification(context))
-		}
-	case utils.ScanDir:
-		if context != nil && context.JobOrchestrator != nil {
-			targetPath, ok := task.Data.(string)
-			if ok {
-				if err := enqueueFilesystemEventJob(context, targetPath, job.JobPriorityNormal); err != nil {
-					log.Printf("worker %d: failed to enqueue fs_event job for %s: %v\n", id, targetPath, err)
-					emitNotification(
-						context,
-						"error",
-						i18n.GetMessage("NOTIFICATION_DIRECTORY_SCAN_FAILED_TITLE"),
-						i18n.Translate("NOTIFICATION_DIRECTORY_SCAN_FAILED_MESSAGE", targetPath, err),
-						"",
-					)
-				}
-			}
-		} else {
-			go scan.ScanDirWorker(context.FilesService, task.Data)
 		}
 	case utils.UpdateCheckSum:
 		UpdateCheckSumWorker(context, task.Data)
