@@ -37,11 +37,11 @@ Mudanças no filesystem são detectadas por eventos do SO, com custo de CPU/IO p
 
 ## Critérios de aceite
 
-- [ ] Criar/alterar/remover arquivo ou pasta sob o `ENTRY_POINT` gera os jobs corretos em menos de 2s, sem varredura completa.
-- [ ] Em repouso (nenhuma mudança), o processo não faz walk da árvore (verificável por log/profile) — disco pode hibernar.
-- [ ] Pastas criadas após o boot passam a ser monitoradas (watch recursivo dinâmico).
-- [ ] Overflow/erro do watcher dispara reconciliação completa automaticamente.
-- [ ] Reconciliação periódica configurável existe e roda.
+- [x] Criar/alterar/remover arquivo ou pasta sob o `ENTRY_POINT` gera os jobs corretos em menos de 2s, sem varredura completa. *(eventos nativos chegam imediatamente — `TestRecursiveWatcherDetectsCreateWriteAndRemove` usa timeout de 2s; despacho no flush de 500ms; `TestDispatchWatcherChangesResolvesAgainstDisk`)*
+- [x] Em repouso (nenhuma mudança), o processo não faz walk da árvore (verificável por log/profile) — disco pode hibernar. *(`collectEntryPointSnapshot`/ticker de 5s removidos; os únicos `WalkDir` restantes são o registro inicial de watches no boot e o de pastas recém-criadas; o flush de 500ms só consulta um mapa em memória)*
+- [x] Pastas criadas após o boot passam a ser monitoradas (watch recursivo dinâmico). *(`watchTree` no Create de diretório, emitindo conteúdo que correu na frente do watch; `TestRecursiveWatcherWatchesDirectoriesCreatedAfterStart`)*
+- [x] Overflow/erro do watcher dispara reconciliação completa automaticamente. *(`onError` → `enqueueFilesystemEventJob`; `TestWatcherErrorFallbackEnqueuesFullReconciliation`)*
+- [x] Reconciliação periódica configurável existe e roda. *(`reconciliationLoop` + `WATCHER_RECONCILE_HOURS`, default 24h; `TestReconcileIntervalIsConfigurableWithSaneDefault`)*
 - [ ] Funciona no build Windows de produção (validação manual documentada na task).
 - [ ] `make ci-backend` verde (cobertura ≥ 80%).
 

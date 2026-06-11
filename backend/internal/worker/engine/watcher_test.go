@@ -8,67 +8,12 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/job"
 	"nas-go/api/pkg/utils"
 )
 
-func snapshotsChanged(previous map[string]fileSnapshot, current map[string]fileSnapshot) bool {
-	if len(previous) != len(current) {
-		return true
-	}
-
-	for path, previousSnapshot := range previous {
-		currentSnapshot, exists := current[path]
-		if !exists {
-			return true
-		}
-		if currentSnapshot != previousSnapshot {
-			return true
-		}
-	}
-
-	return false
-}
-
-func TestSnapshotsChanged(t *testing.T) {
-	base := map[string]fileSnapshot{
-		"/a": {ModTimeUnix: 1, Size: 10, IsDir: false},
-	}
-
-	if snapshotsChanged(base, map[string]fileSnapshot{"/a": {ModTimeUnix: 1, Size: 10, IsDir: false}}) {
-		t.Fatalf("expected equal snapshots to be unchanged")
-	}
-
-	if !snapshotsChanged(base, map[string]fileSnapshot{"/a": {ModTimeUnix: 2, Size: 10, IsDir: false}}) {
-		t.Fatalf("expected change when metadata differs")
-	}
-
-	if !snapshotsChanged(base, map[string]fileSnapshot{"/b": {ModTimeUnix: 1, Size: 10, IsDir: false}}) {
-		t.Fatalf("expected change when path differs")
-	}
-
-	if !snapshotsChanged(base, map[string]fileSnapshot{"/a": {ModTimeUnix: 1, Size: 10, IsDir: false}, "/b": {ModTimeUnix: 1, Size: 1, IsDir: false}}) {
-		t.Fatalf("expected change when snapshot sizes differ")
-	}
-}
-
-func TestSnapshotDiffPaths(t *testing.T) {
-	previous := map[string]fileSnapshot{
-		"/a": {ModTimeUnix: 1, Size: 10, IsDir: false},
-		"/b": {ModTimeUnix: 1, Size: 20, IsDir: false},
-	}
-	current := map[string]fileSnapshot{
-		"/a": {ModTimeUnix: 2, Size: 10, IsDir: false},
-		"/c": {ModTimeUnix: 1, Size: 30, IsDir: false},
-	}
-
-	diff := snapshotDiffPaths(previous, current)
-	if len(diff) != 3 {
-		t.Fatalf("expected 3 changed paths, got %d (%v)", len(diff), diff)
-	}
-}
-
-func TestCollectEntryPointSnapshotAndDispatchWatcherChanges(t *testing.T) {
+func TestDispatchWatcherChangesResolvesAgainstDisk(t *testing.T) {
 	root := t.TempDir()
 	nestedDir := filepath.Join(root, "nested")
 	if err := os.MkdirAll(nestedDir, 0755); err != nil {
@@ -80,28 +25,14 @@ func TestCollectEntryPointSnapshotAndDispatchWatcherChanges(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	snapshot := collectEntryPointSnapshot(root)
-	if len(snapshot) < 3 {
-		t.Fatalf("expected snapshot to include root, dir, and file: %+v", snapshot)
-	}
-	if snapshot[filePath].IsDir {
-		t.Fatalf("expected file snapshot for %s", filePath)
-	}
-	if !snapshot[nestedDir].IsDir {
-		t.Fatalf("expected directory snapshot for %s", nestedDir)
-	}
-
 	repository := newFakeJobsRepository()
 	orchestrator := NewJobOrchestrator(repository, nil)
 	context := &WorkerContext{JobOrchestrator: orchestrator}
 
+	// A vanished path becomes mark_deleted, an existing file becomes a
+	// processing job, and a directory (FilesService unset here) is skipped.
 	deletedPath := filepath.Join(root, "deleted.jpg")
-	dispatchWatcherChanges(
-		context,
-		root,
-		[]string{deletedPath, nestedDir, filePath},
-		snapshot,
-	)
+	dispatchWatcherChanges(context, root, []string{deletedPath, nestedDir, filePath})
 
 	if len(repository.jobs) != 2 {
 		t.Fatalf("expected mark_deleted and file-processing jobs, got %d", len(repository.jobs))
@@ -111,7 +42,7 @@ func TestCollectEntryPointSnapshotAndDispatchWatcherChanges(t *testing.T) {
 	for index := range overflow {
 		overflow[index] = filepath.Join(root, "overflow", string(rune('a'+(index%26))))
 	}
-	dispatchWatcherChanges(context, root, overflow, snapshot)
+	dispatchWatcherChanges(context, root, overflow)
 	if len(repository.jobs) != 3 {
 		t.Fatalf("expected fallback full-scan job, got %d jobs", len(repository.jobs))
 	}
@@ -127,8 +58,6 @@ func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
 			t.Fatalf("MkdirAll failed: %v", err)
 		}
 	}
-
-	snapshot := collectEntryPointSnapshot(root)
 
 	created := []files.FileDto{}
 	updated := []files.FileDto{}
@@ -160,12 +89,7 @@ func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
 	orchestrator := NewJobOrchestrator(repository, nil)
 	context := &WorkerContext{JobOrchestrator: orchestrator, FilesService: filesService}
 
-	dispatchWatcherChanges(
-		context,
-		root,
-		[]string{root, nestedDir, deepDir, movedDir},
-		snapshot,
-	)
+	dispatchWatcherChanges(context, root, []string{root, nestedDir, deepDir, movedDir})
 
 	if len(repository.jobs) != 0 {
 		t.Fatalf("directories must not enqueue processing jobs, got %d", len(repository.jobs))
@@ -188,37 +112,30 @@ func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
 	}
 }
 
-func TestWatcherStateDebounceDefersWithoutDropping(t *testing.T) {
-	snap := func(paths ...string) map[string]fileSnapshot {
-		out := map[string]fileSnapshot{}
-		for index, path := range paths {
-			out[path] = fileSnapshot{ModTimeUnix: int64(index + 1), Size: 10}
-		}
-		return out
-	}
-
+func TestEventBatcherDebounceDefersWithoutDropping(t *testing.T) {
 	window := 2 * time.Second
-	state := newWatcherState(snap(), window)
+	batcher := newEventBatcher(window)
 	t0 := time.Now()
 
-	// First batch dispatches immediately.
-	first := state.processTick(snap("/a"), t0)
+	// First batch dispatches on the first flush.
+	batcher.add("/a")
+	first := batcher.flush(t0)
 	if len(first) != 1 || first[0] != "/a" {
 		t.Fatalf("expected first batch [/a], got %v", first)
 	}
 
-	// Second and third batches land inside the debounce window: deferred,
-	// never dropped.
-	if got := state.processTick(snap("/a", "/b"), t0.Add(time.Second)); got != nil {
-		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
+	// Changes landing inside the debounce window are deferred, never dropped.
+	batcher.add("/b")
+	if got := batcher.flush(t0.Add(time.Second)); got != nil {
+		t.Fatalf("expected debounced flush to dispatch nothing, got %v", got)
 	}
-	if got := state.processTick(snap("/a", "/b", "/c"), t0.Add(1500*time.Millisecond)); got != nil {
-		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
+	batcher.add("/c")
+	if got := batcher.flush(t0.Add(1500 * time.Millisecond)); got != nil {
+		t.Fatalf("expected debounced flush to dispatch nothing, got %v", got)
 	}
 
-	// First allowed tick flushes everything accumulated, even with no new
-	// change in this tick.
-	flushed := state.processTick(snap("/a", "/b", "/c"), t0.Add(3500*time.Millisecond))
+	// First allowed flush delivers everything accumulated.
+	flushed := batcher.flush(t0.Add(3500 * time.Millisecond))
 	flushedSet := map[string]bool{}
 	for _, path := range flushed {
 		flushedSet[path] = true
@@ -228,42 +145,30 @@ func TestWatcherStateDebounceDefersWithoutDropping(t *testing.T) {
 	}
 
 	// Nothing pending afterwards.
-	if got := state.processTick(snap("/a", "/b", "/c"), t0.Add(10*time.Second)); got != nil {
-		t.Fatalf("expected quiet tick to dispatch nothing, got %v", got)
+	if got := batcher.flush(t0.Add(10 * time.Second)); got != nil {
+		t.Fatalf("expected quiet flush to dispatch nothing, got %v", got)
 	}
 }
 
-func TestWatcherStateVanishedPathYieldsNoPersistJob(t *testing.T) {
+func TestWatcherVanishedPathYieldsMarkDeletedNotPersist(t *testing.T) {
 	root := t.TempDir()
 	ghostPath := filepath.Join(root, "ghost.txt")
 
-	window := 2 * time.Second
-	state := newWatcherState(map[string]fileSnapshot{}, window)
-	t0 := time.Now()
-
-	// Burn the first allowed dispatch so the next changes fall in the window.
-	if got := state.processTick(map[string]fileSnapshot{"/warm": {Size: 1}}, t0); len(got) != 1 {
-		t.Fatalf("expected warm-up dispatch, got %v", got)
-	}
-
-	// File appears inside the debounce window…
-	if got := state.processTick(map[string]fileSnapshot{"/warm": {Size: 1}, ghostPath: {Size: 5}}, t0.Add(time.Second)); got != nil {
-		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
-	}
-	// …and vanishes before the dispatch is allowed.
-	currentSnapshot := map[string]fileSnapshot{"/warm": {Size: 1}}
-	flushed := state.processTick(currentSnapshot, t0.Add(3*time.Second))
+	// File appeared and vanished before the debounced dispatch ran. Dispatch
+	// resolves against the CURRENT disk state: the vanished file must become
+	// a mark_deleted job, never an orphan persist job.
+	batcher := newEventBatcher(time.Second)
+	batcher.add(ghostPath)
+	flushed := batcher.flush(time.Now())
 	if len(flushed) != 1 || flushed[0] != ghostPath {
 		t.Fatalf("expected ghost path flushed, got %v", flushed)
 	}
 
-	// Dispatch resolves against the CURRENT snapshot: the vanished file must
-	// become a mark_deleted job, never an orphan persist job.
 	repository := newFakeJobsRepository()
 	orchestrator := NewJobOrchestrator(repository, nil)
 	context := &WorkerContext{JobOrchestrator: orchestrator}
 
-	dispatchWatcherChanges(context, root, flushed, currentSnapshot)
+	dispatchWatcherChanges(context, root, flushed)
 
 	if len(repository.jobs) != 1 {
 		t.Fatalf("expected exactly one job for the vanished file, got %d", len(repository.jobs))
@@ -281,5 +186,56 @@ func TestWatcherStateVanishedPathYieldsNoPersistJob(t *testing.T) {
 	}
 	if !foundMarkDeleted {
 		t.Fatalf("expected a mark_deleted step for the vanished file")
+	}
+}
+
+func TestReconcileIntervalIsConfigurableWithSaneDefault(t *testing.T) {
+	previous := config.AppConfig.WatcherReconcileHours
+	t.Cleanup(func() { config.AppConfig.WatcherReconcileHours = previous })
+
+	config.AppConfig.WatcherReconcileHours = 6
+	if got := reconcileInterval(); got != 6*time.Hour {
+		t.Fatalf("expected 6h interval, got %v", got)
+	}
+
+	config.AppConfig.WatcherReconcileHours = 0
+	if got := reconcileInterval(); got != 24*time.Hour {
+		t.Fatalf("expected 24h default, got %v", got)
+	}
+}
+
+func TestWatcherErrorFallbackEnqueuesFullReconciliation(t *testing.T) {
+	root := t.TempDir()
+
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+	context := &WorkerContext{JobOrchestrator: orchestrator}
+
+	// Same fallback startEntryPointWatcher wires into the recursive watcher.
+	onWatcherError := func(error) {
+		if err := enqueueFilesystemEventJob(context, root, job.JobPriorityNormal); err != nil {
+			t.Fatalf("enqueueFilesystemEventJob: %v", err)
+		}
+	}
+
+	watcher, err := newRecursiveWatcher(root, onWatcherError)
+	if err != nil {
+		t.Fatalf("newRecursiveWatcher: %v", err)
+	}
+	defer watcher.Close()
+
+	watcher.handleError(os.ErrInvalid)
+
+	if len(repository.jobs) != 1 {
+		t.Fatalf("expected a full reconciliation job after watcher error, got %d", len(repository.jobs))
+	}
+	hasScanStep := false
+	for _, step := range repository.steps {
+		if step.Type == string(job.StepTypeScanFilesystem) {
+			hasScanStep = true
+		}
+	}
+	if !hasScanStep {
+		t.Fatalf("expected reconciliation job to carry a scan_filesystem step")
 	}
 }
