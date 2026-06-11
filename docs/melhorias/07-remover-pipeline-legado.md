@@ -39,12 +39,12 @@ Um único pipeline de indexação (o orquestrador de jobs), com o orquestrador t
 
 ## Critérios de aceite
 
-- [ ] Nenhuma referência a `ScanFilesWorker`, `StartFileProcessingPipeline`, `ScanDirWorker`, `FindFilesDeleted`, `UpdateFileDto`/`CreateFileDto` no código de produção.
+- [x] Nenhuma referência a `ScanFilesWorker`, `StartFileProcessingPipeline`, `ScanDirWorker`, `FindFilesDeleted`, `UpdateFileDto`/`CreateFileDto` no código de produção. *(grep em `internal/`, `pkg/`, `cmd/` → 0 referências, inclusive aos workers de canal `Start*Worker` órfãos; −3362 linhas)*
 - [x] `StartWorkers` sem `JobsRepository` falha de forma explícita (não degrada silenciosamente). *(loga ERROR e não inicia nada; `TestStartWorkersWithoutJobsRepositoryRefusesToStart`)*
-- [ ] Tasks `UpdateCheckSum`/`CreateThumbnail`/`GenerateVideoPlaylists` continuam funcionando pelo canal.
-- [ ] Comportamento de scan inalterado (startup_scan, fs_event, watcher) — validado pelos testes de integração existentes.
-- [ ] `backend/CLAUDE.md` atualizado.
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [x] Tasks `UpdateCheckSum`/`CreateThumbnail`/`GenerateVideoPlaylists` continuam funcionando pelo canal. *(`TestWorkerKnownTaskBranches`, `TestUpdateCheckSumWorker*`, `TestCreateThumbnailWorkerAndVideoPlaylistWorker`)*
+- [x] Comportamento de scan inalterado (startup_scan, fs_event, watcher) — validado pelos testes de integração existentes. *(suite completa verde, incl. `diff_step_pg_integration_test` e `mark_deleted_pg_integration_test` contra Postgres real)*
+- [x] `backend/CLAUDE.md` atualizado. *(seção "Worker subsystem": orquestrador único e obrigatório; canal só para checksum/thumbnail/playlists; watcher por eventos nativos)*
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(2026-06-11, 80.0%, integração pg via `TEST_DB_PORT=54329`)*
 
 ## Fora de escopo
 
