@@ -30,7 +30,7 @@ Regras invariantes:
 | 05 | [Operações atualizam banco sincronamente](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | 01, 02 | ✅ concluída (2026-06-11) | |
 | 06 | [Watcher por eventos (fsnotify)](06-watcher-por-eventos-fsnotify.md) | performance | P2 | 01, 03 | 🚫 bloqueada | código pronto e CI verde; falta só validação manual no Windows (dono) |
 | 07 | [Remover pipeline legado](07-remover-pipeline-legado.md) | dívida técnica | P2 | 01 | ✅ concluída (2026-06-11) | |
-| 08 | [Decompor get_files query](08-decompor-get-files-query.md) | dívida técnica | P2 | 02 | pendente | |
+| 08 | [Decompor get_files query](08-decompor-get-files-query.md) | dívida técnica | P2 | 02 | em execução | |
 | 09 | [Lixeira](09-lixeira.md) | feature | P2 | 02, 05 | pendente | |
 | 10 | [Múltiplas raízes](10-multiplas-raizes.md) | feature | P3 | 01, 05 | pendente | fundação da visão de armazenamento |
 | 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | pendente | melhor após 10 |
