@@ -56,6 +56,36 @@ func (s *Service) logSyncFailure(operation string, path string, err error) {
 	log.Printf("%s: database sync failed for %q (rescan will reconcile): %v", operation, path, err)
 }
 
+// syncMovedRows updates the moved/renamed row and, when it is a directory,
+// rewrites the path prefix of every descendant — all in one transaction.
+func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
+	oldPath := file.Path
+
+	file.Name = filepath.Base(destinationPath)
+	file.Path = destinationPath
+	file.ParentPath = filepath.Dir(destinationPath)
+	if file.Type == File {
+		file.Format = filepath.Ext(file.Name)
+	}
+
+	fileModel, err := file.ToModel()
+	if err != nil {
+		return err
+	}
+
+	return s.withTransaction(func(tx *sql.Tx) error {
+		if _, err := s.Repository.UpdateFile(tx, fileModel); err != nil {
+			return err
+		}
+		if file.Type == Directory {
+			if _, err := s.Repository.UpdateDescendantPaths(tx, oldPath, destinationPath); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // syncPathRow inserts the row for a path just materialized on disk, reviving
 // the soft-deleted row when the same path is recreated instead of duplicating it.
 func (s *Service) syncPathRow(path string) error {

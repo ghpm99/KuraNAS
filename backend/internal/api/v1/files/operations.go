@@ -501,6 +501,10 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
 	}
 
+	if err := s.syncMovedRows(sourceFile, resolvedDestPath); err != nil {
+		s.logSyncFailure("MoveFile", resolvedDestPath, err)
+	}
+
 	s.ScanDirTask(filepath.Dir(resolvedSourcePath))
 	if filepath.Dir(resolvedDestPath) != filepath.Dir(resolvedSourcePath) {
 		s.ScanDirTask(filepath.Dir(resolvedDestPath))
@@ -595,6 +599,10 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 
 	if err := os.Rename(resolvedSourcePath, destPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_RENAME_FAILED", err)
+	}
+
+	if err := s.syncMovedRows(file, destPath); err != nil {
+		s.logSyncFailure("RenameFile", destPath, err)
 	}
 
 	s.ScanDirTask(filepath.Dir(resolvedSourcePath))
