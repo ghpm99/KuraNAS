@@ -648,6 +648,163 @@ func TestCreateFolderAlreadyExists(t *testing.T) {
 	requireOperationError(t, err, http.StatusConflict, "ERROR_FOLDER_ALREADY_EXISTS")
 }
 
+func TestMoveDirectorySyncsRowAndDescendantsInOneTransaction(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceDir := filepath.Join(entryPoint, "library")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "child"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	destDir := filepath.Join(entryPoint, "archive")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "library", Path: sourceDir, ParentPath: entryPoint, Type: Directory},
+		{ID: 2, Name: "archive", Path: destDir, ParentPath: entryPoint, Type: Directory},
+	}
+
+	var updated []FileModel
+	var prefixSwaps [][2]string
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue {
+				for _, r := range records {
+					if r.ID == filter.ID.Value {
+						return utils.PaginationResponse[FileModel]{Items: []FileModel{r}}, nil
+					}
+				}
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updated = append(updated, file)
+			return true, nil
+		},
+		updateDescendantPathsFn: func(transaction *sql.Tx, oldPath string, newPath string) (int64, error) {
+			prefixSwaps = append(prefixSwaps, [2]string{oldPath, newPath})
+			return 1, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	destID := 2
+	movedPath, err := service.MoveFile(1, &destID, "")
+	if err != nil {
+		t.Fatalf("MoveFile returned error: %v", err)
+	}
+
+	if len(updated) != 1 {
+		t.Fatalf("expected 1 updated row, got %d", len(updated))
+	}
+	row := updated[0]
+	if row.ID != 1 || row.Path != movedPath || row.ParentPath != destDir || row.Name != "library" {
+		t.Fatalf("moved row not synced: %+v", row)
+	}
+	if len(prefixSwaps) != 1 || prefixSwaps[0][0] != sourceDir || prefixSwaps[0][1] != movedPath {
+		t.Fatalf("descendant prefix swap not applied: %+v", prefixSwaps)
+	}
+}
+
+func TestRenameFileSyncsRowSynchronously(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceFile := filepath.Join(entryPoint, "old.txt")
+	if err := os.WriteFile(sourceFile, []byte("data"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "old.txt", Path: sourceFile, ParentPath: entryPoint, Type: File, Format: ".txt"},
+	}
+
+	var updated []FileModel
+	var prefixSwaps int
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue && filter.ID.Value == 1 {
+				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updated = append(updated, file)
+			return true, nil
+		},
+		updateDescendantPathsFn: func(transaction *sql.Tx, oldPath string, newPath string) (int64, error) {
+			prefixSwaps++
+			return 0, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	renamedPath, err := service.RenameFile(1, "new.md")
+	if err != nil {
+		t.Fatalf("RenameFile returned error: %v", err)
+	}
+
+	if len(updated) != 1 {
+		t.Fatalf("expected 1 updated row, got %d", len(updated))
+	}
+	row := updated[0]
+	if row.Name != "new.md" || row.Path != renamedPath || row.Format != ".md" {
+		t.Fatalf("renamed row not synced: %+v", row)
+	}
+	if prefixSwaps != 0 {
+		t.Fatalf("plain file rename must not touch descendants, got %d prefix swaps", prefixSwaps)
+	}
+}
+
+func TestMoveFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceFile := filepath.Join(entryPoint, "data.txt")
+	if err := os.WriteFile(sourceFile, []byte("x"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	destDir := filepath.Join(entryPoint, "dest")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "data.txt", Path: sourceFile, ParentPath: entryPoint, Type: File},
+		{ID: 2, Name: "dest", Path: destDir, ParentPath: entryPoint, Type: Directory},
+	}
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue {
+				for _, r := range records {
+					if r.ID == filter.ID.Value {
+						return utils.PaginationResponse[FileModel]{Items: []FileModel{r}}, nil
+					}
+				}
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			return false, errors.New("db down")
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	destID := 2
+	movedPath, err := service.MoveFile(1, &destID, "")
+	if err != nil {
+		t.Fatalf("MoveFile must succeed when only the db sync fails, got: %v", err)
+	}
+	if _, statErr := os.Stat(movedPath); statErr != nil {
+		t.Fatalf("moved file missing on disk: %v", statErr)
+	}
+	if _, statErr := os.Stat(sourceFile); !os.IsNotExist(statErr) {
+		t.Fatalf("source file still present, disk operation corrupted")
+	}
+}
+
 func TestCreateFolderInsertsDirectoryRowSynchronously(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)
