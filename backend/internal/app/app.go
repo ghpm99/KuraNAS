@@ -105,6 +105,12 @@ func InitializeApp() (*Application, error) {
 
 	router := newRouterFn()
 
+	// Never trust proxy headers: ClientIP() must come from the connection's
+	// RemoteAddr, or a forged X-Forwarded-For would bypass the IP whitelist.
+	if err := router.SetTrustedProxies(nil); err != nil {
+		return nil, err
+	}
+
 	registerRoutesFn(router, appContext)
 
 	var librariesService = appContext.Libraries

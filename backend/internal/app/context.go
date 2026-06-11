@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/aiproviders"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/assistant"
@@ -43,6 +44,7 @@ var tasks = make(chan utils.Task, 100)
 type AppContext struct {
 	DB            *database.DbContext
 	Logger        logger.LoggerServiceInterface
+	AccessControl *AccessControlContext
 	AI            ai.ServiceInterface
 	Assistant     *AssistantContext
 	AIProviders   *AIProvidersContext
@@ -65,6 +67,12 @@ type AppContext struct {
 	Distribution  *DistributionContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
+}
+
+type AccessControlContext struct {
+	Handler    *accesscontrol.Handler
+	Service    accesscontrol.ServiceInterface
+	Repository accesscontrol.RepositoryInterface
 }
 
 type DistributionContext struct {
@@ -198,6 +206,7 @@ func NewContext(db *sql.DB) *AppContext {
 	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service, notificationContext.Service)
 	librariesContext := newLibrariesContext(dbContext, loggerService)
 	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
+	accessControlContext := newAccessControlContext(dbContext, loggerService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -208,6 +217,7 @@ func NewContext(db *sql.DB) *AppContext {
 	context := &AppContext{
 		DB:            dbContext,
 		Logger:        loggerService,
+		AccessControl: accessControlContext,
 		AI:            aiService,
 		Assistant:     assistantContext,
 		AIProviders:   aiProvidersContext,
@@ -452,6 +462,21 @@ func newLibrariesContext(
 	handler := libraries.NewHandler(service, loggerService)
 
 	return &LibrariesContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newAccessControlContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+) *AccessControlContext {
+	repository := accesscontrol.NewRepository(dbContext)
+	service := accesscontrol.NewService(repository)
+	handler := accesscontrol.NewHandler(service, loggerService)
+
+	return &AccessControlContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
