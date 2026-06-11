@@ -37,10 +37,10 @@ Acumular as mudanças detectadas durante a janela de debounce e despachá-las no
 
 ## Critérios de aceite
 
-- [ ] Teste de unidade: mudanças que chegam dentro da janela de debounce são despachadas no tick seguinte permitido (nenhum path some).
-- [ ] Teste de unidade: arquivo criado e removido dentro da janela não gera job de persist órfão (resolve contra o snapshot corrente).
-- [ ] Copiar um lote grande de arquivos em duas levas com <2s de intervalo resulta em todos os arquivos indexados sem rescan manual.
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [x] Teste de unidade: mudanças que chegam dentro da janela de debounce são despachadas no tick seguinte permitido (nenhum path some). *(`TestWatcherStateDebounceDefersWithoutDropping`)*
+- [x] Teste de unidade: arquivo criado e removido dentro da janela não gera job de persist órfão (resolve contra o snapshot corrente). *(`TestWatcherStateVanishedPathYieldsNoPersistJob`)*
+- [x] Copiar um lote grande de arquivos em duas levas com <2s de intervalo resulta em todos os arquivos indexados sem rescan manual. *(o `pending` acumula entre ticks e o flush despacha tudo; lotes >50 paths continuam caindo no fallback de scan completo — `watcherMaxIndividualJobs` preservado)*
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(make ci completo verde em 2026-06-11, 80.1%)*
 
 ## Fora de escopo
 

@@ -20,6 +20,52 @@ type fileSnapshot struct {
 
 const watcherMaxIndividualJobs = 50
 
+// watcherState is the per-tick state machine of the entry-point watcher. The
+// debounce may only DEFER a dispatch, never drop it: changes seen during the
+// debounce window accumulate in pending and go out on the first allowed tick.
+// (The old loop advanced the snapshot before the debounce check, so changes
+// landing inside the window were silently lost until a full rescan.)
+type watcherState struct {
+	lastSnapshot   map[string]fileSnapshot
+	pending        map[string]struct{}
+	lastDispatchAt time.Time
+	debounceWindow time.Duration
+}
+
+func newWatcherState(initialSnapshot map[string]fileSnapshot, debounceWindow time.Duration) *watcherState {
+	return &watcherState{
+		lastSnapshot:   initialSnapshot,
+		pending:        map[string]struct{}{},
+		debounceWindow: debounceWindow,
+	}
+}
+
+// processTick merges this tick's changes into the pending set and returns the
+// paths to dispatch now — nil while debounced or when nothing is pending. Each
+// returned path must be resolved against the CURRENT snapshot by the caller
+// (created × deleted may have flipped since the change was first seen).
+func (s *watcherState) processTick(currentSnapshot map[string]fileSnapshot, now time.Time) []string {
+	for _, path := range snapshotDiffPaths(s.lastSnapshot, currentSnapshot) {
+		s.pending[path] = struct{}{}
+	}
+	s.lastSnapshot = currentSnapshot
+
+	if len(s.pending) == 0 {
+		return nil
+	}
+	if !s.lastDispatchAt.IsZero() && now.Sub(s.lastDispatchAt) < s.debounceWindow {
+		return nil
+	}
+
+	toDispatch := make([]string, 0, len(s.pending))
+	for path := range s.pending {
+		toDispatch = append(toDispatch, path)
+	}
+	s.pending = map[string]struct{}{}
+	s.lastDispatchAt = now
+	return toDispatch
+}
+
 func startEntryPointWatcher(context *WorkerContext) {
 	entryPoint := config.AppConfig.EntryPoint
 	if entryPoint == "" {
@@ -27,21 +73,15 @@ func startEntryPointWatcher(context *WorkerContext) {
 	}
 
 	go func() {
-		lastSnapshot := collectEntryPointSnapshot(entryPoint)
+		state := newWatcherState(collectEntryPointSnapshot(entryPoint), 2*time.Second)
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
-		lastDispatchAt := time.Time{}
-		debounceWindow := 2 * time.Second
 
 		for range ticker.C {
 			currentSnapshot := collectEntryPointSnapshot(entryPoint)
-			changed := snapshotDiffPaths(lastSnapshot, currentSnapshot)
-			lastSnapshot = currentSnapshot
+			changed := state.processTick(currentSnapshot, time.Now())
 
 			if len(changed) == 0 {
-				continue
-			}
-			if !lastDispatchAt.IsZero() && time.Since(lastDispatchAt) < debounceWindow {
 				continue
 			}
 
@@ -53,7 +93,6 @@ func startEntryPointWatcher(context *WorkerContext) {
 				default:
 				}
 			}
-			lastDispatchAt = time.Now()
 		}
 	}()
 }

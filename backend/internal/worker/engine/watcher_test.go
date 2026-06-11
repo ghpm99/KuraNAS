@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/worker/job"
 	"nas-go/api/pkg/utils"
 )
 
@@ -184,5 +185,101 @@ func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
 
 	if len(updated) != 1 || updated[0].ID != 7 || updated[0].DeletedAt.HasValue {
 		t.Fatalf("expected soft-deleted directory row to be revived, got %+v", updated)
+	}
+}
+
+func TestWatcherStateDebounceDefersWithoutDropping(t *testing.T) {
+	snap := func(paths ...string) map[string]fileSnapshot {
+		out := map[string]fileSnapshot{}
+		for index, path := range paths {
+			out[path] = fileSnapshot{ModTimeUnix: int64(index + 1), Size: 10}
+		}
+		return out
+	}
+
+	window := 2 * time.Second
+	state := newWatcherState(snap(), window)
+	t0 := time.Now()
+
+	// First batch dispatches immediately.
+	first := state.processTick(snap("/a"), t0)
+	if len(first) != 1 || first[0] != "/a" {
+		t.Fatalf("expected first batch [/a], got %v", first)
+	}
+
+	// Second and third batches land inside the debounce window: deferred,
+	// never dropped.
+	if got := state.processTick(snap("/a", "/b"), t0.Add(time.Second)); got != nil {
+		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
+	}
+	if got := state.processTick(snap("/a", "/b", "/c"), t0.Add(1500*time.Millisecond)); got != nil {
+		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
+	}
+
+	// First allowed tick flushes everything accumulated, even with no new
+	// change in this tick.
+	flushed := state.processTick(snap("/a", "/b", "/c"), t0.Add(3500*time.Millisecond))
+	flushedSet := map[string]bool{}
+	for _, path := range flushed {
+		flushedSet[path] = true
+	}
+	if len(flushed) != 2 || !flushedSet["/b"] || !flushedSet["/c"] {
+		t.Fatalf("expected deferred batch [/b /c], got %v", flushed)
+	}
+
+	// Nothing pending afterwards.
+	if got := state.processTick(snap("/a", "/b", "/c"), t0.Add(10*time.Second)); got != nil {
+		t.Fatalf("expected quiet tick to dispatch nothing, got %v", got)
+	}
+}
+
+func TestWatcherStateVanishedPathYieldsNoPersistJob(t *testing.T) {
+	root := t.TempDir()
+	ghostPath := filepath.Join(root, "ghost.txt")
+
+	window := 2 * time.Second
+	state := newWatcherState(map[string]fileSnapshot{}, window)
+	t0 := time.Now()
+
+	// Burn the first allowed dispatch so the next changes fall in the window.
+	if got := state.processTick(map[string]fileSnapshot{"/warm": {Size: 1}}, t0); len(got) != 1 {
+		t.Fatalf("expected warm-up dispatch, got %v", got)
+	}
+
+	// File appears inside the debounce window…
+	if got := state.processTick(map[string]fileSnapshot{"/warm": {Size: 1}, ghostPath: {Size: 5}}, t0.Add(time.Second)); got != nil {
+		t.Fatalf("expected debounced tick to dispatch nothing, got %v", got)
+	}
+	// …and vanishes before the dispatch is allowed.
+	currentSnapshot := map[string]fileSnapshot{"/warm": {Size: 1}}
+	flushed := state.processTick(currentSnapshot, t0.Add(3*time.Second))
+	if len(flushed) != 1 || flushed[0] != ghostPath {
+		t.Fatalf("expected ghost path flushed, got %v", flushed)
+	}
+
+	// Dispatch resolves against the CURRENT snapshot: the vanished file must
+	// become a mark_deleted job, never an orphan persist job.
+	repository := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repository, nil)
+	context := &WorkerContext{JobOrchestrator: orchestrator}
+
+	dispatchWatcherChanges(context, root, flushed, currentSnapshot)
+
+	if len(repository.jobs) != 1 {
+		t.Fatalf("expected exactly one job for the vanished file, got %d", len(repository.jobs))
+	}
+	for _, step := range repository.steps {
+		if step.Type == string(job.StepTypePersist) {
+			t.Fatalf("vanished file must not produce a persist job, got step %+v", step)
+		}
+	}
+	foundMarkDeleted := false
+	for _, step := range repository.steps {
+		if step.Type == string(job.StepTypeMarkDeleted) {
+			foundMarkDeleted = true
+		}
+	}
+	if !foundMarkDeleted {
+		t.Fatalf("expected a mark_deleted step for the vanished file")
 	}
 }
