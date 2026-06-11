@@ -1,30 +1,48 @@
-# Melhorias do sistema — tasks
+# Melhorias do sistema — board de execução
 
-Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11). Cada arquivo é **uma task autocontida**: contexto, objetivo, o que/como fazer, critérios de aceite e o que está fora de escopo.
+Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11), estendido com a visão de armazenamento do dono (tiering + backup, 2026-06-11). Cada arquivo é **uma task autocontida**: contexto, objetivo, o que/como fazer, critérios de aceite e fora de escopo.
 
-Origem: investigação do bug "pasta nova de músicas aparece na aba de músicas mas não na aba de arquivos", que revelou problemas estruturais na sincronização disco ↔ banco, além de lacunas de maturidade frente a NAS estabelecidos (autenticação, watcher, lixeira, protocolos).
+**Este README é a fonte de verdade do andamento.** Um agente apontado para este arquivo deve conseguir continuar o trabalho de onde parou, mesmo após interrupção — o protocolo abaixo existe para isso.
 
-## Regras válidas para todas as tasks
+## Protocolo de execução (para agentes)
 
-- Cada task termina **verde no `make ci`** antes de ser considerada concluída.
-- **O contrato HTTP não muda** salvo quando a task disser explicitamente o contrário (frontend, 2 apps Android e plugin consomem a API).
-- Commits lógicos diretos em `develop`, conforme o workflow do projeto.
-- Toda string visível ao usuário passa pelo i18n (regra do `CLAUDE.md` raiz).
+1. **Leia o board.** Se existe task `em execução`, **retome-a**: abra o arquivo da task, veja quais critérios de aceite já estão marcados (`[x]`), confira no `git log` o que já foi commitado para ela, e continue do primeiro critério desmarcado. Não recomece do zero o que os checkboxes dizem que está feito — mas verifique que o último commit compila (`make ci`) antes de confiar.
+2. **Se não há task em execução**, pegue a primeira `pendente` de cima para baixo cuja coluna **Depende de** esteja toda `concluída`.
+3. **Ao iniciar**: mude o status dela para `em execução` neste README e commite essa mudança isolada (`docs(melhorias): inicia task NN`). É esse commit que marca o estado para uma retomada futura.
+4. **Durante**: trabalhe em commits lógicos (workflow do projeto). Ao satisfazer um critério de aceite, **marque o checkbox `[x]` no arquivo da task no mesmo commit do código** que o satisfaz — os checkboxes são o progresso fino que permite retomar no meio.
+5. **Ao concluir**: todos os checkboxes marcados + `make ci` verde → status `✅ concluída (data)` na tabela + commit (`docs(melhorias): conclui task NN`).
+6. **Se travar** (decisão pendente do dono, dependência externa): status `🚫 bloqueada` com o motivo na coluna Notas, commite, e passe para a próxima `pendente` elegível.
 
-## Ordem sugerida e status
+Regras invariantes:
 
-| # | Arquivo | Tipo | Prioridade | Status |
-|---|---|---|---|---|
-| 01 | [01-indexacao-de-diretorios.md](01-indexacao-de-diretorios.md) | bug crítico | P0 | pendente |
-| 02 | [02-filtro-deleted-at.md](02-filtro-deleted-at.md) | bug | P0 | pendente |
-| 03 | [03-debounce-watcher-perde-eventos.md](03-debounce-watcher-perde-eventos.md) | bug | P1 | pendente |
-| 04 | [04-whitelist-de-ips.md](04-whitelist-de-ips.md) | segurança | P0 | pendente |
-| 05 | [05-operacoes-atualizam-banco-sincronamente.md](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | pendente |
-| 06 | [06-watcher-por-eventos-fsnotify.md](06-watcher-por-eventos-fsnotify.md) | performance | P2 | pendente |
-| 07 | [07-remover-pipeline-legado.md](07-remover-pipeline-legado.md) | dívida técnica | P2 | pendente |
-| 08 | [08-decompor-get-files-query.md](08-decompor-get-files-query.md) | dívida técnica | P2 | pendente |
-| 09 | [09-lixeira.md](09-lixeira.md) | feature | P2 | pendente |
-| 10 | [10-multiplas-raizes.md](10-multiplas-raizes.md) | feature | P3 | pendente |
-| 11 | [11-acesso-webdav.md](11-acesso-webdav.md) | feature | P3 | pendente |
+- **Uma task `em execução` por vez.** Não pular a ordem sem registrar o motivo em Notas.
+- Toda task termina **verde no `make ci`**; o **contrato HTTP não muda** salvo a task dizer o contrário (frontend, 2 apps Android e plugin consomem a API); **i18n obrigatório** em toda string visível; commits lógicos diretos em `develop`, sem `Co-Authored-By`.
+- Mudança de status é sempre um commit — o board nunca fica só na memória de quem executa.
 
-> Dependências fortes: a 01 e a 02 destravam a confiabilidade básica da aba de arquivos. A 04 vem antes de qualquer exposição fora da máquina local. A 05 reduz o trabalho da 06. A 07 fica mais segura depois da 01 (o único código que indexava diretórios mora no legado). A 11 depende da 04.
+## Board
+
+| # | Task | Tipo | Prioridade | Depende de | Status | Notas |
+|---|---|---|---|---|---|---|
+| 01 | [Indexação de diretórios](01-indexacao-de-diretorios.md) | bug crítico | P0 | — | pendente | causa raiz do bug reportado |
+| 02 | [Filtro deleted_at](02-filtro-deleted-at.md) | bug | P0 | — | pendente | |
+| 03 | [Debounce do watcher perde eventos](03-debounce-watcher-perde-eventos.md) | bug | P1 | — | pendente | |
+| 04 | [Whitelist de IPs](04-whitelist-de-ips.md) | segurança | P0 | — | pendente | decisão: sem autenticação |
+| 05 | [Operações atualizam banco sincronamente](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | 01, 02 | pendente | |
+| 06 | [Watcher por eventos (fsnotify)](06-watcher-por-eventos-fsnotify.md) | performance | P2 | 01, 03 | pendente | |
+| 07 | [Remover pipeline legado](07-remover-pipeline-legado.md) | dívida técnica | P2 | 01 | pendente | legado guarda o único exemplo de indexação de dirs |
+| 08 | [Decompor get_files query](08-decompor-get-files-query.md) | dívida técnica | P2 | 02 | pendente | |
+| 09 | [Lixeira](09-lixeira.md) | feature | P2 | 02, 05 | pendente | |
+| 10 | [Múltiplas raízes](10-multiplas-raizes.md) | feature | P3 | 01, 05 | pendente | fundação da visão de armazenamento |
+| 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | pendente | melhor após 10 |
+| 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | pendente | retenção ≠ espelho |
+| 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | pendente | path lógico × físico |
+
+Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
+
+## Decisões registradas (valem para todas as tasks)
+
+- **Sem autenticação** (2026-06-11): nada de login/senha/token. Controle de acesso é whitelist de IPs (task 04). TLS fora de escopo enquanto o produto for de rede interna.
+- **Redundância de disco é do SO, não do app** (2026-06-11): HDs avulsos em pool espelhado via Windows Storage Spaces; o KuraNAS enxerga um volume comum. Detalhe na task 10.
+- **Visão de armazenamento** (2026-06-11): SSD = tier quente; pool de HDs = tier frio + backup com retenção; HD externo 2 TB = segunda cópia desconectável (gerida pelo SO). Tasks 10 → 12/13.
+- **Backup ≠ espelho**: backup tem retenção de versões; espelho propaga ransomware/exclusão acidental (task 12).
+- **Tiering é transparente**: arquivo migrado não muda de lugar na árvore lógica — separação path lógico × localização física (task 13).

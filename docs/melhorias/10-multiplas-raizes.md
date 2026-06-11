@@ -10,6 +10,12 @@ Um NAS real quase nunca tem um disco só: HD interno + externo, partições sepa
 
 Observação: o domínio `libraries` e os `watchfolders` já apontam para pastas específicas, mas **dentro** do conceito de raiz única — não são raízes de indexação independentes.
 
+### Visão de armazenamento que esta task fundamenta (registrada 2026-06-11)
+
+Esta task deixou de ser "feature futura isolada" e virou **fundação** do desenho de armazenamento do dono: SSD 512 GB como tier quente, pool de HDs como tier frio + área de backup, HD externo 2 TB como segunda cópia. As tasks **12 (backup)** e **13 (tiering)** dependem das múltiplas raízes definidas aqui.
+
+**Decisão de infraestrutura (fora do código):** redundância contra disco queimado **não será implementada no KuraNAS**. Os HDs avulsos serão agrupados em pool espelhado pelo **Windows Storage Spaces** (nativo, discos de tamanhos diferentes, reconstrução ao trocar disco), que apresenta o pool ao sistema como um volume comum — a redundância fica transparente para o KuraNAS, zero código. Recomendação registrada: discos do pool em SATA interno quando possível; USB fica para a segunda cópia de backup desconectável.
+
 ## Objetivo
 
 O usuário cadastra N raízes de armazenamento (ex.: `D:\Arquivos`, `E:\Midia`); todas são indexadas, vigiadas e navegáveis, e os paths fora delas continuam inacessíveis pela API.
