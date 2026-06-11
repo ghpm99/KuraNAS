@@ -492,15 +492,11 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 	page := 1
 	pageSize := 500
 	updatedAny := false
-	// Deliberately DeletedFilterAny: this step both marks missing files as
-	// deleted and restores soft-deleted rows whose file reappeared on disk,
-	// so it must see deleted rows too.
-	filter := files.FileFilter{
-		PathPrefix: utils.Optional[string]{HasValue: true, Value: root},
-		Deleted:    files.DeletedFilterAny,
-	}
+	// The prefix walk deliberately sees soft-deleted rows too: this step both
+	// marks missing files as deleted and restores rows whose file reappeared
+	// on disk.
 	for {
-		result, listErr := context.FilesService.GetFiles(filter, page, pageSize)
+		result, listErr := context.FilesService.GetFilesByPathPrefix(root, page, pageSize)
 		if listErr != nil {
 			return listErr
 		}

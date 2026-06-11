@@ -16,6 +16,7 @@ import (
 type workerFilesServiceMock struct {
 	files.ServiceInterface
 	getFilesFn          func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	getByPathPrefixFn   func(prefix string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	getFileStatByPathFn func(path string) (files.FileStat, bool, error)
 	createFileFn        func(fileDto files.FileDto) (files.FileDto, error)
 	updateFileFn        func(file files.FileDto) (bool, error)
@@ -30,6 +31,12 @@ type workerFilesServiceMock struct {
 func (m *workerFilesServiceMock) GetFiles(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	if m.getFilesFn != nil {
 		return m.getFilesFn(filter, page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileDto]{}, nil
+}
+func (m *workerFilesServiceMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	if m.getByPathPrefixFn != nil {
+		return m.getByPathPrefixFn(prefix, page, pageSize)
 	}
 	return utils.PaginationResponse[files.FileDto]{}, nil
 }

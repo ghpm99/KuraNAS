@@ -361,7 +361,7 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	missingPath := filepath.Join(root, "missing.txt")
 	restoreTime := time.Now().Add(-time.Hour)
 	markDeletedService := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+		getByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			return utils.PaginationResponse[files.FileDto]{
 				Items: []files.FileDto{
 					{ID: 10, Path: missingPath},
@@ -388,7 +388,7 @@ func TestExecuteDiffAgainstDBStepAndMarkDeletedStep(t *testing.T) {
 	}
 
 	noChangesService := &workerFilesServiceMock{
-		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+		getByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			return utils.PaginationResponse[files.FileDto]{
 				Items:      []files.FileDto{{ID: 12, Path: existingPath}},
 				Pagination: utils.Pagination{Page: page, PageSize: pageSize},

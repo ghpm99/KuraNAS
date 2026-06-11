@@ -1,6 +1,7 @@
 package files
 
 import (
+	"database/sql"
 	"errors"
 	"mime/multipart"
 	"net/http"
@@ -39,6 +40,26 @@ func (m *filesHandlerServiceMock) GetFiles(filter FileFilter, page int, pageSize
 			Page: page, PageSize: pageSize,
 		},
 	}, nil
+}
+func (m *filesHandlerServiceMock) listingPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return utils.PaginationResponse[FileDto]{
+		Items: []FileDto{{ID: 1, Name: "a", Path: "/tmp/a", ParentPath: "/tmp"}},
+		Pagination: utils.Pagination{
+			Page: page, PageSize: pageSize,
+		},
+	}, nil
+}
+func (m *filesHandlerServiceMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) GetActiveFilesPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
 }
 func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return FileStat{}, false, nil
@@ -107,6 +128,9 @@ func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFi
 type filesHandlerServiceFuncMock struct {
 	filesHandlerServiceMock
 	getFilesFn           func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFilesByPathFn     func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getActiveFilesFn     func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getFileByIdFn        func(id int) (FileDto, error)
 	updateFileFn         func(file FileDto) (bool, error)
 	getFileBlobByIdFn    func(fileId int) (FileBlob, error)
@@ -123,6 +147,24 @@ func (m *filesHandlerServiceFuncMock) GetFiles(filter FileFilter, page int, page
 		return m.getFilesFn(filter, page, pageSize)
 	}
 	return m.filesHandlerServiceMock.GetFiles(filter, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getChildrenFn != nil {
+		return m.getChildrenFn(parentPath, category, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetChildrenByParentPath(parentPath, category, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getFilesByPathFn != nil {
+		return m.getFilesByPathFn(path, page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetFilesByPath(path, page, pageSize)
+}
+func (m *filesHandlerServiceFuncMock) GetActiveFilesPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getActiveFilesFn != nil {
+		return m.getActiveFilesFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetActiveFilesPage(page, pageSize)
 }
 func (m *filesHandlerServiceFuncMock) GetFileById(id int) (FileDto, error) {
 	if m.getFileByIdFn != nil {
@@ -339,11 +381,8 @@ func TestFilesHandlerThumbnailMissingSource(t *testing.T) {
 
 func TestFilesHandlerGetChildrenByIdNotFound(t *testing.T) {
 	service := &filesHandlerServiceFuncMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-			if filter.ID.HasValue {
-				return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
-			}
-			return utils.PaginationResponse[FileDto]{Items: []FileDto{{ID: 1, Path: "/tmp"}}}, nil
+		getFileByIdFn: func(id int) (FileDto, error) {
+			return FileDto{}, sql.ErrNoRows
 		},
 	}
 	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
@@ -364,9 +403,9 @@ func TestFilesHandlerGetFilesTreeWithParentFilter(t *testing.T) {
 		getFileByIdFn: func(id int) (FileDto, error) {
 			return FileDto{ID: id, Path: expectedParentPath}, nil
 		},
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-			if !filter.ParentPath.HasValue || filter.ParentPath.Value != expectedParentPath {
-				t.Fatalf("expected ParentPath filter %q, got %+v", expectedParentPath, filter.ParentPath)
+		getChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			if parentPath != expectedParentPath {
+				t.Fatalf("expected parent path %q, got %q", expectedParentPath, parentPath)
 			}
 			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
 		},
@@ -387,6 +426,15 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 	errBoom := errors.New("boom")
 	service := &filesHandlerServiceFuncMock{
 		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getFilesByPathFn: func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			return utils.PaginationResponse[FileDto]{}, errBoom
+		},
+		getActiveFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 			return utils.PaginationResponse[FileDto]{}, errBoom
 		},
 		getFileByIdFn: func(id int) (FileDto, error) {
