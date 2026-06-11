@@ -379,6 +379,10 @@ func (s *Service) UploadFiles(targetFolderID int, files []*multipart.FileHeader)
 			return UploadFilesResult{}, newFileOperationError(http.StatusInternalServerError, "ERROR_UPLOAD_FAILED", saveErr)
 		}
 
+		if syncErr := s.syncPathRow(destinationPath); syncErr != nil {
+			s.logSyncFailure("UploadFiles", destinationPath, syncErr)
+		}
+
 		uploaded = append(uploaded, destinationPath)
 	}
 
@@ -672,6 +676,12 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 
 	if err := copyPathRecursive(resolvedSourcePath, resolvedDestPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_COPY_FAILED", err)
+	}
+
+	// Only the copied root row is inserted synchronously; the contents of a
+	// copied directory (and metadata/checksum/thumbnail) come via the pipeline.
+	if err := s.syncPathRow(resolvedDestPath); err != nil {
+		s.logSyncFailure("CopyFile", resolvedDestPath, err)
 	}
 
 	s.ScanDirTask(filepath.Dir(resolvedDestPath))
