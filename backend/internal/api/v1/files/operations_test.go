@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"io"
 	"mime/multipart"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestResolvePathInEntryPoint(t *testing.T) {
@@ -644,6 +646,98 @@ func TestCreateFolderAlreadyExists(t *testing.T) {
 
 	_, err := service.CreateFolder(nil, "existing")
 	requireOperationError(t, err, http.StatusConflict, "ERROR_FOLDER_ALREADY_EXISTS")
+}
+
+func TestCreateFolderInsertsDirectoryRowSynchronously(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	var created []FileModel
+	repo := &filesRepoMock{
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			file.ID = len(created) + 1
+			created = append(created, file)
+			return file, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	createdPath, err := service.CreateFolder(nil, "albums")
+	if err != nil {
+		t.Fatalf("CreateFolder returned error: %v", err)
+	}
+
+	if len(created) != 1 {
+		t.Fatalf("expected 1 directory row inserted, got %d", len(created))
+	}
+	row := created[0]
+	if row.Type != Directory || row.Name != "albums" || row.Path != createdPath || row.ParentPath != entryPoint {
+		t.Fatalf("unexpected directory row: %+v", row)
+	}
+}
+
+func TestCreateFolderRevivesSoftDeletedRow(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	deletedRow := FileModel{
+		ID:         7,
+		Name:       "albums",
+		Path:       filepath.Join(entryPoint, "albums"),
+		ParentPath: entryPoint,
+		Type:       Directory,
+		DeletedAt:  sql.NullTime{Valid: true, Time: time.Now()},
+	}
+
+	var updated []FileModel
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.Name.HasValue && filter.Name.Value == "albums" {
+				return utils.PaginationResponse[FileModel]{Items: []FileModel{deletedRow}}, nil
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			t.Fatalf("expected revive via UpdateFile, got CreateFile for %+v", file)
+			return file, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updated = append(updated, file)
+			return true, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	if _, err := service.CreateFolder(nil, "albums"); err != nil {
+		t.Fatalf("CreateFolder returned error: %v", err)
+	}
+
+	if len(updated) != 1 {
+		t.Fatalf("expected 1 updated row, got %d", len(updated))
+	}
+	if updated[0].ID != 7 || updated[0].DeletedAt.Valid {
+		t.Fatalf("expected row 7 revived (deleted_at cleared), got %+v", updated[0])
+	}
+}
+
+func TestCreateFolderSucceedsWhenDatabaseSyncFails(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	repo := &filesRepoMock{
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			return file, errors.New("db down")
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	createdPath, err := service.CreateFolder(nil, "albums")
+	if err != nil {
+		t.Fatalf("CreateFolder must succeed when only the db sync fails, got: %v", err)
+	}
+	if info, statErr := os.Stat(createdPath); statErr != nil || !info.IsDir() {
+		t.Fatalf("created folder missing on disk: %v", statErr)
+	}
 }
 
 func TestCreateFolderEmptyName(t *testing.T) {
