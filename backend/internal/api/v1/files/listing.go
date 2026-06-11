@@ -11,7 +11,6 @@ import (
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
-	"time"
 )
 
 func (handler *Handler) GetFilesHandler(c *gin.Context) {
@@ -33,6 +32,7 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 			HasValue: fileParent != 0,
 			Value:    fileParent,
 		},
+		Deleted: DeletedFilterOnlyActive,
 	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
@@ -72,6 +72,7 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 			HasValue: true,
 			Value:    path,
 		},
+		Deleted: DeletedFilterOnlyActive,
 	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
@@ -109,6 +110,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 			HasValue: true,
 			Value:    id,
 		},
+		Deleted: DeletedFilterOnlyActive,
 	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
@@ -134,6 +136,7 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 			HasValue: true,
 			Value:    file.Items[0].Path,
 		},
+		Deleted: DeletedFilterOnlyActive,
 	}, page, pageSize)
 
 	if err != nil {
@@ -187,9 +190,7 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 	fileCategory := c.DefaultQuery("category", string(AllCategory))
 
 	fileFilter := FileFilter{
-		DeletedAt: utils.Optional[time.Time]{
-			HasValue: false,
-		},
+		Deleted:  DeletedFilterOnlyActive,
 		Category: FileCategory(fileCategory),
 	}
 
@@ -256,8 +257,7 @@ func (r *Repository) GetFiles(filter FileFilter, page int, pageSize int) (utils.
 		filter.Format.Value,
 		!filter.Type.HasValue,
 		filter.Type.Value,
-		!filter.DeletedAt.HasValue,
-		filter.DeletedAt.Value,
+		string(filter.Deleted),
 		filter.Category,
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),

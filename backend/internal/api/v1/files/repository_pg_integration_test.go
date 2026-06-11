@@ -170,3 +170,58 @@ func TestPostgres_GetFileStatByPath_RecognizesUnchangedFixtureFiles(t *testing.T
 		}
 	}
 }
+
+// TestPostgres_DeletedFilterTriState proves the three intents of the
+// deleted_at filter against the real query: only-active hides soft-deleted
+// rows (the bug was that they leaked into the tree), only-deleted returns just
+// them, and any ignores the flag. The old Optional[time.Time] filter could not
+// express IS NULL / IS NOT NULL at all.
+func TestPostgres_DeletedFilterTriState(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	parent := "/srv/dados"
+	activePath := parent + "/ativo.txt"
+	deletedPath := parent + "/deletado.txt"
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "ativo.txt", activePath, parent, 10, mod)
+	insertFileRow(t, repo, "deletado.txt", deletedPath, parent, 20, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, e := tx.Exec("UPDATE home_file SET deleted_at = now() WHERE path = $1", deletedPath)
+		return e
+	})
+	if err != nil {
+		t.Fatalf("soft-delete row: %v", err)
+	}
+
+	parentFilter := utils.Optional[string]{HasValue: true, Value: parent}
+
+	listPaths := func(deleted DeletedFilter) []string {
+		t.Helper()
+		res, listErr := repo.GetFiles(FileFilter{ParentPath: parentFilter, Deleted: deleted}, 1, 50)
+		if listErr != nil {
+			t.Fatalf("GetFiles(%q): %v", deleted, listErr)
+		}
+		paths := []string{}
+		for _, item := range res.Items {
+			paths = append(paths, item.Path)
+		}
+		return paths
+	}
+
+	if got := listPaths(DeletedFilterOnlyActive); len(got) != 1 || got[0] != activePath {
+		t.Fatalf("only-active must return just the active row, got %v", got)
+	}
+	if got := listPaths(DeletedFilterOnlyDeleted); len(got) != 1 || got[0] != deletedPath {
+		t.Fatalf("only-deleted must return just the soft-deleted row, got %v", got)
+	}
+	if got := listPaths(DeletedFilterAny); len(got) != 2 {
+		t.Fatalf("any must return both rows, got %v", got)
+	}
+	// Zero value (caller declared nothing) keeps the ignore semantics.
+	if got := listPaths(DeletedFilter("")); len(got) != 2 {
+		t.Fatalf("zero-value filter must behave as any, got %v", got)
+	}
+}

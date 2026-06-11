@@ -635,8 +635,8 @@ func TestFindFilesDeleted_CountsOnlySuccessfulUpdatesAndKeepsDeletedFilterOnPagi
 	svc := &workerFilesServiceMock{
 		getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 			pageCalls++
-			if !filter.DeletedAt.HasValue {
-				t.Fatalf("expected DeletedAt filter to be preserved on page %d", page)
+			if filter.Deleted != files.DeletedFilterOnlyActive {
+				t.Fatalf("expected only-active deleted filter to be preserved on page %d, got %q", page, filter.Deleted)
 			}
 			if page == 1 {
 				return utils.PaginationResponse[files.FileDto]{

@@ -34,11 +34,14 @@ func ScanDirWorker(service files.ServiceInterface, data any) {
 		dirFileMap[fileDto.Name] = fileDto
 	}
 
+	// Legacy pipeline (removal tracked in task 07). DeletedFilterAny keeps the
+	// behavior it always had: the old deleted_at filter was effectively off.
 	cacheFileArray, err := service.GetFiles(files.FileFilter{
 		Path: utils.Optional[string]{
 			Value:    path,
 			HasValue: true,
 		},
+		Deleted: files.DeletedFilterAny,
 	}, 1, 1000)
 
 	if err != nil {

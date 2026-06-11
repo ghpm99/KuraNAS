@@ -51,11 +51,11 @@ END
 
 ## Critérios de aceite
 
-- [ ] Arquivo marcado com `deleted_at` não aparece na aba de arquivos (árvore, listagem por path, children).
-- [ ] O fluxo de restauração do `mark_deleted` (arquivo reaparece no disco → `deleted_at` limpo) continua funcionando, com teste cobrindo.
-- [ ] Não existe mais comparação `deleted_at = <timestamp>` em query nenhuma de `queries/files/`.
-- [ ] Todos os construtores de `FileFilter` declaram explicitamente a intenção do filtro de deletados.
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [x] Arquivo marcado com `deleted_at` não aparece na aba de arquivos (árvore, listagem por path, children). *(handlers de listagem passam `DeletedFilterOnlyActive`; `TestPostgres_DeletedFilterTriState` prova o ramo `IS NULL` contra Postgres real)*
+- [x] O fluxo de restauração do `mark_deleted` (arquivo reaparece no disco → `deleted_at` limpo) continua funcionando, com teste cobrindo. *(`executeMarkDeletedStep` agora declara `DeletedFilterAny`; `TestMarkDeletedStep_RestoresReappearedFile_Postgres`)*
+- [x] Não existe mais comparação `deleted_at = <timestamp>` em query nenhuma de `queries/files/`. *(só restam `IS NULL`/`IS NOT NULL` e colunas de escrita)*
+- [x] Todos os construtores de `FileFilter` declaram explicitamente a intenção do filtro de deletados. *(listing/handlers → OnlyActive; GetFileById/GetFileByNameAndPath/mark_deleted → Any com comentário; legado scan → Any preservando comportamento, FindFilesDeleted → OnlyActive e deixa de ser inócua)*
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(make ci completo verde em 2026-06-11, integração contra Postgres 18 local)*
 
 ## Fora de escopo
 
