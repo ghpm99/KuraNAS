@@ -25,21 +25,11 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
-	fileParent := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
-
-	filter := FileFilter{
-		FileParent: utils.Optional[int]{
-			HasValue: fileParent != 0,
-			Value:    fileParent,
-		},
-		Deleted: DeletedFilterOnlyActive,
-	}
-
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: filter,
+		Data: map[string]int{"page": page, "page_size": pageSize},
 	})
 
-	pagination, err := handler.service.GetFiles(filter, page, pageSize)
+	pagination, err := handler.service.GetActiveFilesPage(page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -67,19 +57,11 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 	rawPath := c.DefaultQuery("path", "")
 	path := config.ToAbsolutePath(rawPath)
 
-	filter := FileFilter{
-		Path: utils.Optional[string]{
-			HasValue: true,
-			Value:    path,
-		},
-		Deleted: DeletedFilterOnlyActive,
-	}
-
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: filter,
+		Data: map[string]string{"path": path},
 	})
 
-	pagination, err := handler.service.GetFiles(filter, page, pageSize)
+	pagination, err := handler.service.GetFilesByPath(path, page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -105,39 +87,27 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 	id := utils.ParseInt(c.Param("id"), c)
 
-	filter := FileFilter{
-		ID: utils.Optional[int]{
-			HasValue: true,
-			Value:    id,
-		},
-		Deleted: DeletedFilterOnlyActive,
-	}
-
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: filter,
+		Data: map[string]int{"id": id},
 	})
 
-	file, err := handler.service.GetFiles(filter, page, pageSize)
+	file, err := handler.service.GetFileById(id)
 
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
-	if len(file.Items) == 0 {
-		err := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+	// Soft-deleted rows are not part of the tree: same 404 the active-only
+	// filter used to produce.
+	if errors.Is(err, sql.ErrNoRows) || file.DeletedAt.HasValue {
+		notFoundErr := fmt.Errorf("%s", i18n.GetMessage("ERROR_FILE_NOT_FOUND"))
+		handler.Logger.CompleteWithErrorLog(loggerModel, notFoundErr)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	pagination, err := handler.service.GetFiles(FileFilter{
-		Path: utils.Optional[string]{
-			HasValue: true,
-			Value:    file.Items[0].Path,
-		},
-		Deleted: DeletedFilterOnlyActive,
-	}, page, pageSize)
+	pagination, err := handler.service.GetFilesByPath(file.Path, page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -187,13 +157,9 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 
 	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
 
-	fileCategory := c.DefaultQuery("category", string(AllCategory))
+	fileCategory := FileCategory(c.DefaultQuery("category", string(AllCategory)))
 
-	fileFilter := FileFilter{
-		Deleted:  DeletedFilterOnlyActive,
-		Category: FileCategory(fileCategory),
-	}
-
+	parentPath := config.AppConfig.EntryPoint
 	if fileParentId != 0 {
 		fileParent, err := handler.service.GetFileById(fileParentId)
 		if err != nil {
@@ -202,23 +168,15 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 			return
 		}
 		if fileParent.ID != 0 {
-			fileFilter.ParentPath = utils.Optional[string]{
-				HasValue: true,
-				Value:    fileParent.Path,
-			}
-		}
-	} else {
-		fileFilter.ParentPath = utils.Optional[string]{
-			HasValue: true,
-			Value:    config.AppConfig.EntryPoint,
+			parentPath = fileParent.Path
 		}
 	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: fileFilter,
+		Data: map[string]string{"parent_path": parentPath, "category": string(fileCategory)},
 	})
 
-	pagination, err := handler.service.GetFiles(fileFilter, page, pageSize)
+	pagination, err := handler.service.GetChildrenByParentPath(parentPath, fileCategory, page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)

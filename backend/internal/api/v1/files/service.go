@@ -102,35 +102,89 @@ func (s *Service) getDirectoryContentCount(file FileDto) int {
 	return contentCount
 }
 
-func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
-	// Deliberately DeletedFilterAny: pickActiveFile prefers the active row,
-	// but persist/revive flows need to see the soft-deleted one too.
-	filter := FileFilter{
-		Name:    utils.Optional[string]{HasValue: true, Value: name},
-		Path:    utils.Optional[string]{HasValue: true, Value: path},
-		Deleted: DeletedFilterAny,
+// toDtoPageWithCounts converts a model page to the DTO shape served by the
+// listing endpoints, filling DirectoryContentCount for directories.
+func (s *Service) toDtoPageWithCounts(models utils.PaginationResponse[FileModel]) (utils.PaginationResponse[FileDto], error) {
+	page, err := ParsePaginationToDto(&models)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
 	}
-	pagination, err := s.GetFiles(filter, 1, 5)
+	for index := range page.Items {
+		if page.Items[index].Type == Directory {
+			page.Items[index].DirectoryContentCount = s.getDirectoryContentCount(page.Items[index])
+		}
+	}
+	return page, nil
+}
 
+// GetChildrenByParentPath lists the active children of a directory (the tree),
+// optionally narrowed by category (all / starred / recent).
+func (s *Service) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetActiveChildrenByParentPath(parentPath, category, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return s.toDtoPageWithCounts(models)
+}
+
+// GetFilesByPath returns the active row(s) at an exact path.
+func (s *Service) GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetActiveFilesByPath(path, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return s.toDtoPageWithCounts(models)
+}
+
+// GetActiveFilesPage lists all active files, paginated.
+func (s *Service) GetActiveFilesPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetActiveFiles(page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return s.toDtoPageWithCounts(models)
+}
+
+// GetFilesByPathPrefix walks a subtree in any soft-delete state (reconciliation
+// feed) — no per-directory content counts, the consumer only needs the rows.
+func (s *Service) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetFilesByPathPrefix(prefix, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[FileDto]{}, err
+	}
+	return ParsePaginationToDto(&models)
+}
+
+func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
+	// Sees soft-deleted rows too: pickActiveFile prefers the active row, but
+	// persist/revive flows need the deleted one when it is all there is.
+	models, err := s.Repository.GetFilesByNameAndPath(name, path, 5)
 	if err != nil {
 		return FileDto{}, fmt.Errorf("error fetching files: %w", err)
 	}
-	return pickActiveFile(pagination.Items)
+
+	items := make([]FileDto, 0, len(models))
+	for index := range models {
+		fileDto, dtoErr := models[index].ToDto()
+		if dtoErr != nil {
+			return FileDto{}, dtoErr
+		}
+		items = append(items, fileDto)
+	}
+	return pickActiveFile(items)
 }
 
 func (s *Service) GetFileById(id int) (FileDto, error) {
-	// Deliberately DeletedFilterAny: internal flows look rows up by id even
-	// while soft-deleted (e.g. restore); pickActiveFile prefers the active row.
-	filter := FileFilter{
-		ID:      utils.Optional[int]{HasValue: true, Value: id},
-		Deleted: DeletedFilterAny,
-	}
-	pagination, err := s.GetFiles(filter, 1, 5)
-
+	// Sees soft-deleted rows too: internal flows look rows up by id even
+	// while soft-deleted (e.g. restore).
+	model, found, err := s.Repository.GetFileByID(id)
 	if err != nil {
 		return FileDto{}, fmt.Errorf("error fetching file: %w", err)
 	}
-	return pickActiveFile(pagination.Items)
+	if !found {
+		return FileDto{}, sql.ErrNoRows
+	}
+	return model.ToDto()
 }
 
 // pickActiveFile resolve buscas que podem casar mais de uma linha. Um arquivo recriado
@@ -388,13 +442,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 
 	for hasNext {
 
-		filesInDirectory, err := s.GetFiles(FileFilter{
-			ParentPath: utils.Optional[string]{
-				Value:    fileDto.Path,
-				HasValue: true,
-			},
-			Deleted: DeletedFilterOnlyActive,
-		}, page, 1000)
+		filesInDirectory, err := s.Repository.GetActiveChildrenByParentPath(fileDto.Path, AllCategory, page, 1000)
 
 		if err != nil {
 			return err

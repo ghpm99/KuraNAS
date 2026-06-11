@@ -258,17 +258,21 @@ func sampleModel(id int, name string, typ FileType) FileModel {
 
 func TestFileService_GetAndFind(t *testing.T) {
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.Name.HasValue && filter.Name.Value == "none" {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		getFilesByNameAndPathFn: func(name string, path string, limit int) ([]FileModel, error) {
+			switch name {
+			case "none":
+				return nil, nil
+			case "multi":
+				return []FileModel{sampleModel(1, "a", File), sampleModel(2, "b", File)}, nil
+			default:
+				return []FileModel{sampleModel(1, "one", File)}, nil
 			}
-			if filter.Name.HasValue && filter.Name.Value == "multi" {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "a", File), sampleModel(2, "b", File)}}, nil
+		},
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			if id == 123 {
+				return sampleModel(123, "one", File), true, nil
 			}
-			if filter.ID.HasValue && filter.ID.Value == 123 {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(123, "one", File)}}, nil
-			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "one", File)}}, nil
+			return FileModel{}, false, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo)
@@ -420,11 +424,11 @@ func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
 
 func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue && filter.ID.Value == 999 {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			if id == 999 {
+				return FileModel{}, false, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(10, "blob.txt", File)}}, nil
+			return sampleModel(10, "blob.txt", File), true, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo)
@@ -448,21 +452,17 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 	}
 
 	// Rebind repo return path to existing file for blob retrieval.
-	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-		return utils.PaginationResponse[FileModel]{
-			Items: []FileModel{
-				{
-					ID:         10,
-					Name:       "blob.txt",
-					Path:       tmpFile,
-					ParentPath: tmpDir,
-					Type:       File,
-					Format:     ".txt",
-					UpdatedAt:  time.Now(),
-					CreatedAt:  time.Now(),
-				},
-			},
-		}, nil
+	repo.getFileByIDFn = func(id int) (FileModel, bool, error) {
+		return FileModel{
+			ID:         10,
+			Name:       "blob.txt",
+			Path:       tmpFile,
+			ParentPath: tmpDir,
+			Type:       File,
+			Format:     ".txt",
+			UpdatedAt:  time.Now(),
+			CreatedAt:  time.Now(),
+		}, true, nil
 	}
 
 	blob, err := s.GetFileBlobById(10)
@@ -472,8 +472,8 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 	if !s.CheckFileExists(10) {
 		t.Fatalf("expected CheckFileExists true for existing file")
 	}
-	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-		return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+	repo.getFileByIDFn = func(id int) (FileModel, bool, error) {
+		return FileModel{}, false, nil
 	}
 	if s.CheckFileExists(999) {
 		t.Fatalf("expected CheckFileExists false for missing file")
@@ -536,10 +536,8 @@ func TestFileService_ReportsAndWrappers(t *testing.T) {
 
 func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{
-				Items: []FileModel{sampleModel(filter.ID.Value, "x", File)},
-			}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			return sampleModel(id, "x", File), true, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo)
@@ -568,9 +566,8 @@ func TestFileService_DeleteAndChecksumBranches(t *testing.T) {
 	}
 
 	// Force default branch in UpdateCheckSum.
-	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-		m := sampleModel(filter.ID.Value, "unknown", FileType(99))
-		return utils.PaginationResponse[FileModel]{Items: []FileModel{m}}, nil
+	repo.getFileByIDFn = func(id int) (FileModel, bool, error) {
+		return sampleModel(id, "unknown", FileType(99)), true, nil
 	}
 	if err := s.UpdateCheckSum(9); err == nil {
 		t.Fatalf("expected unknown file type error")
@@ -585,56 +582,49 @@ func TestFileService_ChecksumThumbnailAndDeleteSuccess(t *testing.T) {
 	}
 
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue && filter.ID.Value == 1 {
-				return utils.PaginationResponse[FileModel]{
-					Items: []FileModel{
-						{
-							ID:         1,
-							Name:       "data.txt",
-							Path:       filePath,
-							ParentPath: tmpDir,
-							Type:       File,
-							Format:     ".txt",
-							UpdatedAt:  time.Now(),
-							CreatedAt:  time.Now(),
-						},
-					},
-				}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			switch id {
+			case 1:
+				return FileModel{
+					ID:         1,
+					Name:       "data.txt",
+					Path:       filePath,
+					ParentPath: tmpDir,
+					Type:       File,
+					Format:     ".txt",
+					UpdatedAt:  time.Now(),
+					CreatedAt:  time.Now(),
+				}, true, nil
+			case 2:
+				return FileModel{
+					ID:         2,
+					Name:       "dir",
+					Path:       tmpDir,
+					ParentPath: filepath.Dir(tmpDir),
+					Type:       Directory,
+					UpdatedAt:  time.Now(),
+					CreatedAt:  time.Now(),
+				}, true, nil
+			default:
+				return FileModel{}, false, nil
 			}
-			if filter.ID.HasValue && filter.ID.Value == 2 {
-				return utils.PaginationResponse[FileModel]{
-					Items: []FileModel{
-						{
-							ID:         2,
-							Name:       "dir",
-							Path:       tmpDir,
-							ParentPath: filepath.Dir(tmpDir),
-							Type:       Directory,
-							UpdatedAt:  time.Now(),
-							CreatedAt:  time.Now(),
-						},
+		},
+		getActiveChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{
+				Items: []FileModel{
+					{
+						ID:         3,
+						Name:       "child1",
+						Path:       filepath.Join(tmpDir, "c1"),
+						ParentPath: tmpDir,
+						Type:       File,
+						CheckSum:   "abcd",
+						UpdatedAt:  time.Now(),
+						CreatedAt:  time.Now(),
 					},
-				}, nil
-			}
-			if filter.ParentPath.HasValue {
-				return utils.PaginationResponse[FileModel]{
-					Items: []FileModel{
-						{
-							ID:         3,
-							Name:       "child1",
-							Path:       filepath.Join(tmpDir, "c1"),
-							ParentPath: tmpDir,
-							Type:       File,
-							CheckSum:   "abcd",
-							UpdatedAt:  time.Now(),
-							CreatedAt:  time.Now(),
-						},
-					},
-					Pagination: utils.Pagination{Page: 1, PageSize: 1000, HasNext: false},
-				}, nil
-			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+				},
+				Pagination: utils.Pagination{Page: 1, PageSize: 1000, HasNext: false},
+			}, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo)
@@ -836,29 +826,22 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("GetFileById no rows and multiple rows", func(t *testing.T) {
+	t.Run("GetFileById no rows and found row", func(t *testing.T) {
 		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				if filter.ID.Value == 10 {
-					return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			getFileByIDFn: func(id int) (FileModel, bool, error) {
+				if id == 10 {
+					return FileModel{}, false, nil
 				}
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{
-					sampleModel(1, "a", File),
-					sampleModel(2, "b", File),
-				}}, nil
+				return sampleModel(id, "a", File), true, nil
 			},
 		})
 
 		if _, err := s.GetFileById(10); !errors.Is(err, sql.ErrNoRows) {
 			t.Fatalf("expected sql.ErrNoRows, got %v", err)
 		}
-		// Múltiplas linhas: retorna a ativa (id 1) em vez de erro.
-		multi, err := s.GetFileById(11)
-		if err != nil {
-			t.Fatalf("expected active file, got error %v", err)
-		}
-		if multi.ID != 1 {
-			t.Fatalf("expected active file id 1, got %d", multi.ID)
+		found, err := s.GetFileById(11)
+		if err != nil || found.ID != 11 {
+			t.Fatalf("expected file 11, got %+v err=%v", found, err)
 		}
 	})
 
@@ -869,19 +852,17 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			t.Fatalf("failed to create file: %v", err)
 		}
 		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				return utils.PaginationResponse[FileModel]{
-					Items: []FileModel{{
-						ID:         filter.ID.Value,
-						Name:       "x.txt",
-						Path:       filePath,
-						ParentPath: tmpDir,
-						Type:       File,
-						Format:     ".txt",
-						UpdatedAt:  time.Now(),
-						CreatedAt:  time.Now(),
-					}},
-				}, nil
+			getFileByIDFn: func(id int) (FileModel, bool, error) {
+				return FileModel{
+					ID:         id,
+					Name:       "x.txt",
+					Path:       filePath,
+					ParentPath: tmpDir,
+					Type:       File,
+					Format:     ".txt",
+					UpdatedAt:  time.Now(),
+					CreatedAt:  time.Now(),
+				}, true, nil
 			},
 		})
 

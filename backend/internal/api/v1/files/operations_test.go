@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime/multipart"
 	"nas-go/api/internal/config"
-	"nas-go/api/pkg/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -134,16 +133,13 @@ func TestResolvePathInEntryPointFromOperationsTest(t *testing.T) {
 func newTestServiceWithFileRecords(t *testing.T, entryPoint string, records []FileModel) *Service {
 	t.Helper()
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue {
-				for _, r := range records {
-					if r.ID == filter.ID.Value {
-						return utils.PaginationResponse[FileModel]{Items: []FileModel{r}}, nil
-					}
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			for _, r := range records {
+				if r.ID == id {
+					return r, true, nil
 				}
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 	}
 	service := newFilesServiceForTest(t, repo)
@@ -669,15 +665,13 @@ func TestMoveDirectorySyncsRowAndDescendantsInOneTransaction(t *testing.T) {
 	var updated []FileModel
 	var prefixSwaps [][2]string
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue {
-				for _, r := range records {
-					if r.ID == filter.ID.Value {
-						return utils.PaginationResponse[FileModel]{Items: []FileModel{r}}, nil
-					}
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			for _, r := range records {
+				if r.ID == id {
+					return r, true, nil
 				}
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			updated = append(updated, file)
@@ -724,11 +718,11 @@ func TestRenameFileSyncsRowSynchronously(t *testing.T) {
 	var updated []FileModel
 	var prefixSwaps int
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue && filter.ID.Value == 1 {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			if id == 1 {
+				return records[0], true, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			updated = append(updated, file)
@@ -776,15 +770,13 @@ func TestMoveFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
 		{ID: 2, Name: "dest", Path: destDir, ParentPath: entryPoint, Type: Directory},
 	}
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue {
-				for _, r := range records {
-					if r.ID == filter.ID.Value {
-						return utils.PaginationResponse[FileModel]{Items: []FileModel{r}}, nil
-					}
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			for _, r := range records {
+				if r.ID == id {
+					return r, true, nil
 				}
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
 			return false, errors.New("db down")
@@ -820,11 +812,11 @@ func TestDeleteFileMarksSubtreeDeletedSynchronously(t *testing.T) {
 
 	var markedPaths []string
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue && filter.ID.Value == 1 {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			if id == 1 {
+				return records[0], true, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 		markDeletedSubtreeFn: func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
 			markedPaths = append(markedPaths, path)
@@ -858,11 +850,11 @@ func TestDeleteFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
 		{ID: 1, Name: "doomed.txt", Path: fileToDelete, ParentPath: entryPoint, Type: File},
 	}
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.ID.HasValue && filter.ID.Value == 1 {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			if id == 1 {
+				return records[0], true, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return FileModel{}, false, nil
 		},
 		markDeletedSubtreeFn: func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
 			return 0, errors.New("db down")
@@ -921,11 +913,11 @@ func TestCreateFolderRevivesSoftDeletedRow(t *testing.T) {
 
 	var updated []FileModel
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			if filter.Name.HasValue && filter.Name.Value == "albums" {
-				return utils.PaginationResponse[FileModel]{Items: []FileModel{deletedRow}}, nil
+		getFilesByNameAndPathFn: func(name string, path string, limit int) ([]FileModel, error) {
+			if name == "albums" {
+				return []FileModel{deletedRow}, nil
 			}
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+			return nil, nil
 		},
 		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
 			t.Fatalf("expected revive via UpdateFile, got CreateFile for %+v", file)
@@ -995,11 +987,11 @@ func TestUploadAndCopyInsertBasicRowsSynchronously(t *testing.T) {
 	}
 
 	sourceRecord := FileModel{ID: 50, Name: "photo.jpg", Path: result.Uploaded[0], ParentPath: entryPoint, Type: File, Format: ".jpg"}
-	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-		if filter.ID.HasValue && filter.ID.Value == 50 {
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{sourceRecord}}, nil
+	repo.getFileByIDFn = func(id int) (FileModel, bool, error) {
+		if id == 50 {
+			return sourceRecord, true, nil
 		}
-		return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		return FileModel{}, false, nil
 	}
 
 	copiedPath, err := service.CopyFile(50, nil, "", "copy.jpg")
