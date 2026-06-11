@@ -12,6 +12,7 @@ import {
     TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import AccessControlSettingsSection from './AccessControlSettingsSection';
 import AIProvidersSettingsSection from './AIProvidersSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import useSettingsScreen from './useSettingsScreen';
@@ -69,6 +70,8 @@ const SettingsScreen = () => {
             {hasError ? <Alert severity="error">{t('SETTINGS_LOAD_ERROR')}</Alert> : null}
 
             <div className={styles.grid}>
+                <AccessControlSettingsSection className={styles.panel} />
+
                 <LibrarySettingsSection className={styles.panel} />
 
                 <AIProvidersSettingsSection className={styles.panel} />

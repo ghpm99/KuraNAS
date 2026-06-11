@@ -45,13 +45,13 @@ Nenhuma requisição é atendida (API, UI, futuro `/dav`) se o IP de origem não
 
 ## Critérios de aceite
 
-- [ ] Requisição de IP não cadastrado recebe 403 com mensagem i18n em **qualquer** rota (API, assets, SPA).
-- [ ] `localhost` acessa sempre, mesmo com a lista vazia — impossível se trancar para fora no próprio servidor.
-- [ ] Cadastro/edição/remoção pela UI tem efeito imediato, sem restart.
-- [ ] Faixas CIDR funcionam (ex.: liberar `192.168.1.0/24` libera a sub-rede).
-- [ ] Teste prova que `X-Forwarded-For`/`X-Real-IP` forjados não contornam a whitelist.
-- [ ] Cliente IPv4 via socket IPv6 (`::ffff:...`) casa com a entrada IPv4 cadastrada.
-- [ ] `make ci` verde (backend + frontend).
+- [x] Requisição de IP não cadastrado recebe 403 com mensagem i18n em **qualquer** rota (API, assets, SPA). *(middleware registrado no engine antes de todas as rotas; `TestMiddlewareBlocksUnknownIPWithI18nBody`)*
+- [x] `localhost` acessa sempre, mesmo com a lista vazia — impossível se trancar para fora no próprio servidor. *(`TestMiddlewareLoopbackAlwaysPasses`, inclui `::1` e `127.0.0.53`)*
+- [x] Cadastro/edição/remoção pela UI tem efeito imediato, sem restart. *(cache atômico recarregado a cada mutação; `TestIsAllowedReflectsCRUDImmediately`; seção em Settings com toggle/remover e cadastro do dispositivo atual em um clique)*
+- [x] Faixas CIDR funcionam (ex.: liberar `192.168.1.0/24` libera a sub-rede). *(`TestMiddlewareAllowsRegisteredCIDRRange`)*
+- [x] Teste prova que `X-Forwarded-For`/`X-Real-IP` forjados não contornam a whitelist. *(`TestMiddlewareForgedProxyHeadersDoNotBypass` + `SetTrustedProxies(nil)` no boot)*
+- [x] Cliente IPv4 via socket IPv6 (`::ffff:...`) casa com a entrada IPv4 cadastrada. *(`TestMiddlewareIPv4MappedClientMatchesIPv4Entry`; normalização com `netip.Addr.Unmap` nos dois lados)*
+- [x] `make ci` verde (backend + frontend). *(2026-06-11, integração contra Postgres 18 local; migração 0034 verificada no banco real)*
 
 ## Fora de escopo
 
