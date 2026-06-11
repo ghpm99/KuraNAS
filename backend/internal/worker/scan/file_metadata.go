@@ -2,44 +2,30 @@ package scan
 
 import (
 	"encoding/json"
-	"log"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
 	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/utils"
-	"sync"
 )
 
 type ScriptRunner func(scriptType utils.ScriptType, filePath string) (string, error)
 
-func StartMetadataWorker(
-	fileDtoChannel <-chan files.FileDto,
-	metadataProcessedChannel chan<- files.FileDto,
-	runner ScriptRunner,
-	monitorChannel chan<- ResultWorkerData,
-	workerGroup *sync.WaitGroup,
-	aiService ai.ServiceInterface,
-) {
-	defer workerGroup.Done()
+// PythonScriptRunner is the production ScriptRunner used by the metadata step.
+var PythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+	return utils.RunPythonScript(scriptType, filePath)
+}
 
-	for unprocessedFile := range fileDtoChannel {
-		metadata, err := GetMetadata(unprocessedFile, runner, aiService)
-
-		if err != nil {
-			log.Println(err)
-			monitorChannel <- ResultWorkerData{
-				Path:    unprocessedFile.Path,
-				Success: false,
-				Error:   err.Error(),
-			}
-		} else {
-			unprocessedFile.Metadata = metadata
+func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, filePath string) (string, error)) {
+	if runner == nil {
+		PythonScriptRunner = func(scriptType utils.ScriptType, filePath string) (string, error) {
+			return utils.RunPythonScript(scriptType, filePath)
 		}
-
-		metadataProcessedChannel <- unprocessedFile
+		return
 	}
+
+	PythonScriptRunner = runner
 }
 
 func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {

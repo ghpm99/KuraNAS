@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	jobdomain "nas-go/api/internal/worker/job"
@@ -11,16 +10,12 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/config"
-	"nas-go/api/internal/worker/scan"
-	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 )
 
 type pipelineFilesServiceMock struct {
 	workerFilesServiceMock
 	updated []files.FileDto
-	created []files.FileDto
 }
 
 func (m *pipelineFilesServiceMock) UpdateFile(file files.FileDto) (bool, error) {
@@ -29,26 +24,6 @@ func (m *pipelineFilesServiceMock) UpdateFile(file files.FileDto) (bool, error) 
 		return m.updateFileFn(file)
 	}
 	return true, nil
-}
-
-func (m *pipelineFilesServiceMock) CreateFile(fileDto files.FileDto) (files.FileDto, error) {
-	fileDto.ID = len(m.created) + 1
-	m.created = append(m.created, fileDto)
-	return fileDto, nil
-}
-
-func (m *pipelineFilesServiceMock) GetFileByNameAndPath(name, path string) (files.FileDto, error) {
-	return files.FileDto{}, sql.ErrNoRows
-}
-
-type pipelineLoggerMock struct{ logger.LoggerServiceInterface }
-
-func (m *pipelineLoggerMock) CreateLog(log logger.LoggerModel, object interface{}) (logger.LoggerModel, error) {
-	return logger.LoggerModel{}, nil
-}
-func (m *pipelineLoggerMock) CompleteWithSuccessLog(log logger.LoggerModel) error { return nil }
-func (m *pipelineLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error) error {
-	return nil
 }
 
 func TestUpdateCheckSumWorker(t *testing.T) {
@@ -162,42 +137,5 @@ func TestUpdateCheckSumWorkerOrchestratorAndPayloadHelper(t *testing.T) {
 	}
 	if decoded.FileID != 11 {
 		t.Fatalf("unexpected checksum payload: %+v", decoded)
-	}
-}
-
-func TestStartFileProcessingPipeline(t *testing.T) {
-	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("hello"), 0644); err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
-
-	prev := config.AppConfig
-	t.Cleanup(func() { config.AppConfig = prev })
-	config.AppConfig.EntryPoint = tmpDir
-
-	mock := &pipelineFilesServiceMock{}
-	tasks := make(chan utils.Task, 4)
-
-	scan.SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
-		return "{}", nil
-	})
-	defer scan.SetPythonScriptRunnerForTesting(nil)
-
-	scan.StartFileProcessingPipeline(mock, tasks, &pipelineLoggerMock{}, nil)
-
-	if len(mock.created) == 0 && len(mock.updated) == 0 {
-		t.Fatalf("expected pipeline to persist at least one file")
-	}
-
-	foundVideoTask := false
-	close(tasks)
-	for task := range tasks {
-		if task.Type == utils.GenerateVideoPlaylists {
-			foundVideoTask = true
-			break
-		}
-	}
-	if !foundVideoTask {
-		t.Fatalf("expected GenerateVideoPlaylists task to be enqueued")
 	}
 }
