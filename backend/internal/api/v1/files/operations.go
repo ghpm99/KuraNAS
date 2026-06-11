@@ -436,6 +436,10 @@ func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_CREATE_FOLDER_FAILED", err)
 	}
 
+	if err := s.syncPathRow(createdPath); err != nil {
+		s.logSyncFailure("CreateFolder", createdPath, err)
+	}
+
 	s.ScanDirTask(resolvedParentPath)
 	return createdPath, nil
 }
