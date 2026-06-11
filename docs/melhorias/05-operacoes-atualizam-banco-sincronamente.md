@@ -41,10 +41,10 @@ Para cada operação, atualizar as linhas afetadas em `home_file` na mesma trans
 
 ## Critérios de aceite
 
-- [ ] Após `POST` de move/rename/delete/create-folder, um `GET` imediato na árvore reflete o novo estado, **com workers desligados** (`ENABLE_WORKERS=false`).
+- [x] Após `POST` de move/rename/delete/create-folder, um `GET` imediato na árvore reflete o novo estado, **com workers desligados** (`ENABLE_WORKERS=false`). *(`TestPostgres_OperationsReflectImmediatelyWithoutWorkers` contra Postgres real, sem nenhum worker consumindo o canal de tasks; rodar com `TEST_DB_PORT=54329` no dev local)*
 - [x] Mover/renomear pasta atualiza `path`/`parent_path` de todos os descendentes em uma transação. *(`syncMovedRows`: `UpdateFile` + `UpdateDescendantPaths` no mesmo `withTransaction`; `TestMoveDirectorySyncsRowAndDescendantsInOneTransaction`)*
 - [x] Delete marca `deleted_at` da subárvore inteira. *(`syncDeletedRows` → `MarkDeletedSubtree` (linha + descendentes num único UPDATE); `TestDeleteFileMarksSubtreeDeletedSynchronously`)*
-- [ ] Falha no update do banco não corrompe a operação de disco (operação responde sucesso, log registra, rescan reconcilia).
+- [x] Falha no update do banco não corrompe a operação de disco (operação responde sucesso, log registra, rescan reconcilia). *(`logSyncFailure` + `TestMoveFileSucceedsWhenDatabaseSyncFails`, `TestDeleteFileSucceedsWhenDatabaseSyncFails`, `TestCreateFolderSucceedsWhenDatabaseSyncFails`)*
 - [x] Nenhuma query nova usa `LIKE` sobre paths. *(`update_descendant_paths.sql` e `mark_deleted_subtree.sql` usam `starts_with` com prefixo + separador montados no Go)*
 - [ ] `make ci-backend` verde (cobertura ≥ 80%).
 
