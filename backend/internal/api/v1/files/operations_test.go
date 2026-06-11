@@ -805,6 +805,79 @@ func TestMoveFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
 	}
 }
 
+func TestDeleteFileMarksSubtreeDeletedSynchronously(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	dirToDelete := filepath.Join(entryPoint, "library")
+	if err := os.MkdirAll(filepath.Join(dirToDelete, "child"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "library", Path: dirToDelete, ParentPath: entryPoint, Type: Directory},
+	}
+
+	var markedPaths []string
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue && filter.ID.Value == 1 {
+				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		markDeletedSubtreeFn: func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
+			markedPaths = append(markedPaths, path)
+			if deletedAt.IsZero() {
+				t.Fatalf("expected non-zero deleted_at timestamp")
+			}
+			return 2, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	if err := service.DeleteFileFromDisk(1); err != nil {
+		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
+	}
+
+	if len(markedPaths) != 1 || markedPaths[0] != dirToDelete {
+		t.Fatalf("expected subtree soft-delete for %q, got %v", dirToDelete, markedPaths)
+	}
+}
+
+func TestDeleteFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	fileToDelete := filepath.Join(entryPoint, "doomed.txt")
+	if err := os.WriteFile(fileToDelete, []byte("bye"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "doomed.txt", Path: fileToDelete, ParentPath: entryPoint, Type: File},
+	}
+	repo := &filesRepoMock{
+		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			if filter.ID.HasValue && filter.ID.Value == 1 {
+				return utils.PaginationResponse[FileModel]{Items: []FileModel{records[0]}}, nil
+			}
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+		},
+		markDeletedSubtreeFn: func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
+			return 0, errors.New("db down")
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	if err := service.DeleteFileFromDisk(1); err != nil {
+		t.Fatalf("DeleteFileFromDisk must succeed when only the db sync fails, got: %v", err)
+	}
+	if _, statErr := os.Stat(fileToDelete); !os.IsNotExist(statErr) {
+		t.Fatalf("deleted file still on disk")
+	}
+}
+
 func TestCreateFolderInsertsDirectoryRowSynchronously(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)

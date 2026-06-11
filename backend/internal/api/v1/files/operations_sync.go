@@ -86,6 +86,15 @@ func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
 	})
 }
 
+// syncDeletedRows soft-deletes the row at the removed path and its whole
+// subtree, so listings stop showing them before the reconciliation scan runs.
+func (s *Service) syncDeletedRows(path string) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		_, err := s.Repository.MarkDeletedSubtree(tx, path, time.Now())
+		return err
+	})
+}
+
 // syncPathRow inserts the row for a path just materialized on disk, reviving
 // the soft-deleted row when the same path is recreated instead of duplicating it.
 func (s *Service) syncPathRow(path string) error {

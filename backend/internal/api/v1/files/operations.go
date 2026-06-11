@@ -551,6 +551,10 @@ func (s *Service) DeleteFileFromDisk(id int) error {
 		return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 	}
 
+	if err := s.syncDeletedRows(file.Path); err != nil {
+		s.logSyncFailure("DeleteFileFromDisk", file.Path, err)
+	}
+
 	s.ScanDirTask(filepath.Dir(resolvedPath))
 	return nil
 }
