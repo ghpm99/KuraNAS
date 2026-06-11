@@ -970,6 +970,47 @@ func TestCreateFolderSucceedsWhenDatabaseSyncFails(t *testing.T) {
 	}
 }
 
+func TestUploadAndCopyInsertBasicRowsSynchronously(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	var created []FileModel
+	repo := &filesRepoMock{
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			file.ID = len(created) + 1
+			created = append(created, file)
+			return file, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+	service.JobsRepository = newFilesJobsRepoMockForTest(t)
+
+	headers := buildMultipartFileHeaders(t, "files", map[string]string{"photo.jpg": "binary"})
+	result, err := service.UploadFiles(0, headers)
+	if err != nil {
+		t.Fatalf("UploadFiles returned error: %v", err)
+	}
+	if len(created) != 1 || created[0].Path != result.Uploaded[0] || created[0].Type != File {
+		t.Fatalf("expected uploaded file row inserted, got %+v", created)
+	}
+
+	sourceRecord := FileModel{ID: 50, Name: "photo.jpg", Path: result.Uploaded[0], ParentPath: entryPoint, Type: File, Format: ".jpg"}
+	repo.getFilesFn = func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		if filter.ID.HasValue && filter.ID.Value == 50 {
+			return utils.PaginationResponse[FileModel]{Items: []FileModel{sourceRecord}}, nil
+		}
+		return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+	}
+
+	copiedPath, err := service.CopyFile(50, nil, "", "copy.jpg")
+	if err != nil {
+		t.Fatalf("CopyFile returned error: %v", err)
+	}
+	if len(created) != 2 || created[1].Path != copiedPath || created[1].Name != "copy.jpg" {
+		t.Fatalf("expected copied file row inserted, got %+v", created)
+	}
+}
+
 func TestCreateFolderEmptyName(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)
