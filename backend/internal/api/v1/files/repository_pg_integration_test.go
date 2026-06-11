@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"nas-go/api/pkg/utils"
 	"nas-go/api/internal/testutil"
+	"nas-go/api/pkg/utils"
 )
 
 // fixtureScanDir resolves the real fixture folder shipped in the repo

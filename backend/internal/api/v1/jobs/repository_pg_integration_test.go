@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"nas-go/api/internal/api/v1/jobs"
-	"nas-go/api/pkg/database"
 	"nas-go/api/internal/testutil"
+	"nas-go/api/pkg/database"
 )
 
 func truncateWorkerTables(t *testing.T, ctx *database.DbContext) {
