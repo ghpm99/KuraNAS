@@ -42,8 +42,8 @@ Mudanças no filesystem são detectadas por eventos do SO, com custo de CPU/IO p
 - [x] Pastas criadas após o boot passam a ser monitoradas (watch recursivo dinâmico). *(`watchTree` no Create de diretório, emitindo conteúdo que correu na frente do watch; `TestRecursiveWatcherWatchesDirectoriesCreatedAfterStart`)*
 - [x] Overflow/erro do watcher dispara reconciliação completa automaticamente. *(`onError` → `enqueueFilesystemEventJob`; `TestWatcherErrorFallbackEnqueuesFullReconciliation`)*
 - [x] Reconciliação periódica configurável existe e roda. *(`reconciliationLoop` + `WATCHER_RECONCILE_HOURS`, default 24h; `TestReconcileIntervalIsConfigurableWithSaneDefault`)*
-- [ ] Funciona no build Windows de produção (validação manual documentada na task).
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [ ] Funciona no build Windows de produção (validação manual documentada na task). *(pendente do dono: rodar `kuranas.exe` no servidor Windows, criar/alterar/apagar arquivo e pasta sob o `ENTRY_POINT` e conferir que os jobs `fs_event`/`mark_deleted` aparecem em segundos. Evidência parcial já coletada em 2026-06-11: `make build` cross-compila o binário de produção com fsnotify sem erro, e `GOOS=windows go build ./internal/...` passa — o backend Windows do fsnotify é `ReadDirectoryChangesW` por diretório, mesmo modelo recursivo manual usado no Linux)*
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(2026-06-11, 80.0%, integração pg via `TEST_DB_PORT=54329`)*
 
 ## Fora de escopo
 
