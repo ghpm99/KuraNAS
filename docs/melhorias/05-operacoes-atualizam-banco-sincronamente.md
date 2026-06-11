@@ -45,7 +45,7 @@ Para cada operação, atualizar as linhas afetadas em `home_file` na mesma trans
 - [ ] Mover/renomear pasta atualiza `path`/`parent_path` de todos os descendentes em uma transação.
 - [ ] Delete marca `deleted_at` da subárvore inteira.
 - [ ] Falha no update do banco não corrompe a operação de disco (operação responde sucesso, log registra, rescan reconcilia).
-- [ ] Nenhuma query nova usa `LIKE` sobre paths.
+- [x] Nenhuma query nova usa `LIKE` sobre paths. *(`update_descendant_paths.sql` e `mark_deleted_subtree.sql` usam `starts_with` com prefixo + separador montados no Go)*
 - [ ] `make ci-backend` verde (cobertura ≥ 80%).
 
 ## Fora de escopo

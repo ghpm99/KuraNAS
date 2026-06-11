@@ -69,6 +69,8 @@ type filesRepoMock struct {
 	getFilesFn                 func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFileStatByPathFn        func(path string) (FileStat, bool, error)
 	updateFileFn               func(transaction *sql.Tx, file FileModel) (bool, error)
+	updateDescendantPathsFn    func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
+	markDeletedSubtreeFn       func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	getDirectoryContentCountFn func(fileId int, parentPath string) (int, error)
 	getCountByTypeFn           func(fileType FileType) (int, error)
 	getTotalSpaceUsedFn        func() (int, error)
@@ -101,6 +103,18 @@ func (m *filesRepoMock) UpdateFile(transaction *sql.Tx, file FileModel) (bool, e
 		return m.updateFileFn(transaction, file)
 	}
 	return true, nil
+}
+func (m *filesRepoMock) UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error) {
+	if m.updateDescendantPathsFn != nil {
+		return m.updateDescendantPathsFn(transaction, oldPath, newPath)
+	}
+	return 0, nil
+}
+func (m *filesRepoMock) MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
+	if m.markDeletedSubtreeFn != nil {
+		return m.markDeletedSubtreeFn(transaction, path, deletedAt)
+	}
+	return 0, nil
 }
 func (m *filesRepoMock) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
 	if m.getDirectoryContentCountFn != nil {

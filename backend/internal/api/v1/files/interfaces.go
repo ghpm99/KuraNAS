@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type RepositoryInterface interface {
@@ -13,6 +14,8 @@ type RepositoryInterface interface {
 	GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetFileStatByPath(path string) (FileStat, bool, error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
+	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
+	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
 	GetCountByType(fileType FileType) (int, error)
 	GetTotalSpaceUsed() (int, error)
