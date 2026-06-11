@@ -2,37 +2,8 @@ package scan
 
 import (
 	"fmt"
-	"log"
 	"nas-go/api/internal/api/v1/files"
-	"sync"
 )
-
-func StartChecksumWorker(
-	metadataProcessedChannel <-chan files.FileDto,
-	checksumCompletedChannel chan<- files.FileDto,
-	getFileChecksum func(path string) (string, error),
-	getDirectorysum func(dirPath string) (string, error),
-	monitorChannel chan<- ResultWorkerData,
-	workerGroup *sync.WaitGroup,
-) {
-	defer workerGroup.Done()
-
-	for fileToProcess := range metadataProcessedChannel {
-		checksum, err := GetCheckSum(fileToProcess, getFileChecksum, getDirectorysum)
-
-		if err != nil {
-			log.Printf("Erro ao gerar checksum: %v\n", err)
-			monitorChannel <- ResultWorkerData{
-				Path:    fileToProcess.Path,
-				Success: false,
-				Error:   err.Error(),
-			}
-		} else {
-			fileToProcess.CheckSum = checksum
-		}
-		checksumCompletedChannel <- fileToProcess
-	}
-}
 
 func GetCheckSum(fileDto files.FileDto,
 	getFileChecksum func(path string) (string, error),
