@@ -40,7 +40,7 @@ Um único pipeline de indexação (o orquestrador de jobs), com o orquestrador t
 ## Critérios de aceite
 
 - [ ] Nenhuma referência a `ScanFilesWorker`, `StartFileProcessingPipeline`, `ScanDirWorker`, `FindFilesDeleted`, `UpdateFileDto`/`CreateFileDto` no código de produção.
-- [ ] `StartWorkers` sem `JobsRepository` falha de forma explícita (não degrada silenciosamente).
+- [x] `StartWorkers` sem `JobsRepository` falha de forma explícita (não degrada silenciosamente). *(loga ERROR e não inicia nada; `TestStartWorkersWithoutJobsRepositoryRefusesToStart`)*
 - [ ] Tasks `UpdateCheckSum`/`CreateThumbnail`/`GenerateVideoPlaylists` continuam funcionando pelo canal.
 - [ ] Comportamento de scan inalterado (startup_scan, fs_event, watcher) — validado pelos testes de integração existentes.
 - [ ] `backend/CLAUDE.md` atualizado.

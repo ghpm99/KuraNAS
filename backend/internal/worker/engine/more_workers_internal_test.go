@@ -136,17 +136,16 @@ func (m *workerLoggerMock) CompleteWithErrorLog(logModel logger.LoggerModel, err
 }
 
 func TestWorkerSchedulerAndWorkerLoop(t *testing.T) {
+	// Without an orchestrator the scheduler must refuse loudly — no legacy
+	// scan task may be enqueued as a silent fallback.
 	tasks := make(chan utils.Task, 2)
 	ctx := &WorkerContext{Tasks: tasks}
 
 	startWorkersScheduler(ctx)
 	select {
 	case task := <-tasks:
-		if task.Type != utils.ScanFiles {
-			t.Fatalf("expected ScanFiles task, got %v", task.Type)
-		}
+		t.Fatalf("expected no fallback task without orchestrator, got %v", task.Type)
 	default:
-		t.Fatalf("expected task in queue")
 	}
 
 	loopTasks := make(chan utils.Task, 1)
@@ -164,22 +163,24 @@ func TestStartWorkersRespectsConfigFlag(t *testing.T) {
 	StartWorkers(ctx, 1)
 }
 
-func TestStartWorkersEnabledSchedulesScanTask(t *testing.T) {
+func TestStartWorkersWithoutJobsRepositoryRefusesToStart(t *testing.T) {
 	prev := config.AppConfig
 	t.Cleanup(func() { config.AppConfig = prev })
 
 	config.AppConfig.EnableWorkers = true
 	ctx := &WorkerContext{Tasks: make(chan utils.Task, 2)}
 
+	// JobsRepository is mandatory: the subsystem must refuse to start instead
+	// of degrading to the removed legacy pipeline.
 	StartWorkers(ctx, 0)
 
+	if ctx.JobOrchestrator != nil || ctx.JobScheduler != nil {
+		t.Fatalf("expected no orchestrator/scheduler without JobsRepository")
+	}
 	select {
 	case task := <-ctx.Tasks:
-		if task.Type != utils.ScanFiles {
-			t.Fatalf("expected scheduled ScanFiles task, got %v", task.Type)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatalf("expected scheduled task from StartWorkers")
+		t.Fatalf("expected no task scheduled, got %v", task.Type)
+	default:
 	}
 }
 

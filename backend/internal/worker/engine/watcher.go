@@ -9,7 +9,6 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
-	"nas-go/api/pkg/utils"
 )
 
 const watcherMaxIndividualJobs = 50
@@ -105,11 +104,6 @@ func watcherDispatchLoop(context *WorkerContext, entryPoint string, watcher *rec
 
 			if context != nil && context.JobOrchestrator != nil {
 				dispatchWatcherChanges(context, entryPoint, changed)
-			} else if context != nil {
-				select {
-				case context.Tasks <- utils.Task{Type: utils.ScanFiles, Data: "filesystem watch detected changes"}:
-				default:
-				}
 			}
 		}
 	}
