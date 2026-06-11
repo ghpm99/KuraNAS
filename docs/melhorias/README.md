@@ -25,7 +25,7 @@ Regras invariantes:
 |---|---|---|---|---|---|---|
 | 01 | [Indexação de diretórios](01-indexacao-de-diretorios.md) | bug crítico | P0 | — | ✅ concluída (2026-06-11) | causa raiz do bug reportado |
 | 02 | [Filtro deleted_at](02-filtro-deleted-at.md) | bug | P0 | — | ✅ concluída (2026-06-11) | |
-| 03 | [Debounce do watcher perde eventos](03-debounce-watcher-perde-eventos.md) | bug | P1 | — | em execução | |
+| 03 | [Debounce do watcher perde eventos](03-debounce-watcher-perde-eventos.md) | bug | P1 | — | ✅ concluída (2026-06-11) | |
 | 04 | [Whitelist de IPs](04-whitelist-de-ips.md) | segurança | P0 | — | pendente | decisão: sem autenticação |
 | 05 | [Operações atualizam banco sincronamente](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | 01, 02 | pendente | |
 | 06 | [Watcher por eventos (fsnotify)](06-watcher-por-eventos-fsnotify.md) | performance | P2 | 01, 03 | pendente | |
