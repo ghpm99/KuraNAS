@@ -46,7 +46,7 @@ Para cada operação, atualizar as linhas afetadas em `home_file` na mesma trans
 - [x] Delete marca `deleted_at` da subárvore inteira. *(`syncDeletedRows` → `MarkDeletedSubtree` (linha + descendentes num único UPDATE); `TestDeleteFileMarksSubtreeDeletedSynchronously`)*
 - [x] Falha no update do banco não corrompe a operação de disco (operação responde sucesso, log registra, rescan reconcilia). *(`logSyncFailure` + `TestMoveFileSucceedsWhenDatabaseSyncFails`, `TestDeleteFileSucceedsWhenDatabaseSyncFails`, `TestCreateFolderSucceedsWhenDatabaseSyncFails`)*
 - [x] Nenhuma query nova usa `LIKE` sobre paths. *(`update_descendant_paths.sql` e `mark_deleted_subtree.sql` usam `starts_with` com prefixo + separador montados no Go)*
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(2026-06-11, 80.1%, integração pg incluída via `TEST_DB_PORT=54329`; frontend intocado — `make ci` completo verde no início da sessão)*
 
 ## Fora de escopo
 
