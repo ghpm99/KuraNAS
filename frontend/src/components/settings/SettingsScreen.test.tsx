@@ -23,6 +23,11 @@ jest.mock('./LibrarySettingsSection', () => ({
 	default: () => <div>Library Paths Section</div>,
 }));
 
+jest.mock('./AccessControlSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>Access Control Section</div>,
+}));
+
 jest.mock('./AIProvidersSettingsSection', () => ({
 	__esModule: true,
 	default: () => <div>AI Providers Section</div>,

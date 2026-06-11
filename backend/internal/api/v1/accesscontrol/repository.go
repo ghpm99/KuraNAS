@@ -33,6 +33,12 @@ func scanAllowedIP(scanner interface{ Scan(...any) error }) (AllowedIPModel, err
 }
 
 func (r *Repository) GetAll() ([]AllowedIPModel, error) {
+	// GetAll runs at service construction (initial cache load); a context
+	// built without a real database (tests) must fail soft, not panic.
+	if r.DbContext == nil || r.DbContext.GetDatabase() == nil {
+		return nil, sql.ErrConnDone
+	}
+
 	models := make([]AllowedIPModel, 0)
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
