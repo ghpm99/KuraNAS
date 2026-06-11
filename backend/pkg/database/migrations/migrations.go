@@ -110,6 +110,9 @@ var ExtendSystemEventTypeCheckQuery string
 //go:embed queries/0033_extend_system_event_type_check_ollama.sql
 var ExtendSystemEventTypeCheckOllamaQuery string
 
+//go:embed queries/0034_create_allowed_ip_table.sql
+var CreateAllowedIPTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -249,4 +252,9 @@ func watchFoldersMigrationList() {
 func assistantMigrationList() {
 	addMigration("0031_create_assistant_tables",
 		defaultMigrationFunc(CreateAssistantTablesQuery))
+}
+
+func accessControlMigrationList() {
+	addMigration("0034_create_allowed_ip_table",
+		defaultMigrationFunc(CreateAllowedIPTableQuery))
 }

@@ -1003,5 +1003,22 @@
 	"DOWNLOADS_PLUGIN_STEP_1": "Baixe o arquivo .zip e descompacte em uma pasta.",
 	"DOWNLOADS_PLUGIN_STEP_2": "Abra chrome://extensions e ative o Modo do desenvolvedor.",
 	"DOWNLOADS_PLUGIN_STEP_3": "Clique em \"Carregar sem compactação\" e selecione a pasta descompactada.",
-	"DOWNLOADS_PLUGIN_STEP_4": "A extensão do KuraNAS aparecerá na barra do navegador."
+	"DOWNLOADS_PLUGIN_STEP_4": "A extensão do KuraNAS aparecerá na barra do navegador.",
+	"ERROR_IP_NOT_ALLOWED": "Acesso negado: o IP %s não está na lista de dispositivos permitidos",
+	"ACCESS_CONTROL_INVALID_CIDR": "Endereço IP ou faixa CIDR inválida",
+	"ACCESS_CONTROL_DUPLICATE_ENTRY": "Este IP ou faixa já está cadastrado",
+	"ACCESS_CONTROL_ENTRY_NOT_FOUND": "Entrada da lista de IPs não encontrada",
+	"ACCESS_CONTROL_SAVE_ERROR": "Falha ao salvar a lista de IPs permitidos",
+	"SETTINGS_ACCESS_CONTROL_TITLE": "Dispositivos permitidos (IP)",
+	"SETTINGS_ACCESS_CONTROL_DESCRIPTION": "Sem autenticação: apenas dispositivos com IP cadastrado acessam o servidor. localhost sempre tem acesso.",
+	"SETTINGS_ACCESS_CONTROL_YOUR_IP": "Seu IP atual: {{ip}}",
+	"SETTINGS_ACCESS_CONTROL_ADD_CURRENT": "Adicionar este dispositivo",
+	"SETTINGS_ACCESS_CONTROL_CIDR_LABEL": "IP ou faixa (CIDR)",
+	"SETTINGS_ACCESS_CONTROL_LABEL_LABEL": "Identificação",
+	"SETTINGS_ACCESS_CONTROL_ADD": "Adicionar",
+	"SETTINGS_ACCESS_CONTROL_EMPTY": "Nenhum IP cadastrado — apenas localhost consegue acessar o servidor.",
+	"SETTINGS_ACCESS_CONTROL_ENABLED": "Habilitado",
+	"SETTINGS_ACCESS_CONTROL_REMOVE": "Remover",
+	"SETTINGS_ACCESS_CONTROL_SAVED": "Lista de IPs atualizada",
+	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Falha ao carregar a lista de IPs"
 }

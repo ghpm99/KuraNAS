@@ -1,6 +1,7 @@
 package app
 
 import (
+	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
+	registerAccessControlMiddleware(router, context)
 	registerCorsRoutes(router, context)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	registerSwaggerRoutes(router)
@@ -36,7 +38,31 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterDistributionRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
+	RegisterAccessControlRoutes(routesV1, context)
 	registerReactRoutes(router)
+}
+
+// registerAccessControlMiddleware installs the IP whitelist in front of every
+// route — API, assets, SPA and Swagger alike. It runs before CORS so a blocked
+// origin gets its 403 straight away.
+func registerAccessControlMiddleware(router *gin.Engine, context *AppContext) {
+	if context == nil || context.AccessControl == nil || context.AccessControl.Service == nil {
+		return
+	}
+	router.Use(accesscontrol.NewMiddleware(context.AccessControl.Service))
+}
+
+func RegisterAccessControlRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.AccessControl == nil || context.AccessControl.Handler == nil {
+		return
+	}
+
+	group := router.Group("/access-control")
+	group.GET("/ips", context.AccessControl.Handler.GetAllowedIPsHandler)
+	group.POST("/ips", context.AccessControl.Handler.CreateAllowedIPHandler)
+	group.PUT("/ips/:id", context.AccessControl.Handler.UpdateAllowedIPHandler)
+	group.DELETE("/ips/:id", context.AccessControl.Handler.DeleteAllowedIPHandler)
+	group.GET("/client-ip", context.AccessControl.Handler.GetClientIPHandler)
 }
 
 func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {

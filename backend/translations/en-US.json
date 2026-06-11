@@ -1003,5 +1003,22 @@
 	"DOWNLOADS_PLUGIN_STEP_1": "Download the .zip file and unzip it into a folder.",
 	"DOWNLOADS_PLUGIN_STEP_2": "Open chrome://extensions and turn on Developer mode.",
 	"DOWNLOADS_PLUGIN_STEP_3": "Click \"Load unpacked\" and select the unzipped folder.",
-	"DOWNLOADS_PLUGIN_STEP_4": "The KuraNAS extension will appear in your browser toolbar."
+	"DOWNLOADS_PLUGIN_STEP_4": "The KuraNAS extension will appear in your browser toolbar.",
+	"ERROR_IP_NOT_ALLOWED": "Access denied: IP %s is not in the allowed devices list",
+	"ACCESS_CONTROL_INVALID_CIDR": "Invalid IP address or CIDR range",
+	"ACCESS_CONTROL_DUPLICATE_ENTRY": "This IP or range is already registered",
+	"ACCESS_CONTROL_ENTRY_NOT_FOUND": "Allowed IP entry not found",
+	"ACCESS_CONTROL_SAVE_ERROR": "Failed to save the allowed IPs list",
+	"SETTINGS_ACCESS_CONTROL_TITLE": "Allowed devices (IP)",
+	"SETTINGS_ACCESS_CONTROL_DESCRIPTION": "No authentication: only devices with a registered IP can reach the server. localhost always has access.",
+	"SETTINGS_ACCESS_CONTROL_YOUR_IP": "Your current IP: {{ip}}",
+	"SETTINGS_ACCESS_CONTROL_ADD_CURRENT": "Add this device",
+	"SETTINGS_ACCESS_CONTROL_CIDR_LABEL": "IP or range (CIDR)",
+	"SETTINGS_ACCESS_CONTROL_LABEL_LABEL": "Label",
+	"SETTINGS_ACCESS_CONTROL_ADD": "Add",
+	"SETTINGS_ACCESS_CONTROL_EMPTY": "No IPs registered — only localhost can access the server.",
+	"SETTINGS_ACCESS_CONTROL_ENABLED": "Enabled",
+	"SETTINGS_ACCESS_CONTROL_REMOVE": "Remove",
+	"SETTINGS_ACCESS_CONTROL_SAVED": "Allowed IPs updated",
+	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Failed to load the allowed IPs list"
 }
