@@ -67,6 +67,12 @@ type filesRepoMock struct {
 
 	createFileFn               func(transaction *sql.Tx, file FileModel) (FileModel, error)
 	getFilesFn                 func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getFileByIDFn              func(id int) (FileModel, bool, error)
+	getFilesByNameAndPathFn    func(name string, path string, limit int) ([]FileModel, error)
+	getActiveChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getActiveFilesByPathFn     func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getActiveFilesFn           func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getFilesByPathPrefixFn     func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFileStatByPathFn        func(path string) (FileStat, bool, error)
 	updateFileFn               func(transaction *sql.Tx, file FileModel) (bool, error)
 	updateDescendantPathsFn    func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
@@ -89,6 +95,42 @@ func (m *filesRepoMock) CreateFile(transaction *sql.Tx, file FileModel) (FileMod
 func (m *filesRepoMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getFilesFn != nil {
 		return m.getFilesFn(filter, page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetFileByID(id int) (FileModel, bool, error) {
+	if m.getFileByIDFn != nil {
+		return m.getFileByIDFn(id)
+	}
+	return FileModel{}, false, nil
+}
+func (m *filesRepoMock) GetFilesByNameAndPath(name string, path string, limit int) ([]FileModel, error) {
+	if m.getFilesByNameAndPathFn != nil {
+		return m.getFilesByNameAndPathFn(name, path, limit)
+	}
+	return nil, nil
+}
+func (m *filesRepoMock) GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getActiveChildrenFn != nil {
+		return m.getActiveChildrenFn(parentPath, category, page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetActiveFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getActiveFilesByPathFn != nil {
+		return m.getActiveFilesByPathFn(path, page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetActiveFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getActiveFilesFn != nil {
+		return m.getActiveFilesFn(page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getFilesByPathPrefixFn != nil {
+		return m.getFilesByPathPrefixFn(prefix, page, pageSize)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }

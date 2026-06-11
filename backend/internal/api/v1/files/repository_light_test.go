@@ -210,6 +210,115 @@ func TestRepositoryUpdateDescendantPathsAndMarkDeletedSubtree(t *testing.T) {
 	}
 }
 
+func fileRowColumns() []string {
+	return []string{
+		"id", "name", "path", "parent_path", "format", "size", "updated_at", "created_at",
+		"last_interaction", "last_backup", "type", "check_sum", "deleted_at", "starred",
+	}
+}
+
+func addFileRow(rows *sqlmock.Rows, id int, name, path string) *sqlmock.Rows {
+	now := time.Now()
+	return rows.AddRow(id, name, path, "/tmp", ".txt", 1, now, now, nil, nil, int(File), "abc", nil, false)
+}
+
+func TestRepositoryDecomposedListingQueries(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFileByIDQuery)).
+		WithArgs(7).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 7, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	file, found, err := repo.GetFileByID(7)
+	if err != nil || !found || file.ID != 7 {
+		t.Fatalf("GetFileByID failed file=%+v found=%v err=%v", file, found, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFileByIDQuery)).
+		WithArgs(8).
+		WillReturnRows(sqlmock.NewRows(fileRowColumns()))
+	mock.ExpectRollback()
+	_, found, err = repo.GetFileByID(8)
+	if err != nil || found {
+		t.Fatalf("GetFileByID expected not found, got found=%v err=%v", found, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFilesByNameAndPathQuery)).
+		WithArgs("a", "/tmp/a", 5).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 7, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	rows, err := repo.GetFilesByNameAndPath("a", "/tmp/a", 5)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("GetFilesByNameAndPath failed len=%d err=%v", len(rows), err)
+	}
+	if _, err := repo.GetFilesByNameAndPath("a", "/tmp/a", 0); err == nil {
+		t.Fatalf("expected limit validation error")
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetChildrenByParentPathQuery)).
+		WithArgs("/tmp", 11, 0).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	pageResult, err := repo.GetActiveChildrenByParentPath("/tmp", AllCategory, 1, 10)
+	if err != nil || len(pageResult.Items) != 1 {
+		t.Fatalf("GetActiveChildrenByParentPath failed len=%d err=%v", len(pageResult.Items), err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetStarredChildrenByParentPathQuery)).
+		WithArgs("/tmp", 11, 0).
+		WillReturnRows(sqlmock.NewRows(fileRowColumns()))
+	mock.ExpectRollback()
+	if _, err := repo.GetActiveChildrenByParentPath("/tmp", StarredCategory, 1, 10); err != nil {
+		t.Fatalf("starred children query failed: %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetRecentChildrenByParentPathQuery)).
+		WithArgs("/tmp", 11, 0).
+		WillReturnRows(sqlmock.NewRows(fileRowColumns()))
+	mock.ExpectRollback()
+	if _, err := repo.GetActiveChildrenByParentPath("/tmp", RecentCategory, 1, 10); err != nil {
+		t.Fatalf("recent children query failed: %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFilesByPathQuery)).
+		WithArgs("/tmp/a", 11, 0).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	if _, err := repo.GetActiveFilesByPath("/tmp/a", 1, 10); err != nil {
+		t.Fatalf("GetActiveFilesByPath failed: %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetActiveFilesQuery)).
+		WithArgs(11, 0).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	if _, err := repo.GetActiveFiles(1, 10); err != nil {
+		t.Fatalf("GetActiveFiles failed: %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFilesByPathPrefixQuery)).
+		WithArgs("/tmp", 11, 0).
+		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
+	mock.ExpectRollback()
+	if _, err := repo.GetFilesByPathPrefix("/tmp", 1, 10); err != nil {
+		t.Fatalf("GetFilesByPathPrefix failed: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
 func TestRepositoryGetFileStatByPath(t *testing.T) {
 	now := time.Now()
 

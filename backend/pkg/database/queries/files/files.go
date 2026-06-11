@@ -10,6 +10,30 @@ var InsertFileQuery string
 //go:embed get_files.sql
 var GetFilesQuery string
 
+//go:embed get_file_by_id.sql
+var GetFileByIDQuery string
+
+//go:embed get_files_by_name_and_path.sql
+var GetFilesByNameAndPathQuery string
+
+//go:embed get_children_by_parent_path.sql
+var GetChildrenByParentPathQuery string
+
+//go:embed get_starred_children_by_parent_path.sql
+var GetStarredChildrenByParentPathQuery string
+
+//go:embed get_recent_children_by_parent_path.sql
+var GetRecentChildrenByParentPathQuery string
+
+//go:embed get_files_by_path.sql
+var GetFilesByPathQuery string
+
+//go:embed get_active_files.sql
+var GetActiveFilesQuery string
+
+//go:embed get_files_by_path_prefix.sql
+var GetFilesByPathPrefixQuery string
+
 //go:embed get_file_stat_by_path.sql
 var GetFileStatByPathQuery string
 
