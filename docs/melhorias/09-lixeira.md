@@ -6,7 +6,7 @@
 
 Hoje a exclusão pela UI é **irreversível e imediata**: `DeleteFileFromDisk` (`internal/api/v1/files/operations.go`) faz `os.RemoveAll` no path. O `deleted_at` que existe no schema é só o rastro de "arquivo sumiu do disco" usado pelo scan (`mark_deleted`) — não há como restaurar conteúdo, porque os bytes se foram.
 
-Todo NAS maduro (Synology `#recycle`, TrueNAS, Nextcloud trash) trata exclusão como operação recuperável, porque é o erro de usuário mais comum e mais destrutivo em um servidor de arquivos. Para um produto cujo trabalho é guardar arquivos, deletar para sempre com um clique — hoje sem nem autenticação na frente (task 04) — é o maior risco de perda de dados do sistema.
+Todo NAS maduro (Synology `#recycle`, TrueNAS, Nextcloud trash) trata exclusão como operação recuperável, porque é o erro de usuário mais comum e mais destrutivo em um servidor de arquivos. Para um produto cujo trabalho é guardar arquivos, deletar para sempre com um clique — hoje acessível a qualquer dispositivo da rede (whitelist da task 04 ainda pendente) — é o maior risco de perda de dados do sistema.
 
 ## Objetivo
 

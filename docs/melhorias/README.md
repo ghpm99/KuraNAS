@@ -18,7 +18,7 @@ Origem: investigação do bug "pasta nova de músicas aparece na aba de músicas
 | 01 | [01-indexacao-de-diretorios.md](01-indexacao-de-diretorios.md) | bug crítico | P0 | pendente |
 | 02 | [02-filtro-deleted-at.md](02-filtro-deleted-at.md) | bug | P0 | pendente |
 | 03 | [03-debounce-watcher-perde-eventos.md](03-debounce-watcher-perde-eventos.md) | bug | P1 | pendente |
-| 04 | [04-autenticacao-e-tls.md](04-autenticacao-e-tls.md) | segurança | P0 | pendente |
+| 04 | [04-whitelist-de-ips.md](04-whitelist-de-ips.md) | segurança | P0 | pendente |
 | 05 | [05-operacoes-atualizam-banco-sincronamente.md](05-operacoes-atualizam-banco-sincronamente.md) | consistência | P1 | pendente |
 | 06 | [06-watcher-por-eventos-fsnotify.md](06-watcher-por-eventos-fsnotify.md) | performance | P2 | pendente |
 | 07 | [07-remover-pipeline-legado.md](07-remover-pipeline-legado.md) | dívida técnica | P2 | pendente |
