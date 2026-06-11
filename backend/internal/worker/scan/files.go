@@ -149,10 +149,12 @@ func FileExists(path string) bool {
 func FindFilesDeleted(service files.ServiceInterface) int {
 	var deletedFilesCount = 0
 	var currentPage = 1
+	// Legacy pipeline (removal tracked in task 07). It scans active rows and
+	// marks the ones missing on disk as deleted; the old filter compared
+	// deleted_at to a zero timestamp and matched nothing, so this worker was
+	// inert until the tri-state filter made the intent expressible.
 	var pagination, error = service.GetFiles(files.FileFilter{
-		DeletedAt: utils.Optional[time.Time]{
-			HasValue: true,
-		},
+		Deleted: files.DeletedFilterOnlyActive,
 	}, currentPage, 20)
 	if error != nil {
 		i18n.LogTranslate("ERROR_GET_FILES", error)
@@ -181,9 +183,7 @@ func FindFilesDeleted(service files.ServiceInterface) int {
 		}
 		currentPage++
 		pagination, error = service.GetFiles(files.FileFilter{
-			DeletedAt: utils.Optional[time.Time]{
-				HasValue: true,
-			},
+			Deleted: files.DeletedFilterOnlyActive,
 		}, currentPage, 20)
 		if error != nil {
 			i18n.LogTranslate("ERROR_GET_FILES", error)

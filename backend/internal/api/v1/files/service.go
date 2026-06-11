@@ -103,9 +103,12 @@ func (s *Service) getDirectoryContentCount(file FileDto) int {
 }
 
 func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error) {
+	// Deliberately DeletedFilterAny: pickActiveFile prefers the active row,
+	// but persist/revive flows need to see the soft-deleted one too.
 	filter := FileFilter{
-		Name: utils.Optional[string]{HasValue: true, Value: name},
-		Path: utils.Optional[string]{HasValue: true, Value: path},
+		Name:    utils.Optional[string]{HasValue: true, Value: name},
+		Path:    utils.Optional[string]{HasValue: true, Value: path},
+		Deleted: DeletedFilterAny,
 	}
 	pagination, err := s.GetFiles(filter, 1, 5)
 
@@ -116,8 +119,11 @@ func (s *Service) GetFileByNameAndPath(name string, path string) (FileDto, error
 }
 
 func (s *Service) GetFileById(id int) (FileDto, error) {
+	// Deliberately DeletedFilterAny: internal flows look rows up by id even
+	// while soft-deleted (e.g. restore); pickActiveFile prefers the active row.
 	filter := FileFilter{
-		ID: utils.Optional[int]{HasValue: true, Value: id},
+		ID:      utils.Optional[int]{HasValue: true, Value: id},
+		Deleted: DeletedFilterAny,
 	}
 	pagination, err := s.GetFiles(filter, 1, 5)
 
@@ -387,6 +393,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 				Value:    fileDto.Path,
 				HasValue: true,
 			},
+			Deleted: DeletedFilterOnlyActive,
 		}, page, 1000)
 
 		if err != nil {

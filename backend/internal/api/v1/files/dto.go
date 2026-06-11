@@ -165,6 +165,19 @@ type FileStat struct {
 	UpdatedAt time.Time
 }
 
+// DeletedFilter expresses the three possible intents over soft-deleted rows:
+// ignore the flag, only active rows, or only deleted rows. An Optional[time.Time]
+// cannot say "deleted_at IS NULL" / "IS NOT NULL", which is how soft-deleted
+// files used to leak into listings. The zero value behaves as DeletedFilterAny;
+// user-facing listings must set DeletedFilterOnlyActive explicitly.
+type DeletedFilter string
+
+const (
+	DeletedFilterAny         DeletedFilter = "any"
+	DeletedFilterOnlyActive  DeletedFilter = "active"
+	DeletedFilterOnlyDeleted DeletedFilter = "deleted"
+)
+
 type FileFilter struct {
 	ID         utils.Optional[int]
 	Name       utils.Optional[string]
@@ -174,7 +187,7 @@ type FileFilter struct {
 	Format     utils.Optional[string]
 	Type       utils.Optional[FileType]
 	FileParent utils.Optional[int]
-	DeletedAt  utils.Optional[time.Time]
+	Deleted    DeletedFilter
 	Category   FileCategory
 }
 

@@ -47,11 +47,12 @@ WHERE
         $13
         OR hf.type = $14
     )
-    AND (
-        $15
-        OR hf.deleted_at = $16
-    )
-    AND CASE $17
+    AND CASE $15
+        WHEN 'active' THEN hf.deleted_at IS NULL
+        WHEN 'deleted' THEN hf.deleted_at IS NOT NULL
+        ELSE TRUE
+    END
+    AND CASE $16
         WHEN 'all' THEN TRUE
         WHEN 'recent' THEN hf.id IN (
             SELECT
@@ -67,6 +68,6 @@ TYPE,
 NAME,
 id DESC
 LIMIT
-    $18
+    $17
 OFFSET
-    $19;
+    $18;

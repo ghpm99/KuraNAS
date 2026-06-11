@@ -110,3 +110,39 @@ func TestMarkDeletedStep_SoftDeletesMissingFileWithWindowsPath_Postgres(t *testi
 			"but it is still active — mark_deleted failed to identify a DB row absent from the folder")
 	}
 }
+
+// TestMarkDeletedStep_RestoresReappearedFile_Postgres covers the restore half
+// of mark_deleted: a soft-deleted row whose file is back on disk must have its
+// deleted_at cleared. This depends on the step querying with DeletedFilterAny —
+// an only-active filter would hide the row and silently kill the restore flow.
+func TestMarkDeletedStep_RestoresReappearedFile_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	root := t.TempDir()
+	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)
+	workerCtx := &WorkerContext{FilesService: filesSvc}
+
+	backPath := filepath.Join(root, "back.txt")
+	if err := os.WriteFile(backPath, []byte("back"), 0o644); err != nil {
+		t.Fatalf("write reappeared file: %v", err)
+	}
+
+	insertHomeFile(t, dbCtx, "back.txt", backPath, root)
+	markErr := dbCtx.ExecTx(func(tx *sql.Tx) error {
+		_, e := tx.Exec("UPDATE home_file SET deleted_at = now() WHERE path = $1", backPath)
+		return e
+	})
+	if markErr != nil {
+		t.Fatalf("soft-delete row: %v", markErr)
+	}
+
+	payload, _ := marshalPayload(StepFilePayload{Path: root})
+	if err := executeMarkDeletedStep(workerCtx, jobs.StepModel{Payload: payload}); err != nil {
+		t.Fatalf("executeMarkDeletedStep returned error: %v", err)
+	}
+
+	if isMarkedDeleted(t, dbCtx, backPath) {
+		t.Fatalf("expected reappeared file to be restored (deleted_at cleared), but it is still soft-deleted")
+	}
+}
