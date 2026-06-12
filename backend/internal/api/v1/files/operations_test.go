@@ -439,7 +439,93 @@ func TestCopyDirectoryIntoItself(t *testing.T) {
 	requireOperationError(t, err, http.StatusBadRequest, "ERROR_CANNOT_COPY_INTO_ITSELF")
 }
 
-func TestDeleteFileFromDiskByID(t *testing.T) {
+// trashBinRecorder fakes the trash domain: it records the call and moves the
+// file aside, like the real bin, so assertions can check both sides.
+type trashBinRecorder struct {
+	calls []string
+	sizes []int64
+	dest  string
+	err   error
+}
+
+func (b *trashBinRecorder) MoveToTrash(originalPath string, size int64) error {
+	if b.err != nil {
+		return b.err
+	}
+	b.calls = append(b.calls, originalPath)
+	b.sizes = append(b.sizes, size)
+	if b.dest != "" {
+		return os.Rename(originalPath, b.dest)
+	}
+	return nil
+}
+
+func TestDeleteFileFromDiskMovesToTrashByDefault(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	fileToDelete := filepath.Join(entryPoint, "delete-me.txt")
+	if err := os.WriteFile(fileToDelete, []byte("bye"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "delete-me.txt", Path: fileToDelete, Type: File, Size: 3},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+	bin := &trashBinRecorder{dest: filepath.Join(t.TempDir(), "delete-me.txt.1")}
+	service.SetTrashBin(bin)
+
+	if err := service.DeleteFileFromDisk(1, false); err != nil {
+		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
+	}
+	if len(bin.calls) != 1 || bin.calls[0] != fileToDelete || bin.sizes[0] != 3 {
+		t.Fatalf("expected one MoveToTrash(%q, 3), got %v %v", fileToDelete, bin.calls, bin.sizes)
+	}
+	if _, err := os.Stat(fileToDelete); !os.IsNotExist(err) {
+		t.Fatalf("file must be gone from the original path")
+	}
+	if data, err := os.ReadFile(bin.dest); err != nil || string(data) != "bye" {
+		t.Fatalf("bytes must survive in the bin, got %q err=%v", data, err)
+	}
+
+	// Invalid ID
+	err := service.DeleteFileFromDisk(0, false)
+	requireOperationError(t, err, http.StatusBadRequest, "ERROR_INVALID_ID")
+
+	// Non-existent ID
+	err = service.DeleteFileFromDisk(999, false)
+	requireOperationError(t, err, http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND")
+}
+
+func TestDeleteFileFromDiskPermanentRemovesBytes(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	fileToDelete := filepath.Join(entryPoint, "delete-me.txt")
+	if err := os.WriteFile(fileToDelete, []byte("bye"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "delete-me.txt", Path: fileToDelete, Type: File},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+	bin := &trashBinRecorder{}
+	service.SetTrashBin(bin)
+
+	if err := service.DeleteFileFromDisk(1, true); err != nil {
+		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
+	}
+	if _, err := os.Stat(fileToDelete); !os.IsNotExist(err) {
+		t.Fatalf("permanently deleted file still exists")
+	}
+	if len(bin.calls) != 0 {
+		t.Fatalf("permanent delete must not touch the trash bin, got %v", bin.calls)
+	}
+}
+
+func TestDeleteFileFromDiskWithoutTrashBinRefusesDefaultDelete(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)
 
@@ -453,20 +539,11 @@ func TestDeleteFileFromDiskByID(t *testing.T) {
 	}
 	service := newTestServiceWithFileRecords(t, entryPoint, records)
 
-	if err := service.DeleteFileFromDisk(1); err != nil {
-		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
+	err := service.DeleteFileFromDisk(1, false)
+	requireOperationError(t, err, http.StatusInternalServerError, "ERROR_DELETE_FAILED")
+	if _, statErr := os.Stat(fileToDelete); statErr != nil {
+		t.Fatalf("file must be untouched when the trash bin is missing: %v", statErr)
 	}
-	if _, err := os.Stat(fileToDelete); !os.IsNotExist(err) {
-		t.Fatalf("deleted file still exists")
-	}
-
-	// Invalid ID
-	err := service.DeleteFileFromDisk(0)
-	requireOperationError(t, err, http.StatusBadRequest, "ERROR_INVALID_ID")
-
-	// Non-existent ID
-	err = service.DeleteFileFromDisk(999)
-	requireOperationError(t, err, http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND")
 }
 
 func TestDeleteFileFromDiskForbidsEntryPoint(t *testing.T) {
@@ -478,7 +555,7 @@ func TestDeleteFileFromDiskForbidsEntryPoint(t *testing.T) {
 	}
 	service := newTestServiceWithFileRecords(t, entryPoint, records)
 
-	err := service.DeleteFileFromDisk(1)
+	err := service.DeleteFileFromDisk(1, false)
 	requireOperationError(t, err, http.StatusBadRequest, "ERROR_DELETE_ENTRYPOINT_FORBIDDEN")
 }
 
@@ -828,7 +905,7 @@ func TestDeleteFileMarksSubtreeDeletedSynchronously(t *testing.T) {
 	}
 	service := newFilesServiceForTest(t, repo)
 
-	if err := service.DeleteFileFromDisk(1); err != nil {
+	if err := service.DeleteFileFromDisk(1, true); err != nil {
 		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
 	}
 
@@ -862,7 +939,7 @@ func TestDeleteFileSucceedsWhenDatabaseSyncFails(t *testing.T) {
 	}
 	service := newFilesServiceForTest(t, repo)
 
-	if err := service.DeleteFileFromDisk(1); err != nil {
+	if err := service.DeleteFileFromDisk(1, true); err != nil {
 		t.Fatalf("DeleteFileFromDisk must succeed when only the db sync fails, got: %v", err)
 	}
 	if _, statErr := os.Stat(fileToDelete); !os.IsNotExist(statErr) {

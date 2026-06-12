@@ -59,9 +59,17 @@ type ServiceInterface interface {
 	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
 	CreateFolder(parentID *int, name string) (string, error)
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
-	DeleteFileFromDisk(id int) error
+	DeleteFileFromDisk(id int, permanent bool) error
+	SetTrashBin(trashBin TrashBinInterface)
 	RenameFile(id int, newName string) (string, error)
 	CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error)
+}
+
+// TrashBinInterface is what the delete flow needs from the trash domain: take
+// an absolute path out of the tree, keeping the bytes recoverable. Declared
+// here (not imported from trash) so files never depends on the trash package.
+type TrashBinInterface interface {
+	MoveToTrash(originalPath string, size int64) error
 }
 
 type RecentFileRepositoryInterface interface {
