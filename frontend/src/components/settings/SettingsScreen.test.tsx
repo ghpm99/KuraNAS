@@ -38,6 +38,11 @@ jest.mock('./StorageRootsSettingsSection', () => ({
 	default: () => <div>Storage Roots Section</div>,
 }));
 
+jest.mock('./EmailSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>Email Section</div>,
+}));
+
 const createScreenState = (overrides: Record<string, any> = {}) => ({
     t: (key: string, params?: Record<string, string>) => {
         const map: Record<string, string> = {
