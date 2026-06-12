@@ -1,117 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/primary">
+    android:background="@color/primary"
+    android:orientation="vertical"
+    android:gravity="center">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/clock_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="64sp"
+        android:textColor="@color/on_primary"
+        android:fontFamily="sans-serif-light"
+        android:text="@string/loading" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+    <TextView
+        android:id="@+id/date_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_subtitle"
+        android:textColor="@color/on_surface_secondary"
+        android:layout_marginTop="@dimen/spacing_xs" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:paddingTop="@dimen/spacing_xl"
-                android:paddingBottom="@dimen/spacing_lg">
-
-                <TextView
-                    android:id="@+id/clock_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="64sp"
-                    android:textColor="@color/on_primary"
-                    android:fontFamily="sans-serif-light"
-                    android:text="--:--" />
-
-                <TextView
-                    android:id="@+id/date_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="@dimen/text_subtitle"
-                    android:textColor="@color/on_surface_secondary"
-                    android:layout_marginTop="@dimen/spacing_xs" />
-
-            </LinearLayout>
-
-            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                android:id="@+id/swipe_refresh"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:id="@+id/remote_content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:id="@+id/section_recent"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginBottom="@dimen/spacing_md"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:id="@+id/section_recent_title"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/recent_files"
-                            android:textSize="@dimen/text_subtitle"
-                            android:textColor="@color/accent"
-                            android:paddingLeft="@dimen/spacing_md"
-                            android:paddingRight="@dimen/spacing_md"
-                            android:paddingTop="@dimen/spacing_sm"
-                            android:paddingBottom="@dimen/spacing_sm" />
-
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/recent_files_list"
-                            android:layout_width="match_parent"
-                            android:layout_height="120dp" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/section_starred"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginBottom="@dimen/spacing_md"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:id="@+id/section_starred_title"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/starred"
-                            android:textSize="@dimen/text_subtitle"
-                            android:textColor="@color/accent"
-                            android:paddingLeft="@dimen/spacing_md"
-                            android:paddingRight="@dimen/spacing_md"
-                            android:paddingTop="@dimen/spacing_sm"
-                            android:paddingBottom="@dimen/spacing_sm" />
-
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/starred_list"
-                            android:layout_width="match_parent"
-                            android:layout_height="120dp" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-        </LinearLayout>
-
-    </ScrollView>
-
-</FrameLayout>
+</LinearLayout>

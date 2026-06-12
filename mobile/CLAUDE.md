@@ -2,7 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Legacy Android client, superseded by `../android`.** Java + Android Views (no Compose, no Kotlin), `applicationId com.kuranas.mobile`. Targets very old devices: `minSdk 16`, `targetSdk 35`, `compileSdk 35`. Standalone Gradle project. Prefer working in `../android`; only touch this for maintenance of the legacy app.
+**Legacy Android client, superseded by `../android` — now a wall-panel (kiosk) app.** Java + Android Views (no Compose, no Kotlin), `applicationId com.kuranas.mobile`. Targets very old devices: `minSdk 16`, `targetSdk 35`, `compileSdk 35`. Standalone Gradle project.
+
+Since task 17 of `docs/melhorias/` (2026-06-12) every media-browsing screen (files/images/music/video/search/settings) was **removed for good** — media navigation belongs to `../android`. What remains: `ConnectionActivity` (LAN discovery: mDNS/UDP/scan + cache) → `MainActivity` hosting a single `HomeFragment` (clock + date), `KioskManager` (fullscreen pinning), `TranslationManager` + `HttpClient`, and a trimmed `ServiceLocator`. Task 18 builds the kiosk panel (notifications + e-mail digest) on top of `HomeFragment` — keep DTO consumption tiny, no WebView (2012 tablet).
 
 ## Commands (`cd mobile`)
 

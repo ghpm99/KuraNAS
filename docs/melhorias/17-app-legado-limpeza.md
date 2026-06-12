@@ -36,11 +36,13 @@ O app compila e roda contendo apenas: discovery/conexão de servidor (`Connectio
 
 ## Critérios de aceite
 
-- [ ] App compila, instala e roda: discovery → tela única com relógio.
-- [ ] Nenhuma referência a classes/layouts/strings removidos (lint limpo, grep sem hits).
-- [ ] `ServiceLocator` e manifest só contêm o que restou.
-- [ ] Testes unitários restantes verdes.
-- [ ] APK menor que o atual (registrar números no commit).
+- [ ] App compila, instala e roda: discovery → tela única com relógio. *(Compila ✓ — `assembleDebug` verde; instalar e rodar no tablet é validação manual do dono.)*
+- [x] Nenhuma referência a classes/layouts/strings removidos (lint limpo, grep sem hits).
+- [x] `ServiceLocator` e manifest só contêm o que restou.
+- [x] Testes unitários restantes verdes.
+- [x] APK menor que o atual (registrar números no commit). *(debug: 3.502.028 → 3.335.846 bytes, −4,7%.)*
+
+**Desvio registrado na execução**: `ConfigApi`/`ConfigRepository` foram **removidos** (o "manter" do plano assumia que a tradução remota passava por eles, mas o fetch de traduções vive no próprio `TranslationManager` via `HttpClient`; o `ConfigApi` só servia a `SettingsFragment`, que morreu). Java: 92 → 23 arquivos.
 
 ## Fora de escopo
 
