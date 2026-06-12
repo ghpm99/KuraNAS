@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/watcher"
@@ -67,6 +68,7 @@ type Application struct {
 	UDPListener   *discovery.UDPListener
 	MdnsRegistrar *discovery.MdnsRegistrar
 	FolderWatcher FolderWatcherInterface
+	TrashPurger   *trash.Purger
 	SystemEvents  systemevent.ServiceInterface
 }
 
@@ -150,6 +152,12 @@ func InitializeApp() (*Application, error) {
 		folderWatcher.Start()
 	}
 
+	var trashPurger *trash.Purger
+	if appContext.Trash != nil && appContext.Trash.Service != nil {
+		trashPurger = trash.NewPurger(appContext.Trash.Service, trash.DefaultPurgeInterval)
+		trashPurger.Start()
+	}
+
 	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
 	if err := udpListener.Start(); err != nil {
 		log.Printf("[APP] Failed to start UDP discovery listener: %v", err)
@@ -172,6 +180,7 @@ func InitializeApp() (*Application, error) {
 		UDPListener:   udpListener,
 		MdnsRegistrar: mdnsRegistrar,
 		FolderWatcher: folderWatcher,
+		TrashPurger:   trashPurger,
 		SystemEvents:  systemEvents,
 	}, nil
 }
@@ -269,6 +278,10 @@ func (app *Application) Stop() error {
 
 	if app.FolderWatcher != nil {
 		app.FolderWatcher.Stop()
+	}
+
+	if app.TrashPurger != nil {
+		app.TrashPurger.Stop()
 	}
 
 	if app.Server == nil {
