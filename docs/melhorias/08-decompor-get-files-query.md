@@ -44,7 +44,7 @@ Cada pergunta ao banco tem seu próprio `.sql` pequeno e seu próprio método de
 - [x] Nenhuma mudança de contrato HTTP (paths, params e shapes idênticos — validado pelos testes de handler existentes). *(testes de handler intactos e verdes)*
 - [x] `get_files.sql` removido ou reduzido a um único caso real remanescente, documentado. *(removido junto com `FileFilter`/`DeletedFilter` e `Service.GetFiles`/`Repository.GetFiles`)*
 - [x] Índices verificados para `parent_path` e lookup/prefixo de `path` (migração criada se necessário). *(`parent_path` b-tree 0005 e `path` b-tree 0004 já existiam; prefixo ganhou SP-GiST na migração 0035 + predicados `starts_with()` → `^@`, que é a forma servida pelo índice — `EXPLAIN` confirma Index Scan)*
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [x] `make ci-backend` verde (cobertura ≥ 80%). *(2026-06-11, 80.0%, integração pg via `TEST_DB_PORT=54329`; `make ci` completo verde)*
 
 ## Fora de escopo
 
