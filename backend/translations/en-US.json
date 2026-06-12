@@ -1020,5 +1020,11 @@
 	"SETTINGS_ACCESS_CONTROL_ENABLED": "Enabled",
 	"SETTINGS_ACCESS_CONTROL_REMOVE": "Remove",
 	"SETTINGS_ACCESS_CONTROL_SAVED": "Allowed IPs updated",
-	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Failed to load the allowed IPs list"
+	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Failed to load the allowed IPs list",
+	"TRASH_ITEM_NOT_FOUND": "Trash item not found",
+	"TRASH_RESTORE_CONFLICT": "Cannot restore: the original location is occupied again",
+	"TRASH_OPERATION_FAILED": "Trash operation failed",
+	"TRASH_RESTORE_SUCCESS": "Item restored to its original location",
+	"TRASH_DELETE_SUCCESS": "Item permanently deleted",
+	"TRASH_EMPTY_SUCCESS": "Trash emptied"
 }

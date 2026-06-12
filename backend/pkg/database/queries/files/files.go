@@ -46,6 +46,9 @@ var UpdateDescendantPathsQuery string
 //go:embed mark_deleted_subtree.sql
 var MarkDeletedSubtreeQuery string
 
+//go:embed restore_subtree.sql
+var RestoreSubtreeQuery string
+
 //go:embed delete_old_recent_files.sql
 var DeleteOldRecentFilesQuery string
 

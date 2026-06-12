@@ -89,6 +89,7 @@ func (m *filesHandlerServiceMock) GetDuplicateFiles(page int, pageSize int) (Dup
 func (m *filesHandlerServiceMock) CheckFileExists(fileId int) bool              { return false }
 func (m *filesHandlerServiceMock) CheckFileExistsByPath(path string) bool       { return false }
 func (m *filesHandlerServiceMock) DeleteFile(file FileDto, bySystem bool) error { return nil }
+func (m *filesHandlerServiceMock) RestoreSubtree(path string) error             { return nil }
 func (m *filesHandlerServiceMock) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
 	return UploadFilesResult{}, nil
 }
