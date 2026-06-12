@@ -37,7 +37,7 @@ Regras invariantes:
 | 14 | [Contas de e-mail + OAuth2](14-email-contas-oauth.md) | feature | P2 | 04 | 🚫 bloqueada | código pronto e CI verde; falta o dono registrar os apps OAuth (Google Cloud + Entra), configurar `EMAIL_TOKEN_KEY`/`EMAIL_*` e vincular as contas reais pela UI |
 | 15 | [Sincronização de e-mail](15-email-sync-worker.md) | feature | P2 | 14 | pendente | metadados de anexo apenas |
 | 16 | [Análise de e-mail por IA](16-email-analise-ia.md) | feature | P2 | 15 | pendente | LLM sem ferramentas; fail-closed |
-| 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | em execução | app vira discovery + kiosk; paralelizável |
+| 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | 🚫 bloqueada | código pronto, build e testes verdes, APK −4,7%; falta só instalar/rodar no tablet (dono) |
 | 18 | [Tela kiosk do app legado](18-app-legado-kiosk.md) | feature | P2 | 16, 17 | pendente | tablet 2012: DTOs pequenos, sem WebView |
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | pendente | retenção ≠ espelho; despriorizada em favor de 14–18 (2026-06-12) |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | pendente | path lógico × físico; despriorizada em favor de 14–18 (2026-06-12) |
