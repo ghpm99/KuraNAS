@@ -36,10 +36,7 @@ func insertRowForOps(t *testing.T, repo *Repository, name, path, parent string, 
 
 func activeRowByPath(t *testing.T, repo *Repository, path string) (FileModel, bool) {
 	t.Helper()
-	res, err := repo.GetFiles(FileFilter{
-		Path:    utils.Optional[string]{HasValue: true, Value: path},
-		Deleted: DeletedFilterOnlyActive,
-	}, 1, 10)
+	res, err := repo.GetActiveFilesByPath(path, 1, 10)
 	if err != nil {
 		t.Fatalf("GetFiles(Path=%q): %v", path, err)
 	}
@@ -147,14 +144,17 @@ func TestPostgres_OperationsReflectImmediatelyWithoutWorkers(t *testing.T) {
 			t.Fatalf("row %q still active after delete", gone)
 		}
 	}
-	deletedRes, err := repo.GetFiles(FileFilter{
-		PathPrefix: utils.Optional[string]{HasValue: true, Value: renamedPath},
-		Deleted:    DeletedFilterOnlyDeleted,
-	}, 1, 50)
+	deletedRes, err := repo.GetFilesByPathPrefix(renamedPath, 1, 50)
 	if err != nil {
 		t.Fatalf("GetFiles(deleted subtree): %v", err)
 	}
-	if len(deletedRes.Items) != 4 {
-		t.Fatalf("expected 4 soft-deleted rows in subtree, got %d", len(deletedRes.Items))
+	deletedCount := 0
+	for _, row := range deletedRes.Items {
+		if row.DeletedAt.Valid {
+			deletedCount++
+		}
+	}
+	if deletedCount != 4 {
+		t.Fatalf("expected 4 soft-deleted rows in subtree, got %d", deletedCount)
 	}
 }

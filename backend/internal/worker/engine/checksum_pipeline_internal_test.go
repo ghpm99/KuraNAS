@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/pkg/utils"
 )
 
 type pipelineFilesServiceMock struct {
@@ -48,14 +47,6 @@ func TestUpdateCheckSumWorker(t *testing.T) {
 				}
 				return files.FileDto{ID: 2, Name: "dir", Path: subDir, Type: files.Directory, UpdatedAt: time.Now()}, nil
 			},
-			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-				return utils.PaginationResponse[files.FileDto]{
-					Items: []files.FileDto{{ID: 3, Name: "b.txt", CheckSum: "abcd", Path: filepath.Join(subDir, "b.txt"), Type: files.File}},
-					Pagination: utils.Pagination{
-						Page: page, PageSize: pageSize, HasNext: false,
-					},
-				}, nil
-			},
 		},
 	}
 
@@ -89,9 +80,6 @@ func TestUpdateCheckSumWorker_ErrorBranchesDoNotUpdateInvalidEntries(t *testing.
 				default:
 					return files.FileDto{}, errors.New("not found")
 				}
-			},
-			getFilesFn: func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-				return utils.PaginationResponse[files.FileDto]{}, errors.New("list failed")
 			},
 		},
 	}

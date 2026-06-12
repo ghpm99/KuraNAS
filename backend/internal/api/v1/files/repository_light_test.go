@@ -91,7 +91,7 @@ func TestRepositoryConstructorsAndSimpleQueries(t *testing.T) {
 	}
 }
 
-func TestRepositoryCreateUpdateAndGetFiles(t *testing.T) {
+func TestRepositoryCreateAndUpdateFile(t *testing.T) {
 	repo, mock, db := newRepoWithMock(t)
 	defer db.Close()
 	now := time.Now()
@@ -141,18 +141,6 @@ func TestRepositoryCreateUpdateAndGetFiles(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("UpdateFile failed: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetFilesQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "name", "path", "parent_path", "format", "size", "updated_at", "created_at",
-			"last_interaction", "last_backup", "type", "check_sum", "deleted_at", "starred",
-		}).AddRow(1, "n", "/tmp/n", "/tmp", ".txt", 1, now, now, nil, nil, int(File), "abc", nil, false))
-	mock.ExpectRollback()
-	out, err := repo.GetFiles(FileFilter{}, 1, 10)
-	if err != nil || len(out.Items) != 1 {
-		t.Fatalf("GetFiles failed len=%d err=%v", len(out.Items), err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

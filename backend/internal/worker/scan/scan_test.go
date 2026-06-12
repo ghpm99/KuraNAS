@@ -17,18 +17,11 @@ import (
 
 type scanFilesServiceMock struct {
 	files.ServiceInterface
-	getFilesFn          func(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	getFileByNamePathFn func(name, path string) (files.FileDto, error)
 	createFileFn        func(fileDto files.FileDto) (files.FileDto, error)
 	updateFileFn        func(file files.FileDto) (bool, error)
 }
 
-func (m *scanFilesServiceMock) GetFiles(filter files.FileFilter, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
-	if m.getFilesFn != nil {
-		return m.getFilesFn(filter, page, pageSize)
-	}
-	return utils.PaginationResponse[files.FileDto]{}, nil
-}
 func (m *scanFilesServiceMock) GetFileByNameAndPath(name, path string) (files.FileDto, error) {
 	if m.getFileByNamePathFn != nil {
 		return m.getFileByNamePathFn(name, path)
