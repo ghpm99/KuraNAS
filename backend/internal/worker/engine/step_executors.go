@@ -15,6 +15,7 @@ import (
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
 	musicdom "nas-go/api/internal/api/v1/music"
+	"nas-go/api/internal/api/v1/trash"
 	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
@@ -382,6 +383,12 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 		if d.IsDir() {
+			// The trash dir holds soft-deleted bytes awaiting restore/purge;
+			// indexing it would resurrect everything the user just deleted.
+			if d.Name() == trash.DirName {
+				return filepath.SkipDir
+			}
+
 			// Directories need a home_file row to be navigable in the tree,
 			// but have nothing to extract — a direct upsert replaces the full
 			// processing plan. The entry point itself stays implicit: the tree

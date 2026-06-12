@@ -10,6 +10,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/testutil"
 	"nas-go/api/pkg/database"
@@ -255,5 +256,57 @@ func TestDiffStep_IndexesDirectories_Postgres(t *testing.T) {
 	total, active, _ := activeRowsByPath(t, dbCtx, albumDir)
 	if total != 1 || active != 1 {
 		t.Fatalf("expected soft-deleted directory row revived without duplicate, got total=%d active=%d", total, active)
+	}
+}
+
+// TestDiffStep_SkipsTrashDir_Postgres proves the scan never indexes the trash
+// directory: trashed bytes must not resurface in the tree, the media tabs or
+// the analytics after a reconciliation scan.
+func TestDiffStep_SkipsTrashDir_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	prevEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = prevEntryPoint })
+
+	root := t.TempDir()
+	config.AppConfig.EntryPoint = root
+
+	trashDir := filepath.Join(root, trash.DirName)
+	if err := os.MkdirAll(trashDir, 0o755); err != nil {
+		t.Fatalf("mkdir trash dir: %v", err)
+	}
+	trashedFile := filepath.Join(trashDir, "deleted.txt.123")
+	if err := os.WriteFile(trashedFile, []byte("bye"), 0o644); err != nil {
+		t.Fatalf("write trashed fixture: %v", err)
+	}
+	libraryFile := filepath.Join(root, "alive.txt")
+	if err := os.WriteFile(libraryFile, []byte("hi"), 0o644); err != nil {
+		t.Fatalf("write library fixture: %v", err)
+	}
+
+	filesRepo := files.NewRepository(dbCtx)
+	jobsRepo := jobs.NewRepository(dbCtx)
+	filesSvc := files.NewService(filesRepo, jobsRepo, nil)
+	orchestrator := NewJobOrchestrator(jobsRepo, nil)
+
+	workerCtx := &WorkerContext{
+		FilesService:    filesSvc,
+		JobOrchestrator: orchestrator,
+	}
+
+	diffPayload, _ := marshalPayload(StepFilePayload{Path: root})
+	if err := executeDiffAgainstDBStep(workerCtx, jobs.StepModel{Payload: diffPayload}); err != nil {
+		t.Fatalf("diff returned error: %v", err)
+	}
+
+	// The library file enters the pipeline; nothing under the trash dir does.
+	if jobs := countWorkerJobs(t, dbCtx); jobs != 1 {
+		t.Fatalf("expected exactly 1 job (the library file), got %d", jobs)
+	}
+	for _, path := range []string{trashDir, trashedFile} {
+		if total, _, _ := activeRowsByPath(t, dbCtx, path); total != 0 {
+			t.Fatalf("trash path %q must have no home_file row, got %d", path, total)
+		}
 	}
 }

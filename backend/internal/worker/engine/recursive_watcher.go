@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"nas-go/api/internal/api/v1/trash"
+
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -71,6 +73,11 @@ func (rw *recursiveWatcher) watchTree(dir string, emitPaths bool) error {
 			return nil
 		}
 		if entry.IsDir() {
+			// Never watch the trash dir: restores/purges inside it are not
+			// library changes and must not feed the indexing pipeline.
+			if trash.IsInsideTrash(rw.root, path) {
+				return filepath.SkipDir
+			}
 			if watchErr := rw.watcher.Add(path); watchErr != nil {
 				log.Printf("[watcher] failed to watch %q: %v\n", path, watchErr)
 			}
@@ -111,6 +118,12 @@ func (rw *recursiveWatcher) run() {
 func (rw *recursiveWatcher) handleEvent(event fsnotify.Event) {
 	// Chmod-only events carry no content change.
 	if event.Op&(fsnotify.Create|fsnotify.Write|fsnotify.Remove|fsnotify.Rename) == 0 {
+		return
+	}
+
+	// A delete-to-trash shows up as a Create inside the trash dir; surfacing
+	// it would make the pipeline re-index what the user just deleted.
+	if trash.IsInsideTrash(rw.root, event.Name) {
 		return
 	}
 
