@@ -25,6 +25,7 @@ import (
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/api/v1/search"
+	"nas-go/api/internal/api/v1/storageroots"
 	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/updater"
@@ -64,6 +65,7 @@ type AppContext struct {
 	Captures      *CapturesContext
 	Libraries     *LibrariesContext
 	WatchFolders  *WatchFoldersContext
+	StorageRoots  *StorageRootsContext
 	Takeout       *TakeoutContext
 	Trash         *TrashContext
 	Distribution  *DistributionContext
@@ -81,6 +83,12 @@ type TrashContext struct {
 	Handler    *trash.Handler
 	Service    trash.ServiceInterface
 	Repository trash.RepositoryInterface
+}
+
+type StorageRootsContext struct {
+	Handler    *storageroots.Handler
+	Service    storageroots.ServiceInterface
+	Repository storageroots.RepositoryInterface
 }
 
 type DistributionContext struct {
@@ -219,6 +227,12 @@ func NewContext(db *sql.DB) *AppContext {
 	// Delete-to-trash: files cannot import trash (trash already leans on
 	// files), so the bin arrives by interface after both contexts exist.
 	fileContext.Service.SetTrashBin(trashContext.Service)
+	storageRootsContext := newStorageRootsContext(dbContext, loggerService, fileContext.Service)
+	// Load the registered roots (seeding ENTRY_POINT on first boot) before
+	// workers and watchers start consuming the registry.
+	if err := storageRootsContext.Service.ReloadRegistry(); err != nil {
+		log.Printf("storageroots: registry load failed (falling back to ENTRY_POINT): %v", err)
+	}
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -248,6 +262,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Captures:      capturesContext,
 		Libraries:     librariesContext,
 		WatchFolders:  watchFoldersContext,
+		StorageRoots:  storageRootsContext,
 		Takeout:       takeoutContext,
 		Trash:         trashContext,
 		Distribution:  distributionContext,
@@ -475,6 +490,22 @@ func newLibrariesContext(
 	handler := libraries.NewHandler(service, loggerService)
 
 	return &LibrariesContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newStorageRootsContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+	filesService files.ServiceInterface,
+) *StorageRootsContext {
+	repository := storageroots.NewRepository(dbContext)
+	service := storageroots.NewService(repository, filesService)
+	handler := storageroots.NewHandler(service, loggerService)
+
+	return &StorageRootsContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

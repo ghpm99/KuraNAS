@@ -40,7 +40,20 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterHealthRoutes(routesV1)
 	RegisterAccessControlRoutes(routesV1, context)
 	RegisterTrashRoutes(routesV1, context)
+	RegisterStorageRootsRoutes(routesV1, context)
 	registerReactRoutes(router)
+}
+
+func RegisterStorageRootsRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.StorageRoots == nil || context.StorageRoots.Handler == nil {
+		return
+	}
+
+	group := router.Group("/storage-roots")
+	group.GET("", context.StorageRoots.Handler.GetStorageRootsHandler)
+	group.POST("", context.StorageRoots.Handler.CreateStorageRootHandler)
+	group.PUT("/:id", context.StorageRoots.Handler.UpdateStorageRootHandler)
+	group.DELETE("/:id", context.StorageRoots.Handler.DeleteStorageRootHandler)
 }
 
 func RegisterTrashRoutes(router *gin.RouterGroup, context *AppContext) {

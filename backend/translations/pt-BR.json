@@ -1047,5 +1047,12 @@
 	"TRASH_RETENTION_HINT": "Itens além do período de retenção são excluídos automaticamente.",
 	"TRASH_RETENTION_SAVED": "Retenção atualizada",
 	"TRASH_PREV_PAGE": "Anterior",
-	"TRASH_NEXT_PAGE": "Próxima"
+	"TRASH_NEXT_PAGE": "Próxima",
+	"STORAGE_ROOT_NOT_FOUND": "Raiz de armazenamento não encontrada",
+	"STORAGE_ROOT_INVALID_PATH": "Caminho de raiz inválido: precisa ser um caminho absoluto para um diretório existente",
+	"STORAGE_ROOT_INVALID_LABEL": "Nome de raiz inválido",
+	"STORAGE_ROOT_OVERLAP": "O caminho sobrepõe uma raiz de armazenamento já cadastrada",
+	"STORAGE_ROOT_DUPLICATE": "Este caminho ou nome já está cadastrado",
+	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "A raiz de armazenamento principal não pode ser desabilitada nem removida",
+	"STORAGE_ROOT_OPERATION_FAILED": "Falha na operação de raiz de armazenamento"
 }
