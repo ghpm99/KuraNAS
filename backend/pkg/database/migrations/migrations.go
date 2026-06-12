@@ -119,6 +119,9 @@ var CreateHomeFilePathPrefixIndexQuery string
 //go:embed queries/0036_create_trash_item_table.sql
 var CreateTrashItemTableQuery string
 
+//go:embed queries/0037_create_storage_root_table.sql
+var CreateStorageRootTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -271,4 +274,9 @@ func accessControlMigrationList() {
 func trashMigrationList() {
 	addMigration("0036_create_trash_item_table",
 		defaultMigrationFunc(CreateTrashItemTableQuery))
+}
+
+func storageRootsMigrationList() {
+	addMigration("0037_create_storage_root_table",
+		defaultMigrationFunc(CreateStorageRootTableQuery))
 }

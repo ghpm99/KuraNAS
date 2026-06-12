@@ -1047,5 +1047,12 @@
 	"TRASH_RETENTION_HINT": "Items older than the retention period are deleted automatically.",
 	"TRASH_RETENTION_SAVED": "Retention updated",
 	"TRASH_PREV_PAGE": "Previous",
-	"TRASH_NEXT_PAGE": "Next"
+	"TRASH_NEXT_PAGE": "Next",
+	"STORAGE_ROOT_NOT_FOUND": "Storage root not found",
+	"STORAGE_ROOT_INVALID_PATH": "Invalid storage root path: it must be an absolute path to an existing directory",
+	"STORAGE_ROOT_INVALID_LABEL": "Invalid storage root label",
+	"STORAGE_ROOT_OVERLAP": "The path overlaps a registered storage root",
+	"STORAGE_ROOT_DUPLICATE": "This path or label is already registered",
+	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "The primary storage root cannot be disabled or removed",
+	"STORAGE_ROOT_OPERATION_FAILED": "Storage root operation failed"
 }
