@@ -1,0 +1,75 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-4);
+}
+
+.header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-2);
+}
+
+.title {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 700;
+}
+
+.description {
+	margin: 0;
+	color: var(--app-color-text-secondary);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--app-spacing-3);
+}
+
+.deviceCode {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-2);
+}
+
+.userCode {
+	font-family: monospace;
+	font-size: 1.4rem;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+}
+
+.row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: var(--app-spacing-3);
+}
+
+.entry {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.address {
+	display: flex;
+	align-items: center;
+	gap: var(--app-spacing-2);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.lastError {
+	color: var(--app-color-text-secondary);
+	font-size: 0.85rem;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+	.row {
+		grid-template-columns: 1fr;
+	}
+}
