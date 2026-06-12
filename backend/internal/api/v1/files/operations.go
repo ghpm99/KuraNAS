@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"mime/multipart"
-	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
@@ -257,42 +257,11 @@ func normalizePathSeparators(path string) string {
 	return strings.ReplaceAll(path, "\\", "/")
 }
 
-func resolvePathInEntryPoint(inputPath string) (string, error) {
-	entryPoint := strings.TrimSpace(config.AppConfig.EntryPoint)
-	if entryPoint == "" {
-		return "", fmt.Errorf("entry point not configured")
-	}
-
-	entryPointAbs, err := filepath.Abs(entryPoint)
-	if err != nil {
-		return "", err
-	}
-	entryPointClean := filepath.Clean(entryPointAbs)
-
+// resolvePathInRoots validates that a path (absolute, or client-relative)
+// lands under some enabled storage root and returns its absolute clean form.
+func resolvePathInRoots(inputPath string) (string, error) {
 	candidate := normalizePathSeparators(strings.TrimSpace(inputPath))
-	if candidate == "" {
-		candidate = entryPointClean
-	}
-
-	if !filepath.IsAbs(candidate) || !strings.HasPrefix(filepath.Clean(candidate), entryPointClean) {
-		candidate = filepath.Join(entryPointClean, candidate)
-	}
-
-	candidateAbs, err := filepath.Abs(candidate)
-	if err != nil {
-		return "", err
-	}
-	candidateClean := filepath.Clean(candidateAbs)
-
-	relPath, err := filepath.Rel(entryPointClean, candidateClean)
-	if err != nil {
-		return "", err
-	}
-	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("path outside entrypoint")
-	}
-
-	return candidateClean, nil
+	return roots.ResolveAbsolute(candidate)
 }
 
 // resolveTargetFolder resolves a folder from ID or creates from path.
@@ -311,7 +280,7 @@ func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (strin
 		if folder.Type != Directory {
 			return "", newFileOperationError(http.StatusBadRequest, "ERROR_TARGET_NOT_DIRECTORY", fmt.Errorf("target is not a directory"))
 		}
-		resolved, err := resolvePathInEntryPoint(folder.Path)
+		resolved, err := resolvePathInRoots(folder.Path)
 		if err != nil {
 			return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 		}
@@ -320,10 +289,10 @@ func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (strin
 
 	trimmedPath := strings.TrimSpace(relativePath)
 	if trimmedPath == "" {
-		return resolvePathInEntryPoint("")
+		return resolvePathInRoots("")
 	}
 
-	resolved, err := resolvePathInEntryPoint(trimmedPath)
+	resolved, err := resolvePathInRoots(trimmedPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -363,7 +332,7 @@ func (s *Service) UploadFiles(targetFolderID int, files []*multipart.FileHeader)
 		}
 
 		destinationPath := filepath.Join(resolvedTargetPath, fileName)
-		destinationPath, err = resolvePathInEntryPoint(destinationPath)
+		destinationPath, err = resolvePathInRoots(destinationPath)
 		if err != nil {
 			return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 		}
@@ -429,7 +398,7 @@ func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 	}
 
 	createdPath := filepath.Join(resolvedParentPath, name)
-	createdPath, err = resolvePathInEntryPoint(createdPath)
+	createdPath, err = resolvePathInRoots(createdPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -462,7 +431,7 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(sourceFile.Path)
+	resolvedSourcePath, err := resolvePathInRoots(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -473,7 +442,7 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 	}
 
 	resolvedDestPath := filepath.Join(resolvedDestDir, sourceFile.Name)
-	resolvedDestPath, err = resolvePathInEntryPoint(resolvedDestPath)
+	resolvedDestPath, err = resolvePathInRoots(resolvedDestPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -534,12 +503,12 @@ func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 		return newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedPath, err := resolvePathInEntryPoint(file.Path)
+	resolvedPath, err := resolvePathInRoots(file.Path)
 	if err != nil {
 		return newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
 
-	entryPoint, err := resolvePathInEntryPoint("")
+	entryPoint, err := resolvePathInRoots("")
 	if err != nil {
 		return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 	}
@@ -603,7 +572,7 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(file.Path)
+	resolvedSourcePath, err := resolvePathInRoots(file.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -612,7 +581,7 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	destPath, err := resolvePathInEntryPoint(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
+	destPath, err := resolvePathInRoots(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -649,7 +618,7 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInEntryPoint(sourceFile.Path)
+	resolvedSourcePath, err := resolvePathInRoots(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -665,7 +634,7 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 	}
 
 	resolvedDestPath := filepath.Join(resolvedDestDir, fileName)
-	resolvedDestPath, err = resolvePathInEntryPoint(resolvedDestPath)
+	resolvedDestPath, err = resolvePathInRoots(resolvedDestPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}

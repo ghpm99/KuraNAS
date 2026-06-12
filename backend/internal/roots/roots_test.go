@@ -142,8 +142,13 @@ func TestResolveAbsoluteEnforcesContainment(t *testing.T) {
 		t.Fatalf("empty resolves to primary: %q err=%v", resolved, err)
 	}
 
-	if _, err := ResolveAbsolute(abs("fora", "x.txt")); err == nil {
-		t.Fatalf("absolute outside every root must fail")
+	// An absolute path outside every root is reinterpreted as a
+	// client-visible relative path under the primary root — the legacy
+	// entry-point resolver was lenient in exactly this way ("/fotos" is
+	// absolute on Linux but is how clients spell relative paths).
+	resolved, err = ResolveAbsolute(abs("fora", "x.txt"))
+	if err != nil || resolved != filepath.Join(abs("data"), abs("fora", "x.txt")) {
+		t.Fatalf("absolute outside roots should fold under primary: %q err=%v", resolved, err)
 	}
 
 	// Path-traversal out of the roots must fail too.

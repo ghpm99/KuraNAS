@@ -208,7 +208,10 @@ func ResolveAbsolute(inputPath string) (string, error) {
 		if _, ok := OwnerOf(cleanPath); ok {
 			return cleanPath, nil
 		}
-		return "", fmt.Errorf("path %q is outside every storage root", inputPath)
+		// Not under any root: fall through and reinterpret it as a
+		// client-visible relative path ("/fotos/x" is absolute on Linux but
+		// is how clients spell paths) — the legacy entry-point resolver was
+		// lenient in exactly this way.
 	}
 
 	cleanPath := filepath.Clean(ToAbsolutePath(candidate))

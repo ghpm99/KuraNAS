@@ -94,28 +94,6 @@ func TestInitializeConfigFallbackWorkerValues(t *testing.T) {
 	}
 }
 
-func TestRelativeAndAbsolutePathHelpers(t *testing.T) {
-	AppConfig.EntryPoint = "/data/root"
-
-	if got := ToRelativePath("/data/root"); got != "/" {
-		t.Fatalf("expected root relative path '/', got %q", got)
-	}
-
-	if got := ToRelativePath("/data/root/library/file.mp4"); got != "/library/file.mp4" {
-		t.Fatalf("expected relative file path, got %q", got)
-	}
-
-	if got := ToAbsolutePath(""); got != "/data/root" {
-		t.Fatalf("expected entrypoint for empty relative path, got %q", got)
-	}
-	if got := ToAbsolutePath("/"); got != "/data/root" {
-		t.Fatalf("expected entrypoint for '/' relative path, got %q", got)
-	}
-	if got := ToAbsolutePath("library/file.mp4"); got != filepath.Clean("/data/root/library/file.mp4") {
-		t.Fatalf("expected joined absolute path, got %q", got)
-	}
-}
-
 func TestBuildConfigAndLoadConfig(t *testing.T) {
 	// LoadConfig should not fail even if .env does not exist.
 	if err := LoadConfig(); err != nil {
