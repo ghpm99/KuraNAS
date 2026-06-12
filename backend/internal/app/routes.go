@@ -2,6 +2,7 @@ package app
 
 import (
 	"nas-go/api/internal/api/v1/accesscontrol"
+	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
@@ -46,6 +47,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterAccessControlRoutes(routesV1, context)
 	RegisterTrashRoutes(routesV1, context)
 	RegisterStorageRootsRoutes(routesV1, context)
+	RegisterEmailRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
 
@@ -73,6 +75,30 @@ func RegisterStorageRootsRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.POST("", context.StorageRoots.Handler.CreateStorageRootHandler)
 	group.PUT("/:id", context.StorageRoots.Handler.UpdateStorageRootHandler)
 	group.DELETE("/:id", context.StorageRoots.Handler.DeleteStorageRootHandler)
+}
+
+// RegisterEmailRoutes mounts the e-mail accounts feature. When the context is
+// nil (no/invalid EMAIL_TOKEN_KEY) the routes still exist but every one of
+// them answers an explicit i18n error — the feature refuses to run without
+// encryption at rest.
+func RegisterEmailRoutes(router *gin.RouterGroup, context *AppContext) {
+	group := router.Group("/email")
+
+	if context == nil || context.Email == nil || context.Email.Handler == nil {
+		group.Any("/accounts", email.DisabledHandler)
+		group.Any("/accounts/*rest", email.DisabledHandler)
+		group.Any("/oauth/google/callback", email.DisabledHandler)
+		return
+	}
+
+	handler := context.Email.Handler
+	group.GET("/accounts", handler.GetAccountsHandler)
+	group.DELETE("/accounts/:id", handler.DeleteAccountHandler)
+	group.PUT("/accounts/:id/sync-enabled", handler.UpdateSyncEnabledHandler)
+	group.POST("/accounts/google/auth-url", handler.GoogleAuthURLHandler)
+	group.GET("/oauth/google/callback", handler.GoogleCallbackHandler)
+	group.POST("/accounts/microsoft/device-code", handler.MicrosoftDeviceCodeHandler)
+	group.GET("/accounts/microsoft/device-code/status", handler.MicrosoftDeviceCodeStatusHandler)
 }
 
 func RegisterTrashRoutes(router *gin.RouterGroup, context *AppContext) {

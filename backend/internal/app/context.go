@@ -17,6 +17,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/distribution"
+	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/api/v1/jobs"
@@ -31,11 +32,13 @@ import (
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/api/v1/watchfolders"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/agent"
 	"nas-go/api/pkg/ai/providers/anthropic"
 	"nas-go/api/pkg/ai/providers/ollama"
 	"nas-go/api/pkg/ai/providers/openai"
+	"nas-go/api/pkg/crypto"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -66,6 +69,7 @@ type AppContext struct {
 	Libraries     *LibrariesContext
 	WatchFolders  *WatchFoldersContext
 	StorageRoots  *StorageRootsContext
+	Email         *EmailContext
 	Takeout       *TakeoutContext
 	Trash         *TrashContext
 	Distribution  *DistributionContext
@@ -89,6 +93,12 @@ type StorageRootsContext struct {
 	Handler    *storageroots.Handler
 	Service    storageroots.ServiceInterface
 	Repository storageroots.RepositoryInterface
+}
+
+type EmailContext struct {
+	Handler    *email.Handler
+	Service    email.ServiceInterface
+	Repository email.RepositoryInterface
 }
 
 type DistributionContext struct {
@@ -233,6 +243,7 @@ func NewContext(db *sql.DB) *AppContext {
 	if err := storageRootsContext.Service.ReloadRegistry(); err != nil {
 		log.Printf("storageroots: registry load failed (falling back to ENTRY_POINT): %v", err)
 	}
+	emailContext := newEmailContext(dbContext)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -263,6 +274,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Libraries:     librariesContext,
 		WatchFolders:  watchFoldersContext,
 		StorageRoots:  storageRootsContext,
+		Email:         emailContext,
 		Takeout:       takeoutContext,
 		Trash:         trashContext,
 		Distribution:  distributionContext,
@@ -522,6 +534,38 @@ func newTrashContext(
 	handler := trash.NewHandler(service, loggerService)
 
 	return &TrashContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+// newEmailContext wires the e-mail accounts module. Without a valid
+// EMAIL_TOKEN_KEY the whole feature refuses to turn on (returns nil; the
+// routes then answer EMAIL_FEATURE_DISABLED_NO_KEY) — tokens are never stored
+// unencrypted.
+func newEmailContext(dbContext *database.DbContext) *EmailContext {
+	key := config.AppConfig.EmailTokenKey
+	if key == "" {
+		log.Println("email: EMAIL_TOKEN_KEY not configured; e-mail integration is off")
+		return nil
+	}
+
+	cipher, err := crypto.NewAESGCM(key)
+	if err != nil {
+		log.Printf("email: invalid EMAIL_TOKEN_KEY (%v); e-mail integration is off", err)
+		return nil
+	}
+
+	repository := email.NewRepository(dbContext)
+	service := email.NewService(repository, cipher, email.Config{
+		GoogleClientID:     config.AppConfig.EmailGoogleClientID,
+		GoogleClientSecret: config.AppConfig.EmailGoogleClientSecret,
+		MicrosoftClientID:  config.AppConfig.EmailMSClientID,
+	})
+	handler := email.NewHandler(service)
+
+	return &EmailContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

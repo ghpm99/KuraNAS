@@ -33,6 +33,10 @@ type AppConfigStruct struct {
 	LogMaxSizeMB               int
 	LogMaxBackups              int
 	LogMaxAgeDays              int
+	EmailTokenKey              string
+	EmailGoogleClientID        string
+	EmailGoogleClientSecret    string
+	EmailMSClientID            string
 }
 
 var AppConfig AppConfigStruct
@@ -65,6 +69,10 @@ func InitializeConfig() {
 		LogMaxSizeMB:               parseEnvInt("LOG_MAX_SIZE_MB", 50),
 		LogMaxBackups:              parseEnvInt("LOG_MAX_BACKUPS", 10),
 		LogMaxAgeDays:              parseEnvInt("LOG_MAX_AGE_DAYS", 30),
+		EmailTokenKey:              os.Getenv("EMAIL_TOKEN_KEY"),
+		EmailGoogleClientID:        os.Getenv("EMAIL_GOOGLE_CLIENT_ID"),
+		EmailGoogleClientSecret:    os.Getenv("EMAIL_GOOGLE_CLIENT_SECRET"),
+		EmailMSClientID:            os.Getenv("EMAIL_MS_CLIENT_ID"),
 	}
 }
 
