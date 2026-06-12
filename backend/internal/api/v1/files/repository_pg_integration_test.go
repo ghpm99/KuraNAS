@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"nas-go/api/internal/testutil"
-	"nas-go/api/pkg/utils"
 )
 
 // fixtureScanDir resolves the real fixture folder shipped in the repo
@@ -86,11 +85,9 @@ func TestPostgres_PathPrefixMatchesWindowsPaths(t *testing.T) {
 
 	// PathPrefix (used by mark_deleted) must match the backslash path now that
 	// the filter uses starts_with() instead of LIKE.
-	prefixRes, err := repo.GetFiles(FileFilter{
-		PathPrefix: utils.Optional[string]{HasValue: true, Value: winParent},
-	}, 1, 500)
+	prefixRes, err := repo.GetFilesByPathPrefix(winParent, 1, 500)
 	if err != nil {
-		t.Fatalf("GetFiles(PathPrefix) error: %v", err)
+		t.Fatalf("GetFilesByPathPrefix error: %v", err)
 	}
 	if len(prefixRes.Items) != 1 {
 		t.Fatalf("expected PathPrefix to match the Windows-path row, got %d row(s)", len(prefixRes.Items))
@@ -171,12 +168,11 @@ func TestPostgres_GetFileStatByPath_RecognizesUnchangedFixtureFiles(t *testing.T
 	}
 }
 
-// TestPostgres_DeletedFilterTriState proves the three intents of the
-// deleted_at filter against the real query: only-active hides soft-deleted
-// rows (the bug was that they leaked into the tree), only-deleted returns just
-// them, and any ignores the flag. The old Optional[time.Time] filter could not
-// express IS NULL / IS NOT NULL at all.
-func TestPostgres_DeletedFilterTriState(t *testing.T) {
+// TestPostgres_DeletedSemanticsOfDecomposedQueries proves each decomposed
+// query carries the soft-delete intent it declares: the tree listing hides
+// soft-deleted rows (the bug was that they leaked into the tree), while the
+// prefix walk used by mark_deleted sees every state.
+func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
 	repo := NewRepository(ctx)
 	truncateHomeFile(t, repo)
@@ -196,32 +192,35 @@ func TestPostgres_DeletedFilterTriState(t *testing.T) {
 		t.Fatalf("soft-delete row: %v", err)
 	}
 
-	parentFilter := utils.Optional[string]{HasValue: true, Value: parent}
-
-	listPaths := func(deleted DeletedFilter) []string {
-		t.Helper()
-		res, listErr := repo.GetFiles(FileFilter{ParentPath: parentFilter, Deleted: deleted}, 1, 50)
-		if listErr != nil {
-			t.Fatalf("GetFiles(%q): %v", deleted, listErr)
-		}
-		paths := []string{}
-		for _, item := range res.Items {
-			paths = append(paths, item.Path)
-		}
-		return paths
+	children, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, 1, 50)
+	if err != nil {
+		t.Fatalf("GetActiveChildrenByParentPath: %v", err)
+	}
+	if len(children.Items) != 1 || children.Items[0].Path != activePath {
+		t.Fatalf("tree listing must hide soft-deleted rows, got %+v", children.Items)
 	}
 
-	if got := listPaths(DeletedFilterOnlyActive); len(got) != 1 || got[0] != activePath {
-		t.Fatalf("only-active must return just the active row, got %v", got)
+	byPath, err := repo.GetActiveFilesByPath(deletedPath, 1, 10)
+	if err != nil {
+		t.Fatalf("GetActiveFilesByPath: %v", err)
 	}
-	if got := listPaths(DeletedFilterOnlyDeleted); len(got) != 1 || got[0] != deletedPath {
-		t.Fatalf("only-deleted must return just the soft-deleted row, got %v", got)
+	if len(byPath.Items) != 0 {
+		t.Fatalf("path lookup must hide soft-deleted rows, got %+v", byPath.Items)
 	}
-	if got := listPaths(DeletedFilterAny); len(got) != 2 {
-		t.Fatalf("any must return both rows, got %v", got)
+
+	walk, err := repo.GetFilesByPathPrefix(parent, 1, 50)
+	if err != nil {
+		t.Fatalf("GetFilesByPathPrefix: %v", err)
 	}
-	// Zero value (caller declared nothing) keeps the ignore semantics.
-	if got := listPaths(DeletedFilter("")); len(got) != 2 {
-		t.Fatalf("zero-value filter must behave as any, got %v", got)
+	if len(walk.Items) != 2 {
+		t.Fatalf("prefix walk must see every state, got %+v", walk.Items)
+	}
+
+	byNamePath, err := repo.GetFilesByNameAndPath("deletado.txt", deletedPath, 5)
+	if err != nil {
+		t.Fatalf("GetFilesByNameAndPath: %v", err)
+	}
+	if len(byNamePath) != 1 || !byNamePath[0].DeletedAt.Valid {
+		t.Fatalf("name+path lookup must see the soft-deleted row, got %+v", byNamePath)
 	}
 }

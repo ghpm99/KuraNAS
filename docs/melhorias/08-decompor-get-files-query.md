@@ -40,9 +40,9 @@ Cada pergunta ao banco tem seu próprio `.sql` pequeno e seu próprio método de
 
 ## Critérios de aceite
 
-- [ ] Cada `.sql` novo responde exatamente uma pergunta e não tem filtros opcionais no padrão `($n OR ...)`.
-- [ ] Nenhuma mudança de contrato HTTP (paths, params e shapes idênticos — validado pelos testes de handler existentes).
-- [ ] `get_files.sql` removido ou reduzido a um único caso real remanescente, documentado.
+- [x] Cada `.sql` novo responde exatamente uma pergunta e não tem filtros opcionais no padrão `($n OR ...)`. *(grep por `$n OR` em `queries/files/` vazio; uma query por pergunta: children, by-id, by-path, by-prefix, name+path, active-page)*
+- [x] Nenhuma mudança de contrato HTTP (paths, params e shapes idênticos — validado pelos testes de handler existentes). *(testes de handler intactos e verdes)*
+- [x] `get_files.sql` removido ou reduzido a um único caso real remanescente, documentado. *(removido junto com `FileFilter`/`DeletedFilter` e `Service.GetFiles`/`Repository.GetFiles`)*
 - [ ] Índices verificados para `parent_path` e lookup/prefixo de `path` (migração criada se necessário).
 - [ ] `make ci-backend` verde (cobertura ≥ 80%).
 

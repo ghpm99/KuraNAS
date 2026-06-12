@@ -7,9 +7,6 @@ import (
 //go:embed insert_file.sql
 var InsertFileQuery string
 
-//go:embed get_files.sql
-var GetFilesQuery string
-
 //go:embed get_file_by_id.sql
 var GetFileByIDQuery string
 

@@ -33,14 +33,6 @@ func (m *filesHandlerServiceMock) GetFileById(id int) (FileDto, error) {
 		Type:       File,
 	}, nil
 }
-func (m *filesHandlerServiceMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	return utils.PaginationResponse[FileDto]{
-		Items: []FileDto{{ID: 1, Name: "a", Path: "/tmp/a", ParentPath: "/tmp"}},
-		Pagination: utils.Pagination{
-			Page: page, PageSize: pageSize,
-		},
-	}, nil
-}
 func (m *filesHandlerServiceMock) listingPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return utils.PaginationResponse[FileDto]{
 		Items: []FileDto{{ID: 1, Name: "a", Path: "/tmp/a", ParentPath: "/tmp"}},
@@ -127,7 +119,6 @@ func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFi
 
 type filesHandlerServiceFuncMock struct {
 	filesHandlerServiceMock
-	getFilesFn           func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getFilesByPathFn     func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getActiveFilesFn     func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
@@ -142,12 +133,6 @@ type filesHandlerServiceFuncMock struct {
 	getDuplicateFilesFn  func(page int, pageSize int) (DuplicateFileReportDto, error)
 }
 
-func (m *filesHandlerServiceFuncMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	if m.getFilesFn != nil {
-		return m.getFilesFn(filter, page, pageSize)
-	}
-	return m.filesHandlerServiceMock.GetFiles(filter, page, pageSize)
-}
 func (m *filesHandlerServiceFuncMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	if m.getChildrenFn != nil {
 		return m.getChildrenFn(parentPath, category, page, pageSize)
@@ -425,9 +410,6 @@ func TestFilesHandlerGetFilesTreeWithParentFilter(t *testing.T) {
 func TestFilesHandlerErrorResponses(t *testing.T) {
 	errBoom := errors.New("boom")
 	service := &filesHandlerServiceFuncMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-			return utils.PaginationResponse[FileDto]{}, errBoom
-		},
 		getChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 			return utils.PaginationResponse[FileDto]{}, errBoom
 		},

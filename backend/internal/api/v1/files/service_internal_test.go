@@ -66,7 +66,6 @@ type filesRepoMock struct {
 	db *database.DbContext
 
 	createFileFn               func(transaction *sql.Tx, file FileModel) (FileModel, error)
-	getFilesFn                 func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFileByIDFn              func(id int) (FileModel, bool, error)
 	getFilesByNameAndPathFn    func(name string, path string, limit int) ([]FileModel, error)
 	getActiveChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
@@ -91,12 +90,6 @@ func (m *filesRepoMock) CreateFile(transaction *sql.Tx, file FileModel) (FileMod
 		return m.createFileFn(transaction, file)
 	}
 	return file, nil
-}
-func (m *filesRepoMock) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.getFilesFn != nil {
-		return m.getFilesFn(filter, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
 func (m *filesRepoMock) GetFileByID(id int) (FileModel, bool, error) {
 	if m.getFileByIDFn != nil {
@@ -352,9 +345,9 @@ func TestFileService_CreateUploadProcessJob(t *testing.T) {
 	}
 }
 
-func TestFileService_GetFilesAndDirectoryCount(t *testing.T) {
+func TestFileService_GetChildrenAndDirectoryCount(t *testing.T) {
 	repo := &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		getActiveChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{
 				Items: []FileModel{
 					sampleModel(1, "dir", Directory),
@@ -372,7 +365,7 @@ func TestFileService_GetFilesAndDirectoryCount(t *testing.T) {
 	}
 	s := newFilesServiceForTest(t, repo)
 
-	result, err := s.GetFiles(FileFilter{}, 1, 10)
+	result, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -382,6 +375,122 @@ func TestFileService_GetFilesAndDirectoryCount(t *testing.T) {
 	if result.Items[0].DirectoryContentCount != 4 {
 		t.Fatalf("expected directory content count 4")
 	}
+}
+
+func TestFileService_DecomposedListings(t *testing.T) {
+	t.Run("GetFilesByPath converts and counts directories", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getActiveFilesByPathFn: func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{sampleModel(1, "dir", Directory)},
+				}, nil
+			},
+			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
+				return 3, nil
+			},
+		})
+
+		out, err := s.GetFilesByPath("/tmp/dir", 1, 10)
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if len(out.Items) != 1 || out.Items[0].DirectoryContentCount != 3 {
+			t.Fatalf("expected one directory with count 3, got %+v", out.Items)
+		}
+	})
+
+	t.Run("GetFilesByPath propagates repository error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getActiveFilesByPathFn: func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{}, errors.New("path lookup failed")
+			},
+		})
+
+		if _, err := s.GetFilesByPath("/tmp/dir", 1, 10); err == nil {
+			t.Fatalf("expected GetFilesByPath error")
+		}
+	})
+
+	t.Run("GetActiveFilesPage converts the page", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getActiveFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{sampleModel(2, "file", File)},
+				}, nil
+			},
+		})
+
+		out, err := s.GetActiveFilesPage(1, 10)
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if len(out.Items) != 1 || out.Items[0].ID != 2 {
+			t.Fatalf("expected file 2, got %+v", out.Items)
+		}
+	})
+
+	t.Run("GetActiveFilesPage propagates repository error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getActiveFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{}, errors.New("listing failed")
+			},
+		})
+
+		if _, err := s.GetActiveFilesPage(1, 10); err == nil {
+			t.Fatalf("expected GetActiveFilesPage error")
+		}
+	})
+
+	t.Run("GetFilesByPathPrefix converts without directory counts", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{
+					Items: []FileModel{sampleModel(3, "dir", Directory)},
+				}, nil
+			},
+			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
+				t.Fatalf("prefix walk must not count directory contents")
+				return 0, nil
+			},
+		})
+
+		out, err := s.GetFilesByPathPrefix("/tmp", 1, 10)
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if len(out.Items) != 1 || out.Items[0].ID != 3 {
+			t.Fatalf("expected file 3, got %+v", out.Items)
+		}
+	})
+
+	t.Run("GetFilesByPathPrefix propagates repository error", func(t *testing.T) {
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFilesByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+				return utils.PaginationResponse[FileModel]{}, errors.New("prefix walk failed")
+			},
+		})
+
+		if _, err := s.GetFilesByPathPrefix("/tmp", 1, 10); err == nil {
+			t.Fatalf("expected GetFilesByPathPrefix error")
+		}
+	})
+
+	t.Run("GetFileStatByPath passes through", func(t *testing.T) {
+		now := time.Now()
+		s := newFilesServiceForTest(t, &filesRepoMock{
+			getFileStatByPathFn: func(path string) (FileStat, bool, error) {
+				return FileStat{Size: 42, UpdatedAt: now}, true, nil
+			},
+		})
+
+		stat, found, err := s.GetFileStatByPath("/tmp/file")
+		if err != nil || !found {
+			t.Fatalf("expected stat found, got found=%v err=%v", found, err)
+		}
+		if stat.Size != 42 || !stat.UpdatedAt.Equal(now) {
+			t.Fatalf("expected stat passthrough, got %+v", stat)
+		}
+	})
 }
 
 func TestFileService_CreateUpdateAndMetadata(t *testing.T) {
@@ -768,8 +877,8 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 
 func TestFileService_ErrorBranches(t *testing.T) {
 	s := newFilesServiceForTest(t, &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{}, errors.New("get files failed")
+		getActiveChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{}, errors.New("get children failed")
 		},
 		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
 			return FileModel{}, errors.New("create failed")
@@ -779,8 +888,8 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		},
 	})
 
-	if _, err := s.GetFiles(FileFilter{}, 1, 10); err == nil {
-		t.Fatalf("expected GetFiles error")
+	if _, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10); err == nil {
+		t.Fatalf("expected GetChildrenByParentPath error")
 	}
 	if _, err := s.CreateFile(FileDto{Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected CreateFile error")
@@ -792,10 +901,8 @@ func TestFileService_ErrorBranches(t *testing.T) {
 
 func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
 	s := newFilesServiceForTest(t, &filesRepoMock{
-		getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			return utils.PaginationResponse[FileModel]{
-				Items: []FileModel{sampleModel(999, "missing.bin", File)},
-			}, nil
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			return sampleModel(999, "missing.bin", File), true, nil
 		},
 	})
 
@@ -805,9 +912,9 @@ func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
 }
 
 func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
-	t.Run("GetFiles with directory count error falls back to zero", func(t *testing.T) {
+	t.Run("listing with directory count error falls back to zero", func(t *testing.T) {
 		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			getActiveChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 				return utils.PaginationResponse[FileModel]{
 					Items: []FileModel{sampleModel(1, "dir", Directory)},
 				}, nil
@@ -817,9 +924,9 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			},
 		})
 
-		out, err := s.GetFiles(FileFilter{}, 1, 10)
+		out, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
 		if err != nil {
-			t.Fatalf("expected GetFiles success, got %v", err)
+			t.Fatalf("expected GetChildrenByParentPath success, got %v", err)
 		}
 		if out.Items[0].DirectoryContentCount != 0 {
 			t.Fatalf("expected directory count fallback to 0")
@@ -882,8 +989,8 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 
 	t.Run("UpdateCheckSum propagates get-file error", func(t *testing.T) {
 		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				return utils.PaginationResponse[FileModel]{}, errors.New("repository down")
+			getFileByIDFn: func(id int) (FileModel, bool, error) {
+				return FileModel{}, false, errors.New("repository down")
 			},
 		})
 
@@ -906,8 +1013,8 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 
 	t.Run("CheckFileExists returns false on repository error", func(t *testing.T) {
 		s := newFilesServiceForTest(t, &filesRepoMock{
-			getFilesFn: func(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-				return utils.PaginationResponse[FileModel]{}, errors.New("query failed")
+			getFileByIDFn: func(id int) (FileModel, bool, error) {
+				return FileModel{}, false, errors.New("query failed")
 			},
 		})
 

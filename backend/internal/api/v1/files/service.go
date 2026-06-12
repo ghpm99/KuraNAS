@@ -70,29 +70,6 @@ func (s *Service) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return s.Repository.GetFileStatByPath(path)
 }
 
-func (s *Service) GetFiles(filter FileFilter, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-
-	filesModel, err := s.Repository.GetFiles(filter, page, pageSize)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	paginationResponse, err := ParsePaginationToDto(&filesModel)
-
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
-	}
-
-	for index := range paginationResponse.Items {
-		if paginationResponse.Items[index].Type == Directory {
-			paginationResponse.Items[index].DirectoryContentCount = s.getDirectoryContentCount(paginationResponse.Items[index])
-		}
-	}
-
-	return paginationResponse, nil
-
-}
-
 func (s *Service) getDirectoryContentCount(file FileDto) int {
 	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
 	if err != nil {
