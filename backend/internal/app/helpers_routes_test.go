@@ -3,11 +3,13 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
@@ -258,5 +260,74 @@ func TestRegisterReactRoutes_AssetsHaveImmutableCacheHeader(t *testing.T) {
 	expected := "public, max-age=31536000, immutable"
 	if got := w.Header().Get("Cache-Control"); got != expected {
 		t.Fatalf("expected Cache-Control %q for assets, got %q", expected, got)
+	}
+}
+
+func TestWebDAVRouteIsGatedByConfig(t *testing.T) {
+	setAllowedOriginsForTest(t)
+	previous := config.AppConfig.EnableWebDAV
+	t.Cleanup(func() { config.AppConfig.EnableWebDAV = previous })
+
+	// Default (disabled): /dav does not exist.
+	config.AppConfig.EnableWebDAV = false
+	router := SetUpRouter()
+	RegisterRoutes(router, buildRouteContext())
+	for _, route := range router.Routes() {
+		if strings.HasPrefix(route.Path, "/dav") {
+			t.Fatalf("expected no /dav route with WebDAV disabled, found %s %s", route.Method, route.Path)
+		}
+	}
+
+	// Enabled: /dav answers WebDAV verbs.
+	config.AppConfig.EnableWebDAV = true
+	enabledRouter := SetUpRouter()
+	RegisterRoutes(enabledRouter, buildRouteContext())
+
+	found := false
+	for _, route := range enabledRouter.Routes() {
+		if route.Path == "/dav/*path" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected /dav/*path route with WebDAV enabled")
+	}
+}
+
+// denyAllAccessControl implements accesscontrol.ServiceInterface refusing
+// every non-loopback IP, to prove protected routes answer 403.
+type denyAllAccessControl struct{}
+
+func (denyAllAccessControl) GetAllowedIPs() ([]accesscontrol.AllowedIPDto, error) { return nil, nil }
+func (denyAllAccessControl) CreateAllowedIP(dto accesscontrol.CreateAllowedIPDto) (accesscontrol.AllowedIPDto, error) {
+	return accesscontrol.AllowedIPDto{}, nil
+}
+func (denyAllAccessControl) UpdateAllowedIP(id int, dto accesscontrol.UpdateAllowedIPDto) (accesscontrol.AllowedIPDto, error) {
+	return accesscontrol.AllowedIPDto{}, nil
+}
+func (denyAllAccessControl) DeleteAllowedIP(id int) error   { return nil }
+func (denyAllAccessControl) IsAllowed(addr netip.Addr) bool { return false }
+func (denyAllAccessControl) Reload() error                  { return nil }
+
+func TestWebDAVSitsBehindTheIPWhitelist(t *testing.T) {
+	setAllowedOriginsForTest(t)
+	previous := config.AppConfig.EnableWebDAV
+	t.Cleanup(func() { config.AppConfig.EnableWebDAV = previous })
+	config.AppConfig.EnableWebDAV = true
+
+	context := buildRouteContext()
+	context.AccessControl = &AccessControlContext{Service: denyAllAccessControl{}}
+
+	router := SetUpRouter()
+	RegisterRoutes(router, context)
+
+	for _, method := range []string{http.MethodGet, http.MethodPut, "PROPFIND", "MKCOL", http.MethodDelete} {
+		request := httptest.NewRequest(method, "/dav/qualquer", nil)
+		request.RemoteAddr = "192.168.1.99:50000" // non-loopback, not whitelisted
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusForbidden {
+			t.Fatalf("%s /dav: expected 403 from the whitelist, got %d", method, recorder.Code)
+		}
 	}
 }

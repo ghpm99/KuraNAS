@@ -10,6 +10,7 @@ type AppConfigStruct struct {
 	EntryPoint                 string
 	Lang                       string
 	EnableWorkers              bool
+	EnableWebDAV               bool
 	StartupTime                time.Time
 	RecentFilesKeep            int
 	Env                        string
@@ -41,6 +42,7 @@ func InitializeConfig() {
 		EntryPoint:                 os.Getenv("ENTRY_POINT"),
 		Lang:                       os.Getenv("LANGUAGE"),
 		EnableWorkers:              os.Getenv("ENABLE_WORKERS") == "true",
+		EnableWebDAV:               os.Getenv("WEBDAV_ENABLED") == "true",
 		StartupTime:                time.Now(),
 		RecentFilesKeep:            10,
 		Env:                        os.Getenv("ENV"),
