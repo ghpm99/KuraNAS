@@ -3,6 +3,7 @@ package trash
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -128,6 +129,32 @@ func TestTrashHandlers_ListRestoreDeleteEmpty(t *testing.T) {
 	}
 	if items, _ := repo.GetAllItems(); len(items) != 0 {
 		t.Fatalf("trash must be empty, got %v", items)
+	}
+}
+
+func TestTrashHandlers_ServiceErrorsBecome500(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service, repo, _, _ := newTrashServiceForTest(t)
+	repo.getErr = errors.New("db down")
+	handler := NewHandler(service, nil)
+
+	router := gin.New()
+	group := router.Group("/trash")
+	group.GET("", handler.GetTrashItemsHandler)
+	group.DELETE("", handler.EmptyTrashHandler)
+	group.GET("/retention", handler.GetTrashRetentionHandler)
+
+	for _, request := range []struct {
+		method string
+		url    string
+	}{
+		{http.MethodGet, "/trash"},
+		{http.MethodDelete, "/trash"},
+	} {
+		rec := doTrashJSON(router, request.method, request.url, nil)
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("%s %s: expected 500, got %d", request.method, request.url, rec.Code)
+		}
 	}
 }
 
