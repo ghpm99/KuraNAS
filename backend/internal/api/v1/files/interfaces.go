@@ -35,6 +35,7 @@ type ServiceInterface interface {
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	GetFileById(id int) (FileDto, error)
 	GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetRootNodes() ([]FileDto, error)
 	GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetActiveFilesPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)

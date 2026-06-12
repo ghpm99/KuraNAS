@@ -8,6 +8,7 @@ import (
 	"image/png"
 	jobsapi "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"os"
@@ -1108,4 +1109,104 @@ func TestPickActiveFile(t *testing.T) {
 			t.Fatalf("expected first id 9 no error, got %d err=%v", got.ID, err)
 		}
 	})
+}
+
+func TestGetRootNodesListsRevivesAndSelfHeals(t *testing.T) {
+	previousEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() {
+		config.AppConfig.EntryPoint = previousEntryPoint
+		roots.Reset()
+	})
+	config.AppConfig.EntryPoint = ""
+
+	indexedRoot := t.TempDir()                             // already has an active row
+	freshRoot := t.TempDir()                               // no row yet → created on the fly
+	missingRoot := filepath.Join(t.TempDir(), "unplugged") // not on disk → skipped
+	disabledRoot := t.TempDir()                            // disabled → never listed
+
+	roots.Set([]roots.Root{
+		{ID: 1, Path: indexedRoot, Label: "Principal", Enabled: true},
+		{ID: 2, Path: freshRoot, Label: "Midia", Enabled: true},
+		{ID: 3, Path: missingRoot, Label: "Externo", Enabled: true},
+		{ID: 4, Path: disabledRoot, Label: "Oculto", Enabled: false},
+	})
+
+	created := []FileModel{}
+	repo := &filesRepoMock{
+		getFilesByNameAndPathFn: func(name string, path string, limit int) ([]FileModel, error) {
+			if path == indexedRoot {
+				return []FileModel{{ID: 11, Name: name, Path: path, ParentPath: filepath.Dir(path), Type: Directory}}, nil
+			}
+			return nil, nil
+		},
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			file.ID = 22
+			created = append(created, file)
+			return file, nil
+		},
+		getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) { return 3, nil },
+	}
+	service := &Service{Repository: repo}
+
+	nodes, err := service.GetRootNodes()
+	if err != nil {
+		t.Fatalf("GetRootNodes: %v", err)
+	}
+
+	if len(nodes) != 2 {
+		t.Fatalf("expected 2 nodes (indexed + fresh), got %+v", nodes)
+	}
+	if nodes[0].ID != 11 || nodes[0].Name != "Principal" || nodes[0].Path != indexedRoot {
+		t.Fatalf("unexpected first node: %+v", nodes[0])
+	}
+	if nodes[1].ID != 22 || nodes[1].Name != "Midia" || nodes[1].Path != freshRoot {
+		t.Fatalf("unexpected second node: %+v", nodes[1])
+	}
+	if nodes[0].DirectoryContentCount != 3 {
+		t.Fatalf("expected content count filled, got %+v", nodes[0])
+	}
+	if len(created) != 1 || created[0].Path != freshRoot || created[0].Type != Directory {
+		t.Fatalf("expected the fresh root row to be self-created, got %+v", created)
+	}
+}
+
+func TestGetRootNodesRevivesSoftDeletedRow(t *testing.T) {
+	previousEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() {
+		config.AppConfig.EntryPoint = previousEntryPoint
+		roots.Reset()
+	})
+	config.AppConfig.EntryPoint = ""
+
+	rootPath := t.TempDir()
+	roots.Set([]roots.Root{{ID: 1, Path: rootPath, Label: "Principal", Enabled: true}})
+
+	updates := []FileModel{}
+	repo := &filesRepoMock{
+		getFilesByNameAndPathFn: func(name string, path string, limit int) ([]FileModel, error) {
+			return []FileModel{{
+				ID:        7,
+				Name:      name,
+				Path:      path,
+				Type:      Directory,
+				DeletedAt: sql.NullTime{Valid: true, Time: time.Now()},
+			}}, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updates = append(updates, file)
+			return true, nil
+		},
+	}
+	service := &Service{Repository: repo}
+
+	nodes, err := service.GetRootNodes()
+	if err != nil {
+		t.Fatalf("GetRootNodes: %v", err)
+	}
+	if len(nodes) != 1 || nodes[0].ID != 7 || nodes[0].DeletedAt.HasValue {
+		t.Fatalf("expected the soft-deleted row revived, got %+v", nodes)
+	}
+	if len(updates) != 1 || updates[0].DeletedAt.Valid {
+		t.Fatalf("expected an update clearing deleted_at, got %+v", updates)
+	}
 }
