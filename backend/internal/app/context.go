@@ -26,6 +26,7 @@ import (
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/takeout"
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/api/v1/watchfolders"
@@ -64,6 +65,7 @@ type AppContext struct {
 	Libraries     *LibrariesContext
 	WatchFolders  *WatchFoldersContext
 	Takeout       *TakeoutContext
+	Trash         *TrashContext
 	Distribution  *DistributionContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
@@ -73,6 +75,12 @@ type AccessControlContext struct {
 	Handler    *accesscontrol.Handler
 	Service    accesscontrol.ServiceInterface
 	Repository accesscontrol.RepositoryInterface
+}
+
+type TrashContext struct {
+	Handler    *trash.Handler
+	Service    trash.ServiceInterface
+	Repository trash.RepositoryInterface
 }
 
 type DistributionContext struct {
@@ -207,6 +215,7 @@ func NewContext(db *sql.DB) *AppContext {
 	librariesContext := newLibrariesContext(dbContext, loggerService)
 	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
 	accessControlContext := newAccessControlContext(dbContext, loggerService)
+	trashContext := newTrashContext(dbContext, loggerService, fileContext.Service)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -237,6 +246,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Libraries:     librariesContext,
 		WatchFolders:  watchFoldersContext,
 		Takeout:       takeoutContext,
+		Trash:         trashContext,
 		Distribution:  distributionContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
@@ -462,6 +472,22 @@ func newLibrariesContext(
 	handler := libraries.NewHandler(service, loggerService)
 
 	return &LibrariesContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newTrashContext(
+	dbContext *database.DbContext,
+	loggerService logger.LoggerServiceInterface,
+	filesService files.ServiceInterface,
+) *TrashContext {
+	repository := trash.NewRepository(dbContext)
+	service := trash.NewService(repository, filesService)
+	handler := trash.NewHandler(service, loggerService)
+
+	return &TrashContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,

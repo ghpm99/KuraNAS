@@ -49,6 +49,20 @@ func (r *Repository) MarkDeletedSubtree(transaction *sql.Tx, path string, delete
 	return result.RowsAffected()
 }
 
+// RestoreSubtree revives the soft-deleted row at path and every descendant
+// row — the inverse of MarkDeletedSubtree. Returns the number of affected rows.
+func (r *Repository) RestoreSubtree(transaction *sql.Tx, path string) (int64, error) {
+	result, err := transaction.Exec(
+		queries.RestoreSubtreeQuery,
+		path,
+		path+string(filepath.Separator),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("RestoreSubtree: %w", err)
+	}
+	return result.RowsAffected()
+}
+
 // logSyncFailure records a failed disk→database sync. The disk operation
 // already succeeded and stays authoritative; the pending ScanDirTask
 // reconciles the rows later, so the operation still reports success.
@@ -91,6 +105,15 @@ func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
 func (s *Service) syncDeletedRows(path string) error {
 	return s.withTransaction(func(tx *sql.Tx) error {
 		_, err := s.Repository.MarkDeletedSubtree(tx, path, time.Now())
+		return err
+	})
+}
+
+// RestoreSubtree revives the home_file rows of a subtree that came back from
+// the trash, so listings show it again before the reconciliation scan runs.
+func (s *Service) RestoreSubtree(path string) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		_, err := s.Repository.RestoreSubtree(tx, path)
 		return err
 	})
 }

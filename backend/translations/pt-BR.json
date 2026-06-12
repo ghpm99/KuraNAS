@@ -1020,5 +1020,11 @@
 	"SETTINGS_ACCESS_CONTROL_ENABLED": "Habilitado",
 	"SETTINGS_ACCESS_CONTROL_REMOVE": "Remover",
 	"SETTINGS_ACCESS_CONTROL_SAVED": "Lista de IPs atualizada",
-	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Falha ao carregar a lista de IPs"
+	"SETTINGS_ACCESS_CONTROL_LOAD_ERROR": "Falha ao carregar a lista de IPs",
+	"TRASH_ITEM_NOT_FOUND": "Item não encontrado na lixeira",
+	"TRASH_RESTORE_CONFLICT": "Não foi possível restaurar: o local original está ocupado",
+	"TRASH_OPERATION_FAILED": "Falha na operação da lixeira",
+	"TRASH_RESTORE_SUCCESS": "Item restaurado ao local original",
+	"TRASH_DELETE_SUCCESS": "Item excluído definitivamente",
+	"TRASH_EMPTY_SUCCESS": "Lixeira esvaziada"
 }

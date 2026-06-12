@@ -116,6 +116,9 @@ var CreateAllowedIPTableQuery string
 //go:embed queries/0035_create_home_file_path_prefix_index.sql
 var CreateHomeFilePathPrefixIndexQuery string
 
+//go:embed queries/0036_create_trash_item_table.sql
+var CreateTrashItemTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -263,4 +266,9 @@ func assistantMigrationList() {
 func accessControlMigrationList() {
 	addMigration("0034_create_allowed_ip_table",
 		defaultMigrationFunc(CreateAllowedIPTableQuery))
+}
+
+func trashMigrationList() {
+	addMigration("0036_create_trash_item_table",
+		defaultMigrationFunc(CreateTrashItemTableQuery))
 }

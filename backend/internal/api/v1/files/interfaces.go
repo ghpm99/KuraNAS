@@ -21,6 +21,7 @@ type RepositoryInterface interface {
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
+	RestoreSubtree(transaction *sql.Tx, path string) (int64, error)
 	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
 	GetCountByType(fileType FileType) (int, error)
 	GetTotalSpaceUsed() (int, error)
@@ -54,6 +55,7 @@ type ServiceInterface interface {
 	CheckFileExists(fileId int) bool
 	CheckFileExistsByPath(path string) bool
 	DeleteFile(file FileDto, bySystem bool) error
+	RestoreSubtree(path string) error
 	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
 	CreateFolder(parentID *int, name string) (string, error)
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)

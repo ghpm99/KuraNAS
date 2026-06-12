@@ -76,6 +76,7 @@ type filesRepoMock struct {
 	updateFileFn               func(transaction *sql.Tx, file FileModel) (bool, error)
 	updateDescendantPathsFn    func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	markDeletedSubtreeFn       func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
+	restoreSubtreeFn           func(transaction *sql.Tx, path string) (int64, error)
 	getDirectoryContentCountFn func(fileId int, parentPath string) (int, error)
 	getCountByTypeFn           func(fileType FileType) (int, error)
 	getTotalSpaceUsedFn        func() (int, error)
@@ -148,6 +149,12 @@ func (m *filesRepoMock) UpdateDescendantPaths(transaction *sql.Tx, oldPath strin
 func (m *filesRepoMock) MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
 	if m.markDeletedSubtreeFn != nil {
 		return m.markDeletedSubtreeFn(transaction, path, deletedAt)
+	}
+	return 0, nil
+}
+func (m *filesRepoMock) RestoreSubtree(transaction *sql.Tx, path string) (int64, error) {
+	if m.restoreSubtreeFn != nil {
+		return m.restoreSubtreeFn(transaction, path)
 	}
 	return 0, nil
 }

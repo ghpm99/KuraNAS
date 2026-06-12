@@ -76,6 +76,7 @@ func initMigrationList() {
 	watchFoldersMigrationList()
 	assistantMigrationList()
 	accessControlMigrationList()
+	trashMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {
