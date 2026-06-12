@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import AccessControlSettingsSection from './AccessControlSettingsSection';
 import AIProvidersSettingsSection from './AIProvidersSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
+import StorageRootsSettingsSection from './StorageRootsSettingsSection';
 import useSettingsScreen from './useSettingsScreen';
 import styles from './SettingsScreen.module.css';
 
@@ -70,6 +71,8 @@ const SettingsScreen = () => {
             {hasError ? <Alert severity="error">{t('SETTINGS_LOAD_ERROR')}</Alert> : null}
 
             <div className={styles.grid}>
+                <StorageRootsSettingsSection className={styles.panel} />
+
                 <AccessControlSettingsSection className={styles.panel} />
 
                 <LibrarySettingsSection className={styles.panel} />

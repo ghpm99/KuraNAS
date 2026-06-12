@@ -1055,5 +1055,18 @@
 	"STORAGE_ROOT_DUPLICATE": "Este caminho ou nome já está cadastrado",
 	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "A raiz de armazenamento principal não pode ser desabilitada nem removida",
 	"STORAGE_ROOT_OPERATION_FAILED": "Falha na operação de raiz de armazenamento",
-	"ERROR_MOVE_ACROSS_ROOTS": "Mover entre raízes de armazenamento não é suportado; copie o item e exclua o original"
+	"ERROR_MOVE_ACROSS_ROOTS": "Mover entre raízes de armazenamento não é suportado; copie o item e exclua o original",
+	"SETTINGS_STORAGE_ROOTS_TITLE": "Raízes de armazenamento",
+	"SETTINGS_STORAGE_ROOTS_DESCRIPTION": "Pastas que o KuraNAS indexa, vigia e serve. Cada raiz aparece como uma pasta de topo.",
+	"SETTINGS_STORAGE_ROOTS_LOAD_ERROR": "Falha ao carregar as raízes de armazenamento",
+	"SETTINGS_STORAGE_ROOTS_SAVE_ERROR": "Falha ao salvar a raiz de armazenamento",
+	"SETTINGS_STORAGE_ROOTS_SAVED": "Raízes de armazenamento atualizadas",
+	"SETTINGS_STORAGE_ROOTS_PATH_LABEL": "Caminho absoluto",
+	"SETTINGS_STORAGE_ROOTS_LABEL_LABEL": "Nome de exibição",
+	"SETTINGS_STORAGE_ROOTS_ADD": "Adicionar raiz",
+	"SETTINGS_STORAGE_ROOTS_EMPTY": "Nenhuma raiz de armazenamento cadastrada.",
+	"SETTINGS_STORAGE_ROOTS_PRIMARY": "Principal",
+	"SETTINGS_STORAGE_ROOTS_ENABLED": "Habilitada",
+	"SETTINGS_STORAGE_ROOTS_REMOVE": "Remover",
+	"SETTINGS_STORAGE_ROOTS_HELP": "Uma raiz nova é indexada na hora. Desabilitar uma raiz a esconde da navegação sem apagar os dados indexados; a raiz principal não pode ser desabilitada nem removida."
 }

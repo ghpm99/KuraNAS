@@ -1055,5 +1055,18 @@
 	"STORAGE_ROOT_DUPLICATE": "This path or label is already registered",
 	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "The primary storage root cannot be disabled or removed",
 	"STORAGE_ROOT_OPERATION_FAILED": "Storage root operation failed",
-	"ERROR_MOVE_ACROSS_ROOTS": "Moving between storage roots is not supported; copy the item and delete the original"
+	"ERROR_MOVE_ACROSS_ROOTS": "Moving between storage roots is not supported; copy the item and delete the original",
+	"SETTINGS_STORAGE_ROOTS_TITLE": "Storage roots",
+	"SETTINGS_STORAGE_ROOTS_DESCRIPTION": "Folders KuraNAS indexes, watches and serves. Each root appears as a top-level folder.",
+	"SETTINGS_STORAGE_ROOTS_LOAD_ERROR": "Failed to load the storage roots",
+	"SETTINGS_STORAGE_ROOTS_SAVE_ERROR": "Failed to save the storage root",
+	"SETTINGS_STORAGE_ROOTS_SAVED": "Storage roots updated",
+	"SETTINGS_STORAGE_ROOTS_PATH_LABEL": "Absolute path",
+	"SETTINGS_STORAGE_ROOTS_LABEL_LABEL": "Display name",
+	"SETTINGS_STORAGE_ROOTS_ADD": "Add root",
+	"SETTINGS_STORAGE_ROOTS_EMPTY": "No storage root registered.",
+	"SETTINGS_STORAGE_ROOTS_PRIMARY": "Primary",
+	"SETTINGS_STORAGE_ROOTS_ENABLED": "Enabled",
+	"SETTINGS_STORAGE_ROOTS_REMOVE": "Remove",
+	"SETTINGS_STORAGE_ROOTS_HELP": "A new root is indexed right away. Disabling a root hides it from navigation without deleting indexed data; the primary root cannot be disabled or removed."
 }
