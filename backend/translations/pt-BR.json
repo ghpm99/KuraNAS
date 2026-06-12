@@ -1054,5 +1054,6 @@
 	"STORAGE_ROOT_OVERLAP": "O caminho sobrepõe uma raiz de armazenamento já cadastrada",
 	"STORAGE_ROOT_DUPLICATE": "Este caminho ou nome já está cadastrado",
 	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "A raiz de armazenamento principal não pode ser desabilitada nem removida",
-	"STORAGE_ROOT_OPERATION_FAILED": "Falha na operação de raiz de armazenamento"
+	"STORAGE_ROOT_OPERATION_FAILED": "Falha na operação de raiz de armazenamento",
+	"ERROR_MOVE_ACROSS_ROOTS": "Mover entre raízes de armazenamento não é suportado; copie o item e exclua o original"
 }

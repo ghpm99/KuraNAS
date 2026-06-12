@@ -471,6 +471,18 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		}
 	}
 
+	// Roots usually live on different volumes, where os.Rename fails (EXDEV).
+	// First version: refuse with a clear message; copy+delete may come later.
+	sourceOwner, sourceOwned := roots.OwnerOf(resolvedSourcePath)
+	destOwner, destOwned := roots.OwnerOf(resolvedDestPath)
+	if sourceOwned && destOwned && sourceOwner.Path != destOwner.Path {
+		return "", newFileOperationError(
+			http.StatusBadRequest,
+			"ERROR_MOVE_ACROSS_ROOTS",
+			fmt.Errorf("cannot move between storage roots"),
+		)
+	}
+
 	if err := os.Rename(resolvedSourcePath, resolvedDestPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
 	}

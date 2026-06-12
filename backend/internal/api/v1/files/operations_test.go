@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1088,4 +1089,39 @@ func TestCreateFolderEmptyName(t *testing.T) {
 
 	_, err := service.CreateFolder(nil, "")
 	requireOperationError(t, err, http.StatusBadRequest, "ERROR_FOLDER_NAME_REQUIRED")
+}
+
+func TestMoveFileAcrossRootsIsRefused(t *testing.T) {
+	primaryRoot := t.TempDir()
+	secondRoot := t.TempDir()
+	setEntryPointForTest(t, primaryRoot)
+	t.Cleanup(roots.Reset)
+	roots.Set([]roots.Root{
+		{ID: 1, Path: primaryRoot, Label: "Principal", Enabled: true},
+		{ID: 2, Path: secondRoot, Label: "Midia", Enabled: true},
+	})
+
+	sourceFile := filepath.Join(primaryRoot, "video.mp4")
+	if err := os.WriteFile(sourceFile, []byte("bytes"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	destDir := filepath.Join(secondRoot, "filmes")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "video.mp4", Path: sourceFile, Type: File},
+		{ID: 2, Name: "filmes", Path: destDir, Type: Directory},
+	}
+	service := newTestServiceWithFileRecords(t, primaryRoot, records)
+
+	destFolderID := 2
+	_, err := service.MoveFile(1, &destFolderID, "")
+	requireOperationError(t, err, http.StatusBadRequest, "ERROR_MOVE_ACROSS_ROOTS")
+
+	// The source must be untouched after the refusal.
+	if _, statErr := os.Stat(sourceFile); statErr != nil {
+		t.Fatalf("source vanished after refused move: %v", statErr)
+	}
 }
