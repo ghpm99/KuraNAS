@@ -2,9 +2,7 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -79,30 +77,6 @@ func StepTimeout() time.Duration {
 		timeout = 120 * time.Second
 	}
 	return timeout
-}
-
-// ToRelativePath strips the EntryPoint prefix from an absolute path,
-// returning a path relative to the entry point (e.g. "/imagens/fotos").
-func ToRelativePath(absolutePath string) string {
-	entryPoint := filepath.Clean(AppConfig.EntryPoint)
-	cleaned := filepath.Clean(absolutePath)
-	rel := strings.TrimPrefix(cleaned, entryPoint)
-	if rel == "" || rel == "." {
-		return "/"
-	}
-	if !strings.HasPrefix(rel, "/") {
-		rel = "/" + rel
-	}
-	return rel
-}
-
-// ToAbsolutePath prepends the EntryPoint to a relative path.
-func ToAbsolutePath(relativePath string) string {
-	entryPoint := filepath.Clean(AppConfig.EntryPoint)
-	if relativePath == "" || relativePath == "/" {
-		return entryPoint
-	}
-	return filepath.Join(entryPoint, relativePath)
 }
 
 func parseEnvInt(key string, fallback int) int {

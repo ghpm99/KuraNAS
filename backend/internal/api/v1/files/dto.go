@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
@@ -97,8 +97,8 @@ func ParsePaginationToDto(pagination *utils.PaginationResponse[FileModel]) (util
 // ToResponse returns a copy with paths relative to the entry point,
 // suitable for JSON responses sent to the frontend.
 func (fileDto FileDto) ToResponse() FileDto {
-	fileDto.Path = config.ToRelativePath(fileDto.Path)
-	fileDto.ParentPath = config.ToRelativePath(fileDto.ParentPath)
+	fileDto.Path = roots.ToRelativePath(fileDto.Path)
+	fileDto.ParentPath = roots.ToRelativePath(fileDto.ParentPath)
 	return fileDto
 }
 

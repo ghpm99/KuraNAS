@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
@@ -55,7 +56,7 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
 
 	rawPath := c.DefaultQuery("path", "")
-	path := config.ToAbsolutePath(rawPath)
+	path := roots.ToAbsolutePath(rawPath)
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: map[string]string{"path": path},

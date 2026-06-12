@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"strings"
@@ -248,8 +248,8 @@ func mapFiles(items []FileResultModel) []FileResultDto {
 		results = append(results, FileResultDto{
 			ID:         item.ID,
 			Name:       item.Name,
-			Path:       config.ToRelativePath(item.Path),
-			ParentPath: config.ToRelativePath(item.ParentPath),
+			Path:       roots.ToRelativePath(item.Path),
+			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 			Starred:    item.Starred,
 		})
@@ -263,8 +263,8 @@ func mapFolders(items []FolderResultModel) []FolderResultDto {
 		results = append(results, FolderResultDto{
 			ID:         item.ID,
 			Name:       item.Name,
-			Path:       config.ToRelativePath(item.Path),
-			ParentPath: config.ToRelativePath(item.ParentPath),
+			Path:       roots.ToRelativePath(item.Path),
+			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Starred:    item.Starred,
 		})
 	}
@@ -337,8 +337,8 @@ func mapVideos(items []VideoResultModel) []VideoResultDto {
 		results = append(results, VideoResultDto{
 			ID:         item.ID,
 			Name:       item.Name,
-			Path:       config.ToRelativePath(item.Path),
-			ParentPath: config.ToRelativePath(item.ParentPath),
+			Path:       roots.ToRelativePath(item.Path),
+			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 		})
 	}
@@ -351,8 +351,8 @@ func mapImages(items []ImageResultModel) []ImageResultDto {
 		results = append(results, ImageResultDto{
 			ID:         item.ID,
 			Name:       item.Name,
-			Path:       config.ToRelativePath(item.Path),
-			ParentPath: config.ToRelativePath(item.ParentPath),
+			Path:       roots.ToRelativePath(item.Path),
+			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 			Category:   item.Category,
 			Context:    item.Context,
