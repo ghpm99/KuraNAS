@@ -14,6 +14,7 @@ import (
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/applog"
@@ -97,7 +98,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 	applog.Go("workers-scheduler", func() { startWorkersScheduler(context) })
 	applog.Go("notification-cleanup", func() { startNotificationCleanup(context) })
-	startEntryPointWatcher(context)
+	startRootWatchers(context)
 
 	if context != nil && context.SystemEvents != nil {
 		if err := context.SystemEvents.RecordEvent(
@@ -243,23 +244,22 @@ func startWorkersScheduler(context *WorkerContext) {
 	}
 }
 
+// enqueueStartupScanJob enqueues one startup_scan job per enabled storage
+// root (the registry falls back to ENTRY_POINT while nothing is registered).
 func enqueueStartupScanJob(context *WorkerContext) error {
-	rootPath := config.AppConfig.EntryPoint
-	if rootPath == "" {
-		return nil
-	}
+	for _, root := range roots.Enabled() {
+		plan, planErr := buildScanPlan(root.Path, job.JobTypeStartupScan, job.JobPriorityLow)
+		if planErr != nil {
+			return planErr
+		}
 
-	plan, planErr := buildScanPlan(rootPath, job.JobTypeStartupScan, job.JobPriorityLow)
-	if planErr != nil {
-		return planErr
-	}
+		jobID, err := context.JobOrchestrator.CreateJob(plan)
+		if err != nil {
+			return err
+		}
 
-	jobID, err := context.JobOrchestrator.CreateJob(plan)
-	if err != nil {
-		return err
+		log.Printf("startup_scan job enqueued id=%d root=%q\n", jobID, root.Path)
 	}
-
-	log.Printf("startup_scan job enqueued id=%d\n", jobID)
 	return nil
 }
 
@@ -364,15 +364,17 @@ func handleTask(id int, context *WorkerContext, task utils.Task) {
 			log.Printf("worker %d: job orchestrator unavailable; ScanFiles task dropped\n", id)
 			return
 		}
-		if err := enqueueFilesystemEventJob(context, config.AppConfig.EntryPoint, job.JobPriorityLow); err != nil {
-			log.Printf("worker %d: failed to enqueue fs_event job: %v\n", id, err)
-			emitNotification(
-				context,
-				"error",
-				i18n.GetMessage("NOTIFICATION_FILE_SCAN_FAILED_TITLE"),
-				err.Error(),
-				"",
-			)
+		for _, root := range roots.Enabled() {
+			if err := enqueueFilesystemEventJob(context, root.Path, job.JobPriorityLow); err != nil {
+				log.Printf("worker %d: failed to enqueue fs_event job for root %q: %v\n", id, root.Path, err)
+				emitNotification(
+					context,
+					"error",
+					i18n.GetMessage("NOTIFICATION_FILE_SCAN_FAILED_TITLE"),
+					err.Error(),
+					"",
+				)
+			}
 		}
 	case utils.ScanDir:
 		if context == nil || context.JobOrchestrator == nil {

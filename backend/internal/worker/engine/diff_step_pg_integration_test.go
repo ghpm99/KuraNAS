@@ -223,8 +223,10 @@ func TestDiffStep_IndexesDirectories_Postgres(t *testing.T) {
 			t.Fatalf("expected directory type for %q, got %d", dir, fileType)
 		}
 	}
-	if total, _, _ := activeRowsByPath(t, dbCtx, root); total != 0 {
-		t.Fatalf("entry point must not get a home_file row, got %d", total)
+	// The scanned root itself gets a row too: storage roots are the
+	// level-zero nodes of the multi-root tree.
+	if total, active, _ := activeRowsByPath(t, dbCtx, root); total != 1 || active != 1 {
+		t.Fatalf("expected exactly 1 active row for the root, got total=%d active=%d", total, active)
 	}
 
 	// (2) Idempotency: a second scan must not duplicate directory rows.
