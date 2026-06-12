@@ -1054,5 +1054,6 @@
 	"STORAGE_ROOT_OVERLAP": "The path overlaps a registered storage root",
 	"STORAGE_ROOT_DUPLICATE": "This path or label is already registered",
 	"STORAGE_ROOT_PRIMARY_IMMUTABLE": "The primary storage root cannot be disabled or removed",
-	"STORAGE_ROOT_OPERATION_FAILED": "Storage root operation failed"
+	"STORAGE_ROOT_OPERATION_FAILED": "Storage root operation failed",
+	"ERROR_MOVE_ACROSS_ROOTS": "Moving between storage roots is not supported; copy the item and delete the original"
 }

@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
@@ -495,5 +497,45 @@ func TestTrashService_IsInsideTrash(t *testing.T) {
 	}
 	if IsInsideTrash(root, filepath.Join(root, DirName+"-sufixo", "x.txt")) {
 		t.Fatalf("a sibling dir sharing the prefix must not count as inside")
+	}
+}
+
+func TestMoveToTrashUsesOwningRootTrashDir(t *testing.T) {
+	service, repo, _, primaryRoot := newTrashServiceForTest(t)
+
+	secondRoot := t.TempDir()
+	t.Cleanup(roots.Reset)
+	roots.Set([]roots.Root{
+		{ID: 1, Path: primaryRoot, Label: "Principal", Enabled: true},
+		{ID: 2, Path: secondRoot, Label: "Midia", Enabled: true},
+	})
+
+	victim := filepath.Join(secondRoot, "filme.mp4")
+	writeFile(t, victim, "bytes")
+
+	if err := service.MoveToTrash(victim, 5); err != nil {
+		t.Fatalf("MoveToTrash: %v", err)
+	}
+
+	items := repo.sortedItems()
+	if len(items) != 1 {
+		t.Fatalf("expected one trash item, got %+v", items)
+	}
+	// The bytes must land in the trash dir of the root that owns the path
+	// (same volume), never in the primary root's trash.
+	expectedPrefix := filepath.Join(secondRoot, DirName) + string(filepath.Separator)
+	if !strings.HasPrefix(items[0].TrashPath, expectedPrefix) {
+		t.Fatalf("expected trash path under %q, got %q", expectedPrefix, items[0].TrashPath)
+	}
+	if _, err := os.Stat(items[0].TrashPath); err != nil {
+		t.Fatalf("trashed bytes missing: %v", err)
+	}
+
+	// Purge must accept the second root's trash dir as a valid location.
+	if err := service.DeleteItemPermanently(items[0].ID); err != nil {
+		t.Fatalf("DeleteItemPermanently: %v", err)
+	}
+	if _, err := os.Stat(items[0].TrashPath); !os.IsNotExist(err) {
+		t.Fatalf("expected purged bytes, stat err=%v", err)
 	}
 }

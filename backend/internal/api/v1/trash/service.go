@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
 
-// DirName is the trash directory living at the root of the entry point. The
+// DirName is the trash directory living at the top of each storage root. The
 // scan walker and the filesystem watcher must ignore it explicitly, so trashed
 // content never re-enters the index.
 const DirName = ".kuranas-trash"
@@ -32,18 +32,22 @@ func NewService(repository RepositoryInterface, filesIndex FilesIndexInterface) 
 	return &Service{Repository: repository, FilesIndex: filesIndex}
 }
 
-// Dir returns the absolute path of the trash directory for the configured
-// entry point.
+// Dir returns the absolute path of the primary storage root's trash directory.
 func Dir() (string, error) {
-	entryPoint := strings.TrimSpace(config.AppConfig.EntryPoint)
-	if entryPoint == "" {
+	primary, ok := roots.Primary()
+	if !ok {
 		return "", fmt.Errorf("entry point not configured")
 	}
-	entryPointAbs, err := filepath.Abs(entryPoint)
-	if err != nil {
-		return "", err
+	return filepath.Join(primary.Path, DirName), nil
+}
+
+// dirFor returns the trash directory of the storage root that owns path —
+// trashing stays inside the same volume, so os.Rename remains free.
+func dirFor(originalPath string) (string, error) {
+	if owner, ok := roots.OwnerOf(originalPath); ok {
+		return filepath.Join(owner.Path, DirName), nil
 	}
-	return filepath.Join(filepath.Clean(entryPointAbs), DirName), nil
+	return Dir()
 }
 
 // IsInsideTrash reports whether path lives under the trash directory of root.
@@ -58,12 +62,12 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
-// MoveToTrash relocates an absolute path into the trash directory (same
-// volume, so os.Rename is free) and registers it for later restore. The
-// caller (files domain) has already validated the path against the entry
-// point and soft-deletes the home_file rows itself.
+// MoveToTrash relocates an absolute path into the trash directory of its
+// owning storage root (same volume, so os.Rename is free) and registers it
+// for later restore. The caller (files domain) has already validated the path
+// against the storage roots and soft-deletes the home_file rows itself.
 func (s *Service) MoveToTrash(originalPath string, size int64) error {
-	trashDir, err := Dir()
+	trashDir, err := dirFor(originalPath)
 	if err != nil {
 		return err
 	}
@@ -176,14 +180,11 @@ func (s *Service) deleteRegistryRow(id int) error {
 }
 
 // removeItemFromDisk permanently deletes the bytes of one registered item.
-// It refuses to touch anything outside the trash directory.
+// It refuses to touch anything outside a trash directory (any root's).
 func (s *Service) removeItemFromDisk(item TrashItemModel) error {
-	trashDir, err := Dir()
-	if err != nil {
-		return err
-	}
 	cleanPath := filepath.Clean(item.TrashPath)
-	if !strings.HasPrefix(cleanPath, trashDir+string(filepath.Separator)) {
+	separator := string(filepath.Separator)
+	if !strings.Contains(cleanPath, separator+DirName+separator) {
 		return fmt.Errorf("trash item %d points outside the trash dir: %q", item.ID, item.TrashPath)
 	}
 	if err := os.RemoveAll(cleanPath); err != nil {
