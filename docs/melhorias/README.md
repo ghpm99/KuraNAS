@@ -33,7 +33,7 @@ Regras invariantes:
 | 08 | [Decompor get_files query](08-decompor-get-files-query.md) | dívida técnica | P2 | 02 | ✅ concluída (2026-06-11) | |
 | 09 | [Lixeira](09-lixeira.md) | feature | P2 | 02, 05 | ✅ concluída (2026-06-12) | |
 | 10 | [Múltiplas raízes](10-multiplas-raizes.md) | feature | P3 | 01, 05 | ✅ concluída (2026-06-12) | fundação da visão de armazenamento |
-| 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | pendente | melhor após 10 |
+| 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | em execução | melhor após 10 |
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | pendente | retenção ≠ espelho |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | pendente | path lógico × físico |
 
