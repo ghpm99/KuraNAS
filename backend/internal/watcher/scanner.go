@@ -3,6 +3,7 @@ package watcher
 import (
 	"io/fs"
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/pkg/utils"
 	"path/filepath"
@@ -28,6 +29,11 @@ func ScanWatchFolder(watchFolder watchfolders.WatchFolderModel) ([]ScannedFile, 
 			return nil
 		}
 		if d.IsDir() {
+			// A watch folder may be (or sit inside) the entry point; its
+			// trash dir holds deleted bytes, never auto-organization input.
+			if d.Name() == trash.DirName {
+				return fs.SkipDir
+			}
 			return nil
 		}
 

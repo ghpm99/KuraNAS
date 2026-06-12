@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/watchfolders"
 	"os"
 	"path/filepath"
@@ -88,5 +89,26 @@ func TestScanWatchFolderWithoutThresholdRecursesAndSorts(t *testing.T) {
 		if files[i-1].SourcePath > files[i].SourcePath {
 			t.Fatalf("expected sorted by path, got %s before %s", files[i-1].SourcePath, files[i].SourcePath)
 		}
+	}
+}
+
+func TestScanWatchFolderSkipsTrashDir(t *testing.T) {
+	root := t.TempDir()
+	trashDir := filepath.Join(root, trash.DirName)
+	if err := os.MkdirAll(trashDir, 0755); err != nil {
+		t.Fatalf("mkdir trash dir: %v", err)
+	}
+	for _, p := range []string{filepath.Join(root, "a.jpg"), filepath.Join(trashDir, "b.mp4")} {
+		if err := os.WriteFile(p, []byte("x"), 0644); err != nil {
+			t.Fatalf("write %s: %v", p, err)
+		}
+	}
+
+	files, err := ScanWatchFolder(watchfolders.WatchFolderModel{Path: root, Enabled: true})
+	if err != nil {
+		t.Fatalf("ScanWatchFolder returned error: %v", err)
+	}
+	if len(files) != 1 || filepath.Base(files[0].SourcePath) != "a.jpg" {
+		t.Fatalf("expected only the library file, got %+v", files)
 	}
 }

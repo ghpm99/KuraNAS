@@ -6,6 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"nas-go/api/internal/api/v1/trash"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 // collectEventsUntil drains watcher events into a set until want paths were
@@ -96,6 +100,59 @@ func TestRecursiveWatcherWatchesDirectoriesCreatedAfterStart(t *testing.T) {
 	seen := collectEventsUntil(t, watcher, map[string]bool{deepFile: true}, 2*time.Second)
 	if !seen[deepFile] {
 		t.Fatalf("event for file inside post-start directory not received, saw %v", seen)
+	}
+}
+
+func TestRecursiveWatcherIgnoresTrashDir(t *testing.T) {
+	root := t.TempDir()
+
+	// Trash dir already populated before the watcher starts: it must not be
+	// watched, so changes inside it never become events.
+	trashDir := filepath.Join(root, trash.DirName)
+	if err := os.MkdirAll(trashDir, 0755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+
+	watcher, err := newRecursiveWatcher(root, nil)
+	if err != nil {
+		t.Fatalf("newRecursiveWatcher: %v", err)
+	}
+	defer watcher.Close()
+
+	trashedFile := filepath.Join(trashDir, "deleted.txt.123")
+	if err := os.WriteFile(trashedFile, []byte("bye"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	// A real library file proves the watcher is alive while the trash write
+	// stays silent.
+	libraryFile := filepath.Join(root, "alive.txt")
+	if err := os.WriteFile(libraryFile, []byte("hi"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	seen := collectEventsUntil(t, watcher, map[string]bool{libraryFile: true}, 2*time.Second)
+	if !seen[libraryFile] {
+		t.Fatalf("event for library file not received, saw %v", seen)
+	}
+	if seen[trashedFile] || seen[trashDir] {
+		t.Fatalf("trash paths must not produce events, saw %v", seen)
+	}
+
+	// Same guard for events arriving after start (the Create of the trash dir
+	// itself when the first delete happens). Residual events for the library
+	// file may still drain; only a trash path is a failure.
+	watcher.handleEvent(fsnotify.Event{Name: trashedFile, Op: fsnotify.Create})
+	deadline := time.After(200 * time.Millisecond)
+	for {
+		select {
+		case path := <-watcher.Events():
+			if trash.IsInsideTrash(root, path) {
+				t.Fatalf("unexpected trash event for %q", path)
+			}
+		case <-deadline:
+			return
+		}
 	}
 }
 
