@@ -28,11 +28,6 @@
             android:name=".app.MainActivity"
             android:exported="false"
             android:label="@string/app_name" />
-
-        <activity
-            android:name=".presentation.video.VideoPlayerActivity"
-            android:configChanges="orientation|screenSize"
-            android:theme="@style/Theme.Kuranas.Fullscreen" />
     </application>
 
 </manifest>
