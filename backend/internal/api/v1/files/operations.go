@@ -165,7 +165,8 @@ func (handler *Handler) DeleteFileHandler(c *gin.Context) {
 		return
 	}
 
-	if err := handler.service.DeleteFileFromDisk(req.ID); err != nil {
+	permanent := c.DefaultQuery("permanent", "false") == "true"
+	if err := handler.service.DeleteFileFromDisk(req.ID, permanent); err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_DELETE_FAILED")
 		return
 	}
@@ -517,7 +518,10 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 	return resolvedDestPath, nil
 }
 
-func (s *Service) DeleteFileFromDisk(id int) error {
+// DeleteFileFromDisk removes the entry from the visible tree. By default the
+// bytes survive: the path is moved into the trash bin and stays restorable.
+// permanent=true keeps the old destructive behavior (os.RemoveAll).
+func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 	if id <= 0 {
 		return newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid file id"))
 	}
@@ -551,8 +555,23 @@ func (s *Service) DeleteFileFromDisk(id int) error {
 		return newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	if err := os.RemoveAll(resolvedPath); err != nil {
-		return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
+	if permanent {
+		if err := os.RemoveAll(resolvedPath); err != nil {
+			return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
+		}
+	} else {
+		if s.TrashBin == nil {
+			// Refuse to fall back to destruction: a missing trash bin is a
+			// wiring bug, not a license to delete bytes forever.
+			return newFileOperationError(
+				http.StatusInternalServerError,
+				"ERROR_DELETE_FAILED",
+				fmt.Errorf("trash bin not configured"),
+			)
+		}
+		if err := s.TrashBin.MoveToTrash(resolvedPath, file.Size); err != nil {
+			return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
+		}
 	}
 
 	if err := s.syncDeletedRows(file.Path); err != nil {

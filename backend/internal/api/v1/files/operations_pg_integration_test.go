@@ -130,8 +130,8 @@ func TestPostgres_OperationsReflectImmediatelyWithoutWorkers(t *testing.T) {
 		t.Fatalf("created folder row not visible: found=%v row=%+v", found, createdRow)
 	}
 
-	// DeleteFileFromDisk: whole subtree soft-deleted immediately.
-	if err := service.DeleteFileFromDisk(libraryID); err != nil {
+	// DeleteFileFromDisk (permanent): whole subtree soft-deleted immediately.
+	if err := service.DeleteFileFromDisk(libraryID, true); err != nil {
 		t.Fatalf("DeleteFileFromDisk: %v", err)
 	}
 	for _, gone := range []string{

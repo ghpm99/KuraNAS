@@ -216,6 +216,9 @@ func NewContext(db *sql.DB) *AppContext {
 	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
 	accessControlContext := newAccessControlContext(dbContext, loggerService)
 	trashContext := newTrashContext(dbContext, loggerService, fileContext.Service)
+	// Delete-to-trash: files cannot import trash (trash already leans on
+	// files), so the bin arrives by interface after both contexts exist.
+	fileContext.Service.SetTrashBin(trashContext.Service)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()

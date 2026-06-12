@@ -23,6 +23,13 @@ type Service struct {
 	Repository     RepositoryInterface
 	JobsRepository jobs.RepositoryInterface
 	Tasks          chan utils.Task
+	TrashBin       TrashBinInterface
+}
+
+// SetTrashBin wires the trash domain in after construction (the trash service
+// itself depends on files, so it cannot be a constructor argument).
+func (s *Service) SetTrashBin(trashBin TrashBinInterface) {
+	s.TrashBin = trashBin
 }
 
 func NewService(

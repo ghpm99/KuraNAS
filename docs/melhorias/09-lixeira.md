@@ -43,7 +43,7 @@ Excluir pela UI move o item para uma lixeira no próprio disco; o usuário conse
 - [ ] Restaurar com o path original ocupado responde conflito (409) com mensagem i18n.
 - [ ] `.kuranas-trash/` não aparece na árvore, nas abas de mídia nem nos analytics.
 - [ ] Expurgo automático remove itens além da retenção configurada.
-- [ ] `?permanent=true` mantém o comportamento destrutivo atual para quem quiser.
+- [x] `?permanent=true` mantém o comportamento destrutivo atual para quem quiser. *(query param no DELETE /files/path; sem lixeira configurada o delete padrão recusa em vez de destruir)*
 - [ ] `make ci` verde (backend + frontend).
 
 ## Fora de escopo
