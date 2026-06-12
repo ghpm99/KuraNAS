@@ -28,7 +28,9 @@ The same code compiles for three targets via build tags; `cmd/nas/` and `interna
 
 To add a feature: a package under `internal/api/v1/<feature>/` (`handler.go`, `service.go`, `repository.go`, `interfaces.go`, `model.go`, `dto.go` — `snake_case`, see "Domain package organization" below), a `new<Feature>Context` in `context.go`, and a `Register<Feature>Routes` in `routes.go`.
 
-Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs`, `configuration`, `search`, `notifications`, `captures`, `libraries`, `watchfolders`, `takeout`, `aiproviders`, `ollama`, `updater`, `distribution`, `health`.
+Existing feature modules: `files`, `diary`, `music`, `video`, `analytics`, `jobs`, `configuration`, `search`, `notifications`, `captures`, `libraries`, `watchfolders`, `takeout`, `aiproviders`, `ollama`, `updater`, `distribution`, `health`, `email`.
+
+`email` links personal mail accounts via **read-only** OAuth2 (Google: Authorization Code + PKCE with loopback redirect; Microsoft personal: Device Code Flow) and stores the token set AES-256-GCM-encrypted (`pkg/crypto`, key from `EMAIL_TOKEN_KEY` — without it the feature refuses to start and its routes answer an i18n error). Its OAuth HTTP client only talks to a fixed host allowlist (`accounts.google.com`, `oauth2.googleapis.com`, `login.microsoftonline.com`). The hard rules of the e-mail feature (read-only scopes forever, no URL fetching/attachment download, fail-closed analysis) live in `docs/melhorias/README.md` → "Decisões registradas".
 
 `distribution` is filesystem-backed (no DB): it serves pre-built client apps (Android APKs, the browser-extension zip) from a `./downloads/` directory described by `downloads/manifest.json` — `GET /api/v1/downloads` lists them, `GET /api/v1/downloads/:id` streams one. Artifacts are built by `scripts/build-downloads.sh` (CI/maintainer, never the server), bundled into `build/` by the root `make move`, and synced in place by the `updater`. A missing `downloads/` directory simply yields an empty catalog.
 
@@ -68,7 +70,7 @@ Any string that can reach a user — API `error`/message fields, notification ti
 
 - PostgreSQL via `lib/pq`; connection from `DB_*` env vars (`pkg/database`).
 - `pkg/database/dbContext.go` — `DbContext` wraps `*sql.DB` with `ExecTx`/`QueryTx` transaction helpers; repositories receive a `*DbContext`.
-- **SQL is never inline.** Each query is a `.sql` file under `pkg/database/queries/<domain>/`, embedded into a sibling `<domain>.go` via `//go:embed` into an exported `var`. Add a query by dropping a `.sql` file + a `//go:embed` line. Domains today: `aiproviders`, `analytics`, `assistant`, `captures`, `configuration`, `diary`, `files`, `image`, `jobs`, `libraries`, `log`, `music`, `notifications`, `search`, `systemevent`, `video`, `watchfolders`. The directory name matches the feature package name exactly.
+- **SQL is never inline.** Each query is a `.sql` file under `pkg/database/queries/<domain>/`, embedded into a sibling `<domain>.go` via `//go:embed` into an exported `var`. Add a query by dropping a `.sql` file + a `//go:embed` line. Domains today: `aiproviders`, `analytics`, `assistant`, `captures`, `configuration`, `diary`, `email`, `files`, `image`, `jobs`, `libraries`, `log`, `music`, `notifications`, `search`, `systemevent`, `video`, `watchfolders`. The directory name matches the feature package name exactly.
 - Migrations: numbered `.sql` files in `pkg/database/migrations/queries/`, applied on startup. Schema changes go here, never as ad-hoc DDL.
 
 ## Worker subsystem (`internal/worker`)
@@ -96,5 +98,5 @@ The task channel (`chan utils.Task`) still exists, but only for auxiliary work: 
 - `internal/roots` — in-memory registry of the storage roots (the N indexed directories; `storage_root` table, seeded from `ENTRY_POINT`). Hot paths read it via `roots.Enabled()`/`Primary()`/`OwnerOf()`; `roots.ToRelativePath`/`ToAbsolutePath`/`ResolveAbsolute` translate between client-visible paths (`/Midia/...` for non-primary roots) and disk paths. The `storageroots` domain pushes changes in at boot and on every CRUD.
 - `internal/dav` — embedded WebDAV server (`/dav/<label>/...`, gated by `WEBDAV_ENABLED`, default off). Registered before the gzip middleware (compression corrupts DAV bodies) and behind the IP whitelist; hides each root's trash dir.
 - `pkg/`: `i18n` (translation files), `logger`/`systemevent` (DB-backed), `icons`/`img`/`pdf` (thumbnails & media), `utils` (generic `PaginationResponse[T]`, tasks).
-- Config is env-driven (`internal/config`, loaded from `.env` via `godotenv`). Env vars: `ENTRY_POINT` (seed of the first storage root), `ENABLE_WORKERS`, `WEBDAV_ENABLED`, `LANGUAGE`, `ENV`, `ALLOWED_ORIGINS`, `DB_HOST/PORT/USER/PASSWORD/NAME`.
+- Config is env-driven (`internal/config`, loaded from `.env` via `godotenv`). Env vars: `ENTRY_POINT` (seed of the first storage root), `ENABLE_WORKERS`, `WEBDAV_ENABLED`, `LANGUAGE`, `ENV`, `ALLOWED_ORIGINS`, `DB_HOST/PORT/USER/PASSWORD/NAME`, `EMAIL_TOKEN_KEY` (32 bytes base64; gates the e-mail feature), `EMAIL_GOOGLE_CLIENT_ID`/`EMAIL_GOOGLE_CLIENT_SECRET`, `EMAIL_MS_CLIENT_ID`.
 </content>
