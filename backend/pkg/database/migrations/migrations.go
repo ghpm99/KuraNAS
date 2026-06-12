@@ -113,6 +113,9 @@ var ExtendSystemEventTypeCheckOllamaQuery string
 //go:embed queries/0034_create_allowed_ip_table.sql
 var CreateAllowedIPTableQuery string
 
+//go:embed queries/0035_create_home_file_path_prefix_index.sql
+var CreateHomeFilePathPrefixIndexQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -156,6 +159,9 @@ func fileMigrationList() {
 
 	addMigration("0029_add_image_suggested_name",
 		defaultMigrationFunc(AddImageSuggestedNameQuery))
+
+	addMigration("0035_create_home_file_path_prefix_index",
+		defaultMigrationFunc(CreateHomeFilePathPrefixIndexQuery))
 
 }
 
