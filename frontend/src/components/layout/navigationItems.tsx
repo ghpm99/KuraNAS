@@ -9,6 +9,7 @@ import {
     Music,
     Settings,
     Star,
+    Trash2,
     Upload,
     Videotape,
 } from 'lucide-react';
@@ -64,6 +65,11 @@ export const navigationItems: NavigationItem[] = [
         href: appRoutes.downloads,
         icon: <DownloadCloud size={20} />,
         labelKey: 'NAV_DOWNLOADS',
+    },
+    {
+        href: appRoutes.trash,
+        icon: <Trash2 size={20} />,
+        labelKey: 'NAV_TRASH',
     },
     { href: appRoutes.analytics, icon: analyticsIcon, labelKey: 'ANALYTICS' },
     {

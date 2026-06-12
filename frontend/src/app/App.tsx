@@ -27,6 +27,7 @@ const VideosPage = lazy(() => import('@/pages/videos/videos'));
 const AssistantPage = lazy(() => import('@/pages/assistant'));
 const TakeoutPage = lazy(() => import('@/pages/takeout'));
 const DownloadsPage = lazy(() => import('@/pages/downloads'));
+const TrashPage = lazy(() => import('@/pages/trash'));
 const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function AppContent() {
@@ -67,6 +68,7 @@ function AppContent() {
                 <Route path={appRoutes.assistant} element={<AssistantPage />} />
                 <Route path={appRoutes.takeout} element={<TakeoutPage />} />
                 <Route path={appRoutes.downloads} element={<DownloadsPage />} />
+                <Route path={appRoutes.trash} element={<TrashPage />} />
                 <Route path={`${appRoutes.videoPlayerBase}/:id`} element={<VideoPlayerPage />} />
                 <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
             </Routes>
