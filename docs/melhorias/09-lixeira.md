@@ -38,9 +38,9 @@ Excluir pela UI move o item para uma lixeira no próprio disco; o usuário conse
 
 ## Critérios de aceite
 
-- [ ] Excluir arquivo/pasta pela UI não remove bytes do disco; o item aparece em `GET /api/v1/trash`.
-- [ ] Restaurar devolve o item ao path original e ele reaparece na árvore de arquivos.
-- [ ] Restaurar com o path original ocupado responde conflito (409) com mensagem i18n.
+- [x] Excluir arquivo/pasta pela UI não remove bytes do disco; o item aparece em `GET /api/v1/trash`. *(DELETE /files/path default move para a lixeira; UI inalterada no fluxo de excluir + página /trash nova lista os itens)*
+- [x] Restaurar devolve o item ao path original e ele reaparece na árvore de arquivos. *(os.Rename de volta + RestoreSubtree revive as linhas + ScanDirTask; a UI invalida as queries de files)*
+- [x] Restaurar com o path original ocupado responde conflito (409) com mensagem i18n. *(ErrRestoreConflict → 409 TRASH_RESTORE_CONFLICT; a UI exibe a mensagem do backend verbatim)*
 - [x] `.kuranas-trash/` não aparece na árvore, nas abas de mídia nem nos analytics. *(o conteúdo da lixeira nunca vira linha de `home_file`: o walker do diff pula o dir (`SkipDir`), o watcher fsnotify não o observa nem emite eventos dele, e o scanner de watch folders o ignora — árvore, mídia e analytics leem só `home_file`)*
 - [x] Expurgo automático remove itens além da retenção configurada. *(trash.Purger: roda no boot e a cada 12h; retenção em app_settings via GET/PUT /trash/retention, default 30 dias)*
 - [x] `?permanent=true` mantém o comportamento destrutivo atual para quem quiser. *(query param no DELETE /files/path; sem lixeira configurada o delete padrão recusa em vez de destruir)*

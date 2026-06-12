@@ -1,0 +1,95 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+}
+
+.hero {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.heroText {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.title {
+    margin: 0;
+    font-size: 1.75rem;
+}
+
+.description {
+    margin: 0;
+    opacity: 0.8;
+    max-width: 60ch;
+}
+
+.state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.8;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    flex-wrap: wrap;
+}
+
+.itemInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.itemPath {
+    margin: 0;
+    font-size: 1rem;
+    word-break: break-all;
+}
+
+.itemMeta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.itemActions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.retention {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
