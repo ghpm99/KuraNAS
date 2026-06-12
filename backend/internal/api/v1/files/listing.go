@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
 	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/i18n"
@@ -160,7 +159,30 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 
 	fileCategory := FileCategory(c.DefaultQuery("category", string(AllCategory)))
 
-	parentPath := config.AppConfig.EntryPoint
+	// Level zero with multiple roots: the tree starts at the list of storage
+	// roots, each a navigable directory node. With a single root the legacy
+	// shape is kept — level zero lists the root's children directly.
+	if fileParentId == 0 && len(roots.Enabled()) > 1 {
+		nodes, err := handler.service.GetRootNodes()
+		if err != nil {
+			handler.Logger.CompleteWithErrorLog(loggerModel, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
+			return
+		}
+
+		response := utils.PaginationResponse[FileDto]{
+			Items:      nodes,
+			Pagination: utils.Pagination{Page: 1, PageSize: pageSize},
+		}
+		handler.Logger.CompleteWithSuccessLog(loggerModel)
+		c.JSON(http.StatusOK, ParsePaginationToResponse(response))
+		return
+	}
+
+	var parentPath string
+	if primary, ok := roots.Primary(); ok {
+		parentPath = primary.Path
+	}
 	if fileParentId != 0 {
 		fileParent, err := handler.service.GetFileById(fileParentId)
 		if err != nil {

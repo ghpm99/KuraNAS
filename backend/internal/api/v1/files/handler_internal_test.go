@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -43,6 +45,13 @@ func (m *filesHandlerServiceMock) listingPage(page int, pageSize int) (utils.Pag
 }
 func (m *filesHandlerServiceMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) GetRootNodes() ([]FileDto, error) {
+	page, err := m.listingPage(1, 1)
+	if err != nil {
+		return nil, err
+	}
+	return page.Items, nil
 }
 func (m *filesHandlerServiceMock) GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
@@ -481,5 +490,48 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		if w.Code != tc.code {
 			t.Fatalf("path %s expected %d got %d body=%s", tc.path, tc.code, w.Code, w.Body.String())
 		}
+	}
+}
+
+func TestGetFilesTreeHandlerMultiRootLevelZero(t *testing.T) {
+	t.Cleanup(roots.Reset)
+	rootA := t.TempDir()
+	rootB := t.TempDir()
+	roots.Set([]roots.Root{
+		{ID: 1, Path: rootA, Label: "Principal", Enabled: true},
+		{ID: 2, Path: rootB, Label: "Midia", Enabled: true},
+	})
+
+	handler := NewHandler(&filesHandlerServiceMock{}, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/tree", handler.GetFilesTreeHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/tree", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d (%s)", w.Code, w.Body.String())
+	}
+
+	var payload struct {
+		Items []FileDto `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	// The mock returns one root node; the handler must serve exactly the
+	// GetRootNodes result instead of the legacy children listing.
+	if len(payload.Items) != 1 || payload.Items[0].ID != 1 {
+		t.Fatalf("expected the root-node listing, got %+v", payload.Items)
+	}
+
+	// Asking for a specific folder keeps the legacy children behavior even
+	// with multiple roots.
+	req = httptest.NewRequest(http.MethodGet, "/files/tree?file_parent=9", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for child listing, got %d", w.Code)
 	}
 }

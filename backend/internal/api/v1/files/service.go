@@ -3,10 +3,12 @@ package files
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
@@ -109,6 +111,66 @@ func (s *Service) GetChildrenByParentPath(parentPath string, category FileCatego
 		return utils.PaginationResponse[FileDto]{}, err
 	}
 	return s.toDtoPageWithCounts(models)
+}
+
+// GetRootNodes returns the level-zero nodes of the tree: one home_file row
+// per enabled storage root, displayed under the root's registered label. A
+// root not yet indexed gets its row created on the fly (self-healing), so it
+// is navigable right after registration without waiting for the scan.
+func (s *Service) GetRootNodes() ([]FileDto, error) {
+	enabledRoots := roots.Enabled()
+	nodes := make([]FileDto, 0, len(enabledRoots))
+
+	for _, root := range enabledRoots {
+		node, found, err := s.rootNode(root.Path)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			continue
+		}
+		node.Name = root.Label
+		node.DirectoryContentCount = s.getDirectoryContentCount(node)
+		nodes = append(nodes, node)
+	}
+	return nodes, nil
+}
+
+// rootNode fetches (or creates/revives) the home_file row of a root directory.
+func (s *Service) rootNode(rootPath string) (FileDto, bool, error) {
+	existing, err := s.GetFileByNameAndPath(filepath.Base(rootPath), rootPath)
+	if err == nil && !existing.DeletedAt.HasValue {
+		return existing, true, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return FileDto{}, false, err
+	}
+
+	info, statErr := os.Stat(rootPath)
+	if statErr != nil || !info.IsDir() {
+		// Root unreachable on disk (unplugged drive): leave it out of the
+		// tree rather than failing the whole level-zero listing.
+		return FileDto{}, false, nil
+	}
+
+	if err == nil && existing.DeletedAt.HasValue {
+		existing.DeletedAt = utils.Optional[time.Time]{}
+		existing.UpdatedAt = info.ModTime()
+		if _, updateErr := s.UpdateFile(existing); updateErr != nil {
+			return FileDto{}, false, updateErr
+		}
+		return existing, true, nil
+	}
+
+	dirDto := FileDto{Path: rootPath, ParentPath: filepath.Dir(rootPath)}
+	if parseErr := dirDto.ParseFileInfoToFileDto(info); parseErr != nil {
+		return FileDto{}, false, parseErr
+	}
+	created, createErr := s.CreateFile(dirDto)
+	if createErr != nil {
+		return FileDto{}, false, createErr
+	}
+	return created, true, nil
 }
 
 // GetFilesByPath returns the active row(s) at an exact path.
