@@ -17,7 +17,6 @@ import (
 	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/trash"
 	videodom "nas-go/api/internal/api/v1/video"
-	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/scan"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -391,12 +390,8 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 
 			// Directories need a home_file row to be navigable in the tree,
 			// but have nothing to extract — a direct upsert replaces the full
-			// processing plan. The entry point itself stays implicit: the tree
-			// lists its children by parent_path.
-			if path == config.AppConfig.EntryPoint {
-				return nil
-			}
-
+			// processing plan. Storage roots get a row too: with multiple
+			// roots they are the level-zero nodes of the tree.
 			_, dirExists, dirStatErr := context.FilesService.GetFileStatByPath(path)
 			if dirStatErr != nil {
 				return fmt.Errorf("lookup directory stat for %q: %w", path, dirStatErr)

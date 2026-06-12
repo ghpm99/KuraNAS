@@ -9,6 +9,7 @@ import (
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 )
 
 const watcherMaxIndividualJobs = 50
@@ -56,35 +57,38 @@ func (b *eventBatcher) flush(now time.Time) []string {
 	return toDispatch
 }
 
-// startEntryPointWatcher watches the entry point with OS-native filesystem
-// events (fsnotify): near-zero CPU/IO at rest, so a mechanical disk can spin
-// down. Full-tree scans remain only as reconciliation — at boot (the existing
-// startup_scan) and at a low configurable frequency — plus the automatic
-// fallback when the native watcher reports an error/overflow.
-func startEntryPointWatcher(context *WorkerContext) {
-	entryPoint := config.AppConfig.EntryPoint
-	if entryPoint == "" {
+// startRootWatchers watches every enabled storage root with OS-native
+// filesystem events (fsnotify): near-zero CPU/IO at rest, so a mechanical disk
+// can spin down. Full-tree scans remain only as reconciliation — at boot (the
+// existing startup_scan) and at a low configurable frequency — plus the
+// automatic fallback when a native watcher reports an error/overflow.
+func startRootWatchers(context *WorkerContext) {
+	enabledRoots := roots.Enabled()
+	if len(enabledRoots) == 0 {
 		return
 	}
 
-	onWatcherError := func(error) {
-		// Events may have been lost: reconcile the whole tree.
-		if err := enqueueFilesystemEventJob(context, entryPoint, job.JobPriorityNormal); err != nil {
-			log.Printf("[watcher] failed to enqueue overflow reconciliation: %v\n", err)
+	for _, root := range enabledRoots {
+		rootPath := root.Path
+		onWatcherError := func(error) {
+			// Events may have been lost: reconcile this root's whole tree.
+			if err := enqueueFilesystemEventJob(context, rootPath, job.JobPriorityNormal); err != nil {
+				log.Printf("[watcher] failed to enqueue overflow reconciliation for %q: %v\n", rootPath, err)
+			}
 		}
+
+		watcher, err := newRecursiveWatcher(rootPath, onWatcherError)
+		if err != nil {
+			log.Printf("[watcher] native watcher unavailable for %q (%v); relying on reconciliation scans only\n", rootPath, err)
+			continue
+		}
+		go watcherDispatchLoop(context, rootPath, watcher)
 	}
 
-	watcher, err := newRecursiveWatcher(entryPoint, onWatcherError)
-	if err != nil {
-		log.Printf("[watcher] native watcher unavailable (%v); relying on reconciliation scans only\n", err)
-	} else {
-		go watcherDispatchLoop(context, entryPoint, watcher)
-	}
-
-	go reconciliationLoop(context, entryPoint)
+	go reconciliationLoop(context)
 }
 
-func watcherDispatchLoop(context *WorkerContext, entryPoint string, watcher *recursiveWatcher) {
+func watcherDispatchLoop(context *WorkerContext, rootPath string, watcher *recursiveWatcher) {
 	batcher := newEventBatcher(watcherDebounceWindow)
 	ticker := time.NewTicker(watcherFlushPoll)
 	defer ticker.Stop()
@@ -103,7 +107,7 @@ func watcherDispatchLoop(context *WorkerContext, entryPoint string, watcher *rec
 			}
 
 			if context != nil && context.JobOrchestrator != nil {
-				dispatchWatcherChanges(context, entryPoint, changed)
+				dispatchWatcherChanges(context, rootPath, changed)
 			}
 		}
 	}
@@ -117,24 +121,28 @@ func reconcileInterval() time.Duration {
 	return time.Duration(hours) * time.Hour
 }
 
-// reconciliationLoop enqueues a low-priority full-tree fs_event at the
-// WATCHER_RECONCILE_HOURS interval (default 24h) to capture anything the
-// native watcher missed. Boot reconciliation is the existing startup_scan.
-func reconciliationLoop(context *WorkerContext, entryPoint string) {
+// reconciliationLoop enqueues a low-priority full-tree fs_event per enabled
+// root at the WATCHER_RECONCILE_HOURS interval (default 24h) to capture
+// anything the native watchers missed. Boot reconciliation is the existing
+// startup_scan. The roots are re-read every tick, so roots registered after
+// boot are reconciled too.
+func reconciliationLoop(context *WorkerContext) {
 	ticker := time.NewTicker(reconcileInterval())
 	defer ticker.Stop()
 
 	for range ticker.C {
-		if err := enqueueFilesystemEventJob(context, entryPoint, job.JobPriorityLow); err != nil {
-			log.Printf("[watcher] failed to enqueue periodic reconciliation: %v\n", err)
+		for _, root := range roots.Enabled() {
+			if err := enqueueFilesystemEventJob(context, root.Path, job.JobPriorityLow); err != nil {
+				log.Printf("[watcher] failed to enqueue periodic reconciliation for %q: %v\n", root.Path, err)
+			}
 		}
 	}
 }
 
-func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed []string) {
+func dispatchWatcherChanges(context *WorkerContext, rootPath string, changed []string) {
 	// If too many changes, fall back to a full scan job
 	if len(changed) > watcherMaxIndividualJobs {
-		if err := enqueueFilesystemEventJob(context, entryPoint, job.JobPriorityNormal); err != nil {
+		if err := enqueueFilesystemEventJob(context, rootPath, job.JobPriorityNormal); err != nil {
 			log.Printf("[watcher] failed to enqueue full fs_event job: %v\n", err)
 		}
 		return
@@ -169,10 +177,10 @@ func dispatchWatcherChanges(context *WorkerContext, entryPoint string, changed [
 		}
 
 		// New or renamed directory — persist its row directly so it becomes
-		// navigable in the tree; directories have no processing plan. The
-		// entry point itself stays implicit (the tree lists its children).
+		// navigable in the tree; directories have no processing plan. Storage
+		// roots get a row too: they are the top-level nodes of the tree.
 		if info.IsDir() {
-			if path == entryPoint || context.FilesService == nil {
+			if context.FilesService == nil {
 				continue
 			}
 			if err := persistDirectoryRow(context.FilesService, path, info); err != nil {

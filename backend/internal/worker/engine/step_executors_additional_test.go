@@ -245,20 +245,19 @@ func TestExecuteDiffAgainstDBStepIndexesDirectories(t *testing.T) {
 		t.Fatalf("directories must not enqueue processing jobs, got %d", len(repository.jobs))
 	}
 
-	if len(created) != 2 {
-		t.Fatalf("expected rows created for the 2 missing directories, got %+v", created)
+	// The scanned root gets a row too: storage roots are the level-zero
+	// nodes of the multi-root tree.
+	if len(created) != 3 {
+		t.Fatalf("expected rows created for the root and the 2 missing directories, got %+v", created)
 	}
 	createdPaths := map[string]files.FileType{}
 	for _, fileDto := range created {
 		createdPaths[fileDto.Path] = fileDto.Type
 	}
-	for _, dir := range []string{newDir, newNestedDir} {
+	for _, dir := range []string{root, newDir, newNestedDir} {
 		if createdPaths[dir] != files.Directory {
 			t.Fatalf("expected directory row for %q, got %+v", dir, createdPaths)
 		}
-	}
-	if _, ok := createdPaths[root]; ok {
-		t.Fatalf("entry point itself must not get a row")
 	}
 	if _, ok := createdPaths[knownDir]; ok {
 		t.Fatalf("directory with an existing active row must not be recreated")

@@ -95,16 +95,20 @@ func TestDispatchWatcherChangesPersistsDirectories(t *testing.T) {
 		t.Fatalf("directories must not enqueue processing jobs, got %d", len(repository.jobs))
 	}
 
-	if len(created) != 2 {
-		t.Fatalf("expected 2 directory rows created (nested + deep), got %+v", created)
+	// The root itself gets a row too: storage roots are the level-zero
+	// nodes of the multi-root tree.
+	if len(created) != 3 {
+		t.Fatalf("expected 3 directory rows created (root + nested + deep), got %+v", created)
 	}
+	createdPaths := map[string]struct{}{}
 	for _, fileDto := range created {
 		if fileDto.Type != files.Directory {
 			t.Fatalf("expected directory type for %q, got %v", fileDto.Path, fileDto.Type)
 		}
-		if fileDto.Path == root {
-			t.Fatalf("entry point itself must not get a row")
-		}
+		createdPaths[fileDto.Path] = struct{}{}
+	}
+	if _, ok := createdPaths[root]; !ok {
+		t.Fatalf("expected a row for the root itself, got %+v", created)
 	}
 
 	if len(updated) != 1 || updated[0].ID != 7 || updated[0].DeletedAt.HasValue {
@@ -189,12 +193,12 @@ func TestWatcherVanishedPathYieldsMarkDeletedNotPersist(t *testing.T) {
 	}
 }
 
-func TestStartEntryPointWatcherWithoutEntryPointIsNoop(t *testing.T) {
+func TestStartRootWatchersWithoutAnyRootIsNoop(t *testing.T) {
 	previous := config.AppConfig.EntryPoint
 	t.Cleanup(func() { config.AppConfig.EntryPoint = previous })
 
 	config.AppConfig.EntryPoint = ""
-	startEntryPointWatcher(&WorkerContext{})
+	startRootWatchers(&WorkerContext{})
 }
 
 func TestWatcherDispatchLoopDeliversNativeEventsAsJobs(t *testing.T) {
