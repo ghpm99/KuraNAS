@@ -4,6 +4,7 @@ import (
 	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/dav"
 	"strings"
 	"time"
 
@@ -16,6 +17,10 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 
 	registerAccessControlMiddleware(router, context)
 	registerCorsRoutes(router, context)
+	// WebDAV registers before the gzip middleware on purpose: compressing
+	// PUT/PROPFIND bodies corrupts them for native clients. It still sits
+	// behind the IP whitelist installed above.
+	registerWebDAVRoutes(router)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	registerSwaggerRoutes(router)
 	routesV1 := router.Group("/api/v1")
@@ -42,6 +47,20 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterTrashRoutes(routesV1, context)
 	RegisterStorageRootsRoutes(routesV1, context)
 	registerReactRoutes(router)
+}
+
+// registerWebDAVRoutes mounts the WebDAV tree under /dav when enabled
+// (WEBDAV_ENABLED env, default off). With the flag off the route simply does
+// not exist.
+func registerWebDAVRoutes(router *gin.Engine) {
+	if !config.AppConfig.EnableWebDAV {
+		return
+	}
+
+	handler := dav.NewHandler()
+	router.Any(dav.Prefix+"/*path", gin.WrapH(handler))
+	// Mount-point requests arrive without the trailing slash.
+	router.Any(dav.Prefix, gin.WrapH(handler))
 }
 
 func RegisterStorageRootsRoutes(router *gin.RouterGroup, context *AppContext) {

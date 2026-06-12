@@ -93,6 +93,8 @@ The task channel (`chan utils.Task`) still exists, but only for auxiliary work: 
 
 - `internal/discovery` — mDNS registrar + UDP listener advertising the server on port 8000 for LAN auto-discovery.
 - `internal/watcher` — polling folder watcher (60s) driving auto-organization (libraries, watch folders, Google Takeout import).
+- `internal/roots` — in-memory registry of the storage roots (the N indexed directories; `storage_root` table, seeded from `ENTRY_POINT`). Hot paths read it via `roots.Enabled()`/`Primary()`/`OwnerOf()`; `roots.ToRelativePath`/`ToAbsolutePath`/`ResolveAbsolute` translate between client-visible paths (`/Midia/...` for non-primary roots) and disk paths. The `storageroots` domain pushes changes in at boot and on every CRUD.
+- `internal/dav` — embedded WebDAV server (`/dav/<label>/...`, gated by `WEBDAV_ENABLED`, default off). Registered before the gzip middleware (compression corrupts DAV bodies) and behind the IP whitelist; hides each root's trash dir.
 - `pkg/`: `i18n` (translation files), `logger`/`systemevent` (DB-backed), `icons`/`img`/`pdf` (thumbnails & media), `utils` (generic `PaginationResponse[T]`, tasks).
-- Config is env-driven (`internal/config`, loaded from `.env` via `godotenv`). Env vars: `ENTRY_POINT` (root dir KuraNAS indexes), `ENABLE_WORKERS`, `LANGUAGE`, `ENV`, `ALLOWED_ORIGINS`, `DB_HOST/PORT/USER/PASSWORD/NAME`. `ToRelativePath`/`ToAbsolutePath` translate between stored relative paths and disk paths.
+- Config is env-driven (`internal/config`, loaded from `.env` via `godotenv`). Env vars: `ENTRY_POINT` (seed of the first storage root), `ENABLE_WORKERS`, `WEBDAV_ENABLED`, `LANGUAGE`, `ENV`, `ALLOWED_ORIGINS`, `DB_HOST/PORT/USER/PASSWORD/NAME`.
 </content>

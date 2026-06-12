@@ -32,13 +32,13 @@ O usuário monta o KuraNAS como unidade de rede (Windows "Mapear unidade de rede
 
 ## Critérios de aceite
 
-- [ ] Com WebDAV habilitado e a partir de IP cadastrado, é possível montar a unidade no Windows Explorer e num cliente Linux, navegar, abrir, criar, renomear e excluir arquivos.
-- [ ] De IP fora da whitelist, qualquer verbo em `/dav/` responde 403.
-- [ ] Arquivo criado via WebDAV aparece na aba de arquivos (e nas abas de mídia, quando aplicável) sem ação manual.
-- [ ] Diretórios internos (lixeira) não aparecem nem são acessíveis via WebDAV.
-- [ ] Com WebDAV desabilitado (default), `/dav/` não existe.
-- [ ] Download/upload de arquivo grande (>1 GB) funciona sem carregar o arquivo inteiro em memória.
-- [ ] `make ci-backend` verde (cobertura ≥ 80%).
+- [ ] Com WebDAV habilitado e a partir de IP cadastrado, é possível montar a unidade no Windows Explorer e num cliente Linux, navegar, abrir, criar, renomear e excluir arquivos. *(código pronto e verbos testados via Go; falta validação manual do dono com Explorer/davfs2)*
+- [x] De IP fora da whitelist, qualquer verbo em `/dav/` responde 403.
+- [ ] Arquivo criado via WebDAV aparece na aba de arquivos (e nas abas de mídia, quando aplicável) sem ação manual. *(PUT escreve direto no disco e o watcher fsnotify indexa — validar manualmente junto com o item 1)*
+- [x] Diretórios internos (lixeira) não aparecem nem são acessíveis via WebDAV.
+- [x] Com WebDAV desabilitado (default), `/dav/` não existe.
+- [x] Download/upload de arquivo grande (>1 GB) funciona sem carregar o arquivo inteiro em memória. *(`webdav.Dir` faz io.Copy sobre os.File — streaming; /dav fica fora do gzip)*
+- [x] `make ci-backend` verde (cobertura ≥ 80%).
 
 ## Fora de escopo
 
