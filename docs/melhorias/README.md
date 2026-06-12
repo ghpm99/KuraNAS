@@ -1,6 +1,6 @@
 # Melhorias do sistema — board de execução
 
-Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11), estendido com a visão de armazenamento do dono (tiering + backup, 2026-06-11). Cada arquivo é **uma task autocontida**: contexto, objetivo, o que/como fazer, critérios de aceite e fora de escopo.
+Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11), estendido com a visão de armazenamento do dono (tiering + backup, 2026-06-11) e com a demanda e-mail + kiosk (2026-06-12). Cada arquivo é **uma task autocontida**: contexto, objetivo, o que/como fazer, critérios de aceite e fora de escopo.
 
 **Este README é a fonte de verdade do andamento.** Um agente apontado para este arquivo deve conseguir continuar o trabalho de onde parou, mesmo após interrupção — o protocolo abaixo existe para isso.
 
@@ -36,6 +36,11 @@ Regras invariantes:
 | 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | 🚫 bloqueada | código pronto e CI verde; falta validação manual do dono (montar via Explorer/davfs2, `WEBDAV_ENABLED=true`) |
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | pendente | retenção ≠ espelho |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | pendente | path lógico × físico |
+| 14 | [Contas de e-mail + OAuth2](14-email-contas-oauth.md) | feature | P2 | 04 | pendente | escopos read-only; tokens cifrados |
+| 15 | [Sincronização de e-mail](15-email-sync-worker.md) | feature | P2 | 14 | pendente | metadados de anexo apenas |
+| 16 | [Análise de e-mail por IA](16-email-analise-ia.md) | feature | P2 | 15 | pendente | LLM sem ferramentas; fail-closed |
+| 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | pendente | app vira discovery + kiosk; paralelizável |
+| 18 | [Tela kiosk do app legado](18-app-legado-kiosk.md) | feature | P2 | 16, 17 | pendente | tablet 2012: DTOs pequenos, sem WebView |
 
 Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
 
@@ -46,3 +51,7 @@ Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)
 - **Visão de armazenamento** (2026-06-11): SSD = tier quente; pool de HDs = tier frio + backup com retenção; HD externo 2 TB = segunda cópia desconectável (gerida pelo SO). Tasks 10 → 12/13.
 - **Backup ≠ espelho**: backup tem retenção de versões; espelho propaga ransomware/exclusão acidental (task 12).
 - **Tiering é transparente**: arquivo migrado não muda de lugar na árvore lógica — separação path lógico × localização física (task 13).
+- **Regras duras de e-mail** (2026-06-12, valem para as tasks 14–18 e qualquer evolução futura — viabilidade da feature depende delas): (1) escopos OAuth somente leitura (`gmail.readonly`, `Mail.Read` + `offline_access`), nenhuma capacidade de envio jamais; (2) nunca buscar URL contida em e-mail, nunca baixar/armazenar/executar anexo (metadados apenas); (3) HTML → texto puro no backend antes de qualquer LLM, remoção de Unicode invisível, corpo ≤ 16 KB; (4) o LLM do pipeline de e-mail não tem ferramentas — entrada texto, saída JSON com schema validado; parse inválido = `suspicious` (fail-closed); (5) tokens cifrados em repouso (AES-GCM, chave `EMAIL_TOKEN_KEY` em env; sem a chave a feature não liga); (6) clients HTTP de e-mail com allowlist fixa de hosts; (7) spam barrado no pré-filtro determinístico não chega ao LLM. Reputação externa de URLs ficou fora do v1 (cria superfície e vaza dados). Pior caso aceito: e-mail mal classificado/resumo errado no painel — nunca execução, download ou exfiltração.
+- **OAuth dos e-mails** (2026-06-12): Microsoft pessoal via Device Code Flow (public client, audience consumers, só `EMAIL_MS_CLIENT_ID`); Google via Authorization Code + PKCE com loopback `localhost:8000` (Device Flow do Google não aceita escopos Gmail) — vínculo feito em navegador na máquina do NAS ou via túnel SSH; consent screen publicada In production para o refresh token não expirar em 7 dias. Detalhe na task 14.
+- **Privacidade da análise de e-mail** (2026-06-12): provedor de IA escolhível na UI (chave `email_ai_provider` na `configuration`), default Ollama local; nuvem só por escolha explícita com aviso de privacidade (task 16).
+- **App legado é painel de parede** (2026-06-12): o `mobile/` perde todas as telas de navegação de mídia (removidas de vez, task 17) e vira discovery + kiosk (task 18); navegação fica com o app `android/` novo.
