@@ -78,6 +78,9 @@ func (m *trashRepoMock) GetItemByID(id int) (TrashItemModel, bool, error) {
 }
 
 func (m *trashRepoMock) GetExpiredItems(cutoff time.Time) ([]TrashItemModel, error) {
+	if m.getErr != nil {
+		return nil, m.getErr
+	}
 	expired := []TrashItemModel{}
 	for _, item := range m.sortedItems() {
 		if item.DeletedAt.Before(cutoff) {
@@ -88,6 +91,9 @@ func (m *trashRepoMock) GetExpiredItems(cutoff time.Time) ([]TrashItemModel, err
 }
 
 func (m *trashRepoMock) GetAllItems() ([]TrashItemModel, error) {
+	if m.getErr != nil {
+		return nil, m.getErr
+	}
 	return m.sortedItems(), nil
 }
 
@@ -412,6 +418,65 @@ func TestTrashService_GetItemsConvertsToDto(t *testing.T) {
 	}
 	if len(page.Items) != 1 || page.Items[0].OriginalPath != filePath || page.Items[0].Size != 8 {
 		t.Fatalf("unexpected dto page: %+v", page.Items)
+	}
+}
+
+func TestTrashService_RepositoryErrorsPropagate(t *testing.T) {
+	s, repo, _, _ := newTrashServiceForTest(t)
+	repo.getErr = sql.ErrConnDone
+
+	if _, err := s.GetItems(1, 10); err == nil {
+		t.Fatalf("expected GetItems to propagate repository error")
+	}
+	if _, err := s.RestoreItem(1); err == nil {
+		t.Fatalf("expected RestoreItem to propagate repository error")
+	}
+	if err := s.DeleteItemPermanently(1); err == nil {
+		t.Fatalf("expected DeleteItemPermanently to propagate repository error")
+	}
+	if _, err := s.EmptyTrash(); err == nil {
+		t.Fatalf("expected EmptyTrash to propagate repository error")
+	}
+	if _, err := s.PurgeExpired(); err == nil {
+		t.Fatalf("expected PurgeExpired to propagate repository error")
+	}
+}
+
+func TestTrashService_MoveToTrashRequiresEntryPoint(t *testing.T) {
+	originalEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = originalEntryPoint })
+	config.AppConfig.EntryPoint = ""
+
+	s := NewService(newTrashRepoMock(), nil)
+	if err := s.MoveToTrash("/qualquer/coisa.txt", 1); err == nil {
+		t.Fatalf("expected error without a configured entry point")
+	}
+	if _, err := Dir(); err == nil {
+		t.Fatalf("Dir must fail without a configured entry point")
+	}
+}
+
+func TestTrashService_PurgeItemsSkipsBrokenRegistryRows(t *testing.T) {
+	s, repo, _, root := newTrashServiceForTest(t)
+	path := filepath.Join(root, "a.txt")
+	writeFile(t, path, "a")
+	if err := s.MoveToTrash(path, 1); err != nil {
+		t.Fatalf("MoveToTrash: %v", err)
+	}
+
+	// One healthy item + one whose trash_path points outside the trash dir:
+	// the broken one is skipped, the healthy one is purged.
+	outside := filepath.Join(root, "fora.txt")
+	writeFile(t, outside, "fora")
+	repo.items[99] = TrashItemModel{ID: 99, OriginalPath: outside, TrashPath: outside}
+
+	items, _ := repo.GetAllItems()
+	purged := s.purgeItems(items)
+	if purged != 1 {
+		t.Fatalf("expected 1 purged (broken row skipped), got %d", purged)
+	}
+	if _, err := os.Stat(outside); err != nil {
+		t.Fatalf("file outside the trash dir must survive: %v", err)
 	}
 }
 
