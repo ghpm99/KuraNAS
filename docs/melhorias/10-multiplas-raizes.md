@@ -48,7 +48,7 @@ O usuário cadastra N raízes de armazenamento (ex.: `D:\Arquivos`, `E:\Midia`);
 - [x] Operações de arquivo (upload, move, rename, delete) funcionam em qualquer raiz e recusam paths fora de todas (400, mensagem i18n). Mover **entre** raízes é recusado com mensagem clara (copiar+excluir fica para depois).
 - [x] Raiz sobreposta a outra (ancestral/descendente) é recusada no cadastro.
 - [x] Desabilitar uma raiz a tira da navegação sem apagar dados indexados.
-- [ ] `make ci` verde (backend + frontend).
+- [x] `make ci` verde (backend + frontend).
 
 ## Fora de escopo
 
