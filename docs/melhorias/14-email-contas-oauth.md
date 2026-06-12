@@ -50,12 +50,12 @@ O dono vincula suas contas Gmail e Hotmail pela tela de Settings do frontend; o 
 ## Critérios de aceite
 
 - [ ] Vincular conta Google e conta Microsoft pela UI funciona de ponta a ponta (validação manual do dono).
-- [ ] Escopos pedidos são exatamente `gmail.readonly` e `Mail.Read` + `offline_access` — nada de envio.
-- [ ] Tokens ilegíveis no banco (AES-GCM) e ausentes de qualquer DTO/log/resposta.
-- [ ] Sem `EMAIL_TOKEN_KEY`, endpoints respondem erro i18n e nada é gravado.
-- [ ] Access token expirado é renovado sozinho; refresh inválido marca `reauth_required`.
-- [ ] Remover conta apaga os tokens.
-- [ ] `make ci` verde (backend + frontend).
+- [x] Escopos pedidos são exatamente `gmail.readonly` e `Mail.Read` + `offline_access` — nada de envio. *(Ajuste registrado na implementação: somam-se os escopos de **identidade** `openid email` (e `profile` na Microsoft), necessários para o `id_token` informar **qual endereço** foi vinculado — não concedem nenhuma capacidade de e-mail além da leitura já pedida. Testes garantem a ausência de qualquer escopo de envio/escrita.)*
+- [x] Tokens ilegíveis no banco (AES-GCM) e ausentes de qualquer DTO/log/resposta.
+- [x] Sem `EMAIL_TOKEN_KEY`, endpoints respondem erro i18n e nada é gravado.
+- [x] Access token expirado é renovado sozinho; refresh inválido marca `reauth_required`.
+- [x] Remover conta apaga os tokens.
+- [x] `make ci` verde (backend + frontend).
 
 ## Fora de escopo
 

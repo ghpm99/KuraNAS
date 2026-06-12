@@ -34,7 +34,7 @@ Regras invariantes:
 | 09 | [Lixeira](09-lixeira.md) | feature | P2 | 02, 05 | ✅ concluída (2026-06-12) | |
 | 10 | [Múltiplas raízes](10-multiplas-raizes.md) | feature | P3 | 01, 05 | ✅ concluída (2026-06-12) | fundação da visão de armazenamento |
 | 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | 🚫 bloqueada | código pronto e CI verde; falta validação manual do dono (montar via Explorer/davfs2, `WEBDAV_ENABLED=true`) |
-| 14 | [Contas de e-mail + OAuth2](14-email-contas-oauth.md) | feature | P2 | 04 | em execução | escopos read-only; tokens cifrados |
+| 14 | [Contas de e-mail + OAuth2](14-email-contas-oauth.md) | feature | P2 | 04 | 🚫 bloqueada | código pronto e CI verde; falta o dono registrar os apps OAuth (Google Cloud + Entra), configurar `EMAIL_TOKEN_KEY`/`EMAIL_*` e vincular as contas reais pela UI |
 | 15 | [Sincronização de e-mail](15-email-sync-worker.md) | feature | P2 | 14 | pendente | metadados de anexo apenas |
 | 16 | [Análise de e-mail por IA](16-email-analise-ia.md) | feature | P2 | 15 | pendente | LLM sem ferramentas; fail-closed |
 | 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | pendente | app vira discovery + kiosk; paralelizável |
