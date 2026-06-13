@@ -150,6 +150,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Tiering != nil {
 		workerFileContext.TieringService = appContext.Tiering.Service
 	}
+	if appContext.Email != nil {
+		workerFileContext.EmailService = appContext.Email.Service
+	}
 
 	startWorkersFn(workerFileContext, 200)
 
