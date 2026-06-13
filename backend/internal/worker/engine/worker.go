@@ -7,6 +7,7 @@ import (
 	"time"
 
 	backupapi "nas-go/api/internal/api/v1/backup"
+	emailapi "nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/api/v1/jobs"
@@ -49,6 +50,7 @@ type WorkerContext struct {
 	SystemEvents            systemevent.ServiceInterface
 	BackupService           backupapi.WorkerInterface
 	TieringService          tieringapi.WorkerInterface
+	EmailService            emailapi.WorkerInterface
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 }
@@ -104,6 +106,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	applog.Go("notification-cleanup", func() { startNotificationCleanup(context) })
 	applog.Go("backup-scheduler", func() { startBackupScheduler(context) })
 	applog.Go("tiering-scheduler", func() { startTieringScheduler(context) })
+	applog.Go("email-sync-scheduler", func() { startEmailSyncScheduler(context) })
 	startRootWatchers(context)
 
 	if context != nil && context.SystemEvents != nil {

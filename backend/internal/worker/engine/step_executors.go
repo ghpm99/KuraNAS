@@ -70,6 +70,12 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeTierMigration] = func(step jobs.StepModel) error {
 		return executeTierMigrationStep(context, step)
 	}
+	executors[job.StepTypeEmailFetch] = func(step jobs.StepModel) error {
+		return executeEmailFetchStep(context, step)
+	}
+	executors[job.StepTypeEmailPrefilter] = func(step jobs.StepModel) error {
+		return executeEmailPrefilterStep(context, step)
+	}
 
 	return executors
 }
