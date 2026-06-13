@@ -39,3 +39,15 @@ var UpdateMessagePrefilterQuery string
 
 //go:embed purge_messages_before.sql
 var PurgeMessagesBeforeQuery string
+
+//go:embed list_messages_for_analysis.sql
+var ListMessagesForAnalysisQuery string
+
+//go:embed upsert_analysis.sql
+var UpsertAnalysisQuery string
+
+//go:embed update_message_analyzed.sql
+var UpdateMessageAnalyzedQuery string
+
+//go:embed get_analysis_by_message.sql
+var GetAnalysisByMessageQuery string

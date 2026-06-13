@@ -29,6 +29,8 @@ var (
 	ErrHostNotAllowed        = errors.New("email: host not in the oauth allowlist")
 	ErrNoDeviceLink          = errors.New("email: no device-code link in progress")
 	ErrSyncUnavailable       = errors.New("email: sync dispatcher not configured")
+	ErrInvalidProvider       = errors.New("email: invalid AI provider")
+	ErrAnalysisNotFound      = errors.New("email: message not analyzed")
 )
 
 // Config carries the OAuth client settings (from env, set in the composition
@@ -110,6 +112,10 @@ type Service struct {
 	jobsRepo      jobs.RepositoryInterface
 	retentionDays int
 	maxPerAccount int
+
+	// aiRouter is the AI seam for the analysis step (task 16). Nil = AI off, so
+	// analysis leaves messages pending.
+	aiRouter AIRouter
 
 	mu         sync.Mutex
 	pkceStates map[string]pkceState

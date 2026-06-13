@@ -171,6 +171,53 @@ func (h *Handler) SyncAccountHandler(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"job_id": jobID, "message": i18n.GetMessage("EMAIL_SYNC_ENQUEUED")})
 }
 
+func (h *Handler) GetMessageSummaryHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	analysis, err := h.service.GetMessageAnalysis(id)
+	if err != nil {
+		if errors.Is(err, ErrAnalysisNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("EMAIL_ANALYSIS_UNAVAILABLE")})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_EMAIL_MESSAGES_LOAD")})
+		return
+	}
+	c.JSON(http.StatusOK, analysis)
+}
+
+func (h *Handler) GetProviderHandler(c *gin.Context) {
+	dto, err := h.service.GetProviderPreference()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_LOAD_FAILED")})
+		return
+	}
+	c.JSON(http.StatusOK, dto)
+}
+
+func (h *Handler) SetProviderHandler(c *gin.Context) {
+	var request ProviderPreferenceDto
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	dto, err := h.service.SetProviderPreference(request.Provider)
+	if err != nil {
+		if errors.Is(err, ErrInvalidProvider) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_INVALID")})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_UPDATE_FAILED")})
+		return
+	}
+	c.JSON(http.StatusOK, dto)
+}
+
 // DisabledHandler answers every e-mail route when EMAIL_TOKEN_KEY is not
 // configured: the feature refuses to turn on and nothing is ever stored.
 func DisabledHandler(c *gin.Context) {

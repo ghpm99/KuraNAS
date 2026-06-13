@@ -76,3 +76,26 @@ func TestUserPromptFormatting(t *testing.T) {
 		}
 	}
 }
+
+func TestEmailPromptsEmbedAndInterpolate(t *testing.T) {
+	if !strings.Contains(EmailClassificationSystemPrompt(), "UNTRUSTED DATA") {
+		t.Fatal("classification system prompt must flag untrusted data")
+	}
+	if !strings.Contains(EmailSummarySystemPrompt(), "UNTRUSTED DATA") {
+		t.Fatal("summary system prompt must flag untrusted data")
+	}
+
+	user := EmailClassificationUserPrompt("NONCE123", "- SPF: pass", "Hello", "Body text")
+	for _, want := range []string{"<<EMAIL-NONCE123>>", "<</EMAIL-NONCE123>>", "- SPF: pass", "Hello", "Body text"} {
+		if !strings.Contains(user, want) {
+			t.Fatalf("classification user prompt missing %q:\n%s", want, user)
+		}
+	}
+
+	summary := EmailSummaryUserPrompt("ABC", "Subj", "Some body")
+	for _, want := range []string{"<<EMAIL-ABC>>", "<</EMAIL-ABC>>", "Subj", "Some body"} {
+		if !strings.Contains(summary, want) {
+			t.Fatalf("summary user prompt missing %q:\n%s", want, summary)
+		}
+	}
+}

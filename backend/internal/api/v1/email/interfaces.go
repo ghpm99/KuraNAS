@@ -21,6 +21,12 @@ type RepositoryInterface interface {
 	ListPendingMessages(limit int) ([]MessageModel, error)
 	UpdateMessagePrefilter(id int, status MessageStatus, rules []string) error
 	PurgeMessagesBefore(cutoff time.Time) (int, error)
+	ListMessagesForAnalysis(limit int) ([]MessageModel, error)
+	UpsertAnalysis(model AnalysisModel) error
+	UpdateMessageAnalyzed(id int, status MessageStatus) error
+	GetAnalysisByMessage(messageID int) (AnalysisModel, error)
+	GetProviderPreference() (string, error)
+	SetProviderPreference(value string) error
 }
 
 type ServiceInterface interface {
@@ -39,6 +45,12 @@ type ServiceInterface interface {
 	// EnqueueSync queues an email_sync job (manual trigger), after checking the
 	// account exists. Returns the job id.
 	EnqueueSync(accountID int) (int, error)
+	// GetMessageAnalysis returns one message's stored AI verdict/summary.
+	GetMessageAnalysis(messageID int) (AnalysisDto, error)
+	// GetProviderPreference / SetProviderPreference read and set which AI
+	// provider analyzes e-mail.
+	GetProviderPreference() (ProviderPreferenceDto, error)
+	SetProviderPreference(provider string) (ProviderPreferenceDto, error)
 	WorkerInterface
 }
 
@@ -54,4 +66,8 @@ type WorkerInterface interface {
 	PrefilterPending() (int, error)
 	// PurgeExpired drops messages past the retention window. Returns the count.
 	PurgeExpired() (int, error)
+	// AnalyzePending classifies + summarizes pending messages, returning the
+	// detections worth notifying. AIUnavailable in the stats means messages were
+	// left pending for the next cycle.
+	AnalyzePending() (AnalyzeStats, error)
 }

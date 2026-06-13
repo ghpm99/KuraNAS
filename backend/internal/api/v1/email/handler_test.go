@@ -22,6 +22,9 @@ type mockService struct {
 	deviceStatusFn func() DeviceCodeStatusDto
 	listMessagesFn func(page, pageSize int) (utils.PaginationResponse[MessageDto], error)
 	enqueueSyncFn  func(accountID int) (int, error)
+	analysisFn     func(messageID int) (AnalysisDto, error)
+	getProviderFn  func() (ProviderPreferenceDto, error)
+	setProviderFn  func(provider string) (ProviderPreferenceDto, error)
 }
 
 func (m *mockService) ListAccounts() ([]AccountDto, error) { return m.listFn() }
@@ -43,6 +46,16 @@ func (m *mockService) EnqueueSync(accountID int) (int, error)  { return m.enqueu
 func (m *mockService) SyncEnabledAccounts() (SyncStats, error) { return SyncStats{}, nil }
 func (m *mockService) PrefilterPending() (int, error)          { return 0, nil }
 func (m *mockService) PurgeExpired() (int, error)              { return 0, nil }
+func (m *mockService) AnalyzePending() (AnalyzeStats, error)   { return AnalyzeStats{}, nil }
+func (m *mockService) GetMessageAnalysis(messageID int) (AnalysisDto, error) {
+	return m.analysisFn(messageID)
+}
+func (m *mockService) GetProviderPreference() (ProviderPreferenceDto, error) {
+	return m.getProviderFn()
+}
+func (m *mockService) SetProviderPreference(provider string) (ProviderPreferenceDto, error) {
+	return m.setProviderFn(provider)
+}
 
 func newTestRouter(service ServiceInterface) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -58,6 +71,9 @@ func newTestRouter(service ServiceInterface) *gin.Engine {
 	router.GET("/email/accounts/microsoft/device-code/status", handler.MicrosoftDeviceCodeStatusHandler)
 	router.POST("/email/accounts/:id/sync", handler.SyncAccountHandler)
 	router.GET("/email/messages", handler.GetMessagesHandler)
+	router.GET("/email/messages/:id/summary", handler.GetMessageSummaryHandler)
+	router.GET("/email/settings/provider", handler.GetProviderHandler)
+	router.PUT("/email/settings/provider", handler.SetProviderHandler)
 	return router
 }
 
@@ -302,5 +318,64 @@ func TestDisabledHandlerAnswers503(t *testing.T) {
 	}
 	if !strings.Contains(response.Body.String(), "EMAIL_FEATURE_DISABLED_NO_KEY") {
 		t.Fatalf("expected i18n key fallback in body, got %s", response.Body.String())
+	}
+}
+
+func TestGetMessageSummaryHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		analysisFn: func(messageID int) (AnalysisDto, error) {
+			return AnalysisDto{MessageID: messageID, Verdict: "legitimate", Summary: "ok"}, nil
+		},
+	})
+	w := performRequest(router, http.MethodGet, "/email/messages/7/summary", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "legitimate") {
+		t.Fatalf("body missing verdict: %s", w.Body.String())
+	}
+}
+
+func TestGetMessageSummaryHandlerNotFound(t *testing.T) {
+	router := newTestRouter(&mockService{
+		analysisFn: func(int) (AnalysisDto, error) { return AnalysisDto{}, ErrAnalysisNotFound },
+	})
+	w := performRequest(router, http.MethodGet, "/email/messages/7/summary", "")
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
+}
+
+func TestGetProviderHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		getProviderFn: func() (ProviderPreferenceDto, error) {
+			return ProviderPreferenceDto{Provider: ProviderPrefOllama}, nil
+		},
+	})
+	w := performRequest(router, http.MethodGet, "/email/settings/provider", "")
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "ollama") {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestSetProviderHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		setProviderFn: func(provider string) (ProviderPreferenceDto, error) {
+			return ProviderPreferenceDto{Provider: provider}, nil
+		},
+	})
+	w := performRequest(router, http.MethodPut, "/email/settings/provider", `{"provider":"anthropic"}`)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "anthropic") {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestSetProviderHandlerInvalid(t *testing.T) {
+	router := newTestRouter(&mockService{
+		setProviderFn: func(string) (ProviderPreferenceDto, error) { return ProviderPreferenceDto{}, ErrInvalidProvider },
+	})
+	w := performRequest(router, http.MethodPut, "/email/settings/provider", `{"provider":"gemini"}`)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }

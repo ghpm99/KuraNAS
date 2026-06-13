@@ -205,7 +205,7 @@ func TestListMessagesClampsPageSizeAndDropsBody(t *testing.T) {
 	}
 }
 
-func TestEnqueueSyncCreatesTwoStepJob(t *testing.T) {
+func TestEnqueueSyncCreatesThreeStepJob(t *testing.T) {
 	repo := newFakeRepo()
 	cipher := testCipher(t)
 	service := newTestService(repo, cipher, "http://test.local")
@@ -232,6 +232,9 @@ func TestEnqueueSyncCreatesTwoStepJob(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(jobqueries.InsertStepQuery)).
 		WillReturnRows(sqlmock.NewRows(stepCols).
 			AddRow(2, 77, "email_prefilter", "queued", []byte("[1]"), 0, 1, "", 0, nil, now, nil, nil))
+	mock.ExpectQuery(regexp.QuoteMeta(jobqueries.InsertStepQuery)).
+		WillReturnRows(sqlmock.NewRows(stepCols).
+			AddRow(3, 77, "email_analyze", "queued", []byte("[2]"), 0, 1, "", 0, nil, now, nil, nil))
 	mock.ExpectCommit()
 
 	jobID, err := service.EnqueueSync(id)

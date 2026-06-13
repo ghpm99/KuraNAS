@@ -3,13 +3,20 @@ package email
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"nas-go/api/pkg/database"
+	confqueries "nas-go/api/pkg/database/queries/configuration"
 	queries "nas-go/api/pkg/database/queries/email"
 	"nas-go/api/pkg/utils"
 )
+
+// providerSettingKey is the app_settings key holding which AI provider analyzes
+// e-mail (task 16). The e-mail domain reuses the shared settings table through
+// the existing get/upsert queries instead of owning a parallel table.
+const providerSettingKey = "email_ai_provider"
 
 type Repository struct {
 	DbContext *database.DbContext
@@ -211,14 +218,17 @@ func (r *Repository) ListMessages(page, pageSize int) (utils.PaginationResponse[
 
 		for rows.Next() {
 			var m MessageModel
-			var status string
+			var status, verdict, importance string
 			if scanErr := rows.Scan(
 				&m.ID, &m.AccountID, &m.SenderName, &m.SenderAddress, &m.Subject,
 				&m.Snippet, &m.ReceivedAt, &status, &m.CreatedAt,
+				&verdict, &importance, &m.Summary,
 			); scanErr != nil {
 				return scanErr
 			}
 			m.Status = MessageStatus(status)
+			m.Verdict = Verdict(verdict)
+			m.Importance = Importance(importance)
 			response.Items = append(response.Items, m)
 		}
 		return rows.Err()
@@ -297,6 +307,145 @@ func (r *Repository) PurgeMessagesBefore(cutoff time.Time) (int, error) {
 		return 0, fmt.Errorf("PurgeMessagesBefore: %w", err)
 	}
 	return int(removed), nil
+}
+
+// ListMessagesForAnalysis returns pending messages with the full sanitized body
+// and every evidence column, for the AI analysis step.
+func (r *Repository) ListMessagesForAnalysis(limit int) ([]MessageModel, error) {
+	var messages []MessageModel
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.ListMessagesForAnalysisQuery, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var m MessageModel
+			var authJSON, attachmentJSON, linkJSON, rulesJSON []byte
+			if scanErr := rows.Scan(
+				&m.ID, &m.AccountID, &m.SenderName, &m.SenderAddress, &m.Subject,
+				&m.SanitizedBody, &authJSON, &attachmentJSON, &linkJSON, &rulesJSON,
+			); scanErr != nil {
+				return scanErr
+			}
+			if err := unmarshalJSONIfPresent(authJSON, &m.AuthResults); err != nil {
+				return err
+			}
+			if err := unmarshalJSONIfPresent(attachmentJSON, &m.Attachments); err != nil {
+				return err
+			}
+			if err := unmarshalJSONIfPresent(linkJSON, &m.LinkDomains); err != nil {
+				return err
+			}
+			if err := unmarshalJSONIfPresent(rulesJSON, &m.PrefilterRules); err != nil {
+				return err
+			}
+			m.Status = MsgStatusPending
+			messages = append(messages, m)
+		}
+		return rows.Err()
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("ListMessagesForAnalysis: %w", err)
+	}
+	return messages, nil
+}
+
+// UpsertAnalysis persists one message's verdict, replacing any previous one.
+func (r *Repository) UpsertAnalysis(model AnalysisModel) error {
+	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec(
+			queries.UpsertAnalysisQuery,
+			model.MessageID,
+			string(model.Verdict),
+			model.RiskScore,
+			marshalJSONArray(model.Evidence),
+			model.Summary,
+			string(model.Importance),
+			model.ProviderUsed,
+			model.ModelUsed,
+		)
+		return execErr
+	})
+	if err != nil {
+		return fmt.Errorf("UpsertAnalysis: %w", err)
+	}
+	return nil
+}
+
+// UpdateMessageAnalyzed advances a message's status and expunges its sanitized
+// body (retention rule A7).
+func (r *Repository) UpdateMessageAnalyzed(id int, status MessageStatus) error {
+	err := r.execExpectingRow(queries.UpdateMessageAnalyzedQuery, id, string(status))
+	if err != nil {
+		return fmt.Errorf("UpdateMessageAnalyzed: %w", err)
+	}
+	return nil
+}
+
+// GetAnalysisByMessage returns the stored verdict for one message, or
+// sql.ErrNoRows when it has not been analyzed.
+func (r *Repository) GetAnalysisByMessage(messageID int) (AnalysisModel, error) {
+	var m AnalysisModel
+	m.MessageID = messageID
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		var verdict, importance string
+		var evidenceJSON []byte
+		scanErr := tx.QueryRow(queries.GetAnalysisByMessageQuery, messageID).Scan(
+			&m.MessageID, &verdict, &m.RiskScore, &evidenceJSON, &m.Summary,
+			&importance, &m.ProviderUsed, &m.ModelUsed,
+		)
+		if scanErr != nil {
+			return scanErr
+		}
+		m.Verdict = Verdict(verdict)
+		m.Importance = Importance(importance)
+		return unmarshalJSONIfPresent(evidenceJSON, &m.Evidence)
+	})
+
+	if err != nil {
+		return AnalysisModel{}, fmt.Errorf("GetAnalysisByMessage: %w", err)
+	}
+	return m, nil
+}
+
+// GetProviderPreference reads which AI provider analyzes e-mail. A missing row
+// means the operator never chose one, reported as empty so the service applies
+// its default (local Ollama).
+func (r *Repository) GetProviderPreference() (string, error) {
+	var value string
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		var key, stored string
+		scanErr := tx.QueryRow(confqueries.GetSettingQuery, providerSettingKey).Scan(&key, &stored)
+		if scanErr != nil {
+			return scanErr
+		}
+		value = stored
+		return nil
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("GetProviderPreference: %w", err)
+	}
+	return value, nil
+}
+
+// SetProviderPreference stores which AI provider analyzes e-mail.
+func (r *Repository) SetProviderPreference(value string) error {
+	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec(confqueries.UpsertSettingQuery, providerSettingKey, value)
+		return execErr
+	})
+	if err != nil {
+		return fmt.Errorf("SetProviderPreference: %w", err)
+	}
+	return nil
 }
 
 // marshalJSONArray marshals a slice to JSON, emitting "[]" for nil/empty so the
