@@ -14,6 +14,7 @@ package tiering
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +24,41 @@ import (
 )
 
 const tmpPrefix = ".kuranas-tier-tmp-"
+
+// ValidateColdDir rejects a cold directory that is empty, relative or inside
+// (or equal to) an indexed root. Keeping it outside every root is what stops
+// the scanner, watcher, tree and analytics from ever seeing the cold copies —
+// the cold area is bytes only, never a navigable root.
+func ValidateColdDir(coldDir string, rootPaths []string) error {
+	cleaned := filepath.Clean(strings.TrimSpace(coldDir))
+	if cleaned == "" || cleaned == "." {
+		return errors.New("tiering: cold directory not configured")
+	}
+	if !filepath.IsAbs(cleaned) {
+		return errors.New("tiering: cold directory must be an absolute path")
+	}
+	for _, rootPath := range rootPaths {
+		root := filepath.Clean(rootPath)
+		if cleaned == root || strings.HasPrefix(cleaned+string(filepath.Separator), root+string(filepath.Separator)) {
+			return fmt.Errorf("tiering: cold directory %q is inside the indexed root %q", cleaned, root)
+		}
+	}
+	return nil
+}
+
+// ColdPathFor maps a file's logical (hot) path to its location under the cold
+// directory, mirroring the root-relative structure beneath a per-root label so
+// two roots never collide: coldDir/<label>/<path relative to root>.
+func ColdPathFor(coldDir string, rootLabel string, rootPath string, logicalPath string) (string, error) {
+	rel, err := filepath.Rel(filepath.Clean(rootPath), filepath.Clean(logicalPath))
+	if err != nil {
+		return "", err
+	}
+	if rel == "." || strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("tiering: %q is not inside root %q", logicalPath, rootPath)
+	}
+	return filepath.Join(coldDir, rootLabel, rel), nil
+}
 
 // SetPhysicalPath records a file's new physical location. An empty path means
 // "the bytes are back at the logical path" (promotion clears physical_path).

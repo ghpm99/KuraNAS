@@ -67,6 +67,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeBackupRun] = func(step jobs.StepModel) error {
 		return executeBackupRunStep(context, step)
 	}
+	executors[job.StepTypeTierMigration] = func(step jobs.StepModel) error {
+		return executeTierMigrationStep(context, step)
+	}
 
 	return executors
 }

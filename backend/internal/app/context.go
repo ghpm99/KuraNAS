@@ -29,6 +29,7 @@ import (
 	"nas-go/api/internal/api/v1/search"
 	"nas-go/api/internal/api/v1/storageroots"
 	"nas-go/api/internal/api/v1/takeout"
+	"nas-go/api/internal/api/v1/tiering"
 	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/updater"
 	"nas-go/api/internal/api/v1/video"
@@ -74,6 +75,7 @@ type AppContext struct {
 	Takeout       *TakeoutContext
 	Trash         *TrashContext
 	Backup        *BackupContext
+	Tiering       *TieringContext
 	Distribution  *DistributionContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
@@ -95,6 +97,12 @@ type BackupContext struct {
 	Handler    *backup.Handler
 	Service    backup.ServiceInterface
 	Repository backup.RepositoryInterface
+}
+
+type TieringContext struct {
+	Handler    *tiering.Handler
+	Service    tiering.ServiceInterface
+	Repository tiering.RepositoryInterface
 }
 
 type StorageRootsContext struct {
@@ -252,6 +260,7 @@ func NewContext(db *sql.DB) *AppContext {
 		log.Printf("storageroots: registry load failed (falling back to ENTRY_POINT): %v", err)
 	}
 	backupContext := newBackupContext(dbContext)
+	tieringContext := newTieringContext(dbContext)
 	emailContext := newEmailContext(dbContext)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
@@ -287,6 +296,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Takeout:       takeoutContext,
 		Trash:         trashContext,
 		Backup:        backupContext,
+		Tiering:       tieringContext,
 		Distribution:  distributionContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
@@ -556,6 +566,18 @@ func newBackupContext(dbContext *database.DbContext) *BackupContext {
 	handler := backup.NewHandler(service)
 
 	return &BackupContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newTieringContext(dbContext *database.DbContext) *TieringContext {
+	repository := tiering.NewRepository(dbContext)
+	service := tiering.NewService(repository)
+	handler := tiering.NewHandler(service)
+
+	return &TieringContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
