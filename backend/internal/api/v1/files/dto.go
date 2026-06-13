@@ -195,7 +195,7 @@ type FileStat struct {
 }
 
 func (fileDto *FileDto) GetCheckSumFromFile() (string, error) {
-	file, err := os.Open(fileDto.Path)
+	file, err := os.Open(fileDto.ResolveContentPath())
 
 	if err != nil {
 		return "", err

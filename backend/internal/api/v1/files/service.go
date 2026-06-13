@@ -545,7 +545,8 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 		}
 		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 	} else {
-		exists := s.CheckFileExistsByPath(fileDto.Path)
+		contentPath := fileDto.ResolveContentPath()
+		exists := s.CheckFileExistsByPath(contentPath)
 		if !exists {
 			err := s.DeleteFile(fileDto, true)
 			if err != nil {
@@ -554,7 +555,7 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
 		}
 
-		srcImg, format, err := img.OpenImageFromFile(fileDto.Path)
+		srcImg, format, err := img.OpenImageFromFile(contentPath)
 		if err != nil {
 			switch strings.ToLower(fileDto.Format) {
 			case ".pdf":
@@ -595,7 +596,7 @@ func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
 		return FileBlob{}, err
 	}
 
-	data, err := os.ReadFile(file.Path)
+	data, err := os.ReadFile(file.ResolveContentPath())
 
 	if err != nil {
 		return FileBlob{}, err

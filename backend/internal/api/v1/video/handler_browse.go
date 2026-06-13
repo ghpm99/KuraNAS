@@ -120,14 +120,15 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
-	exists := h.filesService.CheckFileExistsByPath(file.Path)
+	contentPath := file.ResolveContentPath()
+	exists := h.filesService.CheckFileExistsByPath(contentPath)
 	if !exists {
 		h.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	videoFile, err := os.Open(file.Path)
+	videoFile, err := os.Open(contentPath)
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})

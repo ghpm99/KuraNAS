@@ -129,7 +129,7 @@ func ClassifyImageWithAI(file files.FileDto, metadata MetadataModel, aiService a
 	// Send a downscaled copy of the image so a vision model (e.g. gemma3) can
 	// classify and name it from the actual content. If encoding fails we still
 	// run a text-only request rather than dropping AI entirely.
-	images := encodeImageForAI(file.Path)
+	images := encodeImageForAI(file.ResolveContentPath())
 
 	// No per-request deadline: how long the model may take is bounded solely by
 	// the provider's HTTP timeout, configured at runtime in the ai_providers

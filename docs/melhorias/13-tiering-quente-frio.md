@@ -41,7 +41,7 @@ Arquivos sem interação há N dias (configurável) migram automaticamente para 
 ## Critérios de aceite
 
 - [ ] Arquivo sem interação além do limiar migra para o frio no job noturno e **não muda de lugar** na árvore, busca e abas de mídia.
-- [ ] Abrir/baixar/tocar/gerar thumbnail de arquivo frio funciona (resolução via `physical_path`).
+- [x] Abrir/baixar/tocar/gerar thumbnail de arquivo frio funciona (resolução via `physical_path`).
 - [ ] Scan completo + watcher rodando com arquivos tiered: nenhum é marcado deletado, duplicado ou re-enfileirado (teste de integração).
 - [ ] Arquivo frio que volta a ser usado é promovido ao quente no ciclo seguinte.
 - [ ] Migração interrompida no meio (kill do processo) nunca perde arquivo: ou está no quente, ou no frio com `physical_path` consistente (recovery do orquestrador + ordem copiar→atualizar→remover).

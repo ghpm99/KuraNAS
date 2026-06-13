@@ -49,7 +49,7 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.S
 		Path:   fileDto.Path,
 	}
 
-	result, err := runner(utils.ImageMetadata, fileDto.Path)
+	result, err := runner(utils.ImageMetadata, fileDto.ResolveContentPath())
 	if err != nil {
 		return metadata, err
 	}
@@ -70,7 +70,7 @@ func getAudioMetadata(fileDto files.FileDto, runner ScriptRunner) (musicdom.Audi
 		Path:   fileDto.Path,
 	}
 
-	result, err := runner(utils.AudioMetadata, fileDto.Path)
+	result, err := runner(utils.AudioMetadata, fileDto.ResolveContentPath())
 	if err != nil {
 		return metadata, err
 	}
@@ -89,7 +89,7 @@ func getVideoMetadata(fileDto files.FileDto, runner ScriptRunner) (videodom.Vide
 		Path:   fileDto.Path,
 	}
 
-	result, err := runner(utils.VideoMetadata, fileDto.Path)
+	result, err := runner(utils.VideoMetadata, fileDto.ResolveContentPath())
 	if err != nil {
 		return metadata, err
 	}
