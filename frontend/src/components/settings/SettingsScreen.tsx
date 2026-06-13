@@ -18,6 +18,7 @@ import BackupSettingsSection from './BackupSettingsSection';
 import EmailSettingsSection from './EmailSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
+import TieringSettingsSection from './TieringSettingsSection';
 import useSettingsScreen from './useSettingsScreen';
 import styles from './SettingsScreen.module.css';
 
@@ -76,6 +77,8 @@ const SettingsScreen = () => {
                 <StorageRootsSettingsSection className={styles.panel} />
 
                 <BackupSettingsSection className={styles.panel} />
+
+                <TieringSettingsSection className={styles.panel} />
 
                 <AccessControlSettingsSection className={styles.panel} />
 

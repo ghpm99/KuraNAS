@@ -48,6 +48,11 @@ jest.mock('./BackupSettingsSection', () => ({
 	default: () => <div>Backup Section</div>,
 }));
 
+jest.mock('./TieringSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>Tiering Section</div>,
+}));
+
 const createScreenState = (overrides: Record<string, any> = {}) => ({
     t: (key: string, params?: Record<string, string>) => {
         const map: Record<string, string> = {
