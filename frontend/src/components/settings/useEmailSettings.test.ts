@@ -5,11 +5,13 @@ import {
 	deleteEmailAccount,
 	startMicrosoftDeviceCode,
 	updateEmailAccountSyncEnabled,
+	updateEmailAiProvider,
 } from '@/service/email';
 import useEmailSettings from './useEmailSettings';
 
 const mockEnqueueSnackbar = jest.fn();
 const mockInvalidateQueries = jest.fn();
+const mockSetQueryData = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
 	useQuery: jest.fn(),
@@ -35,6 +37,8 @@ jest.mock('@/service/email', () => ({
 	createGoogleAuthUrl: jest.fn(),
 	startMicrosoftDeviceCode: jest.fn(),
 	getMicrosoftDeviceCodeStatus: jest.fn(),
+	getEmailAiProvider: jest.fn(),
+	updateEmailAiProvider: jest.fn(),
 }));
 
 const mockedUseQuery = useQuery as jest.Mock;
@@ -44,6 +48,7 @@ const mockedCreateGoogleAuthUrl = createGoogleAuthUrl as jest.Mock;
 const mockedStartMicrosoftDeviceCode = startMicrosoftDeviceCode as jest.Mock;
 const mockedUpdateSyncEnabled = updateEmailAccountSyncEnabled as jest.Mock;
 const mockedDeleteEmailAccount = deleteEmailAccount as jest.Mock;
+const mockedUpdateProvider = updateEmailAiProvider as jest.Mock;
 
 const sampleAccounts = [
 	{
@@ -78,7 +83,10 @@ const setupQueries = (accounts: QueryState, deviceStatus: QueryState = {}) => {
 describe('components/settings/useEmailSettings', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockedUseQueryClient.mockReturnValue({ invalidateQueries: mockInvalidateQueries });
+		mockedUseQueryClient.mockReturnValue({
+			invalidateQueries: mockInvalidateQueries,
+			setQueryData: mockSetQueryData,
+		});
 		setupQueries({ data: sampleAccounts });
 		mockedUseMutation.mockImplementation(
 			({
@@ -249,6 +257,38 @@ describe('components/settings/useEmailSettings', () => {
 
 		await act(async () => {
 			await result.current.handleRemove(1);
+		});
+
+		expect(mockEnqueueSnackbar).toHaveBeenCalledWith('EMAIL_ACCOUNT_LINK_FAILED', {
+			variant: 'error',
+		});
+	});
+
+	it('defaults the AI provider to local ollama before the query resolves', () => {
+		const { result } = renderHook(() => useEmailSettings());
+		expect(result.current.aiProvider).toBe('ollama');
+	});
+
+	it('changes the AI provider and caches the new value', async () => {
+		mockedUpdateProvider.mockResolvedValue({ provider: 'anthropic' });
+		const { result } = renderHook(() => useEmailSettings());
+
+		await act(async () => {
+			await result.current.handleChangeProvider('anthropic');
+		});
+
+		expect(mockedUpdateProvider).toHaveBeenCalledWith('anthropic');
+		expect(mockSetQueryData).toHaveBeenCalledWith(['email-ai-provider'], {
+			provider: 'anthropic',
+		});
+	});
+
+	it('surfaces provider change failures through the snackbar', async () => {
+		mockedUpdateProvider.mockRejectedValue(new Error('boom'));
+		const { result } = renderHook(() => useEmailSettings());
+
+		await act(async () => {
+			await result.current.handleChangeProvider('openai');
 		});
 
 		expect(mockEnqueueSnackbar).toHaveBeenCalledWith('EMAIL_ACCOUNT_LINK_FAILED', {

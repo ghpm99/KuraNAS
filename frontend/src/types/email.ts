@@ -30,3 +30,9 @@ export type EmailDeviceCodeStatus = 'idle' | 'pending' | 'linked' | 'expired' | 
 export interface EmailDeviceCodeStatusDto {
 	status: EmailDeviceCodeStatus;
 }
+
+export type EmailAiProvider = 'auto' | 'ollama' | 'openai' | 'anthropic';
+
+export interface EmailProviderPreferenceDto {
+	provider: EmailAiProvider;
+}

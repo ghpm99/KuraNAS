@@ -5,11 +5,14 @@ const mockHandleLinkGoogle = jest.fn();
 const mockHandleLinkMicrosoft = jest.fn();
 const mockHandleToggleSync = jest.fn();
 const mockHandleRemove = jest.fn();
+const mockHandleChangeProvider = jest.fn();
 const mockUseEmailSettings = jest.fn();
 
 jest.mock('./useEmailSettings', () => ({
 	__esModule: true,
 	default: () => mockUseEmailSettings(),
+	isCloudEmailProvider: (provider: string) =>
+		provider === 'openai' || provider === 'anthropic',
 }));
 
 const sampleAccounts = [
@@ -46,10 +49,13 @@ const createState = (overrides: Record<string, unknown> = {}) => ({
 	loadErrorMessage: '',
 	deviceCode: null,
 	deviceStatus: null,
+	aiProvider: 'ollama',
+	isProviderSaving: false,
 	handleLinkGoogle: mockHandleLinkGoogle,
 	handleLinkMicrosoft: mockHandleLinkMicrosoft,
 	handleToggleSync: mockHandleToggleSync,
 	handleRemove: mockHandleRemove,
+	handleChangeProvider: mockHandleChangeProvider,
 	...overrides,
 });
 
@@ -151,5 +157,23 @@ describe('components/settings/EmailSettingsSection', () => {
 		render(<EmailSettingsSection />);
 
 		expect(screen.getByText('integração desligada: sem chave')).toBeInTheDocument();
+	});
+
+	it('does not warn about privacy for the local default provider', () => {
+		render(<EmailSettingsSection />);
+
+		expect(screen.getAllByText('SETTINGS_EMAIL_AI_PROVIDER').length).toBeGreaterThan(0);
+		expect(
+			screen.queryByText('SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING')
+		).not.toBeInTheDocument();
+	});
+
+	it('warns about privacy when a cloud provider is selected', () => {
+		mockUseEmailSettings.mockReturnValue(createState({ aiProvider: 'openai' }));
+		render(<EmailSettingsSection />);
+
+		expect(
+			screen.getByText('SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING')
+		).toBeInTheDocument();
 	});
 });
