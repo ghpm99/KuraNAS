@@ -1,5 +1,7 @@
 package com.kuranas.mobile.app;
 
+import com.kuranas.mobile.data.remote.api.EmailApi;
+import com.kuranas.mobile.data.remote.api.NotificationApi;
 import com.kuranas.mobile.i18n.TranslationManager;
 import com.kuranas.mobile.infra.http.HttpClient;
 
@@ -9,6 +11,8 @@ public final class ServiceLocator {
 
     private final HttpClient httpClient;
     private final TranslationManager translationManager;
+    private final NotificationApi notificationApi;
+    private final EmailApi emailApi;
 
     private ServiceLocator(String baseUrl) {
         httpClient = new HttpClient(baseUrl);
@@ -16,6 +20,9 @@ public final class ServiceLocator {
         TranslationManager tm = TranslationManager.getInstance();
         tm.setHttpClient(httpClient);
         translationManager = tm;
+
+        notificationApi = new NotificationApi(httpClient);
+        emailApi = new EmailApi(httpClient);
     }
 
     public static synchronized void initialize(String baseUrl) {
@@ -38,6 +45,14 @@ public final class ServiceLocator {
 
     public TranslationManager getTranslationManager() {
         return translationManager;
+    }
+
+    public NotificationApi getNotificationApi() {
+        return notificationApi;
+    }
+
+    public EmailApi getEmailApi() {
+        return emailApi;
     }
 
     public void shutdown() {
