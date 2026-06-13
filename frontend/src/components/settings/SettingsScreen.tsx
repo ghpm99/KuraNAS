@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom';
 import AccessControlSettingsSection from './AccessControlSettingsSection';
 import AIProvidersSettingsSection from './AIProvidersSettingsSection';
+import BackupSettingsSection from './BackupSettingsSection';
 import EmailSettingsSection from './EmailSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
@@ -73,6 +74,8 @@ const SettingsScreen = () => {
 
             <div className={styles.grid}>
                 <StorageRootsSettingsSection className={styles.panel} />
+
+                <BackupSettingsSection className={styles.panel} />
 
                 <AccessControlSettingsSection className={styles.panel} />
 
