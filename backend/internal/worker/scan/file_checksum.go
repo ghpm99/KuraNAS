@@ -12,7 +12,7 @@ func GetCheckSum(fileDto files.FileDto,
 
 	switch fileDto.Type {
 	case files.File:
-		return getFileChecksum(fileDto.Path)
+		return getFileChecksum(fileDto.ResolveContentPath())
 	case files.Directory:
 		return getDirectoryChecksum(fileDto.Path)
 	default:

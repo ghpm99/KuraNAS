@@ -158,14 +158,15 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		return
 	}
 
-	exists := handler.filesService.CheckFileExistsByPath(file.Path)
+	contentPath := file.ResolveContentPath()
+	exists := handler.filesService.CheckFileExistsByPath(contentPath)
 	if !exists {
 		handler.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	audioFile, err := os.Open(file.Path)
+	audioFile, err := os.Open(contentPath)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})

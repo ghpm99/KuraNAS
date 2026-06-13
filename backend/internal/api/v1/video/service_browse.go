@@ -65,7 +65,8 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([
 		return data, nil
 	}
 
-	if !fileExistsOnDisk(fileDto.Path) {
+	contentPath := fileDto.ResolveContentPath()
+	if !fileExistsOnDisk(contentPath) {
 		return nil, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
 	}
 
@@ -78,7 +79,7 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([
 		"-loglevel", "error",
 		"-y",
 		"-ss", "00:00:03",
-		"-i", fileDto.Path,
+		"-i", contentPath,
 		"-frames:v", "1",
 		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
 		cachePath,
@@ -122,7 +123,8 @@ func (s *Service) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (
 		return data, nil
 	}
 
-	if !fileExistsOnDisk(fileDto.Path) {
+	contentPath := fileDto.ResolveContentPath()
+	if !fileExistsOnDisk(contentPath) {
 		return nil, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
 	}
 
@@ -137,7 +139,7 @@ func (s *Service) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (
 		"-y",
 		"-ss", "00:00:03",
 		"-t", "2.5",
-		"-i", fileDto.Path,
+		"-i", contentPath,
 		"-vf", fmt.Sprintf("fps=4,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
 		"-loop", "0",
 		cachePath,

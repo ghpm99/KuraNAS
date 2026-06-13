@@ -79,8 +79,16 @@ func (i *FileDto) ToModel() (FileModel, error) {
 	return fileModel, nil
 }
 
+// ResolveContentPath mirrors FileDto.ResolveContentPath for the DB shape.
+func (fileModel *FileModel) ResolveContentPath() string {
+	if fileModel.PhysicalPath.Valid && fileModel.PhysicalPath.String != "" {
+		return fileModel.PhysicalPath.String
+	}
+	return fileModel.Path
+}
+
 func (fileModel *FileModel) GetCheckSumFromFile() error {
-	file, err := os.Open(fileModel.Path)
+	file, err := os.Open(fileModel.ResolveContentPath())
 
 	if err != nil {
 		return err
