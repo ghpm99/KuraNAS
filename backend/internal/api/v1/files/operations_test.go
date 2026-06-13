@@ -443,20 +443,29 @@ func TestCopyDirectoryIntoItself(t *testing.T) {
 // trashBinRecorder fakes the trash domain: it records the call and moves the
 // file aside, like the real bin, so assertions can check both sides.
 type trashBinRecorder struct {
-	calls []string
-	sizes []int64
-	dest  string
-	err   error
+	calls        []string
+	contentCalls []string
+	sizes        []int64
+	dest         string
+	err          error
 }
 
 func (b *trashBinRecorder) MoveToTrash(originalPath string, size int64) error {
+	return b.MoveToTrashFrom(originalPath, originalPath, size)
+}
+
+// contentCalls records the byte-source path of each MoveToTrashFrom, so tests
+// can assert that a tiered file is trashed from its cold copy, not its logical
+// path. calls keeps recording the logical path for the existing assertions.
+func (b *trashBinRecorder) MoveToTrashFrom(logicalPath string, contentPath string, size int64) error {
 	if b.err != nil {
 		return b.err
 	}
-	b.calls = append(b.calls, originalPath)
+	b.calls = append(b.calls, logicalPath)
+	b.contentCalls = append(b.contentCalls, contentPath)
 	b.sizes = append(b.sizes, size)
 	if b.dest != "" {
-		return os.Rename(originalPath, b.dest)
+		return os.Rename(contentPath, b.dest)
 	}
 	return nil
 }
@@ -1123,5 +1132,134 @@ func TestMoveFileAcrossRootsIsRefused(t *testing.T) {
 	// The source must be untouched after the refusal.
 	if _, statErr := os.Stat(sourceFile); statErr != nil {
 		t.Fatalf("source vanished after refused move: %v", statErr)
+	}
+}
+
+// --- Tiered files (task 13) -------------------------------------------------
+// A tiered file has no bytes at its logical path; they live on the cold volume
+// (PhysicalPath). The logical operations must act on the path in the DB and the
+// physical copy respectively, never expecting a hot copy that is not there.
+
+func TestRenameFileTieredLeavesColdBytesAndUpdatesPath(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "old.txt")
+	if err := os.WriteFile(coldPath, []byte("cold bytes"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "old.txt") // no hot copy on disk
+
+	records := []FileModel{
+		{ID: 1, Name: "old.txt", Path: logicalPath, Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+
+	renamed, err := service.RenameFile(1, "new.txt")
+	if err != nil {
+		t.Fatalf("RenameFile (tiered) returned error: %v", err)
+	}
+	if filepath.Base(renamed) != "new.txt" {
+		t.Fatalf("RenameFile returned %q", renamed)
+	}
+	if data, err := os.ReadFile(coldPath); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("cold bytes must be untouched, got %q err=%v", data, err)
+	}
+	if _, err := os.Stat(filepath.Join(entryPoint, "new.txt")); !os.IsNotExist(err) {
+		t.Fatalf("rename must not materialize a hot copy, stat err=%v", err)
+	}
+}
+
+func TestMoveFileTieredUpdatesPathWithoutHotCopy(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "doc.txt")
+	if err := os.WriteFile(coldPath, []byte("cold"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "doc.txt")
+	destDir := filepath.Join(entryPoint, "sub")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "doc.txt", Path: logicalPath, Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+		{ID: 2, Name: "sub", Path: destDir, Type: Directory},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+
+	destFolderID := 2
+	moved, err := service.MoveFile(1, &destFolderID, "")
+	if err != nil {
+		t.Fatalf("MoveFile (tiered) returned error: %v", err)
+	}
+	if moved != filepath.Join(destDir, "doc.txt") {
+		t.Fatalf("MoveFile returned %q", moved)
+	}
+	if data, err := os.ReadFile(coldPath); err != nil || string(data) != "cold" {
+		t.Fatalf("cold bytes must be untouched, got %q err=%v", data, err)
+	}
+	if _, err := os.Stat(moved); !os.IsNotExist(err) {
+		t.Fatalf("move must not materialize a hot copy, stat err=%v", err)
+	}
+}
+
+func TestDeleteFileFromDiskTieredTrashesColdCopy(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "doc.txt")
+	if err := os.WriteFile(coldPath, []byte("cold"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "doc.txt")
+
+	records := []FileModel{
+		{ID: 1, Name: "doc.txt", Path: logicalPath, Type: File, Size: 4,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+	bin := &trashBinRecorder{dest: filepath.Join(t.TempDir(), "doc.txt.1")}
+	service.SetTrashBin(bin)
+
+	if err := service.DeleteFileFromDisk(1, false); err != nil {
+		t.Fatalf("DeleteFileFromDisk (tiered) returned error: %v", err)
+	}
+	if len(bin.contentCalls) != 1 || bin.contentCalls[0] != coldPath {
+		t.Fatalf("tiered delete must trash the cold copy, got %v", bin.contentCalls)
+	}
+	if len(bin.calls) != 1 || bin.calls[0] != logicalPath {
+		t.Fatalf("trash registry must use the logical path, got %v", bin.calls)
+	}
+	if _, err := os.Stat(coldPath); !os.IsNotExist(err) {
+		t.Fatalf("cold copy should have moved to trash, stat err=%v", err)
+	}
+}
+
+func TestDeleteFileFromDiskTieredPermanentRemovesColdCopy(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "doc.txt")
+	if err := os.WriteFile(coldPath, []byte("cold"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "doc.txt")
+
+	records := []FileModel{
+		{ID: 1, Name: "doc.txt", Path: logicalPath, Type: File, Size: 4,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+
+	if err := service.DeleteFileFromDisk(1, true); err != nil {
+		t.Fatalf("permanent delete (tiered) returned error: %v", err)
+	}
+	if _, err := os.Stat(coldPath); !os.IsNotExist(err) {
+		t.Fatalf("permanent delete must remove the cold copy, stat err=%v", err)
 	}
 }

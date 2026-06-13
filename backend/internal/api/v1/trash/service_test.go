@@ -539,3 +539,52 @@ func TestMoveToTrashUsesOwningRootTrashDir(t *testing.T) {
 		t.Fatalf("expected purged bytes, stat err=%v", err)
 	}
 }
+
+// A tiered file is trashed from its cold copy (contentPath) but registered and
+// restorable under its logical path — MoveToTrashFrom keeps the two distinct.
+func TestTrashService_MoveToTrashFromUsesLogicalPathForRegistry(t *testing.T) {
+	s, repo, _, root := newTrashServiceForTest(t)
+
+	logicalPath := filepath.Join(root, "docs", "a.txt")
+	contentPath := filepath.Join(t.TempDir(), "cold-a.txt") // bytes on the cold volume
+	writeFile(t, contentPath, "cold bytes")
+
+	if err := s.MoveToTrashFrom(logicalPath, contentPath, 10); err != nil {
+		t.Fatalf("MoveToTrashFrom: %v", err)
+	}
+
+	if _, err := os.Stat(contentPath); !os.IsNotExist(err) {
+		t.Fatalf("cold copy must move out of its path, stat err=%v", err)
+	}
+
+	items, err := repo.GetAllItems()
+	if err != nil || len(items) != 1 {
+		t.Fatalf("expected one registered item, got %v err=%v", items, err)
+	}
+	item := items[0]
+	if item.OriginalPath != logicalPath {
+		t.Fatalf("registry must store the logical path, got %q", item.OriginalPath)
+	}
+	if !IsInsideTrash(root, item.TrashPath) {
+		t.Fatalf("trash path %q must live under the logical root's trash dir", item.TrashPath)
+	}
+	if data, err := os.ReadFile(item.TrashPath); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("bytes must survive in the trash, got %q err=%v", data, err)
+	}
+}
+
+func TestCopyThenRemoveMovesBytesAcrossDirs(t *testing.T) {
+	source := filepath.Join(t.TempDir(), "a.txt")
+	writeFile(t, source, "payload")
+	destination := filepath.Join(t.TempDir(), "b.txt")
+
+	if err := copyThenRemove(source, destination); err != nil {
+		t.Fatalf("copyThenRemove: %v", err)
+	}
+	if _, err := os.Stat(source); !os.IsNotExist(err) {
+		t.Fatalf("source must be removed, stat err=%v", err)
+	}
+	if data, err := os.ReadFile(destination); err != nil || string(data) != "payload" {
+		t.Fatalf("destination content = %q err=%v", data, err)
+	}
+}

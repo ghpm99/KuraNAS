@@ -3,6 +3,7 @@ package trash
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -67,7 +68,17 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 // for later restore. The caller (files domain) has already validated the path
 // against the storage roots and soft-deletes the home_file rows itself.
 func (s *Service) MoveToTrash(originalPath string, size int64) error {
-	trashDir, err := dirFor(originalPath)
+	return s.MoveToTrashFrom(originalPath, originalPath, size)
+}
+
+// MoveToTrashFrom trashes a file whose bytes live at contentPath but whose
+// logical identity (the path shown in the tree and used to restore it) is
+// logicalPath. For a hot file the two are equal; for a tiered file contentPath
+// is the cold copy, so the move crosses volumes and falls back to copy+delete.
+// The trash dir and the registry row are always derived from logicalPath, so a
+// restore puts the file back where the user expects it.
+func (s *Service) MoveToTrashFrom(logicalPath string, contentPath string, size int64) error {
+	trashDir, err := dirFor(logicalPath)
 	if err != nil {
 		return err
 	}
@@ -75,18 +86,18 @@ func (s *Service) MoveToTrash(originalPath string, size int64) error {
 		return fmt.Errorf("create trash dir: %w", err)
 	}
 
-	trashPath, err := uniqueTrashPath(trashDir, filepath.Base(originalPath))
+	trashPath, err := uniqueTrashPath(trashDir, filepath.Base(logicalPath))
 	if err != nil {
 		return err
 	}
 
-	if err := os.Rename(originalPath, trashPath); err != nil {
+	if err := moveFile(contentPath, trashPath); err != nil {
 		return fmt.Errorf("move to trash: %w", err)
 	}
 
 	err = s.withTransaction(func(tx *sql.Tx) error {
 		_, createErr := s.Repository.CreateItem(tx, TrashItemModel{
-			OriginalPath: originalPath,
+			OriginalPath: logicalPath,
 			TrashPath:    trashPath,
 			Size:         size,
 			DeletedAt:    time.Now(),
@@ -96,13 +107,49 @@ func (s *Service) MoveToTrash(originalPath string, size int64) error {
 	if err != nil {
 		// The bytes are safe but unregistered — put them back so the user
 		// never has data that exists nowhere in the UI.
-		if renameErr := os.Rename(trashPath, originalPath); renameErr != nil {
-			log.Printf("trash: failed to undo move of %q after registry error: %v", trashPath, renameErr)
+		if undoErr := moveFile(trashPath, contentPath); undoErr != nil {
+			log.Printf("trash: failed to undo move of %q after registry error: %v", trashPath, undoErr)
 		}
 		return fmt.Errorf("register trash item: %w", err)
 	}
 
 	return nil
+}
+
+// moveFile renames source → destination, falling back to copy+delete when the
+// rename crosses a volume boundary (a tiered file is trashed from the cold
+// volume into the hot root's trash dir, where os.Rename returns EXDEV).
+func moveFile(source string, destination string) error {
+	if err := os.Rename(source, destination); err == nil {
+		return nil
+	} else if copyErr := copyThenRemove(source, destination); copyErr != nil {
+		return fmt.Errorf("rename failed (%v) and copy fallback failed: %w", err, copyErr)
+	}
+	return nil
+}
+
+func copyThenRemove(source string, destination string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	out, err := os.Create(destination)
+	if err != nil {
+		in.Close()
+		return err
+	}
+	_, copyErr := io.Copy(out, in)
+	in.Close()
+	closeErr := out.Close()
+	if copyErr != nil {
+		os.Remove(destination)
+		return copyErr
+	}
+	if closeErr != nil {
+		os.Remove(destination)
+		return closeErr
+	}
+	return os.Remove(source)
 }
 
 // uniqueTrashPath builds a collision-free destination name inside the trash

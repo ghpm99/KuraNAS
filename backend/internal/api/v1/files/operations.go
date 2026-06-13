@@ -447,9 +447,27 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
 
-	sourceInfo, err := os.Stat(resolvedSourcePath)
-	if err != nil {
-		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+	// A tiered file's bytes are on the cold volume, not at the logical path, so
+	// the move is purely logical: rewrite the path in the DB and leave the cold
+	// copy (and physical_path) untouched. A tiered entry is always a regular
+	// file, never a directory.
+	tiered := sourceFile.PhysicalPath != ""
+
+	if !tiered {
+		sourceInfo, err := os.Stat(resolvedSourcePath)
+		if err != nil {
+			return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
+		if sourceInfo.IsDir() {
+			relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestPath)
+			if relErr == nil && relPath != "." && relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+				return "", newFileOperationError(
+					http.StatusBadRequest,
+					"ERROR_CANNOT_MOVE_INTO_ITSELF",
+					fmt.Errorf("cannot move directory into itself"),
+				)
+			}
+		}
 	}
 
 	if _, err := os.Stat(resolvedDestPath); err == nil {
@@ -458,17 +476,6 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 			"ERROR_TARGET_ALREADY_EXISTS",
 			fmt.Errorf("destination exists: %s", resolvedDestPath),
 		)
-	}
-
-	if sourceInfo.IsDir() {
-		relPath, relErr := filepath.Rel(resolvedSourcePath, resolvedDestPath)
-		if relErr == nil && relPath != "." && relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
-			return "", newFileOperationError(
-				http.StatusBadRequest,
-				"ERROR_CANNOT_MOVE_INTO_ITSELF",
-				fmt.Errorf("cannot move directory into itself"),
-			)
-		}
 	}
 
 	// Roots usually live on different volumes, where os.Rename fails (EXDEV).
@@ -483,8 +490,10 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		)
 	}
 
-	if err := os.Rename(resolvedSourcePath, resolvedDestPath); err != nil {
-		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
+	if !tiered {
+		if err := os.Rename(resolvedSourcePath, resolvedDestPath); err != nil {
+			return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
+		}
 	}
 
 	if err := s.syncMovedRows(sourceFile, resolvedDestPath); err != nil {
@@ -532,12 +541,21 @@ func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 		)
 	}
 
-	if _, err := os.Stat(resolvedPath); err != nil {
+	// A tiered file's bytes live on the cold volume, not at the logical path, so
+	// the delete must act on the physical copy. resolvedPath stays the logical
+	// identity used for the trash registry (so a restore lands in the right
+	// place); contentPath is where the bytes actually are.
+	contentPath := resolvedPath
+	if file.PhysicalPath != "" {
+		contentPath = file.PhysicalPath
+	}
+
+	if _, err := os.Stat(contentPath); err != nil {
 		return newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
 	if permanent {
-		if err := os.RemoveAll(resolvedPath); err != nil {
+		if err := os.RemoveAll(contentPath); err != nil {
 			return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 		}
 	} else {
@@ -550,7 +568,7 @@ func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 				fmt.Errorf("trash bin not configured"),
 			)
 		}
-		if err := s.TrashBin.MoveToTrash(resolvedPath, file.Size); err != nil {
+		if err := s.TrashBin.MoveToTrashFrom(resolvedPath, contentPath, file.Size); err != nil {
 			return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 		}
 	}
@@ -589,8 +607,16 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
 
-	if _, err := os.Stat(resolvedSourcePath); err != nil {
-		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+	// A tiered file has no bytes at its logical path — they live on the cold
+	// volume. Rename is purely a logical operation: it only rewrites the path in
+	// the DB; the cold copy (and physical_path, preserved by syncMovedRows)
+	// stays put. So skip the on-disk stat/rename for tiered files.
+	tiered := file.PhysicalPath != ""
+
+	if !tiered {
+		if _, err := os.Stat(resolvedSourcePath); err != nil {
+			return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
+		}
 	}
 
 	destPath, err := resolvePathInRoots(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
@@ -605,8 +631,10 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		)
 	}
 
-	if err := os.Rename(resolvedSourcePath, destPath); err != nil {
-		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_RENAME_FAILED", err)
+	if !tiered {
+		if err := os.Rename(resolvedSourcePath, destPath); err != nil {
+			return "", newFileOperationError(http.StatusInternalServerError, "ERROR_RENAME_FAILED", err)
+		}
 	}
 
 	if err := s.syncMovedRows(file, destPath); err != nil {
