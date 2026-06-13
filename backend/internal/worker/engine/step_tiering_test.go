@@ -89,6 +89,31 @@ func TestExecuteTierMigrationStepDemotesFile(t *testing.T) {
 	}
 }
 
+func TestExecuteTierMigrationStepEmitsFailureOnPlanError(t *testing.T) {
+	service := &fakeTieringService{planErr: errors.New("cold volume offline")}
+	context := &WorkerContext{TieringService: service}
+
+	err := executeTierMigrationStep(context, jobsapi.StepModel{})
+	if err == nil {
+		t.Fatalf("expected the plan error to propagate")
+	}
+}
+
+func TestMaybeEnqueueTierMigrationSilentOnScheduleError(t *testing.T) {
+	repo := newFakeJobsRepository()
+	orchestrator := NewJobOrchestrator(repo, nil)
+	context := &WorkerContext{
+		TieringService:  &fakeTieringService{dueErr: errors.New("db down")},
+		JobOrchestrator: orchestrator,
+	}
+
+	maybeEnqueueTierMigration(context, time.Now())
+
+	if _, err := repo.GetJobByID(1); err == nil {
+		t.Fatalf("a schedule error must not enqueue a job")
+	}
+}
+
 func TestMaybeEnqueueTierMigrationCreatesJobWhenDue(t *testing.T) {
 	repo := newFakeJobsRepository()
 	orchestrator := NewJobOrchestrator(repo, nil)
