@@ -1,0 +1,111 @@
+package backup
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	backupengine "nas-go/api/internal/worker/backup"
+
+	"github.com/gin-gonic/gin"
+)
+
+type mockService struct {
+	getFn     func() (SettingsDto, error)
+	updateFn  func(dto SettingsDto) (SettingsDto, error)
+	statusFn  func() (StatusDto, error)
+	pendingFn func() (PendingDto, error)
+}
+
+func (m *mockService) GetSettings() (SettingsDto, error)                   { return m.getFn() }
+func (m *mockService) UpdateSettings(dto SettingsDto) (SettingsDto, error) { return m.updateFn(dto) }
+func (m *mockService) Status() (StatusDto, error)                          { return m.statusFn() }
+func (m *mockService) Pending() (PendingDto, error)                        { return m.pendingFn() }
+func (m *mockService) RunOptions() (bool, backupengine.Options, error) {
+	return false, backupengine.Options{}, nil
+}
+func (m *mockService) NextRunDue(now time.Time) (bool, error) { return false, nil }
+
+func newTestRouter(service ServiceInterface) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	handler := NewHandler(service)
+	router.GET("/backup/settings", handler.GetSettingsHandler)
+	router.PUT("/backup/settings", handler.UpdateSettingsHandler)
+	router.GET("/backup/status", handler.GetStatusHandler)
+	router.GET("/backup/pending", handler.GetPendingHandler)
+	return router
+}
+
+func performRequest(router *gin.Engine, method, path, body string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	if body != "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+	return recorder
+}
+
+func TestGetSettingsHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		getFn: func() (SettingsDto, error) {
+			return SettingsDto{Enabled: true, DestinationPath: "/mnt/backup", RetentionDays: 30, IntervalHours: 24}, nil
+		},
+	})
+
+	response := performRequest(router, http.MethodGet, "/backup/settings", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "/mnt/backup") {
+		t.Fatalf("unexpected response: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestUpdateSettingsHandlerInvalidDestination(t *testing.T) {
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) {
+			return SettingsDto{}, ErrInvalidDestination
+		},
+	})
+
+	response := performRequest(router, http.MethodPut, "/backup/settings", `{"enabled":true,"destination_path":"/mnt/dados/backup"}`)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", response.Code)
+	}
+}
+
+func TestUpdateSettingsHandlerMalformedBody(t *testing.T) {
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) { t.Fatal("must not be called"); return dto, nil },
+	})
+
+	response := performRequest(router, http.MethodPut, "/backup/settings", `{nope`)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", response.Code)
+	}
+}
+
+func TestGetStatusHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		statusFn: func() (StatusDto, error) {
+			return StatusDto{Enabled: true, HasRun: true, Status: "completed"}, nil
+		},
+	})
+
+	response := performRequest(router, http.MethodGet, "/backup/status", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "completed") {
+		t.Fatalf("unexpected response: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestGetPendingHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		pendingFn: func() (PendingDto, error) { return PendingDto{PendingFiles: 5}, nil },
+	})
+
+	response := performRequest(router, http.MethodGet, "/backup/pending", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "5") {
+		t.Fatalf("unexpected response: %d %s", response.Code, response.Body.String())
+	}
+}

@@ -13,6 +13,7 @@ import (
 	"nas-go/api/internal/api/v1/aiproviders"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/assistant"
+	"nas-go/api/internal/api/v1/backup"
 	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
@@ -72,6 +73,7 @@ type AppContext struct {
 	Email         *EmailContext
 	Takeout       *TakeoutContext
 	Trash         *TrashContext
+	Backup        *BackupContext
 	Distribution  *DistributionContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
@@ -87,6 +89,12 @@ type TrashContext struct {
 	Handler    *trash.Handler
 	Service    trash.ServiceInterface
 	Repository trash.RepositoryInterface
+}
+
+type BackupContext struct {
+	Handler    *backup.Handler
+	Service    backup.ServiceInterface
+	Repository backup.RepositoryInterface
 }
 
 type StorageRootsContext struct {
@@ -243,6 +251,7 @@ func NewContext(db *sql.DB) *AppContext {
 	if err := storageRootsContext.Service.ReloadRegistry(); err != nil {
 		log.Printf("storageroots: registry load failed (falling back to ENTRY_POINT): %v", err)
 	}
+	backupContext := newBackupContext(dbContext)
 	emailContext := newEmailContext(dbContext)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
@@ -277,6 +286,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Email:         emailContext,
 		Takeout:       takeoutContext,
 		Trash:         trashContext,
+		Backup:        backupContext,
 		Distribution:  distributionContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
@@ -534,6 +544,18 @@ func newTrashContext(
 	handler := trash.NewHandler(service, loggerService)
 
 	return &TrashContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newBackupContext(dbContext *database.DbContext) *BackupContext {
+	repository := backup.NewRepository(dbContext)
+	service := backup.NewService(repository)
+	handler := backup.NewHandler(service)
+
+	return &BackupContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
