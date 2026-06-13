@@ -64,6 +64,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeAIPlaylistCluster] = func(step jobs.StepModel) error {
 		return executeAIPlaylistClusterStep(context, step)
 	}
+	executors[job.StepTypeBackupRun] = func(step jobs.StepModel) error {
+		return executeBackupRunStep(context, step)
+	}
 
 	return executors
 }
