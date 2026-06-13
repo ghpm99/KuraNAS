@@ -1,8 +1,10 @@
 import { apiBase } from '@/service';
 import type {
 	EmailAccountDto,
+	EmailAiProvider,
 	EmailDeviceCodeDto,
 	EmailDeviceCodeStatusDto,
+	EmailProviderPreferenceDto,
 	GoogleAuthUrlDto,
 } from '@/types/email';
 
@@ -39,5 +41,19 @@ export const getMicrosoftDeviceCodeStatus = async (): Promise<EmailDeviceCodeSta
 	const response = await apiBase.get<EmailDeviceCodeStatusDto>(
 		'/email/accounts/microsoft/device-code/status'
 	);
+	return response.data;
+};
+
+export const getEmailAiProvider = async (): Promise<EmailProviderPreferenceDto> => {
+	const response = await apiBase.get<EmailProviderPreferenceDto>('/email/settings/provider');
+	return response.data;
+};
+
+export const updateEmailAiProvider = async (
+	provider: EmailAiProvider
+): Promise<EmailProviderPreferenceDto> => {
+	const response = await apiBase.put<EmailProviderPreferenceDto>('/email/settings/provider', {
+		provider,
+	});
 	return response.data;
 };

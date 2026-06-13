@@ -73,3 +73,10 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+.providerField {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-spacing-2);
+	max-width: 420px;
+}

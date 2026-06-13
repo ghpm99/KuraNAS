@@ -3,9 +3,11 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
-import type { EmailAccountStatus, EmailDeviceCodeStatus } from '@/types/email';
-import useEmailSettings from './useEmailSettings';
+import TextField from '@mui/material/TextField';
+import type { EmailAccountStatus, EmailAiProvider, EmailDeviceCodeStatus } from '@/types/email';
+import useEmailSettings, { isCloudEmailProvider } from './useEmailSettings';
 import styles from './EmailSettingsSection.module.css';
 
 type EmailSettingsSectionProps = {
@@ -26,6 +28,13 @@ const deviceStatusKeyByStatus: Record<EmailDeviceCodeStatus, string> = {
 	error: 'SETTINGS_EMAIL_DEVICE_ERROR',
 };
 
+const providerOptions: { value: EmailAiProvider; labelKey: string }[] = [
+	{ value: 'ollama', labelKey: 'SETTINGS_EMAIL_AI_PROVIDER_OLLAMA' },
+	{ value: 'auto', labelKey: 'SETTINGS_EMAIL_AI_PROVIDER_AUTO' },
+	{ value: 'openai', labelKey: 'SETTINGS_EMAIL_AI_PROVIDER_OPENAI' },
+	{ value: 'anthropic', labelKey: 'SETTINGS_EMAIL_AI_PROVIDER_ANTHROPIC' },
+];
+
 const EmailSettingsSection = ({ className = '' }: EmailSettingsSectionProps) => {
 	const {
 		t,
@@ -36,10 +45,13 @@ const EmailSettingsSection = ({ className = '' }: EmailSettingsSectionProps) => 
 		loadErrorMessage,
 		deviceCode,
 		deviceStatus,
+		aiProvider,
+		isProviderSaving,
 		handleLinkGoogle,
 		handleLinkMicrosoft,
 		handleToggleSync,
 		handleRemove,
+		handleChangeProvider,
 	} = useEmailSettings();
 
 	const sectionClassName = `${className} ${styles.section}`.trim();
@@ -89,6 +101,30 @@ const EmailSettingsSection = ({ className = '' }: EmailSettingsSectionProps) => 
 					</div>
 				</Alert>
 			) : null}
+			<div className={styles.providerField}>
+				<TextField
+					select
+					size="small"
+					label={t('SETTINGS_EMAIL_AI_PROVIDER')}
+					value={aiProvider}
+					disabled={isProviderSaving}
+					helperText={t('SETTINGS_EMAIL_AI_PROVIDER_HELP')}
+					onChange={(event) =>
+						void handleChangeProvider(event.target.value as EmailAiProvider)
+					}
+				>
+					{providerOptions.map((option) => (
+						<MenuItem key={option.value} value={option.value}>
+							{t(option.labelKey)}
+						</MenuItem>
+					))}
+				</TextField>
+				{isCloudEmailProvider(aiProvider) ? (
+					<Alert severity="warning">
+						{t('SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING')}
+					</Alert>
+				) : null}
+			</div>
 			{accounts.length === 0 ? (
 				<Alert severity="warning">{t('SETTINGS_EMAIL_NO_ACCOUNTS')}</Alert>
 			) : (

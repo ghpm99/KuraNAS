@@ -12,9 +12,11 @@ import {
 	createGoogleAuthUrl,
 	deleteEmailAccount,
 	getEmailAccounts,
+	getEmailAiProvider,
 	getMicrosoftDeviceCodeStatus,
 	startMicrosoftDeviceCode,
 	updateEmailAccountSyncEnabled,
+	updateEmailAiProvider,
 } from './email';
 
 const mockedApi = apiBase as unknown as {
@@ -100,5 +102,25 @@ describe('service/email', () => {
 
 		expect(mockedApi.get).toHaveBeenCalledWith('/email/accounts/microsoft/device-code/status');
 		expect(result.status).toBe('pending');
+	});
+
+	it('reads the e-mail AI provider preference', async () => {
+		mockedApi.get.mockResolvedValue({ data: { provider: 'ollama' } });
+
+		const result = await getEmailAiProvider();
+
+		expect(mockedApi.get).toHaveBeenCalledWith('/email/settings/provider');
+		expect(result.provider).toBe('ollama');
+	});
+
+	it('updates the e-mail AI provider preference', async () => {
+		mockedApi.put.mockResolvedValue({ data: { provider: 'anthropic' } });
+
+		const result = await updateEmailAiProvider('anthropic');
+
+		expect(mockedApi.put).toHaveBeenCalledWith('/email/settings/provider', {
+			provider: 'anthropic',
+		});
+		expect(result.provider).toBe('anthropic');
 	});
 });

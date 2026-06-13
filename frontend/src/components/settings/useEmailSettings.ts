@@ -3,11 +3,23 @@ import {
 	createGoogleAuthUrl,
 	deleteEmailAccount,
 	getEmailAccounts,
+	getEmailAiProvider,
 	getMicrosoftDeviceCodeStatus,
 	startMicrosoftDeviceCode,
 	updateEmailAccountSyncEnabled,
+	updateEmailAiProvider,
 } from '@/service/email';
-import type { EmailDeviceCodeDto, EmailDeviceCodeStatus } from '@/types/email';
+import type { EmailAiProvider, EmailDeviceCodeDto, EmailDeviceCodeStatus } from '@/types/email';
+
+// Cloud providers send e-mail content off-box, so the UI shows a privacy warning
+// before they are selected. Local Ollama and the default chain do not.
+const CLOUD_PROVIDERS: ReadonlySet<EmailAiProvider> = new Set<EmailAiProvider>([
+	'openai',
+	'anthropic',
+]);
+
+export const isCloudEmailProvider = (provider: EmailAiProvider): boolean =>
+	CLOUD_PROVIDERS.has(provider);
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useState } from 'react';
@@ -49,6 +61,12 @@ const useEmailSettings = () => {
 		? (deviceStatusQuery.data?.status ?? 'pending')
 		: null;
 
+	const providerQuery = useQuery({
+		queryKey: ['email-ai-provider'],
+		queryFn: getEmailAiProvider,
+		retry: false,
+	});
+
 	const invalidateAccounts = useCallback(() => {
 		void queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
 	}, [queryClient]);
@@ -78,6 +96,12 @@ const useEmailSettings = () => {
 	const deleteMutation = useMutation({
 		mutationFn: deleteEmailAccount,
 		onSuccess: invalidateAccounts,
+	});
+	const providerMutation = useMutation({
+		mutationFn: updateEmailAiProvider,
+		onSuccess: (data) => {
+			queryClient.setQueryData(['email-ai-provider'], data);
+		},
 	});
 
 	const handleLinkGoogle = useCallback(async () => {
@@ -123,6 +147,17 @@ const useEmailSettings = () => {
 		[deleteMutation, enqueueSnackbar, notifyError]
 	);
 
+	const handleChangeProvider = useCallback(
+		async (provider: EmailAiProvider) => {
+			try {
+				await providerMutation.mutateAsync(provider);
+			} catch (error) {
+				notifyError(error);
+			}
+		},
+		[notifyError, providerMutation]
+	);
+
 	return {
 		t,
 		accounts: accountsQuery.data ?? [],
@@ -135,10 +170,13 @@ const useEmailSettings = () => {
 			extractBackendError(accountsQuery.error) ?? t('ERROR_EMAIL_ACCOUNTS_LOAD'),
 		deviceCode,
 		deviceStatus,
+		aiProvider: providerQuery.data?.provider ?? 'ollama',
+		isProviderSaving: providerMutation.isPending,
 		handleLinkGoogle,
 		handleLinkMicrosoft,
 		handleToggleSync,
 		handleRemove,
+		handleChangeProvider,
 	};
 };
 
