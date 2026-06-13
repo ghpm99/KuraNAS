@@ -122,6 +122,9 @@ var CreateTrashItemTableQuery string
 //go:embed queries/0037_create_storage_root_table.sql
 var CreateStorageRootTableQuery string
 
+//go:embed queries/0038_create_email_account_table.sql
+var CreateEmailAccountTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -279,4 +282,9 @@ func trashMigrationList() {
 func storageRootsMigrationList() {
 	addMigration("0037_create_storage_root_table",
 		defaultMigrationFunc(CreateStorageRootTableQuery))
+}
+
+func emailMigrationList() {
+	addMigration("0038_create_email_account_table",
+		defaultMigrationFunc(CreateEmailAccountTableQuery))
 }

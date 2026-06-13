@@ -78,6 +78,7 @@ func initMigrationList() {
 	accessControlMigrationList()
 	trashMigrationList()
 	storageRootsMigrationList()
+	emailMigrationList()
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {
