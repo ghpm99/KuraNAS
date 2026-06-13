@@ -28,10 +28,14 @@ type fakeRepo struct {
 	messages   []MessageModel
 	nextMsgID  int
 	lastSyncAt map[int]time.Time
+
+	analyses    map[int]AnalysisModel
+	providerKey string
+	providerErr error
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{accounts: map[int]AccountModel{}, nextID: 1, nextMsgID: 1, lastSyncAt: map[int]time.Time{}}
+	return &fakeRepo{accounts: map[int]AccountModel{}, nextID: 1, nextMsgID: 1, lastSyncAt: map[int]time.Time{}, analyses: map[int]AnalysisModel{}}
 }
 
 func (f *fakeRepo) GetDbContext() *database.DbContext { return nil }
@@ -197,6 +201,67 @@ func (f *fakeRepo) PurgeMessagesBefore(cutoff time.Time) (int, error) {
 	}
 	f.messages = kept
 	return removed, nil
+}
+
+func (f *fakeRepo) ListMessagesForAnalysis(limit int) ([]MessageModel, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var pending []MessageModel
+	for _, m := range f.messages {
+		if m.Status == MsgStatusPending {
+			pending = append(pending, m)
+		}
+		if len(pending) >= limit {
+			break
+		}
+	}
+	return pending, nil
+}
+
+func (f *fakeRepo) UpsertAnalysis(model AnalysisModel) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.analyses[model.MessageID] = model
+	return nil
+}
+
+func (f *fakeRepo) UpdateMessageAnalyzed(id int, status MessageStatus) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for i := range f.messages {
+		if f.messages[i].ID == id {
+			f.messages[i].Status = status
+			f.messages[i].SanitizedBody = ""
+			return nil
+		}
+	}
+	return sql.ErrNoRows
+}
+
+func (f *fakeRepo) GetAnalysisByMessage(messageID int) (AnalysisModel, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	m, ok := f.analyses[messageID]
+	if !ok {
+		return AnalysisModel{}, sql.ErrNoRows
+	}
+	return m, nil
+}
+
+func (f *fakeRepo) GetProviderPreference() (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.providerKey, f.providerErr
+}
+
+func (f *fakeRepo) SetProviderPreference(value string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.providerErr != nil {
+		return f.providerErr
+	}
+	f.providerKey = value
+	return nil
 }
 
 func (f *fakeRepo) account(t *testing.T, id int) AccountModel {

@@ -91,6 +91,8 @@ func RegisterEmailRoutes(router *gin.RouterGroup, context *AppContext) {
 		group.Any("/accounts/*rest", email.DisabledHandler)
 		group.Any("/oauth/google/callback", email.DisabledHandler)
 		group.Any("/messages", email.DisabledHandler)
+		group.Any("/messages/*rest", email.DisabledHandler)
+		group.Any("/settings/*rest", email.DisabledHandler)
 		return
 	}
 
@@ -104,6 +106,9 @@ func RegisterEmailRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.GET("/accounts/microsoft/device-code/status", handler.MicrosoftDeviceCodeStatusHandler)
 	group.POST("/accounts/:id/sync", handler.SyncAccountHandler)
 	group.GET("/messages", handler.GetMessagesHandler)
+	group.GET("/messages/:id/summary", handler.GetMessageSummaryHandler)
+	group.GET("/settings/provider", handler.GetProviderHandler)
+	group.PUT("/settings/provider", handler.SetProviderHandler)
 }
 
 func RegisterTrashRoutes(router *gin.RouterGroup, context *AppContext) {

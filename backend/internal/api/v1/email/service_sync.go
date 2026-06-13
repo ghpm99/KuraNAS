@@ -21,6 +21,7 @@ const (
 	syncJobType        = "email_sync"
 	fetchStepType      = "email_fetch"
 	prefilterStepType  = "email_prefilter"
+	analyzeStepType    = "email_analyze"
 	perAccountFetchTTL = 60 * time.Second
 )
 
@@ -235,11 +236,26 @@ func (s *Service) EnqueueSync(accountID int) (int, error) {
 		if marshalErr != nil {
 			return marshalErr
 		}
-		if _, stepErr := s.jobsRepo.CreateStep(tx, jobs.StepModel{
+		prefilterStep, stepErr := s.jobsRepo.CreateStep(tx, jobs.StepModel{
 			JobID:       createdJob.ID,
 			Type:        prefilterStepType,
 			Status:      "queued",
 			DependsOn:   dependsOn,
+			MaxAttempts: 1,
+		})
+		if stepErr != nil {
+			return stepErr
+		}
+
+		analyzeDependsOn, marshalErr := json.Marshal([]int{prefilterStep.ID})
+		if marshalErr != nil {
+			return marshalErr
+		}
+		if _, stepErr := s.jobsRepo.CreateStep(tx, jobs.StepModel{
+			JobID:       createdJob.ID,
+			Type:        analyzeStepType,
+			Status:      "queued",
+			DependsOn:   analyzeDependsOn,
 			MaxAttempts: 1,
 		}); stepErr != nil {
 			return stepErr

@@ -16,6 +16,8 @@ type fakeEmailService struct {
 	prefilterErr error
 	purged       int
 	purgeErr     error
+	analyzeStats emailapi.AnalyzeStats
+	analyzeErr   error
 }
 
 func (f *fakeEmailService) SyncEnabledAccounts() (emailapi.SyncStats, error) {
@@ -23,6 +25,9 @@ func (f *fakeEmailService) SyncEnabledAccounts() (emailapi.SyncStats, error) {
 }
 func (f *fakeEmailService) PrefilterPending() (int, error) { return f.flagged, f.prefilterErr }
 func (f *fakeEmailService) PurgeExpired() (int, error)     { return f.purged, f.purgeErr }
+func (f *fakeEmailService) AnalyzePending() (emailapi.AnalyzeStats, error) {
+	return f.analyzeStats, f.analyzeErr
+}
 
 func TestExecuteEmailFetchStepSkipsWhenFeatureOff(t *testing.T) {
 	if err := executeEmailFetchStep(&WorkerContext{}, jobsapi.StepModel{}); !errors.Is(err, ErrStepSkipped) {
@@ -89,7 +94,55 @@ func TestMaybeEnqueueEmailSyncCreatesTwoStepJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get steps: %v", err)
 	}
-	if len(steps) != 2 {
-		t.Fatalf("expected 2 steps (fetch -> prefilter), got %d", len(steps))
+	if len(steps) != 3 {
+		t.Fatalf("expected 3 steps (fetch -> prefilter -> analyze), got %d", len(steps))
+	}
+}
+
+func TestExecuteEmailAnalyzeStepSkipsWhenFeatureOff(t *testing.T) {
+	if err := executeEmailAnalyzeStep(&WorkerContext{}, jobsapi.StepModel{}); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected ErrStepSkipped when no email service, got %v", err)
+	}
+}
+
+func TestExecuteEmailAnalyzeStepSkipsWhenAIUnavailable(t *testing.T) {
+	context := &WorkerContext{EmailService: &fakeEmailService{
+		analyzeStats: emailapi.AnalyzeStats{AIUnavailable: true},
+	}}
+	if err := executeEmailAnalyzeStep(context, jobsapi.StepModel{}); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("AI unavailable must skip (not fail) the step, got %v", err)
+	}
+}
+
+func TestExecuteEmailAnalyzeStepSkipsWhenNothingAnalyzed(t *testing.T) {
+	context := &WorkerContext{EmailService: &fakeEmailService{analyzeStats: emailapi.AnalyzeStats{}}}
+	if err := executeEmailAnalyzeStep(context, jobsapi.StepModel{}); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected ErrStepSkipped when nothing analyzed, got %v", err)
+	}
+}
+
+func TestExecuteEmailAnalyzeStepPropagatesError(t *testing.T) {
+	context := &WorkerContext{EmailService: &fakeEmailService{analyzeErr: errors.New("boom")}}
+	if err := executeEmailAnalyzeStep(context, jobsapi.StepModel{}); err == nil {
+		t.Fatal("expected analysis error to propagate")
+	}
+}
+
+func TestExecuteEmailAnalyzeStepEmitsNotifications(t *testing.T) {
+	notifier := &fakeWorkerNotifSvc{}
+	context := &WorkerContext{
+		NotificationService: notifier,
+		EmailService: &fakeEmailService{analyzeStats: emailapi.AnalyzeStats{
+			Analyzed:   3,
+			Malicious:  []emailapi.EmailDetection{{AccountID: 1, Subject: "bad"}},
+			Suspicious: []emailapi.EmailDetection{{AccountID: 1, Subject: "hmm"}},
+			Important:  []emailapi.EmailDetection{{AccountID: 2, Subject: "bank"}},
+		}},
+	}
+	if err := executeEmailAnalyzeStep(context, jobsapi.StepModel{}); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if len(notifier.dtos) != 3 {
+		t.Fatalf("expected 3 notifications (malicious, suspicious, important), got %d", len(notifier.dtos))
 	}
 }

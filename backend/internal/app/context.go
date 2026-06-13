@@ -261,7 +261,7 @@ func NewContext(db *sql.DB) *AppContext {
 	}
 	backupContext := newBackupContext(dbContext)
 	tieringContext := newTieringContext(dbContext)
-	emailContext := newEmailContext(dbContext, jobsContext.Repository)
+	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -588,7 +588,7 @@ func newTieringContext(dbContext *database.DbContext) *TieringContext {
 // EMAIL_TOKEN_KEY the whole feature refuses to turn on (returns nil; the
 // routes then answer EMAIL_FEATURE_DISABLED_NO_KEY) — tokens are never stored
 // unencrypted.
-func newEmailContext(dbContext *database.DbContext, jobsRepository jobs.RepositoryInterface) *EmailContext {
+func newEmailContext(dbContext *database.DbContext, jobsRepository jobs.RepositoryInterface, aiService ai.ServiceInterface) *EmailContext {
 	key := config.AppConfig.EmailTokenKey
 	if key == "" {
 		log.Println("email: EMAIL_TOKEN_KEY not configured; e-mail integration is off")
@@ -611,6 +611,13 @@ func newEmailContext(dbContext *database.DbContext, jobsRepository jobs.Reposito
 	})
 	// The jobs repository lets the manual-sync endpoint enqueue an email_sync job.
 	service.SetJobsDispatcher(jobsRepository)
+	// The AI seam powers the analysis step. aiService is the hot-swappable
+	// *ai.Manager, which satisfies email.AIRouter (Execute + Named + Enabled), so
+	// a provider toggle reflects in the next analysis with no restart. When the
+	// concrete is something else (e.g. a test double) the analysis stays off.
+	if router, ok := aiService.(email.AIRouter); ok {
+		service.SetAIRouter(router)
+	}
 	handler := email.NewHandler(service)
 
 	return &EmailContext{
@@ -689,7 +696,11 @@ func newAIStack(dbContext *database.DbContext) (ai.ServiceInterface, *AIProvider
 			log.Printf("AI providers: failed to load configuration: %v\n", err)
 			return
 		}
-		manager.Swap(buildAIServiceFromModels(models, cfg))
+		providers, named := buildProvidersFromModels(models, cfg)
+		manager.Swap(buildServiceFromProviders(providers))
+		// Repopulate the by-name registry so the e-mail analysis sees a provider
+		// toggle without a restart (hot-swap).
+		manager.SwapNamed(named)
 	}
 
 	if dbContext != nil && dbContext.GetDatabase() != nil {
@@ -727,7 +738,7 @@ func newOllamaContext(aiProvidersService aiproviders.ServiceInterface, jobsRepos
 	}
 
 	// enabled reads the live provider config so the autostart only fires when the
-	// operator actually turned Ollama on (matches buildAIServiceFromModels).
+	// operator actually turned Ollama on (matches buildProvidersFromModels).
 	enabled := func() bool {
 		if aiProvidersService == nil {
 			return false
@@ -785,14 +796,33 @@ func withProviderRetry(provider ai.Provider, model aiproviders.ProviderModel) ai
 	return ai.WithRetry(provider, model.Params.MaxRetries, backoff)
 }
 
-// buildAIServiceFromModels constructs the provider chain from persisted
-// configuration. Operational tuning (model, base_url, timeout, retries) comes
-// from the ai_providers table; only the API keys come from the environment.
-// Providers are already ordered by priority; the first enabled one becomes
-// primary and the rest are fallbacks. Cloud providers are skipped when their
-// API key is missing. Returns nil when nothing is enabled.
-func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config) ai.ServiceInterface {
+// buildServiceFromProviders builds the task router over an already-constructed,
+// priority-ordered provider list (the first becomes primary, the rest
+// fallbacks). Operational tuning (model, base_url, timeout, retries) is baked
+// into each provider by buildProvidersFromModels. Returns nil when the list is
+// empty, which callers treat as "AI unavailable".
+func buildServiceFromProviders(providers []ai.Provider) ai.ServiceInterface {
+	if len(providers) == 0 {
+		log.Println("AI service has no enabled providers")
+		return nil
+	}
+
+	router := ai.NewRouter()
+	for _, taskType := range aiTaskTypes() {
+		router.RegisterChain(taskType, providers...)
+	}
+
+	log.Printf("AI service enabled with %d provider(s)\n", len(providers))
+	return ai.NewService(router)
+}
+
+// buildProvidersFromModels constructs the enabled providers once, returning both
+// the priority-ordered chain (for the router) and a by-name map (for the
+// Manager's Named lookup, used by the e-mail analysis to pin a provider). A cloud
+// provider with no API key is skipped from both.
+func buildProvidersFromModels(models []aiproviders.ProviderModel, cfg ai.Config) ([]ai.Provider, map[string]ai.Provider) {
 	var providers []ai.Provider
+	named := make(map[string]ai.Provider)
 
 	for _, model := range models {
 		if !model.Enabled {
@@ -806,7 +836,9 @@ func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config)
 				keepAlive = cfg.OllamaKeepAlive
 			}
 			base := ollama.NewProvider(model.BaseURL, model.Model, keepAlive, providerTimeout(model, cfg))
-			providers = append(providers, withProviderRetry(base, model))
+			provider := withProviderRetry(base, model)
+			providers = append(providers, provider)
+			named[string(aiproviders.ProviderOllama)] = provider
 			log.Printf("AI provider enabled: ollama (%s @ %s)\n", model.Model, model.BaseURL)
 		case aiproviders.ProviderOpenAI:
 			if cfg.OpenAIAPIKey == "" {
@@ -814,7 +846,9 @@ func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config)
 				continue
 			}
 			base := openai.NewProvider(cfg.OpenAIAPIKey, model.Model, model.BaseURL, providerTimeout(model, cfg))
-			providers = append(providers, withProviderRetry(base, model))
+			provider := withProviderRetry(base, model)
+			providers = append(providers, provider)
+			named[string(aiproviders.ProviderOpenAI)] = provider
 			log.Printf("AI provider enabled: openai (%s)\n", model.Model)
 		case aiproviders.ProviderAnthropic:
 			if cfg.AnthropicAPIKey == "" {
@@ -822,23 +856,14 @@ func buildAIServiceFromModels(models []aiproviders.ProviderModel, cfg ai.Config)
 				continue
 			}
 			base := anthropic.NewProvider(cfg.AnthropicAPIKey, model.Model, providerTimeout(model, cfg))
-			providers = append(providers, withProviderRetry(base, model))
+			provider := withProviderRetry(base, model)
+			providers = append(providers, provider)
+			named[string(aiproviders.ProviderAnthropic)] = provider
 			log.Printf("AI provider enabled: anthropic (%s)\n", model.Model)
 		}
 	}
 
-	if len(providers) == 0 {
-		log.Println("AI service has no enabled providers")
-		return nil
-	}
-
-	router := ai.NewRouter()
-	for _, taskType := range aiTaskTypes() {
-		router.RegisterChain(taskType, providers...)
-	}
-
-	log.Printf("AI service enabled with %d provider(s)\n", len(providers))
-	return ai.NewService(router)
+	return providers, named
 }
 
 func newTakeoutContext(

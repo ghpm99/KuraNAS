@@ -95,6 +95,57 @@ type MessageModel struct {
 	PrefilterRules    []string
 	Status            MessageStatus
 	CreatedAt         time.Time
+
+	// Analysis fields are populated only by the listing JOIN with email_analysis
+	// (task 16); they stay zero-valued for a message not yet analyzed.
+	Verdict    Verdict
+	Importance Importance
+	Summary    string
+}
+
+// Verdict is the AI classification of a message. It matches the CHECK
+// constraint on the email_analysis table.
+type Verdict string
+
+const (
+	VerdictLegitimate Verdict = "legitimate"
+	VerdictSuspicious Verdict = "suspicious"
+	VerdictMalicious  Verdict = "malicious"
+)
+
+func (v Verdict) IsValid() bool {
+	return v == VerdictLegitimate || v == VerdictSuspicious || v == VerdictMalicious
+}
+
+// Importance is the priority hint the classifier assigns. It matches the CHECK
+// constraint on the email_analysis table.
+type Importance string
+
+const (
+	ImportanceLow    Importance = "low"
+	ImportanceNormal Importance = "normal"
+	ImportanceHigh   Importance = "high"
+)
+
+func (i Importance) IsValid() bool {
+	return i == ImportanceLow || i == ImportanceNormal || i == ImportanceHigh
+}
+
+// AnalysisModel mirrors a row in the email_analysis table. Evidence is the
+// structured signal list behind the verdict; Summary is set only for legitimate
+// mail. The model answer is data: it is validated, persisted and shown — never
+// fed back into another AI call.
+type AnalysisModel struct {
+	ID           int
+	MessageID    int
+	Verdict      Verdict
+	RiskScore    int
+	Evidence     []string
+	Summary      string
+	Importance   Importance
+	ProviderUsed string
+	ModelUsed    string
+	AnalyzedAt   time.Time
 }
 
 func encodeTokenSet(tokens TokenSet) ([]byte, error) {

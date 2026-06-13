@@ -118,6 +118,12 @@ func maybeEnqueueEmailSync(context *WorkerContext) {
 				DependsOn:   []string{"email_fetch"},
 				MaxAttempts: 1,
 			},
+			{
+				Key:         "email_analyze",
+				Type:        job.StepTypeEmailAnalyze,
+				DependsOn:   []string{"email_prefilter"},
+				MaxAttempts: 1,
+			},
 		},
 	}
 

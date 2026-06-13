@@ -76,6 +76,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeEmailPrefilter] = func(step jobs.StepModel) error {
 		return executeEmailPrefilterStep(context, step)
 	}
+	executors[job.StepTypeEmailAnalyze] = func(step jobs.StepModel) error {
+		return executeEmailAnalyzeStep(context, step)
+	}
 
 	return executors
 }

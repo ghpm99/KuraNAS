@@ -131,6 +131,9 @@ var AddFilePhysicalPathColumnQuery string
 //go:embed queries/0040_create_email_message_table.sql
 var CreateEmailMessageTableQuery string
 
+//go:embed queries/0041_create_email_analysis_table.sql
+var CreateEmailAnalysisTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -183,6 +186,9 @@ func fileMigrationList() {
 
 	addMigration("0040_create_email_message_table",
 		defaultMigrationFunc(CreateEmailMessageTableQuery))
+
+	addMigration("0041_create_email_analysis_table",
+		defaultMigrationFunc(CreateEmailAnalysisTableQuery))
 
 }
 

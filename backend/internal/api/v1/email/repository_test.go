@@ -215,6 +215,7 @@ func TestRepositoryInsertMessageConflictIsNotInserted(t *testing.T) {
 
 var messageColumns = []string{
 	"id", "account_id", "sender_name", "sender_address", "subject", "snippet", "received_at", "status", "created_at",
+	"verdict", "importance", "summary",
 }
 
 func TestRepositoryListMessages(t *testing.T) {
@@ -226,8 +227,8 @@ func TestRepositoryListMessages(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(queries.ListMessagesQuery)).
 		WithArgs(3, 0).
 		WillReturnRows(sqlmock.NewRows(messageColumns).
-			AddRow(1, 5, "Alice", "a@example.com", "Hi", "snippet", now, "pending", now).
-			AddRow(2, 5, "Bob", "b@example.com", "Yo", "snip2", now, "prefiltered_spam", now))
+			AddRow(1, 5, "Alice", "a@example.com", "Hi", "snippet", now, "pending", now, "", "", "").
+			AddRow(2, 5, "Bob", "b@example.com", "Yo", "snip2", now, "analyzed", now, "legitimate", "high", "A short summary."))
 	mock.ExpectRollback()
 
 	page, err := repo.ListMessages(1, 2)
