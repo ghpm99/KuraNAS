@@ -38,15 +38,15 @@ Job periódico `email_sync` busca mensagens novas de cada conta habilitada via G
 
 ## Critérios de aceite
 
-- [ ] Sync periódico busca só o novo e não duplica (idempotente via UNIQUE).
-- [ ] Corpo armazenado é texto puro ≤ 16 KB, sem tags e sem Unicode invisível.
-- [ ] Anexos: só metadados; teste prova que rota de download nunca é chamada.
-- [ ] URLs do corpo viram `link_domains` (dados) e nenhuma é visitada.
-- [ ] Client recusa qualquer host fora da allowlist (teste).
-- [ ] Spam óbvio cai em `prefiltered_spam` com as regras disparadas registradas.
-- [ ] Token inválido marca a conta `reauth_required` + notificação, sem derrubar o job.
-- [ ] Expurgo por retenção funciona.
-- [ ] `make ci` verde.
+- [x] Sync periódico busca só o novo e não duplica (idempotente via UNIQUE).
+- [x] Corpo armazenado é texto puro ≤ 16 KB, sem tags e sem Unicode invisível.
+- [x] Anexos: só metadados; teste prova que rota de download nunca é chamada.
+- [x] URLs do corpo viram `link_domains` (dados) e nenhuma é visitada.
+- [x] Client recusa qualquer host fora da allowlist (teste).
+- [x] Spam óbvio cai em `prefiltered_spam` com as regras disparadas registradas.
+- [x] Token inválido marca a conta `reauth_required` + notificação, sem derrubar o job.
+- [x] Expurgo por retenção funciona.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
