@@ -147,6 +147,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Backup != nil {
 		workerFileContext.BackupService = appContext.Backup.Service
 	}
+	if appContext.Tiering != nil {
+		workerFileContext.TieringService = appContext.Tiering.Service
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

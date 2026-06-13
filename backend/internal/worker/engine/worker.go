@@ -13,6 +13,7 @@ import (
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/api/v1/notifications"
+	tieringapi "nas-go/api/internal/api/v1/tiering"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
@@ -47,6 +48,7 @@ type WorkerContext struct {
 	AISettings              AISettingsReader
 	SystemEvents            systemevent.ServiceInterface
 	BackupService           backupapi.WorkerInterface
+	TieringService          tieringapi.WorkerInterface
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 }
@@ -101,6 +103,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 	applog.Go("workers-scheduler", func() { startWorkersScheduler(context) })
 	applog.Go("notification-cleanup", func() { startNotificationCleanup(context) })
 	applog.Go("backup-scheduler", func() { startBackupScheduler(context) })
+	applog.Go("tiering-scheduler", func() { startTieringScheduler(context) })
 	startRootWatchers(context)
 
 	if context != nil && context.SystemEvents != nil {
