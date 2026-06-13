@@ -46,6 +46,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterHealthRoutes(routesV1)
 	RegisterAccessControlRoutes(routesV1, context)
 	RegisterTrashRoutes(routesV1, context)
+	RegisterBackupRoutes(routesV1, context)
 	RegisterStorageRootsRoutes(routesV1, context)
 	RegisterEmailRoutes(routesV1, context)
 	registerReactRoutes(router)
@@ -113,6 +114,18 @@ func RegisterTrashRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.DELETE("", context.Trash.Handler.EmptyTrashHandler)
 	group.GET("/retention", context.Trash.Handler.GetTrashRetentionHandler)
 	group.PUT("/retention", context.Trash.Handler.UpdateTrashRetentionHandler)
+}
+
+func RegisterBackupRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Backup == nil || context.Backup.Handler == nil {
+		return
+	}
+
+	group := router.Group("/backup")
+	group.GET("/settings", context.Backup.Handler.GetSettingsHandler)
+	group.PUT("/settings", context.Backup.Handler.UpdateSettingsHandler)
+	group.GET("/status", context.Backup.Handler.GetStatusHandler)
+	group.GET("/pending", context.Backup.Handler.GetPendingHandler)
 }
 
 // registerAccessControlMiddleware installs the IP whitelist in front of every
