@@ -45,7 +45,7 @@ Arquivos sem interação há N dias (configurável) migram automaticamente para 
 - [x] Scan completo + watcher rodando com arquivos tiered: nenhum é marcado deletado, duplicado ou re-enfileirado (teste de integração). *(`TestMarkDeletedStep_KeepsTieredFileActive_Postgres`, `TestMarkDeletedStep_TieredFileSurvivesWatcherRemoveEvent_Postgres`, `TestDiffStep_IgnoresTieredFile_Postgres`)*
 - [x] Arquivo frio que volta a ser usado é promovido ao quente no ciclo seguinte. *(`ListPromotionCandidates` com o mesmo cutoff simétrico; promoções rodam antes das demoções no mesmo passe.)*
 - [x] Migração interrompida no meio (kill do processo) nunca perde arquivo: ou está no quente, ou no frio com `physical_path` consistente (recovery do orquestrador + ordem copiar→atualizar→remover). *(ordem testada em `TestRun_DemotionDbFailureKeepsHotCopy`; jobs `running` voltam a `queued` no `recoverInterruptedWork`.)*
-- [ ] Rename/move/delete lógicos funcionam para arquivos tiered (incluindo lixeira).
+- [x] Rename/move/delete lógicos funcionam para arquivos tiered (incluindo lixeira). *(rename/move viram operação só-lógica quando `physical_path` está preenchido; delete/lixeira agem no path físico via `MoveToTrashFrom`. Testes: `TestRenameFileTieredLeavesColdBytesAndUpdatesPath`, `TestMoveFileTieredUpdatesPathWithoutHotCopy`, `TestDeleteFileFromDiskTiered{TrashesColdCopy,PermanentRemovesColdCopy}`.)*
 - [ ] UI mostra tier do arquivo e espaço por tier; parâmetros configuráveis em Settings.
 - [ ] `make ci` verde (backend + frontend).
 
