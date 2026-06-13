@@ -39,7 +39,7 @@ Regras invariantes:
 | 16 | [Análise de e-mail por IA](16-email-analise-ia.md) | feature | P2 | 15 | pendente | LLM sem ferramentas; fail-closed |
 | 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | 🚫 bloqueada | código pronto, build e testes verdes, APK −4,7%; falta só instalar/rodar no tablet (dono) |
 | 18 | [Tela kiosk do app legado](18-app-legado-kiosk.md) | feature | P2 | 16, 17 | pendente | tablet 2012: DTOs pequenos, sem WebView |
-| 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | em execução | retenção ≠ espelho; 14–18 bloqueadas em validação manual, 12 voltou a ser a próxima (2026-06-12) |
+| 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | ✅ concluída (2026-06-12) | retenção ≠ espelho; segunda cópia (HD externo) documentada no README, fica com o SO |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | pendente | path lógico × físico; despriorizada em favor de 14–18 (2026-06-12) |
 
 Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
