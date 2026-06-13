@@ -49,6 +49,33 @@ const (
 	DeviceCodeError   = "error"
 )
 
+// MessageDto is the lean API representation of a synced message. It carries NO
+// body — the listing is built for a low-powered kiosk, so the payload stays
+// small. (The AI verdict/importance/summary fields arrive with task 16.)
+type MessageDto struct {
+	ID            int       `json:"id"`
+	AccountID     int       `json:"account_id"`
+	SenderName    string    `json:"sender_name"`
+	SenderAddress string    `json:"sender_address"`
+	Subject       string    `json:"subject"`
+	Snippet       string    `json:"snippet"`
+	ReceivedAt    time.Time `json:"received_at"`
+	Status        string    `json:"status"`
+}
+
+func (m MessageModel) toDto() MessageDto {
+	return MessageDto{
+		ID:            m.ID,
+		AccountID:     m.AccountID,
+		SenderName:    m.SenderName,
+		SenderAddress: m.SenderAddress,
+		Subject:       m.Subject,
+		Snippet:       m.Snippet,
+		ReceivedAt:    m.ReceivedAt,
+		Status:        string(m.Status),
+	}
+}
+
 func (m AccountModel) toDto() AccountDto {
 	return AccountDto{
 		ID:          m.ID,

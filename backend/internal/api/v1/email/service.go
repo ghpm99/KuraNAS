@@ -14,7 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/pkg/crypto"
+	"nas-go/api/pkg/mailfetch"
+	"nas-go/api/pkg/mailfetch/gmail"
+	"nas-go/api/pkg/mailfetch/graph"
 )
 
 var (
@@ -24,6 +28,7 @@ var (
 	ErrReauthRequired        = errors.New("email: refresh token rejected, reauthorization required")
 	ErrHostNotAllowed        = errors.New("email: host not in the oauth allowlist")
 	ErrNoDeviceLink          = errors.New("email: no device-code link in progress")
+	ErrSyncUnavailable       = errors.New("email: sync dispatcher not configured")
 )
 
 // Config carries the OAuth client settings (from env, set in the composition
@@ -32,6 +37,23 @@ type Config struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	MicrosoftClientID  string
+	// Sync tuning (task 15). Zero values fall back to the package defaults.
+	RetentionDays         int
+	MaxMessagesPerAccount int
+}
+
+const (
+	defaultRetentionDays = 30
+	defaultMaxPerAccount = 100
+	// pendingScanLimit caps how many pending messages one pre-filter pass scans.
+	pendingScanLimit = 500
+)
+
+func orDefault(value, fallback int) int {
+	if value <= 0 {
+		return fallback
+	}
+	return value
 }
 
 // Endpoints groups every external URL the service may call. Production always
@@ -82,6 +104,13 @@ type Service struct {
 	allowed    map[string]bool
 	httpClient *http.Client
 
+	// Sync dependencies (task 15). fetchers are the per-provider transport
+	// clients; jobsRepo enqueues the manual-sync job (nil = manual sync off).
+	fetchers      map[Provider]mailfetch.Fetcher
+	jobsRepo      jobs.RepositoryInterface
+	retentionDays int
+	maxPerAccount int
+
 	mu         sync.Mutex
 	pkceStates map[string]pkceState
 	deviceLink deviceLinkState
@@ -100,9 +129,22 @@ func NewServiceWithEndpoints(repository RepositoryInterface, cipher *crypto.AESG
 		endpoints:  endpoints,
 		allowed:    allowedHostsFor(endpoints),
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		pkceStates: make(map[string]pkceState),
-		deviceLink: deviceLinkState{status: DeviceCodeIdle},
+		fetchers: map[Provider]mailfetch.Fetcher{
+			ProviderGoogle:    gmail.NewDefaultClient(),
+			ProviderMicrosoft: graph.NewDefaultClient(),
+		},
+		retentionDays: orDefault(config.RetentionDays, defaultRetentionDays),
+		maxPerAccount: orDefault(config.MaxMessagesPerAccount, defaultMaxPerAccount),
+		pkceStates:    make(map[string]pkceState),
+		deviceLink:    deviceLinkState{status: DeviceCodeIdle},
 	}
+}
+
+// SetJobsDispatcher wires the jobs repository used to enqueue the manual-sync
+// job. The composition root calls it after the jobs context exists; without it
+// manual sync answers ErrSyncUnavailable.
+func (s *Service) SetJobsDispatcher(jobsRepo jobs.RepositoryInterface) {
+	s.jobsRepo = jobsRepo
 }
 
 func (s *Service) ListAccounts() ([]AccountDto, error) {
