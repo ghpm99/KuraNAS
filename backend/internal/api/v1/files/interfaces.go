@@ -71,6 +71,10 @@ type ServiceInterface interface {
 // here (not imported from trash) so files never depends on the trash package.
 type TrashBinInterface interface {
 	MoveToTrash(originalPath string, size int64) error
+	// MoveToTrashFrom trashes a file whose bytes live at contentPath while its
+	// logical identity (restore location) is logicalPath — they differ only for
+	// a tiered file, whose bytes are on the cold volume.
+	MoveToTrashFrom(logicalPath string, contentPath string, size int64) error
 }
 
 type RecentFileRepositoryInterface interface {
