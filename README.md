@@ -218,6 +218,10 @@ Pipeline local completa:
 make ci
 ```
 
+### Backup e segunda cópia
+
+O KuraNAS executa um backup incremental das raízes de armazenamento para a pasta de destino configurada na UI (Configurações → Backup), com retenção de versões em `_versions/`. A **segunda cópia** (HD externo de 2 TB, idealmente desconectável) fica fora do aplicativo: sincronize o diretório de backup para o HD externo pelo próprio SO — por exemplo, `robocopy <destino-do-backup> <hd-externo> /MIR` agendado pelo Agendador de Tarefas do Windows. O sistema não gerencia mídia desconectável.
+
 ### Internacionalização
 
 - Não hardcode texto visível para usuário.

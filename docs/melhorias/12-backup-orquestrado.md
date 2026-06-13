@@ -42,7 +42,7 @@ Um job periódico copia arquivos novos/alterados das raízes de armazenamento pa
 - [x] A área de backup não aparece na árvore, nas abas de mídia, nos analytics, e não dispara o watcher (o destino é validado fora de qualquer raiz indexada — scan/watcher/abas/analytics só enxergam as raízes).
 - [x] UI mostra status do backup (última execução, pendentes, falhas) e notificação de conclusão/falha (i18n).
 - [x] Interromper o servidor no meio de um backup não corrompe nada (recovery do orquestrador retoma; cópias parciais ficam só no temporário).
-- [ ] `make ci` verde (backend + frontend).
+- [x] `make ci` verde (backend + frontend).
 
 ## Fora de escopo
 
