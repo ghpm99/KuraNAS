@@ -46,6 +46,19 @@ func isMarkedDeleted(t *testing.T, dbCtx *database.DbContext, path string) bool 
 	return deletedAt.Valid
 }
 
+// setPhysicalPath turns an indexed row into a tiered one: the bytes now live at
+// physicalPath while the logical path stays the row identity.
+func setPhysicalPath(t *testing.T, dbCtx *database.DbContext, logicalPath, physicalPath string) {
+	t.Helper()
+	err := dbCtx.ExecTx(func(tx *sql.Tx) error {
+		_, e := tx.Exec("UPDATE home_file SET physical_path = $1 WHERE path = $2", physicalPath, logicalPath)
+		return e
+	})
+	if err != nil {
+		t.Fatalf("set physical_path for %q: %v", logicalPath, err)
+	}
+}
+
 // TestMarkDeletedStep_DetectsMissingFiles_Postgres is the positive control: when
 // the stored paths are POSIX-style (no backslashes), the PathPrefix query finds
 // the rows and mark_deleted correctly flags the file that no longer exists on
@@ -108,6 +121,82 @@ func TestMarkDeletedStep_SoftDeletesMissingFileWithWindowsPath_Postgres(t *testi
 	if !isMarkedDeleted(t, dbCtx, ghostPath) {
 		t.Fatalf("expected the missing Windows-path file to be soft-deleted (deleted_at set), " +
 			"but it is still active — mark_deleted failed to identify a DB row absent from the folder")
+	}
+}
+
+// TestMarkDeletedStep_KeepsTieredFileActive_Postgres is the tiering blindage
+// (task 13): a file migrated to cold storage has no bytes at its logical path,
+// so a naive existence check would soft-delete every cold file on the next
+// scan. The step must stat the resolved content path instead — keeping the
+// tiered row active while still flagging a tiered file whose cold copy is
+// genuinely gone.
+func TestMarkDeletedStep_KeepsTieredFileActive_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	root := t.TempDir()
+	coldDir := t.TempDir()
+	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)
+	workerCtx := &WorkerContext{FilesService: filesSvc}
+
+	// Tiered file: absent from the hot tree, bytes present in the cold area.
+	tieredLogical := filepath.Join(root, "cold.txt")
+	tieredPhysical := filepath.Join(coldDir, "cold.txt")
+	if err := os.WriteFile(tieredPhysical, []byte("cold bytes"), 0o644); err != nil {
+		t.Fatalf("write cold copy: %v", err)
+	}
+	insertHomeFile(t, dbCtx, "cold.txt", tieredLogical, root)
+	setPhysicalPath(t, dbCtx, tieredLogical, tieredPhysical)
+
+	// Tiered file whose cold copy was destroyed: really missing everywhere.
+	goneLogical := filepath.Join(root, "gone.txt")
+	gonePhysical := filepath.Join(coldDir, "gone.txt") // never created
+	insertHomeFile(t, dbCtx, "gone.txt", goneLogical, root)
+	setPhysicalPath(t, dbCtx, goneLogical, gonePhysical)
+
+	payload, _ := marshalPayload(StepFilePayload{Path: root})
+	if err := executeMarkDeletedStep(workerCtx, jobs.StepModel{Payload: payload}); err != nil {
+		t.Fatalf("executeMarkDeletedStep returned error: %v", err)
+	}
+
+	if isMarkedDeleted(t, dbCtx, tieredLogical) {
+		t.Fatalf("tiered file with live cold copy must NOT be marked deleted")
+	}
+	if !isMarkedDeleted(t, dbCtx, goneLogical) {
+		t.Fatalf("tiered file missing from BOTH tiers should be marked deleted")
+	}
+}
+
+// TestMarkDeletedStep_TieredFileSurvivesWatcherRemoveEvent_Postgres mirrors what
+// the fsnotify watcher does when the migration job removes the hot copy: it
+// enqueues a targeted mark_deleted for that exact logical path. The blindage
+// must make that targeted check a no-op for a healthy tiered file.
+func TestMarkDeletedStep_TieredFileSurvivesWatcherRemoveEvent_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	root := t.TempDir()
+	coldDir := t.TempDir()
+	filesSvc := files.NewService(files.NewRepository(dbCtx), jobs.NewRepository(dbCtx), nil)
+	workerCtx := &WorkerContext{FilesService: filesSvc}
+
+	tieredLogical := filepath.Join(root, "video.mp4")
+	tieredPhysical := filepath.Join(coldDir, "video.mp4")
+	if err := os.WriteFile(tieredPhysical, []byte("frames"), 0o644); err != nil {
+		t.Fatalf("write cold copy: %v", err)
+	}
+	insertHomeFile(t, dbCtx, "video.mp4", tieredLogical, root)
+	setPhysicalPath(t, dbCtx, tieredLogical, tieredPhysical)
+
+	// The watcher payload targets the removed file's own path, not the root.
+	payload, _ := marshalPayload(StepFilePayload{Path: tieredLogical})
+	err := executeMarkDeletedStep(workerCtx, jobs.StepModel{Payload: payload})
+	if err != nil && err != ErrStepSkipped {
+		t.Fatalf("executeMarkDeletedStep returned unexpected error: %v", err)
+	}
+
+	if isMarkedDeleted(t, dbCtx, tieredLogical) {
+		t.Fatalf("watcher remove event for a migrated file must not soft-delete the tiered row")
 	}
 }
 
