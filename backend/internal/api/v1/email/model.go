@@ -51,6 +51,52 @@ type TokenSet struct {
 	Expiry       time.Time `json:"expiry"`
 }
 
+// MessageStatus matches the CHECK constraint on the email_message table.
+type MessageStatus string
+
+const (
+	MsgStatusPending         MessageStatus = "pending"
+	MsgStatusPrefilteredSpam MessageStatus = "prefiltered_spam"
+	MsgStatusAnalyzed        MessageStatus = "analyzed"
+	MsgStatusFailed          MessageStatus = "failed"
+)
+
+// AuthResults holds the SPF/DKIM/DMARC verdicts (stored as JSONB). It mirrors
+// mailfetch.AuthResults but lives in the domain so the pre-filter never depends
+// on the transport layer.
+type AuthResults struct {
+	SPF   string `json:"spf"`
+	DKIM  string `json:"dkim"`
+	DMARC string `json:"dmarc"`
+}
+
+// AttachmentMeta is metadata only — content is never stored (stored as JSONB).
+type AttachmentMeta struct {
+	Filename string `json:"filename"`
+	Mime     string `json:"mime"`
+	Size     int64  `json:"size"`
+}
+
+// MessageModel mirrors a row in the email_message table. SanitizedBody is plain
+// text only; Attachments/LinkDomains are evidence, never fetched content.
+type MessageModel struct {
+	ID                int
+	AccountID         int
+	ProviderMessageID string
+	SenderName        string
+	SenderAddress     string
+	Subject           string
+	Snippet           string
+	SanitizedBody     string
+	ReceivedAt        time.Time
+	AuthResults       AuthResults
+	Attachments       []AttachmentMeta
+	LinkDomains       []string
+	PrefilterRules    []string
+	Status            MessageStatus
+	CreatedAt         time.Time
+}
+
 func encodeTokenSet(tokens TokenSet) ([]byte, error) {
 	return json.Marshal(tokens)
 }
