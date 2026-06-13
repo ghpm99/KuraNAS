@@ -202,12 +202,13 @@ func fileRowColumns() []string {
 	return []string{
 		"id", "name", "path", "parent_path", "format", "size", "updated_at", "created_at",
 		"last_interaction", "last_backup", "type", "check_sum", "deleted_at", "starred",
+		"physical_path",
 	}
 }
 
 func addFileRow(rows *sqlmock.Rows, id int, name, path string) *sqlmock.Rows {
 	now := time.Now()
-	return rows.AddRow(id, name, path, "/tmp", ".txt", 1, now, now, nil, nil, int(File), "abc", nil, false)
+	return rows.AddRow(id, name, path, "/tmp", ".txt", 1, now, now, nil, nil, int(File), "abc", nil, false, nil)
 }
 
 func TestRepositoryDecomposedListingQueries(t *testing.T) {

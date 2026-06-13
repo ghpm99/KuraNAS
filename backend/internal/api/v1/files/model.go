@@ -24,7 +24,10 @@ type FileModel struct {
 	LastBackup      sql.NullTime
 	CheckSum        string
 	Starred         bool
-	Metadata        any
+	// PhysicalPath points at the bytes when the file was tiered to cold
+	// storage; invalid means the bytes live at Path itself (hot tier).
+	PhysicalPath sql.NullString
+	Metadata     any
 }
 
 type RecentFileModel struct {
@@ -68,6 +71,10 @@ func (i *FileDto) ToModel() (FileModel, error) {
 		return fileModel, err
 	}
 	fileModel.LastBackup = lastBackup
+
+	if i.PhysicalPath != "" {
+		fileModel.PhysicalPath = sql.NullString{String: i.PhysicalPath, Valid: true}
+	}
 
 	return fileModel, nil
 }

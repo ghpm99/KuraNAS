@@ -118,3 +118,40 @@ func TestFileModelToDtoAndPaginationParsing(t *testing.T) {
 		t.Fatalf("expected metadata propagation in ParsePaginationToDto")
 	}
 }
+
+func TestResolveContentPathAndTier(t *testing.T) {
+	hot := FileDto{Path: "/ssd/docs/a.txt"}
+	if hot.ResolveContentPath() != "/ssd/docs/a.txt" {
+		t.Fatalf("hot file must resolve to its logical path")
+	}
+
+	cold := FileDto{Path: "/ssd/docs/a.txt", PhysicalPath: "/cold/docs/a.txt"}
+	if cold.ResolveContentPath() != "/cold/docs/a.txt" {
+		t.Fatalf("cold file must resolve to its physical path")
+	}
+
+	model, err := cold.ToModel()
+	if err != nil {
+		t.Fatalf("ToModel error: %v", err)
+	}
+	if !model.PhysicalPath.Valid || model.PhysicalPath.String != "/cold/docs/a.txt" {
+		t.Fatalf("expected physical path on model, got %+v", model.PhysicalPath)
+	}
+
+	roundTrip, err := model.ToDto()
+	if err != nil {
+		t.Fatalf("ToDto error: %v", err)
+	}
+	if roundTrip.Tier != TierCold || roundTrip.PhysicalPath != "/cold/docs/a.txt" {
+		t.Fatalf("expected cold tier after round trip, got %+v", roundTrip)
+	}
+
+	hotModel := FileModel{Path: "/ssd/docs/b.txt"}
+	hotDto, err := hotModel.ToDto()
+	if err != nil {
+		t.Fatalf("ToDto error: %v", err)
+	}
+	if hotDto.Tier != TierHot {
+		t.Fatalf("expected hot tier without physical path, got %q", hotDto.Tier)
+	}
+}

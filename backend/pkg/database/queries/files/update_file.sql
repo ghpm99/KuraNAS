@@ -12,6 +12,7 @@ SET
 TYPE = $10,
 checksum = $11,
 deleted_at = $12,
-starred = $13
+starred = $13,
+physical_path = $14
 WHERE
-    id = $14;
+    id = $15;
