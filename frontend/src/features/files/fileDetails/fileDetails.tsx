@@ -4,6 +4,7 @@ import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     Box,
+    Chip,
     CircularProgress,
     Divider,
     IconButton,
@@ -11,7 +12,7 @@ import {
     ListItem,
     Typography,
 } from '@mui/material';
-import { X } from 'lucide-react';
+import { Snowflake, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
@@ -63,6 +64,17 @@ const FileDetails = () => {
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
                 {t('FILE_DETAILS_SUBTITLE')}
             </Typography>
+
+            {selectedItem.tier === 'cold' ? (
+                <Chip
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                    icon={<Snowflake size={14} />}
+                    label={t('FILE_TIER_COLD')}
+                    sx={{ mt: 0.5 }}
+                />
+            ) : null}
 
             <Typography variant="overline" color="text.secondary" display="block" sx={{ mt: 2 }}>
                 {t('PROPERTIES')}

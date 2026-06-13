@@ -63,6 +63,46 @@ describe('fileDetails', () => {
         expect(screen.getByText('127.0.0.1')).toBeInTheDocument();
     });
 
+    it('shows the cold-tier badge for a migrated file', () => {
+        mockUseFile.mockReturnValue({
+            selectedItem: {
+                id: 3,
+                type: 2,
+                format: '.mp3',
+                size: 1024,
+                created_at: '2026-01-01T00:00:00Z',
+                updated_at: '2026-01-02T00:00:00Z',
+                path: '/music/cold.mp3',
+                tier: 'cold',
+            },
+            isLoadingAccessData: false,
+            recentAccessFiles: [],
+            handleSelectItem: jest.fn(),
+        });
+        render(<FileDetails />);
+        expect(screen.getByText('FILE_TIER_COLD')).toBeInTheDocument();
+    });
+
+    it('hides the cold-tier badge for a hot file', () => {
+        mockUseFile.mockReturnValue({
+            selectedItem: {
+                id: 4,
+                type: 2,
+                format: '.mp3',
+                size: 1024,
+                created_at: '2026-01-01T00:00:00Z',
+                updated_at: '2026-01-02T00:00:00Z',
+                path: '/music/hot.mp3',
+                tier: 'hot',
+            },
+            isLoadingAccessData: false,
+            recentAccessFiles: [],
+            handleSelectItem: jest.fn(),
+        });
+        render(<FileDetails />);
+        expect(screen.queryByText('FILE_TIER_COLD')).not.toBeInTheDocument();
+    });
+
     it('renders loading spinner for recent activity', () => {
         mockUseFile.mockReturnValue({
             selectedItem: {

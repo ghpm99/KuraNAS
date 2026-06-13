@@ -16,6 +16,7 @@ export type FileData = {
     check_sum: string;
     directory_content_count: number;
     starred: boolean;
+    tier?: string;
     file_children?: FileData[];
 };
 
