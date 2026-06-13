@@ -46,8 +46,8 @@ Arquivos sem interação há N dias (configurável) migram automaticamente para 
 - [x] Arquivo frio que volta a ser usado é promovido ao quente no ciclo seguinte. *(`ListPromotionCandidates` com o mesmo cutoff simétrico; promoções rodam antes das demoções no mesmo passe.)*
 - [x] Migração interrompida no meio (kill do processo) nunca perde arquivo: ou está no quente, ou no frio com `physical_path` consistente (recovery do orquestrador + ordem copiar→atualizar→remover). *(ordem testada em `TestRun_DemotionDbFailureKeepsHotCopy`; jobs `running` voltam a `queued` no `recoverInterruptedWork`.)*
 - [x] Rename/move/delete lógicos funcionam para arquivos tiered (incluindo lixeira). *(rename/move viram operação só-lógica quando `physical_path` está preenchido; delete/lixeira agem no path físico via `MoveToTrashFrom`. Testes: `TestRenameFileTieredLeavesColdBytesAndUpdatesPath`, `TestMoveFileTieredUpdatesPathWithoutHotCopy`, `TestDeleteFileFromDiskTiered{TrashesColdCopy,PermanentRemovesColdCopy}`.)*
-- [ ] UI mostra tier do arquivo e espaço por tier; parâmetros configuráveis em Settings.
-- [ ] `make ci` verde (backend + frontend).
+- [x] UI mostra tier do arquivo e espaço por tier; parâmetros configuráveis em Settings. *(`TieringSettingsSection` na tela de Settings: config + chips de uso quente/frio de `GET /tiering/usage`; badge "volume frio" no detalhe do arquivo via `tier` no `FileDto`.)*
+- [x] `make ci` verde (backend + frontend). *(backend 80,1% ≥ 80%; frontend 1272 testes, thresholds 89/90 atingidos; build + typecheck:test ok.)*
 
 ## Fora de escopo
 
