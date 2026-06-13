@@ -118,6 +118,62 @@ func TestRun_MissingSourceCountsAsFailure(t *testing.T) {
 	}
 }
 
+// A DB failure mid-promotion must keep the cold copy intact: the file is never
+// lost, only left on the cold tier.
+func TestRun_PromotionDbFailureKeepsColdCopy(t *testing.T) {
+	dir := t.TempDir()
+	hot := filepath.Join(dir, "hot", "a.txt")
+	cold := filepath.Join(dir, "cold", "a.txt")
+	writeFile(t, cold, "still cold")
+
+	setPhysical := func(int, string) error { return errors.New("db down") }
+
+	stats := Run(filepath.Join(dir, "cold"), []Promotion{
+		{FileID: 1, HotPath: hot, ColdPath: cold},
+	}, nil, setPhysical)
+
+	if stats.Promoted != 0 || stats.Failures != 1 {
+		t.Fatalf("unexpected stats %+v", stats)
+	}
+	if got, err := os.ReadFile(cold); err != nil || string(got) != "still cold" {
+		t.Fatalf("cold copy must survive a db failure, content = %q err = %v", got, err)
+	}
+}
+
+func TestValidateColdDir(t *testing.T) {
+	roots := []string{"/mnt/dados"}
+
+	if err := ValidateColdDir("", roots); err == nil {
+		t.Fatal("empty cold dir must be rejected")
+	}
+	if err := ValidateColdDir("relativo", roots); err == nil {
+		t.Fatal("relative cold dir must be rejected")
+	}
+	if err := ValidateColdDir("/mnt/dados/cold", roots); err == nil {
+		t.Fatal("cold dir inside a root must be rejected")
+	}
+	if err := ValidateColdDir("/mnt/dados", roots); err == nil {
+		t.Fatal("cold dir equal to a root must be rejected")
+	}
+	if err := ValidateColdDir("/mnt/cold", roots); err != nil {
+		t.Fatalf("valid cold dir rejected: %v", err)
+	}
+}
+
+func TestColdPathFor(t *testing.T) {
+	got, err := ColdPathFor("/mnt/cold", "Casa", "/mnt/dados", "/mnt/dados/Documentos/a.txt")
+	if err != nil {
+		t.Fatalf("ColdPathFor: %v", err)
+	}
+	if got != filepath.Join("/mnt/cold", "Casa", "Documentos", "a.txt") {
+		t.Fatalf("unexpected cold path %q", got)
+	}
+
+	if _, err := ColdPathFor("/mnt/cold", "Casa", "/mnt/dados", "/elsewhere/b.txt"); err == nil {
+		t.Fatal("a path outside the root must be rejected")
+	}
+}
+
 func TestRun_RemovesLeftoverTempFiles(t *testing.T) {
 	dir := t.TempDir()
 	coldDir := filepath.Join(dir, "cold")
