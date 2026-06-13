@@ -32,6 +32,7 @@ func scanFileRows(rows *sql.Rows) ([]FileModel, error) {
 			&file.CheckSum,
 			&file.DeletedAt,
 			&file.Starred,
+			&file.PhysicalPath,
 		); err != nil {
 			return nil, err
 		}

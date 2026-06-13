@@ -36,7 +36,28 @@ type FileDto struct {
 	CheckSum              string                    `json:"check_sum"`
 	DirectoryContentCount int                       `json:"directory_content_count"`
 	Starred               bool                      `json:"starred"`
-	Metadata              any                       `json:"metadata"`
+	// PhysicalPath is where the bytes live when the file was tiered to cold
+	// storage (empty = bytes at Path). It is a storage detail, never exposed
+	// to clients — they see only the derived Tier.
+	PhysicalPath string `json:"-"`
+	Tier         string `json:"tier"`
+	Metadata     any    `json:"metadata"`
+}
+
+const (
+	TierHot  = "hot"
+	TierCold = "cold"
+)
+
+// ResolveContentPath returns the on-disk location of the file's bytes: the
+// physical path for a file tiered to cold storage, the logical path otherwise.
+// Every flow that opens the file (blob, stream, thumbnail, checksum, metadata,
+// backup) must resolve through here instead of using Path directly.
+func (fileDto *FileDto) ResolveContentPath() string {
+	if fileDto.PhysicalPath != "" {
+		return fileDto.PhysicalPath
+	}
+	return fileDto.Path
 }
 
 func (i *FileModel) ToDto() (FileDto, error) {
@@ -58,6 +79,14 @@ func (i *FileModel) ToDto() (FileDto, error) {
 	fileDto.DeletedAt = toOptionalTime(i.DeletedAt)
 	fileDto.LastInteraction = toOptionalTime(i.LastInteraction)
 	fileDto.LastBackup = toOptionalTime(i.LastBackup)
+
+	if i.PhysicalPath.Valid {
+		fileDto.PhysicalPath = i.PhysicalPath.String
+	}
+	fileDto.Tier = TierHot
+	if fileDto.PhysicalPath != "" {
+		fileDto.Tier = TierCold
+	}
 
 	return fileDto, nil
 }

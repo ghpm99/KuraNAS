@@ -295,6 +295,7 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 		&file.CheckSum,
 		&file.DeletedAt,
 		&file.Starred,
+		&file.PhysicalPath,
 		&file.ID,
 	)
 

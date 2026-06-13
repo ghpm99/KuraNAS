@@ -125,6 +125,9 @@ var CreateStorageRootTableQuery string
 //go:embed queries/0038_create_email_account_table.sql
 var CreateEmailAccountTableQuery string
 
+//go:embed queries/0039_add_file_physical_path_column.sql
+var AddFilePhysicalPathColumnQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -171,6 +174,9 @@ func fileMigrationList() {
 
 	addMigration("0035_create_home_file_path_prefix_index",
 		defaultMigrationFunc(CreateHomeFilePathPrefixIndexQuery))
+
+	addMigration("0039_add_file_physical_path_column",
+		defaultMigrationFunc(AddFilePhysicalPathColumnQuery))
 
 }
 

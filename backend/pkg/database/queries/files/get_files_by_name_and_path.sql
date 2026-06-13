@@ -16,7 +16,8 @@ SELECT
     hf.type,
     hf.checksum,
     hf.deleted_at,
-    hf.starred
+    hf.starred,
+    hf.physical_path
 FROM
     home_file hf
 WHERE
