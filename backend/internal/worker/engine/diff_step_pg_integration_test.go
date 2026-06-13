@@ -261,6 +261,53 @@ func TestDiffStep_IndexesDirectories_Postgres(t *testing.T) {
 	}
 }
 
+// TestDiffStep_IgnoresTieredFile_Postgres is the diff half of the tiering
+// blindage (task 13): a file migrated to cold storage is absent from the hot
+// tree, and the reconciliation diff must neither re-enqueue it as new nor
+// create a second row for it — the logical row with physical_path set is the
+// single source of truth.
+func TestDiffStep_IgnoresTieredFile_Postgres(t *testing.T) {
+	dbCtx := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	truncateWorkerAndFiles(t, dbCtx)
+
+	prevEntryPoint := config.AppConfig.EntryPoint
+	t.Cleanup(func() { config.AppConfig.EntryPoint = prevEntryPoint })
+
+	root := t.TempDir()
+	coldDir := t.TempDir()
+	config.AppConfig.EntryPoint = root
+
+	filesRepo := files.NewRepository(dbCtx)
+	jobsRepo := jobs.NewRepository(dbCtx)
+	filesSvc := files.NewService(filesRepo, jobsRepo, nil)
+	orchestrator := NewJobOrchestrator(jobsRepo, nil)
+	workerCtx := &WorkerContext{FilesService: filesSvc, JobOrchestrator: orchestrator}
+
+	// A tiered file: row points at the logical path, bytes live in the cold
+	// area, nothing on disk under the scanned root.
+	tieredLogical := filepath.Join(root, "archive.zip")
+	tieredPhysical := filepath.Join(coldDir, "archive.zip")
+	if err := os.WriteFile(tieredPhysical, []byte("zip"), 0o644); err != nil {
+		t.Fatalf("write cold copy: %v", err)
+	}
+	insertHomeFile(t, dbCtx, "archive.zip", tieredLogical, root)
+	setPhysicalPath(t, dbCtx, tieredLogical, tieredPhysical)
+
+	diffPayload, _ := marshalPayload(StepFilePayload{Path: root})
+	err := executeDiffAgainstDBStep(workerCtx, jobs.StepModel{Payload: diffPayload})
+	if err != nil && err != ErrStepSkipped {
+		t.Fatalf("diff returned unexpected error: %v", err)
+	}
+
+	if jobs := countWorkerJobs(t, dbCtx); jobs != 0 {
+		t.Fatalf("expected 0 jobs — a tiered file must not be re-enqueued, got %d", jobs)
+	}
+	total, active, _ := activeRowsByPath(t, dbCtx, tieredLogical)
+	if total != 1 || active != 1 {
+		t.Fatalf("expected the single tiered row to stay active, got total=%d active=%d", total, active)
+	}
+}
+
 // TestDiffStep_SkipsTrashDir_Postgres proves the scan never indexes the trash
 // directory: trashed bytes must not resurface in the tree, the media tabs or
 // the analytics after a reconciliation scan.

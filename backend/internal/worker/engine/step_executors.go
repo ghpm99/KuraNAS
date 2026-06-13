@@ -507,7 +507,10 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 		}
 
 		for _, file := range result.Items {
-			_, statErr := os.Stat(file.Path)
+			// A tiered file legitimately has no bytes at its logical path —
+			// existence is checked where the bytes actually live, otherwise
+			// every cold file would be flagged deleted on the next scan.
+			_, statErr := os.Stat(file.ResolveContentPath())
 			missing := statErr != nil && errors.Is(statErr, os.ErrNotExist)
 
 			if missing && !file.DeletedAt.HasValue {
