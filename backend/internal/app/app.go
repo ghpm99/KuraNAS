@@ -144,6 +144,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Configuration != nil {
 		workerFileContext.AISettings = appContext.Configuration.Service
 	}
+	if appContext.Backup != nil {
+		workerFileContext.BackupService = appContext.Backup.Service
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

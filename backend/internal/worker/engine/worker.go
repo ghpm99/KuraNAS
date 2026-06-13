@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/worker/job"
 	"time"
 
+	backupapi "nas-go/api/internal/api/v1/backup"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	"nas-go/api/internal/api/v1/jobs"
@@ -45,6 +46,7 @@ type WorkerContext struct {
 	AIService               ai.ServiceInterface
 	AISettings              AISettingsReader
 	SystemEvents            systemevent.ServiceInterface
+	BackupService           backupapi.WorkerInterface
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 }
@@ -98,6 +100,7 @@ func StartWorkers(context *WorkerContext, numWorkers int) {
 
 	applog.Go("workers-scheduler", func() { startWorkersScheduler(context) })
 	applog.Go("notification-cleanup", func() { startNotificationCleanup(context) })
+	applog.Go("backup-scheduler", func() { startBackupScheduler(context) })
 	startRootWatchers(context)
 
 	if context != nil && context.SystemEvents != nil {
