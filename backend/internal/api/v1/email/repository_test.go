@@ -151,6 +151,171 @@ func TestRepositoryUpdateSyncEnabledNotFound(t *testing.T) {
 	}
 }
 
+func TestRepositoryUpdateAccountLastSyncCommits(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateAccountLastSyncQuery)).
+		WithArgs(3, now).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	if err := repo.UpdateAccountLastSync(3, now); err != nil {
+		t.Fatalf("UpdateAccountLastSync error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestRepositoryInsertMessage(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.InsertMessageQuery)).
+		WithArgs(1, "m1", "", "", "", "", "", now,
+			[]byte(`{"spf":"","dkim":"","dmarc":""}`), []byte("[]"), []byte("[]"), []byte("[]"), "pending").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
+	mock.ExpectCommit()
+
+	inserted, err := repo.InsertMessage(MessageModel{AccountID: 1, ProviderMessageID: "m1", ReceivedAt: now})
+	if err != nil || !inserted {
+		t.Fatalf("InsertMessage: inserted=%v err=%v", inserted, err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestRepositoryInsertMessageConflictIsNotInserted(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.InsertMessageQuery)).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectCommit()
+
+	inserted, err := repo.InsertMessage(MessageModel{AccountID: 1, ProviderMessageID: "dup", ReceivedAt: now})
+	if err != nil {
+		t.Fatalf("conflict must not error: %v", err)
+	}
+	if inserted {
+		t.Fatal("conflicting message must report inserted=false")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+var messageColumns = []string{
+	"id", "account_id", "sender_name", "sender_address", "subject", "snippet", "received_at", "status", "created_at",
+}
+
+func TestRepositoryListMessages(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.ListMessagesQuery)).
+		WithArgs(3, 0).
+		WillReturnRows(sqlmock.NewRows(messageColumns).
+			AddRow(1, 5, "Alice", "a@example.com", "Hi", "snippet", now, "pending", now).
+			AddRow(2, 5, "Bob", "b@example.com", "Yo", "snip2", now, "prefiltered_spam", now))
+	mock.ExpectRollback()
+
+	page, err := repo.ListMessages(1, 2)
+	if err != nil {
+		t.Fatalf("ListMessages error: %v", err)
+	}
+	if len(page.Items) != 2 || page.Items[0].SenderAddress != "a@example.com" {
+		t.Fatalf("unexpected items: %+v", page.Items)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestRepositoryListPendingMessages(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.ListPendingMessagesQuery)).
+		WithArgs(500).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_address", "subject", "auth_results", "attachment_meta", "link_domains"}).
+			AddRow(1, "a@example.com", "Hi",
+				[]byte(`{"spf":"pass","dkim":"pass","dmarc":"fail"}`),
+				[]byte(`[{"filename":"x.pdf","mime":"application/pdf","size":10}]`),
+				[]byte(`["promo.net"]`)))
+	mock.ExpectRollback()
+
+	pending, err := repo.ListPendingMessages(500)
+	if err != nil {
+		t.Fatalf("ListPendingMessages error: %v", err)
+	}
+	if len(pending) != 1 {
+		t.Fatalf("expected 1 pending, got %d", len(pending))
+	}
+	m := pending[0]
+	if m.AuthResults.DMARC != "fail" || len(m.Attachments) != 1 || m.Attachments[0].Filename != "x.pdf" {
+		t.Fatalf("unexpected decoded message: %+v", m)
+	}
+	if len(m.LinkDomains) != 1 || m.LinkDomains[0] != "promo.net" {
+		t.Fatalf("unexpected link domains: %v", m.LinkDomains)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestRepositoryUpdateMessagePrefilter(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateMessagePrefilterQuery)).
+		WithArgs(8, "prefiltered_spam", []byte(`["dmarc_fail"]`)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	if err := repo.UpdateMessagePrefilter(8, MsgStatusPrefilteredSpam, []string{"dmarc_fail"}); err != nil {
+		t.Fatalf("UpdateMessagePrefilter error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestRepositoryPurgeMessagesBefore(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+	cutoff := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(queries.PurgeMessagesBeforeQuery)).
+		WithArgs(cutoff).
+		WillReturnResult(sqlmock.NewResult(0, 4))
+	mock.ExpectCommit()
+
+	removed, err := repo.PurgeMessagesBefore(cutoff)
+	if err != nil {
+		t.Fatalf("PurgeMessagesBefore error: %v", err)
+	}
+	if removed != 4 {
+		t.Fatalf("expected 4 removed, got %d", removed)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
 func TestRepositoryDeleteAccountCommits(t *testing.T) {
 	repo, mock, db := newRepoWithMock(t)
 	defer db.Close()

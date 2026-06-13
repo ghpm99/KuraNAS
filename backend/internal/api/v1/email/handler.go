@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -130,6 +131,44 @@ func (h *Handler) MicrosoftDeviceCodeHandler(c *gin.Context) {
 
 func (h *Handler) MicrosoftDeviceCodeStatusHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, h.service.MicrosoftDeviceCodeStatus())
+}
+
+func (h *Handler) GetMessagesHandler(c *gin.Context) {
+	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
+	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	if c.IsAborted() {
+		return
+	}
+
+	messages, err := h.service.ListMessages(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_EMAIL_MESSAGES_LOAD")})
+		return
+	}
+	c.JSON(http.StatusOK, messages)
+}
+
+func (h *Handler) SyncAccountHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	jobID, err := h.service.EnqueueSync(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrAccountNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_NOT_FOUND")})
+		case errors.Is(err, ErrSyncUnavailable):
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("EMAIL_SYNC_UNAVAILABLE")})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_SYNC_ENQUEUE_FAILED")})
+		}
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"job_id": jobID, "message": i18n.GetMessage("EMAIL_SYNC_ENQUEUED")})
 }
 
 // DisabledHandler answers every e-mail route when EMAIL_TOKEN_KEY is not

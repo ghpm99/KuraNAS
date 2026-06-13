@@ -16,6 +16,7 @@ import (
 
 	"nas-go/api/pkg/crypto"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
 )
 
 // fakeRepo is an in-memory RepositoryInterface for service tests.
@@ -23,10 +24,14 @@ type fakeRepo struct {
 	mu       sync.Mutex
 	accounts map[int]AccountModel
 	nextID   int
+
+	messages   []MessageModel
+	nextMsgID  int
+	lastSyncAt map[int]time.Time
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{accounts: map[int]AccountModel{}, nextID: 1}
+	return &fakeRepo{accounts: map[int]AccountModel{}, nextID: 1, nextMsgID: 1, lastSyncAt: map[int]time.Time{}}
 }
 
 func (f *fakeRepo) GetDbContext() *database.DbContext { return nil }
@@ -105,6 +110,93 @@ func (f *fakeRepo) DeleteAccount(id int) error {
 	}
 	delete(f.accounts, id)
 	return nil
+}
+
+func (f *fakeRepo) UpdateAccountLastSync(id int, syncedAt time.Time) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	m, ok := f.accounts[id]
+	if !ok {
+		return sql.ErrNoRows
+	}
+	m.Status = StatusLinked
+	m.LastError = ""
+	m.LastSyncAt = &syncedAt
+	f.accounts[id] = m
+	f.lastSyncAt[id] = syncedAt
+	return nil
+}
+
+func (f *fakeRepo) InsertMessage(message MessageModel) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, existing := range f.messages {
+		if existing.AccountID == message.AccountID && existing.ProviderMessageID == message.ProviderMessageID {
+			return false, nil
+		}
+	}
+	message.ID = f.nextMsgID
+	f.nextMsgID++
+	if message.Status == "" {
+		message.Status = MsgStatusPending
+	}
+	f.messages = append(f.messages, message)
+	return true, nil
+}
+
+func (f *fakeRepo) ListMessages(page, pageSize int) (utils.PaginationResponse[MessageModel], error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	response := utils.PaginationResponse[MessageModel]{
+		Items:      append([]MessageModel{}, f.messages...),
+		Pagination: utils.Pagination{Page: page, PageSize: pageSize},
+	}
+	response.UpdatePagination()
+	return response, nil
+}
+
+func (f *fakeRepo) ListPendingMessages(limit int) ([]MessageModel, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var pending []MessageModel
+	for _, m := range f.messages {
+		if m.Status == MsgStatusPending {
+			pending = append(pending, m)
+		}
+		if len(pending) >= limit {
+			break
+		}
+	}
+	return pending, nil
+}
+
+func (f *fakeRepo) UpdateMessagePrefilter(id int, status MessageStatus, rules []string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for i := range f.messages {
+		if f.messages[i].ID == id {
+			f.messages[i].Status = status
+			f.messages[i].PrefilterRules = rules
+			return nil
+		}
+	}
+	return sql.ErrNoRows
+}
+
+func (f *fakeRepo) PurgeMessagesBefore(cutoff time.Time) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	kept := f.messages[:0:0]
+	removed := 0
+	for _, m := range f.messages {
+		if m.ReceivedAt.Before(cutoff) {
+			removed++
+			continue
+		}
+		kept = append(kept, m)
+	}
+	f.messages = kept
+	return removed, nil
 }
 
 func (f *fakeRepo) account(t *testing.T, id int) AccountModel {

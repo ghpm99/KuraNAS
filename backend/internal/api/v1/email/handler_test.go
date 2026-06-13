@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"nas-go/api/pkg/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +20,8 @@ type mockService struct {
 	callbackFn     func(state, code string) error
 	deviceCodeFn   func() (DeviceCodeDto, error)
 	deviceStatusFn func() DeviceCodeStatusDto
+	listMessagesFn func(page, pageSize int) (utils.PaginationResponse[MessageDto], error)
+	enqueueSyncFn  func(accountID int) (int, error)
 }
 
 func (m *mockService) ListAccounts() ([]AccountDto, error) { return m.listFn() }
@@ -32,6 +36,13 @@ func (m *mockService) HandleGoogleCallback(state string, code string) error {
 func (m *mockService) StartMicrosoftDeviceCode() (DeviceCodeDto, error) { return m.deviceCodeFn() }
 func (m *mockService) MicrosoftDeviceCodeStatus() DeviceCodeStatusDto   { return m.deviceStatusFn() }
 func (m *mockService) ValidAccessToken(accountID int) (string, error)   { return "", nil }
+func (m *mockService) ListMessages(page, pageSize int) (utils.PaginationResponse[MessageDto], error) {
+	return m.listMessagesFn(page, pageSize)
+}
+func (m *mockService) EnqueueSync(accountID int) (int, error)  { return m.enqueueSyncFn(accountID) }
+func (m *mockService) SyncEnabledAccounts() (SyncStats, error) { return SyncStats{}, nil }
+func (m *mockService) PrefilterPending() (int, error)          { return 0, nil }
+func (m *mockService) PurgeExpired() (int, error)              { return 0, nil }
 
 func newTestRouter(service ServiceInterface) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -45,6 +56,8 @@ func newTestRouter(service ServiceInterface) *gin.Engine {
 	router.GET("/email/oauth/google/callback", handler.GoogleCallbackHandler)
 	router.POST("/email/accounts/microsoft/device-code", handler.MicrosoftDeviceCodeHandler)
 	router.GET("/email/accounts/microsoft/device-code/status", handler.MicrosoftDeviceCodeStatusHandler)
+	router.POST("/email/accounts/:id/sync", handler.SyncAccountHandler)
+	router.GET("/email/messages", handler.GetMessagesHandler)
 	return router
 }
 
@@ -204,6 +217,77 @@ func TestMicrosoftDeviceCodeStatusHandler(t *testing.T) {
 	}
 	if !strings.Contains(response.Body.String(), DeviceCodePending) {
 		t.Fatalf("unexpected body: %s", response.Body.String())
+	}
+}
+
+func TestGetMessagesHandler(t *testing.T) {
+	router := newTestRouter(&mockService{
+		listMessagesFn: func(page, pageSize int) (utils.PaginationResponse[MessageDto], error) {
+			if page != 2 || pageSize != 25 {
+				t.Fatalf("unexpected paging: page=%d size=%d", page, pageSize)
+			}
+			return utils.PaginationResponse[MessageDto]{
+				Items:      []MessageDto{{ID: 7, Subject: "Hi", SenderAddress: "a@example.com"}},
+				Pagination: utils.Pagination{Page: page, PageSize: pageSize},
+			}, nil
+		},
+	})
+
+	response := performRequest(router, http.MethodGet, "/email/messages?page=2&page_size=25", "")
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", response.Code)
+	}
+	var page utils.PaginationResponse[MessageDto]
+	if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(page.Items) != 1 || page.Items[0].ID != 7 {
+		t.Fatalf("unexpected items: %+v", page.Items)
+	}
+	// The lean DTO must never carry a body field.
+	if strings.Contains(response.Body.String(), "sanitized_body") || strings.Contains(response.Body.String(), "\"body\"") {
+		t.Fatalf("listing must not include a body: %s", response.Body.String())
+	}
+}
+
+func TestSyncAccountHandlerAccepted(t *testing.T) {
+	router := newTestRouter(&mockService{
+		enqueueSyncFn: func(accountID int) (int, error) {
+			if accountID != 4 {
+				t.Fatalf("unexpected account id: %d", accountID)
+			}
+			return 42, nil
+		},
+	})
+
+	response := performRequest(router, http.MethodPost, "/email/accounts/4/sync", "")
+	if response.Code != http.StatusAccepted {
+		t.Fatalf("expected 202, got %d", response.Code)
+	}
+	if !strings.Contains(response.Body.String(), "42") {
+		t.Fatalf("expected job id in body: %s", response.Body.String())
+	}
+}
+
+func TestSyncAccountHandlerNotFound(t *testing.T) {
+	router := newTestRouter(&mockService{
+		enqueueSyncFn: func(accountID int) (int, error) { return 0, ErrAccountNotFound },
+	})
+
+	response := performRequest(router, http.MethodPost, "/email/accounts/9/sync", "")
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", response.Code)
+	}
+}
+
+func TestSyncAccountHandlerUnavailable(t *testing.T) {
+	router := newTestRouter(&mockService{
+		enqueueSyncFn: func(accountID int) (int, error) { return 0, ErrSyncUnavailable },
+	})
+
+	response := performRequest(router, http.MethodPost, "/email/accounts/1/sync", "")
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", response.Code)
 	}
 }
 

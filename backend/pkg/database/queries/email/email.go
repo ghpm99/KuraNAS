@@ -21,3 +21,21 @@ var UpdateAccountSyncEnabledQuery string
 
 //go:embed delete_account.sql
 var DeleteAccountQuery string
+
+//go:embed update_account_last_sync.sql
+var UpdateAccountLastSyncQuery string
+
+//go:embed insert_message.sql
+var InsertMessageQuery string
+
+//go:embed list_messages.sql
+var ListMessagesQuery string
+
+//go:embed list_pending_messages.sql
+var ListPendingMessagesQuery string
+
+//go:embed update_message_prefilter.sql
+var UpdateMessagePrefilterQuery string
+
+//go:embed purge_messages_before.sql
+var PurgeMessagesBeforeQuery string
