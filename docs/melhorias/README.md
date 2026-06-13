@@ -35,7 +35,7 @@ Regras invariantes:
 | 10 | [Múltiplas raízes](10-multiplas-raizes.md) | feature | P3 | 01, 05 | ✅ concluída (2026-06-12) | fundação da visão de armazenamento |
 | 11 | [Acesso WebDAV](11-acesso-webdav.md) | feature | P3 | 04 | 🚫 bloqueada | código pronto e CI verde; falta validação manual do dono (montar via Explorer/davfs2, `WEBDAV_ENABLED=true`) |
 | 14 | [Contas de e-mail + OAuth2](14-email-contas-oauth.md) | feature | P2 | 04 | 🚫 bloqueada | código pronto e CI verde; falta o dono registrar os apps OAuth (Google Cloud + Entra), configurar `EMAIL_TOKEN_KEY`/`EMAIL_*` e vincular as contas reais pela UI |
-| 15 | [Sincronização de e-mail](15-email-sync-worker.md) | feature | P2 | 14 | pendente | metadados de anexo apenas |
+| 15 | [Sincronização de e-mail](15-email-sync-worker.md) | feature | P2 | 14 | em execução | metadados de anexo apenas; 14 está código-completo (bloqueio é só registro OAuth do dono), então o worker é construído/testado com mocks httptest |
 | 16 | [Análise de e-mail por IA](16-email-analise-ia.md) | feature | P2 | 15 | pendente | LLM sem ferramentas; fail-closed |
 | 17 | [Enxugar app legado](17-app-legado-limpeza.md) | dívida técnica | P2 | — | 🚫 bloqueada | código pronto, build e testes verdes, APK −4,7%; falta só instalar/rodar no tablet (dono) |
 | 18 | [Tela kiosk do app legado](18-app-legado-kiosk.md) | feature | P2 | 16, 17 | pendente | tablet 2012: DTOs pequenos, sem WebView |
