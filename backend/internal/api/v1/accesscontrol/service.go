@@ -199,7 +199,9 @@ func (s *Service) DeleteAllowedIP(id int) error {
 }
 
 func (s *Service) IsAllowed(addr netip.Addr) bool {
-	addr = addr.Unmap()
+	// Strip any IPv4-mapping and scope id: a zoned address (fe80::1%eth0)
+	// never matches a prefix, so the zone must go before Contains.
+	addr = addr.Unmap().WithZone("")
 
 	prefixes, _ := s.allowedPrefixes.Load().([]netip.Prefix)
 	for _, prefix := range prefixes {

@@ -29,7 +29,11 @@ func NewMiddleware(service ServiceInterface) gin.HandlerFunc {
 			return
 		}
 
-		addr = addr.Unmap()
+		// Unmap normalizes IPv4-mapped IPv6; WithZone("") strips the scope id
+		// (e.g. fe80::1%eth0) that a link-local connection carries, because
+		// netip.Prefix.Contains never matches a zoned address ("Prefixes strip
+		// zones") and would otherwise block every link-local device.
+		addr = addr.Unmap().WithZone("")
 		if addr.IsLoopback() {
 			c.Next()
 			return
