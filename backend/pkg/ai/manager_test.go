@@ -52,3 +52,33 @@ func TestManagerSwapToNilDisables(t *testing.T) {
 		t.Fatalf("expected ErrServiceUnavailable after nil swap, got %v", err)
 	}
 }
+
+func TestManagerNamedLookupAndHotSwap(t *testing.T) {
+	m := NewManager(nil)
+
+	// Nothing registered yet.
+	if m.Named("ollama") != nil {
+		t.Fatalf("expected nil before any named provider is registered")
+	}
+
+	ollama := &providerMock{name: "ollama"}
+	m.SwapNamed(map[string]Provider{"ollama": ollama})
+
+	if got := m.Named("ollama"); got != ollama {
+		t.Fatalf("Named(ollama) = %v, want the registered provider", got)
+	}
+	if m.Named("anthropic") != nil {
+		t.Fatalf("expected nil for an unregistered name")
+	}
+
+	// Hot-swap: enabling anthropic and dropping ollama must reflect live.
+	anthropic := &providerMock{name: "anthropic"}
+	m.SwapNamed(map[string]Provider{"anthropic": anthropic})
+
+	if m.Named("ollama") != nil {
+		t.Fatalf("ollama should be gone after the swap")
+	}
+	if got := m.Named("anthropic"); got != anthropic {
+		t.Fatalf("Named(anthropic) = %v, want the swapped-in provider", got)
+	}
+}
