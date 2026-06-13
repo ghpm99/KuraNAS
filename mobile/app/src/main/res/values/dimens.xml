@@ -5,6 +5,12 @@
     <dimen name="spacing_md">16dp</dimen>
     <dimen name="spacing_lg">24dp</dimen>
 
+    <dimen name="text_caption">12sp</dimen>
     <dimen name="text_body">14sp</dimen>
     <dimen name="text_subtitle">16sp</dimen>
+    <dimen name="text_panel_title">18sp</dimen>
+    <dimen name="text_date">24sp</dimen>
+    <dimen name="text_clock">96sp</dimen>
+
+    <dimen name="kiosk_marker_width">4dp</dimen>
 </resources>

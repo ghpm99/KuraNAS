@@ -9,5 +9,11 @@
   "DISCOVERY_CONNECTING": "Conectando...",
   "DISCOVERY_RETRY": "Tentar novamente",
   "DISCOVERY_INVALID_ADDRESS": "Endereco invalido",
-  "DISCOVERY_SERVER_NOT_FOUND": "Servidor nao encontrado neste endereco"
+  "DISCOVERY_SERVER_NOT_FOUND": "Servidor nao encontrado neste endereco",
+  "KIOSK_NOTIFICATIONS_TITLE": "Notificacoes",
+  "KIOSK_EMAILS_TITLE": "E-mails",
+  "KIOSK_EMPTY_NOTIFICATIONS": "Sem notificacoes",
+  "KIOSK_EMPTY_EMAILS": "Sem e-mails",
+  "KIOSK_OFFLINE": "Offline",
+  "KIOSK_IMPORTANCE_HIGH": "Importante"
 }
