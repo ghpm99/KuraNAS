@@ -261,7 +261,7 @@ func NewContext(db *sql.DB) *AppContext {
 	}
 	backupContext := newBackupContext(dbContext)
 	tieringContext := newTieringContext(dbContext)
-	emailContext := newEmailContext(dbContext)
+	emailContext := newEmailContext(dbContext, jobsContext.Repository)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
 	updateService := updater.NewService()
@@ -588,7 +588,7 @@ func newTieringContext(dbContext *database.DbContext) *TieringContext {
 // EMAIL_TOKEN_KEY the whole feature refuses to turn on (returns nil; the
 // routes then answer EMAIL_FEATURE_DISABLED_NO_KEY) — tokens are never stored
 // unencrypted.
-func newEmailContext(dbContext *database.DbContext) *EmailContext {
+func newEmailContext(dbContext *database.DbContext, jobsRepository jobs.RepositoryInterface) *EmailContext {
 	key := config.AppConfig.EmailTokenKey
 	if key == "" {
 		log.Println("email: EMAIL_TOKEN_KEY not configured; e-mail integration is off")
@@ -603,10 +603,14 @@ func newEmailContext(dbContext *database.DbContext) *EmailContext {
 
 	repository := email.NewRepository(dbContext)
 	service := email.NewService(repository, cipher, email.Config{
-		GoogleClientID:     config.AppConfig.EmailGoogleClientID,
-		GoogleClientSecret: config.AppConfig.EmailGoogleClientSecret,
-		MicrosoftClientID:  config.AppConfig.EmailMSClientID,
+		GoogleClientID:        config.AppConfig.EmailGoogleClientID,
+		GoogleClientSecret:    config.AppConfig.EmailGoogleClientSecret,
+		MicrosoftClientID:     config.AppConfig.EmailMSClientID,
+		RetentionDays:         config.AppConfig.EmailRetentionDays,
+		MaxMessagesPerAccount: config.AppConfig.EmailMaxMessagesPerAccount,
 	})
+	// The jobs repository lets the manual-sync endpoint enqueue an email_sync job.
+	service.SetJobsDispatcher(jobsRepository)
 	handler := email.NewHandler(service)
 
 	return &EmailContext{

@@ -37,6 +37,9 @@ type AppConfigStruct struct {
 	EmailGoogleClientID        string
 	EmailGoogleClientSecret    string
 	EmailMSClientID            string
+	EmailSyncIntervalMinutes   int
+	EmailRetentionDays         int
+	EmailMaxMessagesPerAccount int
 }
 
 var AppConfig AppConfigStruct
@@ -73,6 +76,9 @@ func InitializeConfig() {
 		EmailGoogleClientID:        os.Getenv("EMAIL_GOOGLE_CLIENT_ID"),
 		EmailGoogleClientSecret:    os.Getenv("EMAIL_GOOGLE_CLIENT_SECRET"),
 		EmailMSClientID:            os.Getenv("EMAIL_MS_CLIENT_ID"),
+		EmailSyncIntervalMinutes:   parseEnvInt("EMAIL_SYNC_INTERVAL_MINUTES", 10),
+		EmailRetentionDays:         parseEnvInt("EMAIL_RETENTION_DAYS", 30),
+		EmailMaxMessagesPerAccount: parseEnvInt("EMAIL_MAX_MESSAGES_PER_ACCOUNT", 100),
 	}
 }
 
