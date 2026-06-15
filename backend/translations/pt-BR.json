@@ -1184,5 +1184,14 @@
 	"SETTINGS_EMAIL_AI_PROVIDER_OLLAMA": "Ollama (local)",
 	"SETTINGS_EMAIL_AI_PROVIDER_OPENAI": "OpenAI (nuvem)",
 	"SETTINGS_EMAIL_AI_PROVIDER_ANTHROPIC": "Anthropic (nuvem)",
-	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Atenção: este provedor é na nuvem. O conteúdo dos seus e-mails será enviado para um serviço externo para análise."
+	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Atenção: este provedor é na nuvem. O conteúdo dos seus e-mails será enviado para um serviço externo para análise.",
+	"ERROR_DOWNLOAD_INVALID_REQUEST": "Requisição de download inválida",
+	"ERROR_DOWNLOAD_INVALID_URL": "Informe uma URL http(s) válida",
+	"ERROR_DOWNLOAD_INVALID_PRESET": "Formato de download desconhecido",
+	"ERROR_DOWNLOAD_INVALID_TARGET": "Destino inválido: selecione uma biblioteca habilitada",
+	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "O subsistema de tarefas está indisponível",
+	"ERROR_DOWNLOAD_ENQUEUE": "Não foi possível enfileirar o download",
+	"DOWNLOAD_PRESET_AUDIO_MP3": "Áudio (MP3)",
+	"DOWNLOAD_PRESET_VIDEO_1080": "Vídeo (até 1080p, MP4)",
+	"DOWNLOAD_PRESET_VIDEO_BEST": "Vídeo (melhor qualidade, MP4)"
 }

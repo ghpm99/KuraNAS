@@ -21,6 +21,7 @@ import (
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	"nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
@@ -77,6 +78,7 @@ type AppContext struct {
 	Backup        *BackupContext
 	Tiering       *TieringContext
 	Distribution  *DistributionContext
+	Ingest        *IngestContext
 	UpdateHandler *updater.Handler
 	UpdateService *updater.Service
 }
@@ -228,6 +230,22 @@ type AssistantContext struct {
 	Repository assistant.RepositoryInterface
 }
 
+type IngestContext struct {
+	Handler *ingest.Handler
+	Service ingest.ServiceInterface
+}
+
+// newIngestContext builds the server-side media-fetch module. It only needs the
+// jobs repository: a fetch is enqueued as a background job, and the worker runs
+// yt-dlp and drops the file into a watched root.
+func newIngestContext(jobsRepository jobs.RepositoryInterface) *IngestContext {
+	service := ingest.NewService(jobsRepository)
+	return &IngestContext{
+		Handler: ingest.NewHandler(service),
+		Service: service,
+	}
+}
+
 func NewContext(db *sql.DB) *AppContext {
 
 	dbContext := database.NewDbContext(db)
@@ -264,6 +282,7 @@ func NewContext(db *sql.DB) *AppContext {
 	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
+	ingestContext := newIngestContext(jobsContext.Repository)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 	assistantAgent := buildAssistantAgent(aiService, searchContext.Service)
@@ -298,6 +317,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Backup:        backupContext,
 		Tiering:       tieringContext,
 		Distribution:  distributionContext,
+		Ingest:        ingestContext,
 		UpdateHandler: updateHandler,
 		UpdateService: updateService,
 	}

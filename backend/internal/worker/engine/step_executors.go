@@ -79,6 +79,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeEmailAnalyze] = func(step jobs.StepModel) error {
 		return executeEmailAnalyzeStep(context, step)
 	}
+	executors[job.StepTypeRemoteFetch] = func(step jobs.StepModel) error {
+		return executeRemoteFetchStep(context, step)
+	}
 
 	return executors
 }
