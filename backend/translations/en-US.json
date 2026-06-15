@@ -1193,5 +1193,10 @@
 	"ERROR_DOWNLOAD_ENQUEUE": "Could not enqueue the download",
 	"DOWNLOAD_PRESET_AUDIO_MP3": "Audio (MP3)",
 	"DOWNLOAD_PRESET_VIDEO_1080": "Video (up to 1080p, MP4)",
-	"DOWNLOAD_PRESET_VIDEO_BEST": "Video (best quality, MP4)"
+	"DOWNLOAD_PRESET_VIDEO_BEST": "Video (best quality, MP4)",
+	"ERROR_YTDLP_UPDATE": "Could not update yt-dlp",
+	"YTDLP_UPDATE_APPLIED": "yt-dlp updated successfully",
+	"YTDLP_UPDATE_NOTIF_TITLE": "yt-dlp update available",
+	"YTDLP_UPDATE_NOTIF_MESSAGE": "yt-dlp %s is available (installed: %s). Update it in Settings.",
+	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s is available to install in Settings."
 }

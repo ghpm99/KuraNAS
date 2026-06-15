@@ -41,6 +41,7 @@ type AppConfigStruct struct {
 	EmailRetentionDays         int
 	EmailMaxMessagesPerAccount int
 	YtDlpPath                  string
+	YtDlpCheckHours            int
 }
 
 var AppConfig AppConfigStruct
@@ -81,6 +82,7 @@ func InitializeConfig() {
 		EmailRetentionDays:         parseEnvInt("EMAIL_RETENTION_DAYS", 30),
 		EmailMaxMessagesPerAccount: parseEnvInt("EMAIL_MAX_MESSAGES_PER_ACCOUNT", 100),
 		YtDlpPath:                  os.Getenv("YTDLP_PATH"),
+		YtDlpCheckHours:            parseEnvInt("YTDLP_CHECK_HOURS", 24),
 	}
 }
 

@@ -14,6 +14,12 @@ type ServiceInterface interface {
 	ListPresets() []PresetDto
 }
 
+// YtDlpServiceInterface is the mocking boundary for the yt-dlp lifecycle handler.
+type YtDlpServiceInterface interface {
+	Status() YtDlpStatusDto
+	Update() error
+}
+
 // jobEnqueuer is the slice of the jobs repository the download service needs to
 // enqueue a background fetch. Declared locally so the service depends on the
 // narrowest contract and tests can fake it without the full repository.

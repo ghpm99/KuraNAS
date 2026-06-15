@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
-	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
 	"nas-go/api/internal/worker/job"
 	"nas-go/api/pkg/database"
@@ -47,16 +46,11 @@ func (s *Service) Fetch(request FetchRequestDto) (int, error) {
 		return 0, ErrJobsUnavailable
 	}
 
-	binary := strings.TrimSpace(config.AppConfig.YtDlpPath)
-	if binary == "" {
-		binary = "yt-dlp"
-	}
-
 	stepPayload, err := json.Marshal(RemoteFetchStepPayload{
 		URL:       rawURL,
 		Preset:    request.Preset,
 		OutputDir: outputDir,
-		Binary:    binary,
+		Binary:    resolveYtDlpBinary(),
 	})
 	if err != nil {
 		return 0, err
