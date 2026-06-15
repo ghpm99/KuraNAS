@@ -81,6 +81,18 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       sendResponse(handlers.getHybridStatus(msg.tabId));
       return false;
 
+    case "ingest_fetch":
+      handlers.submitFetch(msg.payload).then(sendResponse);
+      return true;
+
+    case "ingest_targets":
+      handlers.listIngestTargets().then(sendResponse);
+      return true;
+
+    case "ingest_presets":
+      handlers.listIngestPresets().then(sendResponse);
+      return true;
+
     default:
       return false;
   }

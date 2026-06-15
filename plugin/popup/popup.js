@@ -18,6 +18,12 @@
   const apiUrlInput = $("#apiUrl");
   const btnSaveSettings = $("#btnSaveSettings");
   const detectedTitleEl = $("#detectedTitle");
+  const fetchUrlInput = $("#fetchUrl");
+  const fetchPresetSelect = $("#fetchPreset");
+  const fetchTargetSelect = $("#fetchTarget");
+  const fetchSubfolderInput = $("#fetchSubfolder");
+  const btnFetch = $("#btnFetch");
+  const fetchStatusEl = $("#fetchStatus");
 
   let currentTabId = null;
 
@@ -37,6 +43,10 @@
     loadMedia();
     loadHybridStatus();
     loadDetectedTitle();
+    loadFetchOptions();
+    if (tab.url && /^https?:/i.test(tab.url)) {
+      fetchUrlInput.value = tab.url;
+    }
 
     // Ask content script to re-detect title (in case it wasn't detected yet)
     chrome.tabs.sendMessage(currentTabId, { action: "request_title" }).catch(() => {});
@@ -366,6 +376,68 @@
   btnSaveSettings.addEventListener("click", () => {
     const url = apiUrlInput.value.trim();
     chrome.storage.sync.set({ apiBaseUrl: url });
+  });
+
+  // -----------------------------------------------------------------------
+  // Server-side fetch (yt-dlp on the KuraNAS server)
+  // -----------------------------------------------------------------------
+
+  function loadFetchOptions() {
+    chrome.runtime.sendMessage({ action: "ingest_presets" }, (response) => {
+      if (response && response.ok) {
+        fillSelect(fetchPresetSelect, response.presets, (p) => p.key, (p) => p.label);
+      }
+    });
+    chrome.runtime.sendMessage({ action: "ingest_targets" }, (response) => {
+      if (response && response.ok) {
+        fillSelect(fetchTargetSelect, response.targets, (t) => t.path, (t) => t.label || t.path);
+      }
+    });
+  }
+
+  function fillSelect(selectEl, items, valueOf, labelOf) {
+    selectEl.innerHTML = "";
+    (items || []).forEach((item) => {
+      const option = document.createElement("option");
+      option.value = valueOf(item);
+      option.textContent = labelOf(item);
+      selectEl.appendChild(option);
+    });
+  }
+
+  function setFetchStatus(text, kind) {
+    fetchStatusEl.textContent = text;
+    fetchStatusEl.className = "fetch-status" + (kind ? ` fetch-status-${kind}` : "");
+  }
+
+  btnFetch.addEventListener("click", () => {
+    const url = fetchUrlInput.value.trim();
+    const preset = fetchPresetSelect.value;
+    const targetRoot = fetchTargetSelect.value;
+    const subfolder = fetchSubfolderInput.value.trim();
+
+    if (!url) {
+      setFetchStatus("Informe uma URL.", "error");
+      return;
+    }
+    if (!preset || !targetRoot) {
+      setFetchStatus("Selecione formato e biblioteca.", "error");
+      return;
+    }
+
+    btnFetch.disabled = true;
+    setFetchStatus("Enviando…", "pending");
+    chrome.runtime.sendMessage(
+      { action: "ingest_fetch", payload: { url, preset, targetRoot, subfolder } },
+      (response) => {
+        btnFetch.disabled = false;
+        if (response && response.ok) {
+          setFetchStatus(`Enfileirado (job #${response.jobId}).`, "success");
+        } else {
+          setFetchStatus((response && response.error) || "Falha ao enviar.", "error");
+        }
+      }
+    );
   });
 
   // Real-time updates

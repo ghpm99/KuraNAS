@@ -22,6 +22,7 @@ import { createMediaDetectionManager } from "./src/background/media-detection.js
 import { routeRuntimeMessage } from "./src/background/message-router.js";
 import { createUploader } from "./src/background/uploader.js";
 import { createDownloader } from "./src/background/downloader.js";
+import { createFetcher } from "./src/background/fetcher.js";
 import { createHybridStateMachine } from "./src/background/hybrid-state.js";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,13 @@ const {
   downloadDirect,
   downloadHLS,
 } = downloader;
+
+const fetcher = createFetcher({ getApiBaseUrl });
+const {
+  submitFetch,
+  listTargets: listIngestTargets,
+  listPresets: listIngestPresets,
+} = fetcher;
 
 const hybridStateMachine = createHybridStateMachine({
   hybridStates,
@@ -125,7 +133,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     handleOffscreenStopped,
     handleSaveRecordingBlob,
     handleTitleDetected,
+    listIngestPresets,
+    listIngestTargets,
     stopHybridRecording,
+    submitFetch,
     uploadBlobCapture,
   }
 ));

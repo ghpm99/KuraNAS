@@ -312,3 +312,66 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Server-side fetch panel */
+.fetch-panel {
+  padding: 10px 12px;
+  margin: 8px 10px;
+  background: #2a2a3e;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fetch-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: #a0d0ff;
+}
+
+.fetch-row {
+  display: flex;
+  gap: 6px;
+}
+
+.fetch-input,
+.fetch-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #3a3a5e;
+  border-radius: 4px;
+  background: #1e1e2e;
+  color: #e0e0e0;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.fetch-select {
+  flex: 1;
+}
+
+.btn-fetch {
+  background: #4a6fa5;
+  color: #fff;
+}
+
+.btn-fetch:hover {
+  background: #5a8fca;
+}
+
+.btn-fetch:disabled {
+  background: #3a3a5e;
+  color: #999;
+  cursor: default;
+}
+
+.fetch-status {
+  font-size: 11px;
+  min-height: 14px;
+  color: #999;
+}
+
+.fetch-status-success { color: #8fbc8f; }
+.fetch-status-error { color: #ff6b6b; }
+.fetch-status-pending { color: #ffd700; }
