@@ -231,18 +231,26 @@ type AssistantContext struct {
 }
 
 type IngestContext struct {
-	Handler *ingest.Handler
-	Service ingest.ServiceInterface
+	Handler      *ingest.Handler
+	Service      ingest.ServiceInterface
+	YtDlp        *ingest.YtDlpService
+	YtDlpHandler *ingest.YtDlpHandler
+	Notifier     ingest.Notifier
 }
 
-// newIngestContext builds the server-side media-fetch module. It only needs the
-// jobs repository: a fetch is enqueued as a background job, and the worker runs
-// yt-dlp and drops the file into a watched root.
-func newIngestContext(jobsRepository jobs.RepositoryInterface) *IngestContext {
+// newIngestContext builds the server-side media-fetch module: the URL fetch
+// (enqueued as a background yt-dlp job) plus the yt-dlp binary lifecycle
+// (version status, verified manual update, and the update-available checker
+// that raises a notification).
+func newIngestContext(jobsRepository jobs.RepositoryInterface, notifier ingest.Notifier) *IngestContext {
 	service := ingest.NewService(jobsRepository)
+	ytdlp := ingest.NewYtDlpService()
 	return &IngestContext{
-		Handler: ingest.NewHandler(service),
-		Service: service,
+		Handler:      ingest.NewHandler(service),
+		Service:      service,
+		YtDlp:        ytdlp,
+		YtDlpHandler: ingest.NewYtDlpHandler(ytdlp),
+		Notifier:     notifier,
 	}
 }
 
@@ -282,7 +290,7 @@ func NewContext(db *sql.DB) *AppContext {
 	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
-	ingestContext := newIngestContext(jobsContext.Repository)
+	ingestContext := newIngestContext(jobsContext.Repository, notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 	assistantAgent := buildAssistantAgent(aiService, searchContext.Service)

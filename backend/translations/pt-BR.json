@@ -1193,5 +1193,10 @@
 	"ERROR_DOWNLOAD_ENQUEUE": "Não foi possível enfileirar o download",
 	"DOWNLOAD_PRESET_AUDIO_MP3": "Áudio (MP3)",
 	"DOWNLOAD_PRESET_VIDEO_1080": "Vídeo (até 1080p, MP4)",
-	"DOWNLOAD_PRESET_VIDEO_BEST": "Vídeo (melhor qualidade, MP4)"
+	"DOWNLOAD_PRESET_VIDEO_BEST": "Vídeo (melhor qualidade, MP4)",
+	"ERROR_YTDLP_UPDATE": "Não foi possível atualizar o yt-dlp",
+	"YTDLP_UPDATE_APPLIED": "yt-dlp atualizado com sucesso",
+	"YTDLP_UPDATE_NOTIF_TITLE": "Atualização do yt-dlp disponível",
+	"YTDLP_UPDATE_NOTIF_MESSAGE": "Versão %s do yt-dlp disponível (instalada: %s). Atualize em Configurações.",
+	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s disponível para instalação em Configurações."
 }

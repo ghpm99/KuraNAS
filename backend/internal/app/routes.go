@@ -481,6 +481,11 @@ func RegisterIngestRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.POST("/fetch", context.Ingest.Handler.FetchHandler)
 	group.GET("/targets", context.Ingest.Handler.GetTargetsHandler)
 	group.GET("/presets", context.Ingest.Handler.GetPresetsHandler)
+
+	if context.Ingest.YtDlpHandler != nil {
+		group.GET("/ytdlp/status", context.Ingest.YtDlpHandler.GetStatusHandler)
+		group.POST("/ytdlp/update", context.Ingest.YtDlpHandler.UpdateHandler)
+	}
 }
 
 func RegisterHealthRoutes(router *gin.RouterGroup) {

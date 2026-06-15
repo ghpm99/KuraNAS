@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	ingest "nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/api/v1/trash"
@@ -182,6 +183,7 @@ func InitializeApp() (*Application, error) {
 	}
 
 	startOllamaDaemon(appContext, systemEvents)
+	startYtDlpUpdateChecker(appContext)
 
 	return &Application{
 		Router:        router,
@@ -214,6 +216,42 @@ func startOllamaDaemon(appContext *AppContext, systemEvents systemevent.ServiceI
 		}
 		applyOllamaOutcome(systemEvents, outcome)
 	})
+}
+
+// startYtDlpUpdateChecker launches a low-frequency background loop that only
+// *checks* for a newer yt-dlp and raises a grouped notification — it never
+// downloads or applies anything (applying is a human action in Settings). It
+// degrades gracefully like the other boot goroutines: any failure is logged and
+// the server keeps running. A missing notifier or non-positive interval is a
+// no-op.
+func startYtDlpUpdateChecker(appContext *AppContext) {
+	if appContext == nil || appContext.Ingest == nil || appContext.Ingest.YtDlp == nil || appContext.Ingest.Notifier == nil {
+		return
+	}
+	hours := config.AppConfig.YtDlpCheckHours
+	if hours <= 0 {
+		return
+	}
+	service := appContext.Ingest.YtDlp
+	notifier := appContext.Ingest.Notifier
+
+	applog.Go("ytdlp-update-checker", func() {
+		// Small initial delay so boot is never slowed by a network call.
+		time.Sleep(1 * time.Minute)
+		runYtDlpCheck(service, notifier)
+
+		ticker := time.NewTicker(time.Duration(hours) * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			runYtDlpCheck(service, notifier)
+		}
+	})
+}
+
+func runYtDlpCheck(service *ingest.YtDlpService, notifier ingest.Notifier) {
+	if _, err := service.CheckAndNotify(notifier); err != nil {
+		applog.Warn("ytdlp update check failed", "error", err.Error())
+	}
 }
 
 // applyOllamaOutcome maps a daemon lifecycle outcome to logs and observability
