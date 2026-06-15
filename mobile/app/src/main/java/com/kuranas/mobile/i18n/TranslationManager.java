@@ -146,7 +146,12 @@ public final class TranslationManager {
     }
 
     private void parseTranslations(String json) throws JSONException {
-        Map<String, String> result = new HashMap<String, String>();
+        // Merge over what's already loaded (the bundled local fallback loads first):
+        // remote values override shared keys, but client-only keys such as the kiosk
+        // strings survive even when talking to an older backend that lacks them.
+        // Without this, a successful remote load would wipe those keys and the UI
+        // would regress to showing raw term names (e.g. "KIOSK_OFFLINE").
+        Map<String, String> result = new HashMap<String, String>(translations);
         JSONObject root = new JSONObject(json);
         flattenJson("", root, result);
         translations = result;
