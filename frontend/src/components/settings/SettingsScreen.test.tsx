@@ -52,6 +52,10 @@ jest.mock('./TieringSettingsSection', () => ({
 	__esModule: true,
 	default: () => <div>Tiering Section</div>,
 }));
+jest.mock('./YtDlpSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>yt-dlp Section</div>,
+}));
 
 const createScreenState = (overrides: Record<string, any> = {}) => ({
     t: (key: string, params?: Record<string, string>) => {
