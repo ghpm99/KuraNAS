@@ -33,6 +33,28 @@
 
       <div class="detected-title-bar hidden" id="detectedTitle"></div>
 
+      <section class="fetch-panel" id="fetchPanel">
+        <h2 class="fetch-title">Salvar no KuraNAS</h2>
+        <input
+          type="text"
+          id="fetchUrl"
+          class="fetch-input"
+          placeholder="URL do vídeo/áudio"
+        />
+        <div class="fetch-row">
+          <select id="fetchPreset" class="fetch-select"></select>
+          <select id="fetchTarget" class="fetch-select"></select>
+        </div>
+        <input
+          type="text"
+          id="fetchSubfolder"
+          class="fetch-input"
+          placeholder="Subpasta (opcional)"
+        />
+        <button id="btnFetch" class="btn btn-fetch">Salvar no servidor</button>
+        <span id="fetchStatus" class="fetch-status"></span>
+      </section>
+
     <section id="mediaList" class="media-list">
         <p class="empty-state" id="emptyState">
           Nenhuma midia detectada nesta aba.
