@@ -22,7 +22,8 @@
             android:layout_height="wrap_content"
             android:textSize="@dimen/text_clock"
             android:textColor="@color/on_primary"
-            android:fontFamily="sans-serif-light"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
             android:text="@string/loading" />
 
         <TextView
@@ -31,6 +32,15 @@
             android:layout_height="wrap_content"
             android:textSize="@dimen/text_date"
             android:textColor="@color/on_surface_secondary"
+            android:layout_marginTop="@dimen/spacing_xs" />
+
+        <TextView
+            android:id="@+id/date_full_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_subtitle"
+            android:textColor="@color/on_surface_secondary"
+            android:fontFamily="monospace"
             android:layout_marginTop="@dimen/spacing_xs" />
 
     </LinearLayout>
