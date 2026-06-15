@@ -1,5 +1,6 @@
 package com.kuranas.mobile.presentation.home;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +18,7 @@ import com.kuranas.mobile.domain.error.AppError;
 import com.kuranas.mobile.domain.model.EmailItem;
 import com.kuranas.mobile.domain.model.NotificationItem;
 import com.kuranas.mobile.infra.http.ApiCallback;
+import com.kuranas.mobile.infra.logging.AppLogger;
 import com.kuranas.mobile.presentation.base.BaseFragment;
 
 import java.text.SimpleDateFormat;
@@ -31,7 +33,10 @@ import java.util.Locale;
  */
 public class HomeFragment extends BaseFragment {
 
-    private static final long CLOCK_INTERVAL_MS = 1000;
+    private static final String LOG_TAG = "HomeFragment";
+    // Terminal-style monospace for the clock; XML keeps a system-monospace fallback.
+    private static final String CLOCK_FONT_ASSET = "fonts/JetBrainsMono-Bold.ttf";
+    private static final long MINUTE_MS = 60_000;
 
     private static final int PAGE_SIZE = 8;
     private static final long NOTIF_BASE_MS = 60_000;
@@ -42,6 +47,7 @@ public class HomeFragment extends BaseFragment {
 
     private TextView clockText;
     private TextView dateText;
+    private TextView dateFullText;
 
     private TextView notificationsOffline;
     private TextView emailsOffline;
@@ -61,7 +67,8 @@ public class HomeFragment extends BaseFragment {
         @Override
         public void run() {
             updateClock();
-            handler.postDelayed(this, CLOCK_INTERVAL_MS);
+            // Only minutes are shown now — wake on the minute boundary, not every second.
+            handler.postDelayed(this, msUntilNextMinute());
         }
     };
 
@@ -85,6 +92,8 @@ public class HomeFragment extends BaseFragment {
 
         clockText = (TextView) root.findViewById(R.id.clock_text);
         dateText = (TextView) root.findViewById(R.id.date_text);
+        dateFullText = (TextView) root.findViewById(R.id.date_full_text);
+        applyTerminalFont(clockText, dateFullText);
 
         notificationsOffline = (TextView) root.findViewById(R.id.notifications_offline);
         emailsOffline = (TextView) root.findViewById(R.id.emails_offline);
@@ -122,7 +131,7 @@ public class HomeFragment extends BaseFragment {
         active = true;
 
         updateClock();
-        handler.postDelayed(clockRunnable, CLOCK_INTERVAL_MS);
+        handler.postDelayed(clockRunnable, msUntilNextMinute());
 
         // Fetch both promptly, but stagger so the two requests don't coincide.
         handler.post(notificationPoll);
@@ -138,10 +147,30 @@ public class HomeFragment extends BaseFragment {
 
     private void updateClock() {
         Calendar now = Calendar.getInstance();
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d 'de' MMMM", new Locale("pt", "BR"));
+        SimpleDateFormat fullDateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         clockText.setText(timeFormat.format(now.getTime()));
         dateText.setText(dateFormat.format(now.getTime()));
+        dateFullText.setText(fullDateFormat.format(now.getTime()));
+    }
+
+    /** Milliseconds until the next minute boundary, so the clock ticks exactly when it changes. */
+    private long msUntilNextMinute() {
+        long remainder = MINUTE_MS - (System.currentTimeMillis() % MINUTE_MS);
+        return remainder <= 0 ? MINUTE_MS : remainder;
+    }
+
+    private void applyTerminalFont(TextView... views) {
+        try {
+            Typeface font = Typeface.createFromAsset(requireContext().getAssets(), CLOCK_FONT_ASSET);
+            for (TextView view : views) {
+                view.setTypeface(font);
+            }
+        } catch (RuntimeException e) {
+            // Bundled font missing/corrupt — fall back to the XML system monospace.
+            AppLogger.w(LOG_TAG, "Failed to load terminal clock font, using fallback");
+        }
     }
 
     private void pollNotifications() {
