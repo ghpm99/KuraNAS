@@ -19,6 +19,7 @@ import EmailSettingsSection from './EmailSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
 import TieringSettingsSection from './TieringSettingsSection';
+import YtDlpSettingsSection from './YtDlpSettingsSection';
 import useSettingsScreen from './useSettingsScreen';
 import styles from './SettingsScreen.module.css';
 
@@ -85,6 +86,8 @@ const SettingsScreen = () => {
                 <LibrarySettingsSection className={styles.panel} />
 
                 <AIProvidersSettingsSection className={styles.panel} />
+
+                <YtDlpSettingsSection className={styles.panel} />
 
                 <EmailSettingsSection className={styles.panel} />
 

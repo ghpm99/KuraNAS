@@ -1198,5 +1198,16 @@
 	"YTDLP_UPDATE_APPLIED": "yt-dlp updated successfully",
 	"YTDLP_UPDATE_NOTIF_TITLE": "yt-dlp update available",
 	"YTDLP_UPDATE_NOTIF_MESSAGE": "yt-dlp %s is available (installed: %s). Update it in Settings.",
-	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s is available to install in Settings."
+	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s is available to install in Settings.",
+	"SETTINGS_YTDLP_TITLE": "yt-dlp",
+	"SETTINGS_YTDLP_DESCRIPTION": "Tool used to download media from URLs on the server. Updates are manual and checksum-verified.",
+	"SETTINGS_YTDLP_LOAD_ERROR": "Could not check the yt-dlp version.",
+	"SETTINGS_YTDLP_CURRENT": "Current version",
+	"SETTINGS_YTDLP_LATEST": "Latest version",
+	"SETTINGS_YTDLP_NOT_INSTALLED": "Not installed",
+	"SETTINGS_YTDLP_UPDATE_AVAILABLE": "Update available",
+	"SETTINGS_YTDLP_UP_TO_DATE": "Up to date",
+	"SETTINGS_YTDLP_UPDATE_BUTTON": "Update",
+	"SETTINGS_YTDLP_UPDATING": "Updating…",
+	"SETTINGS_YTDLP_RELEASE_NOTES": "Release notes"
 }

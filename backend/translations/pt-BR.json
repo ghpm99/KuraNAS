@@ -1198,5 +1198,16 @@
 	"YTDLP_UPDATE_APPLIED": "yt-dlp atualizado com sucesso",
 	"YTDLP_UPDATE_NOTIF_TITLE": "Atualização do yt-dlp disponível",
 	"YTDLP_UPDATE_NOTIF_MESSAGE": "Versão %s do yt-dlp disponível (instalada: %s). Atualize em Configurações.",
-	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s disponível para instalação em Configurações."
+	"YTDLP_INSTALL_NOTIF_MESSAGE": "yt-dlp %s disponível para instalação em Configurações.",
+	"SETTINGS_YTDLP_TITLE": "yt-dlp",
+	"SETTINGS_YTDLP_DESCRIPTION": "Ferramenta usada para baixar mídia de URLs no servidor. A atualização é manual e verificada por checksum.",
+	"SETTINGS_YTDLP_LOAD_ERROR": "Não foi possível verificar a versão do yt-dlp.",
+	"SETTINGS_YTDLP_CURRENT": "Versão atual",
+	"SETTINGS_YTDLP_LATEST": "Última versão",
+	"SETTINGS_YTDLP_NOT_INSTALLED": "Não instalado",
+	"SETTINGS_YTDLP_UPDATE_AVAILABLE": "Atualização disponível",
+	"SETTINGS_YTDLP_UP_TO_DATE": "Atualizado",
+	"SETTINGS_YTDLP_UPDATE_BUTTON": "Atualizar",
+	"SETTINGS_YTDLP_UPDATING": "Atualizando…",
+	"SETTINGS_YTDLP_RELEASE_NOTES": "Notas da versão"
 }
