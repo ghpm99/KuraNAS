@@ -1,0 +1,55 @@
+package ingest
+
+// preset is a fixed, closed mapping from a UI-facing key to the yt-dlp format
+// arguments it expands into. The map is intentionally small: a download feature
+// that exposes arbitrary yt-dlp flags is a footgun. The label is an i18n key the
+// client resolves, never a literal shown as-is.
+type preset struct {
+	Key   string
+	Label string // i18n key
+	Args  []string
+}
+
+// presets is the source of truth for the allowed download formats. Order is the
+// display order in the client dropdown.
+var presets = []preset{
+	{
+		Key:   "audio_mp3",
+		Label: "DOWNLOAD_PRESET_AUDIO_MP3",
+		Args:  []string{"-x", "--audio-format", "mp3", "--embed-metadata", "--embed-thumbnail"},
+	},
+	{
+		Key:   "video_1080",
+		Label: "DOWNLOAD_PRESET_VIDEO_1080",
+		Args:  []string{"-f", "bv*[height<=1080]+ba/b[height<=1080]", "--merge-output-format", "mp4", "--embed-metadata"},
+	},
+	{
+		Key:   "video_best",
+		Label: "DOWNLOAD_PRESET_VIDEO_BEST",
+		Args:  []string{"-f", "bv*+ba/b", "--merge-output-format", "mp4", "--embed-metadata"},
+	},
+}
+
+// ResolvePreset returns the format arguments for a preset key. The second result
+// is false when the key is unknown, so callers reject it instead of running an
+// unconfigured download.
+func ResolvePreset(key string) ([]string, bool) {
+	for _, p := range presets {
+		if p.Key == key {
+			// Copy so callers cannot mutate the shared slice.
+			args := make([]string, len(p.Args))
+			copy(args, p.Args)
+			return args, true
+		}
+	}
+	return nil, false
+}
+
+// availablePresets returns the selectable presets as transport DTOs.
+func availablePresets() []PresetDto {
+	out := make([]PresetDto, 0, len(presets))
+	for _, p := range presets {
+		out = append(out, PresetDto{Key: p.Key, Label: p.Label})
+	}
+	return out
+}

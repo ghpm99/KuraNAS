@@ -15,11 +15,12 @@ const (
 	JobTypeBackupRun         JobType = "backup_run"
 	JobTypeTierMigration     JobType = "tier_migration"
 	JobTypeEmailSync         JobType = "email_sync"
+	JobTypeRemoteFetch       JobType = "remote_fetch"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch:
 		return true
 	default:
 		return false
@@ -45,11 +46,12 @@ const (
 	StepTypeEmailFetch        StepType = "email_fetch"
 	StepTypeEmailPrefilter    StepType = "email_prefilter"
 	StepTypeEmailAnalyze      StepType = "email_analyze"
+	StepTypeRemoteFetch       StepType = "remote_fetch"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch:
 		return true
 	default:
 		return false

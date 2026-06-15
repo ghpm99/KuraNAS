@@ -43,6 +43,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterWatchFoldersRoutes(routesV1, context)
 	RegisterTakeoutRoutes(routesV1, context)
 	RegisterDistributionRoutes(routesV1, context)
+	RegisterIngestRoutes(routesV1, context)
 	RegisterHealthRoutes(routesV1)
 	RegisterAccessControlRoutes(routesV1, context)
 	RegisterTrashRoutes(routesV1, context)
@@ -466,6 +467,20 @@ func RegisterDistributionRoutes(router *gin.RouterGroup, context *AppContext) {
 	downloads.GET("", context.Distribution.Handler.GetDownloadsHandler)
 	downloads.GET("/", context.Distribution.Handler.GetDownloadsHandler)
 	downloads.GET("/:id", context.Distribution.Handler.DownloadFileHandler)
+}
+
+// RegisterIngestRoutes mounts the server-side media-fetch feature: pull a URL
+// with yt-dlp into a watched library root. Mounted under /ingest because
+// /downloads is owned by the distribution feature (pre-built client apps).
+func RegisterIngestRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Ingest == nil || context.Ingest.Handler == nil {
+		return
+	}
+
+	group := router.Group("/ingest")
+	group.POST("/fetch", context.Ingest.Handler.FetchHandler)
+	group.GET("/targets", context.Ingest.Handler.GetTargetsHandler)
+	group.GET("/presets", context.Ingest.Handler.GetPresetsHandler)
 }
 
 func RegisterHealthRoutes(router *gin.RouterGroup) {

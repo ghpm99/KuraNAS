@@ -1184,5 +1184,14 @@
 	"SETTINGS_EMAIL_AI_PROVIDER_OLLAMA": "Ollama (local)",
 	"SETTINGS_EMAIL_AI_PROVIDER_OPENAI": "OpenAI (cloud)",
 	"SETTINGS_EMAIL_AI_PROVIDER_ANTHROPIC": "Anthropic (cloud)",
-	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Warning: this is a cloud provider. Your e-mail content will be sent to an external service for analysis."
+	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Warning: this is a cloud provider. Your e-mail content will be sent to an external service for analysis.",
+	"ERROR_DOWNLOAD_INVALID_REQUEST": "Invalid download request",
+	"ERROR_DOWNLOAD_INVALID_URL": "A valid http(s) URL is required",
+	"ERROR_DOWNLOAD_INVALID_PRESET": "Unknown download format",
+	"ERROR_DOWNLOAD_INVALID_TARGET": "Invalid destination: select an enabled library",
+	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "The jobs subsystem is unavailable",
+	"ERROR_DOWNLOAD_ENQUEUE": "Could not enqueue the download",
+	"DOWNLOAD_PRESET_AUDIO_MP3": "Audio (MP3)",
+	"DOWNLOAD_PRESET_VIDEO_1080": "Video (up to 1080p, MP4)",
+	"DOWNLOAD_PRESET_VIDEO_BEST": "Video (best quality, MP4)"
 }
