@@ -41,7 +41,7 @@ Regras invariantes:
 | 18 | [Tela kiosk do app legado](18-app-legado-kiosk.md) | feature | P2 | 16, 17 | 🚫 bloqueada | código pronto, `assembleDebug`+`testDebugUnitTest` verdes; faltam só os 2 critérios do ambiente do dono — medir payload < 4 KB no servidor real e rodar no Galaxy Tab 2 |
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | ✅ concluída (2026-06-12) | retenção ≠ espelho; segunda cópia (HD externo) documentada no README, fica com o SO |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | ✅ concluída (2026-06-13) | path lógico × físico; job tier_migration + operações tiered + UI; `make ci` verde |
-| 19 | [Captura inteligente de streaming](19-captura-inteligente-de-streaming.md) | feature | P3 | — | em execução | Fase 2 da ingestão; Fase 1 (`ingest` + `/ingest/fetch` via yt-dlp) já em `develop`. Captura de saída (analog hole) com máquina de estados por episódio; **sem decrypt de DRM** |
+| 19 | [Captura inteligente de streaming](19-captura-inteligente-de-streaming.md) | feature | P3 | — | 🚫 bloqueada | código pronto, `npm test` (plugin) + `make ci-backend` verdes. Falta validação do dono no navegador real: (1) confirmar que `tabCapture` na cobaia (Crunchyroll) **não** entrega frame preto — se entregar, a peça de captura migra para nível de SO (analog hole continua, ver Riscos); (2) verificar in-loco arma-em-fullscreen / finaliza-no-fim / autoplay→arquivo-novo / retomada→arquivo-único. Máquina de estados + idempotência por `episode_key` + adapter Crunchyroll já cobertos por testes; **sem decrypt de DRM** |
 
 Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
 
