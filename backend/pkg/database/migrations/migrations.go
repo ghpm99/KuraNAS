@@ -184,12 +184,6 @@ func fileMigrationList() {
 	addMigration("0039_add_file_physical_path_column",
 		defaultMigrationFunc(AddFilePhysicalPathColumnQuery))
 
-	addMigration("0040_create_email_message_table",
-		defaultMigrationFunc(CreateEmailMessageTableQuery))
-
-	addMigration("0041_create_email_analysis_table",
-		defaultMigrationFunc(CreateEmailAnalysisTableQuery))
-
 }
 
 func diaryMigrationList() {
@@ -305,4 +299,15 @@ func storageRootsMigrationList() {
 func emailMigrationList() {
 	addMigration("0038_create_email_account_table",
 		defaultMigrationFunc(CreateEmailAccountTableQuery))
+
+	// email_message has a FK to email_account, and email_analysis a FK to
+	// email_message. Declaring the prerequisites keeps them correctly ordered
+	// even though they are registered after lower-numbered file migrations.
+	addMigrationRequiring("0040_create_email_message_table",
+		[]string{"0038_create_email_account_table"},
+		defaultMigrationFunc(CreateEmailMessageTableQuery))
+
+	addMigrationRequiring("0041_create_email_analysis_table",
+		[]string{"0040_create_email_message_table"},
+		defaultMigrationFunc(CreateEmailAnalysisTableQuery))
 }
