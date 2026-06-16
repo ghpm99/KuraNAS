@@ -18,6 +18,14 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       handlers.handleHybridVideoState(tabId, msg.snapshot);
       return false;
 
+    case "episode_state":
+      handlers.handleEpisodeState(tabId, msg.snapshot);
+      return false;
+
+    case "get_capture_session_status":
+      sendResponse(handlers.getCaptureSessionStatus(msg.tabId));
+      return false;
+
     case "get_media":
       sendResponse({ media: handlers.getDetectedMedia(msg.tabId) });
       return false;

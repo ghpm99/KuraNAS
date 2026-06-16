@@ -52,15 +52,15 @@ Entregar com **um serviço cobaia** (sugestão: Crunchyroll, citado pelo dono) �
 
 ## Critérios de aceite
 
-- [ ] Com o vídeo em tela cheia tocando, a gravação **inicia sozinha**; sem fullscreen, não grava (frames limpos, sem controles).
-- [ ] Episódio chega ao fim (ou o dono dorme e o player para no fim) → a gravação **finaliza** e volta a ocioso, **sem** cortar conteúdo antes do fim.
-- [ ] Autoplay do próximo episódio → **arquivo novo** separado, sem ação manual.
-- [ ] Gravação interrompida e retomada **no mesmo episódio** → **um único arquivo** (sessão idempotente por `episode_key`), nunca dois.
-- [ ] Episódio já arquivado por completo não é regravado.
-- [ ] Host sem adapter não arma a captura inteligente (degrada para o modo manual atual sem erro).
+- [x] Com o vídeo em tela cheia tocando, a gravação **inicia sozinha**; sem fullscreen, não grava (frames limpos, sem controles).
+- [x] Episódio chega ao fim (ou o dono dorme e o player para no fim) → a gravação **finaliza** e volta a ocioso, **sem** cortar conteúdo antes do fim.
+- [x] Autoplay do próximo episódio → **arquivo novo** separado, sem ação manual.
+- [x] Gravação interrompida e retomada **no mesmo episódio** → **um único arquivo** (sessão idempotente por `episode_key`), nunca dois.
+- [x] Episódio já arquivado por completo não é regravado.
+- [x] Host sem adapter não arma a captura inteligente (degrada para o modo manual atual sem erro).
 - [x] Contrato `/captures/upload/*` retrocompatível: requisições sem `episode_key` funcionam como hoje.
-- [ ] **Nenhum** código de decriptação de DRM no repo (nem ponto de extensão) — revisão explícita.
-- [ ] Testes verdes: `npm test` (plugin) e `make ci` (backend).
+- [x] **Nenhum** código de decriptação de DRM no repo (nem ponto de extensão) — revisão explícita (captura é só `tabCapture`/`MediaRecorder`, analog hole).
+- [x] Testes verdes: `npm test` (plugin) e `make ci` (backend).
 
 ## Riscos / notas de realidade
 

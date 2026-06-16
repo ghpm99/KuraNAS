@@ -21,7 +21,12 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/bridge.js"],
+      "js": [
+        "content/adapters/registry.js",
+        "content/adapters/crunchyroll.js",
+        "content/bridge.js",
+        "content/episode-monitor.js"
+      ],
       "run_at": "document_start",
       "world": "ISOLATED"
     },
