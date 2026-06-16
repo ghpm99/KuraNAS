@@ -184,6 +184,141 @@ func TestInitMigrationListPopulatesEntries(t *testing.T) {
 	}
 }
 
+func names(list []migration) []string {
+	out := make([]string, len(list))
+	for i, m := range list {
+		out[i] = m.Name
+	}
+	return out
+}
+
+func TestOrderMigrationsSortsBySequence(t *testing.T) {
+	noop := func(*sql.Tx) error { return nil }
+	// Registered out of numeric order on purpose.
+	list := []migration{
+		{Name: "0040_b", Migrate: noop},
+		{Name: "0010_a", Migrate: noop},
+		{Name: "0038_x", Migrate: noop},
+	}
+
+	ordered, err := orderMigrations(list)
+	if err != nil {
+		t.Fatalf("orderMigrations: %v", err)
+	}
+	got := names(ordered)
+	want := []string{"0010_a", "0038_x", "0040_b"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("ordering = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestOrderMigrationsRespectsRequires(t *testing.T) {
+	noop := func(*sql.Tx) error { return nil }
+	// This reproduces the real bug: a higher-numbered migration registered first
+	// that requires a lower-numbered one registered later.
+	list := []migration{
+		{Name: "0040_email_message", Requires: []string{"0038_email_account"}, Migrate: noop},
+		{Name: "0041_email_analysis", Requires: []string{"0040_email_message"}, Migrate: noop},
+		{Name: "0038_email_account", Migrate: noop},
+	}
+
+	ordered, err := orderMigrations(list)
+	if err != nil {
+		t.Fatalf("orderMigrations: %v", err)
+	}
+	got := names(ordered)
+	want := []string{"0038_email_account", "0040_email_message", "0041_email_analysis"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("ordering = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestOrderMigrationsUnknownRequirement(t *testing.T) {
+	noop := func(*sql.Tx) error { return nil }
+	list := []migration{
+		{Name: "0002_b", Requires: []string{"0001_missing"}, Migrate: noop},
+	}
+
+	if _, err := orderMigrations(list); err == nil {
+		t.Fatal("expected error for unknown requirement")
+	}
+}
+
+func TestOrderMigrationsDetectsCycle(t *testing.T) {
+	noop := func(*sql.Tx) error { return nil }
+	list := []migration{
+		{Name: "0001_a", Requires: []string{"0002_b"}, Migrate: noop},
+		{Name: "0002_b", Requires: []string{"0001_a"}, Migrate: noop},
+	}
+
+	if _, err := orderMigrations(list); err == nil {
+		t.Fatal("expected error for dependency cycle")
+	}
+}
+
+func TestRealMigrationListOrdersEmailDependencies(t *testing.T) {
+	oldList := migrationList
+	migrationList = nil
+	t.Cleanup(func() { migrationList = oldList })
+
+	initMigrationList()
+	ordered, err := orderMigrations(migrationList)
+	if err != nil {
+		t.Fatalf("orderMigrations on real list: %v", err)
+	}
+
+	position := make(map[string]int, len(ordered))
+	for i, m := range ordered {
+		position[m.Name] = i
+	}
+	account := position["0038_create_email_account_table"]
+	message := position["0040_create_email_message_table"]
+	analysis := position["0041_create_email_analysis_table"]
+	if !(account < message && message < analysis) {
+		t.Fatalf("email migrations out of order: account=%d message=%d analysis=%d", account, message, analysis)
+	}
+}
+
+func TestInitPanicsWhenOrderingFails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock db: %v", err)
+	}
+	defer db.Close()
+
+	origInitMigrationList := initMigrationListFn
+	origCreateMigrationDB := createMigrationDatabaseFn
+	origList := migrationList
+	t.Cleanup(func() {
+		initMigrationListFn = origInitMigrationList
+		createMigrationDatabaseFn = origCreateMigrationDB
+		migrationList = origList
+	})
+
+	initMigrationListFn = func() {}
+	createMigrationDatabaseFn = func(tx *sql.Tx) error { return nil }
+	migrationList = []migration{
+		{Name: "0002_b", Requires: []string{"0001_missing"}, Migrate: func(*sql.Tx) error { return nil }},
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when ordering fails")
+		} else if !strings.Contains(r.(string), "Failed to order migrations") {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	Init(db)
+}
+
 func TestRunMigrationPropagatesMigrationError(t *testing.T) {
 	db, mock := openMigrationDB(t)
 	mock.ExpectBegin()
