@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"nas-go/api/internal/api/v1/autoshutdown"
 	ingest "nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
@@ -63,14 +64,15 @@ type FolderWatcherInterface interface {
 }
 
 type Application struct {
-	Router        *gin.Engine
-	Context       *AppContext
-	Server        *http.Server
-	UDPListener   *discovery.UDPListener
-	MdnsRegistrar *discovery.MdnsRegistrar
-	FolderWatcher FolderWatcherInterface
-	TrashPurger   *trash.Purger
-	SystemEvents  systemevent.ServiceInterface
+	Router            *gin.Engine
+	Context           *AppContext
+	Server            *http.Server
+	UDPListener       *discovery.UDPListener
+	MdnsRegistrar     *discovery.MdnsRegistrar
+	FolderWatcher     FolderWatcherInterface
+	TrashPurger       *trash.Purger
+	AutoShutdownSched *autoshutdown.Scheduler
+	SystemEvents      systemevent.ServiceInterface
 }
 
 func InitializeApp() (*Application, error) {
@@ -168,6 +170,8 @@ func InitializeApp() (*Application, error) {
 		trashPurger.Start()
 	}
 
+	autoShutdownSched := startAutoShutdownScheduler(appContext)
+
 	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
 	if err := udpListener.Start(); err != nil {
 		log.Printf("[APP] Failed to start UDP discovery listener: %v", err)
@@ -186,14 +190,44 @@ func InitializeApp() (*Application, error) {
 	startYtDlpUpdateChecker(appContext)
 
 	return &Application{
-		Router:        router,
-		Context:       appContext,
-		UDPListener:   udpListener,
-		MdnsRegistrar: mdnsRegistrar,
-		FolderWatcher: folderWatcher,
-		TrashPurger:   trashPurger,
-		SystemEvents:  systemEvents,
+		Router:            router,
+		Context:           appContext,
+		UDPListener:       udpListener,
+		MdnsRegistrar:     mdnsRegistrar,
+		FolderWatcher:     folderWatcher,
+		TrashPurger:       trashPurger,
+		AutoShutdownSched: autoShutdownSched,
+		SystemEvents:      systemEvents,
 	}, nil
+}
+
+// startAutoShutdownScheduler launches the background scheduler that powers the
+// machine off at the configured local time. It degrades gracefully like the
+// other boot helpers: a missing auto-shutdown context is a no-op. The pre-shutdown
+// warning is emitted as a notification (best-effort).
+func startAutoShutdownScheduler(appContext *AppContext) *autoshutdown.Scheduler {
+	if appContext == nil || appContext.AutoShutdown == nil || appContext.AutoShutdown.Service == nil {
+		return nil
+	}
+
+	notifyFn := func(graceSeconds int) {
+		if appContext.Notifications == nil || appContext.Notifications.Service == nil {
+			return
+		}
+		_, err := appContext.Notifications.Service.GroupOrCreate(notifications.CreateNotificationDto{
+			Type:     string(notifications.NotificationTypeWarning),
+			Title:    i18n.GetMessage("NOTIFICATION_AUTO_SHUTDOWN_TITLE"),
+			Message:  i18n.Translate("NOTIFICATION_AUTO_SHUTDOWN_BODY", graceSeconds),
+			GroupKey: "auto_shutdown",
+		})
+		if err != nil {
+			applog.Warn("auto-shutdown warning notification failed", "error", err.Error())
+		}
+	}
+
+	scheduler := autoshutdown.NewScheduler(appContext.AutoShutdown.Service, nil, notifyFn, autoshutdown.DefaultCheckInterval)
+	scheduler.Start()
+	return scheduler
 }
 
 // startOllamaDaemon verifies (and, when needed and possible, spawns) the local
@@ -329,6 +363,10 @@ func (app *Application) Stop() error {
 
 	if app.TrashPurger != nil {
 		app.TrashPurger.Stop()
+	}
+
+	if app.AutoShutdownSched != nil {
+		app.AutoShutdownSched.Stop()
 	}
 
 	if app.Server == nil {

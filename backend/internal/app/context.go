@@ -13,6 +13,7 @@ import (
 	"nas-go/api/internal/api/v1/aiproviders"
 	"nas-go/api/internal/api/v1/analytics"
 	"nas-go/api/internal/api/v1/assistant"
+	"nas-go/api/internal/api/v1/autoshutdown"
 	"nas-go/api/internal/api/v1/backup"
 	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/configuration"
@@ -77,6 +78,7 @@ type AppContext struct {
 	Trash         *TrashContext
 	Backup        *BackupContext
 	Tiering       *TieringContext
+	AutoShutdown  *AutoShutdownContext
 	Distribution  *DistributionContext
 	Ingest        *IngestContext
 	UpdateHandler *updater.Handler
@@ -105,6 +107,12 @@ type TieringContext struct {
 	Handler    *tiering.Handler
 	Service    tiering.ServiceInterface
 	Repository tiering.RepositoryInterface
+}
+
+type AutoShutdownContext struct {
+	Handler    *autoshutdown.Handler
+	Service    autoshutdown.ServiceInterface
+	Repository autoshutdown.RepositoryInterface
 }
 
 type StorageRootsContext struct {
@@ -287,6 +295,7 @@ func NewContext(db *sql.DB) *AppContext {
 	}
 	backupContext := newBackupContext(dbContext)
 	tieringContext := newTieringContext(dbContext)
+	autoShutdownContext := newAutoShutdownContext(dbContext)
 	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
@@ -324,6 +333,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Trash:         trashContext,
 		Backup:        backupContext,
 		Tiering:       tieringContext,
+		AutoShutdown:  autoShutdownContext,
 		Distribution:  distributionContext,
 		Ingest:        ingestContext,
 		UpdateHandler: updateHandler,
@@ -606,6 +616,18 @@ func newTieringContext(dbContext *database.DbContext) *TieringContext {
 	handler := tiering.NewHandler(service)
 
 	return &TieringContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newAutoShutdownContext(dbContext *database.DbContext) *AutoShutdownContext {
+	repository := autoshutdown.NewRepository(dbContext)
+	service := autoshutdown.NewService(repository)
+	handler := autoshutdown.NewHandler(service)
+
+	return &AutoShutdownContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
