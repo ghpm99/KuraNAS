@@ -3,6 +3,8 @@
  * ======================================================================== */
 
 import {
+  CAPTURE_SESSION_END_EPSILON_SECONDS,
+  CAPTURE_SESSION_GRACE_MS,
   DEFAULT_KURANAS_API_BASE,
   DISCOVERY_HEALTH_SUFFIX,
   DISCOVERY_REQUEST_TIMEOUT_MS,
@@ -24,6 +26,7 @@ import { createUploader } from "./src/background/uploader.js";
 import { createDownloader } from "./src/background/downloader.js";
 import { createFetcher } from "./src/background/fetcher.js";
 import { createHybridStateMachine } from "./src/background/hybrid-state.js";
+import { createCaptureSessionMachine } from "./src/background/capture-session.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -32,6 +35,7 @@ import { createHybridStateMachine } from "./src/background/hybrid-state.js";
 const detectedMedia = new Map();
 const hybridStates = new Map();
 const detectedTitles = new Map();
+const captureSessions = new Map();
 
 const uploader = createUploader({
   getApiBaseUrl,
@@ -93,6 +97,20 @@ const {
   stopHybridRecording,
 } = hybridStateMachine;
 
+const captureSessionMachine = createCaptureSessionMachine({
+  captureSessions,
+  startCapture: startEpisodeCapture,
+  stopCapture: stopEpisodeCapture,
+  broadcastStatus: broadcastCaptureSessionStatus,
+  graceMs: CAPTURE_SESSION_GRACE_MS,
+  endEpsilonSeconds: CAPTURE_SESSION_END_EPSILON_SECONDS,
+});
+const {
+  cleanupTab: cleanupCaptureSession,
+  getSessionStatus: getCaptureSessionStatus,
+  handleEpisodeState,
+} = captureSessionMachine;
+
 // ---------------------------------------------------------------------------
 // 1. Media Detection via Network
 // ---------------------------------------------------------------------------
@@ -121,14 +139,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     downloadDASH,
     downloadDirect,
     downloadHLS,
+    getCaptureSessionStatus,
     getDetectedMedia: (tabId) => detectedMedia.get(tabId) || [],
     getHybridStatus,
     getTitleForTab,
     handleBlobDetected,
-    handleHybridRecordingChunk,
-    handleHybridRecordingComplete,
+    handleEpisodeState,
+    handleHybridRecordingChunk: dispatchRecordingChunk,
+    handleHybridRecordingComplete: dispatchRecordingComplete,
     handleHybridVideoState,
-    handleOffscreenError,
+    handleOffscreenError: dispatchOffscreenError,
     handleOffscreenStarted,
     handleOffscreenStopped,
     handleSaveRecordingBlob,
@@ -311,6 +331,176 @@ function broadcastHybridStatus(tabId) {
   chrome.runtime
     .sendMessage({ action: "hybrid_status", tabId, status })
     .catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// 4b. Smart Episode Capture (capture-session machine wiring)
+//
+// The machine decides *when* to record per episode; these callbacks own the
+// edge: an idempotent upload session keyed by episode_key, the offscreen
+// recorder, and chunk streaming. The offscreen recorder reuses the same
+// `hybrid_recording_*` messages, so dispatchRecording* below routes those to the
+// smart session when the tab owns one, else to the manual hybrid path.
+// ---------------------------------------------------------------------------
+
+async function startEpisodeCapture(tabId, { episodeKey, title }) {
+  const apiUrl = await getApiBaseUrl();
+  const name = title || episodeKey;
+  const fileName = `${sanitizeFileName(name)}.webm`;
+
+  const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      media_type: "recording",
+      mime_type: "video/webm",
+      size: 0,
+      file_name: fileName,
+      episode_key: episodeKey,
+    }),
+  });
+
+  if (!initResp.ok) {
+    const body = await initResp.text();
+    throw new Error(`Init episode upload failed (${initResp.status}): ${body}`);
+  }
+
+  const payload = await initResp.json();
+
+  // Already archived in full -> tell the machine not to record (no second file).
+  if (payload.already_complete) {
+    return { recording: false };
+  }
+  if (!payload.upload_id) {
+    throw new Error("Invalid episode upload init response: upload_id is required");
+  }
+
+  const state = captureSessions.get(tabId);
+  if (!state) return { recording: false };
+
+  // A resumed session hands back the offset the server already holds, so the
+  // continuation appends to the same file instead of duplicating it.
+  state.upload = {
+    apiUrl,
+    uploadID: payload.upload_id,
+    offset: Number(payload.received_size || 0),
+    chunkIndex: 0,
+    pending: Promise.resolve(),
+    failed: false,
+    completed: false,
+    episodeKey,
+  };
+
+  const streamId = await chrome.tabCapture.getMediaStreamId({
+    targetTabId: tabId,
+  });
+  await ensureOffscreen();
+  chrome.runtime
+    .sendMessage({
+      action: "offscreen_start_recording",
+      tabId,
+      streamId,
+      streamUpload: true,
+    })
+    .catch(() => {});
+
+  return { recording: true };
+}
+
+function stopEpisodeCapture(tabId) {
+  stopOffscreenRecording(tabId);
+}
+
+function broadcastCaptureSessionStatus(tabId) {
+  const status = getCaptureSessionStatus(tabId);
+  chrome.runtime
+    .sendMessage({ action: "capture_session_status", tabId, status })
+    .catch(() => {});
+}
+
+function handleEpisodeRecordingChunk(tabId, msg) {
+  const state = captureSessions.get(tabId);
+  if (!state || !state.upload || state.upload.failed) return;
+
+  const chunkBlob = msg.chunk;
+  if (!chunkBlob || !chunkBlob.size) return;
+
+  const session = state.upload;
+  session.pending = session.pending
+    .then(async () => {
+      if (session.failed || session.completed) return;
+      await uploadChunkWithRetry(
+        session.apiUrl,
+        session.uploadID,
+        chunkBlob,
+        session.offset,
+        session.chunkIndex
+      );
+      session.offset += chunkBlob.size;
+      session.chunkIndex += 1;
+    })
+    .catch(() => {
+      session.failed = true;
+    });
+}
+
+async function handleEpisodeRecordingComplete(tabId) {
+  const state = captureSessions.get(tabId);
+  if (!state || !state.upload) return;
+
+  const session = state.upload;
+  try {
+    await session.pending;
+    if (!session.failed && !session.completed) {
+      const completeResp = await fetch(
+        `${session.apiUrl}/captures/upload/complete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ upload_id: session.uploadID }),
+        }
+      );
+      if (completeResp.ok) {
+        session.completed = true;
+      }
+    }
+  } catch {
+    // leave the session for the next init to resume by episode_key
+  } finally {
+    state.upload = null;
+  }
+}
+
+function tabHasSmartSession(tabId) {
+  const state = captureSessions.get(tabId);
+  return Boolean(state && state.upload);
+}
+
+function dispatchRecordingChunk(tabId, msg) {
+  if (tabHasSmartSession(tabId)) {
+    handleEpisodeRecordingChunk(tabId, msg);
+    return;
+  }
+  handleHybridRecordingChunk(tabId, msg);
+}
+
+function dispatchRecordingComplete(tabId) {
+  if (tabHasSmartSession(tabId)) {
+    handleEpisodeRecordingComplete(tabId);
+    return;
+  }
+  handleHybridRecordingComplete(tabId);
+}
+
+function dispatchOffscreenError(tabId, msg) {
+  const state = captureSessions.get(tabId);
+  if (state && state.upload) {
+    state.upload.failed = true;
+    state.upload = null;
+    return;
+  }
+  handleOffscreenError(tabId, msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -536,6 +726,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   detectedMedia.delete(tabId);
   detectedTitles.delete(tabId);
   cleanupTab(tabId);
+  cleanupCaptureSession(tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
