@@ -40,9 +40,10 @@ func (h *Handler) UploadCaptureHandler(c *gin.Context) {
 	}
 
 	dto := CreateCaptureDto{
-		Name:      c.PostForm("name"),
-		MediaType: c.PostForm("media_type"),
-		MimeType:  c.PostForm("mime_type"),
+		Name:       c.PostForm("name"),
+		MediaType:  c.PostForm("media_type"),
+		MimeType:   c.PostForm("mime_type"),
+		EpisodeKey: c.PostForm("episode_key"),
 	}
 
 	if dto.Name == "" {

@@ -38,6 +38,7 @@ type captureUploadSession struct {
 	MediaType     string    `json:"media_type"`
 	MimeType      string    `json:"mime_type"`
 	FileName      string    `json:"file_name"`
+	EpisodeKey    string    `json:"episode_key"`
 	ExpectedSize  int64     `json:"expected_size"`
 	ReceivedSize  int64     `json:"received_size"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -88,6 +89,17 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 		return InitCaptureUploadResultDto{}, fmt.Errorf("InitCaptureUpload: name is required")
 	}
 
+	episodeKey := strings.TrimSpace(dto.EpisodeKey)
+	if episodeKey != "" {
+		resumed, handled, err := s.resumeOrSkipByEpisodeKey(episodeKey)
+		if err != nil {
+			return InitCaptureUploadResultDto{}, err
+		}
+		if handled {
+			return resumed, nil
+		}
+	}
+
 	uploadID, err := generateUploadID()
 	if err != nil {
 		return InitCaptureUploadResultDto{}, fmt.Errorf("InitCaptureUpload: generate upload id: %w", err)
@@ -109,6 +121,7 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 		MediaType:     dto.MediaType,
 		MimeType:      dto.MimeType,
 		FileName:      fileName,
+		EpisodeKey:    episodeKey,
 		ExpectedSize:  dto.Size,
 		ReceivedSize:  0,
 		CreatedAt:     time.Now(),
@@ -125,6 +138,71 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 		UploadID:  uploadID,
 		ChunkSize: captureUploadChunkSize,
 	}, nil
+}
+
+// resumeOrSkipByEpisodeKey applies the per-episode idempotency contract. It
+// returns handled=true when the caller should short-circuit InitCaptureUpload:
+//   - a completed capture already exists for this episode_key -> AlreadyComplete
+//     (don't re-record);
+//   - an open upload session already carries this episode_key -> resume it,
+//     handing back its upload_id and received offset (one file, not two).
+//
+// handled=false means there is no prior state and a fresh session must be made.
+func (s *Service) resumeOrSkipByEpisodeKey(episodeKey string) (InitCaptureUploadResultDto, bool, error) {
+	_, archived, err := s.Repository.GetCaptureByEpisodeKey(episodeKey)
+	if err != nil {
+		return InitCaptureUploadResultDto{}, false, err
+	}
+	if archived {
+		return InitCaptureUploadResultDto{
+			ChunkSize:       captureUploadChunkSize,
+			AlreadyComplete: true,
+		}, true, nil
+	}
+
+	open, found, err := s.findOpenSessionByEpisodeKey(episodeKey)
+	if err != nil {
+		return InitCaptureUploadResultDto{}, false, err
+	}
+	if found {
+		return InitCaptureUploadResultDto{
+			UploadID:     open.UploadID,
+			ChunkSize:    captureUploadChunkSize,
+			ReceivedSize: open.ReceivedSize,
+			Resumed:      true,
+		}, true, nil
+	}
+
+	return InitCaptureUploadResultDto{}, false, nil
+}
+
+// findOpenSessionByEpisodeKey scans the on-disk upload session directory for an
+// incomplete session tagged with the given episode_key. Sessions live as
+// meta.json files (see saveCaptureUploadSession), so the lookup is a directory
+// walk; garbage/unreadable entries are skipped rather than failing the init.
+func (s *Service) findOpenSessionByEpisodeKey(episodeKey string) (captureUploadSession, bool, error) {
+	entries, err := os.ReadDir(s.captureUploadRootDir())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return captureUploadSession{}, false, nil
+		}
+		return captureUploadSession{}, false, fmt.Errorf("findOpenSessionByEpisodeKey: %w", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		session, loadErr := s.loadCaptureUploadSession(entry.Name())
+		if loadErr != nil {
+			continue
+		}
+		if session.EpisodeKey == episodeKey {
+			return session, true, nil
+		}
+	}
+
+	return captureUploadSession{}, false, nil
 }
 
 func (s *Service) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error {
@@ -198,10 +276,11 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 	}
 
 	createDto := CreateCaptureDto{
-		Name:      session.Name,
-		MediaType: session.MediaType,
-		MimeType:  session.MimeType,
-		Size:      session.ReceivedSize,
+		Name:       session.Name,
+		MediaType:  session.MediaType,
+		MimeType:   session.MimeType,
+		Size:       session.ReceivedSize,
+		EpisodeKey: session.EpisodeKey,
 	}
 
 	capture, persistErr := s.persistCaptureAndDispatch(captureDir, destPath, filepath.Base(destPath), createDto, session.ReceivedSize)
@@ -292,13 +371,14 @@ func (s *Service) persistCaptureAndDispatch(
 	size int64,
 ) (CaptureDto, error) {
 	model := CaptureModel{
-		Name:      dto.Name,
-		FileName:  fileName,
-		FilePath:  destPath,
-		MediaType: dto.MediaType,
-		MimeType:  dto.MimeType,
-		Size:      size,
-		CreatedAt: time.Now(),
+		Name:       dto.Name,
+		FileName:   fileName,
+		FilePath:   destPath,
+		MediaType:  dto.MediaType,
+		MimeType:   dto.MimeType,
+		Size:       size,
+		EpisodeKey: dto.EpisodeKey,
+		CreatedAt:  time.Now(),
 	}
 
 	var result CaptureModel

@@ -12,6 +12,7 @@ type RepositoryInterface interface {
 	CreateCapture(transaction *sql.Tx, capture CaptureModel) (CaptureModel, error)
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
 	GetCaptureByID(id int) (CaptureModel, error)
+	GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error)
 	DeleteCapture(transaction *sql.Tx, id int) error
 }
 
