@@ -1,4 +1,4 @@
-SELECT id, name, file_name, file_path, media_type, mime_type, size, created_at
+SELECT id, name, file_name, file_path, media_type, mime_type, size, episode_key, created_at
 FROM captures
 WHERE
     ($1::boolean OR name ILIKE '%' || $2::text || '%')

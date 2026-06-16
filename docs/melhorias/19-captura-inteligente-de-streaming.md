@@ -58,7 +58,7 @@ Entregar com **um serviço cobaia** (sugestão: Crunchyroll, citado pelo dono) �
 - [ ] Gravação interrompida e retomada **no mesmo episódio** → **um único arquivo** (sessão idempotente por `episode_key`), nunca dois.
 - [ ] Episódio já arquivado por completo não é regravado.
 - [ ] Host sem adapter não arma a captura inteligente (degrada para o modo manual atual sem erro).
-- [ ] Contrato `/captures/upload/*` retrocompatível: requisições sem `episode_key` funcionam como hoje.
+- [x] Contrato `/captures/upload/*` retrocompatível: requisições sem `episode_key` funcionam como hoje.
 - [ ] **Nenhum** código de decriptação de DRM no repo (nem ponto de extensão) — revisão explícita.
 - [ ] Testes verdes: `npm test` (plugin) e `make ci` (backend).
 

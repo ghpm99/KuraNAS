@@ -6,34 +6,47 @@ import (
 )
 
 type CaptureDto struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	FileName  string    `json:"file_name"`
-	FilePath  string    `json:"file_path"`
-	MediaType string    `json:"media_type"`
-	MimeType  string    `json:"mime_type"`
-	Size      int64     `json:"size"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	FileName   string    `json:"file_name"`
+	FilePath   string    `json:"file_path"`
+	MediaType  string    `json:"media_type"`
+	MimeType   string    `json:"mime_type"`
+	Size       int64     `json:"size"`
+	EpisodeKey string    `json:"episode_key"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type CreateCaptureDto struct {
-	Name      string `json:"name" form:"name" binding:"required"`
-	MediaType string `json:"media_type" form:"media_type"`
-	MimeType  string `json:"mime_type" form:"mime_type"`
-	Size      int64  `json:"size" form:"size"`
+	Name       string `json:"name" form:"name" binding:"required"`
+	MediaType  string `json:"media_type" form:"media_type"`
+	MimeType   string `json:"mime_type" form:"mime_type"`
+	Size       int64  `json:"size" form:"size"`
+	EpisodeKey string `json:"episode_key" form:"episode_key"`
 }
 
 type InitCaptureUploadDto struct {
-	Name      string `json:"name" binding:"required"`
-	MediaType string `json:"media_type"`
-	MimeType  string `json:"mime_type"`
-	Size      int64  `json:"size"`
-	FileName  string `json:"file_name"`
+	Name       string `json:"name" binding:"required"`
+	MediaType  string `json:"media_type"`
+	MimeType   string `json:"mime_type"`
+	Size       int64  `json:"size"`
+	FileName   string `json:"file_name"`
+	EpisodeKey string `json:"episode_key"`
 }
 
+// InitCaptureUploadResultDto answers an upload init. When EpisodeKey-based
+// idempotency kicks in, the optional fields steer the client:
+//   - AlreadyComplete=true: a capture with this episode_key already exists; do
+//     not re-record. UploadID is empty.
+//   - Resumed=true: an open session for this episode_key was reused; UploadID is
+//     the existing one and ReceivedSize is how much the server already holds, so
+//     the client appends from that offset instead of opening a second file.
 type InitCaptureUploadResultDto struct {
-	UploadID  string `json:"upload_id"`
-	ChunkSize int64  `json:"chunk_size"`
+	UploadID        string `json:"upload_id"`
+	ChunkSize       int64  `json:"chunk_size"`
+	ReceivedSize    int64  `json:"received_size"`
+	Resumed         bool   `json:"resumed"`
+	AlreadyComplete bool   `json:"already_complete"`
 }
 
 type UploadCaptureChunkDto struct {
@@ -52,14 +65,15 @@ type CaptureFilter struct {
 
 func (m *CaptureModel) ToDto() CaptureDto {
 	return CaptureDto{
-		ID:        m.ID,
-		Name:      m.Name,
-		FileName:  m.FileName,
-		FilePath:  m.FilePath,
-		MediaType: m.MediaType,
-		MimeType:  m.MimeType,
-		Size:      m.Size,
-		CreatedAt: m.CreatedAt,
+		ID:         m.ID,
+		Name:       m.Name,
+		FileName:   m.FileName,
+		FilePath:   m.FilePath,
+		MediaType:  m.MediaType,
+		MimeType:   m.MimeType,
+		Size:       m.Size,
+		EpisodeKey: m.EpisodeKey,
+		CreatedAt:  m.CreatedAt,
 	}
 }
 

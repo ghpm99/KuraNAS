@@ -21,11 +21,12 @@ import (
 // ---------------------------------------------------------------------------
 
 type repoMock struct {
-	dbContext     *database.DbContext
-	createFn      func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error)
-	getCapturesFn func(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
-	getByIDFn     func(id int) (CaptureModel, error)
-	deleteFn      func(tx *sql.Tx, id int) error
+	dbContext         *database.DbContext
+	createFn          func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error)
+	getCapturesFn     func(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
+	getByIDFn         func(id int) (CaptureModel, error)
+	getByEpisodeKeyFn func(episodeKey string) (CaptureModel, bool, error)
+	deleteFn          func(tx *sql.Tx, id int) error
 }
 
 type uploadJobDispatcherMock struct {
@@ -72,6 +73,13 @@ func (r *repoMock) GetCaptureByID(id int) (CaptureModel, error) {
 		return r.getByIDFn(id)
 	}
 	return CaptureModel{ID: id, Name: "test"}, nil
+}
+
+func (r *repoMock) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error) {
+	if r.getByEpisodeKeyFn != nil {
+		return r.getByEpisodeKeyFn(episodeKey)
+	}
+	return CaptureModel{}, false, nil
 }
 
 func (r *repoMock) DeleteCapture(tx *sql.Tx, id int) error {
@@ -302,6 +310,147 @@ func TestServiceChunkedUploadLifecycle(t *testing.T) {
 
 	if len(dispatchedPaths) != 2 {
 		t.Fatalf("expected 2 dispatched paths, got %d", len(dispatchedPaths))
+	}
+}
+
+func TestServiceInitCaptureUploadSkipsAlreadyArchivedEpisode(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{
+		getByEpisodeKeyFn: func(episodeKey string) (CaptureModel, bool, error) {
+			if episodeKey != "crunchyroll:GREP01" {
+				t.Fatalf("unexpected episode key: %s", episodeKey)
+			}
+			return CaptureModel{ID: 7, EpisodeKey: episodeKey}, true, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, nil)
+
+	result, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:       "archived_show",
+		FileName:   "archived.webm",
+		EpisodeKey: "crunchyroll:GREP01",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+	if !result.AlreadyComplete {
+		t.Fatal("expected AlreadyComplete to be true for an archived episode")
+	}
+	if result.UploadID != "" {
+		t.Fatalf("expected no upload id for archived episode, got %q", result.UploadID)
+	}
+}
+
+func TestServiceInitCaptureUploadResumesOpenEpisodeSession(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+
+	first, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:       "resume_show",
+		FileName:   "resume.webm",
+		EpisodeKey: "crunchyroll:GEP02",
+		Size:       10,
+	})
+	if err != nil {
+		t.Fatalf("first InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "1234")
+	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{
+		UploadID: first.UploadID,
+		Offset:   0,
+	}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	second, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:       "resume_show",
+		FileName:   "resume.webm",
+		EpisodeKey: "crunchyroll:GEP02",
+		Size:       10,
+	})
+	if err != nil {
+		t.Fatalf("second InitCaptureUpload returned error: %v", err)
+	}
+	if !second.Resumed {
+		t.Fatal("expected the second init to resume the open session")
+	}
+	if second.UploadID != first.UploadID {
+		t.Fatalf("expected resumed upload id %q, got %q", first.UploadID, second.UploadID)
+	}
+	if second.ReceivedSize != 4 {
+		t.Fatalf("expected received size 4, got %d", second.ReceivedSize)
+	}
+}
+
+func TestServiceInitCaptureUploadWithoutEpisodeKeyAlwaysCreatesNewSession(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	calls := 0
+	mock := &repoMock{
+		getByEpisodeKeyFn: func(string) (CaptureModel, bool, error) {
+			calls++
+			return CaptureModel{}, false, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, nil)
+
+	first, err := service.InitCaptureUpload(InitCaptureUploadDto{Name: "a", FileName: "a.webm"})
+	if err != nil {
+		t.Fatalf("first init error: %v", err)
+	}
+	second, err := service.InitCaptureUpload(InitCaptureUploadDto{Name: "a", FileName: "a.webm"})
+	if err != nil {
+		t.Fatalf("second init error: %v", err)
+	}
+	if first.UploadID == second.UploadID {
+		t.Fatal("expected distinct upload ids without an episode key (no idempotency)")
+	}
+	if calls != 0 {
+		t.Fatalf("expected episode-key lookup to be skipped, got %d calls", calls)
+	}
+}
+
+func TestServiceCompleteCaptureUploadPersistsEpisodeKey(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	var persisted CaptureModel
+	mock := &repoMock{
+		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			persisted = capture
+			capture.ID = 5
+			return capture, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:       "ep_show",
+		FileName:   "ep.webm",
+		EpisodeKey: "crunchyroll:GEP03",
+		Size:       4,
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
+	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err != nil {
+		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
+	}
+
+	if persisted.EpisodeKey != "crunchyroll:GEP03" {
+		t.Fatalf("expected persisted episode key, got %q", persisted.EpisodeKey)
 	}
 }
 

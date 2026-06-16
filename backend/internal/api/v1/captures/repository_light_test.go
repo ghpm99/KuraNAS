@@ -39,19 +39,20 @@ func TestRepositoryCreateCapture(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.InsertCaptureQuery)).
-		WithArgs("test", "video.ts", "/data/capturas/test/video.ts", "hls", "video/mp2t", int64(1024), now).
+		WithArgs("test", "video.ts", "/data/capturas/test/video.ts", "hls", "video/mp2t", int64(1024), "crunchyroll:GEP01", now).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
 	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
 		result, err := repo.CreateCapture(tx, CaptureModel{
-			Name:      "test",
-			FileName:  "video.ts",
-			FilePath:  "/data/capturas/test/video.ts",
-			MediaType: "hls",
-			MimeType:  "video/mp2t",
-			Size:      1024,
-			CreatedAt: now,
+			Name:       "test",
+			FileName:   "video.ts",
+			FilePath:   "/data/capturas/test/video.ts",
+			MediaType:  "hls",
+			MimeType:   "video/mp2t",
+			Size:       1024,
+			EpisodeKey: "crunchyroll:GEP01",
+			CreatedAt:  now,
 		})
 		if err != nil {
 			return err
@@ -94,9 +95,9 @@ func TestRepositoryGetCaptures(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "created_at"}).
-		AddRow(1, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, now).
-		AddRow(2, "other", "stream.mp4", "/path2", "dash", "video/mp4", 2048, now)
+	rows := sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
+		AddRow(1, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now).
+		AddRow(2, "other", "stream.mp4", "/path2", "dash", "video/mp4", 2048, "crunchyroll:GEP02", now)
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCapturesQuery)).WillReturnRows(rows)
@@ -138,8 +139,8 @@ func TestRepositoryGetCaptureByID(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCaptureByIDQuery)).
 		WithArgs(5).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "created_at"}).
-			AddRow(5, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, now))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
+			AddRow(5, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now))
 	mock.ExpectRollback()
 
 	result, err := repo.GetCaptureByID(5)
@@ -167,6 +168,49 @@ func TestRepositoryGetCaptureByIDNotFound(t *testing.T) {
 	_, err := repo.GetCaptureByID(99)
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestRepositoryGetCaptureByEpisodeKeyFound(t *testing.T) {
+	repo, mock, db := newCapturesRepoWithMock(t)
+	defer db.Close()
+
+	now := time.Now()
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCaptureByEpisodeKeyQuery)).
+		WithArgs("crunchyroll:GEP01").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
+			AddRow(8, "show", "ep.webm", "/path", "recording", "video/webm", 4096, "crunchyroll:GEP01", now))
+	mock.ExpectRollback()
+
+	result, found, err := repo.GetCaptureByEpisodeKey("crunchyroll:GEP01")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !found {
+		t.Fatal("expected found to be true")
+	}
+	if result.ID != 8 || result.EpisodeKey != "crunchyroll:GEP01" {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+}
+
+func TestRepositoryGetCaptureByEpisodeKeyNotFound(t *testing.T) {
+	repo, mock, db := newCapturesRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCaptureByEpisodeKeyQuery)).
+		WithArgs("crunchyroll:MISSING").
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectRollback()
+
+	_, found, err := repo.GetCaptureByEpisodeKey("crunchyroll:MISSING")
+	if err != nil {
+		t.Fatalf("expected nil error for no rows, got %v", err)
+	}
+	if found {
+		t.Fatal("expected found to be false")
 	}
 }
 

@@ -134,6 +134,9 @@ var CreateEmailMessageTableQuery string
 //go:embed queries/0041_create_email_analysis_table.sql
 var CreateEmailAnalysisTableQuery string
 
+//go:embed queries/0042_add_capture_episode_key.sql
+var AddCaptureEpisodeKeyQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -259,6 +262,10 @@ func systemEventMigrationList() {
 func capturesMigrationList() {
 	addMigration("0023_create_captures_table",
 		defaultMigrationFunc(CreateCapturesTableQuery))
+
+	addMigrationRequiring("0042_add_capture_episode_key",
+		[]string{"0023_create_captures_table"},
+		defaultMigrationFunc(AddCaptureEpisodeKeyQuery))
 }
 
 func librariesMigrationList() {

@@ -2,6 +2,7 @@ package captures
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/captures"
@@ -28,6 +29,7 @@ func (r *Repository) CreateCapture(transaction *sql.Tx, capture CaptureModel) (C
 		capture.MediaType,
 		capture.MimeType,
 		capture.Size,
+		capture.EpisodeKey,
 		capture.CreatedAt,
 	}
 
@@ -78,6 +80,7 @@ func (r *Repository) GetCaptures(filter CaptureFilter, page int, pageSize int) (
 				&m.MediaType,
 				&m.MimeType,
 				&m.Size,
+				&m.EpisodeKey,
 				&m.CreatedAt,
 			); err != nil {
 				return err
@@ -107,6 +110,7 @@ func (r *Repository) GetCaptureByID(id int) (CaptureModel, error) {
 			&m.MediaType,
 			&m.MimeType,
 			&m.Size,
+			&m.EpisodeKey,
 			&m.CreatedAt,
 		)
 	})
@@ -116,6 +120,37 @@ func (r *Repository) GetCaptureByID(id int) (CaptureModel, error) {
 	}
 
 	return m, nil
+}
+
+// GetCaptureByEpisodeKey returns the most recent completed capture archived
+// under the given episode_key. The boolean is false (with a nil error) when no
+// capture matches, so the caller can distinguish "not archived yet" from a real
+// query failure.
+func (r *Repository) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error) {
+	var m CaptureModel
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.GetCaptureByEpisodeKeyQuery, episodeKey).Scan(
+			&m.ID,
+			&m.Name,
+			&m.FileName,
+			&m.FilePath,
+			&m.MediaType,
+			&m.MimeType,
+			&m.Size,
+			&m.EpisodeKey,
+			&m.CreatedAt,
+		)
+	})
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return CaptureModel{}, false, nil
+		}
+		return m, false, fmt.Errorf("GetCaptureByEpisodeKey: %w", err)
+	}
+
+	return m, true, nil
 }
 
 func (r *Repository) DeleteCapture(transaction *sql.Tx, id int) error {
