@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/trash"
 
 	"github.com/fsnotify/fsnotify"
@@ -78,6 +79,12 @@ func (rw *recursiveWatcher) watchTree(dir string, emitPaths bool) error {
 			if trash.IsInsideTrash(rw.root, path) {
 				return filepath.SkipDir
 			}
+			// Never watch the capture upload staging dir: an in-progress chunked
+			// upload rewrites payload.bin every chunk, and indexing the growing
+			// partial file repeatedly leaks memory and floods the job queue.
+			if captures.IsInsideUploadStaging(rw.root, path) {
+				return filepath.SkipDir
+			}
 			if watchErr := rw.watcher.Add(path); watchErr != nil {
 				log.Printf("[watcher] failed to watch %q: %v\n", path, watchErr)
 			}
@@ -124,6 +131,12 @@ func (rw *recursiveWatcher) handleEvent(event fsnotify.Event) {
 	// A delete-to-trash shows up as a Create inside the trash dir; surfacing
 	// it would make the pipeline re-index what the user just deleted.
 	if trash.IsInsideTrash(rw.root, event.Name) {
+		return
+	}
+
+	// In-progress chunked uploads live under capturas/.uploads and rewrite their
+	// payload every chunk; never feed those writes to the indexing pipeline.
+	if captures.IsInsideUploadStaging(rw.root, event.Name) {
 		return
 	}
 
