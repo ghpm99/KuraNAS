@@ -79,20 +79,6 @@
   // -----------------------------------------------------------------------
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.action === "capture_mediasource") {
-      window.dispatchEvent(new Event("__stream_grabber_download_request__"));
-
-      const handler = (e) => {
-        window.removeEventListener(
-          "__stream_grabber_download_response__",
-          handler
-        );
-        sendResponse(e.detail);
-      };
-      window.addEventListener("__stream_grabber_download_response__", handler);
-      return true;
-    }
-
     if (msg.action === "request_title") {
       // Ask MAIN world title-detector to re-run and emit
       window.dispatchEvent(new Event("__stream_grabber_request_title__"));
