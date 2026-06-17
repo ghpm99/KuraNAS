@@ -207,6 +207,31 @@ describe('components/providers/settingsProvider', () => {
         expect(result.current.settings.appearance.accent_color).toBe('violet');
     });
 
+    it('does not crash and fills missing groups when the backend returns a partial payload', async () => {
+        // Regression: a server response missing `players`/`appearance` used to
+        // leave those groups undefined and crash GlobalMusicProvider /
+        // applyAppearanceSettings. The provider must backfill from defaults.
+        mockedGetSettingsConfiguration.mockResolvedValue({
+            library: { runtime_root_path: '/data', watched_paths: [] },
+            language: { current: 'pt-BR', available: ['pt-BR'] },
+        });
+
+        const { result } = renderHook(() => useSettings(), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.settings.players.remember_music_queue).toBe(true);
+        expect(result.current.settings.appearance.accent_color).toBe('violet');
+        // backend-provided fields still win over the defaults
+        expect(result.current.settings.language.current).toBe('pt-BR');
+        // applyAppearanceSettings ran without throwing on the missing group
+        expect(document.documentElement.style.getPropertyValue('--app-color-primary')).toBe(
+            '#6D5DF6'
+        );
+    });
+
     it('exposes isSaving as false before mutation and refresh function', async () => {
         mockedGetSettingsConfiguration.mockResolvedValue(fullSettings());
 
