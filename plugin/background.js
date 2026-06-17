@@ -218,9 +218,18 @@ async function initHybridUploadSession(tabId) {
   }
 
   const apiUrl = await getApiBaseUrl();
-  const name = `recording_${tabId}_${Date.now()}`;
+  // Name the capture after the detected page title (show + episode, e.g.
+  // "Anime - S1 E2 - Título") so the file says which episode it is and episode 2
+  // does not overwrite episode 1. Fall back to a timestamped name when no title
+  // was detected for this tab.
+  const detected = getTitleForTab(tabId);
+  const name =
+    detected && detected.title && detected.title.trim()
+      ? detected.title.trim()
+      : `recording_${tabId}_${Date.now()}`;
   const mimeType = "video/webm";
   const fileName = `${sanitizeFileName(name)}.webm`;
+  logBg(tabId, `nome da captura: "${name}"`);
 
   const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
     method: "POST",
