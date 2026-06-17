@@ -40,7 +40,7 @@ const captureSessions = new Map();
 // Load probe: this prints the moment the service worker starts. If you reload
 // the extension (chrome://extensions -> reload) and open the "service worker"
 // console, seeing this line proves the new code is the one running.
-console.log("[KuraNAS bg] service worker carregado — beta1.2", new Date().toISOString());
+console.log("[KuraNAS bg] service worker carregado — beta1.3", new Date().toISOString());
 
 const uploader = createUploader({
   getApiBaseUrl,
@@ -272,17 +272,28 @@ async function initHybridUploadSession(tabId) {
   return state.uploadSession;
 }
 
+// Streamed chunks arrive as a blob: URL string (a Blob cannot cross
+// chrome.runtime messaging). Fetch it here to recover the real bytes, then
+// revoke so a long recording does not leak blob URLs.
+async function fetchChunkBlob(chunkUrl) {
+  const resp = await fetch(chunkUrl);
+  const blob = await resp.blob();
+  URL.revokeObjectURL(chunkUrl);
+  return blob;
+}
+
 function handleHybridRecordingChunk(tabId, msg) {
   const state = hybridStates.get(tabId);
   if (!state || !state.uploadSession || state.uploadSession.failed) return;
-
-  const chunkBlob = msg.chunk;
-  if (!chunkBlob || !chunkBlob.size) return;
+  if (!msg.chunkUrl) return;
 
   const session = state.uploadSession;
+  const { chunkUrl } = msg;
   session.pending = session.pending
     .then(async () => {
       if (session.failed || session.completed) return;
+      const chunkBlob = await fetchChunkBlob(chunkUrl);
+      if (!chunkBlob.size) return;
       await uploadChunkWithRetry(
         session.apiUrl,
         session.uploadID,
@@ -292,9 +303,15 @@ function handleHybridRecordingChunk(tabId, msg) {
       );
       session.offset += chunkBlob.size;
       session.chunkIndex += 1;
+      console.log(
+        "[KuraNAS bg]",
+        `tab=${tabId}`,
+        `chunk #${session.chunkIndex} enviado (${chunkBlob.size} bytes, offset ${session.offset})`
+      );
     })
     .catch((err) => {
       session.failed = true;
+      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk:", err && err.message);
       chrome.runtime
         .sendMessage({
           action: "hybrid_upload_error",
@@ -439,13 +456,15 @@ function handleEpisodeRecordingChunk(tabId, msg) {
   const state = captureSessions.get(tabId);
   if (!state || !state.upload || state.upload.failed) return;
 
-  const chunkBlob = msg.chunk;
-  if (!chunkBlob || !chunkBlob.size) return;
+  if (!msg.chunkUrl) return;
 
   const session = state.upload;
+  const { chunkUrl } = msg;
   session.pending = session.pending
     .then(async () => {
       if (session.failed || session.completed) return;
+      const chunkBlob = await fetchChunkBlob(chunkUrl);
+      if (!chunkBlob.size) return;
       await uploadChunkWithRetry(
         session.apiUrl,
         session.uploadID,
