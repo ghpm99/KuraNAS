@@ -86,3 +86,26 @@ test('uploadBlobCapture uploads fetched blob', async () => {
   assert.equal(result.ok, true);
   assert.equal(result.name, 'capture_name');
 });
+
+test('uploadToKuraNAS rejects an empty blob before any network call', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+  let fetchCalled = false;
+
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'webm',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    fetchImpl: async () => {
+      fetchCalled = true;
+      return { ok: true, json: async () => ({}) };
+    },
+  });
+
+  const emptyBlob = new Blob([], { type: 'video/webm' });
+  await assert.rejects(
+    () => uploader.uploadToKuraNAS(emptyBlob, 'recording_empty', 'recording'),
+    /empty/i
+  );
+  assert.equal(fetchCalled, false);
+});
