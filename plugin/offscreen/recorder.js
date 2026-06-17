@@ -102,6 +102,7 @@ async function startRecording(tabId, streamId, streamUpload) {
 
     let dataEvents = 0;
     let emptyDataEvents = 0;
+    let streamedBytes = 0;
     const startedAt = Date.now();
 
     recorder.onstart = () => logRec(tabId, "recorder START");
@@ -120,11 +121,18 @@ async function startRecording(tabId, streamId, streamUpload) {
       logRec(tabId, `ondataavailable #${dataEvents}: ${e.data.size} bytes`);
 
       if (streamUpload) {
+        // A Blob does NOT survive chrome.runtime.sendMessage (JSON serialization
+        // turns it into {}), which silently dropped every streamed chunk. Pass a
+        // blob: URL string instead — the service worker fetches it to get the
+        // bytes. Same proven trick the non-stream path uses for the final blob.
+        streamedBytes += e.data.size;
+        const chunkUrl = URL.createObjectURL(e.data);
         chrome.runtime
           .sendMessage({
             action: "hybrid_recording_chunk",
             tabId,
-            chunk: e.data,
+            chunkUrl,
+            size: e.data.size,
           })
           .catch(() => {});
         return;
@@ -138,8 +146,10 @@ async function startRecording(tabId, streamId, streamUpload) {
       const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
       logRec(
         tabId,
-        `recorder STOP: ${elapsedMs}ms, ${dataEvents} eventos ` +
-          `(${emptyDataEvents} vazios), ${totalBytes} bytes acumulados`
+        `recorder STOP: ${elapsedMs}ms, ${dataEvents} eventos (${emptyDataEvents} vazios), ` +
+          (streamUpload
+            ? `${streamedBytes} bytes transmitidos (stream)`
+            : `${totalBytes} bytes acumulados`)
       );
 
       if (streamUpload) {
