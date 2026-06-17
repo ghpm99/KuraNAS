@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KuraNAS Stream Grabber",
-  "version": "1.11.0",
-  "version_name": "beta1.11",
+  "version": "1.12.0",
+  "version_name": "beta1.12",
   "description": "Detect and capture media streams, sending them to your KuraNAS server.",
   "permissions": [
     "activeTab",
@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/bridge.js"],
+      "js": ["content/control-hider.js", "content/bridge.js"],
       "run_at": "document_start",
       "world": "ISOLATED"
     },

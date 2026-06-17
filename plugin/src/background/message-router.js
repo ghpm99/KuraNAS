@@ -27,7 +27,7 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       return false;
 
     case "hybrid_arm":
-      handlers.armHybrid(msg.tabId);
+      handlers.armHybrid(msg.tabId, msg.mode);
       sendResponse({ ok: true });
       return false;
 

@@ -23,7 +23,9 @@ export function createHybridStateMachine({
     };
   }
 
-  function armHybrid(tabId) {
+  // mode: "auto" (Armar — wait for controls to auto-hide) or "dom" (Armar v2 —
+  // edit the DOM to hide controls). Defaults to "auto".
+  function armHybrid(tabId, mode = "auto") {
     let state = hybridStates.get(tabId);
     if (!state) {
       state = {
@@ -35,6 +37,7 @@ export function createHybridStateMachine({
         lastSnapshot: null,
         recording: false,
         preparing: false,
+        mode,
         uploadSession: null,
       };
       hybridStates.set(tabId, state);
@@ -43,6 +46,7 @@ export function createHybridStateMachine({
       state.monitorEnabled = true;
       state.recordingState = "ARMED";
       state.preparing = false;
+      state.mode = mode;
     }
 
     sendTabMessage(tabId, { action: "hybrid_monitor_start" });
@@ -62,6 +66,9 @@ export function createHybridStateMachine({
 
     if (state.recording) {
       stopOffscreenRecording(tabId);
+    }
+    if (state.mode === "dom") {
+      sendTabMessage(tabId, { action: "hybrid_restore_dom" });
     }
     state.uploadSession = null;
 
@@ -93,6 +100,7 @@ export function createHybridStateMachine({
               state.preparing = true;
               sendTabMessage(tabId, {
                 action: "hybrid_prepare_capture",
+                mode: state.mode || "auto",
                 settleMs: hybridPrepareSettleMs,
               });
             }
@@ -168,6 +176,9 @@ export function createHybridStateMachine({
     state.recordingState = "STOPPED";
     broadcastHybridStatus(tabId);
 
+    if (state.mode === "dom") {
+      sendTabMessage(tabId, { action: "hybrid_restore_dom" });
+    }
     stopOffscreenRecording(tabId);
 
     setTimeoutFn(() => {

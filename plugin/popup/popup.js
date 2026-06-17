@@ -59,6 +59,7 @@
   const mediaListEl = $("#mediaList");
   const emptyStateEl = $("#emptyState");
   const btnArm = $("#btnArm");
+  const btnArmV2 = $("#btnArmV2");
   const btnDisarm = $("#btnDisarm");
   const btnStopNow = $("#btnStopNow");
   const hybridStatusEl = $("#hybridStatus");
@@ -377,12 +378,14 @@
     if (!status.armed) {
       hybridStatusEl.textContent = "";
       btnArm.classList.remove("hidden");
+      btnArmV2.classList.remove("hidden");
       btnDisarm.classList.add("hidden");
       btnStopNow.classList.add("hidden");
       return;
     }
 
     btnArm.classList.add("hidden");
+    btnArmV2.classList.add("hidden");
     btnDisarm.classList.remove("hidden");
 
     if (status.state === "RECORDING") {
@@ -404,8 +407,13 @@
   // -----------------------------------------------------------------------
 
   btnArm.addEventListener("click", () => {
-    logPopup("hybrid_arm ->", "tabId=", currentTabId);
-    chrome.runtime.sendMessage({ action: "hybrid_arm", tabId: currentTabId });
+    logPopup("hybrid_arm (auto) ->", "tabId=", currentTabId);
+    chrome.runtime.sendMessage({ action: "hybrid_arm", tabId: currentTabId, mode: "auto" });
+  });
+
+  btnArmV2.addEventListener("click", () => {
+    logPopup("hybrid_arm (dom/v2) ->", "tabId=", currentTabId);
+    chrome.runtime.sendMessage({ action: "hybrid_arm", tabId: currentTabId, mode: "dom" });
   });
 
   btnDisarm.addEventListener("click", () => {
