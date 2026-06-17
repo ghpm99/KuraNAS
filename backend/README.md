@@ -130,7 +130,6 @@ Como subir o backend localmente em modo de desenvolvimento.
    LANGUAGE=pt-BR
    ENABLE_WORKERS=true
    ENV=dev
-   ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
    DB_HOST=localhost
    DB_PORT=5432
    DB_USER=kuranas
@@ -230,7 +229,6 @@ Atualmente o projeto não possui `backend/.env.example`. Use a tabela abaixo com
 | `DB_USER` | Sim | - | Usuário do banco. |
 | `DB_PASSWORD` | Sim | - | Senha do banco. |
 | `DB_NAME` | Sim | - | Nome do banco. |
-| `ALLOWED_ORIGINS` | Sim | - | Lista de origens CORS separadas por vírgula. |
 
 #### Variáveis de workers (opcionais)
 

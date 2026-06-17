@@ -51,17 +51,7 @@ func routeExists(routes gin.RoutesInfo, method, path string) bool {
 	return false
 }
 
-func setAllowedOriginsForTest(t *testing.T) {
-	t.Helper()
-	originalAllowedOrigins := config.AppConfig.AllowedOrigins
-	config.AppConfig.AllowedOrigins = "https://github.com,http://localhost:5173"
-	t.Cleanup(func() {
-		config.AppConfig.AllowedOrigins = originalAllowedOrigins
-	})
-}
-
 func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
-	setAllowedOriginsForTest(t)
 	router := SetUpRouter()
 	RegisterRoutes(router, buildRouteContext())
 
@@ -137,43 +127,35 @@ func TestRegisterSwaggerRoutes(t *testing.T) {
 }
 
 func TestRegisterCorsRoutes(t *testing.T) {
-	setAllowedOriginsForTest(t)
-
 	router := SetUpRouter()
 	registerCorsRoutes(router, buildRouteContext())
 	router.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
 
-	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
-	req.Header.Set("Origin", "https://github.com")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	// Any origin is allowed: CORS is not an access barrier here (the IP whitelist
+	// is), so every origin gets a wildcard allow header.
+	// Note: avoid "example.com" — httptest.NewRequest defaults the request Host
+	// to it, and the cors middleware treats origin == host as a non-CORS request.
+	for _, origin := range []string{"https://github.com", "https://gitlab.com", "http://localhost:5173"} {
+		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		req.Header.Set("Origin", origin)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
-	}
-	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Fatalf("expected credentials header to be true, got %q", got)
-	}
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://github.com" {
-		t.Fatalf("expected allowed origin header, got %q", got)
-	}
-
-	reqDenied := httptest.NewRequest(http.MethodGet, "/ping", nil)
-	reqDenied.Header.Set("Origin", "https://example.com")
-	wDenied := httptest.NewRecorder()
-	router.ServeHTTP(wDenied, reqDenied)
-	if wDenied.Code != http.StatusOK {
-		t.Fatalf("expected 200 for denied-origin request too, got %d", wDenied.Code)
-	}
-	if got := wDenied.Header().Get("Access-Control-Allow-Credentials"); got != "" {
-		t.Fatalf("expected denied-origin request to not include credentials header, got %q", got)
-	}
-	if got := wDenied.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("expected denied-origin request to not include origin header, got %q", got)
+		if w.Code != http.StatusOK {
+			t.Fatalf("origin %s: expected 200, got %d", origin, w.Code)
+		}
+		if got := w.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+			t.Fatalf("origin %s: expected wildcard allow-origin, got %q", origin, got)
+		}
+		// No cookie/session auth, so credentials must never be advertised
+		// (wildcard origin + credentials is invalid per spec anyway).
+		if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "" {
+			t.Fatalf("origin %s: expected no credentials header, got %q", origin, got)
+		}
 	}
 
 	reqPreflight := httptest.NewRequest(http.MethodOptions, "/ping", nil)
-	reqPreflight.Header.Set("Origin", "https://github.com")
+	reqPreflight.Header.Set("Origin", "https://gitlab.com")
 	reqPreflight.Header.Set("Access-Control-Request-Method", http.MethodGet)
 	wPreflight := httptest.NewRecorder()
 	router.ServeHTTP(wPreflight, reqPreflight)
@@ -264,7 +246,6 @@ func TestRegisterReactRoutes_AssetsHaveImmutableCacheHeader(t *testing.T) {
 }
 
 func TestWebDAVRouteIsGatedByConfig(t *testing.T) {
-	setAllowedOriginsForTest(t)
 	previous := config.AppConfig.EnableWebDAV
 	t.Cleanup(func() { config.AppConfig.EnableWebDAV = previous })
 
@@ -310,7 +291,6 @@ func (denyAllAccessControl) IsAllowed(addr netip.Addr) bool { return false }
 func (denyAllAccessControl) Reload() error                  { return nil }
 
 func TestWebDAVSitsBehindTheIPWhitelist(t *testing.T) {
-	setAllowedOriginsForTest(t)
 	previous := config.AppConfig.EnableWebDAV
 	t.Cleanup(func() { config.AppConfig.EnableWebDAV = previous })
 	config.AppConfig.EnableWebDAV = true
