@@ -177,22 +177,12 @@
 
     // ----- Crunchyroll -----
     "crunchyroll.com": function () {
-      // Combine the show (h4) with the episode line (h1, e.g. "S1 E2 - Title")
-      // so the name distinguishes episodes; otherwise every episode of a show
-      // would share the same name and overwrite each other on the server.
-      const showEl = document.querySelector(
-        'h1.hero-heading-line, [class*="CurrentMediaInfo"] h4, .erc-current-media-info h4'
-      );
-      const episodeEl = document.querySelector(
-        '[class*="CurrentMediaInfo"] h1, .erc-current-media-info h1'
-      );
-      const show = showEl && showEl.textContent.trim();
-      const episode = episodeEl && episodeEl.textContent.trim();
+      // Structured TVEpisode data first (series + SxxExx); the player's class
+      // names are obfuscated and unstable, so scraping them is unreliable.
+      const episodeName = extractEpisodeFromLdJson();
+      if (episodeName) return episodeName;
 
-      if (show && episode) return `${show} - ${episode}`;
-      if (show) return show;
-      if (episode) return episode;
-
+      // og:title carries the episode line ("Season 1 | E1 - ...") but no show.
       return extractOpenGraphTitle();
     },
 
@@ -294,6 +284,54 @@
     return null;
   }
 
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  // Build a rich, unique-per-episode name from a TVEpisode node, e.g.
+  // "I Made Friends ... in My Class - S01E02". Falls back to series + the raw
+  // node name, or null if there isn't enough structured data.
+  function buildEpisodeName(node) {
+    const series = node.partOfSeries && node.partOfSeries.name;
+    const epNum = node.episodeNumber;
+    if (series != null && epNum != null) {
+      const season = node.partOfSeason && node.partOfSeason.seasonNumber;
+      const se = (season != null ? `S${pad2(season)}` : "") + `E${pad2(epNum)}`;
+      return `${series} - ${se}`;
+    }
+    if (series && node.name) return `${series} - ${node.name}`;
+    return null;
+  }
+
+  // Prefer structured episode metadata (schema.org TVEpisode in JSON-LD) over
+  // scraping CSS classes — it carries the show, season and episode reliably and
+  // survives the site changing its markup (Crunchyroll obfuscates class names).
+  function extractEpisodeFromLdJson() {
+    const scripts = document.querySelectorAll(
+      'script[type="application/ld+json"]'
+    );
+    for (const script of scripts) {
+      let data;
+      try {
+        data = JSON.parse(script.textContent);
+      } catch {
+        continue;
+      }
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data["@graph"])
+          ? data["@graph"]
+          : [data];
+      for (const item of items) {
+        if (item && item["@type"] === "TVEpisode") {
+          const name = buildEpisodeName(item);
+          if (name) return name;
+        }
+      }
+    }
+    return null;
+  }
+
   function extractFromVideoElement() {
     const videos = document.querySelectorAll("video");
     for (const video of videos) {
@@ -360,7 +398,10 @@
       }
     }
 
-    // 2. JSON-LD structured data
+    // 2. Structured episode metadata (TVEpisode) — best for anime/TV sites.
+    if (!title) title = extractEpisodeFromLdJson();
+
+    // 3. JSON-LD structured data (generic name)
     if (!title) title = extractLdJsonTitle();
 
     // 3. OpenGraph / Twitter meta
@@ -385,7 +426,10 @@
     if (!title || title === lastTitle) return;
     lastTitle = title;
 
-    document.dispatchEvent(
+    // Dispatch on window: the bridge (ISOLATED world) listens with
+    // window.addEventListener. A CustomEvent on document does NOT reach window
+    // unless it bubbles, which is why the title never got relayed before.
+    window.dispatchEvent(
       new CustomEvent("__stream_grabber_title__", {
         detail: {
           title: title.trim(),
