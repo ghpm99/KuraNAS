@@ -6,6 +6,39 @@
   "use strict";
 
   const $ = (sel) => document.querySelector(sel);
+
+  const LOG_PREFIX = "[KuraNAS popup]";
+  const logPopup = (...args) => console.log(LOG_PREFIX, ...args);
+
+  // Describe a clicked element for the log: prefer its id, then a data-action,
+  // then a trimmed text label, finally the tag name.
+  const describeTarget = (el) => {
+    if (el.id) return `#${el.id}`;
+    const action = el.getAttribute("data-action");
+    if (action) return `[data-action=${action}]`;
+    const text = (el.textContent || "").trim().replace(/\s+/g, " ");
+    if (text) return `"${text.slice(0, 40)}"`;
+    return el.tagName.toLowerCase();
+  };
+
+  // Log EVERY click that lands on an actionable element — buttons, links,
+  // list items — including ones created dynamically later. Capture phase so it
+  // runs before the specific handlers, and it never interferes with them.
+  document.addEventListener(
+    "click",
+    (e) => {
+      const el =
+        e.target instanceof Element
+          ? e.target.closest("button, a, [data-action], .btn, .media-item, .quality-item")
+          : null;
+      if (!el) return;
+      logPopup("click:", describeTarget(el));
+    },
+    true
+  );
+
+  logPopup("popup carregado");
+
   const mediaListEl = $("#mediaList");
   const emptyStateEl = $("#emptyState");
   const btnArm = $("#btnArm");
@@ -354,10 +387,12 @@
   // -----------------------------------------------------------------------
 
   btnArm.addEventListener("click", () => {
+    logPopup("hybrid_arm ->", "tabId=", currentTabId);
     chrome.runtime.sendMessage({ action: "hybrid_arm", tabId: currentTabId });
   });
 
   btnDisarm.addEventListener("click", () => {
+    logPopup("hybrid_disarm ->", "tabId=", currentTabId);
     chrome.runtime.sendMessage({
       action: "hybrid_disarm",
       tabId: currentTabId,
@@ -365,6 +400,7 @@
   });
 
   btnStopNow.addEventListener("click", () => {
+    logPopup("hybrid_stop_now ->", "tabId=", currentTabId);
     chrome.runtime.sendMessage({
       action: "hybrid_stop_now",
       tabId: currentTabId,
@@ -375,6 +411,7 @@
 
   btnSaveSettings.addEventListener("click", () => {
     const url = apiUrlInput.value.trim();
+    logPopup("salvar settings -> apiBaseUrl=", url);
     chrome.storage.sync.set({ apiBaseUrl: url });
   });
 
@@ -427,10 +464,12 @@
 
     btnFetch.disabled = true;
     setFetchStatus("Enviando…", "pending");
+    logPopup("ingest_fetch ->", { url, preset, targetRoot, subfolder });
     chrome.runtime.sendMessage(
       { action: "ingest_fetch", payload: { url, preset, targetRoot, subfolder } },
       (response) => {
         btnFetch.disabled = false;
+        logPopup("ingest_fetch <- resposta:", response);
         if (response && response.ok) {
           setFetchStatus(`Enfileirado (job #${response.jobId}).`, "success");
         } else {
