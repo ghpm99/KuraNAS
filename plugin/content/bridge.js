@@ -119,12 +119,12 @@
     }
   }
 
-  // Prepare the page so the recording starts clean from second 0.
-  //   "auto" (Armar):    rewind, wait for the controls overlay to auto-hide,
-  //                      then resume playback.
-  //   "dom"  (Armar v2): rewind, edit the DOM via a control-hider strategy so the
-  //                      controls are not visible (z-index by default), play. No
-  //                      wait. restoreDom() undoes it when recording stops.
+  // Prepare the page before recording.
+  //   "auto" (Armar):    rewind to 0, wait for the controls overlay to auto-hide,
+  //                      then resume playback — a clean capture from the start.
+  //   "dom"  (Armar v2): ONLY edit the DOM (control-hider strategy) to hide the
+  //                      controls. No rewind, no forced play — playback is left
+  //                      exactly as-is and we record from the current position.
   function prepareCapture(mode, settleMs) {
     const video = getMainVideo();
     if (!video) {
@@ -132,27 +132,29 @@
       return;
     }
 
+    const done = () => safeRuntimeSendMessage({ action: "hybrid_prepared", ok: true });
+
+    if (mode === "dom") {
+      if (globalThis.__kuraControlHider) {
+        try {
+          domStrategy = globalThis.__kuraControlHider.resolve(location.hostname);
+          domStrategyVideo = video;
+          domStrategy.apply(video);
+        } catch {
+          domStrategy = null;
+          domStrategyVideo = null;
+        }
+      }
+      done();
+      return;
+    }
+
+    // "auto" mode
     try {
       video.currentTime = 0;
     } catch {
       // some players block seeking; proceed anyway
     }
-
-    const done = () => safeRuntimeSendMessage({ action: "hybrid_prepared", ok: true });
-
-    if (mode === "dom" && globalThis.__kuraControlHider) {
-      try {
-        domStrategy = globalThis.__kuraControlHider.resolve(location.hostname);
-        domStrategyVideo = video;
-        domStrategy.apply(video);
-      } catch {
-        domStrategy = null;
-        domStrategyVideo = null;
-      }
-      playVideo(video, done);
-      return;
-    }
-
     setTimeout(() => playVideo(getMainVideo() || video, done), settleMs);
   }
 
