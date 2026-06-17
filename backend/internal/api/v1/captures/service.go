@@ -58,6 +58,12 @@ type captureUploadSession struct {
 // the recording inside the capture folder.
 const captureMetadataFileName = "metadata.json"
 
+// capturesRootDirName is the folder (under a storage root) that holds saved
+// captures; uploadStagingDirName is the hidden subtree under it where in-progress
+// chunked uploads are assembled before being finalized and moved out.
+const capturesRootDirName = "capturas"
+const uploadStagingDirName = ".uploads"
+
 func NewService(
 	repository RepositoryInterface,
 	uploadJobDispatcher UploadJobDispatcherInterface,
@@ -475,7 +481,20 @@ func (s *Service) DeleteCapture(id int) error {
 
 func buildCaptureDir(name string) string {
 	safeName := sanitizeFileName(name)
-	return filepath.Join(config.AppConfig.EntryPoint, "capturas", safeName)
+	return filepath.Join(config.AppConfig.EntryPoint, capturesRootDirName, safeName)
+}
+
+// IsInsideUploadStaging reports whether path lives in the capture upload staging
+// area (root/capturas/.uploads) of the given storage root. The indexing pipeline
+// (filesystem watcher and scan) uses this to EXCLUDE the staging subtree: a
+// chunked upload rewrites payload.bin on every chunk, so re-indexing the growing
+// partial file each time is pure waste and drives unbounded memory/job growth
+// during a long recording. The finalized capture is indexed explicitly on
+// complete, so nothing real is missed.
+func IsInsideUploadStaging(root string, path string) bool {
+	staging := filepath.Join(filepath.Clean(root), capturesRootDirName, uploadStagingDirName)
+	cleanPath := filepath.Clean(path)
+	return cleanPath == staging || strings.HasPrefix(cleanPath, staging+string(filepath.Separator))
 }
 
 // writeCaptureMetadata persists the client-supplied metadata JSON as a sidecar
@@ -569,7 +588,7 @@ func generateUploadID() (string, error) {
 }
 
 func (s *Service) captureUploadRootDir() string {
-	return filepath.Join(config.AppConfig.EntryPoint, "capturas", ".uploads")
+	return filepath.Join(config.AppConfig.EntryPoint, capturesRootDirName, uploadStagingDirName)
 }
 
 func (s *Service) captureUploadSessionDir(uploadID string) string {
