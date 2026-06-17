@@ -274,8 +274,18 @@ async function initHybridUploadSession(tabId) {
     completed: false,
   };
 
+  logBg(tabId, `upload session HYBRID criada: uploadID=${payload.upload_id}`);
   return state.uploadSession;
 }
+
+function logBg(tabId, ...args) {
+  console.log("[KuraNAS bg]", `tab=${tabId}`, ...args);
+}
+
+// Logged-once guards so the per-chunk handlers (called ~hundreds of times) emit
+// a single line for routing and dropped-chunk reasons instead of flooding.
+const chunkRouteLogged = new Set();
+const chunkDropLogged = new Set();
 
 // Streamed chunks arrive as a blob: URL string (a Blob cannot cross
 // chrome.runtime messaging). Fetch it here to recover the real bytes, then
@@ -289,7 +299,17 @@ async function fetchChunkBlob(chunkUrl) {
 
 function handleHybridRecordingChunk(tabId, msg) {
   const state = hybridStates.get(tabId);
-  if (!state || !state.uploadSession || state.uploadSession.failed) return;
+  if (!state || !state.uploadSession || state.uploadSession.failed) {
+    if (!chunkDropLogged.has(tabId)) {
+      chunkDropLogged.add(tabId);
+      logBg(
+        tabId,
+        "chunk DESCARTADO (hybrid): ",
+        !state ? "sem state" : !state.uploadSession ? "sem uploadSession (init não rodou?)" : "session.failed"
+      );
+    }
+    return;
+  }
   if (!msg.chunkUrl) return;
 
   const session = state.uploadSession;
@@ -298,7 +318,10 @@ function handleHybridRecordingChunk(tabId, msg) {
     .then(async () => {
       if (session.failed || session.completed) return;
       const chunkBlob = await fetchChunkBlob(chunkUrl);
-      if (!chunkBlob.size) return;
+      if (!chunkBlob.size) {
+        logBg(tabId, "chunk vazio após fetch da blob URL (SW não leu a blob?)");
+        return;
+      }
       await uploadChunkWithRetry(
         session.apiUrl,
         session.uploadID,
@@ -308,15 +331,13 @@ function handleHybridRecordingChunk(tabId, msg) {
       );
       session.offset += chunkBlob.size;
       session.chunkIndex += 1;
-      console.log(
-        "[KuraNAS bg]",
-        `tab=${tabId}`,
-        `chunk #${session.chunkIndex} enviado (${chunkBlob.size} bytes, offset ${session.offset})`
-      );
+      if (session.chunkIndex === 1 || session.chunkIndex % 25 === 0) {
+        logBg(tabId, `chunk #${session.chunkIndex} enviado (offset ${session.offset} bytes)`);
+      }
     })
     .catch((err) => {
       session.failed = true;
-      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk:", err && err.message);
+      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk (hybrid):", err && err.message);
       chrome.runtime
         .sendMessage({
           action: "hybrid_upload_error",
@@ -334,6 +355,7 @@ async function handleHybridRecordingComplete(tabId) {
   const session = state.uploadSession;
   try {
     await session.pending;
+    logBg(tabId, `complete HYBRID: ${session.chunkIndex} chunks, ${session.offset} bytes, failed=${session.failed}`);
     if (session.failed || session.completed) {
       state.uploadSession = null;
       return;
@@ -350,6 +372,7 @@ async function handleHybridRecordingComplete(tabId) {
       throw new Error(`Complete hybrid upload failed (${completeResp.status}): ${body}`);
     }
 
+    logBg(tabId, "complete HYBRID OK (captura salva)");
     session.completed = true;
   } catch (err) {
     chrome.runtime
@@ -430,6 +453,8 @@ async function startEpisodeCapture(tabId, { episodeKey, title }) {
     episodeKey,
   };
 
+  logBg(tabId, `upload session EPISODE criada: uploadID=${payload.upload_id}, offset=${state.upload.offset}`);
+
   const streamId = await chrome.tabCapture.getMediaStreamId({
     targetTabId: tabId,
   });
@@ -459,7 +484,17 @@ function broadcastCaptureSessionStatus(tabId) {
 
 function handleEpisodeRecordingChunk(tabId, msg) {
   const state = captureSessions.get(tabId);
-  if (!state || !state.upload || state.upload.failed) return;
+  if (!state || !state.upload || state.upload.failed) {
+    if (!chunkDropLogged.has(tabId)) {
+      chunkDropLogged.add(tabId);
+      logBg(
+        tabId,
+        "chunk DESCARTADO (episode): ",
+        !state ? "sem state" : !state.upload ? "sem upload session" : "session.failed"
+      );
+    }
+    return;
+  }
 
   if (!msg.chunkUrl) return;
 
@@ -469,7 +504,10 @@ function handleEpisodeRecordingChunk(tabId, msg) {
     .then(async () => {
       if (session.failed || session.completed) return;
       const chunkBlob = await fetchChunkBlob(chunkUrl);
-      if (!chunkBlob.size) return;
+      if (!chunkBlob.size) {
+        logBg(tabId, "chunk vazio após fetch da blob URL (SW não leu a blob?)");
+        return;
+      }
       await uploadChunkWithRetry(
         session.apiUrl,
         session.uploadID,
@@ -479,9 +517,13 @@ function handleEpisodeRecordingChunk(tabId, msg) {
       );
       session.offset += chunkBlob.size;
       session.chunkIndex += 1;
+      if (session.chunkIndex === 1 || session.chunkIndex % 25 === 0) {
+        logBg(tabId, `chunk #${session.chunkIndex} enviado (offset ${session.offset} bytes) [episode]`);
+      }
     })
-    .catch(() => {
+    .catch((err) => {
       session.failed = true;
+      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk (episode):", err && err.message);
     });
 }
 
@@ -518,7 +560,12 @@ function tabHasSmartSession(tabId) {
 }
 
 function dispatchRecordingChunk(tabId, msg) {
-  if (tabHasSmartSession(tabId)) {
+  const smart = tabHasSmartSession(tabId);
+  if (!chunkRouteLogged.has(tabId)) {
+    chunkRouteLogged.add(tabId);
+    logBg(tabId, `roteando chunks -> ${smart ? "sessão SMART (episódio)" : "hybrid MANUAL"}`);
+  }
+  if (smart) {
     handleEpisodeRecordingChunk(tabId, msg);
     return;
   }
@@ -526,7 +573,11 @@ function dispatchRecordingChunk(tabId, msg) {
 }
 
 function dispatchRecordingComplete(tabId) {
-  if (tabHasSmartSession(tabId)) {
+  const smart = tabHasSmartSession(tabId);
+  logBg(tabId, `complete recebido -> ${smart ? "sessão SMART" : "hybrid MANUAL"}`);
+  chunkRouteLogged.delete(tabId);
+  chunkDropLogged.delete(tabId);
+  if (smart) {
     handleEpisodeRecordingComplete(tabId);
     return;
   }
