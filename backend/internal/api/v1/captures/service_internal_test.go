@@ -313,6 +313,36 @@ func TestServiceChunkedUploadLifecycle(t *testing.T) {
 	}
 }
 
+func TestServiceCompleteCaptureUploadEmptyReturnsErrEmptyCapture(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+
+	// Init a session but never upload a chunk (an empty recording blob). The
+	// plugin sends zero chunks, so there is no temp file to finalize.
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:      "empty_recording",
+		MediaType: "recording",
+		MimeType:  "video/webm",
+		Size:      0,
+		FileName:  "recording.webm",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	_, err = service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID})
+	if !errors.Is(err, ErrEmptyCapture) {
+		t.Fatalf("expected ErrEmptyCapture, got %v", err)
+	}
+
+	// The session dir must be cleaned up rather than left dangling.
+	if _, statErr := os.Stat(service.captureUploadSessionDir(initResult.UploadID)); !os.IsNotExist(statErr) {
+		t.Fatalf("expected session dir removed, stat err = %v", statErr)
+	}
+}
+
 func TestServiceInitCaptureUploadSkipsAlreadyArchivedEpisode(t *testing.T) {
 	dir := t.TempDir()
 	setEntryPointForTest(t, dir)

@@ -376,6 +376,34 @@ func TestCapturesHandlerErrorResponses(t *testing.T) {
 	})
 }
 
+// capturesHandlerEmptyServiceMock returns ErrEmptyCapture from
+// CompleteCaptureUpload to exercise the 400 mapping (an empty capture is a
+// client condition, not a server failure).
+type capturesHandlerEmptyServiceMock struct {
+	capturesHandlerErrServiceMock
+}
+
+func (m *capturesHandlerEmptyServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
+	return CaptureDto{}, fmt.Errorf("complete: %w", ErrEmptyCapture)
+}
+
+func TestCompleteCaptureUploadEmptyReturns400(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&capturesHandlerEmptyServiceMock{}, &capturesLoggerMock{})
+	router := gin.New()
+	router.POST("/captures/upload/complete", handler.CompleteCaptureUploadHandler)
+
+	req := buildJSONRequest(t, http.MethodPost, "/captures/upload/complete", CompleteCaptureUploadDto{
+		UploadID: "abc",
+	})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected %d, got %d, body=%s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Tests — NewHandler constructor
 // ---------------------------------------------------------------------------

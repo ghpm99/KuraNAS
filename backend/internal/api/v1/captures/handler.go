@@ -1,6 +1,7 @@
 package captures
 
 import (
+	"errors"
 	"fmt"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
@@ -162,6 +163,10 @@ func (h *Handler) CompleteCaptureUploadHandler(c *gin.Context) {
 	result, err := h.service.CompleteCaptureUpload(dto)
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
+		if errors.Is(err, ErrEmptyCapture) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_EMPTY")})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
 		return
 	}
