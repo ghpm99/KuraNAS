@@ -9,6 +9,7 @@ export function createHybridStateMachine({
   stopOffscreenRecording,
   hybridStabilityMs,
   hybridStopGraceMs,
+  hybridPrepareSettleMs = 3000,
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
 }) {
@@ -33,6 +34,7 @@ export function createHybridStateMachine({
         graceTimer: null,
         lastSnapshot: null,
         recording: false,
+        preparing: false,
         uploadSession: null,
       };
       hybridStates.set(tabId, state);
@@ -40,6 +42,7 @@ export function createHybridStateMachine({
       state.armed = true;
       state.monitorEnabled = true;
       state.recordingState = "ARMED";
+      state.preparing = false;
     }
 
     sendTabMessage(tabId, { action: "hybrid_monitor_start" });
@@ -55,6 +58,7 @@ export function createHybridStateMachine({
     state.armed = false;
     state.monitorEnabled = false;
     state.recordingState = "IDLE";
+    state.preparing = false;
 
     if (state.recording) {
       stopOffscreenRecording(tabId);
@@ -78,13 +82,22 @@ export function createHybridStateMachine({
       !snapshot.isEnded;
 
     if (state.recordingState === "ARMED") {
+      // Precondition met (playing + fullscreen). Ask the page to rewind to 0,
+      // let the controls overlay fade, then resume playback — only then record,
+      // so the capture starts clean from the beginning. Fire once per arm.
       if (shouldRecord) {
-        clearTimeoutFn(state.stabilityTimer);
-        state.stabilityTimer = setTimeoutFn(() => {
-          if (state.armed && state.recordingState === "ARMED") {
-            startHybridRecording(tabId);
-          }
-        }, hybridStabilityMs);
+        if (!state.preparing) {
+          clearTimeoutFn(state.stabilityTimer);
+          state.stabilityTimer = setTimeoutFn(() => {
+            if (state.armed && state.recordingState === "ARMED" && !state.preparing) {
+              state.preparing = true;
+              sendTabMessage(tabId, {
+                action: "hybrid_prepare_capture",
+                settleMs: hybridPrepareSettleMs,
+              });
+            }
+          }, hybridStabilityMs);
+        }
       } else {
         clearTimeoutFn(state.stabilityTimer);
       }
@@ -112,6 +125,14 @@ export function createHybridStateMachine({
       }
     }
     state.lastUrl = snapshot.url;
+  }
+
+  // The page finished the prepare sequence (rewound + settled + playing). Now
+  // that no controls overlay is showing, begin the actual recording.
+  function handleHybridPrepared(tabId) {
+    const state = hybridStates.get(tabId);
+    if (!state || !state.armed || state.recordingState !== "ARMED") return;
+    startHybridRecording(tabId);
   }
 
   async function startHybridRecording(tabId) {
@@ -197,6 +218,7 @@ export function createHybridStateMachine({
     cleanupTab,
     disarmHybrid,
     getHybridStatus,
+    handleHybridPrepared,
     handleHybridVideoState,
     handleOffscreenError,
     handleOffscreenStarted,

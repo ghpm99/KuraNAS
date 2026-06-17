@@ -22,5 +22,8 @@ export const MEDIA_CONTENT_TYPES = [
 
 export const HYBRID_STABILITY_MS = 200;
 export const HYBRID_STOP_GRACE_MS = 5000;
+// After arming, the page is rewound to 0 and we wait this long for the player
+// controls overlay to fade before starting (so the recording is clean).
+export const HYBRID_PREPARE_SETTLE_MS = 3000;
 export const CAPTURE_UPLOAD_CHUNK_SIZE = 2 * 1024 * 1024;
 export const CAPTURE_UPLOAD_MAX_RETRIES = 3;

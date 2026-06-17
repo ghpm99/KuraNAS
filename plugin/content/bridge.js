@@ -93,7 +93,45 @@
     if (msg.action === "hybrid_monitor_stop") {
       stopMonitor();
     }
+
+    if (msg.action === "hybrid_prepare_capture") {
+      prepareCapture(msg.settleMs || 3000);
+    }
   });
+
+  // Rewind the main video to the start, wait for the player's controls overlay
+  // to fade, then resume playback via code (a programmatic play() does not
+  // re-show the controls). Tells the background when it is ready to record, so
+  // the recording starts clean and from second 0.
+  function prepareCapture(settleMs) {
+    const video = getMainVideo();
+    if (!video) {
+      safeRuntimeSendMessage({ action: "hybrid_prepared", ok: false, reason: "no_video" });
+      return;
+    }
+
+    try {
+      video.currentTime = 0;
+    } catch {
+      // some players block seeking; proceed anyway
+    }
+
+    setTimeout(() => {
+      const v = getMainVideo() || video;
+      const done = () =>
+        safeRuntimeSendMessage({ action: "hybrid_prepared", ok: true });
+      try {
+        const p = v.play();
+        if (p && typeof p.then === "function") {
+          p.then(done).catch(done);
+        } else {
+          done();
+        }
+      } catch {
+        done();
+      }
+    }, settleMs);
+  }
 
   // -----------------------------------------------------------------------
   // 3. Hybrid Video Monitor
