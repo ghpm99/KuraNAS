@@ -345,26 +345,64 @@
     );
   }
 
+  function scheduleEmit(delay) {
+    setTimeout(emitMetadata, delay);
+  }
+
   // Explicit re-detect request (e.g. just before recording starts).
   window.addEventListener("__stream_grabber_request_metadata__", () => {
     lastSerialized = null;
     emitMetadata();
   });
 
-  // Initial + observed detection, mirroring the title-detector's strategy.
+  // Initial detection plus a few delayed re-runs: sites such as Crunchyroll
+  // inject the rich TVEpisode JSON-LD a beat AFTER the first paint, so an early
+  // single pass only sees the generic OpenGraph snapshot.
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => setTimeout(emitMetadata, 600));
+    document.addEventListener("DOMContentLoaded", () => scheduleEmit(600));
   } else {
-    setTimeout(emitMetadata, 400);
+    scheduleEmit(400);
   }
+  scheduleEmit(1500);
+  scheduleEmit(3000);
 
+  // Re-detect on SPA navigation (URL change).
   let lastUrl = location.href;
-  const observer = new MutationObserver(() => {
+  const urlObserver = new MutationObserver(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       lastSerialized = null;
-      setTimeout(emitMetadata, 900);
+      scheduleEmit(900);
+      scheduleEmit(2000);
     }
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  urlObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Re-detect when structured data (JSON-LD) or title/meta tags are added or
+  // changed on the SAME url. This is the fix for the first episode keeping only
+  // the early generic snapshot: the episode's TVEpisode JSON-LD lands after load,
+  // and dedup (lastSerialized) makes these extra passes cheap no-ops otherwise.
+  const head = document.head || document.documentElement;
+  const dataObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      const tag = m.target && m.target.tagName;
+      if (tag === "SCRIPT" || tag === "META" || tag === "TITLE") {
+        scheduleEmit(200);
+        return;
+      }
+      for (const node of m.addedNodes || []) {
+        const ntag = node && node.tagName;
+        if (ntag === "SCRIPT" || ntag === "META") {
+          scheduleEmit(200);
+          return;
+        }
+      }
+    }
+  });
+  dataObserver.observe(head, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["content"],
+  });
 })();

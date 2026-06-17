@@ -257,19 +257,29 @@ async function resolveCaptureName(tabId) {
 // re-detect and wait briefly for a fresh object before giving up (null is fine —
 // a capture may legitimately carry no metadata).
 async function resolveCaptureMetadata(tabId) {
-  const current = getMetadataForTab(tabId);
-  if (current) return current;
-
+  // Prefer "rich" metadata (a resolved title, which on structured-data sites like
+  // Crunchyroll only appears once the TVEpisode JSON-LD is injected — a beat after
+  // load). Keep the best snapshot seen and wait briefly for the title to arrive,
+  // re-asking the page to detect; fall back to whatever partial we have (or null).
   chrome.tabs.sendMessage(tabId, { action: "request_metadata" }).catch(() => {});
-  for (let i = 0; i < 15; i++) {
-    await wait(100);
+
+  let latest = getMetadataForTab(tabId);
+  for (let i = 0; i < 25; i++) {
     const meta = getMetadataForTab(tabId);
     if (meta) {
-      logBg(tabId, `metadados resolvidos após ${(i + 1) * 100}ms`);
-      return meta;
+      latest = meta;
+      if (meta.title) {
+        logBg(tabId, `metadados (com título) resolvidos após ${(i + 1) * 100}ms`);
+        return meta;
+      }
     }
+    await wait(100);
   }
-  return null;
+
+  if (latest) {
+    logBg(tabId, "metadados parciais (sem título estruturado) — usando o que há");
+  }
+  return latest || null;
 }
 
 async function initHybridUploadSession(tabId) {
