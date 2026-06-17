@@ -1,6 +1,7 @@
 package captures
 
 import (
+	"encoding/json"
 	"nas-go/api/pkg/utils"
 	"time"
 )
@@ -32,6 +33,12 @@ type InitCaptureUploadDto struct {
 	Size       int64  `json:"size"`
 	FileName   string `json:"file_name"`
 	EpisodeKey string `json:"episode_key"`
+	// Metadata is an opaque, standardized JSON object the client (browser plugin)
+	// builds from the source site (title, episode, duration, cast, next episode,
+	// origin, …). The server does not interpret it — it persists it verbatim as
+	// metadata.json next to the recording. Keeping it opaque means new fields need
+	// no backend change; the client owns the schema and the per-site de→para.
+	Metadata json.RawMessage `json:"metadata,omitempty"`
 }
 
 // InitCaptureUploadResultDto answers an upload init. When EpisodeKey-based

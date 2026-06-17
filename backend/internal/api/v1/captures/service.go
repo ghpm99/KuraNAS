@@ -1,6 +1,7 @@
 package captures
 
 import (
+	"bytes"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -40,17 +41,22 @@ type notificationServiceInterface interface {
 }
 
 type captureUploadSession struct {
-	UploadID      string    `json:"upload_id"`
-	Name          string    `json:"name"`
-	MediaType     string    `json:"media_type"`
-	MimeType      string    `json:"mime_type"`
-	FileName      string    `json:"file_name"`
-	EpisodeKey    string    `json:"episode_key"`
-	ExpectedSize  int64     `json:"expected_size"`
-	ReceivedSize  int64     `json:"received_size"`
-	CreatedAt     time.Time `json:"created_at"`
-	LastUpdatedAt time.Time `json:"last_updated_at"`
+	UploadID      string          `json:"upload_id"`
+	Name          string          `json:"name"`
+	MediaType     string          `json:"media_type"`
+	MimeType      string          `json:"mime_type"`
+	FileName      string          `json:"file_name"`
+	EpisodeKey    string          `json:"episode_key"`
+	ExpectedSize  int64           `json:"expected_size"`
+	ReceivedSize  int64           `json:"received_size"`
+	Metadata      json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
+	LastUpdatedAt time.Time       `json:"last_updated_at"`
 }
+
+// captureMetadataFileName is the standardized metadata sidecar written next to
+// the recording inside the capture folder.
+const captureMetadataFileName = "metadata.json"
 
 func NewService(
 	repository RepositoryInterface,
@@ -131,6 +137,7 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 		EpisodeKey:    episodeKey,
 		ExpectedSize:  dto.Size,
 		ReceivedSize:  0,
+		Metadata:      dto.Metadata,
 		CreatedAt:     time.Now(),
 		LastUpdatedAt: time.Now(),
 	}
@@ -287,6 +294,13 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 	destPath := filepath.Join(captureDir, sanitizeFileName(filepath.Base(session.FileName)))
 	if err := moveFile(tempPath, destPath); err != nil {
 		uploadErr := fmt.Errorf("CompleteCaptureUpload: finalize upload file: %w", err)
+		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
+		return CaptureDto{}, uploadErr
+	}
+
+	if err := writeCaptureMetadata(captureDir, session.Metadata); err != nil {
+		uploadErr := fmt.Errorf("CompleteCaptureUpload: write metadata: %w", err)
+		_ = os.Remove(destPath)
 		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
 		return CaptureDto{}, uploadErr
 	}
@@ -462,6 +476,27 @@ func (s *Service) DeleteCapture(id int) error {
 func buildCaptureDir(name string) string {
 	safeName := sanitizeFileName(name)
 	return filepath.Join(config.AppConfig.EntryPoint, "capturas", safeName)
+}
+
+// writeCaptureMetadata persists the client-supplied metadata JSON as a sidecar
+// (metadata.json) inside the capture folder, beside the recording. The payload
+// is opaque to the server; it is only re-indented for readability and validated
+// as JSON. An empty payload is a no-op (captures may arrive without metadata).
+func writeCaptureMetadata(captureDir string, raw json.RawMessage) error {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, raw, "", "  "); err != nil {
+		return fmt.Errorf("writeCaptureMetadata: invalid metadata json: %w", err)
+	}
+
+	metadataPath := filepath.Join(captureDir, captureMetadataFileName)
+	if err := os.WriteFile(metadataPath, pretty.Bytes(), 0644); err != nil {
+		return fmt.Errorf("writeCaptureMetadata: write file: %w", err)
+	}
+	return nil
 }
 
 func sanitizeFileName(name string) string {
