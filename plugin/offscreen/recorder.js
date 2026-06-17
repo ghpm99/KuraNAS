@@ -5,6 +5,56 @@
 
 const recordings = new Map();
 
+const LOG_PREFIX = "[KuraNAS rec]";
+
+function logRec(tabId, ...args) {
+  console.log(LOG_PREFIX, `tab=${tabId}`, ...args);
+}
+
+// describeTrack dumps everything that tells empty-frame-by-DRM apart from other
+// causes: a Widevine-protected tab capture typically hands back a video track
+// that is `muted: true` and/or reports 0x0 with no real frames, while a normal
+// capture reports the page's dimensions and `muted: false`.
+function describeTrack(track) {
+  const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
+  return {
+    kind: track.kind,
+    label: track.label,
+    enabled: track.enabled,
+    muted: track.muted,
+    readyState: track.readyState,
+    width: settings.width,
+    height: settings.height,
+    frameRate: settings.frameRate,
+  };
+}
+
+function logStreamDiagnostics(tabId, stream) {
+  const videoTracks = stream.getVideoTracks();
+  const audioTracks = stream.getAudioTracks();
+
+  logRec(tabId, `stream obtido: ${videoTracks.length} vídeo, ${audioTracks.length} áudio`);
+
+  videoTracks.forEach((track, i) => {
+    const info = describeTrack(track);
+    logRec(tabId, `vídeo[${i}]`, info);
+    if (info.muted) {
+      console.warn(
+        LOG_PREFIX,
+        `tab=${tabId}`,
+        "track de vídeo está MUTED — forte indício de DRM/Widevine (frames não chegam)."
+      );
+    }
+    // DRM/policy changes can mute the track AFTER capture starts; watch for it.
+    track.onmute = () =>
+      console.warn(LOG_PREFIX, `tab=${tabId}`, "vídeo MUTED durante a gravação (DRM?).");
+    track.onunmute = () => logRec(tabId, "vídeo UNMUTED (frames voltaram).");
+    track.onended = () => logRec(tabId, "track de vídeo ENDED.");
+  });
+
+  audioTracks.forEach((track, i) => logRec(tabId, `áudio[${i}]`, describeTrack(track)));
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "offscreen_start_recording") {
     startRecording(msg.tabId, msg.streamId, Boolean(msg.streamUpload));
@@ -34,28 +84,55 @@ async function startRecording(tabId, streamId, streamUpload) {
       },
     });
 
+    logStreamDiagnostics(tabId, stream);
+
     const mimeType = selectMimeType();
+    logRec(tabId, `MediaRecorder mimeType=${mimeType}, streamUpload=${streamUpload}`);
     const recorder = new MediaRecorder(stream, { mimeType });
     const chunks = [];
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        if (streamUpload) {
-          chrome.runtime
-            .sendMessage({
-              action: "hybrid_recording_chunk",
-              tabId,
-              chunk: e.data,
-            })
-            .catch(() => {});
-          return;
-        }
+    let dataEvents = 0;
+    let emptyDataEvents = 0;
+    const startedAt = Date.now();
 
-        chunks.push(e.data);
+    recorder.onstart = () => logRec(tabId, "recorder START");
+
+    recorder.ondataavailable = (e) => {
+      dataEvents += 1;
+      if (e.data.size === 0) {
+        emptyDataEvents += 1;
+        logRec(
+          tabId,
+          `ondataavailable #${dataEvents}: 0 byte (vazio ${emptyDataEvents}x) — sem frames (DRM?)`
+        );
+        return;
       }
+
+      logRec(tabId, `ondataavailable #${dataEvents}: ${e.data.size} bytes`);
+
+      if (streamUpload) {
+        chrome.runtime
+          .sendMessage({
+            action: "hybrid_recording_chunk",
+            tabId,
+            chunk: e.data,
+          })
+          .catch(() => {});
+        return;
+      }
+
+      chunks.push(e.data);
     };
 
     recorder.onstop = () => {
+      const elapsedMs = Date.now() - startedAt;
+      const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
+      logRec(
+        tabId,
+        `recorder STOP: ${elapsedMs}ms, ${dataEvents} eventos ` +
+          `(${emptyDataEvents} vazios), ${totalBytes} bytes acumulados`
+      );
+
       if (streamUpload) {
         chrome.runtime
           .sendMessage({
@@ -64,15 +141,20 @@ async function startRecording(tabId, streamId, streamUpload) {
           })
           .catch(() => {});
       } else {
-        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
-
-        if (totalSize === 0) {
+        if (totalBytes === 0) {
           // The stream produced no media data, so the recording is empty. This is
           // typical of DRM-protected playback (e.g. Widevine on Crunchyroll) or a
           // recording stopped before any frame was captured. Fail loudly here
           // instead of creating an empty blob that the backend would reject.
+          // The diagnostics above (track muted?, dataEvents, elapsedMs) tell which.
+          const likelyDrm = dataEvents === 0 || emptyDataEvents === dataEvents;
           console.warn(
-            "[KuraNAS] Gravação vazia: nenhum dado de mídia capturado (DRM ou gravação muito curta?)"
+            LOG_PREFIX,
+            `tab=${tabId}`,
+            `Gravação vazia: ${dataEvents} eventos, ${emptyDataEvents} vazios, ${elapsedMs}ms. ` +
+              (likelyDrm
+                ? "Nenhum frame chegou — provável DRM/Widevine."
+                : "Houve dados mas o total é 0 — verifique acima.")
           );
           chrome.runtime.sendMessage({
             action: "hybrid_offscreen_error",
@@ -102,22 +184,28 @@ async function startRecording(tabId, streamId, streamUpload) {
     };
 
     recorder.onerror = (e) => {
+      const message = e.error ? e.error.message : "Unknown recorder error";
+      console.error(LOG_PREFIX, `tab=${tabId}`, "recorder ERROR:", message);
       chrome.runtime.sendMessage({
         action: "hybrid_offscreen_error",
         tabId,
-        error: e.error ? e.error.message : "Unknown recorder error",
+        error: message,
       });
       cleanupRecording(tabId);
     };
 
     recordings.set(tabId, { recorder, stream, url: null });
     recorder.start(1000);
+    logRec(tabId, "recorder.start(1000) chamado");
 
     chrome.runtime.sendMessage({
       action: "hybrid_offscreen_started",
       tabId,
     });
   } catch (err) {
+    // getUserMedia/tabCapture failed outright (permission, invalid streamId, or
+    // the capture was denied for the protected content).
+    console.error(LOG_PREFIX, `tab=${tabId}`, "falha ao iniciar captura:", err.message);
     chrome.runtime.sendMessage({
       action: "hybrid_offscreen_error",
       tabId,
