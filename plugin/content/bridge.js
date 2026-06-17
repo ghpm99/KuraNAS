@@ -95,15 +95,37 @@
     }
 
     if (msg.action === "hybrid_prepare_capture") {
-      prepareCapture(msg.settleMs || 3000);
+      prepareCapture(msg.mode || "auto", msg.settleMs || 3000);
+    }
+
+    if (msg.action === "hybrid_restore_dom") {
+      restoreDom();
     }
   });
 
-  // Rewind the main video to the start, wait for the player's controls overlay
-  // to fade, then resume playback via code (a programmatic play() does not
-  // re-show the controls). Tells the background when it is ready to record, so
-  // the recording starts clean and from second 0.
-  function prepareCapture(settleMs) {
+  let domStrategy = null;
+  let domStrategyVideo = null;
+
+  function playVideo(video, done) {
+    try {
+      const p = video.play();
+      if (p && typeof p.then === "function") {
+        p.then(done).catch(done);
+      } else {
+        done();
+      }
+    } catch {
+      done();
+    }
+  }
+
+  // Prepare the page so the recording starts clean from second 0.
+  //   "auto" (Armar):    rewind, wait for the controls overlay to auto-hide,
+  //                      then resume playback.
+  //   "dom"  (Armar v2): rewind, edit the DOM via a control-hider strategy so the
+  //                      controls are not visible (z-index by default), play. No
+  //                      wait. restoreDom() undoes it when recording stops.
+  function prepareCapture(mode, settleMs) {
     const video = getMainVideo();
     if (!video) {
       safeRuntimeSendMessage({ action: "hybrid_prepared", ok: false, reason: "no_video" });
@@ -116,21 +138,35 @@
       // some players block seeking; proceed anyway
     }
 
-    setTimeout(() => {
-      const v = getMainVideo() || video;
-      const done = () =>
-        safeRuntimeSendMessage({ action: "hybrid_prepared", ok: true });
+    const done = () => safeRuntimeSendMessage({ action: "hybrid_prepared", ok: true });
+
+    if (mode === "dom" && globalThis.__kuraControlHider) {
       try {
-        const p = v.play();
-        if (p && typeof p.then === "function") {
-          p.then(done).catch(done);
-        } else {
-          done();
-        }
+        domStrategy = globalThis.__kuraControlHider.resolve(location.hostname);
+        domStrategyVideo = video;
+        domStrategy.apply(video);
       } catch {
-        done();
+        domStrategy = null;
+        domStrategyVideo = null;
       }
-    }, settleMs);
+      playVideo(video, done);
+      return;
+    }
+
+    setTimeout(() => playVideo(getMainVideo() || video, done), settleMs);
+  }
+
+  // Undo the DOM edits made by the "dom" strategy (called when recording stops).
+  function restoreDom() {
+    if (domStrategy && domStrategyVideo) {
+      try {
+        domStrategy.restore(domStrategyVideo);
+      } catch {
+        // best effort
+      }
+    }
+    domStrategy = null;
+    domStrategyVideo = null;
   }
 
   // -----------------------------------------------------------------------
