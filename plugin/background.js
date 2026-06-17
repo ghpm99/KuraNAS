@@ -293,7 +293,13 @@ const chunkDropLogged = new Set();
 async function fetchChunkBlob(chunkUrl) {
   const resp = await fetch(chunkUrl);
   const blob = await resp.blob();
-  URL.revokeObjectURL(chunkUrl);
+  // URL.revokeObjectURL does NOT exist in the MV3 service worker (it threw
+  // "is not a function" and failed the whole upload). The bytes are already read
+  // above, so ask the offscreen document — which created the blob URL and where
+  // URL.revokeObjectURL does exist — to revoke it.
+  chrome.runtime
+    .sendMessage({ action: "offscreen_revoke_url", url: chunkUrl })
+    .catch(() => {});
   return blob;
 }
 

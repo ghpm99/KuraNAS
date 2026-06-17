@@ -71,6 +71,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "offscreen_stop_recording") {
     stopRecording(msg.tabId);
   }
+  if (msg.action === "offscreen_revoke_url" && msg.url) {
+    // The service worker finished reading a streamed chunk's blob URL. Revoke it
+    // here (the doc that created it) since URL.revokeObjectURL is unavailable in
+    // the service worker.
+    try {
+      URL.revokeObjectURL(msg.url);
+    } catch (_e) {
+      // best effort
+    }
+  }
 });
 
 async function startRecording(tabId, streamId, streamUpload) {
