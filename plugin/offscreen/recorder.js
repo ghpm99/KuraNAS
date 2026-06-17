@@ -130,8 +130,17 @@ async function startRecording(tabId, streamId, streamUpload) {
     const audioContext = setupAudioPassthrough(tabId, stream);
 
     const mimeType = selectMimeType();
-    logRec(tabId, `MediaRecorder mimeType=${mimeType}, streamUpload=${streamUpload}`);
-    const recorder = new MediaRecorder(stream, { mimeType });
+    const { videoBitsPerSecond, audioBitsPerSecond } = selectBitrates(stream);
+    logRec(
+      tabId,
+      `MediaRecorder mimeType=${mimeType}, vídeo=${Math.round(videoBitsPerSecond / 1e6)}Mbps, ` +
+        `áudio=${Math.round(audioBitsPerSecond / 1e3)}kbps, streamUpload=${streamUpload}`
+    );
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond,
+      audioBitsPerSecond,
+    });
     const chunks = [];
 
     let dataEvents = 0;
@@ -287,6 +296,36 @@ function cleanupRecording(tabId) {
     URL.revokeObjectURL(rec.url);
   }
   recordings.delete(tabId);
+}
+
+// Quality target. The design goal is to save the capture as close to the frames
+// the browser actually rendered as practical — the LAN (2.5 Gbps) and the server
+// favor quality over size, and the recording machine only records (all heavy
+// processing is async on the server). So we provision a HIGH bitrate sized to the
+// real captured resolution/framerate via a bits-per-pixel-per-frame budget, with
+// a generous ceiling. VP9 is VBR: complex scenes spend up to this ceiling while
+// calm scenes stay small, so over-provisioning costs little and never under-codes.
+const QUALITY_BITS_PER_PIXEL = 0.15; // ~visually lossless for VP9 screen capture
+const MIN_VIDEO_BITS_PER_SECOND = 8000000; // 8 Mbps floor (low-res tabs still crisp)
+const MAX_VIDEO_BITS_PER_SECOND = 120000000; // 120 Mbps ceiling (covers 4K60)
+const AUDIO_BITS_PER_SECOND = 320000; // 320 kbps Opus (transparent)
+
+// selectBitrates derives the encoder bitrate from the ACTUAL captured track
+// (its rendered width/height/frameRate), so 4K60 gets far more than 1080p30.
+function selectBitrates(stream) {
+  const track = stream.getVideoTracks()[0];
+  const settings =
+    track && typeof track.getSettings === "function" ? track.getSettings() : {};
+  const width = settings.width || 1920;
+  const height = settings.height || 1080;
+  const frameRate = Math.min(settings.frameRate || 60, 60);
+
+  const target = Math.round(width * height * frameRate * QUALITY_BITS_PER_PIXEL);
+  const videoBitsPerSecond = Math.max(
+    MIN_VIDEO_BITS_PER_SECOND,
+    Math.min(target, MAX_VIDEO_BITS_PER_SECOND)
+  );
+  return { videoBitsPerSecond, audioBitsPerSecond: AUDIO_BITS_PER_SECOND };
 }
 
 function selectMimeType() {
