@@ -4,24 +4,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 	"time"
 )
 
-// RotateConfig bounds the forensic log on disk so it never grows unbounded.
+// RotateConfig caps the size of the active forensic log file. Rotated files are
+// kept indefinitely — nothing on disk is ever deleted automatically.
 type RotateConfig struct {
-	Dir        string // directory holding the log files
-	Prefix     string // file name prefix, e.g. "kuranas-"
-	MaxSizeMB  int    // rotate the active file once it exceeds this size
-	MaxBackups int    // how many rotated files to keep (0 = keep all)
-	MaxAgeDays int    // delete rotated files older than this (0 = no age limit)
+	Dir       string // directory holding the log files
+	Prefix    string // file name prefix, e.g. "kuranas-"
+	MaxSizeMB int    // rotate the active file once it exceeds this size
 }
 
 // RotatingFile is an io.Writer that appends to a single active log file and
-// rolls it over to a timestamped name once MaxSizeMB is exceeded, pruning old
-// files by count and age. It is safe for concurrent use.
+// rolls it over to a timestamped name once MaxSizeMB is exceeded. Rotated files
+// are never pruned. It is safe for concurrent use.
 type RotatingFile struct {
 	cfg RotateConfig
 
@@ -55,7 +52,6 @@ func NewRotatingFile(cfg RotateConfig) (*RotatingFile, error) {
 	if err := rf.openNew(); err != nil {
 		return nil, err
 	}
-	rf.prune()
 	return rf, nil
 }
 
@@ -118,66 +114,5 @@ func (rf *RotatingFile) rotate() error {
 	if rf.file != nil {
 		_ = rf.file.Close()
 	}
-	if err := rf.openNew(); err != nil {
-		return err
-	}
-	rf.prune()
-	return nil
-}
-
-// prune removes rotated files beyond MaxBackups (by count, oldest first) and
-// older than MaxAgeDays. Best-effort: removal errors are ignored.
-func (rf *RotatingFile) prune() {
-	if rf.cfg.MaxBackups <= 0 && rf.cfg.MaxAgeDays <= 0 {
-		return
-	}
-
-	entries, err := os.ReadDir(rf.cfg.Dir)
-	if err != nil {
-		return
-	}
-
-	type logFile struct {
-		path    string
-		modTime time.Time
-	}
-	var files []logFile
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasPrefix(entry.Name(), rf.cfg.Prefix) || !strings.HasSuffix(entry.Name(), ".log") {
-			continue
-		}
-		info, infoErr := entry.Info()
-		if infoErr != nil {
-			continue
-		}
-		files = append(files, logFile{path: filepath.Join(rf.cfg.Dir, entry.Name()), modTime: info.ModTime()})
-	}
-
-	// Newest first so the active file and the most recent backups are kept.
-	sort.Slice(files, func(i, j int) bool { return files[i].modTime.After(files[j].modTime) })
-
-	activePath := ""
-	if rf.file != nil {
-		activePath = rf.file.Name()
-	}
-
-	cutoff := time.Time{}
-	if rf.cfg.MaxAgeDays > 0 {
-		cutoff = time.Now().Add(-time.Duration(rf.cfg.MaxAgeDays) * 24 * time.Hour)
-	}
-
-	kept := 0
-	for _, f := range files {
-		if f.path == activePath {
-			kept++
-			continue
-		}
-		tooMany := rf.cfg.MaxBackups > 0 && kept >= rf.cfg.MaxBackups
-		tooOld := rf.cfg.MaxAgeDays > 0 && f.modTime.Before(cutoff)
-		if tooMany || tooOld {
-			_ = os.Remove(f.path)
-			continue
-		}
-		kept++
-	}
+	return rf.openNew()
 }
