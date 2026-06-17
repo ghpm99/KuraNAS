@@ -97,3 +97,58 @@ test('hybrid state prepares then records when stable playback conditions are met
   assert.equal(runtimeMessages[0].tabId, 20);
   assert.equal(machine.getHybridStatus(20).state, 'RECORDING');
 });
+
+test('hybrid state keeps capturing the next episode after a URL change (continuous)', async () => {
+  const { createHybridStateMachine } = await import(hybridStateModuleUrl);
+  const hybridStates = new Map();
+  const tabMessages = [];
+
+  const machine = createHybridStateMachine({
+    hybridStates,
+    broadcastHybridStatus: () => {},
+    initHybridUploadSession: async () => {},
+    ensureOffscreen: async () => {},
+    getMediaStreamId: async () => 'stream-id',
+    sendRuntimeMessage: () => {},
+    sendTabMessage: (tabId, message) => tabMessages.push([tabId, message.action]),
+    stopOffscreenRecording: () => {},
+    hybridStabilityMs: 200,
+    hybridStopGraceMs: 5000,
+    setTimeoutFn: (fn) => {
+      fn();
+      return 1;
+    },
+    clearTimeoutFn: () => {},
+  });
+
+  const playingFullscreen = (url) => ({
+    hasVideo: true,
+    isPlaying: true,
+    isFullscreen: true,
+    isEnded: false,
+    url,
+  });
+
+  const countPrepares = () =>
+    tabMessages.filter(([id, action]) => id === 30 && action === 'hybrid_prepare_capture').length;
+
+  machine.armHybrid(30, 'dom');
+
+  // Episode 1: precondition met -> prepares and records.
+  machine.handleHybridVideoState(30, playingFullscreen('https://site/ep1'));
+  machine.handleHybridPrepared(30);
+  assert.equal(machine.getHybridStatus(30).state, 'RECORDING');
+  assert.equal(countPrepares(), 1);
+
+  // Page auto-advances to episode 2: the URL change stops episode 1's recording.
+  // The synchronous re-arm timer returns the machine to ARMED.
+  machine.handleHybridVideoState(30, playingFullscreen('https://site/ep2'));
+  assert.equal(machine.getHybridStatus(30).state, 'ARMED');
+
+  // Episode 2 is now playing -> the machine must prepare AGAIN (the bug left
+  // state.preparing=true so this second prepare never fired before the fix).
+  machine.handleHybridVideoState(30, playingFullscreen('https://site/ep2'));
+  machine.handleHybridPrepared(30);
+  assert.equal(machine.getHybridStatus(30).state, 'RECORDING');
+  assert.equal(countPrepares(), 2);
+});
