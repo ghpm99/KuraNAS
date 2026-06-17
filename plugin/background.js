@@ -212,6 +212,29 @@ function stopOffscreenRecording(tabId) {
     .catch(() => {});
 }
 
+// Resolve the capture name from the page title. Title detection is async (and
+// the title is cleared on SPA navigation), so if it is not ready yet, ask the
+// page to re-detect and wait briefly for it before falling back to a timestamp.
+async function resolveCaptureName(tabId) {
+  const current = getTitleForTab(tabId);
+  if (current && current.title && current.title.trim()) {
+    return current.title.trim();
+  }
+
+  chrome.tabs.sendMessage(tabId, { action: "request_title" }).catch(() => {});
+  for (let i = 0; i < 15; i++) {
+    await wait(100);
+    const t = getTitleForTab(tabId);
+    if (t && t.title && t.title.trim()) {
+      logBg(tabId, `título resolvido após ${(i + 1) * 100}ms`);
+      return t.title.trim();
+    }
+  }
+
+  logBg(tabId, "nenhum título detectado — usando nome com timestamp");
+  return `recording_${tabId}_${Date.now()}`;
+}
+
 async function initHybridUploadSession(tabId) {
   const state = hybridStates.get(tabId);
   if (!state) {
@@ -225,12 +248,8 @@ async function initHybridUploadSession(tabId) {
   // Name the capture after the detected page title (show + episode, e.g.
   // "Anime - S1 E2 - Título") so the file says which episode it is and episode 2
   // does not overwrite episode 1. Fall back to a timestamped name when no title
-  // was detected for this tab.
-  const detected = getTitleForTab(tabId);
-  const name =
-    detected && detected.title && detected.title.trim()
-      ? detected.title.trim()
-      : `recording_${tabId}_${Date.now()}`;
+  // could be resolved.
+  const name = await resolveCaptureName(tabId);
   const mimeType = "video/webm";
   const fileName = `${sanitizeFileName(name)}.webm`;
   logBg(tabId, `nome da captura: "${name}"`);
