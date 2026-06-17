@@ -850,6 +850,7 @@
 	"ERROR_CAPTURE_NO_FILE": "No file uploaded for capture",
 	"ERROR_CAPTURE_NAME_REQUIRED": "Capture name is required",
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Failed to save capture",
+	"ERROR_CAPTURE_UPLOAD_EMPTY": "The capture is empty: no data was received",
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
 	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture",

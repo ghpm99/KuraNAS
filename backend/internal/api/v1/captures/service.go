@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -21,6 +22,12 @@ import (
 )
 
 const captureUploadChunkSize int64 = 2 * 1024 * 1024
+
+// ErrEmptyCapture is returned when a completed upload received no bytes (e.g. a
+// recording whose MediaRecorder produced an empty blob, so the plugin sent no
+// chunks). It is a client/data condition, not a server failure — the handler
+// maps it to 400, not 500.
+var ErrEmptyCapture = errors.New("capture upload is empty")
 
 type Service struct {
 	Repository          RepositoryInterface
@@ -248,6 +255,15 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 	if err != nil {
 		s.emitUploadFailedNotification(dto.UploadID, "", err)
 		return CaptureDto{}, err
+	}
+
+	if session.ReceivedSize == 0 {
+		// No chunk ever arrived: there is no temp file to finalize. Fail fast with
+		// a typed error so the handler answers 400 instead of a misleading 500.
+		uploadErr := fmt.Errorf("CompleteCaptureUpload: %w (upload_id %s)", ErrEmptyCapture, dto.UploadID)
+		_ = os.RemoveAll(s.captureUploadSessionDir(dto.UploadID))
+		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
+		return CaptureDto{}, uploadErr
 	}
 
 	if session.ExpectedSize > 0 && session.ReceivedSize != session.ExpectedSize {
