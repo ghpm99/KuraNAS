@@ -9,6 +9,15 @@ const LOG_PREFIX = "[KuraNAS rec]";
 
 function logRec(tabId, ...args) {
   console.log(LOG_PREFIX, `tab=${tabId}`, ...args);
+  // Mirror into the service worker console (the offscreen doc console is hidden).
+  try {
+    chrome.runtime
+      .sendMessage({ action: "kuranas_log", source: LOG_PREFIX, args: [`tab=${tabId}`, ...args] })
+      .catch(() => {});
+  } catch (_e) {
+    // sendMessage can throw if the SW is momentarily unavailable; the local
+    // console.log above still happened.
+  }
 }
 
 // describeTrack dumps everything that tells empty-frame-by-DRM apart from other
