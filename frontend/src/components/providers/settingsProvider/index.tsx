@@ -29,6 +29,29 @@ const accentPalette: Record<
     },
 };
 
+// mergeSettingsConfiguration fills every group from the defaults before
+// overlaying whatever the backend returned. A component must never assume the
+// server sent a complete payload: a partial response (older server, a group not
+// yet persisted) used to leave `settings.players`/`settings.appearance`
+// undefined and crash the whole tree. Merging here keeps the contract — a fully
+// shaped SettingsConfiguration — no matter what the API returns.
+const mergeSettingsConfiguration = (
+    data: Partial<SettingsConfiguration> | undefined
+): SettingsConfiguration => {
+    const base = defaultSettingsConfiguration;
+    if (!data) {
+        return base;
+    }
+    return {
+        library: { ...base.library, ...data.library },
+        indexing: { ...base.indexing, ...data.indexing },
+        ai: { ...base.ai, ...data.ai },
+        players: { ...base.players, ...data.players },
+        appearance: { ...base.appearance, ...data.appearance },
+        language: { ...base.language, ...data.language },
+    };
+};
+
 const applyAppearanceSettings = (settings: SettingsConfiguration) => {
     const root = document.documentElement;
     const accent = accentPalette[settings.appearance.accent_color] ?? accentPalette.violet;
@@ -62,7 +85,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         },
     });
 
-    const settings = settingsQuery.data ?? defaultSettingsConfiguration;
+    const settings = mergeSettingsConfiguration(settingsQuery.data);
     const { isLoading, isError, refetch } = settingsQuery;
     const { isPending, mutateAsync } = saveMutation;
 
