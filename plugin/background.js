@@ -3,8 +3,6 @@
  * ======================================================================== */
 
 import {
-  CAPTURE_SESSION_END_EPSILON_SECONDS,
-  CAPTURE_SESSION_GRACE_MS,
   DEFAULT_KURANAS_API_BASE,
   DISCOVERY_HEALTH_SUFFIX,
   DISCOVERY_REQUEST_TIMEOUT_MS,
@@ -26,7 +24,6 @@ import { createUploader } from "./src/background/uploader.js";
 import { createDownloader } from "./src/background/downloader.js";
 import { createFetcher } from "./src/background/fetcher.js";
 import { createHybridStateMachine } from "./src/background/hybrid-state.js";
-import { createCaptureSessionMachine } from "./src/background/capture-session.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -35,7 +32,6 @@ import { createCaptureSessionMachine } from "./src/background/capture-session.js
 const detectedMedia = new Map();
 const hybridStates = new Map();
 const detectedTitles = new Map();
-const captureSessions = new Map();
 
 // Load probe: this prints the moment the service worker starts. If you reload
 // the extension (chrome://extensions -> reload) and open the "service worker"
@@ -107,20 +103,6 @@ const {
   stopHybridRecording,
 } = hybridStateMachine;
 
-const captureSessionMachine = createCaptureSessionMachine({
-  captureSessions,
-  startCapture: startEpisodeCapture,
-  stopCapture: stopEpisodeCapture,
-  broadcastStatus: broadcastCaptureSessionStatus,
-  graceMs: CAPTURE_SESSION_GRACE_MS,
-  endEpsilonSeconds: CAPTURE_SESSION_END_EPSILON_SECONDS,
-});
-const {
-  cleanupTab: cleanupCaptureSession,
-  getSessionStatus: getCaptureSessionStatus,
-  handleEpisodeState,
-} = captureSessionMachine;
-
 // ---------------------------------------------------------------------------
 // 1. Media Detection via Network
 // ---------------------------------------------------------------------------
@@ -160,16 +142,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     downloadDASH,
     downloadDirect,
     downloadHLS,
-    getCaptureSessionStatus,
     getDetectedMedia: (tabId) => detectedMedia.get(tabId) || [],
     getHybridStatus,
     getTitleForTab,
     handleBlobDetected,
-    handleEpisodeState,
-    handleHybridRecordingChunk: dispatchRecordingChunk,
-    handleHybridRecordingComplete: dispatchRecordingComplete,
+    handleHybridRecordingChunk,
+    handleHybridRecordingComplete,
     handleHybridVideoState,
-    handleOffscreenError: dispatchOffscreenError,
+    handleOffscreenError,
     handleOffscreenStarted,
     handleOffscreenStopped,
     handleSaveRecordingBlob,
@@ -282,9 +262,8 @@ function logBg(tabId, ...args) {
   console.log("[KuraNAS bg]", `tab=${tabId}`, ...args);
 }
 
-// Logged-once guards so the per-chunk handlers (called ~hundreds of times) emit
-// a single line for routing and dropped-chunk reasons instead of flooding.
-const chunkRouteLogged = new Set();
+// Logged-once guard so the per-chunk handler (called ~hundreds of times) emits a
+// single line for a dropped-chunk reason instead of flooding the console.
 const chunkDropLogged = new Set();
 
 // Streamed chunks arrive as a blob: URL string (a Blob cannot cross
@@ -355,6 +334,7 @@ function handleHybridRecordingChunk(tabId, msg) {
 }
 
 async function handleHybridRecordingComplete(tabId) {
+  chunkDropLogged.delete(tabId);
   const state = hybridStates.get(tabId);
   if (!state || !state.uploadSession) return;
 
@@ -398,212 +378,6 @@ function broadcastHybridStatus(tabId) {
   chrome.runtime
     .sendMessage({ action: "hybrid_status", tabId, status })
     .catch(() => {});
-}
-
-// ---------------------------------------------------------------------------
-// 4b. Smart Episode Capture (capture-session machine wiring)
-//
-// The machine decides *when* to record per episode; these callbacks own the
-// edge: an idempotent upload session keyed by episode_key, the offscreen
-// recorder, and chunk streaming. The offscreen recorder reuses the same
-// `hybrid_recording_*` messages, so dispatchRecording* below routes those to the
-// smart session when the tab owns one, else to the manual hybrid path.
-// ---------------------------------------------------------------------------
-
-async function startEpisodeCapture(tabId, { episodeKey, title }) {
-  const apiUrl = await getApiBaseUrl();
-  const name = title || episodeKey;
-  const fileName = `${sanitizeFileName(name)}.webm`;
-
-  const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      media_type: "recording",
-      mime_type: "video/webm",
-      size: 0,
-      file_name: fileName,
-      episode_key: episodeKey,
-    }),
-  });
-
-  if (!initResp.ok) {
-    const body = await initResp.text();
-    throw new Error(`Init episode upload failed (${initResp.status}): ${body}`);
-  }
-
-  const payload = await initResp.json();
-
-  // Already archived in full -> tell the machine not to record (no second file).
-  if (payload.already_complete) {
-    return { recording: false };
-  }
-  if (!payload.upload_id) {
-    throw new Error("Invalid episode upload init response: upload_id is required");
-  }
-
-  const state = captureSessions.get(tabId);
-  if (!state) return { recording: false };
-
-  // A resumed session hands back the offset the server already holds, so the
-  // continuation appends to the same file instead of duplicating it.
-  state.upload = {
-    apiUrl,
-    uploadID: payload.upload_id,
-    offset: Number(payload.received_size || 0),
-    chunkIndex: 0,
-    pending: Promise.resolve(),
-    failed: false,
-    completed: false,
-    episodeKey,
-  };
-
-  logBg(tabId, `upload session EPISODE criada: uploadID=${payload.upload_id}, offset=${state.upload.offset}`);
-
-  const streamId = await chrome.tabCapture.getMediaStreamId({
-    targetTabId: tabId,
-  });
-  await ensureOffscreen();
-  chrome.runtime
-    .sendMessage({
-      action: "offscreen_start_recording",
-      tabId,
-      streamId,
-      streamUpload: true,
-    })
-    .catch(() => {});
-
-  return { recording: true };
-}
-
-function stopEpisodeCapture(tabId) {
-  stopOffscreenRecording(tabId);
-}
-
-function broadcastCaptureSessionStatus(tabId) {
-  const status = getCaptureSessionStatus(tabId);
-  chrome.runtime
-    .sendMessage({ action: "capture_session_status", tabId, status })
-    .catch(() => {});
-}
-
-function handleEpisodeRecordingChunk(tabId, msg) {
-  const state = captureSessions.get(tabId);
-  if (!state || !state.upload || state.upload.failed) {
-    if (!chunkDropLogged.has(tabId)) {
-      chunkDropLogged.add(tabId);
-      logBg(
-        tabId,
-        "chunk DESCARTADO (episode): ",
-        !state ? "sem state" : !state.upload ? "sem upload session" : "session.failed"
-      );
-    }
-    return;
-  }
-
-  if (!msg.chunkUrl) return;
-
-  const session = state.upload;
-  const { chunkUrl } = msg;
-  session.pending = session.pending
-    .then(async () => {
-      if (session.failed || session.completed) return;
-      const chunkBlob = await fetchChunkBlob(chunkUrl);
-      if (!chunkBlob.size) {
-        logBg(tabId, "chunk vazio após fetch da blob URL (SW não leu a blob?)");
-        return;
-      }
-      await uploadChunkWithRetry(
-        session.apiUrl,
-        session.uploadID,
-        chunkBlob,
-        session.offset,
-        session.chunkIndex
-      );
-      session.offset += chunkBlob.size;
-      session.chunkIndex += 1;
-      if (session.chunkIndex === 1 || session.chunkIndex % 25 === 0) {
-        logBg(tabId, `chunk #${session.chunkIndex} enviado (offset ${session.offset} bytes) [episode]`);
-      }
-    })
-    .catch((err) => {
-      session.failed = true;
-      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk (episode):", err && err.message);
-    });
-}
-
-async function handleEpisodeRecordingComplete(tabId) {
-  const state = captureSessions.get(tabId);
-  if (!state || !state.upload) return;
-
-  const session = state.upload;
-  try {
-    await session.pending;
-    logBg(
-      tabId,
-      `complete EPISODE: ${session.chunkIndex} chunks enviados, ${session.offset} bytes, failed=${session.failed}`
-    );
-    if (!session.failed && !session.completed) {
-      const completeResp = await fetch(
-        `${session.apiUrl}/captures/upload/complete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ upload_id: session.uploadID }),
-        }
-      );
-      logBg(tabId, `complete EPISODE -> HTTP ${completeResp.status}${completeResp.ok ? " (captura salva)" : ""}`);
-      if (completeResp.ok) {
-        session.completed = true;
-      }
-    }
-  } catch (err) {
-    // leave the session for the next init to resume by episode_key
-    console.error("[KuraNAS bg]", `tab=${tabId}`, "complete EPISODE falhou:", err && err.message);
-  } finally {
-    state.upload = null;
-  }
-}
-
-function tabHasSmartSession(tabId) {
-  const state = captureSessions.get(tabId);
-  return Boolean(state && state.upload);
-}
-
-function dispatchRecordingChunk(tabId, msg) {
-  const smart = tabHasSmartSession(tabId);
-  if (!chunkRouteLogged.has(tabId)) {
-    chunkRouteLogged.add(tabId);
-    logBg(tabId, `roteando chunks -> ${smart ? "sessão SMART (episódio)" : "hybrid MANUAL"}`);
-  }
-  if (smart) {
-    handleEpisodeRecordingChunk(tabId, msg);
-    return;
-  }
-  handleHybridRecordingChunk(tabId, msg);
-}
-
-function dispatchRecordingComplete(tabId) {
-  const smart = tabHasSmartSession(tabId);
-  logBg(tabId, `complete recebido -> ${smart ? "sessão SMART" : "hybrid MANUAL"}`);
-  chunkRouteLogged.delete(tabId);
-  chunkDropLogged.delete(tabId);
-  if (smart) {
-    handleEpisodeRecordingComplete(tabId);
-    return;
-  }
-  handleHybridRecordingComplete(tabId);
-}
-
-function dispatchOffscreenError(tabId, msg) {
-  const state = captureSessions.get(tabId);
-  if (state && state.upload) {
-    state.upload.failed = true;
-    state.upload = null;
-    return;
-  }
-  handleOffscreenError(tabId, msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -829,7 +603,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   detectedMedia.delete(tabId);
   detectedTitles.delete(tabId);
   cleanupTab(tabId);
-  cleanupCaptureSession(tabId);
+  chunkDropLogged.delete(tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {

@@ -24,9 +24,3 @@ export const HYBRID_STABILITY_MS = 200;
 export const HYBRID_STOP_GRACE_MS = 5000;
 export const CAPTURE_UPLOAD_CHUNK_SIZE = 2 * 1024 * 1024;
 export const CAPTURE_UPLOAD_MAX_RETRIES = 3;
-
-// Smart per-episode capture (capture-session.js): grace window before a pause /
-// fullscreen exit finalizes a recording, and how close to `duration` counts as
-// "the episode ended".
-export const CAPTURE_SESSION_GRACE_MS = 8000;
-export const CAPTURE_SESSION_END_EPSILON_SECONDS = 2;
