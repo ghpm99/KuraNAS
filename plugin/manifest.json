@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "KuraNAS Stream Grabber",
-  "version": "1.7.0",
-  "version_name": "beta1.7",
+  "version": "1.8.0",
+  "version_name": "beta1.8",
   "description": "Detect and capture media streams, sending them to your KuraNAS server.",
   "permissions": [
     "activeTab",
@@ -22,12 +22,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": [
-        "content/adapters/registry.js",
-        "content/adapters/crunchyroll.js",
-        "content/bridge.js",
-        "content/episode-monitor.js"
-      ],
+      "js": ["content/bridge.js"],
       "run_at": "document_start",
       "world": "ISOLATED"
     },
