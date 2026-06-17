@@ -540,6 +540,10 @@ async function handleEpisodeRecordingComplete(tabId) {
   const session = state.upload;
   try {
     await session.pending;
+    logBg(
+      tabId,
+      `complete EPISODE: ${session.chunkIndex} chunks enviados, ${session.offset} bytes, failed=${session.failed}`
+    );
     if (!session.failed && !session.completed) {
       const completeResp = await fetch(
         `${session.apiUrl}/captures/upload/complete`,
@@ -549,12 +553,14 @@ async function handleEpisodeRecordingComplete(tabId) {
           body: JSON.stringify({ upload_id: session.uploadID }),
         }
       );
+      logBg(tabId, `complete EPISODE -> HTTP ${completeResp.status}${completeResp.ok ? " (captura salva)" : ""}`);
       if (completeResp.ok) {
         session.completed = true;
       }
     }
-  } catch {
+  } catch (err) {
     // leave the session for the next init to resume by episode_key
+    console.error("[KuraNAS bg]", `tab=${tabId}`, "complete EPISODE falhou:", err && err.message);
   } finally {
     state.upload = null;
   }
