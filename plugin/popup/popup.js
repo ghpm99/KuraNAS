@@ -47,7 +47,14 @@
     true
   );
 
-  logPopup("popup carregado");
+  // Single source of truth for the version label: manifest version_name (falls
+  // back to version). The <h1> shows it so you always know which build is live.
+  const manifest = chrome.runtime.getManifest();
+  const versionLabel = manifest.version_name || manifest.version;
+  const appTitleEl = $("#appTitle");
+  if (appTitleEl) appTitleEl.textContent = `KuraNAS Grabber ${versionLabel}`;
+
+  logPopup(`popup carregado — ${versionLabel}`);
 
   const mediaListEl = $("#mediaList");
   const emptyStateEl = $("#emptyState");

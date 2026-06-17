@@ -40,7 +40,12 @@ const captureSessions = new Map();
 // Load probe: this prints the moment the service worker starts. If you reload
 // the extension (chrome://extensions -> reload) and open the "service worker"
 // console, seeing this line proves the new code is the one running.
-console.log("[KuraNAS bg] service worker carregado — beta1.3", new Date().toISOString());
+console.log(
+  `[KuraNAS bg] service worker carregado — ${
+    chrome.runtime.getManifest().version_name || chrome.runtime.getManifest().version
+  }`,
+  new Date().toISOString()
+);
 
 const uploader = createUploader({
   getApiBaseUrl,
