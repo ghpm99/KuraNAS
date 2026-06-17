@@ -3,6 +3,7 @@ package captures
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"nas-go/api/internal/api/v1/notifications"
@@ -481,6 +482,96 @@ func TestServiceCompleteCaptureUploadPersistsEpisodeKey(t *testing.T) {
 
 	if persisted.EpisodeKey != "crunchyroll:GEP03" {
 		t.Fatalf("expected persisted episode key, got %q", persisted.EpisodeKey)
+	}
+}
+
+func TestServiceCompleteCaptureUploadWritesMetadataSidecar(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{
+		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			capture.ID = 42
+			return capture, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, nil)
+
+	metadata := json.RawMessage(`{"platform":"crunchyroll","title":"My Show","season":1,"episode":2}`)
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:     "meta_show",
+		FileName: "meta.webm",
+		Size:     4,
+		Metadata: metadata,
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
+	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err != nil {
+		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
+	}
+
+	metaPath := filepath.Join(dir, "capturas", "meta_show", captureMetadataFileName)
+	data, readErr := os.ReadFile(metaPath)
+	if readErr != nil {
+		t.Fatalf("expected metadata sidecar to be written: %v", readErr)
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("metadata sidecar is not valid json: %v", err)
+	}
+	if parsed["platform"] != "crunchyroll" || parsed["title"] != "My Show" {
+		t.Fatalf("unexpected metadata content: %s", string(data))
+	}
+}
+
+func TestServiceCompleteCaptureUploadWithoutMetadataWritesNoSidecar(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	mock := &repoMock{
+		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			capture.ID = 1
+			return capture, nil
+		},
+	}
+	service := newServiceForTest(t, mock, nil, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:     "no_meta_show",
+		FileName: "no_meta.webm",
+		Size:     4,
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
+	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err != nil {
+		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
+	}
+
+	metaPath := filepath.Join(dir, "capturas", "no_meta_show", captureMetadataFileName)
+	if _, statErr := os.Stat(metaPath); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no metadata sidecar, stat err = %v", statErr)
+	}
+}
+
+func TestWriteCaptureMetadataRejectsInvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	if err := writeCaptureMetadata(dir, json.RawMessage(`{not-json`)); err == nil {
+		t.Fatal("expected error for invalid metadata json")
 	}
 }
 
