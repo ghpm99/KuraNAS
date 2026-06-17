@@ -399,8 +399,11 @@ async function ensureOffscreen() {
 
   creatingOffscreen = chrome.offscreen.createDocument({
     url: "offscreen/recorder.html",
-    reasons: ["USER_MEDIA"],
-    justification: "Tab capture recording for media grabbing",
+    // USER_MEDIA: tabCapture recording. AUDIO_PLAYBACK: re-play the captured tab
+    // audio back to the speakers so the owner can still hear while recording
+    // (tabCapture otherwise swallows the tab's audio output).
+    reasons: ["USER_MEDIA", "AUDIO_PLAYBACK"],
+    justification: "Tab capture recording and audio passthrough",
   });
 
   await creatingOffscreen;
