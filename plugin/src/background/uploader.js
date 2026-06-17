@@ -25,6 +25,13 @@ export function createUploader({
   }
 
   async function uploadCaptureChunked(apiUrl, blob, metadata) {
+    // An empty blob (e.g. a recording that captured nothing) would init a session,
+    // send zero chunks, and make /complete fail server-side. Stop before the
+    // round-trip and surface a clear error instead.
+    if (!blob || blob.size === 0) {
+      throw new Error("Capture is empty: nothing to upload");
+    }
+
     const initResp = await fetchImpl(`${apiUrl}/captures/upload/init`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
