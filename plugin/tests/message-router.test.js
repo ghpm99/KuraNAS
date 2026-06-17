@@ -26,6 +26,8 @@ function createHandlers() {
       handleHybridRecordingChunk: (tabId) => calls.push(['chunk', tabId]),
       handleHybridRecordingComplete: (tabId) => calls.push(['complete', tabId]),
       handleHybridVideoState: (tabId, snapshot) => calls.push(['video_state', tabId, snapshot]),
+      handleMetadataDetected: (tabId, msg) => calls.push(['metadata', tabId, msg.metadata]),
+      getMetadataForTab: (tabId) => ({ platform: 'test', tabId }),
       handleOffscreenError: (tabId) => calls.push(['offscreen_error', tabId]),
       handleOffscreenStarted: (tabId) => calls.push(['offscreen_started', tabId]),
       handleOffscreenStopped: (tabId) => calls.push(['offscreen_stopped', tabId]),
@@ -54,6 +56,18 @@ test('routeRuntimeMessage dispatches sync actions', async () => {
 
   routeRuntimeMessage({ action: 'get_media', tabId: 9 }, {}, sendResponse, handlers);
   assert.deepEqual(responses[0], { media: [{ tabId: 9, type: 'video' }] });
+
+  const metaAlive = routeRuntimeMessage(
+    { action: 'metadata_detected', metadata: { platform: 'netflix' } },
+    { tab: { id: 9 } },
+    sendResponse,
+    handlers
+  );
+  assert.equal(metaAlive, false);
+  assert.deepEqual(calls[calls.length - 1], ['metadata', 9, { platform: 'netflix' }]);
+
+  routeRuntimeMessage({ action: 'get_metadata', tabId: 7 }, {}, sendResponse, handlers);
+  assert.deepEqual(responses[responses.length - 1], { metadata: { platform: 'test', tabId: 7 } });
 });
 
 test('routeRuntimeMessage keeps channel alive for async downloads', async () => {

@@ -33,6 +33,7 @@ import { createHybridStateMachine } from "./src/background/hybrid-state.js";
 const detectedMedia = new Map();
 const hybridStates = new Map();
 const detectedTitles = new Map();
+const detectedMetadata = new Map();
 
 // Load probe: this prints the moment the service worker starts. If you reload
 // the extension (chrome://extensions -> reload) and open the "service worker"
@@ -147,12 +148,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     downloadHLS,
     getDetectedMedia: (tabId) => detectedMedia.get(tabId) || [],
     getHybridStatus,
+    getMetadataForTab,
     getTitleForTab,
     handleBlobDetected,
     handleHybridPrepared,
     handleHybridRecordingChunk,
     handleHybridRecordingComplete,
     handleHybridVideoState,
+    handleMetadataDetected,
     handleOffscreenError,
     handleOffscreenStarted,
     handleOffscreenStopped,
@@ -203,6 +206,20 @@ function getTitleForTab(tabId) {
 }
 
 // ---------------------------------------------------------------------------
+// 3c. Metadata Detection
+// ---------------------------------------------------------------------------
+
+function handleMetadataDetected(tabId, msg) {
+  if (!tabId || !msg.metadata) return;
+  detectedMetadata.set(tabId, { metadata: msg.metadata, timestamp: Date.now() });
+}
+
+function getMetadataForTab(tabId) {
+  const entry = detectedMetadata.get(tabId);
+  return entry ? entry.metadata : null;
+}
+
+// ---------------------------------------------------------------------------
 // 4. Hybrid State Machine
 // ---------------------------------------------------------------------------
 
@@ -235,6 +252,26 @@ async function resolveCaptureName(tabId) {
   return `recording_${tabId}_${Date.now()}`;
 }
 
+// Resolve the standardized metadata for the capture. Like the title, it is
+// detected asynchronously and reset on SPA navigation, so ask the page to
+// re-detect and wait briefly for a fresh object before giving up (null is fine —
+// a capture may legitimately carry no metadata).
+async function resolveCaptureMetadata(tabId) {
+  const current = getMetadataForTab(tabId);
+  if (current) return current;
+
+  chrome.tabs.sendMessage(tabId, { action: "request_metadata" }).catch(() => {});
+  for (let i = 0; i < 15; i++) {
+    await wait(100);
+    const meta = getMetadataForTab(tabId);
+    if (meta) {
+      logBg(tabId, `metadados resolvidos após ${(i + 1) * 100}ms`);
+      return meta;
+    }
+  }
+  return null;
+}
+
 async function initHybridUploadSession(tabId) {
   const state = hybridStates.get(tabId);
   if (!state) {
@@ -254,6 +291,16 @@ async function initHybridUploadSession(tabId) {
   const fileName = `${sanitizeFileName(name)}.webm`;
   logBg(tabId, `nome da captura: "${name}"`);
 
+  // Standardized metadata (title, episode, duration, origin, …) is persisted by
+  // the server as metadata.json beside the recording. The episode_key (when the
+  // page yields a stable per-episode id) also drives the server's idempotency, so
+  // re-arming on the same episode resumes instead of recording a duplicate.
+  const metadata = await resolveCaptureMetadata(tabId);
+  const episodeKey = (metadata && metadata.episode_key) || "";
+  if (metadata) {
+    logBg(tabId, `metadados: episode_key="${episodeKey}", plataforma="${metadata.platform || "?"}"`);
+  }
+
   const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -263,6 +310,8 @@ async function initHybridUploadSession(tabId) {
       mime_type: mimeType,
       size: 0,
       file_name: fileName,
+      episode_key: episodeKey,
+      metadata: metadata || undefined,
     }),
   });
 
@@ -272,14 +321,27 @@ async function initHybridUploadSession(tabId) {
   }
 
   const payload = await initResp.json();
+
+  // This episode is already archived (episode_key idempotency): there is no
+  // upload_id and nothing to record. Throw so the state machine reverts to ARMED
+  // without starting the offscreen recorder (it will move on at the next episode).
+  if (payload.already_complete) {
+    logBg(tabId, `episódio já capturado (episode_key="${episodeKey}") — pulando gravação`);
+    throw new Error("capture already complete for this episode");
+  }
+
   if (!payload.upload_id) {
     throw new Error("Invalid hybrid upload init response: upload_id is required");
   }
 
+  // On a resumed session the server already holds received_size bytes; chunks
+  // must continue from that offset or the very first chunk fails on a mismatch.
+  const startOffset = Number(payload.received_size || 0);
+
   state.uploadSession = {
     apiUrl,
     uploadID: payload.upload_id,
-    offset: 0,
+    offset: startOffset,
     chunkIndex: 0,
     pending: Promise.resolve(),
     failed: false,
@@ -637,6 +699,7 @@ async function fetchWithTimeout(url, options, timeoutMs) {
 chrome.tabs.onRemoved.addListener((tabId) => {
   detectedMedia.delete(tabId);
   detectedTitles.delete(tabId);
+  detectedMetadata.delete(tabId);
   cleanupTab(tabId);
   chunkDropLogged.delete(tabId);
 });
@@ -645,8 +708,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) {
     detectedMedia.delete(tabId);
     detectedTitles.delete(tabId);
+    detectedMetadata.delete(tabId);
     updateBadge(tabId);
-    // Ask content script to re-detect title for new page
+    // Ask content scripts to re-detect title + metadata for the new page
     chrome.tabs.sendMessage(tabId, { action: "request_title" }).catch(() => {});
+    chrome.tabs.sendMessage(tabId, { action: "request_metadata" }).catch(() => {});
   }
 });

@@ -14,6 +14,14 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       sendResponse(handlers.getTitleForTab(msg.tabId));
       return false;
 
+    case "metadata_detected":
+      handlers.handleMetadataDetected(tabId, msg);
+      return false;
+
+    case "get_metadata":
+      sendResponse({ metadata: handlers.getMetadataForTab(msg.tabId) });
+      return false;
+
     case "hybrid_video_state":
       handlers.handleHybridVideoState(tabId, msg.snapshot);
       return false;
