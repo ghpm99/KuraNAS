@@ -177,19 +177,21 @@
 
     // ----- Crunchyroll -----
     "crunchyroll.com": function () {
-      const titleEl = document.querySelector(
+      // Combine the show (h4) with the episode line (h1, e.g. "S1 E2 - Title")
+      // so the name distinguishes episodes; otherwise every episode of a show
+      // would share the same name and overwrite each other on the server.
+      const showEl = document.querySelector(
         'h1.hero-heading-line, [class*="CurrentMediaInfo"] h4, .erc-current-media-info h4'
       );
-      if (titleEl && titleEl.textContent.trim())
-        return titleEl.textContent.trim();
-
-      const episodeTitle = document.querySelector(
-        '[class*="CurrentMediaInfo"] h1'
+      const episodeEl = document.querySelector(
+        '[class*="CurrentMediaInfo"] h1, .erc-current-media-info h1'
       );
-      if (episodeTitle && episodeTitle.textContent.trim()) {
-        const show = titleEl ? titleEl.textContent.trim() + " - " : "";
-        return show + episodeTitle.textContent.trim();
-      }
+      const show = showEl && showEl.textContent.trim();
+      const episode = episodeEl && episodeEl.textContent.trim();
+
+      if (show && episode) return `${show} - ${episode}`;
+      if (show) return show;
+      if (episode) return episode;
 
       return extractOpenGraphTitle();
     },
