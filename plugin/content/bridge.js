@@ -63,6 +63,18 @@
   });
 
   // -----------------------------------------------------------------------
+  // 1c. Metadata Relay — MAIN → Background
+  // -----------------------------------------------------------------------
+
+  window.addEventListener("__stream_grabber_metadata__", (e) => {
+    const detail = e.detail || {};
+    safeRuntimeSendMessage({
+      action: "metadata_detected",
+      metadata: detail.metadata,
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // 2. Capture MediaSource Relay
   // -----------------------------------------------------------------------
 
@@ -84,6 +96,11 @@
     if (msg.action === "request_title") {
       // Ask MAIN world title-detector to re-run and emit
       window.dispatchEvent(new Event("__stream_grabber_request_title__"));
+    }
+
+    if (msg.action === "request_metadata") {
+      // Ask MAIN world metadata-detector to re-run and emit
+      window.dispatchEvent(new Event("__stream_grabber_request_metadata__"));
     }
 
     if (msg.action === "hybrid_monitor_start") {
