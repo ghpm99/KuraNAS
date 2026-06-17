@@ -64,15 +64,33 @@ async function startRecording(tabId, streamId, streamUpload) {
           })
           .catch(() => {});
       } else {
-        const blob = new Blob(chunks, { type: mimeType });
-        const url = URL.createObjectURL(blob);
+        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
 
-        chrome.runtime.sendMessage({
-          action: "hybrid_save_recording_blob",
-          tabId,
-          blobUrl: url,
-          name: `recording_${tabId}_${Date.now()}`,
-        });
+        if (totalSize === 0) {
+          // The stream produced no media data, so the recording is empty. This is
+          // typical of DRM-protected playback (e.g. Widevine on Crunchyroll) or a
+          // recording stopped before any frame was captured. Fail loudly here
+          // instead of creating an empty blob that the backend would reject.
+          console.warn(
+            "[KuraNAS] Gravação vazia: nenhum dado de mídia capturado (DRM ou gravação muito curta?)"
+          );
+          chrome.runtime.sendMessage({
+            action: "hybrid_offscreen_error",
+            tabId,
+            error:
+              "Gravação vazia: o stream não produziu dados (conteúdo protegido por DRM ou gravação muito curta).",
+          });
+        } else {
+          const blob = new Blob(chunks, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+
+          chrome.runtime.sendMessage({
+            action: "hybrid_save_recording_blob",
+            tabId,
+            blobUrl: url,
+            name: `recording_${tabId}_${Date.now()}`,
+          });
+        }
       }
 
       chrome.runtime.sendMessage({
