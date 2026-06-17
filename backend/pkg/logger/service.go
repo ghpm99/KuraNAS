@@ -3,7 +3,10 @@ package logger
 import (
 	"database/sql"
 	"fmt"
+	"runtime/debug"
 	"time"
+
+	"nas-go/api/pkg/applog"
 )
 
 type LoggerService struct {
@@ -73,6 +76,17 @@ func (s *LoggerService) CompleteWithErrorLog(log LoggerModel, err error) error {
 	log.SetExtraData(LogExtraData{
 		Error: err.Error(),
 	})
+
+	// The DB log row above is for metrics and to surface a notification in the
+	// app. Anything that needs investigation — the actual error and a stack
+	// trace — goes to the forensic file log (pkg/applog → log/), so a production
+	// failure is debuggable from the file without ever touching the database.
+	applog.Error("operation failed",
+		"operation", log.Name,
+		"ip", log.IPAddress,
+		"error", err.Error(),
+		"stack", string(debug.Stack()),
+	)
 
 	return s.UpdateLog(log)
 
