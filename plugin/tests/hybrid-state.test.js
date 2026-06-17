@@ -46,10 +46,11 @@ test('hybrid state machine arms and disarms monitor flow', async () => {
   assert.ok(statusEvents.length >= 2);
 });
 
-test('hybrid state starts recording when stable playback conditions are met', async () => {
+test('hybrid state prepares then records when stable playback conditions are met', async () => {
   const { createHybridStateMachine } = await import(hybridStateModuleUrl);
   const hybridStates = new Map();
   const runtimeMessages = [];
+  const tabMessages = [];
 
   const machine = createHybridStateMachine({
     hybridStates,
@@ -58,10 +59,11 @@ test('hybrid state starts recording when stable playback conditions are met', as
     ensureOffscreen: async () => {},
     getMediaStreamId: async () => 'stream-xyz',
     sendRuntimeMessage: (message) => runtimeMessages.push(message),
-    sendTabMessage: () => {},
+    sendTabMessage: (tabId, message) => tabMessages.push([tabId, message.action]),
     stopOffscreenRecording: () => {},
     hybridStabilityMs: 200,
     hybridStopGraceMs: 5000,
+    hybridPrepareSettleMs: 3000,
     setTimeoutFn: (fn) => {
       fn();
       return 1;
@@ -78,6 +80,16 @@ test('hybrid state starts recording when stable playback conditions are met', as
     url: 'https://example.com/video',
   });
 
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  // Precondition met -> it asks the page to prepare (rewind + settle + play),
+  // and does NOT record yet.
+  assert.ok(tabMessages.some(([id, action]) => id === 20 && action === 'hybrid_prepare_capture'));
+  assert.equal(runtimeMessages.length, 0);
+  assert.equal(machine.getHybridStatus(20).state, 'ARMED');
+
+  // Page reports it is ready -> recording begins.
+  machine.handleHybridPrepared(20);
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   assert.equal(runtimeMessages.length, 1);

@@ -18,6 +18,10 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       handlers.handleHybridVideoState(tabId, msg.snapshot);
       return false;
 
+    case "hybrid_prepared":
+      handlers.handleHybridPrepared(tabId);
+      return false;
+
     case "get_media":
       sendResponse({ media: handlers.getDetectedMedia(msg.tabId) });
       return false;
