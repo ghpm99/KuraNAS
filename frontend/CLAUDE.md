@@ -15,6 +15,17 @@ React 19 + Vite 7 + TypeScript web UI (Yarn 1, `packageManager` pinned to `yarn@
 
 Coverage thresholds are enforced in `jest.config.js`: **branches 89, functions 90, lines 90, statements 90**. `src/service/index.ts` is excluded from coverage.
 
+## Component tests are mandatory — resilience-first (owner rule)
+
+**Every component must have a test, and its first test is a plain render with NO service/backend mock.** The component must render without throwing when the backend is absent or returns a partial/empty payload — a component may never assume the server sent a complete, well-shaped response. This is the guard against the whole-tree crash we hit when a settings group came back `undefined` (`settings.players` / `settings.appearance`).
+
+Concretely:
+- The first `it(...)` renders the component (or hook) with services left unmocked / rejecting, and asserts it mounts and shows something sane (loading/empty/fallback) instead of crashing.
+- Make the component tolerant at the data edge: default props, optional chaining, and **fill missing groups from a default** before use. The reference fix is `mergeSettingsConfiguration` in `components/providers/settingsProvider/index.tsx` (backfills every group from `defaultSettingsConfiguration`); the regression test is the "partial payload" case in its `index.test.tsx`.
+- Only after the no-mock render passes do the behavior tests (with mocked services) follow.
+
+Coverage thresholds (branches 89 / functions 90 / lines 90 / statements 90, in `jest.config.js`) still apply on top of this.
+
 ## API base URL resolution (`src/service/apiUrl.ts`)
 
 The same build talks to the bundled backend (same origin) or a remote dev server. `getApiBaseUrl()` resolves in order:
