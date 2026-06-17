@@ -108,10 +108,9 @@ func TestGoRunsWithRecover(t *testing.T) {
 func TestRotatingFileRollsOverOnSize(t *testing.T) {
 	dir := t.TempDir()
 	rf, err := NewRotatingFile(RotateConfig{
-		Dir:        dir,
-		Prefix:     "test-",
-		MaxSizeMB:  1, // 1 MiB threshold; we cross it with raw writes below
-		MaxBackups: 5,
+		Dir:       dir,
+		Prefix:    "test-",
+		MaxSizeMB: 1, // 1 MiB threshold; we cross it with raw writes below
 	})
 	if err != nil {
 		t.Fatalf("NewRotatingFile: %v", err)
@@ -139,35 +138,30 @@ func TestRotatingFileRollsOverOnSize(t *testing.T) {
 	}
 }
 
-func TestRotatingFilePrunesBeyondMaxBackups(t *testing.T) {
+func TestRotatingFileKeepsAllRotatedFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	// Seed three stale rotated files; the active file plus these would exceed
-	// MaxBackups=1, so pruning must remove the oldest stale ones.
-	for _, name := range []string{"test-2020-01-01_00-00-00.log", "test-2020-01-02_00-00-00.log", "test-2020-01-03_00-00-00.log"} {
+	// Seed three stale rotated files; none of them must ever be deleted —
+	// rotation keeps everything on disk.
+	seeded := []string{"test-2020-01-01_00-00-00.log", "test-2020-01-02_00-00-00.log", "test-2020-01-03_00-00-00.log"}
+	for _, name := range seeded {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("old"), 0o644); err != nil {
 			t.Fatalf("seed: %v", err)
 		}
 	}
 
-	rf, err := NewRotatingFile(RotateConfig{Dir: dir, Prefix: "test-", MaxSizeMB: 1, MaxBackups: 1})
+	rf, err := NewRotatingFile(RotateConfig{Dir: dir, Prefix: "test-", MaxSizeMB: 1})
 	if err != nil {
 		t.Fatalf("NewRotatingFile: %v", err)
 	}
-	// Force a rotation so prune runs against the seeded files.
+	// Force a rotation; it must not delete any of the seeded files.
 	if err := rf.rotate(); err != nil {
 		t.Fatalf("rotate: %v", err)
 	}
 
-	entries, _ := os.ReadDir(dir)
-	count := 0
-	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), "test-") {
-			count++
+	for _, name := range seeded {
+		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
+			t.Fatalf("seeded file %q was deleted: %v", name, err)
 		}
-	}
-	// active file + at most MaxBackups kept.
-	if count > 2 {
-		t.Fatalf("expected pruning to cap files at 2 (active + 1 backup), got %d", count)
 	}
 }

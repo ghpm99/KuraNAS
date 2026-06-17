@@ -175,11 +175,9 @@ func setupFileLogger() {
 	// come from the real OS environment here; the level is re-applied from the
 	// loaded config once InitializeApp runs.
 	rotating, err := applog.NewRotatingFile(applog.RotateConfig{
-		Dir:        logDir,
-		Prefix:     "kuranas-",
-		MaxSizeMB:  envIntOrDefault("LOG_MAX_SIZE_MB", 50),
-		MaxBackups: envIntOrDefault("LOG_MAX_BACKUPS", 10),
-		MaxAgeDays: envIntOrDefault("LOG_MAX_AGE_DAYS", 30),
+		Dir:       logDir,
+		Prefix:    "kuranas-",
+		MaxSizeMB: envIntOrDefault("LOG_MAX_SIZE_MB", 50),
 	})
 	if err != nil {
 		log.Println("Erro ao iniciar arquivo de log:", err)
