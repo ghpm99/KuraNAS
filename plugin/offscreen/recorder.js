@@ -64,6 +64,28 @@ function logStreamDiagnostics(tabId, stream) {
   audioTracks.forEach((track, i) => logRec(tabId, `áudio[${i}]`, describeTrack(track)));
 }
 
+// setupAudioPassthrough re-plays the captured tab audio through the speakers.
+// tabCapture redirects the tab's audio into the stream, so the owner stops
+// hearing it; piping the stream's audio to the AudioContext destination gives
+// the sound back while the recording still captures it. Returns the context so
+// cleanup can close it (returns null when there is no audio track / on failure).
+function setupAudioPassthrough(tabId, stream) {
+  try {
+    if (stream.getAudioTracks().length === 0) return null;
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(audioContext.destination);
+    if (audioContext.state === "suspended") {
+      audioContext.resume().catch(() => {});
+    }
+    logRec(tabId, "áudio reencaminhado aos alto-falantes (você ouve enquanto grava)");
+    return audioContext;
+  } catch (e) {
+    logRec(tabId, "falha ao reencaminhar áudio:", e && e.message);
+    return null;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "offscreen_start_recording") {
     startRecording(msg.tabId, msg.streamId, Boolean(msg.streamUpload));
@@ -104,6 +126,8 @@ async function startRecording(tabId, streamId, streamUpload) {
     });
 
     logStreamDiagnostics(tabId, stream);
+
+    const audioContext = setupAudioPassthrough(tabId, stream);
 
     const mimeType = selectMimeType();
     logRec(tabId, `MediaRecorder mimeType=${mimeType}, streamUpload=${streamUpload}`);
@@ -223,7 +247,7 @@ async function startRecording(tabId, streamId, streamUpload) {
       cleanupRecording(tabId);
     };
 
-    recordings.set(tabId, { recorder, stream, url: null });
+    recordings.set(tabId, { recorder, stream, url: null, audioContext });
     recorder.start(1000);
     logRec(tabId, "recorder.start(1000) chamado");
 
@@ -256,6 +280,9 @@ function cleanupRecording(tabId) {
   const rec = recordings.get(tabId);
   if (!rec) return;
   rec.stream.getTracks().forEach((track) => track.stop());
+  if (rec.audioContext) {
+    rec.audioContext.close().catch(() => {});
+  }
   if (rec.url) {
     URL.revokeObjectURL(rec.url);
   }
