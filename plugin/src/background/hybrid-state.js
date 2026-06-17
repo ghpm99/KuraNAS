@@ -173,6 +173,11 @@ export function createHybridStateMachine({
     clearTimeoutFn(state.stabilityTimer);
     clearTimeoutFn(state.graceTimer);
     state.graceTimer = null;
+    // Reset the prepare guard. It was set true when THIS recording was prepared
+    // and is never cleared elsewhere — without zeroing it here, re-arming for the
+    // next episode (continuous capture) would see preparing=true and never start
+    // the prepare→record sequence again, so only the first episode ever recorded.
+    state.preparing = false;
     state.recordingState = "STOPPED";
     broadcastHybridStatus(tabId);
 
