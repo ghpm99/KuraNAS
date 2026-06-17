@@ -66,6 +66,15 @@ Every endpoint follows **handler → service → repository**, built from **smal
 
 Any string that can reach a user — API `error`/message fields, notification titles/bodies, user-facing logged events — must come from `pkg/i18n`: `i18n.GetMessage("KEY")` (static) or `i18n.Translate("KEY", args…)` (with `%s`/`%d` placeholders), with the term added to **both** `translations/pt-BR.json` and `translations/en-US.json`. The active locale is the `LANGUAGE` env, loaded once at boot. **Never return `gin.H{"error": err.Error()}`** — that leaks a raw, untranslated Go error to the client; map it to an i18n key instead. Clients receive the already-translated text and render it verbatim. Full cross-app rule in the root `CLAUDE.md` → "No user-facing literal strings".
 
+## Observability — two log sinks, never SQL in production (mandatory)
+
+Because the client only ever sees a generic translated `error` string, the **real** failure lives server-side. There are two distinct sinks, and they are not interchangeable:
+
+- **DB `log` table + notifications** (`pkg/logger`, `LoggerService`) — for **metrics and surfacing in-app notifications only**. Not a debugging surface.
+- **Forensic file log** (`pkg/applog`, slog → `<exeDir>/log/kuranas-*.log`, rotating, **never auto-deleted**) — where **every error that needs follow-up is recorded with a stack trace**. `LoggerService.CompleteWithErrorLog` (the central error choke point) writes the error + `debug.Stack()` here, so every operation failure lands in the file log automatically. New error paths must reach this sink (not just the DB row); panics are captured via `applog.Recover`/`Go`/`GoRestart`.
+
+**Never run SQL against the production database to debug** — not even read-only. Production is the Windows `kuranas.exe`; investigate by reading `log/kuranas-*.log`. When a prod bug appears, ask the owner for the relevant lines from that file.
+
 ## Database
 
 - PostgreSQL via `lib/pq`; connection from `DB_*` env vars (`pkg/database`).
