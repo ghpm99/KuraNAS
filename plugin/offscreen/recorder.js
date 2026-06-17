@@ -303,11 +303,16 @@ function cleanupRecording(tabId) {
 // favor quality over size, and the recording machine only records (all heavy
 // processing is async on the server). So we provision a HIGH bitrate sized to the
 // real captured resolution/framerate via a bits-per-pixel-per-frame budget, with
-// a generous ceiling. VP9 is VBR: complex scenes spend up to this ceiling while
-// calm scenes stay small, so over-provisioning costs little and never under-codes.
-const QUALITY_BITS_PER_PIXEL = 0.15; // ~visually lossless for VP9 screen capture
-const MIN_VIDEO_BITS_PER_SECOND = 8000000; // 8 Mbps floor (low-res tabs still crisp)
-const MAX_VIDEO_BITS_PER_SECOND = 120000000; // 120 Mbps ceiling (covers 4K60)
+// a ceiling. VP9 is VBR: complex scenes spend up to this ceiling while calm scenes
+// stay small, so over-provisioning costs little and never under-codes.
+//
+// Tuned for 1080p (the primary capture resolution): 0.20 bpp puts 1080p60 at
+// ~25 Mbps (transparent for VP9), with the budget scaling up for the 3440x1440
+// ultrawide and down for the 1366x768 panel. The ceiling drops the unused 4K
+// headroom while still covering the ultrawide at 60 fps.
+const QUALITY_BITS_PER_PIXEL = 0.2; // ~visually lossless 1080p for VP9 screen capture
+const MIN_VIDEO_BITS_PER_SECOND = 12000000; // 12 Mbps floor (low-res panels stay crisp)
+const MAX_VIDEO_BITS_PER_SECOND = 60000000; // 60 Mbps ceiling (covers 3440x1440@60)
 const AUDIO_BITS_PER_SECOND = 320000; // 320 kbps Opus (transparent)
 
 // selectBitrates derives the encoder bitrate from the ACTUAL captured track
