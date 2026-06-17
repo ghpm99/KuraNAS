@@ -19,7 +19,6 @@ type AppConfigStruct struct {
 	DbUser                     string
 	DbPassword                 string
 	DbName                     string
-	AllowedOrigins             string
 	WorkerConcurrencyChecksum  int
 	WorkerConcurrencyMetadata  int
 	WorkerConcurrencyThumbnail int
@@ -60,7 +59,6 @@ func InitializeConfig() {
 		DbUser:                     os.Getenv("DB_USER"),
 		DbPassword:                 os.Getenv("DB_PASSWORD"),
 		DbName:                     os.Getenv("DB_NAME"),
-		AllowedOrigins:             os.Getenv("ALLOWED_ORIGINS"),
 		WorkerConcurrencyChecksum:  parseEnvInt("WORKER_CONCURRENCY_CHECKSUM", 3),
 		WorkerConcurrencyMetadata:  parseEnvInt("WORKER_CONCURRENCY_METADATA", 3),
 		WorkerConcurrencyThumbnail: parseEnvInt("WORKER_CONCURRENCY_THUMBNAIL", 2),

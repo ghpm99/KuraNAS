@@ -6,7 +6,6 @@ import (
 	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
-	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -523,22 +522,18 @@ func cacheControlMiddleware(value string) gin.HandlerFunc {
 }
 
 func registerCorsRoutes(router *gin.Engine, context *AppContext) {
-	// Get allowed origins from environment variable (comma-separated)
-	// Default to localhost for development
-	allowedOriginsStr := config.AppConfig.AllowedOrigins
-	allowedOrigins := strings.Split(allowedOriginsStr, ",")
-
-	// Trim whitespace from each origin
-	for i, origin := range allowedOrigins {
-		allowedOrigins[i] = strings.TrimSpace(origin)
-	}
-
+	// CORS is intentionally wide open. It is not an access-control barrier here:
+	// the IP whitelist (registered before this middleware) and the closed network
+	// are what protect the server. CORS only governs whether a browser lets JS
+	// from another origin read responses — so allowing any origin simply lets any
+	// future frontend talk to the API without re-touching this config. There is no
+	// cookie/session auth, so AllowCredentials stays off (it is also invalid to
+	// combine with a "*" origin).
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins,
-		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		AllowOrigins:  []string{"*"},
+		AllowMethods:  []string{"GET", "PUT", "POST", "DELETE"},
+		AllowHeaders:  []string{"Origin", "Content-Type"},
+		ExposeHeaders: []string{"Content-Length"},
+		MaxAge:        12 * time.Hour,
 	}))
 }
