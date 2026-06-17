@@ -37,6 +37,11 @@ const hybridStates = new Map();
 const detectedTitles = new Map();
 const captureSessions = new Map();
 
+// Load probe: this prints the moment the service worker starts. If you reload
+// the extension (chrome://extensions -> reload) and open the "service worker"
+// console, seeing this line proves the new code is the one running.
+console.log("[KuraNAS bg] service worker carregado — beta1.2", new Date().toISOString());
+
 const uploader = createUploader({
   getApiBaseUrl,
   guessExtension,
@@ -128,6 +133,17 @@ mediaDetectionManager.registerNetworkListeners();
 // ---------------------------------------------------------------------------
 // 2. Message Router
 // ---------------------------------------------------------------------------
+
+// Central log relay: the popup and the (hidden) offscreen document forward
+// their console output here via { action: "kuranas_log" }, so EVERY plugin log
+// also shows up in the one console that is trivial to open — the service
+// worker's. This is purely additive; the relay never answers the message.
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.action === "kuranas_log") {
+    console.log(msg.source || "[KuraNAS]", ...(Array.isArray(msg.args) ? msg.args : []));
+  }
+  return false;
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntimeMessage(
   msg,

@@ -8,7 +8,17 @@
   const $ = (sel) => document.querySelector(sel);
 
   const LOG_PREFIX = "[KuraNAS popup]";
-  const logPopup = (...args) => console.log(LOG_PREFIX, ...args);
+  const logPopup = (...args) => {
+    console.log(LOG_PREFIX, ...args);
+    // Mirror into the service worker console so all plugin logs land in one place.
+    try {
+      chrome.runtime
+        .sendMessage({ action: "kuranas_log", source: LOG_PREFIX, args })
+        .catch(() => {});
+    } catch (_e) {
+      // Ignore: the local console.log above already happened.
+    }
+  };
 
   // Describe a clicked element for the log: prefer its id, then a data-action,
   // then a trimmed text label, finally the tag name.
