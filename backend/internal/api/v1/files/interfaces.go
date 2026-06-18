@@ -45,6 +45,7 @@ type ServiceInterface interface {
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error
 	CreateUploadProcessJob(paths []string) (int, error)
+	CreateCaptureProcessJob(captureID int) (int, error)
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
 	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int, error)

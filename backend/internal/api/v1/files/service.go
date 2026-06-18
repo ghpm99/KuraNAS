@@ -290,6 +290,66 @@ type uploadJobPayload struct {
 	File   *FileDto `json:"file,omitempty"`
 }
 
+type captureJobPayload struct {
+	CaptureID int `json:"capture_id"`
+}
+
+// CreateCaptureProcessJob enqueues the promotion of an uploaded capture: a
+// single capture_promote step carrying the capture id. The heavy lifting
+// (metadata parse, destination resolution, home_file pre-register, poster
+// download, move) runs in the step executor, which delegates to the captures
+// service so the auto-organization pipeline stays free of capture concepts.
+func (s *Service) CreateCaptureProcessJob(captureID int) (int, error) {
+	if s.JobsRepository == nil {
+		return 0, fmt.Errorf("jobs repository is not configured")
+	}
+	if captureID <= 0 {
+		return 0, fmt.Errorf("capture id is required")
+	}
+
+	var createdJob jobs.JobModel
+	err := database.ExecOptionalTx(s.JobsRepository.GetDbContext(), func(tx *sql.Tx) error {
+		scopeJSON, scopeErr := json.Marshal(map[string]any{"capture_id": captureID})
+		if scopeErr != nil {
+			return fmt.Errorf("marshal capture scope: %w", scopeErr)
+		}
+
+		jobModel, createErr := s.JobsRepository.CreateJob(tx, jobs.JobModel{
+			Type:            "capture_process",
+			Priority:        "high",
+			Scope:           scopeJSON,
+			Status:          "queued",
+			CancelRequested: false,
+		})
+		if createErr != nil {
+			return createErr
+		}
+		createdJob = jobModel
+
+		promotePayload, marshalErr := json.Marshal(captureJobPayload{CaptureID: captureID})
+		if marshalErr != nil {
+			return marshalErr
+		}
+
+		_, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+			JobID:       createdJob.ID,
+			Type:        "capture_promote",
+			Status:      "queued",
+			DependsOn:   []byte("[]"),
+			Attempts:    0,
+			MaxAttempts: 3,
+			Progress:    0,
+			Payload:     promotePayload,
+		})
+		return createStepErr
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return createdJob.ID, nil
+}
+
 func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 	if s.JobsRepository == nil {
 		return 0, fmt.Errorf("jobs repository is not configured")
