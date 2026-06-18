@@ -9,6 +9,8 @@ module.exports = [
       sourceType: 'module',
       globals: {
         AbortController: 'readonly',
+        AudioContext: 'readonly',
+        AudioEncoder: 'readonly',
         Blob: 'readonly',
         cancelAnimationFrame: 'readonly',
         URL: 'readonly',
@@ -29,6 +31,7 @@ module.exports = [
         MutationObserver: 'readonly',
         MediaRecorder: 'readonly',
         MediaSource: 'readonly',
+        MediaStreamTrackProcessor: 'readonly',
         module: 'readonly',
         navigator: 'readonly',
         performance: 'readonly',
@@ -38,6 +41,8 @@ module.exports = [
         Response: 'readonly',
         setInterval: 'readonly',
         setTimeout: 'readonly',
+        Uint8Array: 'readonly',
+        VideoEncoder: 'readonly',
         window: 'readonly',
         __dirname: 'readonly'
       }
