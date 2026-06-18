@@ -33,6 +33,13 @@ type AISettingsReader interface {
 	IsAIImageClassificationEnabled() (bool, error)
 }
 
+// CapturePromoter is the slice of the captures domain the capture_promote step
+// needs. Declared here (not imported from captures) so the engine does not take
+// a dependency on the whole captures package just to run one step.
+type CapturePromoter interface {
+	PromoteCapture(captureID int) error
+}
+
 type WorkerContext struct {
 	Tasks                   chan utils.Task
 	FilesService            files.ServiceInterface
@@ -51,6 +58,7 @@ type WorkerContext struct {
 	BackupService           backupapi.WorkerInterface
 	TieringService          tieringapi.WorkerInterface
 	EmailService            emailapi.WorkerInterface
+	CapturesService         CapturePromoter
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 }

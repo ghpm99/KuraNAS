@@ -34,6 +34,8 @@ type Service struct {
 	Repository          RepositoryInterface
 	UploadJobDispatcher UploadJobDispatcherInterface
 	NotificationService notificationServiceInterface
+	LibrariesProvider   LibrariesProviderInterface
+	FilesProvider       FilesProviderInterface
 }
 
 type notificationServiceInterface interface {
@@ -74,11 +76,15 @@ func NewService(
 	repository RepositoryInterface,
 	uploadJobDispatcher UploadJobDispatcherInterface,
 	notificationService notificationServiceInterface,
+	librariesProvider LibrariesProviderInterface,
+	filesProvider FilesProviderInterface,
 ) ServiceInterface {
 	return &Service{
 		Repository:          repository,
 		UploadJobDispatcher: uploadJobDispatcher,
 		NotificationService: notificationService,
+		LibrariesProvider:   librariesProvider,
+		FilesProvider:       filesProvider,
 	}
 }
 

@@ -50,6 +50,15 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) (err error) {
 	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
+// DeleteFileRecord hard-deletes a single home_file row by id. It is the rollback
+// counterpart to a stub created by CreateFile (capture promotion pre-register)
+// and never touches the disk.
+func (s *Service) DeleteFileRecord(id int) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		return s.Repository.DeleteFileByID(tx, id)
+	})
+}
+
 func (s *Service) CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error) {
 
 	err = s.withTransaction(func(tx *sql.Tx) (err error) {

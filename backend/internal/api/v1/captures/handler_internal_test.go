@@ -46,6 +46,10 @@ func (m *capturesHandlerServiceMock) GetCaptureByID(id int) (CaptureDto, error) 
 	return CaptureDto{ID: id, Name: "test"}, nil
 }
 
+func (m *capturesHandlerServiceMock) PromoteCapture(captureID int) error {
+	return nil
+}
+
 func (m *capturesHandlerServiceMock) DeleteCapture(id int) error {
 	return nil
 }

@@ -156,6 +156,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Email != nil {
 		workerFileContext.EmailService = appContext.Email.Service
 	}
+	if appContext.Captures != nil {
+		workerFileContext.CapturesService = appContext.Captures.Service
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

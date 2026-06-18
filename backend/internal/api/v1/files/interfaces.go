@@ -28,10 +28,12 @@ type RepositoryInterface interface {
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
+	DeleteFileByID(transaction *sql.Tx, id int) error
 }
 
 type ServiceInterface interface {
 	CreateFile(fileDto FileDto) (fileDtoResult FileDto, err error)
+	DeleteFileRecord(id int) error
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	GetFileById(id int) (FileDto, error)
 	GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)

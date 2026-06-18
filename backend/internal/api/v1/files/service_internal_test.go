@@ -67,6 +67,7 @@ type filesRepoMock struct {
 	db *database.DbContext
 
 	createFileFn               func(transaction *sql.Tx, file FileModel) (FileModel, error)
+	deleteFileByIDFn           func(transaction *sql.Tx, id int) error
 	getFileByIDFn              func(id int) (FileModel, bool, error)
 	getFilesByNameAndPathFn    func(name string, path string, limit int) ([]FileModel, error)
 	getActiveChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
@@ -92,6 +93,12 @@ func (m *filesRepoMock) CreateFile(transaction *sql.Tx, file FileModel) (FileMod
 		return m.createFileFn(transaction, file)
 	}
 	return file, nil
+}
+func (m *filesRepoMock) DeleteFileByID(transaction *sql.Tx, id int) error {
+	if m.deleteFileByIDFn != nil {
+		return m.deleteFileByIDFn(transaction, id)
+	}
+	return nil
 }
 func (m *filesRepoMock) GetFileByID(id int) (FileModel, bool, error) {
 	if m.getFileByIDFn != nil {

@@ -33,7 +33,8 @@ type repoMock struct {
 }
 
 type uploadJobDispatcherMock struct {
-	createUploadProcessJobFn func(paths []string) (int, error)
+	createUploadProcessJobFn  func(paths []string) (int, error)
+	createCaptureProcessJobFn func(captureID int) (int, error)
 }
 
 type notificationServiceMock struct {
@@ -43,6 +44,13 @@ type notificationServiceMock struct {
 func (m *uploadJobDispatcherMock) CreateUploadProcessJob(paths []string) (int, error) {
 	if m.createUploadProcessJobFn != nil {
 		return m.createUploadProcessJobFn(paths)
+	}
+	return 1, nil
+}
+
+func (m *uploadJobDispatcherMock) CreateCaptureProcessJob(captureID int) (int, error) {
+	if m.createCaptureProcessJobFn != nil {
+		return m.createCaptureProcessJobFn(captureID)
 	}
 	return 1, nil
 }
