@@ -72,6 +72,9 @@ func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error       { retur
 func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, error) {
 	return 1, nil
 }
+func (m *filesHandlerServiceMock) CreateCaptureProcessJob(captureID int) (int, error) {
+	return 1, nil
+}
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
 }

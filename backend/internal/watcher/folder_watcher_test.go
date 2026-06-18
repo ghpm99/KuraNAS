@@ -54,6 +54,10 @@ func (f *fakeFilesSvc) CreateUploadProcessJob(paths []string) (int, error) {
 	return len(f.jobs), nil
 }
 
+func (f *fakeFilesSvc) CreateCaptureProcessJob(captureID int) (int, error) {
+	return captureID, nil
+}
+
 type fakeNotifSvc struct {
 	notifications.ServiceInterface
 	count int

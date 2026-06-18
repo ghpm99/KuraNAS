@@ -353,6 +353,38 @@ func TestFileService_CreateUploadProcessJob(t *testing.T) {
 	}
 }
 
+func TestFileService_CreateCaptureProcessJob(t *testing.T) {
+	jobsRepo := newFilesJobsRepoMockForTest(t)
+	service := newFilesServiceForTest(t, &filesRepoMock{})
+	service.JobsRepository = jobsRepo
+
+	jobID, err := service.CreateCaptureProcessJob(42)
+	if err != nil {
+		t.Fatalf("expected capture job creation success, got %v", err)
+	}
+	if jobID <= 0 {
+		t.Fatalf("expected valid job id, got %d", jobID)
+	}
+	if len(jobsRepo.createdJobs) != 1 {
+		t.Fatalf("expected one created job, got %d", len(jobsRepo.createdJobs))
+	}
+	if jobsRepo.createdJobs[0].Type != "capture_process" {
+		t.Fatalf("expected capture_process job, got %s", jobsRepo.createdJobs[0].Type)
+	}
+	if len(jobsRepo.createdSteps) != 1 || jobsRepo.createdSteps[0].Type != "capture_promote" {
+		t.Fatalf("expected a single capture_promote step, got %+v", jobsRepo.createdSteps)
+	}
+}
+
+func TestFileService_CreateCaptureProcessJobRequiresID(t *testing.T) {
+	service := newFilesServiceForTest(t, &filesRepoMock{})
+	service.JobsRepository = newFilesJobsRepoMockForTest(t)
+
+	if _, err := service.CreateCaptureProcessJob(0); err == nil {
+		t.Fatal("expected error for missing capture id")
+	}
+}
+
 func TestFileService_GetChildrenAndDirectoryCount(t *testing.T) {
 	repo := &filesRepoMock{
 		getActiveChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
