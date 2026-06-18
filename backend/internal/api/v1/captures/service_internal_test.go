@@ -166,10 +166,10 @@ func TestServiceUploadCapture(t *testing.T) {
 			return capture, nil
 		},
 	}
-	dispatchedPaths := []string{}
+	dispatchedCaptureIDs := []int{}
 	dispatcher := &uploadJobDispatcherMock{
-		createUploadProcessJobFn: func(paths []string) (int, error) {
-			dispatchedPaths = append(dispatchedPaths, paths...)
+		createCaptureProcessJobFn: func(captureID int) (int, error) {
+			dispatchedCaptureIDs = append(dispatchedCaptureIDs, captureID)
 			return 11, nil
 		},
 	}
@@ -203,11 +203,8 @@ func TestServiceUploadCapture(t *testing.T) {
 		t.Fatal("expected file to be saved")
 	}
 
-	if len(dispatchedPaths) != 2 {
-		t.Fatalf("expected 2 dispatched paths, got %d", len(dispatchedPaths))
-	}
-	if dispatchedPaths[0] != captureDir || dispatchedPaths[1] != savedPath {
-		t.Fatalf("unexpected dispatched paths: %+v", dispatchedPaths)
+	if len(dispatchedCaptureIDs) != 1 || dispatchedCaptureIDs[0] != 1 {
+		t.Fatalf("expected capture_process dispatch for capture 1, got %+v", dispatchedCaptureIDs)
 	}
 }
 
@@ -246,7 +243,7 @@ func TestServiceUploadCaptureJobDispatchErrorRollsBack(t *testing.T) {
 		},
 	}
 	dispatcher := &uploadJobDispatcherMock{
-		createUploadProcessJobFn: func(paths []string) (int, error) {
+		createCaptureProcessJobFn: func(captureID int) (int, error) {
 			return 0, errors.New("job enqueue failed")
 		},
 	}
@@ -275,10 +272,10 @@ func TestServiceChunkedUploadLifecycle(t *testing.T) {
 			return capture, nil
 		},
 	}
-	dispatchedPaths := []string{}
+	dispatchedCaptureIDs := []int{}
 	dispatcher := &uploadJobDispatcherMock{
-		createUploadProcessJobFn: func(paths []string) (int, error) {
-			dispatchedPaths = append(dispatchedPaths, paths...)
+		createCaptureProcessJobFn: func(captureID int) (int, error) {
+			dispatchedCaptureIDs = append(dispatchedCaptureIDs, captureID)
 			return 55, nil
 		},
 	}
@@ -333,8 +330,8 @@ func TestServiceChunkedUploadLifecycle(t *testing.T) {
 		t.Fatalf("unexpected finalized content: %q", string(data))
 	}
 
-	if len(dispatchedPaths) != 2 {
-		t.Fatalf("expected 2 dispatched paths, got %d", len(dispatchedPaths))
+	if len(dispatchedCaptureIDs) != 1 || dispatchedCaptureIDs[0] != 9 {
+		t.Fatalf("expected capture_process dispatch for capture 9, got %+v", dispatchedCaptureIDs)
 	}
 }
 
@@ -368,15 +365,17 @@ func TestServiceCompleteCaptureUploadEmptyReturnsErrEmptyCapture(t *testing.T) {
 	}
 }
 
-func TestServiceInitCaptureUploadSkipsAlreadyArchivedEpisode(t *testing.T) {
+func TestServiceInitCaptureUploadAllowsReRecordingArchivedEpisode(t *testing.T) {
 	dir := t.TempDir()
 	setEntryPointForTest(t, dir)
 
+	// Even if an episode_key was already archived, re-recording is allowed
+	// (decided: regra (c) — it becomes a new capture). The archived lookup must
+	// not even be consulted anymore, so a fresh session is always opened.
+	episodeLookups := 0
 	mock := &repoMock{
 		getByEpisodeKeyFn: func(episodeKey string) (CaptureModel, bool, error) {
-			if episodeKey != "crunchyroll:GREP01" {
-				t.Fatalf("unexpected episode key: %s", episodeKey)
-			}
+			episodeLookups++
 			return CaptureModel{ID: 7, EpisodeKey: episodeKey}, true, nil
 		},
 	}
@@ -390,11 +389,14 @@ func TestServiceInitCaptureUploadSkipsAlreadyArchivedEpisode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitCaptureUpload returned error: %v", err)
 	}
-	if !result.AlreadyComplete {
-		t.Fatal("expected AlreadyComplete to be true for an archived episode")
+	if result.AlreadyComplete {
+		t.Fatal("re-recording an archived episode must not be blocked")
 	}
-	if result.UploadID != "" {
-		t.Fatalf("expected no upload id for archived episode, got %q", result.UploadID)
+	if result.UploadID == "" {
+		t.Fatal("expected a fresh upload session for the re-record")
+	}
+	if episodeLookups != 0 {
+		t.Fatalf("expected no archived-capture lookup, got %d", episodeLookups)
 	}
 }
 
@@ -509,12 +511,14 @@ func TestServiceCompleteCaptureUploadPersistsEpisodeKey(t *testing.T) {
 	}
 }
 
-func TestServiceCompleteCaptureUploadWritesMetadataSidecar(t *testing.T) {
+func TestServiceCompleteCaptureUploadPersistsMetadataToRow(t *testing.T) {
 	dir := t.TempDir()
 	setEntryPointForTest(t, dir)
 
+	var persisted CaptureModel
 	mock := &repoMock{
 		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+			persisted = capture
 			capture.ID = 42
 			return capture, nil
 		},
@@ -541,60 +545,48 @@ func TestServiceCompleteCaptureUploadWritesMetadataSidecar(t *testing.T) {
 		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
 	}
 
-	metaPath := filepath.Join(dir, "capturas", "meta_show", captureMetadataFileName)
-	data, readErr := os.ReadFile(metaPath)
-	if readErr != nil {
-		t.Fatalf("expected metadata sidecar to be written: %v", readErr)
+	// The metadata.json sidecar was retired: the raw payload lives on the row.
+	if _, statErr := os.Stat(filepath.Join(dir, "capturas", "meta_show", "metadata.json")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no metadata.json sidecar, stat err = %v", statErr)
 	}
-
+	if persisted.Status != CaptureStatusUploaded {
+		t.Fatalf("expected status uploaded, got %s", persisted.Status)
+	}
 	var parsed map[string]any
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		t.Fatalf("metadata sidecar is not valid json: %v", err)
+	if err := json.Unmarshal(persisted.RawMetadata, &parsed); err != nil {
+		t.Fatalf("expected valid raw_metadata persisted, got %q: %v", string(persisted.RawMetadata), err)
 	}
 	if parsed["platform"] != "crunchyroll" || parsed["title"] != "My Show" {
-		t.Fatalf("unexpected metadata content: %s", string(data))
+		t.Fatalf("unexpected raw_metadata content: %s", string(persisted.RawMetadata))
 	}
 }
 
-func TestServiceCompleteCaptureUploadWithoutMetadataWritesNoSidecar(t *testing.T) {
+func TestServiceInitCaptureUploadRejectsInvalidMetadata(t *testing.T) {
 	dir := t.TempDir()
 	setEntryPointForTest(t, dir)
 
-	mock := &repoMock{
-		createFn: func(tx *sql.Tx, capture CaptureModel) (CaptureModel, error) {
-			capture.ID = 1
-			return capture, nil
-		},
-	}
-	service := newServiceForTest(t, mock, nil, nil)
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
 
-	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
-		Name:     "no_meta_show",
-		FileName: "no_meta.webm",
+	// Invalid metadata can never reach a capture row: the session persist
+	// marshals it through json.RawMessage, which rejects malformed JSON.
+	if _, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:     "bad_meta_show",
+		FileName: "bad.webm",
 		Size:     4,
-	})
-	if err != nil {
-		t.Fatalf("InitCaptureUpload returned error: %v", err)
-	}
-
-	chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
-	if err := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
-		t.Fatalf("UploadCaptureChunk returned error: %v", err)
-	}
-
-	if _, err := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID}); err != nil {
-		t.Fatalf("CompleteCaptureUpload returned error: %v", err)
-	}
-
-	metaPath := filepath.Join(dir, "capturas", "no_meta_show", captureMetadataFileName)
-	if _, statErr := os.Stat(metaPath); !os.IsNotExist(statErr) {
-		t.Fatalf("expected no metadata sidecar, stat err = %v", statErr)
+		Metadata: json.RawMessage(`{not-json`),
+	}); err == nil {
+		t.Fatal("expected invalid metadata to fail the upload init")
 	}
 }
 
-func TestWriteCaptureMetadataRejectsInvalidJSON(t *testing.T) {
-	dir := t.TempDir()
-	if err := writeCaptureMetadata(dir, json.RawMessage(`{not-json`)); err == nil {
+func TestValidateCaptureMetadata(t *testing.T) {
+	if err := validateCaptureMetadata(nil); err != nil {
+		t.Fatalf("empty metadata should be allowed, got %v", err)
+	}
+	if err := validateCaptureMetadata(json.RawMessage(`{"a":1}`)); err != nil {
+		t.Fatalf("valid metadata should pass, got %v", err)
+	}
+	if err := validateCaptureMetadata(json.RawMessage(`{not-json`)); err == nil {
 		t.Fatal("expected error for invalid metadata json")
 	}
 }
