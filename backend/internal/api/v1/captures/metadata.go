@@ -62,8 +62,9 @@ func resolvedTitle(meta captureMetadata, capture CaptureModel) string {
 //     (no season -> no Temporada folder);
 //   - otherwise    -> <title> (<release_year>).ext (no year -> <title>.ext).
 //
-// The extension is preserved from the uploaded recording (the plugin delivers a
-// finished MP4; no transcode/remux happens here).
+// The extension is preserved from the uploaded recording. The video stream is
+// never re-encoded, but MP4 captures are remuxed to a faststart/AAC file on
+// promotion (see placeRecordingInLibrary) so the extension still holds.
 func buildCaptureRelPath(meta captureMetadata, capture CaptureModel) string {
 	ext := filepath.Ext(capture.FileName)
 	if ext == "" {

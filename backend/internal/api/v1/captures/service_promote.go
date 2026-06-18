@@ -1,6 +1,7 @@
 package captures
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"nas-go/api/pkg/i18n"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -21,7 +23,15 @@ import (
 const (
 	posterDownloadTimeout = 8 * time.Second
 	maxPosterBytes        = 10 * 1024 * 1024
+	// remuxTimeout bounds the ffmpeg remux. Video is stream-copied (no re-encode)
+	// so this is I/O-bound; the generous ceiling only guards a stalled process on
+	// a very large file. The worker step itself has no context to cancel us.
+	remuxTimeout = 30 * time.Minute
 )
+
+// remuxRecording rewrites a captured recording into a broadly-compatible MP4.
+// It is a package var so tests can swap the real ffmpeg call for a stub.
+var remuxRecording = ffmpegRemuxForPlayback
 
 // PromoteCapture turns an uploaded capture into an organized video in the
 // library. Ordering matters: the home_file stub and the captures row are
@@ -93,7 +103,7 @@ func (s *Service) PromoteCapture(captureID int) error {
 	// download just means the thumbnail step later falls back to an ffmpeg frame.
 	s.downloadPoster(meta, fileID)
 
-	if moveErr := moveFile(stagingPath, finalPath); moveErr != nil {
+	if moveErr := placeRecordingInLibrary(stagingPath, finalPath); moveErr != nil {
 		s.rollbackPromotion(captureID, fileID)
 		promoteErr := fmt.Errorf("PromoteCapture: move recording into library: %w", moveErr)
 		s.emitPromotionFailedNotification(capture, promoteErr)
@@ -102,6 +112,63 @@ func (s *Service) PromoteCapture(captureID int) error {
 
 	_ = os.RemoveAll(stagingDir)
 	s.emitPromotionCompletedNotification(capture)
+	return nil
+}
+
+// placeRecordingInLibrary moves the staged recording into the watched library,
+// remuxing MP4 captures into a broadly-compatible file first. The plugin emits
+// fragmented MP4 with Opus audio (the browser had no AAC encoder), which the
+// Android/ExoPlayer Mp4 demuxer cannot play; the remux copies the video stream
+// untouched, transcodes the audio to AAC and writes a faststart (defragmented)
+// file. ffmpeg is already a runtime dependency (video thumbnails); if it is
+// missing or the remux fails, fall back to a plain move so the recording is
+// still promoted — just not necessarily playable everywhere — and log it for
+// follow-up. Non-MP4 containers (e.g. WebM) are moved as-is.
+func placeRecordingInLibrary(stagingPath, finalPath string) error {
+	if isRemuxableContainer(finalPath) {
+		if err := remuxRecording(stagingPath, finalPath); err != nil {
+			applog.Error("captures: remux failed, falling back to plain move", "src", stagingPath, "dest", finalPath, "error", err)
+		} else {
+			return nil
+		}
+	}
+	return moveFile(stagingPath, finalPath)
+}
+
+// isRemuxableContainer reports whether the destination is an MP4-family container
+// where stream-copying the (H.264) video into a faststart MP4 is valid.
+func isRemuxableContainer(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".mp4", ".m4v", ".mov":
+		return true
+	default:
+		return false
+	}
+}
+
+// ffmpegRemuxForPlayback writes destPath from srcPath: video stream-copied, audio
+// transcoded to AAC, faststart. A partial output is removed on failure so the
+// caller's fallback move can recreate the destination.
+func ffmpegRemuxForPlayback(srcPath, destPath string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), remuxTimeout)
+	defer cancel()
+
+	out, err := exec.CommandContext(
+		ctx,
+		"ffmpeg",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-y",
+		"-i", srcPath,
+		"-c:v", "copy",
+		"-c:a", "aac",
+		"-movflags", "+faststart",
+		destPath,
+	).CombinedOutput()
+	if err != nil {
+		_ = os.Remove(destPath)
+		return fmt.Errorf("ffmpegRemuxForPlayback: %w: %s", err, strings.TrimSpace(string(out)))
+	}
 	return nil
 }
 

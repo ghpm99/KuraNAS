@@ -67,6 +67,16 @@ func TestPromoteCaptureEpisodeMovesAndPersists(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Stub the ffmpeg remux: copy staging->final so the test exercises the
+	// remux-success path without invoking a real ffmpeg.
+	swapRemux(t, func(src, dest string) error {
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dest, data, 0644)
+	})
+
 	var promoted CaptureModel
 	mock := &repoMock{
 		getByIDFn: func(id int) (CaptureModel, error) {
@@ -124,8 +134,11 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 	dir := t.TempDir()
 	videosDir := filepath.Join(dir, "videos")
 
-	// No staging file on disk -> the move fails, triggering rollback.
+	// No staging file on disk -> the move fails, triggering rollback. The remux
+	// is stubbed to fail (as a missing ffmpeg would), so the fallback move runs
+	// and also fails on the missing source.
 	staging := filepath.Join(dir, "capturas", "gone", "missing.mp4")
+	swapRemux(t, func(src, dest string) error { return os.ErrNotExist })
 
 	deleted := 0
 	var failedStatus CaptureStatus
@@ -155,6 +168,133 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 	}
 	if failedStatus != CaptureStatusFailed {
 		t.Fatalf("expected failed status, got %s", failedStatus)
+	}
+}
+
+// swapRemux replaces the package-level remux function for the duration of a test.
+func swapRemux(t *testing.T, fn func(src, dest string) error) {
+	t.Helper()
+	prev := remuxRecording
+	remuxRecording = fn
+	t.Cleanup(func() { remuxRecording = prev })
+}
+
+func TestIsRemuxableContainer(t *testing.T) {
+	cases := map[string]bool{
+		"video.mp4":    true,
+		"video.MP4":    true,
+		"clip.m4v":     true,
+		"clip.mov":     true,
+		"capture.webm": false,
+		"audio.mp3":    false,
+		"noext":        false,
+	}
+	for name, want := range cases {
+		if got := isRemuxableContainer(name); got != want {
+			t.Fatalf("isRemuxableContainer(%q) = %v, want %v", name, got, want)
+		}
+	}
+}
+
+func TestPlaceRecordingInLibraryRemuxesMP4(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "staging", "rec.mp4")
+	if err := os.MkdirAll(filepath.Dir(src), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(src, []byte("raw"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(dir, "lib", "show.mp4")
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	called := false
+	swapRemux(t, func(s, d string) error {
+		called = true
+		return os.WriteFile(d, []byte("remuxed"), 0644)
+	})
+
+	if err := placeRecordingInLibrary(src, dest); err != nil {
+		t.Fatalf("placeRecordingInLibrary error: %v", err)
+	}
+	if !called {
+		t.Fatal("expected remux to be used for .mp4")
+	}
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatalf("expected remuxed file at dest: %v", err)
+	}
+	if string(data) != "remuxed" {
+		t.Fatalf("expected remuxed content, got %q", string(data))
+	}
+}
+
+func TestPlaceRecordingInLibraryFallsBackOnRemuxError(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "staging", "rec.mp4")
+	if err := os.MkdirAll(filepath.Dir(src), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(src, []byte("raw"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(dir, "lib", "show.mp4")
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	swapRemux(t, func(s, d string) error { return os.ErrNotExist })
+
+	if err := placeRecordingInLibrary(src, dest); err != nil {
+		t.Fatalf("expected fallback move to succeed: %v", err)
+	}
+	if data, err := os.ReadFile(dest); err != nil || string(data) != "raw" {
+		t.Fatalf("expected moved file at dest (data=%q, err=%v)", string(data), err)
+	}
+	if _, err := os.Stat(src); !os.IsNotExist(err) {
+		t.Fatalf("expected source consumed by move, stat err = %v", err)
+	}
+}
+
+func TestPlaceRecordingInLibrarySkipsRemuxForNonMP4(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "staging", "rec.webm")
+	if err := os.MkdirAll(filepath.Dir(src), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(src, []byte("webm-bytes"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(dir, "lib", "show.webm")
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	swapRemux(t, func(s, d string) error {
+		t.Fatal("remux must not be called for non-MP4 containers")
+		return nil
+	})
+
+	if err := placeRecordingInLibrary(src, dest); err != nil {
+		t.Fatalf("placeRecordingInLibrary error: %v", err)
+	}
+	if data, err := os.ReadFile(dest); err != nil || string(data) != "webm-bytes" {
+		t.Fatalf("expected moved webm at dest (data=%q, err=%v)", string(data), err)
+	}
+}
+
+func TestFfmpegRemuxForPlaybackErrorsOnBadInput(t *testing.T) {
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "out.mp4")
+	// Whether ffmpeg is absent (exec error) or present (it rejects the missing
+	// input), the result must be an error with no partial output left behind.
+	if err := ffmpegRemuxForPlayback(filepath.Join(dir, "nope.mp4"), dest); err == nil {
+		t.Fatal("expected error remuxing a missing source")
+	}
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Fatalf("expected no partial output, stat err = %v", err)
 	}
 }
 
