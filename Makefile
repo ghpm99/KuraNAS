@@ -2,6 +2,9 @@
 
 FRONTEND_DIR := frontend
 BACKEND_DIR := backend
+PLUGIN_DIR := plugin
+ANDROID_DIR := android
+MOBILE_DIR := mobile
 DIST_DIR := $(FRONTEND_DIR)/dist
 OUTPUT_DIR := build
 DOWNLOADS_DIR := downloads
@@ -11,7 +14,12 @@ BACKEND_GO_CACHE_DIR := $(abspath .cache/go-build)
 BACKEND_GO_MOD_CACHE_DIR := $(abspath .cache/go-mod)
 BACKEND_GO_ENV := GOCACHE=$(BACKEND_GO_CACHE_DIR) GOMODCACHE=$(BACKEND_GO_MOD_CACHE_DIR)
 
-.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend lint-frontend test-frontend lint-backend test-backend prepare-backend-go-cache release-main-ff
+# Host-specific JDK / Android SDK for the gradle gates. Override via env or
+# Makefile.local. JAVA_HOME falls back to the first JDK under ~/.local/jdks.
+ANDROID_SDK_DIR ?= $(HOME)/Android/Sdk
+JAVA_HOME ?= $(firstword $(wildcard $(HOME)/.local/jdks/jdk-*))
+
+.PHONY: all frontend backend move clean deploy ci ci-frontend ci-backend ci-plugin ci-android ci-mobile gradle-ci lint-frontend test-frontend lint-backend test-backend prepare-backend-go-cache release-main-ff
 
 all: frontend backend move deploy
 
@@ -39,7 +47,7 @@ clean:
 	@rm -rf $(OUTPUT_DIR)
 	@echo "Clean complete."
 
-ci: ci-frontend ci-backend
+ci: ci-frontend ci-backend ci-plugin ci-android ci-mobile
 	@echo ""
 	@echo "========================================"
 	@echo "  All quality gates passed"
@@ -48,6 +56,30 @@ ci: ci-frontend ci-backend
 ci-frontend: lint-frontend test-frontend
 
 ci-backend: lint-backend test-backend
+
+ci-plugin:
+	@echo ""
+	@echo "======== Plugin Lint + Tests ========"
+	@cd $(PLUGIN_DIR) && npm ci && npm run lint && npm test
+	@echo "Plugin quality gate passed."
+
+ci-android:
+	@$(MAKE) gradle-ci GRADLE_DIR=$(ANDROID_DIR) GRADLE_LABEL=Android
+
+ci-mobile:
+	@$(MAKE) gradle-ci GRADLE_DIR=$(MOBILE_DIR) GRADLE_LABEL=Mobile
+
+gradle-ci:
+	@echo ""
+	@echo "======== $(GRADLE_LABEL) Tests + Build ========"
+	@if [ -z "$(JAVA_HOME)" ]; then \
+		echo "FAILED: JAVA_HOME is not set and no JDK found under ~/.local/jdks."; \
+		echo "Set JAVA_HOME (env or Makefile.local) before running the gradle gates."; \
+		exit 1; \
+	fi
+	@[ -f $(GRADLE_DIR)/local.properties ] || echo "sdk.dir=$(ANDROID_SDK_DIR)" > $(GRADLE_DIR)/local.properties
+	@cd $(GRADLE_DIR) && JAVA_HOME="$(JAVA_HOME)" ./gradlew --no-daemon test assembleDebug
+	@echo "$(GRADLE_LABEL) quality gate passed."
 
 prepare-backend-go-cache:
 	@mkdir -p $(BACKEND_GO_CACHE_DIR) $(BACKEND_GO_MOD_CACHE_DIR)
