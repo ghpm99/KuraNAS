@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.kuranas.android.R
@@ -37,7 +38,14 @@ fun VideoPlayerScreen(
     viewModel: VideoPlayerViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val player = remember { ExoPlayer.Builder(context).build() }
+    val player = remember {
+        // Capturas vêm de streams (H.264 High@L5.1); o decoder de hardware do
+        // dispositivo pode recusar o nível (NO_EXCEEDS_CAPABILITIES). O fallback
+        // permite cair para o decoder de software quando o hardware não inicializa.
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setEnableDecoderFallback(true)
+        ExoPlayer.Builder(context, renderersFactory).build()
+    }
     var playbackError by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(player) {
