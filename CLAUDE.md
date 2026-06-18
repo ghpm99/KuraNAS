@@ -32,6 +32,8 @@ Each app has its own build system and its own `CLAUDE.md` with stack-specific de
 
 `make deploy` and `make all`'s deploy step include `Makefile.local` (gitignored, optional).
 
+**Only declare a delivery or fix done after `make ci` runs fully green.** `make ci` is slow, so don't run it on every commit — but at the end of a delivery or fix, run it to consolidate, and only call the work complete once every gate passes.
+
 ## The HTTP contract is the integration point
 
 Because the apps are otherwise decoupled, a change to a backend route or DTO shape can break the frontend, both Android apps, and the plugin at once. When changing anything under `backend/internal/api/v1/`, check the consumers: frontend `src/service/*.ts`, the Android `feature/*/data` layers, and `plugin/src/background/uploader.js` (captures endpoints).
