@@ -135,6 +135,7 @@
     <string name="video_recent">Recentes</string>
     <string name="video_playlists">Playlists</string>
     <string name="video_empty">Nenhum vídeo encontrado</string>
+    <string name="video_playback_error">Não foi possível reproduzir este vídeo: %1$s</string>
     <plurals name="video_count">
         <item quantity="one">%1$d vídeo</item>
         <item quantity="other">%1$d vídeos</item>
