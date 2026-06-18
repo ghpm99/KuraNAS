@@ -78,3 +78,6 @@ var TopFilesBySizeQuery string
 
 //go:embed get_duplicate_files.sql
 var GetDuplicateFilesQuery string
+
+//go:embed delete_file_by_id.sql
+var DeleteFileByIDQuery string

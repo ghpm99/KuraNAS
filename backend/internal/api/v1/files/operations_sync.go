@@ -34,6 +34,17 @@ func (r *Repository) UpdateDescendantPaths(transaction *sql.Tx, oldPath string, 
 	return result.RowsAffected()
 }
 
+// DeleteFileByID hard-deletes a single home_file row. Unlike the soft-delete
+// subtree flow, this physically removes the record; it exists for rolling back
+// a pre-registered stub row (e.g. a capture promotion whose move failed) and
+// must not be used for user-initiated deletions (those go through trash).
+func (r *Repository) DeleteFileByID(transaction *sql.Tx, id int) error {
+	if _, err := transaction.Exec(queries.DeleteFileByIDQuery, id); err != nil {
+		return fmt.Errorf("DeleteFileByID: %w", err)
+	}
+	return nil
+}
+
 // MarkDeletedSubtree soft-deletes the row at path and every descendant row.
 // Returns the number of affected rows.
 func (r *Repository) MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {

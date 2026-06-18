@@ -58,6 +58,10 @@ func (f *fakeFilesSvc) CreateCaptureProcessJob(captureID int) (int, error) {
 	return captureID, nil
 }
 
+func (f *fakeFilesSvc) DeleteFileRecord(id int) error {
+	return nil
+}
+
 type fakeNotifSvc struct {
 	notifications.ServiceInterface
 	count int

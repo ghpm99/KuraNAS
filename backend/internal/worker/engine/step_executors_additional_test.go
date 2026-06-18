@@ -65,8 +65,8 @@ func (f *fakeEngineImageRepository) UpsertImageMetadata(tx *sql.Tx, m imagedom.M
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
-	if len(executors) != 17 {
-		t.Fatalf("expected 17 step executors, got %d", len(executors))
+	if len(executors) != 18 {
+		t.Fatalf("expected 18 step executors, got %d", len(executors))
 	}
 
 	imagePlan, err := buildFileProcessingPlan(
