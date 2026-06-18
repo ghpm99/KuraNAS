@@ -3,10 +3,19 @@ package configuration
 type SettingsDto struct {
 	Library    LibrarySettingsDto    `json:"library"`
 	Indexing   IndexingSettingsDto   `json:"indexing"`
+	Captures   CapturesSettingsDto   `json:"captures"`
 	AI         AISettingsDto         `json:"ai"`
 	Players    PlayerSettingsDto     `json:"players"`
 	Appearance AppearanceSettingsDto `json:"appearance"`
 	Language   LanguageSettingsDto   `json:"language"`
+}
+
+// CapturesSettingsDto exposes the configured capture save path plus the
+// read-only default and the storage roots the UI must keep the path out of.
+type CapturesSettingsDto struct {
+	SavePath     string   `json:"save_path"`
+	DefaultPath  string   `json:"default_path"`
+	StorageRoots []string `json:"storage_roots"`
 }
 
 type LibrarySettingsDto struct {
@@ -49,10 +58,15 @@ type LanguageSettingsDto struct {
 type UpdateSettingsRequest struct {
 	Library    LibrarySettingsRequest    `json:"library"`
 	Indexing   IndexingSettingsRequest   `json:"indexing"`
+	Captures   CapturesSettingsRequest   `json:"captures"`
 	AI         AISettingsRequest         `json:"ai"`
 	Players    PlayerSettingsRequest     `json:"players"`
 	Appearance AppearanceSettingsRequest `json:"appearance"`
 	Language   LanguageSettingsRequest   `json:"language"`
+}
+
+type CapturesSettingsRequest struct {
+	SavePath string `json:"save_path"`
 }
 
 type LibrarySettingsRequest struct {

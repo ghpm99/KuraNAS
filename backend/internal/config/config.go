@@ -8,6 +8,7 @@ import (
 
 type AppConfigStruct struct {
 	EntryPoint                 string
+	CapturesPath               string
 	Lang                       string
 	EnableWorkers              bool
 	EnableWebDAV               bool

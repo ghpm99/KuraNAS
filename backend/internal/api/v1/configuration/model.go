@@ -5,10 +5,18 @@ package configuration
 type settingsState struct {
 	Library    librarySettingsState    `json:"library"`
 	Indexing   indexingSettingsState   `json:"indexing"`
+	Captures   capturesSettingsState   `json:"captures"`
 	AI         aiSettingsState         `json:"ai"`
 	Players    playerSettingsState     `json:"players"`
 	Appearance appearanceSettingsState `json:"appearance"`
 	Language   languageSettingsState   `json:"language"`
+}
+
+// capturesSettingsState stores where browser-plugin captures are saved. The path
+// must live OUTSIDE every storage root (validated on update) so captures and
+// their in-progress upload staging are never indexed/watched.
+type capturesSettingsState struct {
+	SavePath string `json:"save_path"`
 }
 
 type librarySettingsState struct {

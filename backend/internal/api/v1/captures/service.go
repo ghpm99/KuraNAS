@@ -58,11 +58,17 @@ type captureUploadSession struct {
 // the recording inside the capture folder.
 const captureMetadataFileName = "metadata.json"
 
-// capturesRootDirName is the folder (under a storage root) that holds saved
-// captures; uploadStagingDirName is the hidden subtree under it where in-progress
-// chunked uploads are assembled before being finalized and moved out.
-const capturesRootDirName = "capturas"
+// uploadStagingDirName is the hidden subtree (under the configured captures root)
+// where in-progress chunked uploads are assembled before being finalized and
+// moved out. The captures root lives OUTSIDE every storage root (configurable via
+// system settings, validated on save), so neither the partial uploads nor the
+// finished captures are part of the indexed library — the filesystem watcher
+// never sees them, which is why no per-chunk indexing storm can happen.
 const uploadStagingDirName = ".uploads"
+
+// defaultCapturesSubdir is the captures folder name used as a fallback when no
+// captures path has been configured/applied yet.
+const defaultCapturesSubdir = "capturas"
 
 func NewService(
 	repository RepositoryInterface,
@@ -481,20 +487,19 @@ func (s *Service) DeleteCapture(id int) error {
 
 func buildCaptureDir(name string) string {
 	safeName := sanitizeFileName(name)
-	return filepath.Join(config.AppConfig.EntryPoint, capturesRootDirName, safeName)
+	return filepath.Join(capturesRootDir(), safeName)
 }
 
-// IsInsideUploadStaging reports whether path lives in the capture upload staging
-// area (root/capturas/.uploads) of the given storage root. The indexing pipeline
-// (filesystem watcher and scan) uses this to EXCLUDE the staging subtree: a
-// chunked upload rewrites payload.bin on every chunk, so re-indexing the growing
-// partial file each time is pure waste and drives unbounded memory/job growth
-// during a long recording. The finalized capture is indexed explicitly on
-// complete, so nothing real is missed.
-func IsInsideUploadStaging(root string, path string) bool {
-	staging := filepath.Join(filepath.Clean(root), capturesRootDirName, uploadStagingDirName)
-	cleanPath := filepath.Clean(path)
-	return cleanPath == staging || strings.HasPrefix(cleanPath, staging+string(filepath.Separator))
+// capturesRootDir is the directory where captures are saved. It is configured in
+// system settings and validated to live OUTSIDE every storage root, so captures
+// (and their upload staging) are never indexed/watched. When no path has been
+// applied yet (e.g. before settings load, or in unit tests) it falls back to the
+// historical location next to the entry point.
+func capturesRootDir() string {
+	if path := strings.TrimSpace(config.AppConfig.CapturesPath); path != "" {
+		return path
+	}
+	return filepath.Join(config.AppConfig.EntryPoint, defaultCapturesSubdir)
 }
 
 // writeCaptureMetadata persists the client-supplied metadata JSON as a sidecar
@@ -588,7 +593,7 @@ func generateUploadID() (string, error) {
 }
 
 func (s *Service) captureUploadRootDir() string {
-	return filepath.Join(config.AppConfig.EntryPoint, capturesRootDirName, uploadStagingDirName)
+	return filepath.Join(capturesRootDir(), uploadStagingDirName)
 }
 
 func (s *Service) captureUploadSessionDir(uploadID string) string {
