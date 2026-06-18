@@ -137,6 +137,9 @@ var CreateEmailAnalysisTableQuery string
 //go:embed queries/0042_add_capture_episode_key.sql
 var AddCaptureEpisodeKeyQuery string
 
+//go:embed queries/0043_expand_captures_table.sql
+var ExpandCapturesTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -266,6 +269,11 @@ func capturesMigrationList() {
 	addMigrationRequiring("0042_add_capture_episode_key",
 		[]string{"0023_create_captures_table"},
 		defaultMigrationFunc(AddCaptureEpisodeKeyQuery))
+
+	// file_id FKs home_file, so home_file must exist first.
+	addMigrationRequiring("0043_expand_captures_table",
+		[]string{"0023_create_captures_table", "0001_create_home_file_table"},
+		defaultMigrationFunc(ExpandCapturesTableQuery))
 }
 
 func librariesMigrationList() {

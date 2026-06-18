@@ -1,3 +1,5 @@
-SELECT id, name, file_name, file_path, media_type, mime_type, size, episode_key, created_at
+SELECT id, name, file_name, file_path, media_type, mime_type, size, episode_key, created_at,
+    file_id, status, title, episode_title, season, episode, description, release_year,
+    genres, cast_members, directors, studio, content_rating, platform, source_url, thumbnail_url, content_type, raw_metadata
 FROM captures
 WHERE id = $1;

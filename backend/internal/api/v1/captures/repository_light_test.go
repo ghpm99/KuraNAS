@@ -2,6 +2,7 @@ package captures
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"regexp"
 	"testing"
@@ -12,6 +13,24 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
+
+// captureColumns mirrors the SELECT projection of every capture read query, so
+// the sqlmock rows scan into the same 27 destinations scanCapture expects.
+var captureColumns = []string{
+	"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at",
+	"file_id", "status", "title", "episode_title", "season", "episode", "description", "release_year",
+	"genres", "cast_members", "directors", "studio", "content_rating", "platform", "source_url", "thumbnail_url", "content_type", "raw_metadata",
+}
+
+// captureRow builds a full mock row from the historical columns, leaving the
+// rich semantic columns at their pre-promotion defaults.
+func captureRow(id int, name, fileName, filePath, mediaType, mimeType string, size int64, episodeKey string, createdAt time.Time) []driver.Value {
+	return []driver.Value{
+		id, name, fileName, filePath, mediaType, mimeType, size, episodeKey, createdAt,
+		nil, "uploaded", "", "", nil, nil, "", nil,
+		[]byte("[]"), []byte("[]"), []byte("[]"), "", "", "", "", "", "", []byte("{}"),
+	}
+}
 
 func newCapturesRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
 	t.Helper()
@@ -39,7 +58,7 @@ func TestRepositoryCreateCapture(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.InsertCaptureQuery)).
-		WithArgs("test", "video.ts", "/data/capturas/test/video.ts", "hls", "video/mp2t", int64(1024), "crunchyroll:GEP01", now).
+		WithArgs("test", "video.ts", "/data/capturas/test/video.ts", "hls", "video/mp2t", int64(1024), "crunchyroll:GEP01", now, "uploaded", []byte("{}")).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
@@ -95,9 +114,9 @@ func TestRepositoryGetCaptures(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
-		AddRow(1, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now).
-		AddRow(2, "other", "stream.mp4", "/path2", "dash", "video/mp4", 2048, "crunchyroll:GEP02", now)
+	rows := sqlmock.NewRows(captureColumns).
+		AddRow(captureRow(1, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now)...).
+		AddRow(captureRow(2, "other", "stream.mp4", "/path2", "dash", "video/mp4", 2048, "crunchyroll:GEP02", now)...)
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCapturesQuery)).WillReturnRows(rows)
@@ -139,8 +158,8 @@ func TestRepositoryGetCaptureByID(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCaptureByIDQuery)).
 		WithArgs(5).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
-			AddRow(5, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now))
+		WillReturnRows(sqlmock.NewRows(captureColumns).
+			AddRow(captureRow(5, "test", "video.ts", "/path", "hls", "video/mp2t", 1024, "", now)...))
 	mock.ExpectRollback()
 
 	result, err := repo.GetCaptureByID(5)
@@ -179,8 +198,8 @@ func TestRepositoryGetCaptureByEpisodeKeyFound(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetCaptureByEpisodeKeyQuery)).
 		WithArgs("crunchyroll:GEP01").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at"}).
-			AddRow(8, "show", "ep.webm", "/path", "recording", "video/webm", 4096, "crunchyroll:GEP01", now))
+		WillReturnRows(sqlmock.NewRows(captureColumns).
+			AddRow(captureRow(8, "show", "ep.webm", "/path", "recording", "video/webm", 4096, "crunchyroll:GEP01", now)...))
 	mock.ExpectRollback()
 
 	result, found, err := repo.GetCaptureByEpisodeKey("crunchyroll:GEP01")

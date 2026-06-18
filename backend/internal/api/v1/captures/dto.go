@@ -16,6 +16,24 @@ type CaptureDto struct {
 	Size       int64     `json:"size"`
 	EpisodeKey string    `json:"episode_key"`
 	CreatedAt  time.Time `json:"created_at"`
+
+	FileID        *int     `json:"file_id,omitempty"`
+	Status        string   `json:"status"`
+	Title         string   `json:"title,omitempty"`
+	EpisodeTitle  string   `json:"episode_title,omitempty"`
+	Season        *int     `json:"season,omitempty"`
+	Episode       *int     `json:"episode,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	ReleaseYear   *int     `json:"release_year,omitempty"`
+	Genres        []string `json:"genres,omitempty"`
+	Cast          []string `json:"cast,omitempty"`
+	Directors     []string `json:"directors,omitempty"`
+	Studio        string   `json:"studio,omitempty"`
+	ContentRating string   `json:"content_rating,omitempty"`
+	Platform      string   `json:"platform,omitempty"`
+	SourceURL     string   `json:"source_url,omitempty"`
+	ThumbnailURL  string   `json:"thumbnail_url,omitempty"`
+	ContentType   string   `json:"content_type,omitempty"`
 }
 
 type CreateCaptureDto struct {
@@ -72,15 +90,32 @@ type CaptureFilter struct {
 
 func (m *CaptureModel) ToDto() CaptureDto {
 	return CaptureDto{
-		ID:         m.ID,
-		Name:       m.Name,
-		FileName:   m.FileName,
-		FilePath:   m.FilePath,
-		MediaType:  m.MediaType,
-		MimeType:   m.MimeType,
-		Size:       m.Size,
-		EpisodeKey: m.EpisodeKey,
-		CreatedAt:  m.CreatedAt,
+		ID:            m.ID,
+		Name:          m.Name,
+		FileName:      m.FileName,
+		FilePath:      m.FilePath,
+		MediaType:     m.MediaType,
+		MimeType:      m.MimeType,
+		Size:          m.Size,
+		EpisodeKey:    m.EpisodeKey,
+		CreatedAt:     m.CreatedAt,
+		FileID:        m.FileID,
+		Status:        string(m.Status),
+		Title:         m.Title,
+		EpisodeTitle:  m.EpisodeTitle,
+		Season:        m.Season,
+		Episode:       m.Episode,
+		Description:   m.Description,
+		ReleaseYear:   m.ReleaseYear,
+		Genres:        m.Genres,
+		Cast:          m.Cast,
+		Directors:     m.Directors,
+		Studio:        m.Studio,
+		ContentRating: m.ContentRating,
+		Platform:      m.Platform,
+		SourceURL:     m.SourceURL,
+		ThumbnailURL:  m.ThumbnailURL,
+		ContentType:   m.ContentType,
 	}
 }
 

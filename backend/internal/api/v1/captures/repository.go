@@ -2,6 +2,7 @@ package captures
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"nas-go/api/pkg/database"
@@ -21,7 +22,118 @@ func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
+// rowScanner is satisfied by both *sql.Row and *sql.Rows so the column mapping
+// lives in one place (scanCapture) for every read path.
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanCapture(scanner rowScanner) (CaptureModel, error) {
+	var m CaptureModel
+	var (
+		fileID, season, episode, releaseYear sql.NullInt64
+		status                               string
+		genres, cast, directors, rawMetadata []byte
+	)
+
+	err := scanner.Scan(
+		&m.ID,
+		&m.Name,
+		&m.FileName,
+		&m.FilePath,
+		&m.MediaType,
+		&m.MimeType,
+		&m.Size,
+		&m.EpisodeKey,
+		&m.CreatedAt,
+		&fileID,
+		&status,
+		&m.Title,
+		&m.EpisodeTitle,
+		&season,
+		&episode,
+		&m.Description,
+		&releaseYear,
+		&genres,
+		&cast,
+		&directors,
+		&m.Studio,
+		&m.ContentRating,
+		&m.Platform,
+		&m.SourceURL,
+		&m.ThumbnailURL,
+		&m.ContentType,
+		&rawMetadata,
+	)
+	if err != nil {
+		return m, err
+	}
+
+	m.Status = CaptureStatus(status)
+	m.FileID = nullIntToPtr(fileID)
+	m.Season = nullIntToPtr(season)
+	m.Episode = nullIntToPtr(episode)
+	m.ReleaseYear = nullIntToPtr(releaseYear)
+	m.Genres = decodeStringArray(genres)
+	m.Cast = decodeStringArray(cast)
+	m.Directors = decodeStringArray(directors)
+	m.RawMetadata = json.RawMessage(rawMetadata)
+
+	return m, nil
+}
+
+func nullIntToPtr(v sql.NullInt64) *int {
+	if !v.Valid {
+		return nil
+	}
+	i := int(v.Int64)
+	return &i
+}
+
+func ptrToNullInt(v *int) sql.NullInt64 {
+	if v == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*v), Valid: true}
+}
+
+// decodeStringArray turns a jsonb array column into []string, tolerating NULL,
+// empty, or malformed payloads by returning nil rather than failing the scan.
+func decodeStringArray(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var out []string
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil
+	}
+	return out
+}
+
+func encodeStringArray(values []string) []byte {
+	if len(values) == 0 {
+		return []byte("[]")
+	}
+	data, err := json.Marshal(values)
+	if err != nil {
+		return []byte("[]")
+	}
+	return data
+}
+
+func rawMetadataOrEmpty(raw json.RawMessage) []byte {
+	if len(raw) == 0 {
+		return []byte("{}")
+	}
+	return raw
+}
+
 func (r *Repository) CreateCapture(transaction *sql.Tx, capture CaptureModel) (CaptureModel, error) {
+	status := capture.Status
+	if status == "" {
+		status = CaptureStatusUploaded
+	}
+
 	args := []any{
 		capture.Name,
 		capture.FileName,
@@ -31,6 +143,8 @@ func (r *Repository) CreateCapture(transaction *sql.Tx, capture CaptureModel) (C
 		capture.Size,
 		capture.EpisodeKey,
 		capture.CreatedAt,
+		string(status),
+		rawMetadataOrEmpty(capture.RawMetadata),
 	}
 
 	var id int
@@ -40,6 +154,7 @@ func (r *Repository) CreateCapture(transaction *sql.Tx, capture CaptureModel) (C
 	}
 
 	capture.ID = id
+	capture.Status = status
 	return capture, nil
 }
 
@@ -71,19 +186,9 @@ func (r *Repository) GetCaptures(filter CaptureFilter, page int, pageSize int) (
 		defer rows.Close()
 
 		for rows.Next() {
-			var m CaptureModel
-			if err := rows.Scan(
-				&m.ID,
-				&m.Name,
-				&m.FileName,
-				&m.FilePath,
-				&m.MediaType,
-				&m.MimeType,
-				&m.Size,
-				&m.EpisodeKey,
-				&m.CreatedAt,
-			); err != nil {
-				return err
+			m, scanErr := scanCapture(rows)
+			if scanErr != nil {
+				return scanErr
 			}
 			paginationResponse.Items = append(paginationResponse.Items, m)
 		}
@@ -102,17 +207,9 @@ func (r *Repository) GetCaptureByID(id int) (CaptureModel, error) {
 	var m CaptureModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		return tx.QueryRow(queries.GetCaptureByIDQuery, id).Scan(
-			&m.ID,
-			&m.Name,
-			&m.FileName,
-			&m.FilePath,
-			&m.MediaType,
-			&m.MimeType,
-			&m.Size,
-			&m.EpisodeKey,
-			&m.CreatedAt,
-		)
+		var scanErr error
+		m, scanErr = scanCapture(tx.QueryRow(queries.GetCaptureByIDQuery, id))
+		return scanErr
 	})
 
 	if err != nil {
@@ -130,17 +227,9 @@ func (r *Repository) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bo
 	var m CaptureModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		return tx.QueryRow(queries.GetCaptureByEpisodeKeyQuery, episodeKey).Scan(
-			&m.ID,
-			&m.Name,
-			&m.FileName,
-			&m.FilePath,
-			&m.MediaType,
-			&m.MimeType,
-			&m.Size,
-			&m.EpisodeKey,
-			&m.CreatedAt,
-		)
+		var scanErr error
+		m, scanErr = scanCapture(tx.QueryRow(queries.GetCaptureByEpisodeKeyQuery, episodeKey))
+		return scanErr
 	})
 
 	if err != nil {
@@ -151,6 +240,49 @@ func (r *Repository) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bo
 	}
 
 	return m, true, nil
+}
+
+// UpdateCapturePromotion writes the resolved file_id, final path and all the
+// rich semantic columns parsed from the metadata, flipping the capture to its
+// new status in the same statement.
+func (r *Repository) UpdateCapturePromotion(transaction *sql.Tx, capture CaptureModel) error {
+	args := []any{
+		capture.ID,
+		ptrToNullInt(capture.FileID),
+		capture.FileName,
+		capture.FilePath,
+		string(capture.Status),
+		capture.Title,
+		capture.EpisodeTitle,
+		ptrToNullInt(capture.Season),
+		ptrToNullInt(capture.Episode),
+		capture.Description,
+		ptrToNullInt(capture.ReleaseYear),
+		encodeStringArray(capture.Genres),
+		encodeStringArray(capture.Cast),
+		encodeStringArray(capture.Directors),
+		capture.Studio,
+		capture.ContentRating,
+		capture.Platform,
+		capture.SourceURL,
+		capture.ThumbnailURL,
+		capture.ContentType,
+	}
+
+	if _, err := transaction.Exec(queries.UpdateCapturePromotionQuery, args...); err != nil {
+		return fmt.Errorf("UpdateCapturePromotion: %w", err)
+	}
+	return nil
+}
+
+// UpdateCaptureStatus sets a capture's lifecycle status and (optionally) clears
+// or sets its file_id — used to flip to "failed" and detach the rolled-back
+// home_file during a promotion failure.
+func (r *Repository) UpdateCaptureStatus(transaction *sql.Tx, id int, status CaptureStatus, fileID *int) error {
+	if _, err := transaction.Exec(queries.UpdateCaptureStatusQuery, id, string(status), ptrToNullInt(fileID)); err != nil {
+		return fmt.Errorf("UpdateCaptureStatus: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) DeleteCapture(transaction *sql.Tx, id int) error {

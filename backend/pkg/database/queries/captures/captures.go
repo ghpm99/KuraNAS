@@ -18,3 +18,9 @@ var GetCaptureByEpisodeKeyQuery string
 
 //go:embed delete_capture.sql
 var DeleteCaptureQuery string
+
+//go:embed update_capture_promotion.sql
+var UpdateCapturePromotionQuery string
+
+//go:embed update_capture_status.sql
+var UpdateCaptureStatusQuery string
