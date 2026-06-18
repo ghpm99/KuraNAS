@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands (`cd plugin`)
 
 - `yarn lint` — ESLint over the extension.
-- `yarn test` — `node --test tests/**/*.test.js` (Node's built-in test runner).
+- `yarn test` — `node --test tests/*.test.js` (Node's built-in test runner). The glob is left unquoted so the shell expands it: Node 20 (the CI runtime) does not expand globs passed to `--test` itself.
 
 Load unpacked in a Chromium browser from this directory to run it; `manifest.json` is the entry manifest.
 
