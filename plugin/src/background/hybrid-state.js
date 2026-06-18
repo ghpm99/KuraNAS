@@ -13,6 +13,11 @@ export function createHybridStateMachine({
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
 }) {
+  const LOG = "[KuraNAS][hybrid]";
+  function log(...args) {
+    console.log(LOG, ...args);
+  }
+
   function getHybridStatus(tabId) {
     const state = hybridStates.get(tabId);
     if (!state) return { armed: false, state: "IDLE" };
@@ -49,6 +54,7 @@ export function createHybridStateMachine({
       state.mode = mode;
     }
 
+    log("armado", { tabId, mode });
     sendTabMessage(tabId, { action: "hybrid_monitor_start" });
     broadcastHybridStatus(tabId);
   }
@@ -56,6 +62,7 @@ export function createHybridStateMachine({
   function disarmHybrid(tabId) {
     const state = hybridStates.get(tabId);
     if (!state) return;
+    log("desarmado", { tabId, recordingState: state.recordingState });
 
     clearTimeoutFn(state.stabilityTimer);
     clearTimeoutFn(state.graceTimer);
@@ -78,7 +85,10 @@ export function createHybridStateMachine({
 
   function handleHybridVideoState(tabId, snapshot) {
     const state = hybridStates.get(tabId);
-    if (!state || !state.armed) return;
+    if (!state || !state.armed) {
+      log("snapshot ignorado (não armado)", { tabId, armed: state?.armed, snapshot });
+      return;
+    }
 
     state.lastSnapshot = snapshot;
 
@@ -88,6 +98,23 @@ export function createHybridStateMachine({
       snapshot.isFullscreen &&
       !snapshot.isEnded;
 
+    log("avaliando gatilho", {
+      tabId,
+      recordingState: state.recordingState,
+      preparing: state.preparing,
+      shouldRecord,
+      bloqueadoPor: shouldRecord
+        ? null
+        : {
+            hasVideo: snapshot.hasVideo,
+            isPlaying: snapshot.isPlaying,
+            isFullscreen: snapshot.isFullscreen,
+            isEnded: snapshot.isEnded,
+          },
+      snapshot,
+      stabilityMs: hybridStabilityMs,
+    });
+
     if (state.recordingState === "ARMED") {
       // Precondition met (playing + fullscreen). Ask the page to rewind to 0,
       // let the controls overlay fade, then resume playback — only then record,
@@ -95,28 +122,43 @@ export function createHybridStateMachine({
       if (shouldRecord) {
         if (!state.preparing) {
           clearTimeoutFn(state.stabilityTimer);
+          log("condições OK — aguardando estabilidade antes de preparar", { tabId, stabilityMs: hybridStabilityMs });
           state.stabilityTimer = setTimeoutFn(() => {
             if (state.armed && state.recordingState === "ARMED" && !state.preparing) {
               state.preparing = true;
+              log("estabilidade confirmada — disparando prepare_capture", { tabId, mode: state.mode || "auto" });
               sendTabMessage(tabId, {
                 action: "hybrid_prepare_capture",
                 mode: state.mode || "auto",
                 settleMs: hybridPrepareSettleMs,
               });
+            } else {
+              log("estabilidade expirou mas estado mudou — prepare cancelado", {
+                tabId,
+                armed: state.armed,
+                recordingState: state.recordingState,
+                preparing: state.preparing,
+              });
             }
           }, hybridStabilityMs);
+        } else {
+          log("condições OK mas já está preparando — ignorado", { tabId });
         }
       } else {
+        log("condições não atendidas — timer de estabilidade cancelado", { tabId });
         clearTimeoutFn(state.stabilityTimer);
       }
     } else if (state.recordingState === "RECORDING") {
       if (snapshot.isEnded) {
+        log("vídeo terminou — parando gravação", { tabId });
         clearTimeoutFn(state.graceTimer);
         stopHybridRecording(tabId);
       } else if (!shouldRecord) {
         if (!state.graceTimer) {
+          log("condições perdidas durante gravação — iniciando grace timer", { tabId, graceMs: hybridStopGraceMs });
           state.graceTimer = setTimeoutFn(() => {
             if (state.recordingState === "RECORDING") {
+              log("grace expirou — parando gravação", { tabId });
               stopHybridRecording(tabId);
             }
           }, hybridStopGraceMs);
@@ -129,6 +171,7 @@ export function createHybridStateMachine({
 
     if (state.lastUrl && snapshot.url !== state.lastUrl) {
       if (state.recordingState === "RECORDING") {
+        log("URL mudou durante gravação — parando", { tabId, de: state.lastUrl, para: snapshot.url });
         stopHybridRecording(tabId);
       }
     }
@@ -139,7 +182,15 @@ export function createHybridStateMachine({
   // that no controls overlay is showing, begin the actual recording.
   function handleHybridPrepared(tabId) {
     const state = hybridStates.get(tabId);
-    if (!state || !state.armed || state.recordingState !== "ARMED") return;
+    if (!state || !state.armed || state.recordingState !== "ARMED") {
+      log("prepared recebido mas estado inválido — ignorado", {
+        tabId,
+        armed: state?.armed,
+        recordingState: state?.recordingState,
+      });
+      return;
+    }
+    log("página preparada — iniciando gravação", { tabId });
     startHybridRecording(tabId);
   }
 
@@ -153,13 +204,15 @@ export function createHybridStateMachine({
       await initHybridUploadSession(tabId);
       const streamId = await getMediaStreamId(tabId);
       await ensureOffscreen();
+      log("gravação iniciada", { tabId, streamId });
       sendRuntimeMessage({
         action: "offscreen_start_recording",
         tabId,
         streamId,
         streamUpload: true,
       });
-    } catch {
+    } catch (err) {
+      log("falha ao iniciar gravação — voltando para ARMED", { tabId, erro: String(err) });
       state.uploadSession = null;
       state.recordingState = "ARMED";
       broadcastHybridStatus(tabId);
