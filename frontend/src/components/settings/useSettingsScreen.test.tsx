@@ -42,6 +42,11 @@ jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
                 extract_metadata: true,
                 generate_previews: true,
             },
+            captures: {
+                save_path: '/srv/capturas',
+                default_path: '/srv/capturas',
+                storage_roots: ['/data'],
+            },
             ai: {
                 image_classification: true,
             },
@@ -278,6 +283,42 @@ describe('components/settings/useSettingsScreen', () => {
 
         const savedDraft = mockSaveSettings.mock.calls[0][0];
         expect(savedDraft.players.image_slideshow_seconds).toBe(20);
+    });
+
+    it('setCapturesField updates the captures save path in the draft', () => {
+        const { result } = renderHook(() => useSettingsScreen());
+
+        act(() => {
+            result.current.setCapturesField('save_path', '/srv/outras-capturas');
+        });
+        expect(result.current.draft.captures.save_path).toBe('/srv/outras-capturas');
+    });
+
+    it('handleSave surfaces the backend error message when the save is rejected', async () => {
+        mockSaveSettings.mockRejectedValue({
+            response: { data: { error: 'Captures path must be outside the storage roots' } },
+        });
+        const { result } = renderHook(() => useSettingsScreen());
+
+        await act(async () => {
+            await result.current.handleSave();
+        });
+
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith(
+            'Captures path must be outside the storage roots',
+            { variant: 'error' }
+        );
+    });
+
+    it('handleSave falls back to the generic error toast without a backend message', async () => {
+        mockSaveSettings.mockRejectedValue(new Error('network down'));
+        const { result } = renderHook(() => useSettingsScreen());
+
+        await act(async () => {
+            await result.current.handleSave();
+        });
+
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('Failed', { variant: 'error' });
     });
 
     it('exposes settings and loading states from provider', () => {

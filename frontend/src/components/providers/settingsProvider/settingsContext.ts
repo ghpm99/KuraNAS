@@ -17,6 +17,11 @@ export const defaultSettingsConfiguration: SettingsConfiguration = {
         extract_metadata: true,
         generate_previews: true,
     },
+    captures: {
+        save_path: '',
+        default_path: '',
+        storage_roots: [],
+    },
     ai: {
         image_classification: true,
     },

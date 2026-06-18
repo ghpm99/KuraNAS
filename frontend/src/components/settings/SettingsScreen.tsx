@@ -39,6 +39,7 @@ const SettingsScreen = () => {
         watchedPathsText,
         setLibraryField,
         setIndexingField,
+        setCapturesField,
         setAIField,
         setPlayersField,
         setAppearanceField,
@@ -209,6 +210,36 @@ const SettingsScreen = () => {
                             ? t('SETTINGS_INDEXING_WORKERS_ON')
                             : t('SETTINGS_INDEXING_WORKERS_OFF')}
                     </Alert>
+                </section>
+
+                <section className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_CAPTURES')}</h2>
+                        <p className={styles.panelDescription}>
+                            {t('SETTINGS_SECTION_CAPTURES_DESCRIPTION')}
+                        </p>
+                    </div>
+                    <TextField
+                        fullWidth
+                        label={t('SETTINGS_CAPTURES_SAVE_PATH')}
+                        value={draft.captures?.save_path ?? ''}
+                        onChange={(event) => setCapturesField('save_path', event.target.value)}
+                        placeholder={settings.captures?.default_path ?? ''}
+                        disabled={disableActions}
+                    />
+                    <p className={styles.hint}>
+                        {t('SETTINGS_CAPTURES_DEFAULT_PATH', {
+                            path: settings.captures?.default_path || '-',
+                        })}
+                    </p>
+                    {(settings.captures?.storage_roots ?? []).length > 0 ? (
+                        <div className={styles.summary}>
+                            {settings.captures.storage_roots.map((root) => (
+                                <Chip key={root} label={root} variant="outlined" />
+                            ))}
+                        </div>
+                    ) : null}
+                    <Alert severity="warning">{t('SETTINGS_CAPTURES_OUTSIDE_ROOTS_HELP')}</Alert>
                 </section>
 
                 <section className={styles.panel}>
