@@ -282,6 +282,20 @@ async function resolveCaptureMetadata(tabId) {
   return latest || null;
 }
 
+// probeOffscreenFormat asks the (ensured) offscreen recorder which container it
+// will record in, so the upload session is created with the matching mime type
+// and file extension. Defaults to WebM if the recorder cannot be reached.
+async function probeOffscreenFormat() {
+  try {
+    await ensureOffscreen();
+    const res = await chrome.runtime.sendMessage({ action: "offscreen_probe_format" });
+    if (res && res.mimeType && res.fileExt) return res;
+  } catch (_e) {
+    // fall through to the WebM default
+  }
+  return { mimeType: "video/webm", fileExt: "webm", container: "webm" };
+}
+
 async function initHybridUploadSession(tabId) {
   const state = hybridStates.get(tabId);
   if (!state) {
@@ -297,9 +311,13 @@ async function initHybridUploadSession(tabId) {
   // does not overwrite episode 1. Fall back to a timestamped name when no title
   // could be resolved.
   const name = await resolveCaptureName(tabId);
-  const mimeType = "video/webm";
-  const fileName = `${sanitizeFileName(name)}.webm`;
-  logBg(tabId, `nome da captura: "${name}"`);
+  // The recorder decides its container by capability (GPU-encoded MP4 when
+  // available, else WebM). Ask it BEFORE creating the session so the server
+  // stores the right mime type and names the file with the right extension.
+  const fmt = await probeOffscreenFormat();
+  const mimeType = fmt.mimeType;
+  const fileName = `${sanitizeFileName(name)}.${fmt.fileExt}`;
+  logBg(tabId, `nome da captura: "${name}" (${mimeType})`);
 
   // Standardized metadata (title, episode, duration, origin, …) is persisted by
   // the server as metadata.json beside the recording. The episode_key (when the
