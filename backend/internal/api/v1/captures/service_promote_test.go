@@ -48,9 +48,10 @@ func intPtr(v int) *int { return &v }
 
 func newPromoteServiceForTest(mock *repoMock, lib LibrariesProviderInterface, fp FilesProviderInterface) *Service {
 	return &Service{
-		Repository:        mock,
-		LibrariesProvider: lib,
-		FilesProvider:     fp,
+		Repository:          mock,
+		LibrariesProvider:   lib,
+		FilesProvider:       fp,
+		NotificationService: &notificationServiceMock{},
 	}
 }
 
@@ -232,7 +233,7 @@ func TestCollisionAvoidantPath(t *testing.T) {
 	}
 }
 
-func TestDownloadPosterWritesSourcePoster(t *testing.T) {
+func TestDownloadPosterRejectsNonHTTPS(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		_, _ = w.Write([]byte("\x89PNG fake"))
@@ -246,5 +247,62 @@ func TestDownloadPosterWritesSourcePoster(t *testing.T) {
 	if _, err := os.Stat(posterSourcePath(4242)); !os.IsNotExist(err) {
 		_ = os.Remove(posterSourcePath(4242))
 		t.Fatal("expected http poster url to be rejected")
+	}
+}
+
+func TestFetchPosterImage(t *testing.T) {
+	t.Run("returns image bytes", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "image/png")
+			_, _ = w.Write([]byte("\x89PNG fake-bytes"))
+		}))
+		defer server.Close()
+
+		data, err := fetchPosterImage(server.URL)
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if len(data) == 0 {
+			t.Fatal("expected non-empty poster bytes")
+		}
+	})
+
+	t.Run("rejects non-image content type", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte("<html>"))
+		}))
+		defer server.Close()
+
+		if _, err := fetchPosterImage(server.URL); err == nil {
+			t.Fatal("expected non-image rejection")
+		}
+	})
+
+	t.Run("rejects bad status", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		if _, err := fetchPosterImage(server.URL); err == nil {
+			t.Fatal("expected bad-status rejection")
+		}
+	})
+}
+
+func TestWritePosterSource(t *testing.T) {
+	const fileID = 91234
+	t.Cleanup(func() { _ = os.Remove(posterSourcePath(fileID)) })
+
+	if err := writePosterSource(fileID, []byte("poster")); err != nil {
+		t.Fatalf("writePosterSource error: %v", err)
+	}
+	data, err := os.ReadFile(posterSourcePath(fileID))
+	if err != nil {
+		t.Fatalf("expected poster written: %v", err)
+	}
+	if string(data) != "poster" {
+		t.Fatalf("unexpected poster content: %q", string(data))
 	}
 }

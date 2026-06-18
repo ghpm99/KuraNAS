@@ -128,8 +128,8 @@ func posterSourcePath(fileID int) string {
 
 // downloadPoster fetches the capture's poster (thumbnail_url, falling back to
 // poster_url) and stores it as the source poster. It is strictly best-effort:
-// only https URLs, a short timeout, a ~10MB cap and an image/* content type are
-// accepted, and any failure is logged and swallowed.
+// only https URLs are accepted, and any failure is logged and swallowed so the
+// promotion is never gated on artwork.
 func (s *Service) downloadPoster(meta captureMetadata, fileID int) {
 	url := strings.TrimSpace(meta.ThumbnailURL)
 	if url == "" {
@@ -139,37 +139,50 @@ func (s *Service) downloadPoster(meta captureMetadata, fileID int) {
 		return
 	}
 
-	client := &http.Client{Timeout: posterDownloadTimeout}
-	resp, err := client.Get(url)
+	data, err := fetchPosterImage(url)
 	if err != nil {
 		applog.Error("captures: poster download failed", "file_id", fileID, "url", url, "error", err)
 		return
 	}
+	if err := writePosterSource(fileID, data); err != nil {
+		applog.Error("captures: poster write failed", "file_id", fileID, "error", err)
+	}
+}
+
+// fetchPosterImage GETs the URL with a short timeout and returns its bytes,
+// rejecting a non-200 status, a non-image content type, and capping the read at
+// maxPosterBytes. The scheme guard lives in the caller.
+func fetchPosterImage(url string) ([]byte, error) {
+	client := &http.Client{Timeout: posterDownloadTimeout}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		applog.Error("captures: poster download bad status", "file_id", fileID, "url", url, "status", resp.StatusCode)
-		return
+		return nil, fmt.Errorf("fetchPosterImage: bad status %d", resp.StatusCode)
 	}
 	if !strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "image/") {
-		applog.Error("captures: poster download non-image", "file_id", fileID, "content_type", resp.Header.Get("Content-Type"))
-		return
+		return nil, fmt.Errorf("fetchPosterImage: non-image content type %q", resp.Header.Get("Content-Type"))
 	}
 
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxPosterBytes))
-	if err != nil || len(data) == 0 {
-		applog.Error("captures: poster read failed", "file_id", fileID, "error", err)
-		return
+	if err != nil {
+		return nil, err
 	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("fetchPosterImage: empty body")
+	}
+	return data, nil
+}
 
+func writePosterSource(fileID int, data []byte) error {
 	destPath := posterSourcePath(fileID)
-	if mkErr := os.MkdirAll(filepath.Dir(destPath), 0755); mkErr != nil {
-		applog.Error("captures: poster dir create failed", "file_id", fileID, "error", mkErr)
-		return
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+		return err
 	}
-	if writeErr := os.WriteFile(destPath, data, 0644); writeErr != nil {
-		applog.Error("captures: poster write failed", "file_id", fileID, "error", writeErr)
-	}
+	return os.WriteFile(destPath, data, 0644)
 }
 
 func (s *Service) emitPromotionCompletedNotification(capture CaptureModel) {
