@@ -23,6 +23,9 @@ const buildDraftFromSettings = (
         extract_metadata: settings.indexing.extract_metadata,
         generate_previews: settings.indexing.generate_previews,
     },
+    captures: {
+        save_path: settings.captures.save_path,
+    },
     ai: {
         image_classification: settings.ai.image_classification,
     },
@@ -57,6 +60,20 @@ const areSettingsEqual = (
     left: UpdateSettingsConfigurationRequest,
     right: UpdateSettingsConfigurationRequest
 ) => JSON.stringify(left) === JSON.stringify(right);
+
+// The backend returns validation failures (e.g. a captures path inside a storage
+// root) as an already-translated { error } string. Surface it verbatim instead
+// of the generic save-error toast; the i18n rule forbids re-translating it.
+const extractBackendError = (error: unknown): string | null => {
+    if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as { response?: { data?: { error?: unknown } } }).response;
+        const message = response?.data?.error;
+        if (typeof message === 'string' && message.trim()) {
+            return message;
+        }
+    }
+    return null;
+};
 
 const useSettingsScreen = () => {
     const { t } = useI18n();
@@ -194,6 +211,22 @@ const useSettingsScreen = () => {
         []
     );
 
+    const setCapturesField = useCallback(
+        <Key extends keyof UpdateSettingsConfigurationRequest['captures']>(
+            field: Key,
+            value: UpdateSettingsConfigurationRequest['captures'][Key]
+        ) => {
+            setDraft((current) => ({
+                ...current,
+                captures: {
+                    ...current.captures,
+                    [field]: value,
+                },
+            }));
+        },
+        []
+    );
+
     const setLanguageField = useCallback((value: string) => {
         setDraft((current) => ({
             ...current,
@@ -218,8 +251,9 @@ const useSettingsScreen = () => {
         try {
             await saveSettings(draft);
             enqueueSnackbar(t('SETTINGS_SAVE_SUCCESS'), { variant: 'success' });
-        } catch {
-            enqueueSnackbar(t('SETTINGS_SAVE_ERROR'), { variant: 'error' });
+        } catch (error) {
+            const backendMessage = extractBackendError(error);
+            enqueueSnackbar(backendMessage ?? t('SETTINGS_SAVE_ERROR'), { variant: 'error' });
         }
     }, [draft, enqueueSnackbar, saveSettings, t]);
 
@@ -237,6 +271,7 @@ const useSettingsScreen = () => {
         watchedPathsText,
         setLibraryField,
         setIndexingField,
+        setCapturesField,
         setAIField,
         setPlayersField,
         setAppearanceField,

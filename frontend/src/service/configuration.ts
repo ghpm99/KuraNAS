@@ -14,6 +14,11 @@ export type SettingsConfiguration = {
         extract_metadata: boolean;
         generate_previews: boolean;
     };
+    captures: {
+        save_path: string;
+        default_path: string;
+        storage_roots: string[];
+    };
     ai: {
         image_classification: boolean;
     };
@@ -43,6 +48,9 @@ export type UpdateSettingsConfigurationRequest = {
         scan_on_startup: boolean;
         extract_metadata: boolean;
         generate_previews: boolean;
+    };
+    captures: {
+        save_path: string;
     };
     ai: {
         image_classification: boolean;

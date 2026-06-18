@@ -6,6 +6,7 @@ const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
 const mockSetLibraryField = jest.fn();
 const mockSetIndexingField = jest.fn();
+const mockSetCapturesField = jest.fn();
 const mockSetAIField = jest.fn();
 const mockSetPlayersField = jest.fn();
 const mockSetAppearanceField = jest.fn();
@@ -128,6 +129,11 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             extract_metadata: true,
             generate_previews: true,
         },
+        captures: {
+            save_path: '/srv/capturas',
+            default_path: '/srv/capturas',
+            storage_roots: ['/data'],
+        },
     },
     draft: {
         library: {
@@ -139,6 +145,9 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             scan_on_startup: true,
             extract_metadata: true,
             generate_previews: true,
+        },
+        captures: {
+            save_path: '/srv/capturas',
         },
         ai: {
             image_classification: true,
@@ -171,6 +180,7 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
     watchedPathsText: '/data',
     setLibraryField: mockSetLibraryField,
     setIndexingField: mockSetIndexingField,
+    setCapturesField: mockSetCapturesField,
     setAIField: mockSetAIField,
     setPlayersField: mockSetPlayersField,
     setAppearanceField: mockSetAppearanceField,

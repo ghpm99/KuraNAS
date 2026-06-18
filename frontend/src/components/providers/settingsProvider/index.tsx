@@ -45,6 +45,7 @@ const mergeSettingsConfiguration = (
     return {
         library: { ...base.library, ...data.library },
         indexing: { ...base.indexing, ...data.indexing },
+        captures: { ...base.captures, ...data.captures },
         ai: { ...base.ai, ...data.ai },
         players: { ...base.players, ...data.players },
         appearance: { ...base.appearance, ...data.appearance },

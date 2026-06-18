@@ -120,6 +120,9 @@ describe('components/providers/settingsProvider', () => {
                     extract_metadata: true,
                     generate_previews: false,
                 },
+                captures: {
+                    save_path: '/srv/capturas',
+                },
                 ai: {
                     image_classification: false,
                 },
@@ -298,6 +301,9 @@ describe('components/providers/settingsProvider', () => {
                     scan_on_startup: true,
                     extract_metadata: true,
                     generate_previews: true,
+                },
+                captures: {
+                    save_path: '/srv/capturas',
                 },
                 ai: {
                     image_classification: true,

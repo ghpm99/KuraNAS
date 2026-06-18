@@ -29,6 +29,9 @@ const settingsRequest = {
         extract_metadata: true,
         generate_previews: true,
     },
+    captures: {
+        save_path: '/srv/capturas',
+    },
     ai: {
         image_classification: true,
     },
