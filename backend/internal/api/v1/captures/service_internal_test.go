@@ -27,6 +27,8 @@ type repoMock struct {
 	getCapturesFn     func(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
 	getByIDFn         func(id int) (CaptureModel, error)
 	getByEpisodeKeyFn func(episodeKey string) (CaptureModel, bool, error)
+	updatePromotionFn func(tx *sql.Tx, capture CaptureModel) error
+	updateStatusFn    func(tx *sql.Tx, id int, status CaptureStatus, fileID *int) error
 	deleteFn          func(tx *sql.Tx, id int) error
 }
 
@@ -81,6 +83,20 @@ func (r *repoMock) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool
 		return r.getByEpisodeKeyFn(episodeKey)
 	}
 	return CaptureModel{}, false, nil
+}
+
+func (r *repoMock) UpdateCapturePromotion(tx *sql.Tx, capture CaptureModel) error {
+	if r.updatePromotionFn != nil {
+		return r.updatePromotionFn(tx, capture)
+	}
+	return nil
+}
+
+func (r *repoMock) UpdateCaptureStatus(tx *sql.Tx, id int, status CaptureStatus, fileID *int) error {
+	if r.updateStatusFn != nil {
+		return r.updateStatusFn(tx, id, status, fileID)
+	}
+	return nil
 }
 
 func (r *repoMock) DeleteCapture(tx *sql.Tx, id int) error {

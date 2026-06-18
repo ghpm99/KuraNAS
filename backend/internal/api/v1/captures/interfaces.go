@@ -13,6 +13,8 @@ type RepositoryInterface interface {
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
 	GetCaptureByID(id int) (CaptureModel, error)
 	GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error)
+	UpdateCapturePromotion(transaction *sql.Tx, capture CaptureModel) error
+	UpdateCaptureStatus(transaction *sql.Tx, id int, status CaptureStatus, fileID *int) error
 	DeleteCapture(transaction *sql.Tx, id int) error
 }
 
