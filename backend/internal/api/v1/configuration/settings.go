@@ -2,6 +2,8 @@ package configuration
 
 import (
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
+	"path/filepath"
 	"strings"
 )
 
@@ -43,6 +45,9 @@ func buildDefaultSettings(availableLocales []string) settingsState {
 			ExtractMetadata:  true,
 			GeneratePreviews: true,
 		},
+		Captures: capturesSettingsState{
+			SavePath: defaultCapturesPath(),
+		},
 		AI: aiSettingsState{
 			ImageClassification: boolPtr(defaultAIImageClassification),
 		},
@@ -70,6 +75,7 @@ func normalizeState(candidate settingsState, defaults settingsState, availableLo
 	normalized.Indexing.ScanOnStartup = candidate.Indexing.ScanOnStartup
 	normalized.Indexing.ExtractMetadata = candidate.Indexing.ExtractMetadata
 	normalized.Indexing.GeneratePreviews = candidate.Indexing.GeneratePreviews
+	normalized.Captures.SavePath = sanitizeCapturePath(candidate.Captures.SavePath, defaults.Captures.SavePath)
 	normalized.AI.ImageClassification = resolveBoolPtr(candidate.AI.ImageClassification, defaults.AI.ImageClassification)
 	normalized.Players.RememberMusicQueue = candidate.Players.RememberMusicQueue
 	normalized.Players.RememberVideoProgress = candidate.Players.RememberVideoProgress
@@ -92,6 +98,9 @@ func (request UpdateSettingsRequest) toState() settingsState {
 			ScanOnStartup:    request.Indexing.ScanOnStartup,
 			ExtractMetadata:  request.Indexing.ExtractMetadata,
 			GeneratePreviews: request.Indexing.GeneratePreviews,
+		},
+		Captures: capturesSettingsState{
+			SavePath: request.Captures.SavePath,
 		},
 		AI: aiSettingsState{
 			ImageClassification: boolPtr(request.AI.ImageClassification),
@@ -125,6 +134,11 @@ func (state settingsState) toDto(availableLocales []string) SettingsDto {
 			ScanOnStartup:    state.Indexing.ScanOnStartup,
 			ExtractMetadata:  state.Indexing.ExtractMetadata,
 			GeneratePreviews: state.Indexing.GeneratePreviews,
+		},
+		Captures: CapturesSettingsDto{
+			SavePath:     state.Captures.SavePath,
+			DefaultPath:  defaultCapturesPath(),
+			StorageRoots: storageRootPaths(),
 		},
 		AI: AISettingsDto{
 			ImageClassification: derefBool(state.AI.ImageClassification, defaultAIImageClassification),
@@ -167,6 +181,46 @@ func sanitizePaths(paths []string, fallback []string) []string {
 	}
 
 	return append([]string(nil), fallback...)
+}
+
+// defaultCapturesPath is the out-of-roots fallback location for captures: a
+// sibling of the entry point named "kuranas-capturas". Keeping it outside every
+// storage root means captures are never indexed/watched by default.
+func defaultCapturesPath() string {
+	entryPoint := strings.TrimSpace(config.AppConfig.EntryPoint)
+	if entryPoint == "" {
+		return "kuranas-capturas"
+	}
+	return filepath.Join(filepath.Dir(filepath.Clean(entryPoint)), "kuranas-capturas")
+}
+
+// sanitizeCapturePath cleans the stored captures path; an empty value falls back
+// to the default. Containment-against-roots is enforced separately at update
+// time (validateCapturesPath), so a document persisted earlier is never rejected
+// here — only normalized.
+func sanitizeCapturePath(value string, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return filepath.Clean(trimmed)
+}
+
+// storageRootPaths returns the enabled storage root paths, surfaced to the client
+// so the settings UI can warn that the captures path must stay out of them.
+func storageRootPaths() []string {
+	enabled := roots.Enabled()
+	paths := make([]string, 0, len(enabled))
+	for _, root := range enabled {
+		paths = append(paths, root.Path)
+	}
+	return paths
+}
+
+// applyRuntimeCapturesPath publishes the captures path into the runtime config so
+// the captures domain saves there immediately, without a restart.
+func applyRuntimeCapturesPath(savePath string) {
+	config.AppConfig.CapturesPath = strings.TrimSpace(savePath)
 }
 
 func normalizeSlideshowSeconds(value int, fallback int) int {

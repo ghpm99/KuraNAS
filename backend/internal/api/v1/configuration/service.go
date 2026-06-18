@@ -6,14 +6,22 @@ import (
 	"errors"
 	"fmt"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
 
 var ErrInvalidSettingsRequest = errors.New("invalid settings request")
+
+// ErrCapturesPathInsideRoot is returned when the captures save path would land
+// inside a storage root (or a subfolder of one). Captures must live outside the
+// indexed roots so they — and their in-progress upload staging — are never
+// watched/indexed.
+var ErrCapturesPathInsideRoot = errors.New("captures path must be outside every storage root")
 
 type Service struct {
 	Repository RepositoryInterface
@@ -62,6 +70,7 @@ func (s *Service) UpdateSettings(request UpdateSettingsRequest) (SettingsDto, er
 	if err := applyRuntimeLanguage(normalized.Language.Current); err != nil {
 		return SettingsDto{}, fmt.Errorf("falha ao aplicar idioma em runtime: %w", err)
 	}
+	applyRuntimeCapturesPath(normalized.Captures.SavePath)
 
 	return normalized.toDto(availableLocales), nil
 }
@@ -80,6 +89,7 @@ func (s *Service) ApplyRuntimeSettings() error {
 	if err != nil {
 		return err
 	}
+	applyRuntimeCapturesPath(settings.Captures.SavePath)
 	return applyRuntimeLanguage(settings.Language.Current)
 }
 
@@ -162,6 +172,31 @@ func validateUpdateRequest(request UpdateSettingsRequest, availableLocales []str
 	}
 	if resolveLocale(request.Language.Current, availableLocales) != strings.TrimSpace(request.Language.Current) {
 		return fmt.Errorf("%w: language.current", ErrInvalidSettingsRequest)
+	}
+	if err := validateCapturesPath(request.Captures.SavePath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateCapturesPath enforces that a non-empty captures save path is absolute
+// and lives OUTSIDE every storage root (an empty path is normalized to the
+// default later). Rejecting in-root paths is the whole point of the setting: a
+// captures folder inside a root would be watched/indexed, and the in-progress
+// upload would be re-indexed on every chunk.
+func validateCapturesPath(raw string) error {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil
+	}
+
+	clean := filepath.Clean(trimmed)
+	if !filepath.IsAbs(clean) {
+		return fmt.Errorf("%w: captures.save_path must be absolute", ErrInvalidSettingsRequest)
+	}
+	if _, inside := roots.OwnerOf(clean); inside {
+		return fmt.Errorf("%w (%s)", ErrCapturesPathInsideRoot, clean)
 	}
 
 	return nil

@@ -568,28 +568,6 @@ func TestServiceCompleteCaptureUploadWithoutMetadataWritesNoSidecar(t *testing.T
 	}
 }
 
-func TestIsInsideUploadStaging(t *testing.T) {
-	root := filepath.Join("/data")
-	tests := []struct {
-		path string
-		want bool
-	}{
-		{filepath.Join(root, "capturas", ".uploads"), true},
-		{filepath.Join(root, "capturas", ".uploads", "abc123", "payload.bin"), true},
-		{filepath.Join(root, "capturas", "My Show", "ep.webm"), false},
-		{filepath.Join(root, "capturas"), false},
-		{filepath.Join(root, "Movies", "a.mp4"), false},
-		// a sibling dir whose name merely starts with .uploads must not match
-		{filepath.Join(root, "capturas", ".uploads-old", "x"), false},
-	}
-
-	for _, tc := range tests {
-		if got := IsInsideUploadStaging(root, tc.path); got != tc.want {
-			t.Errorf("IsInsideUploadStaging(%q) = %v, want %v", tc.path, got, tc.want)
-		}
-	}
-}
-
 func TestWriteCaptureMetadataRejectsInvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	if err := writeCaptureMetadata(dir, json.RawMessage(`{not-json`)); err == nil {

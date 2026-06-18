@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"nas-go/api/internal/api/v1/captures"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -404,12 +403,6 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			// The trash dir holds soft-deleted bytes awaiting restore/purge;
 			// indexing it would resurrect everything the user just deleted.
 			if d.Name() == trash.DirName {
-				return filepath.SkipDir
-			}
-
-			// The capture upload staging dir holds in-progress partial uploads;
-			// the finalized capture is indexed explicitly on complete.
-			if captures.IsInsideUploadStaging(root, path) {
 				return filepath.SkipDir
 			}
 

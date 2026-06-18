@@ -137,6 +137,8 @@ func (handler *Handler) UpdateSettingsHandler(c *gin.Context) {
 
 func respondConfigurationError(c *gin.Context, err error, defaultMessageKey string) {
 	switch {
+	case errors.Is(err, ErrCapturesPathInsideRoot):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURES_PATH_INSIDE_ROOT")})
 	case errors.Is(err, ErrInvalidSettingsRequest):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	case errors.Is(err, sql.ErrNoRows):

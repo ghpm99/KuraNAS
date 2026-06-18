@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/database"
 	"testing"
 )
@@ -151,6 +152,61 @@ func TestConfigurationServiceUpdateSettingsValidatesRequest(t *testing.T) {
 	}
 	if !errors.Is(err, ErrInvalidSettingsRequest) {
 		t.Fatalf("expected invalid request error, got %v", err)
+	}
+}
+
+func validCapturesUpdateRequest(savePath string) UpdateSettingsRequest {
+	return UpdateSettingsRequest{
+		Captures:   CapturesSettingsRequest{SavePath: savePath},
+		Players:    PlayerSettingsRequest{ImageSlideshowSeconds: 4},
+		Appearance: AppearanceSettingsRequest{AccentColor: "violet"},
+		Language:   LanguageSettingsRequest{Current: "en-US"},
+	}
+}
+
+func TestConfigurationServiceUpdateSettingsRejectsCapturesPathInsideRoot(t *testing.T) {
+	originalEntry := config.AppConfig.EntryPoint
+	originalCaptures := config.AppConfig.CapturesPath
+	t.Cleanup(func() {
+		config.AppConfig.EntryPoint = originalEntry
+		config.AppConfig.CapturesPath = originalCaptures
+		roots.Reset()
+	})
+	config.AppConfig.EntryPoint = "/srv/media"
+	roots.Set([]roots.Root{{Path: "/srv/media", Label: "media", Enabled: true}})
+
+	service := newConfigurationServiceForTest(t, &serviceRepoMock{})
+
+	for _, inside := range []string{"/srv/media", "/srv/media/capturas/.uploads"} {
+		_, err := service.UpdateSettings(validCapturesUpdateRequest(inside))
+		if !errors.Is(err, ErrCapturesPathInsideRoot) {
+			t.Fatalf("path %q: expected ErrCapturesPathInsideRoot, got %v", inside, err)
+		}
+	}
+}
+
+func TestConfigurationServiceUpdateSettingsAcceptsCapturesPathOutsideRoots(t *testing.T) {
+	originalEntry := config.AppConfig.EntryPoint
+	originalCaptures := config.AppConfig.CapturesPath
+	t.Cleanup(func() {
+		config.AppConfig.EntryPoint = originalEntry
+		config.AppConfig.CapturesPath = originalCaptures
+		roots.Reset()
+	})
+	config.AppConfig.EntryPoint = "/srv/media"
+	roots.Set([]roots.Root{{Path: "/srv/media", Label: "media", Enabled: true}})
+
+	service := newConfigurationServiceForTest(t, &serviceRepoMock{})
+
+	settings, err := service.UpdateSettings(validCapturesUpdateRequest("/srv/capturas"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if settings.Captures.SavePath != "/srv/capturas" {
+		t.Fatalf("expected captures path persisted, got %q", settings.Captures.SavePath)
+	}
+	if config.AppConfig.CapturesPath != "/srv/capturas" {
+		t.Fatalf("expected runtime captures path applied, got %q", config.AppConfig.CapturesPath)
 	}
 }
 
