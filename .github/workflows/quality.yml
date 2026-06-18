@@ -149,8 +149,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: plugin/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
+          cache: yarn
+          cache-dependency-path: plugin/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn test --coverage --watchAll=false
