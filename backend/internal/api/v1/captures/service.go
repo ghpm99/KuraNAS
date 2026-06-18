@@ -1,7 +1,6 @@
 package captures
 
 import (
-	"bytes"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -56,10 +55,6 @@ type captureUploadSession struct {
 	LastUpdatedAt time.Time       `json:"last_updated_at"`
 }
 
-// captureMetadataFileName is the standardized metadata sidecar written next to
-// the recording inside the capture folder.
-const captureMetadataFileName = "metadata.json"
-
 // uploadStagingDirName is the hidden subtree (under the configured captures root)
 // where in-progress chunked uploads are assembled before being finalized and
 // moved out. The captures root lives OUTSIDE every storage root (configurable via
@@ -106,7 +101,7 @@ func (s *Service) UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto
 		return CaptureDto{}, fmt.Errorf("UploadCapture: failed to save file: %w", err)
 	}
 
-	result, err := s.persistCaptureAndDispatch(captureDir, destPath, fileName, dto, file.Size)
+	result, err := s.persistCaptureAndDispatch(destPath, fileName, dto, file.Size, nil)
 	if err != nil {
 		_ = os.Remove(destPath)
 		return CaptureDto{}, err
@@ -122,7 +117,7 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 
 	episodeKey := strings.TrimSpace(dto.EpisodeKey)
 	if episodeKey != "" {
-		resumed, handled, err := s.resumeOrSkipByEpisodeKey(episodeKey)
+		resumed, handled, err := s.resumeByEpisodeKey(episodeKey)
 		if err != nil {
 			return InitCaptureUploadResultDto{}, err
 		}
@@ -172,26 +167,16 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 	}, nil
 }
 
-// resumeOrSkipByEpisodeKey applies the per-episode idempotency contract. It
-// returns handled=true when the caller should short-circuit InitCaptureUpload:
-//   - a completed capture already exists for this episode_key -> AlreadyComplete
-//     (don't re-record);
-//   - an open upload session already carries this episode_key -> resume it,
-//     handing back its upload_id and received offset (one file, not two).
+// resumeByEpisodeKey applies the per-episode resume contract. It returns
+// handled=true only to resume an open upload session carrying this episode_key
+// (continuing an upload interrupted mid-flight, handing back its upload_id and
+// received offset so the client appends from there instead of opening a second
+// file). Re-recording an already-completed episode is deliberately allowed
+// (decided: regra (c) — it becomes a new capture), so there is no
+// AlreadyComplete short-circuit here.
 //
-// handled=false means there is no prior state and a fresh session must be made.
-func (s *Service) resumeOrSkipByEpisodeKey(episodeKey string) (InitCaptureUploadResultDto, bool, error) {
-	_, archived, err := s.Repository.GetCaptureByEpisodeKey(episodeKey)
-	if err != nil {
-		return InitCaptureUploadResultDto{}, false, err
-	}
-	if archived {
-		return InitCaptureUploadResultDto{
-			ChunkSize:       captureUploadChunkSize,
-			AlreadyComplete: true,
-		}, true, nil
-	}
-
+// handled=false means there is no open session and a fresh one must be made.
+func (s *Service) resumeByEpisodeKey(episodeKey string) (InitCaptureUploadResultDto, bool, error) {
 	open, found, err := s.findOpenSessionByEpisodeKey(episodeKey)
 	if err != nil {
 		return InitCaptureUploadResultDto{}, false, err
@@ -316,8 +301,8 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 		return CaptureDto{}, uploadErr
 	}
 
-	if err := writeCaptureMetadata(captureDir, session.Metadata); err != nil {
-		uploadErr := fmt.Errorf("CompleteCaptureUpload: write metadata: %w", err)
+	if err := validateCaptureMetadata(session.Metadata); err != nil {
+		uploadErr := fmt.Errorf("CompleteCaptureUpload: invalid metadata: %w", err)
 		_ = os.Remove(destPath)
 		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
 		return CaptureDto{}, uploadErr
@@ -331,7 +316,7 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 		EpisodeKey: session.EpisodeKey,
 	}
 
-	capture, persistErr := s.persistCaptureAndDispatch(captureDir, destPath, filepath.Base(destPath), createDto, session.ReceivedSize)
+	capture, persistErr := s.persistCaptureAndDispatch(destPath, filepath.Base(destPath), createDto, session.ReceivedSize, session.Metadata)
 	if persistErr != nil {
 		_ = os.Remove(destPath)
 		s.emitUploadFailedNotification(dto.UploadID, session.Name, persistErr)
@@ -412,21 +397,23 @@ func (s *Service) emitUploadFailedNotification(uploadID string, captureName stri
 }
 
 func (s *Service) persistCaptureAndDispatch(
-	captureDir string,
 	destPath string,
 	fileName string,
 	dto CreateCaptureDto,
 	size int64,
+	rawMetadata json.RawMessage,
 ) (CaptureDto, error) {
 	model := CaptureModel{
-		Name:       dto.Name,
-		FileName:   fileName,
-		FilePath:   destPath,
-		MediaType:  dto.MediaType,
-		MimeType:   dto.MimeType,
-		Size:       size,
-		EpisodeKey: dto.EpisodeKey,
-		CreatedAt:  time.Now(),
+		Name:        dto.Name,
+		FileName:    fileName,
+		FilePath:    destPath,
+		MediaType:   dto.MediaType,
+		MimeType:    dto.MimeType,
+		Size:        size,
+		EpisodeKey:  dto.EpisodeKey,
+		Status:      CaptureStatusUploaded,
+		RawMetadata: rawMetadata,
+		CreatedAt:   time.Now(),
 	}
 
 	var result CaptureModel
@@ -440,17 +427,21 @@ func (s *Service) persistCaptureAndDispatch(
 		return CaptureDto{}, err
 	}
 
+	// The capture row exists; dispatch its promotion. Promotion (metadata parse,
+	// destination resolution, home_file pre-register, poster, move) runs in the
+	// capture_process job and ends with the file in the watched library, where
+	// the regular pipeline indexes it.
 	if s.UploadJobDispatcher != nil {
-		_, jobErr := s.UploadJobDispatcher.CreateUploadProcessJob([]string{captureDir, destPath})
+		_, jobErr := s.UploadJobDispatcher.CreateCaptureProcessJob(result.ID)
 		if jobErr != nil {
 			cleanupErr := s.withTransaction(func(tx *sql.Tx) error {
 				return s.Repository.DeleteCapture(tx, result.ID)
 			})
 			if cleanupErr != nil {
-				return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue upload processing job: %w (cleanup failed: %v)", jobErr, cleanupErr)
+				return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue capture processing job: %w (cleanup failed: %v)", jobErr, cleanupErr)
 			}
 
-			return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue upload processing job: %w", jobErr)
+			return CaptureDto{}, fmt.Errorf("UploadCapture: failed to enqueue capture processing job: %w", jobErr)
 		}
 	}
 
@@ -508,23 +499,17 @@ func capturesRootDir() string {
 	return filepath.Join(config.AppConfig.EntryPoint, defaultCapturesSubdir)
 }
 
-// writeCaptureMetadata persists the client-supplied metadata JSON as a sidecar
-// (metadata.json) inside the capture folder, beside the recording. The payload
-// is opaque to the server; it is only re-indented for readability and validated
-// as JSON. An empty payload is a no-op (captures may arrive without metadata).
-func writeCaptureMetadata(captureDir string, raw json.RawMessage) error {
+// validateCaptureMetadata rejects a non-empty metadata payload that is not valid
+// JSON before it is stored in the captures.raw_metadata jsonb column. The
+// metadata.json sidecar was retired — the database is the source of truth — so
+// this is the single validation point. An empty payload is allowed (captures
+// may arrive without metadata).
+func validateCaptureMetadata(raw json.RawMessage) error {
 	if len(raw) == 0 {
 		return nil
 	}
-
-	var pretty bytes.Buffer
-	if err := json.Indent(&pretty, raw, "", "  "); err != nil {
-		return fmt.Errorf("writeCaptureMetadata: invalid metadata json: %w", err)
-	}
-
-	metadataPath := filepath.Join(captureDir, captureMetadataFileName)
-	if err := os.WriteFile(metadataPath, pretty.Bytes(), 0644); err != nil {
-		return fmt.Errorf("writeCaptureMetadata: write file: %w", err)
+	if !json.Valid(raw) {
+		return fmt.Errorf("validateCaptureMetadata: invalid metadata json")
 	}
 	return nil
 }
