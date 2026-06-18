@@ -5,7 +5,7 @@
   "description": "Quality tooling for the KuraNAS browser extension.",
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test \"tests/*.test.js\""
+    "test": "node --test tests/*.test.js"
   },
   "devDependencies": {
     "eslint": "^9.38.0"
