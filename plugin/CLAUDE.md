@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands (`cd plugin`)
 
-- `npm run lint` — ESLint over the extension.
-- `npm test` — `node --test tests/**/*.test.js` (Node's built-in test runner).
+- `yarn lint` — ESLint over the extension.
+- `yarn test` — `node --test tests/**/*.test.js` (Node's built-in test runner).
 
 Load unpacked in a Chromium browser from this directory to run it; `manifest.json` is the entry manifest.
 
