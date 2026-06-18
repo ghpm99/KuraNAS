@@ -1,6 +1,7 @@
 package video
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -170,5 +171,45 @@ func TestVideoService_ThumbAndPreviewCacheHit(t *testing.T) {
 	}
 	if string(preview) != string(previewBytes) {
 		t.Fatalf("expected cached preview bytes")
+	}
+}
+
+func TestVideoService_ThumbnailUsesSourcePoster(t *testing.T) {
+	ensureVideoTestIcons(t)
+	s := newVideoBrowseServiceForTest(t, &videoRepoMock{})
+
+	const fileID = 70123
+	sourceDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", "source")
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatalf("failed to create poster source dir: %v", err)
+	}
+	sourcePath := filepath.Join(sourceDir, fmt.Sprintf("%d", fileID))
+	f, err := os.Create(sourcePath)
+	if err != nil {
+		t.Fatalf("failed to create source poster: %v", err)
+	}
+	posterImg := image.NewRGBA(image.Rect(0, 0, 8, 8))
+	posterImg.Set(0, 0, color.RGBA{G: 255, A: 255})
+	if encErr := png.Encode(f, posterImg); encErr != nil {
+		f.Close()
+		t.Fatalf("failed to encode source poster: %v", encErr)
+	}
+	f.Close()
+	t.Cleanup(func() { _ = os.Remove(sourcePath) })
+
+	cachePath := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", fmt.Sprintf("%d_320x180.png", fileID))
+	t.Cleanup(func() { _ = os.Remove(cachePath) })
+
+	// The video file itself is missing on disk; the source poster must still
+	// yield a thumbnail (never reaching the missing-file error path).
+	thumb, err := s.GetVideoThumbnail(files.FileDto{ID: fileID, Path: "/missing.mp4", Type: files.File}, 320, 180)
+	if err != nil {
+		t.Fatalf("expected source poster thumbnail, got %v", err)
+	}
+	if len(thumb) == 0 {
+		t.Fatal("expected non-empty thumbnail from source poster")
+	}
+	if _, statErr := os.Stat(cachePath); statErr != nil {
+		t.Fatalf("expected poster thumbnail to be cached: %v", statErr)
 	}
 }
