@@ -65,6 +65,20 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([
 		return data, nil
 	}
 
+	// Source poster branch: when a real poster was dropped at
+	// <ThumbnailPath>/video/source/<file_id> (e.g. by a capture promotion), it is
+	// the authoritative artwork — resize it to the requested size and cache the
+	// result. The source file is never consumed/deleted, so it can be re-resized
+	// to any size later. Falls through to the ffmpeg frame when absent/undecodable.
+	sourcePoster := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", "source", fmt.Sprintf("%d", fileDto.ID))
+	if posterImg, _, posterErr := img.OpenImageFromFile(sourcePoster); posterErr == nil {
+		thumb := img.Thumbnail(posterImg, uint(width), uint(height))
+		if encoded, encErr := img.EncodePNG(thumb); encErr == nil {
+			_ = os.WriteFile(cachePath, encoded, 0644)
+			return encoded, nil
+		}
+	}
+
 	contentPath := fileDto.ResolveContentPath()
 	if !fileExistsOnDisk(contentPath) {
 		return nil, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
