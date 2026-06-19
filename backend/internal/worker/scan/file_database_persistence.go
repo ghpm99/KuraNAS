@@ -14,7 +14,6 @@ func UpdateFileRecord(service files.ServiceInterface, finalizedFile files.FileDt
 	existingRecord.UpdatedAt = finalizedFile.UpdatedAt
 	existingRecord.CreatedAt = finalizedFile.CreatedAt
 	existingRecord.DeletedAt = finalizedFile.DeletedAt
-	existingRecord.LastInteraction = finalizedFile.LastInteraction
 	existingRecord.LastBackup = finalizedFile.LastBackup
 	existingRecord.CheckSum = finalizedFile.CheckSum
 	existingRecord.DirectoryContentCount = finalizedFile.DirectoryContentCount

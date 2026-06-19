@@ -42,8 +42,8 @@ func TestFileDto_ParseAndChecksums(t *testing.T) {
 	if dto2.Type != File || dto2.Format != ".txt" {
 		t.Fatalf("expected file type and format, got type=%v format=%s", dto2.Type, dto2.Format)
 	}
-	if !dto2.LastInteraction.HasValue {
-		t.Fatalf("expected last interaction to be set")
+	if dto2.LastInteraction.HasValue {
+		t.Fatalf("scan must not set last_interaction; it is a user-access field")
 	}
 
 	dto2.Path = filePath
