@@ -43,7 +43,6 @@ const mergeSettingsConfiguration = (
         return base;
     }
     return {
-        library: { ...base.library, ...data.library },
         indexing: { ...base.indexing, ...data.indexing },
         captures: { ...base.captures, ...data.captures },
         ai: { ...base.ai, ...data.ai },

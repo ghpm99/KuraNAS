@@ -13,11 +13,6 @@ const slideshowOptionValues = [4, 8, 12, 20] as const;
 const buildDraftFromSettings = (
     settings: SettingsConfiguration
 ): UpdateSettingsConfigurationRequest => ({
-    library: {
-        watched_paths: settings.library.watched_paths,
-        remember_last_location: settings.library.remember_last_location,
-        prioritize_favorites: settings.library.prioritize_favorites,
-    },
     indexing: {
         scan_on_startup: settings.indexing.scan_on_startup,
         extract_metadata: settings.indexing.extract_metadata,
@@ -43,18 +38,6 @@ const buildDraftFromSettings = (
         current: settings.language.current,
     },
 });
-
-const serializeWatchedPaths = (paths: string[]) => paths.join('\n');
-
-const parseWatchedPaths = (value: string) =>
-    Array.from(
-        new Set(
-            value
-                .split('\n')
-                .map((path) => path.trim())
-                .filter(Boolean)
-        )
-    );
 
 const areSettingsEqual = (
     left: UpdateSettingsConfigurationRequest,
@@ -93,10 +76,6 @@ const useSettingsScreen = () => {
         setDraft(baselineDraft);
     }, [baselineDraft]);
 
-    const watchedPathsText = useMemo(
-        () => serializeWatchedPaths(draft.library.watched_paths),
-        [draft.library.watched_paths]
-    );
     const hasUnsavedChanges = useMemo(
         () => !areSettingsEqual(draft, baselineDraft),
         [baselineDraft, draft]
@@ -129,22 +108,6 @@ const useSettingsScreen = () => {
                 }),
             })),
         [t]
-    );
-
-    const setLibraryField = useCallback(
-        <Key extends keyof UpdateSettingsConfigurationRequest['library']>(
-            field: Key,
-            value: UpdateSettingsConfigurationRequest['library'][Key]
-        ) => {
-            setDraft((current) => ({
-                ...current,
-                library: {
-                    ...current.library,
-                    [field]: value,
-                },
-            }));
-        },
-        []
     );
 
     const setIndexingField = useCallback(
@@ -236,13 +199,6 @@ const useSettingsScreen = () => {
         }));
     }, []);
 
-    const handleWatchedPathsChange = useCallback(
-        (value: string) => {
-            setLibraryField('watched_paths', parseWatchedPaths(value));
-        },
-        [setLibraryField]
-    );
-
     const handleReset = useCallback(() => {
         setDraft(baselineDraft);
     }, [baselineDraft]);
@@ -268,15 +224,12 @@ const useSettingsScreen = () => {
         languageOptions,
         accentOptions,
         slideshowOptions,
-        watchedPathsText,
-        setLibraryField,
         setIndexingField,
         setCapturesField,
         setAIField,
         setPlayersField,
         setAppearanceField,
         setLanguageField,
-        handleWatchedPathsChange,
         handleReset,
         handleSave,
     };

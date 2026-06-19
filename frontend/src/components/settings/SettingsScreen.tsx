@@ -36,15 +36,12 @@ const SettingsScreen = () => {
         languageOptions,
         accentOptions,
         slideshowOptions,
-        watchedPathsText,
-        setLibraryField,
         setIndexingField,
         setCapturesField,
         setAIField,
         setPlayersField,
         setAppearanceField,
         setLanguageField,
-        handleWatchedPathsChange,
         handleReset,
         handleSave,
     } = useSettingsScreen();
@@ -59,10 +56,6 @@ const SettingsScreen = () => {
                     <p className={styles.description}>{t('SETTINGS_PAGE_DESCRIPTION')}</p>
                 </div>
                 <div className={styles.summary}>
-                    <Chip
-                        label={`${t('SETTINGS_SUMMARY_ROOT')}: ${settings.library.runtime_root_path || '-'}`}
-                        variant="outlined"
-                    />
                     <Chip
                         label={`${t('SETTINGS_SUMMARY_WORKERS')}: ${settings.indexing.workers_enabled ? t('SETTINGS_STATUS_ENABLED') : t('SETTINGS_STATUS_DISABLED')}`}
                         variant="outlined"
@@ -94,59 +87,6 @@ const SettingsScreen = () => {
                 <YtDlpSettingsSection className={styles.panel} />
 
                 <EmailSettingsSection className={styles.panel} />
-
-                <section className={styles.panel}>
-                    <div className={styles.panelHeader}>
-                        <h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_LIBRARY')}</h2>
-                        <p className={styles.panelDescription}>
-                            {t('SETTINGS_SECTION_LIBRARY_DESCRIPTION')}
-                        </p>
-                    </div>
-                    <div className={styles.summary}>
-                        {draft.library.watched_paths.map((path) => (
-                            <Chip key={path} label={path} variant="outlined" />
-                        ))}
-                    </div>
-                    <TextField
-                        fullWidth
-                        multiline
-                        minRows={4}
-                        label={t('SETTINGS_LIBRARY_WATCHED_PATHS')}
-                        value={watchedPathsText}
-                        onChange={(event) => handleWatchedPathsChange(event.target.value)}
-                        disabled={disableActions}
-                    />
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={draft.library.remember_last_location}
-                                onChange={(_, checked) =>
-                                    setLibraryField('remember_last_location', checked)
-                                }
-                                disabled={disableActions}
-                            />
-                        }
-                        label={t('SETTINGS_LIBRARY_REMEMBER_LAST_LOCATION')}
-                    />
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={draft.library.prioritize_favorites}
-                                onChange={(_, checked) =>
-                                    setLibraryField('prioritize_favorites', checked)
-                                }
-                                disabled={disableActions}
-                            />
-                        }
-                        label={t('SETTINGS_LIBRARY_PRIORITIZE_FAVORITES')}
-                    />
-                    <Alert severity="info">{t('SETTINGS_LIBRARY_WATCHED_PATHS_HELP')}</Alert>
-                    <p className={styles.hint}>
-                        {t('SETTINGS_LIBRARY_RUNTIME_ROOT', {
-                            path: settings.library.runtime_root_path || '-',
-                        })}
-                    </p>
-                </section>
 
                 <section className={styles.panel}>
                     <div className={styles.panelHeader}>

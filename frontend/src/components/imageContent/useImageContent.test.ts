@@ -83,12 +83,6 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
     useSettings: () => ({
         settings: {
-            library: {
-                runtime_root_path: '/data',
-                watched_paths: ['/data'],
-                remember_last_location: true,
-                prioritize_favorites: true,
-            },
             indexing: {
                 workers_enabled: true,
                 scan_on_startup: true,

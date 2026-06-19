@@ -4,14 +4,12 @@ import SettingsScreen from './SettingsScreen';
 
 const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
-const mockSetLibraryField = jest.fn();
 const mockSetIndexingField = jest.fn();
 const mockSetCapturesField = jest.fn();
 const mockSetAIField = jest.fn();
 const mockSetPlayersField = jest.fn();
 const mockSetAppearanceField = jest.fn();
 const mockSetLanguageField = jest.fn();
-const mockHandleWatchedPathsChange = jest.fn();
 const mockUseSettingsScreen = jest.fn();
 
 jest.mock('./useSettingsScreen', () => ({
@@ -67,18 +65,10 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
         const map: Record<string, string> = {
             SETTINGS_PAGE_TITLE: 'Settings',
             SETTINGS_PAGE_DESCRIPTION: 'Manage runtime preferences.',
-            SETTINGS_SUMMARY_ROOT: 'Root',
             SETTINGS_SUMMARY_WORKERS: 'Workers',
             SETTINGS_STATUS_ENABLED: 'Enabled',
             SETTINGS_STATUS_DISABLED: 'Disabled',
             LANGUAGE: 'Language',
-            SETTINGS_SECTION_LIBRARY: 'Library',
-            SETTINGS_SECTION_LIBRARY_DESCRIPTION: 'Library preferences.',
-            SETTINGS_LIBRARY_WATCHED_PATHS: 'Watched paths',
-            SETTINGS_LIBRARY_WATCHED_PATHS_HELP: 'One path per line.',
-            SETTINGS_LIBRARY_REMEMBER_LAST_LOCATION: 'Remember last location',
-            SETTINGS_LIBRARY_PRIORITIZE_FAVORITES: 'Prioritize favorites',
-            SETTINGS_LIBRARY_RUNTIME_ROOT: `Runtime root: ${params?.path ?? ''}`,
             SETTINGS_SECTION_INDEXING: 'Indexing',
             SETTINGS_SECTION_INDEXING_DESCRIPTION: 'Indexing behavior.',
             SETTINGS_INDEXING_SCAN_ON_STARTUP: 'Scan on startup',
@@ -117,12 +107,6 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
         return map[key] ?? key;
     },
     settings: {
-        library: {
-            runtime_root_path: '/data',
-            watched_paths: ['/data'],
-            remember_last_location: true,
-            prioritize_favorites: true,
-        },
         indexing: {
             workers_enabled: true,
             scan_on_startup: true,
@@ -136,11 +120,6 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
         },
     },
     draft: {
-        library: {
-            watched_paths: ['/data'],
-            remember_last_location: true,
-            prioritize_favorites: true,
-        },
         indexing: {
             scan_on_startup: true,
             extract_metadata: true,
@@ -177,15 +156,12 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
         { value: 4, label: '4 seconds' },
         { value: 8, label: '8 seconds' },
     ],
-    watchedPathsText: '/data',
-    setLibraryField: mockSetLibraryField,
     setIndexingField: mockSetIndexingField,
     setCapturesField: mockSetCapturesField,
     setAIField: mockSetAIField,
     setPlayersField: mockSetPlayersField,
     setAppearanceField: mockSetAppearanceField,
     setLanguageField: mockSetLanguageField,
-    handleWatchedPathsChange: mockHandleWatchedPathsChange,
     handleReset: mockHandleReset,
     handleSave: mockHandleSave,
     ...overrides,
@@ -205,7 +181,6 @@ describe('components/settings/SettingsScreen', () => {
         );
 
         expect(screen.getByText('Settings')).toBeInTheDocument();
-        expect(screen.getByText('Library')).toBeInTheDocument();
         expect(screen.getByText('Indexing')).toBeInTheDocument();
         expect(screen.getByText('Players')).toBeInTheDocument();
         expect(screen.getByText('Appearance')).toBeInTheDocument();
@@ -223,12 +198,6 @@ describe('components/settings/SettingsScreen', () => {
         mockUseSettingsScreen.mockReturnValue(
             createScreenState({
                 settings: {
-                    library: {
-                        runtime_root_path: '',
-                        watched_paths: ['/data', '/backup'],
-                        remember_last_location: true,
-                        prioritize_favorites: true,
-                    },
                     indexing: {
                         workers_enabled: false,
                         scan_on_startup: false,
@@ -237,11 +206,6 @@ describe('components/settings/SettingsScreen', () => {
                     },
                 },
                 draft: {
-                    library: {
-                        watched_paths: ['/data', '/backup'],
-                        remember_last_location: true,
-                        prioritize_favorites: true,
-                    },
                     indexing: {
                         scan_on_startup: false,
                         extract_metadata: false,
@@ -270,11 +234,8 @@ describe('components/settings/SettingsScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByText('Root: -')).toBeInTheDocument();
         expect(screen.getByText('Workers: Disabled')).toBeInTheDocument();
-        expect(screen.getByText('/backup')).toBeInTheDocument();
         expect(screen.getByText('Workers are disabled.')).toBeInTheDocument();
-        expect(screen.getByText('Runtime root: -')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
     });
 
@@ -314,25 +275,10 @@ describe('components/settings/SettingsScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByRole('switch', { name: 'Remember last location' })).toBeDisabled();
         expect(screen.getByRole('switch', { name: 'Scan on startup' })).toBeDisabled();
         expect(screen.getByRole('switch', { name: 'Remember music queue' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-    });
-
-    it('fires library switch handlers with correct arguments', () => {
-        render(
-            <MemoryRouter>
-                <SettingsScreen />
-            </MemoryRouter>
-        );
-
-        fireEvent.click(screen.getByRole('switch', { name: 'Remember last location' }));
-        expect(mockSetLibraryField).toHaveBeenCalledWith('remember_last_location', false);
-
-        fireEvent.click(screen.getByRole('switch', { name: 'Prioritize favorites' }));
-        expect(mockSetLibraryField).toHaveBeenCalledWith('prioritize_favorites', false);
     });
 
     it('fires indexing switch handlers with correct arguments', () => {
@@ -391,18 +337,6 @@ describe('components/settings/SettingsScreen', () => {
         expect(mockSetAppearanceField).toHaveBeenCalledWith('reduce_motion', true);
     });
 
-    it('calls handleWatchedPathsChange when textarea changes', () => {
-        render(
-            <MemoryRouter>
-                <SettingsScreen />
-            </MemoryRouter>
-        );
-
-        const textarea = screen.getByLabelText('Watched paths');
-        fireEvent.change(textarea, { target: { value: '/new\n/other' } });
-        expect(mockHandleWatchedPathsChange).toHaveBeenCalledWith('/new\n/other');
-    });
-
     it('renders footer links to analytics and about pages', () => {
         render(
             <MemoryRouter>
@@ -438,11 +372,6 @@ describe('components/settings/SettingsScreen', () => {
         mockUseSettingsScreen.mockReturnValue(
             createScreenState({
                 draft: {
-                    library: {
-                        watched_paths: ['/data'],
-                        remember_last_location: true,
-                        prioritize_favorites: true,
-                    },
                     indexing: {
                         scan_on_startup: false,
                         extract_metadata: true,
