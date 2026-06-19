@@ -17,14 +17,12 @@ import (
 
 type recentRepoMock struct {
 	upsertFn      func(ip string, fileID int) error
-	deleteOldFn   func(ip string, keep int) error
 	getRecentFn   func(page int, pageSize int) ([]RecentFileModel, error)
 	deleteFn      func(ip string, fileID int) error
 	getByFileIDFn func(fileID int) ([]RecentFileModel, error)
 }
 
-func (m *recentRepoMock) Upsert(ip string, fileID int) error  { return m.upsertFn(ip, fileID) }
-func (m *recentRepoMock) DeleteOld(ip string, keep int) error { return m.deleteOldFn(ip, keep) }
+func (m *recentRepoMock) Upsert(ip string, fileID int) error { return m.upsertFn(ip, fileID) }
 func (m *recentRepoMock) GetRecentFiles(page int, pageSize int) ([]RecentFileModel, error) {
 	return m.getRecentFn(page, pageSize)
 }
@@ -36,8 +34,7 @@ func (m *recentRepoMock) GetByFileID(fileID int) ([]RecentFileModel, error) {
 func TestRecentFileService(t *testing.T) {
 	now := time.Now()
 	repo := &recentRepoMock{
-		upsertFn:    func(ip string, fileID int) error { return nil },
-		deleteOldFn: func(ip string, keep int) error { return nil },
+		upsertFn: func(ip string, fileID int) error { return nil },
 		getRecentFn: func(page int, pageSize int) ([]RecentFileModel, error) {
 			return []RecentFileModel{{ID: 1, IPAddress: "127.0.0.1", FileID: 2, AccessedAt: now}}, nil
 		},
@@ -48,7 +45,7 @@ func TestRecentFileService(t *testing.T) {
 	}
 	svc := NewRecentFileService(repo)
 
-	if err := svc.RegisterAccess("127.0.0.1", 2, 10); err != nil {
+	if err := svc.RegisterAccess("127.0.0.1", 2); err != nil {
 		t.Fatalf("RegisterAccess failed: %v", err)
 	}
 	list, err := svc.GetRecentFiles(0, 0)
@@ -81,15 +78,6 @@ func TestRecentFileRepository(t *testing.T) {
 	mock.ExpectCommit()
 	if err := repo.Upsert("127.0.0.1", 10); err != nil {
 		t.Fatalf("Upsert failed: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(queries.DeleteOldRecentFilesQuery)).
-		WithArgs("127.0.0.1", "127.0.0.1", 10).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-	if err := repo.DeleteOld("127.0.0.1", 10); err != nil {
-		t.Fatalf("DeleteOld failed: %v", err)
 	}
 
 	mock.ExpectBegin()
@@ -146,23 +134,11 @@ func TestFileModelChecksumAndServiceConstructors(t *testing.T) {
 func TestRecentFileService_RegisterAccessErrors(t *testing.T) {
 	upsertErrRepo := &recentRepoMock{
 		upsertFn:      func(ip string, fileID int) error { return errors.New("upsert failed") },
-		deleteOldFn:   func(ip string, keep int) error { return nil },
 		getRecentFn:   func(page int, pageSize int) ([]RecentFileModel, error) { return nil, nil },
 		deleteFn:      func(ip string, fileID int) error { return nil },
 		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) { return nil, nil },
 	}
-	if err := NewRecentFileService(upsertErrRepo).RegisterAccess("127.0.0.1", 1, 10); err == nil {
+	if err := NewRecentFileService(upsertErrRepo).RegisterAccess("127.0.0.1", 1); err == nil {
 		t.Fatalf("expected RegisterAccess to return upsert error")
-	}
-
-	deleteOldErrRepo := &recentRepoMock{
-		upsertFn:      func(ip string, fileID int) error { return nil },
-		deleteOldFn:   func(ip string, keep int) error { return errors.New("delete old failed") },
-		getRecentFn:   func(page int, pageSize int) ([]RecentFileModel, error) { return nil, nil },
-		deleteFn:      func(ip string, fileID int) error { return nil },
-		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) { return nil, nil },
-	}
-	if err := NewRecentFileService(deleteOldErrRepo).RegisterAccess("127.0.0.1", 1, 10); err == nil {
-		t.Fatalf("expected RegisterAccess to return delete-old error")
 	}
 }

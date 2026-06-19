@@ -125,7 +125,7 @@ func (m *filesHandlerServiceMock) CopyFile(sourceID int, destinationFolderID *in
 
 type filesRecentServiceMock struct{}
 
-func (m *filesRecentServiceMock) RegisterAccess(ip string, fileID int, keep int) error { return nil }
+func (m *filesRecentServiceMock) RegisterAccess(ip string, fileID int) error { return nil }
 func (m *filesRecentServiceMock) GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error) {
 	return []RecentFileDto{{ID: 1, FileID: 1, IPAddress: "127.0.0.1", AccessedAt: time.Now()}}, nil
 }

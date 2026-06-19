@@ -273,8 +273,8 @@ func NewContext(db *sql.DB) *AppContext {
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
 	imageContext := newImageContext(dbContext, loggerService)
 	diaryContext := newDiaryContext(dbContext, loggerService)
-	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service)
-	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service)
+	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
+	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	searchContext := newSearchContext(dbContext, aiService)
@@ -464,11 +464,11 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	}
 }
 
-func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface) *MusicContext {
+func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface) *MusicContext {
 	repository := music.NewRepository(dbContext)
 	audioMetadataRepository := music.NewAudioMetadataRepository(dbContext)
 	service := music.NewService(repository, aiService)
-	handler := music.NewHandler(service, filesService, loggerSvc)
+	handler := music.NewHandler(service, filesService, recentFileService, loggerSvc)
 	return &MusicContext{
 		Handler:                 handler,
 		Service:                 service,
@@ -477,11 +477,11 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	}
 }
 
-func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface) *VideoContext {
+func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface) *VideoContext {
 	repository := video.NewRepository(dbContext)
 	metadataRepository := video.NewVideoMetadataRepository(dbContext)
 	service := video.NewService(repository, aiService)
-	handler := video.NewHandler(service, filesService, logger)
+	handler := video.NewHandler(service, filesService, recentFileService, logger)
 	return &VideoContext{
 		Handler:            handler,
 		Service:            service,

@@ -26,6 +26,10 @@ WHERE
             file_id
         FROM
             recent_file
+        ORDER BY
+            accessed_at DESC
+        LIMIT
+            10
     )
 ORDER BY
     hf.type,
