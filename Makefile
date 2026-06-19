@@ -60,7 +60,7 @@ ci-backend: lint-backend test-backend
 ci-plugin:
 	@echo ""
 	@echo "======== Plugin Lint + Tests ========"
-	@cd $(PLUGIN_DIR) && npm ci && npm run lint && npm test
+	@cd $(PLUGIN_DIR) && yarn install --frozen-lockfile && yarn lint && yarn test
 	@echo "Plugin quality gate passed."
 
 ci-android:
