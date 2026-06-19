@@ -19,11 +19,6 @@ const mockedApi = apiBase as unknown as {
 };
 
 const settingsRequest = {
-    library: {
-        watched_paths: ['/data'],
-        remember_last_location: true,
-        prioritize_favorites: true,
-    },
     indexing: {
         scan_on_startup: true,
         extract_metadata: true,
@@ -74,12 +69,6 @@ describe('service/configuration', () => {
             url: '/configuration/settings',
             payload: undefined,
             response: {
-                library: {
-                    runtime_root_path: '/data',
-                    watched_paths: ['/data'],
-                    remember_last_location: true,
-                    prioritize_favorites: true,
-                },
                 indexing: {
                     workers_enabled: true,
                     scan_on_startup: true,
@@ -104,7 +93,6 @@ describe('service/configuration', () => {
             payload: settingsRequest,
             response: {
                 ...settingsRequest,
-                library: { ...settingsRequest.library, runtime_root_path: '/data' },
                 indexing: { ...settingsRequest.indexing, workers_enabled: true },
                 language: { ...settingsRequest.language, available: ['en-US', 'pt-BR'] },
             },

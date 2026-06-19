@@ -2,12 +2,6 @@ import { AboutContextType } from '@/components/providers/aboutProvider/AboutCont
 import { apiBase } from '.';
 
 export type SettingsConfiguration = {
-    library: {
-        runtime_root_path: string;
-        watched_paths: string[];
-        remember_last_location: boolean;
-        prioritize_favorites: boolean;
-    };
     indexing: {
         workers_enabled: boolean;
         scan_on_startup: boolean;
@@ -39,11 +33,6 @@ export type SettingsConfiguration = {
 };
 
 export type UpdateSettingsConfigurationRequest = {
-    library: {
-        watched_paths: string[];
-        remember_last_location: boolean;
-        prioritize_favorites: boolean;
-    };
     indexing: {
         scan_on_startup: boolean;
         extract_metadata: boolean;

@@ -5,12 +5,6 @@ import type {
 } from '@/service/configuration';
 
 export const defaultSettingsConfiguration: SettingsConfiguration = {
-    library: {
-        runtime_root_path: '',
-        watched_paths: [],
-        remember_last_location: true,
-        prioritize_favorites: true,
-    },
     indexing: {
         workers_enabled: false,
         scan_on_startup: true,

@@ -28,12 +28,6 @@ const createWrapper = () => {
 };
 
 const fullSettings = (overrides: Record<string, any> = {}) => ({
-    library: {
-        runtime_root_path: '/data',
-        watched_paths: ['/data'],
-        remember_last_location: true,
-        prioritize_favorites: true,
-    },
     indexing: {
         workers_enabled: true,
         scan_on_startup: true,
@@ -91,12 +85,6 @@ describe('components/providers/settingsProvider', () => {
         mockedGetSettingsConfiguration.mockResolvedValue(fullSettings());
         mockedUpdateSettingsConfiguration.mockResolvedValue(
             fullSettings({
-                library: {
-                    runtime_root_path: '/data',
-                    watched_paths: ['/media'],
-                    remember_last_location: false,
-                    prioritize_favorites: false,
-                },
                 appearance: { accent_color: 'rose', reduce_motion: true },
                 language: { current: 'pt-BR', available: ['en-US', 'pt-BR'] },
             })
@@ -110,11 +98,6 @@ describe('components/providers/settingsProvider', () => {
 
         await act(async () => {
             await result.current.saveSettings({
-                library: {
-                    watched_paths: ['/media'],
-                    remember_last_location: false,
-                    prioritize_favorites: false,
-                },
                 indexing: {
                     scan_on_startup: false,
                     extract_metadata: true,
@@ -206,7 +189,7 @@ describe('components/providers/settingsProvider', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         expect(result.current.hasError).toBe(true);
-        expect(result.current.settings.library.runtime_root_path).toBe('');
+        expect(result.current.settings.language.current).toBe('en-US');
         expect(result.current.settings.appearance.accent_color).toBe('violet');
     });
 
@@ -215,7 +198,6 @@ describe('components/providers/settingsProvider', () => {
         // leave those groups undefined and crash GlobalMusicProvider /
         // applyAppearanceSettings. The provider must backfill from defaults.
         mockedGetSettingsConfiguration.mockResolvedValue({
-            library: { runtime_root_path: '/data', watched_paths: [] },
             language: { current: 'pt-BR', available: ['pt-BR'] },
         });
 
@@ -292,11 +274,6 @@ describe('components/providers/settingsProvider', () => {
 
         await act(async () => {
             await result.current.saveSettings({
-                library: {
-                    watched_paths: ['/data'],
-                    remember_last_location: true,
-                    prioritize_favorites: true,
-                },
                 indexing: {
                     scan_on_startup: true,
                     extract_metadata: true,

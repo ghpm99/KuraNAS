@@ -30,12 +30,6 @@ jest.mock('notistack', () => ({
 jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
     useSettings: () => ({
         settings: {
-            library: {
-                runtime_root_path: '/data',
-                watched_paths: ['/data'],
-                remember_last_location: true,
-                prioritize_favorites: true,
-            },
             indexing: {
                 workers_enabled: true,
                 scan_on_startup: true,
@@ -71,18 +65,17 @@ describe('components/settings/useSettingsScreen', () => {
         jest.clearAllMocks();
     });
 
-    it('derives draft state and allows editing watched paths', () => {
+    it('derives draft state from provider settings', () => {
         const { result } = renderHook(() => useSettingsScreen());
 
         expect(result.current.languageOptions).toHaveLength(2);
-        expect(result.current.watchedPathsText).toBe('/data');
         expect(result.current.hasUnsavedChanges).toBe(false);
 
         act(() => {
-            result.current.handleWatchedPathsChange('/media\n/archive');
+            result.current.setLanguageField('pt-BR');
         });
 
-        expect(result.current.draft.library.watched_paths).toEqual(['/media', '/archive']);
+        expect(result.current.draft.language.current).toBe('pt-BR');
         expect(result.current.hasUnsavedChanges).toBe(true);
     });
 
@@ -133,25 +126,6 @@ describe('components/settings/useSettingsScreen', () => {
             { value: 12, label: '12 seconds' },
             { value: 20, label: '20 seconds' },
         ]);
-    });
-
-    it('setLibraryField updates library fields in draft', () => {
-        const { result } = renderHook(() => useSettingsScreen());
-
-        act(() => {
-            result.current.setLibraryField('remember_last_location', false);
-        });
-        expect(result.current.draft.library.remember_last_location).toBe(false);
-
-        act(() => {
-            result.current.setLibraryField('prioritize_favorites', false);
-        });
-        expect(result.current.draft.library.prioritize_favorites).toBe(false);
-
-        act(() => {
-            result.current.setLibraryField('watched_paths', ['/a', '/b']);
-        });
-        expect(result.current.draft.library.watched_paths).toEqual(['/a', '/b']);
     });
 
     it('setIndexingField updates indexing fields in draft', () => {
@@ -246,24 +220,6 @@ describe('components/settings/useSettingsScreen', () => {
         expect(result.current.draft.appearance.accent_color).toBe('violet');
     });
 
-    it('handleWatchedPathsChange deduplicates and trims paths', () => {
-        const { result } = renderHook(() => useSettingsScreen());
-
-        act(() => {
-            result.current.handleWatchedPathsChange('  /a  \n/b\n  /a\n\n/c\n');
-        });
-        expect(result.current.draft.library.watched_paths).toEqual(['/a', '/b', '/c']);
-    });
-
-    it('handleWatchedPathsChange handles empty input', () => {
-        const { result } = renderHook(() => useSettingsScreen());
-
-        act(() => {
-            result.current.handleWatchedPathsChange('');
-        });
-        expect(result.current.draft.library.watched_paths).toEqual([]);
-    });
-
     it('hasUnsavedChanges is false when draft equals baseline', () => {
         const { result } = renderHook(() => useSettingsScreen());
         expect(result.current.hasUnsavedChanges).toBe(false);
@@ -324,7 +280,7 @@ describe('components/settings/useSettingsScreen', () => {
     it('exposes settings and loading states from provider', () => {
         const { result } = renderHook(() => useSettingsScreen());
 
-        expect(result.current.settings.library.runtime_root_path).toBe('/data');
+        expect(result.current.settings.indexing.workers_enabled).toBe(true);
         expect(result.current.isLoading).toBe(false);
         expect(result.current.isSaving).toBe(false);
         expect(result.current.hasError).toBe(false);
