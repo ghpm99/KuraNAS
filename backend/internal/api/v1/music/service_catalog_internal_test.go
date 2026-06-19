@@ -90,7 +90,7 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 	if got := preferredArtist(withAlbumArtist); got != "Album Artist" {
 		t.Fatalf("preferredArtist returned %q", got)
 	}
-	if got := entryTimestamp(entries[1]); !got.Equal(base.Add(5 * time.Hour)) {
+	if got := entryTimestamp(entries[1]); !got.Equal(base.Add(2 * time.Hour)) {
 		t.Fatalf("entryTimestamp returned %v", got)
 	}
 	if got := parseTrackNumber("8/12"); got != 8 {
@@ -145,7 +145,7 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 	}
 
 	recentIDs := buildRecentPlaylistTrackIDs(entries)
-	if len(recentIDs) != 4 || recentIDs[0] != 4 || recentIDs[1] != 2 {
+	if len(recentIDs) != 4 || recentIDs[0] != 4 || recentIDs[1] != 3 {
 		t.Fatalf("buildRecentPlaylistTrackIDs returned %+v", recentIDs)
 	}
 
@@ -159,7 +159,7 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 		CurrentFileID: sql.NullInt64{Valid: true, Int64: 3},
 	}
 	continueIDs := buildContinueListeningTrackIDs(entries, state, []PlaylistTrackModel{{FileID: 3}, {FileID: 2}})
-	if len(continueIDs) != 3 || continueIDs[0] != 3 || continueIDs[1] != 2 || continueIDs[2] != 4 {
+	if len(continueIDs) != 4 || continueIDs[0] != 3 || continueIDs[1] != 2 || continueIDs[2] != 1 || continueIDs[3] != 4 {
 		t.Fatalf("buildContinueListeningTrackIDs returned %+v", continueIDs)
 	}
 
@@ -234,7 +234,7 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetAutomaticPlaylists returned error: %v", err)
 	}
-	if len(playlists) != 3 || playlists[0].ID != AutoPlaylistContinueListeningID || playlists[0].TrackCount != 3 || playlists[1].TrackCount != 4 || playlists[2].TrackCount != 2 {
+	if len(playlists) != 3 || playlists[0].ID != AutoPlaylistContinueListeningID || playlists[0].TrackCount != 4 || playlists[1].TrackCount != 4 || playlists[2].TrackCount != 2 {
 		t.Fatalf("GetAutomaticPlaylists returned %+v", playlists)
 	}
 
