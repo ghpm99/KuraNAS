@@ -112,11 +112,8 @@ func NewRecentFileService(repo RecentFileRepositoryInterface) *RecentFileService
 
 var DEFAULT_LIMIT = 10
 
-func (s *RecentFileService) RegisterAccess(ip string, fileID int, keep int) error {
-	if err := s.Repo.Upsert(ip, fileID); err != nil {
-		return err
-	}
-	return s.Repo.DeleteOld(ip, keep)
+func (s *RecentFileService) RegisterAccess(ip string, fileID int) error {
+	return s.Repo.Upsert(ip, fileID)
 }
 
 func (s *RecentFileService) GetRecentFiles(page int, limit int) ([]RecentFileDto, error) {
@@ -174,20 +171,6 @@ func (r *RecentFileRepository) Upsert(ip string, fileID int) error {
 	})
 	if err != nil {
 		return fmt.Errorf("falha ao realizar upsert de arquivo recente: %w", err)
-	}
-	return nil
-}
-
-func (r *RecentFileRepository) DeleteOld(ip string, keep int) error {
-	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
-		_, err := tx.Exec(
-			queries.DeleteOldRecentFilesQuery,
-			ip, ip, keep,
-		)
-		return err
-	})
-	if err != nil {
-		return fmt.Errorf("falha ao deletar arquivos recentes antigos: %w", err)
 	}
 	return nil
 }

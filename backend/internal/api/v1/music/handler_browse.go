@@ -166,6 +166,8 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 		return
 	}
 
+	handler.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
+
 	audioFile, err := os.Open(contentPath)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)

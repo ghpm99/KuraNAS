@@ -128,6 +128,8 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
+	h.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
+
 	videoFile, err := os.Open(contentPath)
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)

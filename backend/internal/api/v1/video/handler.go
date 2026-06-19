@@ -13,13 +13,14 @@ import (
 )
 
 type Handler struct {
-	service      ServiceInterface
-	filesService files.ServiceInterface
-	logService   logger.LoggerServiceInterface
+	service           ServiceInterface
+	filesService      files.ServiceInterface
+	recentFileService files.RecentFileServiceInterface
+	logService        logger.LoggerServiceInterface
 }
 
-func NewHandler(service ServiceInterface, filesService files.ServiceInterface, logService logger.LoggerServiceInterface) *Handler {
-	return &Handler{service: service, filesService: filesService, logService: logService}
+func NewHandler(service ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface, logService logger.LoggerServiceInterface) *Handler {
+	return &Handler{service: service, filesService: filesService, recentFileService: recentFileService, logService: logService}
 }
 
 func respondVideoError(c *gin.Context, err error) {

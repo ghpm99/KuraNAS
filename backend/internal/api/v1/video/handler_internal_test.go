@@ -162,7 +162,7 @@ func (m *videoLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error
 
 func TestVideoHandlerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
 	router := gin.New()
 
 	router.POST("/video/playback/start", handler.StartPlaybackHandler)
@@ -227,7 +227,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 
 func TestVideoHandlerErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
 	router := gin.New()
 
 	router.POST("/video/playback/start", handler.StartPlaybackHandler)

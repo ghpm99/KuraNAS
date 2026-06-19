@@ -17,6 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type musicRecentServiceMock struct{}
+
+func (m *musicRecentServiceMock) RegisterAccess(ip string, fileID int) error { return nil }
+func (m *musicRecentServiceMock) GetRecentFiles(page int, pageSize int) ([]files.RecentFileDto, error) {
+	return nil, nil
+}
+func (m *musicRecentServiceMock) DeleteRecentFile(ip string, fileID int) error { return nil }
+func (m *musicRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]files.RecentFileDto, error) {
+	return nil, nil
+}
+
 type musicHandlerServiceMock struct{}
 
 func (m *musicHandlerServiceMock) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {
@@ -220,7 +231,7 @@ func (m *musicLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error
 
 func TestMusicHandlerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&musicHandlerServiceMock{}, nil, &musicLoggerMock{})
+	handler := NewHandler(&musicHandlerServiceMock{}, nil, &musicRecentServiceMock{}, &musicLoggerMock{})
 	router := gin.New()
 
 	router.GET("/music/playlists", handler.GetPlaylistsHandler)
@@ -293,7 +304,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 
 func TestMusicHandlerErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&musicHandlerErrServiceMock{}, nil, &musicLoggerMock{})
+	handler := NewHandler(&musicHandlerErrServiceMock{}, nil, &musicRecentServiceMock{}, &musicLoggerMock{})
 	router := gin.New()
 
 	router.GET("/music/playlists", handler.GetPlaylistsHandler)
@@ -396,7 +407,7 @@ func TestMusicHandlerStreamAudio(t *testing.T) {
 	}
 
 	filesService := &musicStreamFilesServiceMock{filePath: audioPath, format: ".mp3"}
-	handler := NewHandler(&musicHandlerServiceMock{}, filesService, &musicLoggerMock{})
+	handler := NewHandler(&musicHandlerServiceMock{}, filesService, &musicRecentServiceMock{}, &musicLoggerMock{})
 
 	router := gin.New()
 	router.GET("/files/stream/:id", handler.StreamAudioHandler)
@@ -442,7 +453,7 @@ func TestMusicHandlerStreamAudio(t *testing.T) {
 	}
 
 	missingService := &musicStreamFilesServiceMock{filePath: filepath.Join(tmpDir, "missing.mp3"), format: ".mp3"}
-	missingHandler := NewHandler(&musicHandlerServiceMock{}, missingService, &musicLoggerMock{})
+	missingHandler := NewHandler(&musicHandlerServiceMock{}, missingService, &musicRecentServiceMock{}, &musicLoggerMock{})
 	missingRouter := gin.New()
 	missingRouter.GET("/files/stream/:id", missingHandler.StreamAudioHandler)
 
@@ -454,7 +465,7 @@ func TestMusicHandlerStreamAudio(t *testing.T) {
 	}
 
 	notFoundService := &musicStreamFilesServiceMock{}
-	notFoundHandler := NewHandler(&musicHandlerServiceMock{}, notFoundService, &musicLoggerMock{})
+	notFoundHandler := NewHandler(&musicHandlerServiceMock{}, notFoundService, &musicRecentServiceMock{}, &musicLoggerMock{})
 	notFoundRouter := gin.New()
 	notFoundRouter.GET("/files/stream/:id", notFoundHandler.StreamAudioHandler)
 

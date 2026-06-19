@@ -20,6 +20,17 @@ type videoFilesServiceMock struct {
 	missing  bool
 }
 
+type videoRecentServiceMock struct{}
+
+func (m *videoRecentServiceMock) RegisterAccess(ip string, fileID int) error { return nil }
+func (m *videoRecentServiceMock) GetRecentFiles(page int, pageSize int) ([]files.RecentFileDto, error) {
+	return nil, nil
+}
+func (m *videoRecentServiceMock) DeleteRecentFile(ip string, fileID int) error { return nil }
+func (m *videoRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]files.RecentFileDto, error) {
+	return nil, nil
+}
+
 func (m *videoFilesServiceMock) GetFileById(id int) (files.FileDto, error) {
 	if m.missing {
 		return files.FileDto{}, errors.New("not found")
@@ -47,7 +58,7 @@ func (m *videoFilesServiceMock) CheckFileExistsByPath(path string) bool {
 
 func TestVideoHandlerBrowseEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
 
 	router := gin.New()
 	router.GET("/files/videos", handler.GetVideosHandler)
@@ -79,7 +90,7 @@ func TestVideoHandlerBrowseEndpoints(t *testing.T) {
 
 func TestVideoHandlerBrowseErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{}, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
 
 	router := gin.New()
 	router.GET("/files/videos", handler.GetVideosHandler)
@@ -106,7 +117,7 @@ func TestVideoHandlerBrowseErrorResponses(t *testing.T) {
 		})
 	}
 
-	missingHandler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{missing: true}, &videoLoggerMock{})
+	missingHandler := NewHandler(&videoHandlerErrServiceMock{}, &videoFilesServiceMock{missing: true}, &videoRecentServiceMock{}, &videoLoggerMock{})
 	missingRouter := gin.New()
 	missingRouter.GET("/files/video-thumbnail/:id", missingHandler.GetVideoThumbnailHandler)
 	missingRouter.GET("/files/video-stream/:id", missingHandler.StreamVideoHandler)
@@ -135,7 +146,7 @@ func TestVideoHandlerStreamRanges(t *testing.T) {
 	}
 
 	filesService := &videoFilesServiceMock{filePath: videoPath, format: ".mp4"}
-	handler := NewHandler(&videoHandlerServiceMock{}, filesService, &videoLoggerMock{})
+	handler := NewHandler(&videoHandlerServiceMock{}, filesService, &videoRecentServiceMock{}, &videoLoggerMock{})
 
 	router := gin.New()
 	router.GET("/files/video-stream/:id", handler.StreamVideoHandler)

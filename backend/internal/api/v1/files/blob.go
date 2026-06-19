@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"mime"
-	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -80,7 +79,7 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		return
 	}
 
-	handler.recentFileService.RegisterAccess(c.ClientIP(), fileBlob.ID, config.AppConfig.RecentFilesKeep)
+	handler.recentFileService.RegisterAccess(c.ClientIP(), fileBlob.ID)
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(fileBlob.Format)), fileBlob.Blob)
 }

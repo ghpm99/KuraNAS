@@ -13,16 +13,18 @@ import (
 )
 
 type Handler struct {
-	service      ServiceInterface
-	filesService files.ServiceInterface
-	logService   logger.LoggerServiceInterface
+	service           ServiceInterface
+	filesService      files.ServiceInterface
+	recentFileService files.RecentFileServiceInterface
+	logService        logger.LoggerServiceInterface
 }
 
-func NewHandler(musicService ServiceInterface, filesService files.ServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
+func NewHandler(musicService ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface, loggerService logger.LoggerServiceInterface) *Handler {
 	return &Handler{
-		service:      musicService,
-		filesService: filesService,
-		logService:   loggerService,
+		service:           musicService,
+		filesService:      filesService,
+		recentFileService: recentFileService,
+		logService:        loggerService,
 	}
 }
 
