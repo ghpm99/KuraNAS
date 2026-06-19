@@ -3,7 +3,6 @@ package configuration
 // settingsState is the persisted shape of system preferences (stored as one
 // JSON document under the system_preferences configuration key).
 type settingsState struct {
-	Library    librarySettingsState    `json:"library"`
 	Indexing   indexingSettingsState   `json:"indexing"`
 	Captures   capturesSettingsState   `json:"captures"`
 	AI         aiSettingsState         `json:"ai"`
@@ -17,12 +16,6 @@ type settingsState struct {
 // their in-progress upload staging are never indexed/watched.
 type capturesSettingsState struct {
 	SavePath string `json:"save_path"`
-}
-
-type librarySettingsState struct {
-	WatchedPaths         []string `json:"watched_paths"`
-	RememberLastLocation bool     `json:"remember_last_location"`
-	PrioritizeFavorites  bool     `json:"prioritize_favorites"`
 }
 
 type indexingSettingsState struct {

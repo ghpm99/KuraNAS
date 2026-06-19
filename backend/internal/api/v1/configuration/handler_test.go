@@ -203,7 +203,6 @@ func TestUpdateSettingsHandler(t *testing.T) {
 	}, l)
 
 	body := bytes.NewBufferString(`{
-		"library": {"watched_paths": ["/data"], "remember_last_location": true, "prioritize_favorites": true},
 		"indexing": {"scan_on_startup": true, "extract_metadata": true, "generate_previews": true},
 		"players": {"remember_music_queue": true, "remember_video_progress": true, "autoplay_next_video": true, "image_slideshow_seconds": 4},
 		"appearance": {"accent_color": "violet", "reduce_motion": false},
