@@ -136,9 +136,6 @@ func preferredArtist(entry MusicLibraryIndexEntryModel) string {
 }
 
 func entryTimestamp(entry MusicLibraryIndexEntryModel) time.Time {
-	if entry.LastInteraction.Valid {
-		return entry.LastInteraction.Time
-	}
 	if !entry.UpdatedAt.IsZero() {
 		return entry.UpdatedAt
 	}
@@ -511,7 +508,7 @@ func buildContinueListeningTrackIDs(indexEntries []MusicLibraryIndexEntryModel, 
 	}
 
 	for _, entry := range indexEntries {
-		if seen[entry.FileID] || !entry.LastInteraction.Valid {
+		if seen[entry.FileID] {
 			continue
 		}
 		seen[entry.FileID] = true
