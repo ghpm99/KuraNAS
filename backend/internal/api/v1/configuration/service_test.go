@@ -62,9 +62,6 @@ func TestConfigurationServiceGetSettingsUsesDefaultsWhenMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSettings returned error: %v", err)
 	}
-	if settings.Library.RuntimeRootPath != "/runtime" {
-		t.Fatalf("expected runtime root path to match config")
-	}
 	if settings.Language.Current != "pt-BR" {
 		t.Fatalf("expected current locale from config, got %s", settings.Language.Current)
 	}
@@ -91,11 +88,6 @@ func TestConfigurationServiceUpdateSettingsPersistsNormalizedState(t *testing.T)
 	})
 
 	settings, err := service.UpdateSettings(UpdateSettingsRequest{
-		Library: LibrarySettingsRequest{
-			WatchedPaths:         []string{"/data", "/data"},
-			RememberLastLocation: true,
-			PrioritizeFavorites:  false,
-		},
 		Indexing: IndexingSettingsRequest{
 			ScanOnStartup:    false,
 			ExtractMetadata:  true,
@@ -316,29 +308,6 @@ func TestResolveLocaleAllBranches(t *testing.T) {
 		got := resolveLocale("ja-JP", []string{"fr-FR", "de-DE"})
 		if got != "fr-FR" {
 			t.Fatalf("expected first available fr-FR, got %s", got)
-		}
-	})
-}
-
-func TestSanitizePathsBranches(t *testing.T) {
-	t.Run("deduplicates and trims", func(t *testing.T) {
-		result := sanitizePaths([]string{" /a ", "/b", "/a", " "}, []string{"/default"})
-		if len(result) != 2 || result[0] != "/a" || result[1] != "/b" {
-			t.Fatalf("expected [/a /b], got %v", result)
-		}
-	})
-
-	t.Run("returns fallback when all empty", func(t *testing.T) {
-		result := sanitizePaths([]string{" ", ""}, []string{"/default"})
-		if len(result) != 1 || result[0] != "/default" {
-			t.Fatalf("expected [/default], got %v", result)
-		}
-	})
-
-	t.Run("returns fallback when nil", func(t *testing.T) {
-		result := sanitizePaths(nil, []string{"/d"})
-		if len(result) != 1 || result[0] != "/d" {
-			t.Fatalf("expected [/d], got %v", result)
 		}
 	})
 }

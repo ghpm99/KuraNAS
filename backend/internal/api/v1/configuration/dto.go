@@ -1,7 +1,6 @@
 package configuration
 
 type SettingsDto struct {
-	Library    LibrarySettingsDto    `json:"library"`
 	Indexing   IndexingSettingsDto   `json:"indexing"`
 	Captures   CapturesSettingsDto   `json:"captures"`
 	AI         AISettingsDto         `json:"ai"`
@@ -16,13 +15,6 @@ type CapturesSettingsDto struct {
 	SavePath     string   `json:"save_path"`
 	DefaultPath  string   `json:"default_path"`
 	StorageRoots []string `json:"storage_roots"`
-}
-
-type LibrarySettingsDto struct {
-	RuntimeRootPath      string   `json:"runtime_root_path"`
-	WatchedPaths         []string `json:"watched_paths"`
-	RememberLastLocation bool     `json:"remember_last_location"`
-	PrioritizeFavorites  bool     `json:"prioritize_favorites"`
 }
 
 type IndexingSettingsDto struct {
@@ -56,7 +48,6 @@ type LanguageSettingsDto struct {
 }
 
 type UpdateSettingsRequest struct {
-	Library    LibrarySettingsRequest    `json:"library"`
 	Indexing   IndexingSettingsRequest   `json:"indexing"`
 	Captures   CapturesSettingsRequest   `json:"captures"`
 	AI         AISettingsRequest         `json:"ai"`
@@ -67,12 +58,6 @@ type UpdateSettingsRequest struct {
 
 type CapturesSettingsRequest struct {
 	SavePath string `json:"save_path"`
-}
-
-type LibrarySettingsRequest struct {
-	WatchedPaths         []string `json:"watched_paths"`
-	RememberLastLocation bool     `json:"remember_last_location"`
-	PrioritizeFavorites  bool     `json:"prioritize_favorites"`
 }
 
 type IndexingSettingsRequest struct {

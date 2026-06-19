@@ -28,18 +28,7 @@ var allowedAccentColors = map[string]struct{}{
 }
 
 func buildDefaultSettings(availableLocales []string) settingsState {
-	runtimeRootPath := strings.TrimSpace(config.AppConfig.EntryPoint)
-	watchedPaths := []string{}
-	if runtimeRootPath != "" {
-		watchedPaths = []string{runtimeRootPath}
-	}
-
 	return settingsState{
-		Library: librarySettingsState{
-			WatchedPaths:         watchedPaths,
-			RememberLastLocation: true,
-			PrioritizeFavorites:  true,
-		},
 		Indexing: indexingSettingsState{
 			ScanOnStartup:    true,
 			ExtractMetadata:  true,
@@ -69,9 +58,6 @@ func buildDefaultSettings(availableLocales []string) settingsState {
 
 func normalizeState(candidate settingsState, defaults settingsState, availableLocales []string) settingsState {
 	normalized := defaults
-	normalized.Library.WatchedPaths = sanitizePaths(candidate.Library.WatchedPaths, defaults.Library.WatchedPaths)
-	normalized.Library.RememberLastLocation = candidate.Library.RememberLastLocation
-	normalized.Library.PrioritizeFavorites = candidate.Library.PrioritizeFavorites
 	normalized.Indexing.ScanOnStartup = candidate.Indexing.ScanOnStartup
 	normalized.Indexing.ExtractMetadata = candidate.Indexing.ExtractMetadata
 	normalized.Indexing.GeneratePreviews = candidate.Indexing.GeneratePreviews
@@ -89,11 +75,6 @@ func normalizeState(candidate settingsState, defaults settingsState, availableLo
 
 func (request UpdateSettingsRequest) toState() settingsState {
 	return settingsState{
-		Library: librarySettingsState{
-			WatchedPaths:         request.Library.WatchedPaths,
-			RememberLastLocation: request.Library.RememberLastLocation,
-			PrioritizeFavorites:  request.Library.PrioritizeFavorites,
-		},
 		Indexing: indexingSettingsState{
 			ScanOnStartup:    request.Indexing.ScanOnStartup,
 			ExtractMetadata:  request.Indexing.ExtractMetadata,
@@ -123,12 +104,6 @@ func (request UpdateSettingsRequest) toState() settingsState {
 
 func (state settingsState) toDto(availableLocales []string) SettingsDto {
 	return SettingsDto{
-		Library: LibrarySettingsDto{
-			RuntimeRootPath:      strings.TrimSpace(config.AppConfig.EntryPoint),
-			WatchedPaths:         append([]string(nil), state.Library.WatchedPaths...),
-			RememberLastLocation: state.Library.RememberLastLocation,
-			PrioritizeFavorites:  state.Library.PrioritizeFavorites,
-		},
 		Indexing: IndexingSettingsDto{
 			WorkersEnabled:   config.AppConfig.EnableWorkers,
 			ScanOnStartup:    state.Indexing.ScanOnStartup,
@@ -158,29 +133,6 @@ func (state settingsState) toDto(availableLocales []string) SettingsDto {
 			Available: append([]string(nil), availableLocales...),
 		},
 	}
-}
-
-func sanitizePaths(paths []string, fallback []string) []string {
-	uniquePaths := make([]string, 0, len(paths))
-	seen := make(map[string]struct{}, len(paths))
-
-	for _, path := range paths {
-		trimmedPath := strings.TrimSpace(path)
-		if trimmedPath == "" {
-			continue
-		}
-		if _, exists := seen[trimmedPath]; exists {
-			continue
-		}
-		seen[trimmedPath] = struct{}{}
-		uniquePaths = append(uniquePaths, trimmedPath)
-	}
-
-	if len(uniquePaths) > 0 {
-		return uniquePaths
-	}
-
-	return append([]string(nil), fallback...)
 }
 
 // defaultCapturesPath is the out-of-roots fallback location for captures: a
