@@ -162,10 +162,6 @@ func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
 	fileDto.Size = info.Size()
 	fileDto.UpdatedAt = info.ModTime()
 	fileDto.CreatedAt = info.ModTime()
-	fileDto.LastInteraction = utils.Optional[time.Time]{
-		Value:    time.Now(),
-		HasValue: true,
-	}
 
 	if info.IsDir() {
 		fileDto.Type = Directory
