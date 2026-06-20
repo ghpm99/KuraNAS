@@ -1,9 +1,5 @@
 package playlist
 
-import (
-	"sort"
-)
-
 // ---------------------------------------------------------------------------
 // Template Method — PlaylistEngine orquestra o pipeline completo.
 //
@@ -258,11 +254,13 @@ func (r BuildResult) ToSmartGroups() []SmartGroup {
 	groups := make([]SmartGroup, 0, len(r.Candidates))
 
 	for _, c := range r.Candidates {
+		// Preserva a ordem definida pela estrategia (ex.: episodios por season+ep).
+		// O INSERT grava order_index pela posicao no array, entao reordenar aqui
+		// destruiria a ordem que a estrategia construiu.
 		ids := make([]int, 0, len(c.Videos))
 		for _, sv := range c.Videos {
 			ids = append(ids, sv.Video.Video.ID)
 		}
-		sort.Ints(ids)
 
 		groups = append(groups, SmartGroup{
 			SourceKey:      c.SourceKey,
