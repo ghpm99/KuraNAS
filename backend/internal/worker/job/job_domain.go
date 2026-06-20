@@ -5,23 +5,24 @@ import "time"
 type JobType string
 
 const (
-	JobTypeStartupScan       JobType = "startup_scan"
-	JobTypeUploadProcess     JobType = "upload_process"
-	JobTypeFSEvent           JobType = "fs_event"
-	JobTypeReindexFolder     JobType = "reindex_folder"
-	JobTypeTakeoutImport     JobType = "takeout_import"
-	JobTypeOllamaPull        JobType = "ollama_pull"
-	JobTypeAIPlaylistCluster JobType = "ai_playlist_cluster"
-	JobTypeBackupRun         JobType = "backup_run"
-	JobTypeTierMigration     JobType = "tier_migration"
-	JobTypeEmailSync         JobType = "email_sync"
-	JobTypeRemoteFetch       JobType = "remote_fetch"
-	JobTypeCaptureProcess    JobType = "capture_process"
+	JobTypeStartupScan           JobType = "startup_scan"
+	JobTypeUploadProcess         JobType = "upload_process"
+	JobTypeFSEvent               JobType = "fs_event"
+	JobTypeReindexFolder         JobType = "reindex_folder"
+	JobTypeTakeoutImport         JobType = "takeout_import"
+	JobTypeOllamaPull            JobType = "ollama_pull"
+	JobTypeAIPlaylistCluster     JobType = "ai_playlist_cluster"
+	JobTypeBackupRun             JobType = "backup_run"
+	JobTypeTierMigration         JobType = "tier_migration"
+	JobTypeEmailSync             JobType = "email_sync"
+	JobTypeRemoteFetch           JobType = "remote_fetch"
+	JobTypeCaptureProcess        JobType = "capture_process"
+	JobTypeImageClassifyBackfill JobType = "image_classify_backfill"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill:
 		return true
 	default:
 		return false
@@ -31,29 +32,30 @@ func (t JobType) IsValid() bool {
 type StepType string
 
 const (
-	StepTypeScanFilesystem    StepType = "scan_filesystem"
-	StepTypeDiffAgainstDB     StepType = "diff_against_db"
-	StepTypeMetadata          StepType = "metadata"
-	StepTypeChecksum          StepType = "checksum"
-	StepTypePersist           StepType = "persist"
-	StepTypeThumbnail         StepType = "thumbnail"
-	StepTypePlaylistIndex     StepType = "playlist_index"
-	StepTypeMarkDeleted       StepType = "mark_deleted"
-	StepTypeTakeoutExtract    StepType = "takeout_extract"
-	StepTypeOllamaPull        StepType = "ollama_model_pull"
-	StepTypeAIPlaylistCluster StepType = "ai_playlist_cluster"
-	StepTypeBackupRun         StepType = "backup_run"
-	StepTypeTierMigration     StepType = "tier_migration"
-	StepTypeEmailFetch        StepType = "email_fetch"
-	StepTypeEmailPrefilter    StepType = "email_prefilter"
-	StepTypeEmailAnalyze      StepType = "email_analyze"
-	StepTypeRemoteFetch       StepType = "remote_fetch"
-	StepTypeCapturePromote    StepType = "capture_promote"
+	StepTypeScanFilesystem         StepType = "scan_filesystem"
+	StepTypeDiffAgainstDB          StepType = "diff_against_db"
+	StepTypeMetadata               StepType = "metadata"
+	StepTypeChecksum               StepType = "checksum"
+	StepTypePersist                StepType = "persist"
+	StepTypeThumbnail              StepType = "thumbnail"
+	StepTypePlaylistIndex          StepType = "playlist_index"
+	StepTypeMarkDeleted            StepType = "mark_deleted"
+	StepTypeTakeoutExtract         StepType = "takeout_extract"
+	StepTypeOllamaPull             StepType = "ollama_model_pull"
+	StepTypeAIPlaylistCluster      StepType = "ai_playlist_cluster"
+	StepTypeBackupRun              StepType = "backup_run"
+	StepTypeTierMigration          StepType = "tier_migration"
+	StepTypeEmailFetch             StepType = "email_fetch"
+	StepTypeEmailPrefilter         StepType = "email_prefilter"
+	StepTypeEmailAnalyze           StepType = "email_analyze"
+	StepTypeRemoteFetch            StepType = "remote_fetch"
+	StepTypeCapturePromote         StepType = "capture_promote"
+	StepTypeImageClassifyEnumerate StepType = "image_classify_enumerate"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate:
 		return true
 	default:
 		return false

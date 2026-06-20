@@ -65,7 +65,8 @@ SELECT
     im.classification_category,
     im.classification_confidence,
     im.classification_suggested_name,
-    im.created_at
+    im.created_at,
+    im.ai_classified_at
 FROM
     home_file hf
     LEFT JOIN image_metadata im ON hf.id = im.file_id

@@ -140,6 +140,9 @@ var AddCaptureEpisodeKeyQuery string
 //go:embed queries/0043_expand_captures_table.sql
 var ExpandCapturesTableQuery string
 
+//go:embed queries/0044_add_image_ai_classified_at.sql
+var AddImageAIClassifiedAtQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -183,6 +186,9 @@ func fileMigrationList() {
 
 	addMigration("0029_add_image_suggested_name",
 		defaultMigrationFunc(AddImageSuggestedNameQuery))
+
+	addMigration("0044_add_image_ai_classified_at",
+		defaultMigrationFunc(AddImageAIClassifiedAtQuery))
 
 	addMigration("0035_create_home_file_path_prefix_index",
 		defaultMigrationFunc(CreateHomeFilePathPrefixIndexQuery))

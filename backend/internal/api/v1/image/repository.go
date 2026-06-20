@@ -89,6 +89,7 @@ func (r *Repository) GetImageMetadataByID(id int) (MetadataModel, error) {
 			&metadata.Classification.Confidence,
 			&metadata.Classification.SuggestedName,
 			&metadata.CreatedAt,
+			&metadata.Classification.AIClassifiedAt,
 		); err != nil {
 			return err
 		}
@@ -106,6 +107,17 @@ func (r *Repository) GetImageMetadataByID(id int) (MetadataModel, error) {
 func (r *Repository) UpsertImageMetadata(tx *sql.Tx, metadata MetadataModel) (MetadataModel, error) {
 	var id int
 	var createdAt time.Time
+
+	// Only stamp ai_classified_at when the AI service actually classified this
+	// image. When it is nil the upsert keeps any previously stored value
+	// (COALESCE in the query), so a heuristic-only re-index never erases the fact
+	// that AI already ran for this file.
+	var aiClassifiedAt *time.Time
+	if metadata.Classification.ClassifiedByAI {
+		now := time.Now()
+		aiClassifiedAt = &now
+	}
+
 	args := []any{
 		metadata.FileId,
 		metadata.Path,
@@ -159,6 +171,7 @@ func (r *Repository) UpsertImageMetadata(tx *sql.Tx, metadata MetadataModel) (Me
 		metadata.Classification.Confidence,
 		metadata.Classification.SuggestedName,
 		time.Now(),
+		aiClassifiedAt,
 	}
 
 	row := tx.QueryRow(queries.UpsertImageMetadataQuery, args...)
@@ -188,6 +201,46 @@ func (r *Repository) DeleteImageMetadata(id int) error {
 	}
 
 	return nil
+}
+
+// CountPendingAIClassification returns how many indexed images still await AI
+// classification: ai_classified_at IS NULL and heuristic confidence below the
+// threshold where the AI would take over.
+func (r *Repository) CountPendingAIClassification(confidenceThreshold float64) (int, error) {
+	var count int
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.CountPendingAIClassificationQuery, confidenceThreshold).Scan(&count)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("falha ao contar imagens pendentes de classificação por IA: %w", err)
+	}
+	return count, nil
+}
+
+// ListPendingAIClassification returns a keyset page (file_id > afterFileID) of
+// images awaiting AI classification, ordered by file_id for stable paging.
+func (r *Repository) ListPendingAIClassification(confidenceThreshold float64, afterFileID int, limit int) ([]PendingImageClassification, error) {
+	pending := []PendingImageClassification{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectPendingAIClassificationQuery, confidenceThreshold, afterFileID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item PendingImageClassification
+			if err := rows.Scan(&item.FileID, &item.Path); err != nil {
+				return err
+			}
+			pending = append(pending, item)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar imagens pendentes de classificação por IA: %w", err)
+	}
+	return pending, nil
 }
 
 func imageOrderByClause(groupBy ImageGroupBy) string {
@@ -307,6 +360,7 @@ func (r *Repository) GetImages(page int, pageSize int, groupBy ImageGroupBy) (ut
 				&metadata.Classification.Confidence,
 				&metadata.Classification.SuggestedName,
 				&metadata.CreatedAt,
+				&metadata.Classification.AIClassifiedAt,
 			); err != nil {
 				return err
 			}

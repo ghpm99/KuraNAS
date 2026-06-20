@@ -189,6 +189,17 @@ func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
 	if result.Confidence != 0.85 {
 		t.Fatalf("expected 0.85 confidence, got %f", result.Confidence)
 	}
+	if !result.ClassifiedByAI {
+		t.Fatal("expected ClassifiedByAI to be true when the AI service answered")
+	}
+}
+
+func TestClassifyImageWithAI_HeuristicDoesNotSetClassifiedByAI(t *testing.T) {
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	result := ClassifyImageWithAI(file, MetadataModel{}, nil)
+	if result.ClassifiedByAI {
+		t.Fatal("expected ClassifiedByAI to be false on the heuristic path")
+	}
 }
 
 func TestClassifyImageWithAI_AIErrorFallsBackToHeuristic(t *testing.T) {

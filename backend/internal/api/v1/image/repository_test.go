@@ -48,11 +48,12 @@ func TestGetImageMetadataByID_Success(t *testing.T) {
 			"white_balance", "exposure_program", "max_aperture_value", "gps_latitude", "gps_longitude", "gps_altitude",
 			"gps_date", "gps_time", "image_description", "user_comment", "copyright", "artist",
 			"classification_category", "classification_confidence", "classification_suggested_name", "created_at",
+			"ai_classified_at",
 		}).AddRow(
 			1, 10, "/i.jpg", "jpeg", "rgb", 100, 80, 72.0, 72.0, 72.0, 72.0, 2.0, 1.0, 1.0, 2.0, 1.0,
 			"cfg", "icc", "mk", "md", "sw", "lens", "sn", "2026", "2026", "2026", "1", 0.1, 2.8, 200.0,
 			3.0, 2.0, 1.0, 0.0, 5.0, 0.0, 35.0, 0.0, 1.0, 2.0, -23.5, -46.6, 700.0, "2026-01-01",
-			"12:00:00", "desc", "comment", "cpr", "art", "photo", 0.91, "rikka", now,
+			"12:00:00", "desc", "comment", "cpr", "art", "photo", 0.91, "rikka", now, nil,
 		))
 	mock.ExpectRollback()
 
@@ -161,5 +162,77 @@ func TestDeleteImageMetadata_Error(t *testing.T) {
 	err := repo.DeleteImageMetadata(1)
 	if err == nil || !strings.Contains(err.Error(), "falha ao deletar metadados da imagem") {
 		t.Fatalf("expected wrapped delete error, got: %v", err)
+	}
+}
+
+func TestCountPendingAIClassification_Success(t *testing.T) {
+	repo, mock, db := newImageRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CountPendingAIClassificationQuery)).
+		WithArgs(AIClassificationConfidenceThreshold).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(7))
+	mock.ExpectRollback()
+
+	count, err := repo.CountPendingAIClassification(AIClassificationConfidenceThreshold)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 7 {
+		t.Fatalf("expected 7, got %d", count)
+	}
+}
+
+func TestCountPendingAIClassification_Error(t *testing.T) {
+	repo, mock, db := newImageRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CountPendingAIClassificationQuery)).
+		WithArgs(AIClassificationConfidenceThreshold).
+		WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+
+	if _, err := repo.CountPendingAIClassification(AIClassificationConfidenceThreshold); err == nil ||
+		!strings.Contains(err.Error(), "falha ao contar imagens pendentes") {
+		t.Fatalf("expected wrapped count error, got: %v", err)
+	}
+}
+
+func TestListPendingAIClassification_Success(t *testing.T) {
+	repo, mock, db := newImageRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SelectPendingAIClassificationQuery)).
+		WithArgs(AIClassificationConfidenceThreshold, 0, 500).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "path"}).
+			AddRow(1, "/a.jpg").
+			AddRow(2, "/b.jpg"))
+	mock.ExpectRollback()
+
+	items, err := repo.ListPendingAIClassification(AIClassificationConfidenceThreshold, 0, 500)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 2 || items[0].FileID != 1 || items[1].Path != "/b.jpg" {
+		t.Fatalf("unexpected items: %+v", items)
+	}
+}
+
+func TestListPendingAIClassification_Error(t *testing.T) {
+	repo, mock, db := newImageRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SelectPendingAIClassificationQuery)).
+		WithArgs(AIClassificationConfidenceThreshold, 0, 500).
+		WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+
+	if _, err := repo.ListPendingAIClassification(AIClassificationConfidenceThreshold, 0, 500); err == nil ||
+		!strings.Contains(err.Error(), "falha ao listar imagens pendentes") {
+		t.Fatalf("expected wrapped list error, got: %v", err)
 	}
 }

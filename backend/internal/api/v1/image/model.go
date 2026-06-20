@@ -67,6 +67,21 @@ type ClassificationModel struct {
 	Category      ClassificationCategory `json:"category"`
 	Confidence    float64                `json:"confidence"`
 	SuggestedName string                 `json:"suggested_name"`
+	// AIClassifiedAt is set when the classification came from the AI service; nil
+	// means it was never classified by AI (only the heuristic ran).
+	AIClassifiedAt *time.Time `json:"ai_classified_at,omitempty"`
+	// ClassifiedByAI is an in-process signal (not persisted directly) telling the
+	// repository to stamp ai_classified_at = now() on upsert. It is true only when
+	// the AI service actually ran and returned a result for this image.
+	ClassifiedByAI bool `json:"-"`
+}
+
+// PendingImageClassification identifies an indexed image still awaiting AI
+// classification (ai_classified_at IS NULL and heuristic confidence below the
+// threshold where the AI would take over).
+type PendingImageClassification struct {
+	FileID int
+	Path   string
 }
 
 // ImageGroupBy selects the ordering/grouping of the image listing.
