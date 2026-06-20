@@ -483,14 +483,29 @@ func TestGetPlaylistByIDUsesPlaybackAndBehaviorProgress(t *testing.T) {
 }
 
 func TestVideoServiceRebuildSmartPlaylists(t *testing.T) {
+	upsertedSources := map[string]bool{}
 	repo := &videoRepoMock{
 		getAllVideosWithMetadataFn: func() ([]VideoWithMetadataModel, error) {
 			return []VideoWithMetadataModel{
 				{VideoFileModel: VideoFileModel{ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv"}},
 				{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
+				// Episodios capturados pelo plugin: proveniencia explicita.
+				{
+					VideoFileModel: VideoFileModel{ID: 3, Name: "E2.mp4", ParentPath: "/Filmes/Frieren/Temporada 1", Path: "/Filmes/Frieren/Temporada 1/E2.mp4"},
+					CaptureTitle:   sql.NullString{String: "Frieren", Valid: true},
+					CaptureSeason:  sql.NullInt64{Int64: 1, Valid: true},
+					CaptureEpisode: sql.NullInt64{Int64: 2, Valid: true},
+				},
+				{
+					VideoFileModel: VideoFileModel{ID: 4, Name: "E1.mp4", ParentPath: "/Filmes/Frieren/Temporada 1", Path: "/Filmes/Frieren/Temporada 1/E1.mp4"},
+					CaptureTitle:   sql.NullString{String: "Frieren", Valid: true},
+					CaptureSeason:  sql.NullInt64{Int64: 1, Valid: true},
+					CaptureEpisode: sql.NullInt64{Int64: 1, Valid: true},
+				},
 			}, nil
 		},
 		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+			upsertedSources[sourcePath] = true
 			return VideoPlaylistModel{ID: 100, Name: name}, nil
 		},
 		getPlaylistExclusionsFn: func(playlistID int) (map[int]bool, error) {
@@ -502,6 +517,9 @@ func TestVideoServiceRebuildSmartPlaylists(t *testing.T) {
 	svc := newVideoServiceForTest(t, repo)
 	if err := svc.RebuildSmartPlaylists(); err != nil {
 		t.Fatalf("expected rebuild smart playlists success, err=%v", err)
+	}
+	if !upsertedSources["series:capture:frieren"] {
+		t.Errorf("expected a captured-series playlist to be upserted, got sources %v", upsertedSources)
 	}
 }
 
