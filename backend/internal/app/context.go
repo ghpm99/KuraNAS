@@ -271,7 +271,7 @@ func NewContext(db *sql.DB) *AppContext {
 	jobsContext := newJobsContext(dbContext)
 	ollamaContext := newOllamaContext(aiProvidersContext.Service, jobsContext.Repository)
 	fileContext := newFileContext(dbContext, loggerService, jobsContext.Repository)
-	imageContext := newImageContext(dbContext, loggerService)
+	imageContext := newImageContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
 	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
@@ -453,9 +453,9 @@ func newFileContext(dbContext *database.DbContext, logger logger.LoggerServiceIn
 	}
 }
 
-func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface) *ImageContext {
+func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, jobsRepository imagedom.JobEnqueuer) *ImageContext {
 	repository := imagedom.NewRepository(dbContext)
-	service := imagedom.NewService(repository)
+	service := imagedom.NewService(repository, jobsRepository)
 	handler := imagedom.NewHandler(service, logger)
 	return &ImageContext{
 		Handler:    handler,

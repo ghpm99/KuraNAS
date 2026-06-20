@@ -15,3 +15,9 @@ var DeleteImageMetadataQuery string
 
 //go:embed get_images.sql
 var GetImagesQuery string
+
+//go:embed count_pending_ai_classification.sql
+var CountPendingAIClassificationQuery string
+
+//go:embed select_pending_ai_classification.sql
+var SelectPendingAIClassificationQuery string

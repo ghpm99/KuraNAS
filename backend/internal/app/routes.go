@@ -213,6 +213,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/duplicate-files", context.Files.Handler.GetDuplicateFilesHandler)
 	if context.Image != nil {
 		files.GET("/images", context.Image.Handler.GetImagesHandler)
+		files.GET("/images/classification/pending-count", context.Image.Handler.GetPendingAIClassificationCountHandler)
+		files.POST("/images/classification/backfill", context.Image.Handler.EnqueueClassificationBackfillHandler)
 	}
 }
 

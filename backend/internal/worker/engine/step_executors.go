@@ -85,6 +85,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeCapturePromote] = func(step jobs.StepModel) error {
 		return executeCapturePromoteStep(context, step)
 	}
+	executors[job.StepTypeImageClassifyEnumerate] = func(step jobs.StepModel) error {
+		return executeImageClassifyEnumerateStep(context, step)
+	}
 
 	return executors
 }

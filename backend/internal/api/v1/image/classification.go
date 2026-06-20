@@ -41,7 +41,10 @@ const (
 	ClassificationCategoryScreenshot ClassificationCategory = "screenshot_app"
 )
 
-const aiClassificationConfidenceThreshold = 0.70
+// AIClassificationConfidenceThreshold is the heuristic confidence below which
+// the AI classifier takes over. The backfill targets exactly the images that
+// would have gone to the AI under normal indexing (confidence below this).
+const AIClassificationConfidenceThreshold = 0.70
 
 var screenshotKeywords = []string{
 	"screenshot",
@@ -120,7 +123,7 @@ func ClassifyImageWithAI(file files.FileDto, metadata MetadataModel, aiService a
 		return heuristic
 	}
 
-	if heuristic.Confidence >= aiClassificationConfidenceThreshold {
+	if heuristic.Confidence >= AIClassificationConfidenceThreshold {
 		return heuristic
 	}
 
@@ -153,6 +156,7 @@ func ClassifyImageWithAI(file files.FileDto, metadata MetadataModel, aiService a
 		return heuristic
 	}
 
+	result.ClassifiedByAI = true
 	return result
 }
 

@@ -51,7 +51,8 @@ INSERT INTO
         classification_category,
         classification_confidence,
         classification_suggested_name,
-        created_at
+        created_at,
+        ai_classified_at
     )
 VALUES
     (
@@ -106,7 +107,8 @@ VALUES
         $49,
         $50,
         $51,
-        $52
+        $52,
+        $53
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
@@ -159,7 +161,8 @@ SET
     artist = EXCLUDED.artist,
     classification_category = EXCLUDED.classification_category,
     classification_confidence = EXCLUDED.classification_confidence,
-    classification_suggested_name = EXCLUDED.classification_suggested_name
+    classification_suggested_name = EXCLUDED.classification_suggested_name,
+    ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at)
 RETURNING
     id,
     created_at;

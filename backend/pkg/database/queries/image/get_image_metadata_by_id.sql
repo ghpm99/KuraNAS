@@ -51,7 +51,8 @@ SELECT
     classification_category,
     classification_confidence,
     classification_suggested_name,
-    created_at
+    created_at,
+    ai_classified_at
 FROM
     image_metadata
 WHERE

@@ -9,12 +9,17 @@ import (
 
 // Service is the image-domain business-logic implementation.
 type Service struct {
-	Repository RepositoryInterface
+	Repository  RepositoryInterface
+	JobEnqueuer JobEnqueuer
 }
 
-func NewService(repository RepositoryInterface) ServiceInterface {
+// NewService wires the image service. jobEnqueuer may be nil when the jobs
+// subsystem is not available; the classification-backfill endpoints then report
+// the feature as unavailable instead of panicking.
+func NewService(repository RepositoryInterface, jobEnqueuer JobEnqueuer) ServiceInterface {
 	return &Service{
-		Repository: repository,
+		Repository:  repository,
+		JobEnqueuer: jobEnqueuer,
 	}
 }
 
