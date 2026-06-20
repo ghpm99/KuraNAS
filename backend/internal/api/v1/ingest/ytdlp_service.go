@@ -15,6 +15,7 @@ import (
 	"time"
 
 	notifications "nas-go/api/internal/api/v1/notifications"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 )
 
@@ -77,9 +78,20 @@ func NewYtDlpService() *YtDlpService {
 }
 
 // Status never errors: an unreachable GitHub or a missing binary degrades to a
-// partial status, exactly like the Ollama status probe.
+// partial status, exactly like the Ollama status probe. The --version failure
+// is still recorded forensically — a binary in the wrong place, an ephemeral
+// install path and a genuinely absent binary all collapse to CurrentVersion ==
+// "" for the client, so the real cause only survives in the file log.
 func (s *YtDlpService) Status() YtDlpStatusDto {
-	current, _ := s.versionOf(s.execPath())
+	execPath := s.execPath()
+	current, err := s.versionOf(execPath)
+	if err != nil {
+		if _, statErr := os.Stat(execPath); statErr == nil {
+			applog.Error("ytdlp: binary present but --version failed", "path", execPath, "error", err.Error())
+		} else {
+			applog.Warn("ytdlp: binary not found", "path", execPath, "error", err.Error())
+		}
+	}
 	status := YtDlpStatusDto{Installed: current != "", CurrentVersion: current}
 
 	release, err := s.fetchRelease()

@@ -1,15 +1,19 @@
 package ingest
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	notifications "nas-go/api/internal/api/v1/notifications"
+	"nas-go/api/pkg/applog"
 )
 
 func TestCompareCalVer(t *testing.T) {
@@ -124,6 +128,35 @@ func TestStatus(t *testing.T) {
 		st := newTestYtDlp("2024.08.06", nil, ghRelease{}, errors.New("offline")).Status()
 		if st.UpdateAvailable || st.LatestVersion != "" {
 			t.Fatalf("expected no update info: %+v", st)
+		}
+	})
+}
+
+func TestStatusLogsVersionFailureForensically(t *testing.T) {
+	var buf bytes.Buffer
+	applog.Setup(applog.Options{Writer: &buf, Level: slog.LevelInfo})
+
+	t.Run("binary present but --version fails -> error", func(t *testing.T) {
+		buf.Reset()
+		existing := filepath.Join(t.TempDir(), "yt-dlp")
+		if err := os.WriteFile(existing, []byte("x"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		svc := newTestYtDlp("", errors.New("boom"), ghRelease{}, errors.New("offline"))
+		svc.execPath = func() string { return existing }
+		svc.Status()
+		if !strings.Contains(buf.String(), "binary present but --version failed") {
+			t.Fatalf("expected present-but-failed log, got: %q", buf.String())
+		}
+	})
+
+	t.Run("binary absent -> warn", func(t *testing.T) {
+		buf.Reset()
+		svc := newTestYtDlp("", errors.New("missing"), ghRelease{}, errors.New("offline"))
+		svc.execPath = func() string { return filepath.Join(t.TempDir(), "absent") }
+		svc.Status()
+		if !strings.Contains(buf.String(), "binary not found") {
+			t.Fatalf("expected not-found log, got: %q", buf.String())
 		}
 	})
 }
