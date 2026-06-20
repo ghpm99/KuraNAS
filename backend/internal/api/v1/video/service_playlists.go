@@ -64,6 +64,18 @@ func (s *Service) RebuildSmartPlaylists() error {
 			entry.Meta = meta
 		}
 
+		if v.CaptureEpisode.Valid && v.CaptureTitle.Valid && strings.TrimSpace(v.CaptureTitle.String) != "" {
+			prov := &playlist.SeriesProvenance{
+				Title:   strings.TrimSpace(v.CaptureTitle.String),
+				Episode: int(v.CaptureEpisode.Int64),
+			}
+			if v.CaptureSeason.Valid {
+				season := int(v.CaptureSeason.Int64)
+				prov.Season = &season
+			}
+			entry.Series = prov
+		}
+
 		entries = append(entries, entry)
 	}
 

@@ -733,6 +733,9 @@ func (r *Repository) GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error
 				&item.MetaAudioChannels,
 				&item.MetaAudioCodec,
 				&item.MetaAudioSampleRate,
+				&item.CaptureTitle,
+				&item.CaptureSeason,
+				&item.CaptureEpisode,
 			); err != nil {
 				return err
 			}

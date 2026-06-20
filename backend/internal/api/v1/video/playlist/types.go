@@ -18,6 +18,18 @@ type VideoEntry struct {
 
 	// Metadados extraidos do worker (pode ser nil se nao processado ainda)
 	Meta *VideoMeta
+
+	// Proveniencia de serie capturada pelo plugin (nil quando o video nao veio
+	// de uma captura de episodio). Sinal forte: titulo + episodio explicitos.
+	Series *SeriesProvenance
+}
+
+// SeriesProvenance carrega o que a captura do plugin sabe sobre o episodio:
+// titulo da serie e numeracao. Season pode ser nil (serie sem temporada).
+type SeriesProvenance struct {
+	Title   string
+	Season  *int
+	Episode int
 }
 
 type VideoMeta struct {
