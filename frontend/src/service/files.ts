@@ -152,3 +152,17 @@ export const getImageFiles = async (
     });
     return response.data;
 };
+
+export const getPendingImageClassificationCount = async (): Promise<number> => {
+    const response = await apiBase.get<{ pending_count: number }>(
+        '/files/images/classification/pending-count'
+    );
+    return response.data.pending_count;
+};
+
+export const startImageClassificationBackfill = async (): Promise<number> => {
+    const response = await apiBase.post<{ job_id: number; message: string }>(
+        '/files/images/classification/backfill'
+    );
+    return response.data.job_id;
+};
