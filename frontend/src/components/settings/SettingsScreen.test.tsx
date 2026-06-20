@@ -59,6 +59,10 @@ jest.mock('./YtDlpSettingsSection', () => ({
 	__esModule: true,
 	default: () => <div>yt-dlp Section</div>,
 }));
+jest.mock('./ImageClassificationBackfill', () => ({
+	__esModule: true,
+	default: () => <div>Image Classification Backfill</div>,
+}));
 
 const createScreenState = (overrides: Record<string, any> = {}) => ({
     t: (key: string, params?: Record<string, string>) => {

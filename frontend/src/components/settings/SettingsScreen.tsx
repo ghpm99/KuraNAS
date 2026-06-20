@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom';
 import AccessControlSettingsSection from './AccessControlSettingsSection';
 import AIProvidersSettingsSection from './AIProvidersSettingsSection';
+import ImageClassificationBackfill from './ImageClassificationBackfill';
 import AutoShutdownSettingsSection from './AutoShutdownSettingsSection';
 import BackupSettingsSection from './BackupSettingsSection';
 import EmailSettingsSection from './EmailSettingsSection';
@@ -208,6 +209,9 @@ const SettingsScreen = () => {
                         label={t('SETTINGS_AI_IMAGE_CLASSIFICATION')}
                     />
                     <Alert severity="info">{t('SETTINGS_AI_IMAGE_CLASSIFICATION_HELP')}</Alert>
+                    <ImageClassificationBackfill
+                        disabled={!draft.ai.image_classification || disableActions}
+                    />
                 </section>
 
                 <section className={styles.panel}>
