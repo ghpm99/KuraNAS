@@ -5,15 +5,24 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
+	"runtime"
 	"testing"
 
 	"nas-go/api/internal/config"
 )
 
 func TestResolveYtDlpPaths(t *testing.T) {
-	original := config.AppConfig.YtDlpPath
-	t.Cleanup(func() { config.AppConfig.YtDlpPath = original })
+	originalPath := config.AppConfig.YtDlpPath
+	originalDir := managedYtDlpDir
+	t.Cleanup(func() {
+		config.AppConfig.YtDlpPath = originalPath
+		managedYtDlpDir = originalDir
+	})
+
+	// Pin the managed dir to a temp dir so resolution never depends on the
+	// developer's real bin/.
+	dir := t.TempDir()
+	managedYtDlpDir = func() string { return dir }
 
 	config.AppConfig.YtDlpPath = "/opt/yt-dlp"
 	if got := resolveYtDlpInstallPath(); got != "/opt/yt-dlp" {
@@ -24,12 +33,35 @@ func TestResolveYtDlpPaths(t *testing.T) {
 	}
 
 	config.AppConfig.YtDlpPath = ""
-	if got := resolveYtDlpInstallPath(); !strings.HasSuffix(got, filepath.Join("bin", "yt-dlp")) {
+	if got := resolveYtDlpInstallPath(); got != filepath.Join(dir, ytDlpBinaryName()) {
 		t.Fatalf("managed install path: got %q", got)
 	}
 	// No managed binary on disk -> falls back to the PATH command.
 	if got := resolveYtDlpBinary(); got != "yt-dlp" {
 		t.Fatalf("expected PATH fallback, got %q", got)
+	}
+
+	// A managed binary on disk -> it is preferred over the PATH command, so a
+	// dev install survives restarts without YTDLP_PATH.
+	managed := filepath.Join(dir, ytDlpBinaryName())
+	if err := os.WriteFile(managed, []byte("bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveYtDlpBinary(); got != managed {
+		t.Fatalf("expected managed binary %q, got %q", managed, got)
+	}
+}
+
+func TestYtDlpBinaryNameCarriesExecExt(t *testing.T) {
+	// The installed binary name and the Windows asset name must agree on the
+	// executable extension — that mismatch was the production "not installed" bug.
+	if want := "yt-dlp" + ytDlpExecExt(); ytDlpBinaryName() != want {
+		t.Fatalf("ytDlpBinaryName() = %q, want %q", ytDlpBinaryName(), want)
+	}
+	if runtime.GOOS == "windows" {
+		if filepath.Ext(ytDlpBinaryName()) != ".exe" || filepath.Ext(ytDlpAssetName()) != ".exe" {
+			t.Fatalf("windows must use .exe: binary=%q asset=%q", ytDlpBinaryName(), ytDlpAssetName())
+		}
 	}
 }
 

@@ -51,6 +51,9 @@ func GetBuildConfig(key string) string {
 	case "ThumbnailPath":
 		currentDir := FindProjectRoot()
 		return FilepathJoin(true, currentDir, "thumbnails")
+	case "YtDlpDir":
+		currentDir := FindProjectRoot()
+		return FilepathJoin(true, currentDir, "bin")
 	default:
 		return ""
 	}
