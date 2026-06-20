@@ -63,6 +63,23 @@ func (h *ContinueWatchingHandler) Handle(ctx *PlaylistContext, d *StrategyDecisi
 	return false
 }
 
+// CapturedSeriesHandler: se existe ao menos um video com proveniencia de
+// captura do plugin (title+episode), adiciona a estrategia que monta uma
+// playlist por serie capturada.
+type CapturedSeriesHandler struct{}
+
+func (h *CapturedSeriesHandler) Name() string { return "captured_series_check" }
+func (h *CapturedSeriesHandler) Handle(ctx *PlaylistContext, d *StrategyDecision) bool {
+	for _, v := range ctx.Videos {
+		if v.Video.Series != nil {
+			d.Strategies = append(d.Strategies, NewCapturedSeriesStrategy())
+			d.Reasons = append(d.Reasons, "captured_series_detected")
+			return true
+		}
+	}
+	return false
+}
+
 // SeriesDetectionHandler: se existem videos com padrao de episodio,
 // adiciona a estrategia de series sequenciais.
 type SeriesDetectionHandler struct{}
@@ -173,6 +190,7 @@ func (h *SmartMixHandler) Handle(ctx *PlaylistContext, d *StrategyDecision) bool
 func DefaultStrategyChain() *StrategyChain {
 	return NewStrategyChain(
 		&ContinueWatchingHandler{},
+		&CapturedSeriesHandler{},
 		&SeriesDetectionHandler{},
 		&FolderGroupingHandler{},
 		&RelatedContentHandler{},

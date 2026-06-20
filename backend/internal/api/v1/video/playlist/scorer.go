@@ -66,7 +66,7 @@ func (e *ScoringEngine) ScoreCandidate(candidate *PlaylistCandidate, ctx *Scorin
 	candidate.TotalScore = totalPlaylistScore
 
 	// Reordenar videos por score (maior primeiro) exceto para series (manter ordem)
-	if candidate.GroupMode != "folder" && candidate.GroupMode != "prefix" {
+	if candidate.GroupMode != "folder" && candidate.GroupMode != "prefix" && candidate.GroupMode != "captured_series" {
 		sort.Slice(candidate.Videos, func(i, j int) bool {
 			return candidate.Videos[i].Score > candidate.Videos[j].Score
 		})

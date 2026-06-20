@@ -150,6 +150,94 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 }
 
 // ---------------------------------------------------------------------------
+// CapturedSeriesStrategy: agrupa episodios capturados pelo plugin por titulo
+// da serie (proveniencia explicita em VideoEntry.Series), gerando uma playlist
+// por serie ordenada por (season, episode). Diferente das outras estrategias,
+// nao depende de nome de pasta nem de regex no nome do arquivo — usa o que o
+// plugin ja sabia (title/season/episode), o sinal mais forte disponivel.
+// ---------------------------------------------------------------------------
+
+type CapturedSeriesStrategy struct{}
+
+func NewCapturedSeriesStrategy() *CapturedSeriesStrategy {
+	return &CapturedSeriesStrategy{}
+}
+
+func (s *CapturedSeriesStrategy) Name() string { return "captured_series" }
+
+func (s *CapturedSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
+	type seriesGroup struct {
+		title  string
+		videos []*ClassifiedVideo
+	}
+
+	groups := map[string]*seriesGroup{}
+	order := make([]string, 0) // preserva ordem de descoberta dos titulos (saida deterministica)
+
+	for i := range ctx.Videos {
+		v := &ctx.Videos[i]
+		if v.Video.Series == nil {
+			continue
+		}
+		title := strings.TrimSpace(v.Video.Series.Title)
+		if title == "" {
+			continue
+		}
+		key := normalizeSeriesKey(title)
+		g, ok := groups[key]
+		if !ok {
+			g = &seriesGroup{title: title}
+			groups[key] = g
+			order = append(order, key)
+		}
+		g.videos = append(g.videos, v)
+	}
+
+	candidates := make([]PlaylistCandidate, 0, len(order))
+	for _, key := range order {
+		g := groups[key]
+
+		// Ordem natural de episodios: (season, episode), desempate por nome.
+		sort.SliceStable(g.videos, func(i, j int) bool {
+			return seriesProvenanceLess(
+				g.videos[i].Video.Series, g.videos[i].Video.Name,
+				g.videos[j].Video.Series, g.videos[j].Video.Name,
+			)
+		})
+
+		classCount := map[VideoClassification]int{}
+		scored := make([]ScoredVideo, 0, len(g.videos))
+		for _, v := range g.videos {
+			classCount[v.Classification]++
+			prov := v.Video.Series
+			reasons := []string{"captured_series:" + key}
+			if prov.Season != nil {
+				reasons = append(reasons, fmt.Sprintf("s%de%d", *prov.Season, prov.Episode))
+			} else {
+				reasons = append(reasons, fmt.Sprintf("e%d", prov.Episode))
+			}
+			scored = append(scored, ScoredVideo{
+				Video:   *v,
+				Score:   1.0,
+				Reasons: reasons,
+			})
+		}
+
+		candidates = append(candidates, PlaylistCandidate{
+			SourceKey:      "series:capture:" + key,
+			Name:           g.title,
+			PlaylistType:   "series",
+			GroupMode:      "captured_series",
+			Classification: dominantClassification(classCount),
+			Strategy:       s.Name(),
+			Videos:         scored,
+		})
+	}
+
+	return candidates
+}
+
+// ---------------------------------------------------------------------------
 // ContinueWatchingStrategy: prioriza videos em progresso e sugere proximos.
 // Funciona por cliente — precisa de PlaybackState no contexto.
 // ---------------------------------------------------------------------------
@@ -239,10 +327,15 @@ func NewRelatedContentStrategy() *RelatedContentStrategy {
 func (s *RelatedContentStrategy) Name() string { return "related_content" }
 
 func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
-	// Agrupar por classificacao
+	// Agrupar por classificacao. Videos com proveniencia de captura ja viram uma
+	// playlist concreta por serie (CapturedSeriesStrategy), entao ficam de fora
+	// do balde generico — este passa a conter apenas series/anime avulsos.
 	byClass := map[VideoClassification][]*ClassifiedVideo{}
 	for i := range ctx.Videos {
 		v := &ctx.Videos[i]
+		if v.Video.Series != nil {
+			continue
+		}
 		byClass[v.Classification] = append(byClass[v.Classification], v)
 	}
 
@@ -494,6 +587,32 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// normalizeSeriesKey gera uma chave estavel a partir do titulo da serie para
+// upsert idempotente: minuscula, espacos colapsados. "Frieren  e a Jornada" e
+// "frieren e a jornada" caem na mesma playlist entre rebuilds.
+func normalizeSeriesKey(title string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(title))), " ")
+}
+
+// seriesProvenanceLess ordena episodios por (season, episode); season ausente
+// conta como 0. Desempate final pelo nome do arquivo para ser deterministico.
+func seriesProvenanceLess(a *SeriesProvenance, nameA string, b *SeriesProvenance, nameB string) bool {
+	seasonA, seasonB := 0, 0
+	if a.Season != nil {
+		seasonA = *a.Season
+	}
+	if b.Season != nil {
+		seasonB = *b.Season
+	}
+	if seasonA != seasonB {
+		return seasonA < seasonB
+	}
+	if a.Episode != b.Episode {
+		return a.Episode < b.Episode
+	}
+	return nameA < nameB
+}
 
 func dominantClassification(counts map[VideoClassification]int) VideoClassification {
 	best := ClassPersonal
