@@ -89,6 +89,11 @@ type VideoWithMetadataModel struct {
 	MetaAudioChannels   sql.NullInt64
 	MetaAudioCodec      sql.NullString
 	MetaAudioSampleRate sql.NullString
+	// Capture provenance (LEFT JOIN captures), present only for plugin-captured
+	// series episodes (title set + episode not null).
+	CaptureTitle   sql.NullString
+	CaptureSeason  sql.NullInt64
+	CaptureEpisode sql.NullInt64
 }
 
 // VideoMetadataModel is the video_metadata complement table for a files row.
