@@ -33,10 +33,10 @@ func (f *fakeRepo) UpsertSettingsDocument(document string) error {
 	f.upserted = append(f.upserted, document)
 	return nil
 }
-func (f *fakeRepo) ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time, limit int) ([]CandidateModel, error) {
+func (f *fakeRepo) ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time) ([]CandidateModel, error) {
 	return f.demotions, nil
 }
-func (f *fakeRepo) ListPromotionCandidates(usedAfter time.Time, limit int) ([]CandidateModel, error) {
+func (f *fakeRepo) ListPromotionCandidates(usedAfter time.Time) ([]CandidateModel, error) {
 	return f.promotions, nil
 }
 func (f *fakeRepo) SetPhysicalPath(fileID int, physicalPath string) error {

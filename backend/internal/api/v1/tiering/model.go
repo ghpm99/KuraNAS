@@ -9,7 +9,6 @@ const (
 	defaultMinAgeDays    = 90
 	defaultMinSizeBytes  = 1 << 20 // 1 MiB — not worth tiering tiny files
 	defaultIntervalHours = 24
-	defaultBatchLimit    = 500
 )
 
 // SettingsModel is the persisted tiering configuration (one JSON document under
