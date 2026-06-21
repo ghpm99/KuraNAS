@@ -13,9 +13,9 @@ type RepositoryInterface interface {
 	UpsertSettingsDocument(document string) error
 	// ListDemotionCandidates returns hot files idle since idleBefore and at
 	// least minSizeBytes large, least-recently-used first.
-	ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time, limit int) ([]CandidateModel, error)
+	ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time) ([]CandidateModel, error)
 	// ListPromotionCandidates returns cold files used again since usedAfter.
-	ListPromotionCandidates(usedAfter time.Time, limit int) ([]CandidateModel, error)
+	ListPromotionCandidates(usedAfter time.Time) ([]CandidateModel, error)
 	// SetPhysicalPath records (or, with an empty path, clears) a file's
 	// physical location in one transaction.
 	SetPhysicalPath(fileID int, physicalPath string) error

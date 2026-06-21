@@ -52,11 +52,11 @@ func (r *Repository) UpsertSettingsDocument(document string) error {
 	return nil
 }
 
-func (r *Repository) ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time, limit int) ([]CandidateModel, error) {
+func (r *Repository) ListDemotionCandidates(minSizeBytes int64, idleBefore time.Time) ([]CandidateModel, error) {
 	var candidates []CandidateModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, queryErr := tx.Query(queries.ListDemotionCandidatesQuery, minSizeBytes, idleBefore, limit)
+		rows, queryErr := tx.Query(queries.ListDemotionCandidatesQuery, minSizeBytes, idleBefore)
 		if queryErr != nil {
 			return queryErr
 		}
@@ -78,11 +78,11 @@ func (r *Repository) ListDemotionCandidates(minSizeBytes int64, idleBefore time.
 	return candidates, nil
 }
 
-func (r *Repository) ListPromotionCandidates(usedAfter time.Time, limit int) ([]CandidateModel, error) {
+func (r *Repository) ListPromotionCandidates(usedAfter time.Time) ([]CandidateModel, error) {
 	var candidates []CandidateModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, queryErr := tx.Query(queries.ListPromotionCandidatesQuery, usedAfter, limit)
+		rows, queryErr := tx.Query(queries.ListPromotionCandidatesQuery, usedAfter)
 		if queryErr != nil {
 			return queryErr
 		}

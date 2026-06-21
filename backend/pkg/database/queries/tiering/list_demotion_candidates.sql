@@ -2,7 +2,7 @@
 -- enough to be worth moving. "Idle" means neither modified nor accessed since
 -- the cutoff: updated_at is older than it AND no recent_file access row is newer
 -- than it. Least-recently-modified first so a partial pass migrates the coldest
--- files. $1 = min size bytes, $2 = idle cutoff, $3 = limit.
+-- files. $1 = min size bytes, $2 = idle cutoff.
 SELECT hf.id,
        hf.path,
        hf.size
@@ -17,5 +17,4 @@ WHERE hf.type = 2
       WHERE rf.file_id = hf.id
         AND rf.accessed_at >= $2
   )
-ORDER BY hf.updated_at ASC
-LIMIT $3;
+ORDER BY hf.updated_at ASC;

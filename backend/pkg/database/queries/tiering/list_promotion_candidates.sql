@@ -1,6 +1,6 @@
 -- Cold files (bytes on the cold volume) accessed again since the cutoff: a real
 -- user read (recent_file) earned them their way back to the hot tier. Most
--- recently accessed first. $1 = recent cutoff, $2 = limit.
+-- recently accessed first. $1 = recent cutoff.
 SELECT hf.id,
        hf.path,
        hf.physical_path,
@@ -17,5 +17,4 @@ WHERE hf.type = 2
 ORDER BY (
       SELECT MAX(rf.accessed_at) FROM recent_file rf
       WHERE rf.file_id = hf.id
-  ) DESC
-LIMIT $2;
+  ) DESC;

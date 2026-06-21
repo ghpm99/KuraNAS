@@ -79,12 +79,12 @@ func TestRepositoryListDemotionCandidates(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.ListDemotionCandidatesQuery)).
-		WithArgs(int64(1024), cutoff, 500).
+		WithArgs(int64(1024), cutoff).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "path", "size"}).
 			AddRow(1, "/mnt/dados/a.txt", int64(2048)))
 	mock.ExpectRollback()
 
-	candidates, err := repo.ListDemotionCandidates(1024, cutoff, 500)
+	candidates, err := repo.ListDemotionCandidates(1024, cutoff)
 	if err != nil || len(candidates) != 1 || candidates[0].FileID != 1 || candidates[0].LogicalPath != "/mnt/dados/a.txt" {
 		t.Fatalf("unexpected result: %+v %v", candidates, err)
 	}
@@ -97,12 +97,12 @@ func TestRepositoryListPromotionCandidates(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.ListPromotionCandidatesQuery)).
-		WithArgs(cutoff, 500).
+		WithArgs(cutoff).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "path", "physical_path", "size"}).
 			AddRow(7, "/mnt/dados/c.txt", "/mnt/cold/Casa/c.txt", int64(4096)))
 	mock.ExpectRollback()
 
-	candidates, err := repo.ListPromotionCandidates(cutoff, 500)
+	candidates, err := repo.ListPromotionCandidates(cutoff)
 	if err != nil || len(candidates) != 1 || candidates[0].PhysicalPath != "/mnt/cold/Casa/c.txt" {
 		t.Fatalf("unexpected result: %+v %v", candidates, err)
 	}

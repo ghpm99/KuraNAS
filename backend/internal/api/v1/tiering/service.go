@@ -126,7 +126,7 @@ func (s *Service) MigrationPlan(now time.Time) (bool, string, []tieringengine.Pr
 
 	cutoff := now.Add(-time.Duration(settings.MinAgeDays) * 24 * time.Hour)
 
-	promotionCandidates, err := s.repository.ListPromotionCandidates(cutoff, defaultBatchLimit)
+	promotionCandidates, err := s.repository.ListPromotionCandidates(cutoff)
 	if err != nil {
 		return false, "", nil, nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) MigrationPlan(now time.Time) (bool, string, []tieringengine.Pr
 		})
 	}
 
-	demotionCandidates, err := s.repository.ListDemotionCandidates(settings.MinSizeBytes, cutoff, defaultBatchLimit)
+	demotionCandidates, err := s.repository.ListDemotionCandidates(settings.MinSizeBytes, cutoff)
 	if err != nil {
 		return false, "", nil, nil, err
 	}
