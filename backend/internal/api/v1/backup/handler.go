@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func NewHandler(service ServiceInterface) *Handler {
 func (h *Handler) GetSettingsHandler(c *gin.Context) {
 	settings, err := h.service.GetSettings()
 	if err != nil {
+		applog.ErrorWithStack("backup: load settings failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_BACKUP_SETTINGS_LOAD")})
 		return
 	}
@@ -39,6 +41,7 @@ func (h *Handler) UpdateSettingsHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("BACKUP_INVALID_DESTINATION")})
 			return
 		}
+		applog.ErrorWithStack("backup: save settings failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_BACKUP_SETTINGS_SAVE")})
 		return
 	}
@@ -49,6 +52,7 @@ func (h *Handler) UpdateSettingsHandler(c *gin.Context) {
 func (h *Handler) GetStatusHandler(c *gin.Context) {
 	status, err := h.service.Status()
 	if err != nil {
+		applog.ErrorWithStack("backup: load status failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_BACKUP_STATUS_LOAD")})
 		return
 	}
@@ -58,6 +62,7 @@ func (h *Handler) GetStatusHandler(c *gin.Context) {
 func (h *Handler) GetPendingHandler(c *gin.Context) {
 	pending, err := h.service.Pending()
 	if err != nil {
+		applog.ErrorWithStack("backup: load pending failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_BACKUP_STATUS_LOAD")})
 		return
 	}

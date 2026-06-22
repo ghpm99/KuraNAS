@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"errors"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"net/http"
 	"strconv"
@@ -23,6 +24,7 @@ func (handler *Handler) respond(c *gin.Context, payload any, err error) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_INVALID_PERIOD")})
 			return
 		}
+		applog.ErrorWithStack("analytics: query failed", err, "path", c.FullPath(), "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_LOAD")})
 		return
 	}

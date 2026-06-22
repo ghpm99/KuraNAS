@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 
@@ -75,6 +76,7 @@ func parseRootID(c *gin.Context) (int, bool) {
 func (handler *Handler) GetStorageRootsHandler(c *gin.Context) {
 	rootsList, err := handler.service.GetRoots()
 	if err != nil {
+		applog.ErrorWithStack("storageroots: list roots failed", err, "ip", c.ClientIP())
 		handler.respondServiceError(c, err)
 		return
 	}

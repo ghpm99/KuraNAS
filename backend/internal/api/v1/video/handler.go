@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	files "nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -39,6 +40,7 @@ func respondVideoError(c *gin.Context, err error) {
 	case errors.Is(err, ErrNoVideosForContext):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 	default:
+		applog.ErrorWithStack("video: operation failed", err, "path", c.FullPath(), "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_OPERATION_FAILED")})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func NewHandler(service ServiceInterface) *Handler {
 func (h *Handler) GetProvidersHandler(c *gin.Context) {
 	providers, err := h.service.GetProviders()
 	if err != nil {
+		applog.ErrorWithStack("aiproviders: load failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_AI_PROVIDERS_LOAD")})
 		return
 	}
@@ -47,6 +49,7 @@ func (h *Handler) UpdateProviderHandler(c *gin.Context) {
 		case errors.Is(err, ErrProviderNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_AI_PROVIDER_NOT_FOUND")})
 		default:
+			applog.ErrorWithStack("aiproviders: update failed", err, "provider", string(name), "ip", c.ClientIP())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_AI_PROVIDER_UPDATE")})
 		}
 		return

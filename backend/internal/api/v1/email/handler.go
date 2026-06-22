@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 
@@ -23,6 +24,7 @@ func NewHandler(service ServiceInterface) *Handler {
 func (h *Handler) GetAccountsHandler(c *gin.Context) {
 	accounts, err := h.service.ListAccounts()
 	if err != nil {
+		applog.ErrorWithStack("email: list accounts failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_EMAIL_ACCOUNTS_LOAD")})
 		return
 	}
@@ -41,6 +43,7 @@ func (h *Handler) DeleteAccountHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_NOT_FOUND")})
 			return
 		}
+		applog.ErrorWithStack("email: delete account failed", err, "account_id", id, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_REMOVE_FAILED")})
 		return
 	}
@@ -66,6 +69,7 @@ func (h *Handler) UpdateSyncEnabledHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_NOT_FOUND")})
 			return
 		}
+		applog.ErrorWithStack("email: set sync enabled failed", err, "account_id", id, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_UPDATE_FAILED")})
 		return
 	}
@@ -80,6 +84,7 @@ func (h *Handler) GoogleAuthURLHandler(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("EMAIL_OAUTH_NOT_CONFIGURED")})
 			return
 		}
+		applog.ErrorWithStack("email: google auth url failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_LINK_FAILED")})
 		return
 	}
@@ -101,6 +106,8 @@ func (h *Handler) GoogleCallbackHandler(c *gin.Context) {
 		status := http.StatusInternalServerError
 		if errors.Is(err, ErrInvalidOAuthState) {
 			status = http.StatusBadRequest
+		} else {
+			applog.ErrorWithStack("email: google callback failed", err, "ip", c.ClientIP())
 		}
 		h.renderCallbackPage(c, status, i18n.GetMessage("EMAIL_ACCOUNT_LINK_FAILED"))
 		return
@@ -121,6 +128,7 @@ func (h *Handler) MicrosoftDeviceCodeHandler(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("EMAIL_OAUTH_NOT_CONFIGURED")})
 			return
 		}
+		applog.ErrorWithStack("email: start microsoft device code failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_ACCOUNT_LINK_FAILED")})
 		return
 	}
@@ -142,6 +150,7 @@ func (h *Handler) GetMessagesHandler(c *gin.Context) {
 
 	messages, err := h.service.ListMessages(page, pageSize)
 	if err != nil {
+		applog.ErrorWithStack("email: list messages failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_EMAIL_MESSAGES_LOAD")})
 		return
 	}
@@ -163,6 +172,7 @@ func (h *Handler) SyncAccountHandler(c *gin.Context) {
 		case errors.Is(err, ErrSyncUnavailable):
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("EMAIL_SYNC_UNAVAILABLE")})
 		default:
+			applog.ErrorWithStack("email: enqueue sync failed", err, "account_id", id, "ip", c.ClientIP())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_SYNC_ENQUEUE_FAILED")})
 		}
 		return
@@ -184,6 +194,7 @@ func (h *Handler) GetMessageSummaryHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("EMAIL_ANALYSIS_UNAVAILABLE")})
 			return
 		}
+		applog.ErrorWithStack("email: get message analysis failed", err, "message_id", id, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_EMAIL_MESSAGES_LOAD")})
 		return
 	}
@@ -193,6 +204,7 @@ func (h *Handler) GetMessageSummaryHandler(c *gin.Context) {
 func (h *Handler) GetProviderHandler(c *gin.Context) {
 	dto, err := h.service.GetProviderPreference()
 	if err != nil {
+		applog.ErrorWithStack("email: get provider preference failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_LOAD_FAILED")})
 		return
 	}
@@ -212,6 +224,7 @@ func (h *Handler) SetProviderHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_INVALID")})
 			return
 		}
+		applog.ErrorWithStack("email: set provider preference failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("EMAIL_PROVIDER_UPDATE_FAILED")})
 		return
 	}
