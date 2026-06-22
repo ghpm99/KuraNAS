@@ -1,6 +1,7 @@
 package tiering
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -110,5 +111,33 @@ func TestGetUsageHandler(t *testing.T) {
 	response := performRequest(router, http.MethodGet, "/tiering/usage", "")
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "4096") {
 		t.Fatalf("unexpected response: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestTieringHandlersServerErrors(t *testing.T) {
+	boom := errors.New("boom")
+	router := newTestRouter(&mockService{
+		getFn:    func() (SettingsDto, error) { return SettingsDto{}, boom },
+		updateFn: func(dto SettingsDto) (SettingsDto, error) { return SettingsDto{}, boom },
+		statusFn: func() (StatusDto, error) { return StatusDto{}, boom },
+		usageFn:  func() (TierUsageDto, error) { return TierUsageDto{}, boom },
+	})
+
+	cases := []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/tiering/settings", ""},
+		{http.MethodPut, "/tiering/settings", `{"enabled":true,"cold_dir_path":"/mnt/cold"}`},
+		{http.MethodGet, "/tiering/status", ""},
+		{http.MethodGet, "/tiering/usage", ""},
+	}
+
+	for _, tc := range cases {
+		response := performRequest(router, tc.method, tc.path, tc.body)
+		if response.Code != http.StatusInternalServerError {
+			t.Fatalf("%s %s: expected 500, got %d", tc.method, tc.path, response.Code)
+		}
 	}
 }
