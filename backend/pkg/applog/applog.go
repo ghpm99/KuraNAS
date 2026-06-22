@@ -107,6 +107,21 @@ func Info(msg string, args ...any)  { logAt(slog.LevelInfo, msg, args...) }
 func Warn(msg string, args ...any)  { logAt(slog.LevelWarn, msg, args...) }
 func Error(msg string, args ...any) { logAt(slog.LevelError, msg, args...) }
 
+// ErrorWithStack records an error in the forensic sink together with a stack
+// trace. Use it on handler/service error paths that respond to the client but
+// do NOT go through LoggerService.CompleteWithErrorLog (the central choke point
+// that already writes the stack). The client still gets only the translated
+// string; the real error + stack land here so production stays debuggable from
+// log/kuranas-*.log.
+func ErrorWithStack(msg string, err error, args ...any) {
+	errText := ""
+	if err != nil {
+		errText = err.Error()
+	}
+	all := append([]any{"error", errText, "stack", string(debug.Stack())}, args...)
+	logAt(slog.LevelError, msg, all...)
+}
+
 func logAt(level slog.Level, msg string, args ...any) {
 	logger := slog.Default()
 	ctx := context.Background()
