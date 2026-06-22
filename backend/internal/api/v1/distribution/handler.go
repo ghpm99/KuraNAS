@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ func NewHandler(service ServiceInterface) *Handler {
 func (handler *Handler) GetDownloadsHandler(c *gin.Context) {
 	items, err := handler.service.ListDownloads()
 	if err != nil {
+		applog.ErrorWithStack("distribution: list downloads failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOADS_LIST")})
 		return
 	}
@@ -40,6 +42,7 @@ func (handler *Handler) DownloadFileHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_NOT_FOUND")})
 			return
 		}
+		applog.ErrorWithStack("distribution: resolve download failed", err, "id", id, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOADS_LIST")})
 		return
 	}

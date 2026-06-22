@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,7 @@ func (h *Handler) GetStatusHandler(c *gin.Context) {
 func (h *Handler) ListModelsHandler(c *gin.Context) {
 	models, err := h.service.ListModels(c.Request.Context())
 	if err != nil {
+		applog.ErrorWithStack("ollama: list models failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusBadGateway, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_DAEMON_UNREACHABLE")})
 		return
 	}
@@ -45,6 +47,7 @@ func (h *Handler) PullModelHandler(c *gin.Context) {
 		case errors.Is(err, ErrJobsUnavailable):
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_JOBS_UNAVAILABLE")})
 		default:
+			applog.ErrorWithStack("ollama: enqueue pull failed", err, "model", request.Model, "ip", c.ClientIP())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_OLLAMA_ENQUEUE_DOWNLOAD")})
 		}
 		return

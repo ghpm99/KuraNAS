@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 
@@ -45,6 +46,7 @@ func (handler *Handler) ListNotificationsHandler(c *gin.Context) {
 
 	notifications, err := handler.service.ListNotifications(filter, page, pageSize)
 	if err != nil {
+		applog.ErrorWithStack("notifications: list failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_LIST_NOTIFICATIONS")})
 		return
 	}
@@ -70,6 +72,7 @@ func (handler *Handler) GetNotificationByIDHandler(c *gin.Context) {
 			return
 		}
 
+		applog.ErrorWithStack("notifications: get by id failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_GET_NOTIFICATION")})
 		return
 	}
@@ -80,6 +83,7 @@ func (handler *Handler) GetNotificationByIDHandler(c *gin.Context) {
 func (handler *Handler) GetUnreadCountHandler(c *gin.Context) {
 	count, err := handler.service.GetUnreadCount()
 	if err != nil {
+		applog.ErrorWithStack("notifications: unread count failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_GET_UNREAD_COUNT")})
 		return
 	}
@@ -105,6 +109,7 @@ func (handler *Handler) MarkAsReadHandler(c *gin.Context) {
 			return
 		}
 
+		applog.ErrorWithStack("notifications: mark as read failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MARK_NOTIFICATION_READ")})
 		return
 	}
@@ -115,6 +120,7 @@ func (handler *Handler) MarkAsReadHandler(c *gin.Context) {
 func (handler *Handler) MarkAllAsReadHandler(c *gin.Context) {
 	err := handler.service.MarkAllAsRead()
 	if err != nil {
+		applog.ErrorWithStack("notifications: mark all as read failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MARK_ALL_NOTIFICATIONS_READ")})
 		return
 	}

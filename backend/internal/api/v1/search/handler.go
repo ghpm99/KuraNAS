@@ -2,6 +2,7 @@ package search
 
 import (
 	"errors"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"net/http"
 	"strconv"
@@ -20,6 +21,7 @@ func NewHandler(service ServiceInterface) *Handler {
 
 func (handler *Handler) SearchGlobalHandler(c *gin.Context) {
 	if handler.service == nil {
+		applog.Error("search: service unavailable", "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 		return
 	}
@@ -33,6 +35,7 @@ func (handler *Handler) SearchGlobalHandler(c *gin.Context) {
 
 	response, err := handler.service.SearchGlobal(query, limit)
 	if err != nil {
+		applog.ErrorWithStack("search: global search failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 		return
 	}
