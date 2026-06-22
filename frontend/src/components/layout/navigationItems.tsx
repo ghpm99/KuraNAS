@@ -2,6 +2,7 @@ import { appRoutes } from '@/app/routes';
 import {
     BookImage,
     DownloadCloud,
+    Film,
     House,
     Info,
     LayoutGrid,
@@ -60,6 +61,11 @@ export const navigationItems: NavigationItem[] = [
         href: appRoutes.takeout,
         icon: <Upload size={20} />,
         labelKey: 'NAV_TAKEOUT',
+    },
+    {
+        href: appRoutes.captures,
+        icon: <Film size={20} />,
+        labelKey: 'NAV_CAPTURES',
     },
     {
         href: appRoutes.downloads,
