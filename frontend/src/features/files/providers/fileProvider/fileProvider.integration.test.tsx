@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import FileProvider from './index';
@@ -86,5 +86,56 @@ describe('features/files/fileProvider (seam)', () => {
 		});
 
 		expect(mockedApi.delete).toHaveBeenCalledWith('/files/path', { data: { id: 5 } });
+	});
+
+	it('copyFile POSTs to /files/copy with the source, destination and new name', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await act(async () => {
+			await result.current.copyFile(3, 9, '/data/dst', 'copia.pdf');
+		});
+
+		expect(mockedApi.post).toHaveBeenCalledWith(
+			'/files/copy',
+			expect.objectContaining({ source_id: 3, destination_folder_id: 9, new_name: 'copia.pdf' })
+		);
+	});
+
+	it('handleStarredItem POSTs to /files/starred/:id', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		act(() => result.current.handleStarredItem(5));
+
+		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/files/starred/5'));
+	});
+
+	it('rescanFiles POSTs the manual rescan to /files/update', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await act(async () => {
+			await result.current.rescanFiles();
+		});
+
+		expect(mockedApi.post).toHaveBeenCalledWith(
+			'/files/update',
+			expect.any(FormData),
+			expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
+		);
+	});
+
+	it('uploadFiles POSTs the files to /files/upload', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		const file = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
+		const fileList = { length: 1, 0: file } as unknown as FileList;
+		await act(async () => {
+			await result.current.uploadFiles(fileList, 7);
+		});
+
+		expect(mockedApi.post).toHaveBeenCalledWith(
+			'/files/upload',
+			expect.any(FormData),
+			expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
+		);
 	});
 });
