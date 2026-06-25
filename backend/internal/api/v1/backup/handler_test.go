@@ -63,6 +63,38 @@ func TestGetSettingsHandler(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsHandlerDecodesPayload pins the request seam: it proves the
+// handler decodes the exact JSON the frontend service sends (service/backup.ts
+// → PUT /backup/settings) into the right SettingsDto fields, and echoes the
+// saved settings back. If a json tag drifts on either side, `captured` loses a
+// field and this fails — instead of the integration breaking silently in prod.
+func TestUpdateSettingsHandlerDecodesPayload(t *testing.T) {
+	var captured SettingsDto
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) {
+			captured = dto
+			return dto, nil
+		},
+	})
+
+	body := `{"enabled":true,"destination_path":"/mnt/cold","retention_days":15,"interval_hours":12}`
+	response := performRequest(router, http.MethodPut, "/backup/settings", body)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+
+	want := SettingsDto{Enabled: true, DestinationPath: "/mnt/cold", RetentionDays: 15, IntervalHours: 12}
+	if captured != want {
+		t.Fatalf("handler decoded payload into %#v, want %#v", captured, want)
+	}
+
+	if !strings.Contains(response.Body.String(), `"destination_path":"/mnt/cold"`) ||
+		!strings.Contains(response.Body.String(), `"interval_hours":12`) {
+		t.Fatalf("response did not echo the saved settings: %s", response.Body.String())
+	}
+}
+
 func TestUpdateSettingsHandlerInvalidDestination(t *testing.T) {
 	router := newTestRouter(&mockService{
 		updateFn: func(dto SettingsDto) (SettingsDto, error) {
