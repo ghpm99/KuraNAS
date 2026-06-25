@@ -28,7 +28,7 @@ export const createActivityDiaryEntry = async (
 
 export const duplicateActivityDiaryEntry = async (diaryId: number): Promise<ActivityDiaryData> => {
     const response = await apiBase.post<ActivityDiaryData>('/diary/copy', {
-        ID: diaryId,
+        id: diaryId,
     });
     return response.data;
 };

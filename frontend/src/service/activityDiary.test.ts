@@ -53,7 +53,7 @@ describe('service/activityDiary', () => {
             fn: () => duplicateActivityDiaryEntry(1),
             method: 'post' as const,
             url: '/diary/copy',
-            payload: { ID: 1 },
+            payload: { id: 1 },
             response: { id: 2, name: 'Workout copy' },
         },
     ])('$name', async ({ fn, method, url, payload, response }) => {
