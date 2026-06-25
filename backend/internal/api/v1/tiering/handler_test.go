@@ -64,6 +64,38 @@ func TestGetSettingsHandler(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsHandlerDecodesPayload pins the request seam: it proves the
+// handler decodes the exact JSON the frontend service sends (service/tiering.ts
+// → PUT /tiering/settings) into the right SettingsDto fields, and echoes the
+// saved settings back. A json tag drift fails here instead of breaking the
+// frontend integration silently.
+func TestUpdateSettingsHandlerDecodesPayload(t *testing.T) {
+	var captured SettingsDto
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) {
+			captured = dto
+			return dto, nil
+		},
+	})
+
+	body := `{"enabled":true,"cold_dir_path":"/mnt/cold","min_age_days":90,"min_size_bytes":1048576,"interval_hours":12}`
+	response := performRequest(router, http.MethodPut, "/tiering/settings", body)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+
+	want := SettingsDto{Enabled: true, ColdDirPath: "/mnt/cold", MinAgeDays: 90, MinSizeBytes: 1048576, IntervalHours: 12}
+	if captured != want {
+		t.Fatalf("handler decoded payload into %#v, want %#v", captured, want)
+	}
+
+	if !strings.Contains(response.Body.String(), `"cold_dir_path":"/mnt/cold"`) ||
+		!strings.Contains(response.Body.String(), `"min_size_bytes":1048576`) {
+		t.Fatalf("response did not echo the saved settings: %s", response.Body.String())
+	}
+}
+
 func TestUpdateSettingsHandlerInvalidColdDir(t *testing.T) {
 	router := newTestRouter(&mockService{
 		updateFn: func(dto SettingsDto) (SettingsDto, error) {

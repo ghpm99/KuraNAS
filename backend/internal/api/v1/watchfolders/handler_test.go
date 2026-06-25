@@ -88,6 +88,59 @@ func TestCreateWatchFolderHandlerSuccess(t *testing.T) {
 	}
 }
 
+// TestCreateWatchFolderHandlerDecodesPayload pins the request seam: it proves
+// the handler decodes the exact JSON the frontend sends (POST /watch-folders)
+// into CreateWatchFolderDto. A json tag drift fails here instead of breaking
+// the frontend integration silently.
+func TestCreateWatchFolderHandlerDecodesPayload(t *testing.T) {
+	var captured CreateWatchFolderDto
+	handler := NewHandler(&handlerServiceMock{createFn: func(dto CreateWatchFolderDto) (WatchFolderDto, error) {
+		captured = dto
+		return WatchFolderDto{ID: 7, Path: dto.Path, Label: dto.Label, Enabled: true}, nil
+	}}, nil)
+	ctx, rec := newWatchFoldersContext(http.MethodPost, "/watch-folders", bytes.NewBufferString(`{"path":"/tmp/watch","label":"Fotos"}`))
+
+	handler.CreateWatchFolderHandler(ctx)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if captured != (CreateWatchFolderDto{Path: "/tmp/watch", Label: "Fotos"}) {
+		t.Fatalf("handler decoded create payload into %#v", captured)
+	}
+}
+
+// TestUpdateWatchFolderHandlerDecodesPayload proves the PUT body decodes into
+// the optional pointer fields of UpdateWatchFolderDto, and the id path param is
+// forwarded to the service.
+func TestUpdateWatchFolderHandlerDecodesPayload(t *testing.T) {
+	var capturedID int
+	var captured UpdateWatchFolderDto
+	handler := NewHandler(&handlerServiceMock{updateFn: func(id int, dto UpdateWatchFolderDto) (WatchFolderDto, error) {
+		capturedID = id
+		captured = dto
+		return WatchFolderDto{ID: id, Path: "/tmp/watch", Enabled: false}, nil
+	}}, nil)
+	ctx, rec := newWatchFoldersContext(http.MethodPut, "/watch-folders/4", bytes.NewBufferString(`{"label":"Backup","enabled":false}`))
+	ctx.AddParam("id", "4")
+
+	handler.UpdateWatchFolderHandler(ctx)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if capturedID != 4 {
+		t.Fatalf("expected id 4 forwarded, got %d", capturedID)
+	}
+	if captured.Path != nil {
+		t.Fatalf("path must stay nil when omitted, got %v", *captured.Path)
+	}
+	if captured.Label == nil || *captured.Label != "Backup" {
+		t.Fatalf("label decoded as %v", captured.Label)
+	}
+	if captured.Enabled == nil || *captured.Enabled != false {
+		t.Fatalf("enabled decoded as %v", captured.Enabled)
+	}
+}
+
 func TestCreateWatchFolderHandlerBadRequest(t *testing.T) {
 	handler := NewHandler(&handlerServiceMock{}, nil)
 	ctx, rec := newWatchFoldersContext(http.MethodPost, "/watch-folders", bytes.NewBufferString(`{`))
