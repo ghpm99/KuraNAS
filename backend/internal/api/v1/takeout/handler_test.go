@@ -175,6 +175,53 @@ func TestTakeoutHandler(t *testing.T) {
 		}
 	})
 
+	// Pins the request seam across all three takeout bodies: init (JSON),
+	// chunk (multipart form) and complete (JSON). A json/form tag drift fails
+	// here instead of silently dropping a field during the upload handshake.
+	t.Run("decodes init/chunk/complete payloads", func(t *testing.T) {
+		var initDto InitTakeoutUploadDto
+		var chunkDto UploadTakeoutChunkDto
+		var completeDto CompleteTakeoutUploadDto
+		handler := NewHandler(&handlerServiceMock{
+			initFn: func(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error) {
+				initDto = dto
+				return InitTakeoutUploadResultDto{UploadID: "u1", ChunkSize: 1024}, nil
+			},
+			chunkFn: func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error {
+				chunkDto = dto
+				return nil
+			},
+			completeFn: func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error) {
+				completeDto = dto
+				return TakeoutImportResultDto{JobID: 12, Message: "ok"}, nil
+			},
+		}, nil)
+
+		recInit := httptest.NewRecorder()
+		ctxInit, _ := gin.CreateTestContext(recInit)
+		ctxInit.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/init", `{"file_name":"takeout.zip","size":2048}`)
+		handler.InitUploadHandler(ctxInit)
+		if initDto.FileName != "takeout.zip" || initDto.Size != 2048 {
+			t.Fatalf("init payload did not decode: %+v", initDto)
+		}
+
+		recChunk := httptest.NewRecorder()
+		ctxChunk, _ := gin.CreateTestContext(recChunk)
+		ctxChunk.Request = buildChunkRequest(t, "u1", "1024", true)
+		handler.UploadChunkHandler(ctxChunk)
+		if chunkDto.UploadID != "u1" || chunkDto.Offset != 1024 {
+			t.Fatalf("chunk form did not decode: %+v", chunkDto)
+		}
+
+		recDone := httptest.NewRecorder()
+		ctxDone, _ := gin.CreateTestContext(recDone)
+		ctxDone.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/complete", `{"upload_id":"u9"}`)
+		handler.CompleteUploadHandler(ctxDone)
+		if completeDto.UploadID != "u9" {
+			t.Fatalf("complete payload did not decode: %+v", completeDto)
+		}
+	})
+
 	t.Run("UploadChunkHandler offset mismatch", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(rec)
