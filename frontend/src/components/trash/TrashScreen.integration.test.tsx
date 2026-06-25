@@ -55,6 +55,7 @@ describe('TrashScreen (seam)', () => {
 		});
 		mockedApi.post.mockResolvedValue({ data: undefined });
 		mockedApi.delete.mockResolvedValue({ data: undefined });
+		mockedApi.put.mockResolvedValue({ data: { days: 7 } });
 	});
 
 	it('restores an item via POST /trash/:id/restore', async () => {
@@ -86,5 +87,17 @@ describe('TrashScreen (seam)', () => {
 
 		await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith('/trash'));
 		confirmSpy.mockRestore();
+	});
+
+	it('saves the retention policy on blur via PUT /trash/retention', async () => {
+		renderScreen();
+		const input = await screen.findByLabelText('TRASH_RETENTION_LABEL');
+
+		fireEvent.change(input, { target: { value: '7' } });
+		fireEvent.blur(input);
+
+		await waitFor(() =>
+			expect(mockedApi.put).toHaveBeenCalledWith('/trash/retention', { days: 7 })
+		);
 	});
 });
