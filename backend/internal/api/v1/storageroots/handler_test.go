@@ -16,13 +16,20 @@ type serviceStub struct {
 	roots []StorageRootDto
 	dto   StorageRootDto
 	err   error
+
+	capturedCreate   *CreateStorageRootDto
+	capturedUpdate   *UpdateStorageRootDto
+	capturedUpdateID int
 }
 
 func (s *serviceStub) GetRoots() ([]StorageRootDto, error) { return s.roots, s.err }
 func (s *serviceStub) CreateRoot(request CreateStorageRootDto) (StorageRootDto, error) {
+	s.capturedCreate = &request
 	return s.dto, s.err
 }
 func (s *serviceStub) UpdateRoot(id int, request UpdateStorageRootDto) (StorageRootDto, error) {
+	s.capturedUpdate = &request
+	s.capturedUpdateID = id
 	return s.dto, s.err
 }
 func (s *serviceStub) DeleteRoot(id int) error { return s.err }
@@ -80,6 +87,57 @@ func TestCreateStorageRootHandlerSuccess(t *testing.T) {
 	rec := doRootsJSON(router, http.MethodPost, "/storage-roots", CreateStorageRootDto{Path: "/x"})
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}
+
+// TestCreateStorageRootHandlerDecodesPayload pins the request seam: it proves
+// the handler decodes the exact JSON the frontend sends (service/storageRoots.ts
+// → POST /storage-roots) into CreateStorageRootDto, including the optional
+// *bool enabled. A json tag drift fails here instead of breaking the frontend
+// integration silently.
+func TestCreateStorageRootHandlerDecodesPayload(t *testing.T) {
+	stub := &serviceStub{dto: StorageRootDto{ID: 2}}
+	router := newRootsRouter(stub)
+
+	enabled := false
+	rec := doRootsJSON(router, http.MethodPost, "/storage-roots", map[string]any{
+		"path":    "/mnt/midia",
+		"label":   "Mídia",
+		"enabled": enabled,
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d (%s)", rec.Code, rec.Body.String())
+	}
+	if stub.capturedCreate == nil {
+		t.Fatal("service did not receive the create request")
+	}
+	got := *stub.capturedCreate
+	if got.Path != "/mnt/midia" || got.Label != "Mídia" {
+		t.Fatalf("path/label did not decode: %+v", got)
+	}
+	if got.Enabled == nil || *got.Enabled != false {
+		t.Fatalf("enabled did not decode as a *bool: %v", got.Enabled)
+	}
+}
+
+// TestUpdateStorageRootHandlerDecodesPayload proves the PUT body decodes into
+// UpdateStorageRootDto and the id path param is forwarded to the service.
+func TestUpdateStorageRootHandlerDecodesPayload(t *testing.T) {
+	stub := &serviceStub{dto: StorageRootDto{ID: 5}}
+	router := newRootsRouter(stub)
+
+	rec := doRootsJSON(router, http.MethodPut, "/storage-roots/5", map[string]any{"label": "renomeado", "enabled": true})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d (%s)", rec.Code, rec.Body.String())
+	}
+	if stub.capturedUpdateID != 5 {
+		t.Fatalf("expected id 5 forwarded, got %d", stub.capturedUpdateID)
+	}
+	if stub.capturedUpdate == nil || stub.capturedUpdate.Label != "renomeado" {
+		t.Fatalf("label did not decode: %+v", stub.capturedUpdate)
+	}
+	if stub.capturedUpdate.Enabled == nil || *stub.capturedUpdate.Enabled != true {
+		t.Fatalf("enabled did not decode as a *bool: %v", stub.capturedUpdate.Enabled)
 	}
 }
 
