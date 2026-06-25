@@ -114,6 +114,34 @@ func TestAllowedIPsCRUDHandlers(t *testing.T) {
 	}
 }
 
+// TestCreateAllowedIPHandlerDecodesPayload pins the request seam: it proves the
+// handler decodes the exact JSON the frontend sends (service/accessControl.ts →
+// POST /access-control/ips) into CreateAllowedIPDto — including the optional
+// label — round-tripping through the real service. A json tag drift fails here
+// instead of breaking the frontend integration silently.
+func TestCreateAllowedIPHandlerDecodesPayload(t *testing.T) {
+	router, _ := newHandlerRouter(t)
+
+	rec := doJSON(router, http.MethodPost, "/access-control/ips", map[string]any{
+		"cidr":  "10.0.0.5",
+		"label": "notebook-sala",
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	var created AllowedIPDto
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode created: %v", err)
+	}
+	if created.CIDR != "10.0.0.5/32" {
+		t.Fatalf("cidr did not decode/normalize, got %q", created.CIDR)
+	}
+	if created.Label != "notebook-sala" {
+		t.Fatalf("label did not decode, got %q", created.Label)
+	}
+}
+
 func TestGetClientIPHandlerEchoesConnectionIP(t *testing.T) {
 	router, _ := newHandlerRouter(t)
 

@@ -54,6 +54,38 @@ func TestGetSettingsHandlerOK(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsHandlerDecodesPayload pins the request seam: it proves the
+// handler decodes the exact JSON the frontend service sends (service/autoShutdown.ts
+// → PUT /auto-shutdown/settings) into the right SettingsDto fields, and echoes
+// the saved settings back. A json tag drift fails here instead of breaking the
+// frontend integration silently.
+func TestUpdateSettingsHandlerDecodesPayload(t *testing.T) {
+	var captured SettingsDto
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) {
+			captured = dto
+			return dto, nil
+		},
+	})
+
+	body := `{"enabled":true,"time":"03:30","grace_period_seconds":120}`
+	response := performRequest(router, http.MethodPut, "/auto-shutdown/settings", body)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+
+	want := SettingsDto{Enabled: true, Time: "03:30", GracePeriodSeconds: 120}
+	if captured != want {
+		t.Fatalf("handler decoded payload into %#v, want %#v", captured, want)
+	}
+
+	if !strings.Contains(response.Body.String(), `"time":"03:30"`) ||
+		!strings.Contains(response.Body.String(), `"grace_period_seconds":120`) {
+		t.Fatalf("response did not echo the saved settings: %s", response.Body.String())
+	}
+}
+
 func TestUpdateSettingsHandlerInvalid(t *testing.T) {
 	router := newTestRouter(&mockService{
 		updateFn: func(dto SettingsDto) (SettingsDto, error) {
