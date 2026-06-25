@@ -11,15 +11,19 @@ import (
 )
 
 type fakeService struct {
-	fetchID  int
-	fetchErr error
-	targets  []TargetDto
-	presets  []PresetDto
+	fetchID       int
+	fetchErr      error
+	targets       []TargetDto
+	presets       []PresetDto
+	capturedFetch *FetchRequestDto
 }
 
-func (s *fakeService) Fetch(FetchRequestDto) (int, error) { return s.fetchID, s.fetchErr }
-func (s *fakeService) ListTargets() []TargetDto           { return s.targets }
-func (s *fakeService) ListPresets() []PresetDto           { return s.presets }
+func (s *fakeService) Fetch(req FetchRequestDto) (int, error) {
+	s.capturedFetch = &req
+	return s.fetchID, s.fetchErr
+}
+func (s *fakeService) ListTargets() []TargetDto { return s.targets }
+func (s *fakeService) ListPresets() []PresetDto { return s.presets }
 
 func newTestRouter(service ServiceInterface) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -52,6 +56,28 @@ func TestFetchHandlerSuccess(t *testing.T) {
 	}
 	if resp.JobID != 7 {
 		t.Fatalf("expected job id 7, got %d", resp.JobID)
+	}
+}
+
+// TestFetchHandlerDecodesPayload pins the request seam: it captures the
+// FetchRequestDto the handler decodes (service/ingest.ts → POST /downloads/fetch)
+// and asserts every field. A json tag drift fails here instead of silently
+// dropping a field of the download request in production.
+func TestFetchHandlerDecodesPayload(t *testing.T) {
+	service := &fakeService{fetchID: 7}
+	router := newTestRouter(service)
+
+	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv","subfolder":"musicas"}`)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("expected 202, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if service.capturedFetch == nil {
+		t.Fatal("service did not receive the fetch request")
+	}
+	got := *service.capturedFetch
+	want := FetchRequestDto{URL: "https://x.test/v", Preset: "audio_mp3", TargetRoot: "/srv", Subfolder: "musicas"}
+	if got != want {
+		t.Fatalf("fetch payload decoded into %#v, want %#v", got, want)
 	}
 }
 
