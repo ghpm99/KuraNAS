@@ -2,20 +2,26 @@ jest.mock('./index', () => ({
     apiBase: {
         get: jest.fn(),
         put: jest.fn(),
+        post: jest.fn(),
     },
 }));
 
 import { apiBase } from './index';
 import {
     getAboutConfiguration,
+    getEnvConfig,
     getSettingsConfiguration,
     getTranslations,
+    testEnvDatabase,
+    testEnvPath,
+    updateEnvConfig,
     updateSettingsConfiguration,
 } from './configuration';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
     put: jest.Mock;
+    post: jest.Mock;
 };
 
 const settingsRequest = {
@@ -96,6 +102,63 @@ describe('service/configuration', () => {
                 indexing: { ...settingsRequest.indexing, workers_enabled: true },
                 language: { ...settingsRequest.language, available: ['en-US', 'pt-BR'] },
             },
+        },
+        {
+            name: 'gets env config',
+            fn: () => getEnvConfig(),
+            method: 'get' as const,
+            url: '/configuration/env',
+            payload: undefined,
+            response: {
+                fields: [
+                    {
+                        key: 'LANGUAGE',
+                        group: 'general',
+                        kind: 'string',
+                        value: 'pt-BR',
+                        configured: true,
+                        dangerous: false,
+                    },
+                ],
+                restart_required: false,
+            },
+        },
+        {
+            name: 'updates env config',
+            fn: () => updateEnvConfig({ changes: { LANGUAGE: 'en-US' }, confirmed: false }),
+            method: 'put' as const,
+            url: '/configuration/env',
+            payload: { changes: { LANGUAGE: 'en-US' }, confirmed: false },
+            response: { fields: [], restart_required: true },
+        },
+        {
+            name: 'tests env database',
+            fn: () =>
+                testEnvDatabase({
+                    host: 'localhost',
+                    port: '5432',
+                    user: 'postgres',
+                    name: 'kuranas',
+                    password: '',
+                }),
+            method: 'post' as const,
+            url: '/configuration/env/test-db',
+            payload: {
+                host: 'localhost',
+                port: '5432',
+                user: 'postgres',
+                name: 'kuranas',
+                password: '',
+            },
+            response: { ok: true, message: 'ok' },
+        },
+        {
+            name: 'tests env path',
+            fn: () => testEnvPath({ path: '/data' }),
+            method: 'post' as const,
+            url: '/configuration/env/test-path',
+            payload: { path: '/data' },
+            response: { ok: false, message: 'fail' },
         },
     ])('$name', async ({ fn, method, url, payload, response }) => {
         mockedApi[method].mockResolvedValue({ data: response });

@@ -1,0 +1,97 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 920px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.description {
+    margin: 0;
+    color: var(--text-secondary, #9aa0aa);
+}
+
+.stepper {
+    margin: 0.5rem 0;
+}
+
+.stepContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fieldMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.testRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reviewList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reviewItem {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: var(--surface-2, rgba(255, 255, 255, 0.04));
+}
+
+.reviewKey {
+    font-weight: 600;
+}
+
+.reviewValue {
+    color: var(--text-secondary, #9aa0aa);
+    word-break: break-all;
+}
+
+.hint {
+    margin: 0;
+    color: var(--text-secondary, #9aa0aa);
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}

@@ -9,6 +9,7 @@ export const appRoutes = {
     legacyActivityDiary: '/activity-diary',
     analytics: '/analytics',
     about: '/about',
+    configWizard: '/internal/config-wizard',
     images: '/images',
     music: '/music',
     videos: '/videos',
