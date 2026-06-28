@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 )
 
 var ErrInvalidSettingsRequest = errors.New("invalid settings request")
@@ -25,6 +26,11 @@ var ErrCapturesPathInsideRoot = errors.New("captures path must be outside every 
 
 type Service struct {
 	Repository RepositoryInterface
+
+	// envMu guards envRestartRequired, set after a .env write so GET can surface
+	// the "restart pending" banner until the process is restarted.
+	envMu              sync.Mutex
+	envRestartRequired bool
 }
 
 func NewService(repository RepositoryInterface) ServiceInterface {

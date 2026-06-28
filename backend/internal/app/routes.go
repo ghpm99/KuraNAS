@@ -6,6 +6,9 @@ import (
 	"nas-go/api/internal/api/v1/health"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
+	"nas-go/api/pkg/i18n"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -283,6 +286,33 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations.GET("/about", context.Configuration.Handler.GetAboutHandler)
 	configurations.GET("/settings", context.Configuration.Handler.GetSettingsHandler)
 	configurations.PUT("/settings", context.Configuration.Handler.UpdateSettingsHandler)
+
+	// The .env editor writes secrets and bootstrap settings (DB, CORS) to disk,
+	// so it is gated to loopback only — it must be operated on the server host
+	// itself, never from another LAN device behind the IP whitelist.
+	env := configurations.Group("/env", loopbackOnlyMiddleware())
+	env.GET("", context.Configuration.Handler.GetEnvConfigHandler)
+	env.PUT("", context.Configuration.Handler.UpdateEnvConfigHandler)
+	env.POST("/test-db", context.Configuration.Handler.TestEnvDatabaseHandler)
+	env.POST("/test-path", context.Configuration.Handler.TestEnvPathHandler)
+}
+
+// loopbackOnlyMiddleware rejects any request whose TCP peer is not the loopback
+// interface. It reads RemoteAddr directly (not X-Forwarded-For) so a forged
+// header cannot grant access to the .env editor.
+func loopbackOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+		if err != nil {
+			host = c.Request.RemoteAddr
+		}
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": i18n.GetMessage("ERROR_ENV_LOOPBACK_ONLY")})
+			return
+		}
+		c.Next()
+	}
 }
 
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {

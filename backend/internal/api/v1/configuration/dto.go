@@ -47,6 +47,57 @@ type LanguageSettingsDto struct {
 	Available []string `json:"available"`
 }
 
+// EnvFieldDto is one editable .env variable as seen by the infra wizard. For
+// secret fields the actual value is never sent to the client (write-only): only
+// Configured tells whether a value is currently set. For non-secret fields Value
+// carries the current value (or its effective default when absent from the file).
+type EnvFieldDto struct {
+	Key        string `json:"key"`
+	Group      string `json:"group"`
+	Kind       string `json:"kind"`
+	Value      string `json:"value"`
+	Configured bool   `json:"configured"`
+	Dangerous  bool   `json:"dangerous"`
+}
+
+// EnvConfigDto is the whole .env, grouped field list plus whether a restart is
+// pending because a write happened after boot (the process still runs the old
+// snapshot until restarted).
+type EnvConfigDto struct {
+	Fields          []EnvFieldDto `json:"fields"`
+	RestartRequired bool          `json:"restart_required"`
+}
+
+// UpdateEnvConfigRequest carries only the keys the user changed. Secret keys are
+// present only when the user typed a new value (empty/absent means keep current).
+// Confirmed must be true when any dangerous key (DB_*, ALLOWED_ORIGINS,
+// EMAIL_TOKEN_KEY) is among the changes.
+type UpdateEnvConfigRequest struct {
+	Changes   map[string]string `json:"changes"`
+	Confirmed bool              `json:"confirmed"`
+}
+
+// TestDatabaseRequest validates a candidate database connection before it is
+// persisted. An empty Password reuses the currently stored DB_PASSWORD.
+type TestDatabaseRequest struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	User     string `json:"user"`
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+type TestPathRequest struct {
+	Path string `json:"path"`
+}
+
+// EnvTestResultDto is the outcome of a side-effecting validator (test-db /
+// test-path). Message is already translated server-side.
+type EnvTestResultDto struct {
+	Ok      bool   `json:"ok"`
+	Message string `json:"message"`
+}
+
 type UpdateSettingsRequest struct {
 	Indexing   IndexingSettingsRequest   `json:"indexing"`
 	Captures   CapturesSettingsRequest   `json:"captures"`

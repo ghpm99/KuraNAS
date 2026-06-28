@@ -44,6 +44,10 @@ type serviceMock struct {
 	getSettingsFn          func() (SettingsDto, error)
 	updateSettingsFn       func(request UpdateSettingsRequest) (SettingsDto, error)
 	getTranslationFilePath func() (string, error)
+	getEnvConfigFn         func() (EnvConfigDto, error)
+	updateEnvConfigFn      func(request UpdateEnvConfigRequest) (EnvConfigDto, error)
+	testDatabaseFn         func(request TestDatabaseRequest) error
+	testPathFn             func(request TestPathRequest) error
 }
 
 func (m *serviceMock) GetSettings() (SettingsDto, error) {
@@ -73,6 +77,34 @@ func (m *serviceMock) ApplyRuntimeSettings() error {
 
 func (m *serviceMock) IsAIImageClassificationEnabled() (bool, error) {
 	return true, nil
+}
+
+func (m *serviceMock) GetEnvConfig() (EnvConfigDto, error) {
+	if m.getEnvConfigFn != nil {
+		return m.getEnvConfigFn()
+	}
+	return EnvConfigDto{}, nil
+}
+
+func (m *serviceMock) UpdateEnvConfig(request UpdateEnvConfigRequest) (EnvConfigDto, error) {
+	if m.updateEnvConfigFn != nil {
+		return m.updateEnvConfigFn(request)
+	}
+	return EnvConfigDto{}, nil
+}
+
+func (m *serviceMock) TestDatabaseConnection(request TestDatabaseRequest) error {
+	if m.testDatabaseFn != nil {
+		return m.testDatabaseFn(request)
+	}
+	return nil
+}
+
+func (m *serviceMock) TestPath(request TestPathRequest) error {
+	if m.testPathFn != nil {
+		return m.testPathFn(request)
+	}
+	return nil
 }
 
 func newTestContext(method string, body *bytes.Buffer) (*gin.Context, *httptest.ResponseRecorder) {
