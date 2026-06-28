@@ -53,6 +53,7 @@ jest.mock('@/pages/favorites', () => () => <div>FavoritesPage</div>);
 jest.mock('@/pages/files', () => () => <div>FilePage</div>);
 jest.mock('@/pages/home', () => () => <div>HomePage</div>);
 jest.mock('@/pages/about', () => () => <div>AboutPage</div>);
+jest.mock('@/pages/configWizard', () => () => <div>ConfigWizardPage</div>);
 jest.mock('@/pages/images', () => () => <div>ImagesPage</div>);
 jest.mock('@/pages/music', () => () => <div>MusicPage</div>);
 jest.mock('@/features/music/components/MusicHomeScreen', () => () => <div>MusicHomeScreen</div>);

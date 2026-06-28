@@ -14,6 +14,7 @@ const SettingsPage = lazy(() => import('@/pages/settings'));
 const ActivityDiaryPage = lazy(() => import('@/pages/activityDiary'));
 const AnalyticsPage = lazy(() => import('@/pages/analytics'));
 const AboutPage = lazy(() => import('@/pages/about'));
+const ConfigWizardPage = lazy(() => import('@/pages/configWizard'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const ImagesPage = lazy(() => import('@/pages/images'));
 const MusicPage = lazy(() => import('@/pages/music'));
@@ -54,6 +55,7 @@ function AppContent() {
                 />
                 <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
                 <Route path={appRoutes.about} element={<AboutPage />} />
+                <Route path={appRoutes.configWizard} element={<ConfigWizardPage />} />
                 <Route path={appRoutes.notifications} element={<NotificationsPage />} />
                 <Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
                 <Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
