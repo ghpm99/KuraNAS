@@ -1,22 +1,19 @@
 import type { ReactNode } from 'react';
+import PageContainer from '@/components/layout/PageContainer';
 import styles from './DomainPageLayout.module.css';
 
 interface DomainPageLayoutProps {
     header: ReactNode;
-    sidebar: ReactNode;
+    nav: ReactNode;
     children: ReactNode;
 }
 
-const DomainPageLayout = ({ header, sidebar, children }: DomainPageLayoutProps) => (
-    <div className={styles.container}>
-        <div className={styles.page}>
-            {header}
-            <div className={styles.domainContent}>
-                <div className={styles.sidebarArea}>{sidebar}</div>
-                <div className={styles.contentArea}>{children}</div>
-            </div>
-        </div>
-    </div>
+const DomainPageLayout = ({ header, nav, children }: DomainPageLayoutProps) => (
+    <PageContainer>
+        {header}
+        {nav}
+        <div className={styles.contentArea}>{children}</div>
+    </PageContainer>
 );
 
 export default DomainPageLayout;

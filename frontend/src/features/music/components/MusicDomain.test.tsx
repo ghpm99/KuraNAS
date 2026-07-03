@@ -2,8 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MusicDomainHeader from './MusicDomainHeader';
+import MusicDomainNav from './MusicDomainNav';
 import MusicHomeScreen from './MusicHomeScreen';
-import MusicSidebar from './MusicSidebar';
 
 const mockUseGlobalMusic = jest.fn();
 const mockUseQuery = useQuery as jest.Mock;
@@ -152,20 +152,19 @@ describe('components/music domain shell', () => {
         });
     });
 
-    it('renders contextual header and active sidebar item from route', () => {
+    it('renders contextual header and active nav tab from route', () => {
         render(
             <MemoryRouter initialEntries={['/music/albums']}>
                 <MusicDomainHeader />
-                <MusicSidebar />
+                <MusicDomainNav />
             </MemoryRouter>
         );
 
         expect(screen.getByRole('heading', { name: 'MUSIC_ALBUMS' })).toBeInTheDocument();
-        expect(screen.getAllByText('MUSIC_ALBUMS_DESCRIPTION')[0]).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /MUSIC_ALBUMS/i })).toHaveAttribute(
-            'href',
-            '/music/albums'
-        );
+        expect(screen.getByText('MUSIC_ALBUMS_DESCRIPTION')).toBeInTheDocument();
+        const activeLink = screen.getByRole('link', { name: /MUSIC_ALBUMS/i });
+        expect(activeLink).toHaveAttribute('href', '/music/albums');
+        expect(activeLink).toHaveAttribute('aria-current', 'page');
     });
 
     it('renders music home with queue, playback context, and content sections', () => {

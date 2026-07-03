@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ImageDomainHeader from './ImageDomainHeader';
-import ImageSidebar from './ImageSidebar';
+import ImageDomainNav from './ImageDomainNav';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -11,19 +11,18 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 }));
 
 describe('components/images domain shell', () => {
-    it('renders contextual header and active sidebar item from route', () => {
+    it('renders contextual header and active nav tab from route', () => {
         render(
             <MemoryRouter initialEntries={['/images/albums']}>
                 <ImageDomainHeader />
-                <ImageSidebar />
+                <ImageDomainNav />
             </MemoryRouter>
         );
 
         expect(screen.getByRole('heading', { name: 'IMAGES_SECTION_ALBUMS' })).toBeInTheDocument();
-        expect(screen.getAllByText('IMAGES_SECTION_ALBUMS_DESCRIPTION')[0]).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /IMAGES_SECTION_ALBUMS/i })).toHaveAttribute(
-            'href',
-            '/images/albums'
-        );
+        expect(screen.getByText('IMAGES_SECTION_ALBUMS_DESCRIPTION')).toBeInTheDocument();
+        const activeLink = screen.getByRole('link', { name: /IMAGES_SECTION_ALBUMS/i });
+        expect(activeLink).toHaveAttribute('href', '/images/albums');
+        expect(activeLink).toHaveAttribute('aria-current', 'page');
     });
 });

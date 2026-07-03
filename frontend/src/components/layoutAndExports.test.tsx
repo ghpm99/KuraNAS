@@ -4,7 +4,7 @@ import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
 import FilesLayout from '@/features/files/files/filesLayout';
 import ImagesLayout from './images/imagesLayout';
 import MusicLayout from '@/features/music/components/musicLayout';
-import MusicSidebar from '@/features/music/components/MusicSidebar';
+import MusicDomainNav from '@/features/music/components/MusicDomainNav';
 import NavItem from './layout/Sidebar/components/navItem';
 import Button from './ui/Button/Button';
 
@@ -35,8 +35,8 @@ describe('layout wrappers and export indexes', () => {
         }
     });
 
-    it('renders music sidebar links', () => {
-        render(<MusicSidebar />);
+    it('renders music domain nav links', () => {
+        render(<MusicDomainNav />);
         expect(screen.getByRole('link', { name: /MUSIC_ARTISTS/i })).toHaveAttribute(
             'href',
             '/music/artists'

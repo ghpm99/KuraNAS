@@ -113,13 +113,13 @@ jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => (
 jest.mock('@/features/music/components/musicLayout', () => ({ children }: any) => (
     <div data-testid="music-layout">{children}</div>
 ));
-jest.mock('@/features/music/components/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
+jest.mock('@/features/music/components/MusicDomainNav', () => () => <div>MusicDomainNavMock</div>);
 jest.mock('@/features/music/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 jest.mock('@/components/settings/SettingsScreen', () => () => <div>SETTINGS_PAGE_TITLE</div>);
 
 jest.mock('@/features/videos/components/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
-jest.mock('@/features/videos/components/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
+jest.mock('@/features/videos/components/VideoDomainNav', () => () => <div>VideoDomainNavMock</div>);
 jest.mock('@/features/videos/components/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
 jest.mock('@/features/videos/videoPlayer/VideoPlayerScreen', () => () => (
@@ -375,7 +375,7 @@ describe('shell components and pages', () => {
 
         render(<VideosPage />);
         expect(screen.getByText('VideoDomainHeaderMock')).toBeInTheDocument();
-        expect(screen.getByText('VideoSidebarMock')).toBeInTheDocument();
+        expect(screen.getByText('VideoDomainNavMock')).toBeInTheDocument();
 
         render(<AboutPage />);
         expect(screen.getByTestId('about-layout')).toBeInTheDocument();

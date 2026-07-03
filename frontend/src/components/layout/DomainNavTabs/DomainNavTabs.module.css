@@ -1,0 +1,35 @@
+.nav {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-2);
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: var(--app-spacing-1);
+}
+
+.tab {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: var(--app-radius-pill);
+    color: var(--app-color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        color var(--app-motion-fast) ease,
+        background-color var(--app-motion-fast) ease,
+        border-color var(--app-motion-fast) ease;
+}
+
+.tab:hover {
+    color: var(--app-color-text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tabActive {
+    color: var(--app-color-text-primary);
+    background-color: var(--app-color-surface-3);
+    border-color: var(--app-color-border-strong);
+}
