@@ -2,7 +2,8 @@ import { lazy, Suspense } from 'react';
 import AppProviders from '@/components/providers/appProviders';
 
 import { appRoutes, getMusicRoute, isVideoPlayerRoute } from '@/app/routes';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { AppShell } from '@/components/layout/AppShell/AppShell';
 import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import GlobalPlayerControl from '@/features/music/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -32,6 +33,14 @@ const DownloadsPage = lazy(() => import('@/pages/downloads'));
 const TrashPage = lazy(() => import('@/pages/trash'));
 const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
+function ShellLayout() {
+    return (
+        <AppShell>
+            <Outlet />
+        </AppShell>
+    );
+}
+
 function AppContent() {
     const location = useLocation();
     const hidePlayer = isVideoPlayerRoute(location.pathname);
@@ -40,39 +49,41 @@ function AppContent() {
         <Suspense>
             <Routes>
                 <Route path={appRoutes.root} element={<Navigate to={appRoutes.home} replace />} />
-                <Route path={appRoutes.home} element={<HomePage />} />
-                <Route path={`${appRoutes.files}/*`} element={<FilePage />} />
-                <Route path={appRoutes.favorites} element={<FavoritesPage />} />
                 <Route
                     path={appRoutes.legacyFavorites}
                     element={<Navigate to={appRoutes.favorites} replace />}
                 />
-                <Route path={appRoutes.settings} element={<SettingsPage />} />
-                <Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
                 <Route
                     path={appRoutes.legacyActivityDiary}
                     element={<Navigate to={appRoutes.activityDiary} replace />}
                 />
-                <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
-                <Route path={appRoutes.about} element={<AboutPage />} />
-                <Route path={appRoutes.configWizard} element={<ConfigWizardPage />} />
-                <Route path={appRoutes.notifications} element={<NotificationsPage />} />
-                <Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
-                <Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
-                    <Route index element={<MusicHomeScreen />} />
-                    <Route path="playlists" element={<PlaylistsView />} />
-                    <Route path="artists" element={<ArtistsView />} />
-                    <Route path="albums" element={<AlbumsView />} />
-                    <Route path="genres" element={<GenresView />} />
-                    <Route path="folders" element={<FoldersView />} />
-                    <Route path="*" element={<Navigate to={getMusicRoute('home')} replace />} />
+                <Route element={<ShellLayout />}>
+                    <Route path={appRoutes.home} element={<HomePage />} />
+                    <Route path={`${appRoutes.files}/*`} element={<FilePage />} />
+                    <Route path={appRoutes.favorites} element={<FavoritesPage />} />
+                    <Route path={appRoutes.settings} element={<SettingsPage />} />
+                    <Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
+                    <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />
+                    <Route path={appRoutes.about} element={<AboutPage />} />
+                    <Route path={appRoutes.configWizard} element={<ConfigWizardPage />} />
+                    <Route path={appRoutes.notifications} element={<NotificationsPage />} />
+                    <Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
+                    <Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
+                        <Route index element={<MusicHomeScreen />} />
+                        <Route path="playlists" element={<PlaylistsView />} />
+                        <Route path="artists" element={<ArtistsView />} />
+                        <Route path="albums" element={<AlbumsView />} />
+                        <Route path="genres" element={<GenresView />} />
+                        <Route path="folders" element={<FoldersView />} />
+                        <Route path="*" element={<Navigate to={getMusicRoute('home')} replace />} />
+                    </Route>
+                    <Route path={`${appRoutes.videos}/*`} element={<VideosPage />} />
+                    <Route path={appRoutes.assistant} element={<AssistantPage />} />
+                    <Route path={appRoutes.takeout} element={<TakeoutPage />} />
+                    <Route path={appRoutes.captures} element={<CapturesPage />} />
+                    <Route path={appRoutes.downloads} element={<DownloadsPage />} />
+                    <Route path={appRoutes.trash} element={<TrashPage />} />
                 </Route>
-                <Route path={`${appRoutes.videos}/*`} element={<VideosPage />} />
-                <Route path={appRoutes.assistant} element={<AssistantPage />} />
-                <Route path={appRoutes.takeout} element={<TakeoutPage />} />
-                <Route path={appRoutes.captures} element={<CapturesPage />} />
-                <Route path={appRoutes.downloads} element={<DownloadsPage />} />
-                <Route path={appRoutes.trash} element={<TrashPage />} />
                 <Route path={`${appRoutes.videoPlayerBase}/:id`} element={<VideoPlayerPage />} />
                 <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
             </Routes>

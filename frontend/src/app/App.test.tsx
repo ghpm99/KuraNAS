@@ -6,10 +6,20 @@ const mockNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
     Routes: ({ children }: any) => <div data-testid="routes">{children}</div>,
-    Route: ({ element }: any) => <div>{element}</div>,
+    Route: ({ element, children }: any) => (
+        <div>
+            {element}
+            {children}
+        </div>
+    ),
     Navigate: () => <div>Navigate</div>,
+    Outlet: () => <div data-testid="outlet">Outlet</div>,
     useLocation: () => mockUseLocation(),
     useNavigate: () => mockNavigate,
+}));
+
+jest.mock('@/components/layout/AppShell/AppShell', () => ({
+    AppShell: ({ children }: any) => <div data-testid="app-shell">{children}</div>,
 }));
 
 jest.mock('@/components/providers/appProviders', () => ({ children }: any) => (

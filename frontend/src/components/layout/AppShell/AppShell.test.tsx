@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { Layout } from './Layout';
+import { AppShell } from './AppShell';
 
 const mockUseAppShell = jest.fn();
 const headerSpy = jest.fn();
@@ -12,7 +12,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-jest.mock('@/components/layout/AppShell/useAppShell', () => ({
+jest.mock('./useAppShell', () => ({
     useAppShell: () => mockUseAppShell(),
 }));
 
@@ -29,7 +29,7 @@ jest.mock('../Sidebar/Sidebar', () => ({
     default: () => <div data-testid="sidebar">sidebar</div>,
 }));
 
-describe('layout/Layout/Layout', () => {
+describe('layout/AppShell', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
@@ -39,9 +39,9 @@ describe('layout/Layout/Layout', () => {
 
         render(
             <MemoryRouter>
-                <Layout>
+                <AppShell>
                     <div>body</div>
-                </Layout>
+                </AppShell>
             </MemoryRouter>
         );
 
@@ -56,9 +56,9 @@ describe('layout/Layout/Layout', () => {
 
         render(
             <MemoryRouter>
-                <Layout>
+                <AppShell>
                     <div>content</div>
-                </Layout>
+                </AppShell>
             </MemoryRouter>
         );
 

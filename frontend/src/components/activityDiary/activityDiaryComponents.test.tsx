@@ -22,9 +22,6 @@ jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
     </div>
 ));
 
-jest.mock('../layout/Layout', () => ({ children }: any) => (
-    <div data-testid="layout">{children}</div>
-));
 jest.mock('@/components/activityDiary/activityDiaryLayout', () => ({ children }: any) => (
     <div data-testid="activity-layout">{children}</div>
 ));

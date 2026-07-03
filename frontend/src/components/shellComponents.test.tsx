@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Header from '@/components/layout/Header/Header';
-import { Layout } from '@/components/layout/Layout/Layout';
+import { AppShell } from '@/components/layout/AppShell/AppShell';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import Tabs from '@/components/tabs/tabs';
@@ -85,11 +85,6 @@ jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
 jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ children }: any) => (
     <div>{children}</div>
 ));
-jest.mock('@/components/layout/Layout', () => ({
-    __esModule: true,
-    default: ({ children }: any) => <div data-testid="analytics-layout">{children}</div>,
-}));
-
 jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
     useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
 }));
@@ -123,9 +118,6 @@ jest.mock('@/features/music/components/musicContent', () => () => <div>MusicCont
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 jest.mock('@/components/settings/SettingsScreen', () => () => <div>SETTINGS_PAGE_TITLE</div>);
 
-jest.mock('@/features/videos/components/videoLayout', () => ({ children }: any) => (
-    <div data-testid="video-layout">{children}</div>
-));
 jest.mock('@/features/videos/components/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
 jest.mock('@/features/videos/components/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
 jest.mock('@/features/videos/components/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
@@ -260,9 +252,9 @@ describe('shell components and pages', () => {
 
         render(
             <MemoryRouter>
-                <Layout>
+                <AppShell>
                     <div>child</div>
-                </Layout>
+                </AppShell>
             </MemoryRouter>
         );
         expect(screen.getByText('child')).toBeInTheDocument();
@@ -364,7 +356,6 @@ describe('shell components and pages', () => {
 
     it('renders composition pages and video back behavior', () => {
         render(<HomePage />);
-        expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
         expect(screen.getByText('HomeScreenMock')).toBeInTheDocument();
 
         render(<FilesPage />);
@@ -383,7 +374,6 @@ describe('shell components and pages', () => {
         expect(screen.getByTestId('music-layout')).toBeInTheDocument();
 
         render(<VideosPage />);
-        expect(screen.getByTestId('video-layout')).toBeInTheDocument();
         expect(screen.getByText('VideoDomainHeaderMock')).toBeInTheDocument();
         expect(screen.getByText('VideoSidebarMock')).toBeInTheDocument();
 
@@ -392,7 +382,6 @@ describe('shell components and pages', () => {
         expect(screen.getByText('AboutScreenMock')).toBeInTheDocument();
 
         render(<AnalyticsPage />);
-        expect(screen.getAllByTestId('analytics-layout').length).toBeGreaterThan(0);
         expect(
             screen.getByRole('heading', { name: 'ANALYTICS_SECTION_OVERVIEW' })
         ).toBeInTheDocument();
