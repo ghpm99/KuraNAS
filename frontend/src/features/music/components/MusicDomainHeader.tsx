@@ -1,18 +1,12 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
+import PageHeader from '@/components/layout/PageHeader';
 import { useMusicDomainHeader } from '@/features/music/components/useMusicDomainHeader';
-import styles from './MusicDomainHeader.module.css';
 
 const MusicDomainHeader = () => {
     const { t } = useI18n();
     const { titleKey, descriptionKey } = useMusicDomainHeader();
 
-    return (
-        <header className={styles.header}>
-            <span className={styles.eyebrow}>{t('NAV_MUSIC')}</span>
-            <h1 className={styles.title}>{t(titleKey)}</h1>
-            <p className={styles.description}>{t(descriptionKey)}</p>
-        </header>
-    );
+    return <PageHeader title={t(titleKey)} subtitle={t(descriptionKey)} />;
 };
 
 export default MusicDomainHeader;

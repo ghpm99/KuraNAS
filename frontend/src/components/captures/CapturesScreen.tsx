@@ -1,3 +1,5 @@
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
 import { ExternalLink, Film, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
@@ -36,12 +38,11 @@ const CapturesScreen = () => {
     } = useCapturesScreen();
 
     return (
-        <div className={styles.page}>
-            <header className={styles.hero}>
-                <p className={styles.eyebrow}>{t('CAPTURES_PAGE_EYEBROW')}</p>
-                <h1 className={styles.title}>{t('CAPTURES_PAGE_TITLE')}</h1>
-                <p className={styles.description}>{t('CAPTURES_PAGE_DESCRIPTION')}</p>
-            </header>
+        <PageContainer>
+            <PageHeader
+                title={t('CAPTURES_PAGE_TITLE')}
+                subtitle={t('CAPTURES_PAGE_DESCRIPTION')}
+            />
 
             {isLoading && (
                 <div className={styles.state}>
@@ -140,7 +141,7 @@ const CapturesScreen = () => {
                     })}
                 </ul>
             )}
-        </div>
+        </PageContainer>
     );
 };
 

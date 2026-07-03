@@ -69,7 +69,7 @@ describe('FilesExplorerScreen', () => {
 
         expect(screen.getByText('FILES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByText('FILES_PAGE_DESCRIPTION')).toBeInTheDocument();
-        expect(screen.getByText('FILES_EXPLORER_EYEBROW')).toBeInTheDocument();
+        expect(screen.getByText('FILES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByTestId('file-content')).toHaveAttribute('data-view-mode', 'grid');
         expect(screen.getByTestId('file-content')).toHaveAttribute('data-show-heading', 'false');
 

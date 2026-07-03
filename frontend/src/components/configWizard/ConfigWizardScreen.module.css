@@ -14,17 +14,6 @@
     padding: 3rem;
 }
 
-.header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.title {
-    margin: 0;
-    font-size: 1.5rem;
-}
-
 .description {
     margin: 0;
     color: var(--text-secondary, #9aa0aa);

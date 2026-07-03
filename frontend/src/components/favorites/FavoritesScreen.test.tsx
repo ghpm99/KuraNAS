@@ -65,7 +65,7 @@ describe('FavoritesScreen', () => {
 
         expect(screen.getByText('FAVORITES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByText('FAVORITES_PAGE_DESCRIPTION')).toBeInTheDocument();
-        expect(screen.getByText('FAVORITES_EYEBROW')).toBeInTheDocument();
+        expect(screen.getByText('FAVORITES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByTestId('favorites-file-content')).toHaveAttribute(
             'data-view-mode',
             'grid'

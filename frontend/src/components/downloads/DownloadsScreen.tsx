@@ -1,3 +1,5 @@
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress } from '@mui/material';
 import { Download } from 'lucide-react';
 import styles from './DownloadsScreen.module.css';
@@ -16,12 +18,11 @@ const DownloadsScreen = () => {
     } = useDownloadsScreen();
 
     return (
-        <div className={styles.page}>
-            <header className={styles.hero}>
-                <p className={styles.eyebrow}>{t('DOWNLOADS_PAGE_EYEBROW')}</p>
-                <h1 className={styles.title}>{t('DOWNLOADS_PAGE_TITLE')}</h1>
-                <p className={styles.description}>{t('DOWNLOADS_PAGE_DESCRIPTION')}</p>
-            </header>
+        <PageContainer>
+            <PageHeader
+                title={t('DOWNLOADS_PAGE_TITLE')}
+                subtitle={t('DOWNLOADS_PAGE_DESCRIPTION')}
+            />
 
             {isLoading && (
                 <div className={styles.state}>
@@ -96,7 +97,7 @@ const DownloadsScreen = () => {
                     </ol>
                 </section>
             )}
-        </div>
+        </PageContainer>
     );
 };
 

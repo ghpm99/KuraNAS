@@ -2,10 +2,12 @@ import ActionBar from '@/components/actionBar';
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import Tabs from '@/components/tabs';
 import { Button, Drawer, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { FolderOpen, LayoutGrid, List, PanelLeft } from 'lucide-react';
+import { LayoutGrid, List, PanelLeft } from 'lucide-react';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { appRoutes } from '@/app/routes';
@@ -32,17 +34,8 @@ const FilesExplorerScreen = () => {
         : styles.workspace;
 
     return (
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroEyebrow}>
-                    <FolderOpen size={16} />
-                    <span>{t('FILES_EXPLORER_EYEBROW')}</span>
-                </div>
-                <div>
-                    <h1 className={styles.heroTitle}>{t('FILES_PAGE_TITLE')}</h1>
-                    <p className={styles.heroDescription}>{t('FILES_PAGE_DESCRIPTION')}</p>
-                </div>
-            </section>
+        <PageContainer>
+            <PageHeader title={t('FILES_PAGE_TITLE')} subtitle={t('FILES_PAGE_DESCRIPTION')} />
 
             <div className={workspaceClassName}>
                 <div className={styles.mainColumn}>
@@ -157,7 +150,7 @@ const FilesExplorerScreen = () => {
                     <FolderTree />
                 </div>
             </Drawer>
-        </div>
+        </PageContainer>
     );
 };
 

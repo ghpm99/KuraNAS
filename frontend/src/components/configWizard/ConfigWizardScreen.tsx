@@ -12,6 +12,7 @@ import {
     TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import PageHeader from '@/components/layout/PageHeader';
 import { appRoutes } from '@/app/routes';
 import { EnvField } from '@/service/configuration';
 import useConfigWizard, { generateTokenKey } from './useConfigWizard';
@@ -175,10 +176,7 @@ const ConfigWizardScreen = () => {
 
     return (
         <div className={styles.page}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>{t('ENV_WIZARD_TITLE')}</h1>
-                <p className={styles.description}>{t('ENV_WIZARD_DESCRIPTION')}</p>
-            </header>
+            <PageHeader title={t('ENV_WIZARD_TITLE')} subtitle={t('ENV_WIZARD_DESCRIPTION')} />
 
             {restartRequired ? <Alert severity="info">{t('ENV_RESTART_REQUIRED')}</Alert> : null}
 

@@ -12,6 +12,8 @@ import {
     TextField,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import AccessControlSettingsSection from './AccessControlSettingsSection';
 import AIProvidersSettingsSection from './AIProvidersSettingsSection';
 import ImageClassificationBackfill from './ImageClassificationBackfill';
@@ -50,23 +52,23 @@ const SettingsScreen = () => {
     const disableActions = isLoading || isSaving;
 
     return (
-        <div className={styles.content}>
-            <header className={styles.header}>
-                <div className={styles.intro}>
-                    <h1 className={styles.title}>{t('SETTINGS_PAGE_TITLE')}</h1>
-                    <p className={styles.description}>{t('SETTINGS_PAGE_DESCRIPTION')}</p>
-                </div>
-                <div className={styles.summary}>
-                    <Chip
-                        label={`${t('SETTINGS_SUMMARY_WORKERS')}: ${settings.indexing.workers_enabled ? t('SETTINGS_STATUS_ENABLED') : t('SETTINGS_STATUS_DISABLED')}`}
-                        variant="outlined"
-                    />
-                    <Chip
-                        label={`${t('LANGUAGE')}: ${draft.language.current}`}
-                        variant="outlined"
-                    />
-                </div>
-            </header>
+        <PageContainer>
+            <PageHeader
+                title={t('SETTINGS_PAGE_TITLE')}
+                subtitle={t('SETTINGS_PAGE_DESCRIPTION')}
+                actions={
+                    <>
+                        <Chip
+                            label={`${t('SETTINGS_SUMMARY_WORKERS')}: ${settings.indexing.workers_enabled ? t('SETTINGS_STATUS_ENABLED') : t('SETTINGS_STATUS_DISABLED')}`}
+                            variant="outlined"
+                        />
+                        <Chip
+                            label={`${t('LANGUAGE')}: ${draft.language.current}`}
+                            variant="outlined"
+                        />
+                    </>
+                }
+            />
 
             {hasError ? <Alert severity="error">{t('SETTINGS_LOAD_ERROR')}</Alert> : null}
 
@@ -390,7 +392,7 @@ const SettingsScreen = () => {
                     </Button>
                 </div>
             </footer>
-        </div>
+        </PageContainer>
     );
 };
 

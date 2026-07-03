@@ -1,3 +1,5 @@
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import { formatSize } from '@/shared/utils/formatSize';
 import { Button, Chip, CircularProgress, TextField } from '@mui/material';
 import { ArchiveRestore, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
@@ -25,22 +27,22 @@ const TrashScreen = () => {
     } = useTrashScreen();
 
     return (
-        <div className={styles.page}>
-            <header className={styles.hero}>
-                <div className={styles.heroText}>
-                    <h1 className={styles.title}>{t('TRASH_PAGE_TITLE')}</h1>
-                    <p className={styles.description}>{t('TRASH_PAGE_DESCRIPTION')}</p>
-                </div>
-                <Button
-                    variant="outlined"
-                    color="error"
-                    disabled={isMutating || items.length === 0}
-                    onClick={() => void handleEmptyTrash()}
-                    startIcon={<Trash2 size={16} />}
-                >
-                    {t('TRASH_EMPTY_BUTTON')}
-                </Button>
-            </header>
+        <PageContainer>
+            <PageHeader
+                title={t('TRASH_PAGE_TITLE')}
+                subtitle={t('TRASH_PAGE_DESCRIPTION')}
+                actions={
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        disabled={isMutating || items.length === 0}
+                        onClick={() => void handleEmptyTrash()}
+                        startIcon={<Trash2 size={16} />}
+                    >
+                        {t('TRASH_EMPTY_BUTTON')}
+                    </Button>
+                }
+            />
 
             {retentionDays !== undefined && (
                 <div className={styles.retention}>
@@ -50,9 +52,7 @@ const TrashScreen = () => {
                         label={t('TRASH_RETENTION_LABEL')}
                         defaultValue={retentionDays}
                         slotProps={{ htmlInput: { min: 1 } }}
-                        onBlur={(event) =>
-                            void handleRetentionChange(Number(event.target.value))
-                        }
+                        onBlur={(event) => void handleRetentionChange(Number(event.target.value))}
                     />
                     <span className={styles.description}>{t('TRASH_RETENTION_HINT')}</span>
                 </div>
@@ -135,7 +135,7 @@ const TrashScreen = () => {
                     </Button>
                 </div>
             )}
-        </div>
+        </PageContainer>
     );
 };
 
