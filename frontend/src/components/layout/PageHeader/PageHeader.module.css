@@ -1,0 +1,37 @@
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--app-spacing-4);
+    flex-wrap: wrap;
+}
+
+.copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-1);
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--app-font-page-title);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--app-color-text-primary);
+}
+
+.subtitle {
+    margin: 0;
+    font-size: var(--app-font-page-subtitle);
+    line-height: 1.5;
+    color: var(--app-color-text-muted);
+    max-width: 72ch;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-2);
+    flex-shrink: 0;
+}

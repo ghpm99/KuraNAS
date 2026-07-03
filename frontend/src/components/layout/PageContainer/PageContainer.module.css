@@ -1,0 +1,22 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-5);
+    width: 100%;
+    max-width: var(--app-content-max-width);
+    margin: 0 auto;
+    padding: var(--app-spacing-5) var(--app-spacing-6) var(--app-spacing-6);
+}
+
+@media (max-width: 768px) {
+    .container {
+        gap: var(--app-spacing-4);
+        padding: var(--app-spacing-3) var(--app-spacing-3) var(--app-spacing-4);
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: var(--app-spacing-2) var(--app-spacing-2) var(--app-spacing-3);
+    }
+}
