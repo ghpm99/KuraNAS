@@ -1,70 +1,17 @@
 import { appRoutes } from '@/app/routes';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import useGlobalSearch from '@/components/search/useGlobalSearch';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useHomeScreen from './useHomeScreen';
 import type { HomeRecentFile, HomeFavoriteFile, HomeRecentImage } from './useHomeScreen';
 import { formatDate, formatSize, getFileTypeInfo } from '@/utils';
-import {
-    AlertCircle,
-    ArrowRight,
-    BarChart3,
-    Film,
-    FolderOpen,
-    HardDrive,
-    Heart,
-    Image as ImageIcon,
-    LibraryBig,
-    Music2,
-    Search,
-    Settings2,
-} from 'lucide-react';
-import { Button, Chip, InputAdornment, LinearProgress, TextField } from '@mui/material';
-import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { AlertCircle, HardDrive, LibraryBig } from 'lucide-react';
+import { Button, Chip, LinearProgress } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { type Variants, motion } from 'framer-motion';
 import styles from './HomeScreen.module.css';
 import HomeSectionShell from './HomeSectionShell';
-
-// Animation variants
-const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1,
-            delayChildren: 0.1,
-        },
-    },
-};
-
-const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { 
-        opacity: 1, 
-        y: 0,
-        transition: { type: 'spring', stiffness: 300, damping: 24 }
-    },
-};
-
-const heroVariants: Variants = {
-    hidden: { opacity: 0, y: -20 },
-    show: { 
-        opacity: 1, 
-        y: 0,
-        transition: { duration: 0.6, ease: 'easeOut' }
-    },
-};
-
-type QuickAction = {
-    id: string;
-    label: string;
-    description: string;
-    route: string;
-    icon: ReactNode;
-};
 
 const getAnalyticsStatusKey = (status: 'ok' | 'scanning' | 'error') => {
     switch (status) {
@@ -105,14 +52,7 @@ const FileListCard = ({
 }) => {
     const fileType = getFileTypeInfo(file.format);
     return (
-        <motion.button
-            variants={itemVariants}
-            type="button"
-            className={styles.recentCardButton}
-            onClick={onClick}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-        >
+        <button type="button" className={styles.recentCardButton} onClick={onClick}>
             <div className={styles.recentCard}>
                 <div className={styles.recentIcon}>{t(fileType.description)}</div>
                 <div className={styles.recentContent}>
@@ -130,7 +70,7 @@ const FileListCard = ({
                     <p className={styles.recentPath}>{file.parent_path}</p>
                 </div>
             </div>
-        </motion.button>
+        </button>
     );
 };
 
@@ -138,7 +78,6 @@ const HomeScreen = () => {
     const { t } = useI18n();
     const navigate = useNavigate();
     const { openMediaItem } = useMediaOpener();
-    const { openSearch, shortcut } = useGlobalSearch();
     const {
         recentFiles,
         favoriteItems = [],
@@ -153,61 +92,6 @@ const HomeScreen = () => {
         isVideoLoading,
         isMusicLoading,
     } = useHomeScreen();
-
-    const quickActions = useMemo<QuickAction[]>(
-        () => [
-            {
-                id: 'files',
-                label: t('FILES'),
-                description: t('HOME_LIBRARY_DESCRIPTION'),
-                route: appRoutes.files,
-                icon: <FolderOpen size={18} />,
-            },
-            {
-                id: 'favorites',
-                label: t('STARRED_FILES'),
-                description: t('HOME_LIBRARY_DESCRIPTION'),
-                route: appRoutes.favorites,
-                icon: <Heart size={18} />,
-            },
-            {
-                id: 'images',
-                label: t('NAV_IMAGES'),
-                description: t('HOME_MEDIA_DESCRIPTION'),
-                route: appRoutes.images,
-                icon: <ImageIcon size={18} />,
-            },
-            {
-                id: 'music',
-                label: t('NAV_MUSIC'),
-                description: t('HOME_MEDIA_DESCRIPTION'),
-                route: appRoutes.music,
-                icon: <Music2 size={18} />,
-            },
-            {
-                id: 'videos',
-                label: t('NAV_VIDEOS'),
-                description: t('HOME_MEDIA_DESCRIPTION'),
-                route: appRoutes.videos,
-                icon: <Film size={18} />,
-            },
-            {
-                id: 'analytics',
-                label: t('ANALYTICS'),
-                description: t('HOME_SYSTEM_DESCRIPTION'),
-                route: appRoutes.analytics,
-                icon: <BarChart3 size={18} />,
-            },
-            {
-                id: 'settings',
-                label: t('SETTINGS'),
-                description: t('HOME_SYSTEM_DESCRIPTION'),
-                route: appRoutes.settings,
-                icon: <Settings2 size={18} />,
-            },
-        ],
-        [t]
-    );
 
     const storageUsedLabel = analytics
         ? `${formatSize(analytics.storage.used_bytes)} / ${formatSize(analytics.storage.total_bytes)}`
@@ -242,109 +126,9 @@ const HomeScreen = () => {
     };
 
     return (
-        <motion.div 
-            className={styles.page}
-            initial="hidden"
-            animate="show"
-            variants={containerVariants}
-        >
-            {/* Hero section */}
-            <section className={styles.hero}>
-                <motion.div className={styles.heroCopy} variants={heroVariants}>
-                    <div className={styles.heroEyebrow}>
-                        <LibraryBig size={16} />
-                        <span>{t('HOME_HERO_EYEBROW')}</span>
-                    </div>
-                    <h1 className={styles.heroTitle}>{t('HOME_PAGE_TITLE')}</h1>
-                    <p className={styles.heroDescription}>{t('HOME_PAGE_DESCRIPTION')}</p>
-                </motion.div>
+        <PageContainer>
+            <PageHeader title={t('HOME_PAGE_TITLE')} subtitle={t('HOME_PAGE_DESCRIPTION')} />
 
-                <motion.div className={styles.heroSearch} variants={heroVariants}>
-                    <TextField
-                        fullWidth
-                        value=""
-                        onClick={openSearch}
-                        onFocus={openSearch}
-                        placeholder={t('SEARCH_PLACEHOLDER')}
-                        inputProps={{
-                            readOnly: true,
-                            'aria-label': t('GLOBAL_SEARCH_OPEN'),
-                        }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search size={18} />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                    <div className={styles.searchMeta}>
-                        <p className={styles.searchHint}>
-                            {t('GLOBAL_SEARCH_SHORTCUT', { shortcut })}
-                        </p>
-                        <Button variant="text" onClick={openSearch}>
-                            {t('HOME_OPEN_SECTION')}
-                        </Button>
-                    </div>
-                </motion.div>
-
-                <motion.div className={styles.heroMetrics} variants={containerVariants}>
-                    <motion.div className={styles.metricCard} variants={itemVariants}>
-                        <div className={styles.metricLabel}>{t('HOME_STORAGE_LABEL')}</div>
-                        <div className={styles.metricValue}>{storageUsedLabel}</div>
-                        <div className={styles.metricHelp}>{storageFreeLabel}</div>
-                    </motion.div>
-                    <motion.div className={styles.metricCard} variants={itemVariants}>
-                        <div className={styles.metricLabel}>{t('HOME_INDEX_LABEL')}</div>
-                        <div className={styles.metricValue}>{indexedFilesLabel}</div>
-                        <div className={styles.metricHelp}>{analyticsStatusLabel}</div>
-                    </motion.div>
-                    <motion.div className={styles.metricCard} variants={itemVariants}>
-                        <div className={styles.metricLabel}>{t('HOME_LAST_SCAN_LABEL')}</div>
-                        <div className={styles.metricValue}>{lastScanLabel}</div>
-                        <div className={styles.metricHelp}>
-                            {t('HOME_ERRORS_LABEL')}: {recentErrorsLabel}
-                        </div>
-                    </motion.div>
-                </motion.div>
-
-                <div className={styles.actionsSection}>
-                    <div className={styles.sectionHeader}>
-                        <div>
-                            <h2 className={styles.sectionTitle}>{t('HOME_LIBRARY_TITLE')}</h2>
-                            <p className={styles.sectionDescription}>
-                                {t('HOME_LIBRARY_DESCRIPTION')}
-                            </p>
-                        </div>
-                    </div>
-                    <div className={styles.actionsGrid}>
-                        {quickActions.map((action) => (
-                            <motion.article 
-                                key={action.id} 
-                                className={styles.actionCard}
-                                whileHover={{ y: -4 }}
-                                transition={{ type: 'spring', stiffness: 300 }}
-                            >
-                                <div className={styles.actionIcon}>{action.icon}</div>
-                                <div className={styles.actionContent}>
-                                    <h3 className={styles.actionTitle}>{action.label}</h3>
-                                    <p className={styles.actionDescription}>{action.description}</p>
-                                </div>
-                                <Button
-                                    component={RouterLink}
-                                    to={action.route}
-                                    variant="text"
-                                    endIcon={<ArrowRight size={16} />}
-                                >
-                                    {t('HOME_OPEN_SECTION')}
-                                </Button>
-                            </motion.article>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Content sections */}
             <div className={styles.contentGrid}>
                 {/* Recent files */}
                 <HomeSectionShell
@@ -356,12 +140,7 @@ const HomeScreen = () => {
                     isEmpty={recentFiles.length === 0}
                     emptyMessage={t('HOME_RECENT_EMPTY')}
                 >
-                    <motion.div 
-                        className={styles.recentList}
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="show"
-                    >
+                    <div className={styles.recentList}>
                         {recentFiles.map((file) => (
                             <FileListCard
                                 key={file.id}
@@ -370,7 +149,7 @@ const HomeScreen = () => {
                                 t={t}
                             />
                         ))}
-                    </motion.div>
+                    </div>
                 </HomeSectionShell>
 
                 {/* Recent images */}
@@ -385,22 +164,14 @@ const HomeScreen = () => {
                     skeletonVariant="rounded"
                     skeletonHeight={132}
                 >
-                    <motion.div 
-                        className={styles.imageGrid}
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="show"
-                    >
+                    <div className={styles.imageGrid}>
                         {recentImages.map((image) => (
-                            <motion.button
+                            <button
                                 key={image.id}
-                                variants={itemVariants}
                                 type="button"
                                 className={styles.imageCard}
                                 onClick={() => handleOpenRecentImage(image)}
                                 aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: image.name })}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                             >
                                 <img
                                     src={imageThumbnailUrl(image.id)}
@@ -412,9 +183,9 @@ const HomeScreen = () => {
                                     <strong>{image.name}</strong>
                                     <span>{formatDate(image.created_at)}</span>
                                 </div>
-                            </motion.button>
+                            </button>
                         ))}
-                    </motion.div>
+                    </div>
                 </HomeSectionShell>
 
                 {/* Favorites */}
@@ -427,12 +198,7 @@ const HomeScreen = () => {
                     isEmpty={favoriteItems.length === 0}
                     emptyMessage={t('HOME_FAVORITES_EMPTY')}
                 >
-                    <motion.div 
-                        className={styles.recentList}
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="show"
-                    >
+                    <div className={styles.recentList}>
                         {favoriteItems.map((file) => (
                             <FileListCard
                                 key={file.id}
@@ -441,7 +207,7 @@ const HomeScreen = () => {
                                 t={t}
                             />
                         ))}
-                    </motion.div>
+                    </div>
                 </HomeSectionShell>
 
                 {/* Music */}
@@ -458,12 +224,7 @@ const HomeScreen = () => {
                     skeletonHeight={180}
                 >
                     {musicResume ? (
-                        <motion.div 
-                            className={styles.mediaCard}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.4 }}
-                        >
+                        <div className={styles.mediaCard}>
                             <div className={styles.mediaHeader}>
                                 <div>
                                     <h3 className={styles.mediaTitle}>{musicTitle}</h3>
@@ -499,7 +260,7 @@ const HomeScreen = () => {
                             <Button component={RouterLink} to={appRoutes.music} variant="contained">
                                 {t('HOME_RESUME_ACTION')}
                             </Button>
-                        </motion.div>
+                        </div>
                     ) : null}
                 </HomeSectionShell>
 
@@ -519,11 +280,7 @@ const HomeScreen = () => {
                 >
                     <div className={styles.videoStack}>
                         {videoResume ? (
-                            <motion.article 
-                                className={styles.videoHeroCard}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                            >
+                            <article className={styles.videoHeroCard}>
                                 <img
                                     className={styles.videoHeroImage}
                                     src={`${getApiV1BaseUrl()}/files/video-thumbnail/${videoResume.video.id}?width=960&height=540`}
@@ -558,18 +315,13 @@ const HomeScreen = () => {
                                         </Button>
                                     </div>
                                 </div>
-                            </motion.article>
+                            </article>
                         ) : null}
 
-                        <motion.div 
-                            className={styles.videoList}
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="show"
-                        >
+                        <div className={styles.videoList}>
                             {featuredVideoItems.map((item) => (
-                                <motion.div key={item.video.id} variants={itemVariants}>
                                 <RouterLink
+                                    key={item.video.id}
                                     className={styles.videoCard}
                                     to={`${appRoutes.videoPlayerBase}/${item.video.id}`}
                                     state={{ from: appRoutes.home }}
@@ -591,9 +343,8 @@ const HomeScreen = () => {
                                         />
                                     </div>
                                 </RouterLink>
-                                </motion.div>
                             ))}
-                        </motion.div>
+                        </div>
                     </div>
                 </HomeSectionShell>
 
@@ -612,41 +363,36 @@ const HomeScreen = () => {
                     className={styles.statusPanel}
                 >
                     {analytics ? (
-                        <motion.div 
-                            className={styles.statusGrid}
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="show"
-                        >
-                            <motion.div className={styles.statusCard} variants={itemVariants}>
+                        <div className={styles.statusGrid}>
+                            <div className={styles.statusCard}>
                                 <div className={styles.statusLabel}>
                                     <HardDrive size={16} />
                                     <span>{t('HOME_STORAGE_LABEL')}</span>
                                 </div>
                                 <strong className={styles.statusValue}>{storageUsedLabel}</strong>
                                 <span className={styles.statusHelp}>{storageFreeLabel}</span>
-                            </motion.div>
-                            <motion.div className={styles.statusCard} variants={itemVariants}>
+                            </div>
+                            <div className={styles.statusCard}>
                                 <div className={styles.statusLabel}>
                                     <LibraryBig size={16} />
                                     <span>{t('HOME_INDEX_LABEL')}</span>
                                 </div>
                                 <strong className={styles.statusValue}>{indexedFilesLabel}</strong>
                                 <span className={styles.statusHelp}>{analyticsStatusLabel}</span>
-                            </motion.div>
-                            <motion.div className={styles.statusCard} variants={itemVariants}>
+                            </div>
+                            <div className={styles.statusCard}>
                                 <div className={styles.statusLabel}>
                                     <AlertCircle size={16} />
                                     <span>{t('HOME_ERRORS_LABEL')}</span>
                                 </div>
                                 <strong className={styles.statusValue}>{recentErrorsLabel}</strong>
                                 <span className={styles.statusHelp}>{lastScanLabel}</span>
-                            </motion.div>
-                        </motion.div>
+                            </div>
+                        </div>
                     ) : null}
                 </HomeSectionShell>
             </div>
-        </motion.div>
+        </PageContainer>
     );
 };
 

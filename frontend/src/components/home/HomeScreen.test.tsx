@@ -5,7 +5,6 @@ import HomeScreen from './HomeScreen';
 const mockUseHomeScreen = jest.fn();
 const mockOpenMediaItem = jest.fn();
 const mockNavigate = jest.fn();
-const mockOpenSearch = jest.fn();
 
 jest.mock('./useHomeScreen', () => ({
     __esModule: true,
@@ -15,13 +14,6 @@ jest.mock('@/components/hooks/useMediaOpener/useMediaOpener', () => ({
     __esModule: true,
     default: () => ({
         openMediaItem: (...args: any[]) => mockOpenMediaItem(...args),
-    }),
-}));
-jest.mock('@/components/search/useGlobalSearch', () => ({
-    __esModule: true,
-    default: () => ({
-        openSearch: mockOpenSearch,
-        shortcut: 'Ctrl+K',
     }),
 }));
 jest.mock('react-router-dom', () => {
@@ -190,8 +182,8 @@ describe('components/home/HomeScreen', () => {
         expect(screen.getByText('Episode 5')).toBeInTheDocument();
         expect(screen.getByText('photo.jpg')).toBeInTheDocument();
         expect(screen.getByText('System status')).toBeInTheDocument();
-        expect(screen.getAllByText('Open area').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Resume').length).toBeGreaterThan(0);
+        expect(screen.getByText('Storage used')).toBeInTheDocument();
     });
 
     it('uses the shared media opener for recent files and falls back to files when needed', () => {
@@ -266,7 +258,7 @@ describe('components/home/HomeScreen', () => {
         expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);
     });
 
-    it('opens the global search from the home hero and renders empty states when no content is available', () => {
+    it('renders empty states when no content is available', () => {
         mockUseHomeScreen.mockReturnValue({
             recentFiles: [],
             favoriteItems: [],
@@ -288,9 +280,6 @@ describe('components/home/HomeScreen', () => {
             </MemoryRouter>
         );
 
-        fireEvent.click(screen.getByLabelText('GLOBAL_SEARCH_OPEN'));
-
-        expect(mockOpenSearch).toHaveBeenCalled();
         expect(screen.getByText('No recent files')).toBeInTheDocument();
         expect(screen.getByText('No music')).toBeInTheDocument();
         expect(screen.getByText('No videos')).toBeInTheDocument();
