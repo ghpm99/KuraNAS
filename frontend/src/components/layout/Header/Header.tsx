@@ -1,4 +1,4 @@
-import { Avatar, IconButton } from '@mui/material';
+import { IconButton } from '@mui/material';
 import { Clock3, Menu, Search } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useGlobalSearch from '@/components/search/useGlobalSearch';
@@ -56,7 +56,6 @@ export default function Header({ showClock = false, onOpenMobileMenu }: HeaderPr
                     )}
 
                     <NotificationBell className={styles.iconButton} />
-                    <Avatar src="/avatar.jpg" alt={t('AVATAR_ALT')} className={styles.avatar} />
                 </div>
             </header>
         </div>

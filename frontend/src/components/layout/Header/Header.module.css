@@ -120,12 +120,6 @@
     background-color: rgba(24, 34, 52, 0.88) !important;
 }
 
-.avatar {
-    width: 36px !important;
-    height: 36px !important;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
-}
-
 .drawerPaper {
     width: min(320px, 88vw);
 }
@@ -171,10 +165,5 @@
 
     .actions {
         gap: var(--app-spacing-1);
-    }
-
-    .avatar {
-        width: 32px !important;
-        height: 32px !important;
     }
 }
