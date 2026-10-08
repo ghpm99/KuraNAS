@@ -1,0 +1,62 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { createTestFile } from '@/features/files/selection/testFileFactory';
+import DeleteFilesDialog from './deleteFilesDialog';
+
+const files = [createTestFile(1), createTestFile(2)];
+
+const renderOpenDialog = (props: Partial<Parameters<typeof DeleteFilesDialog>[0]> = {}) =>
+    render(
+        <MemoryRouter>
+            <DeleteFilesDialog files={files} isOpen onClose={jest.fn()} onConfirm={jest.fn()} {...props} />
+        </MemoryRouter>
+    );
+
+describe('DeleteFilesDialog', () => {
+    it('renders closed without a router or any provider', () => {
+        render(<DeleteFilesDialog files={[]} isOpen={false} onClose={jest.fn()} onConfirm={jest.fn()} />);
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('says the items go to the trash and links to the trash page', () => {
+        renderOpenDialog();
+
+        expect(screen.getByText(/FILES_DELETE_TRASH_NOTICE/)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'FILES_DELETE_OPEN_TRASH' })).toHaveAttribute(
+            'href',
+            '/trash'
+        );
+    });
+
+    it('confirms a regular delete by default', () => {
+        const onConfirm = jest.fn();
+        renderOpenDialog({ onConfirm });
+
+        expect(screen.getByRole('checkbox', { name: 'FILES_DELETE_PERMANENTLY' })).not.toBeChecked();
+        expect(screen.queryByText('FILES_DELETE_PERMANENT_WARNING')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(files, false);
+    });
+
+    it('shows the red warning and confirms a permanent delete when checked', () => {
+        const onConfirm = jest.fn();
+        renderOpenDialog({ onConfirm });
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'FILES_DELETE_PERMANENTLY' }));
+
+        expect(screen.getByRole('alert')).toHaveTextContent('FILES_DELETE_PERMANENT_WARNING');
+        fireEvent.click(screen.getAllByRole('button', { name: 'FILES_DELETE_PERMANENTLY' })[0]!);
+        expect(onConfirm).toHaveBeenCalledWith(files, true);
+    });
+
+    it('uses the many-items message for several files and closes the dialog from the trash link', () => {
+        const onClose = jest.fn();
+        renderOpenDialog({ onClose });
+
+        expect(screen.getByText('FILES_CONFIRM_DELETE_MANY')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('link', { name: 'FILES_DELETE_OPEN_TRASH' }));
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});

@@ -440,6 +440,17 @@ describe('service/files', () => {
         });
     });
 
+    it('deletes permanently by sending permanent=true as a query param', async () => {
+        mockedApi.delete.mockResolvedValue({});
+
+        await deleteFile(42, true);
+
+        expect(mockedApi.delete).toHaveBeenCalledWith('/files/path', {
+            data: { id: 42 },
+            params: { permanent: true },
+        });
+    });
+
     it('builds the single download url without touching axios', () => {
         expect(getFileDownloadUrl(99)).toBe('/api/v1/files/download/99');
         expect(mockedApi.get).not.toHaveBeenCalled();

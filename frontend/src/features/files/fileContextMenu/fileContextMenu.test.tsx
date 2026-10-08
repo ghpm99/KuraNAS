@@ -148,7 +148,7 @@ describe('FileContextMenu', () => {
         const confirmButtons = await screen.findAllByRole('button', { name: 'DELETE' });
         fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
 
-        await waitFor(() => expect(fileContext.deleteFile).toHaveBeenCalledWith(1));
+        await waitFor(() => expect(fileContext.deleteFile).toHaveBeenCalledWith(1, false));
     });
 
     describe('details action', () => {

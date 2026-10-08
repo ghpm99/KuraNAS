@@ -207,7 +207,7 @@ describe('components/actionBar', () => {
         dialog = screen.getByRole('dialog');
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'DELETE' })[0]!);
         await waitFor(() => {
-            expect(deleteFile).toHaveBeenCalledWith(7);
+            expect(deleteFile).toHaveBeenCalledWith(7, false);
         });
         await waitFor(() => {
             expect(screen.queryByRole('dialog', { name: 'DELETE' })).not.toBeInTheDocument();

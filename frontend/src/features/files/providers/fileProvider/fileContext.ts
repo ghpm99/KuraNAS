@@ -41,6 +41,8 @@ export type FileContextType = {
     recentAccessFiles: RecentAccessFile[];
     isLoadingAccessData: boolean;
     status: string;
+    listingErrorMessage?: string;
+    retryListing: () => void;
     selectedItem: FileData | null;
     handleSelectItem: (item: FileData | null) => void;
     handleStarredItem: (itemId: number) => void;
@@ -49,7 +51,7 @@ export type FileContextType = {
     moveFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string) => Promise<void>;
     copyFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => Promise<void>;
     renameFile: (id: number, newName: string) => Promise<void>;
-    deleteFile: (id: number) => Promise<void>;
+    deleteFile: (id: number, permanent?: boolean) => Promise<void>;
     rescanFiles: () => Promise<void>;
     fetchNextPage: () => void;
     hasNextPage: boolean;

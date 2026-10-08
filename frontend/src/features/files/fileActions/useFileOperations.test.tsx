@@ -53,6 +53,17 @@ describe('useFileOperations', () => {
         );
     });
 
+    it('passes the permanent flag to every delete', async () => {
+        const { result } = renderHook(() => useFileOperations());
+
+        await act(async () => {
+            await result.current.deleteFiles(files, true);
+        });
+
+        expect(mockFileContext.deleteFile).toHaveBeenCalledWith(files[0]!.id, true);
+        expect(mockFileContext.deleteFile).toHaveBeenCalledTimes(3);
+    });
+
     it('uses the single-item message for one file', async () => {
         const { result } = renderHook(() => useFileOperations());
 
