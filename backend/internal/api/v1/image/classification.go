@@ -304,3 +304,26 @@ func photoConfidence(file files.FileDto, metadata MetadataModel) float64 {
 		return 0
 	}
 }
+
+var allClassificationCategories = []ClassificationCategory{
+	ClassificationCategoryCapture,
+	ClassificationCategoryPhoto,
+	ClassificationCategoryOther,
+	ClassificationCategoryDocument,
+	ClassificationCategoryReceipt,
+	ClassificationCategoryLandscape,
+	ClassificationCategoryPortrait,
+	ClassificationCategoryMeme,
+	ClassificationCategoryArt,
+	ClassificationCategoryScreenshot,
+}
+
+func ParseClassificationCategory(rawCategory string) (ClassificationCategory, bool) {
+	category := ClassificationCategory(strings.ToLower(strings.TrimSpace(rawCategory)))
+	for _, knownCategory := range allClassificationCategories {
+		if category == knownCategory {
+			return category, true
+		}
+	}
+	return "", false
+}

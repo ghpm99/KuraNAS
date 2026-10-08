@@ -1,0 +1,70 @@
+package image
+
+import "time"
+
+type LibrarySort string
+
+const (
+	LibrarySortTakenAt LibrarySort = "taken_at"
+	LibrarySortName    LibrarySort = "name"
+	LibrarySortSize    LibrarySort = "size"
+)
+
+type LibrarySortOrder string
+
+const (
+	LibrarySortOrderDesc LibrarySortOrder = "desc"
+	LibrarySortOrderAsc  LibrarySortOrder = "asc"
+)
+
+// LibraryFilter holds the combinable gallery filters. Zero values mean the
+// filter is not applied. Folder lists direct children only; it is a client-visible
+// path in requests and an absolute disk path once the service resolved it.
+type LibraryFilter struct {
+	NameQuery   string
+	Categories  []ClassificationCategory
+	OnlyStarred bool
+	Formats     []string
+	TakenFrom   *time.Time
+	TakenTo     *time.Time
+	Camera      string
+	Folder      string
+}
+
+// LibraryListQuery is one page request against the gallery listing.
+// Cursor and TakenBefore are only honored for the taken_at/desc ordering.
+type LibraryListQuery struct {
+	Filter      LibraryFilter
+	Sort        LibrarySort
+	Order       LibrarySortOrder
+	Cursor      *LibraryCursor
+	TakenBefore *time.Time
+	Limit       int
+	Offset      int
+}
+
+type LibraryItemModel struct {
+	FileID     int
+	Name       string
+	Path       string
+	ParentPath string
+	Format     string
+	Size       int64
+	Width      int
+	Height     int
+	TakenAt    *time.Time
+	Category   string
+	Starred    bool
+	IsCold     bool
+	UpdatedAt  time.Time
+}
+
+type LibraryTimelineBucketModel struct {
+	Year  int
+	Month int
+	Count int
+}
+
+func IsKeysetOrdering(sort LibrarySort, order LibrarySortOrder) bool {
+	return sort == LibrarySortTakenAt && order == LibrarySortOrderDesc
+}

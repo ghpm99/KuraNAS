@@ -172,6 +172,7 @@ func (r *Repository) UpsertImageMetadata(tx *sql.Tx, metadata MetadataModel) (Me
 		metadata.Classification.SuggestedName,
 		time.Now(),
 		aiClassifiedAt,
+		ResolveTakenAt(metadata),
 	}
 
 	row := tx.QueryRow(queries.UpsertImageMetadataQuery, args...)
