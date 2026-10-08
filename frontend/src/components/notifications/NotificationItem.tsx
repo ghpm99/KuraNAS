@@ -1,29 +1,28 @@
-import { Box, Typography } from '@mui/material';
+import { Box, ButtonBase, Typography } from '@mui/material';
 import { AlertCircle, CheckCircle, Info, AlertTriangle, Monitor } from 'lucide-react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import type { Notification, NotificationType } from '@/types/notification';
+import { formatNotificationRelativeTime } from './notificationRelativeTime';
 
-const typeConfig: Record<NotificationType, { icon: typeof Info; color: string }> = {
-    info: { icon: Info, color: '#2196f3' },
-    success: { icon: CheckCircle, color: '#4caf50' },
-    warning: { icon: AlertTriangle, color: '#ff9800' },
-    error: { icon: AlertCircle, color: '#f44336' },
-    system: { icon: Monitor, color: '#9e9e9e' },
+const typeConfig: Record<NotificationType, { icon: typeof Info; colorToken: string }> = {
+    info: { icon: Info, colorToken: 'var(--app-color-link)' },
+    success: { icon: CheckCircle, colorToken: 'var(--app-color-success)' },
+    warning: { icon: AlertTriangle, colorToken: 'var(--app-color-warning)' },
+    error: { icon: AlertCircle, colorToken: 'var(--app-color-danger)' },
+    system: { icon: Monitor, colorToken: 'var(--app-color-text-muted)' },
 };
 
-function formatRelativeTime(dateStr: string): string {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMinutes < 1) return 'now';
-    if (diffMinutes < 60) return `${diffMinutes}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 30) return `${diffDays}d`;
-    return date.toLocaleDateString();
-}
+const visuallyHiddenSx = {
+    border: 0,
+    clip: 'rect(0 0 0 0)',
+    height: '1px',
+    margin: '-1px',
+    overflow: 'hidden',
+    padding: 0,
+    position: 'absolute',
+    whiteSpace: 'nowrap',
+    width: '1px',
+} as const;
 
 interface NotificationItemProps {
     notification: Notification;
@@ -31,30 +30,22 @@ interface NotificationItemProps {
 }
 
 export default function NotificationItem({ notification, onClick }: NotificationItemProps) {
+    const { t } = useI18n();
     const config = typeConfig[notification.type] ?? typeConfig.info;
     const Icon = config.icon;
 
-    return (
-        <Box
-            onClick={onClick}
-            sx={{
-                display: 'flex',
-                gap: 1.5,
-                p: 1.5,
-                cursor: onClick ? 'pointer' : 'default',
-                opacity: notification.is_read ? 0.6 : 1,
-                borderRadius: 1,
-                '&:hover': onClick
-                    ? { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' }
-                    : undefined,
-            }}
-        >
-            <Box sx={{ mt: 0.25, flexShrink: 0 }}>
-                <Icon size={18} color={config.color} />
+    const content = (
+        <>
+            <Box
+                component="span"
+                sx={{ mt: 0.25, flexShrink: 0, display: 'flex', color: config.colorToken }}
+            >
+                <Icon size={18} aria-hidden="true" />
             </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box component="span" sx={{ flex: 1, minWidth: 0, display: 'block' }}>
+                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography
+                        component="span"
                         variant="body2"
                         sx={{
                             fontWeight: notification.is_read ? 400 : 600,
@@ -68,6 +59,7 @@ export default function NotificationItem({ notification, onClick }: Notification
                     </Typography>
                     {notification.is_grouped && notification.group_count > 1 && (
                         <Typography
+                            component="span"
                             variant="caption"
                             sx={{
                                 bgcolor: 'rgba(var(--app-color-ink-rgb), 0.08)',
@@ -83,6 +75,7 @@ export default function NotificationItem({ notification, onClick }: Notification
                     )}
                 </Box>
                 <Typography
+                    component="span"
                     variant="caption"
                     sx={{
                         color: 'text.secondary',
@@ -94,12 +87,17 @@ export default function NotificationItem({ notification, onClick }: Notification
                 >
                     {notification.message}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
-                    {formatRelativeTime(notification.created_at)}
+                <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ color: 'text.disabled', fontSize: '0.65rem', display: 'block' }}
+                >
+                    {formatNotificationRelativeTime(notification.created_at)}
                 </Typography>
             </Box>
             {!notification.is_read && (
                 <Box
+                    component="span"
                     sx={{
                         width: 8,
                         height: 8,
@@ -108,8 +106,44 @@ export default function NotificationItem({ notification, onClick }: Notification
                         flexShrink: 0,
                         mt: 0.75,
                     }}
-                />
+                >
+                    <Box component="span" sx={visuallyHiddenSx}>
+                        {t('UNREAD')}
+                    </Box>
+                </Box>
             )}
-        </Box>
+        </>
+    );
+
+    const sharedSx = {
+        display: 'flex',
+        gap: 1.5,
+        p: 1.5,
+        width: '100%',
+        textAlign: 'left',
+        opacity: notification.is_read ? 0.6 : 1,
+        borderRadius: 1,
+    } as const;
+
+    if (!onClick) {
+        return <Box sx={sharedSx}>{content}</Box>;
+    }
+
+    return (
+        <ButtonBase
+            onClick={onClick}
+            sx={{
+                ...sharedSx,
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start',
+                '&:hover': { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' },
+                '&.Mui-focusVisible': {
+                    outline: '2px solid var(--app-color-primary)',
+                    outlineOffset: -2,
+                },
+            }}
+        >
+            {content}
+        </ButtonBase>
     );
 }

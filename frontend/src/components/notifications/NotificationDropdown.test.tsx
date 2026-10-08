@@ -68,13 +68,15 @@ describe('components/notifications/NotificationDropdown', () => {
 		expect(screen.getByText('Read title')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'MARK_ALL_AS_READ' })).toBeInTheDocument();
 
-		fireEvent.click(screen.getByText('Unread title'));
+		fireEvent.click(screen.getByRole('button', { name: /Unread title/ }));
 		await waitFor(() => {
 			expect(mockMarkAsRead).toHaveBeenCalledWith(10);
 		});
 
-		fireEvent.click(screen.getByText('Read title'));
+		fireEvent.click(screen.getByRole('button', { name: /Read title/ }));
 		expect(mockMarkAsRead).toHaveBeenCalledTimes(1);
+		expect(mockNavigate).not.toHaveBeenCalled();
+		expect(onClose).not.toHaveBeenCalled();
 	});
 
 	it('hides mark-all button and shows empty state when there are no notifications', () => {
@@ -99,5 +101,53 @@ describe('components/notifications/NotificationDropdown', () => {
 
 		expect(onClose).toHaveBeenCalled();
 		expect(mockNavigate).toHaveBeenCalledWith('/notifications');
+	});
+
+	it('marks as read, closes and navigates to the target route when the notification carries one', async () => {
+		const onClose = jest.fn();
+		mockUseNotifications.mockReturnValue({
+			notifications: [
+				{
+					...notificationsFixture[0],
+					metadata: { event: 'capture_upload_completed' },
+				},
+			],
+			unreadCount: 1,
+			markAsRead: mockMarkAsRead,
+			markAllAsRead: mockMarkAllAsRead,
+		});
+		render(<NotificationDropdown onClose={onClose} />);
+
+		fireEvent.click(screen.getByRole('button', { name: /Unread title/ }));
+
+		await waitFor(() => expect(mockMarkAsRead).toHaveBeenCalledWith(10));
+		expect(onClose).toHaveBeenCalled();
+		expect(mockNavigate).toHaveBeenCalledWith('/captures');
+	});
+
+	it('navigates without marking again when a read notification has a target route', () => {
+		mockUseNotifications.mockReturnValue({
+			notifications: [{ ...notificationsFixture[1], group_key: 'takeout_import' }],
+			unreadCount: 0,
+			markAsRead: mockMarkAsRead,
+			markAllAsRead: mockMarkAllAsRead,
+		});
+		render(<NotificationDropdown onClose={jest.fn()} />);
+
+		fireEvent.click(screen.getByRole('button', { name: /Read title/ }));
+
+		expect(mockMarkAsRead).not.toHaveBeenCalled();
+		expect(mockNavigate).toHaveBeenCalledWith('/takeout');
+	});
+
+	it('limits the popover width to the viewport', () => {
+		const { container } = render(<NotificationDropdown onClose={jest.fn()} />);
+
+		const rootClassName = (container.firstChild as HTMLElement).className.split(' ').find((name) => name.startsWith('css-'));
+		const injectedRules = Array.from(document.styleSheets).flatMap((sheet) =>
+			Array.from(sheet.cssRules).map((rule) => rule.cssText)
+		);
+		const rootRule = injectedRules.find((rule) => rule.includes(`.${rootClassName}`)) ?? '';
+		expect(rootRule).toContain('min(360px, calc(100vw - 32px))');
 	});
 });

@@ -11,12 +11,19 @@ interface NotificationBellProps {
 
 export default function NotificationBell({ className }: NotificationBellProps) {
     const { t } = useI18n();
-    const { unreadCount } = useNotifications();
+    const { unreadCount, refetch } = useNotifications();
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-    const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl((prev) => (prev ? null : event.currentTarget));
-    }, []);
+    const handleClick = useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            const isOpening = anchorEl === null;
+            setAnchorEl(isOpening ? event.currentTarget : null);
+            if (isOpening) {
+                void refetch();
+            }
+        },
+        [anchorEl, refetch]
+    );
 
     const handleClose = useCallback(() => {
         setAnchorEl(null);
@@ -59,7 +66,7 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                             mt: 1,
                             bgcolor: 'background.paper',
                             backgroundImage: 'none',
-                            border: '1px solid rgba(var(--app-color-ink-rgb), 0.08)',
+                            border: '1px solid var(--app-color-border-subtle)',
                             borderRadius: 2,
                         },
                     },

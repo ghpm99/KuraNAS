@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { appRoutes } from '@/app/routes';
 import { useNotifications } from '@/components/providers/notificationProvider/notificationContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import type { Notification } from '@/types/notification';
 import NotificationItem from './NotificationItem';
+import { resolveNotificationTargetRoute } from './notificationTargetRoute';
 
 interface NotificationDropdownProps {
     onClose: () => void;
@@ -19,20 +21,43 @@ export default function NotificationDropdown({ onClose }: NotificationDropdownPr
         navigate(appRoutes.notifications);
     };
 
-    const handleItemClick = async (id: number, isRead: boolean) => {
-        if (!isRead) {
-            await markAsRead(id);
+    const handleItemClick = async (notification: Notification) => {
+        const targetRoute = resolveNotificationTargetRoute(notification);
+        const markingAsRead = notification.is_read ? undefined : markAsRead(notification.id);
+        if (targetRoute) {
+            onClose();
+            navigate(targetRoute);
         }
+        await markingAsRead;
     };
 
     return (
-        <Box sx={{ width: 360, maxHeight: 440, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, pb: 1 }}>
+        <Box
+            sx={{
+                width: 'min(360px, calc(100vw - 32px))',
+                maxHeight: 440,
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    pb: 1,
+                }}
+            >
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {t('NOTIFICATIONS')}
                 </Typography>
                 {unreadCount > 0 && (
-                    <Button size="small" onClick={markAllAsRead} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
+                    <Button
+                        size="small"
+                        onClick={markAllAsRead}
+                        sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                    >
                         {t('MARK_ALL_AS_READ')}
                     </Button>
                 )}
@@ -50,14 +75,18 @@ export default function NotificationDropdown({ onClose }: NotificationDropdownPr
                         <NotificationItem
                             key={notification.id}
                             notification={notification}
-                            onClick={() => handleItemClick(notification.id, notification.is_read)}
+                            onClick={() => handleItemClick(notification)}
                         />
                     ))
                 )}
             </Box>
             <Divider />
             <Box sx={{ p: 1, textAlign: 'center' }}>
-                <Button size="small" onClick={handleViewAll} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
+                <Button
+                    size="small"
+                    onClick={handleViewAll}
+                    sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                >
                     {t('VIEW_ALL_NOTIFICATIONS')}
                 </Button>
             </Box>
