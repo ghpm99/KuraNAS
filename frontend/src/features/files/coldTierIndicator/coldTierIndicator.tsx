@@ -1,6 +1,9 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { Tooltip } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import { Snowflake } from 'lucide-react';
+
+const coldIndicatorLightColor = '#1d4ed8';
+const coldIndicatorDarkColor = '#60a5fa';
 
 const ColdTierIndicator = ({ size = 14 }: { size?: number }) => {
     const { t } = useI18n();
@@ -8,13 +11,19 @@ const ColdTierIndicator = ({ size = 14 }: { size?: number }) => {
 
     return (
         <Tooltip title={label}>
-            <span
+            <Box
+                component="span"
                 role="img"
                 aria-label={label}
-                style={{ display: 'inline-flex', alignItems: 'center', color: '#60a5fa' }}
+                sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    color: (theme) =>
+                        theme.palette.mode === 'dark' ? coldIndicatorDarkColor : coldIndicatorLightColor,
+                }}
             >
                 <Snowflake size={size} />
-            </span>
+            </Box>
         </Tooltip>
     );
 };

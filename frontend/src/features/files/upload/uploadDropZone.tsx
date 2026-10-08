@@ -49,11 +49,15 @@ const UploadDropZone = ({ children }: { children: ReactNode }) => {
             onDrop={handleDrop}
         >
             {children}
-            {isDragging ? (
-                <div className={styles.overlay} role="presentation">
+            <div
+                role="status"
+                aria-live="polite"
+                className={isDragging ? styles.overlay : styles.liveRegion}
+            >
+                {isDragging ? (
                     <span className={styles.overlayText}>{t('FILES_UPLOAD_DROP_HINT')}</span>
-                </div>
-            ) : null}
+                ) : null}
+            </div>
         </div>
     );
 };

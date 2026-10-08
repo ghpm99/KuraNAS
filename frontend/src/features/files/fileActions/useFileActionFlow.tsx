@@ -1,7 +1,8 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import FolderPicker, { type FolderPickerResult } from '@/components/folderPicker/folderPicker';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
+import { focusFileItem } from '@/features/files/shortcuts/fileItemFocus';
 import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import type { BulkOutcome } from './bulkOutcome';
 import DeleteFilesDialog from './deleteFilesDialog';
@@ -21,10 +22,21 @@ export const useFileActionFlow = (): {
     const { deselect } = useFileSelectionContext();
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
+    const focusReturnTargetIdRef = useRef<number | null>(null);
+
     const startAction = useCallback((action: DialogFileAction, files: FileData[]) => {
-        if (files.length === 0) return;
+        const [firstFile] = files;
+        if (!firstFile) return;
+        focusReturnTargetIdRef.current = firstFile.id;
         setPendingAction({ action, files });
     }, []);
+
+    const isActionPending = pendingAction !== null;
+    useEffect(() => {
+        if (isActionPending || focusReturnTargetIdRef.current === null) return;
+        focusFileItem(focusReturnTargetIdRef.current);
+        focusReturnTargetIdRef.current = null;
+    }, [isActionPending]);
 
     const cancelAction = () => setPendingAction(null);
 

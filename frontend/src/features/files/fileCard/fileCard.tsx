@@ -88,7 +88,7 @@ const FileCard = ({
                 <CardMedia
                     component="img"
                     image={thumbnail || '/placeholder.svg'}
-                    alt={title}
+                    alt=""
                     loading="lazy"
                     sx={{ height: 140, objectFit: 'cover' }}
                 />
@@ -129,12 +129,29 @@ const FileCard = ({
                 </Box>
             ) : null}
             {isCold ? (
-                <Box sx={{ position: 'absolute', top: 8, left: onToggleSelection ? 44 : 8 }}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 8,
+                        left: onToggleSelection ? 44 : 8,
+                        display: 'flex',
+                        p: 0.5,
+                        borderRadius: 1,
+                        bgcolor: 'background.paper',
+                    }}
+                >
                     <ColdTierIndicator size={16} />
                 </Box>
             ) : null}
             <Box sx={{ position: 'absolute', top: 4, right: 4, display: 'flex' }}>
-                <IconButton size="small" onClick={onClickStar}>
+                <IconButton
+                    size="small"
+                    aria-label={t(starred ? 'FILES_UNFAVORITE_ITEM' : 'FILES_FAVORITE_ITEM', {
+                        name: title,
+                    })}
+                    aria-pressed={Boolean(starred)}
+                    onClick={onClickStar}
+                >
                     <Star size={16} fill={starred ? 'currentColor' : 'none'} />
                 </IconButton>
                 {onOpenMenu ? (

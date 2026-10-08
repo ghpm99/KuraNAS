@@ -48,6 +48,22 @@ describe('FileListRow', () => {
         expect(screen.getByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toBeInTheDocument();
     });
 
+    it('labels the favorite toggle with the item name and its pressed state', () => {
+        const { rerender } = render(
+            <FileListRow title="Doc" href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT" thumbnail="/t.png" onClick={jest.fn()} />
+        );
+        expect(
+            screen.getByRole('button', { name: 'FILES_FAVORITE_ITEM', pressed: false })
+        ).toBeInTheDocument();
+
+        rerender(
+            <FileListRow title="Doc" href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT" thumbnail="/t.png" onClick={jest.fn()} starred />
+        );
+        expect(
+            screen.getByRole('button', { name: 'FILES_UNFAVORITE_ITEM', pressed: true })
+        ).toBeInTheDocument();
+    });
+
     it('wires open, star, checkbox, menu button and context menu', () => {
         const onClick = jest.fn();
         const onClickStar = jest.fn();

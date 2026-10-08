@@ -38,6 +38,6 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 21. Thumbnail apaga registro do banco quando o arquivo some do disco (volume desmontado)
 - [x] 22. WebDAV ciente de tier (arquivo frio some do DAV)
 - [x] 23. "Trazer para o quente agora" a partir do detalhe
-- [ ] 24. Mover entre raízes (cópia verificada + remoção)
-- [ ] 25. Código morto e i18n (`FILES_EXPLORER_EYEBROW`, `.page`, subtítulo longo)
-- [ ] 26. Acessibilidade de cards/linhas/breadcrumb
+- [x] 24. Mover entre raízes (cópia verificada + remoção)
+- [x] 25. Código morto e i18n (`FILES_EXPLORER_EYEBROW`, `.page`, subtítulo longo)
+- [x] 26. Acessibilidade de cards/linhas/breadcrumb

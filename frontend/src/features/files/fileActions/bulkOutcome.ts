@@ -1,7 +1,7 @@
 import { runWithConcurrencyLimit } from '@/shared/utils/runWithConcurrencyLimit';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 
-export const bulkConcurrencyLimit = 4;
+const bulkConcurrencyLimit = 4;
 
 export type BulkOutcome = {
     succeededFiles: FileData[];

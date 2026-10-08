@@ -43,8 +43,32 @@ describe('components/fileCard', () => {
     });
 
     it('uses placeholder thumbnail fallback when image is empty', () => {
-        render(<FileCard title="No Image" metadata="meta" thumbnail="" onClick={jest.fn()} />);
-        expect(screen.getByAltText('No Image')).toHaveAttribute('src', '/placeholder.svg');
+        const { container } = render(
+            <FileCard title="No Image" metadata="meta" thumbnail="" onClick={jest.fn()} />
+        );
+        expect(container.querySelector('img')).toHaveAttribute('src', '/placeholder.svg');
+    });
+
+    it('keeps the thumbnail decorative so the card name is announced once', () => {
+        const { container } = render(
+            <FileCard title="Photo" metadata="meta" thumbnail="/photo.jpg" onClick={jest.fn()} />
+        );
+
+        expect(container.querySelector('img')).toHaveAttribute('alt', '');
+    });
+
+    it('labels the favorite toggle with the item name and its pressed state', () => {
+        const { rerender } = render(
+            <FileCard title="Photo" metadata="meta" thumbnail="" onClick={jest.fn()} />
+        );
+        expect(
+            screen.getByRole('button', { name: 'FILES_FAVORITE_ITEM', pressed: false })
+        ).toBeInTheDocument();
+
+        rerender(<FileCard title="Photo" metadata="meta" thumbnail="" onClick={jest.fn()} starred />);
+        expect(
+            screen.getByRole('button', { name: 'FILES_UNFAVORITE_ITEM', pressed: true })
+        ).toBeInTheDocument();
     });
 
     it('shows the cold indicator only for cold files', () => {

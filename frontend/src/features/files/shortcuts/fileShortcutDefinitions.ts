@@ -1,4 +1,4 @@
-export type FileShortcutDefinition = {
+type FileShortcutDefinition = {
     keyLabels: string[];
     descriptionKey: string;
 };

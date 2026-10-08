@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import FileContextMenu from './fileContextMenu';
 import { createTestFile } from '@/features/files/selection/testFileFactory';
@@ -125,6 +126,36 @@ describe('FileContextMenu', () => {
         fireEvent.click(screen.getByText('COPY'));
         fireEvent.click(screen.getByText('CONFIRM_PICKER'));
         await waitFor(() => expect(fileContext.copyFile).toHaveBeenCalledTimes(2));
+    });
+
+    it('returns focus to the file item after the folder picker closes', async () => {
+        const targetFiles = [createTestFile(1)];
+        const ClosingMenu = () => {
+            const [anchor, setAnchor] = useState<typeof anchorPosition | null>(anchorPosition);
+            return (
+                <>
+                    <a href="#file-1" data-file-id={1}>
+                        file one
+                    </a>
+                    <FileContextMenu
+                        anchorPosition={anchor}
+                        targetFiles={targetFiles}
+                        onClose={() => setAnchor(null)}
+                        onOpenFile={jest.fn()}
+                    />
+                </>
+            );
+        };
+        render(
+            <SelectionTestHarness fileContext={createFileContextStub()} seedFiles={targetFiles}>
+                <ClosingMenu />
+            </SelectionTestHarness>
+        );
+
+        fireEvent.click(screen.getByText('MOVE'));
+        fireEvent.click(screen.getByText('CONFIRM_PICKER'));
+
+        await waitFor(() => expect(screen.getByText('file one')).toHaveFocus());
     });
 
     it('downloads the targets', () => {
