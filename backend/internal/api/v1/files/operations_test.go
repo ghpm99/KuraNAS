@@ -1328,3 +1328,33 @@ func TestCopyFileDirectoryIncludesColdChildren(t *testing.T) {
 		}
 	}
 }
+
+func TestRenameFileStoresLowercaseFormatForUppercaseExtension(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceFile := filepath.Join(entryPoint, "old.txt")
+	if err := os.WriteFile(sourceFile, []byte("data"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	var updatedRows []FileModel
+	repo := &filesRepoMock{
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			return FileModel{ID: 1, Name: "old.txt", Path: sourceFile, ParentPath: entryPoint, Type: File, Format: ".txt"}, true, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updatedRows = append(updatedRows, file)
+			return true, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	if _, err := service.RenameFile(1, "IMG_0001.JPG"); err != nil {
+		t.Fatalf("RenameFile returned error: %v", err)
+	}
+
+	if len(updatedRows) != 1 || updatedRows[0].Format != ".jpg" {
+		t.Fatalf("expected lowercase format .jpg, got %+v", updatedRows)
+	}
+}

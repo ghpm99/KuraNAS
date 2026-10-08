@@ -9,7 +9,6 @@ import (
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/utils"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -167,7 +166,7 @@ func (fileDto *FileDto) ParseFileInfoToFileDto(info os.FileInfo) error {
 		fileDto.Type = Directory
 	} else {
 		fileDto.Type = File
-		fileDto.Format = filepath.Ext(fileDto.Name)
+		fileDto.Format = utils.ExtensionOf(fileDto.Name)
 	}
 
 	return nil

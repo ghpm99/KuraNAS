@@ -17,7 +17,7 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 
 ## Lacunas
 
-- [ ] 01. Extensão em maiúsculas: normalizar `format` na gravação + migração dos dados + consultas tolerantes
+- [x] 01. Extensão em maiúsculas: normalizar `format` na gravação + migração dos dados + consultas tolerantes
 - [ ] 02. Página quebra com 500 quando a imagem não tem linha de metadata; `rows.Err()`
 - [ ] 03. Listagem enxuta no servidor com busca/filtros (q, categoria, favoritas, formato, período, câmera, ordenação) e scroll infinito real com estado de erro
 - [ ] 04. `taken_at` indexado (EXIF → mtime), timeline agrupada por ele, total de fotos e salto por ano/mês

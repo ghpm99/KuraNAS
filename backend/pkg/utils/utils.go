@@ -210,8 +210,16 @@ var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".w
 var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
 var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
 
+func NormalizeExtension(ext string) string {
+	return strings.ToLower(ext)
+}
+
+func ExtensionOf(fileName string) string {
+	return NormalizeExtension(filepath.Ext(fileName))
+}
+
 func GetFormatTypeByExtension(ext string) FormatType {
-	ext = strings.ToLower(ext)
+	ext = NormalizeExtension(ext)
 	switch ext {
 	case ".jpg", ".jpeg":
 		return FormatType{Type: FormatTypeImage, Mime: "image/jpeg", Description: "IMAGE_JPEG"}
