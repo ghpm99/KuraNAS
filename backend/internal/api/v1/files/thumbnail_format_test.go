@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -110,6 +111,8 @@ func TestFileService_RemovesLegacyThumbnailCacheFiles(t *testing.T) {
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	removeCachedThumbnailsForFile(t, cacheDir, 8103)
+	t.Cleanup(func() { removeCachedThumbnailsForFile(t, cacheDir, 8103) })
 	legacyPath := filepath.Join(cacheDir, "8103_64_123.png")
 	if err := os.WriteFile(legacyPath, []byte("legacy"), 0644); err != nil {
 		t.Fatal(err)
@@ -147,5 +150,16 @@ func TestFilesHandlerThumbnailContentTypeMatchesEncodedFormat(t *testing.T) {
 		if recorder.Header().Get("Content-Type") != expectedType {
 			t.Fatalf("expected %s, got %s", expectedType, recorder.Header().Get("Content-Type"))
 		}
+	}
+}
+
+func removeCachedThumbnailsForFile(t *testing.T, cacheDir string, fileID int) {
+	t.Helper()
+	cachedPaths, err := filepath.Glob(filepath.Join(cacheDir, fmt.Sprintf("%d_*", fileID)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, cachedPath := range cachedPaths {
+		_ = os.Remove(cachedPath)
 	}
 }
