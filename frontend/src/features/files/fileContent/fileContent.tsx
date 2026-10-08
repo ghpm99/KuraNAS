@@ -1,7 +1,11 @@
+import { useState, type MouseEvent } from 'react';
 import { FileType } from '@/utils';
 import { formatSize } from '@/shared/utils/formatSize';
 import FileCard from '../fileCard';
-import ColdTierIndicator from '../coldTierIndicator/coldTierIndicator';
+import FileListRow from '../fileListRow';
+import FileContextMenu, { type FileContextMenuAnchor } from '../fileContextMenu/fileContextMenu';
+import { useFileSelectionContext } from '../selection/fileSelectionContext';
+import { resolveListedFiles } from '../selection/listedFiles';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useFile, { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import FileViewer from './components/fileViewer/fileViewer';
@@ -9,6 +13,8 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from './fileContent.module.css';
+
+type ContextMenuState = { file: FileData; anchorPosition: FileContextMenuAnchor };
 
 interface FileContentProps {
     showHeading?: boolean;
@@ -38,6 +44,9 @@ const FileContent = ({
     } = useFile();
     const { t } = useI18n();
     const { openMediaItem } = useMediaOpener();
+    const fileSelection = useFileSelectionContext();
+    const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+    const isSelectionEnabled = items === undefined;
     const currentListTitle =
         fileListFilter === 'starred'
             ? t('STARRED_FILES')
@@ -72,6 +81,73 @@ const FileContent = ({
         }
     };
 
+    const handleItemClick = (
+        file: FileData,
+        event: MouseEvent<HTMLElement>,
+        orderedFiles: FileData[]
+    ) => {
+        if (isSelectionEnabled && event.shiftKey) {
+            fileSelection.selectRange(file, orderedFiles);
+            return;
+        }
+        const isTogglingSelection =
+            isSelectionEnabled &&
+            (event.ctrlKey || event.metaKey || fileSelection.hasSelection);
+        if (isTogglingSelection) {
+            fileSelection.toggle(file);
+            return;
+        }
+        handleOpenItem(file);
+    };
+
+    const handleToggleSelectionClick = (
+        file: FileData,
+        event: MouseEvent<HTMLElement>,
+        orderedFiles: FileData[]
+    ) => {
+        if (event.shiftKey) {
+            fileSelection.selectRange(file, orderedFiles);
+            return;
+        }
+        fileSelection.toggle(file);
+    };
+
+    const openContextMenu = (file: FileData, event: MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        setContextMenuState({
+            file,
+            anchorPosition: { top: event.clientY, left: event.clientX },
+        });
+    };
+
+    const openContextMenuFromButton = (file: FileData, event: MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        const buttonBounds = event.currentTarget.getBoundingClientRect();
+        setContextMenuState({
+            file,
+            anchorPosition: { top: buttonBounds.bottom, left: buttonBounds.left },
+        });
+    };
+
+    const buildInteractionProps = (file: FileData, orderedFiles: FileData[]) => ({
+        isSelected: isSelectionEnabled && fileSelection.isSelected(file.id),
+        isSelectionActive: isSelectionEnabled && fileSelection.hasSelection,
+        onToggleSelection: isSelectionEnabled
+            ? (event: MouseEvent<HTMLElement>) =>
+                  handleToggleSelectionClick(file, event, orderedFiles)
+            : undefined,
+        onOpenMenu: (event: MouseEvent<HTMLElement>) => openContextMenuFromButton(file, event),
+        onContextMenu: (event: MouseEvent<HTMLElement>) => openContextMenu(file, event),
+    });
+
+    const contextMenuTargetFiles = (): FileData[] => {
+        if (!contextMenuState) return [];
+        const { file } = contextMenuState;
+        const isPartOfMultiSelection =
+            isSelectionEnabled && fileSelection.isSelected(file.id) && fileSelection.selectedCount > 1;
+        return isPartOfMultiSelection ? fileSelection.selectedFiles : [file];
+    };
+
     const renderCollection = (collectionTitle: string, collectionItems: FileData[]) => {
         if (collectionItems.length === 0) {
             return (
@@ -90,42 +166,17 @@ const FileContent = ({
                 {viewMode === 'list' ? (
                     <div className={styles.fileList}>
                         {collectionItems.map((file) => (
-                            <div key={file.id} className={styles.listRow}>
-                                <button
-                                    type="button"
-                                    className={styles.listButton}
-                                    onClick={() => handleOpenItem(file)}
-                                    aria-label={file.name}
-                                >
-                                    <img
-                                        src={thumbnailUrl(file.id)}
-                                        alt={file.name}
-                                        loading="lazy"
-                                        className={styles.listThumbnail}
-                                    />
-                                    <div className={styles.listContent}>
-                                        <span className={styles.listTitle}>
-                                            {file.name}
-                                            {file.tier === 'cold' ? (
-                                                <>
-                                                    {' '}
-                                                    <ColdTierIndicator />
-                                                </>
-                                            ) : null}
-                                        </span>
-                                        <span className={styles.listMetadata}>
-                                            {fileMetadata(file)}
-                                        </span>
-                                    </div>
-                                </button>
-                                <button
-                                    type="button"
-                                    className={styles.listStarButton}
-                                    onClick={() => handleStarredItem(file.id)}
-                                >
-                                    {file.starred ? '★' : '☆'}
-                                </button>
-                            </div>
+                            <FileListRow
+                                key={file.id}
+                                title={file.name}
+                                starred={file.starred}
+                                isCold={file.tier === 'cold'}
+                                metadata={fileMetadata(file)}
+                                thumbnail={thumbnailUrl(file.id)}
+                                onClick={(event) => handleItemClick(file, event, collectionItems)}
+                                onClickStar={() => handleStarredItem(file.id)}
+                                {...buildInteractionProps(file, collectionItems)}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -138,12 +189,19 @@ const FileContent = ({
                                 isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}
                                 thumbnail={thumbnailUrl(file.id)}
-                                onClick={() => handleOpenItem(file)}
+                                onClick={(event) => handleItemClick(file, event, collectionItems)}
                                 onClickStar={() => handleStarredItem(file.id)}
+                                {...buildInteractionProps(file, collectionItems)}
                             />
                         ))}
                     </div>
                 )}
+                <FileContextMenu
+                    anchorPosition={contextMenuState?.anchorPosition ?? null}
+                    targetFiles={contextMenuTargetFiles()}
+                    onClose={() => setContextMenuState(null)}
+                    onOpenFile={handleOpenItem}
+                />
                 {items ? null : (
                     <LoadMoreSentinel
                         hasNextPage={hasNextPage}
@@ -155,13 +213,7 @@ const FileContent = ({
         );
     };
 
-    const currentItems =
-        items ??
-        (!selectedItem
-            ? (files ?? [])
-            : selectedItem.type === FileType.Directory
-              ? (selectedItem.file_children ?? [])
-              : []);
+    const currentItems = items ?? resolveListedFiles(selectedItem, files);
     const currentTitle = title ?? (!selectedItem ? currentListTitle : selectedItem.name);
 
     if (!selectedItem) {
