@@ -3,6 +3,7 @@ import {
     ArrowLeft,
     Copy,
     FolderPlus,
+    FolderUp,
     MoveRight,
     Pencil,
     RefreshCcw,
@@ -24,15 +25,21 @@ import {
     Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type InputHTMLAttributes } from 'react';
+import ConflictPolicySelect from '@/features/files/upload/conflictPolicySelect';
+import { entriesFromFileList } from '@/features/files/upload/entriesFromFileList';
+import useUploadToCurrentFolder from '@/features/files/upload/useUploadToCurrentFolder';
 import { useSnackbar } from 'notistack';
 import useFileActionFlow from '@/features/files/fileActions/useFileActionFlow';
 import useFileOperations from '@/features/files/fileActions/useFileOperations';
 
+const folderInputAttributes = {
+    webkitdirectory: '',
+} as unknown as InputHTMLAttributes<HTMLInputElement>;
+
 export const ActionBar = () => {
     const {
         selectedItem,
-        uploadFiles,
         createFolder,
         rescanFiles,
         fileListFilter,
@@ -41,6 +48,8 @@ export const ActionBar = () => {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const uploadInputRef = useRef<HTMLInputElement | null>(null);
+    const uploadFolderInputRef = useRef<HTMLInputElement | null>(null);
+    const { uploadEntries } = useUploadToCurrentFolder();
     const { startAction, dialogs } = useFileActionFlow();
     const { downloadFiles } = useFileOperations();
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
@@ -59,17 +68,14 @@ export const ActionBar = () => {
 
     const handleUploadClick = () => uploadInputRef.current?.click();
 
+    const handleUploadFolderClick = () => uploadFolderInputRef.current?.click();
+
     const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
         const inputFiles = event.target.files;
         if (!inputFiles || inputFiles.length === 0) return;
-        try {
-            await uploadFiles(inputFiles, currentFolderId);
-            enqueueSnackbar(t('ACTION_UPLOAD_SUCCESS'), { variant: 'success' });
-        } catch {
-            enqueueSnackbar(t('ERROR_UPLOAD_FAILED'), { variant: 'error' });
-        } finally {
-            event.target.value = '';
-        }
+        const entries = entriesFromFileList(inputFiles);
+        event.target.value = '';
+        await uploadEntries(entries);
     };
 
     const handleCreateFolder = async () => {
@@ -105,8 +111,10 @@ export const ActionBar = () => {
         <Box
             sx={{
                 display: 'flex',
+                flexWrap: 'wrap',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: 1,
                 mb: 2,
             }}
         >
@@ -128,13 +136,21 @@ export const ActionBar = () => {
                 )}
                 <Typography variant="h6">{selectedItem?.name ?? currentListTitle}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 <input
                     ref={uploadInputRef}
                     type="file"
                     multiple
                     style={{ display: 'none' }}
                     onChange={handleUploadChange}
+                />
+                <input
+                    ref={uploadFolderInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleUploadChange}
+                    {...folderInputAttributes}
                 />
                 <Button
                     variant="contained"
@@ -152,6 +168,15 @@ export const ActionBar = () => {
                 >
                     {t('UPLOAD_FILE')}
                 </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<FolderUp size={16} />}
+                    onClick={handleUploadFolderClick}
+                >
+                    {t('FILES_UPLOAD_FOLDER')}
+                </Button>
+                <ConflictPolicySelect />
                 <Button
                     variant="outlined"
                     size="small"

@@ -3,6 +3,8 @@ import { FileData } from './fileContext';
 
 const FILES_PREFIX = appRoutes.files;
 
+export const fileQueryKeys = ['files', 'files-path', 'filesRecent'];
+
 export const extractFilePath = (pathname: string): string => {
     if (!pathname.startsWith(FILES_PREFIX)) return '';
     const rest = pathname.slice(FILES_PREFIX.length);

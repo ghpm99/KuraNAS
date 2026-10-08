@@ -123,22 +123,6 @@ describe('features/files/fileProvider (seam)', () => {
 		);
 	});
 
-	it('uploadFiles POSTs the files to /files/upload', async () => {
-		const { result } = renderHook(() => useFile(), { wrapper });
-
-		const file = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
-		const fileList = { length: 1, 0: file } as unknown as FileList;
-		await act(async () => {
-			await result.current.uploadFiles(fileList, 7);
-		});
-
-		expect(mockedApi.post).toHaveBeenCalledWith(
-			'/files/upload',
-			expect.any(FormData),
-			expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
-		);
-	});
-
 	it('exposes the items of every loaded page after fetchNextPage', async () => {
 		const buildFile = (id: number) => ({ id, name: `file-${id}`, path: `/file-${id}`, type: 2 });
 		mockedApi.get.mockImplementation((url: string, config?: { params?: { page?: number } }) => {

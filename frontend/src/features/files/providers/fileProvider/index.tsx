@@ -15,7 +15,6 @@ import {
     renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
     toggleStarredFile,
-    uploadFiles as uploadFilesService,
 } from '@/service/files';
 import {
     FileContextProvider,
@@ -31,13 +30,12 @@ import {
     addChildrenToTree,
     buildFilesUrl,
     extractFilePath,
+    fileQueryKeys,
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
 
 const pageSize = 200;
-
-const fileQueryKeys = ['files', 'files-path', 'filesRecent'];
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -154,14 +152,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         await requestFilesRescan();
         await refetch();
     }, [refetch]);
-
-    const uploadFiles = useCallback(
-        async (files: FileList, targetFolderId?: number) => {
-            await uploadFilesService(files, targetFolderId);
-            await refetch();
-        },
-        [refetch]
-    );
 
     const createFolder = useCallback(
         async (name: string, parentId?: number) => {
@@ -324,7 +314,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             setFilesSort,
             handleStarredItem,
             toggleStarred,
-            uploadFiles,
             createFolder,
             moveFile,
             copyFile,
@@ -350,7 +339,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             setFilesSort,
             handleStarredItem,
             toggleStarred,
-            uploadFiles,
             createFolder,
             moveFile,
             copyFile,

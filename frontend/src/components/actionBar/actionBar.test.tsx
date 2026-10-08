@@ -5,6 +5,12 @@ import { FileType } from '@/utils';
 const mockUseFile = jest.fn();
 const mockNavigate = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
+const mockUploadEntries = jest.fn();
+
+jest.mock('@/features/files/upload/useUploadToCurrentFolder', () => ({
+    __esModule: true,
+    default: () => ({ uploadEntries: mockUploadEntries }),
+}));
 
 // Mock FolderPicker — renders a minimal dialog with confirm/cancel buttons.
 // The confirm button calls onSelect with a result stored in mockFolderPickerResult.
@@ -24,7 +30,6 @@ jest.mock('@/components/folderPicker/folderPicker', () => ({
 
 const createFileContext = (overrides = {}) => ({
     selectedItem: null,
-    uploadFiles: jest.fn(),
     createFolder: jest.fn().mockResolvedValue(undefined),
     moveFile: jest.fn().mockResolvedValue(undefined),
     copyFile: jest.fn().mockResolvedValue(undefined),
@@ -287,10 +292,7 @@ describe('components/actionBar', () => {
         );
     });
 
-    it('shows upload errors and resets the file input', async () => {
-        const uploadFiles = jest.fn().mockRejectedValue(new Error('upload failed'));
-        mockUseFile.mockReturnValue(createFileContext({ uploadFiles }));
-
+    it('hands the picked files to the upload queue and resets the file input', async () => {
         render(<ActionBar />);
 
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -298,13 +300,33 @@ describe('components/actionBar', () => {
         fireEvent.change(fileInput, { target: { files: [blob] } });
 
         await waitFor(() => {
-            expect(uploadFiles).toHaveBeenCalledWith([blob], undefined);
-        });
-
-        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_UPLOAD_FAILED', {
-            variant: 'error',
+            expect(mockUploadEntries).toHaveBeenCalledWith([{ file: blob, relativePath: undefined }]);
         });
         expect(fileInput.value).toBe('');
+    });
+
+    it('hands folder picks to the upload queue with their relative paths', async () => {
+        render(<ActionBar />);
+
+        const folderInput = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+        expect(folderInput.hasAttribute('webkitdirectory')).toBe(true);
+        const blob = new File(['content'], 'a.mp3');
+        Object.defineProperty(blob, 'webkitRelativePath', { value: 'Album/a.mp3' });
+        fireEvent.change(folderInput, { target: { files: [blob] } });
+
+        await waitFor(() => {
+            expect(mockUploadEntries).toHaveBeenCalledWith([{ file: blob, relativePath: 'Album/a.mp3' }]);
+        });
+    });
+
+    it('opens the folder picker from the upload folder button', () => {
+        render(<ActionBar />);
+        const folderInput = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+        const clickSpy = jest.spyOn(folderInput, 'click').mockImplementation(() => undefined);
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_UPLOAD_FOLDER' }));
+
+        expect(clickSpy).toHaveBeenCalled();
     });
 
     it('shows STARRED_FILES title when fileListFilter is starred', () => {
@@ -411,47 +433,22 @@ describe('components/actionBar', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/files');
     });
 
-    it('shows successful upload snackbar', async () => {
-        const uploadFiles = jest.fn().mockResolvedValue(undefined);
-        mockUseFile.mockReturnValue(createFileContext({ uploadFiles }));
-
-        render(<ActionBar />);
-
-        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-        const blob = new File(['content'], 'doc.txt', { type: 'text/plain' });
-        fireEvent.change(fileInput, { target: { files: [blob] } });
-
-        await waitFor(() => {
-            expect(uploadFiles).toHaveBeenCalled();
-        });
-
-        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ACTION_UPLOAD_SUCCESS', {
-            variant: 'success',
-        });
-    });
-
     it('ignores upload when no files are selected', async () => {
-        const uploadFiles = jest.fn();
-        mockUseFile.mockReturnValue(createFileContext({ uploadFiles }));
-
         render(<ActionBar />);
 
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
         fireEvent.change(fileInput, { target: { files: null } });
 
-        expect(uploadFiles).not.toHaveBeenCalled();
+        expect(mockUploadEntries).not.toHaveBeenCalled();
     });
 
     it('ignores upload when file list is empty', async () => {
-        const uploadFiles = jest.fn();
-        mockUseFile.mockReturnValue(createFileContext({ uploadFiles }));
-
         render(<ActionBar />);
 
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
         fireEvent.change(fileInput, { target: { files: [] } });
 
-        expect(uploadFiles).not.toHaveBeenCalled();
+        expect(mockUploadEntries).not.toHaveBeenCalled();
     });
 
     it('does not create folder when name is empty', async () => {
@@ -706,32 +703,6 @@ describe('components/actionBar', () => {
         fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
         await waitFor(() => {
             expect(screen.queryByRole('dialog', { name: 'DELETE' })).not.toBeInTheDocument();
-        });
-    });
-
-    it('uploads files with folder id when selectedItem is a directory', async () => {
-        const uploadFiles = jest.fn().mockResolvedValue(undefined);
-        mockUseFile.mockReturnValue(
-            createFileContext({
-                selectedItem: {
-                    id: 10,
-                    name: 'photos',
-                    path: '/media/photos',
-                    parent_path: '/media',
-                    type: FileType.Directory,
-                },
-                uploadFiles,
-            })
-        );
-
-        render(<ActionBar />);
-
-        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-        const blob = new File(['content'], 'doc.txt', { type: 'text/plain' });
-        fireEvent.change(fileInput, { target: { files: [blob] } });
-
-        await waitFor(() => {
-            expect(uploadFiles).toHaveBeenCalledWith([blob], 10);
         });
     });
 
