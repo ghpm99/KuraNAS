@@ -155,3 +155,22 @@ func TestResolveContentPathAndTier(t *testing.T) {
 		t.Fatalf("expected hot tier without physical path, got %q", hotDto.Tier)
 	}
 }
+
+func TestParseFileInfoToFileDtoLowercasesUppercaseExtension(t *testing.T) {
+	filePath := filepath.Join(t.TempDir(), "IMG_0001.JPG")
+	if err := os.WriteFile(filePath, []byte("pixels"), 0644); err != nil {
+		t.Fatalf("failed to write sample file: %v", err)
+	}
+	info, err := os.Stat(filePath)
+	if err != nil {
+		t.Fatalf("failed to stat file: %v", err)
+	}
+
+	dto := FileDto{}
+	if err := dto.ParseFileInfoToFileDto(info); err != nil {
+		t.Fatalf("expected parse file info success, err=%v", err)
+	}
+	if dto.Format != ".jpg" {
+		t.Fatalf("expected format .jpg, got %q", dto.Format)
+	}
+}

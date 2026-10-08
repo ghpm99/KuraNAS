@@ -155,6 +155,9 @@ var CreateHomeFilePhysicalPathIndexQuery string
 //go:embed queries/0048_create_home_file_name_trigram_index.sql
 var CreateHomeFileNameTrigramIndexQuery string
 
+//go:embed queries/0049_lowercase_home_file_format.sql
+var LowercaseHomeFileFormatQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -219,6 +222,9 @@ func fileMigrationList() {
 
 	addMigration("0048_create_home_file_name_trigram_index",
 		defaultMigrationFunc(CreateHomeFileNameTrigramIndexQuery))
+
+	addMigration("0049_lowercase_home_file_format",
+		defaultMigrationFunc(LowercaseHomeFileFormatQuery))
 
 }
 

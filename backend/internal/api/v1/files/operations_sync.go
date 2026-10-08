@@ -90,7 +90,7 @@ func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
 	file.Path = destinationPath
 	file.ParentPath = filepath.Dir(destinationPath)
 	if file.Type == File {
-		file.Format = filepath.Ext(file.Name)
+		file.Format = utils.ExtensionOf(file.Name)
 	}
 
 	fileModel, err := file.ToModel()
