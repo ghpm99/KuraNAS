@@ -126,6 +126,51 @@ describe('ImageViewerModal', () => {
         expect(onOpenFolder).toHaveBeenCalledTimes(1);
     });
 
+    it('shows the preview at 1x and swaps to the original when zoomed in', () => {
+        const baseProps = {
+            activeImage: createImage({ file_id: 11 }),
+            activeIndex: 0,
+            activeImageDate: null,
+            dateFormatter: new Intl.DateTimeFormat('pt-BR'),
+            filteredImages: [createImage({ file_id: 11 })],
+            showDetails: false,
+            showFilmstrip: true,
+            isSlideshowPlaying: false,
+            isFavoritePending: false,
+            onToggleDetails: jest.fn(),
+            onToggleFilmstrip: jest.fn(),
+            onToggleSlideshow: jest.fn(),
+            onToggleFavorite: jest.fn(),
+            onOpenFolder: jest.fn(),
+            onDecreaseZoom: jest.fn(),
+            onResetZoom: jest.fn(),
+            onIncreaseZoom: jest.fn(),
+            onClose: jest.fn(),
+            onPrevious: jest.fn(),
+            onNext: jest.fn(),
+            onOpenImage: jest.fn(),
+        };
+
+        const { rerender } = renderWithQuery(<ImageViewerModal {...baseProps} zoom={1} />);
+        const stageImage = () =>
+            document.querySelector<HTMLImageElement>('img[class*="image"]') as HTMLImageElement;
+
+        expect(stageImage().getAttribute('src')).toBe(
+            '/api/v1/files/thumbnail/11?width=1600&height=1600'
+        );
+        expect(document.querySelector('button img')?.getAttribute('src')).toBe(
+            '/api/v1/files/thumbnail/11?width=160&height=160'
+        );
+
+        rerender(
+            <QueryClientProvider client={new QueryClient()}>
+                <ImageViewerModal {...baseProps} zoom={1.4} />
+            </QueryClientProvider>
+        );
+
+        expect(stageImage().getAttribute('src')).toBe('/api/v1/files/blob/11');
+    });
+
     it('shows the playing state and hides the filmstrip when requested', () => {
         renderWithQuery(
             <ImageViewerModal

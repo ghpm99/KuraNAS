@@ -14,16 +14,9 @@ import {
 import { createPortal } from 'react-dom';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import { FILMSTRIP_THUMBNAIL_SIZE, thumbnailUrl, viewerImageUrl } from '../imageThumbnailSources';
 import { useImageViewerModal } from './useImageViewerModal';
 import styles from './ImageViewerModal.module.css';
-
-const thumbnailWidth = 960;
-const thumbnailHeight = 720;
-
-const thumbnailUrl = (id: number) =>
-    `${getApiV1BaseUrl()}/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
-const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
 
 type ImageViewerModalProps = {
     activeImage: ImageLibraryItem;
@@ -244,7 +237,7 @@ export default function ImageViewerModal({
                     </button>
                     <div className={styles.stageFrame}>
                         <img
-                            src={blobUrl(activeImage.file_id)}
+                            src={viewerImageUrl(activeImage.file_id, zoom)}
                             alt={activeImage.name}
                             className={styles.image}
                             style={{ transform: `scale(${zoom})` }}
@@ -310,7 +303,7 @@ export default function ImageViewerModal({
                                 aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: item.name })}
                             >
                                 <img
-                                    src={thumbnailUrl(item.file_id)}
+                                    src={thumbnailUrl(item.file_id, FILMSTRIP_THUMBNAIL_SIZE)}
                                     alt={item.name}
                                     loading="lazy"
                                 />

@@ -51,6 +51,22 @@ describe('ImageGroupsGrid', () => {
         expect(screen.getAllByRole('img', { name: 'One.jpg' })).toHaveLength(2);
     });
 
+    it('requests the grid box size with 1x and 2x srcset candidates', () => {
+        renderWithoutBackend(
+            <ImageGroupsGrid
+                groups={[buildGroup()]}
+                onOpenImage={jest.fn()}
+                onToggleStar={jest.fn()}
+            />
+        );
+
+        const firstThumbnail = screen.getByRole('img', { name: 'One.jpg' });
+        expect(firstThumbnail.getAttribute('src')).toContain(
+            '/files/thumbnail/1?width=400&height=400'
+        );
+        expect(firstThumbnail.getAttribute('srcset')).toContain('width=800&height=800 800w');
+    });
+
     it('renders a headerless group without a heading', () => {
         renderWithoutBackend(
             <ImageGroupsGrid
