@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -393,6 +394,33 @@ func TestFilesHandlerThumbnailMissingSource(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 for missing thumbnail source, got %d", w.Code)
+	}
+	if w.Header().Get("ETag") != "" {
+		t.Fatalf("a failed thumbnail must not advertise an ETag")
+	}
+	if !strings.Contains(w.Body.String(), i18n.GetMessage("ERROR_FILE_NOT_FOUND")) {
+		t.Fatalf("expected translated not-found error, got %s", w.Body.String())
+	}
+}
+
+func TestFilesHandlerThumbnailRevalidatesWithETag(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		getFileByIdFn: func(id int) (FileDto, error) {
+			return FileDto{ID: id, UpdatedAt: time.Unix(1000, 0), Type: File}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
+	expectedETag := ThumbnailETag(FileDto{ID: 3, UpdatedAt: time.Unix(1000, 0)}, 320)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/thumbnail/3", nil)
+	req.Header.Set("If-None-Match", expectedETag)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotModified {
+		t.Fatalf("expected 304 for matching ETag, got %d", w.Code)
 	}
 }
 

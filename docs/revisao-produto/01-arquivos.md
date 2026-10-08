@@ -35,7 +35,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 18. Diálogo de apagar informa lixeira + opção definitiva; renomear seleciona só o nome
 - [x] 19. Atalhos de teclado (Enter, Delete, F2, Ctrl+A, Backspace, `/`)
 - [x] 20. Estados vazio/erro com tentar de novo e mensagem do backend
-- [ ] 21. Thumbnail apaga registro do banco quando o arquivo some do disco (volume desmontado)
+- [x] 21. Thumbnail apaga registro do banco quando o arquivo some do disco (volume desmontado)
 - [ ] 22. WebDAV ciente de tier (arquivo frio some do DAV)
 - [ ] 23. "Trazer para o quente agora" a partir do detalhe
 - [ ] 24. Mover entre raízes (cópia verificada + remoção)

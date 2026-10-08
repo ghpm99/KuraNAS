@@ -9,6 +9,7 @@ import (
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
@@ -599,16 +600,10 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	if width <= 0 {
-		width = 320
-	}
-	if width > 2048 {
-		width = 2048
-	}
+	width = normalizeThumbnailWidth(width)
 
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheKey := fmt.Sprintf("%d_%d.png", fileDto.ID, width)
-	cachePath := filepath.Join(cacheDir, cacheKey)
+	cachePath := filepath.Join(cacheDir, thumbnailCacheFileName(fileDto, width))
 
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
@@ -624,13 +619,9 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
 	} else {
 		contentPath := fileDto.ResolveContentPath()
-		exists := s.CheckFileExistsByPath(contentPath)
-		if !exists {
-			err := s.DeleteFile(fileDto, true)
-			if err != nil {
-				return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
-			}
-			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
+		if !s.CheckFileExistsByPath(contentPath) {
+			applog.Warn("files: thumbnail source missing on disk", "file_id", fileDto.ID, "content_path", contentPath)
+			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, contentPath)
 		}
 
 		srcImg, format, err := img.OpenImageFromFile(contentPath)
@@ -661,6 +652,7 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 	}
 
 	_ = os.MkdirAll(cacheDir, 0755)
+	removeStaleThumbnails(cacheDir, fileDto, width)
 	_ = os.WriteFile(cachePath, data, 0644)
 
 	return data, nil
