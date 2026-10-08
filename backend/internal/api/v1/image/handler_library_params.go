@@ -22,6 +22,7 @@ var (
 	errInvalidLibraryOrder    = errors.New("invalid library order")
 	errInvalidLibraryStarred  = errors.New("invalid library starred")
 	errInvalidLibraryQuery    = errors.New("invalid library query")
+	errInvalidLibraryFolder   = errors.New("invalid library folder")
 	errLibraryKeysetOnly      = errors.New("library cursor requires taken_at desc ordering")
 )
 
@@ -34,6 +35,7 @@ var libraryErrorMessageKeys = map[error]string{
 	errInvalidLibraryOrder:    "ERROR_IMAGE_LIBRARY_INVALID_ORDER",
 	errInvalidLibraryStarred:  "ERROR_IMAGE_LIBRARY_INVALID_STARRED",
 	errInvalidLibraryQuery:    "ERROR_IMAGE_LIBRARY_INVALID_QUERY",
+	errInvalidLibraryFolder:   "ERROR_IMAGE_LIBRARY_INVALID_FOLDER",
 	errLibraryKeysetOnly:      "ERROR_IMAGE_LIBRARY_KEYSET_REQUIRES_DATE_SORT",
 }
 

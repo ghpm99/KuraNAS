@@ -96,3 +96,6 @@ var LibraryLimitOffsetQuery string
 
 //go:embed library_timeline_group.sql
 var LibraryTimelineGroupQuery string
+
+//go:embed library_folders.sql
+var LibraryFoldersQuery string

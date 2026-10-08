@@ -6,20 +6,25 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 type fakeLibraryService struct {
-	err          error
-	page         LibraryPageDto
-	count        LibraryCountDto
-	buckets      []LibraryTimelineBucketDto
-	listRequest  LibraryListRequest
-	filterGotten LibraryFilter
-	callCount    int
+	err           error
+	page          LibraryPageDto
+	count         LibraryCountDto
+	buckets       []LibraryTimelineBucketDto
+	listRequest   LibraryListRequest
+	filterGotten  LibraryFilter
+	callCount     int
+	folderPage    utils.PaginationResponse[LibraryFolderDto]
+	folderRequest LibraryFolderRequest
 }
 
 func (f *fakeLibraryService) ListLibraryImages(request LibraryListRequest) (LibraryPageDto, error) {
@@ -40,12 +45,19 @@ func (f *fakeLibraryService) ListLibraryTimeline(filter LibraryFilter) ([]Librar
 	return f.buckets, f.err
 }
 
+func (f *fakeLibraryService) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
+	f.callCount++
+	f.folderRequest = request
+	return f.folderPage, f.err
+}
+
 func serveLibraryRequest(service *fakeLibraryService, requestURL string) *httptest.ResponseRecorder {
 	gin.SetMode(gin.TestMode)
 	handler := NewLibraryHandler(service, &imageLoggerMock{})
 	router := gin.New()
 	router.GET("/image/library", handler.ListLibraryImagesHandler)
 	router.GET("/image/library/count", handler.CountLibraryImagesHandler)
+	router.GET("/image/library/folders", handler.ListLibraryFoldersHandler)
 	router.GET("/image/library/timeline", handler.ListLibraryTimelineHandler)
 
 	recorder := httptest.NewRecorder()
@@ -226,5 +238,69 @@ func TestLibraryHandlersReturn500OnServiceError(t *testing.T) {
 		if recorder.Code != http.StatusInternalServerError {
 			t.Fatalf("%s: status = %d", route, recorder.Code)
 		}
+	}
+}
+
+func TestListLibraryFoldersHandlerDecodesParentAndPagination(t *testing.T) {
+	service := &fakeLibraryService{folderPage: utils.PaginationResponse[LibraryFolderDto]{
+		Items:      []LibraryFolderDto{{Path: "/photos/trip", Name: "trip", ImageCount: 4, CoverFileID: 9}},
+		Pagination: utils.Pagination{Page: 2, PageSize: 10, HasNext: true},
+	}}
+	query := url.Values{"parent": {"  /photos "}, "page": {"2"}, "page_size": {"10"}}
+
+	recorder := serveLibraryRequest(service, "/image/library/folders?"+query.Encode())
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body %s", recorder.Code, recorder.Body.String())
+	}
+	if service.folderRequest.ParentPath != "/photos" || service.folderRequest.Page != 2 || service.folderRequest.PageSize != 10 {
+		t.Fatalf("unexpected request %+v", service.folderRequest)
+	}
+	var body struct {
+		Items      []map[string]any `json:"items"`
+		Pagination map[string]any   `json:"pagination"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, key := range []string{"path", "name", "image_count", "cover_file_id"} {
+		if _, hasKey := body.Items[0][key]; !hasKey {
+			t.Fatalf("folder missing %q: %s", key, recorder.Body.String())
+		}
+	}
+	if body.Pagination["has_next"] != true {
+		t.Fatalf("pagination: %s", recorder.Body.String())
+	}
+}
+
+func TestListLibraryFoldersHandlerDefaultsToRoots(t *testing.T) {
+	service := &fakeLibraryService{}
+	recorder := serveLibraryRequest(service, "/image/library/folders")
+
+	if recorder.Code != http.StatusOK || service.folderRequest.ParentPath != "" || service.folderRequest.PageSize != defaultLibraryFolderPageSize {
+		t.Fatalf("status %d request %+v", recorder.Code, service.folderRequest)
+	}
+}
+
+func TestListLibraryFoldersHandlerRejectsInvalidInput(t *testing.T) {
+	tooLong := url.Values{"parent": {strings.Repeat("a", maxLibraryFolderPathLength+1)}}
+	for name, requestURL := range map[string]string{
+		"parent too long": "/image/library/folders?" + tooLong.Encode(),
+		"parent with NUL": "/image/library/folders?parent=%2Fa%00b",
+		"bad pagination":  "/image/library/folders?page=abc",
+	} {
+		service := &fakeLibraryService{}
+		recorder := serveLibraryRequest(service, requestURL)
+		if recorder.Code != http.StatusBadRequest || service.callCount != 0 {
+			t.Fatalf("%s: status %d calls %d", name, recorder.Code, service.callCount)
+		}
+	}
+}
+
+func TestListLibraryFoldersHandlerMapsServiceErrorToInternal(t *testing.T) {
+	service := &fakeLibraryService{err: errors.New("boom")}
+	recorder := serveLibraryRequest(service, "/image/library/folders")
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d", recorder.Code)
 	}
 }
