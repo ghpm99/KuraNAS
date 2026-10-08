@@ -135,23 +135,25 @@ export const deleteFile = async (id: number): Promise<void> => {
     });
 };
 
-export const renameFile = async (id: number, newName: string): Promise<void> => {
-    await apiBase.post('/files/rename', {
+export const renameFile = async (id: number, newName: string): Promise<string> => {
+    const response = await apiBase.post('/files/rename', {
         id,
         new_name: newName,
     });
+    return response?.data?.path ?? '';
 };
 
 export const moveFile = async (
     sourceId: number,
     destinationFolderId?: number,
     destinationPath?: string
-): Promise<void> => {
-    await apiBase.post('/files/move', {
+): Promise<string> => {
+    const response = await apiBase.post('/files/move', {
         source_id: sourceId,
         destination_folder_id: destinationFolderId ?? null,
         destination_path: destinationPath ?? '',
     });
+    return response?.data?.path ?? '';
 };
 
 export const copyFile = async (

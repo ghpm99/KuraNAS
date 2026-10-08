@@ -1,5 +1,5 @@
 import { FileType } from '@/utils';
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -36,6 +36,11 @@ import {
 
 const pageSize = 200;
 
+const fileQueryKeys = ['files', 'files-path', 'filesRecent'];
+
+const joinPath = (parentPath: string | undefined, name: string | undefined) =>
+    `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
+
 const isGlobalListing = (filter: FileListCategoryType, parentId: number | null) =>
     parentId === null && filter !== 'all';
 
@@ -47,6 +52,7 @@ const fetchGlobalListing = (filter: FileListCategoryType, page: number): Promise
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // URL → path extraction
     const currentFilePath = extractFilePath(location.pathname);
@@ -150,12 +156,30 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [refetch]
     );
 
+    const openedItemId = currentFilePath ? resolvedItem?.id : undefined;
+    const openedItemParentPath = resolvedItem?.parent_path;
+    const openedItemName = resolvedItem?.name;
+
+    const invalidateFileQueries = useCallback(async () => {
+        await Promise.all(
+            fileQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [queryKey] }))
+        );
+    }, [queryClient]);
+
+    const discardOpenedItemPathQuery = useCallback(() => {
+        queryClient.removeQueries({ queryKey: ['files-path', currentFilePath] });
+    }, [queryClient, currentFilePath]);
+
     const moveFile = useCallback(
         async (sourceId: number, destinationFolderId?: number, destinationPath?: string) => {
-            await moveFileService(sourceId, destinationFolderId, destinationPath);
-            await refetch();
+            const movedPath = await moveFileService(sourceId, destinationFolderId, destinationPath);
+            if (sourceId === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(buildFilesUrl(movedPath));
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [openedItemId, discardOpenedItemPathQuery, navigate, invalidateFileQueries]
     );
 
     const copyFile = useCallback(
@@ -168,18 +192,43 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const renameFile = useCallback(
         async (id: number, newName: string) => {
-            await renameFileService(id, newName);
-            await refetch();
+            const renamedPath = await renameFileService(id, newName);
+            if (id === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(
+                    buildFilesUrl(
+                        renamedPath || joinPath(openedItemParentPath, newName || openedItemName)
+                    )
+                );
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [
+            openedItemId,
+            openedItemParentPath,
+            openedItemName,
+            discardOpenedItemPathQuery,
+            navigate,
+            invalidateFileQueries,
+        ]
     );
 
     const deleteFile = useCallback(
         async (id: number) => {
             await deleteFileService(id);
-            await refetch();
+            if (id === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(buildFilesUrl(openedItemParentPath === '/' ? '' : (openedItemParentPath ?? '')));
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [
+            openedItemId,
+            openedItemParentPath,
+            discardOpenedItemPathQuery,
+            navigate,
+            invalidateFileQueries,
+        ]
     );
 
     // Update file tree when data arrives (deferred to avoid cascading renders)
