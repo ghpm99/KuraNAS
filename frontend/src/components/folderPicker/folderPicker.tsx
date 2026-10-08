@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Box,
     Button,
@@ -19,6 +19,7 @@ import { getFilesTree } from '@/service/files';
 import { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 
 export type FolderPickerResult = {
     folderId?: number;
@@ -37,6 +38,8 @@ type FolderEntry = {
     path: string;
 };
 
+const folderPageSize = 200;
+
 const FolderPicker = ({ open, onClose, onSelect }: FolderPickerProps) => {
     const { t } = useI18n();
     const [folders, setFolders] = useState<FolderEntry[]>([]);
@@ -45,25 +48,59 @@ const FolderPicker = ({ open, onClose, onSelect }: FolderPickerProps) => {
     const [pathInput, setPathInput] = useState('');
     const [selectedFolder, setSelectedFolder] = useState<FolderEntry | null>(null);
 
-    const fetchFolders = useCallback(async (folderId?: number) => {
-        setLoading(true);
-        try {
-            const response = await getFilesTree({
-                page: 1,
-                pageSize: 200,
-                fileParent: folderId,
-                category: 'all',
-            });
-            const dirs = response.items
-                .filter((item: FileData) => item.type === FileType.Directory)
-                .map((item: FileData) => ({ id: item.id, name: item.name, path: item.path }));
-            setFolders(dirs);
-        } catch {
-            setFolders([]);
-        } finally {
-            setLoading(false);
-        }
+    const [hasNextPage, setHasNextPage] = useState(false);
+    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const loadedPageRef = useRef(1);
+    const currentFolderIdRef = useRef<number | undefined>(undefined);
+
+    const requestFolderPage = useCallback(async (folderId: number | undefined, page: number) => {
+        const response = await getFilesTree({
+            page,
+            pageSize: folderPageSize,
+            fileParent: folderId,
+            category: 'all',
+        });
+        const folderEntries = response.items
+            .filter((file: FileData) => file.type === FileType.Directory)
+            .map((file: FileData) => ({ id: file.id, name: file.name, path: file.path }));
+        return { folderEntries, hasNext: Boolean(response.pagination?.hasNext) };
     }, []);
+
+    const fetchFolders = useCallback(
+        async (folderId?: number) => {
+            currentFolderIdRef.current = folderId;
+            loadedPageRef.current = 1;
+            setLoading(true);
+            setHasNextPage(false);
+            try {
+                const { folderEntries, hasNext } = await requestFolderPage(folderId, 1);
+                setFolders(folderEntries);
+                setHasNextPage(hasNext);
+            } catch {
+                setFolders([]);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [requestFolderPage]
+    );
+
+    const fetchNextFolderPage = useCallback(async () => {
+        const folderId = currentFolderIdRef.current;
+        const nextPage = loadedPageRef.current + 1;
+        setIsFetchingNextPage(true);
+        try {
+            const { folderEntries, hasNext } = await requestFolderPage(folderId, nextPage);
+            if (currentFolderIdRef.current !== folderId) return;
+            loadedPageRef.current = nextPage;
+            setFolders((currentFolders) => [...currentFolders, ...folderEntries]);
+            setHasNextPage(hasNext);
+        } catch {
+            setHasNextPage(false);
+        } finally {
+            setIsFetchingNextPage(false);
+        }
+    }, [requestFolderPage]);
 
     useEffect(() => {
         if (open) {
@@ -194,6 +231,13 @@ const FolderPicker = ({ open, onClose, onSelect }: FolderPickerProps) => {
                                 </ListItemButton>
                             ))}
                         </List>
+                    )}
+                    {loading ? null : (
+                        <LoadMoreSentinel
+                            hasNextPage={hasNextPage}
+                            isFetchingNextPage={isFetchingNextPage}
+                            fetchNextPage={fetchNextFolderPage}
+                        />
                     )}
                 </Box>
                 <TextField

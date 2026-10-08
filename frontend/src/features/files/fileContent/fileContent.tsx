@@ -6,6 +6,7 @@ import useFile, { FileData } from '@/features/files/providers/fileProvider/fileC
 import FileViewer from './components/fileViewer/fileViewer';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from './fileContent.module.css';
 
 interface FileContentProps {
@@ -23,8 +24,17 @@ const FileContent = ({
     title,
     emptyStateMessage,
 }: FileContentProps) => {
-    const { status, handleSelectItem, selectedItem, files, handleStarredItem, fileListFilter } =
-        useFile();
+    const {
+        status,
+        handleSelectItem,
+        selectedItem,
+        files,
+        handleStarredItem,
+        fileListFilter,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useFile();
     const { t } = useI18n();
     const { openMediaItem } = useMediaOpener();
     const currentListTitle =
@@ -123,6 +133,13 @@ const FileContent = ({
                             />
                         ))}
                     </div>
+                )}
+                {items ? null : (
+                    <LoadMoreSentinel
+                        hasNextPage={hasNextPage}
+                        isFetchingNextPage={isFetchingNextPage}
+                        fetchNextPage={fetchNextPage}
+                    />
                 )}
             </div>
         );

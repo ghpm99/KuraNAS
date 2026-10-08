@@ -258,4 +258,39 @@ describe('fileContent', () => {
         );
         expect(screen.getByText('EMPTY_FAVORITES')).toBeInTheDocument();
     });
+
+    it('offers a load more button that fetches the next page while pages remain', () => {
+        const fetchNextPage = jest.fn();
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            files: [createFile({ id: 1, name: 'song' })],
+            fetchNextPage,
+            hasNextPage: true,
+            isFetchingNextPage: false,
+        });
+        render(<FileContent />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the load more button when there is no next page', () => {
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            files: [createFile({ id: 1, name: 'song' })],
+            fetchNextPage: jest.fn(),
+            hasNextPage: false,
+            isFetchingNextPage: false,
+        });
+        render(<FileContent />);
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
 });

@@ -64,7 +64,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [selectedItemId]
     );
 
-    const { status, data, refetch } = useInfiniteQuery({
+    const { status, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey: ['files', queryParams, fileListFilter],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
             getFilesTree({
@@ -82,6 +82,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         },
         staleTime: 0,
     });
+
+    const loadedItems = useMemo(
+        () => data?.pages.flatMap((page) => page?.items ?? []) ?? [],
+        [data]
+    );
 
     const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
         queryKey: ['filesRecent', 'tree', selectedItemId],
@@ -159,7 +164,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     // Update file tree when data arrives (deferred to avoid cascading renders)
     useEffect(() => {
         if (!data) return;
-        const nextItems = data?.pages[0]?.items ?? [];
+        const nextItems = loadedItems;
         let cancelled = false;
         if (selectedItemId) {
             queueMicrotask(() => {
@@ -180,7 +185,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         return () => {
             cancelled = true;
         };
-    }, [data, selectedItemId]);
+    }, [data, loadedItems, selectedItemId]);
 
     // Compute expanded items from the selected item's trail in the tree (derived, not state)
     const expandedItems = useMemo(() => {
@@ -200,12 +205,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         if (fromTree) return fromTree;
 
         if (selectedItemSnapshot && selectedItemSnapshot.type === FileType.Directory && data) {
-            const nextItems = data.pages[0]?.items ?? [];
-            return { ...selectedItemSnapshot, file_children: nextItems };
+            return { ...selectedItemSnapshot, file_children: loadedItems };
         }
 
         return selectedItemSnapshot;
-    }, [selectedItemId, fileTree, selectedItemSnapshot, data]);
+    }, [selectedItemId, fileTree, selectedItemSnapshot, data, loadedItems]);
 
     // Navigate via URL (push for browser history)
     const handleSelectItem = useCallback(
@@ -245,6 +249,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             renameFile,
             deleteFile,
             rescanFiles,
+            fetchNextPage: () => {
+                fetchNextPage();
+            },
+            hasNextPage: Boolean(hasNextPage),
+            isFetchingNextPage: Boolean(isFetchingNextPage),
         }),
         [
             fileTree,
@@ -263,6 +272,9 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             renameFile,
             deleteFile,
             rescanFiles,
+            fetchNextPage,
+            hasNextPage,
+            isFetchingNextPage,
         ]
     );
     return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;

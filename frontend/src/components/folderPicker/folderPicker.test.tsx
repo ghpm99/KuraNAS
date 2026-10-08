@@ -257,4 +257,40 @@ describe('FolderPicker', () => {
             expect(screen.getByLabelText('PATH')).toHaveValue('');
         });
     });
+
+    it('loads the next page of folders and appends it to the list', async () => {
+        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }]);
+        firstPage.pagination.hasNext = true;
+        mockGetFilesTree
+            .mockResolvedValueOnce(firstPage)
+            .mockResolvedValueOnce(
+                makePaginationResponse([{ id: 2, name: 'Beta', path: '/Beta', type: 1 }])
+            );
+
+        render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+        await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        await waitFor(() => expect(screen.getByText('Beta')).toBeInTheDocument());
+        expect(screen.getByText('Alpha')).toBeInTheDocument();
+        expect(mockGetFilesTree).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
+
+    it('stops offering more pages when loading the next page fails', async () => {
+        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }]);
+        firstPage.pagination.hasNext = true;
+        mockGetFilesTree.mockResolvedValueOnce(firstPage).mockRejectedValueOnce(new Error('fail'));
+
+        render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+        await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        await waitFor(() =>
+            expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument()
+        );
+        expect(screen.getByText('Alpha')).toBeInTheDocument();
+    });
 });

@@ -138,4 +138,30 @@ describe('features/files/fileProvider (seam)', () => {
 			expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
 		);
 	});
+
+	it('exposes the items of every loaded page after fetchNextPage', async () => {
+		const buildFile = (id: number) => ({ id, name: `file-${id}`, path: `/file-${id}`, type: 2 });
+		mockedApi.get.mockImplementation((url: string, config?: { params?: { page?: number } }) => {
+			if (url.startsWith('/files/recent/')) return Promise.resolve({ data: [] });
+			if (config?.params?.page === 2) {
+				return Promise.resolve({
+					data: { items: [buildFile(3)], pagination: { hasNext: false, page: 2 } },
+				});
+			}
+			return Promise.resolve({
+				data: { items: [buildFile(1), buildFile(2)], pagination: { hasNext: true, page: 1 } },
+			});
+		});
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await waitFor(() => expect(result.current.files).toHaveLength(2));
+		expect(result.current.hasNextPage).toBe(true);
+
+		act(() => result.current.fetchNextPage());
+
+		await waitFor(() => expect(result.current.files).toHaveLength(3));
+		expect(result.current.files.map((file) => file.id)).toEqual([1, 2, 3]);
+		expect(result.current.hasNextPage).toBe(false);
+		expect(result.current.isFetchingNextPage).toBe(false);
+	});
 });
