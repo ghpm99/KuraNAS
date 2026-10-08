@@ -23,7 +23,7 @@ jest.mock('./components/folderItem', () => ({ children, label, onClick }: any) =
 describe('folderTree', () => {
     it('renders loading and error states', () => {
         mockUseFile.mockReturnValue({
-            status: 'loading',
+            status: 'pending',
             files: [],
             handleSelectItem: jest.fn(),
         });

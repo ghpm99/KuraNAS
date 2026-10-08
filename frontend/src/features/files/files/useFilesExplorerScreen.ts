@@ -2,7 +2,10 @@ import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
 import { useMemo, useState } from 'react';
+import useFileAncestors from '@/features/files/providers/fileProvider/useFileAncestors';
 import { findTrailById } from './fileNavigation';
+
+const primaryRootPath = '/';
 
 export type FilesViewMode = 'grid' | 'list';
 
@@ -17,6 +20,7 @@ const useFilesExplorerScreen = () => {
     const { t } = useI18n();
     const { files, selectedItem, fileListFilter, hasNextPage } = useFile();
     const [viewMode, setViewMode] = useState<FilesViewMode>('grid');
+    const { data: ancestors } = useFileAncestors(selectedItem?.id ?? null);
     const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
 
     const currentListTitle = useMemo(() => {
@@ -55,6 +59,24 @@ const useFilesExplorerScreen = () => {
             return [rootSegment];
         }
 
+        if (ancestors) {
+            const currentSegment: BreadcrumbSegment = {
+                id: selectedItem.id,
+                label: selectedItem.name,
+                path: selectedItem.path,
+                isCurrent: true,
+            };
+            const ancestorSegments = ancestors
+                .filter((ancestor) => ancestor.path !== primaryRootPath)
+                .map((ancestor) => ({
+                    id: ancestor.id,
+                    label: ancestor.name,
+                    path: ancestor.path,
+                    isCurrent: false,
+                }));
+            return [rootSegment, ...ancestorSegments, currentSegment];
+        }
+
         const trail = findTrailById(files, selectedItem.id) ?? [];
         if (trail.length === 0) {
             return [
@@ -77,7 +99,7 @@ const useFilesExplorerScreen = () => {
                 isCurrent: index === trail.length - 1,
             })),
         ];
-    }, [files, selectedItem, t]);
+    }, [ancestors, files, selectedItem, t]);
 
     const itemCountLabel = useMemo(() => {
         const loadedCount = currentItems.length;

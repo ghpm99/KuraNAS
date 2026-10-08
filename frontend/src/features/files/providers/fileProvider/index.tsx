@@ -34,8 +34,10 @@ import {
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
+import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 
 const pageSize = 200;
+const ancestorsQueryKey = 'files-ancestors';
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -75,6 +77,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         saveFilesSort(nextSort);
         setFilesSortState(nextSort);
     }, []);
+
+    useExpandTreeAlongAncestors({ selectedItemId, filesSort, setFileTree });
 
     // Snapshot derived from resolvedItem — no state/effect needed
     const selectedItemSnapshot = currentFilePath ? (resolvedItem ?? null) : null;
@@ -136,7 +140,9 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const invalidateFileQueries = useCallback(async () => {
         await Promise.all(
-            fileQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [queryKey] }))
+            [...fileQueryKeys, ancestorsQueryKey].map((queryKey) =>
+                queryClient.invalidateQueries({ queryKey: [queryKey] })
+            )
         );
     }, [queryClient]);
 
