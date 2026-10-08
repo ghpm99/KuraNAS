@@ -111,3 +111,6 @@ var GetRecentlyAccessedFilesQuery string
 
 //go:embed get_active_file_by_path_or_physical_path.sql
 var GetActiveFileByPathOrPhysicalPathQuery string
+
+//go:embed get_active_files_by_paths.sql
+var GetActiveFilesByPathsQuery string
