@@ -79,3 +79,10 @@ export type ImageMetadataSummary = {
     iso: number;
     focal_length: number;
 };
+
+export type ImageLibraryFolder = {
+    path: string;
+    name: string;
+    image_count: number;
+    cover_file_id: number;
+};

@@ -10,6 +10,7 @@ import { apiBase } from './index';
 import {
     getImageFiles,
     getImageLibraryCount,
+    getImageLibraryFolders,
     getImageLibraryPage,
     getImageLibraryTimeline,
     getImageMetadataSummary,
@@ -171,5 +172,21 @@ describe('service/image', () => {
 
         expect(mockedApi.get).toHaveBeenCalledWith('/image/metadata/9');
         expect(summary).toEqual({ make: 'Sony' });
+    });
+
+    it('requests the folders under a parent with pagination and omits an empty parent', async () => {
+        const payload = { items: [], pagination: { page: 2, page_size: 48, has_next: false } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const nested = await getImageLibraryFolders('/photos', 2, 48);
+        await getImageLibraryFolders('', 1, 48);
+
+        expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/image/library/folders', {
+            params: { parent: '/photos', page: 2, page_size: 48 },
+        });
+        expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/image/library/folders', {
+            params: { parent: undefined, page: 1, page_size: 48 },
+        });
+        expect(nested).toEqual(payload);
     });
 });

@@ -14,10 +14,10 @@ import {
     groupImagesWithoutHeader,
     parseTakenAt,
 } from './imageDateGroups';
-import { buildFolderCards } from './imageFolderCards';
 import { mapFileDataToLibraryItem, readImageLibraryItemId } from './imageLibraryItemMapping';
 import { useDebouncedNameQuery } from './useDebouncedNameQuery';
 import { useImageAlbumCards } from './useImageAlbumCards';
+import { useImageFolderCards } from './useImageFolderCards';
 import { useImageLibraryControls } from './useImageLibraryControls';
 import { useImageStarToggle } from './useImageStarToggle';
 
@@ -128,10 +128,8 @@ export const useImageContent = () => {
         });
     }, [viewMode, ordering.sort, items, monthFormatter, t, timeline]);
 
-    const folderCards = useMemo(
-        () => (viewMode === 'folders' ? buildFolderCards(items) : []),
-        [viewMode, items]
-    );
+    const folders = useImageFolderCards(selectedFolder, section === 'folders');
+    const folderCards = folders.cards;
     const albumCards = useImageAlbumCards(viewMode === 'albums');
 
     const viewer = useImageViewer(
@@ -181,19 +179,43 @@ export const useImageContent = () => {
         }
     }, [viewerImages, openImage, requestedImageId]);
 
-    const hasLoadError = status === 'error';
-    const loadErrorMessage = hasLoadError ? extractBackendErrorMessage(error) : undefined;
+    const hasFolderLoadError = folders.status === 'error';
+    const hasLoadError = status === 'error' || hasFolderLoadError;
+    const loadErrorMessage = hasLoadError
+        ? extractBackendErrorMessage(hasFolderLoadError ? folders.error : error)
+        : undefined;
+    const { fetchNextPage: fetchNextFolderPage, refetch: refetchFolders } = folders;
     const retryLoading = useCallback(() => {
+        if (hasFolderLoadError) {
+            if (folders.isFetchNextPageError) {
+                fetchNextFolderPage();
+                return;
+            }
+            refetchFolders();
+            return;
+        }
         if (isFetchNextPageError) {
             fetchNextPage();
             return;
         }
         refetch();
-    }, [isFetchNextPageError, fetchNextPage, refetch]);
+    }, [
+        hasFolderLoadError,
+        folders.isFetchNextPageError,
+        fetchNextFolderPage,
+        refetchFolders,
+        isFetchNextPageError,
+        fetchNextPage,
+        refetch,
+    ]);
 
     const loadNextPage = useCallback(() => {
         fetchNextPage();
     }, [fetchNextPage]);
+
+    const loadNextFolderPage = useCallback(() => {
+        fetchNextFolderPage();
+    }, [fetchNextFolderPage]);
 
     const selectedCollectionTitle =
         section === 'albums' && selectedAlbum ? t(selectedAlbum.titleKey) : selectedFolder;
@@ -201,12 +223,21 @@ export const useImageContent = () => {
 
     const summary =
         viewMode === 'folders'
-            ? t('IMAGES_FOLDERS_SUMMARY', { count: String(folderCards.length) })
+            ? folders.hasNextPage
+                ? ''
+                : t('IMAGES_FOLDERS_SUMMARY', { count: String(folderCards.length) })
             : viewMode === 'albums'
               ? t('IMAGES_ALBUMS_SUMMARY', { count: String(albumCards.length) })
               : total === null
                 ? ''
                 : t('IMAGES_PHOTOS_COUNT', { count: String(total) });
+
+    const hasFolderCards = folderCards.length > 0;
+    const isFolderListPending = folders.status === 'pending' && section === 'folders';
+    const isEmpty =
+        viewMode === 'folders'
+            ? folders.status === 'success' && !hasFolderCards
+            : status === 'success' && items.length === 0 && !hasFolderCards && !isFolderListPending;
 
     const hasSectionFilter = section === 'recent' || section === 'captures' || section === 'photos';
 
@@ -227,7 +258,11 @@ export const useImageContent = () => {
         hasNextPage,
         isFetchingNextPage,
         loadNextPage,
-        isEmpty: status === 'success' && items.length === 0,
+        isEmpty,
+        isInitialLoading: viewMode === 'folders' ? isFolderListPending : status === 'pending',
+        hasMoreFolders: folders.hasNextPage && !hasFolderLoadError,
+        isFetchingMoreFolders: folders.isFetchingNextPage,
+        loadNextFolderPage,
         emptyKind: resolveEmptyKind(section, view.hasUserFilters, hasSectionFilter),
         typedNameQuery,
         setTypedNameQuery,

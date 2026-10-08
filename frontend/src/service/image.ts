@@ -1,6 +1,7 @@
 import type { ImageGroupBy, IImageData } from '@/types/image';
 import type {
     ImageLibraryCount,
+    ImageLibraryFolder,
     ImageLibraryFilters,
     ImageLibraryOrdering,
     ImageLibraryPage,
@@ -88,5 +89,16 @@ export const getImageLibraryTimeline = async (
 
 export const getImageMetadataSummary = async (fileId: number): Promise<ImageMetadataSummary> => {
     const response = await apiBase.get<ImageMetadataSummary>(`/image/metadata/${fileId}`);
+    return response.data;
+};
+
+export const getImageLibraryFolders = async (
+    parentPath: string,
+    page: number,
+    pageSize: number
+): Promise<Pagination<ImageLibraryFolder>> => {
+    const response = await apiBase.get<Pagination<ImageLibraryFolder>>('/image/library/folders', {
+        params: { parent: emptyToUndefined(parentPath), page, page_size: pageSize },
+    });
     return response.data;
 };

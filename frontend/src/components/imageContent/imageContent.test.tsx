@@ -90,37 +90,70 @@ const libraryPage = (response: LibraryPageResponse) => ({
     data: { next_cursor: '', has_next: false, page_size: 60, ...response },
 });
 
-const installApi = (
-    pages: (LibraryPageResponse | Error)[],
-    options: { total?: number; timeline?: unknown[] } = {}
-) => {
+type FolderRow = { path: string; name: string; image_count: number; cover_file_id: number };
+type FolderPage = { items: FolderRow[]; hasNext: boolean };
+
+type InstallApiOptions = {
+    total?: number;
+    timeline?: unknown[];
+    folders?: Record<string, FolderRow[]>;
+    folderPages?: FolderPage[];
+};
+
+const folderResponse = (items: FolderRow[], page: number, hasNext: boolean) => ({
+    data: { items, pagination: { page, page_size: 48, has_next: hasNext, has_prev: page > 1 } },
+});
+
+const installApi = (pages: (LibraryPageResponse | Error)[], options: InstallApiOptions = {}) => {
     let pageIndex = 0;
-    mockedApiGet.mockImplementation((url: string, config?: { params?: { page_size?: number } }) => {
-        if (url === '/image/library') {
-            if (config?.params?.page_size === 1) {
+    mockedApiGet.mockImplementation(
+        (
+            url: string,
+            config?: { params?: { page_size?: number; parent?: string; page: number } }
+        ) => {
+            if (url === '/image/library') {
+                if (config?.params?.page_size === 1) {
+                    return Promise.resolve(
+                        libraryPage({ items: [buildImageLibraryItem({ file_id: 900 })] })
+                    );
+                }
+                const page = pages[Math.min(pageIndex++, pages.length - 1)]!;
+                return page instanceof Error
+                    ? Promise.reject(page)
+                    : Promise.resolve(libraryPage(page));
+            }
+            if (url === '/image/library/folders') {
+                const params = config?.params as { parent?: string; page: number };
+                if (options.folderPages) {
+                    const folderPage = options.folderPages[params.page - 1]!;
+                    return Promise.resolve(
+                        folderResponse(folderPage.items, params.page, folderPage.hasNext)
+                    );
+                }
                 return Promise.resolve(
-                    libraryPage({ items: [buildImageLibraryItem({ file_id: 900 })] })
+                    folderResponse(options.folders?.[params.parent ?? ''] ?? [], params.page, false)
                 );
             }
-            const page = pages[Math.min(pageIndex++, pages.length - 1)]!;
-            return page instanceof Error
-                ? Promise.reject(page)
-                : Promise.resolve(libraryPage(page));
+            if (url === '/image/library/count') {
+                return Promise.resolve({ data: { total: options.total ?? 0 } });
+            }
+            if (url === '/image/library/timeline') {
+                return Promise.resolve({ data: options.timeline ?? [] });
+            }
+            return Promise.reject(new Error(`unexpected GET ${url}`));
         }
-        if (url === '/image/library/count') {
-            return Promise.resolve({ data: { total: options.total ?? 0 } });
-        }
-        if (url === '/image/library/timeline') {
-            return Promise.resolve({ data: options.timeline ?? [] });
-        }
-        return Promise.reject(new Error(`unexpected GET ${url}`));
-    });
+    );
 };
 
 const libraryParams = () =>
     mockedApiGet.mock.calls
         .filter(([url, config]) => url === '/image/library' && config.params.page_size !== 1)
         .map(([, config]) => config.params);
+
+const folderCalls = () =>
+    mockedApiGet.mock.calls
+        .filter(([url]) => url === '/image/library/folders')
+        .map(([, config]) => config.params as { parent?: string; page: number });
 
 const lastLibraryParams = () => {
     const allParams = libraryParams();
@@ -452,33 +485,89 @@ describe('ImageContent', () => {
         ).toBeInTheDocument();
     });
 
-    it('lists folders found in the loaded images and filters by the chosen folder', async () => {
-        installApi(
-            [
-                {
-                    items: [
-                        buildImageLibraryItem({ file_id: 1, parent_path: '/photos/trip' }),
-                        buildImageLibraryItem({ file_id: 2, parent_path: '/photos/home' }),
-                    ],
-                },
-            ],
-            { total: 2 }
-        );
+    it('lists server folders with real counts and covers, then browses into a subfolder', async () => {
+        installApi([{ items: [buildImageLibraryItem({ file_id: 5, name: 'Inside.jpg' })] }], {
+            total: 1,
+            folders: {
+                '': [{ path: '/photos', name: 'photos', image_count: 12, cover_file_id: 77 }],
+                '/photos': [
+                    { path: '/photos/trip', name: 'trip', image_count: 4, cover_file_id: 78 },
+                ],
+            },
+        });
 
         renderGallery('/images/folders');
 
-        const tripCard = await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:trip' });
-        expect(screen.getByText('IMAGES_FOLDERS_SUMMARY:2')).toBeInTheDocument();
-        expect(within(tripCard).queryByText(/IMAGES_PHOTOS_COUNT/)).not.toBeInTheDocument();
+        const photosCard = await screen.findByRole('button', {
+            name: 'IMAGES_COLLECTION_OPEN:photos',
+        });
+        expect(within(photosCard).getByText('IMAGES_PHOTOS_COUNT:12')).toBeInTheDocument();
+        expect(within(photosCard).getByRole('img', { name: 'photos' })).toHaveAttribute(
+            'src',
+            expect.stringContaining('/files/thumbnail/77')
+        );
+        expect(libraryParams()).toHaveLength(0);
 
-        fireEvent.click(tripCard);
+        fireEvent.click(photosCard);
 
+        expect(await screen.findByRole('img', { name: 'Inside.jpg' })).toBeInTheDocument();
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:trip' })
+        ).toBeInTheDocument();
+        expect(lastLibraryParams()).toEqual(expect.objectContaining({ folder: '/photos' }));
+        expect(folderCalls()).toContainEqual(
+            expect.objectContaining({ parent: '/photos', page: 1 })
+        );
+        expect(screen.getByTestId('location')).toHaveTextContent('folder=%2Fphotos');
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_SECTION_FOLDERS' }));
         await waitFor(() =>
-            expect(lastLibraryParams()).toEqual(expect.objectContaining({ folder: '/photos/trip' }))
+            expect(screen.getByTestId('location')).not.toHaveTextContent('folder=')
         );
         expect(
-            await screen.findByRole('button', { name: 'IMAGES_BACK_TO_FOLDERS' })
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:photos' })
         ).toBeInTheDocument();
+    });
+
+    it('loads more folders when the folder list sentinel is reached', async () => {
+        installApi([], {
+            folderPages: [
+                {
+                    items: [{ path: '/a', name: 'a', image_count: 1, cover_file_id: 1 }],
+                    hasNext: true,
+                },
+                {
+                    items: [{ path: '/b', name: 'b', image_count: 2, cover_file_id: 2 }],
+                    hasNext: false,
+                },
+            ],
+        });
+
+        renderGallery('/images/folders');
+        await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:a' });
+
+        scrollToSentinel();
+
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:b' })
+        ).toBeInTheDocument();
+        expect(folderCalls().map((params) => params.page)).toEqual([1, 2]);
+    });
+
+    it('shows the empty state when the server has no folders with images', async () => {
+        installApi([], { folders: { '': [] } });
+
+        renderGallery('/images/folders');
+
+        expect(await screen.findByText('IMAGES_FOLDERS_EMPTY_TITLE')).toBeInTheDocument();
+    });
+
+    it('shows a retryable error when the folder list fails', async () => {
+        mockedApiGet.mockRejectedValue(new Error('down'));
+
+        renderGallery('/images/folders');
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
     });
 
     it('opens the viewer from a card, navigates and closes it', async () => {
