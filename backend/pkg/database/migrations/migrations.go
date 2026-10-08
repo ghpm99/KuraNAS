@@ -146,6 +146,9 @@ var AddImageAIClassifiedAtQuery string
 //go:embed queries/0045_create_home_file_children_sort_indexes.sql
 var CreateHomeFileChildrenSortIndexesQuery string
 
+//go:embed queries/0046_create_starred_and_recent_access_indexes.sql
+var CreateStarredAndRecentAccessIndexesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -201,6 +204,9 @@ func fileMigrationList() {
 
 	addMigration("0045_create_home_file_children_sort_indexes",
 		defaultMigrationFunc(CreateHomeFileChildrenSortIndexesQuery))
+
+	addMigration("0046_create_starred_and_recent_access_indexes",
+		defaultMigrationFunc(CreateStarredAndRecentAccessIndexesQuery))
 
 }
 
