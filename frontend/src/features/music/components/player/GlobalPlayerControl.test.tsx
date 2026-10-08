@@ -3,6 +3,12 @@ import GlobalPlayerControl from './GlobalPlayerControl';
 import * as musicUtils from '@/utils/music';
 
 const mockUseGlobalMusic = jest.fn();
+const mockUseMediaQuery = jest.fn();
+
+jest.mock('@mui/material/useMediaQuery', () => ({
+    __esModule: true,
+    default: (query: string) => mockUseMediaQuery(query),
+}));
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
@@ -48,6 +54,9 @@ const baseApi = () => ({
         | { labelKey: string; labelParams: Record<string, string> },
     toggleQueue: jest.fn(),
     queueOpen: false,
+    setQueueOpen: jest.fn(),
+    queue: [],
+    currentIndex: undefined,
 });
 
 const mockGetMusicTitle = musicUtils.getMusicTitle as jest.Mock;
@@ -56,6 +65,7 @@ const mockGetMusicArtist = musicUtils.getMusicArtist as jest.Mock;
 describe('GlobalPlayerControl', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockUseMediaQuery.mockReturnValue(false);
         mockGetMusicTitle.mockImplementation(
             (track: { name: string; metadata?: { title?: string } }) =>
                 track.metadata?.title || track.name
@@ -601,5 +611,33 @@ describe('GlobalPlayerControl', () => {
         rerender(<GlobalPlayerControl />);
         fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
         expect(api3.setRepeatMode).toHaveBeenCalledWith('none');
+    });
+
+    it('flags the document root while the player is visible and clears it on unmount', () => {
+        mockUseGlobalMusic.mockReturnValue(baseApi());
+        const { unmount } = render(<GlobalPlayerControl />);
+        expect(document.documentElement).toHaveAttribute('data-global-player', 'visible');
+        unmount();
+        expect(document.documentElement).not.toHaveAttribute('data-global-player');
+    });
+
+    it('does not flag the document root when there is no queue', () => {
+        mockUseGlobalMusic.mockReturnValue({ ...baseApi(), hasQueue: false });
+        render(<GlobalPlayerControl />);
+        expect(document.documentElement).not.toHaveAttribute('data-global-player');
+    });
+
+    it('mounts the queue drawer once alongside the player', () => {
+        mockUseGlobalMusic.mockReturnValue(baseApi());
+        render(<GlobalPlayerControl />);
+        expect(screen.getAllByText('MUSIC_QUEUE')).toHaveLength(1);
+    });
+
+    it('does not show progress bar nor open the sheet on desktop', () => {
+        mockUseGlobalMusic.mockReturnValue(baseApi());
+        render(<GlobalPlayerControl />);
+        expect(screen.queryByLabelText('PLAYER_ARIA_PROGRESS')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByText('Meta Title'));
+        expect(screen.queryByLabelText('PLAYER_ARIA_CLOSE_EXPANDED')).not.toBeInTheDocument();
     });
 });
