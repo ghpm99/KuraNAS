@@ -34,9 +34,10 @@ import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useFileSearchResults from '@/features/files/search/useFileSearchResults';
 import FilesBreadcrumb from './FilesBreadcrumb';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './FilesExplorerScreen.module.css';
 
-const phoneMediaQuery = '(max-width:640px)';
+const phoneMediaQuery = viewportMediaQueries.belowPhone;
 
 const parentFolderPath = (parentPath: string | undefined): string =>
     !parentPath || parentPath === '/' ? '' : parentPath;
@@ -93,7 +94,7 @@ const FilesExplorerScreenContent = () => {
     };
 
     return (
-        <PageContainer>
+        <PageContainer width="full">
             <PageHeader title={t('FILES_PAGE_TITLE')} subtitle={t('FILES_PAGE_DESCRIPTION')} />
 
             <div className={workspaceClassName}>

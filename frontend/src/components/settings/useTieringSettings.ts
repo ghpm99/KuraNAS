@@ -9,6 +9,7 @@ import type { TieringSettings } from '@/types/tiering';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const defaultSettings: TieringSettings = {
 	enabled: false,
@@ -47,6 +48,8 @@ const useTieringSettings = () => {
 
 	const settingsQuery = useQuery({
 		queryKey: ['tiering-settings'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getTieringSettings,
 		retry: false,
 	});

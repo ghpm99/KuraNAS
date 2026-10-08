@@ -15,7 +15,7 @@
     );
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .button {
         bottom: calc(
             var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-spacing-5)

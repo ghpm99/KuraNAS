@@ -105,7 +105,7 @@
     inset: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
     .overlay {
         padding: 1rem;
     }

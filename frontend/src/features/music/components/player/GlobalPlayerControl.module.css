@@ -21,7 +21,7 @@
     cursor: pointer;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .player {
         left: 0;
         bottom: calc(var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom));

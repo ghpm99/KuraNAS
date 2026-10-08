@@ -5,7 +5,7 @@ import VideoContent from '@/features/videos/components/videoContent/videoContent
 
 const VideosPage = () => {
     return (
-        <DomainPageLayout header={<VideoDomainHeader />} nav={<VideoDomainNav />}>
+        <DomainPageLayout header={<VideoDomainHeader />} nav={<VideoDomainNav />} width="full">
             <VideoContent />
         </DomainPageLayout>
     );

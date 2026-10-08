@@ -121,7 +121,7 @@
     line-height: 1.5;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599.95px) {
     .grid {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 10px;

@@ -19,6 +19,7 @@ import {
 } from '@/service/videoPlayback';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { analyticsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const homeAnalyticsPeriod = '30d' as const;
 const nowPlayingPageSize = 200;
@@ -78,6 +79,7 @@ const useHomeScreen = () => {
                 recent_files: recentFiles,
             };
         },
+        staleTime: analyticsStaleTimeMs,
         retry: false,
     });
     const favoritesQuery = useQuery({

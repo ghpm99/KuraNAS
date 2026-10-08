@@ -42,7 +42,7 @@
     text-overflow: ellipsis;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .navItem {
         padding: var(--app-spacing-3) var(--app-spacing-4) !important;
         min-height: 48px;

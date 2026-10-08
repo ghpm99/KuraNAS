@@ -197,7 +197,7 @@
     color: rgba(var(--app-color-ink-rgb), 0.66);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .heroGrid {
         grid-template-columns: 1fr;
     }
@@ -212,7 +212,7 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599.95px) {
     .content {
         gap: 16px;
     }

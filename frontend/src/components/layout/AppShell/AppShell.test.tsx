@@ -3,7 +3,6 @@ import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { AppShell } from './AppShell';
 
 const mockUseAppShell = jest.fn();
-const headerSpy = jest.fn();
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -18,10 +17,7 @@ jest.mock('./useAppShell', () => ({
 
 jest.mock('../Header/Header', () => ({
     __esModule: true,
-    default: (props: any) => {
-        headerSpy(props);
-        return <div data-testid="header">header</div>;
-    },
+    default: () => <div data-testid="header">header</div>,
 }));
 
 jest.mock('../Sidebar/Sidebar', () => ({
@@ -35,7 +31,7 @@ describe('layout/AppShell', () => {
     });
 
     it('renders header, sidebar and body when queue is active', () => {
-        mockUseAppShell.mockReturnValue({ showClock: true, hasQueue: true });
+        mockUseAppShell.mockReturnValue({ hasQueue: true });
 
         render(
             <MemoryRouter>
@@ -48,25 +44,10 @@ describe('layout/AppShell', () => {
         expect(screen.getByTestId('header')).toBeInTheDocument();
         expect(screen.getByTestId('sidebar')).toBeInTheDocument();
         expect(screen.getByText('body')).toBeInTheDocument();
-        expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: true }));
-    });
-
-    it('renders without clock when shell does not request it', () => {
-        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
-
-        render(
-            <MemoryRouter>
-                <AppShell>
-                    <div>content</div>
-                </AppShell>
-            </MemoryRouter>
-        );
-
-        expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: false }));
     });
 
     it('marks the shell with data-has-player only when the queue is non-empty', () => {
-        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: true });
+        mockUseAppShell.mockReturnValue({ hasQueue: true });
         const { container, rerender } = render(
             <MemoryRouter>
                 <AppShell>
@@ -76,7 +57,7 @@ describe('layout/AppShell', () => {
         );
         expect(container.firstElementChild).toHaveAttribute('data-has-player', 'true');
 
-        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
+        mockUseAppShell.mockReturnValue({ hasQueue: false });
         rerender(
             <MemoryRouter>
                 <AppShell>
@@ -98,7 +79,7 @@ describe('layout/AppShell', () => {
         };
 
         const renderShell = (children: React.ReactNode) => {
-            mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
+            mockUseAppShell.mockReturnValue({ hasQueue: false });
             return render(
                 <MemoryRouter initialEntries={['/home']}>
                     <AppShell>{children}</AppShell>

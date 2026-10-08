@@ -187,7 +187,7 @@
     max-width: 320px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .dialogPaper {
         width: calc(100vw - 16px);
         border-radius: 22px !important;

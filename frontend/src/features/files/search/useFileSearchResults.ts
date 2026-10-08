@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { searchFiles } from '@/service/files';
 import { extractBackendErrorMessage } from '@/features/files/fileActions/bulkOutcome';
 import type { FileData, PaginationResponse } from '@/features/files/providers/fileProvider/fileContext';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const searchPageSize = 100;
 
@@ -36,7 +37,7 @@ const useFileSearchResults = ({ query, parentId, isRecursive }: FileSearchScope)
         getNextPageParam: (lastPage) =>
             lastPage?.pagination?.hasNext ? lastPage.pagination.page + 1 : undefined,
         enabled: isSearchActive,
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
 
     const items: FileData[] = data?.pages.flatMap((page) => page?.items ?? []) ?? [];

@@ -23,15 +23,6 @@
     flex: 1;
 }
 
-.menuButton {
-    display: none !important;
-    width: 42px;
-    height: 42px;
-    border: 1px solid var(--app-color-border-subtle) !important;
-    background-color: rgba(var(--app-color-surface-2-rgb), 0.7) !important;
-    color: var(--app-color-text-primary) !important;
-}
-
 .searchField {
     display: flex;
     align-items: center;
@@ -89,23 +80,6 @@
     flex-shrink: 0;
 }
 
-.clock {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--app-spacing-2);
-    padding: 0 var(--app-spacing-4);
-    height: 40px;
-    background-color: rgba(var(--app-color-background-elevated-rgb), 0.76);
-    border: 1px solid var(--app-color-border-subtle);
-    border-radius: var(--app-radius-pill);
-    color: var(--app-color-text-secondary);
-}
-
-.clockLabel {
-    font-size: 0.8125rem;
-    font-variant-numeric: tabular-nums;
-}
-
 .iconButton {
     width: 40px;
     height: 40px;
@@ -114,8 +88,7 @@
     color: var(--app-color-text-secondary) !important;
 }
 
-.iconButton:hover,
-.menuButton:hover {
+.iconButton:hover {
     border-color: var(--app-color-border-strong) !important;
     background-color: rgba(var(--app-color-surface-3-rgb), 0.88) !important;
 }
@@ -124,7 +97,7 @@
     width: min(320px, 88vw);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .wrapper {
         padding-right: 0;
     }
@@ -144,7 +117,7 @@
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .header {
         padding: 0 var(--app-spacing-2);
         gap: var(--app-spacing-2);
@@ -156,10 +129,6 @@
     }
 
     .searchShortcut {
-        display: none;
-    }
-
-    .clock {
         display: none;
     }
 

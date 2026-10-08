@@ -5,17 +5,22 @@
     width: 100%;
     max-width: var(--app-content-max-width);
     margin: 0 auto;
+    container-type: inline-size;
     padding: var(--app-spacing-5) var(--app-spacing-6) var(--app-spacing-6);
 }
 
-@media (max-width: 768px) {
+.containerFull {
+    max-width: none;
+}
+
+@media (max-width: 899.95px) {
     .container {
         gap: var(--app-spacing-4);
         padding: var(--app-spacing-3) var(--app-spacing-3) var(--app-spacing-4);
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599.95px) {
     .container {
         padding: var(--app-spacing-2) var(--app-spacing-2) var(--app-spacing-3);
     }

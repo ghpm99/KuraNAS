@@ -19,4 +19,22 @@ describe('layout/PageContainer', () => {
         );
         expect(container.firstElementChild?.className).toContain('extra');
     });
+
+    it('does not use the full width variant by default', () => {
+        const { container } = render(
+            <PageContainer>
+                <span>conteudo</span>
+            </PageContainer>
+        );
+        expect(container.firstElementChild?.className).not.toContain('containerFull');
+    });
+
+    it('applies the full width variant when requested', () => {
+        const { container } = render(
+            <PageContainer width="full">
+                <span>conteudo</span>
+            </PageContainer>
+        );
+        expect(container.firstElementChild?.className).toContain('containerFull');
+    });
 });

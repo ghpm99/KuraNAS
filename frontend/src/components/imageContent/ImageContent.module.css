@@ -146,7 +146,6 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow: auto;
     align-items: stretch;
     width: 100%;
     min-width: 0;
@@ -192,6 +191,8 @@
     cursor: pointer;
     background: var(--app-color-background-elevated);
     min-height: 180px;
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto var(--app-intrinsic-image-tile-height);
 }
 
 .landscape {
@@ -274,14 +275,14 @@
     font-size: 0.9rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .selectionSummary {
         flex-direction: column;
         align-items: flex-start;
     }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 599.95px) {
     .grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px;
@@ -314,7 +315,7 @@
     }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 599.95px) {
     .grid {
         grid-template-columns: minmax(0, 1fr);
     }

@@ -13,4 +13,14 @@ describe('layout/DomainPageLayout', () => {
         expect(screen.getByText('tabs')).toBeInTheDocument();
         expect(screen.getByText('conteudo')).toBeInTheDocument();
     });
+
+    it('forwards the full width variant to the page container', () => {
+        const { container } = render(
+            <DomainPageLayout header={<h1>titulo</h1>} nav={<nav>tabs</nav>} width="full">
+                <div>conteudo</div>
+            </DomainPageLayout>
+        );
+
+        expect(container.firstElementChild?.className).toContain('containerFull');
+    });
 });

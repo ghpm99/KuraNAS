@@ -11,13 +11,6 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-jest.mock('@/components/layout/Sidebar/Sidebar', () => ({
-    __esModule: true,
-    default: ({ mobile }: { mobile?: boolean }) => (
-        <div>{mobile ? 'SidebarMobile' : 'SidebarDesktop'}</div>
-    ),
-}));
-
 jest.mock('@/components/search/useGlobalSearch', () => ({
     __esModule: true,
     default: () => ({ openSearch: mockOpenSearch, shortcut: 'Ctrl+K' }),
@@ -34,38 +27,19 @@ jest.mock('@/components/providers/notificationProvider/notificationContext', () 
 }));
 
 describe('layout/Header', () => {
-    const mockOnOpenMobileMenu = jest.fn();
-
     beforeEach(() => {
-        jest.useFakeTimers();
-        jest.setSystemTime(new Date('2026-03-04T10:00:00.000Z'));
         mockOpenSearch.mockReset();
-        mockOnOpenMobileMenu.mockReset();
     });
 
-    afterEach(() => {
-        jest.useRealTimers();
-    });
-
-    it('renders search, clock and calls onOpenMobileMenu', () => {
-        render(<Header showClock onOpenMobileMenu={mockOnOpenMobileMenu} />);
+    it('renders the search field and the notifications bell', () => {
+        render(<Header />);
         expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
         expect(screen.getByTitle('NOTIFICATIONS')).toBeInTheDocument();
-        expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
-
-        fireEvent.click(screen.getByLabelText('GLOBAL_SEARCH_OPEN'));
-        expect(mockOpenSearch).toHaveBeenCalled();
-
-        fireEvent.click(screen.getByLabelText('OPEN_NAVIGATION_MENU'));
-        expect(mockOnOpenMobileMenu).toHaveBeenCalled();
     });
 
-    it('renders without clock by default', () => {
-        render(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
-        expect(screen.queryByText(/\d{1,2}:\d{2}/)).not.toBeInTheDocument();
-
-        const { rerender } = render(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
-        rerender(<Header onOpenMobileMenu={mockOnOpenMobileMenu} />);
-        expect(screen.queryByText(/\d{1,2}:\d{2}/)).not.toBeInTheDocument();
+    it('opens the global search when the search field is clicked', () => {
+        render(<Header />);
+        fireEvent.click(screen.getByLabelText('GLOBAL_SEARCH_OPEN'));
+        expect(mockOpenSearch).toHaveBeenCalled();
     });
 });

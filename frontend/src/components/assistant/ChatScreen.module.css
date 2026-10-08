@@ -42,7 +42,7 @@
     opacity: 0.6;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .layout {
         --assistant-page-chrome: 124px;
         --assistant-reserved-bottom: calc(

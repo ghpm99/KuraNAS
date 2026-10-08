@@ -111,13 +111,13 @@
     font-weight: 700;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .treeButton {
         display: inline-flex;
     }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1199.95px) {
     .workspaceWithPreview {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -128,7 +128,7 @@
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .contextHeader {
         flex-direction: column;
     }

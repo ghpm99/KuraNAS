@@ -9,6 +9,7 @@ import {
 import { createContext, useContext } from 'react';
 import { useState } from 'react';
 import { getImageFiles } from '@/service/image';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 export type PersistedImageCategory = 'capture' | 'photo' | 'other';
 
@@ -123,7 +124,7 @@ export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return undefined;
         },
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
 
     const allImages = data?.pages.flatMap((page) => page.items) ?? [];

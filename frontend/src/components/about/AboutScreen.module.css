@@ -143,7 +143,7 @@
     color: var(--mui-palette-text-secondary, var(--app-color-text-secondary));
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599.95px) {
     .panel {
         padding: 16px;
         border-radius: 14px;

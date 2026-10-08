@@ -28,13 +28,13 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [x] 12. Sino de notificações: largura em tela pequena, cores por token, tempo relativo traduzido, teclado, clique leva ao alvo, lista atualizada ao abrir
 - [x] 13. Tela de Notificações no sistema de layout, scroll infinito, estado de erro
 - [x] 14. Assistente e Diário de atividades no sistema de layout
-- [ ] 15. Painéis com rolagem aninhada (preview de arquivos/favoritos, imagens, fila, playlist)
+- [x] 15. Painéis com rolagem aninhada (preview de arquivos/favoritos, imagens, fila, playlist)
 - [x] 16. Mini-player no celular: progresso e controles completos em painel expandido, alvos de 44px
-- [ ] 17. `prefers-reduced-motion` do sistema operacional
-- [ ] 18. Breakpoints como tokens únicos (CSS + tema MUI) e container queries
-- [ ] 19. Largura "wide": grades de mídia usam a tela toda
+- [x] 17. `prefers-reduced-motion` do sistema operacional
+- [x] 18. Breakpoints como tokens únicos (CSS + tema MUI) e container queries
+- [x] 19. Largura "wide": grades de mídia usam a tela toda
 - [x] 20. Atalhos globais (`?` ajuda, `g`+tecla para navegar)
 - [x] 21. Alvos de toque < 44px (tabs de domínio, botões pequenos)
-- [ ] 22. Atualização de dados: refetch ao voltar o foco para a aba
-- [ ] 23. Custo de render de listas longas (`content-visibility`) nas grades/listas com scroll infinito
-- [ ] 24. Código morto do shell (`useFullscreen`, `App.css`, `pages/files/files.css`, `.menuButton`, `showClock`/`useHeader`)
+- [x] 22. Atualização de dados: refetch ao voltar o foco para a aba
+- [x] 23. Custo de render de listas longas (`content-visibility`) nas grades/listas com scroll infinito
+- [x] 24. Código morto do shell (`useFullscreen`, `App.css`, `pages/files/files.css`, `.menuButton`, `showClock`/`useHeader`)

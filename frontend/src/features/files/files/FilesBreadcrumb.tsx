@@ -1,9 +1,10 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { Breadcrumbs, useMediaQuery } from '@mui/material';
 import type { BreadcrumbSegment } from './useFilesExplorerScreen';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './FilesBreadcrumb.module.css';
 
-const narrowScreenQuery = '(max-width: 600px)';
+const narrowScreenQuery = viewportMediaQueries.belowPhone;
 const narrowScreenMaxItems = 3;
 const wideScreenMaxItems = 8;
 const itemsBeforeCollapse = 1;

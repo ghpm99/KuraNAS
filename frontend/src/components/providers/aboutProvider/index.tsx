@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { formatDuration } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getAboutConfiguration } from '@/service/configuration';
+import { settingsStaleTimeMs } from '../queryFreshness';
 
 const initialAboutContext: AboutContextType = {
     version: '',
@@ -35,6 +36,7 @@ export const AboutProvider = ({ children }: { children: React.ReactNode }) => {
     const { data } = useQuery({
         queryKey: ['about'],
         queryFn: getAboutConfiguration,
+        staleTime: settingsStaleTimeMs,
         refetchOnWindowFocus: false,
     });
 

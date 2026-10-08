@@ -27,7 +27,6 @@ const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockUseAnalyticsOverview = jest.fn();
 const mockOpenSearch = jest.fn();
-const mockOnOpenMobileMenu = jest.fn();
 
 jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
@@ -233,7 +232,7 @@ describe('shell components and pages', () => {
     it('renders header, layout and sidebar', () => {
         render(
             <MemoryRouter>
-                <Header showClock onOpenMobileMenu={mockOnOpenMobileMenu} />
+                <Header />
             </MemoryRouter>
         );
         expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();

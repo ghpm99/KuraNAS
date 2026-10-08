@@ -12,20 +12,22 @@ import NotificationProvider from './notificationProvider';
 import ColorSchemeProvider from './colorSchemeProvider';
 import SettingsProvider from './settingsProvider';
 import { shouldRetryQuery } from './queryRetryPolicy';
+import { listingStaleTimeMs } from './queryFreshness';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            refetchOnWindowFocus: false,
+            refetchOnWindowFocus: true,
             refetchOnReconnect: true,
             retry: shouldRetryQuery,
-            staleTime: 1000 * 60 * 5,
+            staleTime: listingStaleTimeMs,
         },
     },
 });
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
-    const isCompactViewport = useMediaQuery('(max-width: 900px)');
+    const isCompactViewport = useMediaQuery(viewportMediaQueries.belowTablet);
     const toastHorizontalAnchor = isCompactViewport ? 'center' : 'right';
 
     return (

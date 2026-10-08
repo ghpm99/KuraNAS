@@ -44,7 +44,7 @@
 	justify-content: flex-end;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
 	.fields {
 		grid-template-columns: 1fr;
 	}

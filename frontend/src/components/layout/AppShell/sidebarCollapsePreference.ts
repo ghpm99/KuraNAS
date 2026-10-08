@@ -1,6 +1,7 @@
+import { viewportMediaQueries } from '@/theme/visualTokens';
 export const sidebarCollapsedStorageKey = 'kuranas.sidebarCollapsed';
 export const sidebarWidthCssVariable = '--app-shell-sidebar-current-width';
-export const compactDesktopMediaQuery = '(min-width: 900.02px) and (max-width: 1200px)';
+export const compactDesktopMediaQuery = viewportMediaQueries.compactDesktop;
 
 export const readSidebarCollapsedChoice = (): boolean | null => {
     try {
