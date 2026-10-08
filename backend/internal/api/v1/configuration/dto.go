@@ -40,6 +40,7 @@ type PlayerSettingsDto struct {
 type AppearanceSettingsDto struct {
 	AccentColor  string `json:"accent_color"`
 	ReduceMotion bool   `json:"reduce_motion"`
+	ThemeMode    string `json:"theme_mode"`
 }
 
 type LanguageSettingsDto struct {
@@ -131,6 +132,7 @@ type PlayerSettingsRequest struct {
 type AppearanceSettingsRequest struct {
 	AccentColor  string `json:"accent_color"`
 	ReduceMotion bool   `json:"reduce_motion"`
+	ThemeMode    string `json:"theme_mode"`
 }
 
 type LanguageSettingsRequest struct {
