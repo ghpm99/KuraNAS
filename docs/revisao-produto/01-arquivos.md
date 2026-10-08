@@ -15,7 +15,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 
 ## Lacunas
 
-- [ ] 01. Infinite scroll na listagem (todas as páginas) e no FolderPicker
+- [x] 01. Infinite scroll na listagem (todas as páginas) e no FolderPicker
 - [ ] 02. Contagem de filhos ignora `deleted_at` + N+1 por diretório + total real no cabeçalho
 - [ ] 03. Teto de `page_size` e validação de `page` (handler segue após `AbortWithError`)
 - [ ] 04. Ordenação no servidor (nome/tamanho/data/tipo, asc/desc) + índices + seletor na UI

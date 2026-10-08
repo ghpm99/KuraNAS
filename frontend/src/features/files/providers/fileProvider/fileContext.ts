@@ -42,6 +42,9 @@ export type FileContextType = {
     renameFile: (id: number, newName: string) => Promise<void>;
     deleteFile: (id: number) => Promise<void>;
     rescanFiles: () => Promise<void>;
+    fetchNextPage: () => void;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
     expandedItems: number[];
     fileListFilter: FileListCategoryType;
     setFileListFilter: (filter: FileListCategoryType) => void;
