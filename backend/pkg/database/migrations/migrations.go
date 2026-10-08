@@ -158,6 +158,12 @@ var CreateHomeFileNameTrigramIndexQuery string
 //go:embed queries/0049_lowercase_home_file_format.sql
 var LowercaseHomeFileFormatQuery string
 
+//go:embed queries/0050_add_image_taken_at.sql
+var AddImageTakenAtQuery string
+
+//go:embed queries/0051_create_image_library_indexes.sql
+var CreateImageLibraryIndexesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -225,6 +231,12 @@ func fileMigrationList() {
 
 	addMigration("0049_lowercase_home_file_format",
 		defaultMigrationFunc(LowercaseHomeFileFormatQuery))
+
+	addMigration("0050_add_image_taken_at",
+		defaultMigrationFunc(AddImageTakenAtQuery))
+
+	addMigration("0051_create_image_library_indexes",
+		defaultMigrationFunc(CreateImageLibraryIndexesQuery))
 
 }
 

@@ -52,7 +52,8 @@ INSERT INTO
         classification_confidence,
         classification_suggested_name,
         created_at,
-        ai_classified_at
+        ai_classified_at,
+        taken_at
     )
 VALUES
     (
@@ -108,7 +109,8 @@ VALUES
         $50,
         $51,
         $52,
-        $53
+        $53,
+        COALESCE($54::TIMESTAMPTZ, (SELECT file.updated_at FROM home_file AS file WHERE file.id = $1))
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
@@ -162,7 +164,8 @@ SET
     classification_category = EXCLUDED.classification_category,
     classification_confidence = EXCLUDED.classification_confidence,
     classification_suggested_name = EXCLUDED.classification_suggested_name,
-    ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at)
+    ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at),
+    taken_at = EXCLUDED.taken_at
 RETURNING
     id,
     created_at;
