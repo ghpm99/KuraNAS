@@ -27,9 +27,6 @@ interface FilesApi {
     @GET("api/v1/files/path")
     suspend fun getFilesByPath(@Query("path") path: String): PageDto<FileItemDto>
 
-    @GET("api/v1/files/images")
-    suspend fun getImages(@Query("page") page: Int = 1, @Query("limit") limit: Int = 50): PageDto<FileItemDto>
-
     @GET("api/v1/files/music")
     suspend fun getMusicFiles(): PageDto<FileItemDto>
 

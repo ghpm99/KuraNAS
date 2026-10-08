@@ -21,7 +21,7 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [x] 02. Página quebra com 500 quando a imagem não tem linha de metadata; `rows.Err()`
 - [x] 03. Listagem enxuta no servidor com busca/filtros (q, categoria, favoritas, formato, período, câmera, ordenação) e scroll infinito real com estado de erro
 - [x] 04. `taken_at` indexado (EXIF → mtime), timeline agrupada por ele, total de fotos e salto por ano/mês
-- [ ] 05. Android: paginação da galeria (`page_size`)
+- [x] 05. Android: paginação da galeria (`page_size`)
 - [x] 06. Categorias da IA mapeadas (10 valores, i18n, Fotos inclui retrato/paisagem, Capturas inclui screenshot de app)
 - [x] 07. Favoritas: aba na galeria e estrela no card
 - [ ] 08. Pastas a partir do servidor (contagem e capa reais)
