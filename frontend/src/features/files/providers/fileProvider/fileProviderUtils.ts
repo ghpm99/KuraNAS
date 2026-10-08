@@ -71,3 +71,32 @@ export const findTrailByIdInTree = (nodes: FileData[], targetId: number): FileDa
     }
     return null;
 };
+
+export const mergeChildrenIntoTree = (
+    tree: FileData[],
+    parentId: number,
+    children: FileData[]
+): FileData[] =>
+    tree.map((node) => {
+        if (node.id === parentId) {
+            const loadedGrandchildrenById = new Map(
+                (node.file_children ?? []).map((child) => [child.id, child.file_children])
+            );
+            return {
+                ...node,
+                file_children: children.map((child) => {
+                    const loadedGrandchildren = loadedGrandchildrenById.get(child.id);
+                    return loadedGrandchildren
+                        ? { ...child, file_children: loadedGrandchildren }
+                        : child;
+                }),
+            };
+        }
+        if (node.file_children) {
+            return {
+                ...node,
+                file_children: mergeChildrenIntoTree(node.file_children, parentId, children),
+            };
+        }
+        return node;
+    });

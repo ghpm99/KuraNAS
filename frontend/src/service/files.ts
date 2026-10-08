@@ -7,6 +7,7 @@ import type {
 } from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { FileAncestor } from '@/types/fileAncestor';
 import type { FileLocation } from '@/types/fileLocation';
 import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
@@ -80,6 +81,11 @@ export const getFileByPath = async (path: string): Promise<FileData | null> => {
 
 export const getFileLocation = async (fileId: number): Promise<FileLocation> => {
     const response = await apiBase.get<FileLocation>(`/files/location/${fileId}`);
+    return response.data;
+};
+
+export const getFileAncestors = async (fileId: number): Promise<FileAncestor[]> => {
+    const response = await apiBase.get<FileAncestor[]>(`/files/ancestors/${fileId}`);
     return response.data;
 };
 

@@ -14,6 +14,7 @@ import {
     getRecentAccessByFileId,
     getFileByPath,
     getFileLocation,
+    getFileAncestors,
     getFileByDiskPath,
     toggleStarredFile,
     rescanFiles,
@@ -46,6 +47,17 @@ describe('service/files', () => {
 
         await expect(getFileLocation(7)).resolves.toEqual(location);
         expect(mockedApi.get).toHaveBeenCalledWith('/files/location/7');
+    });
+
+    it('gets the ancestor folders of a file sending only the id in the url', async () => {
+        const ancestors = [
+            { id: 1, name: 'Midia', path: '/Midia', type: 1 },
+            { id: 4, name: 'fotos', path: '/Midia/fotos', type: 1 },
+        ];
+        mockedApi.get.mockResolvedValue({ data: ancestors });
+
+        await expect(getFileAncestors(9)).resolves.toEqual(ancestors);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/ancestors/9');
     });
 
     it('gets a file by disk path sending only the path query param', async () => {

@@ -45,36 +45,6 @@
     text-transform: uppercase;
 }
 
-.breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
-
-.breadcrumbButton {
-    border: none;
-    padding: 0;
-    background: transparent;
-    color: var(--app-color-text-primary);
-    cursor: pointer;
-    font: inherit;
-    font-weight: 600;
-}
-
-.breadcrumbButton:hover {
-    color: #7dd3fc;
-}
-
-.breadcrumbCurrent {
-    color: var(--app-color-text-secondary);
-    font-weight: 500;
-}
-
-.breadcrumbSeparator {
-    color: var(--app-color-text-secondary);
-}
-
 .contextMeta {
     display: flex;
     flex-wrap: wrap;
@@ -173,9 +143,3 @@
     }
 }
 
-@media (max-width: 480px) {
-    .breadcrumb {
-        gap: 4px;
-        font-size: 0.85rem;
-    }
-}

@@ -24,7 +24,8 @@ import UploadDropZone from '@/features/files/upload/uploadDropZone';
 import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
+import { buildFilesUrl } from '@/features/files/providers/fileProvider/fileProviderUtils';
+import FilesBreadcrumb from './FilesBreadcrumb';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 import styles from './FilesExplorerScreen.module.css';
 
@@ -60,41 +61,12 @@ const FilesExplorerScreen = () => {
                         <div className={styles.contextHeader}>
                             <div>
                                 <p className={styles.contextTitle}>{t('FILES_CURRENT_LOCATION')}</p>
-                                <nav
-                                    className={styles.breadcrumb}
-                                    aria-label={t('FILES_CURRENT_LOCATION')}
-                                >
-                                    {breadcrumbSegments.map((segment, index) => (
-                                        <div
-                                            key={`${segment.label}-${segment.id ?? 'root'}`}
-                                            className={styles.breadcrumb}
-                                        >
-                                            {segment.isCurrent ? (
-                                                <span className={styles.breadcrumbCurrent}>
-                                                    {segment.label}
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    className={styles.breadcrumbButton}
-                                                    onClick={() => {
-                                                        const url = segment.path
-                                                            ? `${appRoutes.files}${segment.path}`
-                                                            : appRoutes.files;
-                                                        navigate(url);
-                                                    }}
-                                                >
-                                                    {segment.label}
-                                                </button>
-                                            )}
-                                            {index < breadcrumbSegments.length - 1 ? (
-                                                <span className={styles.breadcrumbSeparator}>
-                                                    /
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                    ))}
-                                </nav>
+                                <FilesBreadcrumb
+                                    segments={breadcrumbSegments}
+                                    onNavigate={(segment) =>
+                                        navigate(buildFilesUrl(segment.path ?? ''))
+                                    }
+                                />
                             </div>
 
                             <div className={styles.contextActions}>

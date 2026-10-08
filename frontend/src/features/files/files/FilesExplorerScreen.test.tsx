@@ -15,6 +15,11 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: (key: string) => key }),
 }));
 
+jest.mock('@/features/files/providers/fileProvider/useFileAncestors', () => ({
+    __esModule: true,
+    default: () => ({ data: undefined }),
+}));
+
 jest.mock('@/components/actionBar', () => () => <div>ActionBarMock</div>);
 jest.mock('@/features/files/fileContent', () => ({ viewMode, showHeading }: any) => (
     <div

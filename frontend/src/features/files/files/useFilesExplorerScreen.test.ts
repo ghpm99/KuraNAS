@@ -15,6 +15,13 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: mockT }),
 }));
 
+const mockUseFileAncestors = jest.fn();
+
+jest.mock('@/features/files/providers/fileProvider/useFileAncestors', () => ({
+    __esModule: true,
+    default: (fileId: number | null) => mockUseFileAncestors(fileId),
+}));
+
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 
 const makeFile = (overrides: Partial<FileData> & { id: number; name: string }): FileData => ({
@@ -52,6 +59,7 @@ const rootDir = makeFile({
 describe('useFilesExplorerScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockUseFileAncestors.mockReturnValue({ data: undefined });
         mockUseFile.mockReturnValue({
             files: [rootDir],
             selectedItem: null,
@@ -286,5 +294,41 @@ describe('useFilesExplorerScreen', () => {
 
         const { result } = renderHook(() => useFilesExplorerScreen());
         expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('builds the breadcrumb from the loaded ancestors, dropping the primary root', () => {
+        const deepFile = makeFile({
+            id: 9,
+            name: 'viagem',
+            type: FileType.Directory,
+            path: '/fotos/2024/viagem',
+        });
+        mockUseFile.mockReturnValue({ files: [], selectedItem: deepFile, fileListFilter: 'all' });
+        mockUseFileAncestors.mockReturnValue({
+            data: [
+                { id: 1, name: 'main', path: '/', type: FileType.Directory },
+                { id: 2, name: 'fotos', path: '/fotos', type: FileType.Directory },
+                { id: 3, name: '2024', path: '/fotos/2024', type: FileType.Directory },
+            ],
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+
+        expect(mockUseFileAncestors).toHaveBeenCalledWith(9);
+        expect(
+            result.current.breadcrumbSegments.map((segment) => [segment.label, segment.isCurrent])
+        ).toEqual([
+            ['FILES', false],
+            ['fotos', false],
+            ['2024', false],
+            ['viagem', true],
+        ]);
+        expect(result.current.breadcrumbSegments[2]?.path).toBe('/fotos/2024');
+    });
+
+    it('requests no ancestors when nothing is selected', () => {
+        renderHook(() => useFilesExplorerScreen());
+
+        expect(mockUseFileAncestors).toHaveBeenCalledWith(null);
     });
 });

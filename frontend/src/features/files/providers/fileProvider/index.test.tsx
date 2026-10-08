@@ -15,6 +15,7 @@ jest.mock('@/service', () => ({
 jest.mock('@tanstack/react-query', () => ({
     useInfiniteQuery: jest.fn(),
     useQuery: jest.fn(),
+    useQueries: jest.fn(() => []),
     useMutation: jest.fn(),
     useQueryClient: () => ({ invalidateQueries: jest.fn(), removeQueries: jest.fn() }),
 }));
