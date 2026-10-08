@@ -27,6 +27,15 @@ export type RecentAccessFile = {
     accessed_at: string;
 };
 
+export type FilesSortKey = 'name' | 'size' | 'updated_at' | 'created_at';
+
+export type FilesSortOrder = 'asc' | 'desc';
+
+export type FilesSort = {
+    key: FilesSortKey;
+    order: FilesSortOrder;
+};
+
 export type FileContextType = {
     files: FileData[];
     recentAccessFiles: RecentAccessFile[];
@@ -48,6 +57,8 @@ export type FileContextType = {
     expandedItems: number[];
     fileListFilter: FileListCategoryType;
     setFileListFilter: (filter: FileListCategoryType) => void;
+    filesSort: FilesSort;
+    setFilesSort: (sort: FilesSort) => void;
 };
 
 export type Pagination = {

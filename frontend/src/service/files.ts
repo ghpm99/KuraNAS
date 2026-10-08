@@ -1,5 +1,6 @@
 import type {
     FileData,
+    FilesSort,
     FileListCategoryType,
     PaginationResponse as FilePaginationResponse,
     RecentAccessFile,
@@ -14,6 +15,7 @@ type FilesTreeParams = {
     pageSize: number;
     fileParent?: number;
     category: FileListCategoryType;
+    sort?: FilesSort;
 };
 
 export const getFilesTree = async ({
@@ -21,6 +23,7 @@ export const getFilesTree = async ({
     pageSize,
     fileParent,
     category,
+    sort,
 }: FilesTreeParams): Promise<FilePaginationResponse> => {
     const response = await apiBase.get<FilePaginationResponse>('/files/tree', {
         params: {
@@ -28,6 +31,8 @@ export const getFilesTree = async ({
             page_size: pageSize,
             file_parent: fileParent,
             category,
+            sort: sort?.key,
+            order: sort?.order,
         },
     });
     return response.data;

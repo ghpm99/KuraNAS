@@ -397,6 +397,30 @@ describe('FileProvider', () => {
         await waitFor(() => expect(capturedContext!.fileListFilter).toBe('starred'));
     });
 
+    it('setFilesSort refetches the tree with the new sort params and persists the choice', async () => {
+        window.localStorage.clear();
+        renderProvider();
+        await waitFor(() => expect(mockGetFilesTree).toHaveBeenCalled());
+        expect(mockGetFilesTree.mock.calls[0]![0]).toMatchObject({
+            sort: { key: 'name', order: 'asc' },
+        });
+
+        act(() => {
+            capturedContext!.setFilesSort({ key: 'size', order: 'desc' });
+        });
+
+        await waitFor(() =>
+            expect(mockGetFilesTree).toHaveBeenLastCalledWith(
+                expect.objectContaining({ sort: { key: 'size', order: 'desc' } })
+            )
+        );
+        expect(capturedContext!.filesSort).toEqual({ key: 'size', order: 'desc' });
+        expect(window.localStorage.getItem('kuranas.files.sort')).toBe(
+            JSON.stringify({ key: 'size', order: 'desc' })
+        );
+        window.localStorage.clear();
+    });
+
     it('provides default status as pending initially', async () => {
         mockGetFilesTree.mockReturnValue(new Promise(() => {}));
         renderProvider();

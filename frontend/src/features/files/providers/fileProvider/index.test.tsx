@@ -161,6 +161,8 @@ describe('providers/fileProvider/index', () => {
                 file_parent: undefined,
                 page: 3,
                 category: 'all',
+                sort: 'name',
+                order: 'asc',
             },
         });
         await infiniteOptions.queryFn({});
@@ -170,6 +172,8 @@ describe('providers/fileProvider/index', () => {
                 file_parent: undefined,
                 page: 1,
                 category: 'all',
+                sort: 'name',
+                order: 'asc',
             },
         });
         expect(
