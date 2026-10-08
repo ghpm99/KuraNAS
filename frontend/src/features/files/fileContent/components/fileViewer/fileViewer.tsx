@@ -3,6 +3,7 @@ import { getFileTypeInfo } from '@/utils';
 import './fileViewer.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import { getFileDownloadUrl } from '@/service/files';
 
 const FileViewer = ({ file }: { file: FileData }) => {
     const { t } = useI18n();
@@ -42,7 +43,7 @@ const FileViewer = ({ file }: { file: FileData }) => {
 
     if (fileType.type === 'archive') {
         return (
-            <a className="download-file" href={blobUrl(file.id)} download={file.name}>
+            <a className="download-file" href={getFileDownloadUrl(file.id)} download={file.name}>
                 {t('DOWNLOAD_FILE', { fileName: file.name })}
             </a>
         );

@@ -5,7 +5,6 @@ import { FileType } from '@/utils';
 const mockUseFile = jest.fn();
 const mockNavigate = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
-const mockDownloadFileBlob = jest.fn();
 
 // Mock FolderPicker — renders a minimal dialog with confirm/cancel buttons.
 // The confirm button calls onSelect with a result stored in mockFolderPickerResult.
@@ -95,14 +94,9 @@ jest.mock('notistack', () => ({
     }),
 }));
 
-jest.mock('@/service/files', () => ({
-    downloadFileBlob: (...args: unknown[]) => mockDownloadFileBlob(...args),
-}));
-
 describe('components/actionBar', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockDownloadFileBlob.mockResolvedValue(new Blob(['file']));
         mockUseFile.mockReturnValue(createFileContext());
     });
 
@@ -131,35 +125,11 @@ describe('components/actionBar', () => {
         });
     });
 
-    it('opens move/copy/rename/delete flows and downloads the selected file', async () => {
+    it('opens move/copy/rename/delete flows', async () => {
         const moveFile = jest.fn().mockResolvedValue(undefined);
         const copyFile = jest.fn().mockResolvedValue(undefined);
         const renameFile = jest.fn().mockResolvedValue(undefined);
         const deleteFile = jest.fn().mockResolvedValue(undefined);
-        Object.assign(URL, {
-            createObjectURL: URL.createObjectURL ?? jest.fn(),
-            revokeObjectURL: URL.revokeObjectURL ?? jest.fn(),
-        });
-        const createObjectURLSpy = jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
-        const revokeObjectURLSpy = jest
-            .spyOn(URL, 'revokeObjectURL')
-            .mockImplementation(() => undefined);
-        const clickSpy = jest.fn();
-        const removeSpy = jest.fn();
-        const originalCreateElement = document.createElement.bind(document);
-        const createElementSpy = jest
-            .spyOn(document, 'createElement')
-            .mockImplementation((tagName: string) => {
-                if (tagName === 'a') {
-                    const anchor = originalCreateElement('a');
-                    anchor.click = clickSpy;
-                    anchor.remove = removeSpy;
-                    return anchor;
-                }
-
-                return originalCreateElement(tagName);
-            });
-
         mockUseFile.mockReturnValue(
             createFileContext({
                 selectedItem: {
@@ -226,20 +196,6 @@ describe('components/actionBar', () => {
             expect(screen.queryByRole('dialog', { name: 'DELETE' })).not.toBeInTheDocument();
         });
 
-        // Download
-        fireEvent.click(screen.getByRole('button', { name: 'DOWNLOAD' }));
-        await waitFor(() => {
-            expect(mockDownloadFileBlob).toHaveBeenCalledWith(7);
-        });
-
-        expect(createObjectURLSpy).toHaveBeenCalled();
-        expect(clickSpy).toHaveBeenCalled();
-        expect(removeSpy).toHaveBeenCalled();
-        expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:url');
-
-        createElementSpy.mockRestore();
-        createObjectURLSpy.mockRestore();
-        revokeObjectURLSpy.mockRestore();
     });
 
     it('shows error snackbars when operations fail', async () => {
@@ -455,24 +411,6 @@ describe('components/actionBar', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/files');
     });
 
-    it('does not show download button for directory items', () => {
-        mockUseFile.mockReturnValue(
-            createFileContext({
-                selectedItem: {
-                    id: 10,
-                    name: 'photos',
-                    path: '/media/photos',
-                    parent_path: '/media',
-                    type: FileType.Directory,
-                },
-            })
-        );
-
-        render(<ActionBar />);
-
-        expect(screen.queryByRole('button', { name: 'DOWNLOAD' })).not.toBeInTheDocument();
-    });
-
     it('shows successful upload snackbar', async () => {
         const uploadFiles = jest.fn().mockResolvedValue(undefined);
         mockUseFile.mockReturnValue(createFileContext({ uploadFiles }));
@@ -553,31 +491,6 @@ describe('components/actionBar', () => {
         fireEvent.click(within(dialog).getAllByRole('button', { name: 'RENAME' })[0]!);
 
         expect(renameFile).not.toHaveBeenCalled();
-    });
-
-    it('shows download error snackbar when download fails', async () => {
-        mockDownloadFileBlob.mockRejectedValue(new Error('download failed'));
-        mockUseFile.mockReturnValue(
-            createFileContext({
-                selectedItem: {
-                    id: 7,
-                    name: 'movie.mp4',
-                    path: '/media/movie.mp4',
-                    parent_path: '/media',
-                    type: FileType.File,
-                },
-            })
-        );
-
-        render(<ActionBar />);
-
-        fireEvent.click(screen.getByRole('button', { name: 'DOWNLOAD' }));
-
-        await waitFor(() => {
-            expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_LOADING_FILES', {
-                variant: 'error',
-            });
-        });
     });
 
     it('uses undefined as currentFolderId when selectedItem is a file', async () => {
@@ -820,5 +733,63 @@ describe('components/actionBar', () => {
         await waitFor(() => {
             expect(uploadFiles).toHaveBeenCalledWith([blob], 10);
         });
+    });
+
+    it('downloads the selected file through a plain anchor to the download url', () => {
+        const clickSpy = jest
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => undefined);
+        mockUseFile.mockReturnValue(
+            createFileContext({
+                selectedItem: {
+                    id: 7,
+                    name: 'movie.mp4',
+                    path: '/media/movie.mp4',
+                    parent_path: '/media',
+                    type: FileType.File,
+                },
+            })
+        );
+
+        render(<ActionBar />);
+        fireEvent.click(screen.getByRole('button', { name: 'DOWNLOAD' }));
+
+        expect(clickSpy).toHaveBeenCalledTimes(1);
+        const clickedAnchor = clickSpy.mock.contexts[0] as HTMLAnchorElement;
+        expect(clickedAnchor.href).toContain('/api/v1/files/download/7');
+        expect(clickedAnchor.download).toBe('movie.mp4');
+        clickSpy.mockRestore();
+    });
+
+    it('offers the download action for folders too', () => {
+        const clickSpy = jest
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => undefined);
+        mockUseFile.mockReturnValue(
+            createFileContext({
+                selectedItem: {
+                    id: 12,
+                    name: 'Photos',
+                    path: '/media/Photos',
+                    parent_path: '/media',
+                    type: FileType.Directory,
+                },
+            })
+        );
+
+        render(<ActionBar />);
+        fireEvent.click(screen.getByRole('button', { name: 'DOWNLOAD' }));
+
+        const clickedAnchor = clickSpy.mock.contexts[0] as HTMLAnchorElement;
+        expect(clickedAnchor.href).toContain('/api/v1/files/download/12');
+        clickSpy.mockRestore();
+    });
+
+    it('hides the download action when nothing is selected', () => {
+        mockUseFile.mockReturnValue(createFileContext());
+
+        render(<ActionBar />);
+
+        expect(screen.queryByRole('button', { name: 'DOWNLOAD' })).not.toBeInTheDocument();
     });
 });

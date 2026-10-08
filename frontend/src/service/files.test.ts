@@ -23,7 +23,8 @@ import {
     copyFile,
     renameFile,
     deleteFile,
-    downloadFileBlob,
+    getFileDownloadUrl,
+    getFilesZipDownloadUrl,
     getMusicFiles,
     getImageFiles,
 } from './files';
@@ -325,16 +326,14 @@ describe('service/files', () => {
         });
     });
 
-    it('downloads file blob', async () => {
-        const blob = new Blob(['data']);
-        mockedApi.get.mockResolvedValue({ data: blob });
+    it('builds the single download url without touching axios', () => {
+        expect(getFileDownloadUrl(99)).toBe('/api/v1/files/download/99');
+        expect(mockedApi.get).not.toHaveBeenCalled();
+    });
 
-        const result = await downloadFileBlob(99);
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/files/blob/99', {
-            responseType: 'blob',
-        });
-        expect(result).toEqual(blob);
+    it('builds the zip download url from the selected ids', () => {
+        expect(getFilesZipDownloadUrl([1, 2, 3])).toBe('/api/v1/files/download-zip?ids=1,2,3');
+        expect(mockedApi.get).not.toHaveBeenCalled();
     });
 
     it('gets music files', async () => {
