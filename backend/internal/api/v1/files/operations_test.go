@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1261,5 +1262,105 @@ func TestDeleteFileFromDiskTieredPermanentRemovesColdCopy(t *testing.T) {
 	}
 	if _, err := os.Stat(coldPath); !os.IsNotExist(err) {
 		t.Fatalf("permanent delete must remove the cold copy, stat err=%v", err)
+	}
+}
+
+func TestCopyFileTieredCopiesColdBytesToHotDestination(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "doc.txt")
+	if err := os.WriteFile(coldPath, []byte("cold bytes"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "doc.txt")
+	destDir := filepath.Join(entryPoint, "sub")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "doc.txt", Path: logicalPath, Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+		{ID: 2, Name: "sub", Path: destDir, Type: Directory},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+
+	destFolderID := 2
+	copied, err := service.CopyFile(1, &destFolderID, "", "")
+	if err != nil {
+		t.Fatalf("CopyFile (tiered) returned error: %v", err)
+	}
+	if copied != filepath.Join(destDir, "doc.txt") {
+		t.Fatalf("CopyFile returned %q", copied)
+	}
+	if data, err := os.ReadFile(copied); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("copy must hold the cold bytes, got %q err=%v", data, err)
+	}
+	if data, err := os.ReadFile(coldPath); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("cold bytes must be untouched, got %q err=%v", data, err)
+	}
+}
+
+func TestCopyFileDirectoryIncludesColdChildren(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceDir := filepath.Join(entryPoint, "album")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "nested"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "hot.txt"), []byte("hot"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	coldPath := filepath.Join(t.TempDir(), "cold.txt")
+	if err := os.WriteFile(coldPath, []byte("cold"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	coldNestedPath := filepath.Join(t.TempDir(), "deep.txt")
+	if err := os.WriteFile(coldNestedPath, []byte("deep"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "album", Path: sourceDir, Type: Directory},
+	}
+	descendants := []FileModel{
+		{ID: 2, Name: "cold.txt", Path: filepath.Join(sourceDir, "cold.txt"), Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+		{ID: 3, Name: "deep.txt", Path: filepath.Join(sourceDir, "nested", "deep.txt"), Type: File,
+			PhysicalPath: sql.NullString{String: coldNestedPath, Valid: true}},
+		{ID: 4, Name: "hot.txt", Path: filepath.Join(sourceDir, "hot.txt"), Type: File},
+	}
+	repo := &filesRepoMock{
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			for _, record := range records {
+				if record.ID == id {
+					return record, true, nil
+				}
+			}
+			return FileModel{}, false, nil
+		},
+		getFilesByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{Items: descendants}, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+	service.JobsRepository = newFilesJobsRepoMockForTest(t)
+
+	copied, err := service.CopyFile(1, nil, "", "album-copy")
+	if err != nil {
+		t.Fatalf("CopyFile (directory with cold children) returned error: %v", err)
+	}
+
+	expectedContents := map[string]string{
+		filepath.Join(copied, "hot.txt"):            "hot",
+		filepath.Join(copied, "cold.txt"):           "cold",
+		filepath.Join(copied, "nested", "deep.txt"): "deep",
+	}
+	for path, expectedContent := range expectedContents {
+		if data, err := os.ReadFile(path); err != nil || string(data) != expectedContent {
+			t.Fatalf("expected %q at %s, got %q err=%v", expectedContent, path, data, err)
+		}
 	}
 }
