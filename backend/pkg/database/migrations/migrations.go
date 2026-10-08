@@ -143,6 +143,9 @@ var ExpandCapturesTableQuery string
 //go:embed queries/0044_add_image_ai_classified_at.sql
 var AddImageAIClassifiedAtQuery string
 
+//go:embed queries/0045_create_home_file_children_sort_indexes.sql
+var CreateHomeFileChildrenSortIndexesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -195,6 +198,9 @@ func fileMigrationList() {
 
 	addMigration("0039_add_file_physical_path_column",
 		defaultMigrationFunc(AddFilePhysicalPathColumnQuery))
+
+	addMigration("0045_create_home_file_children_sort_indexes",
+		defaultMigrationFunc(CreateHomeFileChildrenSortIndexesQuery))
 
 }
 

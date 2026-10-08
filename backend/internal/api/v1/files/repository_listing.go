@@ -134,9 +134,10 @@ func (r *Repository) GetFilesByNameAndPath(name string, path string, limit int) 
 }
 
 // GetActiveChildrenByParentPath lists the active children of a directory,
-// optionally narrowed to a category (starred / recently accessed).
-func (r *Repository) GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	query := queries.GetChildrenByParentPathQuery
+// optionally narrowed to a category (starred / recently accessed). The sort
+// applies to the all-files category only.
+func (r *Repository) GetActiveChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	query := childrenSort.childrenQuery()
 	switch category {
 	case StarredCategory:
 		query = queries.GetStarredChildrenByParentPathQuery

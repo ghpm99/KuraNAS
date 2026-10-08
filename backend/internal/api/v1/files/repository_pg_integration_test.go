@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
@@ -192,7 +193,7 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 		t.Fatalf("soft-delete row: %v", err)
 	}
 
-	children, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, 1, 50)
+	children, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, DefaultChildrenSort, 1, 50)
 	if err != nil {
 		t.Fatalf("GetActiveChildrenByParentPath: %v", err)
 	}
@@ -230,5 +231,53 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 	}
 	if len(byNamePath) != 1 || !byNamePath[0].DeletedAt.Valid {
 		t.Fatalf("name+path lookup must see the soft-deleted row, got %+v", byNamePath)
+	}
+}
+
+func TestPostgres_ChildrenSortKeepsDirectoriesFirstAndOrdersByKey(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	parent := "/srv/ordenacao"
+	baseTime := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "b.txt", parent+"/b.txt", parent, 30, baseTime.Add(2*time.Hour))
+	insertFileRow(t, repo, "a.txt", parent+"/a.txt", parent, 20, baseTime.Add(3*time.Hour))
+	insertFileRow(t, repo, "c.txt", parent+"/c.txt", parent, 10, baseTime.Add(1*time.Hour))
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, createErr := repo.CreateFile(tx, FileModel{
+			Name: "z-dir", Path: parent + "/z-dir", ParentPath: parent,
+			Size: 0, UpdatedAt: baseTime, CreatedAt: baseTime, Type: Directory,
+		})
+		return createErr
+	})
+	if err != nil {
+		t.Fatalf("insert directory: %v", err)
+	}
+
+	tests := []struct {
+		childrenSort  ChildrenSort
+		expectedNames []string
+	}{
+		{DefaultChildrenSort, []string{"z-dir", "a.txt", "b.txt", "c.txt"}},
+		{ChildrenSort{SortByName, SortDescending}, []string{"z-dir", "c.txt", "b.txt", "a.txt"}},
+		{ChildrenSort{SortBySize, SortAscending}, []string{"z-dir", "c.txt", "a.txt", "b.txt"}},
+		{ChildrenSort{SortBySize, SortDescending}, []string{"z-dir", "b.txt", "a.txt", "c.txt"}},
+		{ChildrenSort{SortByUpdatedAt, SortDescending}, []string{"z-dir", "a.txt", "b.txt", "c.txt"}},
+		{ChildrenSort{SortByCreatedAt, SortAscending}, []string{"z-dir", "c.txt", "b.txt", "a.txt"}},
+	}
+
+	for _, testCase := range tests {
+		page, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, testCase.childrenSort, 1, 50)
+		if err != nil {
+			t.Fatalf("sort %+v: %v", testCase.childrenSort, err)
+		}
+		names := make([]string, 0, len(page.Items))
+		for _, child := range page.Items {
+			names = append(names, child.Name)
+		}
+		if !slices.Equal(names, testCase.expectedNames) {
+			t.Fatalf("sort %+v: expected %v, got %v", testCase.childrenSort, testCase.expectedNames, names)
+		}
 	}
 }

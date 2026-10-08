@@ -13,7 +13,7 @@ type RepositoryInterface interface {
 	CreateFile(transaction *sql.Tx, file FileModel) (FileModel, error)
 	GetFileByID(id int) (FileModel, bool, error)
 	GetFilesByNameAndPath(name string, path string, limit int) ([]FileModel, error)
-	GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	GetActiveChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetActiveFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetActiveFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
@@ -36,7 +36,7 @@ type ServiceInterface interface {
 	DeleteFileRecord(id int) error
 	GetFileByNameAndPath(name string, path string) (FileDto, error)
 	GetFileById(id int) (FileDto, error)
-	GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetRootNodes() ([]FileDto, error)
 	GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetActiveFilesPage(page int, pageSize int) (utils.PaginationResponse[FileDto], error)

@@ -78,3 +78,27 @@ var GetDuplicateFilesQuery string
 
 //go:embed delete_file_by_id.sql
 var DeleteFileByIDQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_name_asc.sql
+var GetChildrenSortedByNameAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_name_desc.sql
+var GetChildrenSortedByNameDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_size_asc.sql
+var GetChildrenSortedBySizeAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_size_desc.sql
+var GetChildrenSortedBySizeDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_updated_at_asc.sql
+var GetChildrenSortedByUpdatedAtAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_updated_at_desc.sql
+var GetChildrenSortedByUpdatedAtDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_created_at_asc.sql
+var GetChildrenSortedByCreatedAtAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_created_at_desc.sql
+var GetChildrenSortedByCreatedAtDescQuery string
