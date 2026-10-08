@@ -343,3 +343,48 @@ func TestPostgres_StarredAndRecentListAcrossFoldersAndSkipDeleted(t *testing.T) 
 		t.Fatalf("expected paginated recent with next page, got %+v err=%v", firstRecentPage, err)
 	}
 }
+
+func TestPostgres_ActiveFileByPathOrPhysicalPathMatchesBothLocationsAndSkipsDeleted(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "frio.txt", "/srv/docs/frio.txt", "/srv/docs", 1, mod)
+	insertFileRow(t, repo, "quente.txt", "/srv/docs/quente.txt", "/srv/docs", 1, mod)
+	insertFileRow(t, repo, "apagado.txt", "/srv/docs/apagado.txt", "/srv/docs", 1, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		statements := []string{
+			"UPDATE home_file SET physical_path = '/cold/main/docs/frio.txt' WHERE name = 'frio.txt'",
+			"UPDATE home_file SET physical_path = '/cold/main/docs/apagado.txt', deleted_at = now() WHERE name = 'apagado.txt'",
+		}
+		for _, statement := range statements {
+			if _, execErr := tx.Exec(statement); execErr != nil {
+				return execErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed tiered rows: %v", err)
+	}
+
+	byPhysical, found, err := repo.GetActiveFileByPathOrPhysicalPath("/cold/main/docs/frio.txt")
+	if err != nil || !found || byPhysical.Name != "frio.txt" {
+		t.Fatalf("physical path must resolve the cold file, got %+v found=%v err=%v", byPhysical, found, err)
+	}
+	byLogical, found, err := repo.GetActiveFileByPathOrPhysicalPath("/srv/docs/frio.txt")
+	if err != nil || !found || byLogical.Name != "frio.txt" {
+		t.Fatalf("logical path must resolve the cold file, got %+v found=%v err=%v", byLogical, found, err)
+	}
+	hot, found, err := repo.GetActiveFileByPathOrPhysicalPath("/srv/docs/quente.txt")
+	if err != nil || !found || hot.Name != "quente.txt" {
+		t.Fatalf("hot file must resolve by its path, got %+v found=%v err=%v", hot, found, err)
+	}
+	for _, hiddenPath := range []string{"/cold/main/docs/apagado.txt", "/srv/docs/apagado.txt", "/srv/docs/inexistente.txt"} {
+		if _, found, err := repo.GetActiveFileByPathOrPhysicalPath(hiddenPath); err != nil || found {
+			t.Fatalf("%s must not resolve, found=%v err=%v", hiddenPath, found, err)
+		}
+	}
+}

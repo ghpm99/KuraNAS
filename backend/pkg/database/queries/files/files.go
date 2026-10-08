@@ -108,3 +108,6 @@ var GetStarredFilesQuery string
 
 //go:embed get_recently_accessed_files.sql
 var GetRecentlyAccessedFilesQuery string
+
+//go:embed get_active_file_by_path_or_physical_path.sql
+var GetActiveFileByPathOrPhysicalPathQuery string

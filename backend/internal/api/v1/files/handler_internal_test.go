@@ -71,6 +71,12 @@ func (m *filesHandlerServiceMock) GetRecentlyAccessedFiles(page int, pageSize in
 func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return FileStat{}, false, nil
 }
+func (m *filesHandlerServiceMock) GetFileLocation(id int) (FileLocationDto, error) {
+	return FileLocationDto{FileID: id}, nil
+}
+func (m *filesHandlerServiceMock) GetActiveFileByDiskPath(diskPath string) (FileDto, error) {
+	return FileDto{ID: 1, Name: "disk", Path: diskPath}, nil
+}
 func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { return true, nil }
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)               {}
