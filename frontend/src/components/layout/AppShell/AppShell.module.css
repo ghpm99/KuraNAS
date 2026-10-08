@@ -97,3 +97,36 @@
     backdrop-filter: var(--app-glass-medium-backdrop);
     border-right: 1px solid var(--app-color-border-subtle);
 }
+
+.mainPane:focus {
+    outline: none;
+}
+
+.skipLink {
+    position: fixed;
+    top: var(--app-spacing-2);
+    left: var(--app-spacing-2);
+    z-index: 2000;
+    padding: var(--app-spacing-2) var(--app-spacing-4);
+    border-radius: var(--app-radius-pill);
+    background: var(--app-color-primary);
+    color: var(--app-color-on-primary, #fff);
+    font-weight: 600;
+    transform: translateY(-200%);
+}
+
+.skipLink:focus {
+    transform: translateY(0);
+}
+
+.visuallyHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

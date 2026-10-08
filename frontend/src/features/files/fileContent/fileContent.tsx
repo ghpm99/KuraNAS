@@ -19,7 +19,8 @@ import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import ErrorState from '@/components/errorState/errorState';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useFileActionFlow from '../fileActions/useFileActionFlow';
-import KeyboardShortcutsDialog from '../shortcuts/keyboardShortcutsDialog';
+import { useRegisterPageShortcuts } from '@/components/shortcuts/shortcutRegistry';
+import { fileShortcutDefinitions } from '../shortcuts/fileShortcutDefinitions';
 import { countRenderedGridColumns } from '../shortcuts/fileItemFocus';
 import useFileBrowserShortcuts from '../shortcuts/useFileBrowserShortcuts';
 import FileCollectionEmptyState from './fileCollectionEmptyState';
@@ -98,8 +99,11 @@ const FileContent = ({
         }
     };
 
-    const { tabStopFileId, focusFile, isHelpOpen, closeHelp } = useFileBrowserShortcuts({
-        isEnabled: isSelectionEnabled && !isViewingFile,
+    const areFileShortcutsEnabled = isSelectionEnabled && !isViewingFile;
+    useRegisterPageShortcuts(fileShortcutDefinitions, areFileShortcutsEnabled);
+
+    const { tabStopFileId, focusFile } = useFileBrowserShortcuts({
+        isEnabled: areFileShortcutsEnabled,
         files: listedFiles,
         selection: fileSelection,
         getColumnCount: () => (viewMode === 'list' ? 1 : countRenderedGridColumns()),
@@ -227,13 +231,6 @@ const FileContent = ({
         return isPartOfMultiSelection ? fileSelection.selectedFiles : [file];
     };
 
-    const shortcutOverlays = (
-        <>
-            {actionDialogs}
-            <KeyboardShortcutsDialog isOpen={isHelpOpen} onClose={closeHelp} />
-        </>
-    );
-
     const isOpenFolderListing =
         selectedItem?.type === FileType.Directory && items === undefined && !searchListing;
 
@@ -247,7 +244,7 @@ const FileContent = ({
                         isFolderOpen={isOpenFolderListing}
                         fileListFilter={fileListFilter}
                     />
-                    {shortcutOverlays}
+                    {actionDialogs}
                 </div>
             );
         }
@@ -303,7 +300,7 @@ const FileContent = ({
                     onClose={() => setContextMenuState(null)}
                     onOpenFile={(file) => handleOpenItem(file, collectionItems)}
                 />
-                {shortcutOverlays}
+                {actionDialogs}
                 {items ? null : (
                     <LoadMoreSentinel
                         hasNextPage={pagination.hasNextPage}

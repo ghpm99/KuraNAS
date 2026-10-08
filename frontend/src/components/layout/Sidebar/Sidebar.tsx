@@ -28,7 +28,11 @@ const Sidebar = ({
     if (isIconOnly) classNames.push(styles.collapsed);
 
     return (
-        <nav className={classNames.join(' ')} data-collapsed={isIconOnly ? 'true' : 'false'}>
+        <nav
+            aria-label={t('NAV_SIDEBAR_LABEL')}
+            className={classNames.join(' ')}
+            data-collapsed={isIconOnly ? 'true' : 'false'}
+        >
             <div className={styles.brand}>
                 <span className={styles.brandMark} aria-hidden="true" />
                 <div className={styles.brandText}>

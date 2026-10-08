@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import DomainNavTabs from './DomainNavTabs';
@@ -30,5 +32,14 @@ describe('layout/DomainNavTabs', () => {
             'page'
         );
         expect(screen.getByRole('link', { name: 'Albuns' })).not.toHaveAttribute('aria-current');
+    });
+});
+
+describe('layout/DomainNavTabs touch target', () => {
+    it('declares a 44px minimum height for tabs on coarse pointers', () => {
+        const stylesheet = readFileSync(join(__dirname, 'DomainNavTabs.module.css'), 'utf8');
+        const coarsePointerBlock = stylesheet.slice(stylesheet.indexOf('@media (pointer: coarse)'));
+
+        expect(coarsePointerBlock).toContain('min-height: 44px');
     });
 });

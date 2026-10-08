@@ -20,8 +20,8 @@ describe('resolveShortcutAction', () => {
         expect(resolveShortcutAction(keys(key))).toEqual(expectedAction);
     });
 
-    it('maps ? (which needs shift) to the help action', () => {
-        expect(resolveShortcutAction(keys('?', { shiftKey: true }))).toEqual({ kind: 'showHelp' });
+    it('leaves ? to the global shortcuts', () => {
+        expect(resolveShortcutAction(keys('?', { shiftKey: true }))).toBeNull();
     });
 
     it('maps Ctrl+A and Cmd+A to select all', () => {

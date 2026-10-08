@@ -37,6 +37,21 @@ describe('App shell with real providers', () => {
         expect(screen.queryByText('SOMETHING_WENT_WRONG')).not.toBeInTheDocument();
     });
 
+    it('exposes the skip link, labelled landmarks and the document title inside the real shell', async () => {
+        renderAppAt('/does/not/exist');
+        await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' });
+
+        expect(screen.getByRole('link', { name: 'Pular para o conteúdo' })).toHaveAttribute(
+            'href',
+            '#main-content'
+        );
+        expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
+        expect(screen.getAllByRole('navigation', { name: 'Navegação principal' }).length).toBe(1);
+        expect(screen.getByRole('navigation', { name: 'Navegação rápida' })).toBeInTheDocument();
+        expect(document.title).toBe('Página não encontrada · KuraNAS');
+        expect(document.documentElement.lang).not.toBe('');
+    });
+
     it('renders the not found page inside the shell with the requested path', async () => {
         renderAppAt('/does/not/exist');
 

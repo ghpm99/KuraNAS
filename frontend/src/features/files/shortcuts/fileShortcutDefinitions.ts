@@ -1,9 +1,6 @@
-type FileShortcutDefinition = {
-    keyLabels: string[];
-    descriptionKey: string;
-};
+import type { ShortcutDefinition } from '@/components/shortcuts/shortcutDefinition';
 
-export const fileShortcutDefinitions: FileShortcutDefinition[] = [
+export const fileShortcutDefinitions: ShortcutDefinition[] = [
     { keyLabels: ['Enter'], descriptionKey: 'FILES_SHORTCUT_OPEN' },
     { keyLabels: ['Delete'], descriptionKey: 'FILES_SHORTCUT_DELETE' },
     { keyLabels: ['F2'], descriptionKey: 'FILES_SHORTCUT_RENAME' },
@@ -13,5 +10,4 @@ export const fileShortcutDefinitions: FileShortcutDefinition[] = [
     { keyLabels: ['/'], descriptionKey: 'FILES_SHORTCUT_FOCUS_SEARCH' },
     { keyLabels: ['← ↑ → ↓'], descriptionKey: 'FILES_SHORTCUT_MOVE_FOCUS' },
     { keyLabels: ['Shift + ← ↑ → ↓'], descriptionKey: 'FILES_SHORTCUT_EXTEND_SELECTION' },
-    { keyLabels: ['?'], descriptionKey: 'FILES_SHORTCUT_SHOW_HELP' },
 ];

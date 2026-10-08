@@ -6,6 +6,8 @@ import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import I18nProvider from '../i18n/provider';
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
+import GlobalShortcutsProvider from '../shortcuts/GlobalShortcutsProvider';
+import DocumentLanguageSync from '../layout/documentMetadata/DocumentLanguageSync';
 import NotificationProvider from './notificationProvider';
 import ColorSchemeProvider from './colorSchemeProvider';
 import SettingsProvider from './settingsProvider';
@@ -37,9 +39,14 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                         >
                             <ColorSchemeProvider>
                                 <CssBaseline />
+                                <DocumentLanguageSync />
                                 <BrowserRouter>
                                     <NotificationProvider>
-                                        <GlobalSearchProvider>{children}</GlobalSearchProvider>
+                                        <GlobalSearchProvider>
+                                            <GlobalShortcutsProvider>
+                                                {children}
+                                            </GlobalShortcutsProvider>
+                                        </GlobalSearchProvider>
                                     </NotificationProvider>
                                 </BrowserRouter>
                             </ColorSchemeProvider>

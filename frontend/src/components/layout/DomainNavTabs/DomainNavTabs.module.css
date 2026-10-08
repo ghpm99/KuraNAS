@@ -33,3 +33,11 @@
     background-color: var(--app-color-surface-3);
     border-color: var(--app-color-border-strong);
 }
+
+@media (pointer: coarse) {
+    .tab {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
+}

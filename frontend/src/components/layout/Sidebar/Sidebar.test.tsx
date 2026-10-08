@@ -86,3 +86,15 @@ describe('layout/Sidebar', () => {
         expect(screen.getByText('HOME')).toBeInTheDocument();
     });
 });
+
+describe('Sidebar accessibility', () => {
+    it('labels the sidebar navigation landmark', () => {
+        render(
+            <MemoryRouter>
+                <Sidebar />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByRole('navigation', { name: 'NAV_SIDEBAR_LABEL' })).toBeInTheDocument();
+    });
+});

@@ -23,8 +23,8 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [x] 07. Restauração/reset de scroll da área de conteúdo na navegação + voltar ao topo
 - [x] 08. Tema claro/escuro/sistema
 - [x] 09. Sidebar recolhível (ícones), persistida por dispositivo
-- [ ] 10. `document.title` por rota e `<html lang>` dinâmico
-- [ ] 11. Acessibilidade de navegação: skip link, foco no conteúdo ao trocar de rota, rótulos dos `<nav>`, bottom nav com links e `aria-current`, busca global como combobox
+- [x] 10. `document.title` por rota e `<html lang>` dinâmico
+- [x] 11. Acessibilidade de navegação: skip link, foco no conteúdo ao trocar de rota, rótulos dos `<nav>`, bottom nav com links e `aria-current`, busca global como combobox
 - [ ] 12. Sino de notificações: largura em tela pequena, cores por token, tempo relativo traduzido, teclado, clique leva ao alvo, lista atualizada ao abrir
 - [ ] 13. Tela de Notificações no sistema de layout, scroll infinito, estado de erro
 - [ ] 14. Assistente e Diário de atividades no sistema de layout
@@ -33,8 +33,8 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [ ] 17. `prefers-reduced-motion` do sistema operacional
 - [ ] 18. Breakpoints como tokens únicos (CSS + tema MUI) e container queries
 - [ ] 19. Largura "wide": grades de mídia usam a tela toda
-- [ ] 20. Atalhos globais (`?` ajuda, `g`+tecla para navegar)
-- [ ] 21. Alvos de toque < 44px (tabs de domínio, botões pequenos)
+- [x] 20. Atalhos globais (`?` ajuda, `g`+tecla para navegar)
+- [x] 21. Alvos de toque < 44px (tabs de domínio, botões pequenos)
 - [ ] 22. Atualização de dados: refetch ao voltar o foco para a aba
 - [ ] 23. Custo de render de listas longas (`content-visibility`) nas grades/listas com scroll infinito
 - [ ] 24. Código morto do shell (`useFullscreen`, `App.css`, `pages/files/files.css`, `.menuButton`, `showClock`/`useHeader`)
