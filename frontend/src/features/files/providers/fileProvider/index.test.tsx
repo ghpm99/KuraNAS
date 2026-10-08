@@ -16,6 +16,7 @@ jest.mock('@tanstack/react-query', () => ({
     useInfiniteQuery: jest.fn(),
     useQuery: jest.fn(),
     useMutation: jest.fn(),
+    useQueryClient: () => ({ invalidateQueries: jest.fn(), removeQueries: jest.fn() }),
 }));
 
 const mockedUseInfiniteQuery = useInfiniteQuery as jest.Mock;

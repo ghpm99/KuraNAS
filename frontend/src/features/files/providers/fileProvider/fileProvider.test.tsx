@@ -35,9 +35,9 @@ const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
 const mockUploadFiles = jest.fn<Promise<void>, [FileList, number?]>();
 const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
-const mockMoveFile = jest.fn<Promise<void>, [number, number?, string?]>();
+const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
 const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
-const mockRenameFile = jest.fn<Promise<void>, [number, string]>();
+const mockRenameFile = jest.fn<Promise<string | void>, [number, string]>();
 const mockDeleteFile = jest.fn<Promise<void>, [number]>();
 
 jest.mock('@/service/files', () => ({
@@ -369,6 +369,122 @@ describe('FileProvider', () => {
             await capturedContext!.renameFile(5, 'new-name');
         });
         expect(mockRenameFile).toHaveBeenCalledWith(5, 'new-name');
+    });
+
+    describe('mutations on the opened item', () => {
+        const openedFolder = createNode(7, {
+            name: 'report',
+            path: '/docs/report',
+            parent_path: '/docs',
+        });
+
+        const renderWithOpenedFolder = async () => {
+            mockPathname = '/files/docs/report';
+            mockGetFileByPath.mockResolvedValue(openedFolder);
+            mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+            const queryClient = createQueryClient();
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const removeSpy = jest.spyOn(queryClient, 'removeQueries');
+            renderProvider(queryClient);
+            await waitFor(() => expect(capturedContext!.selectedItem?.id).toBe(7));
+            mockNavigate.mockClear();
+            return { invalidateSpy, removeSpy };
+        };
+
+        it('deleting the opened item navigates to its parent and drops its cached path', async () => {
+            const { invalidateSpy, removeSpy } = await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(7);
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files-path'] });
+        });
+
+        it('deleting a top-level opened item navigates to the files root', async () => {
+            mockPathname = '/files/report';
+            mockGetFileByPath.mockResolvedValue({ ...openedFolder, path: '/report', parent_path: '/' });
+            mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+            renderProvider();
+            await waitFor(() => expect(capturedContext!.selectedItem?.id).toBe(7));
+            mockNavigate.mockClear();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(7);
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files');
+        });
+
+        it('deleting another item keeps the current location', async () => {
+            const { removeSpy } = await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(99);
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(removeSpy).not.toHaveBeenCalled();
+        });
+
+        it('renaming the opened item navigates to the path returned by the backend', async () => {
+            const { removeSpy, invalidateSpy } = await renderWithOpenedFolder();
+            mockRenameFile.mockResolvedValueOnce('/docs/renamed');
+
+            await act(async () => {
+                await capturedContext!.renameFile(7, 'renamed');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs/renamed');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files-path'] });
+        });
+
+        it('renaming the opened item computes the path when the backend omits it', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.renameFile(7, 'renamed');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs/renamed');
+        });
+
+        it('renaming another item keeps the current location', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.renameFile(99, 'renamed');
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('moving the opened item navigates to the new path and drops the old cached path', async () => {
+            const { removeSpy, invalidateSpy } = await renderWithOpenedFolder();
+            mockMoveFile.mockResolvedValueOnce('/archive/report');
+
+            await act(async () => {
+                await capturedContext!.moveFile(7, 3, '/archive');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/archive/report');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files'] });
+        });
+
+        it('moving another item keeps the current location', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.moveFile(99, 3, '/archive');
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
     });
 
     it('uploadFiles calls service with correct args', async () => {

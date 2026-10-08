@@ -301,6 +301,20 @@ describe('service/files', () => {
         });
     });
 
+    it('returns the new path from move and rename responses', async () => {
+        mockedApi.post.mockResolvedValue({ data: { path: '/new/place' } });
+
+        await expect(moveFile(1, 2, '')).resolves.toBe('/new/place');
+        await expect(renameFile(5, 'x')).resolves.toBe('/new/place');
+    });
+
+    it('returns an empty path when move and rename responses omit it', async () => {
+        mockedApi.post.mockResolvedValue({});
+
+        await expect(moveFile(1, 2, '')).resolves.toBe('');
+        await expect(renameFile(5, 'x')).resolves.toBe('');
+    });
+
     it('deletes file by id', async () => {
         mockedApi.delete.mockResolvedValue({});
 
