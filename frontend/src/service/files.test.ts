@@ -32,8 +32,6 @@ import {
     deleteFile,
     getFileDownloadUrl,
     getFilesZipDownloadUrl,
-    getMusicFiles,
-    getImageFiles,
 } from './files';
 
 const mockedApi = apiBase as unknown as {
@@ -459,29 +457,5 @@ describe('service/files', () => {
     it('builds the zip download url from the selected ids', () => {
         expect(getFilesZipDownloadUrl([1, 2, 3])).toBe('/api/v1/files/download-zip?ids=1,2,3');
         expect(mockedApi.get).not.toHaveBeenCalled();
-    });
-
-    it('gets music files', async () => {
-        const payload = { items: [], total: 0 };
-        mockedApi.get.mockResolvedValue({ data: payload });
-
-        const result = await getMusicFiles(1, 50);
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/files/music', {
-            params: { page: 1, page_size: 50 },
-        });
-        expect(result).toEqual(payload);
-    });
-
-    it('gets image files', async () => {
-        const payload = { items: [], total: 0 };
-        mockedApi.get.mockResolvedValue({ data: payload });
-
-        const result = await getImageFiles(1, 30, 'date');
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/files/images', {
-            params: { page: 1, page_size: 30, group_by: 'date' },
-        });
-        expect(result).toEqual(payload);
     });
 });

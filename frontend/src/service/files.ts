@@ -5,12 +5,9 @@ import type {
     PaginationResponse as FilePaginationResponse,
     RecentAccessFile,
 } from '@/features/files/providers/fileProvider/fileContext';
-import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import type { FileAncestor } from '@/types/fileAncestor';
 import type { FileLocation } from '@/types/fileLocation';
 import type { FolderStats } from '@/types/folderStats';
-import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
 import { getApiV1BaseUrl } from './apiUrl';
 
@@ -146,7 +143,7 @@ export const rescanFiles = async (): Promise<void> => {
 
 export type UploadConflictPolicy = 'rename' | 'replace' | 'skip';
 
-export type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'failed';
+type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'failed';
 
 export type UploadOutcome = {
     status: UploadOutcomeStatus;
@@ -272,27 +269,6 @@ export const getFileDownloadUrl = (fileId: number): string =>
 
 export const getFilesZipDownloadUrl = (fileIds: number[]): string =>
     `${getApiV1BaseUrl()}/files/download-zip?ids=${fileIds.join(',')}`;
-
-export const getMusicFiles = async (
-    page: number,
-    pageSize: number
-): Promise<Pagination<IMusicData>> => {
-    const response = await apiBase.get<Pagination<IMusicData>>('/files/music', {
-        params: { page, page_size: pageSize },
-    });
-    return response.data;
-};
-
-export const getImageFiles = async (
-    page: number,
-    pageSize: number,
-    groupBy: ImageGroupBy
-): Promise<Pagination<IImageData>> => {
-    const response = await apiBase.get<Pagination<IImageData>>('/files/images', {
-        params: { page, page_size: pageSize, group_by: groupBy },
-    });
-    return response.data;
-};
 
 export const getPendingImageClassificationCount = async (): Promise<number> => {
     const response = await apiBase.get<{ pending_count: number }>(

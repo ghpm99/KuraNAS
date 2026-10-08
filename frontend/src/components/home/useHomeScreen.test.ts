@@ -18,6 +18,9 @@ jest.mock('@/service/analytics', () => ({
 
 jest.mock('@/service/files', () => ({
     getStarredFiles: jest.fn(() => Promise.resolve({ items: [] })),
+}));
+
+jest.mock('@/service/image', () => ({
     getImageFiles: jest.fn(() => Promise.resolve({ items: [] })),
 }));
 
