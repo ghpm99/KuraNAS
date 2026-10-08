@@ -60,7 +60,6 @@ describe('useFileBrowserShortcuts', () => {
         press('/');
 
         expect(result.current.tabStopFileId).toBeNull();
-        expect(result.current.isHelpOpen).toBe(false);
     });
 
     it('makes the first item the tab stop until focus moves', () => {
@@ -197,16 +196,13 @@ describe('useFileBrowserShortcuts', () => {
         expect(handlers.onGoToParent).toHaveBeenCalledTimes(2);
     });
 
-    it('focuses the search with / and opens then closes the help with ?', () => {
-        const { result, handlers } = setUpHook();
+    it('focuses the search with / and leaves ? to the global shortcuts', () => {
+        const { handlers } = setUpHook();
 
         press('/');
-        expect(handlers.onFocusSearch).toHaveBeenCalledTimes(1);
-
         press('?', { shiftKey: true });
-        expect(result.current.shortcuts.isHelpOpen).toBe(true);
-        act(() => result.current.shortcuts.closeHelp());
-        expect(result.current.shortcuts.isHelpOpen).toBe(false);
+
+        expect(handlers.onFocusSearch).toHaveBeenCalledTimes(1);
     });
 
     it('ignores every shortcut while typing in an input', () => {
@@ -252,6 +248,6 @@ describe('useFileBrowserShortcuts', () => {
         press('Backspace');
         press('/');
 
-        expect(result.current.shortcuts.isHelpOpen).toBe(false);
+        expect(result.current.selection.selectedCount).toBe(0);
     });
 });

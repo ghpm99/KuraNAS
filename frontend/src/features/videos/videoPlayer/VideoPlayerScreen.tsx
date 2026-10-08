@@ -1,3 +1,4 @@
+import { useDocumentTitle } from '@/components/layout/documentMetadata/useDocumentTitle';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import VideoControls from '@/features/videos/videoControls/videoControls';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
@@ -44,6 +45,7 @@ export default function VideoPlayerScreen() {
         setCurrentTime,
         setDuration,
     } = useVideoPlayerScreen();
+    useDocumentTitle(contextTitle);
 
     if (isInvalidVideoId) {
         return <div>{t('VIDEO_INVALID_ID')}</div>;

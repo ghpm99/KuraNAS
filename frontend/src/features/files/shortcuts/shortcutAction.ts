@@ -7,7 +7,6 @@ type ShortcutAction =
     | { kind: 'selectAll' }
     | { kind: 'goToParent' }
     | { kind: 'focusSearch' }
-    | { kind: 'showHelp' }
     | { kind: 'moveFocus'; direction: ArrowDirection; isExtendingSelection: boolean };
 
 type KeyboardEventKeys = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>;
@@ -25,7 +24,6 @@ const plainKeyActions: Record<string, ShortcutAction> = {
     F2: { kind: 'renameSelection' },
     Backspace: { kind: 'goToParent' },
     '/': { kind: 'focusSearch' },
-    '?': { kind: 'showHelp' },
 };
 
 export const resolveShortcutAction = (event: KeyboardEventKeys): ShortcutAction | null => {
@@ -41,7 +39,7 @@ export const resolveShortcutAction = (event: KeyboardEventKeys): ShortcutAction 
     if (direction) {
         return { kind: 'moveFocus', direction, isExtendingSelection: event.shiftKey };
     }
-    if (event.shiftKey && event.key !== '?') return null;
+    if (event.shiftKey) return null;
     return plainKeyActions[event.key] ?? null;
 };
 

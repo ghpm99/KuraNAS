@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import FileContent from './fileContent';
+import GlobalShortcutsProvider from '@/components/shortcuts/GlobalShortcutsProvider';
+import { MemoryRouter } from 'react-router-dom';
 import { createTestFile } from '../selection/testFileFactory';
 import { SelectionTestHarness } from '../selection/selectionTestHarness';
 import { createFileContextStub } from '../selection/fileContextStub';
@@ -32,14 +34,18 @@ const renderContent = (viewMode: 'grid' | 'list' = 'grid') => {
         fetchNextPage: jest.fn(),
     });
     render(
-        <SelectionTestHarness fileContext={fileContext} seedFiles={[]}>
-            <FileContent
-                showHeading={false}
-                viewMode={viewMode}
-                onGoToParent={onGoToParent}
-                onFocusSearch={onFocusSearch}
-            />
-        </SelectionTestHarness>
+        <MemoryRouter>
+            <GlobalShortcutsProvider>
+                <SelectionTestHarness fileContext={fileContext} seedFiles={[]}>
+                    <FileContent
+                        showHeading={false}
+                        viewMode={viewMode}
+                        onGoToParent={onGoToParent}
+                        onFocusSearch={onFocusSearch}
+                    />
+                </SelectionTestHarness>
+            </GlobalShortcutsProvider>
+        </MemoryRouter>
     );
     return { handleSelectItem, onGoToParent, onFocusSearch };
 };
@@ -128,11 +134,12 @@ describe('FileContent keyboard shortcuts', () => {
         expect(onFocusSearch).toHaveBeenCalledTimes(1);
     });
 
-    it('opens the shortcuts help with ?', async () => {
+    it('lists the file shortcuts in the global help dialog while mounted', async () => {
         renderContent();
 
         press('?', { shiftKey: true });
 
-        expect(await screen.findByText('FILES_SHORTCUTS_TITLE')).toBeInTheDocument();
+        expect(await screen.findByText('SHORTCUTS_SECTION_CURRENT_PAGE')).toBeInTheDocument();
+        expect(screen.getByText('FILES_SHORTCUT_OPEN')).toBeInTheDocument();
     });
 });

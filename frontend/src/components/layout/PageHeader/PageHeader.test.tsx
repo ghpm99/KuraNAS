@@ -20,3 +20,20 @@ describe('layout/PageHeader', () => {
         expect(screen.getByRole('button', { name: 'acao' })).toBeInTheDocument();
     });
 });
+
+describe('layout/PageHeader document title', () => {
+    it('sets the document title from the page title and restores it on unmount', () => {
+        document.title = 'before';
+        const { unmount } = render(<PageHeader title="Arquivos" />);
+
+        expect(document.title).toBe('Arquivos · APP_NAME');
+        unmount();
+        expect(document.title).toBe('before');
+    });
+
+    it('makes the heading programmatically focusable', () => {
+        render(<PageHeader title="Arquivos" />);
+
+        expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute('tabindex', '-1');
+    });
+});

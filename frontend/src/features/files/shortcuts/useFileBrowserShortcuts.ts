@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import type { FileSelection } from '@/features/files/selection/useFileSelection';
 import { focusFileItem } from './fileItemFocus';
-import { isModalOpen, isNativelyActivatableTarget, isTextEntryTarget } from './keyboardEventContext';
+import { isModalOpen, isNativelyActivatableTarget, isTextEntryTarget } from '@/components/shortcuts/keyboardEventContext';
 import { resolveNextFocusIndex, resolveShortcutAction, type ArrowDirection } from './shortcutAction';
 
 type FileBrowserShortcutsOptions = {
@@ -29,7 +29,6 @@ export const useFileBrowserShortcuts = ({
     onFocusSearch,
 }: FileBrowserShortcutsOptions) => {
     const [focusedFileId, setFocusedFileId] = useState<number | null>(null);
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
     const { selectedFiles, selectedCount, isSelected, toggle, selectRange, selectAll } = selection;
 
     const focusedIndex = files.findIndex((file) => file.id === focusedFileId);
@@ -108,11 +107,6 @@ export const useFileBrowserShortcuts = ({
                 onFocusSearch();
                 return;
             }
-            if (action.kind === 'showHelp') {
-                event.preventDefault();
-                setIsHelpOpen(true);
-                return;
-            }
             event.preventDefault();
             moveFocus(action.direction, action.isExtendingSelection);
         };
@@ -138,8 +132,6 @@ export const useFileBrowserShortcuts = ({
     return {
         tabStopFileId,
         focusFile: setFocusedFileId,
-        isHelpOpen,
-        closeHelp: () => setIsHelpOpen(false),
     };
 };
 

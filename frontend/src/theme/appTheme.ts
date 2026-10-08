@@ -7,6 +7,9 @@ import {
     type ColorScheme,
 } from './visualTokens';
 
+export const coarsePointerMediaQuery = '@media (pointer: coarse)';
+export const minimumTouchTargetPx = 44;
+
 export const createAppTheme = (colorScheme: ColorScheme) => {
     const schemeTokens = colorSchemeTokens[colorScheme];
     const schemeColors = schemeTokens.colors;
@@ -185,6 +188,12 @@ export const createAppTheme = (colorScheme: ColorScheme) => {
                 styleOverrides: {
                     root: {
                         transition: `background-color ${visualTokens.motion.fast} ease, border-color ${visualTokens.motion.fast} ease`,
+                    },
+                    sizeSmall: {
+                        [coarsePointerMediaQuery]: {
+                            minWidth: minimumTouchTargetPx,
+                            minHeight: minimumTouchTargetPx,
+                        },
                     },
                 },
             },

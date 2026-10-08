@@ -1,4 +1,4 @@
-import { CircularProgress, Dialog, DialogContent, InputBase } from '@mui/material';
+import { CircularProgress, Dialog, DialogContent, InputBase, useMediaQuery, useTheme } from '@mui/material';
 import { Aperture, ArrowRightLeft, Folder, Image, Music2, Search, Video } from 'lucide-react';
 import type {
     SearchDialogItem,
@@ -22,6 +22,10 @@ interface GlobalSearchDialogProps {
     onItemHover: (itemId: string) => void;
     onItemSelect: (item: SearchDialogItem) => void;
 }
+
+const listboxId = 'global-search-listbox';
+
+const buildOptionId = (itemId: string) => `global-search-option-${itemId}`;
 
 const getItemIcon = (kind: SearchItemKind) => {
     switch (kind) {
@@ -58,11 +62,16 @@ const GlobalSearchDialog = ({
     onItemSelect,
 }: GlobalSearchDialogProps) => {
     const { t } = useI18n();
+    const theme = useTheme();
+    const isPhoneViewport = useMediaQuery(theme.breakpoints.down('sm'));
+    const hasOptions = sections.some((section) => section.items.length > 0);
+    const activeOptionId = activeItemId ? buildOptionId(activeItemId) : undefined;
 
     return (
         <Dialog
             open={open}
             onClose={onClose}
+            fullScreen={isPhoneViewport}
             fullWidth
             maxWidth="md"
             PaperProps={{ className: styles.dialogPaper }}
@@ -77,7 +86,14 @@ const GlobalSearchDialog = ({
                         onKeyDown={onInputKeyDown}
                         placeholder={t('GLOBAL_SEARCH_PLACEHOLDER')}
                         className={styles.searchInput}
-                        inputProps={{ 'aria-label': t('GLOBAL_SEARCH_OPEN') }}
+                        inputProps={{
+                            'aria-label': t('GLOBAL_SEARCH_OPEN'),
+                            role: 'combobox',
+                            'aria-autocomplete': 'list',
+                            'aria-expanded': hasOptions,
+                            'aria-controls': listboxId,
+                            'aria-activedescendant': activeOptionId,
+                        }}
                     />
                     {isFetching ? (
                         <CircularProgress size={18} />
@@ -87,40 +103,54 @@ const GlobalSearchDialog = ({
                 </div>
 
                 <div className={styles.results}>
-                    {sections.map((section) => (
-                        <div key={section.id} className={styles.section}>
-                            <span className={styles.sectionTitle}>{section.title}</span>
-                            {section.items.map((item) => {
-                                const itemClassName =
-                                    item.id === activeItemId
+                    <div id={listboxId} role="listbox" aria-label={t('GLOBAL_SEARCH_OPEN')}>
+                        {sections.map((section) => (
+                            <div
+                                key={section.id}
+                                role="group"
+                                aria-labelledby={`global-search-section-${section.id}`}
+                                className={styles.section}
+                            >
+                                <span
+                                    id={`global-search-section-${section.id}`}
+                                    className={styles.sectionTitle}
+                                >
+                                    {section.title}
+                                </span>
+                                {section.items.map((item) => {
+                                    const isActive = item.id === activeItemId;
+                                    const itemClassName = isActive
                                         ? `${styles.item} ${styles.itemActive}`
                                         : styles.item;
 
-                                return (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        className={itemClassName}
-                                        onMouseEnter={() => onItemHover(item.id)}
-                                        onClick={() => onItemSelect(item)}
-                                    >
-                                        <span className={styles.itemIcon}>
-                                            {getItemIcon(item.kind)}
-                                        </span>
-                                        <span className={styles.itemBody}>
-                                            <span className={styles.itemLabel}>{item.label}</span>
-                                            <span className={styles.itemDescription}>
-                                                {item.description}
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            id={buildOptionId(item.id)}
+                                            role="option"
+                                            aria-selected={isActive}
+                                            className={itemClassName}
+                                            onMouseEnter={() => onItemHover(item.id)}
+                                            onClick={() => onItemSelect(item)}
+                                        >
+                                            <span className={styles.itemIcon}>
+                                                {getItemIcon(item.kind)}
                                             </span>
-                                        </span>
-                                        {item.meta ? (
-                                            <span className={styles.itemMeta}>{item.meta}</span>
-                                        ) : null}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ))}
+                                            <span className={styles.itemBody}>
+                                                <span className={styles.itemLabel}>{item.label}</span>
+                                                <span className={styles.itemDescription}>
+                                                    {item.description}
+                                                </span>
+                                            </span>
+                                            {item.meta ? (
+                                                <span className={styles.itemMeta}>{item.meta}</span>
+                                            ) : null}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </div>
 
                     {showEmptyState ? (
                         <div className={styles.emptyState}>
