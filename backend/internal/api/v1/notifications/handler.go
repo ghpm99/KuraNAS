@@ -21,15 +21,8 @@ func NewHandler(service ServiceInterface) *Handler {
 }
 
 func (handler *Handler) ListNotificationsHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	if c.IsAborted() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
-		return
-	}
-
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "20"), c)
-	if c.IsAborted() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 20)
+	if !isPaginationValid {
 		return
 	}
 

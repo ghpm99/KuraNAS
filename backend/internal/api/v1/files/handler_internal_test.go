@@ -541,3 +541,50 @@ func TestGetFilesTreeHandlerMultiRootLevelZero(t *testing.T) {
 		t.Fatalf("expected 200 for child listing, got %d", w.Code)
 	}
 }
+
+func TestGetFilesTreeHandlerInvalidPageRespondsOnceWithBadRequest(t *testing.T) {
+	handler := NewHandler(&filesHandlerServiceMock{}, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/tree?page=abc", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("expected a single JSON document, got %q: %v", recorder.Body.String(), err)
+	}
+	if body["error"] == "" {
+		t.Fatalf("expected translated error message, got %q", recorder.Body.String())
+	}
+}
+
+func TestGetFilesHandlerClampsOversizedPageSize(t *testing.T) {
+	receivedPageSizes := []int{}
+	service := &filesHandlerServiceFuncMock{
+		getChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			receivedPageSizes = append(receivedPageSizes, pageSize)
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+		},
+		getActiveFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			receivedPageSizes = append(receivedPageSizes, pageSize)
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files?page=0&page_size=100000", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if len(receivedPageSizes) != 1 || receivedPageSizes[0] != utils.MaxPageSize {
+		t.Fatalf("expected page size clamped to %d, got %v", utils.MaxPageSize, receivedPageSizes)
+	}
+}

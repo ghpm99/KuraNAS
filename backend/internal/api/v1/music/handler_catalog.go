@@ -1,6 +1,7 @@
 package music
 
 import (
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -38,6 +39,10 @@ func (handler *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	}, nil)
 
 	limit := utils.ParseInt(c.DefaultQuery("limit", "4"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	catalog, err := handler.service.GetHomeCatalog(c.ClientIP(), limit)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
@@ -50,24 +55,30 @@ func (handler *Handler) GetHomeCatalogHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetLibraryTracksHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryTracks", "Fetching music library tracks", func() (any, error) {
 		return handler.service.GetLibraryTracks(page, pageSize)
 	})
 }
 
 func (handler *Handler) GetLibraryArtistsHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryArtists", "Fetching music artists catalog", func() (any, error) {
 		return handler.service.GetLibraryArtists(page, pageSize)
 	})
 }
 
 func (handler *Handler) GetLibraryTracksByArtistHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	artistKey := c.Param("key")
 	handler.respondLibraryTracks(c, "GetMusicTracksByArtist", "Fetching music tracks by artist", func() (any, error) {
 		return handler.service.GetLibraryTracksByArtist(artistKey, page, pageSize)
@@ -75,16 +86,20 @@ func (handler *Handler) GetLibraryTracksByArtistHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetLibraryAlbumsHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryAlbums", "Fetching music albums catalog", func() (any, error) {
 		return handler.service.GetLibraryAlbums(page, pageSize)
 	})
 }
 
 func (handler *Handler) GetLibraryTracksByAlbumHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	albumKey := c.Param("key")
 	handler.respondLibraryTracks(c, "GetMusicTracksByAlbum", "Fetching music tracks by album", func() (any, error) {
 		return handler.service.GetLibraryTracksByAlbum(albumKey, page, pageSize)
@@ -92,16 +107,20 @@ func (handler *Handler) GetLibraryTracksByAlbumHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetLibraryGenresHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryGenres", "Fetching music genres catalog", func() (any, error) {
 		return handler.service.GetLibraryGenres(page, pageSize)
 	})
 }
 
 func (handler *Handler) GetLibraryTracksByGenreHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	genreKey := c.Param("key")
 	handler.respondLibraryTracks(c, "GetMusicTracksByGenre", "Fetching music tracks by genre", func() (any, error) {
 		return handler.service.GetLibraryTracksByGenre(genreKey, page, pageSize)
@@ -109,16 +128,20 @@ func (handler *Handler) GetLibraryTracksByGenreHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetLibraryFoldersHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryFolders", "Fetching music folders catalog", func() (any, error) {
 		return handler.service.GetLibraryFolders(page, pageSize)
 	})
 }
 
 func (handler *Handler) GetLibraryTracksByFolderHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	folderKey := c.Param("key")
 	handler.respondLibraryTracks(c, "GetMusicTracksByFolder", "Fetching music tracks by folder", func() (any, error) {
 		return handler.service.GetLibraryTracksByFolder(folderKey, page, pageSize)

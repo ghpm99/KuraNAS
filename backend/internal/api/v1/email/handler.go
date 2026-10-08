@@ -142,8 +142,10 @@ func (h *Handler) MicrosoftDeviceCodeStatusHandler(c *gin.Context) {
 }
 
 func (h *Handler) GetMessagesHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	if c.IsAborted() {
 		return
 	}
