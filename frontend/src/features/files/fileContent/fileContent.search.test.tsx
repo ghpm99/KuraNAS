@@ -133,7 +133,7 @@ describe('FileContent search listing', () => {
                 <FileContent searchListing={buildListing({ status: 'error' })} />
             </SelectionTestHarness>
         );
-        expect(screen.getByText('ERROR_LOADING_FILES')).toBeInTheDocument();
+        expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
     });
 
     it('lists results even when a file is currently selected in the explorer', () => {

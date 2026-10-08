@@ -16,7 +16,14 @@ import FileViewer from './components/fileViewer/fileViewer';
 import FileViewerNavigation from './components/fileViewer/fileViewerNavigation';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
+import ErrorState from '@/components/errorState/errorState';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import useFileActionFlow from '../fileActions/useFileActionFlow';
+import KeyboardShortcutsDialog from '../shortcuts/keyboardShortcutsDialog';
+import { countRenderedGridColumns } from '../shortcuts/fileItemFocus';
+import useFileBrowserShortcuts from '../shortcuts/useFileBrowserShortcuts';
+import FileCollectionEmptyState from './fileCollectionEmptyState';
+import FileListingSkeleton from './fileListingSkeleton';
 import styles from './fileContent.module.css';
 
 type ContextMenuState = { file: FileData; anchorPosition: FileContextMenuAnchor };
@@ -27,6 +34,8 @@ export type FileSearchListing = {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     fetchNextPage: () => void;
+    errorMessage?: string;
+    retry?: () => void;
 };
 
 interface FileContentProps {
@@ -36,6 +45,8 @@ interface FileContentProps {
     items?: FileData[];
     title?: string;
     emptyStateMessage?: string;
+    onGoToParent?: () => void;
+    onFocusSearch?: () => void;
 }
 
 const FileContent = ({
@@ -45,9 +56,13 @@ const FileContent = ({
     title,
     emptyStateMessage,
     searchListing,
+    onGoToParent,
+    onFocusSearch,
 }: FileContentProps) => {
     const {
         status,
+        listingErrorMessage,
+        retryListing,
         handleSelectItem,
         selectedItem,
         files,
@@ -73,11 +88,41 @@ const FileContent = ({
               ? t('RECENT_FILES')
               : t('FILES');
 
+    const { startAction, dialogs: actionDialogs } = useFileActionFlow();
+    const isViewingFile = selectedItem?.type === FileType.File;
+    const listedFiles = searchListing?.items ?? items ?? resolveListedFiles(selectedItem, files);
+
+    const openListedFile = (file: FileData) => {
+        if (!openMediaItem(file, listedFiles)) {
+            handleSelectItem(file);
+        }
+    };
+
+    const { tabStopFileId, focusFile, isHelpOpen, closeHelp } = useFileBrowserShortcuts({
+        isEnabled: isSelectionEnabled && !isViewingFile,
+        files: listedFiles,
+        selection: fileSelection,
+        getColumnCount: () => (viewMode === 'list' ? 1 : countRenderedGridColumns()),
+        onOpenFile: openListedFile,
+        onDeleteFiles: (filesToDelete) => startAction('delete', filesToDelete),
+        onRenameFile: (fileToRename) => startAction('rename', [fileToRename]),
+        onGoToParent,
+        onFocusSearch,
+    });
+
     if (listingStatus === 'pending') {
-        return <div className={styles.fileContent}>{t('LOADING')}</div>;
+        return <FileListingSkeleton viewMode={viewMode} />;
     }
     if (listingStatus === 'error') {
-        return <div className={styles.fileContent}>{t('ERROR_LOADING_FILES')}</div>;
+        return (
+            <div className={styles.fileContent}>
+                <ErrorState
+                    title={t('FILES_LISTING_ERROR_TITLE')}
+                    backendMessage={searchListing ? searchListing.errorMessage : listingErrorMessage}
+                    onRetry={searchListing ? searchListing.retry : retryListing}
+                />
+            </div>
+        );
     }
 
     const fileMetadata = (file: FileData): string => {
@@ -94,8 +139,8 @@ const FileContent = ({
 
     const thumbnailUrl = (id: number) => `${getApiV1BaseUrl()}/files/thumbnail/${id}`;
 
-    const handleOpenItem = (file: FileData, listedFiles: FileData[] = []) => {
-        if (!openMediaItem(file, listedFiles)) {
+    const handleOpenItem = (file: FileData, orderedFiles: FileData[] = []) => {
+        if (!openMediaItem(file, orderedFiles)) {
             handleSelectItem(file);
         }
     };
@@ -159,6 +204,9 @@ const FileContent = ({
     };
 
     const buildInteractionProps = (file: FileData, orderedFiles: FileData[]) => ({
+        fileId: file.id,
+        isTabStop: file.id === tabStopFileId,
+        onFocusItem: () => focusFile(file.id),
         isSelected: isSelectionEnabled && fileSelection.isSelected(file.id),
         isSelectionActive: isSelectionEnabled && fileSelection.hasSelection,
         onToggleSelection: isSelectionEnabled
@@ -179,14 +227,27 @@ const FileContent = ({
         return isPartOfMultiSelection ? fileSelection.selectedFiles : [file];
     };
 
+    const shortcutOverlays = (
+        <>
+            {actionDialogs}
+            <KeyboardShortcutsDialog isOpen={isHelpOpen} onClose={closeHelp} />
+        </>
+    );
+
+    const isOpenFolderListing =
+        selectedItem?.type === FileType.Directory && items === undefined && !searchListing;
+
     const renderCollection = (collectionTitle: string, collectionItems: FileData[]) => {
         if (collectionItems.length === 0) {
             return (
                 <div className={styles.fileContent}>
                     {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
-                    <div className={styles.emptyState}>
-                        {emptyStateMessage ?? t('EMPTY_FILE_LIST')}
-                    </div>
+                    <FileCollectionEmptyState
+                        customMessage={emptyStateMessage}
+                        isFolderOpen={isOpenFolderListing}
+                        fileListFilter={fileListFilter}
+                    />
+                    {shortcutOverlays}
                 </div>
             );
         }
@@ -242,6 +303,7 @@ const FileContent = ({
                     onClose={() => setContextMenuState(null)}
                     onOpenFile={(file) => handleOpenItem(file, collectionItems)}
                 />
+                {shortcutOverlays}
                 {items ? null : (
                     <LoadMoreSentinel
                         hasNextPage={pagination.hasNextPage}

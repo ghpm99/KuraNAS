@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { Checkbox, FormControlLabel, IconButton, InputBase } from '@mui/material';
 import { Search, X } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -10,6 +11,7 @@ interface FileSearchBarProps {
     isFolderScope?: boolean;
     isRecursive?: boolean;
     onRecursiveChange?: (isRecursive: boolean) => void;
+    inputRef?: Ref<HTMLInputElement>;
 }
 
 const FileSearchBar = ({
@@ -19,6 +21,7 @@ const FileSearchBar = ({
     isFolderScope = false,
     isRecursive = true,
     onRecursiveChange,
+    inputRef,
 }: FileSearchBarProps) => {
     const { t } = useI18n();
     const placeholder = isFolderScope ? t('FILES_SEARCH_PLACEHOLDER') : t('FILES_SEARCH_PLACEHOLDER_ALL');
@@ -29,6 +32,7 @@ const FileSearchBar = ({
                 <Search size={16} className={styles.searchIcon} />
                 <InputBase
                     value={value}
+                    inputRef={inputRef}
                     onChange={(event) => onChange?.(event.target.value)}
                     placeholder={placeholder}
                     className={styles.searchInput}

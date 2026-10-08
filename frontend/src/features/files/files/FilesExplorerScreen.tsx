@@ -22,7 +22,7 @@ import {
     useMediaQuery,
 } from '@mui/material';
 import { LayoutGrid, List, PanelLeft, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import UploadDropZone from '@/features/files/upload/uploadDropZone';
 import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
@@ -37,6 +37,9 @@ import useFilesExplorerScreen from './useFilesExplorerScreen';
 import styles from './FilesExplorerScreen.module.css';
 
 const phoneMediaQuery = '(max-width:640px)';
+
+const parentFolderPath = (parentPath: string | undefined): string =>
+    !parentPath || parentPath === '/' ? '' : parentPath;
 
 const FilesExplorerScreenContent = () => {
     const { t } = useI18n();
@@ -57,6 +60,7 @@ const FilesExplorerScreenContent = () => {
     const isPhone = useMediaQuery(phoneMediaQuery);
     const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
     const [isSearchRecursive, setIsSearchRecursive] = useState(true);
     const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery();
     const searchFolderId = selectedItem?.type === FileType.Directory ? selectedItem.id : undefined;
@@ -74,6 +78,11 @@ const FilesExplorerScreenContent = () => {
     const workspaceClassName = isDetailsInSideColumn
         ? `${styles.workspace} ${styles.workspaceWithPreview}`
         : styles.workspace;
+
+    const goToParentFolder = selectedItem
+        ? () => navigate(buildFilesUrl(parentFolderPath(selectedItem.parent_path)))
+        : undefined;
+    const focusSearchInput = () => searchInputRef.current?.focus();
 
     const closeDetailsPanel = () => {
         const isShowingOpenedFile =
@@ -151,6 +160,7 @@ const FilesExplorerScreenContent = () => {
                             isFolderScope={searchFolderId !== undefined}
                             isRecursive={isSearchRecursive}
                             onRecursiveChange={setIsSearchRecursive}
+                            inputRef={searchInputRef}
                         />
 
                         <div className={styles.contextMeta}>
@@ -184,11 +194,18 @@ const FilesExplorerScreenContent = () => {
                                     viewMode={viewMode}
                                     searchListing={searchResults}
                                     emptyStateMessage={t('FILES_SEARCH_EMPTY')}
+                                    onGoToParent={goToParentFolder}
+                                    onFocusSearch={focusSearchInput}
                                 />
                             </>
                         ) : (
                             <UploadDropZone>
-                                <FileContent showHeading={false} viewMode={viewMode} />
+                                <FileContent
+                                    showHeading={false}
+                                    viewMode={viewMode}
+                                    onGoToParent={goToParentFolder}
+                                    onFocusSearch={focusSearchInput}
+                                />
                             </UploadDropZone>
                         )}
                     </section>

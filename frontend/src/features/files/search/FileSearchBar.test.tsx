@@ -62,4 +62,11 @@ describe('FileSearchBar', () => {
         fireEvent.click(screen.getByLabelText('FILES_SEARCH_INCLUDE_SUBFOLDERS'));
         fireEvent.click(screen.getByRole('button', { name: 'FILES_SEARCH_CLEAR' }));
     });
+
+    it('hands the input element to the given ref', () => {
+        const inputRef = { current: null as HTMLInputElement | null };
+        render(<FileSearchBar inputRef={inputRef} />);
+
+        expect(inputRef.current).toBe(screen.getByPlaceholderText('FILES_SEARCH_PLACEHOLDER_ALL'));
+    });
 });

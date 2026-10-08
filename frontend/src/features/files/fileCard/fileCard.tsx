@@ -19,6 +19,9 @@ type FileCardProps = {
     secondaryText?: string;
     thumbnail: string;
     href?: string;
+    fileId?: number;
+    isTabStop?: boolean;
+    onFocusItem?: () => void;
     onClick: (event: MouseEvent<HTMLElement>) => void;
     starred?: boolean;
     onClickStar?: () => void;
@@ -38,6 +41,9 @@ const FileCard = ({
     secondaryText,
     thumbnail,
     href,
+    fileId,
+    isTabStop = true,
+    onFocusItem,
     onClick,
     starred,
     onClickStar,
@@ -59,6 +65,9 @@ const FileCard = ({
                 position: 'relative',
                 outline: isSelected ? '2px solid' : 'none',
                 outlineColor: 'primary.main',
+                '&:has([data-file-id]:focus-visible)': {
+                    boxShadow: (theme) => `0 0 0 3px ${theme.palette.primary.light}`,
+                },
                 [`& .${selectionControlClassName}`]: {
                     opacity: isSelectionControlVisible ? 1 : 0,
                 },
@@ -69,7 +78,13 @@ const FileCard = ({
                 },
             }}
         >
-            <CardActionArea {...linkProps} onClick={onClick}>
+            <CardActionArea
+                {...linkProps}
+                data-file-id={fileId}
+                tabIndex={isTabStop ? 0 : -1}
+                onFocus={onFocusItem}
+                onClick={onClick}
+            >
                 <CardMedia
                     component="img"
                     image={thumbnail || '/placeholder.svg'}

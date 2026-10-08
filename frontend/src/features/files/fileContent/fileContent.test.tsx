@@ -73,7 +73,7 @@ describe('fileContent', () => {
             files: [],
         });
         render(<FileContent />);
-        expect(screen.getByText('ERROR_LOADING_FILES')).toBeInTheDocument();
+        expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
     });
 
     it('renders root files, directory and file preview branches', () => {

@@ -80,4 +80,28 @@ describe('FileListRow', () => {
         expect(onOpenMenu).toHaveBeenCalledTimes(1);
         expect(onContextMenu).toHaveBeenCalledTimes(1);
     });
+
+    it('tags the link and reports focus for the roving tab stop', () => {
+        const onFocusItem = jest.fn();
+        render(
+            <FileListRow
+                title="Doc"
+                href="/files/Doc"
+                fileId={4}
+                isTabStop={false}
+                onFocusItem={onFocusItem}
+                sizeText="1 KB"
+                modifiedText="Mar 10"
+                typeText="TXT"
+                thumbnail="/t.png"
+                onClick={jest.fn()}
+            />
+        );
+
+        const link = screen.getByRole('link', { name: 'Doc' });
+        expect(link).toHaveAttribute('data-file-id', '4');
+        expect(link).toHaveAttribute('tabindex', '-1');
+        fireEvent.focus(link);
+        expect(onFocusItem).toHaveBeenCalledTimes(1);
+    });
 });

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useFileSearchResults from './useFileSearchResults';
 
@@ -39,6 +39,23 @@ describe('useFileSearchResults', () => {
 
         await waitFor(() => expect(result.current.status).toBe('error'));
         expect(result.current.items).toEqual([]);
+    });
+
+    it('exposes the backend error message and retries the search', async () => {
+        mockSearchFiles.mockRejectedValueOnce({ response: { data: { error: 'Busca indisponível' } } });
+        mockSearchFiles.mockResolvedValue({
+            items: [{ id: 1, name: 'foto.png' }],
+            pagination: { page: 1, pageSize: 100, hasNext: false },
+        });
+        const { result } = renderHook(
+            () => useFileSearchResults({ query: 'foto', isRecursive: true }),
+            { wrapper: createWrapper() }
+        );
+
+        await waitFor(() => expect(result.current.errorMessage).toBe('Busca indisponível'));
+        act(() => result.current.retry());
+
+        await waitFor(() => expect(result.current.items).toHaveLength(1));
     });
 
     it('survives a payload without items or pagination', async () => {

@@ -117,4 +117,26 @@ describe('fileCard selection and menu', () => {
 
         expect(screen.getByRole('link', { name: /Photo/ })).toHaveAttribute('href', '/files/Photo');
     });
+
+    it('tags the primary link and reports focus for the roving tab stop', () => {
+        const onFocusItem = jest.fn();
+        render(
+            <FileCard
+                title="Doc"
+                metadata="meta"
+                thumbnail=""
+                href="/files/doc"
+                fileId={9}
+                isTabStop={false}
+                onFocusItem={onFocusItem}
+                onClick={jest.fn()}
+            />
+        );
+
+        const link = screen.getByRole('link');
+        expect(link).toHaveAttribute('data-file-id', '9');
+        expect(link).toHaveAttribute('tabindex', '-1');
+        fireEvent.focus(link);
+        expect(onFocusItem).toHaveBeenCalledTimes(1);
+    });
 });
