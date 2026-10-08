@@ -1,20 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { createTestFile } from '@/features/files/selection/testFileFactory';
-import DeleteFilesDialog from './deleteFilesDialog';
+import DeleteItemsDialog from './deleteItemsDialog';
 
-const files = [createTestFile(1), createTestFile(2)];
+const items = [{ id: 1 }, { id: 2 }];
 
-const renderOpenDialog = (props: Partial<Parameters<typeof DeleteFilesDialog>[0]> = {}) =>
+const renderOpenDialog = (props: Partial<Parameters<typeof DeleteItemsDialog>[0]> = {}) =>
     render(
         <MemoryRouter>
-            <DeleteFilesDialog files={files} isOpen onClose={jest.fn()} onConfirm={jest.fn()} {...props} />
+            <DeleteItemsDialog items={items} isOpen onClose={jest.fn()} onConfirm={jest.fn()} {...props} />
         </MemoryRouter>
     );
 
-describe('DeleteFilesDialog', () => {
+describe('DeleteItemsDialog', () => {
     it('renders closed without a router or any provider', () => {
-        render(<DeleteFilesDialog files={[]} isOpen={false} onClose={jest.fn()} onConfirm={jest.fn()} />);
+        render(<DeleteItemsDialog items={[]} isOpen={false} onClose={jest.fn()} onConfirm={jest.fn()} />);
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
@@ -37,7 +36,7 @@ describe('DeleteFilesDialog', () => {
         expect(screen.queryByText('FILES_DELETE_PERMANENT_WARNING')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));
 
-        expect(onConfirm).toHaveBeenCalledWith(files, false);
+        expect(onConfirm).toHaveBeenCalledWith(items, false);
     });
 
     it('shows the red warning and confirms a permanent delete when checked', () => {
@@ -48,7 +47,7 @@ describe('DeleteFilesDialog', () => {
 
         expect(screen.getByRole('alert')).toHaveTextContent('FILES_DELETE_PERMANENT_WARNING');
         fireEvent.click(screen.getAllByRole('button', { name: 'FILES_DELETE_PERMANENTLY' })[0]!);
-        expect(onConfirm).toHaveBeenCalledWith(files, true);
+        expect(onConfirm).toHaveBeenCalledWith(items, true);
     });
 
     it('uses the many-items message for several files and closes the dialog from the trash link', () => {

@@ -5,13 +5,8 @@ import useFile, { type FileData } from '@/features/files/providers/fileProvider/
 import { getFileDownloadUrl, getFilesZipDownloadUrl } from '@/service/files';
 import { triggerBrowserDownload } from '@/service/browserDownload';
 import type { FolderPickerResult } from '@/components/folderPicker/folderPicker';
+import { useBulkOutcomeNotifier, type OutcomeMessages } from '@/shared/bulk/useBulkOutcomeNotifier';
 import { runBulkOperation, type BulkOutcome } from './bulkOutcome';
-
-type OutcomeMessages = {
-    singleSuccessKey: string;
-    multipleSuccessKey: string;
-    failureKey: string;
-};
 
 const moveMessages: OutcomeMessages = {
     singleSuccessKey: 'ACTION_MOVE_SUCCESS',
@@ -55,42 +50,19 @@ export const useFileOperations = () => {
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
 
-    const notifyOutcome = useCallback(
-        (outcome: BulkOutcome, messages: OutcomeMessages) => {
-            const succeededCount = outcome.succeededFiles.length;
-            const failedCount = outcome.failedFiles.length;
-            const failureMessage = outcome.firstFailureMessage ?? t(messages.failureKey);
+    const notifyBulkOutcome = useBulkOutcomeNotifier();
 
-            if (failedCount === 0) {
-                enqueueSnackbar(
-                    succeededCount === 1
-                        ? t(messages.singleSuccessKey)
-                        : t(messages.multipleSuccessKey, { count: String(succeededCount) }),
-                    { variant: 'success' }
-                );
-                return;
-            }
-            if (succeededCount === 0 && failedCount === 1) {
-                enqueueSnackbar(failureMessage, { variant: 'error' });
-                return;
-            }
-            if (succeededCount === 0) {
-                enqueueSnackbar(
-                    t('FILES_BULK_FAILED_SUMMARY', { failed: String(failedCount), message: failureMessage }),
-                    { variant: 'error' }
-                );
-                return;
-            }
-            enqueueSnackbar(
-                t('FILES_BULK_PARTIAL_SUMMARY', {
-                    succeeded: String(succeededCount),
-                    failed: String(failedCount),
-                    message: failureMessage,
-                }),
-                { variant: 'warning' }
-            );
-        },
-        [enqueueSnackbar, t]
+    const notifyOutcome = useCallback(
+        (outcome: BulkOutcome, messages: OutcomeMessages) =>
+            notifyBulkOutcome(
+                {
+                    succeededCount: outcome.succeededFiles.length,
+                    failedCount: outcome.failedFiles.length,
+                    firstFailureMessage: outcome.firstFailureMessage,
+                },
+                messages
+            ),
+        [notifyBulkOutcome]
     );
 
     const runAndNotify = useCallback(

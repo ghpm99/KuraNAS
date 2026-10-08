@@ -31,17 +31,15 @@ import {
     addChildrenToTree,
     buildFilesUrl,
     extractFilePath,
-    fileQueryKeys,
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
 import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
+import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const pageSize = 200;
-const ancestorsQueryKey = 'files-ancestors';
-const searchQueryKey = 'files-search';
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -145,7 +143,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const invalidateFileQueries = useCallback(async () => {
         await Promise.all(
-            [...fileQueryKeys, ancestorsQueryKey, searchQueryKey].map((queryKey) =>
+            allFileQueryKeys.map((queryKey) =>
                 queryClient.invalidateQueries({ queryKey: [queryKey] })
             )
         );

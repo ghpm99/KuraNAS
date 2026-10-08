@@ -14,13 +14,12 @@ import {
 } from '@mui/material';
 import { appRoutes } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 
-type DeleteFilesDialogProps = {
-    files: FileData[];
+type DeleteItemsDialogProps<TItem> = {
+    items: TItem[];
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (files: FileData[], isPermanent: boolean) => void;
+    onConfirm: (items: TItem[], isPermanent: boolean) => void;
 };
 
 const TrashPageLink = ({ onNavigate }: { onNavigate: () => void }) => {
@@ -36,14 +35,18 @@ const TrashPageLink = ({ onNavigate }: { onNavigate: () => void }) => {
     );
 };
 
-type DeleteFilesDialogBodyProps = Omit<DeleteFilesDialogProps, 'isOpen'>;
+type DeleteItemsDialogBodyProps<TItem> = Omit<DeleteItemsDialogProps<TItem>, 'isOpen'>;
 
-const DeleteFilesDialogBody = ({ files, onClose, onConfirm }: DeleteFilesDialogBodyProps) => {
+const DeleteItemsDialogBody = <TItem,>({
+    items,
+    onClose,
+    onConfirm,
+}: DeleteItemsDialogBodyProps<TItem>) => {
     const { t } = useI18n();
     const [isPermanent, setIsPermanent] = useState(false);
     const confirmationMessage =
-        files.length > 1
-            ? t('FILES_CONFIRM_DELETE_MANY', { count: String(files.length) })
+        items.length > 1
+            ? t('FILES_CONFIRM_DELETE_MANY', { count: String(items.length) })
             : t('CONFIRM_DELETE');
 
     return (
@@ -74,7 +77,7 @@ const DeleteFilesDialogBody = ({ files, onClose, onConfirm }: DeleteFilesDialogB
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>{t('ACTION_CANCEL')}</Button>
-                <Button onClick={() => onConfirm(files, isPermanent)} variant="contained" color="error">
+                <Button onClick={() => onConfirm(items, isPermanent)} variant="contained" color="error">
                     {isPermanent ? t('FILES_DELETE_PERMANENTLY') : t('DELETE')}
                 </Button>
             </DialogActions>
@@ -82,10 +85,14 @@ const DeleteFilesDialogBody = ({ files, onClose, onConfirm }: DeleteFilesDialogB
     );
 };
 
-const DeleteFilesDialog = ({ isOpen, onClose, ...bodyProps }: DeleteFilesDialogProps) => (
+const DeleteItemsDialog = <TItem,>({
+    isOpen,
+    onClose,
+    ...bodyProps
+}: DeleteItemsDialogProps<TItem>) => (
     <Dialog open={isOpen} onClose={onClose} maxWidth="xs" fullWidth>
-        <DeleteFilesDialogBody {...bodyProps} onClose={onClose} />
+        <DeleteItemsDialogBody {...bodyProps} onClose={onClose} />
     </Dialog>
 );
 
-export default DeleteFilesDialog;
+export default DeleteItemsDialog;

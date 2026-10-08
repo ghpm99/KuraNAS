@@ -5,7 +5,7 @@ import type { FileData } from '@/features/files/providers/fileProvider/fileConte
 import { focusFileItem } from '@/features/files/shortcuts/fileItemFocus';
 import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import type { BulkOutcome } from './bulkOutcome';
-import DeleteFilesDialog from './deleteFilesDialog';
+import DeleteItemsDialog from '@/components/deleteItemsDialog/deleteItemsDialog';
 import RenameFileDialog from './renameFileDialog';
 import useFileOperations from './useFileOperations';
 
@@ -86,8 +86,8 @@ export const useFileActionFlow = (): {
                     return { errorMessage: outcome.firstFailureMessage ?? t('ERROR_RENAME_FAILED') };
                 }}
             />
-            <DeleteFilesDialog
-                files={pendingFiles}
+            <DeleteItemsDialog
+                items={pendingFiles}
                 isOpen={isPending('delete')}
                 onClose={cancelAction}
                 onConfirm={async (files, isPermanent) =>
