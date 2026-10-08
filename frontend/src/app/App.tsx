@@ -7,6 +7,9 @@ import { AppShell } from '@/components/layout/AppShell/AppShell';
 import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import GlobalPlayerControl from '@/features/music/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import ConnectionBanner from '@/components/layout/ConnectionBanner/ConnectionBanner';
+import RouteErrorBoundary from '@/components/layout/RouteErrorBoundary/RouteErrorBoundary';
+import RouteFallback from '@/components/layout/RouteFallback/RouteFallback';
 
 const HomePage = lazy(() => import('@/pages/home'));
 const FilePage = lazy(() => import('@/pages/files'));
@@ -31,12 +34,17 @@ const TakeoutPage = lazy(() => import('@/pages/takeout'));
 const CapturesPage = lazy(() => import('@/pages/captures'));
 const DownloadsPage = lazy(() => import('@/pages/downloads'));
 const TrashPage = lazy(() => import('@/pages/trash'));
+const NotFoundPage = lazy(() => import('@/pages/notFound'));
 const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function ShellLayout() {
     return (
-        <AppShell>
-            <Outlet />
+        <AppShell banner={<ConnectionBanner />}>
+            <RouteErrorBoundary>
+                <Suspense fallback={<RouteFallback />}>
+                    <Outlet />
+                </Suspense>
+            </RouteErrorBoundary>
         </AppShell>
     );
 }
@@ -46,7 +54,7 @@ function AppContent() {
     const hidePlayer = isVideoPlayerRoute(location.pathname);
 
     return (
-        <Suspense>
+        <Suspense fallback={<RouteFallback />}>
             <Routes>
                 <Route path={appRoutes.root} element={<Navigate to={appRoutes.home} replace />} />
                 <Route
@@ -83,9 +91,9 @@ function AppContent() {
                     <Route path={appRoutes.captures} element={<CapturesPage />} />
                     <Route path={appRoutes.downloads} element={<DownloadsPage />} />
                     <Route path={appRoutes.trash} element={<TrashPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
                 </Route>
                 <Route path={`${appRoutes.videoPlayerBase}/:id`} element={<VideoPlayerPage />} />
-                <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
             </Routes>
             {!hidePlayer && <GlobalPlayerControl />}
         </Suspense>

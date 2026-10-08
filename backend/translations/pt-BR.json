@@ -1519,5 +1519,15 @@
 	"FILES_EMPTY_FAVORITES_TITLE": "Nenhum favorito ainda",
 	"FILES_EMPTY_FAVORITES_DESCRIPTION": "Marque arquivos e pastas com a estrela para encontrá-los aqui.",
 	"FILES_EMPTY_RECENT_TITLE": "Nada aberto recentemente",
-	"FILES_EMPTY_RECENT_DESCRIPTION": "Os arquivos que você abrir aparecerão aqui."
+	"FILES_EMPTY_RECENT_DESCRIPTION": "Os arquivos que você abrir aparecerão aqui.",
+	"NOT_FOUND_TITLE": "Página não encontrada",
+	"NOT_FOUND_REQUESTED_PATH": "Endereço solicitado: {{path}}",
+	"GO_TO_HOME": "Ir para o início",
+	"GO_BACK": "Voltar",
+	"ROUTE_LOADING": "Carregando página…",
+	"ROUTE_ERROR_DESCRIPTION": "Não foi possível exibir esta página. Tente novamente ou volte ao início.",
+	"ERROR_TECHNICAL_DETAILS": "Detalhes técnicos",
+	"CONNECTION_BANNER_UNAVAILABLE": "Servidor indisponível — tentando reconectar…",
+	"CONNECTION_RETRY_NOW": "Tentar agora",
+	"BACK_TO_TOP": "Voltar ao topo"
 }

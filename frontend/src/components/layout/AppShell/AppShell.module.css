@@ -25,10 +25,13 @@
     background: linear-gradient(180deg, rgba(18, 26, 41, 0.88) 0%, rgba(15, 22, 35, 0.96) 100%);
     border-top: 1px solid var(--app-color-border-subtle);
     border-left: 1px solid var(--app-color-border-subtle);
+    display: flex;
+    flex-direction: column;
 }
 
 .scrollArea {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 

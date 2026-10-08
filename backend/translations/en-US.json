@@ -1519,5 +1519,15 @@
 	"FILES_EMPTY_FAVORITES_TITLE": "No favorites yet",
 	"FILES_EMPTY_FAVORITES_DESCRIPTION": "Mark files and folders with the star to find them here.",
 	"FILES_EMPTY_RECENT_TITLE": "Nothing opened recently",
-	"FILES_EMPTY_RECENT_DESCRIPTION": "Files you open will show up here."
+	"FILES_EMPTY_RECENT_DESCRIPTION": "Files you open will show up here.",
+	"NOT_FOUND_TITLE": "Page not found",
+	"NOT_FOUND_REQUESTED_PATH": "Requested address: {{path}}",
+	"GO_TO_HOME": "Go to home",
+	"GO_BACK": "Go back",
+	"ROUTE_LOADING": "Loading page…",
+	"ROUTE_ERROR_DESCRIPTION": "This page could not be displayed. Try again or go back home.",
+	"ERROR_TECHNICAL_DETAILS": "Technical details",
+	"CONNECTION_BANNER_UNAVAILABLE": "Server unavailable — trying to reconnect…",
+	"CONNECTION_RETRY_NOW": "Try now",
+	"BACK_TO_TOP": "Back to top"
 }

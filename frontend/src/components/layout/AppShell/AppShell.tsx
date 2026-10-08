@@ -1,19 +1,24 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Header from '@/components/layout/Header/Header';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
 import styles from './AppShell.module.css';
 import { useAppShell } from './useAppShell';
 import { Drawer } from '@mui/material';
 import { BottomNav } from '@/components/layout/BottomNav/BottomNav';
+import { BackToTopButton } from './BackToTopButton';
+import { useScrollRestoration } from './useScrollRestoration';
 
 interface AppShellProps {
     children: ReactNode;
+    banner?: ReactNode;
 }
 
-export const AppShell = ({ children }: AppShellProps) => {
+export const AppShell = ({ children, banner }: AppShellProps) => {
     const { hasQueue, showClock } = useAppShell();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    useScrollRestoration(scrollAreaRef);
 
     const scrollAreaClassName = hasQueue
         ? `${styles.scrollArea} ${styles.scrollAreaWithPlayer}`
@@ -29,8 +34,12 @@ export const AppShell = ({ children }: AppShellProps) => {
             </div>
             <Header showClock={showClock} onOpenMobileMenu={handleOpenMobileMenu} />
             <main className={styles.mainPane}>
-                <div className={scrollAreaClassName}>{children}</div>
+                {banner}
+                <div ref={scrollAreaRef} className={scrollAreaClassName}>
+                    {children}
+                </div>
             </main>
+            <BackToTopButton scrollElementRef={scrollAreaRef} isPlayerVisible={hasQueue} />
 
             <BottomNav onOpenMenu={handleOpenMobileMenu} />
 
