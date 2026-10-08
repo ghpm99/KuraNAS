@@ -198,6 +198,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/recent-files", context.Files.Handler.GetRecentlyAccessedFilesHandler)
 	files.GET("/recent", context.Files.Handler.GetRecentFilesHandler)
 	files.GET("/recent/:id", context.Files.Handler.GetRecentAccessByFileHandler)
+	files.GET("/location/:id", context.Files.Handler.GetFileLocationHandler)
+	files.GET("/by-disk-path", context.Files.Handler.GetFileByDiskPathHandler)
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)

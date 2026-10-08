@@ -149,6 +149,9 @@ var CreateHomeFileChildrenSortIndexesQuery string
 //go:embed queries/0046_create_starred_and_recent_access_indexes.sql
 var CreateStarredAndRecentAccessIndexesQuery string
 
+//go:embed queries/0047_create_home_file_physical_path_index.sql
+var CreateHomeFilePhysicalPathIndexQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -207,6 +210,9 @@ func fileMigrationList() {
 
 	addMigration("0046_create_starred_and_recent_access_indexes",
 		defaultMigrationFunc(CreateStarredAndRecentAccessIndexesQuery))
+
+	addMigration("0047_create_home_file_physical_path_index",
+		defaultMigrationFunc(CreateHomeFilePhysicalPathIndexQuery))
 
 }
 
