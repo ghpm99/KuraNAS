@@ -20,7 +20,7 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [ ] 04. Página 404
 - [ ] 05. Fallback de carregamento por rota e boundary de erro dentro do shell (reseta ao navegar, mensagem i18n)
 - [x] 06. Servidor fora do ar: banner global com tentar de novo, `refetchOnReconnect`, fallback de traduções
-- [ ] 07. Restauração/reset de scroll da área de conteúdo na navegação + voltar ao topo
+- [x] 07. Restauração/reset de scroll da área de conteúdo na navegação + voltar ao topo
 - [ ] 08. Tema claro/escuro/sistema
 - [ ] 09. Sidebar recolhível (ícones), persistida por dispositivo
 - [ ] 10. `document.title` por rota e `<html lang>` dinâmico
