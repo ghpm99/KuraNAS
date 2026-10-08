@@ -1,0 +1,44 @@
+.sheet {
+    padding: var(--app-spacing-6) var(--app-spacing-6)
+        calc(var(--app-spacing-6) + var(--app-safe-area-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+    background: var(--app-background-panel-elevated);
+    border-top-left-radius: var(--app-radius-xl);
+    border-top-right-radius: var(--app-radius-xl);
+}
+
+.artwork {
+    align-self: center;
+    width: min(60vw, 240px);
+    aspect-ratio: 1;
+    border-radius: var(--app-radius-lg);
+    background: var(--app-color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trackText {
+    text-align: center;
+    min-width: 0;
+}
+
+.timeRow {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-3);
+}
+
+.controlsRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.volumeRow {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-3);
+}

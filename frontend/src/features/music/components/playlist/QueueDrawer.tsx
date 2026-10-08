@@ -45,7 +45,7 @@ const QueueDrawer = () => {
             variant="persistent"
             sx={{
                 '& .MuiDrawer-paper': {
-                    width: DRAWER_WIDTH,
+                    width: `min(${DRAWER_WIDTH}px, 100vw)`,
                     bgcolor: 'background.paper',
                     borderLeft: '1px solid',
                     borderColor: 'divider',

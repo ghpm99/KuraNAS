@@ -29,7 +29,7 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [ ] 13. Tela de Notificações no sistema de layout, scroll infinito, estado de erro
 - [ ] 14. Assistente e Diário de atividades no sistema de layout
 - [ ] 15. Painéis com rolagem aninhada (preview de arquivos/favoritos, imagens, fila, playlist)
-- [ ] 16. Mini-player no celular: progresso e controles completos em painel expandido, alvos de 44px
+- [x] 16. Mini-player no celular: progresso e controles completos em painel expandido, alvos de 44px
 - [ ] 17. `prefers-reduced-motion` do sistema operacional
 - [ ] 18. Breakpoints como tokens únicos (CSS + tema MUI) e container queries
 - [ ] 19. Largura "wide": grades de mídia usam a tela toda

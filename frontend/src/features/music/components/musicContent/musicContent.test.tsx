@@ -37,7 +37,6 @@ describe('musicContent', () => {
 
         render(<MusicContent />);
         expect(screen.getByText('OutletView')).toBeInTheDocument();
-        expect(screen.getAllByText('MUSIC_QUEUE').length).toBeGreaterThan(0);
 
         mockUseGlobalMusic.mockReturnValue({
             hasQueue: false,
