@@ -123,8 +123,8 @@ func (s *Service) toDtoPageWithCounts(models utils.PaginationResponse[FileModel]
 
 // GetChildrenByParentPath lists the active children of a directory (the tree),
 // optionally narrowed by category (all / starred / recent).
-func (s *Service) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	models, err := s.Repository.GetActiveChildrenByParentPath(parentPath, category, page, pageSize)
+func (s *Service) GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetActiveChildrenByParentPath(parentPath, category, childrenSort, page, pageSize)
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
 	}
@@ -566,7 +566,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 
 	for hasNext {
 
-		filesInDirectory, err := s.Repository.GetActiveChildrenByParentPath(fileDto.Path, AllCategory, page, 1000)
+		filesInDirectory, err := s.Repository.GetActiveChildrenByParentPath(fileDto.Path, AllCategory, DefaultChildrenSort, page, 1000)
 
 		if err != nil {
 			return err

@@ -216,7 +216,7 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 		Data: map[string]string{"parent_path": parentPath, "category": string(fileCategory)},
 	})
 
-	pagination, err := handler.service.GetChildrenByParentPath(parentPath, fileCategory, page, pageSize)
+	pagination, err := handler.service.GetChildrenByParentPath(parentPath, fileCategory, ParseChildrenSort(c.Query("sort"), c.Query("order")), page, pageSize)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)

@@ -112,7 +112,7 @@ func (m *filesRepoMock) GetFilesByNameAndPath(name string, path string, limit in
 	}
 	return nil, nil
 }
-func (m *filesRepoMock) GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+func (m *filesRepoMock) GetActiveChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getActiveChildrenFn != nil {
 		return m.getActiveChildrenFn(parentPath, category, page, pageSize)
 	}
@@ -412,7 +412,7 @@ func TestFileService_GetChildrenAndDirectoryCount(t *testing.T) {
 	}
 	s := newFilesServiceForTest(t, repo)
 
-	result, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
+	result, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -935,7 +935,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		},
 	})
 
-	if _, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10); err == nil {
+	if _, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10); err == nil {
 		t.Fatalf("expected GetChildrenByParentPath error")
 	}
 	if _, err := s.CreateFile(FileDto{Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
@@ -971,7 +971,7 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 			},
 		})
 
-		out, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
+		out, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10)
 		if err != nil {
 			t.Fatalf("expected GetChildrenByParentPath success, got %v", err)
 		}

@@ -267,7 +267,7 @@ func TestRepositoryDecomposedListingQueries(t *testing.T) {
 		WithArgs("/tmp", 11, 0).
 		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
 	mock.ExpectRollback()
-	pageResult, err := repo.GetActiveChildrenByParentPath("/tmp", AllCategory, 1, 10)
+	pageResult, err := repo.GetActiveChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10)
 	if err != nil || len(pageResult.Items) != 1 {
 		t.Fatalf("GetActiveChildrenByParentPath failed len=%d err=%v", len(pageResult.Items), err)
 	}
@@ -277,7 +277,7 @@ func TestRepositoryDecomposedListingQueries(t *testing.T) {
 		WithArgs("/tmp", 11, 0).
 		WillReturnRows(sqlmock.NewRows(fileRowColumns()))
 	mock.ExpectRollback()
-	if _, err := repo.GetActiveChildrenByParentPath("/tmp", StarredCategory, 1, 10); err != nil {
+	if _, err := repo.GetActiveChildrenByParentPath("/tmp", StarredCategory, DefaultChildrenSort, 1, 10); err != nil {
 		t.Fatalf("starred children query failed: %v", err)
 	}
 
@@ -286,7 +286,7 @@ func TestRepositoryDecomposedListingQueries(t *testing.T) {
 		WithArgs("/tmp", 11, 0).
 		WillReturnRows(sqlmock.NewRows(fileRowColumns()))
 	mock.ExpectRollback()
-	if _, err := repo.GetActiveChildrenByParentPath("/tmp", RecentCategory, 1, 10); err != nil {
+	if _, err := repo.GetActiveChildrenByParentPath("/tmp", RecentCategory, DefaultChildrenSort, 1, 10); err != nil {
 		t.Fatalf("recent children query failed: %v", err)
 	}
 
@@ -443,5 +443,44 @@ func TestRepositoryUpdateFileBranches(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestGetActiveChildrenByParentPathUsesSortedQueryVariant(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	variants := map[ChildrenSort]string{
+		{SortByName, SortAscending}:       queries.GetChildrenSortedByNameAscQuery,
+		{SortByName, SortDescending}:      queries.GetChildrenSortedByNameDescQuery,
+		{SortBySize, SortAscending}:       queries.GetChildrenSortedBySizeAscQuery,
+		{SortBySize, SortDescending}:      queries.GetChildrenSortedBySizeDescQuery,
+		{SortByUpdatedAt, SortAscending}:  queries.GetChildrenSortedByUpdatedAtAscQuery,
+		{SortByUpdatedAt, SortDescending}: queries.GetChildrenSortedByUpdatedAtDescQuery,
+		{SortByCreatedAt, SortAscending}:  queries.GetChildrenSortedByCreatedAtAscQuery,
+		{SortByCreatedAt, SortDescending}: queries.GetChildrenSortedByCreatedAtDescQuery,
+	}
+	for childrenSort, expectedQuery := range variants {
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(expectedQuery)).
+			WithArgs("/tmp", 11, 0).
+			WillReturnRows(sqlmock.NewRows(fileRowColumns()))
+		mock.ExpectRollback()
+		if _, err := repo.GetActiveChildrenByParentPath("/tmp", AllCategory, childrenSort, 1, 10); err != nil {
+			t.Fatalf("sort %+v failed: %v", childrenSort, err)
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestParseChildrenSortWhitelist(t *testing.T) {
+	if got := ParseChildrenSort("size; DROP TABLE home_file", "desc"); got != DefaultChildrenSort {
+		t.Fatalf("injection attempt must fall back to default, got %+v", got)
+	}
+	if got := ParseChildrenSort("name", "desc"); got != (ChildrenSort{Key: SortByName, Direction: SortDescending}) {
+		t.Fatalf("unexpected sort %+v", got)
 	}
 }
