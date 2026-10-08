@@ -87,6 +87,7 @@ type filesRepoMock struct {
 	markDeletedSubtreeFn        func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	restoreSubtreeFn            func(transaction *sql.Tx, path string) (int64, error)
 	getDirectoryContentCountsFn func(parentPaths []string) (map[string]int, error)
+	getFolderStatsFn            func(descendantPathPrefix string) (FolderStatsDto, error)
 	getCountByTypeFn            func(fileType FileType) (int, error)
 	getTotalSpaceUsedFn         func() (int, error)
 	getReportSizeByFormatFn     func() ([]SizeReportModel, error)
@@ -202,6 +203,12 @@ func (m *filesRepoMock) GetDirectoryContentCounts(parentPaths []string) (map[str
 		return m.getDirectoryContentCountsFn(parentPaths)
 	}
 	return map[string]int{}, nil
+}
+func (m *filesRepoMock) GetFolderStats(descendantPathPrefix string) (FolderStatsDto, error) {
+	if m.getFolderStatsFn != nil {
+		return m.getFolderStatsFn(descendantPathPrefix)
+	}
+	return FolderStatsDto{}, nil
 }
 func (m *filesRepoMock) GetCountByType(fileType FileType) (int, error) {
 	if m.getCountByTypeFn != nil {

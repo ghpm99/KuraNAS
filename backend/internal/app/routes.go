@@ -200,6 +200,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/recent", context.Files.Handler.GetRecentFilesHandler)
 	files.GET("/recent/:id", context.Files.Handler.GetRecentAccessByFileHandler)
 	files.GET("/ancestors/:id", context.Files.Handler.GetFileAncestorsHandler)
+	files.GET("/folder-stats/:id", context.Files.Handler.GetFolderStatsHandler)
 	files.GET("/location/:id", context.Files.Handler.GetFileLocationHandler)
 	files.GET("/by-disk-path", context.Files.Handler.GetFileByDiskPathHandler)
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
@@ -226,6 +227,9 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 		files.GET("/images", context.Image.Handler.GetImagesHandler)
 		files.GET("/images/classification/pending-count", context.Image.Handler.GetPendingAIClassificationCountHandler)
 		files.POST("/images/classification/backfill", context.Image.Handler.EnqueueClassificationBackfillHandler)
+		if context.Image.SummaryHandler != nil {
+			router.GET("/image/metadata/:file_id", context.Image.SummaryHandler.GetImageSummaryHandler)
+		}
 	}
 }
 
@@ -246,6 +250,9 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	filesGroup := router.Group("/files")
 	filesGroup.GET("/music", context.Music.Handler.GetMusicHandler)
 	filesGroup.GET("/stream/:id", context.Music.Handler.StreamAudioHandler)
+	if context.Music.SummaryHandler != nil {
+		router.GET("/music/metadata/:file_id", context.Music.SummaryHandler.GetAudioSummaryHandler)
+	}
 	musicBrowse := filesGroup.Group("/music")
 	musicBrowse.GET("/artists", context.Music.Handler.GetMusicArtistsHandler)
 	musicBrowse.GET("/artists/:name", context.Music.Handler.GetMusicByArtistHandler)
@@ -329,6 +336,9 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	filesGroup := router.Group("/files")
 	filesGroup.GET("/videos", context.Video.Handler.GetVideosHandler)
 	filesGroup.GET("/video-stream/:id", context.Video.Handler.StreamVideoHandler)
+	if context.Video.SummaryHandler != nil {
+		router.GET("/video/metadata/:file_id", context.Video.SummaryHandler.GetVideoSummaryHandler)
+	}
 	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
 	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)
 

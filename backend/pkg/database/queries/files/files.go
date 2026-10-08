@@ -123,3 +123,6 @@ var SearchActiveFilesByNameUnderPathQuery string
 
 //go:embed search_active_children_by_name.sql
 var SearchActiveChildrenByNameQuery string
+
+//go:embed get_folder_stats.sql
+var GetFolderStatsQuery string

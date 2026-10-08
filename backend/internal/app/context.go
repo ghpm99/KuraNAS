@@ -148,9 +148,10 @@ type FileContext struct {
 }
 
 type ImageContext struct {
-	Handler    *imagedom.Handler
-	Service    imagedom.ServiceInterface
-	Repository imagedom.RepositoryInterface
+	Handler        *imagedom.Handler
+	SummaryHandler *imagedom.ImageSummaryHandler
+	Service        imagedom.ServiceInterface
+	Repository     imagedom.RepositoryInterface
 }
 
 type JobsContext struct {
@@ -167,6 +168,7 @@ type DiaryContext struct {
 
 type MusicContext struct {
 	Handler                 *music.Handler
+	SummaryHandler          *music.AudioSummaryHandler
 	Service                 music.ServiceInterface
 	Repository              music.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
@@ -174,6 +176,7 @@ type MusicContext struct {
 
 type VideoContext struct {
 	Handler            *video.Handler
+	SummaryHandler     *video.VideoSummaryHandler
 	Service            video.ServiceInterface
 	Repository         video.RepositoryInterface
 	MetadataRepository video.VideoMetadataRepositoryInterface
@@ -457,10 +460,12 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	repository := imagedom.NewRepository(dbContext)
 	service := imagedom.NewService(repository, jobsRepository)
 	handler := imagedom.NewHandler(service, logger)
+	summaryHandler := imagedom.NewImageSummaryHandler(imagedom.NewImageSummaryService(imagedom.NewImageSummaryRepository(dbContext)), logger)
 	return &ImageContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:        handler,
+		SummaryHandler: summaryHandler,
+		Service:        service,
+		Repository:     repository,
 	}
 }
 
@@ -469,8 +474,10 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	audioMetadataRepository := music.NewAudioMetadataRepository(dbContext)
 	service := music.NewService(repository, aiService)
 	handler := music.NewHandler(service, filesService, recentFileService, loggerSvc)
+	summaryHandler := music.NewAudioSummaryHandler(music.NewAudioSummaryService(music.NewAudioSummaryRepository(dbContext)), loggerSvc)
 	return &MusicContext{
 		Handler:                 handler,
+		SummaryHandler:          summaryHandler,
 		Service:                 service,
 		Repository:              repository,
 		AudioMetadataRepository: audioMetadataRepository,
@@ -482,8 +489,10 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	metadataRepository := video.NewVideoMetadataRepository(dbContext)
 	service := video.NewService(repository, aiService)
 	handler := video.NewHandler(service, filesService, recentFileService, logger)
+	summaryHandler := video.NewVideoSummaryHandler(video.NewVideoSummaryService(video.NewVideoSummaryRepository(dbContext)), logger)
 	return &VideoContext{
 		Handler:            handler,
+		SummaryHandler:     summaryHandler,
 		Service:            service,
 		Repository:         repository,
 		MetadataRepository: metadataRepository,

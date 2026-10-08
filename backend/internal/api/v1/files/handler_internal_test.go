@@ -77,6 +77,9 @@ func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool
 func (m *filesHandlerServiceMock) GetFileLocation(id int) (FileLocationDto, error) {
 	return FileLocationDto{FileID: id}, nil
 }
+func (m *filesHandlerServiceMock) GetFolderStats(id int) (FolderStatsDto, error) {
+	return FolderStatsDto{}, nil
+}
 func (m *filesHandlerServiceMock) GetFileAncestors(id int) ([]FileAncestorDto, error) {
 	return []FileAncestorDto{}, nil
 }
