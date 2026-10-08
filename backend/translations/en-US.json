@@ -1549,5 +1549,9 @@
 	"SHORTCUT_GO_MUSIC": "Go to Music",
 	"SHORTCUT_GO_VIDEOS": "Go to Videos",
 	"SHORTCUT_GO_SETTINGS": "Go to Settings",
-	"SHORTCUT_SHOW_HELP": "Show this help"
+	"SHORTCUT_SHOW_HELP": "Show this help",
+	"NOTIFICATIONS_SUBTITLE": "Events and alerts from your server",
+	"NOTIFICATIONS_LOAD_ERROR": "Could not load notifications",
+	"ACTIVITY_DIARY_SUBTITLE": "Track what you do and for how long",
+	"ACTIVITY_DIARY_LOAD_ERROR": "Could not load the activity diary"
 }

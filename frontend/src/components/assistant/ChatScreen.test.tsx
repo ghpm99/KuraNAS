@@ -47,6 +47,20 @@ describe('components/assistant/ChatScreen', () => {
         expect(screen.getByText('ASSISTANT_EMPTY')).toBeInTheDocument();
     });
 
+    it('uses the shared page header as the single h1 and keeps the composer inside the sized chat area', () => {
+        mockUseAssistantChat.mockReturnValue({ ...baseState });
+
+        render(<ChatScreen />);
+
+        const headings = screen.getAllByRole('heading', { level: 1 });
+        expect(headings).toHaveLength(1);
+        expect(headings[0]).toHaveTextContent('ASSISTANT_TITLE');
+        expect(screen.getByText('ASSISTANT_SUBTITLE')).toBeInTheDocument();
+        const chatArea = screen.getByTestId('assistant-messages').parentElement?.parentElement;
+        expect(chatArea).toContainElement(screen.getByRole('textbox', { name: 'ASSISTANT_PLACEHOLDER' }));
+        expect(chatArea).toContainElement(screen.getByTestId('conversation-sidebar'));
+    });
+
     it('renders user and assistant bubbles', () => {
         mockUseAssistantChat.mockReturnValue({
             ...baseState,

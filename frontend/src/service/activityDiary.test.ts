@@ -37,7 +37,7 @@ describe('service/activityDiary', () => {
             fn: () => getActivityDiaryEntries(),
             method: 'get' as const,
             url: '/diary/',
-            payload: undefined,
+            payload: { params: { page: 1, page_size: 20 } },
             response: { items: [{ id: 1, name: 'Entry 1' }], total: 1 },
         },
         {
@@ -67,5 +67,15 @@ describe('service/activityDiary', () => {
             expect(mockedApi[method]).toHaveBeenCalledWith(url);
         }
         expect(result).toEqual(response);
+    });
+
+    it('sends the requested page and page size to the diary list', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getActivityDiaryEntries({ page: 3, pageSize: 10 });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/diary/', {
+            params: { page: 3, page_size: 10 },
+        });
     });
 });

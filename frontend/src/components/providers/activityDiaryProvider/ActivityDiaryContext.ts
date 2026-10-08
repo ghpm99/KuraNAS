@@ -48,6 +48,13 @@ export type ActivityDiaryType = {
     getCurrentDuration: (dateString: string) => number;
     currentTime: Date;
     copyActivity: (activity: ActivityDiaryData) => void;
+    isEntriesLoading?: boolean;
+    hasEntriesError?: boolean;
+    entriesErrorMessage?: string;
+    hasMoreEntries?: boolean;
+    isFetchingMoreEntries?: boolean;
+    loadMoreEntries?: () => void;
+    reloadEntries?: () => void;
 };
 
 const ActivityDiaryContext = createContext<ActivityDiaryType | undefined>(undefined);

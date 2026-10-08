@@ -26,8 +26,8 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [x] 10. `document.title` por rota e `<html lang>` dinâmico
 - [x] 11. Acessibilidade de navegação: skip link, foco no conteúdo ao trocar de rota, rótulos dos `<nav>`, bottom nav com links e `aria-current`, busca global como combobox
 - [x] 12. Sino de notificações: largura em tela pequena, cores por token, tempo relativo traduzido, teclado, clique leva ao alvo, lista atualizada ao abrir
-- [ ] 13. Tela de Notificações no sistema de layout, scroll infinito, estado de erro
-- [ ] 14. Assistente e Diário de atividades no sistema de layout
+- [x] 13. Tela de Notificações no sistema de layout, scroll infinito, estado de erro
+- [x] 14. Assistente e Diário de atividades no sistema de layout
 - [ ] 15. Painéis com rolagem aninhada (preview de arquivos/favoritos, imagens, fila, playlist)
 - [x] 16. Mini-player no celular: progresso e controles completos em painel expandido, alvos de 44px
 - [ ] 17. `prefers-reduced-motion` do sistema operacional
