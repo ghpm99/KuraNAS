@@ -24,6 +24,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const multipartMemoryLimitBytes = 8 << 20
+
 var (
 	loadConfigFn       = config.LoadConfig
 	initializeConfigFn = config.InitializeConfig
@@ -109,6 +111,7 @@ func InitializeApp() (*Application, error) {
 	}
 
 	router := newRouterFn()
+	router.MaxMultipartMemory = multipartMemoryLimitBytes
 
 	// Never trust proxy headers: ClientIP() must come from the connection's
 	// RemoteAddr, or a forged X-Forwarded-For would bypass the IP whitelist.

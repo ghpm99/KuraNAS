@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
-	"mime/multipart"
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
@@ -83,7 +82,10 @@ func (handler *Handler) UploadFilesHandler(c *gin.Context) {
 		targetFolderID = parsed
 	}
 
-	result, err := handler.service.UploadFiles(targetFolderID, form.File["files"])
+	result, err := handler.service.UploadFilesWithOptions(targetFolderID, form.File["files"], UploadOptions{
+		OnConflict:    UploadConflictPolicy(strings.TrimSpace(c.PostForm("on_conflict"))),
+		RelativePaths: form.Value["relative_paths"],
+	})
 	if err != nil {
 		handler.respondFileOperationError(c, loggerModel, err, "ERROR_UPLOAD_FAILED")
 		return
@@ -94,6 +96,7 @@ func (handler *Handler) UploadFilesHandler(c *gin.Context) {
 		"message":  i18n.GetMessage("ACTION_UPLOAD_SUCCESS"),
 		"uploaded": result.Uploaded,
 		"job_id":   result.JobID,
+		"files":    result.Files,
 	})
 }
 
@@ -240,11 +243,6 @@ func (e *FileOperationError) Error() string {
 	return e.MessageKey
 }
 
-type UploadFilesResult struct {
-	Uploaded []string
-	JobID    int
-}
-
 func newFileOperationError(statusCode int, messageKey string, err error) *FileOperationError {
 	return &FileOperationError{
 		StatusCode: statusCode,
@@ -304,86 +302,6 @@ func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (strin
 	return resolved, nil
 }
 
-func (s *Service) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
-	var folderIDPtr *int
-	if targetFolderID > 0 {
-		folderIDPtr = &targetFolderID
-	}
-
-	resolvedTargetPath, err := s.resolveTargetFolder(folderIDPtr, "")
-	if err != nil {
-		return UploadFilesResult{}, err
-	}
-
-	stat, err := os.Stat(resolvedTargetPath)
-	if err != nil || !stat.IsDir() {
-		return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_TARGET_NOT_DIRECTORY", err)
-	}
-
-	if len(files) == 0 {
-		return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_NO_FILES_UPLOADED", fmt.Errorf("empty upload payload"))
-	}
-
-	uploaded := make([]string, 0, len(files))
-	for _, fileHeader := range files {
-		fileName := filepath.Base(fileHeader.Filename)
-		if fileName == "." || fileName == string(filepath.Separator) || strings.TrimSpace(fileName) == "" {
-			return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_FILE_NAME_INVALID", fmt.Errorf("invalid file name"))
-		}
-
-		destinationPath := filepath.Join(resolvedTargetPath, fileName)
-		destinationPath, err = resolvePathInRoots(destinationPath)
-		if err != nil {
-			return UploadFilesResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
-		}
-
-		if _, statErr := os.Stat(destinationPath); statErr == nil {
-			return UploadFilesResult{}, newFileOperationError(
-				http.StatusConflict,
-				"ERROR_TARGET_ALREADY_EXISTS",
-				fmt.Errorf("file already exists: %s", destinationPath),
-			)
-		}
-
-		if saveErr := saveUploadedFile(fileHeader, destinationPath); saveErr != nil {
-			return UploadFilesResult{}, newFileOperationError(http.StatusInternalServerError, "ERROR_UPLOAD_FAILED", saveErr)
-		}
-
-		if syncErr := s.syncPathRow(destinationPath); syncErr != nil {
-			s.logSyncFailure("UploadFiles", destinationPath, syncErr)
-		}
-
-		uploaded = append(uploaded, destinationPath)
-	}
-
-	jobID, err := s.CreateUploadProcessJob(uploaded)
-	if err != nil {
-		return UploadFilesResult{}, newFileOperationError(http.StatusInternalServerError, "ERROR_UPLOAD_JOB_CREATE", err)
-	}
-
-	return UploadFilesResult{
-		Uploaded: uploaded,
-		JobID:    jobID,
-	}, nil
-}
-
-func saveUploadedFile(fileHeader *multipart.FileHeader, destinationPath string) error {
-	source, err := fileHeader.Open()
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.OpenFile(destinationPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	return err
-}
-
 func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 	if strings.TrimSpace(name) == "" {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_FOLDER_NAME_REQUIRED", fmt.Errorf("empty folder name"))
@@ -397,8 +315,11 @@ func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 		return "", err
 	}
 
-	createdPath := filepath.Join(resolvedParentPath, name)
-	createdPath, err = resolvePathInRoots(createdPath)
+	return s.createFolderAt(resolvedParentPath, name)
+}
+
+func (s *Service) createFolderAt(resolvedParentPath string, name string) (string, error) {
+	createdPath, err := resolvePathInRoots(filepath.Join(resolvedParentPath, name))
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}

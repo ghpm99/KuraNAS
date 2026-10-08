@@ -67,6 +67,7 @@ type ServiceInterface interface {
 	DeleteFile(file FileDto, bySystem bool) error
 	RestoreSubtree(path string) error
 	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
+	UploadFilesWithOptions(targetFolderID int, files []*multipart.FileHeader, options UploadOptions) (UploadFilesResult, error)
 	CreateFolder(parentID *int, name string) (string, error)
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
 	DeleteFileFromDisk(id int, permanent bool) error

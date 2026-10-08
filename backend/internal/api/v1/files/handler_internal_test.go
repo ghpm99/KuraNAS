@@ -117,6 +117,9 @@ func (m *filesHandlerServiceMock) RestoreSubtree(path string) error             
 func (m *filesHandlerServiceMock) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
 	return UploadFilesResult{}, nil
 }
+func (m *filesHandlerServiceMock) UploadFilesWithOptions(targetFolderID int, files []*multipart.FileHeader, options UploadOptions) (UploadFilesResult, error) {
+	return UploadFilesResult{}, nil
+}
 func (m *filesHandlerServiceMock) CreateFolder(parentID *int, name string) (string, error) {
 	return "", nil
 }
