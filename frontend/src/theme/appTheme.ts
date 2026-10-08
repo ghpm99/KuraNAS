@@ -4,6 +4,8 @@ import {
     colorSchemeTokens,
     structuralCssVariables,
     visualTokens,
+    breakpointsPx,
+    viewportMediaQueries,
     type ColorScheme,
 } from './visualTokens';
 
@@ -45,6 +47,15 @@ export const createAppTheme = (colorScheme: ColorScheme) => {
                 disabled: schemeColors.textDisabled,
             },
             divider: schemeColors.borderSubtle,
+        },
+        breakpoints: {
+            values: {
+                xs: 0,
+                sm: breakpointsPx.phone,
+                md: breakpointsPx.tablet,
+                lg: breakpointsPx.desktop,
+                xl: breakpointsPx.wide,
+            },
         },
         shape: {
             borderRadius: 14,
@@ -110,7 +121,7 @@ export const createAppTheme = (colorScheme: ColorScheme) => {
                         width: '10px',
                         height: '10px',
                     },
-                    '@media (max-width: 640px)': {
+                    [`@media ${viewportMediaQueries.belowPhone}`]: {
                         '*::-webkit-scrollbar': {
                             width: '4px',
                             height: '4px',

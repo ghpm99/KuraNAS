@@ -186,6 +186,28 @@ export const colorSchemeTokens: Record<ColorScheme, SchemeTokens> = {
     light: lightSchemeTokens,
 };
 
+export const breakpointsPx = {
+    phone: 600,
+    tablet: 900,
+    desktop: 1200,
+    wide: 1600,
+} as const;
+
+const toBelowBreakpointPx = (breakpointPx: number) => (breakpointPx * 100 - 5) / 100;
+
+export const belowBreakpointMediaQuery = (breakpointPx: number) =>
+    `(max-width: ${toBelowBreakpointPx(breakpointPx)}px)`;
+
+export const atLeastBreakpointMediaQuery = (breakpointPx: number) =>
+    `(min-width: ${breakpointPx}px)`;
+
+export const viewportMediaQueries = {
+    belowPhone: belowBreakpointMediaQuery(breakpointsPx.phone),
+    belowTablet: belowBreakpointMediaQuery(breakpointsPx.tablet),
+    belowDesktop: belowBreakpointMediaQuery(breakpointsPx.desktop),
+    compactDesktop: `${atLeastBreakpointMediaQuery(breakpointsPx.tablet)} and ${belowBreakpointMediaQuery(breakpointsPx.desktop)}`,
+} as const;
+
 export const visualTokens = {
     colors: darkSchemeTokens.colors,
     backgrounds: darkSchemeTokens.backgrounds,
@@ -224,6 +246,13 @@ export const visualTokens = {
         toastGap: '8px',
         contentMaxWidth: '1440px',
     },
+    intrinsicSize: {
+        fileCardHeight: '220px',
+        fileRowHeight: '56px',
+        imageTileHeight: '180px',
+        trackRowHeight: '56px',
+        videoCardHeight: '240px',
+    },
     motion: {
         fast: '160ms',
         base: '220ms',
@@ -261,6 +290,11 @@ export const structuralCssVariables = {
     '--app-safe-area-top': 'env(safe-area-inset-top, 0px)',
     '--app-safe-area-bottom': 'env(safe-area-inset-bottom, 0px)',
     '--app-content-max-width': visualTokens.layout.contentMaxWidth,
+    '--app-intrinsic-file-card-height': visualTokens.intrinsicSize.fileCardHeight,
+    '--app-intrinsic-file-row-height': visualTokens.intrinsicSize.fileRowHeight,
+    '--app-intrinsic-image-tile-height': visualTokens.intrinsicSize.imageTileHeight,
+    '--app-intrinsic-track-row-height': visualTokens.intrinsicSize.trackRowHeight,
+    '--app-intrinsic-video-card-height': visualTokens.intrinsicSize.videoCardHeight,
     '--app-motion-fast': visualTokens.motion.fast,
     '--app-motion-base': visualTokens.motion.base,
     '--app-motion-slow': visualTokens.motion.slow,
