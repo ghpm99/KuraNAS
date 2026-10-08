@@ -1,45 +1,34 @@
-import { useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
-import useI18n from '@/components/i18n/provider/i18nContext';
+import { FileType } from '@/utils';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import FileNameDialog, { type FileNameSubmitResult } from './fileNameDialog';
+import { findBaseNameLength } from './fileNameValidation';
 
 type RenameFileDialogProps = {
     file: FileData | null;
     onClose: () => void;
-    onConfirm: (file: FileData, newName: string) => void;
+    onConfirm: (file: FileData, newName: string) => Promise<FileNameSubmitResult>;
 };
 
 const RenameFileDialog = ({ file, onClose, onConfirm }: RenameFileDialogProps) => {
     const { t } = useI18n();
-    const [typedName, setTypedName] = useState(file?.name ?? '');
-    const trimmedName = typedName.trim();
-    const isUnchangedOrEmpty = trimmedName === '' || trimmedName === file?.name;
+    const currentName = file?.name ?? '';
+    const isFolder = file?.type === FileType.Directory;
 
-    const confirmRename = () => {
-        if (!file || isUnchangedOrEmpty) return;
-        onConfirm(file, trimmedName);
-    };
+    const renameFile = async (newName: string): Promise<FileNameSubmitResult> =>
+        file ? onConfirm(file, newName) : { errorMessage: null };
 
     return (
-        <Dialog open={file !== null} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{t('RENAME')}</DialogTitle>
-            <DialogContent>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label={t('NAME')}
-                    fullWidth
-                    value={typedName}
-                    onChange={(event) => setTypedName(event.target.value)}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>{t('ACTION_CANCEL')}</Button>
-                <Button onClick={confirmRename} variant="contained" disabled={isUnchangedOrEmpty}>
-                    {t('RENAME')}
-                </Button>
-            </DialogActions>
-        </Dialog>
+        <FileNameDialog
+            isOpen={file !== null}
+            title={t('RENAME')}
+            confirmLabel={t('RENAME')}
+            initialName={currentName}
+            initialSelectionEnd={findBaseNameLength(currentName, isFolder)}
+            currentName={currentName}
+            onClose={onClose}
+            onSubmit={renameFile}
+        />
     );
 };
 

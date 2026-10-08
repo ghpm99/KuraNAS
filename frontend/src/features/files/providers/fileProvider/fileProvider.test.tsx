@@ -37,7 +37,7 @@ const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
 const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
 const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
 const mockRenameFile = jest.fn<Promise<string | void>, [number, string]>();
-const mockDeleteFile = jest.fn<Promise<void>, [number]>();
+const mockDeleteFile = jest.fn<Promise<void>, [number, boolean?]>();
 
 jest.mock('@/service/files', () => ({
     getFileByPath: mockGetFileByPath,
@@ -335,7 +335,18 @@ describe('FileProvider', () => {
         await act(async () => {
             await capturedContext!.deleteFile(42);
         });
-        expect(mockDeleteFile).toHaveBeenCalledWith(42);
+        expect(mockDeleteFile).toHaveBeenCalledWith(42, false);
+    });
+
+    it('deleteFile forwards the permanent flag to the service', async () => {
+        mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        await act(async () => {
+            await capturedContext!.deleteFile(42, true);
+        });
+        expect(mockDeleteFile).toHaveBeenCalledWith(42, true);
     });
 
     it('moveFile calls service with correct args', async () => {

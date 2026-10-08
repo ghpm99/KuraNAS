@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import FolderPicker, { type FolderPickerResult } from '@/components/folderPicker/folderPicker';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
@@ -16,6 +17,7 @@ export const useFileActionFlow = (): {
     dialogs: ReactNode;
 } => {
     const operations = useFileOperations();
+    const { t } = useI18n();
     const { deselect } = useFileSelectionContext();
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
@@ -65,16 +67,19 @@ export const useFileActionFlow = (): {
                 key={`${renameTarget?.id}:${renameTarget?.name}`}
                 file={renameTarget}
                 onClose={cancelAction}
-                onConfirm={async (file, newName) =>
-                    finishAction('rename', await operations.renameSingleFile(file, newName))
-                }
+                onConfirm={async (file, newName) => {
+                    const outcome = await operations.renameSingleFile(file, newName);
+                    finishAction('rename', outcome);
+                    if (outcome.failedFiles.length === 0) return { errorMessage: null };
+                    return { errorMessage: outcome.firstFailureMessage ?? t('ERROR_RENAME_FAILED') };
+                }}
             />
             <DeleteFilesDialog
                 files={pendingFiles}
                 isOpen={isPending('delete')}
                 onClose={cancelAction}
-                onConfirm={async (files) =>
-                    finishAction('delete', await operations.deleteFiles(files))
+                onConfirm={async (files, isPermanent) =>
+                    finishAction('delete', await operations.deleteFiles(files, isPermanent))
                 }
             />
         </>

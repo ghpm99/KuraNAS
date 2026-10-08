@@ -120,7 +120,8 @@ export const useFileOperations = () => {
     );
 
     const deleteFiles = useCallback(
-        (files: FileData[]) => runAndNotify(files, (file) => deleteFile(file.id), deleteMessages),
+        (files: FileData[], permanent = false) =>
+            runAndNotify(files, (file) => deleteFile(file.id, permanent), deleteMessages),
         [deleteFile, runAndNotify]
     );
 

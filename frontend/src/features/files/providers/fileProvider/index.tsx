@@ -35,6 +35,7 @@ import {
     findTrailByIdInTree,
 } from './fileProviderUtils';
 import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
+import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 
 const pageSize = 200;
 const ancestorsQueryKey = 'files-ancestors';
@@ -92,7 +93,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [selectedItemId]
     );
 
-    const { status, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey: ['files', queryParams, fileListFilter, filesSort],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
             isGlobalListing(fileListFilter, selectedItemId)
@@ -221,8 +222,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const deleteFile = useCallback(
-        async (id: number) => {
-            await deleteFileService(id);
+        async (id: number, permanent = false) => {
+            await deleteFileService(id, permanent);
             if (id === openedItemId) {
                 discardOpenedItemPathQuery();
                 navigate(buildFilesUrl(openedItemParentPath === '/' ? '' : (openedItemParentPath ?? '')));
@@ -311,6 +312,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         () => ({
             files: fileTree || [],
             status: status,
+            listingErrorMessage: extractBackendErrorMessage(error),
+            retryListing: () => {
+                refetch();
+            },
             selectedItem: effectiveSelectedItem,
             handleSelectItem,
             expandedItems,
@@ -337,6 +342,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [
             fileTree,
             status,
+            error,
+            refetch,
             effectiveSelectedItem,
             handleSelectItem,
             expandedItems,

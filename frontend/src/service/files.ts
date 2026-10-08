@@ -208,9 +208,10 @@ export const createFolder = async (name: string, parentId?: number): Promise<voi
     });
 };
 
-export const deleteFile = async (id: number): Promise<void> => {
+export const deleteFile = async (id: number, permanent = false): Promise<void> => {
     await apiBase.delete('/files/path', {
         data: { id },
+        ...(permanent ? { params: { permanent: true } } : {}),
     });
 };
 

@@ -88,6 +88,19 @@ describe('features/files/fileProvider (seam)', () => {
 		expect(mockedApi.delete).toHaveBeenCalledWith('/files/path', { data: { id: 5 } });
 	});
 
+	it('deleteFile with permanent DELETEs /files/path with permanent=true as a query param', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await act(async () => {
+			await result.current.deleteFile(5, true);
+		});
+
+		expect(mockedApi.delete).toHaveBeenCalledWith('/files/path', {
+			data: { id: 5 },
+			params: { permanent: true },
+		});
+	});
+
 	it('copyFile POSTs to /files/copy with the source, destination and new name', async () => {
 		const { result } = renderHook(() => useFile(), { wrapper });
 
