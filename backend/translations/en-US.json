@@ -1572,5 +1572,9 @@
 	"IMAGES_SCRUBBER_ARIA": "Jump to date",
 	"IMAGES_SCRUBBER_OPEN": "Go to date",
 	"IMAGES_SCRUBBER_MONTH_ARIA": "{{month}}, {{count}} photos",
-	"IMAGES_JUMP_BACK_LATEST": "Back to latest"
+	"IMAGES_JUMP_BACK_LATEST": "Back to latest",
+	"IMAGES_SELECTION_TOOLBAR": "Photo selection actions",
+	"IMAGES_SELECT_ALL_LOADED": "Select loaded",
+	"IMAGES_SELECT_IMAGE_ARIA": "Select {{name}}",
+	"IMAGES_SELECT_MONTH_ARIA": "Select month {{month}}"
 }

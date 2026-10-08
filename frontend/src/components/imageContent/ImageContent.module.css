@@ -318,3 +318,60 @@
         padding: 14px;
     }
 }
+
+.selectionToolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background: var(--app-color-background-elevated);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.12);
+}
+
+.selectCheckbox,
+.monthCheckbox {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--app-color-primary);
+}
+
+.selectCheckbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.photoCard:hover .selectCheckbox,
+.selectCheckbox:focus-visible,
+.selectionActive .selectCheckbox,
+.photoCardSelected .selectCheckbox {
+    opacity: 1;
+}
+
+.photoCardSelected {
+    outline: 3px solid var(--app-color-primary);
+    outline-offset: -3px;
+}
+
+.photoButton {
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+@media (hover: none) {
+    .selectCheckbox {
+        opacity: 1;
+    }
+}

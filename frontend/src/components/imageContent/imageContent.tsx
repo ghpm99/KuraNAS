@@ -8,6 +8,7 @@ import ImageDateScrubber from './components/ImageDateScrubber';
 import ImageFolderBreadcrumb from './components/ImageFolderBreadcrumb';
 import ImageFilterBar from './components/ImageFilterBar';
 import ImageGroupsGrid from './components/ImageGroupsGrid';
+import ImageSelectionToolbar from './components/ImageSelectionToolbar';
 import ImageToolbar from './components/ImageToolbar';
 import ImageViewerModal from './components/ImageViewerModal';
 import { useImageContent, type ImageEmptyKind } from './useImageContent';
@@ -33,6 +34,8 @@ export default function ImageContent() {
         title,
         summary,
         groups,
+        loadedImages,
+        selection,
         folderCards,
         albumCards,
         timeline,
@@ -171,10 +174,17 @@ export default function ImageContent() {
                         </div>
                     )}
                     <div className={styles.galleryMain}>
+                        {selection.hasSelection && (
+                            <ImageSelectionToolbar
+                                selection={selection}
+                                loadedImages={loadedImages}
+                            />
+                        )}
                         <ImageGroupsGrid
                             groups={groups}
                             onOpenImage={handleOpenImage}
                             onToggleStar={toggleStar}
+                            selection={selection}
                         />
                     </div>
                 </div>

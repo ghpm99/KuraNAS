@@ -19,6 +19,7 @@ import { useDebouncedNameQuery } from './useDebouncedNameQuery';
 import { useImageAlbumCards } from './useImageAlbumCards';
 import { useImageFolderCards } from './useImageFolderCards';
 import { useImageLibraryControls } from './useImageLibraryControls';
+import { useImageSelection } from './useImageSelection';
 import { useImageStarToggle } from './useImageStarToggle';
 
 export type ImageEmptyKind = 'library' | 'filtered' | 'favorites';
@@ -127,6 +128,17 @@ export const useImageContent = () => {
             countsByMonth: buildTimelineCountsByMonth(timeline),
         });
     }, [viewMode, ordering.sort, items, monthFormatter, t, timeline]);
+
+    const loadedImages = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+    const selectionScopeKey = JSON.stringify([
+        section,
+        view.filters,
+        ordering,
+        view.takenBefore,
+        selectedFolder,
+        selectedAlbum?.id ?? null,
+    ]);
+    const selection = useImageSelection(selectionScopeKey);
 
     const folders = useImageFolderCards(selectedFolder, section === 'folders');
     const folderCards = folders.cards;
@@ -247,6 +259,8 @@ export const useImageContent = () => {
         title,
         summary,
         groups,
+        loadedImages,
+        selection,
         folderCards,
         albumCards,
         timeline,
