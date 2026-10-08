@@ -1,12 +1,11 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    GRID_THUMBNAIL_SIZE,
+    gridThumbnailSizes,
+    thumbnailSrcSet,
+    thumbnailUrl,
+} from '../imageThumbnailSources';
 import styles from './ImageCollectionsPanel.module.css';
-
-const thumbnailWidth = 960;
-const thumbnailHeight = 720;
-
-const thumbnailUrl = (id: number) =>
-    `${getApiV1BaseUrl()}/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
 
 export type ImageCollectionCard = {
     id: string;
@@ -57,7 +56,9 @@ const ImageCollectionsPanel = ({
                     <div className={styles.cover}>
                         {card.coverImageId ? (
                             <img
-                                src={thumbnailUrl(card.coverImageId)}
+                                src={thumbnailUrl(card.coverImageId, GRID_THUMBNAIL_SIZE)}
+                                srcSet={thumbnailSrcSet(card.coverImageId, GRID_THUMBNAIL_SIZE)}
+                                sizes={gridThumbnailSizes}
                                 alt={card.title}
                                 loading="lazy"
                             />

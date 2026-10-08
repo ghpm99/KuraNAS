@@ -64,7 +64,7 @@ describe('ImageCollectionsPanel', () => {
         expect(screen.getByText('F')).toBeInTheDocument();
         expect(screen.getByAltText('Folder B')).toHaveAttribute(
             'src',
-            '/api/v1/files/thumbnail/10?width=960&height=720'
+            '/api/v1/files/thumbnail/10?width=400&height=400'
         );
 
         fireEvent.click(screen.getByRole('button', { name: /abrir folder b/i }));

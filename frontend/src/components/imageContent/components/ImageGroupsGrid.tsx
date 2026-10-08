@@ -1,16 +1,15 @@
 import { CalendarDays, Star } from 'lucide-react';
 import { formatSize } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    GRID_THUMBNAIL_SIZE,
+    gridThumbnailSizes,
+    thumbnailSrcSet,
+    thumbnailUrl,
+} from '../imageThumbnailSources';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 import type { ImageDateGroup } from '../imageDateGroups';
 import styles from '../ImageContent.module.css';
-
-const thumbnailWidth = 960;
-const thumbnailHeight = 720;
-
-const thumbnailUrl = (id: number) =>
-    `${getApiV1BaseUrl()}/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
 
 type ImageGroupsGridProps = {
     groups: ImageDateGroup[];
@@ -62,7 +61,9 @@ export default function ImageGroupsGrid({
                                 >
                                     <img
                                         className={styles.thumbnail}
-                                        src={thumbnailUrl(item.file_id)}
+                                        src={thumbnailUrl(item.file_id, GRID_THUMBNAIL_SIZE)}
+                                        srcSet={thumbnailSrcSet(item.file_id, GRID_THUMBNAIL_SIZE)}
+                                        sizes={gridThumbnailSizes}
                                         alt={item.name}
                                         loading="lazy"
                                     />
