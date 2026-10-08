@@ -7,7 +7,10 @@ import styles from './fileListRow.module.css';
 
 type FileListRowProps = {
     title: string;
-    metadata: string;
+    href: string;
+    sizeText: string;
+    modifiedText: string;
+    typeText: string;
     secondaryText?: string;
     thumbnail: string;
     onClick: (event: MouseEvent<HTMLElement>) => void;
@@ -23,7 +26,10 @@ type FileListRowProps = {
 
 const FileListRow = ({
     title,
-    metadata,
+    href,
+    sizeText,
+    modifiedText,
+    typeText,
     secondaryText,
     thumbnail,
     onClick,
@@ -43,9 +49,11 @@ const FileListRow = ({
             ? `${styles.selectionControl} ${styles.selectionControlVisible}`
             : styles.selectionControl;
 
+    const phoneSummary = [sizeText, modifiedText].filter(Boolean).join(' · ');
+
     return (
-        <div className={rowClassName} onContextMenu={onContextMenu}>
-            <div className={selectionClassName}>
+        <div role="row" className={rowClassName} onContextMenu={onContextMenu}>
+            <div role="cell" className={selectionClassName}>
                 {onToggleSelection ? (
                     <Checkbox
                         size="small"
@@ -64,25 +72,38 @@ const FileListRow = ({
                     />
                 ) : null}
             </div>
-            <button type="button" className={styles.listButton} onClick={onClick} aria-label={title}>
-                <img src={thumbnail} alt={title} loading="lazy" className={styles.listThumbnail} />
-                <div className={styles.listContent}>
-                    <span className={styles.listTitle}>
-                        {title}
-                        {isCold ? (
-                            <>
-                                {' '}
-                                <ColdTierIndicator />
-                            </>
+            <div role="cell" className={styles.nameCell}>
+                <a href={href} className={styles.listLink} onClick={onClick} aria-label={title}>
+                    <img src={thumbnail} alt="" loading="lazy" className={styles.listThumbnail} />
+                    <span className={styles.listContent}>
+                        <span className={styles.listTitle}>
+                            {title}
+                            {isCold ? (
+                                <>
+                                    {' '}
+                                    <ColdTierIndicator />
+                                </>
+                            ) : null}
+                        </span>
+                        {secondaryText ? (
+                            <span className={styles.listMetadata}>{secondaryText}</span>
                         ) : null}
+                        <span className={`${styles.listMetadata} ${styles.phoneSummary}`}>
+                            {phoneSummary}
+                        </span>
                     </span>
-                    {secondaryText ? (
-                        <span className={styles.listMetadata}>{secondaryText}</span>
-                    ) : null}
-                    <span className={styles.listMetadata}>{metadata}</span>
-                </div>
-            </button>
-            <div className={styles.rowActions}>
+                </a>
+            </div>
+            <div role="cell" className={`${styles.dataCell} ${styles.sizeCell}`}>
+                {sizeText}
+            </div>
+            <div role="cell" className={`${styles.dataCell} ${styles.modifiedCell}`}>
+                {modifiedText}
+            </div>
+            <div role="cell" className={`${styles.dataCell} ${styles.typeCell}`}>
+                {typeText}
+            </div>
+            <div role="cell" className={styles.rowActions}>
                 <button type="button" className={styles.listStarButton} onClick={onClickStar}>
                     {starred ? '★' : '☆'}
                 </button>

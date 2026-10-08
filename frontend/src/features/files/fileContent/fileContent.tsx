@@ -3,6 +3,10 @@ import { FileType } from '@/utils';
 import { formatSize } from '@/shared/utils/formatSize';
 import FileCard from '../fileCard';
 import FileListRow from '../fileListRow';
+import FileListHeader from '../fileListHeader/fileListHeader';
+import { buildFilesUrl } from '@/features/files/providers/fileProvider/fileProviderUtils';
+import { formatModifiedDate, formatSizeColumn, formatTypeColumn } from './fileListFormatting';
+import { isNewTabClick } from './fileLinkNavigation';
 import FileContextMenu, { type FileContextMenuAnchor } from '../fileContextMenu/fileContextMenu';
 import { useFileSelectionContext } from '../selection/fileSelectionContext';
 import { resolveListedFiles } from '../selection/listedFiles';
@@ -51,6 +55,8 @@ const FileContent = ({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        filesSort,
+        setFilesSort,
     } = useFile();
     const { t } = useI18n();
     const { openMediaItem } = useMediaOpener();
@@ -110,6 +116,17 @@ const FileContent = ({
             return;
         }
         handleOpenItem(file);
+    };
+
+    const handleLinkClick = (
+        file: FileData,
+        event: MouseEvent<HTMLElement>,
+        orderedFiles: FileData[]
+    ) => {
+        const isSelectionModifierClick = isSelectionEnabled && fileSelection.hasSelection;
+        if (isNewTabClick(event) && !isSelectionModifierClick) return;
+        event.preventDefault();
+        handleItemClick(file, event, orderedFiles);
     };
 
     const handleToggleSelectionClick = (
@@ -176,17 +193,23 @@ const FileContent = ({
             <div className={styles.fileContent}>
                 {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
                 {viewMode === 'list' ? (
-                    <div className={styles.fileList}>
+                    <div className={styles.fileList} role="table" aria-label={collectionTitle}>
+                        {isSelectionEnabled && !searchListing ? (
+                            <FileListHeader sort={filesSort} onSortChange={setFilesSort} />
+                        ) : null}
                         {collectionItems.map((file) => (
                             <FileListRow
                                 key={file.id}
                                 title={file.name}
+                                href={buildFilesUrl(file.path)}
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
-                                metadata={fileMetadata(file)}
+                                sizeText={formatSizeColumn(file, t)}
+                                modifiedText={formatModifiedDate(file.updated_at)}
+                                typeText={formatTypeColumn(file, t)}
                                 secondaryText={searchListing ? file.parent_path : undefined}
                                 thumbnail={thumbnailUrl(file.id)}
-                                onClick={(event) => handleItemClick(file, event, collectionItems)}
+                                onClick={(event) => handleLinkClick(file, event, collectionItems)}
                                 onClickStar={() => handleStarredItem(file.id)}
                                 {...buildInteractionProps(file, collectionItems)}
                             />
@@ -198,12 +221,13 @@ const FileContent = ({
                             <FileCard
                                 key={file.id}
                                 title={file.name}
+                                href={buildFilesUrl(file.path)}
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}
                                 secondaryText={searchListing ? file.parent_path : undefined}
                                 thumbnail={thumbnailUrl(file.id)}
-                                onClick={(event) => handleItemClick(file, event, collectionItems)}
+                                onClick={(event) => handleLinkClick(file, event, collectionItems)}
                                 onClickStar={() => handleStarredItem(file.id)}
                                 {...buildInteractionProps(file, collectionItems)}
                             />

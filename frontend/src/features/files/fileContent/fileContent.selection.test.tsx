@@ -74,17 +74,18 @@ describe('FileContent selection', () => {
     it('toggles with ctrl and meta click', () => {
         renderContent();
 
-        fireEvent.click(screen.getByText('file-1.txt'), { ctrlKey: true });
-        fireEvent.click(screen.getByText('file-2.txt'), { metaKey: true });
+        fireEvent.click(screen.getAllByRole('checkbox')[0]!);
+        fireEvent.click(screen.getByText('file-2.txt'), { ctrlKey: true });
+        fireEvent.click(screen.getByText('file-3.txt'), { metaKey: true });
 
-        expect(selectedCount()).toBe('2');
+        expect(selectedCount()).toBe('3');
     });
 
     it('selects a range with shift click from the anchor, in the list view too', () => {
         renderContent('list');
 
-        fireEvent.click(screen.getByRole('button', { name: 'file-1.txt' }), { ctrlKey: true });
-        fireEvent.click(screen.getByRole('button', { name: 'file-3.txt' }), { shiftKey: true });
+        fireEvent.click(screen.getAllByRole('checkbox')[0]!);
+        fireEvent.click(screen.getByRole('link', { name: 'file-3.txt' }), { shiftKey: true });
 
         expect(selectedCount()).toBe('3');
     });
@@ -92,7 +93,7 @@ describe('FileContent selection', () => {
     it('selects a range with shift click on a checkbox', () => {
         renderContent();
 
-        fireEvent.click(screen.getByText('file-1.txt'), { ctrlKey: true });
+        fireEvent.click(screen.getAllByRole('checkbox')[0]!);
         fireEvent.click(screen.getAllByRole('checkbox')[3]!, { shiftKey: true });
 
         expect(selectedCount()).toBe('4');
@@ -102,10 +103,52 @@ describe('FileContent selection', () => {
         const { handleSelectItem } = renderContent('grid', listedFiles);
 
         expect(screen.queryByRole('checkbox')).toBeNull();
-        fireEvent.click(screen.getByText('file-1.txt'), { ctrlKey: true });
+        fireEvent.click(screen.getByText('file-1.txt'));
 
         expect(selectedCount()).toBe('0');
         expect(handleSelectItem).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives every card and row a real link to its path', () => {
+        renderContent('list');
+
+        expect(screen.getByRole('link', { name: 'file-2.txt' })).toHaveAttribute(
+            'href',
+            expect.stringContaining('file-2.txt')
+        );
+    });
+
+    it('leaves ctrl, meta and middle clicks to the browser while nothing is selected', () => {
+        const { handleSelectItem } = renderContent('list');
+        const fileLink = screen.getByRole('link', { name: 'file-1.txt' });
+
+        expect(fireEvent.click(fileLink, { ctrlKey: true })).toBe(true);
+        expect(fireEvent.click(fileLink, { metaKey: true })).toBe(true);
+        expect(fireEvent.click(fileLink, { button: 1 })).toBe(true);
+
+        expect(selectedCount()).toBe('0');
+        expect(handleSelectItem).not.toHaveBeenCalled();
+    });
+
+    it('prevents the browser navigation on a plain click and keeps the in-app open', () => {
+        const { handleSelectItem } = renderContent('list');
+
+        const wasNotPrevented = fireEvent.click(screen.getByRole('link', { name: 'file-1.txt' }));
+
+        expect(wasNotPrevented).toBe(false);
+        expect(handleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+    });
+
+    it('keeps toggling selection on ctrl click while a selection is active', () => {
+        renderContent('list');
+
+        fireEvent.click(screen.getAllByRole('checkbox')[0]!);
+        const wasNotPrevented = fireEvent.click(screen.getByRole('link', { name: 'file-2.txt' }), {
+            ctrlKey: true,
+        });
+
+        expect(wasNotPrevented).toBe(false);
+        expect(selectedCount()).toBe('2');
     });
 
     it('opens the context menu on right click and from the menu button', () => {
@@ -118,9 +161,9 @@ describe('FileContent selection', () => {
     it('applies the context menu to the whole selection when the target is selected', () => {
         renderContent('list');
 
-        fireEvent.click(screen.getByRole('button', { name: 'file-1.txt' }), { ctrlKey: true });
-        fireEvent.click(screen.getByRole('button', { name: 'file-2.txt' }), { ctrlKey: true });
-        fireEvent.contextMenu(screen.getByRole('button', { name: 'file-2.txt' }));
+        fireEvent.click(screen.getAllByRole('checkbox')[0]!);
+        fireEvent.click(screen.getAllByRole('checkbox')[1]!);
+        fireEvent.contextMenu(screen.getByRole('link', { name: 'file-2.txt' }));
 
         expect(screen.getByText('FILES_OPEN').closest('[role="menuitem"]')).toHaveAttribute(
             'aria-disabled',

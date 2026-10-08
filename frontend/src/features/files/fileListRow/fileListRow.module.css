@@ -1,9 +1,12 @@
 .listRow {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: var(
+        --file-list-columns,
+        40px minmax(0, 1fr) 100px 170px 80px 88px
+    );
     gap: 8px;
     align-items: center;
-    padding: 12px;
+    padding: 8px 12px;
     border: 1px solid var(--app-color-border-subtle);
     border-radius: var(--app-radius-lg);
     background: rgba(255, 255, 255, 0.03);
@@ -26,24 +29,39 @@
     opacity: 1;
 }
 
-.listButton {
+.nameCell {
+    min-width: 0;
+}
+
+.listLink {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
-    border: none;
-    padding: 0;
-    background: transparent;
     color: inherit;
     cursor: pointer;
     text-align: left;
+    text-decoration: none;
+}
+
+.dataCell {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--app-color-text-secondary);
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.phoneSummary {
+    display: none;
 }
 
 .listThumbnail {
     flex-shrink: 0;
-    width: 64px;
-    height: 64px;
-    border-radius: 14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     object-fit: cover;
     background: rgba(255, 255, 255, 0.05);
 }
@@ -51,13 +69,15 @@
 .listContent {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
 }
 
 .listTitle {
+    overflow: hidden;
     font-weight: 600;
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .listMetadata {
@@ -85,19 +105,41 @@
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 899.95px) {
+    .typeCell {
+        display: none;
+    }
+
     .listRow {
-        padding: 10px;
+        grid-template-columns: var(
+            --file-list-columns,
+            40px minmax(0, 1fr) 100px 170px 88px
+        );
+    }
+}
+
+@media (max-width: 599.95px) {
+    .listRow {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        padding: 6px 8px;
         gap: 4px;
     }
 
-    .listThumbnail {
-        width: 52px;
-        height: 52px;
-        border-radius: 10px;
+    .sizeCell,
+    .modifiedCell {
+        display: none;
     }
 
-    .listButton {
+    .phoneSummary {
+        display: block;
+    }
+
+    .listThumbnail {
+        width: 36px;
+        height: 36px;
+    }
+
+    .listLink {
         gap: 10px;
     }
 }

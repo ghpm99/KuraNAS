@@ -58,6 +58,7 @@ const rootDir = makeFile({
 
 describe('useFilesExplorerScreen', () => {
     beforeEach(() => {
+        window.localStorage.clear();
         jest.clearAllMocks();
         mockUseFileAncestors.mockReturnValue({ data: undefined });
         mockUseFile.mockReturnValue({
@@ -330,5 +331,17 @@ describe('useFilesExplorerScreen', () => {
         renderHook(() => useFilesExplorerScreen());
 
         expect(mockUseFileAncestors).toHaveBeenCalledWith(null);
+    });
+
+    it('defaults to the grid view and persists the chosen view mode', () => {
+        const { result, unmount } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.viewMode).toBe('grid');
+
+        act(() => result.current.setViewMode('list'));
+        expect(result.current.viewMode).toBe('list');
+        unmount();
+
+        const { result: reopened } = renderHook(() => useFilesExplorerScreen());
+        expect(reopened.current.viewMode).toBe('list');
     });
 });

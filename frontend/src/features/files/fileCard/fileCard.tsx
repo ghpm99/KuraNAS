@@ -18,6 +18,7 @@ type FileCardProps = {
     metadata: string;
     secondaryText?: string;
     thumbnail: string;
+    href?: string;
     onClick: (event: MouseEvent<HTMLElement>) => void;
     starred?: boolean;
     onClickStar?: () => void;
@@ -36,6 +37,7 @@ const FileCard = ({
     metadata,
     secondaryText,
     thumbnail,
+    href,
     onClick,
     starred,
     onClickStar,
@@ -47,6 +49,7 @@ const FileCard = ({
     onContextMenu,
 }: FileCardProps) => {
     const { t } = useI18n();
+    const linkProps = href ? { component: 'a', href } : {};
     const isSelectionControlVisible = isSelected || isSelectionActive;
 
     return (
@@ -66,7 +69,7 @@ const FileCard = ({
                 },
             }}
         >
-            <CardActionArea onClick={onClick}>
+            <CardActionArea {...linkProps} onClick={onClick}>
                 <CardMedia
                     component="img"
                     image={thumbnail || '/placeholder.svg'}

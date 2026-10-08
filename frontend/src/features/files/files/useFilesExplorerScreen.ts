@@ -1,13 +1,14 @@
 import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import useFileAncestors from '@/features/files/providers/fileProvider/useFileAncestors';
 import { findTrailById } from './fileNavigation';
+import { loadFilesViewMode, saveFilesViewMode, type FilesViewMode } from './filesViewModePreference';
 
 const primaryRootPath = '/';
 
-export type FilesViewMode = 'grid' | 'list';
+export type { FilesViewMode };
 
 export type BreadcrumbSegment = {
     id: number | null;
@@ -19,9 +20,14 @@ export type BreadcrumbSegment = {
 const useFilesExplorerScreen = () => {
     const { t } = useI18n();
     const { files, selectedItem, fileListFilter, hasNextPage } = useFile();
-    const [viewMode, setViewMode] = useState<FilesViewMode>('grid');
+    const [viewMode, setViewModeState] = useState<FilesViewMode>(loadFilesViewMode);
     const { data: ancestors } = useFileAncestors(selectedItem?.id ?? null);
     const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
+
+    const setViewMode = useCallback((nextViewMode: FilesViewMode) => {
+        setViewModeState(nextViewMode);
+        saveFilesViewMode(nextViewMode);
+    }, []);
 
     const currentListTitle = useMemo(() => {
         if (fileListFilter === 'starred') {

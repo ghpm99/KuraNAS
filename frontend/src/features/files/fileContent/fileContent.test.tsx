@@ -220,7 +220,29 @@ describe('fileContent', () => {
 
         render(<FileContent viewMode="list" showHeading={false} />);
         expect(screen.queryByText('FILES')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'song' })).toHaveAttribute('href', '/files/library/song.mp3');
+        expect(screen.getByRole('columnheader', { name: 'NAME' })).toBeInTheDocument();
+    });
+
+    it('sorts through the header columns of the list view', () => {
+        const setFilesSort = jest.fn();
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            fileListFilter: 'all',
+            files: [createFile({ id: 1, name: 'song' })],
+            filesSort: { key: 'name', order: 'asc' },
+            setFilesSort,
+        });
+
+        render(<FileContent viewMode="list" showHeading={false} />);
+        fireEvent.click(screen.getByRole('button', { name: 'NAME' }));
+        fireEvent.click(screen.getByRole('button', { name: 'MODIFIED' }));
+
+        expect(setFilesSort).toHaveBeenNthCalledWith(1, { key: 'name', order: 'desc' });
+        expect(setFilesSort).toHaveBeenNthCalledWith(2, { key: 'updated_at', order: 'asc' });
     });
 
     it('flags cold files in the grid cards and shows the indicator in list rows', () => {
