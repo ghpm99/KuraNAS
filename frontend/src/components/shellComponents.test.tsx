@@ -283,7 +283,7 @@ describe('shell components and pages', () => {
         expect(screen.getByText('ALL_FILES')).toBeInTheDocument();
 
         render(<ActionBar />);
-        expect(screen.getByText('NEW_FILE')).toBeInTheDocument();
+        expect(screen.getByText('UPLOAD_FILE')).toBeInTheDocument();
 
         render(<ActivePageListener />);
         expect(mockUseUI().setActivePage).toHaveBeenCalledWith('files');

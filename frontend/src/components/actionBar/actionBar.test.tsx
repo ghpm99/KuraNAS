@@ -53,7 +53,9 @@ jest.mock('../i18n/provider/i18nContext', () => ({
                 FILES: 'FILES',
                 RECENT_FILES: 'RECENT_FILES',
                 STARRED_FILES: 'STARRED_FILES',
-                NEW_FILE: 'NEW_FILE',
+                FILES_RESCAN_FOLDER: 'FILES_RESCAN_FOLDER',
+                FILES_MORE_ACTIONS: 'FILES_MORE_ACTIONS',
+                FILES_UPLOAD_FOLDER: 'FILES_UPLOAD_FOLDER',
                 UPLOAD_FILE: 'UPLOAD_FILE',
                 NEW_FOLDER: 'NEW_FOLDER',
                 MOVE: 'MOVE',
@@ -762,5 +764,105 @@ describe('components/actionBar', () => {
         render(<ActionBar />);
 
         expect(screen.queryByRole('button', { name: 'DOWNLOAD' })).not.toBeInTheDocument();
+    });
+
+    it('rescans from the more actions menu instead of a primary button', () => {
+        const rescanFiles = jest.fn();
+        mockUseFile.mockReturnValue(createFileContext({ rescanFiles }));
+
+        render(<ActionBar />);
+
+        expect(screen.queryByRole('button', { name: 'FILES_RESCAN_FOLDER' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'FILES_RESCAN_FOLDER' }));
+
+        expect(rescanFiles).toHaveBeenCalledTimes(1);
+    });
+
+    describe('responsive layout', () => {
+        const openedFolder = {
+            id: 12,
+            name: 'Photos',
+            path: '/media/Photos',
+            parent_path: '/media',
+            type: FileType.Directory,
+        };
+
+        const setViewportWidth = (viewportWidth: number) => {
+            Object.defineProperty(window, 'matchMedia', {
+                configurable: true,
+                writable: true,
+                value: (query: string) => {
+                    const maxWidth = Number(/max-width:\s*([\d.]+)px/.exec(query)?.[1] ?? NaN);
+                    return {
+                        matches: viewportWidth <= maxWidth,
+                        media: query,
+                        onchange: null,
+                        addListener: jest.fn(),
+                        removeListener: jest.fn(),
+                        addEventListener: jest.fn(),
+                        removeEventListener: jest.fn(),
+                        dispatchEvent: jest.fn(),
+                    };
+                },
+            });
+        };
+
+        afterEach(() => {
+            Reflect.deleteProperty(window, 'matchMedia');
+        });
+
+        it('keeps text labels and inline item actions on wide screens', () => {
+            setViewportWidth(1280);
+            mockUseFile.mockReturnValue(createFileContext({ selectedItem: openedFolder }));
+
+            render(<ActionBar />);
+
+            expect(screen.getByText('UPLOAD_FILE')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'MOVE' })).toBeInTheDocument();
+        });
+
+        it('turns buttons into icon-only controls with accessible names below md', () => {
+            setViewportWidth(768);
+            mockUseFile.mockReturnValue(createFileContext({ selectedItem: openedFolder }));
+
+            render(<ActionBar />);
+
+            expect(screen.queryByText('UPLOAD_FILE')).toBeNull();
+            expect(screen.getByRole('button', { name: 'UPLOAD_FILE' })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'NEW_FOLDER' })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'MOVE' })).toBeInTheDocument();
+        });
+
+        it('collapses item actions into the more actions menu below sm', () => {
+            setViewportWidth(360);
+            mockUseFile.mockReturnValue(createFileContext({ selectedItem: openedFolder }));
+
+            render(<ActionBar />);
+
+            expect(screen.getByRole('button', { name: 'UPLOAD_FILE' })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'FILES_UPLOAD_FOLDER' })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'NEW_FOLDER' })).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: 'MOVE' })).toBeNull();
+
+            fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
+
+            ['MOVE', 'COPY', 'RENAME', 'DELETE', 'DOWNLOAD', 'FILES_RESCAN_FOLDER'].forEach(
+                (menuLabel) => {
+                    expect(screen.getByRole('menuitem', { name: menuLabel })).toBeInTheDocument();
+                }
+            );
+        });
+
+        it('runs an item action chosen from the collapsed menu', () => {
+            setViewportWidth(360);
+            mockUseFile.mockReturnValue(createFileContext({ selectedItem: openedFolder }));
+
+            render(<ActionBar />);
+            fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
+            fireEvent.click(screen.getByRole('menuitem', { name: 'MOVE' }));
+
+            expect(screen.getByRole('button', { name: 'CONFIRM_PICKER' })).toBeInTheDocument();
+        });
     });
 });

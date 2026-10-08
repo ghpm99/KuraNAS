@@ -2,6 +2,7 @@ import { appRoutes } from '@/app/routes';
 import {
     ArrowLeft,
     Copy,
+    Download,
     FolderPlus,
     FolderUp,
     MoveRight,
@@ -32,6 +33,9 @@ import useUploadToCurrentFolder from '@/features/files/upload/useUploadToCurrent
 import { useSnackbar } from 'notistack';
 import useFileActionFlow from '@/features/files/fileActions/useFileActionFlow';
 import useFileOperations from '@/features/files/fileActions/useFileOperations';
+import ActionBarButton from './actionBarButton';
+import ActionBarMoreMenu, { type ActionBarMenuEntry } from './actionBarMoreMenu';
+import useActionBarLayout from './useActionBarLayout';
 
 const folderInputAttributes = {
     webkitdirectory: '',
@@ -52,6 +56,7 @@ export const ActionBar = () => {
     const { uploadEntries } = useUploadToCurrentFolder();
     const { startAction, dialogs } = useFileActionFlow();
     const { downloadFiles } = useFileOperations();
+    const { isIconOnly, isSecondaryCollapsed } = useActionBarLayout();
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [folderName, setFolderName] = useState('');
     const currentListTitle =
@@ -107,6 +112,53 @@ export const ActionBar = () => {
         downloadFiles([selectedItem]);
     };
 
+    const openedItemEntries: ActionBarMenuEntry[] = selectedItem
+        ? [
+              {
+                  key: 'move',
+                  label: t('MOVE'),
+                  icon: <MoveRight size={16} />,
+                  onSelect: () => startActionOnOpenedItem('move'),
+              },
+              {
+                  key: 'copy',
+                  label: t('COPY'),
+                  icon: <Copy size={16} />,
+                  onSelect: () => startActionOnOpenedItem('copy'),
+              },
+              {
+                  key: 'rename',
+                  label: t('RENAME'),
+                  icon: <Pencil size={16} />,
+                  onSelect: () => startActionOnOpenedItem('rename'),
+              },
+              {
+                  key: 'delete',
+                  label: t('DELETE'),
+                  icon: <Trash2 size={16} />,
+                  onSelect: () => startActionOnOpenedItem('delete'),
+                  isDestructive: true,
+              },
+              {
+                  key: 'download',
+                  label: t('DOWNLOAD'),
+                  icon: <Download size={16} />,
+                  onSelect: handleDownloadSelected,
+              },
+          ]
+        : [];
+
+    const rescanEntry: ActionBarMenuEntry = {
+        key: 'rescan',
+        label: t('FILES_RESCAN_FOLDER'),
+        icon: <RefreshCcw size={16} />,
+        onSelect: rescanFiles,
+    };
+
+    const moreMenuEntries = isSecondaryCollapsed
+        ? [...openedItemEntries, rescanEntry]
+        : [rescanEntry];
+
     return (
         <Box
             sx={{
@@ -118,7 +170,7 @@ export const ActionBar = () => {
                 mb: 2,
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                 {selectedItem && (
                     <IconButton
                         size="small"
@@ -134,9 +186,9 @@ export const ActionBar = () => {
                         <ArrowLeft size={16} />
                     </IconButton>
                 )}
-                <Typography variant="h6">{selectedItem?.name ?? currentListTitle}</Typography>
+                <Typography variant="h6" noWrap>{selectedItem?.name ?? currentListTitle}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, minWidth: 0 }}>
                 <input
                     ref={uploadInputRef}
                     type="file"
@@ -152,85 +204,38 @@ export const ActionBar = () => {
                     onChange={handleUploadChange}
                     {...folderInputAttributes}
                 />
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<RefreshCcw size={16} />}
-                    onClick={rescanFiles}
-                >
-                    {t('NEW_FILE')}
-                </Button>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Upload size={16} />}
+                <ActionBarButton
+                    label={t('UPLOAD_FILE')}
+                    icon={<Upload size={16} />}
                     onClick={handleUploadClick}
-                >
-                    {t('UPLOAD_FILE')}
-                </Button>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FolderUp size={16} />}
+                    isIconOnly={isIconOnly}
+                />
+                <ActionBarButton
+                    label={t('FILES_UPLOAD_FOLDER')}
+                    icon={<FolderUp size={16} />}
                     onClick={handleUploadFolderClick}
-                >
-                    {t('FILES_UPLOAD_FOLDER')}
-                </Button>
+                    isIconOnly={isIconOnly}
+                />
                 <ConflictPolicySelect />
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FolderPlus size={16} />}
+                <ActionBarButton
+                    label={t('NEW_FOLDER')}
+                    icon={<FolderPlus size={16} />}
                     onClick={openCreateFolderDialog}
-                >
-                    {t('NEW_FOLDER')}
-                </Button>
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<MoveRight size={16} />}
-                        onClick={() => startActionOnOpenedItem('move')}
-                    >
-                        {t('MOVE')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Copy size={16} />}
-                        onClick={() => startActionOnOpenedItem('copy')}
-                    >
-                        {t('COPY')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Pencil size={16} />}
-                        onClick={() => startActionOnOpenedItem('rename')}
-                    >
-                        {t('RENAME')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        color="error"
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Trash2 size={16} />}
-                        onClick={() => startActionOnOpenedItem('delete')}
-                    >
-                        {t('DELETE')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button variant="outlined" size="small" onClick={handleDownloadSelected}>
-                        {t('DOWNLOAD')}
-                    </Button>
-                )}
+                    isIconOnly={isIconOnly}
+                />
+                {isSecondaryCollapsed
+                    ? null
+                    : openedItemEntries.map((entry) => (
+                          <ActionBarButton
+                              key={entry.key}
+                              label={entry.label}
+                              icon={entry.icon}
+                              onClick={entry.onSelect}
+                              isIconOnly={isIconOnly}
+                              isDestructive={entry.isDestructive}
+                          />
+                      ))}
+                <ActionBarMoreMenu entries={moreMenuEntries} />
             </Box>
             <Dialog
                 open={isCreateFolderOpen}
