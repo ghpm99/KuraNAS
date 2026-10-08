@@ -225,12 +225,6 @@ func (fileDto *FileDto) GetCheckSumFromPath(childrenChecksums []string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-type FileBlob struct {
-	ID     int    `json:"id"`
-	Blob   []byte `json:"blob"`
-	Format string `json:"format"`
-}
-
 type RecentFileDto struct {
 	ID         int       `json:"id"`
 	IPAddress  string    `json:"ip_address"`

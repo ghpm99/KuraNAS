@@ -666,27 +666,6 @@ func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, 
 	return data, nil
 }
 
-func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
-
-	file, err := s.GetFileById(fileId)
-
-	if err != nil {
-		return FileBlob{}, err
-	}
-
-	data, err := os.ReadFile(file.ResolveContentPath())
-
-	if err != nil {
-		return FileBlob{}, err
-	}
-
-	return FileBlob{
-		ID:     file.ID,
-		Blob:   data,
-		Format: file.Format,
-	}, nil
-}
-
 func (s *Service) GetTotalSpaceUsed() (int, error) {
 	return s.Repository.GetTotalSpaceUsed()
 }

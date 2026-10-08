@@ -56,7 +56,6 @@ type ServiceInterface interface {
 	CreateUploadProcessJob(paths []string) (int, error)
 	CreateCaptureProcessJob(captureID int) (int, error)
 	GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error)
-	GetFileBlobById(fileId int) (FileBlob, error)
 	GetTotalSpaceUsed() (int, error)
 	GetTotalFiles() (int, error)
 	GetTotalDirectory() (int, error)
