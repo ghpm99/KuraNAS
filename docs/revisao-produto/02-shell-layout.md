@@ -14,7 +14,7 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 
 ## Lacunas
 
-- [ ] 01. Shell quebrado: `UIProvider` ausente e `FolderTree` da sidebar fora do `FileProvider`; teste de integração do `App` sem mockar o shell
+- [x] 01. Shell quebrado: `UIProvider` ausente e `FolderTree` da sidebar fora do `FileProvider`; teste de integração do `App` sem mockar o shell
 - [ ] 02. Mini-player cobre bottom nav/toasts no celular e a sidebar no desktop; safe-area (`viewport-fit=cover`)
 - [ ] 03. Sidebar sem rolagem em viewport baixo
 - [ ] 04. Página 404
