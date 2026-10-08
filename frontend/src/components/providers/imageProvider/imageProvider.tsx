@@ -58,6 +58,8 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
     );
     const { filters, ordering, takenBefore, isKeyset } = view;
     const isAlbumPicker = section === 'albums' && !view.selectedAlbum;
+    const isFolderRoot = section === 'folders' && !view.selectedFolder;
+    const isListingDisabled = isAlbumPicker || isFolderRoot;
 
     const {
         data: libraryData,
@@ -91,7 +93,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
                 ? { cursor: lastPage.next_cursor, page: loadedPages.length + 1 }
                 : undefined;
         },
-        enabled: !isAlbumPicker,
+        enabled: !isListingDisabled,
         staleTime: listingStaleTimeMs,
         refetchOnWindowFocus: false,
     });
@@ -99,7 +101,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
     const countQuery = useQuery({
         queryKey: ['images', 'count', filters],
         queryFn: () => getImageLibraryCount(filters),
-        enabled: !isAlbumPicker,
+        enabled: !isListingDisabled,
         staleTime: listingStaleTimeMs,
         refetchOnWindowFocus: false,
     });
@@ -107,7 +109,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
     const timelineQuery = useQuery({
         queryKey: ['images', 'timeline', filters],
         queryFn: () => getImageLibraryTimeline(filters),
-        enabled: !isAlbumPicker && isKeyset,
+        enabled: !isListingDisabled && isKeyset,
         staleTime: listingStaleTimeMs,
         refetchOnWindowFocus: false,
     });

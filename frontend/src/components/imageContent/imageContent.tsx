@@ -5,6 +5,7 @@ import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import ImageCollectionsPanel from './components/ImageCollectionsPanel';
 import ImageDateScrubber from './components/ImageDateScrubber';
+import ImageFolderBreadcrumb from './components/ImageFolderBreadcrumb';
 import ImageFilterBar from './components/ImageFilterBar';
 import ImageGroupsGrid from './components/ImageGroupsGrid';
 import ImageToolbar from './components/ImageToolbar';
@@ -35,7 +36,6 @@ export default function ImageContent() {
         folderCards,
         albumCards,
         timeline,
-        status,
         hasLoadError,
         loadErrorMessage,
         retryLoading,
@@ -43,6 +43,10 @@ export default function ImageContent() {
         isFetchingNextPage,
         loadNextPage,
         isEmpty,
+        isInitialLoading,
+        hasMoreFolders,
+        isFetchingMoreFolders,
+        loadNextFolderPage,
         emptyKind,
         typedNameQuery,
         setTypedNameQuery,
@@ -60,8 +64,7 @@ export default function ImageContent() {
     } = useImageContent();
     const { activeImage } = viewer;
     const isAlbumPicker = viewMode === 'albums';
-    const isInitialLoading = !isAlbumPicker && status === 'pending';
-    const hasSelection = Boolean(view.selectedFolder || view.selectedAlbum);
+    const isFolderSection = view.section === 'folders';
     const hasScrubber = viewMode === 'grid' && view.isKeyset && timeline.length > 0;
     const emptyKeys = emptyStateKeys[emptyKind];
 
@@ -87,20 +90,20 @@ export default function ImageContent() {
                     onClearFilters={controls.clearUserFilters}
                 />
             )}
-            {hasSelection && (
+            {isFolderSection && (
+                <ImageFolderBreadcrumb
+                    selectedFolder={view.selectedFolder}
+                    onSelectFolder={controls.selectFolder}
+                />
+            )}
+            {view.selectedAlbum && (
                 <div className={styles.selectionSummary}>
                     <button
                         type="button"
                         className={styles.backButton}
-                        onClick={() =>
-                            view.selectedFolder
-                                ? controls.selectFolder(null)
-                                : controls.selectAlbum(null)
-                        }
+                        onClick={() => controls.selectAlbum(null)}
                     >
-                        {view.selectedFolder
-                            ? t('IMAGES_BACK_TO_FOLDERS')
-                            : t('IMAGES_BACK_TO_ALBUMS')}
+                        {t('IMAGES_BACK_TO_ALBUMS')}
                     </button>
                 </div>
             )}
@@ -128,13 +131,20 @@ export default function ImageContent() {
                     <CircularProgress size={40} />
                 </div>
             )}
-            {viewMode === 'folders' && !isInitialLoading && !isEmpty && (
-                <ImageCollectionsPanel
-                    cards={folderCards}
-                    emptyTitle={t('IMAGES_FOLDERS_EMPTY_TITLE')}
-                    emptyDescription={t('IMAGES_FOLDERS_EMPTY_DESC')}
-                    onSelect={controls.selectFolder}
-                />
+            {isFolderSection && folderCards.length > 0 && (
+                <>
+                    <ImageCollectionsPanel
+                        cards={folderCards}
+                        emptyTitle={t('IMAGES_FOLDERS_EMPTY_TITLE')}
+                        emptyDescription={t('IMAGES_FOLDERS_EMPTY_DESC')}
+                        onSelect={controls.selectFolder}
+                    />
+                    <LoadMoreSentinel
+                        hasNextPage={hasMoreFolders}
+                        isFetchingNextPage={isFetchingMoreFolders}
+                        fetchNextPage={loadNextFolderPage}
+                    />
+                </>
             )}
             {!isAlbumPicker && isEmpty && (
                 <EmptyState

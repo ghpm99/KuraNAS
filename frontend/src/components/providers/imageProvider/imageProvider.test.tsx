@@ -236,6 +236,17 @@ describe('providers/imageProvider', () => {
         expect(screen.getByTestId('status')).toHaveTextContent('pending');
     });
 
+    it('does not query the gallery while the folder roots are shown', async () => {
+        routeResponses([{ items: [], next_cursor: '', has_next: false, page_size: 60 }]);
+
+        renderProvider('/images/folders');
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(mockedApiGet).not.toHaveBeenCalled();
+    });
+
     it('queries the album categories once an album is selected', async () => {
         routeResponses([{ items: [], next_cursor: '', has_next: false, page_size: 60 }]);
 
