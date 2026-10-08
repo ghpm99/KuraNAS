@@ -170,6 +170,14 @@ type filesHandlerServiceFuncMock struct {
 	getReportSizeByFmtFn  func() ([]SizeReportDto, error)
 	getTopFilesBySizeFn   func(limit int) ([]FileDto, error)
 	getDuplicateFilesFn   func(page int, pageSize int) (DuplicateFileReportDto, error)
+	getFileThumbnailFn    func(fileDto FileDto, width, height int) ([]byte, error)
+}
+
+func (m *filesHandlerServiceFuncMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
+	if m.getFileThumbnailFn != nil {
+		return m.getFileThumbnailFn(fileDto, width, height)
+	}
+	return m.filesHandlerServiceMock.GetFileThumbnail(fileDto, width, height)
 }
 
 func (m *filesHandlerServiceFuncMock) GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
@@ -412,7 +420,7 @@ func TestFilesHandlerThumbnailRevalidatesWithETag(t *testing.T) {
 	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
 	router := gin.New()
 	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
-	expectedETag := ThumbnailETag(FileDto{ID: 3, UpdatedAt: time.Unix(1000, 0)}, 320)
+	expectedETag := ThumbnailETag(FileDto{ID: 3, UpdatedAt: time.Unix(1000, 0)}, 320, 320)
 
 	req := httptest.NewRequest(http.MethodGet, "/files/thumbnail/3", nil)
 	req.Header.Set("If-None-Match", expectedETag)

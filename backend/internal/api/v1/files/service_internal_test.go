@@ -910,7 +910,7 @@ func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	setProgramFilesForTest(t)
 	s := newFilesServiceForTest(t, &filesRepoMock{})
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheFile := filepath.Join(cacheDir, thumbnailCacheFileName(FileDto{ID: 42}, 0))
+	cacheFile := filepath.Join(cacheDir, thumbnailCacheFileName(FileDto{ID: 42}, 0, 100, thumbnailPNGExtension))
 	cached := []byte("cached-png")
 
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
@@ -998,7 +998,7 @@ func TestFileService_GetFileThumbnailCacheKeyChangesWithUpdatedAt(t *testing.T) 
 	if _, err := s.GetFileThumbnail(firstVersion, 100, 100); err != nil {
 		t.Fatalf("first thumbnail failed: %v", err)
 	}
-	firstCachePath := filepath.Join(cacheDir, thumbnailCacheFileName(firstVersion, 100))
+	firstCachePath := filepath.Join(cacheDir, thumbnailCacheFileName(firstVersion, 100, 100, thumbnailPNGExtension))
 	if _, err := os.Stat(firstCachePath); err != nil {
 		t.Fatalf("expected first version cached: %v", err)
 	}
@@ -1006,13 +1006,13 @@ func TestFileService_GetFileThumbnailCacheKeyChangesWithUpdatedAt(t *testing.T) 
 	if _, err := s.GetFileThumbnail(secondVersion, 100, 100); err != nil {
 		t.Fatalf("second thumbnail failed: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(cacheDir, thumbnailCacheFileName(secondVersion, 100))); err != nil {
+	if _, err := os.Stat(filepath.Join(cacheDir, thumbnailCacheFileName(secondVersion, 100, 100, thumbnailPNGExtension))); err != nil {
 		t.Fatalf("expected new version cached under a new key: %v", err)
 	}
 	if _, err := os.Stat(firstCachePath); !os.IsNotExist(err) {
 		t.Fatalf("expected the stale cached version to be removed, got %v", err)
 	}
-	if ThumbnailETag(firstVersion, 100) == ThumbnailETag(secondVersion, 100) {
+	if ThumbnailETag(firstVersion, 100, 100) == ThumbnailETag(secondVersion, 100, 100) {
 		t.Fatalf("expected ETag to change when updated_at changes")
 	}
 }

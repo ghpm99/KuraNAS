@@ -3,94 +3,87 @@ package img
 import (
 	"bytes"
 	"image"
-	"image/color"
 	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"math"
 	"os"
+
+	_ "golang.org/x/image/bmp"
+	xdraw "golang.org/x/image/draw"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
+)
+
+const (
+	defaultThumbnailBoxSize   = 320
+	photoThumbnailJPEGQuality = 82
 )
 
 func Thumbnail(src image.Image, maxWidth, maxHeight uint) image.Image {
 	if maxWidth == 0 {
-		maxWidth = 320
+		maxWidth = defaultThumbnailBoxSize
 	}
 	if maxHeight == 0 {
-		maxHeight = 320
+		maxHeight = defaultThumbnailBoxSize
 	}
 
-	bounds := src.Bounds()
-	srcWidth := uint(bounds.Dx())
-	srcHeight := uint(bounds.Dy())
-
-	aspectRatio := float64(srcWidth) / float64(srcHeight)
-	targetAspectRatio := float64(maxWidth) / float64(maxHeight)
-
-	var newWidth, newHeight uint
-	if aspectRatio > targetAspectRatio {
-		newWidth = maxWidth
-		newHeight = uint(float64(maxWidth) / aspectRatio)
-	} else {
-		newHeight = maxHeight
-		newWidth = uint(float64(maxHeight) * aspectRatio)
-	}
-
-	resized := resizeBilinear(src, newWidth, newHeight)
+	fittedWidth, fittedHeight := fitDimensions(src.Bounds().Dx(), src.Bounds().Dy(), int(maxWidth), int(maxHeight), true)
+	resized := scaleTo(src, fittedWidth, fittedHeight)
 
 	canvas := image.NewRGBA(image.Rect(0, 0, int(maxWidth), int(maxHeight)))
-
-	x := (int(maxWidth) - resized.Bounds().Dx()) / 2
-	y := (int(maxHeight) - resized.Bounds().Dy()) / 2
-
-	draw.Draw(canvas, image.Rect(x, y, x+resized.Bounds().Dx(), y+resized.Bounds().Dy()), resized, image.Point{0, 0}, draw.Over)
+	offsetX := (int(maxWidth) - fittedWidth) / 2
+	offsetY := (int(maxHeight) - fittedHeight) / 2
+	draw.Draw(canvas, image.Rect(offsetX, offsetY, offsetX+fittedWidth, offsetY+fittedHeight), resized, image.Point{}, draw.Over)
 
 	return canvas
 }
 
-func resizeBilinear(src image.Image, width, height uint) image.Image {
-	bounds := src.Bounds()
-	dst := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+func FitWithinBox(src image.Image, maxWidth, maxHeight int, orientation int) image.Image {
+	sourceWidth, sourceHeight := src.Bounds().Dx(), src.Bounds().Dy()
+	isTransposing := orientationSwapsAxes(orientation)
 
-	for y := uint(0); y < height; y++ {
-		for x := uint(0); x < width; x++ {
-			srcX := float64(x) * float64(bounds.Dx()) / float64(width)
-			srcY := float64(y) * float64(bounds.Dy()) / float64(height)
-
-			x1 := int(srcX)
-			y1 := int(srcY)
-			x2 := x1 + 1
-			y2 := y1 + 1
-
-			if x2 >= bounds.Dx() {
-				x2 = bounds.Dx() - 1
-			}
-			if y2 >= bounds.Dy() {
-				y2 = bounds.Dy() - 1
-			}
-
-			dx := srcX - float64(x1)
-			dy := srcY - float64(y1)
-
-			p11 := src.At(x1, y1)
-			p21 := src.At(x2, y1)
-			p12 := src.At(x1, y2)
-			p22 := src.At(x2, y2)
-
-			r1, g1, b1, a1 := p11.RGBA()
-			r2, g2, b2, a2 := p21.RGBA()
-			r3, g3, b3, a3 := p12.RGBA()
-			r4, g4, b4, a4 := p22.RGBA()
-
-			r := uint32((float64(r1)*(1-dx)*(1-dy) + float64(r2)*dx*(1-dy) + float64(r3)*(1-dx)*dy + float64(r4)*dx*dy) / 65535.0 * 65535.0)
-			g := uint32((float64(g1)*(1-dx)*(1-dy) + float64(g2)*dx*(1-dy) + float64(g3)*(1-dx)*dy + float64(g4)*dx*dy) / 65535.0 * 65535.0)
-			b := uint32((float64(b1)*(1-dx)*(1-dy) + float64(b2)*dx*(1-dy) + float64(b3)*(1-dx)*dy + float64(b4)*dx*dy) / 65535.0 * 65535.0)
-			a := uint32((float64(a1)*(1-dx)*(1-dy) + float64(a2)*dx*(1-dy) + float64(a3)*(1-dx)*dy + float64(a4)*dx*dy) / 65535.0 * 65535.0)
-
-			dst.Set(int(x), int(y), color.NRGBA64{R: uint16(r), G: uint16(g), B: uint16(b), A: uint16(a)})
-		}
+	orientedWidth, orientedHeight := sourceWidth, sourceHeight
+	if isTransposing {
+		orientedWidth, orientedHeight = sourceHeight, sourceWidth
 	}
 
-	return dst
+	fittedWidth, fittedHeight := fitDimensions(orientedWidth, orientedHeight, maxWidth, maxHeight, false)
+	if isTransposing {
+		fittedWidth, fittedHeight = fittedHeight, fittedWidth
+	}
+
+	return applyOrientation(scaleTo(src, fittedWidth, fittedHeight), orientation)
+}
+
+func fitDimensions(sourceWidth, sourceHeight, maxWidth, maxHeight int, canUpscale bool) (int, int) {
+	if sourceWidth <= 0 || sourceHeight <= 0 {
+		return 1, 1
+	}
+	if !canUpscale && sourceWidth <= maxWidth && sourceHeight <= maxHeight {
+		return sourceWidth, sourceHeight
+	}
+
+	widthScale := float64(maxWidth) / float64(sourceWidth)
+	heightScale := float64(maxHeight) / float64(sourceHeight)
+	scale := math.Min(widthScale, heightScale)
+
+	return max(1, int(math.Round(float64(sourceWidth)*scale))), max(1, int(math.Round(float64(sourceHeight)*scale)))
+}
+
+func scaleTo(src image.Image, width, height int) *image.RGBA {
+	scaled := image.NewRGBA(image.Rect(0, 0, width, height))
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), xdraw.Src, nil)
+	return scaled
+}
+
+func IsOpaque(src image.Image) bool {
+	opacityReporter, isReporter := src.(interface{ Opaque() bool })
+	if !isReporter {
+		return true
+	}
+	return opacityReporter.Opaque()
 }
 
 func OpenImageFromFile(path string) (image.Image, string, error) {
@@ -142,5 +135,11 @@ func DecodeGIF(path string) (image.Image, error) {
 func EncodePNG(img image.Image) ([]byte, error) {
 	var buf bytes.Buffer
 	err := png.Encode(&buf, img)
+	return buf.Bytes(), err
+}
+
+func EncodeJPEG(img image.Image) ([]byte, error) {
+	var buf bytes.Buffer
+	err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: photoThumbnailJPEGQuality})
 	return buf.Bytes(), err
 }
