@@ -16,7 +16,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 ROOT_FOLDER: 'ROOT_FOLDER',
                 PATH: 'PATH',
                 ACTION_CANCEL: 'ACTION_CANCEL',
-                MOVE: 'MOVE',
+                FOLDER_PICKER_MOVE_HERE: 'FOLDER_PICKER_MOVE_HERE',
+                FOLDER_PICKER_COPY_HERE: 'FOLDER_PICKER_COPY_HERE',
                 EMPTY_FILE_LIST: 'EMPTY_FILE_LIST',
             };
             return map[key] ?? key;
@@ -58,6 +59,18 @@ describe('FolderPicker', () => {
         render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
         expect(screen.getByText('SELECT_DESTINATION')).toBeInTheDocument();
         expect(screen.getByText('ROOT_FOLDER')).toBeInTheDocument();
+    });
+
+    it('labels the confirm button after the move mode by default', () => {
+        render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+        expect(screen.getByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'FOLDER_PICKER_COPY_HERE' })).toBeNull();
+    });
+
+    it('labels the confirm button after the copy mode', () => {
+        render(<FolderPicker open mode="copy" onClose={onClose} onSelect={onSelect} />);
+        expect(screen.getByRole('button', { name: 'FOLDER_PICKER_COPY_HERE' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' })).toBeNull();
     });
 
     it('does not render dialog when closed', () => {
@@ -150,7 +163,7 @@ describe('FolderPicker', () => {
         fireEvent.click(screen.getByText('Target'));
         await waitFor(() => expect(screen.getByLabelText('PATH')).toHaveValue('/Target'));
 
-        fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' }));
         expect(onSelect).toHaveBeenCalledWith({ folderId: 5 });
     });
 
@@ -163,7 +176,7 @@ describe('FolderPicker', () => {
             target: { value: '/new/custom/path' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' }));
         expect(onSelect).toHaveBeenCalledWith({ path: '/new/custom/path' });
     });
 
@@ -172,7 +185,7 @@ describe('FolderPicker', () => {
 
         await waitFor(() => expect(screen.getByLabelText('PATH')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' }));
         expect(onSelect).toHaveBeenCalledWith({});
     });
 
@@ -203,7 +216,7 @@ describe('FolderPicker', () => {
             target: { value: '/Target/new-sub' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'MOVE' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FOLDER_PICKER_MOVE_HERE' }));
         expect(onSelect).toHaveBeenCalledWith({ path: '/Target/new-sub' });
     });
 

@@ -51,11 +51,13 @@ export const useFileActionFlow = (): {
         <>
             <FolderPicker
                 open={isPending('move')}
+                mode="move"
                 onClose={cancelAction}
                 onSelect={applyDestination('move', operations.moveFiles)}
             />
             <FolderPicker
                 open={isPending('copy')}
+                mode="copy"
                 onClose={cancelAction}
                 onSelect={applyDestination('copy', operations.copyFiles)}
             />

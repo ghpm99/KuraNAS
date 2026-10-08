@@ -26,8 +26,16 @@ export type FolderPickerResult = {
     path?: string;
 };
 
+export type FolderPickerMode = 'move' | 'copy';
+
+const confirmLabelKeys: Record<FolderPickerMode, string> = {
+    move: 'FOLDER_PICKER_MOVE_HERE',
+    copy: 'FOLDER_PICKER_COPY_HERE',
+};
+
 type FolderPickerProps = {
     open: boolean;
+    mode?: FolderPickerMode;
     onClose: () => void;
     onSelect: (result: FolderPickerResult) => void;
 };
@@ -40,7 +48,7 @@ type FolderEntry = {
 
 const folderPageSize = 200;
 
-const FolderPicker = ({ open, onClose, onSelect }: FolderPickerProps) => {
+const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerProps) => {
     const { t } = useI18n();
     const [folders, setFolders] = useState<FolderEntry[]>([]);
     const [loading, setLoading] = useState(false);
@@ -251,7 +259,7 @@ const FolderPicker = ({ open, onClose, onSelect }: FolderPickerProps) => {
             <DialogActions>
                 <Button onClick={onClose}>{t('ACTION_CANCEL')}</Button>
                 <Button onClick={handleConfirm} variant="contained">
-                    {t('MOVE')}
+                    {t(confirmLabelKeys[mode])}
                 </Button>
             </DialogActions>
         </Dialog>
