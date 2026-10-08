@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { LayoutGrid, List, PanelLeft, Search } from 'lucide-react';
 import { useState } from 'react';
+import UploadDropZone from '@/features/files/upload/uploadDropZone';
 import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
@@ -157,7 +158,9 @@ const FilesExplorerScreen = () => {
                     ) : null}
 
                     <section className={`${styles.panel} ${styles.contentCard}`}>
-                        <FileContent showHeading={false} viewMode={viewMode} />
+                        <UploadDropZone>
+                            <FileContent showHeading={false} viewMode={viewMode} />
+                        </UploadDropZone>
                     </section>
                 </div>
 

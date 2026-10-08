@@ -17,7 +17,7 @@ import {
     getFileByDiskPath,
     toggleStarredFile,
     rescanFiles,
-    uploadFiles,
+    uploadSingleFile,
     createFolder,
     moveFile,
     copyFile,
@@ -176,47 +176,82 @@ describe('service/files', () => {
         });
     });
 
-    it('uploads files with targetFolderId', async () => {
-        mockedApi.post.mockResolvedValue({});
-
+    describe('uploadSingleFile', () => {
         const file = new File(['content'], 'photo.jpg');
-        const fileList = {
-            [Symbol.iterator]: function* () {
-                yield file;
-            },
-            length: 1,
-            item: () => file,
-            0: file,
-        } as unknown as FileList;
 
-        await uploadFiles(fileList, 5);
+        it('posts one file with conflict policy, folder and relative path fields', async () => {
+            mockedApi.post.mockResolvedValue({});
+            const controller = new AbortController();
 
-        expect(mockedApi.post).toHaveBeenCalledWith('/files/upload', expect.any(FormData), {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            await uploadSingleFile({
+                file,
+                targetFolderId: 5,
+                relativePath: 'Album/photo.jpg',
+                onConflict: 'replace',
+                signal: controller.signal,
+            });
+
+            expect(mockedApi.post).toHaveBeenCalledWith(
+                '/files/upload',
+                expect.any(FormData),
+                expect.objectContaining({
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    signal: controller.signal,
+                    onUploadProgress: expect.any(Function),
+                })
+            );
+            const formData: FormData = mockedApi.post.mock.calls[0][1];
+            expect(formData.getAll('files')).toHaveLength(1);
+            expect((formData.get('files') as File).name).toBe('photo.jpg');
+            expect(formData.get('on_conflict')).toBe('replace');
+            expect(formData.get('target_folder_id')).toBe('5');
+            expect(formData.get('relative_paths')).toBe('Album/photo.jpg');
         });
 
-        const formData: FormData = mockedApi.post.mock.calls[0][1];
-        expect(formData.get('files')).toBeTruthy();
-        expect(formData.get('target_folder_id')).toBe('5');
-    });
+        it('omits optional fields when not provided', async () => {
+            mockedApi.post.mockResolvedValue({});
 
-    it('uploads files without targetFolderId', async () => {
-        mockedApi.post.mockResolvedValue({});
+            await uploadSingleFile({ file, onConflict: 'rename' });
 
-        const file = new File(['content'], 'photo.jpg');
-        const fileList = {
-            [Symbol.iterator]: function* () {
-                yield file;
-            },
-            length: 1,
-            item: () => file,
-            0: file,
-        } as unknown as FileList;
+            const formData: FormData = mockedApi.post.mock.calls[0][1];
+            expect(formData.get('target_folder_id')).toBeNull();
+            expect(formData.get('relative_paths')).toBeNull();
+            expect(formData.get('on_conflict')).toBe('rename');
+        });
 
-        await uploadFiles(fileList);
+        it('reports progress as a percentage', async () => {
+            mockedApi.post.mockImplementation(async (_url, _body, config) => {
+                config.onUploadProgress({ loaded: 25, total: 100 });
+                config.onUploadProgress({ loaded: 10 });
+                return {};
+            });
+            const onProgress = jest.fn();
 
-        const formData: FormData = mockedApi.post.mock.calls[0][1];
-        expect(formData.get('target_folder_id')).toBeNull();
+            await uploadSingleFile({ file, onConflict: 'skip', onProgress });
+
+            expect(onProgress).toHaveBeenNthCalledWith(1, 25);
+            expect(onProgress).toHaveBeenNthCalledWith(2, 0);
+        });
+
+        it('returns the per-file outcome from the response', async () => {
+            mockedApi.post.mockResolvedValue({
+                data: { files: [{ name: 'photo (2).jpg', status: 'renamed' }] },
+            });
+
+            await expect(uploadSingleFile({ file, onConflict: 'rename' })).resolves.toEqual({
+                status: 'renamed',
+                name: 'photo (2).jpg',
+                error: undefined,
+            });
+        });
+
+        it('treats a response without per-file results as uploaded', async () => {
+            mockedApi.post.mockResolvedValue({ data: {} });
+
+            await expect(uploadSingleFile({ file, onConflict: 'rename' })).resolves.toEqual({
+                status: 'uploaded',
+            });
+        });
     });
 
     it('creates folder with parentId', async () => {

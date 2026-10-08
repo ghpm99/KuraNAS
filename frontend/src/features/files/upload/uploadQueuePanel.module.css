@@ -1,0 +1,100 @@
+.panel {
+    position: fixed;
+    right: var(--app-spacing-4);
+    bottom: var(--app-spacing-4);
+    z-index: 1300;
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    max-width: calc(100vw - 2 * var(--app-spacing-4));
+    max-height: 60vh;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-xl);
+    background: var(--app-background-panel);
+    box-shadow: var(--app-shadow-card);
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-2);
+    padding: var(--app-spacing-2) var(--app-spacing-3);
+}
+
+.title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-2);
+    padding: 0 var(--app-spacing-3) var(--app-spacing-2);
+}
+
+.toolbarActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--app-spacing-1);
+}
+
+.list {
+    margin: 0;
+    padding: 0 var(--app-spacing-3) var(--app-spacing-3);
+    list-style: none;
+    overflow-y: auto;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-2);
+    padding: var(--app-spacing-2) 0;
+}
+
+.rowMain {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.fileName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+}
+
+.status {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    overflow-wrap: anywhere;
+}
+
+.statusFailed {
+    color: var(--mui-palette-error-main, #f44336);
+    opacity: 1;
+}
+
+@media (max-width: 600px) {
+    .panel {
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-width: 100%;
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: var(--app-radius-xl) var(--app-radius-xl) 0 0;
+    }
+}

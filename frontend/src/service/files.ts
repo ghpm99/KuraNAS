@@ -105,22 +105,61 @@ export const rescanFiles = async (): Promise<void> => {
     });
 };
 
-export const uploadFiles = async (files: FileList, targetFolderId?: number): Promise<void> => {
-    const formData = new FormData();
+export type UploadConflictPolicy = 'rename' | 'replace' | 'skip';
 
-    for (const file of Array.from(files)) {
-        formData.append('files', file);
-    }
+export type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'failed';
+
+export type UploadOutcome = {
+    status: UploadOutcomeStatus;
+    name?: string;
+    error?: string;
+};
+
+export type UploadSingleFileParams = {
+    file: File;
+    targetFolderId?: number;
+    relativePath?: string;
+    onConflict: UploadConflictPolicy;
+    signal?: AbortSignal;
+    onProgress?: (percent: number) => void;
+};
+
+const toProgressPercent = (loaded: number, total?: number): number =>
+    total && total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+
+export const uploadSingleFile = async ({
+    file,
+    targetFolderId,
+    relativePath,
+    onConflict,
+    signal,
+    onProgress,
+}: UploadSingleFileParams): Promise<UploadOutcome> => {
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('on_conflict', onConflict);
 
     if (targetFolderId !== undefined && targetFolderId > 0) {
         formData.append('target_folder_id', String(targetFolderId));
     }
+    if (relativePath) {
+        formData.append('relative_paths', relativePath);
+    }
 
-    await apiBase.post('/files/upload', formData, {
+    const response = await apiBase.post('/files/upload', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
+        signal,
+        onUploadProgress: (event: { loaded: number; total?: number }) =>
+            onProgress?.(toProgressPercent(event.loaded, event.total)),
     });
+
+    const fileResult = response?.data?.files?.[0];
+    if (!fileResult) {
+        return { status: 'uploaded' };
+    }
+    return { status: fileResult.status, name: fileResult.name, error: fileResult.error };
 };
 
 export const createFolder = async (name: string, parentId?: number): Promise<void> => {

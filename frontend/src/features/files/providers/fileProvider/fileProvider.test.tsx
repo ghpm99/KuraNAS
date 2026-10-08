@@ -33,7 +33,6 @@ const mockGetRecentlyAccessedFiles = jest.fn<Promise<PaginationResponse>, [any]>
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
 const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
-const mockUploadFiles = jest.fn<Promise<void>, [FileList, number?]>();
 const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
 const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
 const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
@@ -48,7 +47,6 @@ jest.mock('@/service/files', () => ({
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     toggleStarredFile: mockToggleStarredFile,
     rescanFiles: mockRescanFiles,
-    uploadFiles: mockUploadFiles,
     createFolder: mockCreateFolder,
     moveFile: mockMoveFile,
     copyFile: mockCopyFile,
@@ -241,7 +239,6 @@ describe('FileProvider', () => {
         mockGetFileByPath.mockResolvedValue(null);
         mockToggleStarredFile.mockResolvedValue(undefined);
         mockRescanFiles.mockResolvedValue(undefined);
-        mockUploadFiles.mockResolvedValue(undefined);
         mockCreateFolder.mockResolvedValue(undefined);
         mockMoveFile.mockResolvedValue(undefined);
         mockCopyFile.mockResolvedValue(undefined);
@@ -485,17 +482,6 @@ describe('FileProvider', () => {
 
             expect(mockNavigate).not.toHaveBeenCalled();
         });
-    });
-
-    it('uploadFiles calls service with correct args', async () => {
-        renderProvider();
-        await waitFor(() => expect(capturedContext).not.toBeNull());
-
-        const files = { length: 0, item: () => null } as unknown as FileList;
-        await act(async () => {
-            await capturedContext!.uploadFiles(files, 10);
-        });
-        expect(mockUploadFiles).toHaveBeenCalledWith(files, 10);
     });
 
     it('rescanFiles calls service and refetches', async () => {
