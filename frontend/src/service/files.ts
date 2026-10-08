@@ -7,6 +7,7 @@ import type {
 } from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvider/imageProvider';
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { FileLocation } from '@/types/fileLocation';
 import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
 
@@ -74,6 +75,18 @@ export const getFileByPath = async (path: string): Promise<FileData | null> => {
     });
 
     return response.data.items[0] ?? null;
+};
+
+export const getFileLocation = async (fileId: number): Promise<FileLocation> => {
+    const response = await apiBase.get<FileLocation>(`/files/location/${fileId}`);
+    return response.data;
+};
+
+export const getFileByDiskPath = async (diskPath: string): Promise<FileData> => {
+    const response = await apiBase.get<FileData>('/files/by-disk-path', {
+        params: { path: diskPath },
+    });
+    return response.data;
 };
 
 export const toggleStarredFile = async (itemId: number): Promise<void> => {

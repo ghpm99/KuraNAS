@@ -22,8 +22,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: (k: string) => k }),
 }));
 
-jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar }: any) => (
-    <div>
+jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar, isCold }: any) => (
+    <div data-cold={String(Boolean(isCold))} data-testid={`card-${title}`}>
         <button onClick={onClick}>{title}</button>
         <button onClick={onClickStar}>star-{title}</button>
         <span>{metadata}</span>
@@ -221,6 +221,31 @@ describe('fileContent', () => {
         render(<FileContent viewMode="list" showHeading={false} />);
         expect(screen.queryByText('FILES')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
+    });
+
+    it('flags cold files in the grid cards and shows the indicator in list rows', () => {
+        const baseContext = {
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            fileListFilter: 'all',
+            files: [
+                createFile({ id: 1, name: 'cold.txt', tier: 'cold' }),
+                createFile({ id: 2, name: 'hot.txt', tier: 'hot' }),
+                createFile({ id: 3, name: 'legacy.txt' }),
+            ],
+        };
+        mockUseFile.mockReturnValue(baseContext);
+
+        const grid = render(<FileContent />);
+        expect(screen.getByTestId('card-cold.txt')).toHaveAttribute('data-cold', 'true');
+        expect(screen.getByTestId('card-hot.txt')).toHaveAttribute('data-cold', 'false');
+        expect(screen.getByTestId('card-legacy.txt')).toHaveAttribute('data-cold', 'false');
+        grid.unmount();
+
+        render(<FileContent viewMode="list" />);
+        expect(screen.getAllByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toHaveLength(1);
     });
 
     it('supports custom collection data and empty state messages', () => {

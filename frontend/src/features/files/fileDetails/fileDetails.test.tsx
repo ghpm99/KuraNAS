@@ -1,7 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { render as rtlRender, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 import FileDetails from './fileDetails';
 
 const mockUseFile = jest.fn();
+
+const render = (ui: ReactElement) =>
+    rtlRender(
+        <QueryClientProvider
+            client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+            {ui}
+        </QueryClientProvider>
+    );
 
 jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
@@ -101,6 +112,37 @@ describe('fileDetails', () => {
         });
         render(<FileDetails />);
         expect(screen.queryByText('FILE_TIER_COLD')).not.toBeInTheDocument();
+    });
+
+    it('shows the hot-tier badge for a hot file and no badge without a tier', () => {
+        const hotItem = {
+            id: 4,
+            type: 2,
+            format: '.mp3',
+            size: 1024,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-02T00:00:00Z',
+            path: '/music/hot.mp3',
+        };
+        mockUseFile.mockReturnValue({
+            selectedItem: { ...hotItem, tier: 'hot' },
+            isLoadingAccessData: false,
+            recentAccessFiles: [],
+            handleSelectItem: jest.fn(),
+        });
+        const hot = render(<FileDetails />);
+        expect(screen.getByText('FILE_TIER_HOT')).toBeInTheDocument();
+        hot.unmount();
+
+        mockUseFile.mockReturnValue({
+            selectedItem: hotItem,
+            isLoadingAccessData: false,
+            recentAccessFiles: [],
+            handleSelectItem: jest.fn(),
+        });
+        render(<FileDetails />);
+        expect(screen.queryByText('FILE_TIER_HOT')).toBeNull();
+        expect(screen.queryByText('FILE_TIER_COLD')).toBeNull();
     });
 
     it('renders loading spinner for recent activity', () => {

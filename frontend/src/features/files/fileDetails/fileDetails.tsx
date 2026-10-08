@@ -12,8 +12,9 @@ import {
     ListItem,
     Typography,
 } from '@mui/material';
-import { Snowflake, X } from 'lucide-react';
+import { Flame, Snowflake, X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import DiskLocationRow from './diskLocationRow';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
     return (
@@ -75,6 +76,16 @@ const FileDetails = () => {
                     sx={{ mt: 0.5 }}
                 />
             ) : null}
+            {selectedItem.tier === 'hot' ? (
+                <Chip
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                    icon={<Flame size={14} />}
+                    label={t('FILE_TIER_HOT')}
+                    sx={{ mt: 0.5 }}
+                />
+            ) : null}
 
             <Typography variant="overline" color="text.secondary" display="block" sx={{ mt: 2 }}>
                 {t('PROPERTIES')}
@@ -89,6 +100,7 @@ const FileDetails = () => {
                 <DetailRow label={t('MODIFIED')} value={formatDate(selectedItem.updated_at)} />
                 <DetailRow label={t('PATH')} value={selectedItem.path} />
             </List>
+            <DiskLocationRow fileId={selectedItem.id} />
 
             <Divider sx={{ my: 1.5 }} />
             <Typography variant="overline" color="text.secondary" display="block">

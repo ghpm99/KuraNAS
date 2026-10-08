@@ -8,6 +8,7 @@ import {
     Typography,
 } from '@mui/material';
 import { Star } from 'lucide-react';
+import ColdTierIndicator from '@/features/files/coldTierIndicator/coldTierIndicator';
 
 const FileCard = ({
     title,
@@ -16,6 +17,7 @@ const FileCard = ({
     onClick,
     starred,
     onClickStar,
+    isCold = false,
 }: {
     title: string;
     metadata: string;
@@ -23,6 +25,7 @@ const FileCard = ({
     onClick: () => void;
     starred?: boolean;
     onClickStar?: () => void;
+    isCold?: boolean;
 }) => {
     return (
         <Card sx={{ position: 'relative' }}>
@@ -43,6 +46,11 @@ const FileCard = ({
                     </Typography>
                 </CardContent>
             </CardActionArea>
+            {isCold ? (
+                <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
+                    <ColdTierIndicator size={16} />
+                </Box>
+            ) : null}
             <Box sx={{ position: 'absolute', top: 4, right: 4 }}>
                 <IconButton size="small" onClick={onClickStar}>
                     <Star size={16} fill={starred ? 'currentColor' : 'none'} />

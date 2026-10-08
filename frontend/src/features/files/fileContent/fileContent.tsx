@@ -1,6 +1,7 @@
 import { FileType } from '@/utils';
 import { formatSize } from '@/shared/utils/formatSize';
 import FileCard from '../fileCard';
+import ColdTierIndicator from '../coldTierIndicator/coldTierIndicator';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useFile, { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import FileViewer from './components/fileViewer/fileViewer';
@@ -103,7 +104,15 @@ const FileContent = ({
                                         className={styles.listThumbnail}
                                     />
                                     <div className={styles.listContent}>
-                                        <span className={styles.listTitle}>{file.name}</span>
+                                        <span className={styles.listTitle}>
+                                            {file.name}
+                                            {file.tier === 'cold' ? (
+                                                <>
+                                                    {' '}
+                                                    <ColdTierIndicator />
+                                                </>
+                                            ) : null}
+                                        </span>
                                         <span className={styles.listMetadata}>
                                             {fileMetadata(file)}
                                         </span>
@@ -126,6 +135,7 @@ const FileContent = ({
                                 key={file.id}
                                 title={file.name}
                                 starred={file.starred}
+                                isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}
                                 thumbnail={thumbnailUrl(file.id)}
                                 onClick={() => handleOpenItem(file)}

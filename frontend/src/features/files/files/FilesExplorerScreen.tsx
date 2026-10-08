@@ -8,8 +8,17 @@ import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import Tabs from '@/components/tabs';
-import { Button, Drawer, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { LayoutGrid, List, PanelLeft } from 'lucide-react';
+import {
+    Button,
+    Drawer,
+    IconButton,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
+} from '@mui/material';
+import { LayoutGrid, List, PanelLeft, Search } from 'lucide-react';
+import { useState } from 'react';
+import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { appRoutes } from '@/app/routes';
@@ -29,7 +38,8 @@ const FilesExplorerScreen = () => {
         setViewMode,
         viewMode,
     } = useFilesExplorerScreen();
-    const { filesSort, setFilesSort } = useFile();
+    const { filesSort, setFilesSort, handleSelectItem } = useFile();
+    const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
     const isFileSelected = selectedItem?.type === FileType.File;
     const workspaceClassName = isFileSelected
@@ -93,6 +103,15 @@ const FilesExplorerScreen = () => {
                                 >
                                     {t('FILES_OPEN_TREE')}
                                 </Button>
+                                <Tooltip title={t('FILES_FIND_BY_DISK_PATH')}>
+                                    <IconButton
+                                        size="small"
+                                        aria-label={t('FILES_FIND_BY_DISK_PATH')}
+                                        onClick={() => setIsFindByDiskPathOpen(true)}
+                                    >
+                                        <Search size={16} />
+                                    </IconButton>
+                                </Tooltip>
                                 <FilesSortControl sort={filesSort} onChange={setFilesSort} />
                                 <ToggleButtonGroup
                                     size="small"
@@ -147,6 +166,12 @@ const FilesExplorerScreen = () => {
                     </aside>
                 ) : null}
             </div>
+
+            <FindByDiskPathDialog
+                open={isFindByDiskPathOpen}
+                onClose={() => setIsFindByDiskPathOpen(false)}
+                onFileFound={handleSelectItem}
+            />
 
             <Drawer anchor="left" open={mobileTreeOpen} onClose={closeMobileTree}>
                 <div className={styles.drawerContent}>
