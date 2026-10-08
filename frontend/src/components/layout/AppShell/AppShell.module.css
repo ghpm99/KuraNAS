@@ -12,6 +12,7 @@
 .sidebarPane {
     grid-area: sidebar;
     min-height: 0;
+    overflow: hidden;
 }
 
 .mainPane {

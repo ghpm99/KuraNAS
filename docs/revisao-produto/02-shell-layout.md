@@ -16,7 +16,7 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 
 - [x] 01. Shell quebrado: `UIProvider` ausente e `FolderTree` da sidebar fora do `FileProvider`; teste de integração do `App` sem mockar o shell
 - [ ] 02. Mini-player cobre bottom nav/toasts no celular e a sidebar no desktop; safe-area (`viewport-fit=cover`)
-- [ ] 03. Sidebar sem rolagem em viewport baixo
+- [x] 03. Sidebar sem rolagem em viewport baixo
 - [ ] 04. Página 404
 - [ ] 05. Fallback de carregamento por rota e boundary de erro dentro do shell (reseta ao navegar, mensagem i18n)
 - [ ] 06. Servidor fora do ar: banner global com tentar de novo, `refetchOnReconnect`, fallback de traduções

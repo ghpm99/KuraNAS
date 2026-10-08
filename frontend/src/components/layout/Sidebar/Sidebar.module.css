@@ -10,6 +10,7 @@
 }
 
 .brand {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: var(--app-spacing-3);
@@ -46,15 +47,24 @@
 
 .navList {
     padding: 0 !important;
-}
-
-.treeSection {
     flex: 1;
     min-height: 0;
-    margin-top: var(--app-spacing-4);
-    padding-top: var(--app-spacing-4);
-    border-top: 1px solid var(--app-color-border-subtle);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--app-color-border-subtle) transparent;
+}
+
+.navList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.navList::-webkit-scrollbar-thumb {
+    background: var(--app-color-border-subtle);
+    border-radius: 999px;
+}
+
+.navList::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .mobile {
