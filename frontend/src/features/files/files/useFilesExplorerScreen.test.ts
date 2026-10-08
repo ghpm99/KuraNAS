@@ -124,6 +124,68 @@ describe('useFilesExplorerScreen', () => {
         expect(result.current.itemCountLabel).toBe('0 ITENS');
     });
 
+    it('uses the directory content count when more items exist than are loaded', () => {
+        const largeDir = { ...rootDir, directory_content_count: 120 };
+        mockUseFile.mockReturnValue({
+            files: [largeDir],
+            selectedItem: largeDir,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('120 ITENS');
+    });
+
+    it('uses the singular label when the directory holds one item', () => {
+        const singleDir = { ...rootDir, directory_content_count: 1 };
+        mockUseFile.mockReturnValue({
+            files: [singleDir],
+            selectedItem: singleDir,
+            fileListFilter: 'all',
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('falls back to the loaded length when the directory count is absent', () => {
+        const { directory_content_count: _omitted, ...dirWithoutCount } = rootDir;
+        mockUseFile.mockReturnValue({
+            files: [dirWithoutCount],
+            selectedItem: dirWithoutCount,
+            fileListFilter: 'all',
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('marks the count as partial when more pages exist and no count is known', () => {
+        mockUseFile.mockReturnValue({
+            files: [rootDir],
+            selectedItem: null,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1+ ITENS');
+    });
+
+    it('marks the count as partial when the known count is stale and more pages exist', () => {
+        const staleDir = { ...rootDir, directory_content_count: 0, file_children: [rootDir] };
+        mockUseFile.mockReturnValue({
+            files: [staleDir],
+            selectedItem: staleDir,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1+ ITENS');
+    });
+
     it('returns empty array when selectedItem is a file', () => {
         const file = makeFile({
             id: 2,

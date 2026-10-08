@@ -22,7 +22,7 @@ type RepositoryInterface interface {
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	RestoreSubtree(transaction *sql.Tx, path string) (int64, error)
-	GetDirectoryContentCount(fileId int, parentPath string) (int, error)
+	GetDirectoryContentCounts(parentPaths []string) (map[string]int, error)
 	GetCountByType(fileType FileType) (int, error)
 	GetTotalSpaceUsed() (int, error)
 	GetReportSizeByFormat() ([]SizeReportModel, error)

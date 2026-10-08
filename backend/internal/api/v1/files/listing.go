@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"nas-go/api/internal/roots"
 	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/i18n"
@@ -317,29 +318,34 @@ func (r *Repository) UpdateFile(transaction *sql.Tx, file FileModel) (bool, erro
 	return rowsAffected == 1, nil
 }
 
-func (r *Repository) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
-	var childrenCount int
-
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-
-		row := tx.QueryRow(
-			queries.GetChildrenCountQuery,
-			parentPath,
-			fileId,
-		)
-
-		if err := row.Scan(&childrenCount); err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return 0, fmt.Errorf("failed to get directory count: %w", err)
+func (r *Repository) GetDirectoryContentCounts(parentPaths []string) (map[string]int, error) {
+	countsByParentPath := make(map[string]int, len(parentPaths))
+	if len(parentPaths) == 0 {
+		return countsByParentPath, nil
 	}
 
-	return childrenCount, nil
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetChildrenCountsByParentPathsQuery, pq.Array(parentPaths))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var parentPath string
+			var childrenCount int
+			if err := rows.Scan(&parentPath, &childrenCount); err != nil {
+				return err
+			}
+			countsByParentPath[parentPath] = childrenCount
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory counts: %w", err)
+	}
+
+	return countsByParentPath, nil
 }
 
 func (r *Repository) GetCountByType(fileType FileType) (int, error) {

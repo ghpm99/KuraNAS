@@ -12,6 +12,7 @@ import (
 	queries "nas-go/api/pkg/database/queries/files"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 )
 
 func newRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
@@ -33,12 +34,25 @@ func TestRepositoryConstructorsAndSimpleQueries(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetChildrenCountQuery)).
-		WithArgs("/tmp", 1).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetChildrenCountsByParentPathsQuery)).
+		WithArgs(pq.Array([]string{"/tmp", "/empty"})).
+		WillReturnRows(sqlmock.NewRows([]string{"parent_path", "count"}).AddRow("/tmp", 3))
 	mock.ExpectRollback()
-	if v, err := repo.GetDirectoryContentCount(1, "/tmp"); err != nil || v != 3 {
-		t.Fatalf("GetDirectoryContentCount failed v=%d err=%v", v, err)
+	if counts, err := repo.GetDirectoryContentCounts([]string{"/tmp", "/empty"}); err != nil || counts["/tmp"] != 3 || counts["/empty"] != 0 {
+		t.Fatalf("GetDirectoryContentCounts failed counts=%v err=%v", counts, err)
+	}
+
+	if counts, err := repo.GetDirectoryContentCounts(nil); err != nil || len(counts) != 0 {
+		t.Fatalf("expected empty counts without query, got %v err=%v", counts, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetChildrenCountsByParentPathsQuery)).
+		WithArgs(pq.Array([]string{"/tmp"})).
+		WillReturnError(errors.New("count failed"))
+	mock.ExpectRollback()
+	if _, err := repo.GetDirectoryContentCounts([]string{"/tmp"}); err == nil {
+		t.Fatalf("expected GetDirectoryContentCounts error")
 	}
 
 	mock.ExpectBegin()

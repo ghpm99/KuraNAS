@@ -15,7 +15,7 @@ export type BreadcrumbSegment = {
 
 const useFilesExplorerScreen = () => {
     const { t } = useI18n();
-    const { files, selectedItem, fileListFilter } = useFile();
+    const { files, selectedItem, fileListFilter, hasNextPage } = useFile();
     const [viewMode, setViewMode] = useState<FilesViewMode>('grid');
     const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
 
@@ -80,9 +80,27 @@ const useFilesExplorerScreen = () => {
     }, [files, selectedItem, t]);
 
     const itemCountLabel = useMemo(() => {
-        const count = currentItems.length;
-        return `${count} ${count === 1 ? t('ITEM') : t('ITENS')}`;
-    }, [currentItems.length, t]);
+        const loadedCount = currentItems.length;
+        const folderTotalCount =
+            selectedItem?.type === FileType.Directory &&
+            typeof selectedItem.directory_content_count === 'number'
+                ? selectedItem.directory_content_count
+                : null;
+
+        const isFolderTotalReliable =
+            folderTotalCount !== null && (folderTotalCount > loadedCount || !hasNextPage);
+
+        if (isFolderTotalReliable) {
+            const totalCount = Math.max(folderTotalCount, loadedCount);
+            return `${totalCount} ${totalCount === 1 ? t('ITEM') : t('ITENS')}`;
+        }
+
+        if (hasNextPage) {
+            return `${loadedCount}+ ${t('ITENS')}`;
+        }
+
+        return `${loadedCount} ${loadedCount === 1 ? t('ITEM') : t('ITENS')}`;
+    }, [currentItems.length, hasNextPage, selectedItem, t]);
 
     const contextLabel = selectedItem
         ? selectedItem.type === FileType.File
