@@ -2,6 +2,8 @@ module nas-go/api
 
 go 1.25.0
 
+toolchain go1.25.11
+
 require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/gzip v1.2.5
