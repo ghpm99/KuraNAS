@@ -8,6 +8,9 @@ import styles from './fileListRow.module.css';
 type FileListRowProps = {
     title: string;
     href: string;
+    fileId?: number;
+    isTabStop?: boolean;
+    onFocusItem?: () => void;
     sizeText: string;
     modifiedText: string;
     typeText: string;
@@ -27,6 +30,9 @@ type FileListRowProps = {
 const FileListRow = ({
     title,
     href,
+    fileId,
+    isTabStop = true,
+    onFocusItem,
     sizeText,
     modifiedText,
     typeText,
@@ -73,7 +79,15 @@ const FileListRow = ({
                 ) : null}
             </div>
             <div role="cell" className={styles.nameCell}>
-                <a href={href} className={styles.listLink} onClick={onClick} aria-label={title}>
+                <a
+                    href={href}
+                    className={styles.listLink}
+                    data-file-id={fileId}
+                    tabIndex={isTabStop ? 0 : -1}
+                    onFocus={onFocusItem}
+                    onClick={onClick}
+                    aria-label={title}
+                >
                     <img src={thumbnail} alt="" loading="lazy" className={styles.listThumbnail} />
                     <span className={styles.listContent}>
                         <span className={styles.listTitle}>

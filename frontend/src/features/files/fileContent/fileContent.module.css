@@ -25,17 +25,6 @@
     min-width: 0;
 }
 
-.emptyState {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 180px;
-    border: 1px dashed var(--app-color-border-subtle);
-    border-radius: var(--app-radius-lg);
-    color: var(--app-color-text-secondary);
-    text-align: center;
-}
-
 .previewContainer {
     border-radius: var(--app-radius-lg);
     overflow: hidden;

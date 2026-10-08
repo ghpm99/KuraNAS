@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { searchFiles } from '@/service/files';
+import { extractBackendErrorMessage } from '@/features/files/fileActions/bulkOutcome';
 import type { FileData, PaginationResponse } from '@/features/files/providers/fileProvider/fileContext';
 
 const searchPageSize = 100;
@@ -13,7 +14,15 @@ type FileSearchScope = {
 const useFileSearchResults = ({ query, parentId, isRecursive }: FileSearchScope) => {
     const isSearchActive = query !== '';
 
-    const { data, status, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    const {
+        data,
+        status,
+        error,
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
         queryKey: ['files-search', query, parentId ?? null, isRecursive],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
             searchFiles({
@@ -39,6 +48,10 @@ const useFileSearchResults = ({ query, parentId, isRecursive }: FileSearchScope)
         isFetchingNextPage,
         fetchNextPage: () => {
             fetchNextPage();
+        },
+        errorMessage: extractBackendErrorMessage(error),
+        retry: () => {
+            refetch();
         },
     };
 };
