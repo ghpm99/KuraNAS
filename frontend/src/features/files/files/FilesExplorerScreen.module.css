@@ -112,10 +112,6 @@
 }
 
 @media (max-width: 900px) {
-    .page {
-        padding: 10px 10px 14px;
-    }
-
     .treeButton {
         display: inline-flex;
     }

@@ -7,7 +7,8 @@ import {
     fetchAnalyticsRecentFiles,
     fetchAnalyticsStorage,
 } from '@/service/analytics';
-import { getImageFiles, getStarredFiles } from '@/service/files';
+import { getStarredFiles } from '@/service/files';
+import { getImageFiles } from '@/service/image';
 import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 import {

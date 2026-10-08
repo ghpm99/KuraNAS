@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { createContext, useContext } from 'react';
 import { useState } from 'react';
-import { getImageFiles } from '@/service/files';
+import { getImageFiles } from '@/service/image';
 
 export type PersistedImageCategory = 'capture' | 'photo' | 'other';
 
