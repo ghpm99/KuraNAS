@@ -55,6 +55,16 @@ describe('features/files/fileProvider (seam)', () => {
 		expect(mockedApi.post).toHaveBeenCalledWith('/files/folder', { name: 'Nova', parent_id: 7 });
 	});
 
+	it('promoteFileToHot POSTs to /tiering/promote/:id with no body', async () => {
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await act(async () => {
+			await result.current.promoteFileToHot(12);
+		});
+
+		expect(mockedApi.post).toHaveBeenCalledWith('/tiering/promote/12');
+	});
+
 	it('renameFile POSTs to /files/rename with id and new_name', async () => {
 		const { result } = renderHook(() => useFile(), { wrapper });
 

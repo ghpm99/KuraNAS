@@ -2,12 +2,14 @@ jest.mock('./index', () => ({
 	apiBase: {
 		get: jest.fn(),
 		put: jest.fn(),
+		post: jest.fn(),
 	},
 }));
 
 import { apiBase } from './index';
 import {
 	getTieringSettings,
+	promoteFileToHot,
 	getTieringStatus,
 	getTieringUsage,
 	updateTieringSettings,
@@ -17,6 +19,7 @@ import type { TieringSettings } from '@/types/tiering';
 const mockedApi = apiBase as unknown as {
 	get: jest.Mock;
 	put: jest.Mock;
+	post: jest.Mock;
 };
 
 const sampleSettings: TieringSettings = {
@@ -30,6 +33,14 @@ const sampleSettings: TieringSettings = {
 describe('service/tiering', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+	});
+
+	it('promotes a cold file to the hot disk', async () => {
+		const location = { file_id: 9, tier: 'hot', disk_path: '/data/a.pdf' };
+		mockedApi.post.mockResolvedValue({ data: location });
+		const result = await promoteFileToHot(9);
+		expect(mockedApi.post).toHaveBeenCalledWith('/tiering/promote/9');
+		expect(result).toEqual(location);
 	});
 
 	it('loads the tiering settings', async () => {

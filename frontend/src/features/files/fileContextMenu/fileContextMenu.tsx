@@ -2,6 +2,7 @@ import { Divider, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/materi
 import {
     Copy,
     Download,
+    Flame,
     FolderOpen,
     Info,
     Link,
@@ -36,11 +37,12 @@ const FileContextMenu = ({
 }: FileContextMenuProps) => {
     const { t } = useI18n();
     const { startAction, dialogs } = useFileActionFlow();
-    const { downloadFiles, toggleFavorites, copyPaths } = useFileOperations();
+    const { downloadFiles, toggleFavorites, copyPaths, promoteFilesToHot } = useFileOperations();
     const { deselect } = useFileSelectionContext();
     const { isAvailable: isDetailsAvailable, openDetails } = useFileDetails();
 
     const isSingleTarget = targetFiles.length === 1;
+    const canPromoteToHot = isSingleTarget && targetFiles[0]?.tier === 'cold';
     const allTargetsAreFavorites = targetFiles.every((file) => file.starred);
 
     const runAndClose = (action: () => void) => () => {
@@ -122,6 +124,14 @@ const FileContextMenu = ({
                             <Info size={16} />
                         </ListItemIcon>
                         <ListItemText>{t('FILES_DETAILS')}</ListItemText>
+                    </MenuItem>
+                ) : null}
+                {canPromoteToHot ? (
+                    <MenuItem onClick={runAndClose(() => promoteFilesToHot(targetFiles))}>
+                        <ListItemIcon>
+                            <Flame size={16} />
+                        </ListItemIcon>
+                        <ListItemText>{t('FILE_PROMOTE_TO_HOT')}</ListItemText>
                     </MenuItem>
                 ) : null}
                 <Divider />

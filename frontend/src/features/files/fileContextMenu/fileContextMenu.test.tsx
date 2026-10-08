@@ -63,6 +63,24 @@ describe('FileContextMenu', () => {
         expect(screen.queryByRole('menu')).toBeNull();
     });
 
+    it('offers to bring a single cold file to the hot disk', async () => {
+        const { fileContext } = renderMenu([createTestFile(1, { tier: 'cold' })]);
+
+        fireEvent.click(screen.getByText('FILE_PROMOTE_TO_HOT'));
+
+        await waitFor(() => expect(fileContext.promoteFileToHot).toHaveBeenCalledWith(1));
+    });
+
+    it('does not offer the promotion for hot files or multi-selections', () => {
+        renderMenu([createTestFile(1, { tier: 'hot' })]);
+        expect(screen.queryByText('FILE_PROMOTE_TO_HOT')).toBeNull();
+    });
+
+    it('does not offer the promotion when several cold files are targeted', () => {
+        renderMenu([createTestFile(1, { tier: 'cold' }), createTestFile(2, { tier: 'cold' })]);
+        expect(screen.queryByText('FILE_PROMOTE_TO_HOT')).toBeNull();
+    });
+
     it('opens the target file', () => {
         const { onOpenFile, onClose } = renderMenu();
 

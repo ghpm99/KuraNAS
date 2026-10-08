@@ -52,6 +52,7 @@ export type FileContextType = {
     copyFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => Promise<void>;
     renameFile: (id: number, newName: string) => Promise<void>;
     deleteFile: (id: number, permanent?: boolean) => Promise<void>;
+    promoteFileToHot: (id: number) => Promise<void>;
     rescanFiles: () => Promise<void>;
     fetchNextPage: () => void;
     hasNextPage: boolean;
