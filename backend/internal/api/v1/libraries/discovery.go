@@ -3,6 +3,7 @@ package libraries
 import (
 	"log"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,7 @@ var categorySlugs = map[LibraryCategory][]string{
 }
 
 var categoryExtensions = map[LibraryCategory][]string{
-	LibraryCategoryImages:    {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".heic", ".heif", ".raw", ".cr2", ".nef"},
+	LibraryCategoryImages:    append([]string{".raw"}, utils.ImageFormats...),
 	LibraryCategoryMusic:     {".mp3", ".flac", ".wav", ".aac", ".ogg", ".wma", ".m4a", ".opus"},
 	LibraryCategoryVideos:    {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts"},
 	LibraryCategoryDocuments: {".pdf", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".csv", ".md"},

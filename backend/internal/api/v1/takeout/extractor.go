@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,9 +25,10 @@ func parseTakeoutMetadata(jsonBytes []byte) (TakeoutMetadata, error) {
 
 func classifyFile(fileName string, mimeType string) libraries.LibraryCategory {
 	ext := strings.ToLower(filepath.Ext(fileName))
-	switch ext {
-	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".heic", ".heif", ".raw", ".cr2", ".nef":
+	if utils.GetFormatTypeByExtension(ext).Type == utils.FormatTypeImage || ext == ".raw" {
 		return libraries.LibraryCategoryImages
+	}
+	switch ext {
 	case ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts":
 		return libraries.LibraryCategoryVideos
 	}

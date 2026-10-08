@@ -148,8 +148,8 @@ func TestMetadataHelpers(t *testing.T) {
 	errRunner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "", errors.New("runner failed")
 	}
-	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner, nil); err == nil {
-		t.Fatalf("expected image metadata runner error")
+	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner, nil); err != nil {
+		t.Fatalf("image metadata must degrade instead of failing, got %v", err)
 	}
 	if _, err := getAudioMetadata(files.FileDto{ID: 2, Path: "/err.mp3"}, errRunner); err == nil {
 		t.Fatalf("expected audio metadata runner error")
