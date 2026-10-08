@@ -9,12 +9,12 @@
     padding: 8px 12px;
     border: 1px solid var(--app-color-border-subtle);
     border-radius: var(--app-radius-lg);
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
 }
 
 .listRowSelected {
-    border-color: var(--mui-palette-primary-main, #6366f1);
-    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--mui-palette-primary-main, var(--app-color-primary));
+    background: rgba(var(--app-color-primary-rgb), 0.12);
 }
 
 .selectionControl {
@@ -45,7 +45,7 @@
 }
 
 .listLink:focus-visible {
-    outline: 2px solid var(--mui-palette-primary-main, #6366f1);
+    outline: 2px solid var(--mui-palette-primary-main, var(--app-color-primary));
     outline-offset: 2px;
     border-radius: 8px;
 }
@@ -69,7 +69,7 @@
     height: 40px;
     border-radius: 8px;
     object-fit: cover;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(var(--app-color-ink-rgb), 0.05);
 }
 
 .listContent {

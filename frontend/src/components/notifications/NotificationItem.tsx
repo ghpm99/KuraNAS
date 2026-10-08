@@ -45,7 +45,7 @@ export default function NotificationItem({ notification, onClick }: Notification
                 opacity: notification.is_read ? 0.6 : 1,
                 borderRadius: 1,
                 '&:hover': onClick
-                    ? { bgcolor: 'rgba(255,255,255,0.04)' }
+                    ? { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' }
                     : undefined,
             }}
         >
@@ -70,7 +70,7 @@ export default function NotificationItem({ notification, onClick }: Notification
                         <Typography
                             variant="caption"
                             sx={{
-                                bgcolor: 'rgba(255,255,255,0.08)',
+                                bgcolor: 'rgba(var(--app-color-ink-rgb), 0.08)',
                                 px: 0.75,
                                 py: 0.125,
                                 borderRadius: 1,

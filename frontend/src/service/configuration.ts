@@ -25,6 +25,7 @@ export type SettingsConfiguration = {
     appearance: {
         accent_color: 'violet' | 'cyan' | 'rose';
         reduce_motion: boolean;
+        theme_mode: 'dark' | 'light' | 'system';
     };
     language: {
         current: string;
@@ -53,6 +54,7 @@ export type UpdateSettingsConfigurationRequest = {
     appearance: {
         accent_color: 'violet' | 'cyan' | 'rose';
         reduce_motion: boolean;
+        theme_mode: 'dark' | 'light' | 'system';
     };
     language: {
         current: string;

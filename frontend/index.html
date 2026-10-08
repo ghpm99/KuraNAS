@@ -4,6 +4,31 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="theme-color" content="#070A10" />
+        <script>
+            (function () {
+                var themeMode = 'dark';
+                try {
+                    var storedThemeMode = window.localStorage.getItem('kuranas.themeMode');
+                    if (['dark', 'light', 'system'].indexOf(storedThemeMode) !== -1) {
+                        themeMode = storedThemeMode;
+                    }
+                } catch (error) {}
+                var prefersDark =
+                    typeof window.matchMedia !== 'function' ||
+                    window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var colorScheme =
+                    themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
+                var backgroundColor = colorScheme === 'light' ? '#F3F5FA' : '#070A10';
+                var rootElement = document.documentElement;
+                rootElement.setAttribute('data-theme', colorScheme);
+                rootElement.style.colorScheme = colorScheme;
+                rootElement.style.backgroundColor = backgroundColor;
+                document
+                    .querySelector('meta[name="theme-color"]')
+                    .setAttribute('content', backgroundColor);
+            })();
+        </script>
         <title>KuraNAS</title>
     </head>
     <body>

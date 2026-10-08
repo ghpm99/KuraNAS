@@ -1,6 +1,10 @@
 .shell {
     display: grid;
-    grid-template-columns: var(--app-shell-sidebar-width) minmax(0, 1fr);
+    grid-template-columns: var(
+            --app-shell-sidebar-current-width,
+            var(--app-shell-sidebar-width)
+        ) minmax(0, 1fr);
+    transition: grid-template-columns var(--app-motion-base) ease;
     grid-template-rows: calc(var(--app-shell-header-height) + var(--app-safe-area-top)) minmax(
             0,
             1fr
@@ -22,7 +26,11 @@
     grid-area: main;
     min-width: 0;
     min-height: 0;
-    background: linear-gradient(180deg, rgba(18, 26, 41, 0.88) 0%, rgba(15, 22, 35, 0.96) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(var(--app-color-surface-2-rgb), 0.88) 0%,
+        rgba(var(--app-color-surface-1-rgb), 0.96) 100%
+    );
     border-top: 1px solid var(--app-color-border-subtle);
     border-left: 1px solid var(--app-color-border-subtle);
     display: flex;
@@ -44,9 +52,9 @@
 @media (max-width: 900px) {
     .shell {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: calc(
-                var(--app-shell-header-height-mobile) + var(--app-safe-area-top)
-            ) minmax(0, 1fr);
+        grid-template-rows:
+            calc(var(--app-shell-header-height-mobile) + var(--app-safe-area-top))
+            minmax(0, 1fr);
         grid-template-areas:
             'header'
             'main';

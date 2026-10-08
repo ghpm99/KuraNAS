@@ -21,8 +21,8 @@ Decisões: preferência de tema vai para o grupo `appearance` das settings (cont
 - [x] 05. Fallback de carregamento por rota e boundary de erro dentro do shell (reseta ao navegar, mensagem i18n)
 - [x] 06. Servidor fora do ar: banner global com tentar de novo, `refetchOnReconnect`, fallback de traduções
 - [x] 07. Restauração/reset de scroll da área de conteúdo na navegação + voltar ao topo
-- [ ] 08. Tema claro/escuro/sistema
-- [ ] 09. Sidebar recolhível (ícones), persistida por dispositivo
+- [x] 08. Tema claro/escuro/sistema
+- [x] 09. Sidebar recolhível (ícones), persistida por dispositivo
 - [ ] 10. `document.title` por rota e `<html lang>` dinâmico
 - [ ] 11. Acessibilidade de navegação: skip link, foco no conteúdo ao trocar de rota, rótulos dos `<nav>`, bottom nav com links e `aria-current`, busca global como combobox
 - [ ] 12. Sino de notificações: largura em tela pequena, cores por token, tempo relativo traduzido, teclado, clique leva ao alvo, lista atualizada ao abrir

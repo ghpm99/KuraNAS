@@ -72,7 +72,7 @@ export default function PlaylistDetailSection({
                 subtitle={playlist.description || undefined}
                 trackCount={tracks.length}
                 icon={<ListMusic size={48} opacity={0.7} />}
-                gradientFrom="#6366f1"
+                gradientFrom="var(--app-color-primary)"
                 onBack={onBack}
                 onPlayAll={handlePlayAll}
                 onShuffleAll={handleShuffleAll}
@@ -120,11 +120,11 @@ export default function PlaylistDetailSection({
                                         px: 1,
                                         gap: 1.5,
                                         bgcolor: isCurrentTrack
-                                            ? 'rgba(99, 102, 241, 0.08)'
+                                            ? 'rgba(var(--app-color-primary-rgb), 0.08)'
                                             : 'transparent',
                                         '&:hover': {
                                             bgcolor: isCurrentTrack
-                                                ? 'rgba(99, 102, 241, 0.12)'
+                                                ? 'rgba(var(--app-color-primary-rgb), 0.12)'
                                                 : undefined,
                                         },
                                         '&:hover .track-index': { display: 'none' },
@@ -166,7 +166,7 @@ export default function PlaylistDetailSection({
                                                 ))}
                                             </Box>
                                         ) : isCurrentTrack ? (
-                                            <Pause size={14} color="#6366f1" />
+                                            <Pause size={14} color="var(--app-color-primary)" />
                                         ) : (
                                             <>
                                                 <Typography

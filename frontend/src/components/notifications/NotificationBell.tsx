@@ -57,9 +57,9 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                     paper: {
                         sx: {
                             mt: 1,
-                            bgcolor: '#1e1e2e',
+                            bgcolor: 'background.paper',
                             backgroundImage: 'none',
-                            border: '1px solid rgba(255,255,255,0.08)',
+                            border: '1px solid rgba(var(--app-color-ink-rgb), 0.08)',
                             borderRadius: 2,
                         },
                     },

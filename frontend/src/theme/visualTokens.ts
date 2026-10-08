@@ -1,4 +1,61 @@
-export const visualTokens = {
+export type ColorScheme = 'dark' | 'light';
+
+type SchemeTokens = {
+    colors: {
+        backgroundRoot: string;
+        backgroundElevated: string;
+        surface1: string;
+        surface2: string;
+        surface3: string;
+        borderSubtle: string;
+        borderStrong: string;
+        textPrimary: string;
+        textSecondary: string;
+        textMuted: string;
+        textDisabled: string;
+        primary: string;
+        primaryHover: string;
+        cyanAccent: string;
+        pinkAccent: string;
+        success: string;
+        warning: string;
+        danger: string;
+        link: string;
+        textOnMedia: string;
+        overlaySoft: string;
+        overlayStrong: string;
+    };
+    channels: {
+        ink: string;
+        primary: string;
+        backgroundElevated: string;
+        surface1: string;
+        surface2: string;
+        surface3: string;
+    };
+    backgrounds: {
+        app: string;
+        panel: string;
+        panelElevated: string;
+    };
+    shadow: {
+        card: string;
+        floating: string;
+        activeGlowPrimary: string;
+        layered: string;
+    };
+    glass: {
+        medium: { background: string; backdropFilter: string };
+        strong: { background: string; backdropFilter: string };
+    };
+    scrollbar: {
+        track: string;
+        thumb: string;
+    };
+    metaThemeColor: string;
+};
+
+const darkSchemeTokens: SchemeTokens = {
     colors: {
         backgroundRoot: '#070A10',
         backgroundElevated: '#0A1018',
@@ -18,8 +75,18 @@ export const visualTokens = {
         success: '#22C55E',
         warning: '#F59E0B',
         danger: '#EF4444',
+        link: '#7DD3FC',
+        textOnMedia: '#F8FAFC',
         overlaySoft: 'rgba(7, 10, 16, 0.62)',
         overlayStrong: 'rgba(7, 10, 16, 0.82)',
+    },
+    channels: {
+        ink: '255, 255, 255',
+        primary: '109, 93, 246',
+        backgroundElevated: '10, 16, 24',
+        surface1: '15, 22, 35',
+        surface2: '18, 26, 41',
+        surface3: '24, 34, 52',
     },
     backgrounds: {
         app: 'radial-gradient(1200px 400px at 20% -10%, rgba(225, 29, 72, 0.18), transparent 60%), radial-gradient(900px 320px at 95% 2%, rgba(14, 116, 144, 0.22), transparent 62%), linear-gradient(180deg, #070a10 0%, #0a1018 100%)',
@@ -27,6 +94,101 @@ export const visualTokens = {
         panelElevated:
             'linear-gradient(180deg, rgba(24, 34, 52, 0.96) 0%, rgba(18, 26, 41, 0.94) 100%)',
     },
+    shadow: {
+        card: '0 8px 30px rgba(0, 0, 0, 0.24)',
+        floating: '0 12px 40px rgba(0, 0, 0, 0.35)',
+        activeGlowPrimary: '0 0 0 1px rgba(109, 93, 246, 0.6), 0 8px 30px rgba(109, 93, 246, 0.18)',
+        layered:
+            '0 1px 2px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.1)',
+    },
+    glass: {
+        medium: {
+            background: 'rgba(18, 26, 41, 0.7)',
+            backdropFilter: 'blur(12px)',
+        },
+        strong: {
+            background: 'rgba(15, 22, 35, 0.85)',
+            backdropFilter: 'blur(16px)',
+        },
+    },
+    scrollbar: {
+        track: 'rgba(7, 10, 16, 0.26)',
+        thumb: 'rgba(126, 138, 163, 0.38)',
+    },
+    metaThemeColor: '#070A10',
+};
+
+const lightSchemeTokens: SchemeTokens = {
+    colors: {
+        backgroundRoot: '#F3F5FA',
+        backgroundElevated: '#E9EDF5',
+        surface1: '#FFFFFF',
+        surface2: '#FBFCFE',
+        surface3: '#EFF2F9',
+        borderSubtle: '#DCE2EE',
+        borderStrong: '#C3CCDE',
+        textPrimary: '#0F172A',
+        textSecondary: '#475569',
+        textMuted: '#64748B',
+        textDisabled: '#94A3B8',
+        primary: '#6D5DF6',
+        primaryHover: '#5848DE',
+        cyanAccent: '#0891B2',
+        pinkAccent: '#E11D48',
+        success: '#16A34A',
+        warning: '#D97706',
+        danger: '#DC2626',
+        link: '#0369A1',
+        textOnMedia: '#F8FAFC',
+        overlaySoft: 'rgba(243, 245, 250, 0.7)',
+        overlayStrong: 'rgba(243, 245, 250, 0.9)',
+    },
+    channels: {
+        ink: '15, 23, 42',
+        primary: '109, 93, 246',
+        backgroundElevated: '233, 237, 245',
+        surface1: '255, 255, 255',
+        surface2: '251, 252, 254',
+        surface3: '239, 242, 249',
+    },
+    backgrounds: {
+        app: 'radial-gradient(1200px 400px at 20% -10%, rgba(225, 29, 72, 0.08), transparent 60%), radial-gradient(900px 320px at 95% 2%, rgba(14, 116, 144, 0.1), transparent 62%), linear-gradient(180deg, #f3f5fa 0%, #e9edf5 100%)',
+        panel: 'linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(251, 252, 254, 0.98) 100%)',
+        panelElevated:
+            'linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(239, 242, 249, 0.96) 100%)',
+    },
+    shadow: {
+        card: '0 8px 30px rgba(15, 23, 42, 0.08)',
+        floating: '0 12px 40px rgba(15, 23, 42, 0.16)',
+        activeGlowPrimary: '0 0 0 1px rgba(109, 93, 246, 0.5), 0 8px 30px rgba(109, 93, 246, 0.12)',
+        layered:
+            '0 1px 2px rgba(15,23,42,0.06), 0 4px 8px rgba(15,23,42,0.06), 0 16px 32px rgba(15,23,42,0.06)',
+    },
+    glass: {
+        medium: {
+            background: 'rgba(255, 255, 255, 0.78)',
+            backdropFilter: 'blur(12px)',
+        },
+        strong: {
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(16px)',
+        },
+    },
+    scrollbar: {
+        track: 'rgba(15, 23, 42, 0.05)',
+        thumb: 'rgba(71, 85, 105, 0.35)',
+    },
+    metaThemeColor: '#F3F5FA',
+};
+
+export const colorSchemeTokens: Record<ColorScheme, SchemeTokens> = {
+    dark: darkSchemeTokens,
+    light: lightSchemeTokens,
+};
+
+export const visualTokens = {
+    colors: darkSchemeTokens.colors,
+    backgrounds: darkSchemeTokens.backgrounds,
     spacing: {
         1: '4px',
         2: '8px',
@@ -51,23 +213,6 @@ export const visualTokens = {
         pageSubtitle: '0.875rem',
         sectionTitle: '1.125rem',
     },
-    shadow: {
-        card: '0 8px 30px rgba(0, 0, 0, 0.24)',
-        floating: '0 12px 40px rgba(0, 0, 0, 0.35)',
-        activeGlowPrimary: '0 0 0 1px rgba(109, 93, 246, 0.6), 0 8px 30px rgba(109, 93, 246, 0.18)',
-        layered:
-            '0 1px 2px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.1)',
-    },
-    glass: {
-        medium: {
-            background: 'rgba(18, 26, 41, 0.7)',
-            backdropFilter: 'blur(12px)',
-        },
-        strong: {
-            background: 'rgba(15, 22, 35, 0.85)',
-            backdropFilter: 'blur(16px)',
-        },
-    },
     layout: {
         sidebarWidth: '240px',
         sidebarWidthCollapsed: '80px',
@@ -86,30 +231,7 @@ export const visualTokens = {
     },
 } as const;
 
-export const appCssVariables = {
-    '--app-color-background-root': visualTokens.colors.backgroundRoot,
-    '--app-color-background-elevated': visualTokens.colors.backgroundElevated,
-    '--app-color-surface-1': visualTokens.colors.surface1,
-    '--app-color-surface-2': visualTokens.colors.surface2,
-    '--app-color-surface-3': visualTokens.colors.surface3,
-    '--app-color-border-subtle': visualTokens.colors.borderSubtle,
-    '--app-color-border-strong': visualTokens.colors.borderStrong,
-    '--app-color-text-primary': visualTokens.colors.textPrimary,
-    '--app-color-text-secondary': visualTokens.colors.textSecondary,
-    '--app-color-text-muted': visualTokens.colors.textMuted,
-    '--app-color-text-disabled': visualTokens.colors.textDisabled,
-    '--app-color-primary': visualTokens.colors.primary,
-    '--app-color-primary-hover': visualTokens.colors.primaryHover,
-    '--app-color-cyan-accent': visualTokens.colors.cyanAccent,
-    '--app-color-pink-accent': visualTokens.colors.pinkAccent,
-    '--app-color-success': visualTokens.colors.success,
-    '--app-color-warning': visualTokens.colors.warning,
-    '--app-color-danger': visualTokens.colors.danger,
-    '--app-color-overlay-soft': visualTokens.colors.overlaySoft,
-    '--app-color-overlay-strong': visualTokens.colors.overlayStrong,
-    '--app-background-app': visualTokens.backgrounds.app,
-    '--app-background-panel': visualTokens.backgrounds.panel,
-    '--app-background-panel-elevated': visualTokens.backgrounds.panelElevated,
+export const structuralCssVariables = {
     '--app-spacing-1': visualTokens.spacing[1],
     '--app-spacing-2': visualTokens.spacing[2],
     '--app-spacing-3': visualTokens.spacing[3],
@@ -128,14 +250,6 @@ export const appCssVariables = {
     '--app-font-page-title': visualTokens.typography.pageTitle,
     '--app-font-page-subtitle': visualTokens.typography.pageSubtitle,
     '--app-font-section-title': visualTokens.typography.sectionTitle,
-    '--app-shadow-card': visualTokens.shadow.card,
-    '--app-shadow-floating': visualTokens.shadow.floating,
-    '--app-shadow-active-primary': visualTokens.shadow.activeGlowPrimary,
-    '--app-shadow-layered': visualTokens.shadow.layered,
-    '--app-glass-medium-background': visualTokens.glass.medium.background,
-    '--app-glass-medium-backdrop': visualTokens.glass.medium.backdropFilter,
-    '--app-glass-strong-background': visualTokens.glass.strong.background,
-    '--app-glass-strong-backdrop': visualTokens.glass.strong.backdropFilter,
     '--app-shell-sidebar-width': visualTokens.layout.sidebarWidth,
     '--app-shell-sidebar-width-collapsed': visualTokens.layout.sidebarWidthCollapsed,
     '--app-shell-header-height': visualTokens.layout.headerHeight,
@@ -151,3 +265,48 @@ export const appCssVariables = {
     '--app-motion-base': visualTokens.motion.base,
     '--app-motion-slow': visualTokens.motion.slow,
 } as const;
+
+export const buildColorSchemeCssVariables = (scheme: ColorScheme) => {
+    const tokens = colorSchemeTokens[scheme];
+    return {
+        '--app-color-background-root': tokens.colors.backgroundRoot,
+        '--app-color-background-elevated': tokens.colors.backgroundElevated,
+        '--app-color-surface-1': tokens.colors.surface1,
+        '--app-color-surface-2': tokens.colors.surface2,
+        '--app-color-surface-3': tokens.colors.surface3,
+        '--app-color-border-subtle': tokens.colors.borderSubtle,
+        '--app-color-border-strong': tokens.colors.borderStrong,
+        '--app-color-text-primary': tokens.colors.textPrimary,
+        '--app-color-text-secondary': tokens.colors.textSecondary,
+        '--app-color-text-muted': tokens.colors.textMuted,
+        '--app-color-text-disabled': tokens.colors.textDisabled,
+        '--app-color-primary': tokens.colors.primary,
+        '--app-color-primary-hover': tokens.colors.primaryHover,
+        '--app-color-cyan-accent': tokens.colors.cyanAccent,
+        '--app-color-pink-accent': tokens.colors.pinkAccent,
+        '--app-color-success': tokens.colors.success,
+        '--app-color-warning': tokens.colors.warning,
+        '--app-color-danger': tokens.colors.danger,
+        '--app-color-link': tokens.colors.link,
+        '--app-color-text-on-media': tokens.colors.textOnMedia,
+        '--app-color-overlay-soft': tokens.colors.overlaySoft,
+        '--app-color-overlay-strong': tokens.colors.overlayStrong,
+        '--app-color-ink-rgb': tokens.channels.ink,
+        '--app-color-primary-rgb': tokens.channels.primary,
+        '--app-color-background-elevated-rgb': tokens.channels.backgroundElevated,
+        '--app-color-surface-1-rgb': tokens.channels.surface1,
+        '--app-color-surface-2-rgb': tokens.channels.surface2,
+        '--app-color-surface-3-rgb': tokens.channels.surface3,
+        '--app-background-app': tokens.backgrounds.app,
+        '--app-background-panel': tokens.backgrounds.panel,
+        '--app-background-panel-elevated': tokens.backgrounds.panelElevated,
+        '--app-shadow-card': tokens.shadow.card,
+        '--app-shadow-floating': tokens.shadow.floating,
+        '--app-shadow-active-primary': tokens.shadow.activeGlowPrimary,
+        '--app-shadow-layered': tokens.shadow.layered,
+        '--app-glass-medium-background': tokens.glass.medium.background,
+        '--app-glass-medium-backdrop': tokens.glass.medium.backdropFilter,
+        '--app-glass-strong-background': tokens.glass.strong.background,
+        '--app-glass-strong-backdrop': tokens.glass.strong.backdropFilter,
+    };
+};

@@ -100,9 +100,9 @@ const QueueDrawer = () => {
                             gap: 1.5,
                             p: 1,
                             borderRadius: 2,
-                            bgcolor: 'rgba(99, 102, 241, 0.08)',
+                            bgcolor: 'rgba(var(--app-color-primary-rgb), 0.08)',
                             border: '1px solid',
-                            borderColor: 'rgba(99, 102, 241, 0.2)',
+                            borderColor: 'rgba(var(--app-color-primary-rgb), 0.2)',
                         }}
                     >
                         <Box

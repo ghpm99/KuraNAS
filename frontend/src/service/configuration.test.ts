@@ -42,7 +42,7 @@ const settingsRequest = {
         autoplay_next_video: true,
         image_slideshow_seconds: 8,
     },
-    appearance: { accent_color: 'cyan' as const, reduce_motion: true },
+    appearance: { accent_color: 'cyan' as const, reduce_motion: true, theme_mode: 'light' as const },
     language: { current: 'pt-BR' },
 };
 

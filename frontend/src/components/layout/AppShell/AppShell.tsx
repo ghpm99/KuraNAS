@@ -8,6 +8,7 @@ import { Drawer } from '@mui/material';
 import { BottomNav } from '@/components/layout/BottomNav/BottomNav';
 import { BackToTopButton } from './BackToTopButton';
 import { useScrollRestoration } from './useScrollRestoration';
+import { useSidebarCollapse } from './useSidebarCollapse';
 
 interface AppShellProps {
     children: ReactNode;
@@ -19,6 +20,7 @@ export const AppShell = ({ children, banner }: AppShellProps) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     useScrollRestoration(scrollAreaRef);
+    const { isCollapsed, toggleCollapsed } = useSidebarCollapse();
 
     const scrollAreaClassName = hasQueue
         ? `${styles.scrollArea} ${styles.scrollAreaWithPlayer}`
@@ -30,7 +32,7 @@ export const AppShell = ({ children, banner }: AppShellProps) => {
     return (
         <div className={styles.shell} data-has-player={hasQueue ? 'true' : 'false'}>
             <div className={styles.sidebarPane}>
-                <Sidebar />
+                <Sidebar isCollapsed={isCollapsed} onToggleCollapsed={toggleCollapsed} />
             </div>
             <Header showClock={showClock} onOpenMobileMenu={handleOpenMobileMenu} />
             <main className={styles.mainPane}>

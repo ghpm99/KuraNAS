@@ -246,12 +246,12 @@ const GlobalPlayerControl = () => {
                                     isPlaying ? t('PLAYER_ARIA_PAUSE') : t('PLAYER_ARIA_PLAY')
                                 }
                                 sx={{
-                                    bgcolor: 'white',
-                                    color: 'black',
+                                    bgcolor: 'text.primary',
+                                    color: 'background.paper',
                                     width: { xs: 44, sm: 34 },
                                     height: { xs: 44, sm: 34 },
                                     '&:hover': {
-                                        bgcolor: 'rgba(255,255,255,0.85)',
+                                        bgcolor: 'rgba(var(--app-color-ink-rgb), 0.85)',
                                         transform: 'scale(1.05)',
                                     },
                                     transition: 'all 0.15s ease',

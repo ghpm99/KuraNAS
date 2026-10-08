@@ -20,7 +20,7 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.6;
-    color: var(--text-secondary, #b8c2d9);
+    color: var(--text-secondary, var(--app-color-text-secondary));
 }
 
 .actions {

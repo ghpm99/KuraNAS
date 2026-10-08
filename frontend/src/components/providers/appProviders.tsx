@@ -1,14 +1,13 @@
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { appTheme } from '@/theme/appTheme';
 import I18nProvider from '../i18n/provider';
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
 import NotificationProvider from './notificationProvider';
+import ColorSchemeProvider from './colorSchemeProvider';
 import SettingsProvider from './settingsProvider';
 import { shouldRetryQuery } from './queryRetryPolicy';
 
@@ -36,14 +35,14 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                             maxSnack={3}
                             anchorOrigin={{ vertical: 'bottom', horizontal: toastHorizontalAnchor }}
                         >
-                            <ThemeProvider theme={appTheme}>
+                            <ColorSchemeProvider>
                                 <CssBaseline />
                                 <BrowserRouter>
                                     <NotificationProvider>
                                         <GlobalSearchProvider>{children}</GlobalSearchProvider>
                                     </NotificationProvider>
                                 </BrowserRouter>
-                            </ThemeProvider>
+                            </ColorSchemeProvider>
                         </SnackbarProvider>
                     </SettingsProvider>
                 </I18nProvider>

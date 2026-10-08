@@ -23,7 +23,7 @@
     border: 1px solid var(--app-color-border-subtle);
     border-radius: var(--app-radius-xl);
     background:
-        linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(10, 15, 28, 0.92)),
+        linear-gradient(180deg, rgba(var(--app-color-background-elevated-rgb), 0.72), rgba(var(--app-color-background-elevated-rgb), 0.92)),
         var(--app-background-panel);
     box-shadow: var(--app-shadow-card);
     min-width: 0;
@@ -63,7 +63,7 @@
 }
 
 .breadcrumbButton:hover {
-    color: #fda4af;
+    color: var(--app-color-pink-accent);
 }
 
 .breadcrumbCurrent {
@@ -110,7 +110,7 @@
     height: 24px;
     padding: 0 8px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(var(--app-color-ink-rgb), 0.08);
     font-size: 0.8rem;
     font-weight: 700;
 }

@@ -28,6 +28,7 @@ export const defaultSettingsConfiguration: SettingsConfiguration = {
     appearance: {
         accent_color: 'violet',
         reduce_motion: false,
+        theme_mode: 'dark',
     },
     language: {
         current: 'en-US',

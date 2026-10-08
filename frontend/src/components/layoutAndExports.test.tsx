@@ -49,9 +49,7 @@ describe('layout wrappers and export indexes', () => {
 
     it('renders nav item link and generic button', () => {
         render(
-            <NavItem href="/images" icon={<span>icon</span>}>
-                Images
-            </NavItem>
+            <NavItem href="/images" icon={<span>icon</span>} label="Images" />
         );
         expect(screen.getByRole('link', { name: /Images/ })).toBeInTheDocument();
 
