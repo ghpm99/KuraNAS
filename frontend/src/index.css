@@ -36,3 +36,27 @@ img {
     max-width: 100%;
     height: auto;
 }
+
+@media (max-width: 900px) {
+    .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-toast-gap)
+        ) !important;
+    }
+
+    html[data-global-player='visible'] .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) +
+                var(--app-shell-player-height) + var(--app-toast-gap)
+        ) !important;
+    }
+}
+
+@media (max-width: 599.95px) {
+    html[data-global-player='visible'] .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) +
+                var(--app-shell-player-height-mobile) + var(--app-toast-gap)
+        ) !important;
+    }
+}

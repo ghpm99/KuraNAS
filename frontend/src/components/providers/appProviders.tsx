@@ -1,5 +1,6 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import { StrictMode } from 'react';
@@ -21,6 +22,9 @@ const queryClient = new QueryClient({
 });
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
+    const isCompactViewport = useMediaQuery('(max-width: 900px)');
+    const toastHorizontalAnchor = isCompactViewport ? 'center' : 'right';
+
     return (
         <QueryClientProvider client={queryClient}>
             <StrictMode>
@@ -28,7 +32,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                     <SettingsProvider>
                         <SnackbarProvider
                             maxSnack={3}
-                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: toastHorizontalAnchor }}
                         >
                             <ThemeProvider theme={appTheme}>
                                 <CssBaseline />
