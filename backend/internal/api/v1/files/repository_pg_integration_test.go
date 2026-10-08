@@ -208,6 +208,14 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 		t.Fatalf("path lookup must hide soft-deleted rows, got %+v", byPath.Items)
 	}
 
+	countsByParentPath, err := repo.GetDirectoryContentCounts([]string{parent, "/srv/vazio"})
+	if err != nil {
+		t.Fatalf("GetDirectoryContentCounts: %v", err)
+	}
+	if countsByParentPath[parent] != 1 || countsByParentPath["/srv/vazio"] != 0 {
+		t.Fatalf("content counts must ignore soft-deleted rows, got %v", countsByParentPath)
+	}
+
 	walk, err := repo.GetFilesByPathPrefix(parent, 1, 50)
 	if err != nil {
 		t.Fatalf("GetFilesByPathPrefix: %v", err)

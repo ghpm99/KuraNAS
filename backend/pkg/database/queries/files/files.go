@@ -37,8 +37,8 @@ var GetFileStatByPathQuery string
 //go:embed update_file.sql
 var UpdateFileQuery string
 
-//go:embed get_children_count.sql
-var GetChildrenCountQuery string
+//go:embed get_children_counts_by_parent_paths.sql
+var GetChildrenCountsByParentPathsQuery string
 
 //go:embed update_descendant_paths.sql
 var UpdateDescendantPathsQuery string

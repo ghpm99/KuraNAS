@@ -88,13 +88,26 @@ func (s *Service) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return s.Repository.GetFileStatByPath(path)
 }
 
-func (s *Service) getDirectoryContentCount(file FileDto) int {
-	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
-	if err != nil {
-		return 0
+func (s *Service) fillDirectoryContentCounts(files []FileDto) {
+	directoryIndexes := make([]int, 0, len(files))
+	directoryPaths := make([]string, 0, len(files))
+	for index := range files {
+		if files[index].Type == Directory {
+			directoryIndexes = append(directoryIndexes, index)
+			directoryPaths = append(directoryPaths, files[index].Path)
+		}
+	}
+	if len(directoryPaths) == 0 {
+		return
 	}
 
-	return contentCount
+	countsByParentPath, err := s.Repository.GetDirectoryContentCounts(directoryPaths)
+	if err != nil {
+		return
+	}
+	for _, index := range directoryIndexes {
+		files[index].DirectoryContentCount = countsByParentPath[files[index].Path]
+	}
 }
 
 // toDtoPageWithCounts converts a model page to the DTO shape served by the
@@ -104,11 +117,7 @@ func (s *Service) toDtoPageWithCounts(models utils.PaginationResponse[FileModel]
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
 	}
-	for index := range page.Items {
-		if page.Items[index].Type == Directory {
-			page.Items[index].DirectoryContentCount = s.getDirectoryContentCount(page.Items[index])
-		}
-	}
+	s.fillDirectoryContentCounts(page.Items)
 	return page, nil
 }
 
@@ -139,9 +148,9 @@ func (s *Service) GetRootNodes() ([]FileDto, error) {
 			continue
 		}
 		node.Name = root.Label
-		node.DirectoryContentCount = s.getDirectoryContentCount(node)
 		nodes = append(nodes, node)
 	}
+	s.fillDirectoryContentCounts(nodes)
 	return nodes, nil
 }
 
