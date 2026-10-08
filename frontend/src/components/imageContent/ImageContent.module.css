@@ -21,7 +21,7 @@
 
 .toolbar p {
     margin: 6px 0 0;
-    color: #9ca3af;
+    color: var(--app-color-text-muted);
     font-size: 0.9rem;
 }
 
@@ -30,11 +30,11 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    border: 1px solid #2f323b;
+    border: 1px solid var(--app-color-border-strong);
     border-radius: 10px;
-    background: #10131a;
+    background: var(--app-color-surface-1);
     min-width: min(100%, 360px);
-    color: #c6c9d2;
+    color: var(--app-color-text-secondary);
 }
 
 .search input {
@@ -43,7 +43,7 @@
     border: 0;
     outline: 0;
     font-size: 0.9rem;
-    color: #f9fafb;
+    color: var(--app-color-text-primary);
 }
 
 .categories {
@@ -58,9 +58,9 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: 999px;
-    border: 1px solid #2f323b;
-    background: #11151f;
-    color: #d1d5db;
+    border: 1px solid var(--app-color-border-strong);
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-secondary);
     cursor: pointer;
     font-size: 0.85rem;
 }
@@ -73,9 +73,9 @@
 }
 
 .categoryPillActive {
-    border-color: #2b8aef;
-    background: rgba(43, 138, 239, 0.15);
-    color: #dbeafe;
+    border-color: var(--app-color-primary);
+    background: rgba(var(--app-color-primary-rgb), 0.15);
+    color: var(--app-color-text-primary);
 }
 
 .selectionSummary {
@@ -85,8 +85,8 @@
     gap: 16px;
     padding: 18px 20px;
     border-radius: 20px;
-    background: rgba(18, 20, 32, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(var(--app-color-surface-2-rgb), 0.92);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.08);
 }
 
 .selectionMeta {
@@ -104,21 +104,21 @@
 .selectionMeta h3 {
     font-size: 1rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.94);
+    color: rgba(var(--app-color-ink-rgb), 0.94);
 }
 
 .selectionMeta p {
     font-size: 0.9rem;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.62);
+    color: rgba(var(--app-color-ink-rgb), 0.62);
 }
 
 .backButton {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.1);
     border-radius: 999px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    color: rgba(255, 255, 255, 0.88);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
+    color: rgba(var(--app-color-ink-rgb), 0.88);
     cursor: pointer;
     font: inherit;
     transition:
@@ -127,8 +127,8 @@
 }
 
 .backButton:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(var(--app-color-ink-rgb), 0.08);
+    border-color: rgba(var(--app-color-ink-rgb), 0.18);
 }
 
 .loading {
@@ -138,8 +138,8 @@
     min-height: 240px;
     padding: 24px;
     border-radius: 24px;
-    background: rgba(14, 16, 28, 0.86);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(var(--app-color-background-elevated-rgb), 0.86);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.08);
 }
 
 .sections {
@@ -163,7 +163,7 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 12px;
-    color: #cbd5e1;
+    color: var(--app-color-text-secondary);
 }
 
 .groupHeader h3 {
@@ -173,7 +173,7 @@
 }
 
 .groupHeader span {
-    color: #94a3b8;
+    color: var(--app-color-text-muted);
     font-size: 0.85rem;
 }
 
@@ -190,7 +190,7 @@
     border-radius: 14px;
     overflow: hidden;
     cursor: pointer;
-    background: #0b0d13;
+    background: var(--app-color-background-elevated);
     min-height: 180px;
 }
 
@@ -221,7 +221,7 @@
     bottom: 0;
     padding: 10px;
     background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.75) 100%);
-    color: #f8fafc;
+    color: var(--app-color-text-on-media);
     opacity: 0;
     transition: opacity 0.2s ease;
 }
@@ -241,20 +241,20 @@
 
 .photoOverlay span {
     font-size: 0.74rem;
-    color: #cbd5e1;
+    color: var(--app-color-text-secondary);
 }
 
 .empty {
     padding: 24px;
     text-align: center;
-    border: 1px dashed #374151;
+    border: 1px dashed var(--app-color-border-strong);
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--app-color-text-muted);
 }
 
 .empty h3 {
     margin: 0;
-    color: #e5e7eb;
+    color: var(--app-color-text-primary);
 }
 
 .empty p {
@@ -270,7 +270,7 @@
 .endMessage {
     text-align: center;
     padding: 16px;
-    color: #94a3b8;
+    color: var(--app-color-text-muted);
     font-size: 0.9rem;
 }
 

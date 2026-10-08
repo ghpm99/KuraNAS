@@ -27,7 +27,7 @@ const Playlist = () => {
                                 primary={getMusicTitle(item)}
                             />
                             <IconButton
-                                sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
+                                sx={{ color: 'rgba(var(--app-color-ink-rgb), 0.54)' }}
                                 aria-label={`play ${item.name}`}
                             >
                                 <Play />

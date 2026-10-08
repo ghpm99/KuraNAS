@@ -25,7 +25,7 @@
 
 .tab:hover {
     color: var(--app-color-text-primary);
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(var(--app-color-ink-rgb), 0.05);
 }
 
 .tabActive {

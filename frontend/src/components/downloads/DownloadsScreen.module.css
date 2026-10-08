@@ -10,8 +10,8 @@
     gap: 12px;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.08);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
 }
 
 .cardHeader {
@@ -51,7 +51,7 @@
 .instructions {
     padding: 20px;
     border-radius: 12px;
-    border: 1px dashed rgba(255, 255, 255, 0.16);
+    border: 1px dashed rgba(var(--app-color-ink-rgb), 0.16);
 }
 
 .instructionsTitle {

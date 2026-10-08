@@ -38,6 +38,7 @@ const SettingsScreen = () => {
         hasUnsavedChanges,
         languageOptions,
         accentOptions,
+        themeModeOptions,
         slideshowOptions,
         setIndexingField,
         setCapturesField,
@@ -308,6 +309,29 @@ const SettingsScreen = () => {
                             disabled={disableActions}
                         >
                             {accentOptions.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth>
+                        <InputLabel id="settings-theme-label">
+                            {t('SETTINGS_APPEARANCE_THEME')}
+                        </InputLabel>
+                        <Select
+                            labelId="settings-theme-label"
+                            value={draft.appearance.theme_mode}
+                            label={t('SETTINGS_APPEARANCE_THEME')}
+                            onChange={(event) =>
+                                setAppearanceField(
+                                    'theme_mode',
+                                    event.target.value as 'dark' | 'light' | 'system'
+                                )
+                            }
+                            disabled={disableActions}
+                        >
+                            {themeModeOptions.map((option) => (
                                 <MenuItem key={option.value} value={option.value}>
                                     {option.label}
                                 </MenuItem>

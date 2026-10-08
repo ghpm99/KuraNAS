@@ -145,13 +145,13 @@ function FolderListView({
                                         width: 40,
                                         height: 40,
                                         borderRadius: 1,
-                                        bgcolor: 'rgba(99, 102, 241, 0.12)',
+                                        bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}
                                 >
-                                    <Folder size={20} color="#6366f1" />
+                                    <Folder size={20} color="var(--app-color-primary)" />
                                 </Box>
                             </ListItemIcon>
                             <ListItemText
@@ -166,10 +166,12 @@ function FolderListView({
                                     opacity: 0,
                                     transition: 'all 0.2s ease',
                                     color: 'primary.main',
-                                    '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)' },
+                                    '&:hover': {
+                                        bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                    },
                                 }}
                             >
-                                <Play size={18} fill="#6366f1" />
+                                <Play size={18} fill="var(--app-color-primary)" />
                             </IconButton>
                         </ListItemButton>
                     </ListItem>
@@ -246,7 +248,7 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
                 subtitle={folder}
                 trackCount={tracks.length}
                 icon={<Folder size={48} opacity={0.7} />}
-                gradientFrom="#6366f1"
+                gradientFrom="var(--app-color-primary)"
                 onBack={onBack}
                 onPlayAll={() => void queueFolderTracks()}
                 onShuffleAll={() => void queueFolderTracks(undefined, true)}

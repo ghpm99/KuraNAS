@@ -133,7 +133,7 @@ function AlbumListView({
                             sx={{
                                 bgcolor: 'background.paper',
                                 transition: 'all 0.2s ease',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+                                '&:hover': { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' },
                                 '&:hover .play-overlay': {
                                     opacity: 1,
                                     transform: 'translateY(0)',
@@ -190,7 +190,8 @@ function AlbumListView({
                                         opacity: 0,
                                         transform: 'translateY(8px)',
                                         transition: 'all 0.2s ease',
-                                        boxShadow: '0 4px 12px rgba(99,102,241,0.4)',
+                                        boxShadow:
+                                            '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
                                         '&:hover': {
                                             bgcolor: 'primary.light',
                                             transform: 'translateY(0) scale(1.05)',

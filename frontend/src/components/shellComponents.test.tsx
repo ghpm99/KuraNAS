@@ -72,8 +72,8 @@ jest.mock('react-router-dom', () => {
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
     <div>FolderTreeMock</div>
 ));
-jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ children }: any) => (
-    <div>{children}</div>
+jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ label }: any) => (
+    <div>{label}</div>
 ));
 jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
     useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
@@ -262,9 +262,7 @@ describe('shell components and pages', () => {
 
     it('renders nav item, tabs and action bar', () => {
         render(
-            <NavItem href="/files" icon={<span>x</span>}>
-                Home
-            </NavItem>
+            <NavItem href="/files" icon={<span>x</span>} label="Home" />
         );
         expect(screen.getByText('Home')).toBeInTheDocument();
 

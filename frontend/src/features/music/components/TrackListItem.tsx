@@ -35,9 +35,13 @@ const TrackListItem = ({
                     py: 0.5,
                     px: 1,
                     gap: 1.5,
-                    bgcolor: isCurrentTrack ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                    bgcolor: isCurrentTrack
+                        ? 'rgba(var(--app-color-primary-rgb), 0.08)'
+                        : 'transparent',
                     '&:hover': {
-                        bgcolor: isCurrentTrack ? 'rgba(99, 102, 241, 0.12)' : undefined,
+                        bgcolor: isCurrentTrack
+                            ? 'rgba(var(--app-color-primary-rgb), 0.12)'
+                            : undefined,
                     },
                     '&:hover .track-index': { display: 'none' },
                     '&:hover .track-play-icon': { display: 'flex' },
@@ -79,7 +83,7 @@ const TrackListItem = ({
                             ))}
                         </Box>
                     ) : isCurrentTrack ? (
-                        <Pause size={14} color="#6366f1" />
+                        <Pause size={14} color="var(--app-color-primary)" />
                     ) : (
                         <>
                             <Typography

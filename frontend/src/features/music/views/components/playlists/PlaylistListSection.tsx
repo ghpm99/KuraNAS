@@ -117,7 +117,7 @@ export default function PlaylistListSection({
                                         borderRadius: 1,
                                         bgcolor: playlist.is_system
                                             ? 'rgba(167, 139, 250, 0.15)'
-                                            : 'rgba(99, 102, 241, 0.12)',
+                                            : 'rgba(var(--app-color-primary-rgb), 0.12)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -148,7 +148,7 @@ export default function PlaylistListSection({
                                     onClick={(e) => handlePlayPlaylist(e, playlist)}
                                     sx={{ color: 'primary.main' }}
                                 >
-                                    <Play size={16} fill="#6366f1" />
+                                    <Play size={16} fill="var(--app-color-primary)" />
                                 </IconButton>
                                 {!playlist.is_system && (
                                     <IconButton

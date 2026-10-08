@@ -13,7 +13,7 @@
     padding: var(--app-spacing-4);
     border: 2px dashed var(--app-color-border-strong, currentColor);
     border-radius: var(--app-radius-xl);
-    background: rgba(10, 15, 28, 0.85);
+    background: rgba(var(--app-color-background-elevated-rgb), 0.85);
     pointer-events: none;
 }
 

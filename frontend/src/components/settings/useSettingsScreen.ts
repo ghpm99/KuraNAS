@@ -8,6 +8,7 @@ import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const accentOptionValues = ['violet', 'cyan', 'rose'] as const;
+const themeModeOptionValues = ['dark', 'light', 'system'] as const;
 const slideshowOptionValues = [4, 8, 12, 20] as const;
 
 const buildDraftFromSettings = (
@@ -33,6 +34,7 @@ const buildDraftFromSettings = (
     appearance: {
         accent_color: settings.appearance.accent_color,
         reduce_motion: settings.appearance.reduce_motion,
+        theme_mode: settings.appearance.theme_mode,
     },
     language: {
         current: settings.language.current,
@@ -95,6 +97,15 @@ const useSettingsScreen = () => {
             accentOptionValues.map((value) => ({
                 value,
                 label: t(`SETTINGS_APPEARANCE_ACCENT_${value.toUpperCase()}`),
+            })),
+        [t]
+    );
+
+    const themeModeOptions = useMemo(
+        () =>
+            themeModeOptionValues.map((value) => ({
+                value,
+                label: t(`SETTINGS_APPEARANCE_THEME_${value.toUpperCase()}`),
             })),
         [t]
     );
@@ -223,6 +234,7 @@ const useSettingsScreen = () => {
         hasUnsavedChanges,
         languageOptions,
         accentOptions,
+        themeModeOptions,
         slideshowOptions,
         setIndexingField,
         setCapturesField,

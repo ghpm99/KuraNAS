@@ -1,8 +1,9 @@
 .player {
     position: fixed;
     bottom: 0;
-    left: var(--app-shell-sidebar-width);
+    left: var(--app-shell-sidebar-current-width, var(--app-shell-sidebar-width));
     right: 0;
+    transition: left var(--app-motion-base) ease;
     min-height: var(--app-shell-player-height);
     padding-bottom: var(--app-safe-area-bottom);
     overflow: hidden;

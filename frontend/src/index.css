@@ -10,7 +10,6 @@ body {
     padding: 0;
     margin: 0;
     line-height: 1.5;
-    color-scheme: dark;
 }
 
 html[data-app-motion='reduced'] *,

@@ -24,7 +24,7 @@ const request: UpdateSettingsConfigurationRequest = {
 		autoplay_next_video: true,
 		image_slideshow_seconds: 7,
 	},
-	appearance: { accent_color: 'cyan', reduce_motion: true },
+	appearance: { accent_color: 'cyan', reduce_motion: true, theme_mode: 'system' },
 	language: { current: 'pt-BR' },
 };
 
@@ -38,7 +38,7 @@ const serverConfig = {
 	captures: { save_path: '', default_path: '', storage_roots: [] },
 	ai: { image_classification: true },
 	players: { remember_music_queue: true, remember_video_progress: true, autoplay_next_video: true, image_slideshow_seconds: 4 },
-	appearance: { accent_color: 'violet', reduce_motion: false },
+	appearance: { accent_color: 'violet', reduce_motion: false, theme_mode: 'dark' },
 	language: { current: 'en-US', available: ['en-US'] },
 };
 
