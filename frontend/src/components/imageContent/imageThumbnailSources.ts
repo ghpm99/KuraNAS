@@ -1,4 +1,5 @@
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import { isPreviewOnlyImageFormat } from '@/utils';
 
 export const GRID_THUMBNAIL_SIZE = 400;
 export const FILMSTRIP_THUMBNAIL_SIZE = 160;
@@ -19,5 +20,10 @@ export const thumbnailSrcSet = (fileId: number, boxSize: number): string => {
 
 export const gridThumbnailSizes = `${GRID_THUMBNAIL_SIZE}px`;
 
-export const viewerImageUrl = (fileId: number, zoom: number): string =>
-    zoom > 1 ? originalImageUrl(fileId) : thumbnailUrl(fileId, PREVIEW_IMAGE_SIZE);
+export const viewerImageUrl = (fileId: number, zoom: number, format?: string): string =>
+    zoom > 1 && !isPreviewOnlyImageFormat(format)
+        ? originalImageUrl(fileId)
+        : thumbnailUrl(fileId, PREVIEW_IMAGE_SIZE);
+
+export const downloadOriginalUrl = (fileId: number): string =>
+    `${getApiV1BaseUrl()}/files/download/${fileId}`;

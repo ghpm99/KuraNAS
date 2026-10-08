@@ -173,10 +173,25 @@ describe('components/hooks/useMediaOpener', () => {
     it('leaves formats without a dedicated screen to the in-place viewer', () => {
         const { result } = renderHook(() => useMediaOpener());
 
-        for (const format of ['.heic', '.m4a', '.opus', '.m4v', '.avif', '.md']) {
+        for (const format of ['.m4a', '.opus', '.m4v', '.md']) {
             expect(result.current.openMediaItem({ id: 1, name: `f${format}`, format })).toBe(false);
         }
         expect(mockNavigate).not.toHaveBeenCalled();
         expect(mockReplaceQueue).not.toHaveBeenCalled();
     });
+
+    it.each(['.heic', '.avif', '.tiff', '.jfif', '.cr2', '.nef', '.dng'])(
+        'opens %s on the images screen',
+        (format) => {
+            const { result } = renderHook(() => useMediaOpener());
+
+            expect(result.current.openMediaItem({ id: 5, name: `photo${format}`, format })).toBe(
+                true
+            );
+            expect(mockNavigate).toHaveBeenCalledWith(
+                expect.objectContaining({ search: '?image=5' }),
+                expect.anything()
+            );
+        }
+    );
 });

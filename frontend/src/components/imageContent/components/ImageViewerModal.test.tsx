@@ -27,6 +27,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 IMAGES_VIEWER_ADD_FAVORITE: 'Favoritar',
                 IMAGES_VIEWER_REMOVE_FAVORITE: 'Desfavoritar',
                 IMAGES_VIEWER_OPEN_FOLDER: 'Abrir pasta',
+                IMAGES_VIEWER_DOWNLOAD: 'Baixar original',
                 IMAGES_VIEWER_START_SLIDESHOW: 'Iniciar slideshow',
                 IMAGES_VIEWER_STOP_SLIDESHOW: 'Pausar slideshow',
                 IMAGES_VIEWER_HIDE_FILMSTRIP: 'Ocultar tira',
@@ -169,6 +170,58 @@ describe('ImageViewerModal', () => {
         );
 
         expect(stageImage().getAttribute('src')).toBe('/api/v1/files/blob/11');
+    });
+
+    it.each([
+        ['.heic', false],
+        ['.HEIF', false],
+        ['.tiff', false],
+        ['.tif', false],
+        ['.cr2', false],
+        ['.dng', false],
+        ['.raf', false],
+        ['.jpg', true],
+        ['.jfif', true],
+        ['.avif', true],
+        ['.webp', true],
+    ])('format %s swaps to the original on zoom: %s', (format, canSwapToOriginal) => {
+        const activeImage = createImage({ file_id: 21, format });
+        renderWithQuery(
+            <ImageViewerModal
+                activeImage={activeImage}
+                activeIndex={0}
+                activeImageDate={null}
+                dateFormatter={new Intl.DateTimeFormat('pt-BR')}
+                filteredImages={[activeImage]}
+                zoom={2}
+                showDetails={false}
+                showFilmstrip={false}
+                isSlideshowPlaying={false}
+                isFavoritePending={false}
+                onToggleDetails={jest.fn()}
+                onToggleFilmstrip={jest.fn()}
+                onToggleSlideshow={jest.fn()}
+                onToggleFavorite={jest.fn()}
+                onOpenFolder={jest.fn()}
+                onDecreaseZoom={jest.fn()}
+                onResetZoom={jest.fn()}
+                onIncreaseZoom={jest.fn()}
+                onClose={jest.fn()}
+                onPrevious={jest.fn()}
+                onNext={jest.fn()}
+                onOpenImage={jest.fn()}
+            />
+        );
+
+        const stageImage = document.querySelector<HTMLImageElement>('img[class*="image"]');
+        expect(stageImage?.getAttribute('src')).toBe(
+            canSwapToOriginal
+                ? '/api/v1/files/blob/21'
+                : '/api/v1/files/thumbnail/21?width=1600&height=1600'
+        );
+        expect(screen.getByRole('link', { name: 'Baixar original' }).getAttribute('href')).toBe(
+            '/api/v1/files/download/21'
+        );
     });
 
     it('shows the playing state and hides the filmstrip when requested', () => {
