@@ -23,6 +23,7 @@ type fakeRepo struct {
 	hasLastRun bool
 	counts     TierCountsModel
 	loadErr    error
+	files      map[int]TieredFileModel
 }
 
 func (f *fakeRepo) GetDbContext() *database.DbContext { return nil }
@@ -47,6 +48,10 @@ func (f *fakeRepo) SetPhysicalPath(fileID int, physicalPath string) error {
 	return nil
 }
 func (f *fakeRepo) GetLastRun() (LastRunModel, bool, error) { return f.lastRun, f.hasLastRun, nil }
+func (f *fakeRepo) GetFileById(fileID int) (TieredFileModel, bool, error) {
+	file, found := f.files[fileID]
+	return file, found, f.loadErr
+}
 func (f *fakeRepo) GetTierCounts() (TierCountsModel, error) { return f.counts, nil }
 
 func newTestService(repo RepositoryInterface) *Service {

@@ -162,3 +162,26 @@ func (r *Repository) GetTierCounts() (TierCountsModel, error) {
 	}
 	return counts, nil
 }
+
+func (r *Repository) GetFileById(fileID int) (TieredFileModel, bool, error) {
+	var file TieredFileModel
+	found := true
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		var physicalPath sql.NullString
+		scanErr := tx.QueryRow(queries.GetTieringFileByIdQuery, fileID).Scan(
+			&file.FileID, &file.LogicalPath, &physicalPath, &file.Size,
+		)
+		if errors.Is(scanErr, sql.ErrNoRows) {
+			found = false
+			return nil
+		}
+		file.PhysicalPath = physicalPath.String
+		return scanErr
+	})
+
+	if err != nil {
+		return TieredFileModel{}, false, fmt.Errorf("GetFileById: %w", err)
+	}
+	return file, found, nil
+}

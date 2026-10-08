@@ -59,3 +59,11 @@ func (m TierCountsModel) toDto() TierUsageDto {
 		ColdBytes: m.ColdBytes,
 	}
 }
+
+// FileLocationDto is the response of POST /tiering/promote/:file_id: where the
+// file's bytes live after the promotion.
+type FileLocationDto struct {
+	FileID   int    `json:"file_id"`
+	Tier     string `json:"tier"`
+	DiskPath string `json:"disk_path"`
+}
