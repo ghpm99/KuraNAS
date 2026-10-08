@@ -454,6 +454,7 @@
 	"DELETE": "Excluir",
 	"COPY_SUFFIX": "_copia",
 	"ERROR_FILE_NOT_FOUND": "Arquivo não encontrado",
+	"ERROR_DOWNLOAD_TOO_MANY_ITEMS": "Itens demais selecionados para download (máximo %d)",
 	"ERROR_DISK_PATH_REQUIRED": "Informe o caminho do arquivo no disco",
 	"ERROR_FILE_DISK_PATH_NOT_FOUND": "Nenhum arquivo indexado neste caminho do disco",
 	"ERROR_FOLDER_NOT_FOUND": "Pasta de destino não encontrada",

@@ -454,6 +454,7 @@
 	"DELETE": "Delete",
 	"COPY_SUFFIX": "_copy",
 	"ERROR_FILE_NOT_FOUND": "File not found",
+	"ERROR_DOWNLOAD_TOO_MANY_ITEMS": "Too many items selected for download (maximum %d)",
 	"ERROR_DISK_PATH_REQUIRED": "Provide the file path on disk",
 	"ERROR_FILE_DISK_PATH_NOT_FOUND": "No indexed file at this disk path",
 	"ERROR_FOLDER_NOT_FOUND": "Target folder not found",

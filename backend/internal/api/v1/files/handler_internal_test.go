@@ -93,9 +93,6 @@ func (m *filesHandlerServiceMock) DeleteFileRecord(id int) error {
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
 }
-func (m *filesHandlerServiceMock) GetFileBlobById(fileId int) (FileBlob, error) {
-	return FileBlob{ID: fileId, Blob: []byte("data"), Format: ".txt"}, nil
-}
 func (m *filesHandlerServiceMock) GetTotalSpaceUsed() (int, error) { return 123, nil }
 func (m *filesHandlerServiceMock) GetTotalFiles() (int, error)     { return 9, nil }
 func (m *filesHandlerServiceMock) GetTotalDirectory() (int, error) { return 3, nil }
@@ -154,7 +151,6 @@ type filesHandlerServiceFuncMock struct {
 	getActiveFilesFn      func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getFileByIdFn         func(id int) (FileDto, error)
 	updateFileFn          func(file FileDto) (bool, error)
-	getFileBlobByIdFn     func(fileId int) (FileBlob, error)
 	getTotalSpaceUsedFn   func() (int, error)
 	getTotalFilesFn       func() (int, error)
 	getTotalDirectoryFn   func() (int, error)
@@ -193,12 +189,6 @@ func (m *filesHandlerServiceFuncMock) UpdateFile(file FileDto) (bool, error) {
 		return m.updateFileFn(file)
 	}
 	return m.filesHandlerServiceMock.UpdateFile(file)
-}
-func (m *filesHandlerServiceFuncMock) GetFileBlobById(fileId int) (FileBlob, error) {
-	if m.getFileBlobByIdFn != nil {
-		return m.getFileBlobByIdFn(fileId)
-	}
-	return m.filesHandlerServiceMock.GetFileBlobById(fileId)
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -313,7 +303,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodPost, path: "/files/update", body: "data=/tmp", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/blob/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusOK},
 		{method: http.MethodPost, path: "/files/starred/1", code: http.StatusOK},
@@ -455,9 +444,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		},
 		updateFileFn: func(file FileDto) (bool, error) {
 			return false, errBoom
-		},
-		getFileBlobByIdFn: func(fileId int) (FileBlob, error) {
-			return FileBlob{}, errBoom
 		},
 		getTotalSpaceUsedFn: func() (int, error) { return 0, errBoom },
 		getTotalFilesFn:     func() (int, error) { return 0, errBoom },

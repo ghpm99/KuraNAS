@@ -642,10 +642,6 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 		}, true, nil
 	}
 
-	blob, err := s.GetFileBlobById(10)
-	if err != nil || len(blob.Blob) == 0 {
-		t.Fatalf("expected blob bytes, err=%v", err)
-	}
 	if !s.CheckFileExists(10) {
 		t.Fatalf("expected CheckFileExists true for existing file")
 	}
@@ -964,18 +960,6 @@ func TestFileService_ErrorBranches(t *testing.T) {
 	}
 	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected UpdateFile error")
-	}
-}
-
-func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
-	s := newFilesServiceForTest(t, &filesRepoMock{
-		getFileByIDFn: func(id int) (FileModel, bool, error) {
-			return sampleModel(999, "missing.bin", File), true, nil
-		},
-	})
-
-	if _, err := s.GetFileBlobById(999); err == nil {
-		t.Fatalf("expected GetFileBlobById read error")
 	}
 }
 

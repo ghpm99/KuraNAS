@@ -1,14 +1,18 @@
 package files
 
 import (
+	"database/sql"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"mime"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
+	"os"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
@@ -60,10 +64,17 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
+	handler.serveFileById(c, "GetBlobFile", "Fetching file by ID", false)
+}
 
+func (handler *Handler) DownloadFileHandler(c *gin.Context) {
+	handler.serveFileById(c, "DownloadFile", "Downloading file by ID", true)
+}
+
+func (handler *Handler) serveFileById(c *gin.Context, logName string, logDescription string, isAttachment bool) {
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetBlobFile",
-		Description: "Fetching file by ID",
+		Name:        logName,
+		Description: logDescription,
 		Level:       logger.LogLevelInfo,
 		Status:      logger.LogStatusPending,
 		IPAddress:   c.ClientIP(),
@@ -79,15 +90,74 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 		Data: id,
 	})
 
-	fileBlob, err := handler.service.GetFileBlobById(id)
+	file, err := handler.service.GetFileById(id)
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		respondFileLookupError(c, err)
+		return
+	}
 
+	if file.Type == Directory && isAttachment {
+		handler.Logger.CompleteWithSuccessLog(loggerModel)
+		handler.streamFolderAsZip(c, file)
+		return
+	}
+
+	if file.Type == Directory {
+		handler.Logger.CompleteWithErrorLog(loggerModel, ErrInvalidFormat)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	content, err := os.Open(file.ResolveContentPath())
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		respondContentOpenError(c, err)
+		return
+	}
+	defer content.Close()
+
+	contentInfo, err := content.Stat()
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
 
-	handler.recentFileService.RegisterAccess(c.ClientIP(), fileBlob.ID)
+	handler.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Data(http.StatusOK, mime.TypeByExtension(strings.ToLower(fileBlob.Format)), fileBlob.Blob)
+
+	if contentType := mime.TypeByExtension(strings.ToLower(file.Format)); contentType != "" {
+		c.Header("Content-Type", contentType)
+	}
+	if isAttachment {
+		c.Header("Content-Disposition", buildAttachmentDisposition(file.Name))
+	}
+	http.ServeContent(c.Writer, c.Request, file.Name, contentInfo.ModTime(), content)
+}
+
+func buildAttachmentDisposition(fileName string) string {
+	disposition := mime.FormatMediaType("attachment", map[string]string{"filename": fileName})
+	if disposition == "" {
+		return "attachment"
+	}
+	return disposition
+}
+
+func respondFileLookupError(c *gin.Context, err error) {
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
+	applog.ErrorWithStack("files: lookup failed", err, "ip", c.ClientIP())
+	c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
+}
+
+func respondContentOpenError(c *gin.Context, err error) {
+	if errors.Is(err, os.ErrNotExist) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
+	applog.ErrorWithStack("files: open content failed", err, "ip", c.ClientIP())
+	c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 }
