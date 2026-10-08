@@ -1,0 +1,89 @@
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+    min-width: 0;
+}
+
+.group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--app-color-text-muted);
+    min-width: 0;
+}
+
+.field input,
+.field select {
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-primary);
+    border: 1px solid var(--app-color-border-strong);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 0.85rem;
+    min-width: 0;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.chip:focus-visible,
+.clearButton:focus-visible {
+    outline: 2px solid rgba(var(--app-color-primary-rgb), 0.45);
+    outline-offset: 2px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--app-color-border-strong);
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+.chipActive {
+    border-color: var(--app-color-primary);
+    background: rgba(var(--app-color-primary-rgb), 0.15);
+    color: var(--app-color-text-primary);
+}
+
+.clearButton {
+    padding: 6px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--app-color-link);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
+
+@media (max-width: 599.95px) {
+    .bar {
+        gap: 10px;
+    }
+
+    .group {
+        width: 100%;
+    }
+
+    .field {
+        flex: 1 1 140px;
+    }
+}

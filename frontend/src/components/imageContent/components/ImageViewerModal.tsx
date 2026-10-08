@@ -12,7 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
+import type { ImageLibraryItem } from '@/types/imageLibrary';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { useImageViewerModal } from './useImageViewerModal';
@@ -26,11 +26,11 @@ const thumbnailUrl = (id: number) =>
 const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
 
 type ImageViewerModalProps = {
-    activeImage: IImageData;
+    activeImage: ImageLibraryItem;
     activeIndex: number;
     activeImageDate: Date | null;
     dateFormatter: Intl.DateTimeFormat;
-    filteredImages: IImageData[];
+    filteredImages: ImageLibraryItem[];
     zoom: number;
     showDetails: boolean;
     showFilmstrip: boolean;
@@ -244,7 +244,7 @@ export default function ImageViewerModal({
                     </button>
                     <div className={styles.stageFrame}>
                         <img
-                            src={blobUrl(activeImage.id)}
+                            src={blobUrl(activeImage.file_id)}
                             alt={activeImage.name}
                             className={styles.image}
                             style={{ transform: `scale(${zoom})` }}
@@ -300,16 +300,20 @@ export default function ImageViewerModal({
                         .map((item) => (
                             <button
                                 type="button"
-                                key={item.id}
-                                onClick={() => onOpenImage(item.id)}
+                                key={item.file_id}
+                                onClick={() => onOpenImage(item.file_id)}
                                 className={
-                                    item.id === activeImage.id
+                                    item.file_id === activeImage.file_id
                                         ? `${styles.filmstripItem} ${styles.filmstripItemActive}`
                                         : styles.filmstripItem
                                 }
                                 aria-label={t('IMAGES_OPEN_IMAGE_ARIA', { name: item.name })}
                             >
-                                <img src={thumbnailUrl(item.id)} alt={item.name} loading="lazy" />
+                                <img
+                                    src={thumbnailUrl(item.file_id)}
+                                    alt={item.name}
+                                    loading="lazy"
+                                />
                             </button>
                         ))}
                 </div>

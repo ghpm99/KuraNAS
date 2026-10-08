@@ -1,5 +1,8 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
+import type { ReactElement } from 'react';
+import type { ImageLibraryItem } from '@/types/imageLibrary';
+import { buildImageLibraryItem } from '../imageLibraryTestFixtures';
 import ImageViewerModal from './ImageViewerModal';
 
 jest.mock('@/service/apiUrl', () => ({
@@ -61,92 +64,23 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-const createImage = (
-    overrides: Omit<Partial<IImageData>, 'metadata'> & {
-        metadata?: Partial<NonNullable<IImageData['metadata']>>;
-    } = {}
-): IImageData => {
-    const metadata = {
-        id: 7,
-        fileId: 7,
-        path: '/photos/travel/Trip.jpg',
-        format: 'jpg',
-        mode: 'RGB',
-        width: 1600,
-        height: 900,
-        dpi_x: 72,
-        dpi_y: 72,
-        x_resolution: 72,
-        y_resolution: 72,
-        resolution_unit: 2,
-        orientation: 1,
-        compression: 0,
-        photometric_interpretation: 0,
-        color_space: 1,
-        components_configuration: '',
-        icc_profile: '',
-        make: 'Sony',
-        model: 'A7',
-        lens_model: '24-70mm',
-        serial_number: '',
-        datetime: '2026-03-10T10:00:00Z',
-        datetime_original: '2026-03-10T10:00:00Z',
-        datetime_digitized: '',
-        subsec_time: '',
-        iso: 400,
-        shutter_speed: 0,
-        focal_length: 35,
-        f_number: 2.8,
-        aperture_value: 0,
-        brightness_value: 0,
-        exposure_bias: 0,
-        metering_mode: 0,
-        flash: 0,
-        white_balance: 0,
-        exposure_program: 0,
-        max_aperture_value: 0,
-        gps_latitude: 0,
-        gps_longitude: 0,
-        gps_altitude: 0,
-        gps_date: '',
-        gps_time: '',
-        exposure_time: 0.008,
-        user_comment: '',
-        copyright: '',
-        artist: '',
-        software: 'Photos App',
-        image_description: 'Trip',
-        classification: { category: 'photo', confidence: 0.95 },
-        createdAt: '2026-03-10T10:00:00Z',
-        ...overrides.metadata,
-    } as NonNullable<IImageData['metadata']>;
+const createImage = (overrides: Partial<ImageLibraryItem> = {}) => buildImageLibraryItem(overrides);
 
-    return {
-        id: 7,
-        name: 'Trip.jpg',
-        path: '/photos/travel/Trip.jpg',
-        type: 2,
-        format: '.jpg',
-        size: 2048,
-        deleted_at: '',
-        last_interaction: '',
-        last_backup: '',
-        check_sum: '',
-        directory_content_count: 0,
-        starred: false,
-        created_at: '2026-03-10T10:00:00Z',
-        updated_at: '2026-03-10T10:00:00Z',
-        metadata,
-        ...overrides,
-    } as IImageData;
-};
+const renderWithQuery = (ui: ReactElement) =>
+    render(
+        <QueryClientProvider
+            client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+            {ui}
+        </QueryClientProvider>
+    );
 
 describe('ImageViewerModal', () => {
     it('renders product actions, details, and filmstrip items', () => {
         const onToggleFavorite = jest.fn();
         const onOpenFolder = jest.fn();
 
-        render(
+        renderWithQuery(
             <ImageViewerModal
                 activeImage={createImage()}
                 activeIndex={0}
@@ -157,7 +91,7 @@ describe('ImageViewerModal', () => {
                         timeStyle: 'short',
                     })
                 }
-                filteredImages={[createImage(), createImage({ id: 8, name: 'Trip-2.jpg' })]}
+                filteredImages={[createImage(), createImage({ file_id: 8, name: 'Trip-2.jpg' })]}
                 zoom={1}
                 showDetails
                 showFilmstrip
@@ -182,6 +116,7 @@ describe('ImageViewerModal', () => {
         expect(screen.getByRole('button', { name: 'Abrir pasta' })).toBeInTheDocument();
         expect(screen.getByText('Biblioteca')).toBeInTheDocument();
         expect(screen.getAllByText('/photos/travel')).toHaveLength(2);
+        expect(screen.getByText('Foto')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Abrir Trip-2\.jpg/i })).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Favoritar' }));
@@ -192,7 +127,7 @@ describe('ImageViewerModal', () => {
     });
 
     it('shows the playing state and hides the filmstrip when requested', () => {
-        render(
+        renderWithQuery(
             <ImageViewerModal
                 activeImage={createImage({ starred: true })}
                 activeIndex={0}
@@ -229,7 +164,7 @@ describe('ImageViewerModal', () => {
         const onIncreaseZoom = jest.fn();
         const onDecreaseZoom = jest.fn();
 
-        render(
+        renderWithQuery(
             <ImageViewerModal
                 activeImage={createImage()}
                 activeIndex={0}
@@ -272,10 +207,10 @@ describe('ImageViewerModal', () => {
 
     it('renders filmstrip with non-active items and triggers onOpenImage', () => {
         const onOpenImage = jest.fn();
-        const activeImage = createImage({ id: 7 });
-        const otherImage = createImage({ id: 8, name: 'Other.jpg' });
+        const activeImage = createImage({ file_id: 7 });
+        const otherImage = createImage({ file_id: 8, name: 'Other.jpg' });
 
-        render(
+        renderWithQuery(
             <ImageViewerModal
                 activeImage={activeImage}
                 activeIndex={0}
@@ -312,7 +247,7 @@ describe('ImageViewerModal', () => {
     });
 
     it('disables slideshow button when only one image', () => {
-        render(
+        renderWithQuery(
             <ImageViewerModal
                 activeImage={createImage()}
                 activeIndex={0}

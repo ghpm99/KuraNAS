@@ -19,11 +19,11 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 
 - [x] 01. Extensão em maiúsculas: normalizar `format` na gravação + migração dos dados + consultas tolerantes
 - [x] 02. Página quebra com 500 quando a imagem não tem linha de metadata; `rows.Err()`
-- [ ] 03. Listagem enxuta no servidor com busca/filtros (q, categoria, favoritas, formato, período, câmera, ordenação) e scroll infinito real com estado de erro
-- [ ] 04. `taken_at` indexado (EXIF → mtime), timeline agrupada por ele, total de fotos e salto por ano/mês
+- [x] 03. Listagem enxuta no servidor com busca/filtros (q, categoria, favoritas, formato, período, câmera, ordenação) e scroll infinito real com estado de erro
+- [x] 04. `taken_at` indexado (EXIF → mtime), timeline agrupada por ele, total de fotos e salto por ano/mês
 - [ ] 05. Android: paginação da galeria (`page_size`)
-- [ ] 06. Categorias da IA mapeadas (10 valores, i18n, Fotos inclui retrato/paisagem, Capturas inclui screenshot de app)
-- [ ] 07. Favoritas: aba na galeria e estrela no card
+- [x] 06. Categorias da IA mapeadas (10 valores, i18n, Fotos inclui retrato/paisagem, Capturas inclui screenshot de app)
+- [x] 07. Favoritas: aba na galeria e estrela no card
 - [ ] 08. Pastas a partir do servidor (contagem e capa reais)
 - [ ] 09. Miniaturas: JPEG sem letterbox, orientação EXIF, resampler rápido, cache por largura×altura, tamanho da grade pré-gerado, preview para o viewer
 - [ ] 10. Formatos: WebP/BMP/TIFF/HEIC/HEIF/AVIF/JFIF/RAW reconhecidos, com miniatura/preview
@@ -33,6 +33,6 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [ ] 14. Busca por conteúdo: tags, legenda e OCR pela IA em passo assíncrono, pesquisáveis
 - [ ] 15. Indexação: IA fora do caminho crítico do metadata
 - [ ] 16. Facetas de câmera e formato como filtros
-- [ ] 17. Desempenho do cliente: sem recomputar pastas/álbuns sobre tudo, refetch no foco limitado
+- [x] 17. Desempenho do cliente: sem recomputar pastas/álbuns sobre tudo, refetch no foco limitado
 - [ ] 18. Duplicadas acessíveis a partir da galeria
-- [ ] 19. Código morto (`ImageCategoryTabs`, chaves `IMAGES_CATEGORY_*`, `fileId`/`createdAt` desalinhados)
+- [x] 19. Código morto (`ImageCategoryTabs`, chaves `IMAGES_CATEGORY_*`, `fileId`/`createdAt` desalinhados)

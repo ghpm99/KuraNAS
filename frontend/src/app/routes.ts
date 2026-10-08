@@ -25,7 +25,14 @@ export const appRoutes = {
 export const isVideoPlayerRoute = (pathname: string) =>
     pathname.startsWith(`${appRoutes.videoPlayerBase}/`);
 
-export type ImageSection = 'library' | 'recent' | 'captures' | 'photos' | 'folders' | 'albums';
+export type ImageSection =
+    | 'library'
+    | 'recent'
+    | 'captures'
+    | 'photos'
+    | 'favorites'
+    | 'folders'
+    | 'albums';
 export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
 export type VideoSection =
     | 'home'
