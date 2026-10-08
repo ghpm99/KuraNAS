@@ -114,3 +114,12 @@ var GetActiveFileByPathOrPhysicalPathQuery string
 
 //go:embed get_active_files_by_paths.sql
 var GetActiveFilesByPathsQuery string
+
+//go:embed search_active_files_by_name.sql
+var SearchActiveFilesByNameQuery string
+
+//go:embed search_active_files_by_name_under_path.sql
+var SearchActiveFilesByNameUnderPathQuery string
+
+//go:embed search_active_children_by_name.sql
+var SearchActiveChildrenByNameQuery string

@@ -68,6 +68,9 @@ func (m *filesHandlerServiceMock) GetStarredFiles(page int, pageSize int) (utils
 func (m *filesHandlerServiceMock) GetRecentlyAccessedFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
 }
+func (m *filesHandlerServiceMock) SearchFilesByName(params FileSearchParams) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(params.Page, params.PageSize)
+}
 func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return FileStat{}, false, nil
 }

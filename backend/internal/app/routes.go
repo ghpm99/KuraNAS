@@ -193,6 +193,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	files.GET("/", context.Files.Handler.GetFilesHandler)
 	files.GET("/tree", context.Files.Handler.GetFilesTreeHandler)
+	files.GET("/search", context.Files.Handler.SearchFilesHandler)
 	files.GET("/:id", context.Files.Handler.GetChildrenByIdHandler)
 	files.GET("/starred", context.Files.Handler.GetStarredFilesHandler)
 	files.GET("/recent-files", context.Files.Handler.GetRecentlyAccessedFilesHandler)
