@@ -6,7 +6,6 @@ import Sidebar from '@/components/layout/Sidebar/Sidebar';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import Tabs from '@/components/tabs/tabs';
 import ActionBar from '@/components/actionBar/actionBar';
-import ActivePageListener from '@/components/activePageListener';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Message from '@/components/ui/Message/Message';
@@ -23,7 +22,6 @@ import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
 import AnalyticsPage from '@/pages/analytics';
 
 const mockUseFile = jest.fn();
-const mockUseUI = jest.fn();
 const mockUseLocation = jest.fn();
 const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
@@ -35,14 +33,6 @@ jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
     default: () => mockUseFile(),
 }));
-
-jest.mock('@/components/providers/uiProvider/uiContext', () => {
-    const actual = jest.requireActual('@/components/providers/uiProvider/uiContext');
-    return {
-        ...actual,
-        useUI: () => mockUseUI(),
-    };
-});
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -162,7 +152,6 @@ beforeEach(() => {
         expandedItems: [],
         files: [],
     });
-    mockUseUI.mockReturnValue({ activePage: 'files', setActivePage: jest.fn() });
     mockUseLocation.mockReturnValue({ pathname: '/files', state: null });
     mockUseParams.mockReturnValue({ id: '10' });
     mockUseAnalyticsOverview.mockReturnValue({
@@ -264,14 +253,14 @@ describe('shell components and pages', () => {
                 <Sidebar />
             </MemoryRouter>
         );
-        expect(screen.getAllByText('FolderTreeMock').length).toBeGreaterThan(0);
+        expect(screen.queryByText('FolderTreeMock')).not.toBeInTheDocument();
     });
 
     it('renders folder tree states and folder item formatting', () => {
         expect(screen.queryByText('FolderTreeMock')).not.toBeInTheDocument();
     });
 
-    it('renders nav item, tabs, action bar and active page listener', () => {
+    it('renders nav item, tabs and action bar', () => {
         render(
             <NavItem href="/files" icon={<span>x</span>}>
                 Home
@@ -285,40 +274,6 @@ describe('shell components and pages', () => {
         render(<ActionBar />);
         expect(screen.getByText('UPLOAD_FILE')).toBeInTheDocument();
 
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('files');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/home' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('home');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/favorites' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('favorites');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/settings' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('settings');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/music/playlists' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('music');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/videos/series' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('videos');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/analytics/library' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('analytics');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/activity-diary' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
     });
 
     it('renders reusable ui components', () => {

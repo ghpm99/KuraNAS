@@ -1,43 +1,30 @@
 import { render, screen } from '@testing-library/react';
 import Sidebar from './Sidebar';
 import { MemoryRouter } from 'react-router-dom';
-
-const mockUseUI = jest.fn();
-
-jest.mock('@/components/providers/uiProvider/uiContext', () => ({
-    useUI: () => mockUseUI(),
-}));
-jest.mock('@/components/i18n/provider/i18nContext', () => ({
-    __esModule: true,
-    default: () => ({ t: (k: string) => k }),
-}));
-jest.mock('@/components/layout/Sidebar/components/folderTree', () => ({
-    __esModule: true,
-    default: () => <div>FolderTree</div>,
-}));
+import { navigationItems } from '@/components/layout/navigationItems';
 
 describe('layout/Sidebar', () => {
-    it('renders navigation entries', () => {
-        mockUseUI.mockReturnValue({ activePage: 'images' });
-        render(
-            <MemoryRouter initialEntries={['/images']}>
-                <Sidebar />
-            </MemoryRouter>
-        );
-        expect(screen.getByText('APP_NAME')).toBeInTheDocument();
-        expect(screen.getByText('HOME')).toBeInTheDocument();
-        expect(screen.getByText('FILES')).toBeInTheDocument();
-        expect(screen.getByText('NAV_IMAGES')).toBeInTheDocument();
-        expect(screen.queryByText('FolderTree')).not.toBeInTheDocument();
-    });
-
-    it('shows folder tree only for files page', () => {
-        mockUseUI.mockReturnValue({ activePage: 'files' });
+    it('renders without any provider or service mock', () => {
         render(
             <MemoryRouter initialEntries={['/files']}>
                 <Sidebar />
             </MemoryRouter>
         );
-        expect(screen.getByText('FolderTree')).toBeInTheDocument();
+
+        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getAllByRole('link')).toHaveLength(navigationItems.length);
+    });
+
+    it('renders brand and navigation entries', () => {
+        render(
+            <MemoryRouter initialEntries={['/images']}>
+                <Sidebar />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('APP_NAME')).toBeInTheDocument();
+        expect(screen.getByText('HOME')).toBeInTheDocument();
+        expect(screen.getByText('FILES')).toBeInTheDocument();
+        expect(screen.getByText('NAV_IMAGES')).toBeInTheDocument();
     });
 });

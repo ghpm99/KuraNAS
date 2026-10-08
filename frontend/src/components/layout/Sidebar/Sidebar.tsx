@@ -1,6 +1,4 @@
-import { useUI } from '@/components/providers/uiProvider/uiContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import { List } from '@mui/material';
 import { navigationItems } from '@/components/layout/navigationItems';
@@ -13,7 +11,6 @@ interface SidebarProps {
 
 const Sidebar = ({ mobile = false, onNavigate }: SidebarProps) => {
     const { t } = useI18n();
-    const { activePage } = useUI();
     const sidebarClassName = mobile ? `${styles.sidebar} ${styles.mobile}` : styles.sidebar;
 
     return (
@@ -31,11 +28,6 @@ const Sidebar = ({ mobile = false, onNavigate }: SidebarProps) => {
                     </NavItem>
                 ))}
             </List>
-            {activePage === 'files' && (
-                <div className={styles.treeSection}>
-                    <FolderTree />
-                </div>
-            )}
         </nav>
     );
 };
