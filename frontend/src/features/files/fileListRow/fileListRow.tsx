@@ -8,6 +8,7 @@ import styles from './fileListRow.module.css';
 type FileListRowProps = {
     title: string;
     metadata: string;
+    secondaryText?: string;
     thumbnail: string;
     onClick: (event: MouseEvent<HTMLElement>) => void;
     starred?: boolean;
@@ -23,6 +24,7 @@ type FileListRowProps = {
 const FileListRow = ({
     title,
     metadata,
+    secondaryText,
     thumbnail,
     onClick,
     starred = false,
@@ -74,6 +76,9 @@ const FileListRow = ({
                             </>
                         ) : null}
                     </span>
+                    {secondaryText ? (
+                        <span className={styles.listMetadata}>{secondaryText}</span>
+                    ) : null}
                     <span className={styles.listMetadata}>{metadata}</span>
                 </div>
             </button>

@@ -27,7 +27,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 10. Seleção (clique seleciona, duplo clique abre), multi-seleção, ações em lote, menu de contexto
 - [x] 11. Upload completo: drag&drop, pasta, progresso por arquivo, política de conflito, destino correto
 - [x] 12. Breadcrumb e árvore funcionando com deep link/F5 (`/files/ancestors/:id`); spinner `'pending'`
-- [ ] 13. Busca na pasta (recursiva, paginada) + índice trigram em `name`
+- [x] 13. Busca na pasta (recursiva, paginada) + índice trigram em `name`
 - [ ] 14. Barra de ações responsiva; "Criar" que na verdade reescaneia; título do FolderPicker
 - [ ] 15. Visão lista com colunas ordenáveis; itens como link (ctrl+click/nova aba)
 - [ ] 16. Painel de detalhes completo (checksum, interação, backup, metadados) e para pasta (tamanho/contagem recursivos)

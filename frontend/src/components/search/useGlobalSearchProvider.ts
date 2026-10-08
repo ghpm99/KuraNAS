@@ -236,6 +236,25 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        if (files.length > 0 || folders.length > 0) {
+            nextSections.push({
+                id: 'files-see-all',
+                title: t('GLOBAL_SEARCH_SECTION_MORE'),
+                items: [
+                    {
+                        id: 'files-see-all-results',
+                        kind: 'action',
+                        label: t('GLOBAL_SEARCH_SEE_ALL_FILES'),
+                        description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
+                            query: normalizedQuery,
+                        }),
+                        onSelect: () =>
+                            navigate(`${appRoutes.files}?q=${encodeURIComponent(normalizedQuery)}`),
+                    },
+                ],
+            });
+        }
+
         const artists = data.artists.map<SearchDialogItem>((item) => ({
             id: `artist-${item.key}`,
             kind: 'artist',

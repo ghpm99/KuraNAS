@@ -9,6 +9,7 @@ jest.mock('./index', () => ({
 import { apiBase } from './index';
 import {
     getFilesTree,
+    searchFiles,
     getStarredFiles,
     getRecentlyAccessedFiles,
     getRecentAccessByFileId,
@@ -67,6 +68,40 @@ describe('service/files', () => {
         await expect(getFileByDiskPath('D:\\Cold\\a.txt')).resolves.toEqual(file);
         expect(mockedApi.get).toHaveBeenCalledWith('/files/by-disk-path', {
             params: { path: 'D:\\Cold\\a.txt' },
+        });
+    });
+
+    it('searches files sending the snake_case params the backend decodes', async () => {
+        const payload = { items: [], pagination: { page: 2 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        await expect(
+            searchFiles({ q: 'relatorio', parentId: 7, recursive: false, page: 2, pageSize: 100 })
+        ).resolves.toEqual(payload);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/search', {
+            params: {
+                q: 'relatorio',
+                parent_id: 7,
+                recursive: false,
+                page: 2,
+                page_size: 100,
+            },
+        });
+    });
+
+    it('searches globally leaving parent_id undefined', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await searchFiles({ q: 'foto', page: 1, pageSize: 50 });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/search', {
+            params: {
+                q: 'foto',
+                parent_id: undefined,
+                recursive: undefined,
+                page: 1,
+                page_size: 50,
+            },
         });
     });
 

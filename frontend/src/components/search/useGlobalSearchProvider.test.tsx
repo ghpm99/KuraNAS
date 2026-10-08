@@ -317,6 +317,41 @@ describe('useGlobalSearchProvider', () => {
             expect(mockNavigate).toHaveBeenCalledWith('/files/folder');
         });
 
+        it('adds a see-all-files action that opens the global file search with the term', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('  relatório 2024 ');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'files-see-all');
+            const seeAllItem = getRequired(seeAllSection?.items[0]);
+            expect(seeAllItem.label).toBe('GLOBAL_SEARCH_SEE_ALL_FILES');
+
+            act(() => {
+                result.current.activateItem(seeAllItem);
+            });
+            expect(mockNavigate).toHaveBeenCalledWith(
+                `/files?q=${encodeURIComponent('relatório 2024')}`
+            );
+        });
+
+        it('omits the see-all-files action when no file or folder matched', () => {
+            mockUseQueryReturn = {
+                data: { ...mockSearchData, files: [], folders: [] },
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+
+            expect(result.current.sections.find((s) => s.id === 'files-see-all')).toBeUndefined();
+        });
+
         it('maps artist results correctly', () => {
             const { result } = renderHook(() => useGlobalSearchProvider());
 

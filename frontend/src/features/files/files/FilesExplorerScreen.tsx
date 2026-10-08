@@ -25,6 +25,10 @@ import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPath
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { buildFilesUrl } from '@/features/files/providers/fileProvider/fileProviderUtils';
+import FileSearchBar from '@/features/files/search/FileSearchBar';
+import FileSearchResultsHeader from '@/features/files/search/FileSearchResultsHeader';
+import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
+import useFileSearchResults from '@/features/files/search/useFileSearchResults';
 import FilesBreadcrumb from './FilesBreadcrumb';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 import styles from './FilesExplorerScreen.module.css';
@@ -46,6 +50,15 @@ const FilesExplorerScreen = () => {
     const { hasSelection } = useFileSelectionContext();
     const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
+    const [isSearchRecursive, setIsSearchRecursive] = useState(true);
+    const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery();
+    const searchFolderId = selectedItem?.type === FileType.Directory ? selectedItem.id : undefined;
+    const searchResults = useFileSearchResults({
+        query: activeQuery,
+        parentId: searchFolderId,
+        isRecursive: isSearchRecursive,
+    });
+    const isSearchActive = activeQuery !== '';
     const isFileSelected = selectedItem?.type === FileType.File;
     const workspaceClassName = isFileSelected
         ? `${styles.workspace} ${styles.workspaceWithPreview}`
@@ -112,6 +125,15 @@ const FilesExplorerScreen = () => {
                             </div>
                         </div>
 
+                        <FileSearchBar
+                            value={inputValue}
+                            onChange={setInputValue}
+                            onClear={clearQuery}
+                            isFolderScope={searchFolderId !== undefined}
+                            isRecursive={isSearchRecursive}
+                            onRecursiveChange={setIsSearchRecursive}
+                        />
+
                         <div className={styles.contextMeta}>
                             <span>{contextLabel}</span>
                             <span>{itemCountLabel}</span>
@@ -123,16 +145,33 @@ const FilesExplorerScreen = () => {
                         {hasSelection ? <FileSelectionToolbar /> : <ActionBar />}
                     </section>
 
-                    {!isFileSelected ? (
+                    {!isFileSelected && !isSearchActive ? (
                         <section className={`${styles.panel} ${styles.tabsCard}`}>
                             <Tabs />
                         </section>
                     ) : null}
 
                     <section className={`${styles.panel} ${styles.contentCard}`}>
-                        <UploadDropZone>
-                            <FileContent showHeading={false} viewMode={viewMode} />
-                        </UploadDropZone>
+                        {isSearchActive ? (
+                            <>
+                                <FileSearchResultsHeader
+                                    query={activeQuery}
+                                    resultCount={searchResults.items.length}
+                                    hasMoreResults={searchResults.hasNextPage}
+                                    onClear={clearQuery}
+                                />
+                                <FileContent
+                                    showHeading={false}
+                                    viewMode={viewMode}
+                                    searchListing={searchResults}
+                                    emptyStateMessage={t('FILES_SEARCH_EMPTY')}
+                                />
+                            </>
+                        ) : (
+                            <UploadDropZone>
+                                <FileContent showHeading={false} viewMode={viewMode} />
+                            </UploadDropZone>
+                        )}
                     </section>
                 </div>
 

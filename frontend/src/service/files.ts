@@ -41,6 +41,33 @@ export const getFilesTree = async ({
     return response.data;
 };
 
+type SearchFilesParams = {
+    q: string;
+    parentId?: number;
+    recursive?: boolean;
+    page: number;
+    pageSize: number;
+};
+
+export const searchFiles = async ({
+    q,
+    parentId,
+    recursive,
+    page,
+    pageSize,
+}: SearchFilesParams): Promise<FilePaginationResponse> => {
+    const response = await apiBase.get<FilePaginationResponse>('/files/search', {
+        params: {
+            q,
+            parent_id: parentId,
+            recursive,
+            page,
+            page_size: pageSize,
+        },
+    });
+    return response.data;
+};
+
 type FilesPageParams = {
     page: number;
     pageSize: number;

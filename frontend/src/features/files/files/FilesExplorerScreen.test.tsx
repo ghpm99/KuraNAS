@@ -20,6 +20,17 @@ jest.mock('@/features/files/providers/fileProvider/useFileAncestors', () => ({
     default: () => ({ data: undefined }),
 }));
 
+jest.mock('@/features/files/search/useFileSearchResults', () => ({
+    __esModule: true,
+    default: () => ({
+        items: [],
+        status: 'pending',
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: jest.fn(),
+    }),
+}));
+
 jest.mock('@/components/actionBar', () => () => <div>ActionBarMock</div>);
 jest.mock('@/features/files/fileContent', () => ({ viewMode, showHeading }: any) => (
     <div
