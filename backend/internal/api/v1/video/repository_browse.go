@@ -87,7 +87,7 @@ func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse
 			paginationResponse.Items = append(paginationResponse.Items, file)
 		}
 
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {

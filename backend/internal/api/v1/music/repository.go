@@ -66,7 +66,7 @@ func (r *Repository) getLibraryFiles(args ...any) ([]files.FileModel, error) {
 			}
 			results = append(results, file)
 		}
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {
@@ -152,7 +152,7 @@ func (r *Repository) GetLibraryTracks(page int, pageSize int) (utils.PaginationR
 			}
 			paginationResponse.Items = append(paginationResponse.Items, file)
 		}
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {
@@ -335,7 +335,7 @@ func (r *Repository) GetPlaylistTracks(playlistID int, page int, pageSize int) (
 			}
 			paginationResponse.Items = append(paginationResponse.Items, track)
 		}
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {
