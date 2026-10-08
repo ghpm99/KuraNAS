@@ -10,13 +10,15 @@ import I18nProvider from '../i18n/provider';
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
 import NotificationProvider from './notificationProvider';
 import SettingsProvider from './settingsProvider';
+import { shouldRetryQuery } from './queryRetryPolicy';
 
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            staleTime: 1000 * 60 * 5, // 5 minutes
+            refetchOnReconnect: true,
+            retry: shouldRetryQuery,
+            staleTime: 1000 * 60 * 5,
         },
     },
 });
