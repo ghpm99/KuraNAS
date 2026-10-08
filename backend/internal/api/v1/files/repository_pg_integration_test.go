@@ -281,3 +281,65 @@ func TestPostgres_ChildrenSortKeepsDirectoriesFirstAndOrdersByKey(t *testing.T) 
 		}
 	}
 }
+
+func TestPostgres_StarredAndRecentListAcrossFoldersAndSkipDeleted(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "raiz.txt", "/srv/raiz.txt", "/srv", 1, mod)
+	insertFileRow(t, repo, "fundo.txt", "/srv/a/b/fundo.txt", "/srv/a/b", 1, mod)
+	insertFileRow(t, repo, "apagado.txt", "/srv/a/apagado.txt", "/srv/a", 1, mod)
+	insertFileRow(t, repo, "comum.txt", "/srv/comum.txt", "/srv", 1, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		statements := []string{
+			"UPDATE home_file SET starred = TRUE WHERE name IN ('raiz.txt', 'fundo.txt', 'apagado.txt')",
+			"UPDATE home_file SET deleted_at = now() WHERE name = 'apagado.txt'",
+			"TRUNCATE recent_file",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() - interval '3 hours' FROM home_file WHERE name = 'raiz.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.2', id, now() - interval '1 hours' FROM home_file WHERE name = 'raiz.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() - interval '2 hours' FROM home_file WHERE name = 'fundo.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() FROM home_file WHERE name = 'apagado.txt'",
+		}
+		for _, statement := range statements {
+			if _, execErr := tx.Exec(statement); execErr != nil {
+				return execErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed starred and recent: %v", err)
+	}
+
+	starred, err := repo.GetStarredFiles(1, 50)
+	if err != nil {
+		t.Fatalf("GetStarredFiles: %v", err)
+	}
+	starredNames := []string{}
+	for _, file := range starred.Items {
+		starredNames = append(starredNames, file.Name)
+	}
+	if !slices.Equal(starredNames, []string{"fundo.txt", "raiz.txt"}) {
+		t.Fatalf("starred must span folders and hide deleted rows, got %v", starredNames)
+	}
+
+	recent, err := repo.GetRecentlyAccessedFiles(1, 50)
+	if err != nil {
+		t.Fatalf("GetRecentlyAccessedFiles: %v", err)
+	}
+	recentNames := []string{}
+	for _, file := range recent.Items {
+		recentNames = append(recentNames, file.Name)
+	}
+	if !slices.Equal(recentNames, []string{"raiz.txt", "fundo.txt"}) {
+		t.Fatalf("recent must be distinct, newest first and hide deleted rows, got %v", recentNames)
+	}
+
+	firstRecentPage, err := repo.GetRecentlyAccessedFiles(1, 1)
+	if err != nil || len(firstRecentPage.Items) != 1 || !firstRecentPage.Pagination.HasNext {
+		t.Fatalf("expected paginated recent with next page, got %+v err=%v", firstRecentPage, err)
+	}
+}
