@@ -31,7 +31,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 14. Barra de ações responsiva; "Criar" que na verdade reescaneia; título do FolderPicker
 - [x] 15. Visão lista com colunas ordenáveis; itens como link (ctrl+click/nova aba)
 - [x] 16. Painel de detalhes completo (checksum, interação, backup, metadados) e para pasta (tamanho/contagem recursivos)
-- [ ] 17. Preview: mais tipos (md, código, log, mkv, m4a…), fallback com Baixar, anterior/próximo
+- [x] 17. Preview: mais tipos (md, código, log, mkv, m4a…), fallback com Baixar, anterior/próximo
 - [ ] 18. Diálogo de apagar informa lixeira + opção definitiva; renomear seleciona só o nome
 - [ ] 19. Atalhos de teclado (Enter, Delete, F2, Ctrl+A, Backspace, `/`)
 - [ ] 20. Estados vazio/erro com tentar de novo e mensagem do backend

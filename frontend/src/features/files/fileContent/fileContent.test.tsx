@@ -102,7 +102,11 @@ describe('fileContent', () => {
         expect(screen.getByText(/FOLDER - 1 ITEM/)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'song' }));
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 1, name: 'song' })
+            expect.objectContaining({ id: 1, name: 'song' }),
+            expect.arrayContaining([
+                expect.objectContaining({ id: 1 }),
+                expect.objectContaining({ id: 4 }),
+            ])
         );
         expect(rootHandleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
         fireEvent.click(screen.getByRole('button', { name: 'star-song' }));
@@ -150,7 +154,8 @@ describe('fileContent', () => {
         expect(screen.getByText(/FOLDER - 3 ITENS/)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'child' }));
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 3, name: 'child' })
+            expect.objectContaining({ id: 3, name: 'child' }),
+            expect.arrayContaining([expect.objectContaining({ id: 3 })])
         );
         expect(handleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }));
         fireEvent.click(screen.getByRole('button', { name: 'star-child' }));
@@ -196,7 +201,8 @@ describe('fileContent', () => {
         fireEvent.click(screen.getByRole('button', { name: 'movie.mp4' }));
 
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 1, name: 'movie.mp4' })
+            expect.objectContaining({ id: 1, name: 'movie.mp4' }),
+            [expect.objectContaining({ id: 1 })]
         );
         expect(handleSelectItem).not.toHaveBeenCalled();
     });
@@ -220,7 +226,10 @@ describe('fileContent', () => {
 
         render(<FileContent viewMode="list" showHeading={false} />);
         expect(screen.queryByText('FILES')).not.toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'song' })).toHaveAttribute('href', '/files/library/song.mp3');
+        expect(screen.getByRole('link', { name: 'song' })).toHaveAttribute(
+            'href',
+            '/files/library/song.mp3'
+        );
         expect(screen.getByRole('columnheader', { name: 'NAME' })).toBeInTheDocument();
     });
 

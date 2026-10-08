@@ -9,6 +9,7 @@ import type { IImageData, ImageGroupBy } from '@/components/providers/imageProvi
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import type { FileAncestor } from '@/types/fileAncestor';
 import type { FileLocation } from '@/types/fileLocation';
+import type { FolderStats } from '@/types/folderStats';
 import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
 import { getApiV1BaseUrl } from './apiUrl';
@@ -108,6 +109,11 @@ export const getFileByPath = async (path: string): Promise<FileData | null> => {
 
 export const getFileLocation = async (fileId: number): Promise<FileLocation> => {
     const response = await apiBase.get<FileLocation>(`/files/location/${fileId}`);
+    return response.data;
+};
+
+export const getFolderStats = async (folderId: number): Promise<FolderStats> => {
+    const response = await apiBase.get<FolderStats>(`/files/folder-stats/${folderId}`);
     return response.data;
 };
 
@@ -242,6 +248,23 @@ export const copyFile = async (
         new_name: newName ?? '',
     });
 };
+
+export const textPreviewMaxBytes = 512 * 1024;
+
+export const getFileTextPreview = async (fileId: number): Promise<string> => {
+    const response = await apiBase.get<string>(`/files/blob/${fileId}`, {
+        headers: { Range: `bytes=0-${textPreviewMaxBytes - 1}` },
+        responseType: 'text',
+        transformResponse: (rawBody: string) => rawBody,
+    });
+    return response.data;
+};
+
+export const getFileBlobUrl = (fileId: number): string =>
+    `${getApiV1BaseUrl()}/files/blob/${fileId}`;
+
+export const getFileThumbnailUrl = (fileId: number): string =>
+    `${getApiV1BaseUrl()}/files/thumbnail/${fileId}`;
 
 export const getFileDownloadUrl = (fileId: number): string =>
     `${getApiV1BaseUrl()}/files/download/${fileId}`;

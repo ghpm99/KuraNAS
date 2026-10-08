@@ -13,6 +13,7 @@ import { resolveListedFiles } from '../selection/listedFiles';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useFile, { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import FileViewer from './components/fileViewer/fileViewer';
+import FileViewerNavigation from './components/fileViewer/fileViewerNavigation';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
@@ -93,8 +94,8 @@ const FileContent = ({
 
     const thumbnailUrl = (id: number) => `${getApiV1BaseUrl()}/files/thumbnail/${id}`;
 
-    const handleOpenItem = (file: FileData) => {
-        if (!openMediaItem(file)) {
+    const handleOpenItem = (file: FileData, listedFiles: FileData[] = []) => {
+        if (!openMediaItem(file, listedFiles)) {
             handleSelectItem(file);
         }
     };
@@ -109,13 +110,12 @@ const FileContent = ({
             return;
         }
         const isTogglingSelection =
-            isSelectionEnabled &&
-            (event.ctrlKey || event.metaKey || fileSelection.hasSelection);
+            isSelectionEnabled && (event.ctrlKey || event.metaKey || fileSelection.hasSelection);
         if (isTogglingSelection) {
             fileSelection.toggle(file);
             return;
         }
-        handleOpenItem(file);
+        handleOpenItem(file, orderedFiles);
     };
 
     const handleLinkClick = (
@@ -173,7 +173,9 @@ const FileContent = ({
         if (!contextMenuState) return [];
         const { file } = contextMenuState;
         const isPartOfMultiSelection =
-            isSelectionEnabled && fileSelection.isSelected(file.id) && fileSelection.selectedCount > 1;
+            isSelectionEnabled &&
+            fileSelection.isSelected(file.id) &&
+            fileSelection.selectedCount > 1;
         return isPartOfMultiSelection ? fileSelection.selectedFiles : [file];
     };
 
@@ -238,7 +240,7 @@ const FileContent = ({
                     anchorPosition={contextMenuState?.anchorPosition ?? null}
                     targetFiles={contextMenuTargetFiles()}
                     onClose={() => setContextMenuState(null)}
-                    onOpenFile={handleOpenItem}
+                    onOpenFile={(file) => handleOpenItem(file, collectionItems)}
                 />
                 {items ? null : (
                     <LoadMoreSentinel
@@ -268,6 +270,7 @@ const FileContent = ({
 
     return (
         <div className={styles.previewContainer}>
+            <FileViewerNavigation file={selectedItem} />
             <FileViewer file={selectedItem} />
         </div>
     );

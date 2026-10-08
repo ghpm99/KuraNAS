@@ -1,4 +1,11 @@
-import { formatDate, formatDateTime, formatDuration, formatSize, getFileTypeInfo } from './index';
+import {
+    formatDate,
+    formatDateTime,
+    formatDuration,
+    formatSize,
+    getFileTypeInfo,
+    hasDedicatedMediaScreen,
+} from './index';
 
 describe('utils/index', () => {
     it('formats sizes for bytes and larger units', () => {
@@ -54,5 +61,79 @@ describe('utils/index', () => {
             mime: '',
             description: 'UNKNOWN_FORMAT',
         });
+    });
+
+    it.each([
+        ['.md', 'text'],
+        ['.markdown', 'text'],
+        ['.log', 'text'],
+        ['.json', 'text'],
+        ['.yaml', 'text'],
+        ['.toml', 'text'],
+        ['.ini', 'text'],
+        ['.csv', 'text'],
+        ['.xml', 'text'],
+        ['.html', 'text'],
+        ['.css', 'text'],
+        ['.ts', 'text'],
+        ['.tsx', 'text'],
+        ['.py', 'text'],
+        ['.go', 'text'],
+        ['.java', 'text'],
+        ['.kt', 'text'],
+        ['.c', 'text'],
+        ['.cpp', 'text'],
+        ['.h', 'text'],
+        ['.cs', 'text'],
+        ['.rs', 'text'],
+        ['.sh', 'text'],
+        ['.ps1', 'text'],
+        ['.bat', 'text'],
+        ['.sql', 'text'],
+        ['.mkv', 'video'],
+        ['.avi', 'video'],
+        ['.mov', 'video'],
+        ['.m4v', 'video'],
+        ['.wmv', 'video'],
+        ['.flv', 'video'],
+        ['.m4a', 'audio'],
+        ['.ogg', 'audio'],
+        ['.opus', 'audio'],
+        ['.wma', 'audio'],
+        ['.heic', 'image'],
+        ['.heif', 'image'],
+        ['.avif', 'image'],
+        ['.tiff', 'image'],
+        ['.cr2', 'image'],
+        ['.pdf', 'document'],
+        ['.docx', 'document'],
+        ['.xlsx', 'document'],
+        ['.pptx', 'document'],
+        ['.tgz', 'archive'],
+        ['.7z', 'archive'],
+    ])('classifies %s as %s', (extension, expectedCategory) => {
+        expect(getFileTypeInfo(extension).type).toBe(expectedCategory);
+        expect(getFileTypeInfo(extension).description).not.toBe('UNKNOWN_FORMAT');
+    });
+
+    it('marks formats the browser cannot decode as thumbnail only', () => {
+        expect(getFileTypeInfo('.heic').isThumbnailOnly).toBe(true);
+        expect(getFileTypeInfo('.nef').isThumbnailOnly).toBe(true);
+        expect(getFileTypeInfo('.tif').isThumbnailOnly).toBe(true);
+        expect(getFileTypeInfo('.jpg').isThumbnailOnly).toBeUndefined();
+        expect(getFileTypeInfo('.avif').isThumbnailOnly).toBeUndefined();
+    });
+
+    it('tolerates a missing format', () => {
+        expect(getFileTypeInfo(undefined).type).toBe('unknown');
+        expect(hasDedicatedMediaScreen(undefined)).toBe(false);
+    });
+
+    it('limits dedicated media screens to the formats the backend indexes', () => {
+        expect(hasDedicatedMediaScreen('.MP3')).toBe(true);
+        expect(hasDedicatedMediaScreen('.mkv')).toBe(true);
+        expect(hasDedicatedMediaScreen('.jpg')).toBe(true);
+        expect(hasDedicatedMediaScreen('.heic')).toBe(false);
+        expect(hasDedicatedMediaScreen('.m4a')).toBe(false);
     });
 });
