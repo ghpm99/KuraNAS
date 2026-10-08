@@ -4,11 +4,11 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--app-shell-bottom-nav-height);
+    height: calc(var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom));
     background: var(--app-glass-strong-background);
     border-top: 1px solid var(--app-color-border-subtle);
     z-index: 1100;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--app-safe-area-bottom);
     justify-content: space-around;
     align-items: center;
     backdrop-filter: var(--app-glass-strong-backdrop);
@@ -20,7 +20,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    height: var(--app-shell-bottom-nav-height);
     color: var(--app-color-text-secondary);
     gap: 4px;
     background: none;

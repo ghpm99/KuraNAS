@@ -14,7 +14,7 @@ interface AppShellProps {
 export const AppShell = ({ children }: AppShellProps) => {
     const { hasQueue, showClock } = useAppShell();
     const [mobileOpen, setMobileOpen] = useState(false);
-    
+
     const scrollAreaClassName = hasQueue
         ? `${styles.scrollArea} ${styles.scrollAreaWithPlayer}`
         : styles.scrollArea;
@@ -23,7 +23,7 @@ export const AppShell = ({ children }: AppShellProps) => {
     const handleOpenMobileMenu = () => setMobileOpen(true);
 
     return (
-        <div className={styles.shell}>
+        <div className={styles.shell} data-has-player={hasQueue ? 'true' : 'false'}>
             <div className={styles.sidebarPane}>
                 <Sidebar />
             </div>
@@ -31,9 +31,9 @@ export const AppShell = ({ children }: AppShellProps) => {
             <main className={styles.mainPane}>
                 <div className={scrollAreaClassName}>{children}</div>
             </main>
-            
+
             <BottomNav onOpenMenu={handleOpenMobileMenu} />
-            
+
             <Drawer
                 open={mobileOpen}
                 onClose={handleCloseMobileMenu}

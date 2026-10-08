@@ -55,7 +55,8 @@ export const visualTokens = {
         card: '0 8px 30px rgba(0, 0, 0, 0.24)',
         floating: '0 12px 40px rgba(0, 0, 0, 0.35)',
         activeGlowPrimary: '0 0 0 1px rgba(109, 93, 246, 0.6), 0 8px 30px rgba(109, 93, 246, 0.18)',
-        layered: '0 1px 2px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.1)',
+        layered:
+            '0 1px 2px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.1)',
     },
     glass: {
         medium: {
@@ -73,6 +74,9 @@ export const visualTokens = {
         headerHeight: '64px',
         headerHeightMobile: '56px',
         bottomNavHeight: '64px',
+        playerHeight: '88px',
+        playerHeightMobile: '64px',
+        toastGap: '8px',
         contentMaxWidth: '1440px',
     },
     motion: {
@@ -137,6 +141,11 @@ export const appCssVariables = {
     '--app-shell-header-height': visualTokens.layout.headerHeight,
     '--app-shell-header-height-mobile': visualTokens.layout.headerHeightMobile,
     '--app-shell-bottom-nav-height': visualTokens.layout.bottomNavHeight,
+    '--app-shell-player-height': visualTokens.layout.playerHeight,
+    '--app-shell-player-height-mobile': visualTokens.layout.playerHeightMobile,
+    '--app-toast-gap': visualTokens.layout.toastGap,
+    '--app-safe-area-top': 'env(safe-area-inset-top, 0px)',
+    '--app-safe-area-bottom': 'env(safe-area-inset-bottom, 0px)',
     '--app-content-max-width': visualTokens.layout.contentMaxWidth,
     '--app-motion-fast': visualTokens.motion.fast,
     '--app-motion-base': visualTokens.motion.base,

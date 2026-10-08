@@ -64,4 +64,26 @@ describe('layout/AppShell', () => {
 
         expect(headerSpy).toHaveBeenCalledWith(expect.objectContaining({ showClock: false }));
     });
+
+    it('marks the shell with data-has-player only when the queue is non-empty', () => {
+        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: true });
+        const { container, rerender } = render(
+            <MemoryRouter>
+                <AppShell>
+                    <div>body</div>
+                </AppShell>
+            </MemoryRouter>
+        );
+        expect(container.firstElementChild).toHaveAttribute('data-has-player', 'true');
+
+        mockUseAppShell.mockReturnValue({ showClock: false, hasQueue: false });
+        rerender(
+            <MemoryRouter>
+                <AppShell>
+                    <div>body</div>
+                </AppShell>
+            </MemoryRouter>
+        );
+        expect(container.firstElementChild).toHaveAttribute('data-has-player', 'false');
+    });
 });
