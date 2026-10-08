@@ -85,7 +85,7 @@
     opacity: 1;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.95px) {
     .panel {
         right: 0;
         bottom: 0;

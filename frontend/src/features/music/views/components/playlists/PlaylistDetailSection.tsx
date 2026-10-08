@@ -156,6 +156,7 @@ export default function PlaylistDetailSection({
                                                             width: 3,
                                                             bgcolor: 'primary.main',
                                                             borderRadius: 1,
+                                                            height: '10px',
                                                             animation: `equalizer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
                                                             '@keyframes equalizer': {
                                                                 '0%': { height: '4px' },

@@ -10,6 +10,8 @@
     border: 1px solid var(--app-color-border-subtle);
     border-radius: var(--app-radius-lg);
     background: rgba(var(--app-color-ink-rgb), 0.03);
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto var(--app-intrinsic-file-row-height);
 }
 
 .listRowSelected {

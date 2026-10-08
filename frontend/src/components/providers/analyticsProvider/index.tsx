@@ -15,6 +15,7 @@ import {
 } from '@/service/analytics';
 import { AnalyticsOverview, AnalyticsPeriod } from '@/types/analytics';
 import { useQueries } from '@tanstack/react-query';
+import { analyticsStaleTimeMs } from '../queryFreshness';
 import { useMemo, useState } from 'react';
 import { AnalyticsContext } from './analyticsContext';
 
@@ -25,19 +26,19 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
 
     const results = useQueries({
         queries: [
-            { queryKey: ['analytics', 'storage', period], queryFn: () => fetchAnalyticsStorage(period), retry: false },
-            { queryKey: ['analytics', 'timeseries', period], queryFn: () => fetchAnalyticsTimeSeries(period), retry: false },
-            { queryKey: ['analytics', 'types'], queryFn: () => fetchAnalyticsTypes(), retry: false },
-            { queryKey: ['analytics', 'extensions'], queryFn: () => fetchAnalyticsExtensions(), retry: false },
-            { queryKey: ['analytics', 'recent-files'], queryFn: () => fetchAnalyticsRecentFiles(), retry: false },
-            { queryKey: ['analytics', 'top-folders'], queryFn: () => fetchAnalyticsTopFolders(), retry: false },
-            { queryKey: ['analytics', 'hot-folders', period], queryFn: () => fetchAnalyticsHotFolders(period), retry: false },
-            { queryKey: ['analytics', 'duplicates'], queryFn: () => fetchAnalyticsDuplicates(), retry: false },
-            { queryKey: ['analytics', 'duplicate-groups'], queryFn: () => fetchAnalyticsDuplicateGroups(), retry: false },
-            { queryKey: ['analytics', 'library'], queryFn: () => fetchAnalyticsLibrary(), retry: false },
-            { queryKey: ['analytics', 'processing'], queryFn: () => fetchAnalyticsProcessing(), retry: false },
-            { queryKey: ['analytics', 'health'], queryFn: () => fetchAnalyticsHealth(), retry: false },
-            { queryKey: ['analytics', 'ai-usage'], queryFn: () => fetchAnalyticsAIUsage(), retry: false },
+            { queryKey: ['analytics', 'storage', period], queryFn: () => fetchAnalyticsStorage(period), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'timeseries', period], queryFn: () => fetchAnalyticsTimeSeries(period), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'types'], queryFn: () => fetchAnalyticsTypes(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'extensions'], queryFn: () => fetchAnalyticsExtensions(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'recent-files'], queryFn: () => fetchAnalyticsRecentFiles(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'top-folders'], queryFn: () => fetchAnalyticsTopFolders(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'hot-folders', period], queryFn: () => fetchAnalyticsHotFolders(period), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'duplicates'], queryFn: () => fetchAnalyticsDuplicates(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'duplicate-groups'], queryFn: () => fetchAnalyticsDuplicateGroups(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'library'], queryFn: () => fetchAnalyticsLibrary(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'processing'], queryFn: () => fetchAnalyticsProcessing(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'health'], queryFn: () => fetchAnalyticsHealth(), retry: false, staleTime: analyticsStaleTimeMs },
+            { queryKey: ['analytics', 'ai-usage'], queryFn: () => fetchAnalyticsAIUsage(), retry: false, staleTime: analyticsStaleTimeMs },
         ],
     });
 

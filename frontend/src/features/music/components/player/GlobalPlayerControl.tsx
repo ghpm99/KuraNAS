@@ -29,10 +29,11 @@ import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './GlobalPlayerControl.module.css';
 import '../playerControl/playerControl.css';
 
-const COMPACT_PLAYER_MEDIA_QUERY = '(max-width: 599.95px)';
+const COMPACT_PLAYER_MEDIA_QUERY = viewportMediaQueries.belowPhone;
 const GLOBAL_PLAYER_VISIBILITY_ATTRIBUTE = 'data-global-player';
 const compactTouchTargetSx = { width: { xs: 44, sm: 'auto' }, height: { xs: 44, sm: 'auto' } };
 
@@ -168,6 +169,7 @@ const GlobalPlayerControl = () => {
                                                 width: 3,
                                                 bgcolor: 'white',
                                                 borderRadius: 1,
+                                                height: '10px',
                                                 animation: `eqPlayer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
                                                 '@keyframes eqPlayer': {
                                                     '0%': { height: '4px' },

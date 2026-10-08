@@ -9,6 +9,7 @@ import {
 import { createContext, useContext } from 'react';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { getMusic } from '@/service/music';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 export interface IMusicMetadata {
     id: number;
@@ -77,7 +78,7 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return undefined;
         },
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
 
     const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({

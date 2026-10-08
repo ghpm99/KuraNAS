@@ -63,6 +63,8 @@ const FileCard = ({
             onContextMenu={onContextMenu}
             sx={{
                 position: 'relative',
+                contentVisibility: 'auto',
+                containIntrinsicBlockSize: 'auto var(--app-intrinsic-file-card-height)',
                 outline: isSelected ? '2px solid' : 'none',
                 outlineColor: 'primary.main',
                 '&:has([data-file-id]:focus-visible)': {

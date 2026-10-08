@@ -4,11 +4,14 @@ import { getTranslations } from '@/service/configuration';
 import { I18nContextProvider, I18nContextType } from './i18nContext';
 import { fallbackCatalog } from './fallbackCatalog';
 import { getTranslationRetryDelay, translationRetryCount } from './translationRetry';
+import { translationsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const I18nProvider = ({ children }: { children: React.ReactNode }) => {
     const { data } = useQuery({
         queryKey: ['configuration'],
         queryFn: getTranslations,
+        staleTime: translationsStaleTimeMs,
+        refetchOnWindowFocus: false,
         retry: translationRetryCount,
         retryDelay: getTranslationRetryDelay,
     });

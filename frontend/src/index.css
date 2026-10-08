@@ -21,6 +21,17 @@ html[data-app-motion='reduced'] *::after {
     transition-duration: 0.01ms !important;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    html:not([data-app-motion='full']) *,
+    html:not([data-app-motion='full']) *::before,
+    html:not([data-app-motion='full']) *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 a {
     color: inherit;
     text-decoration: none;
@@ -36,7 +47,7 @@ img {
     height: auto;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .notistack-SnackbarContainer.bottom {
         bottom: calc(
             var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-toast-gap)

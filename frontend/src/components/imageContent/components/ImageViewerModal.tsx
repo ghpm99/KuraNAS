@@ -11,6 +11,7 @@ import {
     Star,
     X,
 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
@@ -84,7 +85,7 @@ export default function ImageViewerModal({
     const isFavorite = activeImage.starred;
     const canToggleSlideshow = filteredImages.length > 1;
 
-    return (
+    return createPortal(
         <div
             className={styles.overlay}
             role="dialog"
@@ -313,6 +314,7 @@ export default function ImageViewerModal({
                         ))}
                 </div>
             ) : null}
-        </div>
+        </div>,
+        document.body
     );
 }

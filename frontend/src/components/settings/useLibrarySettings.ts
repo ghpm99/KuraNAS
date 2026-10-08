@@ -4,6 +4,7 @@ import type { LibraryCategory, LibraryDto } from '@/types/libraries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useMemo, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const orderedCategories: LibraryCategory[] = ['images', 'music', 'videos', 'documents'];
 
@@ -13,6 +14,8 @@ const useLibrarySettings = () => {
 	const queryClient = useQueryClient();
 	const librariesQuery = useQuery({
 		queryKey: ['libraries'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getLibraries,
 		retry: false,
 	});

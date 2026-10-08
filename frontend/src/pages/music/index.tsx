@@ -7,7 +7,7 @@ import MusicDomainNav from '@/features/music/components/MusicDomainNav';
 const MusicPage = () => {
     return (
         <MusicLayout>
-            <DomainPageLayout header={<MusicDomainHeader />} nav={<MusicDomainNav />}>
+            <DomainPageLayout header={<MusicDomainHeader />} nav={<MusicDomainNav />} width="full">
                 <MusicContent />
             </DomainPageLayout>
         </MusicLayout>

@@ -23,6 +23,7 @@ export const isCloudEmailProvider = (provider: EmailAiProvider): boolean =>
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const extractBackendError = (error: unknown): string | undefined => {
 	if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -42,6 +43,8 @@ const useEmailSettings = () => {
 
 	const accountsQuery = useQuery({
 		queryKey: ['email-accounts'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getEmailAccounts,
 		retry: false,
 	});
@@ -63,6 +66,8 @@ const useEmailSettings = () => {
 
 	const providerQuery = useQuery({
 		queryKey: ['email-ai-provider'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getEmailAiProvider,
 		retry: false,
 	});

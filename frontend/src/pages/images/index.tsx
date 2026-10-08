@@ -7,7 +7,7 @@ import ImageDomainNav from '@/components/images/ImageDomainNav';
 const ImagesPage = () => {
     return (
         <ImagesLayout>
-            <DomainPageLayout header={<ImageDomainHeader />} nav={<ImageDomainNav />}>
+            <DomainPageLayout header={<ImageDomainHeader />} nav={<ImageDomainNav />} width="full">
                 <ImageContent />
             </DomainPageLayout>
         </ImagesLayout>

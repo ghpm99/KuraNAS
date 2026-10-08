@@ -26,7 +26,14 @@ const TrackListItem = ({
     const trackArtist = getMusicArtist(track);
 
     return (
-        <ListItem disablePadding sx={{ px: 0 }}>
+        <ListItem
+            disablePadding
+            sx={{
+                px: 0,
+                contentVisibility: 'auto',
+                containIntrinsicBlockSize: 'auto var(--app-intrinsic-track-row-height)',
+            }}
+        >
             <ListItemButton
                 onClick={() => onPlay(track, index)}
                 aria-label={`play ${trackTitle}`}
@@ -47,7 +54,6 @@ const TrackListItem = ({
                     '&:hover .track-play-icon': { display: 'flex' },
                 }}
             >
-                {/* Track number / playing indicator */}
                 <Box
                     sx={{
                         width: 32,
@@ -73,6 +79,7 @@ const TrackListItem = ({
                                         width: 3,
                                         bgcolor: 'primary.main',
                                         borderRadius: 1,
+                                        height: '10px',
                                         animation: `equalizer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
                                         '@keyframes equalizer': {
                                             '0%': { height: '4px' },

@@ -37,6 +37,7 @@ import {
 } from './fileProviderUtils';
 import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const pageSize = 200;
 const ancestorsQueryKey = 'files-ancestors';
@@ -113,7 +114,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return undefined;
         },
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
 
     const loadedItems = useMemo(

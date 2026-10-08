@@ -21,7 +21,7 @@ interface AppShellProps {
 
 export const AppShell = ({ children, banner }: AppShellProps) => {
     const { t } = useI18n();
-    const { hasQueue, showClock } = useAppShell();
+    const { hasQueue } = useAppShell();
     const [mobileOpen, setMobileOpen] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const mainRef = useRef<HTMLElement>(null);
@@ -49,7 +49,7 @@ export const AppShell = ({ children, banner }: AppShellProps) => {
             <div className={styles.sidebarPane}>
                 <Sidebar isCollapsed={isCollapsed} onToggleCollapsed={toggleCollapsed} />
             </div>
-            <Header showClock={showClock} onOpenMobileMenu={handleOpenMobileMenu} />
+            <Header />
             <main id={mainContentId} ref={mainRef} tabIndex={-1} className={styles.mainPane}>
                 {banner}
                 <div ref={scrollAreaRef} className={scrollAreaClassName}>

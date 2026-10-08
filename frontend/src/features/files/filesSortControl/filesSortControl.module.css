@@ -8,7 +8,7 @@
     min-width: 120px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.95px) {
     .sortSelect {
         min-width: 96px;
     }

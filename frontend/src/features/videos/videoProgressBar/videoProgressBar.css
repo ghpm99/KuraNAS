@@ -145,7 +145,7 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
     .video-progress-bar {
         height: 8px;
     }

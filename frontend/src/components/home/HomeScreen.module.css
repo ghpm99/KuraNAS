@@ -362,7 +362,7 @@
     font-size: 1.1rem;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1199.95px) {
     .videoPanel,
     .statusPanel,
     .panel {
@@ -382,7 +382,7 @@
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .recentList,
     .imageGrid,
     .videoList {
@@ -390,7 +390,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
     .sectionHeader,
     .mediaHeader,
     .recentHeader,
@@ -412,7 +412,7 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 599.95px) {
     .recentIcon {
         min-width: 56px;
         height: 56px;

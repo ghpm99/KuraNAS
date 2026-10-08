@@ -5,7 +5,7 @@
     align-items: start;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
     .formAndSummary {
         grid-template-columns: minmax(0, 1fr);
     }
