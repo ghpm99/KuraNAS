@@ -3,8 +3,6 @@ package com.kuranas.android.feature.images.data
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.server.ServerStore
-import com.kuranas.android.feature.files.data.FileItemDto
-import com.kuranas.android.feature.files.data.FilesApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
@@ -14,11 +12,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 class ImagesRepository @Inject constructor(
-    private val api: FilesApi,
+    private val api: ImageLibraryApi,
     private val serverStore: ServerStore,
 ) {
-    suspend fun getImages(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getImages().items
+    suspend fun getImagesPage(cursor: String?): AppResult<ImageLibraryPageDto> = safeApiCall {
+        api.getLibraryPage(cursor = cursor?.takeIf { it.isNotEmpty() })
     }
 
     suspend fun getThumbnailUrl(id: String): String {
@@ -37,5 +35,9 @@ class ImagesRepository @Inject constructor(
 object ImagesModule {
     @Provides
     @Singleton
-    fun provideImagesRepository(api: FilesApi, serverStore: ServerStore) = ImagesRepository(api, serverStore)
+    fun provideImageLibraryApi(retrofit: Retrofit): ImageLibraryApi = retrofit.create(ImageLibraryApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideImagesRepository(api: ImageLibraryApi, serverStore: ServerStore) = ImagesRepository(api, serverStore)
 }
