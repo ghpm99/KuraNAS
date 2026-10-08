@@ -388,3 +388,36 @@ func TestPostgres_ActiveFileByPathOrPhysicalPathMatchesBothLocationsAndSkipsDele
 		}
 	}
 }
+
+func TestPostgres_GetActiveFilesByPathsReturnsOnlyActiveMatches(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Now().UTC().Truncate(time.Second)
+	insertFileRow(t, repo, "srv", "/srv", "/", 0, mod)
+	insertFileRow(t, repo, "docs", "/srv/docs", "/srv", 0, mod)
+	insertFileRow(t, repo, "apagada", "/srv/apagada", "/srv", 0, mod)
+	insertFileRow(t, repo, "outra", "/srv/outra", "/srv", 0, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec("UPDATE home_file SET deleted_at = now() WHERE name = 'apagada'")
+		return execErr
+	})
+	if err != nil {
+		t.Fatalf("soft delete row: %v", err)
+	}
+
+	matched, err := repo.GetActiveFilesByPaths([]string{"/srv", "/srv/docs", "/srv/apagada", "/srv/inexistente"})
+	if err != nil {
+		t.Fatalf("GetActiveFilesByPaths: %v", err)
+	}
+	matchedPaths := []string{}
+	for _, file := range matched {
+		matchedPaths = append(matchedPaths, file.Path)
+	}
+	slices.Sort(matchedPaths)
+	if !slices.Equal(matchedPaths, []string{"/srv", "/srv/docs"}) {
+		t.Fatalf("expected only active requested paths, got %v", matchedPaths)
+	}
+}

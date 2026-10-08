@@ -21,6 +21,7 @@
 	"FILES_PAGE_DESCRIPTION": "Browse the NAS library with clearer location context, view controls, and side preview for file inspection.",
 	"FILES_EXPLORER_EYEBROW": "Explorer",
 	"FILES_CURRENT_LOCATION": "Current location",
+	"FILES_BREADCRUMB_EXPAND": "Show full path",
 	"FILES_OPEN_TREE": "Open tree",
 	"FILES_VIEW_SWITCH": "Switch file view",
 	"FILES_VIEW_GRID": "Grid",

@@ -70,6 +70,7 @@ type filesRepoMock struct {
 	deleteFileByIDFn            func(transaction *sql.Tx, id int) error
 	getFileByIDFn               func(id int) (FileModel, bool, error)
 	getActiveByPathOrPhysicalFn func(path string) (FileModel, bool, error)
+	getActiveFilesByPathsFn     func(paths []string) ([]FileModel, error)
 	getFilesByNameAndPathFn     func(name string, path string, limit int) ([]FileModel, error)
 	getActiveChildrenFn         func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getActiveFilesByPathFn      func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
@@ -114,6 +115,12 @@ func (m *filesRepoMock) GetActiveFileByPathOrPhysicalPath(path string) (FileMode
 		return m.getActiveByPathOrPhysicalFn(path)
 	}
 	return FileModel{}, false, nil
+}
+func (m *filesRepoMock) GetActiveFilesByPaths(paths []string) ([]FileModel, error) {
+	if m.getActiveFilesByPathsFn != nil {
+		return m.getActiveFilesByPathsFn(paths)
+	}
+	return nil, nil
 }
 func (m *filesRepoMock) GetFilesByNameAndPath(name string, path string, limit int) ([]FileModel, error) {
 	if m.getFilesByNameAndPathFn != nil {
