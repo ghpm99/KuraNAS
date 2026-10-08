@@ -37,8 +37,10 @@ func (h *Handler) GetImagesHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 	groupBy, err := ParseImageGroupBy(c.DefaultQuery("group_by", string(ImageGroupByDate)))
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)

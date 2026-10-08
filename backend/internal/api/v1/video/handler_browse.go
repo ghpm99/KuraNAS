@@ -31,8 +31,10 @@ func browseLogEntry(name, description string, c *gin.Context) logger.LoggerModel
 
 func (h *Handler) GetVideosHandler(c *gin.Context) {
 	loggerModel, _ := h.logService.CreateLog(browseLogEntry("GetVideos", "Fetching video files", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := h.service.GetVideos(page, pageSize)
 
@@ -52,6 +54,10 @@ func (h *Handler) GetVideoThumbnailHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
 	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	file, err := h.filesService.GetFileById(id)
 	if err != nil {
@@ -83,6 +89,10 @@ func (h *Handler) GetVideoPreviewHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
 	height := utils.ParseInt(c.DefaultQuery("height", "180"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	file, err := h.filesService.GetFileById(id)
 	if err != nil {
@@ -112,6 +122,10 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 	loggerModel, _ := h.logService.CreateLog(browseLogEntry("StreamVideo", "Streaming video file", c), nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	file, err := h.filesService.GetFileById(id)
 	if err != nil {

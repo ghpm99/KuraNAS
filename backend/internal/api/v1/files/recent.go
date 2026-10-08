@@ -21,8 +21,10 @@ func (handler *Handler) GetRecentFilesHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	recentFiles, err := handler.recentFileService.GetRecentFiles(page, pageSize)
 
@@ -47,6 +49,10 @@ func (handler *Handler) GetRecentAccessByFileHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: id,
@@ -75,6 +81,10 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: id,

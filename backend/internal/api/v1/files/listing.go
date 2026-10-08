@@ -23,8 +23,10 @@ func (handler *Handler) GetFilesHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: map[string]int{"page": page, "page_size": pageSize},
@@ -52,8 +54,10 @@ func (handler *Handler) GetFilesByPathHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	rawPath := c.DefaultQuery("path", "")
 	path := roots.ToAbsolutePath(rawPath)
@@ -84,9 +88,15 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: map[string]int{"id": id},
@@ -153,10 +163,16 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	fileParentId := utils.ParseInt(c.DefaultQuery("file_parent", "0"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	fileCategory := FileCategory(c.DefaultQuery("category", string(AllCategory)))
 

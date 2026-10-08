@@ -24,6 +24,10 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	width := utils.ParseInt(c.DefaultQuery("width", "320"), c)
 	height := utils.ParseInt(c.DefaultQuery("height", "320"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: map[string]int{"id": id, "width": width, "height": height},
@@ -66,6 +70,10 @@ func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: id,

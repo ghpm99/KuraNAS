@@ -76,8 +76,10 @@ func (handler *Handler) GetTrashItemsHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	})
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	items, err := handler.service.GetItems(page, pageSize)
 	if err != nil {

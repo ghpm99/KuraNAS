@@ -300,6 +300,7 @@
 	"ASSISTANT_UNTITLED": "Sem título",
 	"ASSISTANT_DELETE_CONVERSATION": "Excluir conversa",
 	"ERROR_DATA_REQUIRED": "Dados são obrigatórios",
+	"ERROR_INVALID_PAGINATION": "Parâmetros de paginação inválidos",
 	"ERROR_INVALID_REQUEST": "Requisição inválida",
 	"ERROR_INVALID_PATH": "Caminho inválido",
 	"ERROR_TARGET_NOT_DIRECTORY": "O destino precisa ser uma pasta válida",
