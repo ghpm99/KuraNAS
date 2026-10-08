@@ -23,7 +23,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	// WebDAV registers before the gzip middleware on purpose: compressing
 	// PUT/PROPFIND bodies corrupts them for native clients. It still sits
 	// behind the IP whitelist installed above.
-	registerWebDAVRoutes(router)
+	registerWebDAVRoutes(router, context)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	registerSwaggerRoutes(router)
 	routesV1 := router.Group("/api/v1")
@@ -60,12 +60,16 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 // registerWebDAVRoutes mounts the WebDAV tree under /dav when enabled
 // (WEBDAV_ENABLED env, default off). With the flag off the route simply does
 // not exist.
-func registerWebDAVRoutes(router *gin.Engine) {
+func registerWebDAVRoutes(router *gin.Engine, context *AppContext) {
 	if !config.AppConfig.EnableWebDAV {
 		return
 	}
 
-	handler := dav.NewHandler()
+	var coldFiles dav.ColdFileCatalog
+	if context != nil && context.DB != nil {
+		coldFiles = dav.NewColdFileRepository(context.DB)
+	}
+	handler := dav.NewHandler(coldFiles)
 	router.Any(dav.Prefix+"/*path", gin.WrapH(handler))
 	// Mount-point requests arrive without the trailing slash.
 	router.Any(dav.Prefix, gin.WrapH(handler))
@@ -151,6 +155,7 @@ func RegisterTieringRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.PUT("/settings", context.Tiering.Handler.UpdateSettingsHandler)
 	group.GET("/status", context.Tiering.Handler.GetStatusHandler)
 	group.GET("/usage", context.Tiering.Handler.GetUsageHandler)
+	group.POST("/promote/:file_id", context.Tiering.Handler.PromoteFileHandler)
 }
 
 func RegisterAutoShutdownRoutes(router *gin.RouterGroup, context *AppContext) {

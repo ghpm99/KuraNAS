@@ -1,7 +1,9 @@
 package tiering
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,21 +11,26 @@ import (
 	"time"
 
 	tieringengine "nas-go/api/internal/worker/tiering"
+	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
 )
 
 type mockService struct {
-	getFn    func() (SettingsDto, error)
-	updateFn func(dto SettingsDto) (SettingsDto, error)
-	statusFn func() (StatusDto, error)
-	usageFn  func() (TierUsageDto, error)
+	getFn     func() (SettingsDto, error)
+	updateFn  func(dto SettingsDto) (SettingsDto, error)
+	statusFn  func() (StatusDto, error)
+	usageFn   func() (TierUsageDto, error)
+	promoteFn func(fileID int) (FileLocationDto, error)
 }
 
 func (m *mockService) GetSettings() (SettingsDto, error)                   { return m.getFn() }
 func (m *mockService) UpdateSettings(dto SettingsDto) (SettingsDto, error) { return m.updateFn(dto) }
 func (m *mockService) Status() (StatusDto, error)                          { return m.statusFn() }
 func (m *mockService) Usage() (TierUsageDto, error)                        { return m.usageFn() }
+func (m *mockService) PromoteFile(fileID int) (FileLocationDto, error) {
+	return m.promoteFn(fileID)
+}
 func (m *mockService) MigrationPlan(now time.Time) (bool, string, []tieringengine.Promotion, []tieringengine.Demotion, error) {
 	return false, "", nil, nil, nil
 }
@@ -38,6 +45,7 @@ func newTestRouter(service ServiceInterface) *gin.Engine {
 	router.PUT("/tiering/settings", handler.UpdateSettingsHandler)
 	router.GET("/tiering/status", handler.GetStatusHandler)
 	router.GET("/tiering/usage", handler.GetUsageHandler)
+	router.POST("/tiering/promote/:file_id", handler.PromoteFileHandler)
 	return router
 }
 
@@ -171,5 +179,76 @@ func TestTieringHandlersServerErrors(t *testing.T) {
 		if response.Code != http.StatusInternalServerError {
 			t.Fatalf("%s %s: expected 500, got %d", tc.method, tc.path, response.Code)
 		}
+	}
+}
+
+func TestPromoteFileHandlerDecodesFileIdAndReturnsLocation(t *testing.T) {
+	var receivedFileID int
+	router := newTestRouter(&mockService{
+		promoteFn: func(fileID int) (FileLocationDto, error) {
+			receivedFileID = fileID
+			return FileLocationDto{FileID: fileID, Tier: "hot", DiskPath: "/mnt/dados/a.pdf"}, nil
+		},
+	})
+
+	response := performRequest(router, http.MethodPost, "/tiering/promote/42", "")
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d (%s)", response.Code, response.Body.String())
+	}
+	if receivedFileID != 42 {
+		t.Fatalf("expected service to receive file id 42, got %d", receivedFileID)
+	}
+	var location FileLocationDto
+	if err := json.Unmarshal(response.Body.Bytes(), &location); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if location.FileID != 42 || location.Tier != "hot" || location.DiskPath != "/mnt/dados/a.pdf" {
+		t.Fatalf("unexpected location %+v", location)
+	}
+}
+
+func TestPromoteFileHandlerRejectsInvalidFileId(t *testing.T) {
+	router := newTestRouter(&mockService{})
+
+	for _, invalidID := range []string{"abc", "0", "-3"} {
+		response := performRequest(router, http.MethodPost, "/tiering/promote/"+invalidID, "")
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("id %q: expected 400, got %d", invalidID, response.Code)
+		}
+	}
+}
+
+func TestPromoteFileHandlerMapsServiceErrorsToTranslatedStatuses(t *testing.T) {
+	cases := []struct {
+		name            string
+		serviceError    error
+		expectedStatus  int
+		expectedMessage string
+	}{
+		{"not found", ErrFileNotFound, http.StatusNotFound, i18n.GetMessage("ERROR_FILE_NOT_FOUND")},
+		{"already hot", ErrFileAlreadyHot, http.StatusConflict, i18n.GetMessage("ERROR_TIERING_FILE_ALREADY_HOT")},
+		{"no hot space", fmt.Errorf("wrapped: %w", ErrInsufficientHotSpace), http.StatusInsufficientStorage, i18n.GetMessage("ERROR_TIERING_NO_HOT_SPACE")},
+		{"cold unavailable", ErrColdCopyUnavailable, http.StatusServiceUnavailable, i18n.GetMessage("ERROR_TIERING_COLD_UNAVAILABLE")},
+		{"unexpected", errors.New("boom"), http.StatusInternalServerError, i18n.GetMessage("ERROR_TIERING_PROMOTE")},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			router := newTestRouter(&mockService{
+				promoteFn: func(fileID int) (FileLocationDto, error) { return FileLocationDto{}, tc.serviceError },
+			})
+
+			response := performRequest(router, http.MethodPost, "/tiering/promote/7", "")
+
+			if response.Code != tc.expectedStatus {
+				t.Fatalf("expected %d, got %d", tc.expectedStatus, response.Code)
+			}
+			var body map[string]string
+			_ = json.Unmarshal(response.Body.Bytes(), &body)
+			if body["error"] != tc.expectedMessage {
+				t.Fatalf("expected message %q, got %q", tc.expectedMessage, body["error"])
+			}
+		})
 	}
 }

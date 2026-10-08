@@ -3,6 +3,7 @@ package tiering
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
@@ -67,4 +68,37 @@ func (h *Handler) GetUsageHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, usage)
+}
+
+func (h *Handler) PromoteFileHandler(c *gin.Context) {
+	fileID, err := strconv.Atoi(c.Param("file_id"))
+	if err != nil || fileID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	location, err := h.service.PromoteFile(fileID)
+	if err != nil {
+		h.respondPromoteError(c, fileID, err)
+		return
+	}
+	c.JSON(http.StatusOK, location)
+}
+
+func (h *Handler) respondPromoteError(c *gin.Context, fileID int, err error) {
+	switch {
+	case errors.Is(err, ErrFileNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+	case errors.Is(err, ErrFileAlreadyHot):
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_TIERING_FILE_ALREADY_HOT")})
+	case errors.Is(err, ErrInsufficientHotSpace):
+		applog.Warn("tiering: promote refused, hot disk lacks space", "file_id", fileID, "error", err)
+		c.JSON(http.StatusInsufficientStorage, gin.H{"error": i18n.GetMessage("ERROR_TIERING_NO_HOT_SPACE")})
+	case errors.Is(err, ErrColdCopyUnavailable):
+		applog.ErrorWithStack("tiering: promote failed, cold copy unavailable", err, "file_id", fileID, "ip", c.ClientIP())
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_TIERING_COLD_UNAVAILABLE")})
+	default:
+		applog.ErrorWithStack("tiering: promote failed", err, "file_id", fileID, "ip", c.ClientIP())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_TIERING_PROMOTE")})
+	}
 }
