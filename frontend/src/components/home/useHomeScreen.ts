@@ -7,7 +7,7 @@ import {
     fetchAnalyticsRecentFiles,
     fetchAnalyticsStorage,
 } from '@/service/analytics';
-import { getFilesTree, getImageFiles } from '@/service/files';
+import { getImageFiles, getStarredFiles } from '@/service/files';
 import { getPlayerState } from '@/service/playerState';
 import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
 import {
@@ -82,10 +82,9 @@ const useHomeScreen = () => {
     const favoritesQuery = useQuery({
         queryKey: ['home', 'favorites'],
         queryFn: () =>
-            getFilesTree({
+            getStarredFiles({
                 page: 1,
                 pageSize: homeFavoritesLimit,
-                category: 'starred',
             }),
     });
     const imagesQuery = useQuery({

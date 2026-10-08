@@ -19,7 +19,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 02. Contagem de filhos ignora `deleted_at` + N+1 por diretório + total real no cabeçalho
 - [x] 03. Teto de `page_size` e validação de `page` (handler segue após `AbortWithError`)
 - [x] 04. Ordenação no servidor (nome/tamanho/data/tipo, asc/desc) + índices + seletor na UI
-- [ ] 05. Favoritos e Recentes globais e paginados (`/files/starred`, `/files/recent-files`)
+- [x] 05. Favoritos e Recentes globais e paginados (`/files/starred`, `/files/recent-files`)
 - [ ] 06. Local físico: `/files/location/:id`, busca por caminho de disco, tier visível (quente e frio) em detalhes e listagem
 - [ ] 07. Copiar arquivo do tier frio falha (`os.Stat` no caminho lógico)
 - [ ] 08. Estado inválido após apagar/renomear/mover o item aberto
