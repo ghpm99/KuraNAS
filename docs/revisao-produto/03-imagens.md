@@ -26,7 +26,7 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [x] 07. Favoritas: aba na galeria e estrela no card
 - [x] 08. Pastas a partir do servidor (contagem e capa reais)
 - [x] 09. Miniaturas: JPEG sem letterbox, orientação EXIF, resampler rápido, cache por largura×altura, tamanho da grade pré-gerado, preview para o viewer
-- [ ] 10. Formatos: WebP/BMP/TIFF/HEIC/HEIF/AVIF/JFIF/RAW reconhecidos, com miniatura/preview
+- [x] 10. Formatos: WebP/BMP/TIFF/HEIC/HEIF/AVIF/JFIF/RAW reconhecidos, com miniatura/preview
 - [ ] 11. Seleção múltipla e ações em lote na galeria
 - [ ] 12. Viewer: navegar além do carregado (vizinhos), pan/pinça/swipe, baixar original, girar, local no disco, GPS, atalhos ignoram campos de texto
 - [ ] 13. Álbuns reais (criar, renomear, apagar, adicionar/remover, capa)

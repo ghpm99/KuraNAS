@@ -1,6 +1,7 @@
 import {
     ChevronLeft,
     ChevronRight,
+    Download,
     Expand,
     FolderOpen,
     Info,
@@ -14,7 +15,12 @@ import {
 import { createPortal } from 'react-dom';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { FILMSTRIP_THUMBNAIL_SIZE, thumbnailUrl, viewerImageUrl } from '../imageThumbnailSources';
+import {
+    downloadOriginalUrl,
+    FILMSTRIP_THUMBNAIL_SIZE,
+    thumbnailUrl,
+    viewerImageUrl,
+} from '../imageThumbnailSources';
 import { useImageViewerModal } from './useImageViewerModal';
 import styles from './ImageViewerModal.module.css';
 
@@ -128,6 +134,15 @@ export default function ImageViewerModal({
                         <FolderOpen size={16} />
                         <span>{t('IMAGES_VIEWER_OPEN_FOLDER')}</span>
                     </button>
+                    <a
+                        className={styles.actionButton}
+                        href={downloadOriginalUrl(activeImage.file_id)}
+                        download={activeImage.name}
+                        aria-label={t('IMAGES_VIEWER_DOWNLOAD')}
+                    >
+                        <Download size={16} />
+                        <span>{t('IMAGES_VIEWER_DOWNLOAD')}</span>
+                    </a>
                     <button
                         type="button"
                         className={styles.actionButton}
@@ -237,7 +252,7 @@ export default function ImageViewerModal({
                     </button>
                     <div className={styles.stageFrame}>
                         <img
-                            src={viewerImageUrl(activeImage.file_id, zoom)}
+                            src={viewerImageUrl(activeImage.file_id, zoom, activeImage.format)}
                             alt={activeImage.name}
                             className={styles.image}
                             style={{ transform: `scale(${zoom})` }}

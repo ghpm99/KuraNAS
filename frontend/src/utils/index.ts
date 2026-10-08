@@ -42,5 +42,5 @@ export const formatDateTime = (date: Date): string => {
     });
 };
 
-export { getFileTypeInfo, hasDedicatedMediaScreen } from './fileTypeInfo';
+export { getFileTypeInfo, hasDedicatedMediaScreen, isPreviewOnlyImageFormat } from './fileTypeInfo';
 export type { FileTypeInfo } from './fileTypeInfo';

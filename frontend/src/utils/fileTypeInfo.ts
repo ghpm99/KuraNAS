@@ -33,7 +33,7 @@ const group = (
 });
 
 const fileTypeGroups: FileTypeGroup[] = [
-    group('image', 'IMAGE_JPEG', 'image/jpeg', ['.jpg', '.jpeg']),
+    group('image', 'IMAGE_JPEG', 'image/jpeg', ['.jpg', '.jpeg', '.jfif']),
     group('image', 'IMAGE_PNG', 'image/png', ['.png']),
     group('image', 'IMAGE_GIF', 'image/gif', ['.gif']),
     group('image', 'IMAGE_BMP', 'image/bmp', ['.bmp']),
@@ -46,7 +46,7 @@ const fileTypeGroups: FileTypeGroup[] = [
         'image',
         'IMAGE_RAW',
         'image/x-raw',
-        ['.raw', '.cr2', '.cr3', '.nef', '.arw', '.dng', '.raf', '.orf', '.rw2'],
+        ['.raw', '.cr2', '.cr3', '.nef', '.arw', '.dng', '.raf', '.orf', '.rw2', '.srw', '.pef'],
         true
     ),
 
@@ -152,6 +152,22 @@ const dedicatedMediaScreenExtensions = new Set([
     '.bmp',
     '.svg',
     '.webp',
+    '.jfif',
+    '.avif',
+    '.heic',
+    '.heif',
+    '.tif',
+    '.tiff',
+    '.cr2',
+    '.cr3',
+    '.nef',
+    '.arw',
+    '.dng',
+    '.orf',
+    '.rw2',
+    '.raf',
+    '.srw',
+    '.pef',
     '.mp3',
     '.wav',
     '.aac',
@@ -167,3 +183,8 @@ const dedicatedMediaScreenExtensions = new Set([
 
 export const hasDedicatedMediaScreen = (format: string | undefined): boolean =>
     dedicatedMediaScreenExtensions.has((format ?? '').toLowerCase());
+
+export const isPreviewOnlyImageFormat = (format: string | undefined): boolean => {
+    const fileType = getFileTypeInfo(format);
+    return fileType.type === 'image' && fileType.isThumbnailOnly === true;
+};

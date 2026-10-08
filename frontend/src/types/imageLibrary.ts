@@ -13,7 +13,31 @@ export const imageCategories = [
 
 export type ImageCategory = (typeof imageCategories)[number];
 
-export const imageFormats = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'] as const;
+export const imageFormats = [
+    'jpg',
+    'jpeg',
+    'jfif',
+    'png',
+    'gif',
+    'bmp',
+    'svg',
+    'webp',
+    'tif',
+    'tiff',
+    'heic',
+    'heif',
+    'avif',
+    'cr2',
+    'cr3',
+    'nef',
+    'arw',
+    'dng',
+    'orf',
+    'rw2',
+    'raf',
+    'srw',
+    'pef',
+] as const;
 
 export type ImageFormat = (typeof imageFormats)[number];
 

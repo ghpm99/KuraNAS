@@ -5,6 +5,7 @@ import {
     formatSize,
     getFileTypeInfo,
     hasDedicatedMediaScreen,
+    isPreviewOnlyImageFormat,
 } from './index';
 
 describe('utils/index', () => {
@@ -133,7 +134,38 @@ describe('utils/index', () => {
         expect(hasDedicatedMediaScreen('.MP3')).toBe(true);
         expect(hasDedicatedMediaScreen('.mkv')).toBe(true);
         expect(hasDedicatedMediaScreen('.jpg')).toBe(true);
-        expect(hasDedicatedMediaScreen('.heic')).toBe(false);
         expect(hasDedicatedMediaScreen('.m4a')).toBe(false);
+        expect(hasDedicatedMediaScreen('.raw')).toBe(false);
+    });
+
+    it.each([
+        '.jfif',
+        '.avif',
+        '.heic',
+        '.HEIF',
+        '.tif',
+        '.tiff',
+        '.cr2',
+        '.cr3',
+        '.nef',
+        '.arw',
+        '.dng',
+        '.orf',
+        '.rw2',
+        '.raf',
+        '.srw',
+        '.pef',
+    ])('opens %s on the images screen and classifies it as an image', (format) => {
+        expect(hasDedicatedMediaScreen(format)).toBe(true);
+        expect(getFileTypeInfo(format).type).toBe('image');
+    });
+
+    it('marks only formats browsers cannot render as preview-only', () => {
+        for (const format of ['.heic', '.heif', '.tif', '.tiff', '.cr2', '.srw', '.pef', '.dng']) {
+            expect(isPreviewOnlyImageFormat(format)).toBe(true);
+        }
+        for (const format of ['.jpg', '.jfif', '.avif', '.png', '.mp4', undefined]) {
+            expect(isPreviewOnlyImageFormat(format)).toBe(false);
+        }
     });
 });

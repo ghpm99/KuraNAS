@@ -1,4 +1,5 @@
 import {
+    downloadOriginalUrl,
     FILMSTRIP_THUMBNAIL_SIZE,
     GRID_THUMBNAIL_SIZE,
     PREVIEW_IMAGE_SIZE,
@@ -33,5 +34,34 @@ describe('imageThumbnailSources', () => {
         );
         expect(viewerImageUrl(7, 0.5)).toContain('/files/thumbnail/7');
         expect(viewerImageUrl(7, 1.2)).toBe('/api/v1/files/blob/7');
+    });
+
+    it('keeps formats browsers cannot render on the preview even when zoomed', () => {
+        const previewUrl = `/api/v1/files/thumbnail/7?width=${PREVIEW_IMAGE_SIZE}&height=${PREVIEW_IMAGE_SIZE}`;
+        for (const format of [
+            '.heic',
+            '.heif',
+            '.tif',
+            '.tiff',
+            '.cr2',
+            '.cr3',
+            '.nef',
+            '.arw',
+            '.dng',
+            '.orf',
+            '.rw2',
+            '.raf',
+            '.srw',
+            '.pef',
+        ]) {
+            expect(viewerImageUrl(7, 3, format)).toBe(previewUrl);
+        }
+        for (const format of ['.jpg', '.jfif', '.png', '.avif']) {
+            expect(viewerImageUrl(7, 3, format)).toBe('/api/v1/files/blob/7');
+        }
+    });
+
+    it('always points the download at the original file', () => {
+        expect(downloadOriginalUrl(7)).toBe('/api/v1/files/download/7');
     });
 });
