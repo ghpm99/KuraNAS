@@ -21,3 +21,6 @@ var CountPendingAIClassificationQuery string
 
 //go:embed select_pending_ai_classification.sql
 var SelectPendingAIClassificationQuery string
+
+//go:embed get_image_summary_by_file_id.sql
+var GetImageSummaryByFileIDQuery string

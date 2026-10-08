@@ -102,3 +102,6 @@ var GetMusicByGenreQuery string
 
 //go:embed get_music_folders.sql
 var GetMusicFoldersQuery string
+
+//go:embed get_audio_summary_by_file_id.sql
+var GetAudioSummaryByFileIDQuery string

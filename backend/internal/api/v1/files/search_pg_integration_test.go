@@ -174,3 +174,32 @@ func TestPostgres_NameTrigramIndexExistsWhenExtensionIsAvailable(t *testing.T) {
 		t.Fatalf("pg_trgm is installed but the name trigram index is missing")
 	}
 }
+
+func TestPostgres_FolderStatsCountsOnlyActiveDescendantsOfTheFolder(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedSearchTree(t, repo)
+	sizeErr := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec("UPDATE home_file SET size = 10 WHERE type = 2")
+		return execErr
+	})
+	if sizeErr != nil {
+		t.Fatalf("set sizes: %v", sizeErr)
+	}
+
+	stats, err := repo.GetFolderStats("/srv/docs/")
+	if err != nil {
+		t.Fatalf("folder stats: %v", err)
+	}
+	if stats.FileCount != 4 || stats.FolderCount != 1 || stats.TotalSizeBytes != 40 {
+		t.Fatalf("expected 4 files, 1 folder and 40 bytes under /srv/docs (soft-deleted and sibling docs2 excluded), got %+v", stats)
+	}
+
+	emptyStats, err := repo.GetFolderStats("/srv/nothing/")
+	if err != nil {
+		t.Fatalf("empty folder stats: %v", err)
+	}
+	if emptyStats != (FolderStatsDto{}) {
+		t.Fatalf("expected zero stats for an unknown folder, got %+v", emptyStats)
+	}
+}
