@@ -98,6 +98,13 @@
     padding: var(--app-spacing-3);
 }
 
+.detailsDrawerContent {
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
 .drawerTitle {
     margin: 0 0 var(--app-spacing-3);
     font-size: 1rem;

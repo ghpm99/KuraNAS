@@ -1,6 +1,8 @@
 import ActionBar from '@/components/actionBar';
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
+import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
 import FileSelectionToolbar from '@/features/files/selection/fileSelectionToolbar';
 import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import FilesSortControl from '@/features/files/filesSortControl/filesSortControl';
@@ -17,6 +19,7 @@ import {
     ToggleButton,
     ToggleButtonGroup,
     Tooltip,
+    useMediaQuery,
 } from '@mui/material';
 import { LayoutGrid, List, PanelLeft, Search } from 'lucide-react';
 import { useState } from 'react';
@@ -33,7 +36,9 @@ import FilesBreadcrumb from './FilesBreadcrumb';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 import styles from './FilesExplorerScreen.module.css';
 
-const FilesExplorerScreen = () => {
+const phoneMediaQuery = '(max-width:640px)';
+
+const FilesExplorerScreenContent = () => {
     const { t } = useI18n();
     const {
         breadcrumbSegments,
@@ -48,6 +53,8 @@ const FilesExplorerScreen = () => {
     } = useFilesExplorerScreen();
     const { filesSort, setFilesSort, handleSelectItem } = useFile();
     const { hasSelection } = useFileSelectionContext();
+    const { explicitTarget, closeDetails } = useFileDetails();
+    const isPhone = useMediaQuery(phoneMediaQuery);
     const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
     const [isSearchRecursive, setIsSearchRecursive] = useState(true);
@@ -60,9 +67,21 @@ const FilesExplorerScreen = () => {
     });
     const isSearchActive = activeQuery !== '';
     const isFileSelected = selectedItem?.type === FileType.File;
-    const workspaceClassName = isFileSelected
+    const openedFileDetailsTarget = isFileSelected && !isPhone ? selectedItem : null;
+    const detailsTarget = explicitTarget ?? openedFileDetailsTarget;
+    const isDetailsInSideColumn = detailsTarget !== null && !isPhone;
+    const isDetailsInDrawer = explicitTarget !== null && isPhone;
+    const workspaceClassName = isDetailsInSideColumn
         ? `${styles.workspace} ${styles.workspaceWithPreview}`
         : styles.workspace;
+
+    const closeDetailsPanel = () => {
+        const isShowingOpenedFile =
+            openedFileDetailsTarget !== null &&
+            (explicitTarget === null || explicitTarget.id === openedFileDetailsTarget.id);
+        closeDetails();
+        if (isShowingOpenedFile) handleSelectItem(null);
+    };
 
     return (
         <PageContainer>
@@ -175,10 +194,10 @@ const FilesExplorerScreen = () => {
                     </section>
                 </div>
 
-                {isFileSelected ? (
+                {isDetailsInSideColumn ? (
                     <aside className={styles.previewColumn}>
                         <section className={`${styles.panel} ${styles.previewCard}`}>
-                            <FileDetails />
+                            <FileDetails file={detailsTarget} onClose={closeDetailsPanel} />
                         </section>
                     </aside>
                 ) : null}
@@ -190,6 +209,14 @@ const FilesExplorerScreen = () => {
                 onFileFound={handleSelectItem}
             />
 
+            <Drawer anchor="bottom" open={isDetailsInDrawer} onClose={closeDetailsPanel}>
+                <div className={styles.detailsDrawerContent}>
+                    {explicitTarget ? (
+                        <FileDetails file={explicitTarget} onClose={closeDetailsPanel} />
+                    ) : null}
+                </div>
+            </Drawer>
+
             <Drawer anchor="left" open={mobileTreeOpen} onClose={closeMobileTree}>
                 <div className={styles.drawerContent}>
                     <p className={styles.drawerTitle}>{t('FILES_OPEN_TREE')}</p>
@@ -199,5 +226,11 @@ const FilesExplorerScreen = () => {
         </PageContainer>
     );
 };
+
+const FilesExplorerScreen = () => (
+    <FileDetailsProvider>
+        <FilesExplorerScreenContent />
+    </FileDetailsProvider>
+);
 
 export default FilesExplorerScreen;

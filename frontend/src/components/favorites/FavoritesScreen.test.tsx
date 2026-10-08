@@ -27,7 +27,12 @@ jest.mock('@/features/files/fileContent', () => ({ viewMode, title, emptyStateMe
     </div>
 ));
 
-jest.mock('@/features/files/fileDetails', () => () => <div>FileDetailsMock</div>);
+jest.mock('@/features/files/fileDetails', () => ({ file, onClose }: any) => (
+    <div>
+        FileDetailsMock:{file.name}
+        <button onClick={onClose}>CloseDetailsMock</button>
+    </div>
+));
 
 describe('FavoritesScreen', () => {
     beforeEach(() => {
@@ -159,6 +164,24 @@ describe('FavoritesScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByText('FileDetailsMock')).toBeInTheDocument();
+        expect(screen.getByText(/FileDetailsMock:Invoice.pdf/)).toBeInTheDocument();
+    });
+
+    it('closes the selected item from the details panel', () => {
+        const closeSelectedItem = jest.fn();
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: { id: 99, type: 2, name: 'Invoice.pdf' },
+            closeSelectedItem,
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+        fireEvent.click(screen.getByText('CloseDetailsMock'));
+
+        expect(closeSelectedItem).toHaveBeenCalledTimes(1);
     });
 });

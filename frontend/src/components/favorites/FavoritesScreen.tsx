@@ -18,6 +18,7 @@ const FavoritesScreen = () => {
         activeFilter,
         activeFilterLabel,
         breadcrumbSegments,
+        closeSelectedItem,
         contextPath,
         currentTitle,
         fetchNextPage,
@@ -166,10 +167,10 @@ const FavoritesScreen = () => {
                     </section>
                 </div>
 
-                {isFileSelected ? (
+                {isFileSelected && selectedItem ? (
                     <aside className={styles.previewColumn}>
                         <section className={`${styles.panel} ${styles.previewCard}`}>
-                            <FileDetails />
+                            <FileDetails file={selectedItem} onClose={closeSelectedItem} />
                         </section>
                     </aside>
                 ) : null}

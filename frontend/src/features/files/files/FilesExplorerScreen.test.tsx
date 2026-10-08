@@ -31,7 +31,24 @@ jest.mock('@/features/files/search/useFileSearchResults', () => ({
     }),
 }));
 
-jest.mock('@/components/actionBar', () => () => <div>ActionBarMock</div>);
+jest.mock('@/components/actionBar', () => () => {
+    const useFileDetails = jest.requireActual(
+        '@/features/files/fileDetails/useFileDetails'
+    ).default;
+    const OpenFolderDetails = () => {
+        const { openDetails } = useFileDetails();
+        return (
+            <button
+                onClick={() =>
+                    openDetails({ id: 1, name: 'media', path: '/media', parent_path: '/', type: 1 })
+                }
+            >
+                ActionBarMock
+            </button>
+        );
+    };
+    return <OpenFolderDetails />;
+});
 jest.mock('@/features/files/fileContent', () => ({ viewMode, showHeading }: any) => (
     <div
         data-testid="file-content"
@@ -41,7 +58,12 @@ jest.mock('@/features/files/fileContent', () => ({ viewMode, showHeading }: any)
         FileContentMock
     </div>
 ));
-jest.mock('@/features/files/fileDetails', () => () => <div>FileDetailsMock</div>);
+jest.mock('@/features/files/fileDetails', () => ({ file, onClose }: any) => (
+    <div>
+        FileDetailsMock:{file.name}
+        <button onClick={onClose}>CloseDetailsMock</button>
+    </div>
+));
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
     <div>FolderTreeMock</div>
 ));
@@ -140,7 +162,7 @@ describe('FilesExplorerScreen', () => {
 
         expect(screen.getByText('media')).toBeInTheDocument();
         expect(screen.getAllByText('movie.mp4').length).toBeGreaterThan(0);
-        expect(screen.getByText('FileDetailsMock')).toBeInTheDocument();
+        expect(screen.getByText(/FileDetailsMock:movie.mp4/)).toBeInTheDocument();
     });
 
     it('opens the tree drawer action', () => {
@@ -168,5 +190,96 @@ describe('FilesExplorerScreen', () => {
         fireEvent.click(screen.getByText('FindDialogMock'));
 
         expect(handleSelectItem).toHaveBeenCalledWith({ id: 9, path: '/found' });
+    });
+
+    describe('details panel', () => {
+        const openedFile = {
+            id: 2,
+            name: 'movie.mp4',
+            path: '/media/movie.mp4',
+            parent_path: '/media',
+            type: 2,
+            format: '.mp4',
+            size: 42,
+        };
+
+        afterEach(() => {
+            delete (window as any).matchMedia;
+        });
+
+        const mockPhoneViewport = (isPhone: boolean) => {
+            (window as any).matchMedia = (query: string) => ({
+                matches: isPhone,
+                media: query,
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+            });
+        };
+
+        it('leaves the opened file by closing the auto-opened side panel', () => {
+            const handleSelectItem = jest.fn();
+            mockUseFile.mockReturnValue({
+                ...mockUseFile(),
+                selectedItem: openedFile,
+                handleSelectItem,
+            });
+            render(
+                <MemoryRouter>
+                    <FilesExplorerScreen />
+                </MemoryRouter>
+            );
+
+            fireEvent.click(screen.getByText('CloseDetailsMock'));
+
+            expect(handleSelectItem).toHaveBeenCalledWith(null);
+        });
+
+        it('shows the details of a folder in the side column and closes it without navigating', () => {
+            const handleSelectItem = jest.fn();
+            mockUseFile.mockReturnValue({ ...mockUseFile(), handleSelectItem });
+            render(
+                <MemoryRouter>
+                    <FilesExplorerScreen />
+                </MemoryRouter>
+            );
+            expect(screen.queryByText(/FileDetailsMock/)).toBeNull();
+
+            fireEvent.click(screen.getByText('ActionBarMock'));
+            expect(screen.getByText(/FileDetailsMock:media/)).toBeInTheDocument();
+
+            fireEvent.click(screen.getByText('CloseDetailsMock'));
+            expect(screen.queryByText(/FileDetailsMock/)).toBeNull();
+            expect(handleSelectItem).not.toHaveBeenCalled();
+        });
+
+        it('opens the details of a folder as a bottom drawer on phones', () => {
+            mockPhoneViewport(true);
+            render(
+                <MemoryRouter>
+                    <FilesExplorerScreen />
+                </MemoryRouter>
+            );
+
+            fireEvent.click(screen.getByText('ActionBarMock'));
+
+            const drawer = screen.getByRole('presentation');
+            expect(drawer.querySelector('.MuiDrawer-paperAnchorBottom')).not.toBeNull();
+            expect(screen.getByText(/FileDetailsMock:media/)).toBeInTheDocument();
+        });
+
+        it('does not auto-open the details on phones for an opened file', () => {
+            mockPhoneViewport(true);
+            mockUseFile.mockReturnValue({ ...mockUseFile(), selectedItem: openedFile });
+
+            render(
+                <MemoryRouter>
+                    <FilesExplorerScreen />
+                </MemoryRouter>
+            );
+
+            expect(screen.queryByText(/FileDetailsMock/)).toBeNull();
+        });
     });
 });
