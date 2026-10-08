@@ -21,7 +21,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 04. Ordenação no servidor (nome/tamanho/data/tipo, asc/desc) + índices + seletor na UI
 - [x] 05. Favoritos e Recentes globais e paginados (`/files/starred`, `/files/recent-files`)
 - [x] 06. Local físico: `/files/location/:id`, busca por caminho de disco, tier visível (quente e frio) em detalhes e listagem
-- [ ] 07. Copiar arquivo do tier frio falha (`os.Stat` no caminho lógico)
+- [x] 07. Copiar arquivo do tier frio falha (`os.Stat` no caminho lógico)
 - [ ] 08. Estado inválido após apagar/renomear/mover o item aberto
 - [ ] 09. Download por streaming com Range, 404 em arquivo ausente, `Content-Disposition`, pasta como zip, múltiplos
 - [ ] 10. Seleção (clique seleciona, duplo clique abre), multi-seleção, ações em lote, menu de contexto

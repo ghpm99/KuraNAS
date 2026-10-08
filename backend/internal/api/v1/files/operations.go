@@ -679,7 +679,11 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
 
-	sourceInfo, err := os.Stat(resolvedSourcePath)
+	sourceContentPath := resolvedSourcePath
+	if sourceFile.PhysicalPath != "" {
+		sourceContentPath = sourceFile.ResolveContentPath()
+	}
+	sourceInfo, err := os.Stat(sourceContentPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusNotFound, "ERROR_SOURCE_NOT_FOUND", err)
 	}
@@ -702,8 +706,14 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		}
 	}
 
-	if err := copyPathRecursive(resolvedSourcePath, resolvedDestPath); err != nil {
+	if err := copyPathRecursive(sourceContentPath, resolvedDestPath); err != nil {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_COPY_FAILED", err)
+	}
+
+	if sourceInfo.IsDir() {
+		if err := s.copyColdDescendants(resolvedSourcePath, resolvedDestPath); err != nil {
+			return "", newFileOperationError(http.StatusInternalServerError, "ERROR_COPY_FAILED", err)
+		}
 	}
 
 	// Only the copied root row is inserted synchronously; the contents of a
@@ -740,13 +750,17 @@ func copyPathRecursive(sourcePath string, destinationPath string) error {
 		return nil
 	}
 
+	return copyRegularFile(sourcePath, destinationPath, info.Mode())
+}
+
+func copyRegularFile(sourcePath string, destinationPath string, mode os.FileMode) error {
 	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
 		return err
 	}
 	defer sourceFile.Close()
 
-	destinationFile, err := os.OpenFile(destinationPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode())
+	destinationFile, err := os.OpenFile(destinationPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
