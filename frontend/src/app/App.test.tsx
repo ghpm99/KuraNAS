@@ -80,6 +80,7 @@ jest.mock('@/pages/takeout', () => () => <div>TakeoutPage</div>);
 jest.mock('@/pages/captures', () => () => <div>CapturesPage</div>);
 jest.mock('@/pages/downloads', () => () => <div>DownloadsPage</div>);
 jest.mock('@/pages/trash', () => () => <div>TrashPage</div>);
+jest.mock('@/pages/assistant', () => () => <div>AssistantPage</div>);
 
 describe('App', () => {
     it('shows global player when route is not video', async () => {
