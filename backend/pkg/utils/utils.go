@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -206,7 +207,12 @@ type FormatType struct {
 	Description string
 }
 
-var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp"}
+var RawPhotoFormats = []string{".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf", ".srw", ".pef"}
+var HeifFamilyFormats = []string{".heic", ".heif", ".avif"}
+var ImageFormats = append(
+	[]string{".jpg", ".jpeg", ".jfif", ".png", ".gif", ".bmp", ".svg", ".webp", ".tif", ".tiff"},
+	append(append([]string{}, HeifFamilyFormats...), RawPhotoFormats...)...,
+)
 var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
 var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
 
@@ -221,8 +227,18 @@ func ExtensionOf(fileName string) string {
 func GetFormatTypeByExtension(ext string) FormatType {
 	ext = NormalizeExtension(ext)
 	switch ext {
-	case ".jpg", ".jpeg":
+	case ".jpg", ".jpeg", ".jfif":
 		return FormatType{Type: FormatTypeImage, Mime: "image/jpeg", Description: "IMAGE_JPEG"}
+	case ".tif", ".tiff":
+		return FormatType{Type: FormatTypeImage, Mime: "image/tiff", Description: "IMAGE_TIFF"}
+	case ".heic":
+		return FormatType{Type: FormatTypeImage, Mime: "image/heic", Description: "IMAGE_HEIC"}
+	case ".heif":
+		return FormatType{Type: FormatTypeImage, Mime: "image/heif", Description: "IMAGE_HEIC"}
+	case ".avif":
+		return FormatType{Type: FormatTypeImage, Mime: "image/avif", Description: "IMAGE_AVIF"}
+	case ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf", ".srw", ".pef":
+		return FormatType{Type: FormatTypeImage, Mime: "image/x-raw", Description: "IMAGE_RAW"}
 	case ".png":
 		return FormatType{Type: FormatTypeImage, Mime: "image/png", Description: "IMAGE_PNG"}
 	case ".gif":
@@ -430,4 +446,12 @@ func GetDirectoryChecksum(dirPath string) (string, error) {
 	finalHash := sha256.Sum256([]byte(combinedChecksums))
 
 	return hex.EncodeToString(finalHash[:]), nil
+}
+
+func IsRawPhotoExtension(ext string) bool {
+	return slices.Contains(RawPhotoFormats, NormalizeExtension(ext))
+}
+
+func IsHeifFamilyExtension(ext string) bool {
+	return slices.Contains(HeifFamilyFormats, NormalizeExtension(ext))
 }

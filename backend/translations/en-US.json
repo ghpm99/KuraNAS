@@ -845,6 +845,7 @@
 	"IMAGES_VIEWER_FAVORITE_ADDED": "Image added to favorites.",
 	"IMAGES_VIEWER_FAVORITE_REMOVED": "Image removed from favorites.",
 	"IMAGES_VIEWER_FAVORITE_ERROR": "Could not update favorite state.",
+	"IMAGES_VIEWER_DOWNLOAD": "Download original",
 	"IMAGES_VIEWER_OPEN_FOLDER": "Open folder",
 	"IMAGES_VIEWER_START_SLIDESHOW": "Start slideshow",
 	"IMAGES_VIEWER_STOP_SLIDESHOW": "Pause slideshow",

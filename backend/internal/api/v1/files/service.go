@@ -27,6 +27,14 @@ type Service struct {
 	JobsRepository jobs.RepositoryInterface
 	Tasks          chan utils.Task
 	TrashBin       TrashBinInterface
+	StillConverter img.StillImageConverter
+}
+
+func (s *Service) stillImageConverter() img.StillImageConverter {
+	if s.StillConverter == nil {
+		s.StillConverter = img.NewFFmpegStillConverter()
+	}
+	return s.StillConverter
 }
 
 // SetTrashBin wires the trash domain in after construction (the trash service
@@ -635,17 +643,14 @@ func (s *Service) renderThumbnail(fileDto FileDto, width, height int) ([]byte, s
 		return nil, "", fmt.Errorf("%w: %s", ErrFileMissingDisk, contentPath)
 	}
 
-	sourceImg, sourceFormat, err := img.OpenImageFromFile(contentPath)
+	preview, err := img.OpenPreview(contentPath, fileDto.Format, s.stillImageConverter())
 	if err != nil {
 		iconImg, _ := iconForUnreadableFormat(fileDto.Format)
 		return encodeIconThumbnail(iconImg, width, height)
 	}
 
-	orientation := 1
-	if sourceFormat == "jpeg" {
-		orientation = img.ReadJPEGOrientation(contentPath)
-	}
-	fitted := img.FitWithinBox(sourceImg, width, height, orientation)
+	sourceImg := preview.Image
+	fitted := img.FitWithinBox(sourceImg, width, height, preview.Orientation)
 
 	if !img.IsOpaque(sourceImg) {
 		return encodeThumbnail(fitted, img.EncodePNG, thumbnailPNGExtension)
