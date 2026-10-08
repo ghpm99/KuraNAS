@@ -910,7 +910,7 @@ func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	setProgramFilesForTest(t)
 	s := newFilesServiceForTest(t, &filesRepoMock{})
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheFile := filepath.Join(cacheDir, "42_320.png")
+	cacheFile := filepath.Join(cacheDir, thumbnailCacheFileName(FileDto{ID: 42}, 0))
 	cached := []byte("cached-png")
 
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
@@ -934,11 +934,14 @@ func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	}
 }
 
-func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
+func TestFileService_GetFileThumbnailMissingFileIsReadOnly(t *testing.T) {
+	setProgramFilesForTest(t)
 	tmpDir := t.TempDir()
+	repositoryWrites := 0
 	s := newFilesServiceForTest(t, &filesRepoMock{
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-			return false, errors.New("update failure")
+			repositoryWrites++
+			return true, nil
 		},
 	})
 
@@ -948,11 +951,69 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 		Type:   File,
 		Format: ".txt",
 	}, 100, 100)
-	if err == nil {
-		t.Fatalf("expected error for missing file with delete failure")
+
+	if !errors.Is(err, ErrFileMissingDisk) {
+		t.Fatalf("expected ErrFileMissingDisk, got %v", err)
 	}
-	if !errors.Is(err, ErrDatabase) {
-		t.Fatalf("expected ErrDatabase wrapping, got %v", err)
+	if repositoryWrites != 0 {
+		t.Fatalf("thumbnail request must not write to the repository, got %d writes", repositoryWrites)
+	}
+}
+
+func TestFileService_GetFileThumbnailColdFileUsesPhysicalPath(t *testing.T) {
+	setProgramFilesForTest(t)
+	ensureTestIcons(t)
+	coldFile := filepath.Join(t.TempDir(), "cold.txt")
+	if err := os.WriteFile(coldFile, []byte("cold bytes"), 0644); err != nil {
+		t.Fatalf("failed to create cold file: %v", err)
+	}
+	s := newFilesServiceForTest(t, &filesRepoMock{})
+
+	data, err := s.GetFileThumbnail(FileDto{
+		ID:           7001,
+		Path:         filepath.Join(t.TempDir(), "hot-gone.txt"),
+		PhysicalPath: coldFile,
+		Type:         File,
+		Format:       ".txt",
+	}, 100, 100)
+
+	if err != nil || len(data) == 0 {
+		t.Fatalf("expected thumbnail generated from the cold content path, got %v", err)
+	}
+}
+
+func TestFileService_GetFileThumbnailCacheKeyChangesWithUpdatedAt(t *testing.T) {
+	setProgramFilesForTest(t)
+	ensureTestIcons(t)
+	existingFile := filepath.Join(t.TempDir(), "file.txt")
+	if err := os.WriteFile(existingFile, []byte("plain"), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	s := newFilesServiceForTest(t, &filesRepoMock{})
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	firstVersion := FileDto{ID: 7002, Path: existingFile, Type: File, Format: ".txt", UpdatedAt: time.Unix(1000, 0)}
+	secondVersion := firstVersion
+	secondVersion.UpdatedAt = time.Unix(2000, 0)
+
+	if _, err := s.GetFileThumbnail(firstVersion, 100, 100); err != nil {
+		t.Fatalf("first thumbnail failed: %v", err)
+	}
+	firstCachePath := filepath.Join(cacheDir, thumbnailCacheFileName(firstVersion, 100))
+	if _, err := os.Stat(firstCachePath); err != nil {
+		t.Fatalf("expected first version cached: %v", err)
+	}
+
+	if _, err := s.GetFileThumbnail(secondVersion, 100, 100); err != nil {
+		t.Fatalf("second thumbnail failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cacheDir, thumbnailCacheFileName(secondVersion, 100))); err != nil {
+		t.Fatalf("expected new version cached under a new key: %v", err)
+	}
+	if _, err := os.Stat(firstCachePath); !os.IsNotExist(err) {
+		t.Fatalf("expected the stale cached version to be removed, got %v", err)
+	}
+	if ThumbnailETag(firstVersion, 100) == ThumbnailETag(secondVersion, 100) {
+		t.Fatalf("expected ETag to change when updated_at changes")
 	}
 }
 
