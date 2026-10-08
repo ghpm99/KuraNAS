@@ -36,7 +36,7 @@ Decisões tomadas na revisão (owner pediu execução contínua): expor o local 
 - [x] 19. Atalhos de teclado (Enter, Delete, F2, Ctrl+A, Backspace, `/`)
 - [x] 20. Estados vazio/erro com tentar de novo e mensagem do backend
 - [x] 21. Thumbnail apaga registro do banco quando o arquivo some do disco (volume desmontado)
-- [ ] 22. WebDAV ciente de tier (arquivo frio some do DAV)
+- [x] 22. WebDAV ciente de tier (arquivo frio some do DAV)
 - [ ] 23. "Trazer para o quente agora" a partir do detalhe
 - [ ] 24. Mover entre raízes (cópia verificada + remoção)
 - [ ] 25. Código morto e i18n (`FILES_EXPLORER_EYEBROW`, `.page`, subtítulo longo)
