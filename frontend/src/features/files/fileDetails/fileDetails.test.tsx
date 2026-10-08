@@ -1,9 +1,10 @@
-import { render as rtlRender, screen } from '@testing-library/react';
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import FileDetails from './fileDetails';
 
 const mockUseFile = jest.fn();
+const mockEnqueueSnackbar = jest.fn();
 
 const render = (ui: ReactElement) =>
     rtlRender(
@@ -24,39 +25,45 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: (k: string) => k }),
 }));
 
-describe('fileDetails', () => {
-    it('returns null for no item or directory', () => {
-        mockUseFile.mockReturnValue({
-            selectedItem: null,
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        const { container } = render(<FileDetails />);
-        expect(container).toBeEmptyDOMElement();
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
+}));
 
-        mockUseFile.mockReturnValue({
-            selectedItem: { id: 1, type: 1 },
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        const d = render(<FileDetails />);
-        expect(d.container).toBeEmptyDOMElement();
+const baseFile = {
+    id: 2,
+    name: 'a.mp3',
+    type: 2,
+    format: '.mp3',
+    size: 1024,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z',
+    path: '/music/a.mp3',
+} as any;
+
+const baseContext = {
+    isLoadingAccessData: false,
+    recentAccessFiles: [],
+    handleSelectItem: jest.fn(),
+};
+
+describe('fileDetails', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockUseFile.mockReturnValue(baseContext);
+    });
+
+    it('mounts for a partial payload without any service mock', () => {
+        mockUseFile.mockReturnValue({});
+
+        render(<FileDetails file={{ id: 1 } as any} onClose={jest.fn()} />);
+
+        expect(screen.getByText('FILE_DETAILS_TITLE')).toBeInTheDocument();
+        expect(screen.getByText('FILE_DETAILS_CHECKSUM_CALCULATING')).toBeInTheDocument();
     });
 
     it('renders file details and recent access list', () => {
         mockUseFile.mockReturnValue({
-            selectedItem: {
-                id: 2,
-                type: 2,
-                format: '.mp3',
-                size: 1024,
-                created_at: '2026-01-01T00:00:00Z',
-                updated_at: '2026-01-02T00:00:00Z',
-                path: '/music/a.mp3',
-            },
-            isLoadingAccessData: false,
+            ...baseContext,
             recentAccessFiles: [
                 {
                     id: 10,
@@ -64,103 +71,150 @@ describe('fileDetails', () => {
                     file_id: 2,
                     accessed_at: '2026-01-03T00:00:00Z',
                 },
+                {
+                    id: 11,
+                    ip_address: '10.0.0.9',
+                    file_id: 77,
+                    accessed_at: '2026-01-03T00:00:00Z',
+                },
             ],
-            handleSelectItem: jest.fn(),
         });
 
-        render(<FileDetails />);
+        render(<FileDetails file={baseFile} onClose={jest.fn()} />);
+
         expect(screen.getByText('FILE_DETAILS_TITLE')).toBeInTheDocument();
         expect(screen.getByText('/music/a.mp3')).toBeInTheDocument();
+        expect(screen.getByText('AUDIO_MP3')).toBeInTheDocument();
         expect(screen.getByText('127.0.0.1')).toBeInTheDocument();
+        expect(screen.queryByText('10.0.0.9')).toBeNull();
+    });
+
+    it('calls onClose from the close button', () => {
+        const onClose = jest.fn();
+        render(<FileDetails file={baseFile} onClose={onClose} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'CLOSE' }));
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the checksum in monospace with a copy button', async () => {
+        const writeText = jest.fn().mockResolvedValue(undefined);
+        Object.assign(navigator, { clipboard: { writeText } });
+
+        render(<FileDetails file={{ ...baseFile, check_sum: 'abc123def' }} onClose={jest.fn()} />);
+
+        const checksum = screen.getByText('abc123def');
+        expect(checksum.tagName).toBe('CODE');
+        expect(getComputedStyle(checksum).fontFamily).toContain('monospace');
+        expect(screen.queryByText('FILE_DETAILS_CHECKSUM_CALCULATING')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILE_DETAILS_CHECKSUM_COPY' }));
+
+        expect(writeText).toHaveBeenCalledWith('abc123def');
+        await screen.findByRole('button', { name: 'FILE_DETAILS_CHECKSUM_COPY' });
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('FILE_DETAILS_CHECKSUM_COPIED', {
+            variant: 'success',
+        });
+    });
+
+    it('reports a failed checksum copy', async () => {
+        Object.assign(navigator, {
+            clipboard: { writeText: jest.fn().mockRejectedValue(new Error('denied')) },
+        });
+        render(<FileDetails file={{ ...baseFile, check_sum: 'abc' }} onClose={jest.fn()} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILE_DETAILS_CHECKSUM_COPY' }));
+
+        await screen.findByRole('button', { name: 'FILE_DETAILS_CHECKSUM_COPY' });
+        await Promise.resolve();
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('FILE_DETAILS_CHECKSUM_COPY_FAILED', {
+            variant: 'error',
+        });
+    });
+
+    it('shows calculating and no copy button while the checksum is empty', () => {
+        render(<FileDetails file={{ ...baseFile, check_sum: '' }} onClose={jest.fn()} />);
+
+        expect(screen.getByText('FILE_DETAILS_CHECKSUM_CALCULATING')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'FILE_DETAILS_CHECKSUM_COPY' })).toBeNull();
+    });
+
+    it('shows last interaction and last backup from the backend optional wrapper', () => {
+        render(
+            <FileDetails
+                file={{
+                    ...baseFile,
+                    last_interaction: { Value: '2026-02-01T10:00:00Z', HasValue: true },
+                    last_backup: { Value: '0001-01-01T00:00:00Z', HasValue: false },
+                }}
+                onClose={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('FILE_DETAILS_LAST_INTERACTION')).toBeInTheDocument();
+        expect(screen.getByText('FILE_DETAILS_LAST_BACKUP')).toBeInTheDocument();
+        expect(screen.getAllByText('FILE_DETAILS_NEVER')).toHaveLength(1);
+    });
+
+    it('shows never for missing interaction and backup', () => {
+        render(<FileDetails file={baseFile} onClose={jest.fn()} />);
+
+        expect(screen.getAllByText('FILE_DETAILS_NEVER')).toHaveLength(2);
     });
 
     it('shows the cold-tier badge for a migrated file', () => {
-        mockUseFile.mockReturnValue({
-            selectedItem: {
-                id: 3,
-                type: 2,
-                format: '.mp3',
-                size: 1024,
-                created_at: '2026-01-01T00:00:00Z',
-                updated_at: '2026-01-02T00:00:00Z',
-                path: '/music/cold.mp3',
-                tier: 'cold',
-            },
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        render(<FileDetails />);
+        render(<FileDetails file={{ ...baseFile, tier: 'cold' }} onClose={jest.fn()} />);
+
         expect(screen.getByText('FILE_TIER_COLD')).toBeInTheDocument();
     });
 
-    it('hides the cold-tier badge for a hot file', () => {
-        mockUseFile.mockReturnValue({
-            selectedItem: {
-                id: 4,
-                type: 2,
-                format: '.mp3',
-                size: 1024,
-                created_at: '2026-01-01T00:00:00Z',
-                updated_at: '2026-01-02T00:00:00Z',
-                path: '/music/hot.mp3',
-                tier: 'hot',
-            },
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        render(<FileDetails />);
-        expect(screen.queryByText('FILE_TIER_COLD')).not.toBeInTheDocument();
-    });
-
     it('shows the hot-tier badge for a hot file and no badge without a tier', () => {
-        const hotItem = {
-            id: 4,
-            type: 2,
-            format: '.mp3',
-            size: 1024,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-02T00:00:00Z',
-            path: '/music/hot.mp3',
-        };
-        mockUseFile.mockReturnValue({
-            selectedItem: { ...hotItem, tier: 'hot' },
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        const hot = render(<FileDetails />);
+        const hot = render(<FileDetails file={{ ...baseFile, tier: 'hot' }} onClose={jest.fn()} />);
         expect(screen.getByText('FILE_TIER_HOT')).toBeInTheDocument();
+        expect(screen.queryByText('FILE_TIER_COLD')).toBeNull();
         hot.unmount();
 
-        mockUseFile.mockReturnValue({
-            selectedItem: hotItem,
-            isLoadingAccessData: false,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        render(<FileDetails />);
+        render(<FileDetails file={baseFile} onClose={jest.fn()} />);
         expect(screen.queryByText('FILE_TIER_HOT')).toBeNull();
         expect(screen.queryByText('FILE_TIER_COLD')).toBeNull();
     });
 
     it('renders loading spinner for recent activity', () => {
-        mockUseFile.mockReturnValue({
-            selectedItem: {
-                id: 2,
-                type: 2,
-                format: '.mp3',
-                size: 1024,
-                created_at: '2026-01-01T00:00:00Z',
-                updated_at: '2026-01-02T00:00:00Z',
-                path: '/music/a.mp3',
-            },
-            isLoadingAccessData: true,
-            recentAccessFiles: [],
-            handleSelectItem: jest.fn(),
-        });
-        render(<FileDetails />);
+        mockUseFile.mockReturnValue({ ...baseContext, isLoadingAccessData: true });
+
+        render(<FileDetails file={baseFile} onClose={jest.fn()} />);
+
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
+
+    it('renders a folder with name, path and dates but no file-only fields', () => {
+        render(
+            <FileDetails
+                file={
+                    {
+                        id: 5,
+                        name: 'photos',
+                        type: 1,
+                        format: '',
+                        size: 0,
+                        created_at: '2026-01-01T00:00:00Z',
+                        updated_at: '2026-01-02T00:00:00Z',
+                        path: '/media/photos',
+                    } as any
+                }
+                onClose={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('photos')).toBeInTheDocument();
+        expect(screen.getByText('/media/photos')).toBeInTheDocument();
+        expect(screen.getByText('FOLDER')).toBeInTheDocument();
+        expect(screen.queryByText('FILE_DETAILS_CHECKSUM')).toBeNull();
+        expect(screen.queryByText('SIZE')).toBeNull();
+        expect(screen.queryByText('RECENT_ACTIVITY')).toBeNull();
+        expect(
+            screen.getByText('FOLDER_STATS_CALCULATING', { selector: 'span' })
+        ).toBeInTheDocument();
     });
 });

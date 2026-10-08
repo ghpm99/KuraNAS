@@ -5,6 +5,7 @@ import {
     Download,
     FolderPlus,
     FolderUp,
+    Info,
     MoveRight,
     Pencil,
     RefreshCcw,
@@ -31,6 +32,7 @@ import ConflictPolicySelect from '@/features/files/upload/conflictPolicySelect';
 import { entriesFromFileList } from '@/features/files/upload/entriesFromFileList';
 import useUploadToCurrentFolder from '@/features/files/upload/useUploadToCurrentFolder';
 import { useSnackbar } from 'notistack';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
 import useFileActionFlow from '@/features/files/fileActions/useFileActionFlow';
 import useFileOperations from '@/features/files/fileActions/useFileOperations';
 import ActionBarButton from './actionBarButton';
@@ -56,6 +58,7 @@ export const ActionBar = () => {
     const { uploadEntries } = useUploadToCurrentFolder();
     const { startAction, dialogs } = useFileActionFlow();
     const { downloadFiles } = useFileOperations();
+    const { isAvailable: isDetailsAvailable, openDetails } = useFileDetails();
     const { isIconOnly, isSecondaryCollapsed } = useActionBarLayout();
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [folderName, setFolderName] = useState('');
@@ -112,8 +115,21 @@ export const ActionBar = () => {
         downloadFiles([selectedItem]);
     };
 
+    const detailsEntries: ActionBarMenuEntry[] =
+        selectedItem && isDetailsAvailable
+            ? [
+                  {
+                      key: 'details',
+                      label: t('FILES_DETAILS'),
+                      icon: <Info size={16} />,
+                      onSelect: () => openDetails(selectedItem),
+                  },
+              ]
+            : [];
+
     const openedItemEntries: ActionBarMenuEntry[] = selectedItem
         ? [
+              ...detailsEntries,
               {
                   key: 'move',
                   label: t('MOVE'),

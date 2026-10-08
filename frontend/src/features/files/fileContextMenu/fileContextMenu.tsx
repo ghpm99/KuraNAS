@@ -1,11 +1,22 @@
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
-import { Copy, Download, FolderOpen, Link, MoveRight, Pencil, Star, Trash2 } from 'lucide-react';
+import {
+    Copy,
+    Download,
+    FolderOpen,
+    Info,
+    Link,
+    MoveRight,
+    Pencil,
+    Star,
+    Trash2,
+} from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import useFileActionFlow, {
     type DialogFileAction,
 } from '@/features/files/fileActions/useFileActionFlow';
 import useFileOperations from '@/features/files/fileActions/useFileOperations';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
 import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 
 export type FileContextMenuAnchor = { top: number; left: number };
@@ -27,6 +38,7 @@ const FileContextMenu = ({
     const { startAction, dialogs } = useFileActionFlow();
     const { downloadFiles, toggleFavorites, copyPaths } = useFileOperations();
     const { deselect } = useFileSelectionContext();
+    const { isAvailable: isDetailsAvailable, openDetails } = useFileDetails();
 
     const isSingleTarget = targetFiles.length === 1;
     const allTargetsAreFavorites = targetFiles.every((file) => file.starred);
@@ -101,6 +113,17 @@ const FileContextMenu = ({
                     </ListItemIcon>
                     <ListItemText>{t('FILES_COPY_PATH')}</ListItemText>
                 </MenuItem>
+                {isDetailsAvailable ? (
+                    <MenuItem
+                        disabled={!isSingleTarget}
+                        onClick={runAndClose(() => firstTarget && openDetails(firstTarget))}
+                    >
+                        <ListItemIcon>
+                            <Info size={16} />
+                        </ListItemIcon>
+                        <ListItemText>{t('FILES_DETAILS')}</ListItemText>
+                    </MenuItem>
+                ) : null}
                 <Divider />
                 <MenuItem onClick={startDialogAction('delete')}>
                     <ListItemIcon>

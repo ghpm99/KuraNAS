@@ -3,6 +3,8 @@ import FileContextMenu from './fileContextMenu';
 import { createTestFile } from '@/features/files/selection/testFileFactory';
 import { SelectionTestHarness } from '@/features/files/selection/selectionTestHarness';
 import { createFileContextStub } from '@/features/files/selection/fileContextStub';
+import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
 
 const mockEnqueueSnackbar = jest.fn();
 const mockTriggerBrowserDownload = jest.fn();
@@ -21,8 +23,7 @@ jest.mock('@/components/folderPicker/folderPicker', () => ({
     }: {
         open: boolean;
         onSelect: (destination: { folderId: number }) => void;
-    }) =>
-        open ? <button onClick={() => onSelect({ folderId: 7 })}>CONFIRM_PICKER</button> : null,
+    }) => (open ? <button onClick={() => onSelect({ folderId: 7 })}>CONFIRM_PICKER</button> : null),
 }));
 
 const anchorPosition = { top: 10, left: 10 };
@@ -148,5 +149,54 @@ describe('FileContextMenu', () => {
         fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
 
         await waitFor(() => expect(fileContext.deleteFile).toHaveBeenCalledWith(1));
+    });
+
+    describe('details action', () => {
+        const DetailsProbe = () => {
+            const { explicitTarget } = useFileDetails();
+            return <span data-testid="details-target">{explicitTarget?.name ?? 'none'}</span>;
+        };
+
+        const renderMenuWithDetails = (targetFiles = [createTestFile(1)]) => {
+            const onClose = jest.fn();
+            render(
+                <SelectionTestHarness fileContext={createFileContextStub()} seedFiles={targetFiles}>
+                    <FileDetailsProvider>
+                        <DetailsProbe />
+                        <FileContextMenu
+                            anchorPosition={anchorPosition}
+                            targetFiles={targetFiles}
+                            onClose={onClose}
+                            onOpenFile={jest.fn()}
+                        />
+                    </FileDetailsProvider>
+                </SelectionTestHarness>
+            );
+            return { onClose };
+        };
+
+        it('hides the details action when no details panel is mounted', () => {
+            renderMenu();
+
+            expect(screen.queryByText('FILES_DETAILS')).toBeNull();
+        });
+
+        it('opens the details panel for the target and closes the menu', () => {
+            const { onClose } = renderMenuWithDetails([createTestFile(1, { type: 1 })]);
+
+            fireEvent.click(screen.getByText('FILES_DETAILS'));
+
+            expect(onClose).toHaveBeenCalled();
+            expect(screen.getByTestId('details-target')).toHaveTextContent('file-1.txt');
+        });
+
+        it('disables details for a multi-selection', () => {
+            renderMenuWithDetails([createTestFile(1), createTestFile(2)]);
+
+            expect(screen.getByText('FILES_DETAILS').closest('[role="menuitem"]')).toHaveAttribute(
+                'aria-disabled',
+                'true'
+            );
+        });
     });
 });

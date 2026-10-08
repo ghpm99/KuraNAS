@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ActionBar from './actionBar';
 import { FileType } from '@/utils';
+import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
 
 const mockUseFile = jest.fn();
 const mockNavigate = jest.fn();
@@ -17,7 +19,15 @@ jest.mock('@/features/files/upload/useUploadToCurrentFolder', () => ({
 let mockFolderPickerResult = { folderId: 99 };
 jest.mock('@/components/folderPicker/folderPicker', () => ({
     __esModule: true,
-    default: ({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (r: any) => void }) => {
+    default: ({
+        open,
+        onClose,
+        onSelect,
+    }: {
+        open: boolean;
+        onClose: () => void;
+        onSelect: (r: any) => void;
+    }) => {
         if (!open) return null;
         return (
             <div role="dialog" aria-label="FOLDER_PICKER">
@@ -202,7 +212,6 @@ describe('components/actionBar', () => {
         await waitFor(() => {
             expect(screen.queryByRole('dialog', { name: 'DELETE' })).not.toBeInTheDocument();
         });
-
     });
 
     it('shows error snackbars when operations fail', async () => {
@@ -302,7 +311,9 @@ describe('components/actionBar', () => {
         fireEvent.change(fileInput, { target: { files: [blob] } });
 
         await waitFor(() => {
-            expect(mockUploadEntries).toHaveBeenCalledWith([{ file: blob, relativePath: undefined }]);
+            expect(mockUploadEntries).toHaveBeenCalledWith([
+                { file: blob, relativePath: undefined },
+            ]);
         });
         expect(fileInput.value).toBe('');
     });
@@ -317,7 +328,9 @@ describe('components/actionBar', () => {
         fireEvent.change(folderInput, { target: { files: [blob] } });
 
         await waitFor(() => {
-            expect(mockUploadEntries).toHaveBeenCalledWith([{ file: blob, relativePath: 'Album/a.mp3' }]);
+            expect(mockUploadEntries).toHaveBeenCalledWith([
+                { file: blob, relativePath: 'Album/a.mp3' },
+            ]);
         });
     });
 
@@ -863,6 +876,49 @@ describe('components/actionBar', () => {
             fireEvent.click(screen.getByRole('menuitem', { name: 'MOVE' }));
 
             expect(screen.getByRole('button', { name: 'CONFIRM_PICKER' })).toBeInTheDocument();
+        });
+    });
+
+    describe('details action', () => {
+        const DetailsProbe = () => {
+            const { explicitTarget } = useFileDetails();
+            return <span data-testid="details-target">{explicitTarget?.name ?? 'none'}</span>;
+        };
+
+        const openedFolder = {
+            id: 3,
+            name: 'photos',
+            path: '/media/photos',
+            parent_path: '/media',
+            type: FileType.Directory,
+        };
+
+        it('has no details action without a details panel', () => {
+            mockUseFile.mockReturnValue(
+                createFileContext({ selectedItem: openedFolder, fileListFilter: 'all' })
+            );
+
+            render(<ActionBar />);
+
+            expect(screen.queryByRole('button', { name: 'FILES_DETAILS' })).toBeNull();
+        });
+
+        it('opens the details of the opened folder', () => {
+            mockUseFile.mockReturnValue(
+                createFileContext({ selectedItem: openedFolder, fileListFilter: 'all' })
+            );
+
+            render(
+                <FileDetailsProvider>
+                    <DetailsProbe />
+                    <ActionBar />
+                </FileDetailsProvider>
+            );
+            expect(screen.getByTestId('details-target')).toHaveTextContent('none');
+
+            fireEvent.click(screen.getByRole('button', { name: 'FILES_DETAILS' }));
+
+            expect(screen.getByTestId('details-target')).toHaveTextContent('photos');
         });
     });
 });

@@ -1,6 +1,6 @@
 import { FileType, formatDate, getFileTypeInfo } from '@/utils';
 import { formatSize } from '@/shared/utils/formatSize';
-import useFile from '@/features/files/providers/fileProvider/fileContext';
+import useFile, { type FileData } from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     Box,
@@ -13,34 +13,30 @@ import {
     Typography,
 } from '@mui/material';
 import { Flame, Snowflake, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import ChecksumRow from './checksumRow';
+import DetailRow from './detailRow';
 import DiskLocationRow from './diskLocationRow';
+import FileTypeMetadataSection from './fileTypeMetadataSection';
+import FolderStatsSection from './folderStatsSection';
+import { readOptionalDate } from './optionalDate';
 
-function DetailRow({ label, value }: { label: string; value: ReactNode }) {
-    return (
-        <ListItem disablePadding sx={{ py: 0.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <Typography variant="caption" color="text.secondary">
-                    {label}
-                </Typography>
-                <Typography
-                    variant="caption"
-                    sx={{ maxWidth: '60%', textAlign: 'right', wordBreak: 'break-all' }}
-                >
-                    {value}
-                </Typography>
-            </Box>
-        </ListItem>
-    );
-}
+type FileDetailsProps = {
+    file: FileData;
+    onClose: () => void;
+};
 
-const FileDetails = () => {
-    const { selectedItem, isLoadingAccessData, recentAccessFiles, handleSelectItem } = useFile();
+const FileDetails = ({ file, onClose }: FileDetailsProps) => {
+    const { isLoadingAccessData, recentAccessFiles } = useFile();
     const { t } = useI18n();
+    const isFolder = file.type === FileType.Directory;
+    const fileTypeDescription = isFolder
+        ? t('FOLDER')
+        : t(getFileTypeInfo(file.format).description);
 
-    if (!selectedItem || selectedItem.type === FileType.Directory) return null;
-
-    const fileType = getFileTypeInfo(selectedItem.format);
+    const formatOptionalDate = (rawDate: unknown) => {
+        const readDate = readOptionalDate(rawDate);
+        return readDate === null ? t('FILE_DETAILS_NEVER') : formatDate(readDate);
+    };
 
     return (
         <Box sx={{ p: 2 }}>
@@ -54,11 +50,7 @@ const FileDetails = () => {
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                     {t('FILE_DETAILS_TITLE')}
                 </Typography>
-                <IconButton
-                    size="small"
-                    onClick={() => handleSelectItem(null)}
-                    aria-label={t('CLOSE')}
-                >
+                <IconButton size="small" onClick={onClose} aria-label={t('CLOSE')}>
                     <X size={18} />
                 </IconButton>
             </Box>
@@ -66,7 +58,7 @@ const FileDetails = () => {
                 {t('FILE_DETAILS_SUBTITLE')}
             </Typography>
 
-            {selectedItem.tier === 'cold' ? (
+            {file.tier === 'cold' ? (
                 <Chip
                     size="small"
                     color="info"
@@ -76,7 +68,7 @@ const FileDetails = () => {
                     sx={{ mt: 0.5 }}
                 />
             ) : null}
-            {selectedItem.tier === 'hot' ? (
+            {file.tier === 'hot' ? (
                 <Chip
                     size="small"
                     color="warning"
@@ -91,44 +83,72 @@ const FileDetails = () => {
                 {t('PROPERTIES')}
             </Typography>
             <List dense disablePadding>
-                <DetailRow label={t('TYPE')} value={fileType.description} />
-                <DetailRow
-                    label={t('SIZE')}
-                    value={`${formatSize(selectedItem.size)} (${selectedItem.size} B)`}
-                />
-                <DetailRow label={t('CREATED')} value={formatDate(selectedItem.created_at)} />
-                <DetailRow label={t('MODIFIED')} value={formatDate(selectedItem.updated_at)} />
-                <DetailRow label={t('PATH')} value={selectedItem.path} />
+                <DetailRow label={t('NAME')} value={file.name} />
+                <DetailRow label={t('TYPE')} value={fileTypeDescription} />
+                {isFolder ? null : (
+                    <DetailRow
+                        label={t('SIZE')}
+                        value={`${formatSize(file.size)} (${file.size} B)`}
+                    />
+                )}
+                <DetailRow label={t('CREATED')} value={formatDate(file.created_at)} />
+                <DetailRow label={t('MODIFIED')} value={formatDate(file.updated_at)} />
+                {isFolder ? null : (
+                    <>
+                        <DetailRow
+                            label={t('FILE_DETAILS_LAST_INTERACTION')}
+                            value={formatOptionalDate(file.last_interaction)}
+                        />
+                        <DetailRow
+                            label={t('FILE_DETAILS_LAST_BACKUP')}
+                            value={formatOptionalDate(file.last_backup)}
+                        />
+                    </>
+                )}
+                <DetailRow label={t('PATH')} value={file.path} />
             </List>
-            <DiskLocationRow fileId={selectedItem.id} />
+            {isFolder ? null : <ChecksumRow checksum={file.check_sum} />}
+            <DiskLocationRow fileId={file.id} />
 
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="overline" color="text.secondary" display="block">
-                {t('RECENT_ACTIVITY')}
-            </Typography>
-            {isLoadingAccessData ? (
-                <CircularProgress size={16} />
+            {isFolder ? (
+                <>
+                    <Divider sx={{ my: 1.5 }} />
+                    <FolderStatsSection folderId={file.id} />
+                </>
             ) : (
-                <List dense disablePadding>
-                    {recentAccessFiles
-                        .filter((access) => access.file_id === selectedItem.id)
-                        .map((access) => (
-                            <ListItem key={access.id} disablePadding sx={{ py: 0.5 }}>
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        width: '100%',
-                                    }}
-                                >
-                                    <Typography variant="caption">{access.ip_address}</Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {formatDate(access.accessed_at)}
-                                    </Typography>
-                                </Box>
-                            </ListItem>
-                        ))}
-                </List>
+                <>
+                    <FileTypeMetadataSection file={file} />
+                    <Divider sx={{ my: 1.5 }} />
+                    <Typography variant="overline" color="text.secondary" display="block">
+                        {t('RECENT_ACTIVITY')}
+                    </Typography>
+                    {isLoadingAccessData ? (
+                        <CircularProgress size={16} />
+                    ) : (
+                        <List dense disablePadding>
+                            {(recentAccessFiles ?? [])
+                                .filter((access) => access.file_id === file.id)
+                                .map((access) => (
+                                    <ListItem key={access.id} disablePadding sx={{ py: 0.5 }}>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                width: '100%',
+                                            }}
+                                        >
+                                            <Typography variant="caption">
+                                                {access.ip_address}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {formatDate(access.accessed_at)}
+                                            </Typography>
+                                        </Box>
+                                    </ListItem>
+                                ))}
+                        </List>
+                    )}
+                </>
             )}
         </Box>
     );

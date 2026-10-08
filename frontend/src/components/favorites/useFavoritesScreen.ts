@@ -39,7 +39,8 @@ const matchesFavoritesFilter = (filter: FavoritesFilter, file: FileData) => {
 
 const useFavoritesScreen = () => {
     const { t } = useI18n();
-    const { files, selectedItem, fetchNextPage, hasNextPage, isFetchingNextPage } = useFile();
+    const { files, selectedItem, fetchNextPage, hasNextPage, isFetchingNextPage, handleSelectItem } =
+        useFile();
     const [activeFilter, setActiveFilter] = useState<FavoritesFilter>('all');
     const [viewMode, setViewMode] = useState<FavoritesViewMode>('grid');
 
@@ -150,10 +151,13 @@ const useFavoritesScreen = () => {
         filterOptions.find((option) => option.value === activeFilter)?.label ??
         t('FAVORITES_FILTER_ALL');
 
+    const closeSelectedItem = () => handleSelectItem(null);
+
     return {
         activeFilter,
         activeFilterLabel,
         breadcrumbSegments,
+        closeSelectedItem,
         contextPath,
         currentTitle,
         fetchNextPage,
