@@ -370,7 +370,7 @@ func (r *Repository) GetImages(page int, pageSize int, groupBy ImageGroupBy) (ut
 			paginationResponse.Items = append(paginationResponse.Items, file)
 		}
 
-		return nil
+		return rows.Err()
 	})
 
 	if err != nil {
