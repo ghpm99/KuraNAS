@@ -44,6 +44,7 @@ export type FileContextType = {
     selectedItem: FileData | null;
     handleSelectItem: (item: FileData | null) => void;
     handleStarredItem: (itemId: number) => void;
+    toggleStarred: (itemId: number) => Promise<void>;
     uploadFiles: (files: FileList, targetFolderId?: number) => Promise<void>;
     createFolder: (name: string, parentId?: number) => Promise<void>;
     moveFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string) => Promise<void>;

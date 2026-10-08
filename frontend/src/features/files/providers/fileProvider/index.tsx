@@ -25,6 +25,7 @@ import {
     FilesSort,
     PaginationResponse,
 } from './fileContext';
+import FileSelectionProvider from '../../selection/fileSelectionProvider';
 import { loadFilesSort, saveFilesSort } from './filesSortPreference';
 import {
     addChildrenToTree,
@@ -135,6 +136,20 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         },
     });
 
+    const invalidateFileQueries = useCallback(async () => {
+        await Promise.all(
+            fileQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [queryKey] }))
+        );
+    }, [queryClient]);
+
+    const toggleStarred = useCallback(
+        async (itemId: number) => {
+            await toggleStarredFile(itemId);
+            await invalidateFileQueries();
+        },
+        [invalidateFileQueries]
+    );
+
     const rescanFiles = useCallback(async () => {
         await requestFilesRescan();
         await refetch();
@@ -159,12 +174,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const openedItemId = currentFilePath ? resolvedItem?.id : undefined;
     const openedItemParentPath = resolvedItem?.parent_path;
     const openedItemName = resolvedItem?.name;
-
-    const invalidateFileQueries = useCallback(async () => {
-        await Promise.all(
-            fileQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [queryKey] }))
-        );
-    }, [queryClient]);
 
     const discardOpenedItemPathQuery = useCallback(() => {
         queryClient.removeQueries({ queryKey: ['files-path', currentFilePath] });
@@ -314,6 +323,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             filesSort,
             setFilesSort,
             handleStarredItem,
+            toggleStarred,
             uploadFiles,
             createFolder,
             moveFile,
@@ -339,6 +349,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             filesSort,
             setFilesSort,
             handleStarredItem,
+            toggleStarred,
             uploadFiles,
             createFolder,
             moveFile,
@@ -351,7 +362,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             isFetchingNextPage,
         ]
     );
-    return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
+    const selectionScopeKey = `${selectedItemId ?? 'root'}:${fileListFilter}`;
+
+    return (
+        <FileContextProvider value={contextValue}>
+            <FileSelectionProvider scopeKey={selectionScopeKey}>{children}</FileSelectionProvider>
+        </FileContextProvider>
+    );
 };
 
 export default FileProvider;

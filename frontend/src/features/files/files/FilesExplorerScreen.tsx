@@ -1,6 +1,8 @@
 import ActionBar from '@/components/actionBar';
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
+import FileSelectionToolbar from '@/features/files/selection/fileSelectionToolbar';
+import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import FilesSortControl from '@/features/files/filesSortControl/filesSortControl';
 import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -39,6 +41,7 @@ const FilesExplorerScreen = () => {
         viewMode,
     } = useFilesExplorerScreen();
     const { filesSort, setFilesSort, handleSelectItem } = useFile();
+    const { hasSelection } = useFileSelectionContext();
     const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
     const isFileSelected = selectedItem?.type === FileType.File;
@@ -144,7 +147,7 @@ const FilesExplorerScreen = () => {
                     </section>
 
                     <section className={`${styles.panel} ${styles.toolbarCard}`}>
-                        <ActionBar />
+                        {hasSelection ? <FileSelectionToolbar /> : <ActionBar />}
                     </section>
 
                     {!isFileSelected ? (
