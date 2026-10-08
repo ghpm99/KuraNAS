@@ -21,3 +21,9 @@ export type TieringUsage = {
 	cold_files: number;
 	cold_bytes: number;
 };
+
+export type TieringFileLocation = {
+	file_id: number;
+	tier: 'hot' | 'cold';
+	disk_path: string;
+};

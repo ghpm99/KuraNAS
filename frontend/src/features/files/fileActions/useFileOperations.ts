@@ -43,8 +43,15 @@ const renameMessages: OutcomeMessages = {
     failureKey: 'ERROR_RENAME_FAILED',
 };
 
+const promoteToHotMessages: OutcomeMessages = {
+    singleSuccessKey: 'FILE_PROMOTE_TO_HOT_SUCCESS',
+    multipleSuccessKey: 'FILE_PROMOTE_TO_HOT_SUCCESS',
+    failureKey: 'ERROR_PROMOTE_TO_HOT_FAILED',
+};
+
 export const useFileOperations = () => {
-    const { moveFile, copyFile, deleteFile, renameFile, toggleStarred } = useFile();
+    const { moveFile, copyFile, deleteFile, renameFile, toggleStarred, promoteFileToHot } =
+        useFile();
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
 
@@ -131,6 +138,12 @@ export const useFileOperations = () => {
         [renameFile, runAndNotify]
     );
 
+    const promoteFilesToHot = useCallback(
+        (files: FileData[]) =>
+            runAndNotify(files, (file) => promoteFileToHot(file.id), promoteToHotMessages),
+        [promoteFileToHot, runAndNotify]
+    );
+
     const toggleFavorites = useCallback(
         (files: FileData[]) => {
             const shouldUnfavorite = files.every((file) => file.starred);
@@ -172,6 +185,7 @@ export const useFileOperations = () => {
         copyFiles,
         deleteFiles,
         renameSingleFile,
+        promoteFilesToHot,
         toggleFavorites,
         downloadFiles,
         copyPaths,

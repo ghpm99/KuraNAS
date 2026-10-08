@@ -8,6 +8,7 @@ export const createFileContextStub = (overrides: Partial<FileContextType> = {}):
         copyFile: jest.fn().mockResolvedValue(undefined),
         deleteFile: jest.fn().mockResolvedValue(undefined),
         renameFile: jest.fn().mockResolvedValue(undefined),
+        promoteFileToHot: jest.fn().mockResolvedValue(undefined),
         toggleStarred: jest.fn().mockResolvedValue(undefined),
         ...overrides,
     }) as unknown as FileContextType;

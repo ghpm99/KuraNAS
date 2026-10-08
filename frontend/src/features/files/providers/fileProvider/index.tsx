@@ -16,6 +16,7 @@ import {
     rescanFiles as requestFilesRescan,
     toggleStarredFile,
 } from '@/service/files';
+import { promoteFileToHot as promoteFileToHotService } from '@/service/tiering';
 import {
     FileContextProvider,
     FileContextType,
@@ -152,6 +153,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const toggleStarred = useCallback(
         async (itemId: number) => {
             await toggleStarredFile(itemId);
+            await invalidateFileQueries();
+        },
+        [invalidateFileQueries]
+    );
+
+    const promoteFileToHot = useCallback(
+        async (id: number) => {
+            await promoteFileToHotService(id);
             await invalidateFileQueries();
         },
         [invalidateFileQueries]
@@ -332,6 +341,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             copyFile,
             renameFile,
             deleteFile,
+            promoteFileToHot,
             rescanFiles,
             fetchNextPage: () => {
                 fetchNextPage();
@@ -359,6 +369,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             copyFile,
             renameFile,
             deleteFile,
+            promoteFileToHot,
             rescanFiles,
             fetchNextPage,
             hasNextPage,
