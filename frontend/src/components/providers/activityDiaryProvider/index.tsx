@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import {
     ChangeEvent,
     FormEvent,
@@ -8,6 +8,7 @@ import {
     useReducer,
     useState,
 } from 'react';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     createActivityDiaryEntry,
@@ -23,6 +24,8 @@ import {
     messageType,
 } from './ActivityDiaryContext';
 import { useSnackbar } from 'notistack';
+
+const DIARY_PAGE_SIZE = 20;
 
 const initialFormState: ActivityDiaryFormData = {
     name: '',
@@ -69,13 +72,39 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     const {
-        data: diaryData,
+        data: diaryPages,
         error,
+        isLoading: isEntriesLoading,
+        hasNextPage: hasMoreEntries,
+        isFetchingNextPage: isFetchingMoreEntries,
+        fetchNextPage,
         refetch: refetchList,
-    } = useQuery({
+    } = useInfiniteQuery({
         queryKey: ['activity-diary-list'],
-        queryFn: getActivityDiaryEntries,
+        queryFn: ({ pageParam }) =>
+            getActivityDiaryEntries({ page: pageParam, pageSize: DIARY_PAGE_SIZE }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
     });
+
+    const diaryData = useMemo(() => {
+        const loadedPages = diaryPages?.pages ?? [];
+        const lastPage = loadedPages[loadedPages.length - 1];
+        if (!lastPage) return undefined;
+        return {
+            items: loadedPages.flatMap((page) => page?.items ?? []),
+            pagination: lastPage.pagination,
+        };
+    }, [diaryPages]);
+
+    const loadMoreEntries = useCallback(() => {
+        void fetchNextPage();
+    }, [fetchNextPage]);
+
+    const reloadEntries = useCallback(() => {
+        void refetchList();
+    }, [refetchList]);
 
     const createDiaryMutation = useMutation({
         mutationFn: (form: ActivityDiaryFormData): Promise<ActivityDiaryData> =>
@@ -192,11 +221,17 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
             },
             getCurrentDuration,
             error: error?.message || summaryError?.message,
+            isEntriesLoading,
+            hasEntriesError: Boolean(error),
+            entriesErrorMessage: extractBackendErrorMessage(error),
+            hasMoreEntries,
+            isFetchingMoreEntries,
+            loadMoreEntries,
+            reloadEntries,
             currentTime,
             copyActivity,
         }),
         [
-            error?.message,
             summaryError?.message,
             formData,
             getCurrentDuration,
@@ -206,6 +241,12 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
             summaryData,
             currentTime,
             copyActivity,
+            error,
+            isEntriesLoading,
+            hasMoreEntries,
+            isFetchingMoreEntries,
+            loadMoreEntries,
+            reloadEntries,
             createDiaryMutation.isPending,
             duplicateDiaryMutation.isPending,
         ]

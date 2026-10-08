@@ -1,5 +1,8 @@
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { runWithConcurrencyLimit } from '@/shared/utils/runWithConcurrencyLimit';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
+
+export { extractBackendErrorMessage };
 
 const bulkConcurrencyLimit = 4;
 
@@ -7,12 +10,6 @@ export type BulkOutcome = {
     succeededFiles: FileData[];
     failedFiles: FileData[];
     firstFailureMessage?: string;
-};
-
-export const extractBackendErrorMessage = (error: unknown): string | undefined => {
-    const backendMessage = (error as { response?: { data?: { error?: unknown } } } | null)
-        ?.response?.data?.error;
-    return typeof backendMessage === 'string' && backendMessage !== '' ? backendMessage : undefined;
 };
 
 export const runBulkOperation = async (

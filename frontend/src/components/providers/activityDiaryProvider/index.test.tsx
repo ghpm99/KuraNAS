@@ -3,6 +3,7 @@ import ActivityDiaryProvider from '.';
 import { useActivityDiary } from './ActivityDiaryContext';
 
 const mockUseQuery = jest.fn();
+const mockUseInfiniteQuery = jest.fn();
 const mockUseMutation = jest.fn();
 const mockEnqueueSnackbar = jest.fn();
 const mockGetActivityDiarySummary = jest.fn();
@@ -12,6 +13,7 @@ const mockDuplicateActivityDiaryEntry = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
     useQuery: (...args: any[]) => mockUseQuery(...args),
+    useInfiniteQuery: (...args: any[]) => mockUseInfiniteQuery(...args),
     useMutation: (...args: any[]) => mockUseMutation(...args),
 }));
 
@@ -119,39 +121,48 @@ describe('providers/activityDiaryProvider/index', () => {
 
         mockUseQuery.mockImplementation((options: any) => {
             options.queryFn?.();
-            if (options.queryKey[0] === 'activity-diary-summary') {
-                return {
-                    data: {
-                        date: '2026-03-04',
-                        total_activities: 1,
-                        total_time_spent_seconds: 120,
-                    },
-                    error: undefined,
-                    refetch: jest.fn(),
-                };
-            }
-
             return {
                 data: {
-                    items: [
-                        {
-                            id: 1,
-                            name: 'entry',
-                            description: 'x',
-                            start_time: '2026-03-04T00:00:00.000Z',
-                            end_time: null,
-                            duration: 1,
-                            duration_formatted: '1s',
-                        },
-                    ],
-                    pagination: {
-                        page: 1,
-                        page_size: 10,
-                        has_next: false,
-                        has_prev: false,
-                    },
+                    date: '2026-03-04',
+                    total_activities: 1,
+                    total_time_spent_seconds: 120,
                 },
                 error: undefined,
+                refetch: jest.fn(),
+            };
+        });
+
+        mockUseInfiniteQuery.mockImplementation((options: any) => {
+            options.queryFn?.({ pageParam: 1 });
+            return {
+                data: {
+                    pages: [
+                        {
+                            items: [
+                                {
+                                    id: 1,
+                                    name: 'entry',
+                                    description: 'x',
+                                    start_time: '2026-03-04T00:00:00.000Z',
+                                    end_time: null,
+                                    duration: 1,
+                                    duration_formatted: '1s',
+                                },
+                            ],
+                            pagination: {
+                                page: 1,
+                                page_size: 10,
+                                has_next: false,
+                                has_prev: false,
+                            },
+                        },
+                    ],
+                },
+                error: null,
+                isLoading: false,
+                hasNextPage: false,
+                isFetchingNextPage: false,
+                fetchNextPage: jest.fn(),
                 refetch: jest.fn(),
             };
         });
@@ -257,20 +268,22 @@ describe('providers/activityDiaryProvider/index', () => {
     });
 
     it('exposes query error message when data fetch fails', () => {
-        mockUseQuery.mockImplementation(({ queryKey, queryFn }: any) => {
+        mockUseQuery.mockImplementation(({ queryFn }: any) => {
             queryFn?.();
-            if (queryKey[0] === 'activity-diary-summary') {
-                return {
-                    data: undefined,
-                    error: new Error('summary down'),
-                    refetch: jest.fn(),
-                };
-            }
             return {
                 data: undefined,
-                error: new Error('list down'),
+                error: new Error('summary down'),
                 refetch: jest.fn(),
             };
+        });
+        mockUseInfiniteQuery.mockReturnValue({
+            data: undefined,
+            error: new Error('list down'),
+            isLoading: false,
+            hasNextPage: false,
+            isFetchingNextPage: false,
+            fetchNextPage: jest.fn(),
+            refetch: jest.fn(),
         });
 
         render(
@@ -280,5 +293,67 @@ describe('providers/activityDiaryProvider/index', () => {
         );
 
         expect(screen.getByTestId('error')).toHaveTextContent('list down');
+    });
+
+    it('flattens pages, requests the next page and reloads the list through the context', () => {
+        const fetchNextPage = jest.fn();
+        const refetch = jest.fn();
+        const entry = (id: number) => ({
+            id,
+            name: `entry-${id}`,
+            description: '',
+            start_time: '2026-03-04T00:00:00.000Z',
+            end_time: null,
+            duration: 1,
+            duration_formatted: '1s',
+        });
+        mockUseInfiniteQuery.mockImplementation((options: any) => {
+            expect(
+                options.getNextPageParam({ items: [], pagination: { page: 2, has_next: true } })
+            ).toBe(3);
+            expect(
+                options.getNextPageParam({ items: [], pagination: { page: 2, has_next: false } })
+            ).toBeUndefined();
+            expect(mockGetActivityDiaryEntries).not.toHaveBeenCalledWith({ page: 2, pageSize: 20 });
+            options.queryFn({ pageParam: 2 });
+            return {
+                data: {
+                    pages: [
+                        { items: [entry(1)], pagination: { page: 1, has_next: true } },
+                        { items: [entry(2)], pagination: { page: 2, has_next: false } },
+                    ],
+                },
+                error: null,
+                isLoading: false,
+                hasNextPage: true,
+                isFetchingNextPage: false,
+                fetchNextPage,
+                refetch,
+            };
+        });
+
+        const Consumer = () => {
+            const context = useActivityDiary();
+            return (
+                <div>
+                    <span data-testid="flattened">{context.data?.entries.items.length}</span>
+                    <button onClick={context.loadMoreEntries}>more</button>
+                    <button onClick={context.reloadEntries}>reload</button>
+                </div>
+            );
+        };
+
+        render(
+            <ActivityDiaryProvider>
+                <Consumer />
+            </ActivityDiaryProvider>
+        );
+
+        expect(screen.getByTestId('flattened')).toHaveTextContent('2');
+        expect(mockGetActivityDiaryEntries).toHaveBeenCalledWith({ page: 2, pageSize: 20 });
+        fireEvent.click(screen.getByRole('button', { name: 'more' }));
+        fireEvent.click(screen.getByRole('button', { name: 'reload' }));
+        expect(fetchNextPage).toHaveBeenCalled();
+        expect(refetch).toHaveBeenCalled();
     });
 });

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import ActivityDiaryActionBar from './ActivityDiaryActionBar/ActivityDiaryActionBar';
+import ActivityDiaryMessage from './ActivityDiaryMessage/ActivityDiaryMessage';
 import ActivityDiaryForm from './ActivityDiaryForm/ActivityDiaryForm';
 import ActivityList from './ActivityList/ActivityList';
 import ActivitySummary from './ActivitySummary/ActivitySummary';
@@ -25,7 +25,7 @@ jest.mock('@/components/ui/Card/Card', () => ({ title, children }: any) => (
 jest.mock('@/components/activityDiary/activityDiaryLayout', () => ({ children }: any) => (
     <div data-testid="activity-layout">{children}</div>
 ));
-jest.mock('@/components/activityDiary/ActivityDiaryActionBar', () => () => <div>ActionBar</div>);
+jest.mock('@/components/activityDiary/ActivityDiaryMessage', () => () => <div>Message</div>);
 jest.mock('@/components/activityDiary/ActivityDiaryForm', () => () => <div>Form</div>);
 jest.mock('@/components/activityDiary/ActivitySummary', () => () => <div>Summary</div>);
 jest.mock('@/components/activityDiary/ActivityList', () => () => <div>List</div>);
@@ -73,15 +73,15 @@ describe('activity diary components', () => {
         useActivityDiary.mockReturnValue(defaultCtx);
     });
 
-    it('renders action bar with and without message', () => {
-        render(<ActivityDiaryActionBar />);
-        expect(screen.getByText('ACTIVITY_DIARY_TITLE')).toBeInTheDocument();
+    it('renders the message bar only when there is a message', () => {
+        const { container } = render(<ActivityDiaryMessage />);
+        expect(container).toBeEmptyDOMElement();
 
         useActivityDiary.mockReturnValueOnce({
             ...defaultCtx,
             message: { text: 'Erro', type: 'error' },
         });
-        render(<ActivityDiaryActionBar />);
+        render(<ActivityDiaryMessage />);
         expect(screen.getByText('Erro')).toBeInTheDocument();
     });
 
@@ -177,9 +177,53 @@ describe('activity diary components', () => {
 
         render(<ActivityDiaryPage />);
         expect(screen.getAllByTestId('activity-layout').length).toBeGreaterThan(0);
-        expect(screen.getByText('ActionBar')).toBeInTheDocument();
+        expect(
+            screen.getByRole('heading', { level: 1, name: 'ACTIVITY_DIARY_TITLE' })
+        ).toBeInTheDocument();
+        expect(screen.getByText('Message')).toBeInTheDocument();
         expect(screen.getByText('Form')).toBeInTheDocument();
         expect(screen.getByText('Summary')).toBeInTheDocument();
         expect(screen.getByText('List')).toBeInTheDocument();
+    });
+
+    it('shows a progress indicator while entries load', () => {
+        useActivityDiary.mockReturnValueOnce({ ...defaultCtx, isEntriesLoading: true });
+        render(<ActivityList />);
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
+
+    it('shows an error state with the backend message and retries', () => {
+        const reloadEntries = jest.fn();
+        useActivityDiary.mockReturnValueOnce({
+            ...defaultCtx,
+            hasEntriesError: true,
+            entriesErrorMessage: 'falha do servidor',
+            reloadEntries,
+        });
+        render(<ActivityList />);
+        expect(screen.getByText('ACTIVITY_DIARY_LOAD_ERROR')).toBeInTheDocument();
+        expect(screen.getByText('falha do servidor')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(reloadEntries).toHaveBeenCalled();
+    });
+
+    it('shows the empty message and loads more entries on demand', () => {
+        useActivityDiary.mockReturnValueOnce({
+            ...defaultCtx,
+            data: { ...defaultCtx.data, entries: { items: [] } },
+        });
+        const { unmount } = render(<ActivityList />);
+        expect(screen.getByText('NO_ACTIVITIES')).toBeInTheDocument();
+        unmount();
+
+        const loadMoreEntries = jest.fn();
+        useActivityDiary.mockReturnValueOnce({
+            ...defaultCtx,
+            hasMoreEntries: true,
+            loadMoreEntries,
+        });
+        render(<ActivityList />);
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+        expect(loadMoreEntries).toHaveBeenCalled();
     });
 });

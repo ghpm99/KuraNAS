@@ -1,3 +1,3 @@
-import ActionBar from './ActivityDiaryActionBar';
+import ActivityDiaryMessage from './ActivityDiaryMessage';
 
-export default ActionBar;
+export default ActivityDiaryMessage;
