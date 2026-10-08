@@ -38,6 +38,31 @@ export const getFilesTree = async ({
     return response.data;
 };
 
+type FilesPageParams = {
+    page: number;
+    pageSize: number;
+};
+
+export const getStarredFiles = async ({
+    page,
+    pageSize,
+}: FilesPageParams): Promise<FilePaginationResponse> => {
+    const response = await apiBase.get<FilePaginationResponse>('/files/starred', {
+        params: { page, page_size: pageSize },
+    });
+    return response.data;
+};
+
+export const getRecentlyAccessedFiles = async ({
+    page,
+    pageSize,
+}: FilesPageParams): Promise<FilePaginationResponse> => {
+    const response = await apiBase.get<FilePaginationResponse>('/files/recent-files', {
+        params: { page, page_size: pageSize },
+    });
+    return response.data;
+};
+
 export const getRecentAccessByFileId = async (fileId: number): Promise<RecentAccessFile[]> => {
     const response = await apiBase.get<RecentAccessFile[]>(`/files/recent/${fileId}`);
     return response.data;

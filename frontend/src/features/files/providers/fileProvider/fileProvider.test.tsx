@@ -28,6 +28,8 @@ jest.mock('react-router-dom', () => ({
 
 const mockGetFileByPath = jest.fn<Promise<FileData | null>, [string]>();
 const mockGetFilesTree = jest.fn<Promise<PaginationResponse>, [any]>();
+const mockGetStarredFiles = jest.fn<Promise<PaginationResponse>, [any]>();
+const mockGetRecentlyAccessedFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
 const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
@@ -41,6 +43,8 @@ const mockDeleteFile = jest.fn<Promise<void>, [number]>();
 jest.mock('@/service/files', () => ({
     getFileByPath: mockGetFileByPath,
     getFilesTree: mockGetFilesTree,
+    getStarredFiles: mockGetStarredFiles,
+    getRecentlyAccessedFiles: mockGetRecentlyAccessedFiles,
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     toggleStarredFile: mockToggleStarredFile,
     rescanFiles: mockRescanFiles,
@@ -231,6 +235,8 @@ describe('FileProvider', () => {
         capturedContext = null;
         mockPathname = '/files';
         mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+        mockGetStarredFiles.mockResolvedValue(makePaginationResponse([]));
+        mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([]));
         mockGetRecentAccessByFileId.mockResolvedValue([]);
         mockGetFileByPath.mockResolvedValue(null);
         mockToggleStarredFile.mockResolvedValue(undefined);
@@ -395,6 +401,66 @@ describe('FileProvider', () => {
             capturedContext!.setFileListFilter('starred');
         });
         await waitFor(() => expect(capturedContext!.fileListFilter).toBe('starred'));
+    });
+
+    it('lists starred files globally at the top of the starred view and paginates', async () => {
+        mockGetStarredFiles.mockResolvedValueOnce(
+            makePaginationResponse([createNode(7, { starred: true })], true, 1)
+        );
+        mockGetStarredFiles.mockResolvedValueOnce(
+            makePaginationResponse([createNode(8, { starred: true })], false, 2)
+        );
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('starred');
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7]));
+        expect(mockGetStarredFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(capturedContext!.hasNextPage).toBe(true);
+
+        act(() => {
+            capturedContext!.fetchNextPage();
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7, 8]));
+        expect(mockGetStarredFiles).toHaveBeenLastCalledWith({ page: 2, pageSize: 200 });
+        expect(mockGetFilesTree).not.toHaveBeenCalledWith(
+            expect.objectContaining({ category: 'starred' })
+        );
+    });
+
+    it('lists recently accessed files globally at the top of the recent view', async () => {
+        mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([createNode(9)]));
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('recent');
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([9]));
+        expect(mockGetRecentlyAccessedFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+    });
+
+    it('falls back to the folder tree with category when a folder is open in the starred view', async () => {
+        mockPathname = '/files/docs';
+        mockGetFileByPath.mockResolvedValue(createNode(5, { path: '/docs' }));
+        renderProvider();
+        await waitFor(() => expect(capturedContext!.selectedItem).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('starred');
+        });
+
+        await waitFor(() =>
+            expect(mockGetFilesTree).toHaveBeenCalledWith(
+                expect.objectContaining({ category: 'starred', fileParent: 5 })
+            )
+        );
+        expect(mockGetStarredFiles).not.toHaveBeenCalled();
     });
 
     it('setFilesSort refetches the tree with the new sort params and persists the choice', async () => {

@@ -39,7 +39,7 @@ const matchesFavoritesFilter = (filter: FavoritesFilter, file: FileData) => {
 
 const useFavoritesScreen = () => {
     const { t } = useI18n();
-    const { files, selectedItem } = useFile();
+    const { files, selectedItem, fetchNextPage, hasNextPage, isFetchingNextPage } = useFile();
     const [activeFilter, setActiveFilter] = useState<FavoritesFilter>('all');
     const [viewMode, setViewMode] = useState<FavoritesViewMode>('grid');
 
@@ -134,8 +134,11 @@ const useFavoritesScreen = () => {
 
     const itemCountLabel = useMemo(() => {
         const count = filteredItems.length;
+        if (hasNextPage) {
+            return `${count}+ ${t('ITENS')}`;
+        }
         return `${count} ${count === 1 ? t('ITEM') : t('ITENS')}`;
-    }, [filteredItems.length, t]);
+    }, [filteredItems.length, hasNextPage, t]);
 
     const currentTitle = selectedItem ? selectedItem.name : t('STARRED_FILES');
     const contextPath = selectedItem
@@ -153,8 +156,11 @@ const useFavoritesScreen = () => {
         breadcrumbSegments,
         contextPath,
         currentTitle,
+        fetchNextPage,
         filterOptions,
         filteredItems,
+        hasNextPage,
+        isFetchingNextPage,
         itemCountLabel,
         selectedItem,
         setActiveFilter,

@@ -9,6 +9,8 @@ import {
     getFileByPath,
     getFilesTree,
     getRecentAccessByFileId,
+    getRecentlyAccessedFiles,
+    getStarredFiles,
     moveFile as moveFileService,
     renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
@@ -33,6 +35,14 @@ import {
 } from './fileProviderUtils';
 
 const pageSize = 200;
+
+const isGlobalListing = (filter: FileListCategoryType, parentId: number | null) =>
+    parentId === null && filter !== 'all';
+
+const fetchGlobalListing = (filter: FileListCategoryType, page: number): Promise<PaginationResponse> => {
+    const params = { page, pageSize };
+    return filter === 'starred' ? getStarredFiles(params) : getRecentlyAccessedFiles(params);
+};
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
@@ -75,13 +85,15 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const { status, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
         queryKey: ['files', queryParams, fileListFilter, filesSort],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
-            getFilesTree({
-                page: pageParam,
-                pageSize,
-                fileParent: selectedItemId ?? undefined,
-                category: fileListFilter,
-                sort: filesSort,
-            }),
+            isGlobalListing(fileListFilter, selectedItemId)
+                ? fetchGlobalListing(fileListFilter, pageParam)
+                : getFilesTree({
+                      page: pageParam,
+                      pageSize,
+                      fileParent: selectedItemId ?? undefined,
+                      category: fileListFilter,
+                      sort: filesSort,
+                  }),
         initialPageParam: 1,
         getNextPageParam: (lastPage) => {
             if (lastPage.pagination.hasNext) {

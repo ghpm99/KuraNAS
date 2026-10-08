@@ -9,6 +9,8 @@ jest.mock('./index', () => ({
 import { apiBase } from './index';
 import {
     getFilesTree,
+    getStarredFiles,
+    getRecentlyAccessedFiles,
     getRecentAccessByFileId,
     getFileByPath,
     toggleStarredFile,
@@ -33,6 +35,30 @@ const mockedApi = apiBase as unknown as {
 describe('service/files', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('gets starred files from the global endpoint with pagination params', async () => {
+        const payload = { items: [], pagination: { page: 2 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const result = await getStarredFiles({ page: 2, pageSize: 50 });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/starred', {
+            params: { page: 2, page_size: 50 },
+        });
+        expect(result).toEqual(payload);
+    });
+
+    it('gets recently accessed files from the global endpoint with pagination params', async () => {
+        const payload = { items: [], pagination: { page: 1 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const result = await getRecentlyAccessedFiles({ page: 1, pageSize: 30 });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/recent-files', {
+            params: { page: 1, page_size: 30 },
+        });
+        expect(result).toEqual(payload);
     });
 
     it('gets files tree with pagination params', async () => {

@@ -56,6 +56,43 @@ describe('FavoritesScreen', () => {
         });
     });
 
+    it('loads the next page through the sentinel at the top of the favorites list', () => {
+        const fetchNextPage = jest.fn();
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: null,
+            hasNextPage: true,
+            isFetchingNextPage: false,
+            fetchNextPage,
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+        expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the sentinel while a folder is open', () => {
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: { id: 10, type: 1, name: 'Projects' },
+            hasNextPage: true,
+            fetchNextPage: jest.fn(),
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
+
     it('renders the dedicated favorites layout and delegates filter changes', () => {
         render(
             <MemoryRouter>

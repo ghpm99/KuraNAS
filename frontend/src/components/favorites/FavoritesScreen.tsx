@@ -3,6 +3,7 @@ import FileDetails from '@/features/files/fileDetails';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { FileType } from '@/utils';
 import { LayoutGrid, List, Sparkles } from 'lucide-react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
@@ -19,8 +20,11 @@ const FavoritesScreen = () => {
         breadcrumbSegments,
         contextPath,
         currentTitle,
+        fetchNextPage,
         filterOptions,
         filteredItems,
+        hasNextPage,
+        isFetchingNextPage,
         itemCountLabel,
         selectedItem,
         setActiveFilter,
@@ -152,6 +156,13 @@ const FavoritesScreen = () => {
                             title={currentTitle}
                             emptyStateMessage={t('FAVORITES_EMPTY_STATE')}
                         />
+                        {selectedItem ? null : (
+                            <LoadMoreSentinel
+                                hasNextPage={hasNextPage}
+                                isFetchingNextPage={isFetchingNextPage}
+                                fetchNextPage={fetchNextPage}
+                            />
+                        )}
                     </section>
                 </div>
 
