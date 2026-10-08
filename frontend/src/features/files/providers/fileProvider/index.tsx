@@ -20,8 +20,10 @@ import {
     FileContextType,
     FileData,
     FileListCategoryType,
+    FilesSort,
     PaginationResponse,
 } from './fileContext';
+import { loadFilesSort, saveFilesSort } from './filesSortPreference';
 import {
     addChildrenToTree,
     buildFilesUrl,
@@ -52,6 +54,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const [fileTree, setFileTree] = useState<FileData[]>([]);
     const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
+    const [filesSort, setFilesSortState] = useState<FilesSort>(loadFilesSort);
+
+    const setFilesSort = useCallback((nextSort: FilesSort) => {
+        saveFilesSort(nextSort);
+        setFilesSortState(nextSort);
+    }, []);
 
     // Snapshot derived from resolvedItem — no state/effect needed
     const selectedItemSnapshot = currentFilePath ? (resolvedItem ?? null) : null;
@@ -65,13 +73,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const { status, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['files', queryParams, fileListFilter],
+        queryKey: ['files', queryParams, fileListFilter, filesSort],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
             getFilesTree({
                 page: pageParam,
                 pageSize,
                 fileParent: selectedItemId ?? undefined,
                 category: fileListFilter,
+                sort: filesSort,
             }),
         initialPageParam: 1,
         getNextPageParam: (lastPage) => {
@@ -241,6 +250,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             isLoadingAccessData: isLoadingAccessData,
             fileListFilter,
             setFileListFilter,
+            filesSort,
+            setFilesSort,
             handleStarredItem,
             uploadFiles,
             createFolder,
@@ -264,6 +275,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             fileAccessData,
             isLoadingAccessData,
             fileListFilter,
+            filesSort,
+            setFilesSort,
             handleStarredItem,
             uploadFiles,
             createFolder,

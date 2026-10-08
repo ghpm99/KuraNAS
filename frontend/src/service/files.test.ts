@@ -52,9 +52,33 @@ describe('service/files', () => {
                 page_size: 20,
                 file_parent: 5,
                 category: 'all',
+                sort: undefined,
+                order: undefined,
             },
         });
         expect(result).toEqual(payload);
+    });
+
+    it('gets files tree with optional sort params', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getFilesTree({
+            page: 1,
+            pageSize: 20,
+            category: 'all',
+            sort: { key: 'updated_at', order: 'desc' },
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/tree', {
+            params: {
+                page: 1,
+                page_size: 20,
+                file_parent: undefined,
+                category: 'all',
+                sort: 'updated_at',
+                order: 'desc',
+            },
+        });
     });
 
     it('gets recent access by file id', async () => {

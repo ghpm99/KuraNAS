@@ -1,6 +1,8 @@
 import ActionBar from '@/components/actionBar';
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
+import FilesSortControl from '@/features/files/filesSortControl/filesSortControl';
+import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
@@ -27,6 +29,7 @@ const FilesExplorerScreen = () => {
         setViewMode,
         viewMode,
     } = useFilesExplorerScreen();
+    const { filesSort, setFilesSort } = useFile();
     const navigate = useNavigate();
     const isFileSelected = selectedItem?.type === FileType.File;
     const workspaceClassName = isFileSelected
@@ -90,6 +93,7 @@ const FilesExplorerScreen = () => {
                                 >
                                     {t('FILES_OPEN_TREE')}
                                 </Button>
+                                <FilesSortControl sort={filesSort} onChange={setFilesSort} />
                                 <ToggleButtonGroup
                                     size="small"
                                     value={viewMode}

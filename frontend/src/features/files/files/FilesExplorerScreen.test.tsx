@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import FilesExplorerScreen from './FilesExplorerScreen';
 
 const mockUseFile = jest.fn();
+const mockSetFilesSort = jest.fn();
 
 jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
@@ -57,6 +58,8 @@ describe('FilesExplorerScreen', () => {
             selectedItem: null,
             handleSelectItem: jest.fn(),
             fileListFilter: 'all',
+            filesSort: { key: 'name', order: 'asc' },
+            setFilesSort: mockSetFilesSort,
         });
     });
 
@@ -75,6 +78,18 @@ describe('FilesExplorerScreen', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'FILES_VIEW_LIST' }));
         expect(screen.getByTestId('file-content')).toHaveAttribute('data-view-mode', 'list');
+    });
+
+    it('renders the sort control and forwards order toggles to the provider', () => {
+        render(
+            <MemoryRouter>
+                <FilesExplorerScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_SORT_ORDER_ASCENDING' }));
+
+        expect(mockSetFilesSort).toHaveBeenCalledWith({ key: 'name', order: 'desc' });
     });
 
     it('renders breadcrumb and preview when a file is selected', () => {
