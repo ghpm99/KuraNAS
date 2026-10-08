@@ -11,6 +11,7 @@ const (
 	settingsStorageKey           = "system_preferences"
 	defaultLocale                = "en-US"
 	defaultAccentColor           = "violet"
+	defaultThemeMode             = "dark"
 	defaultAIImageClassification = true
 )
 
@@ -25,6 +26,12 @@ var allowedAccentColors = map[string]struct{}{
 	"violet": {},
 	"cyan":   {},
 	"rose":   {},
+}
+
+var allowedThemeModes = map[string]struct{}{
+	"dark":   {},
+	"light":  {},
+	"system": {},
 }
 
 func buildDefaultSettings(availableLocales []string) settingsState {
@@ -49,6 +56,7 @@ func buildDefaultSettings(availableLocales []string) settingsState {
 		Appearance: appearanceSettingsState{
 			AccentColor:  defaultAccentColor,
 			ReduceMotion: false,
+			ThemeMode:    defaultThemeMode,
 		},
 		Language: languageSettingsState{
 			Current: resolveLocale(config.AppConfig.Lang, availableLocales),
@@ -69,6 +77,7 @@ func normalizeState(candidate settingsState, defaults settingsState, availableLo
 	normalized.Players.ImageSlideshowSeconds = normalizeSlideshowSeconds(candidate.Players.ImageSlideshowSeconds, defaults.Players.ImageSlideshowSeconds)
 	normalized.Appearance.AccentColor = normalizeAccentColor(candidate.Appearance.AccentColor, defaults.Appearance.AccentColor)
 	normalized.Appearance.ReduceMotion = candidate.Appearance.ReduceMotion
+	normalized.Appearance.ThemeMode = normalizeThemeMode(candidate.Appearance.ThemeMode, defaults.Appearance.ThemeMode)
 	normalized.Language.Current = resolveLocale(candidate.Language.Current, availableLocales)
 	return normalized
 }
@@ -95,6 +104,7 @@ func (request UpdateSettingsRequest) toState() settingsState {
 		Appearance: appearanceSettingsState{
 			AccentColor:  request.Appearance.AccentColor,
 			ReduceMotion: request.Appearance.ReduceMotion,
+			ThemeMode:    request.Appearance.ThemeMode,
 		},
 		Language: languageSettingsState{
 			Current: request.Language.Current,
@@ -127,6 +137,7 @@ func (state settingsState) toDto(availableLocales []string) SettingsDto {
 		Appearance: AppearanceSettingsDto{
 			AccentColor:  state.Appearance.AccentColor,
 			ReduceMotion: state.Appearance.ReduceMotion,
+			ThemeMode:    state.Appearance.ThemeMode,
 		},
 		Language: LanguageSettingsDto{
 			Current:   state.Language.Current,
@@ -184,6 +195,13 @@ func normalizeSlideshowSeconds(value int, fallback int) int {
 
 func normalizeAccentColor(value string, fallback string) string {
 	if _, ok := allowedAccentColors[value]; ok {
+		return value
+	}
+	return fallback
+}
+
+func normalizeThemeMode(value string, fallback string) string {
+	if _, ok := allowedThemeModes[value]; ok {
 		return value
 	}
 	return fallback

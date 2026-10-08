@@ -272,7 +272,7 @@ func TestUpdateSettingsHandlerDecodesNestedPayload(t *testing.T) {
 		"captures": {"save_path": "/data/Capturas"},
 		"ai": {"image_classification": true},
 		"players": {"remember_music_queue": true, "remember_video_progress": false, "autoplay_next_video": true, "image_slideshow_seconds": 7},
-		"appearance": {"accent_color": "violet", "reduce_motion": true},
+		"appearance": {"accent_color": "violet", "reduce_motion": true, "theme_mode": "system"},
 		"language": {"current": "pt-BR"}
 	}`)
 	ctx, rec := newTestContext(http.MethodPut, body)
@@ -297,6 +297,9 @@ func TestUpdateSettingsHandlerDecodesNestedPayload(t *testing.T) {
 	if captured.Appearance.AccentColor != "violet" || !captured.Appearance.ReduceMotion {
 		t.Fatalf("appearance group did not decode: %+v", captured.Appearance)
 	}
+	if captured.Appearance.ThemeMode != "system" {
+		t.Fatalf("appearance.theme_mode did not decode: %+v", captured.Appearance)
+	}
 	if captured.Language.Current != "pt-BR" {
 		t.Fatalf("language.current did not decode: %q", captured.Language.Current)
 	}
@@ -311,5 +314,22 @@ func TestUpdateSettingsHandlerInvalidJSON(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestUpdateSettingsHandlerRejectsInvalidThemeMode(t *testing.T) {
+	h := NewHandler(&serviceMock{
+		updateSettingsFn: func(request UpdateSettingsRequest) (SettingsDto, error) {
+			return SettingsDto{}, ErrInvalidThemeMode
+		},
+	}, &loggerMock{})
+
+	body := bytes.NewBufferString(`{"appearance": {"accent_color": "violet", "theme_mode": "sepia"}}`)
+	ctx, rec := newTestContext(http.MethodPut, body)
+
+	h.UpdateSettingsHandler(ctx)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 }

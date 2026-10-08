@@ -41,6 +41,7 @@ type playerSettingsState struct {
 type appearanceSettingsState struct {
 	AccentColor  string `json:"accent_color"`
 	ReduceMotion bool   `json:"reduce_motion"`
+	ThemeMode    string `json:"theme_mode"`
 }
 
 type languageSettingsState struct {

@@ -22,6 +22,7 @@ var ErrInvalidSettingsRequest = errors.New("invalid settings request")
 // inside a storage root (or a subfolder of one). Captures must live outside the
 // indexed roots so they — and their in-progress upload staging — are never
 // watched/indexed.
+var ErrInvalidThemeMode = errors.New("theme mode must be dark, light or system")
 var ErrCapturesPathInsideRoot = errors.New("captures path must be outside every storage root")
 
 type Service struct {
@@ -169,9 +170,22 @@ func (s *Service) listAvailableLocales() ([]string, error) {
 	return locales, nil
 }
 
+func validateThemeMode(themeMode string) error {
+	if themeMode == "" {
+		return nil
+	}
+	if _, ok := allowedThemeModes[themeMode]; !ok {
+		return fmt.Errorf("%w: %q", ErrInvalidThemeMode, themeMode)
+	}
+	return nil
+}
+
 func validateUpdateRequest(request UpdateSettingsRequest, availableLocales []string) error {
 	if _, ok := allowedAccentColors[request.Appearance.AccentColor]; !ok {
 		return fmt.Errorf("%w: accent_color", ErrInvalidSettingsRequest)
+	}
+	if err := validateThemeMode(request.Appearance.ThemeMode); err != nil {
+		return err
 	}
 	if _, ok := allowedSlideshowSeconds[request.Players.ImageSlideshowSeconds]; !ok {
 		return fmt.Errorf("%w: image_slideshow_seconds", ErrInvalidSettingsRequest)
