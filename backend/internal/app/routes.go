@@ -239,6 +239,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 			router.GET("/image/library", context.Image.LibraryHandler.ListLibraryImagesHandler)
 			router.GET("/image/library/count", context.Image.LibraryHandler.CountLibraryImagesHandler)
 			router.GET("/image/library/timeline", context.Image.LibraryHandler.ListLibraryTimelineHandler)
+			router.GET("/image/library/folders", context.Image.LibraryHandler.ListLibraryFoldersHandler)
 		}
 	}
 }

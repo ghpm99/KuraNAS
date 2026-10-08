@@ -10,7 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const defaultLibraryPageSize = 60
+const (
+	defaultLibraryPageSize       = 60
+	defaultLibraryFolderPageSize = 60
+)
 
 type LibraryHandler struct {
 	service    LibraryServiceInterface

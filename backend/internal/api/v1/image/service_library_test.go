@@ -15,6 +15,9 @@ type fakeLibraryRepository struct {
 	err         error
 	listQuery   LibraryListQuery
 	countFilter LibraryFilter
+	folders     []LibraryFolderModel
+	folderQuery LibraryFolderQuery
+	folderCalls int
 }
 
 func (f *fakeLibraryRepository) ListLibraryImages(query LibraryListQuery) ([]LibraryItemModel, error) {
@@ -30,6 +33,12 @@ func (f *fakeLibraryRepository) CountLibraryImages(filter LibraryFilter) (int, e
 func (f *fakeLibraryRepository) ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketModel, error) {
 	f.countFilter = filter
 	return f.buckets, f.err
+}
+
+func (f *fakeLibraryRepository) ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error) {
+	f.folderCalls++
+	f.folderQuery = query
+	return f.folders, f.err
 }
 
 func useLibraryTestRoot(t *testing.T) {
@@ -148,5 +157,73 @@ func TestLibraryServicePropagatesRepositoryErrors(t *testing.T) {
 	}
 	if _, err := service.ListLibraryTimeline(LibraryFilter{}); !errors.Is(err, repositoryErr) {
 		t.Fatalf("timeline: %v", err)
+	}
+}
+
+func TestListLibraryFoldersScopesParentAndMapsRelativePaths(t *testing.T) {
+	useLibraryTestRoot(t)
+	repository := &fakeLibraryRepository{folders: []LibraryFolderModel{
+		{Path: "/data/photos/a", Name: "a", ImageCount: 3, CoverFileID: 7},
+		{Path: "/data/photos/b", Name: "b", ImageCount: 1, CoverFileID: 8},
+		{Path: "/data/photos/c", Name: "c", ImageCount: 1, CoverFileID: 9},
+	}}
+	service := NewLibraryService(repository)
+
+	page, err := service.ListLibraryFolders(LibraryFolderRequest{ParentPath: "/photos", Page: 2, PageSize: 2})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+
+	if len(repository.folderQuery.Scopes) != 1 || repository.folderQuery.Scopes[0].Prefix != "/data/photos/" || repository.folderQuery.Scopes[0].IsWholeRoot {
+		t.Fatalf("unexpected scopes %+v", repository.folderQuery.Scopes)
+	}
+	if repository.folderQuery.Limit != 3 || repository.folderQuery.Offset != 2 {
+		t.Fatalf("unexpected window %+v", repository.folderQuery)
+	}
+	if len(page.Items) != 2 || !page.Pagination.HasNext || !page.Pagination.HasPrev || page.Items[0].Path != "/photos/a" || page.Items[0].ImageCount != 3 {
+		t.Fatalf("unexpected page %+v", page)
+	}
+}
+
+func TestListLibraryFoldersWithoutParentCoversEveryRoot(t *testing.T) {
+	roots.Set([]roots.Root{
+		{Path: "/data", Label: "data", Enabled: true},
+		{Path: "/mnt/midia", Label: "Midia", Enabled: true},
+	})
+	t.Cleanup(roots.Reset)
+	repository := &fakeLibraryRepository{folders: []LibraryFolderModel{
+		{Path: "/mnt/midia", Name: "Midia", ImageCount: 2, CoverFileID: 5},
+	}}
+
+	page, err := NewLibraryService(repository).ListLibraryFolders(LibraryFolderRequest{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+
+	scopes := repository.folderQuery.Scopes
+	if len(scopes) != 2 || scopes[0].Prefix != "/data/" || scopes[0].IsWholeRoot || scopes[1].Prefix != "/mnt/midia/" || !scopes[1].IsWholeRoot || scopes[1].Label != "Midia" {
+		t.Fatalf("unexpected scopes %+v", scopes)
+	}
+	if page.Items[0].Path != "/Midia" || page.Pagination.HasNext {
+		t.Fatalf("unexpected page %+v", page)
+	}
+}
+
+func TestListLibraryFoldersWithoutRootsSkipsRepository(t *testing.T) {
+	roots.Reset()
+	repository := &fakeLibraryRepository{}
+
+	page, err := NewLibraryService(repository).ListLibraryFolders(LibraryFolderRequest{Page: 1, PageSize: 10})
+	if err != nil || repository.folderCalls != 0 || len(page.Items) != 0 || page.Items == nil {
+		t.Fatalf("err %v calls %d page %+v", err, repository.folderCalls, page)
+	}
+}
+
+func TestListLibraryFoldersWrapsRepositoryError(t *testing.T) {
+	useLibraryTestRoot(t)
+	repository := &fakeLibraryRepository{err: errors.New("boom")}
+
+	if _, err := NewLibraryService(repository).ListLibraryFolders(LibraryFolderRequest{ParentPath: "/photos", Page: 1, PageSize: 10}); err == nil {
+		t.Fatal("expected error")
 	}
 }

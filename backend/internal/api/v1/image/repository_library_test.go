@@ -127,3 +127,47 @@ func TestListLibraryTimeline(t *testing.T) {
 		t.Fatalf("expected timeline error, got %v", err)
 	}
 }
+
+func TestListLibraryFoldersScansRowsAndBindsScopes(t *testing.T) {
+	repo, mock, db := newLibraryRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("WITH scope").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "/", 11, 20).
+		WillReturnRows(sqlmock.NewRows([]string{"folder_path", "folder_name", "image_count", "cover_file_id"}).
+			AddRow("/data/a", "a", 3, 7))
+	mock.ExpectRollback()
+
+	folders, err := repo.ListLibraryFolders(LibraryFolderQuery{
+		Scopes:    []LibraryFolderScope{{Prefix: "/data/"}, {Prefix: "/mnt/m/", IsWholeRoot: true, Label: "M"}},
+		Separator: "/",
+		Limit:     11,
+		Offset:    20,
+	})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(folders) != 1 || folders[0].Name != "a" || folders[0].ImageCount != 3 || folders[0].CoverFileID != 7 {
+		t.Fatalf("unexpected folders %+v", folders)
+	}
+}
+
+func TestListLibraryFoldersWrapsQueryAndScanErrors(t *testing.T) {
+	repo, mock, db := newLibraryRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("WITH scope").WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryFolders(LibraryFolderQuery{Separator: "/", Limit: 1}); err == nil {
+		t.Fatal("expected query error")
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("WITH scope").WillReturnRows(sqlmock.NewRows([]string{"a", "b", "c", "d"}).AddRow("p", "n", "not-a-number", 1))
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryFolders(LibraryFolderQuery{Separator: "/", Limit: 1}); err == nil {
+		t.Fatal("expected scan error")
+	}
+}

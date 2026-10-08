@@ -343,3 +343,48 @@ func TestUpsertImageMetadataSetsTakenAtFromExifThenFileModificationTime_Postgres
 		t.Fatalf("re-upsert must refresh taken_at, got %v err %v", refreshed, err)
 	}
 }
+
+func TestLibraryFoldersCountRecursivelyAndPickNewestCover_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	ids := seedLibraryImages(t, repository, []seededImage{
+		{name: "direct.jpg", folder: "/data", format: ".jpg", takenAt: utcTime(2021, 1, 1)},
+		{name: "old.jpg", folder: "/data/trip", format: ".jpg", takenAt: utcTime(2019, 1, 1)},
+		{name: "new.jpg", folder: "/data/trip/day2", format: ".jpg", takenAt: utcTime(2023, 1, 1)},
+		{name: "gone.jpg", folder: "/data/trip", format: ".jpg", takenAt: utcTime(2024, 1, 1), deleted: true},
+		{name: "notes.txt", folder: "/data/trip", format: ".txt"},
+		{name: "solo.jpg", folder: "/data/Album", format: ".jpg", takenAt: utcTime(2020, 1, 1)},
+		{name: "extra.jpg", folder: "/mnt/midia/deep", format: ".jpg", takenAt: utcTime(2020, 1, 1)},
+		{name: "like%.jpg", folder: "/data_other/x", format: ".jpg"},
+	})
+
+	roots := []LibraryFolderScope{{Prefix: "/data/"}, {Prefix: "/mnt/midia/", IsWholeRoot: true, Label: "Midia"}}
+	folders, err := repository.ListLibraryFolders(LibraryFolderQuery{Scopes: roots, Separator: "/", Limit: 10})
+	if err != nil {
+		t.Fatalf("roots: %v", err)
+	}
+	if len(folders) != 3 {
+		t.Fatalf("want 3 folders, got %+v", folders)
+	}
+	if folders[0].Name != "Album" || folders[0].ImageCount != 1 || folders[0].CoverFileID != ids["solo.jpg"] {
+		t.Fatalf("unexpected Album %+v", folders[0])
+	}
+	if folders[1].Name != "Midia" || folders[1].Path != "/mnt/midia" || folders[1].ImageCount != 1 {
+		t.Fatalf("unexpected Midia %+v", folders[1])
+	}
+	if folders[2].Name != "trip" || folders[2].Path != "/data/trip" || folders[2].ImageCount != 2 || folders[2].CoverFileID != ids["new.jpg"] {
+		t.Fatalf("unexpected trip %+v", folders[2])
+	}
+
+	children, err := repository.ListLibraryFolders(LibraryFolderQuery{Scopes: []LibraryFolderScope{{Prefix: "/data/trip/"}}, Separator: "/", Limit: 10})
+	if err != nil {
+		t.Fatalf("children: %v", err)
+	}
+	if len(children) != 1 || children[0].Name != "day2" || children[0].Path != "/data/trip/day2" || children[0].ImageCount != 1 {
+		t.Fatalf("unexpected children %+v", children)
+	}
+
+	secondPage, err := repository.ListLibraryFolders(LibraryFolderQuery{Scopes: roots, Separator: "/", Limit: 2, Offset: 2})
+	if err != nil || len(secondPage) != 1 || secondPage[0].Name != "trip" {
+		t.Fatalf("second page %+v err %v", secondPage, err)
+	}
+}
