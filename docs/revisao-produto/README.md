@@ -18,8 +18,8 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 
 | # | Funcionalidade | Status | Notas |
 |---|---|---|---|
-| 01 | [Arquivos](01-arquivos.md) — navegação, CRUD, upload/download, detalhes, paginação, preview por tipo, localização física (tiering) | em execução | |
-| 02 | Shell e layout — responsividade, sidebar, ocultação adaptativa, scroll | pendente | |
+| 01 | [Arquivos](01-arquivos.md) — navegação, CRUD, upload/download, detalhes, paginação, preview por tipo, localização física (tiering) | ✅ concluída (2026-10-08) | 26 lacunas resolvidas; `make ci` verde |
+| 02 | [Shell e layout](02-shell-layout.md) — responsividade, sidebar, ocultação adaptativa, scroll | em execução | |
 | 03 | Imagens — galeria, paginação, busca por conteúdo, álbuns, timeline | pendente | |
 | 04 | Busca global | pendente | |
 | 05 | Música | pendente | |
