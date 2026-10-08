@@ -38,6 +38,7 @@ import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 
 const pageSize = 200;
 const ancestorsQueryKey = 'files-ancestors';
+const searchQueryKey = 'files-search';
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -135,12 +136,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         mutationFn: (itemId: number) => toggleStarredFile(itemId),
         onSuccess: () => {
             refetch();
+            queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
         },
     });
 
     const invalidateFileQueries = useCallback(async () => {
         await Promise.all(
-            [...fileQueryKeys, ancestorsQueryKey].map((queryKey) =>
+            [...fileQueryKeys, ancestorsQueryKey, searchQueryKey].map((queryKey) =>
                 queryClient.invalidateQueries({ queryKey: [queryKey] })
             )
         );

@@ -24,6 +24,24 @@ describe('components/fileCard', () => {
         expect(onClickStar).toHaveBeenCalled();
     });
 
+    it('shows the secondary text under the title only when provided', () => {
+        const { rerender } = render(
+            <FileCard title="Doc" metadata="meta" thumbnail="" onClick={jest.fn()} />
+        );
+        expect(screen.queryByText('/library/docs')).toBeNull();
+
+        rerender(
+            <FileCard
+                title="Doc"
+                metadata="meta"
+                secondaryText="/library/docs"
+                thumbnail=""
+                onClick={jest.fn()}
+            />
+        );
+        expect(screen.getByText('/library/docs')).toBeInTheDocument();
+    });
+
     it('uses placeholder thumbnail fallback when image is empty', () => {
         render(<FileCard title="No Image" metadata="meta" thumbnail="" onClick={jest.fn()} />);
         expect(screen.getByAltText('No Image')).toHaveAttribute('src', '/placeholder.svg');

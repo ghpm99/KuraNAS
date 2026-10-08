@@ -11,6 +11,24 @@ describe('FileListRow', () => {
         expect(screen.getByText('☆')).toBeInTheDocument();
     });
 
+    it('shows the secondary text only when provided', () => {
+        const { rerender } = render(
+            <FileListRow title="Doc" metadata="1 KB" thumbnail="/t.png" onClick={jest.fn()} />
+        );
+        expect(screen.queryByText('/library/docs')).toBeNull();
+
+        rerender(
+            <FileListRow
+                title="Doc"
+                metadata="1 KB"
+                secondaryText="/library/docs"
+                thumbnail="/t.png"
+                onClick={jest.fn()}
+            />
+        );
+        expect(screen.getByText('/library/docs')).toBeInTheDocument();
+    });
+
     it('shows a filled star and the cold indicator when applicable', () => {
         render(
             <FileListRow

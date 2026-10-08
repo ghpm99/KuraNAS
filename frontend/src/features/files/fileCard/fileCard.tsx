@@ -16,6 +16,7 @@ import ColdTierIndicator from '@/features/files/coldTierIndicator/coldTierIndica
 type FileCardProps = {
     title: string;
     metadata: string;
+    secondaryText?: string;
     thumbnail: string;
     onClick: (event: MouseEvent<HTMLElement>) => void;
     starred?: boolean;
@@ -33,6 +34,7 @@ const selectionControlClassName = 'fileCardSelectionControl';
 const FileCard = ({
     title,
     metadata,
+    secondaryText,
     thumbnail,
     onClick,
     starred,
@@ -76,6 +78,11 @@ const FileCard = ({
                     <Typography variant="body2" fontWeight={500} noWrap>
                         {title}
                     </Typography>
+                    {secondaryText ? (
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                            {secondaryText}
+                        </Typography>
+                    ) : null}
                     <Typography variant="caption" color="text.secondary">
                         {metadata}
                     </Typography>

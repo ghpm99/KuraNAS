@@ -16,7 +16,16 @@ import styles from './fileContent.module.css';
 
 type ContextMenuState = { file: FileData; anchorPosition: FileContextMenuAnchor };
 
+export type FileSearchListing = {
+    items: FileData[];
+    status: string;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    fetchNextPage: () => void;
+};
+
 interface FileContentProps {
+    searchListing?: FileSearchListing;
     showHeading?: boolean;
     viewMode?: 'grid' | 'list';
     items?: FileData[];
@@ -30,6 +39,7 @@ const FileContent = ({
     items,
     title,
     emptyStateMessage,
+    searchListing,
 }: FileContentProps) => {
     const {
         status,
@@ -47,6 +57,8 @@ const FileContent = ({
     const fileSelection = useFileSelectionContext();
     const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
     const isSelectionEnabled = items === undefined;
+    const listingStatus = searchListing?.status ?? status;
+    const pagination = searchListing ?? { hasNextPage, isFetchingNextPage, fetchNextPage };
     const currentListTitle =
         fileListFilter === 'starred'
             ? t('STARRED_FILES')
@@ -54,10 +66,10 @@ const FileContent = ({
               ? t('RECENT_FILES')
               : t('FILES');
 
-    if (status === 'pending') {
+    if (listingStatus === 'pending') {
         return <div className={styles.fileContent}>{t('LOADING')}</div>;
     }
-    if (status === 'error') {
+    if (listingStatus === 'error') {
         return <div className={styles.fileContent}>{t('ERROR_LOADING_FILES')}</div>;
     }
 
@@ -172,6 +184,7 @@ const FileContent = ({
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}
+                                secondaryText={searchListing ? file.parent_path : undefined}
                                 thumbnail={thumbnailUrl(file.id)}
                                 onClick={(event) => handleItemClick(file, event, collectionItems)}
                                 onClickStar={() => handleStarredItem(file.id)}
@@ -188,6 +201,7 @@ const FileContent = ({
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}
+                                secondaryText={searchListing ? file.parent_path : undefined}
                                 thumbnail={thumbnailUrl(file.id)}
                                 onClick={(event) => handleItemClick(file, event, collectionItems)}
                                 onClickStar={() => handleStarredItem(file.id)}
@@ -204,14 +218,18 @@ const FileContent = ({
                 />
                 {items ? null : (
                     <LoadMoreSentinel
-                        hasNextPage={hasNextPage}
-                        isFetchingNextPage={isFetchingNextPage}
-                        fetchNextPage={fetchNextPage}
+                        hasNextPage={pagination.hasNextPage}
+                        isFetchingNextPage={pagination.isFetchingNextPage}
+                        fetchNextPage={pagination.fetchNextPage}
                     />
                 )}
             </div>
         );
     };
+
+    if (searchListing) {
+        return renderCollection(title ?? '', searchListing.items);
+    }
 
     const currentItems = items ?? resolveListedFiles(selectedItem, files);
     const currentTitle = title ?? (!selectedItem ? currentListTitle : selectedItem.name);
