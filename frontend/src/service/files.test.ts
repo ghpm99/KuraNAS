@@ -15,6 +15,11 @@ import {
     getRecentAccessByFileId,
     getFileByPath,
     getFileLocation,
+    getFolderStats,
+    getFileTextPreview,
+    getFileBlobUrl,
+    getFileThumbnailUrl,
+    textPreviewMaxBytes,
     getFileAncestors,
     getFileByDiskPath,
     toggleStarredFile,
@@ -48,6 +53,33 @@ describe('service/files', () => {
 
         await expect(getFileLocation(7)).resolves.toEqual(location);
         expect(mockedApi.get).toHaveBeenCalledWith('/files/location/7');
+    });
+
+    it('gets the recursive folder stats sending only the id in the url', async () => {
+        const stats = { file_count: 4, folder_count: 2, total_size_bytes: 900 };
+        mockedApi.get.mockResolvedValue({ data: stats });
+
+        await expect(getFolderStats(5)).resolves.toEqual(stats);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/folder-stats/5');
+    });
+
+    it('fetches only the first 512 KB of a text file with a Range header', async () => {
+        mockedApi.get.mockResolvedValue({ data: 'hello' });
+
+        await expect(getFileTextPreview(8)).resolves.toBe('hello');
+        expect(textPreviewMaxBytes).toBe(524288);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/blob/8', {
+            headers: { Range: 'bytes=0-524287' },
+            responseType: 'text',
+            transformResponse: expect.any(Function),
+        });
+        const [, requestConfig] = mockedApi.get.mock.calls[0];
+        expect(requestConfig.transformResponse('{"raw":1}')).toBe('{"raw":1}');
+    });
+
+    it('builds blob and thumbnail urls', () => {
+        expect(getFileBlobUrl(3)).toMatch(/\/files\/blob\/3$/);
+        expect(getFileThumbnailUrl(3)).toMatch(/\/files\/thumbnail\/3$/);
     });
 
     it('gets the ancestor folders of a file sending only the id in the url', async () => {

@@ -2,57 +2,72 @@ import { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { getFileTypeInfo } from '@/utils';
 import './fileViewer.css';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
-import { getFileDownloadUrl } from '@/service/files';
+import { getFileBlobUrl, getFileThumbnailUrl } from '@/service/files';
+import { useState } from 'react';
+import TextFileViewer from './textFileViewer';
+import UnsupportedFileCard from './unsupportedFileCard';
+
+const pdfMime = 'application/pdf';
 
 const FileViewer = ({ file }: { file: FileData }) => {
     const { t } = useI18n();
-    const blobUrl = (id: number) => `${getApiV1BaseUrl()}/files/blob/${id}`;
+    const [failedPlaybackFileId, setFailedPlaybackFileId] = useState<number | null>(null);
     const fileType = getFileTypeInfo(file.format);
+    const hasPlaybackFailed = failedPlaybackFileId === file.id;
+    const markPlaybackFailed = () => setFailedPlaybackFileId(file.id);
+
     if (fileType.type === 'image') {
-        return <img src={blobUrl(file.id)} alt={file.name} />;
+        const imageUrl = fileType.isThumbnailOnly
+            ? getFileThumbnailUrl(file.id)
+            : getFileBlobUrl(file.id);
+        return <img src={imageUrl} alt={file.name} />;
     }
 
-    if (fileType.type === 'audio') {
+    if (fileType.type === 'audio' && !hasPlaybackFailed) {
         return (
-            <audio controls>
-                <source src={blobUrl(file.id)} type={fileType.mime} />
+            <audio controls onError={markPlaybackFailed}>
+                <source
+                    src={getFileBlobUrl(file.id)}
+                    type={fileType.mime}
+                    onError={markPlaybackFailed}
+                />
                 {t('AUDIO_NOT_SUPPORTED')}
             </audio>
         );
     }
 
-    if (fileType.type === 'video') {
+    if (fileType.type === 'video' && !hasPlaybackFailed) {
         return (
-            <video controls id={file.id.toString()}>
-                <source src={blobUrl(file.id)} type={fileType.mime} />
+            <video controls id={file.id.toString()} onError={markPlaybackFailed}>
+                <source
+                    src={getFileBlobUrl(file.id)}
+                    type={fileType.mime}
+                    onError={markPlaybackFailed}
+                />
             </video>
         );
     }
 
-    if (fileType.type === 'document') {
+    if (fileType.type === 'document' && fileType.mime === pdfMime) {
         return (
             <embed
                 title={file.name}
                 className="embed"
-                src={blobUrl(file.id)}
+                src={getFileBlobUrl(file.id)}
                 type={fileType.mime}
             />
         );
     }
 
-    if (fileType.type === 'archive') {
-        return (
-            <a className="download-file" href={getFileDownloadUrl(file.id)} download={file.name}>
-                {t('DOWNLOAD_FILE', { fileName: file.name })}
-            </a>
-        );
+    if (fileType.type === 'text') {
+        return <TextFileViewer file={file} />;
     }
 
     return (
-        <p>
-            {t('UNSUPPORTED_FILE_FORMAT')} {t(fileType.description)}
-        </p>
+        <UnsupportedFileCard
+            file={file}
+            reasonKey={hasPlaybackFailed ? 'FILE_PREVIEW_PLAYBACK_FAILED' : undefined}
+        />
     );
 };
 
