@@ -5,7 +5,7 @@ import { FileType, getFileTypeInfo } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
 import { buildAudioRows, buildImageRows, buildVideoRows } from './fileTypeMetadataRows';
 
-export type TranslatedMetadataRow = {
+type TranslatedMetadataRow = {
     label: string;
     value: string;
 };

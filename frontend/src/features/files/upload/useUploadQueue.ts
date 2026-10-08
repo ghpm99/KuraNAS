@@ -15,7 +15,7 @@ import {
     type UploadQueue,
 } from './uploadQueueTypes';
 
-export const maxConcurrentUploads = 3;
+const maxConcurrentUploads = 3;
 
 type UploadFileFn = (params: UploadSingleFileParams) => Promise<UploadOutcome>;
 

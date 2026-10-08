@@ -1,9 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fileQueryKeys } from '../providers/fileProvider/fileProviderUtils';
 
-export const listingInvalidationIntervalMs = 1500;
+const listingInvalidationIntervalMs = 1500;
 
-export type ThrottledInvalidation = {
+type ThrottledInvalidation = {
     request: () => void;
     cancel: () => void;
 };

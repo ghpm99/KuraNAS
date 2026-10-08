@@ -1,6 +1,6 @@
 export type ArrowDirection = 'up' | 'down' | 'left' | 'right';
 
-export type ShortcutAction =
+type ShortcutAction =
     | { kind: 'openItem' }
     | { kind: 'deleteSelection' }
     | { kind: 'renameSelection' }

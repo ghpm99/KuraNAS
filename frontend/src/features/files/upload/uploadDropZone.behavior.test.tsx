@@ -32,6 +32,20 @@ describe('UploadDropZone behavior', () => {
         expect(screen.queryByText('FILES_UPLOAD_DROP_HINT')).not.toBeInTheDocument();
     });
 
+    it('announces the drop hint through a polite status region that exists before the drag', () => {
+        renderZone();
+        const statusRegion = screen.getByRole('status');
+        expect(statusRegion).toHaveAttribute('aria-live', 'polite');
+        expect(statusRegion).toBeEmptyDOMElement();
+
+        fireEvent.dragEnter(screen.getByText('listing').parentElement!, {
+            dataTransfer: buildFileDrag(),
+        });
+
+        expect(screen.getByRole('status')).toBe(statusRegion);
+        expect(statusRegion).toHaveTextContent('FILES_UPLOAD_DROP_HINT');
+    });
+
     it('ignores drags that do not carry files', () => {
         renderZone();
         const zone = screen.getByText('listing').parentElement!;

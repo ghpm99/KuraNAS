@@ -33,7 +33,7 @@ const UploadQueuePanel = () => {
     return (
         <aside className={styles.panel} aria-label={t('FILES_UPLOAD_PANEL_TITLE')}>
             <header className={styles.header}>
-                <strong className={styles.title}>
+                <strong className={styles.title} role="status" aria-live="polite">
                     {`${t('FILES_UPLOAD_PANEL_TITLE')} ${finishedCount}/${items.length}`}
                 </strong>
                 <Tooltip title={toggleLabel}>

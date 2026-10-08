@@ -40,7 +40,7 @@ export type UploadQueue = {
     clearFinished: () => void;
 };
 
-export const activeStatuses: UploadItemStatus[] = ['queued', 'uploading'];
+const activeStatuses: UploadItemStatus[] = ['queued', 'uploading'];
 
 export const isActiveItem = (item: UploadItem): boolean => activeStatuses.includes(item.status);
 

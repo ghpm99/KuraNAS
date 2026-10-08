@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
 
-export const searchQueryParam = 'q';
-export const minSearchQueryLength = 2;
+const searchQueryParam = 'q';
+const minSearchQueryLength = 2;
 const searchDebounceMs = 300;
 
 const useFileSearchQuery = () => {

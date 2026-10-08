@@ -1,6 +1,6 @@
 import type { AudioSummary, ImageSummary, VideoSummary } from '@/types/fileTypeMetadata';
 
-export type MetadataRow = {
+type MetadataRow = {
     labelKey: string;
     value: string;
 };

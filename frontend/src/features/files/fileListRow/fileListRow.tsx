@@ -118,8 +118,16 @@ const FileListRow = ({
                 {typeText}
             </div>
             <div role="cell" className={styles.rowActions}>
-                <button type="button" className={styles.listStarButton} onClick={onClickStar}>
-                    {starred ? '★' : '☆'}
+                <button
+                    type="button"
+                    className={styles.listStarButton}
+                    aria-label={t(starred ? 'FILES_UNFAVORITE_ITEM' : 'FILES_FAVORITE_ITEM', {
+                        name: title,
+                    })}
+                    aria-pressed={starred}
+                    onClick={onClickStar}
+                >
+                    <span aria-hidden="true">{starred ? '★' : '☆'}</span>
                 </button>
                 {onOpenMenu ? (
                     <IconButton

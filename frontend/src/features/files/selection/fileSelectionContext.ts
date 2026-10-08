@@ -3,7 +3,7 @@ import type { FileSelection } from './useFileSelection';
 
 const noop = () => undefined;
 
-export const inertFileSelection: FileSelection = {
+const inertFileSelection: FileSelection = {
     selectedFiles: [],
     selectedCount: 0,
     hasSelection: false,

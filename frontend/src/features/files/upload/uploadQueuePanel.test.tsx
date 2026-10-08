@@ -63,6 +63,14 @@ describe('UploadQueuePanel', () => {
         expect(screen.getByText('FILES_UPLOAD_STATUS_RENAMED: e (2).txt')).toBeInTheDocument();
     });
 
+    it('announces upload progress politely through the panel title', () => {
+        renderPanel(buildQueue([buildItem({ id: 'u1', status: 'done', progress: 100 })]));
+
+        const announcement = screen.getByRole('status');
+        expect(announcement).toHaveAttribute('aria-live', 'polite');
+        expect(announcement).toHaveTextContent('FILES_UPLOAD_PANEL_TITLE 1/1');
+    });
+
     it('renders the backend error verbatim for a failed file and falls back when absent', () => {
         renderPanel(
             buildQueue([

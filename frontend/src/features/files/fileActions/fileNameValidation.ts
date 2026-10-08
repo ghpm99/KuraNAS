@@ -1,4 +1,4 @@
-export type FileNameIssue = 'empty' | 'invalidCharacters' | 'unchanged';
+type FileNameIssue = 'empty' | 'invalidCharacters' | 'unchanged';
 
 const forbiddenCharacters = ['/', '\\'];
 

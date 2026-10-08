@@ -38,6 +38,18 @@ describe('FilesBreadcrumb', () => {
         expect(screen.getByRole('navigation', { name: 'FILES_CURRENT_LOCATION' })).toBeInTheDocument();
     });
 
+    it('uses navigation, ordered list and list item semantics', () => {
+        mockMatchMedia(false);
+        render(<FilesBreadcrumb segments={deepSegments} />);
+
+        const navigation = screen.getByRole('navigation', { name: 'FILES_CURRENT_LOCATION' });
+        const list = navigation.querySelector('ol');
+        expect(list).not.toBeNull();
+        expect(list!.querySelectorAll('li[class*="MuiBreadcrumbs-li"]')).toHaveLength(
+            deepSegments.length
+        );
+    });
+
     it('renders every segment, with only the current one not clickable', () => {
         render(<FilesBreadcrumb segments={deepSegments} />);
 
