@@ -28,4 +28,14 @@ describe('components/fileCard', () => {
         render(<FileCard title="No Image" metadata="meta" thumbnail="" onClick={jest.fn()} />);
         expect(screen.getByAltText('No Image')).toHaveAttribute('src', '/placeholder.svg');
     });
+
+    it('shows the cold indicator only for cold files', () => {
+        const { rerender } = render(
+            <FileCard title="Doc" metadata="meta" thumbnail="" onClick={jest.fn()} />
+        );
+        expect(screen.queryByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toBeNull();
+
+        rerender(<FileCard title="Doc" metadata="meta" thumbnail="" onClick={jest.fn()} isCold />);
+        expect(screen.getByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toBeInTheDocument();
+    });
 });

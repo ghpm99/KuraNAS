@@ -13,6 +13,8 @@ import {
     getRecentlyAccessedFiles,
     getRecentAccessByFileId,
     getFileByPath,
+    getFileLocation,
+    getFileByDiskPath,
     toggleStarredFile,
     rescanFiles,
     uploadFiles,
@@ -35,6 +37,24 @@ const mockedApi = apiBase as unknown as {
 describe('service/files', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('gets the file location by id', async () => {
+        const location = { file_id: 7, tier: 'cold', disk_path: '/cold/a' };
+        mockedApi.get.mockResolvedValue({ data: location });
+
+        await expect(getFileLocation(7)).resolves.toEqual(location);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/location/7');
+    });
+
+    it('gets a file by disk path sending only the path query param', async () => {
+        const file = { id: 3, name: 'a.txt' };
+        mockedApi.get.mockResolvedValue({ data: file });
+
+        await expect(getFileByDiskPath('D:\\Cold\\a.txt')).resolves.toEqual(file);
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/by-disk-path', {
+            params: { path: 'D:\\Cold\\a.txt' },
+        });
     });
 
     it('gets starred files from the global endpoint with pagination params', async () => {

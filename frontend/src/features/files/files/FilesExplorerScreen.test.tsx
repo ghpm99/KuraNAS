@@ -30,6 +30,16 @@ jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
     <div>FolderTreeMock</div>
 ));
 jest.mock('@/components/tabs', () => () => <div>TabsMock</div>);
+jest.mock(
+    '@/features/files/findByDiskPath/findByDiskPathDialog',
+    () =>
+        ({ open, onFileFound }: any) =>
+            open ? (
+                <button onClick={() => onFileFound({ id: 9, path: '/found' })}>
+                    FindDialogMock
+                </button>
+            ) : null
+);
 
 describe('FilesExplorerScreen', () => {
     beforeEach(() => {
@@ -126,5 +136,21 @@ describe('FilesExplorerScreen', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'FILES_OPEN_TREE' }));
         expect(screen.getByText('FolderTreeMock')).toBeInTheDocument();
+    });
+
+    it('opens the find-by-disk-path dialog and navigates to the found file', () => {
+        const handleSelectItem = jest.fn();
+        mockUseFile.mockReturnValue({ ...mockUseFile(), handleSelectItem });
+        render(
+            <MemoryRouter>
+                <FilesExplorerScreen />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByText('FindDialogMock')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_FIND_BY_DISK_PATH' }));
+        fireEvent.click(screen.getByText('FindDialogMock'));
+
+        expect(handleSelectItem).toHaveBeenCalledWith({ id: 9, path: '/found' });
     });
 });
