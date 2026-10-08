@@ -18,9 +18,11 @@
 }
 
 .fileList {
+    --file-list-columns: 40px minmax(0, 1fr) 100px 170px 80px 88px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
+    min-width: 0;
 }
 
 .emptyState {
@@ -37,6 +39,12 @@
 .previewContainer {
     border-radius: var(--app-radius-lg);
     overflow: hidden;
+}
+
+@media (max-width: 899.95px) {
+    .fileList {
+        --file-list-columns: 40px minmax(0, 1fr) 100px 170px 88px;
+    }
 }
 
 @media (max-width: 640px) {

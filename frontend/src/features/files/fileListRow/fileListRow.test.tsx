@@ -3,24 +3,27 @@ import FileListRow from './fileListRow';
 
 describe('FileListRow', () => {
     it('renders title and metadata without optional handlers', () => {
-        render(<FileListRow title="Doc" metadata="1 KB" thumbnail="/t.png" onClick={jest.fn()} />);
+        render(<FileListRow title="Doc" href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT" thumbnail="/t.png" onClick={jest.fn()} />);
 
+        expect(screen.getByText('TXT')).toBeInTheDocument();
         expect(screen.getByText('1 KB')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Doc' })).toBeInTheDocument();
+        expect(screen.getByText('Mar 10')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Doc' })).toHaveAttribute('href', '/files/Doc');
+        expect(screen.getByText('1 KB · Mar 10')).toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).toBeNull();
         expect(screen.getByText('☆')).toBeInTheDocument();
     });
 
     it('shows the secondary text only when provided', () => {
         const { rerender } = render(
-            <FileListRow title="Doc" metadata="1 KB" thumbnail="/t.png" onClick={jest.fn()} />
+            <FileListRow title="Doc" href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT" thumbnail="/t.png" onClick={jest.fn()} />
         );
         expect(screen.queryByText('/library/docs')).toBeNull();
 
         rerender(
             <FileListRow
                 title="Doc"
-                metadata="1 KB"
+                href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT"
                 secondaryText="/library/docs"
                 thumbnail="/t.png"
                 onClick={jest.fn()}
@@ -33,7 +36,7 @@ describe('FileListRow', () => {
         render(
             <FileListRow
                 title="Doc"
-                metadata="1 KB"
+                href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT"
                 thumbnail="/t.png"
                 onClick={jest.fn()}
                 starred
@@ -54,7 +57,7 @@ describe('FileListRow', () => {
         render(
             <FileListRow
                 title="Doc"
-                metadata="1 KB"
+                href="/files/Doc" sizeText="1 KB" modifiedText="Mar 10" typeText="TXT"
                 thumbnail="/t.png"
                 onClick={onClick}
                 onClickStar={onClickStar}
@@ -65,11 +68,11 @@ describe('FileListRow', () => {
             />
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Doc' }));
+        fireEvent.click(screen.getByRole('link', { name: 'Doc' }));
         fireEvent.click(screen.getByText('☆'));
         fireEvent.click(screen.getByRole('checkbox', { name: 'FILES_SELECT_ITEM' }));
         fireEvent.click(screen.getByRole('button', { name: 'FILES_ITEM_MENU' }));
-        fireEvent.contextMenu(screen.getByRole('button', { name: 'Doc' }));
+        fireEvent.contextMenu(screen.getByRole('link', { name: 'Doc' }));
 
         expect(onClick).toHaveBeenCalledTimes(1);
         expect(onClickStar).toHaveBeenCalledTimes(1);

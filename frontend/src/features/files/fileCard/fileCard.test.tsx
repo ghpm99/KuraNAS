@@ -109,4 +109,12 @@ describe('fileCard selection and menu', () => {
         fireEvent.contextMenu(screen.getByText('Doc'));
         expect(onContextMenu).toHaveBeenCalledTimes(1);
     });
+
+    it('renders the action area as a link when an href is given', () => {
+        render(
+            <FileCard title="Photo" metadata="meta" thumbnail="" href="/files/Photo" onClick={jest.fn()} />
+        );
+
+        expect(screen.getByRole('link', { name: /Photo/ })).toHaveAttribute('href', '/files/Photo');
+    });
 });
