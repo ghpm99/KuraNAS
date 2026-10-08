@@ -10,6 +10,7 @@ import type { IMusicData } from '@/features/music/providers/musicProvider/musicP
 import type { FileLocation } from '@/types/fileLocation';
 import { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
+import { getApiV1BaseUrl } from './apiUrl';
 
 type FilesTreeParams = {
     page: number;
@@ -170,12 +171,11 @@ export const copyFile = async (
     });
 };
 
-export const downloadFileBlob = async (fileId: number): Promise<Blob> => {
-    const response = await apiBase.get<Blob>(`/files/blob/${fileId}`, {
-        responseType: 'blob',
-    });
-    return response.data;
-};
+export const getFileDownloadUrl = (fileId: number): string =>
+    `${getApiV1BaseUrl()}/files/download/${fileId}`;
+
+export const getFilesZipDownloadUrl = (fileIds: number[]): string =>
+    `${getApiV1BaseUrl()}/files/download-zip?ids=${fileIds.join(',')}`;
 
 export const getMusicFiles = async (
     page: number,

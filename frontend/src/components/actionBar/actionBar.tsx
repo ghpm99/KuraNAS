@@ -26,7 +26,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from 'notistack';
-import { downloadFileBlob } from '@/service/files';
+import { getFileDownloadUrl } from '@/service/files';
+import { triggerBrowserDownload } from '@/service/browserDownload';
 import FolderPicker, { type FolderPickerResult } from '@/components/folderPicker/folderPicker';
 
 export const ActionBar = () => {
@@ -157,21 +158,9 @@ export const ActionBar = () => {
         setOpenDialog('rename');
     };
 
-    const handleDownloadSelected = async () => {
-        if (!selectedItem || selectedItem.type !== FileType.File) return;
-        try {
-            const fileBlob = await downloadFileBlob(selectedItem.id);
-            const blobUrl = URL.createObjectURL(fileBlob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = selectedItem.name;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(blobUrl);
-        } catch {
-            enqueueSnackbar(t('ERROR_LOADING_FILES'), { variant: 'error' });
-        }
+    const handleDownloadSelected = () => {
+        if (!selectedItem) return;
+        triggerBrowserDownload(getFileDownloadUrl(selectedItem.id), selectedItem.name);
     };
 
     return (
@@ -274,7 +263,7 @@ export const ActionBar = () => {
                         {t('DELETE')}
                     </Button>
                 )}
-                {selectedItem?.type === FileType.File && (
+                {selectedItem && (
                     <Button variant="outlined" size="small" onClick={handleDownloadSelected}>
                         {t('DOWNLOAD')}
                     </Button>
