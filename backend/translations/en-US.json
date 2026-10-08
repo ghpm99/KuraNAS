@@ -458,6 +458,7 @@
 	"RENAME": "Rename",
 	"DELETE": "Delete",
 	"COPY_SUFFIX": "_copy",
+	"ERROR_SEARCH_QUERY_TOO_SHORT": "Enter at least 2 characters to search",
 	"ERROR_FILE_NOT_FOUND": "File not found",
 	"ERROR_DOWNLOAD_TOO_MANY_ITEMS": "Too many items selected for download (maximum %d)",
 	"ERROR_DISK_PATH_REQUIRED": "Provide the file path on disk",
@@ -1397,5 +1398,16 @@
 	"FILES_BULK_DELETE_SUCCESS": "{{count}} items deleted successfully",
 	"FILES_BULK_FAVORITE_SUCCESS": "{{count}} favorites updated",
 	"FILES_BULK_FAILED_SUMMARY": "{{failed}} failed: {{message}}",
-	"FILES_BULK_PARTIAL_SUMMARY": "{{succeeded}} succeeded, {{failed}} failed: {{message}}"
+	"FILES_BULK_PARTIAL_SUMMARY": "{{succeeded}} succeeded, {{failed}} failed: {{message}}",
+	"FILES_SEARCH_PLACEHOLDER": "Search this folder",
+	"FILES_SEARCH_PLACEHOLDER_ALL": "Search all files",
+	"FILES_SEARCH_INCLUDE_SUBFOLDERS": "Include subfolders",
+	"FILES_SEARCH_CLEAR": "Clear search",
+	"FILES_SEARCH_EMPTY": "No results",
+	"FILES_SEARCH_RESULTS_ONE": "1 result for \"{{query}}\"",
+	"FILES_SEARCH_RESULTS_TOTAL": "{{count}} results for \"{{query}}\"",
+	"FILES_SEARCH_RESULTS_MORE": "{{count}}+ results for \"{{query}}\"",
+	"GLOBAL_SEARCH_SECTION_MORE": "More results",
+	"GLOBAL_SEARCH_SEE_ALL_FILES": "See all file results",
+	"GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION": "Search \"{{query}}\" in all folders"
 }

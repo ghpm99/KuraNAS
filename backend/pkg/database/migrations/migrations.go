@@ -152,6 +152,9 @@ var CreateStarredAndRecentAccessIndexesQuery string
 //go:embed queries/0047_create_home_file_physical_path_index.sql
 var CreateHomeFilePhysicalPathIndexQuery string
 
+//go:embed queries/0048_create_home_file_name_trigram_index.sql
+var CreateHomeFileNameTrigramIndexQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -213,6 +216,9 @@ func fileMigrationList() {
 
 	addMigration("0047_create_home_file_physical_path_index",
 		defaultMigrationFunc(CreateHomeFilePhysicalPathIndexQuery))
+
+	addMigration("0048_create_home_file_name_trigram_index",
+		defaultMigrationFunc(CreateHomeFileNameTrigramIndexQuery))
 
 }
 

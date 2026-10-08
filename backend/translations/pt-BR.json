@@ -458,6 +458,7 @@
 	"RENAME": "Renomear",
 	"DELETE": "Excluir",
 	"COPY_SUFFIX": "_copia",
+	"ERROR_SEARCH_QUERY_TOO_SHORT": "Informe ao menos 2 caracteres para buscar",
 	"ERROR_FILE_NOT_FOUND": "Arquivo não encontrado",
 	"ERROR_DOWNLOAD_TOO_MANY_ITEMS": "Itens demais selecionados para download (máximo %d)",
 	"ERROR_DISK_PATH_REQUIRED": "Informe o caminho do arquivo no disco",
@@ -1397,5 +1398,16 @@
 	"FILES_BULK_DELETE_SUCCESS": "{{count}} itens apagados com sucesso",
 	"FILES_BULK_FAVORITE_SUCCESS": "{{count}} favoritos atualizados",
 	"FILES_BULK_FAILED_SUMMARY": "{{failed}} falhas: {{message}}",
-	"FILES_BULK_PARTIAL_SUMMARY": "{{succeeded}} concluídos, {{failed}} falharam: {{message}}"
+	"FILES_BULK_PARTIAL_SUMMARY": "{{succeeded}} concluídos, {{failed}} falharam: {{message}}",
+	"FILES_SEARCH_PLACEHOLDER": "Buscar nesta pasta",
+	"FILES_SEARCH_PLACEHOLDER_ALL": "Buscar em todos os arquivos",
+	"FILES_SEARCH_INCLUDE_SUBFOLDERS": "Incluir subpastas",
+	"FILES_SEARCH_CLEAR": "Limpar busca",
+	"FILES_SEARCH_EMPTY": "Nenhum resultado",
+	"FILES_SEARCH_RESULTS_ONE": "1 resultado para \"{{query}}\"",
+	"FILES_SEARCH_RESULTS_TOTAL": "{{count}} resultados para \"{{query}}\"",
+	"FILES_SEARCH_RESULTS_MORE": "{{count}}+ resultados para \"{{query}}\"",
+	"GLOBAL_SEARCH_SECTION_MORE": "Mais resultados",
+	"GLOBAL_SEARCH_SEE_ALL_FILES": "Ver todos os resultados de arquivos",
+	"GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION": "Buscar \"{{query}}\" em todas as pastas"
 }
