@@ -4,9 +4,12 @@ type IdentifiableImage = { id: number };
 
 const defaultSlideshowIntervalInMs = 3500;
 
-export function useImageViewer<T extends IdentifiableImage>(
+const readIdentifiableImageId = (image: IdentifiableImage) => image.id;
+
+export function useImageViewer<T>(
     images: T[],
-    slideshowIntervalInMs = defaultSlideshowIntervalInMs
+    slideshowIntervalInMs = defaultSlideshowIntervalInMs,
+    getImageId: (image: T) => number = readIdentifiableImageId as (image: T) => number
 ) {
     const [viewerImageId, setViewerImageId] = useState<number | null>(null);
     const [zoom, setZoom] = useState(1);
@@ -15,8 +18,8 @@ export function useImageViewer<T extends IdentifiableImage>(
     const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(false);
 
     const activeIndex = useMemo(
-        () => images.findIndex((image) => image.id === viewerImageId),
-        [images, viewerImageId]
+        () => images.findIndex((image) => getImageId(image) === viewerImageId),
+        [images, viewerImageId, getImageId]
     );
     const activeImage = activeIndex >= 0 ? images[activeIndex] : null;
 
@@ -35,18 +38,18 @@ export function useImageViewer<T extends IdentifiableImage>(
         if (images.length === 0 || activeIndex < 0) return;
         const nextImage = images[(activeIndex + 1) % images.length];
         if (!nextImage) return;
-        setViewerImageId(nextImage.id);
+        setViewerImageId(getImageId(nextImage));
         setZoom(1);
-    }, [images, activeIndex]);
+    }, [images, activeIndex, getImageId]);
 
     const goPrevious = useCallback(() => {
         if (images.length === 0 || activeIndex < 0) return;
         const previous = activeIndex === 0 ? images.length - 1 : activeIndex - 1;
         const previousImage = images[previous];
         if (!previousImage) return;
-        setViewerImageId(previousImage.id);
+        setViewerImageId(getImageId(previousImage));
         setZoom(1);
-    }, [images, activeIndex]);
+    }, [images, activeIndex, getImageId]);
 
     const increaseZoom = useCallback(() => {
         setZoom((value) => Math.min(5, Number((value + 0.2).toFixed(2))));

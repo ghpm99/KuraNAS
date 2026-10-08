@@ -12,7 +12,7 @@ export type ImageCollectionCard = {
     id: string;
     title: string;
     description: string;
-    imageCount: number;
+    imageCount?: number;
     coverImageId?: number;
 };
 
@@ -72,9 +72,11 @@ const ImageCollectionsPanel = ({
                             <h3>{card.title}</h3>
                             <p>{card.description}</p>
                         </div>
-                        <span className={styles.count}>
-                            {t('IMAGES_PHOTOS_COUNT', { count: String(card.imageCount) })}
-                        </span>
+                        {card.imageCount === undefined ? null : (
+                            <span className={styles.count}>
+                                {t('IMAGES_PHOTOS_COUNT', { count: String(card.imageCount) })}
+                            </span>
+                        )}
                     </div>
                 </button>
             ))}

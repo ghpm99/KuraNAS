@@ -28,6 +28,11 @@ export const imageNavigationItems: ImageNavigationItem[] = [
         descriptionKey: 'IMAGES_SECTION_PHOTOS_DESCRIPTION',
     },
     {
+        key: 'favorites',
+        labelKey: 'IMAGES_SECTION_FAVORITES',
+        descriptionKey: 'IMAGES_SECTION_FAVORITES_DESCRIPTION',
+    },
+    {
         key: 'folders',
         labelKey: 'IMAGES_SECTION_FOLDERS',
         descriptionKey: 'IMAGES_SECTION_FOLDERS_DESCRIPTION',

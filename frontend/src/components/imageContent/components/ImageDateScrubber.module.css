@@ -1,0 +1,118 @@
+.rail {
+    position: sticky;
+    top: 16px;
+    align-self: flex-start;
+    flex: 0 0 auto;
+}
+
+.yearList,
+.monthList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.yearList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.yearButton {
+    width: 100%;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--app-color-text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8rem;
+    text-align: right;
+}
+
+.yearButton:hover,
+.yearButtonActive {
+    background: rgba(var(--app-color-primary-rgb), 0.15);
+    color: var(--app-color-text-primary);
+}
+
+.yearButton:focus-visible,
+.monthButton:focus-visible,
+.openSheetButton:focus-visible {
+    outline: 2px solid rgba(var(--app-color-primary-rgb), 0.45);
+    outline-offset: 2px;
+}
+
+.monthPanel {
+    position: absolute;
+    right: 100%;
+    top: 0;
+    margin-right: 8px;
+    padding: 8px;
+    border: 1px solid var(--app-color-border-strong);
+    border-radius: 12px;
+    background: var(--app-color-surface-2);
+    z-index: 2;
+}
+
+.monthList {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.monthButton {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: 8px;
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    text-transform: capitalize;
+}
+
+.monthButton:hover {
+    border-color: var(--app-color-primary);
+}
+
+.openSheetButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--app-color-border-strong);
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.sheet {
+    max-height: 70vh;
+    padding: 16px;
+    background: var(--app-color-surface-2);
+    color: var(--app-color-text-primary);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+}
+
+.sheetYear h3 {
+    margin: 12px 0 8px;
+    font-size: 0.95rem;
+}
+
+.sheetYear .monthList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 599.95px) {
+    .sheetYear .monthList {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
