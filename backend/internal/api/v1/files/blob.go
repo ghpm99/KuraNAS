@@ -45,7 +45,7 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 		return
 	}
 
-	thumbnailETag := ThumbnailETag(file, width)
+	thumbnailETag := ThumbnailETag(file, width, height)
 	c.Header("ETag", thumbnailETag)
 	c.Header("Cache-Control", "public, max-age=3600")
 	if c.GetHeader("If-None-Match") == thumbnailETag {
@@ -69,8 +69,9 @@ func (handler *Handler) GetFileThumbnailHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.Header("Content-Type", "image/png")
-	c.Data(http.StatusOK, "image/png", thumbnailData)
+	contentType := thumbnailContentType(thumbnailData)
+	c.Header("Content-Type", contentType)
+	c.Data(http.StatusOK, contentType, thumbnailData)
 }
 
 func (handler *Handler) GetBlobFileHandler(c *gin.Context) {
@@ -170,4 +171,12 @@ func respondContentOpenError(c *gin.Context, err error) {
 	}
 	applog.ErrorWithStack("files: open content failed", err, "ip", c.ClientIP())
 	c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
+}
+
+func thumbnailContentType(thumbnailData []byte) string {
+	detectedType := http.DetectContentType(thumbnailData)
+	if detectedType == "image/jpeg" {
+		return detectedType
+	}
+	return "image/png"
 }

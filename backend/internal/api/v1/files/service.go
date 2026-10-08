@@ -600,62 +600,81 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	width = normalizeThumbnailWidth(width)
+	width = normalizeThumbnailSize(width)
+	height = normalizeThumbnailSize(height)
 
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cachePath := filepath.Join(cacheDir, thumbnailCacheFileName(fileDto, width))
-
-	if data, err := os.ReadFile(cachePath); err == nil {
-		return data, nil
+	if cachedData, isCached := readCachedThumbnail(cacheDir, fileDto, width, height); isCached {
+		return cachedData, nil
 	}
 
-	var thumbnailImg image.Image
-
-	if fileDto.Type == Directory {
-		iconImg, err := icons.FolderIcon()
-		if err != nil {
-			return nil, err
-		}
-		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-	} else {
-		contentPath := fileDto.ResolveContentPath()
-		if !s.CheckFileExistsByPath(contentPath) {
-			applog.Warn("files: thumbnail source missing on disk", "file_id", fileDto.ID, "content_path", contentPath)
-			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, contentPath)
-		}
-
-		srcImg, format, err := img.OpenImageFromFile(contentPath)
-		if err != nil {
-			switch strings.ToLower(fileDto.Format) {
-			case ".pdf":
-				iconImg, _ := icons.PdfIcon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
-				iconImg, _ := icons.Mp3Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			case ".mp4", ".avi", ".mkv", ".mov", ".webm":
-				iconImg, _ := icons.Mp4Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			default:
-				iconImg, _ := icons.Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			}
-		} else {
-			thumbnailImg = img.Thumbnail(srcImg, uint(width), uint(height))
-			_ = format
-		}
-	}
-
-	data, err := img.EncodePNG(thumbnailImg)
+	thumbnailData, extension, err := s.renderThumbnail(fileDto, width, height)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode thumbnail: %w", err)
+		return nil, err
 	}
 
 	_ = os.MkdirAll(cacheDir, 0755)
-	removeStaleThumbnails(cacheDir, fileDto, width)
-	_ = os.WriteFile(cachePath, data, 0644)
+	removeStaleThumbnails(cacheDir, fileDto, width, height, extension)
+	_ = os.WriteFile(filepath.Join(cacheDir, thumbnailCacheFileName(fileDto, width, height, extension)), thumbnailData, 0644)
 
-	return data, nil
+	return thumbnailData, nil
+}
+
+func (s *Service) renderThumbnail(fileDto FileDto, width, height int) ([]byte, string, error) {
+	if fileDto.Type == Directory {
+		iconImg, err := icons.FolderIcon()
+		if err != nil {
+			return nil, "", err
+		}
+		return encodeIconThumbnail(iconImg, width, height)
+	}
+
+	contentPath := fileDto.ResolveContentPath()
+	if !s.CheckFileExistsByPath(contentPath) {
+		applog.Warn("files: thumbnail source missing on disk", "file_id", fileDto.ID, "content_path", contentPath)
+		return nil, "", fmt.Errorf("%w: %s", ErrFileMissingDisk, contentPath)
+	}
+
+	sourceImg, sourceFormat, err := img.OpenImageFromFile(contentPath)
+	if err != nil {
+		iconImg, _ := iconForUnreadableFormat(fileDto.Format)
+		return encodeIconThumbnail(iconImg, width, height)
+	}
+
+	orientation := 1
+	if sourceFormat == "jpeg" {
+		orientation = img.ReadJPEGOrientation(contentPath)
+	}
+	fitted := img.FitWithinBox(sourceImg, width, height, orientation)
+
+	if !img.IsOpaque(sourceImg) {
+		return encodeThumbnail(fitted, img.EncodePNG, thumbnailPNGExtension)
+	}
+	return encodeThumbnail(fitted, img.EncodeJPEG, thumbnailJPEGExtension)
+}
+
+func iconForUnreadableFormat(format string) (image.Image, error) {
+	switch strings.ToLower(format) {
+	case ".pdf":
+		return icons.PdfIcon()
+	case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
+		return icons.Mp3Icon()
+	case ".mp4", ".avi", ".mkv", ".mov", ".webm":
+		return icons.Mp4Icon()
+	}
+	return icons.Icon()
+}
+
+func encodeIconThumbnail(iconImg image.Image, width, height int) ([]byte, string, error) {
+	return encodeThumbnail(img.Thumbnail(iconImg, uint(width), uint(height)), img.EncodePNG, thumbnailPNGExtension)
+}
+
+func encodeThumbnail(thumbnailImg image.Image, encode func(image.Image) ([]byte, error), extension string) ([]byte, string, error) {
+	encoded, err := encode(thumbnailImg)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+	return encoded, extension, nil
 }
 
 func (s *Service) GetTotalSpaceUsed() (int, error) {
