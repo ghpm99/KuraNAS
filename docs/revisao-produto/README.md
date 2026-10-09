@@ -20,8 +20,8 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 |---|---|---|---|
 | 01 | [Arquivos](01-arquivos.md) — navegação, CRUD, upload/download, detalhes, paginação, preview por tipo, localização física (tiering) | ✅ concluída (2026-10-08) | 26 lacunas resolvidas; `make ci` verde |
 | 02 | [Shell e layout](02-shell-layout.md) — responsividade, sidebar, ocultação adaptativa, scroll | ✅ concluída (2026-10-08) | shell não montava desde 717b3f4; 24 lacunas; `make ci` verde |
-| 03 | [Imagens](03-imagens.md) — galeria, paginação, busca por conteúdo, álbuns, timeline | em execução | |
-| 04 | Busca global | pendente | |
+| 03 | [Imagens](03-imagens.md) — galeria, paginação, busca por conteúdo, álbuns, timeline | ✅ concluída (2026-10-09) | 19 lacunas; HEIC/AVIF dependem de ffmpeg ≥ 7.1 no servidor; `make ci` verde |
+| 04 | [Busca global](04-busca-global.md) | em execução | |
 | 05 | Música | pendente | |
 | 06 | Vídeos | pendente | |
 | 07 | Favoritos | pendente | |
