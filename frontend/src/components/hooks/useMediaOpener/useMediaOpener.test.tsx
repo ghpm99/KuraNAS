@@ -171,10 +171,18 @@ describe('components/hooks/useMediaOpener', () => {
         );
     });
 
+    it.each(['.m4v', '.mpg', '.mpeg', '.m2ts', '.3gp', '.vob'])('opens %s on the video screen', (format) => {
+        const { result } = renderHook(() => useMediaOpener());
+
+        expect(result.current.openMediaItem({ id: 7, name: `clip${format}`, format })).toBe(true);
+
+        expect(mockNavigate).toHaveBeenCalledWith('/video/7', expect.anything());
+    });
+
     it('leaves formats without a dedicated screen to the in-place viewer', () => {
         const { result } = renderHook(() => useMediaOpener());
 
-        for (const format of ['.m4v', '.md']) {
+        for (const format of ['.ts', '.md']) {
             expect(result.current.openMediaItem({ id: 1, name: `f${format}`, format })).toBe(false);
         }
         expect(mockNavigate).not.toHaveBeenCalled();

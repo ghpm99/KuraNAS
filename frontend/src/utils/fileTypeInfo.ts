@@ -71,6 +71,10 @@ const fileTypeGroups: FileTypeGroup[] = [
     group('video', 'VIDEO_WMV', 'video/x-ms-wmv', ['.wmv']),
     group('video', 'VIDEO_FLV', 'video/x-flv', ['.flv']),
     group('video', 'VIDEO_M4V', 'video/x-m4v', ['.m4v']),
+    group('video', 'VIDEO_MPEG', 'video/mpeg', ['.mpg', '.mpeg']),
+    group('video', 'VIDEO_M2TS', 'video/mp2t', ['.m2ts']),
+    group('video', 'VIDEO_3GP', 'video/3gpp', ['.3gp']),
+    group('video', 'VIDEO_VOB', 'video/dvd', ['.vob']),
 
     group('document', 'DOCUMENT_PDF', 'application/pdf', ['.pdf']),
     group(
@@ -183,6 +187,12 @@ const dedicatedMediaScreenExtensions = new Set([
     '.wmv',
     '.flv',
     '.webm',
+    '.m4v',
+    '.mpg',
+    '.mpeg',
+    '.m2ts',
+    '.3gp',
+    '.vob',
 ]);
 
 export const hasDedicatedMediaScreen = (format: string | undefined): boolean =>

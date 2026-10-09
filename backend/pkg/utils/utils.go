@@ -214,7 +214,7 @@ var ImageFormats = append(
 	append(append([]string{}, HeifFamilyFormats...), RawPhotoFormats...)...,
 )
 var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac", ".m4a", ".ogg", ".oga", ".opus", ".wma", ".alac", ".aiff", ".aif", ".ape", ".wv"}
-var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".ogv"}
+var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".ogv", ".m4v", ".mpg", ".mpeg", ".m2ts", ".3gp", ".vob"}
 var DocumentFormats = []string{".pdf", ".txt", ".html", ".htm", ".xml", ".json", ".csv"}
 var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz"}
 
@@ -291,6 +291,16 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeVideo, Mime: "video/x-ms-wmv", Description: "VIDEO_WMV"}
 	case ".flv":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/x-flv", Description: "VIDEO_FLV"}
+	case ".m4v":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/x-m4v", Description: "VIDEO_M4V"}
+	case ".mpg", ".mpeg":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/mpeg", Description: "VIDEO_MPEG"}
+	case ".m2ts":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/mp2t", Description: "VIDEO_M2TS"}
+	case ".3gp":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/3gpp", Description: "VIDEO_3GP"}
+	case ".vob":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/dvd", Description: "VIDEO_VOB"}
 
 	case ".pdf":
 		return FormatType{Type: FormatTypeDocument, Mime: "application/pdf", Description: "DOCUMENT_PDF"}

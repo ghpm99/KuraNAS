@@ -63,3 +63,20 @@ func TestVideoFormatListAgreesWithClassification(t *testing.T) {
 		}
 	}
 }
+
+func TestAdditionalVideoExtensionsAreClassifiedAsVideo(t *testing.T) {
+	for _, extension := range []string{".m4v", ".mpg", ".mpeg", ".m2ts", ".3gp", ".vob"} {
+		if GetFormatTypeByExtension(extension).Type != FormatTypeVideo {
+			t.Errorf("%s should be classified as video", extension)
+		}
+		if !slices.Contains(VideoFormats, extension) {
+			t.Errorf("%s missing from VideoFormats", extension)
+		}
+	}
+}
+
+func TestTypeScriptExtensionIsNotClassifiedAsVideo(t *testing.T) {
+	if GetFormatTypeByExtension(".ts").Type == FormatTypeVideo {
+		t.Error(".ts must not be classified as video")
+	}
+}
