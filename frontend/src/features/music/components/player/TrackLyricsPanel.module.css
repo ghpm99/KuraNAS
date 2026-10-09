@@ -1,0 +1,17 @@
+.panel {
+    align-self: center;
+    width: 100%;
+    max-height: min(40vh, 320px);
+    overflow-y: auto;
+    padding: var(--app-spacing-3);
+    border-radius: var(--app-radius-lg);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.lyricsText {
+    white-space: pre-line;
+    text-align: center;
+    line-height: 1.7;
+}

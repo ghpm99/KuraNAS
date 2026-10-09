@@ -2,6 +2,7 @@ import { Box, IconButton, Slider, SwipeableDrawer, Typography } from '@mui/mater
 import {
     ChevronDown,
     ListMusic,
+    MicVocal,
     Pause,
     Play,
     Repeat,
@@ -16,6 +17,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import CoverArt from '@/features/music/components/CoverArt';
 import TrackStarButton from '@/features/music/components/trackStar/TrackStarButton';
+import TrackLyricsPanel from './TrackLyricsPanel';
 import { getTrackCoverUrl } from '@/service/musicCover';
 import { getMusicArtist, getMusicTitle } from '@/utils/music';
 import { formatPlaybackTime } from './formatPlaybackTime';
@@ -24,8 +26,12 @@ import { useSeekSlider } from './useSeekSlider';
 import { supportsProgrammaticVolume } from './supportsProgrammaticVolume';
 import styles from './ExpandedPlayerSheet.module.css';
 
+export type ExpandedSheetView = 'artwork' | 'lyrics';
+
 interface ExpandedPlayerSheetProps {
     isOpen: boolean;
+    view?: ExpandedSheetView;
+    onViewChange?: (view: ExpandedSheetView) => void;
     onOpen: () => void;
     onClose: () => void;
 }
@@ -35,7 +41,13 @@ const touchTargetSx = { width: 44, height: 44 };
 const isReducedMotionEnabled = (): boolean =>
     document.documentElement.getAttribute('data-app-motion') === 'reduced';
 
-const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetProps) => {
+const ExpandedPlayerSheet = ({
+    isOpen,
+    view = 'artwork',
+    onViewChange,
+    onOpen,
+    onClose,
+}: ExpandedPlayerSheetProps) => {
     const { t } = useI18n();
     const {
         isPlaying,
@@ -72,6 +84,9 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
         <Play size={48} color="white" />
     );
 
+    const isLyricsView = view === 'lyrics';
+    const toggleLyricsView = () => onViewChange?.(isLyricsView ? 'artwork' : 'lyrics');
+
     const openQueue = () => {
         onClose();
         setQueueOpen(true);
@@ -95,25 +110,42 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
                     >
                         <ChevronDown size={22} />
                     </IconButton>
-                    <IconButton
-                        sx={touchTargetSx}
-                        onClick={openQueue}
-                        aria-label={t('PLAYER_ARIA_QUEUE')}
-                    >
-                        <ListMusic size={20} />
-                    </IconButton>
+                    <Box sx={{ display: 'flex' }}>
+                        <IconButton
+                            sx={{
+                                ...touchTargetSx,
+                                color: isLyricsView ? 'primary.main' : undefined,
+                            }}
+                            onClick={toggleLyricsView}
+                            aria-label={t('PLAYER_ARIA_LYRICS')}
+                            aria-pressed={isLyricsView}
+                        >
+                            <MicVocal size={20} />
+                        </IconButton>
+                        <IconButton
+                            sx={touchTargetSx}
+                            onClick={openQueue}
+                            aria-label={t('PLAYER_ARIA_QUEUE')}
+                        >
+                            <ListMusic size={20} />
+                        </IconButton>
+                    </Box>
                 </Box>
 
-                <Box className={styles.artwork}>
-                    {currentTrack ? (
-                        <CoverArt
-                            src={getTrackCoverUrl(currentTrack.id, 512)}
-                            fallback={playbackIcon}
-                        />
-                    ) : (
-                        playbackIcon
-                    )}
-                </Box>
+                {isLyricsView ? (
+                    <TrackLyricsPanel track={currentTrack} />
+                ) : (
+                    <Box className={styles.artwork}>
+                        {currentTrack ? (
+                            <CoverArt
+                                src={getTrackCoverUrl(currentTrack.id, 512)}
+                                fallback={playbackIcon}
+                            />
+                        ) : (
+                            playbackIcon
+                        )}
+                    </Box>
+                )}
 
                 <Box className={styles.trackText}>
                     <Typography variant="h3" noWrap>
