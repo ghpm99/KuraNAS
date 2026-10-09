@@ -46,3 +46,9 @@ var IndexErrorsLatestQuery string
 
 //go:embed index_files_total.sql
 var IndexFilesTotalQuery string
+
+//go:embed duplicates_summary_images.sql
+var DuplicatesSummaryImagesQuery string
+
+//go:embed duplicates_top_groups_images.sql
+var DuplicatesTopGroupsImagesQuery string

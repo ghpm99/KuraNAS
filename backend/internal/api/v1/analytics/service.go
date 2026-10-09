@@ -130,6 +130,26 @@ func (s *Service) GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
 	return toDuplicateGroupDto(models), nil
 }
 
+func (s *Service) GetImageDuplicatesSummary() (DuplicatesSummaryDto, error) {
+	model, err := s.Repository.GetImageDuplicatesSummary()
+	if err != nil {
+		return DuplicatesSummaryDto{}, err
+	}
+	return DuplicatesSummaryDto{
+		Groups:          model.GroupsTotal,
+		Files:           model.FilesTotal,
+		ReclaimableSize: model.ReclaimableBytes,
+	}, nil
+}
+
+func (s *Service) GetImageDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
+	models, err := s.Repository.GetImageDuplicateGroups(limit)
+	if err != nil {
+		return nil, err
+	}
+	return toDuplicateGroupDto(models), nil
+}
+
 func (s *Service) GetLibrary() (LibraryDto, error) {
 	model, err := s.Repository.GetLibrarySummary()
 	if err != nil {
