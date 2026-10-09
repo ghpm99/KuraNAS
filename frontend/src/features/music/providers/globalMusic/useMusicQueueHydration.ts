@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { queueToTracks } from '@/features/music/components/musicQueueTracks';
 import { getPlayerQueue, getPlayerState, type PlayerStateDto } from '@/service/playerState';
 import { parseRepeatMode, type RepeatMode } from './repeatMode';

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getAudioSummary } from '@/service/fileTypeMetadata';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 
 interface TrackLyrics {
     lyrics: string;

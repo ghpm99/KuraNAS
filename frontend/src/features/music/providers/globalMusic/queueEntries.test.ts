@@ -1,4 +1,4 @@
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { createQueueEntries, insertAfterIndex, moveQueueEntry } from './queueEntries';
 
 const createTrack = (id: number) => ({ id, name: `track-${id}` }) as IMusicData;

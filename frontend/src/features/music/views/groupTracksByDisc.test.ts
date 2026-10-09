@@ -1,4 +1,4 @@
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { groupTracksByDisc } from './groupTracksByDisc';
 
 const trackOnDisc = (id: number, discNumber?: string) =>

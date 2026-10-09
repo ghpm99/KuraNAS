@@ -1,4 +1,20 @@
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+export interface IMusicData {
+    id: number;
+    name: string;
+    path: string;
+    type: number;
+    format: string;
+    size: number;
+    updated_at: string;
+    created_at: string;
+    deleted_at: string;
+    last_interaction: string;
+    last_backup: string;
+    check_sum: string;
+    directory_content_count: number;
+    starred: boolean;
+    metadata?: IMusicMetadata;
+}
 
 export interface IMusicMetadata {
     mime?: string;

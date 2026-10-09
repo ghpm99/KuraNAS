@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { MusicQueue, MusicQueueEntry } from '@/types/music';
 
 const AUDIO_FILE_TYPE = 2;

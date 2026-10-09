@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SnackbarProvider } from 'notistack';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import CollectionContextMenu from './CollectionContextMenu';
 
 const mockPlayNext = jest.fn();

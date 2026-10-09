@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import useMusicQueuePersistence from './useMusicQueuePersistence';
 import { apiBase } from '@/service';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 
 jest.mock('@/service', () => ({
     apiBase: { put: jest.fn() },
