@@ -26,11 +26,7 @@ jest.mock('@/service/image', () => ({
 
 jest.mock('@/service/playerState', () => ({
     getPlayerState: jest.fn(() => Promise.resolve({})),
-}));
-
-jest.mock('@/service/playlist', () => ({
-    getNowPlayingPlaylist: jest.fn(() => Promise.resolve({ id: 7 })),
-    getPlaylistTracks: jest.fn(() => Promise.resolve({ items: [] })),
+    getPlayerQueue: jest.fn(() => Promise.resolve({ items: [], current_index: 0 })),
 }));
 
 jest.mock('@/service/videoPlayback', () => ({
@@ -58,7 +54,31 @@ const buildQueryState = (data: unknown, overrides?: Record<string, unknown>) => 
 
 const loadingQueryState = () => buildQueryState(undefined, { isLoading: true });
 
-/** Set up 8 useQuery returns (the hook calls useQuery 8 times). */
+const savedQueueEntry = (fileId: number, lengthSeconds = 0) => ({
+    file_id: fileId,
+    name: `${fileId}.mp3`,
+    path: `/music/${fileId}.mp3`,
+    format: '.mp3',
+    title: `Title ${fileId}`,
+    artist: 'Artist',
+    album: 'Album',
+    length: lengthSeconds,
+});
+
+const savedQueue = (fileIds: number[], currentIndex = 0, lengthSeconds = 0) =>
+    buildQueryState({
+        items: fileIds.map((fileId) => savedQueueEntry(fileId, lengthSeconds)),
+        current_index: currentIndex,
+    });
+
+const buildActiveTrack = () => ({
+    id: 10,
+    name: 'Now.mp3',
+    size: 512,
+    updated_at: '2026-03-15',
+    metadata: { length: 300, title: 'Now', artist: 'Band' },
+});
+
 const setupDefaultQueries = (
     overrides?: Partial<
         Record<
@@ -68,8 +88,7 @@ const setupDefaultQueries = (
             | 'videoCatalog'
             | 'videoPlayback'
             | 'playerState'
-            | 'nowPlaying'
-            | 'nowPlayingTracks',
+            | 'playerQueue',
             ReturnType<typeof buildQueryState>
         >
     >
@@ -81,8 +100,7 @@ const setupDefaultQueries = (
         .mockReturnValueOnce(overrides?.videoCatalog ?? buildQueryState({ sections: [] }))
         .mockReturnValueOnce(overrides?.videoPlayback ?? buildQueryState(null))
         .mockReturnValueOnce(overrides?.playerState ?? buildQueryState(null))
-        .mockReturnValueOnce(overrides?.nowPlaying ?? buildQueryState(null))
-        .mockReturnValueOnce(overrides?.nowPlayingTracks ?? buildQueryState({ items: [] }));
+        .mockReturnValueOnce(overrides?.playerQueue ?? buildQueryState(null));
 };
 
 describe('useHomeScreen', () => {
@@ -383,607 +401,161 @@ describe('useHomeScreen', () => {
         });
     });
 
-    // --- fallbackMusicTrack ---
-
-    describe('fallbackMusicTrack', () => {
-        it('returns null when playerState has no current_file_id', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({ current_file_id: null }),
-                nowPlayingTracks: buildQueryState({ items: [] }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume).toBeNull();
-        });
-
-        it('returns null when current_file_id is set but track not found in nowPlayingTracks', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 10,
-                }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 100,
-                                name: 'other.mp3',
-                                size: 100,
-                                metadata: { length: 60 },
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume).toBeNull();
-        });
-
-        it('returns fallback track when found in nowPlayingTracks', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 30,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 3 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'song.mp3',
-                                size: 500,
-                                updated_at: '2026-01-01',
-                                metadata: { length: 200, title: 'Song' },
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume).not.toBeNull();
-            expect(result.current.musicResume!.track.id).toBe(42);
-        });
-    });
-
-    // --- musicResume ---
-
-    describe('musicResume', () => {
-        it('returns null when no currentTrack and no fallback', () => {
+    describe('musicResume from the saved player queue', () => {
+        it('is null when there is no current track and no saved queue', () => {
             setupDefaultQueries();
 
             const { result } = renderHook(() => useHomeScreen());
+
             expect(result.current.musicResume).toBeNull();
         });
 
-        it('uses currentTrack over fallback when currentTrack is available', () => {
-            const track = {
-                id: 10,
-                name: 'Live.mp3',
-                size: 1024,
-                updated_at: '2026-03-01',
-                metadata: { length: 300, title: 'Live' },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [track],
-                currentTrack: track,
-                currentTime: 120,
-                duration: 300,
-                isPlaying: true,
-            });
-
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 10,
-                    current_position: 50,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 5 }),
-                nowPlayingTracks: buildQueryState({ items: [{ file: track }] }),
-            });
+        it('is null when the saved queue is empty', () => {
+            setupDefaultQueries({ playerQueue: buildQueryState({ items: [], current_index: 0 }) });
 
             const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume).not.toBeNull();
-            // Uses currentTime from global music (120), not playerState.current_position (50)
-            expect(result.current.musicResume!.progressSeconds).toBe(120);
-            // Uses global music duration (300)
-            expect(result.current.musicResume!.durationSeconds).toBe(300);
-            expect(result.current.musicResume!.isPlaying).toBe(true);
-            // queue.length (1) is truthy
-            expect(result.current.musicResume!.queueCount).toBe(1);
+
+            expect(result.current.musicResume).toBeNull();
         });
 
-        it('uses fallback track when currentTrack is undefined', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 60,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 4 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'Track.mp3',
-                                size: 2048,
-                                updated_at: '2026-03-14',
-                                metadata: { length: 240, title: 'Track', artist: 'Artist' },
-                            },
-                        },
-                    ],
-                }),
-            });
+        it('is null when the saved index points outside the queue', () => {
+            setupDefaultQueries({ playerQueue: savedQueue([4], 3) });
 
             const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.progressSeconds).toBe(60);
-            expect(result.current.musicResume!.durationSeconds).toBe(240);
-            expect(result.current.musicResume!.isPlaying).toBe(false);
+
+            expect(result.current.musicResume).toBeNull();
         });
 
-        it('uses playerState.current_position default 0 when fallback and no position', () => {
+        it('resumes the saved track at the saved position without playing', () => {
             setupDefaultQueries({
-                playerState: buildQueryState({ current_file_id: 42 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'T.mp3',
-                                size: 100,
-                                updated_at: '2026-01-01',
-                                metadata: { length: 100 },
-                            },
-                        },
-                    ],
-                }),
+                playerState: buildQueryState({ current_file_id: 6, current_position: 60 }),
+                playerQueue: savedQueue([5, 6, 7], 1, 240),
             });
 
             const { result } = renderHook(() => useHomeScreen());
+
+            expect(result.current.musicResume).toMatchObject({
+                track: { id: 6, metadata: { title: 'Title 6', length: 240 } },
+                progressSeconds: 60,
+                durationSeconds: 240,
+                progressPercent: 25,
+                queueCount: 3,
+                isPlaying: false,
+            });
+        });
+
+        it('starts at zero when the player state is missing', () => {
+            setupDefaultQueries({ playerQueue: savedQueue([5], 0, 100) });
+
+            const { result } = renderHook(() => useHomeScreen());
+
+            expect(result.current.musicResume).toMatchObject({
+                progressSeconds: 0,
+                progressPercent: 0,
+                queueCount: 1,
+            });
+        });
+
+        it('starts at zero when the saved state has no position', () => {
+            setupDefaultQueries({
+                playerState: buildQueryState({ current_file_id: 5 }),
+                playerQueue: savedQueue([5]),
+            });
+
+            const { result } = renderHook(() => useHomeScreen());
+
             expect(result.current.musicResume!.progressSeconds).toBe(0);
         });
 
-        it('uses 0 when playerState.data is null for fallback progressSeconds', () => {
-            // currentTrack is undefined, fallback found, playerState.data is null -> current_position ?? 0 -> 0
-            const track = {
-                id: 42,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 100 },
-            };
+        it('has no known duration for a saved track without length', () => {
+            setupDefaultQueries({ playerQueue: savedQueue([5], 0, 0) });
+
+            const { result } = renderHook(() => useHomeScreen());
+
+            expect(result.current.musicResume!.durationSeconds).toBe(0);
+        });
+
+        it('prefers the live track and live queue over the saved ones', () => {
+            const currentTrack = buildActiveTrack();
+            mockedUseGlobalMusic.mockReturnValue({
+                queue: [currentTrack, { id: 11 }],
+                currentTrack,
+                currentTime: 150,
+                duration: 100,
+                isPlaying: true,
+            });
+            setupDefaultQueries({
+                playerState: buildQueryState({ current_file_id: 6, current_position: 60 }),
+                playerQueue: savedQueue([5, 6, 7, 8], 1, 240),
+            });
+
+            const { result } = renderHook(() => useHomeScreen());
+
+            expect(result.current.musicResume).toMatchObject({
+                track: currentTrack,
+                progressSeconds: 150,
+                durationSeconds: 300,
+                queueCount: 2,
+                isPlaying: true,
+            });
+        });
+
+        it('uses the duration reported by the player when it exceeds the metadata', () => {
+            const currentTrack = { ...buildActiveTrack(), metadata: { length: 100 } };
+            mockedUseGlobalMusic.mockReturnValue({
+                queue: [currentTrack],
+                currentTrack,
+                currentTime: 10,
+                duration: 200,
+                isPlaying: false,
+            });
+            setupDefaultQueries();
+
+            const { result } = renderHook(() => useHomeScreen());
+
+            expect(result.current.musicResume!.durationSeconds).toBe(200);
+        });
+
+        it('has no duration for a live track without metadata', () => {
+            const { metadata: _metadata, ...trackWithoutMetadata } = buildActiveTrack();
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [],
-                currentTrack: undefined,
+                currentTrack: trackWithoutMetadata,
                 currentTime: 0,
                 duration: 0,
                 isPlaying: false,
             });
-            setupDefaultQueries({
-                playerState: buildQueryState(null),
-                nowPlaying: buildQueryState({ id: 7, track_count: 3 }),
-                nowPlayingTracks: buildQueryState({ items: [{ file: track }] }),
-            });
-
-            // fallbackMusicTrack requires playerStateQuery.data?.current_file_id to be truthy
-            // but playerState data is null => current_file_id is undefined => fallback is null
-            // So musicResume will be null. This tests the playerState.data?.current_file_id branch.
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume).toBeNull();
-        });
-
-        it('falls through to 0 when playerState.data exists but current_position is undefined', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: undefined,
-                }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'T.mp3',
-                                size: 100,
-                                updated_at: '2026-01-01',
-                                metadata: { length: 100 },
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.progressSeconds).toBe(0);
-        });
-
-        it('uses Math.max(duration, metadata.duration) when currentTrack is available', () => {
-            const track = {
-                id: 10,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 400 },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [track],
-                currentTrack: track,
-                currentTime: 50,
-                duration: 200, // less than metadata.duration (400)
-                isPlaying: false,
-            });
             setupDefaultQueries();
 
             const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.durationSeconds).toBe(400);
-        });
 
-        it('uses duration when greater than metadata.duration for currentTrack', () => {
-            const track = {
-                id: 10,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 100 },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [track],
-                currentTrack: track,
-                currentTime: 50,
-                duration: 500, // greater than metadata.duration
-                isPlaying: false,
-            });
-            setupDefaultQueries();
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.durationSeconds).toBe(500);
-        });
-
-        it('uses 0 for metadata.duration when currentTrack has no metadata', () => {
-            const track = {
-                id: 10,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: null,
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [track],
-                currentTrack: track,
-                currentTime: 50,
-                duration: 0,
-                isPlaying: false,
-            });
-            setupDefaultQueries();
-
-            const { result } = renderHook(() => useHomeScreen());
             expect(result.current.musicResume!.durationSeconds).toBe(0);
-        });
-
-        it('uses metadata.duration for fallback track (no currentTrack)', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 10,
-                }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'T.mp3',
-                                size: 100,
-                                updated_at: '2026-01-01',
-                                metadata: { length: 180 },
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.durationSeconds).toBe(180);
-        });
-
-        it('uses 0 when fallback track has no metadata.duration', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 10,
-                }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'T.mp3',
-                                size: 100,
-                                updated_at: '2026-01-01',
-                                metadata: null,
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.durationSeconds).toBe(0);
+            expect(result.current.musicResume!.queueCount).toBe(0);
         });
     });
-
-    // --- queueCount chain ---
-
-    describe('musicResume.queueCount', () => {
-        const trackWithMeta = {
-            id: 42,
-            name: 'T.mp3',
-            size: 100,
-            updated_at: '2026-01-01',
-            metadata: { length: 100 },
-        };
-
-        it('uses queue.length when > 0', () => {
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [trackWithMeta, trackWithMeta],
-                currentTrack: trackWithMeta,
-                currentTime: 10,
-                duration: 100,
-                isPlaying: false,
-            });
-            setupDefaultQueries({
-                nowPlaying: buildQueryState({ id: 7, track_count: 10 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [{ file: trackWithMeta }, { file: trackWithMeta }],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.queueCount).toBe(2);
-        });
-
-        it('uses nowPlayingQuery.track_count when queue is empty', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 5,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 8 }),
-                nowPlayingTracks: buildQueryState({ items: [{ file: trackWithMeta }] }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.queueCount).toBe(8);
-        });
-
-        it('uses nowPlayingTracks.items.length when queue empty and track_count is 0', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 5,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 0 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [{ file: trackWithMeta }, { file: { id: 43 } }],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.queueCount).toBe(2);
-        });
-
-        it('returns 0 when all queue count sources are falsy', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 5,
-                }),
-                nowPlaying: buildQueryState(null),
-                nowPlayingTracks: buildQueryState({ items: [{ file: trackWithMeta }] }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            // queue.length=0, track_count=undefined, items.length=1 -> should be 1
-            expect(result.current.musicResume!.queueCount).toBe(1);
-        });
-
-        it('falls through to 0 when queue empty, track_count falsy, and items.length is 0', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 5,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 0 }),
-                nowPlayingTracks: buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 42,
-                                name: 'T.mp3',
-                                size: 100,
-                                updated_at: '2026-01-01',
-                                metadata: { length: 100 },
-                            },
-                        },
-                    ],
-                }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            // queue.length=0, track_count=0, items.length=1 -> 1
-            expect(result.current.musicResume!.queueCount).toBe(1);
-        });
-
-        it('falls through entire chain to 0 when queue empty, track_count 0, and items.length 0', () => {
-            const track = {
-                id: 42,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 100 },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [],
-                currentTrack: track,
-                currentTime: 10,
-                duration: 100,
-                isPlaying: false,
-            });
-            setupDefaultQueries({
-                nowPlaying: buildQueryState({ id: 7, track_count: 0 }),
-                nowPlayingTracks: buildQueryState({ items: [] }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.musicResume!.queueCount).toBe(0);
-        });
-
-        it('falls through to 0 when queue empty and nowPlaying.data is null (track_count undefined)', () => {
-            const track = {
-                id: 42,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 100 },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [],
-                currentTrack: track,
-                currentTime: 10,
-                duration: 100,
-                isPlaying: false,
-            });
-            setupDefaultQueries({
-                nowPlaying: buildQueryState(null),
-                nowPlayingTracks: buildQueryState({ items: [] }),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            // queue.length=0, nowPlayingQuery.data?.track_count = undefined, nowPlayingTracksQuery.data?.items.length = 0, fallback 0
-            expect(result.current.musicResume!.queueCount).toBe(0);
-        });
-
-        it('falls through to 0 when queue empty and nowPlayingTracks.data is null (items undefined)', () => {
-            const track = {
-                id: 42,
-                name: 'T.mp3',
-                size: 100,
-                updated_at: '2026-01-01',
-                metadata: { length: 100 },
-            };
-            mockedUseGlobalMusic.mockReturnValue({
-                queue: [],
-                currentTrack: track,
-                currentTime: 10,
-                duration: 100,
-                isPlaying: false,
-            });
-            setupDefaultQueries({
-                nowPlaying: buildQueryState(null),
-                nowPlayingTracks: buildQueryState(null),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            // queue.length=0, nowPlayingQuery.data?.track_count = undefined, nowPlayingTracksQuery.data?.items.length = undefined, fallback 0
-            expect(result.current.musicResume!.queueCount).toBe(0);
-        });
-
-        it('returns 0 when queue empty and no nowPlaying data at all', () => {
-            setupDefaultQueries({
-                playerState: buildQueryState({
-                    current_file_id: 42,
-                    current_position: 5,
-                }),
-                nowPlaying: buildQueryState(null),
-                nowPlayingTracks: buildQueryState(null),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            // fallback track requires nowPlayingTracks.data?.items to exist
-            // if null, fallbackMusicTrack will be null => musicResume null
-            expect(result.current.musicResume).toBeNull();
-        });
-    });
-
-    // --- Loading states ---
 
     describe('loading states', () => {
-        it('reports loading when analytics query is loading', () => {
-            setupDefaultQueries({
-                analytics: loadingQueryState(),
-            });
+        it.each([
+            ['analytics', 'isAnalyticsLoading'],
+            ['favorites', 'isFavoritesLoading'],
+            ['images', 'isImagesLoading'],
+            ['videoCatalog', 'isVideoLoading'],
+            ['videoPlayback', 'isVideoLoading'],
+            ['playerState', 'isMusicLoading'],
+            ['playerQueue', 'isMusicLoading'],
+        ] as const)('reports loading while %s is loading', (queryName, loadingFlag) => {
+            setupDefaultQueries({ [queryName]: loadingQueryState() });
 
             const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isAnalyticsLoading).toBe(true);
-        });
 
-        it('reports video loading when either videoCatalog or videoPlayback is loading', () => {
-            setupDefaultQueries({
-                videoCatalog: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isVideoLoading).toBe(true);
-        });
-
-        it('reports video loading when videoPlayback is loading', () => {
-            setupDefaultQueries({
-                videoPlayback: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isVideoLoading).toBe(true);
-        });
-
-        it('reports music loading when playerState is loading', () => {
-            setupDefaultQueries({
-                playerState: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isMusicLoading).toBe(true);
-        });
-
-        it('reports music loading when nowPlaying is loading', () => {
-            setupDefaultQueries({
-                nowPlaying: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isMusicLoading).toBe(true);
-        });
-
-        it('reports music loading when nowPlayingTracks is loading', () => {
-            setupDefaultQueries({
-                nowPlayingTracks: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isMusicLoading).toBe(true);
-        });
-
-        it('reports favorites loading', () => {
-            setupDefaultQueries({
-                favorites: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isFavoritesLoading).toBe(true);
-        });
-
-        it('reports images loading', () => {
-            setupDefaultQueries({
-                images: loadingQueryState(),
-            });
-
-            const { result } = renderHook(() => useHomeScreen());
-            expect(result.current.isImagesLoading).toBe(true);
+            expect(result.current[loadingFlag]).toBe(true);
         });
 
         it('reports not loading when all queries have data', () => {
             setupDefaultQueries();
 
             const { result } = renderHook(() => useHomeScreen());
+
             expect(result.current.isAnalyticsLoading).toBe(false);
             expect(result.current.isFavoritesLoading).toBe(false);
             expect(result.current.isImagesLoading).toBe(false);
@@ -992,55 +564,9 @@ describe('useHomeScreen', () => {
         });
     });
 
-    // --- nowPlayingTracksQuery enabled flag ---
-
-    describe('nowPlayingTracksQuery enabled', () => {
-        it('sets enabled=true when nowPlaying has an id', () => {
-            setupDefaultQueries({
-                nowPlaying: buildQueryState({ id: 9 }),
-            });
-
-            renderHook(() => useHomeScreen());
-
-            const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
-            expect(nowPlayingTracksOptions.enabled).toBe(true);
-            expect(nowPlayingTracksOptions.queryKey).toContain(9);
-        });
-
-        it('sets enabled=false when nowPlaying data is null', () => {
-            setupDefaultQueries({
-                nowPlaying: buildQueryState(null),
-            });
-
-            renderHook(() => useHomeScreen());
-
-            const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
-            expect(nowPlayingTracksOptions.enabled).toBe(false);
-        });
-
-        it('sets enabled=false when nowPlaying data has no id', () => {
-            setupDefaultQueries({
-                nowPlaying: buildQueryState({}),
-            });
-
-            renderHook(() => useHomeScreen());
-
-            const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
-            expect(nowPlayingTracksOptions.enabled).toBe(false);
-        });
-    });
-
-    // --- Full integration scenario ---
-
     describe('integration: full data scenario', () => {
         it('derives all fields correctly when all data is present', () => {
-            const currentTrack = {
-                id: 10,
-                name: 'Now.mp3',
-                size: 512,
-                updated_at: '2026-03-15',
-                metadata: { length: 300, title: 'Now', artist: 'Band' },
-            };
+            const currentTrack = buildActiveTrack();
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [currentTrack, { id: 11 }, { id: 12 }],
                 currentTrack,
@@ -1078,12 +604,8 @@ describe('useHomeScreen', () => {
                         playlist_id: 10,
                     },
                 }),
-                playerState: buildQueryState({
-                    current_file_id: 10,
-                    current_position: 50,
-                }),
-                nowPlaying: buildQueryState({ id: 7, track_count: 5 }),
-                nowPlayingTracks: buildQueryState({ items: [{ file: currentTrack }] }),
+                playerState: buildQueryState({ current_file_id: 10, current_position: 50 }),
+                playerQueue: savedQueue([10]),
             });
 
             const { result } = renderHook(() => useHomeScreen());
@@ -1092,9 +614,7 @@ describe('useHomeScreen', () => {
             expect(result.current.favoriteItems).toHaveLength(1);
             expect(result.current.recentImages).toHaveLength(1);
             expect(result.current.videoContinueItems).toHaveLength(1);
-            expect(result.current.videoResume).not.toBeNull();
             expect(result.current.videoResume!.progressPercent).toBe(50);
-            expect(result.current.musicResume).not.toBeNull();
             expect(result.current.musicResume!.progressSeconds).toBe(150);
             expect(result.current.musicResume!.isPlaying).toBe(true);
             expect(result.current.musicResume!.queueCount).toBe(3);
@@ -1102,57 +622,38 @@ describe('useHomeScreen', () => {
         });
     });
 
-    // --- Query configuration ---
-
     describe('query configuration', () => {
-        it('passes retry=false to videoPlayback, playerState, nowPlaying, nowPlayingTracks queries', () => {
+        it('disables retry for the playback state queries', () => {
             setupDefaultQueries();
 
             renderHook(() => useHomeScreen());
 
-            expect(mockedUseQuery.mock.calls[4][0].retry).toBe(false); // videoPlayback
-            expect(mockedUseQuery.mock.calls[5][0].retry).toBe(false); // playerState
-            expect(mockedUseQuery.mock.calls[6][0].retry).toBe(false); // nowPlaying
-            expect(mockedUseQuery.mock.calls[7][0].retry).toBe(false); // nowPlayingTracks
+            expect(mockedUseQuery.mock.calls[4][0].retry).toBe(false);
+            expect(mockedUseQuery.mock.calls[5][0].retry).toBe(false);
+            expect(mockedUseQuery.mock.calls[6][0].retry).toBe(false);
         });
 
         it('calls queryFn correctly for each query', async () => {
-            setupDefaultQueries({
-                nowPlaying: buildQueryState({ id: 9 }),
-            });
+            setupDefaultQueries();
 
             renderHook(() => useHomeScreen());
 
-            // analytics queryFn composes storage + health + recent files
             await expect(mockedUseQuery.mock.calls[0][0].queryFn()).resolves.toEqual({
                 storage: {},
                 counts: {},
                 health: {},
                 recent_files: [],
             });
-            // favorites queryFn
-            await expect(mockedUseQuery.mock.calls[1][0].queryFn()).resolves.toEqual({
-                items: [],
-            });
-            // images queryFn
-            await expect(mockedUseQuery.mock.calls[2][0].queryFn()).resolves.toEqual({
-                items: [],
-            });
-            // videoCatalog queryFn
+            await expect(mockedUseQuery.mock.calls[1][0].queryFn()).resolves.toEqual({ items: [] });
+            await expect(mockedUseQuery.mock.calls[2][0].queryFn()).resolves.toEqual({ items: [] });
             await expect(mockedUseQuery.mock.calls[3][0].queryFn()).resolves.toEqual({
                 sections: [],
             });
-            // videoPlayback queryFn
             await expect(mockedUseQuery.mock.calls[4][0].queryFn()).resolves.toBeNull();
-            // playerState queryFn
             await expect(mockedUseQuery.mock.calls[5][0].queryFn()).resolves.toEqual({});
-            // nowPlaying queryFn
             await expect(mockedUseQuery.mock.calls[6][0].queryFn()).resolves.toEqual({
-                id: 7,
-            });
-            // nowPlayingTracks queryFn
-            await expect(mockedUseQuery.mock.calls[7][0].queryFn()).resolves.toEqual({
                 items: [],
+                current_index: 0,
             });
         });
     });

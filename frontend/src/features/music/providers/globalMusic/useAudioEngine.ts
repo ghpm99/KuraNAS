@@ -9,6 +9,7 @@ export interface AudioEngineState {
 export interface AudioEngine extends AudioEngineState {
     audioRef: React.RefObject<HTMLAudioElement | null>;
     loadAndPlayUrl: (url: string) => void;
+    loadUrlPaused: (url: string, startPositionSeconds: number) => void;
     preloadUrl: (url: string) => void;
     togglePlayPause: () => void;
     seek: (time: number) => void;
@@ -26,7 +27,6 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
     const onTrackEndedRef = useRef(onTrackEnded);
-    // Guards against double-firing (onended + fallback interval)
     const endedHandledRef = useRef(false);
 
     useEffect(() => {
@@ -52,7 +52,6 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         const onPause = () => setIsPlaying(false);
         const onPlay = () => setIsPlaying(true);
         const onError = () => {
-            // If an error occurs mid-playback, attempt to advance to next track
             if (audio.src && !endedHandledRef.current) {
                 endedHandledRef.current = true;
                 onTrackEndedRef.current();
@@ -66,7 +65,6 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         audio.addEventListener('play', onPlay);
         audio.addEventListener('error', onError);
 
-        // Fallback: poll every 500ms for cases where `ended` doesn't fire in background
         const fallbackInterval = setInterval(() => {
             if (endedHandledRef.current) return;
             if (!audio.src || audio.duration <= 0) return;
@@ -104,6 +102,19 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         endedHandledRef.current = false;
         audio.src = url;
         audio.play().catch(() => {});
+    }, []);
+
+    const loadUrlPaused = useCallback((url: string, startPositionSeconds: number) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        endedHandledRef.current = false;
+        audio.src = url;
+        setCurrentTime(startPositionSeconds);
+        if (startPositionSeconds <= 0) return;
+        const seekToStartPosition = () => {
+            audio.currentTime = startPositionSeconds;
+        };
+        audio.addEventListener('loadedmetadata', seekToStartPosition, { once: true });
     }, []);
 
     const togglePlayPause = useCallback(() => {
@@ -149,6 +160,7 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         duration,
         volume,
         loadAndPlayUrl,
+        loadUrlPaused,
         preloadUrl,
         togglePlayPause,
         seek,

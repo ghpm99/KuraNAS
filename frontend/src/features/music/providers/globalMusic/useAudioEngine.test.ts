@@ -391,4 +391,59 @@ describe('useAudioEngine', () => {
         unmount();
         jest.useRealTimers();
     });
+
+    it('loads a url without playing and seeks to the saved position on loadedmetadata', async () => {
+        const { result } = renderHook(() => useAudioEngine(() => {}));
+        await act(async () => {
+            await Promise.resolve();
+        });
+        const audio = getMainAudio();
+        const playSpy = jest.spyOn(audio, 'play');
+
+        act(() => {
+            result.current.loadUrlPaused('http://example.com/saved.mp3', 73);
+        });
+
+        expect(audio.src).toBe('http://example.com/saved.mp3');
+        expect(playSpy).not.toHaveBeenCalled();
+        expect(audio.paused).toBe(true);
+        expect(audio.currentTime).toBe(0);
+        expect(result.current.currentTime).toBe(73);
+
+        act(() => {
+            audio.trigger('loadedmetadata');
+        });
+
+        expect(audio.currentTime).toBe(73);
+        expect(playSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not register a seek when the saved position is zero', async () => {
+        const { result } = renderHook(() => useAudioEngine(() => {}));
+        await act(async () => {
+            await Promise.resolve();
+        });
+        const audio = getMainAudio();
+
+        act(() => {
+            result.current.loadUrlPaused('http://example.com/start.mp3', 0);
+            audio.currentTime = 5;
+            audio.trigger('loadedmetadata');
+        });
+
+        expect(audio.currentTime).toBe(5);
+    });
+
+    it('ignores loadUrlPaused before the audio element exists', () => {
+        const { result } = renderHook(() => useAudioEngine(() => {}));
+        const mountedAudio = getMainAudio();
+        const originalSrc = mountedAudio.src;
+
+        act(() => {
+            result.current.audioRef.current = null;
+            result.current.loadUrlPaused('http://example.com/ignored.mp3', 10);
+        });
+
+        expect(mountedAudio.src).toBe(originalSrc);
+    });
 });

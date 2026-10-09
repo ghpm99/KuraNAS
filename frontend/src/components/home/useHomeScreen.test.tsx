@@ -18,11 +18,7 @@ jest.mock('@/service/analytics', () => ({
 
 jest.mock('@/service/playerState', () => ({
     getPlayerState: jest.fn(() => Promise.resolve({})),
-}));
-
-jest.mock('@/service/playlist', () => ({
-    getNowPlayingPlaylist: jest.fn(() => Promise.resolve({ id: 7 })),
-    getPlaylistTracks: jest.fn(() => Promise.resolve({ items: [] })),
+    getPlayerQueue: jest.fn(() => Promise.resolve({ items: [], current_index: 0 })),
 }));
 
 jest.mock('@/service/videoPlayback', () => ({
@@ -67,8 +63,7 @@ describe('components/home/useHomeScreen', () => {
             .mockReturnValueOnce(buildQueryState({ sections: [] }))
             .mockReturnValueOnce(buildQueryState(null))
             .mockReturnValueOnce(buildQueryState({ current_file_id: null }))
-            .mockReturnValueOnce(buildQueryState({ id: 9 }))
-            .mockReturnValueOnce(buildQueryState({ items: [] }));
+            .mockReturnValueOnce(buildQueryState({ items: [], current_index: 0 }));
 
         renderHook(() => useHomeScreen());
 
@@ -78,8 +73,7 @@ describe('components/home/useHomeScreen', () => {
         const videoCatalogOptions = mockedUseQuery.mock.calls[3][0];
         const videoPlaybackOptions = mockedUseQuery.mock.calls[4][0];
         const playerStateOptions = mockedUseQuery.mock.calls[5][0];
-        const nowPlayingOptions = mockedUseQuery.mock.calls[6][0];
-        const nowPlayingTracksOptions = mockedUseQuery.mock.calls[7][0];
+        const playerQueueOptions = mockedUseQuery.mock.calls[6][0];
 
         expect(analyticsOptions.queryKey).toEqual(['home', 'analytics', '30d']);
         await expect(analyticsOptions.queryFn()).resolves.toEqual({
@@ -103,13 +97,11 @@ describe('components/home/useHomeScreen', () => {
         expect(playerStateOptions.queryKey).toEqual(['home', 'music-player-state']);
         expect(playerStateOptions.retry).toBe(false);
 
-        expect(nowPlayingOptions.queryKey).toEqual(['home', 'music-now-playing']);
-        expect(nowPlayingOptions.retry).toBe(false);
-
-        expect(nowPlayingTracksOptions.queryKey).toEqual(['home', 'music-now-playing-tracks', 9]);
-        expect(nowPlayingTracksOptions.enabled).toBe(true);
-        await expect(nowPlayingTracksOptions.queryFn()).resolves.toEqual({
+        expect(playerQueueOptions.queryKey).toEqual(['home', 'music-player-queue']);
+        expect(playerQueueOptions.retry).toBe(false);
+        await expect(playerQueueOptions.queryFn()).resolves.toEqual({
             items: [],
+            current_index: 0,
         });
     });
 
@@ -162,20 +154,19 @@ describe('components/home/useHomeScreen', () => {
                 })
             )
             .mockReturnValueOnce(buildQueryState({ current_file_id: 99, current_position: 60 }))
-            .mockReturnValueOnce(buildQueryState({ id: 7, track_count: 4 }))
             .mockReturnValueOnce(
                 buildQueryState({
-                    items: [
-                        {
-                            file: {
-                                id: 99,
-                                name: 'Track.mp3',
-                                size: 2048,
-                                updated_at: '2026-03-14T12:00:00Z',
-                                metadata: { title: 'Track', artist: 'Artist', length: 240 },
-                            },
-                        },
-                    ],
+                    items: [4, 99, 5, 6].map((fileId) => ({
+                        file_id: fileId,
+                        name: 'Track.mp3',
+                        path: '/music/Track.mp3',
+                        format: '.mp3',
+                        title: 'Track',
+                        artist: 'Artist',
+                        album: 'Album',
+                        length: 240,
+                    })),
+                    current_index: 1,
                 })
             );
 
@@ -192,14 +183,8 @@ describe('components/home/useHomeScreen', () => {
             progressPercent: 50,
             playlistId: 12,
         });
-        expect(result.current.musicResume).toEqual({
-            track: {
-                id: 99,
-                name: 'Track.mp3',
-                size: 2048,
-                updated_at: '2026-03-14T12:00:00Z',
-                metadata: { title: 'Track', artist: 'Artist', length: 240 },
-            },
+        expect(result.current.musicResume).toMatchObject({
+            track: { id: 99, name: 'Track.mp3', metadata: { title: 'Track', length: 240 } },
             progressSeconds: 60,
             durationSeconds: 240,
             progressPercent: 25,

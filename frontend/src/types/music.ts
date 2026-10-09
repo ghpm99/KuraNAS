@@ -99,3 +99,8 @@ export interface MusicQueue {
     items: MusicQueueEntry[];
     truncated: boolean;
 }
+
+export interface PlayerQueue {
+    items: MusicQueueEntry[];
+    current_index: number;
+}
