@@ -294,13 +294,69 @@ describe('useGlobalSearchProvider', () => {
             expect(fileItem.id).toBe('file-1');
             expect(fileItem.kind).toBe('file');
             expect(fileItem.label).toBe('FILE');
-            expect(fileItem.description).toBe('/path/file');
+            expect(fileItem.description).toBe('/ · 1 B');
             expect(fileItem.meta).toBe('mp4');
 
             act(() => {
                 fileItem.onSelect();
             });
             expect(mockNavigate).toHaveBeenCalledWith('/files/path/file');
+        });
+
+        it('describes files with parent path, size and date and flags starred cold files', () => {
+            mockUseQueryReturn = {
+                data: {
+                    ...mockSearchData,
+                    files: [
+                        {
+                            id: 7,
+                            name: 'report.pdf',
+                            path: '/docs/report.pdf',
+                            parent_path: '/docs',
+                            format: '.pdf',
+                            starred: true,
+                            size: 2048,
+                            updated_at: '2026-03-04T12:00:00Z',
+                            tier: 'cold',
+                        },
+                    ],
+                    folders: [
+                        {
+                            id: 8,
+                            name: 'docs',
+                            path: '/docs',
+                            parent_path: '/',
+                            starred: false,
+                            size: 0,
+                            updated_at: '2026-03-04T12:00:00Z',
+                            tier: 'hot',
+                        },
+                    ],
+                } as unknown as typeof mockSearchData,
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('report');
+            });
+
+            const fileItem = getRequired(
+                result.current.sections.find((s) => s.id === 'files')?.items[0]
+            );
+            expect(fileItem.description).toContain('/docs · 2.00 KB · ');
+            expect(fileItem.description).toMatch(/2026/);
+            expect(fileItem.isStarred).toBe(true);
+            expect(fileItem.isCold).toBe(true);
+
+            const folderItem = getRequired(
+                result.current.sections.find((s) => s.id === 'folders')?.items[0]
+            );
+            expect(folderItem.description).toMatch(/^\/ · .*2026/);
+            expect(folderItem.description).not.toContain(' B');
+            expect(folderItem.isStarred).toBe(false);
+            expect(folderItem.isCold).toBe(false);
         });
 
         it('maps folder results correctly', () => {

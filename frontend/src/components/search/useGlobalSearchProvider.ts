@@ -21,6 +21,8 @@ import {
     buildTrackPlaybackContext,
     formatTrackDuration,
 } from './searchTrackPlayback';
+import { formatSize } from '@/shared/utils/formatSize';
+import { formatShortDate } from '@/shared/utils/formatShortDate';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -41,6 +43,8 @@ export type SearchDialogItem = {
     label: string;
     description: string;
     meta?: string;
+    isStarred?: boolean;
+    isCold?: boolean;
     keepsDialogOpen?: boolean;
     secondaryAction?: { label: string; onSelect: () => void };
     onSelect: () => void;
@@ -75,6 +79,20 @@ const isActionMatchingQuery = (query: string, label: string) => {
     return queryWords.every((queryWord) =>
         labelWords.some((labelWord) => labelWord.startsWith(queryWord))
     );
+};
+
+type FileSystemSearchResult = {
+    path: string;
+    parent_path?: string;
+    size?: number;
+    updated_at?: string;
+};
+
+const buildFileSystemDescription = (item: FileSystemSearchResult, isSizeShown: boolean): string => {
+    const sizeText = isSizeShown && item.size !== undefined ? formatSize(item.size) : '';
+    const dateText = item.updated_at ? formatShortDate(item.updated_at) : '';
+    const location = item.parent_path || item.path;
+    return [location, sizeText, dateText].filter(Boolean).join(' · ');
 };
 
 export const useGlobalSearchProvider = () => {
@@ -282,8 +300,10 @@ export const useGlobalSearchProvider = () => {
             id: `file-${item.id}`,
             kind: 'file',
             label: item.name,
-            description: item.path,
+            description: buildFileSystemDescription(item, true),
             meta: item.format,
+            isStarred: item.starred,
+            isCold: item.tier === 'cold',
             onSelect: () => navigate(getFileSearchRoute(item.path)),
         }));
         if (files.length > 0) {
@@ -329,7 +349,9 @@ export const useGlobalSearchProvider = () => {
             id: `folder-${item.id}`,
             kind: 'folder',
             label: item.name,
-            description: item.path,
+            description: buildFileSystemDescription(item, false),
+            isStarred: item.starred,
+            isCold: item.tier === 'cold',
             onSelect: () => navigate(getFileSearchRoute(item.path)),
         }));
         if (folders.length > 0) {

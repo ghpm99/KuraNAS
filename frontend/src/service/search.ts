@@ -7,6 +7,9 @@ export interface GlobalSearchFileResult {
     parent_path: string;
     format: string;
     starred: boolean;
+    size: number;
+    updated_at: string;
+    tier: 'hot' | 'cold';
 }
 
 export interface GlobalSearchFolderResult {
@@ -15,6 +18,9 @@ export interface GlobalSearchFolderResult {
     path: string;
     parent_path: string;
     starred: boolean;
+    size: number;
+    updated_at: string;
+    tier: 'hot' | 'cold';
 }
 
 export interface GlobalSearchArtistResult {
@@ -49,6 +55,7 @@ export interface GlobalSearchVideoResult {
     path: string;
     parent_path: string;
     format: string;
+    updated_at: string;
 }
 
 export interface GlobalSearchImageResult {
@@ -57,6 +64,7 @@ export interface GlobalSearchImageResult {
     path: string;
     parent_path: string;
     format: string;
+    updated_at: string;
     category: string;
     context: string;
 }

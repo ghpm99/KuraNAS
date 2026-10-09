@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { EllipsisVertical, Star } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import ColdTierIndicator from '@/features/files/coldTierIndicator/coldTierIndicator';
+import ColdTierIndicator from '@/components/coldTierIndicator/coldTierIndicator';
 
 type FileCardProps = {
     title: string;

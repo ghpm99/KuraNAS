@@ -21,7 +21,7 @@ Decisões tomadas na revisão: IA sai do caminho principal e vira ação explíc
 - [x] 06. Faixas de música como grupo próprio (tocar/abrir álbum); mídia fora do grupo "Arquivos"
 - [x] 07. "Ver todos" para cada grupo (fotos, vídeos, música, arquivos)
 - [x] 08. Página completa de resultados de arquivos com filtros (tipo, data, tamanho, tier) e ordenação por relevância
-- [ ] 09. Resultados com tamanho, data, favorito e tier
+- [x] 09. Resultados com tamanho, data, favorito e tier
 - [ ] 10. Insensível a acento e tolerante a erro de digitação
 - [ ] 11. Histórico de buscas recentes e destaque do trecho encontrado
 - [ ] 12. Ações rápidas completas (Lixeira, Downloads, Capturas, Assistente, Notificações, Takeout, Diário, subseções, seções de Configurações)

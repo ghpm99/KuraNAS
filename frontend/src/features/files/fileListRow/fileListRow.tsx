@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { Checkbox, IconButton } from '@mui/material';
 import { EllipsisVertical } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import ColdTierIndicator from '@/features/files/coldTierIndicator/coldTierIndicator';
+import ColdTierIndicator from '@/components/coldTierIndicator/coldTierIndicator';
 import styles from './fileListRow.module.css';
 
 type FileListRowProps = {
