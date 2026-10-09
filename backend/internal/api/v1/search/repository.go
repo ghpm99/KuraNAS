@@ -47,7 +47,7 @@ func (r *Repository) SearchFiles(query string, limit int) ([]FileResultModel, er
 	results := []FileResultModel{}
 	err := r.scanRows(queries.SearchFilesQuery, func(rows *sql.Rows) error {
 		var item FileResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Starred); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Starred, &item.Size, &item.UpdatedAt, &item.IsCold); err != nil {
 			return err
 		}
 		results = append(results, item)
@@ -67,7 +67,7 @@ func (r *Repository) SearchFolders(query string, limit int) ([]FolderResultModel
 	results := []FolderResultModel{}
 	err := r.scanRows(queries.SearchFoldersQuery, func(rows *sql.Rows) error {
 		var item FolderResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Starred); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Starred, &item.Size, &item.UpdatedAt, &item.IsCold); err != nil {
 			return err
 		}
 		results = append(results, item)
@@ -168,7 +168,7 @@ func (r *Repository) SearchVideos(query string, limit int) ([]VideoResultModel, 
 	results := []VideoResultModel{}
 	err := r.scanRows(queries.SearchVideosQuery, func(rows *sql.Rows) error {
 		var item VideoResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.UpdatedAt); err != nil {
 			return err
 		}
 		results = append(results, item)
@@ -188,7 +188,7 @@ func (r *Repository) SearchImages(query string, limit int) ([]ImageResultModel, 
 	results := []ImageResultModel{}
 	err := r.scanRows(queries.SearchImagesQuery, func(rows *sql.Rows) error {
 		var item ImageResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Category, &item.Context); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.UpdatedAt, &item.Category, &item.Context); err != nil {
 			return err
 		}
 		results = append(results, item)

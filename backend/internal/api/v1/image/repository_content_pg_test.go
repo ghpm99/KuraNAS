@@ -3,6 +3,7 @@ package image
 import (
 	"database/sql"
 	"testing"
+	"time"
 
 	searchqueries "nas-go/api/pkg/database/queries/search"
 
@@ -197,7 +198,8 @@ func TestGlobalImageSearchMatchesAIContent_Postgres(t *testing.T) {
 		for rows.Next() {
 			var fileID int
 			var name, path, parentPath, format, category, camera string
-			if scanErr := rows.Scan(&fileID, &name, &path, &parentPath, &format, &category, &camera); scanErr != nil {
+			var updatedAt time.Time
+			if scanErr := rows.Scan(&fileID, &name, &path, &parentPath, &format, &updatedAt, &category, &camera); scanErr != nil {
 				return scanErr
 			}
 			matchedFileIDs = append(matchedFileIDs, fileID)

@@ -4,6 +4,7 @@ SELECT
     hf.path,
     hf.parent_path,
     hf.format,
+    hf.updated_at,
     COALESCE(im.classification_category, ''),
     COALESCE(NULLIF(TRIM(im.model), ''), NULLIF(TRIM(im.make), ''), NULLIF(TRIM(im.artist), ''), '')
 FROM

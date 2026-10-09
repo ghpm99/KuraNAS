@@ -1,5 +1,12 @@
 package search
 
+import "time"
+
+const (
+	TierHot  = "hot"
+	TierCold = "cold"
+)
+
 type GlobalSearchResponseDto struct {
 	Query      string              `json:"query"`
 	Suggestion string              `json:"suggestion,omitempty"`
@@ -14,20 +21,26 @@ type GlobalSearchResponseDto struct {
 }
 
 type FileResultDto struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	ParentPath string `json:"parent_path"`
-	Format     string `json:"format"`
-	Starred    bool   `json:"starred"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	Path       string    `json:"path"`
+	ParentPath string    `json:"parent_path"`
+	Format     string    `json:"format"`
+	Starred    bool      `json:"starred"`
+	Size       int64     `json:"size"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Tier       string    `json:"tier"`
 }
 
 type FolderResultDto struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	ParentPath string `json:"parent_path"`
-	Starred    bool   `json:"starred"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	Path       string    `json:"path"`
+	ParentPath string    `json:"parent_path"`
+	Starred    bool      `json:"starred"`
+	Size       int64     `json:"size"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Tier       string    `json:"tier"`
 }
 
 type ArtistResultDto struct {
@@ -57,21 +70,23 @@ type PlaylistResultDto struct {
 }
 
 type VideoResultDto struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	ParentPath string `json:"parent_path"`
-	Format     string `json:"format"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	Path       string    `json:"path"`
+	ParentPath string    `json:"parent_path"`
+	Format     string    `json:"format"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type ImageResultDto struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	ParentPath string `json:"parent_path"`
-	Format     string `json:"format"`
-	Category   string `json:"category"`
-	Context    string `json:"context"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	Path       string    `json:"path"`
+	ParentPath string    `json:"parent_path"`
+	Format     string    `json:"format"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Category   string    `json:"category"`
+	Context    string    `json:"context"`
 }
 
 type TrackResultDto struct {

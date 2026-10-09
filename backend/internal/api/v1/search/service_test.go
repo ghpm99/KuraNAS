@@ -104,6 +104,8 @@ func TestSearchServiceReturnsEmptyPayloadForBlankQuery(t *testing.T) {
 	}
 }
 
+var serviceUpdatedAt = time.Date(2026, 3, 4, 5, 6, 7, 0, time.UTC)
+
 func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 	recordedLimits := []int{}
 	recordLimit := func(limit int) {
@@ -116,11 +118,11 @@ func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 			if query != "mix" {
 				return nil, nil
 			}
-			return []FileResultModel{{ID: 1, Name: "song.mp3", Path: "/media/song.mp3", ParentPath: "/media", Format: ".mp3", Starred: true}}, nil
+			return []FileResultModel{{ID: 1, Name: "song.mp3", Path: "/media/song.mp3", ParentPath: "/media", Format: ".mp3", Starred: true, Size: 2048, UpdatedAt: serviceUpdatedAt, IsCold: true}}, nil
 		},
 		searchFoldersFn: func(string, int) ([]FolderResultModel, error) {
 			recordLimit(maxSearchLimit)
-			return []FolderResultModel{{ID: 2, Name: "Photos", Path: "/photos", ParentPath: "/", Starred: false}}, nil
+			return []FolderResultModel{{ID: 2, Name: "Photos", Path: "/photos", ParentPath: "/", Starred: false, UpdatedAt: serviceUpdatedAt}}, nil
 		},
 		searchArtistsFn: func(string, int) ([]ArtistResultModel, error) {
 			recordLimit(maxSearchLimit)
@@ -140,11 +142,11 @@ func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 		},
 		searchVideosFn: func(string, int) ([]VideoResultModel, error) {
 			recordLimit(maxSearchLimit)
-			return []VideoResultModel{{ID: 5, Name: "Episode 01", Path: "/videos/episode-01.mkv", ParentPath: "/videos", Format: ".mkv"}}, nil
+			return []VideoResultModel{{ID: 5, Name: "Episode 01", Path: "/videos/episode-01.mkv", ParentPath: "/videos", Format: ".mkv", UpdatedAt: serviceUpdatedAt}}, nil
 		},
 		searchImagesFn: func(string, int) ([]ImageResultModel, error) {
 			recordLimit(maxSearchLimit)
-			return []ImageResultModel{{ID: 6, Name: "Vacation", Path: "/photos/vacation.jpg", ParentPath: "/photos", Format: ".jpg", Category: "photo", Context: "Canon"}}, nil
+			return []ImageResultModel{{ID: 6, Name: "Vacation", Path: "/photos/vacation.jpg", ParentPath: "/photos", Format: ".jpg", UpdatedAt: serviceUpdatedAt, Category: "photo", Context: "Canon"}}, nil
 		},
 	}, nil)
 
@@ -164,6 +166,16 @@ func TestSearchServiceMapsSearchBucketsAndClampsLimit(t *testing.T) {
 	}
 	if response.Images[0].Context != "Canon" || response.Files[0].Starred != true {
 		t.Fatalf("unexpected mapped response: %+v", response)
+	}
+	file := response.Files[0]
+	if file.Size != 2048 || file.Tier != TierCold || !file.UpdatedAt.Equal(serviceUpdatedAt) {
+		t.Fatalf("unexpected file size/tier/date: %+v", file)
+	}
+	if response.Folders[0].Tier != TierHot || !response.Folders[0].UpdatedAt.Equal(serviceUpdatedAt) {
+		t.Fatalf("unexpected folder tier/date: %+v", response.Folders[0])
+	}
+	if !response.Videos[0].UpdatedAt.Equal(serviceUpdatedAt) || !response.Images[0].UpdatedAt.Equal(serviceUpdatedAt) {
+		t.Fatalf("unexpected media dates: %+v %+v", response.Videos[0], response.Images[0])
 	}
 }
 
