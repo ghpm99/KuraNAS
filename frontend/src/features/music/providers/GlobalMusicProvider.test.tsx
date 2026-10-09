@@ -46,11 +46,18 @@ const mockQueueHydration = jest.fn();
 const mockQueuePersistence = jest.fn();
 let mockHasHydrationSettled = false;
 let capturedOnTrackEnded: (() => void) | undefined;
+let capturedOnPlaybackFailure: (() => void) | undefined;
+const mockEnqueueSnackbar = jest.fn();
+
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
+}));
 
 jest.mock('./globalMusic/useAudioEngine', () => ({
     __esModule: true,
-    default: (onTrackEnded: () => void) => {
+    default: (onTrackEnded: () => void, onPlaybackFailure: () => void) => {
         capturedOnTrackEnded = onTrackEnded;
+        capturedOnPlaybackFailure = onPlaybackFailure;
         return engineMock;
     },
 }));
@@ -120,6 +127,7 @@ describe('GlobalMusicProvider', () => {
         jest.useFakeTimers();
         engineMock = linkEnginePositionToAudio(createEngineMock());
         mockSyncState.mockReset();
+        mockEnqueueSnackbar.mockReset();
         mockQueueHydration.mockReset();
         mockQueuePersistence.mockReset();
         mockHasHydrationSettled = false;
@@ -300,6 +308,21 @@ describe('GlobalMusicProvider', () => {
             expect.stringContaining('/music/tracks/8/stream?format=mp3'),
             expect.objectContaining({ durationSeconds: 180 })
         );
+    });
+
+    it('shows an error snackbar when playback keeps failing', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([{ ...createTrack(5), metadata: { title: 'Broken' } as never }], 0);
+        });
+        act(() => {
+            capturedOnPlaybackFailure?.();
+        });
+
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('MUSIC_PLAYBACK_FAILED', {
+            variant: 'error',
+        });
     });
 
     it('does not preload the next track when it needs transcoding', () => {

@@ -1668,6 +1668,7 @@
 	"SHORTCUT_GO_VIDEOS": "Go to Videos",
 	"SHORTCUT_GO_SETTINGS": "Go to Settings",
 	"SHORTCUT_SHOW_HELP": "Show this help",
+	"MUSIC_PLAYBACK_FAILED": "Could not play \"{{title}}\". Playback was paused.",
 	"NOTIFICATIONS_SUBTITLE": "Events and alerts from your server",
 	"NOTIFICATIONS_LOAD_ERROR": "Could not load notifications",
 	"ACTIVITY_DIARY_SUBTITLE": "Track what you do and for how long",

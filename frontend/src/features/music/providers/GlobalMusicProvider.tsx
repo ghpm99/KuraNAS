@@ -12,7 +12,9 @@ import type { MusicPlaybackContext } from '@/features/music/components/playbackC
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';
 import usePlayReporting from './globalMusic/usePlayReporting';
-import { getTrackDurationSeconds } from '@/utils/music';
+import { useSnackbar } from 'notistack';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import { getMusicTitle, getTrackDurationSeconds } from '@/utils/music';
 import {
     buildDirectStreamUrl,
     resolveTrackStreamSource,
@@ -79,6 +81,8 @@ const getShuffledIndex = (queueLength: number, currentIndex: number | undefined)
 
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
     const { settings, isLoading: isLoadingSettings } = useSettings();
+    const { t } = useI18n();
+    const { enqueueSnackbar } = useSnackbar();
     const [queue, setQueue] = useState<QueueTrack[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
     const queueRef = useRef<QueueTrack[]>([]);
@@ -140,7 +144,13 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentIndex, queue, repeatMode, shuffle]);
 
-    const engine = useAudioEngine(handleTrackEnded);
+    const notifyPlaybackFailure = useCallback(() => {
+        const failedTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
+        const title = failedTrack ? getMusicTitle(failedTrack) : '';
+        enqueueSnackbar(t('MUSIC_PLAYBACK_FAILED', { title }), { variant: 'error' });
+    }, [currentIndex, queue, enqueueSnackbar, t]);
+
+    const engine = useAudioEngine(handleTrackEnded, notifyPlaybackFailure);
 
     const { canPlayType, loadAndPlayUrl } = engine;
 
