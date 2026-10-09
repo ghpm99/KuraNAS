@@ -54,10 +54,13 @@ const fileTypeGroups: FileTypeGroup[] = [
     group('audio', 'AUDIO_WAV', 'audio/wav', ['.wav']),
     group('audio', 'AUDIO_AAC', 'audio/aac', ['.aac']),
     group('audio', 'AUDIO_FLAC', 'audio/flac', ['.flac']),
-    group('audio', 'AUDIO_M4A', 'audio/mp4', ['.m4a']),
+    group('audio', 'AUDIO_M4A', 'audio/mp4', ['.m4a', '.alac']),
     group('audio', 'AUDIO_OGG', 'audio/ogg', ['.ogg', '.oga']),
     group('audio', 'AUDIO_OPUS', 'audio/opus', ['.opus']),
     group('audio', 'AUDIO_WMA', 'audio/x-ms-wma', ['.wma']),
+    group('audio', 'AUDIO_AIFF', 'audio/aiff', ['.aiff', '.aif']),
+    group('audio', 'AUDIO_APE', 'audio/x-ape', ['.ape']),
+    group('audio', 'AUDIO_WAVPACK', 'audio/x-wavpack', ['.wv']),
 
     group('video', 'VIDEO_MP4', 'video/mp4', ['.mp4']),
     group('video', 'VIDEO_WEBM', 'video/webm', ['.webm']),
@@ -144,6 +147,10 @@ const unknownFileType: FileTypeInfo = {
 export const getFileTypeInfo = (format: string | undefined): FileTypeInfo =>
     fileTypeByExtension.get((format ?? '').toLowerCase()) ?? unknownFileType;
 
+const audioExtensions = fileTypeGroups
+    .filter((fileTypeGroup) => fileTypeGroup.info.type === 'audio')
+    .flatMap((fileTypeGroup) => fileTypeGroup.extensions);
+
 const dedicatedMediaScreenExtensions = new Set([
     '.jpg',
     '.jpeg',
@@ -168,10 +175,7 @@ const dedicatedMediaScreenExtensions = new Set([
     '.raf',
     '.srw',
     '.pef',
-    '.mp3',
-    '.wav',
-    '.aac',
-    '.flac',
+    ...audioExtensions,
     '.mp4',
     '.avi',
     '.mkv',

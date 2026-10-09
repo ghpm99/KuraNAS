@@ -101,6 +101,13 @@ describe('utils/index', () => {
         ['.ogg', 'audio'],
         ['.opus', 'audio'],
         ['.wma', 'audio'],
+        ['.alac', 'audio'],
+        ['.oga', 'audio'],
+        ['.aiff', 'audio'],
+        ['.aif', 'audio'],
+        ['.ape', 'audio'],
+        ['.wv', 'audio'],
+        ['.ogv', 'video'],
         ['.heic', 'image'],
         ['.heif', 'image'],
         ['.avif', 'image'],
@@ -134,7 +141,8 @@ describe('utils/index', () => {
         expect(hasDedicatedMediaScreen('.MP3')).toBe(true);
         expect(hasDedicatedMediaScreen('.mkv')).toBe(true);
         expect(hasDedicatedMediaScreen('.jpg')).toBe(true);
-        expect(hasDedicatedMediaScreen('.m4a')).toBe(false);
+        expect(hasDedicatedMediaScreen('.m4a')).toBe(true);
+        expect(hasDedicatedMediaScreen('.wv')).toBe(true);
         expect(hasDedicatedMediaScreen('.raw')).toBe(false);
     });
 

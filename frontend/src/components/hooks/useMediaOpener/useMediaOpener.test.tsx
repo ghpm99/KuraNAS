@@ -146,6 +146,7 @@ describe('components/hooks/useMediaOpener', () => {
             [
                 expect.objectContaining({ id: 1 }),
                 expect.objectContaining({ id: 3 }),
+                expect.objectContaining({ id: 5 }),
                 expect.objectContaining({ id: 6 }),
             ],
             1,
@@ -173,7 +174,7 @@ describe('components/hooks/useMediaOpener', () => {
     it('leaves formats without a dedicated screen to the in-place viewer', () => {
         const { result } = renderHook(() => useMediaOpener());
 
-        for (const format of ['.m4a', '.opus', '.m4v', '.md']) {
+        for (const format of ['.m4v', '.md']) {
             expect(result.current.openMediaItem({ id: 1, name: `f${format}`, format })).toBe(false);
         }
         expect(mockNavigate).not.toHaveBeenCalled();
