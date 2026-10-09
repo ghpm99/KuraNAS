@@ -32,7 +32,12 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 15. Favoritos dentro da música, histórico e mais tocadas
 - [x] 16. Coletâneas e álbuns homônimos agrupados corretamente; gênero com acento inicial
 - [x] 17. Transcodificação sob demanda para formatos não suportados
-- [ ] 18. Player: erro sem laço, seek ao soltar, shuffle por permutação, atalhos de teclado, Media Session completa, registro de acesso uma vez por reprodução
+- [x] 18. Player: erro de reprodução não percorre a fila em laço (para após 3 falhas e avisa)
+- [ ] 18.2. Seek aplicado ao soltar o controle (sem dezenas de Range ao arrastar)
+- [ ] 18.3. Embaralhar como permutação com histórico para "anterior"
+- [ ] 18.4. Atalhos de teclado do player
+- [ ] 18.5. Media Session com avançar/voltar 10 s e parar
+- [ ] 18.6. Registro de acesso/log uma vez por reprodução, não a cada Range
 - [ ] 19. Letras no player expandido
 - [ ] 20. Aba "Faixas", busca dentro da Música, código morto e i18n (`Unknown Artist`)
 - [ ] 21. Android: paginação e faixa por id

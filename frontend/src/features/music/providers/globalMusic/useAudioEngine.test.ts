@@ -550,3 +550,82 @@ describe('useAudioEngine', () => {
         });
     });
 });
+
+describe('useAudioEngine consecutive playback failures', () => {
+    let originalAudio: typeof Audio;
+
+    beforeAll(() => {
+        originalAudio = globalThis.Audio;
+        (globalThis as any).Audio = MockAudio;
+    });
+
+    beforeEach(() => {
+        MockAudio.reset();
+    });
+
+    afterAll(() => {
+        globalThis.Audio = originalAudio;
+    });
+
+    const failTrack = (engine: { loadAndPlayUrl: (url: string) => void }, url: string) => {
+        act(() => {
+            engine.loadAndPlayUrl(url);
+        });
+        act(() => {
+            getMainAudio().trigger('error');
+        });
+    };
+
+    it('does not crash when no failure callback is provided', () => {
+        const { result } = renderHook(() => useAudioEngine(() => {}));
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            failTrack(result.current, `http://example.com/${attempt}.mp3`);
+        }
+        expect(getMainAudio().src).toBe('http://example.com/3.mp3');
+    });
+
+    it('stops advancing and reports failure after three consecutive errors', () => {
+        const onTrackEnded = jest.fn();
+        const onPlaybackFailure = jest.fn();
+        const { result } = renderHook(() => useAudioEngine(onTrackEnded, onPlaybackFailure));
+
+        failTrack(result.current, 'http://example.com/1.mp3');
+        failTrack(result.current, 'http://example.com/2.mp3');
+        expect(onTrackEnded).toHaveBeenCalledTimes(2);
+        expect(onPlaybackFailure).not.toHaveBeenCalled();
+
+        failTrack(result.current, 'http://example.com/3.mp3');
+
+        expect(onTrackEnded).toHaveBeenCalledTimes(2);
+        expect(onPlaybackFailure).toHaveBeenCalledTimes(1);
+        expect(getMainAudio().paused).toBe(true);
+    });
+
+    it('resets the failure counter when a track starts playing', () => {
+        const onTrackEnded = jest.fn();
+        const onPlaybackFailure = jest.fn();
+        const { result } = renderHook(() => useAudioEngine(onTrackEnded, onPlaybackFailure));
+
+        failTrack(result.current, 'http://example.com/1.mp3');
+        failTrack(result.current, 'http://example.com/2.mp3');
+        act(() => {
+            getMainAudio().trigger('playing');
+        });
+        failTrack(result.current, 'http://example.com/3.mp3');
+        failTrack(result.current, 'http://example.com/4.mp3');
+
+        expect(onPlaybackFailure).not.toHaveBeenCalled();
+        expect(onTrackEnded).toHaveBeenCalledTimes(4);
+    });
+
+    it('allows three more attempts after a failure was reported', () => {
+        const onPlaybackFailure = jest.fn();
+        const { result } = renderHook(() => useAudioEngine(() => {}, onPlaybackFailure));
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            failTrack(result.current, `http://example.com/${attempt}.mp3`);
+        }
+
+        expect(onPlaybackFailure).toHaveBeenCalledTimes(1);
+    });
+});

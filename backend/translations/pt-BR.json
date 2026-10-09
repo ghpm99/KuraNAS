@@ -1668,6 +1668,7 @@
 	"SHORTCUT_GO_VIDEOS": "Ir para Vídeos",
 	"SHORTCUT_GO_SETTINGS": "Ir para Configurações",
 	"SHORTCUT_SHOW_HELP": "Mostrar esta ajuda",
+	"MUSIC_PLAYBACK_FAILED": "Não foi possível tocar \"{{title}}\". A reprodução foi pausada.",
 	"NOTIFICATIONS_SUBTITLE": "Eventos e alertas do seu servidor",
 	"NOTIFICATIONS_LOAD_ERROR": "Não foi possível carregar as notificações",
 	"ACTIVITY_DIARY_SUBTITLE": "Acompanhe o que você faz e por quanto tempo",

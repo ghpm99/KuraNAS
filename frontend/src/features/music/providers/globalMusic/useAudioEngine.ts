@@ -25,7 +25,12 @@ export interface AudioEngine extends AudioEngineState {
     volume: number;
 }
 
-export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
+export const MAX_CONSECUTIVE_PLAYBACK_FAILURES = 3;
+
+export default function useAudioEngine(
+    onTrackEnded: () => void,
+    onPlaybackFailure: () => void = () => undefined
+): AudioEngine {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -34,13 +39,19 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
     const onTrackEndedRef = useRef(onTrackEnded);
+    const onPlaybackFailureRef = useRef(onPlaybackFailure);
     const endedHandledRef = useRef(false);
+    const consecutiveFailuresRef = useRef(0);
     const transcodedStreamRef = useRef<TranscodedStream | null>(null);
     const positionOffsetRef = useRef(0);
 
     useEffect(() => {
         onTrackEndedRef.current = onTrackEnded;
     }, [onTrackEnded]);
+
+    useEffect(() => {
+        onPlaybackFailureRef.current = onPlaybackFailure;
+    }, [onPlaybackFailure]);
 
     useEffect(() => {
         const audio = new Audio();
@@ -67,6 +78,9 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         };
         const onPause = () => setIsPlaying(false);
         const onPlay = () => setIsPlaying(true);
+        const onPlaying = () => {
+            consecutiveFailuresRef.current = 0;
+        };
         const onError = () => {
             const failedTranscode = transcodedStreamRef.current;
             if (failedTranscode) {
@@ -76,10 +90,16 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
                 audio.play().catch(() => {});
                 return;
             }
-            if (audio.src && !endedHandledRef.current) {
-                endedHandledRef.current = true;
-                onTrackEndedRef.current();
+            if (!audio.src || endedHandledRef.current) return;
+            endedHandledRef.current = true;
+            consecutiveFailuresRef.current += 1;
+            if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_PLAYBACK_FAILURES) {
+                consecutiveFailuresRef.current = 0;
+                audio.pause();
+                onPlaybackFailureRef.current();
+                return;
             }
+            onTrackEndedRef.current();
         };
 
         audio.addEventListener('timeupdate', onTimeUpdate);
@@ -87,6 +107,7 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
         audio.addEventListener('ended', onEnded);
         audio.addEventListener('pause', onPause);
         audio.addEventListener('play', onPlay);
+        audio.addEventListener('playing', onPlaying);
         audio.addEventListener('error', onError);
 
         const fallbackInterval = setInterval(() => {
@@ -105,6 +126,7 @@ export default function useAudioEngine(onTrackEnded: () => void): AudioEngine {
             audio.removeEventListener('ended', onEnded);
             audio.removeEventListener('pause', onPause);
             audio.removeEventListener('play', onPlay);
+            audio.removeEventListener('playing', onPlaying);
             audio.removeEventListener('error', onError);
             audio.pause();
             audio.src = '';
