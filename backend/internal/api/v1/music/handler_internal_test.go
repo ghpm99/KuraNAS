@@ -68,6 +68,9 @@ func (m *musicHandlerServiceMock) GetHomeCatalog(clientID string, limit int) (Mu
 func (m *musicHandlerServiceMock) GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
 }
+func (m *musicHandlerServiceMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
+}
 func (m *musicHandlerServiceMock) GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	return utils.PaginationResponse[MusicArtistGroupDto]{Items: []MusicArtistGroupDto{{Key: "artist", Artist: "Artist"}}}, nil
 }
@@ -164,6 +167,9 @@ func (m *musicHandlerErrServiceMock) GetHomeCatalog(clientID string, limit int) 
 func (m *musicHandlerErrServiceMock) GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{}, errors.New("library tracks error")
 }
+func (m *musicHandlerErrServiceMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	return utils.PaginationResponse[files.FileDto]{}, errors.New("search library tracks error")
+}
 func (m *musicHandlerErrServiceMock) GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	return utils.PaginationResponse[MusicArtistGroupDto]{}, errors.New("library artists error")
 }
@@ -247,6 +253,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
 	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
+	router.GET("/music/search", handler.SearchLibraryTracksHandler)
 	router.GET("/files/music", handler.GetMusicHandler)
 	router.GET("/files/music/artists", handler.GetMusicArtistsHandler)
 	router.GET("/files/music/artists/:name", handler.GetMusicByArtistHandler)
@@ -283,6 +290,7 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/music/player-state", "", http.StatusOK},
 		{http.MethodPut, "/music/player-state", `{"volume":0.5}`, http.StatusOK},
 		{http.MethodGet, "/music/library/folders/root/tracks?page=2&page_size=25", "", http.StatusOK},
+		{http.MethodGet, "/music/search?q=queen&page=1&page_size=25", "", http.StatusOK},
 		{http.MethodGet, "/music/playlists/404", "", http.StatusNotFound},
 		{http.MethodPost, "/music/playlists", `{}`, http.StatusBadRequest},
 	}
@@ -319,6 +327,7 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 	router.GET("/music/player-state", handler.GetPlayerStateHandler)
 	router.PUT("/music/player-state", handler.UpdatePlayerStateHandler)
 	router.GET("/music/library/folders/:key/tracks", handler.GetLibraryTracksByFolderHandler)
+	router.GET("/music/search", handler.SearchLibraryTracksHandler)
 	router.GET("/files/music", handler.GetMusicHandler)
 	router.GET("/files/music/artists", handler.GetMusicArtistsHandler)
 	router.GET("/files/music/artists/:name", handler.GetMusicByArtistHandler)
@@ -354,6 +363,7 @@ func TestMusicHandlerErrorResponses(t *testing.T) {
 		{http.MethodGet, "/music/player-state", "", http.StatusNotFound},
 		{http.MethodPut, "/music/player-state", `{"volume":0.5}`, http.StatusInternalServerError},
 		{http.MethodGet, "/music/library/folders/root/tracks", "", http.StatusInternalServerError},
+		{http.MethodGet, "/music/search?q=queen", "", http.StatusInternalServerError},
 		{http.MethodPut, "/music/player-state", `{`, http.StatusBadRequest},
 		{http.MethodPost, "/music/playlists", `{}`, http.StatusBadRequest},
 		{http.MethodPut, "/music/playlists/1/tracks/reorder", `{}`, http.StatusBadRequest},
