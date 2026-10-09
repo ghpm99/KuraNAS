@@ -5,6 +5,7 @@ import { useMusic } from '@/features/music/providers/musicProvider/musicProvider
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import TrackListItem from '@/features/music/components/TrackListItem';
+import { shuffleItems } from '@/utils/shuffleItems';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useState } from 'react';
 
@@ -24,8 +25,7 @@ const AllTracksView = () => {
 
     const handleShuffleAll = () => {
         if (music.length > 0) {
-            const shuffled = [...music].sort(() => Math.random() - 0.5);
-            replaceQueue(shuffled, 0, playbackContext);
+            replaceQueue(shuffleItems(music), 0, playbackContext);
         }
     };
 

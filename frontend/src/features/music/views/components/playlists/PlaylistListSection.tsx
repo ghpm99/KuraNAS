@@ -15,7 +15,8 @@ import { createPlaylistPlaybackContext } from '@/features/music/components/playb
 import { Playlist } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { getPlaylistTracks } from '@/service/playlist';
+import { getPlaylistQueue } from '@/service/playlist';
+import { queueToTracks } from '@/features/music/components/musicQueueTracks';
 
 type PlaylistListSectionProps = {
     playlists: Playlist[];
@@ -53,8 +54,7 @@ export default function PlaylistListSection({
 
     const handlePlayPlaylist = async (e: React.MouseEvent, playlist: Playlist) => {
         e.stopPropagation();
-        const data = await getPlaylistTracks(playlist.id, 1, 200);
-        const tracks = data.items.map((item) => item.file);
+        const tracks = queueToTracks(await getPlaylistQueue(playlist.id));
         if (tracks.length > 0) replaceQueue(tracks, 0, createPlaylistPlaybackContext(playlist));
     };
 
