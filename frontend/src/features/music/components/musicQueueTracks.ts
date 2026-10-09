@@ -26,7 +26,7 @@ export const queueEntryToTrack = (entry: MusicQueueEntry): IMusicData => ({
     },
 });
 
-export const queueToTracks = (queue: MusicQueue | undefined): IMusicData[] =>
+export const queueToTracks = (queue: Partial<MusicQueue> | undefined): IMusicData[] =>
     (queue?.items ?? []).map(queueEntryToTrack);
 
 export const findStartIndex = (tracks: IMusicData[], trackId?: number) =>

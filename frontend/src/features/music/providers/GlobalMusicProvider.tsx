@@ -7,8 +7,8 @@ import useAudioEngine from './globalMusic/useAudioEngine';
 import useMediaSession from './globalMusic/useMediaSession';
 import useMusicStateSync from './globalMusic/useMusicStateSync';
 import useMusicQueueHydration from './globalMusic/useMusicQueueHydration';
-
-type RepeatMode = 'none' | 'all' | 'one';
+import useMusicQueuePersistence from './globalMusic/useMusicQueuePersistence';
+import type { RepeatMode } from './globalMusic/repeatMode';
 
 const RESTART_THRESHOLD_SECONDS = 3;
 
@@ -70,7 +70,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
 
-    // --- Audio engine ---
     const handleTrackEnded = useCallback(() => {
         if (repeatMode === 'one') {
             if (engine.audioRef.current) {
@@ -113,7 +112,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const engine = useAudioEngine(handleTrackEnded);
 
-    // --- Backend sync ---
     const { syncState } = useMusicStateSync({
         getCurrentTrackId: () => currentTrack?.id,
         getCurrentTime: () => engine.audioRef.current?.currentTime ?? 0,
@@ -123,18 +121,32 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         playbackContext,
     });
 
-    // --- Queue hydration ---
+    const { loadUrlPaused, setVolume: setEngineVolume } = engine;
     const hydrationCallbacks = useMemo(
-        () => ({ setQueue, setCurrentIndex, setPlaybackContext }),
-        []
+        () => ({
+            setQueue,
+            setCurrentIndex,
+            setShuffle,
+            setRepeatMode,
+            setVolume: setEngineVolume,
+            loadPausedTrack: (trackId: number, startPositionSeconds: number) =>
+                loadUrlPaused(buildStreamUrl(trackId), startPositionSeconds),
+        }),
+        [loadUrlPaused, setEngineVolume]
     );
 
-    useMusicQueueHydration(
-        !isLoadingSettings && settings.players.remember_music_queue,
+    const isRememberQueueEnabled = !isLoadingSettings && settings.players.remember_music_queue;
+    const { hasSettled: hasHydrationSettled } = useMusicQueueHydration(
+        isRememberQueueEnabled,
         hydrationCallbacks
     );
 
-    // --- Queue operations ---
+    useMusicQueuePersistence({
+        isEnabled: isRememberQueueEnabled && hasHydrationSettled,
+        queue,
+        currentIndex,
+    });
+
     const loadAndPlay = useCallback(
         (index: number) => {
             if (index < 0 || index >= queue.length) return;
@@ -266,7 +278,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         setQueueOpen((prev) => !prev);
     }, []);
 
-    // --- Preload next track for gapless background playback ---
     useEffect(() => {
         if (currentIndex === undefined || queue.length === 0 || shuffle) return;
         let nextIndex: number;
@@ -285,7 +296,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         }
     }, [currentIndex, queue, shuffle, repeatMode, engine]);
 
-    // --- Media session & wake lock ---
     useMediaSession({
         currentTrack,
         isPlaying: engine.isPlaying,
@@ -298,7 +308,6 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         duration: engine.duration,
     });
 
-    // Sync settings changes to backend
     useEffect(() => {
         syncState();
     }, [shuffle, repeatMode, playbackContext, syncState]);

@@ -6,7 +6,12 @@ jest.mock('./index', () => ({
 }));
 
 import { apiBase } from './index';
-import { getPlayerState, updatePlayerState } from './playerState';
+import {
+    getPlayerQueue,
+    getPlayerState,
+    replacePlayerQueue,
+    updatePlayerState,
+} from './playerState';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
@@ -35,6 +40,14 @@ describe('service/playerState', () => {
             payload: { current_position: 10, volume: 0.7 },
             response: { id: 1, current_position: 10, volume: 0.7 },
         },
+        {
+            name: 'gets the saved player queue',
+            fn: () => getPlayerQueue(),
+            method: 'get' as const,
+            url: '/music/player-state/queue',
+            payload: undefined,
+            response: { items: [], current_index: 0 },
+        },
     ])('$name', async ({ fn, method, url, payload, response }) => {
         mockedApi[method].mockResolvedValue({ data: response });
 
@@ -46,5 +59,18 @@ describe('service/playerState', () => {
             expect(mockedApi[method]).toHaveBeenCalledWith(url);
         }
         expect(result).toEqual(response);
+    });
+
+    it('replaces the saved player queue', async () => {
+        mockedApi.put.mockResolvedValue({ data: undefined });
+
+        await expect(
+            replacePlayerQueue({ file_ids: [1, 2], current_index: 1 })
+        ).resolves.toBeUndefined();
+
+        expect(mockedApi.put).toHaveBeenCalledWith('/music/player-state/queue', {
+            file_ids: [1, 2],
+            current_index: 1,
+        });
     });
 });

@@ -18,6 +18,7 @@ const createEngineMock = () => ({
         } as { currentTime: number; play: jest.Mock } | null,
     },
     loadAndPlayUrl: jest.fn(),
+    loadUrlPaused: jest.fn(),
     preloadUrl: jest.fn(),
     togglePlayPause: jest.fn(),
     seek: jest.fn(),
@@ -32,6 +33,8 @@ const createEngineMock = () => ({
 let engineMock = createEngineMock();
 const mockSyncState = jest.fn();
 const mockQueueHydration = jest.fn();
+const mockQueuePersistence = jest.fn();
+let mockHasHydrationSettled = false;
 let capturedOnTrackEnded: (() => void) | undefined;
 
 jest.mock('./globalMusic/useAudioEngine', () => ({
@@ -58,7 +61,15 @@ jest.mock('./globalMusic/useMusicStateSync', () => ({
 
 jest.mock('./globalMusic/useMusicQueueHydration', () => ({
     __esModule: true,
-    default: (enabled: boolean, callbacks: unknown) => mockQueueHydration(enabled, callbacks),
+    default: (enabled: boolean, callbacks: unknown) => {
+        mockQueueHydration(enabled, callbacks);
+        return { hasSettled: mockHasHydrationSettled };
+    },
+}));
+
+jest.mock('./globalMusic/useMusicQueuePersistence', () => ({
+    __esModule: true,
+    default: (params: unknown) => mockQueuePersistence(params),
 }));
 
 jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
@@ -100,10 +111,52 @@ describe('GlobalMusicProvider', () => {
         engineMock = createEngineMock();
         mockSyncState.mockReset();
         mockQueueHydration.mockReset();
+        mockQueuePersistence.mockReset();
+        mockHasHydrationSettled = false;
     });
 
     afterEach(() => {
         jest.useRealTimers();
+    });
+
+    it('restores the saved player through the hydration callbacks without autoplay', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const [isHydrationEnabled, hydrationCallbacks] = mockQueueHydration.mock.calls[0];
+
+        act(() => {
+            hydrationCallbacks.setQueue([createTrack(4), createTrack(5)]);
+            hydrationCallbacks.setCurrentIndex(1);
+            hydrationCallbacks.setShuffle(true);
+            hydrationCallbacks.setRepeatMode('all');
+            hydrationCallbacks.setVolume(0.3);
+            hydrationCallbacks.loadPausedTrack(5, 12);
+        });
+
+        expect(isHydrationEnabled).toBe(true);
+        expect(result.current.queue).toHaveLength(2);
+        expect(result.current.currentIndex).toBe(1);
+        expect(result.current.shuffle).toBe(true);
+        expect(result.current.repeatMode).toBe('all');
+        expect(engineMock.setVolume).toHaveBeenCalledWith(0.3);
+        expect(engineMock.loadUrlPaused).toHaveBeenCalledWith(
+            expect.stringContaining('/files/stream/5'),
+            12
+        );
+        expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
+    });
+
+    it('persists the queue only after hydration settled', () => {
+        const { rerender } = renderHook(() => useGlobalMusic(), { wrapper });
+        expect(mockQueuePersistence).toHaveBeenLastCalledWith(
+            expect.objectContaining({ isEnabled: false })
+        );
+
+        mockHasHydrationSettled = true;
+        rerender();
+
+        expect(mockQueuePersistence).toHaveBeenLastCalledWith(
+            expect.objectContaining({ isEnabled: true, queue: [], currentIndex: undefined })
+        );
     });
 
     it('manages queue operations and shuffle/previous flows', () => {
