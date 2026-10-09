@@ -70,8 +70,7 @@ const typeAndSettle = async (text: string) => {
     await advance(0);
 };
 
-const searchCalls = () =>
-    mockedApi.get.mock.calls.filter(([url]) => url === '/search/global');
+const searchCalls = () => mockedApi.get.mock.calls.filter(([url]) => url === '/search/global');
 
 describe('components/search/GlobalSearchProvider resilience', () => {
     beforeEach(() => {
@@ -136,14 +135,14 @@ describe('components/search/GlobalSearchProvider resilience', () => {
         renderProvider();
         openSearch();
         await typeAndSettle('trip');
-        expect(screen.getByText('trip.jpg')).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /trip\s*\.jpg/ })).toBeInTheDocument();
         expect(screen.queryByText('GLOBAL_SEARCH_UPDATING')).not.toBeInTheDocument();
 
         mockedApi.get.mockImplementation(() => new Promise(() => undefined));
         typeQuery('trips');
         await advance(250);
 
-        expect(screen.getByText('trip.jpg')).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /trip\s*\.jpg/ })).toBeInTheDocument();
         expect(screen.getByText('GLOBAL_SEARCH_UPDATING')).toBeInTheDocument();
         expect(screen.queryByText('GLOBAL_SEARCH_EMPTY_TITLE')).not.toBeInTheDocument();
     });
@@ -166,7 +165,7 @@ describe('components/search/GlobalSearchProvider resilience', () => {
         fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
         await advance(0);
 
-        expect(screen.getByText('trip.jpg')).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /trip\s*\.jpg/ })).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(searchCalls()).toHaveLength(2);
     });

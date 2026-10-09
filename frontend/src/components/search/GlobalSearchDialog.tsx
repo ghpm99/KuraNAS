@@ -1,5 +1,23 @@
-import { CircularProgress, Dialog, DialogContent, InputBase, useMediaQuery, useTheme } from '@mui/material';
-import { Aperture, ArrowRightLeft, Folder, Image, Music2, Search, Star, Video } from 'lucide-react';
+import {
+    CircularProgress,
+    Dialog,
+    DialogContent,
+    InputBase,
+    useMediaQuery,
+    useTheme,
+} from '@mui/material';
+import {
+    Aperture,
+    ArrowRightLeft,
+    Folder,
+    History,
+    Image,
+    Music2,
+    Search,
+    Star,
+    Video,
+    X,
+} from 'lucide-react';
 import ColdTierIndicator from '@/components/coldTierIndicator/coldTierIndicator';
 import ErrorState from '@/components/errorState/errorState';
 import type {
@@ -7,6 +25,7 @@ import type {
     SearchDialogSection,
     SearchItemKind,
 } from './useGlobalSearchProvider';
+import HighlightedText from './HighlightedText';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import styles from './GlobalSearchDialog.module.css';
 
@@ -20,6 +39,11 @@ interface GlobalSearchDialogProps {
     searchErrorMessage?: string;
     onRetry?: () => void;
     suggestion?: string;
+    isFuzzyResult?: boolean;
+    recentSearches?: string[];
+    onRecentSearchSelect?: (recentQuery: string) => void;
+    onRecentSearchRemove?: (recentQuery: string) => void;
+    onRecentSearchesClear?: () => void;
     activeItemId: string;
     shortcut: string;
     showEmptyState: boolean;
@@ -66,6 +90,11 @@ const GlobalSearchDialog = ({
     searchErrorMessage = '',
     onRetry,
     suggestion = '',
+    isFuzzyResult = false,
+    recentSearches = [],
+    onRecentSearchSelect,
+    onRecentSearchRemove,
+    onRecentSearchesClear,
     activeItemId,
     shortcut,
     showEmptyState,
@@ -80,6 +109,9 @@ const GlobalSearchDialog = ({
     const theme = useTheme();
     const isPhoneViewport = useMediaQuery(theme.breakpoints.down('sm'));
     const hasOptions = sections.some((section) => section.items.length > 0);
+    const renderHighlighted = (item: SearchDialogItem, text: string) =>
+        item.kind === 'action' ? text : <HighlightedText text={text} query={query} />;
+    const hasRecentSearches = query.trim() === '' && recentSearches.length > 0;
     const activeOptionId = activeItemId ? buildOptionId(activeItemId) : undefined;
 
     return (
@@ -136,6 +168,49 @@ const GlobalSearchDialog = ({
                             <p>{suggestion}</p>
                         </div>
                     ) : null}
+                    {isFuzzyResult ? (
+                        <div className={styles.fuzzyNotice} role="status">
+                            {t('GLOBAL_SEARCH_FUZZY_NOTICE')}
+                        </div>
+                    ) : null}
+                    {hasRecentSearches ? (
+                        <div className={styles.section}>
+                            <div className={styles.recentHeader}>
+                                <span className={styles.sectionTitle}>
+                                    {t('GLOBAL_SEARCH_SECTION_RECENT')}
+                                </span>
+                                <button
+                                    type="button"
+                                    className={styles.recentClear}
+                                    onClick={() => onRecentSearchesClear?.()}
+                                >
+                                    {t('GLOBAL_SEARCH_RECENT_CLEAR')}
+                                </button>
+                            </div>
+                            {recentSearches.map((recentQuery) => (
+                                <div key={recentQuery} className={styles.recentRow}>
+                                    <button
+                                        type="button"
+                                        className={styles.recentQuery}
+                                        onClick={() => onRecentSearchSelect?.(recentQuery)}
+                                    >
+                                        <History size={16} />
+                                        <span>{recentQuery}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.recentRemove}
+                                        aria-label={t('GLOBAL_SEARCH_RECENT_REMOVE', {
+                                            query: recentQuery,
+                                        })}
+                                        onClick={() => onRecentSearchRemove?.(recentQuery)}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
                     <div id={listboxId} role="listbox" aria-label={t('GLOBAL_SEARCH_OPEN')}>
                         {sections.map((section) => (
                             <div
@@ -170,10 +245,12 @@ const GlobalSearchDialog = ({
                                                 {getItemIcon(item.kind)}
                                             </span>
                                             <span className={styles.itemBody}>
-                                                <span className={styles.itemLabel}>{item.label}</span>
+                                                <span className={styles.itemLabel}>
+                                                    {renderHighlighted(item, item.label)}
+                                                </span>
                                                 <span className={styles.itemDescriptionRow}>
                                                     <span className={styles.itemDescription}>
-                                                        {item.description}
+                                                        {renderHighlighted(item, item.description)}
                                                     </span>
                                                     {item.isStarred ? (
                                                         <span

@@ -25,6 +25,12 @@ import { formatSize } from '@/shared/utils/formatSize';
 import { formatShortDate } from '@/shared/utils/formatShortDate';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
+import {
+    addSearchHistoryEntry,
+    clearSearchHistory,
+    readSearchHistory,
+    removeSearchHistoryEntry,
+} from './searchHistoryStorage';
 
 export type SearchItemKind =
     | 'action'
@@ -105,6 +111,7 @@ export const useGlobalSearchProvider = () => {
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [aiRequestedQuery, setAiRequestedQuery] = useState('');
+    const [recentSearches, setRecentSearches] = useState<string[]>(readSearchHistory);
     const debouncedQuery = useDebouncedValue(query, searchDebounceMs);
     const normalizedQuery = debouncedQuery.trim();
     const isDebouncing = query.trim() !== normalizedQuery;
@@ -261,6 +268,7 @@ export const useGlobalSearchProvider = () => {
         ? (extractBackendErrorMessage(searchError) ?? '')
         : '';
     const suggestion = aiData?.suggestion ?? '';
+    const isFuzzyResult = Boolean(baseData?.fuzzy) && !aiData;
     const canOfferAiSearch =
         Boolean(baseData) &&
         !aiData &&
@@ -533,7 +541,16 @@ export const useGlobalSearchProvider = () => {
 
         appendActionsSection();
         return nextSections;
-    }, [canOfferAiSearch, currentRoute, data, navigate, normalizedQuery, quickActions, replaceQueue, t]);
+    }, [
+        canOfferAiSearch,
+        currentRoute,
+        data,
+        navigate,
+        normalizedQuery,
+        quickActions,
+        replaceQueue,
+        t,
+    ]);
 
     const flattenedItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
     const activeItemId = flattenedItems[activeIndex]?.id ?? '';
@@ -566,7 +583,25 @@ export const useGlobalSearchProvider = () => {
         setQuery(value);
     };
 
+    const rememberCurrentQuery = () => {
+        setRecentSearches((current) => addSearchHistoryEntry(current, query));
+    };
+
+    const rerunRecentSearch = (recentQuery: string) => {
+        setActiveIndex(0);
+        setQuery(recentQuery);
+    };
+
+    const forgetRecentSearch = (recentQuery: string) => {
+        setRecentSearches((current) => removeSearchHistoryEntry(current, recentQuery));
+    };
+
+    const clearRecentSearches = () => {
+        setRecentSearches(clearSearchHistory());
+    };
+
     const activateItem = (item: SearchDialogItem) => {
+        rememberCurrentQuery();
         item.onSelect();
         if (!item.keepsDialogOpen) {
             closeSearch();
@@ -584,6 +619,10 @@ export const useGlobalSearchProvider = () => {
     const handleInputKeyDown = (
         event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
+        if (event.key === 'Enter') {
+            rememberCurrentQuery();
+        }
+
         if (flattenedItems.length === 0) {
             return;
         }
@@ -626,6 +665,11 @@ export const useGlobalSearchProvider = () => {
         searchErrorMessage,
         retrySearch,
         suggestion,
+        isFuzzyResult,
+        recentSearches,
+        rerunRecentSearch,
+        forgetRecentSearch,
+        clearRecentSearches,
         activeItemId,
         shortcut,
         showEmptyState:

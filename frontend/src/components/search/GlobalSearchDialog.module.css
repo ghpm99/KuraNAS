@@ -264,3 +264,61 @@
 .itemSecondaryAction:hover {
     background-color: rgba(var(--app-color-ink-rgb), 0.1);
 }
+
+.fuzzyNotice {
+    padding: var(--app-spacing-2) var(--app-spacing-3);
+    border-radius: var(--app-radius-md);
+    border: 1px solid var(--app-color-warning);
+    color: var(--app-color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.recentHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.recentClear,
+.recentQuery,
+.recentRemove {
+    border: none;
+    background: transparent;
+    color: var(--app-color-text-secondary);
+    cursor: pointer;
+    font: inherit;
+}
+
+.recentClear {
+    font-size: 0.75rem;
+    padding: 0 var(--app-spacing-2);
+}
+
+.recentRow {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.recentQuery {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--app-spacing-2);
+    min-width: 0;
+    padding: var(--app-spacing-2) var(--app-spacing-3);
+    border-radius: var(--app-radius-md);
+    text-align: left;
+}
+
+.recentQuery:hover,
+.recentRemove:hover,
+.recentClear:hover {
+    background-color: rgba(var(--app-color-ink-rgb), 0.06);
+}
+
+.recentRemove {
+    display: inline-flex;
+    padding: var(--app-spacing-2);
+    border-radius: var(--app-radius-pill);
+}

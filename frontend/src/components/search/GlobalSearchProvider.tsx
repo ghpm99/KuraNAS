@@ -14,6 +14,11 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         searchErrorMessage,
         retrySearch,
         suggestion,
+        isFuzzyResult,
+        recentSearches,
+        rerunRecentSearch,
+        forgetRecentSearch,
+        clearRecentSearches,
         activeItemId,
         shortcut,
         showEmptyState,
@@ -41,6 +46,11 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                 searchErrorMessage={searchErrorMessage}
                 onRetry={retrySearch}
                 suggestion={suggestion}
+                isFuzzyResult={isFuzzyResult}
+                recentSearches={recentSearches}
+                onRecentSearchSelect={rerunRecentSearch}
+                onRecentSearchRemove={forgetRecentSearch}
+                onRecentSearchesClear={clearRecentSearches}
                 activeItemId={activeItemId}
                 shortcut={shortcut}
                 showEmptyState={showEmptyState}
