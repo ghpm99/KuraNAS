@@ -26,6 +26,7 @@ const AlbumsView = lazy(() => import('@/features/music/views/AlbumsView'));
 const ArtistsView = lazy(() => import('@/features/music/views/ArtistsView'));
 const FoldersView = lazy(() => import('@/features/music/views/FoldersView'));
 const GenresView = lazy(() => import('@/features/music/views/GenresView'));
+const SearchView = lazy(() => import('@/features/music/views/SearchView'));
 const PlaylistsView = lazy(() => import('@/features/music/views/PlaylistsView'));
 const VideosPage = lazy(() => import('@/pages/videos/videos'));
 const AssistantPage = lazy(() => import('@/pages/assistant'));
@@ -77,6 +78,7 @@ function AppContent() {
                     <Route path={`${appRoutes.images}/*`} element={<ImagesPage />} />
                     <Route path={`${appRoutes.music}/*`} element={<MusicPage />}>
                         <Route index element={<MusicHomeScreen />} />
+                        <Route path="search" element={<SearchView />} />
                         <Route path="playlists" element={<PlaylistsView />} />
                         <Route path="artists" element={<ArtistsView />} />
                         <Route path="albums" element={<AlbumsView />} />

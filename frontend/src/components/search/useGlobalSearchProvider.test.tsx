@@ -331,8 +331,10 @@ describe('useGlobalSearchProvider', () => {
                 result.current.setQuery('  relatório 2024 ');
             });
 
-            const seeAllSection = result.current.sections.find((s) => s.id === 'files-see-all');
-            const seeAllItem = getRequired(seeAllSection?.items[0]);
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            const seeAllItem = getRequired(
+                seeAllSection?.items.find((item) => item.id === 'files-see-all-results')
+            );
             expect(seeAllItem.label).toBe('GLOBAL_SEARCH_SEE_ALL_FILES');
 
             act(() => {
@@ -342,6 +344,64 @@ describe('useGlobalSearchProvider', () => {
                 pathname: '/files',
                 search: '?q=relat%C3%B3rio+2024',
             });
+        });
+
+        it('adds a see-all action per media group that navigates to its library search', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('  Paris 2024 ');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(seeAllSection?.items.map((item) => item.id)).toEqual([
+                'files-see-all-results',
+                'images-see-all-results',
+                'videos-see-all-results',
+                'music-see-all-results',
+            ]);
+
+            const selectSeeAll = (itemId: string) =>
+                act(() => {
+                    result.current.activateItem(
+                        getRequired(seeAllSection?.items.find((item) => item.id === itemId))
+                    );
+                });
+
+            selectSeeAll('images-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/images',
+                search: '?q=Paris+2024',
+            });
+            selectSeeAll('videos-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/videos/folders',
+                search: '?q=Paris+2024',
+            });
+            selectSeeAll('music-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/music/search',
+                search: '?q=Paris+2024',
+            });
+        });
+
+        it('omits the see-all action of groups without results', () => {
+            mockUseQueryReturn = {
+                data: { ...mockSearchData, files: [], folders: [], images: [], videos: [] },
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(seeAllSection?.items.map((item) => item.id)).toEqual([
+                'music-see-all-results',
+            ]);
         });
 
         it('omits the see-all-files action when no file or folder matched', () => {
@@ -356,7 +416,10 @@ describe('useGlobalSearchProvider', () => {
                 result.current.setQuery('search');
             });
 
-            expect(result.current.sections.find((s) => s.id === 'files-see-all')).toBeUndefined();
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(
+                seeAllSection?.items.find((item) => item.id === 'files-see-all-results')
+            ).toBeUndefined();
         });
 
         it('maps artist results correctly', () => {
@@ -937,7 +1000,7 @@ describe('useGlobalSearchProvider', () => {
                 'artists',
                 'albums',
                 'playlists',
-                'files-see-all',
+                'see-all',
                 'actions',
             ]);
         });

@@ -14,6 +14,7 @@ import {
     getMusicFolders,
     getMusicGenres,
     getMusicHomeCatalog,
+    searchMusicTracks,
 } from './music';
 
 const mockedApi = apiBase as unknown as {
@@ -24,6 +25,13 @@ describe('service/music', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedApi.get.mockResolvedValue({ data: { items: [], total: 0 } });
+    });
+
+    it('searches tracks with the term and pagination', async () => {
+        await searchMusicTracks('queen', 2, 50);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/search', {
+            params: { q: 'queen', page: 2, page_size: 50 },
+        });
     });
 
     it('gets artists list', async () => {

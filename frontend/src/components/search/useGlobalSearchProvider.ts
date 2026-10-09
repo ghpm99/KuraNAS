@@ -7,7 +7,10 @@ import {
     getFileSearchRoute,
     getFilesQuerySearchRoute,
     getImageSearchRoute,
+    getImagesQuerySearchRoute,
+    getMusicQuerySearchRoute,
     getPlaylistSearchRoute,
+    getVideosQuerySearchRoute,
 } from './searchResultRoutes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
@@ -434,21 +437,56 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        const seeAllItems: SearchDialogItem[] = [];
         if (files.length > 0 || folders.length > 0) {
+            seeAllItems.push({
+                id: 'files-see-all-results',
+                kind: 'action',
+                label: t('GLOBAL_SEARCH_SEE_ALL_FILES'),
+                description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
+                    query: normalizedQuery,
+                }),
+                onSelect: () => navigate(getFilesQuerySearchRoute(normalizedQuery)),
+            });
+        }
+        if (images.length > 0) {
+            seeAllItems.push({
+                id: 'images-see-all-results',
+                kind: 'action',
+                label: t('GLOBAL_SEARCH_SEE_ALL_IMAGES'),
+                description: t('GLOBAL_SEARCH_SEE_ALL_IMAGES_DESCRIPTION', {
+                    query: normalizedQuery,
+                }),
+                onSelect: () => navigate(getImagesQuerySearchRoute(normalizedQuery)),
+            });
+        }
+        if (videos.length > 0) {
+            seeAllItems.push({
+                id: 'videos-see-all-results',
+                kind: 'action',
+                label: t('GLOBAL_SEARCH_SEE_ALL_VIDEOS'),
+                description: t('GLOBAL_SEARCH_SEE_ALL_VIDEOS_DESCRIPTION', {
+                    query: normalizedQuery,
+                }),
+                onSelect: () => navigate(getVideosQuerySearchRoute(normalizedQuery)),
+            });
+        }
+        if (tracks.length > 0 || artists.length > 0 || albums.length > 0) {
+            seeAllItems.push({
+                id: 'music-see-all-results',
+                kind: 'action',
+                label: t('GLOBAL_SEARCH_SEE_ALL_MUSIC'),
+                description: t('GLOBAL_SEARCH_SEE_ALL_MUSIC_DESCRIPTION', {
+                    query: normalizedQuery,
+                }),
+                onSelect: () => navigate(getMusicQuerySearchRoute(normalizedQuery)),
+            });
+        }
+        if (seeAllItems.length > 0) {
             nextSections.push({
-                id: 'files-see-all',
+                id: 'see-all',
                 title: t('GLOBAL_SEARCH_SECTION_MORE'),
-                items: [
-                    {
-                        id: 'files-see-all-results',
-                        kind: 'action',
-                        label: t('GLOBAL_SEARCH_SEE_ALL_FILES'),
-                        description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
-                            query: normalizedQuery,
-                        }),
-                        onSelect: () => navigate(getFilesQuerySearchRoute(normalizedQuery)),
-                    },
-                ],
+                items: seeAllItems,
             });
         }
 

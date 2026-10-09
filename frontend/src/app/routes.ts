@@ -33,7 +33,14 @@ export type ImageSection =
     | 'favorites'
     | 'folders'
     | 'albums';
-export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
+export type MusicSection =
+    | 'home'
+    | 'search'
+    | 'playlists'
+    | 'artists'
+    | 'albums'
+    | 'genres'
+    | 'folders';
 export type VideoSection =
     | 'home'
     | 'continue'

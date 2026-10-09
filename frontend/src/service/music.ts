@@ -75,6 +75,13 @@ export const getMusic = async (page: number, pageSize: number) => {
     return response.data;
 };
 
+export const searchMusicTracks = async (searchText: string, page: number, pageSize: number) => {
+    const response = await apiBase.get<Pagination<IMusicData>>('/music/search', {
+        params: { q: searchText, page, page_size: pageSize },
+    });
+    return response.data;
+};
+
 export const getMusicByFolder = async (folder: string, page: number, pageSize: number) => {
     const response = await apiBase.get<Pagination<IMusicData>>(
         `/music/library/folders/${encodeURIComponent(folder)}/tracks`,

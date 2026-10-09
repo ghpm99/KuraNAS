@@ -132,6 +132,17 @@ describe('VideoContentProvider', () => {
         expect(result.current.videoSearch).toBe('');
     });
 
+    it('starts the library search from the q url param and follows its changes', async () => {
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(['/videos/folders?q=praia']),
+        });
+
+        await waitFor(() => expect(result.current.isLoadingVideos).toBe(false));
+
+        expect(result.current.videoSearch).toBe('praia');
+        expect(mockGetVideoLibraryFiles).toHaveBeenCalledWith(1, 60, 'praia');
+    });
+
     it('categorizes playlists by classification and type', async () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 1, name: 'Anime Show', classification: 'anime' }),

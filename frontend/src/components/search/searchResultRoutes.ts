@@ -1,4 +1,4 @@
-import { appRoutes, buildFilesUrl, getMusicRoute } from '@/app/routes';
+import { appRoutes, buildFilesUrl, getMusicRoute, getVideoRoute } from '@/app/routes';
 import {
     getVideoDetailRoute,
     getVideoSectionForPlaylist,
@@ -22,6 +22,21 @@ export const getFileSearchRoute = (filePath: string) => buildFilesUrl(filePath);
 
 export const getFilesQuerySearchRoute = (searchText: string): SearchRoute => ({
     pathname: appRoutes.files,
+    search: buildQueryString({ q: searchText }),
+});
+
+export const getImagesQuerySearchRoute = (searchText: string): SearchRoute => ({
+    pathname: appRoutes.images,
+    search: buildQueryString({ q: searchText }),
+});
+
+export const getVideosQuerySearchRoute = (searchText: string): SearchRoute => ({
+    pathname: getVideoRoute('folders'),
+    search: buildQueryString({ q: searchText }),
+});
+
+export const getMusicQuerySearchRoute = (searchText: string): SearchRoute => ({
+    pathname: getMusicRoute('search'),
     search: buildQueryString({ q: searchText }),
 });
 
