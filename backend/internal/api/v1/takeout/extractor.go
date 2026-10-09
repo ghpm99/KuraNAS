@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
@@ -43,8 +44,49 @@ func classifyFile(fileName string, mimeType string) libraries.LibraryCategory {
 	return ""
 }
 
-func buildDestinationPath(libraryPath string, fileName string) string {
-	return filepath.Join(libraryPath, "takeout", sanitizeTakeoutFileName(filepath.Base(fileName)))
+func buildDestinationPath(libraryPath string, fileName string) (string, error) {
+	extractionRoot := filepath.Join(libraryPath, "takeout")
+	return safeExtractionPath(extractionRoot, sanitizeTakeoutFileName(filepath.Base(fileName)))
+}
+
+func safeExtractionPath(extractionRoot string, entryName string) (string, error) {
+	slashedName := strings.ReplaceAll(entryName, "\\", "/")
+	if hasDriveLetterPrefix(slashedName) || filepath.VolumeName(slashedName) != "" {
+		return "", ErrUnsafeArchiveEntry
+	}
+	if strings.HasPrefix(slashedName, "/") {
+		return "", ErrUnsafeArchiveEntry
+	}
+
+	target := filepath.Join(extractionRoot, filepath.FromSlash(slashedName))
+	relativeToRoot, err := filepath.Rel(extractionRoot, target)
+	if err != nil || filepath.IsAbs(relativeToRoot) {
+		return "", ErrUnsafeArchiveEntry
+	}
+	if relativeToRoot == ".." || strings.HasPrefix(relativeToRoot, ".."+string(filepath.Separator)) {
+		return "", ErrUnsafeArchiveEntry
+	}
+	return target, nil
+}
+
+func hasDriveLetterPrefix(entryName string) bool {
+	if len(entryName) < 2 || entryName[1] != ':' {
+		return false
+	}
+	firstChar := entryName[0]
+	return (firstChar >= 'a' && firstChar <= 'z') || (firstChar >= 'A' && firstChar <= 'Z')
+}
+
+func isUnsafeArchiveEntry(entry *zip.File) bool {
+	if entry.Mode()&os.ModeSymlink != 0 {
+		applog.Warn("takeout: skipping symlink entry", "entry", entry.Name)
+		return true
+	}
+	if _, err := safeExtractionPath(".", entry.Name); err != nil {
+		applog.Warn("takeout: skipping entry with unsafe path", "entry", entry.Name)
+		return true
+	}
+	return false
 }
 
 func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (ExtractResult, error) {
@@ -86,6 +128,11 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 			continue
 		}
 
+		if isUnsafeArchiveEntry(entry) {
+			result.SkippedEntries++
+			continue
+		}
+
 		entryName := filepath.Base(entry.Name)
 		lowerName := strings.ToLower(entryName)
 		if strings.HasSuffix(lowerName, ".json") {
@@ -103,7 +150,12 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 			return ExtractResult{}, fmt.Errorf("resolve library %s: %w", category, resolveErr)
 		}
 
-		destinationPath := buildDestinationPath(libraryDto.Path, entryName)
+		destinationPath, pathErr := buildDestinationPath(libraryDto.Path, entryName)
+		if pathErr != nil {
+			applog.Warn("takeout: skipping entry with unsafe destination", "entry", entry.Name)
+			result.SkippedEntries++
+			continue
+		}
 		if err := os.MkdirAll(filepath.Dir(destinationPath), 0755); err != nil {
 			return ExtractResult{}, fmt.Errorf("create destination directory: %w", err)
 		}

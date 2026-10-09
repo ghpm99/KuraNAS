@@ -2,6 +2,7 @@ package takeout
 
 import (
 	"archive/zip"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,7 +74,10 @@ func TestClassifyFile(t *testing.T) {
 }
 
 func TestBuildDestinationPath(t *testing.T) {
-	got := buildDestinationPath("/data/Imagens", "IMG_01.jpg")
+	got, err := buildDestinationPath("/data/Imagens", "IMG_01.jpg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	expected := filepath.Join("/data/Imagens", "takeout", "IMG_01.jpg")
 	if got != expected {
 		t.Fatalf("expected %s, got %s", expected, got)
@@ -125,5 +129,96 @@ func TestExtractTakeoutInvalidZip(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatalf("expected invalid zip error")
+	}
+}
+
+func TestSafeExtractionPathRejectsUnsafeEntryNames(t *testing.T) {
+	extractionRoot := filepath.Join(t.TempDir(), "takeout")
+	unsafeEntryNames := []string{
+		"../evil",
+		"a/../../evil",
+		"/abs",
+		"C:\\evil",
+		"c:/evil",
+		"..\\evil",
+		"a\\..\\..\\evil",
+		"..",
+	}
+
+	for _, entryName := range unsafeEntryNames {
+		if _, err := safeExtractionPath(extractionRoot, entryName); !errors.Is(err, ErrUnsafeArchiveEntry) {
+			t.Fatalf("expected ErrUnsafeArchiveEntry for %q, got %v", entryName, err)
+		}
+	}
+}
+
+func TestSafeExtractionPathAcceptsNestedEntryName(t *testing.T) {
+	extractionRoot := filepath.Join(t.TempDir(), "takeout")
+
+	got, err := safeExtractionPath(extractionRoot, "Google Photos/2020/IMG_01.jpg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := filepath.Join(extractionRoot, "Google Photos", "2020", "IMG_01.jpg")
+	if got != expected {
+		t.Fatalf("expected %s, got %s", expected, got)
+	}
+}
+
+func TestExtractTakeoutSkipsUnsafeAndSymlinkEntries(t *testing.T) {
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "input.zip")
+	imageLib := filepath.Join(tempDir, "Imagens")
+
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("failed to create zip file: %v", err)
+	}
+	writer := zip.NewWriter(zipFile)
+	for _, entryName := range []string{"../evil.jpg", "a/../../evil2.jpg", "C:\\evil3.jpg", "ok/photo.jpg"} {
+		entryWriter, createErr := writer.Create(entryName)
+		if createErr != nil {
+			t.Fatalf("failed to create entry: %v", createErr)
+		}
+		if _, writeErr := entryWriter.Write([]byte("x")); writeErr != nil {
+			t.Fatalf("failed to write entry: %v", writeErr)
+		}
+	}
+	symlinkHeader := &zip.FileHeader{Name: "link.jpg", Method: zip.Store}
+	symlinkHeader.SetMode(os.ModeSymlink | 0777)
+	symlinkWriter, err := writer.CreateHeader(symlinkHeader)
+	if err != nil {
+		t.Fatalf("failed to create symlink entry: %v", err)
+	}
+	if _, err := symlinkWriter.Write([]byte("/etc/passwd")); err != nil {
+		t.Fatalf("failed to write symlink entry: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	zipFile.Close()
+
+	resolver := &extractorLibraryResolverMock{paths: map[libraries.LibraryCategory]string{
+		libraries.LibraryCategoryImages: imageLib,
+	}}
+	result, err := ExtractTakeout(zipPath, resolver)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Files) != 1 || result.SkippedEntries != 4 {
+		t.Fatalf("expected 1 extracted and 4 skipped, got %d and %d", len(result.Files), result.SkippedEntries)
+	}
+	if _, err := os.Stat(filepath.Join(imageLib, "takeout", "photo.jpg")); err != nil {
+		t.Fatalf("expected safe entry extracted: %v", err)
+	}
+	for _, escapedPath := range []string{
+		filepath.Join(tempDir, "evil.jpg"),
+		filepath.Join(imageLib, "evil2.jpg"),
+		filepath.Join(imageLib, "takeout", "link.jpg"),
+	} {
+		if _, err := os.Stat(escapedPath); err == nil {
+			t.Fatalf("unexpected file written at %s", escapedPath)
+		}
 	}
 }
