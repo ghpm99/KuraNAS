@@ -30,6 +30,8 @@ import {
     MUSIC_COLLECTION_PAGE_SIZE,
     shuffleTracks,
 } from './shared';
+import MusicSortControl from './components/MusicSortControl';
+import { useMusicListSort } from './useMusicListSort';
 
 const loadFolderTracks = (folderPath: string) =>
     loadAllTracks((page, pageSize) => getMusicByFolder(folderPath, page, pageSize));
@@ -37,10 +39,11 @@ const loadFolderTracks = (folderPath: string) =>
 export default function FoldersView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedFolderPath = searchParams.get('folder') ?? '';
+    const { listSort, changeField, toggleOrder } = useMusicListSort('folders');
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-folders'],
+        queryKey: ['music-folders', listSort],
         queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicFolder>> =>
-            getMusicFolders(pageParam, MUSIC_COLLECTION_PAGE_SIZE),
+            getMusicFolders(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
@@ -71,14 +74,22 @@ export default function FoldersView() {
     }
 
     return (
-        <FolderListView
-            folders={folders}
-            isLoading={isLoading}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSelect={handleSelectFolder}
-        />
+        <>
+            <MusicSortControl
+                view="folders"
+                listSort={listSort}
+                onFieldChange={changeField}
+                onOrderToggle={toggleOrder}
+            />
+            <FolderListView
+                folders={folders}
+                isLoading={isLoading}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onSelect={handleSelectFolder}
+            />
+        </>
     );
 }
 

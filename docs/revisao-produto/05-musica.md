@@ -20,7 +20,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 03. Duração aparece na web (`length`), tipos alinhados ao contrato real
 - [x] 04. Chaves com `/` funcionam (pastas, artistas, álbuns)
 - [x] 05. Catálogo agregado no SQL com paginação e índices (sem carregar a biblioteca por request)
-- [ ] 06. Ordenação de faixas por disco/faixa numéricos; opções de ordenação nas listas
+- [x] 06. Ordenação de faixas por disco/faixa numéricos; opções de ordenação nas listas
 - [ ] 07. Playlists automáticas abrem
 - [ ] 08. "Tocar tudo" sem truncar: fila por contexto (todas as faixas, payload leve)
 - [ ] 09. Scroll infinito acessível em todas as listas de música + estados de erro/vazio

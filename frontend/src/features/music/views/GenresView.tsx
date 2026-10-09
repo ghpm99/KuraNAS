@@ -29,6 +29,8 @@ import {
     MUSIC_COLLECTION_PAGE_SIZE,
     shuffleTracks,
 } from './shared';
+import MusicSortControl from './components/MusicSortControl';
+import { useMusicListSort } from './useMusicListSort';
 
 const GENRE_COLORS = [
     '#e11d48',
@@ -61,10 +63,11 @@ const loadGenreTracks = (genreKey: string) =>
 export default function GenresView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedGenreKey = searchParams.get('genre') ?? '';
+    const { listSort, changeField, toggleOrder } = useMusicListSort('genres');
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-genres'],
+        queryKey: ['music-genres', listSort],
         queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicGenre>> =>
-            getMusicGenres(pageParam, MUSIC_COLLECTION_PAGE_SIZE),
+            getMusicGenres(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
@@ -99,14 +102,22 @@ export default function GenresView() {
     }
 
     return (
-        <GenreListView
-            genres={genres}
-            isLoading={isLoading}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSelect={handleSelectGenre}
-        />
+        <>
+            <MusicSortControl
+                view="genres"
+                listSort={listSort}
+                onFieldChange={changeField}
+                onOrderToggle={toggleOrder}
+            />
+            <GenreListView
+                genres={genres}
+                isLoading={isLoading}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onSelect={handleSelectGenre}
+            />
+        </>
     );
 }
 

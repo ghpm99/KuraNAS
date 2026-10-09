@@ -29,6 +29,8 @@ import {
     MUSIC_COLLECTION_PAGE_SIZE,
     shuffleTracks,
 } from './shared';
+import MusicSortControl from './components/MusicSortControl';
+import { useMusicListSort } from './useMusicListSort';
 
 const loadAlbumTracks = (albumKey: string) =>
     loadAllTracks((page, pageSize) => getMusicByAlbum(albumKey, page, pageSize));
@@ -36,10 +38,11 @@ const loadAlbumTracks = (albumKey: string) =>
 export default function AlbumsView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedAlbumKey = searchParams.get('album') ?? '';
+    const { listSort, changeField, toggleOrder } = useMusicListSort('albums');
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-albums'],
+        queryKey: ['music-albums', listSort],
         queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicAlbum>> =>
-            getMusicAlbums(pageParam, MUSIC_COLLECTION_PAGE_SIZE),
+            getMusicAlbums(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
@@ -74,14 +77,22 @@ export default function AlbumsView() {
     }
 
     return (
-        <AlbumListView
-            albums={albums}
-            isLoading={isLoading}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSelect={handleSelectAlbum}
-        />
+        <>
+            <MusicSortControl
+                view="albums"
+                listSort={listSort}
+                onFieldChange={changeField}
+                onOrderToggle={toggleOrder}
+            />
+            <AlbumListView
+                albums={albums}
+                isLoading={isLoading}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onSelect={handleSelectAlbum}
+            />
+        </>
     );
 }
 

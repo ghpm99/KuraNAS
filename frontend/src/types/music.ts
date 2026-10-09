@@ -74,3 +74,12 @@ export interface MusicHomeCatalog {
     artists: MusicArtist[];
     albums: MusicAlbum[];
 }
+
+export type MusicListSortField = 'tracks' | 'name' | 'recent' | 'year';
+
+export type MusicListSortOrder = 'asc' | 'desc';
+
+export interface MusicListSort {
+    sort: MusicListSortField;
+    order: MusicListSortOrder;
+}
