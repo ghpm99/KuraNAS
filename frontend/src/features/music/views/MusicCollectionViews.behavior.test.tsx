@@ -51,6 +51,7 @@ type CollectionCase = {
     View: React.ComponentType;
     listMock: jest.Mock;
     tracksMock: jest.Mock;
+    summaryMock: jest.Mock;
     firstGroup: unknown;
     secondGroup: unknown;
     firstGroupLabel: string;
@@ -59,6 +60,7 @@ type CollectionCase = {
     deepLinkKey: string;
     deepLinkTrackMetadata: Record<string, string>;
     deepLinkTitle: string;
+    summaryTitle: string;
 };
 
 const collectionCases: CollectionCase[] = [
@@ -67,6 +69,7 @@ const collectionCases: CollectionCase[] = [
         View: ArtistsView,
         listMock: mockedMusic.getMusicArtists as jest.Mock,
         tracksMock: mockedMusic.getMusicByArtist as jest.Mock,
+        summaryMock: mockedMusic.getMusicArtistSummary as jest.Mock,
         firstGroup: { key: 'a', artist: 'Artist A', track_count: 7, album_count: 1 },
         secondGroup: { key: 'b', artist: 'Artist B', track_count: 2, album_count: 1 },
         firstGroupLabel: 'Artist A',
@@ -75,12 +78,14 @@ const collectionCases: CollectionCase[] = [
         deepLinkKey: 'unloaded-artist',
         deepLinkTrackMetadata: { artist: 'Unloaded Artist' },
         deepLinkTitle: 'Unloaded Artist',
+        summaryTitle: 'Summary Name',
     },
     {
         name: 'AlbumsView',
         View: AlbumsView,
         listMock: mockedMusic.getMusicAlbums as jest.Mock,
         tracksMock: mockedMusic.getMusicByAlbum as jest.Mock,
+        summaryMock: mockedMusic.getMusicAlbumSummary as jest.Mock,
         firstGroup: { key: 'a', album: 'Album A', artist: 'X', year: '2000', track_count: 7 },
         secondGroup: { key: 'b', album: 'Album B', artist: 'Y', year: '2001', track_count: 2 },
         firstGroupLabel: 'Album A',
@@ -89,12 +94,14 @@ const collectionCases: CollectionCase[] = [
         deepLinkKey: 'unloaded-album',
         deepLinkTrackMetadata: { album: 'Unloaded Album', artist: 'Someone' },
         deepLinkTitle: 'Unloaded Album',
+        summaryTitle: 'Summary Name',
     },
     {
         name: 'GenresView',
         View: GenresView,
         listMock: mockedMusic.getMusicGenres as jest.Mock,
         tracksMock: mockedMusic.getMusicByGenre as jest.Mock,
+        summaryMock: mockedMusic.getMusicGenreSummary as jest.Mock,
         firstGroup: { key: 'a', genre: 'Genre A', track_count: 7 },
         secondGroup: { key: 'b', genre: 'Genre B', track_count: 2 },
         firstGroupLabel: 'Genre A',
@@ -103,12 +110,14 @@ const collectionCases: CollectionCase[] = [
         deepLinkKey: 'unloaded-genre',
         deepLinkTrackMetadata: { genre: 'Unloaded Genre' },
         deepLinkTitle: 'Unloaded Genre',
+        summaryTitle: 'Summary Name',
     },
     {
         name: 'FoldersView',
         View: FoldersView,
         listMock: mockedMusic.getMusicFolders as jest.Mock,
         tracksMock: mockedMusic.getMusicByFolder as jest.Mock,
+        summaryMock: mockedMusic.getMusicFolderSummary as jest.Mock,
         firstGroup: { folder: '/music/folder-a', track_count: 7 },
         secondGroup: { folder: '/music/folder-b', track_count: 2 },
         firstGroupLabel: 'folder-a',
@@ -117,6 +126,7 @@ const collectionCases: CollectionCase[] = [
         deepLinkKey: '/music/unloaded-folder',
         deepLinkTrackMetadata: {},
         deepLinkTitle: 'unloaded-folder',
+        summaryTitle: 'unloaded-folder',
     },
 ];
 
@@ -128,12 +138,23 @@ const queryParamByView: Record<string, string> = {
 };
 
 describe.each(collectionCases)('$name', (collectionCase) => {
-    const { View, listMock, tracksMock } = collectionCase;
+    const { View, listMock, tracksMock, summaryMock } = collectionCase;
 
     beforeEach(() => {
         jest.clearAllMocks();
         listMock.mockResolvedValue(pageOf([], 1, false));
         tracksMock.mockResolvedValue(pageOf([], 1, false));
+        summaryMock.mockResolvedValue({
+            key: 'summary-key',
+            name: 'Summary Name',
+            artist: 'Summary Artist',
+            year: '',
+            track_count: 7,
+            album_count: 1,
+            disc_count: 1,
+            total_length_seconds: 3725,
+        });
+        (mockedMusic.getMusicAlbumsByArtist as jest.Mock).mockResolvedValue(pageOf([], 1, false));
     });
 
     it('renders the empty state when there are no groups', async () => {
@@ -176,9 +197,27 @@ describe.each(collectionCases)('$name', (collectionCase) => {
             `/?${queryParamByView[collectionCase.name]}=${encodeURIComponent(collectionCase.deepLinkKey)}`
         );
 
+        expect(await screen.findByText(collectionCase.summaryTitle)).toBeInTheDocument();
+        expect(await screen.findByText('Track 1')).toBeInTheDocument();
+        expect(await screen.findByText('7 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
+        expect(screen.getByText(/MUSIC_DURATION_HOURS_MINUTES/)).toBeInTheDocument();
+        expect(summaryMock).toHaveBeenCalledWith(collectionCase.deepLinkKey);
+    });
+
+    it('falls back to the track metadata title when the summary is unavailable', async () => {
+        summaryMock.mockRejectedValue({ response: { data: { error: 'nao encontrado' } } });
+        listMock.mockResolvedValue(pageOf([collectionCase.firstGroup], 1, true));
+        tracksMock.mockResolvedValue(
+            pageOf([trackNamed(1, collectionCase.deepLinkTrackMetadata)], 1, false)
+        );
+        renderViewAt(
+            <View />,
+            `/?${queryParamByView[collectionCase.name]}=${encodeURIComponent(collectionCase.deepLinkKey)}`
+        );
+
         expect(await screen.findByText(collectionCase.deepLinkTitle)).toBeInTheDocument();
         expect(await screen.findByText('Track 1')).toBeInTheDocument();
-        expect(await screen.findByText('1 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
+        expect(screen.queryByText(/MUSIC_TRACKS_COUNT/)).not.toBeInTheDocument();
     });
 
     it('uses the group total in the detail header and fetches more tracks with the sentinel', async () => {

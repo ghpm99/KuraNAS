@@ -14,9 +14,3 @@ export const getFolderName = (path: string) => {
     const parts = path.split('/').filter(Boolean);
     return parts[parts.length - 1] || path;
 };
-
-export const resolveCollectionTrackCount = (
-    knownTrackCount: number | undefined,
-    loadedTrackCount: number,
-    isFullyLoaded: boolean
-) => knownTrackCount ?? (isFullyLoaded ? loadedTrackCount : undefined);

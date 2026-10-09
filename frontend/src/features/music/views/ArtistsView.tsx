@@ -8,31 +8,21 @@ import {
     Typography,
 } from '@mui/material';
 import { Play, User } from 'lucide-react';
-import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
-import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createArtistPlaybackContext } from '@/features/music/components/playbackContext';
-import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
-import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getMusicArtists, getMusicByArtist, getMusicQueueByArtist } from '@/service/music';
+import { getMusicArtists } from '@/service/music';
 import { MusicArtist } from '@/types/music';
-import {
-    handleKeyboardActivation,
-    MUSIC_COLLECTION_PAGE_SIZE,
-    resolveCollectionTrackCount,
-} from './shared';
+import { handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
+import ArtistPage from './components/ArtistPage';
 import MusicCollectionListFeedback from './components/MusicCollectionListFeedback';
-import MusicCollectionTrackList from './components/MusicCollectionTrackList';
 import MusicSortControl from './components/MusicSortControl';
 import { useMusicInfinitePages } from './useMusicInfinitePages';
 import { useMusicListSort } from './useMusicListSort';
 
-const loadArtistTracks = (artistKey: string) =>
-    getMusicQueueByArtist(artistKey).then(queueToTracks);
+import { loadArtistTracks } from './libraryQueueLoaders';
 
 export default function ArtistsView() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -43,10 +33,6 @@ export default function ArtistsView() {
         (pageNumber) => getMusicArtists(pageNumber, MUSIC_COLLECTION_PAGE_SIZE, listSort)
     );
     const artists = artistsQuery.items;
-    const knownArtist = useMemo(
-        () => artists.find((artist) => artist.key === selectedArtistKey) ?? null,
-        [artists, selectedArtistKey]
-    );
 
     const handleSelectArtist = (artist: MusicArtist) => {
         setSearchParams((current) => {
@@ -68,13 +54,7 @@ export default function ArtistsView() {
     };
 
     if (selectedArtistKey) {
-        return (
-            <ArtistTracksView
-                artistKey={selectedArtistKey}
-                knownArtist={knownArtist}
-                onBack={handleBack}
-            />
-        );
+        return <ArtistPage artistKey={selectedArtistKey} onBack={handleBack} />;
     }
 
     return (
@@ -250,70 +230,5 @@ function ArtistListView({
                 </Grid>
             </Box>
         </MusicCollectionListFeedback>
-    );
-}
-
-function ArtistTracksView({
-    artistKey,
-    knownArtist,
-    onBack,
-}: {
-    artistKey: string;
-    knownArtist: MusicArtist | null;
-    onBack: () => void;
-}) {
-    const { replaceQueue } = useGlobalMusic();
-    const tracksQuery = useMusicInfinitePages<IMusicData>(
-        ['music-by-artist', artistKey],
-        (pageNumber) => getMusicByArtist(artistKey, pageNumber, MUSIC_COLLECTION_PAGE_SIZE)
-    );
-    const tracks = tracksQuery.items;
-    const artistName = knownArtist?.artist ?? tracks[0]?.metadata?.artist ?? artistKey;
-    const playbackContext = createArtistPlaybackContext(artistName);
-
-    const queueArtistTracks = async (trackId?: number, shuffle = false) => {
-        const allTracks = await loadArtistTracks(artistKey);
-        if (allTracks.length === 0) {
-            return;
-        }
-
-        if (shuffle) {
-            replaceQueue(shuffleItems(allTracks), 0, playbackContext);
-            return;
-        }
-
-        const startIndex = findStartIndex(allTracks, trackId);
-        replaceQueue(allTracks, startIndex, playbackContext);
-    };
-
-    return (
-        <Box sx={{ p: 2 }}>
-            <CategoryHeader
-                title={artistName}
-                trackCount={resolveCollectionTrackCount(
-                    knownArtist?.track_count,
-                    tracks.length,
-                    tracksQuery.isFullyLoaded
-                )}
-                icon={<User size={48} opacity={0.7} />}
-                gradientFrom="#4f46e5"
-                onBack={onBack}
-                onPlayAll={() => void queueArtistTracks()}
-                onShuffleAll={() => void queueArtistTracks(undefined, true)}
-            />
-
-            <MusicCollectionTrackList
-                tracks={tracks}
-                isLoading={tracksQuery.isLoading}
-                isError={tracksQuery.isError}
-                errorMessage={tracksQuery.errorMessage}
-                hasNextPage={tracksQuery.hasNextPage}
-                isFetchingNextPage={tracksQuery.isFetchingNextPage}
-                showArtist={false}
-                onPlayTrack={(track) => void queueArtistTracks(track.id)}
-                onRetry={tracksQuery.retry}
-                fetchNextPage={tracksQuery.fetchNextPage}
-            />
-        </Box>
     );
 }

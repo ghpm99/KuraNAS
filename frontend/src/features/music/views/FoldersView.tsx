@@ -8,7 +8,6 @@ import {
     ListItemText,
 } from '@mui/material';
 import { Folder, Play } from 'lucide-react';
-import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
@@ -18,17 +17,18 @@ import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getMusicByFolder, getMusicFolders, getMusicQueueByFolder } from '@/service/music';
-import { MusicFolder } from '@/types/music';
 import {
-    getFolderName,
-    handleKeyboardActivation,
-    MUSIC_COLLECTION_PAGE_SIZE,
-    resolveCollectionTrackCount,
-} from './shared';
+    getMusicByFolder,
+    getMusicFolders,
+    getMusicFolderSummary,
+    getMusicQueueByFolder,
+} from '@/service/music';
+import { MusicFolder, MusicGroupSummary } from '@/types/music';
+import { getFolderName, handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
 import MusicCollectionListFeedback from './components/MusicCollectionListFeedback';
 import MusicCollectionTrackList from './components/MusicCollectionTrackList';
 import MusicSortControl from './components/MusicSortControl';
+import { useMusicGroupSummary } from './useMusicGroupSummary';
 import { useMusicInfinitePages } from './useMusicInfinitePages';
 import { useMusicListSort } from './useMusicListSort';
 
@@ -44,10 +44,6 @@ export default function FoldersView() {
         (pageNumber) => getMusicFolders(pageNumber, MUSIC_COLLECTION_PAGE_SIZE, listSort)
     );
     const folders = foldersQuery.items;
-    const knownFolder = useMemo(
-        () => folders.find((folder) => folder.folder === selectedFolderPath) ?? null,
-        [folders, selectedFolderPath]
-    );
 
     const handleSelectFolder = (folder: string) => {
         setSearchParams((current) => {
@@ -69,13 +65,7 @@ export default function FoldersView() {
     };
 
     if (selectedFolderPath) {
-        return (
-            <FolderTracksView
-                folder={selectedFolderPath}
-                knownFolder={knownFolder}
-                onBack={handleBack}
-            />
-        );
+        return <FolderTracksView folder={selectedFolderPath} onBack={handleBack} />;
     }
 
     return (
@@ -223,16 +213,11 @@ function FolderListView({
     );
 }
 
-function FolderTracksView({
-    folder,
-    knownFolder,
-    onBack,
-}: {
-    folder: string;
-    knownFolder: MusicFolder | null;
-    onBack: () => void;
-}) {
+function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => void }) {
     const { replaceQueue } = useGlobalMusic();
+    const summary = useMusicGroupSummary<MusicGroupSummary>(['music-folder-summary', folder], () =>
+        getMusicFolderSummary(folder)
+    );
     const tracksQuery = useMusicInfinitePages<IMusicData>(
         ['music-by-folder', folder],
         (pageNumber) => getMusicByFolder(folder, pageNumber, MUSIC_COLLECTION_PAGE_SIZE)
@@ -260,11 +245,8 @@ function FolderTracksView({
             <CategoryHeader
                 title={getFolderName(folder)}
                 subtitle={folder}
-                trackCount={resolveCollectionTrackCount(
-                    knownFolder?.track_count,
-                    tracks.length,
-                    tracksQuery.isFullyLoaded
-                )}
+                trackCount={summary?.track_count}
+                totalLengthSeconds={summary?.total_length_seconds}
                 icon={<Folder size={48} opacity={0.7} />}
                 gradientFrom="var(--app-color-primary)"
                 onBack={onBack}

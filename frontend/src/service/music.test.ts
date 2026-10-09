@@ -6,7 +6,12 @@ jest.mock('./index', () => ({
 
 import { apiBase } from './index';
 import {
+    getMusicAlbumSummary,
     getMusicAlbums,
+    getMusicAlbumsByArtist,
+    getMusicArtistSummary,
+    getMusicFolderSummary,
+    getMusicGenreSummary,
     getMusicArtists,
     getMusicByAlbum,
     getMusicByArtist,
@@ -136,5 +141,27 @@ describe('service/music', () => {
 
         expect(mockedApi.get).toHaveBeenCalledWith(path);
         expect(result).toEqual(queue);
+    });
+
+    it.each([
+        ['album', getMusicAlbumSummary, 'ac/dc::back', '/music/library/albums/ac%2Fdc%3A%3Aback'],
+        ['artist', getMusicArtistSummary, 'AC/DC', '/music/library/artists/AC%2FDC'],
+        ['genre', getMusicGenreSummary, 'r&b', '/music/library/genres/r%26b'],
+        ['folder', getMusicFolderSummary, '/data/Rock', '/music/library/folders/%2Fdata%2FRock'],
+    ])('fetches the %s summary without params', async (_, fetchSummary, key, path) => {
+        const summary = { key, name: 'Name', track_count: 3, total_length_seconds: 120 };
+        mockedApi.get.mockResolvedValueOnce({ data: summary });
+
+        const result = await fetchSummary(key);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(path);
+        expect(result).toEqual(summary);
+    });
+
+    it('gets the albums of an encoded artist with pagination', async () => {
+        await getMusicAlbumsByArtist('AC/DC', 2, 24);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/artists/AC%2FDC/albums', {
+            params: { page: 2, page_size: 24 },
+        });
     });
 });

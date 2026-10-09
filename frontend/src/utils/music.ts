@@ -34,3 +34,32 @@ export const musicMetadata = (music: {
     const dur = durationSeconds ? formatMusicDuration(durationSeconds) : '';
     return `${format}${fileSize}${dur ? ` - ${dur}` : ''}`;
 };
+
+const LEADING_NUMBER_PATTERN = /^\s*(\d{1,9})/;
+
+const parseLeadingNumber = (numberText?: string): number | undefined => {
+    const match = LEADING_NUMBER_PATTERN.exec(numberText ?? '');
+    return match ? Number(match[1]) : undefined;
+};
+
+export const parseTrackNumber = (metadata?: IMusicMetadata): number | undefined =>
+    parseLeadingNumber(metadata?.track_number);
+
+export const parseDiscNumber = (metadata?: IMusicMetadata): number =>
+    parseLeadingNumber(metadata?.disc_number) ?? 1;
+
+export const formatTotalDuration = (
+    totalSeconds: number,
+    translate: (key: string, options?: Record<string, string>) => string
+): string => {
+    const totalMinutes = Math.max(0, Math.round(totalSeconds / 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) {
+        return translate('MUSIC_DURATION_MINUTES', { minutes: String(minutes) });
+    }
+    return translate('MUSIC_DURATION_HOURS_MINUTES', {
+        hours: String(hours),
+        minutes: String(minutes).padStart(2, '0'),
+    });
+};

@@ -8,7 +8,6 @@ import {
     Typography,
 } from '@mui/material';
 import { Play, Tag } from 'lucide-react';
-import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
@@ -18,16 +17,18 @@ import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getMusicByGenre, getMusicGenres, getMusicQueueByGenre } from '@/service/music';
-import { MusicGenre } from '@/types/music';
 import {
-    handleKeyboardActivation,
-    MUSIC_COLLECTION_PAGE_SIZE,
-    resolveCollectionTrackCount,
-} from './shared';
+    getMusicByGenre,
+    getMusicGenres,
+    getMusicGenreSummary,
+    getMusicQueueByGenre,
+} from '@/service/music';
+import { MusicGenre, MusicGroupSummary } from '@/types/music';
+import { handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
 import MusicCollectionListFeedback from './components/MusicCollectionListFeedback';
 import MusicCollectionTrackList from './components/MusicCollectionTrackList';
 import MusicSortControl from './components/MusicSortControl';
+import { useMusicGroupSummary } from './useMusicGroupSummary';
 import { useMusicInfinitePages } from './useMusicInfinitePages';
 import { useMusicListSort } from './useMusicListSort';
 
@@ -67,10 +68,6 @@ export default function GenresView() {
         (pageNumber) => getMusicGenres(pageNumber, MUSIC_COLLECTION_PAGE_SIZE, listSort)
     );
     const genres = genresQuery.items;
-    const knownGenre = useMemo(
-        () => genres.find((genre) => genre.key === selectedGenreKey) ?? null,
-        [genres, selectedGenreKey]
-    );
 
     const handleSelectGenre = (genre: MusicGenre) => {
         setSearchParams((current) => {
@@ -92,13 +89,7 @@ export default function GenresView() {
     };
 
     if (selectedGenreKey) {
-        return (
-            <GenreTracksView
-                genreKey={selectedGenreKey}
-                knownGenre={knownGenre}
-                onBack={handleBack}
-            />
-        );
+        return <GenreTracksView genreKey={selectedGenreKey} onBack={handleBack} />;
     }
 
     return (
@@ -276,22 +267,17 @@ function GenreListView({
     );
 }
 
-function GenreTracksView({
-    genreKey,
-    knownGenre,
-    onBack,
-}: {
-    genreKey: string;
-    knownGenre: MusicGenre | null;
-    onBack: () => void;
-}) {
+function GenreTracksView({ genreKey, onBack }: { genreKey: string; onBack: () => void }) {
     const { replaceQueue } = useGlobalMusic();
+    const summary = useMusicGroupSummary<MusicGroupSummary>(['music-genre-summary', genreKey], () =>
+        getMusicGenreSummary(genreKey)
+    );
     const tracksQuery = useMusicInfinitePages<IMusicData>(
         ['music-by-genre', genreKey],
         (pageNumber) => getMusicByGenre(genreKey, pageNumber, MUSIC_COLLECTION_PAGE_SIZE)
     );
     const tracks = tracksQuery.items;
-    const genreName = knownGenre?.genre ?? tracks[0]?.metadata?.genre ?? genreKey;
+    const genreName = summary?.name ?? tracks[0]?.metadata?.genre ?? genreKey;
     const playbackContext = createGenrePlaybackContext(genreName);
 
     const queueGenreTracks = async (trackId?: number, shuffle = false) => {
@@ -313,11 +299,8 @@ function GenreTracksView({
         <Box sx={{ p: 2 }}>
             <CategoryHeader
                 title={genreName}
-                trackCount={resolveCollectionTrackCount(
-                    knownGenre?.track_count,
-                    tracks.length,
-                    tracksQuery.isFullyLoaded
-                )}
+                trackCount={summary?.track_count}
+                totalLengthSeconds={summary?.total_length_seconds}
                 icon={<Tag size={48} opacity={0.7} />}
                 gradientFrom={getGenreColor(genreName)}
                 onBack={onBack}

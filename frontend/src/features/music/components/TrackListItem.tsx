@@ -19,6 +19,7 @@ import useMenuPosition from './contextMenu/useMenuPosition';
 interface TrackListItemProps {
     track: IMusicData;
     index: number;
+    trackNumber?: number;
     onPlay: (track: IMusicData, index: number) => void;
     onAddToPlaylist?: (e: React.MouseEvent<HTMLElement>, fileId: number) => void;
     showArtist?: boolean;
@@ -27,6 +28,7 @@ interface TrackListItemProps {
 const TrackListItem = ({
     track,
     index,
+    trackNumber,
     onPlay,
     onAddToPlaylist,
     showArtist = true,
@@ -123,7 +125,7 @@ const TrackListItem = ({
                                 color="text.secondary"
                                 sx={{ fontVariantNumeric: 'tabular-nums' }}
                             >
-                                {index + 1}
+                                {trackNumber ?? index + 1}
                             </Typography>
                             <Box
                                 className="track-play-icon"
