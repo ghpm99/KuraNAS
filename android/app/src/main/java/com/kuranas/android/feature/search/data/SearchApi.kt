@@ -12,8 +12,8 @@ interface SearchApi {
 }
 
 /**
- * Espelha a resposta de /search/global. O backend devolve `files` misturando
- * áudio/vídeo/documentos; derivamos `music`/`videos`/`total` para a UI.
+ * Espelha a resposta de /search/global. Música vem em `tracks`, vídeo em `videos`
+ * e imagem em `images`; derivamos `files`/`music`/`videos`/`total` para a UI.
  */
 @Serializable
 data class SearchResultsDto(
@@ -25,16 +25,35 @@ data class SearchResultsDto(
     val artists: List<SearchGroupDto> = emptyList(),
     val albums: List<SearchGroupDto> = emptyList(),
     val playlists: List<SearchGroupDto> = emptyList(),
+    val tracks: List<SearchTrackDto> = emptyList(),
 ) {
     val files: List<SearchFileDto>
-        get() = allFiles.filter {
+        get() = (allFiles + images).filter {
             !it.mimeType.startsWith("audio/") && !it.mimeType.startsWith("video/")
         }
-    val music: List<SearchFileDto> get() = allFiles.filter { it.mimeType.startsWith("audio/") }
+    val music: List<SearchFileDto>
+        get() = tracks.map { it.asFile() } + allFiles.filter { it.mimeType.startsWith("audio/") }
     val videos: List<SearchFileDto> get() = videoMatches + allFiles.filter { it.mimeType.startsWith("video/") }
     val total: Int
-        get() = allFiles.size + folders.size + videoMatches.size + images.size +
+        get() = files.size + music.size + videos.size + folders.size +
             artists.size + albums.size + playlists.size
+}
+
+@Serializable
+data class SearchTrackDto(
+    @SerialName("file_id") val fileId: Int = 0,
+    val title: String = "",
+    val artist: String = "",
+    val album: String = "",
+    val duration: Double = 0.0,
+    val path: String = "",
+) {
+    fun asFile() = SearchFileDto(
+        rawId = fileId,
+        name = title,
+        path = path,
+        format = path.substringAfterLast('.', ""),
+    )
 }
 
 @Serializable
