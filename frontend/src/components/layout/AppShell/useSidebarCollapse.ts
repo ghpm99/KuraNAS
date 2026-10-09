@@ -1,5 +1,6 @@
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useCallback, useEffect, useState } from 'react';
+import { subscribeToSidebarToggle } from '../appCommandEvents';
 import {
     compactDesktopMediaQuery,
     isTypingTarget,
@@ -33,6 +34,8 @@ export const useSidebarCollapse = () => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleCollapsed]);
+
+    useEffect(() => subscribeToSidebarToggle(toggleCollapsed), [toggleCollapsed]);
 
     useEffect(() => {
         const rootElement = document.documentElement;

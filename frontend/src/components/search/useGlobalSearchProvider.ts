@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
 import {
     getAlbumSearchRoute,
     getArtistSearchRoute,
@@ -25,6 +24,7 @@ import { formatSize } from '@/shared/utils/formatSize';
 import { formatShortDate } from '@/shared/utils/formatShortDate';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQuickActions } from './useQuickActions';
 import {
     addSearchHistoryEntry,
     clearSearchHistory,
@@ -128,109 +128,7 @@ export const useGlobalSearchProvider = () => {
 
     const currentRoute = `${location.pathname}${location.search}`;
 
-    const quickActions = useMemo<SearchDialogItem[]>(
-        () => [
-            {
-                id: 'action-home',
-                kind: 'action',
-                label: t('HOME'),
-                description: t('HOME_PAGE_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.home),
-            },
-            {
-                id: 'action-files',
-                kind: 'action',
-                label: t('FILES'),
-                description: t('FILES_PAGE_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.files),
-            },
-            {
-                id: 'action-favorites',
-                kind: 'action',
-                label: t('STARRED_FILES'),
-                description: t('FAVORITES_PAGE_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.favorites),
-            },
-            {
-                id: 'action-images',
-                kind: 'action',
-                label: t('NAV_IMAGES'),
-                description: t('IMAGES_SECTION_RECENT_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.images),
-            },
-            {
-                id: 'action-music',
-                kind: 'action',
-                label: t('NAV_MUSIC'),
-                description: t('MUSIC_HOME_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.music),
-            },
-            {
-                id: 'action-music-artists',
-                kind: 'action',
-                label: t('MUSIC_ARTISTS'),
-                description: t('MUSIC_ARTISTS_DESCRIPTION'),
-                onSelect: () => navigate(getMusicRoute('artists')),
-            },
-            {
-                id: 'action-music-albums',
-                kind: 'action',
-                label: t('MUSIC_ALBUMS'),
-                description: t('MUSIC_ALBUMS_DESCRIPTION'),
-                onSelect: () => navigate(getMusicRoute('albums')),
-            },
-            {
-                id: 'action-music-playlists',
-                kind: 'action',
-                label: t('MUSIC_PLAYLISTS'),
-                description: t('MUSIC_PLAYLISTS_DESCRIPTION'),
-                onSelect: () => navigate(getMusicRoute('playlists')),
-            },
-            {
-                id: 'action-videos',
-                kind: 'action',
-                label: t('NAV_VIDEOS'),
-                description: t('VIDEO_SECTION_HOME_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.videos),
-            },
-            {
-                id: 'action-videos-continue',
-                kind: 'action',
-                label: t('VIDEO_SECTION_CONTINUE'),
-                description: t('VIDEO_SECTION_CONTINUE_DESCRIPTION'),
-                onSelect: () => navigate(getVideoRoute('continue')),
-            },
-            {
-                id: 'action-analytics',
-                kind: 'action',
-                label: t('ANALYTICS'),
-                description: t('ANALYTICS_SECTION_OVERVIEW_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.analytics),
-            },
-            {
-                id: 'action-analytics-library',
-                kind: 'action',
-                label: t('ANALYTICS_SECTION_LIBRARY'),
-                description: t('ANALYTICS_SECTION_LIBRARY_DESCRIPTION'),
-                onSelect: () => navigate(getAnalyticsRoute('library')),
-            },
-            {
-                id: 'action-settings',
-                kind: 'action',
-                label: t('SETTINGS'),
-                description: t('SETTINGS_PAGE_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.settings),
-            },
-            {
-                id: 'action-about',
-                kind: 'action',
-                label: t('ABOUT'),
-                description: t('ABOUT_PAGE_DESCRIPTION'),
-                onSelect: () => navigate(appRoutes.about),
-            },
-        ],
-        [navigate, t]
-    );
+    const quickActions = useQuickActions();
 
     const {
         data: baseQueryData,

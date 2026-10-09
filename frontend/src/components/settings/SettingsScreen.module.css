@@ -119,3 +119,13 @@
         padding: var(--app-spacing-4);
     }
 }
+
+.anchor {
+    display: flex;
+    flex-direction: column;
+    scroll-margin-top: var(--app-spacing-5);
+}
+
+.anchor > * {
+    flex: 1;
+}

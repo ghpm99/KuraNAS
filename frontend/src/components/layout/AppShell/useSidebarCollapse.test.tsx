@@ -1,6 +1,7 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { requestSidebarToggle } from '../appCommandEvents';
 import { useSidebarCollapse } from './useSidebarCollapse';
 import { sidebarCollapsedStorageKey, sidebarWidthCssVariable } from './sidebarCollapsePreference';
 
@@ -62,6 +63,14 @@ describe('layout/AppShell/useSidebarCollapse', () => {
         const { result } = renderHook(() => useSidebarCollapse());
 
         expect(result.current.isCollapsed).toBe(false);
+    });
+
+    it('toggles when the sidebar toggle command is requested', () => {
+        const { result } = renderHook(() => useSidebarCollapse());
+
+        act(() => requestSidebarToggle());
+
+        expect(result.current.isCollapsed).toBe(true);
     });
 
     it('persists the toggled choice per device and restores it on the next mount', () => {
