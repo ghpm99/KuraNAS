@@ -724,6 +724,8 @@
 	"ERROR_ANALYTICS_LOAD": "Falha ao carregar o overview de analytics",
 	"ERROR_MUSIC_NOT_FOUND": "Recurso de musica nao encontrado",
 	"ERROR_MUSIC_COVER_NOT_FOUND": "Capa nao encontrada",
+	"ERROR_MUSIC_TRANSCODE_UNAVAILABLE": "O ffmpeg nao esta disponivel no servidor, a conversao de audio esta indisponivel",
+	"ERROR_MUSIC_TRANSCODE_BUSY": "Muitas conversoes simultaneas, tente novamente em instantes",
 	"ERROR_MUSIC_OPERATION_FAILED": "Falha ao processar a requisicao de musica",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "Esta faixa já está na playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Recurso de video nao encontrado",

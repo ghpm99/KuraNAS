@@ -174,6 +174,7 @@ type MusicContext struct {
 	Handler                 *music.Handler
 	SummaryHandler          *music.AudioSummaryHandler
 	CoverHandler            *music.CoverHandler
+	TranscodeHandler        *music.TranscodeHandler
 	Service                 music.ServiceInterface
 	Repository              music.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
@@ -502,6 +503,7 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 		Handler:                 handler,
 		SummaryHandler:          summaryHandler,
 		CoverHandler:            coverHandler,
+		TranscodeHandler:        music.NewFFmpegTranscodeHandler(filesService, loggerSvc),
 		Service:                 service,
 		Repository:              repository,
 		AudioMetadataRepository: audioMetadataRepository,
