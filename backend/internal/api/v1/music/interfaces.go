@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type RepositoryInterface interface {
@@ -48,6 +49,9 @@ type RepositoryInterface interface {
 	GetPlaylistQueue(playlistID int, limit int) ([]MusicQueueEntryModel, error)
 	GetLibraryQueueByFileIDs(fileIDs []int) ([]MusicQueueEntryModel, error)
 	GetRecentLibraryFileIDs(limit int) ([]int, error)
+	InsertPlayEvent(tx *sql.Tx, clientID string, fileID int, playedSeconds int) error
+	GetMostPlayedTracks(earliestPlayedAt *time.Time, page int, pageSize int) (utils.PaginationResponse[PlayedTrackModel], error)
+	GetRecentlyPlayedTracks(page int, pageSize int) (utils.PaginationResponse[PlayedTrackModel], error)
 	GetFavoriteLibraryFileIDs(limit int) ([]int, error)
 	GetArtistClusterInputs() ([]artistClusterInput, error)
 	GetLibraryFileIDsByArtistKeys(artistKeys []string) ([]int, error)
@@ -119,6 +123,9 @@ type ServiceInterface interface {
 	GetPlayerQueue(clientID string) (PlayerQueueDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 	RebuildAIClusters(ctx context.Context) error
+	RecordPlay(clientID string, request RecordPlayRequest) error
+	GetMostPlayedTracks(period PlayPeriod, page int, pageSize int) (utils.PaginationResponse[MusicPlayedTrackDto], error)
+	GetRecentlyPlayedTracks(page int, pageSize int) (utils.PaginationResponse[MusicPlayedTrackDto], error)
 	// Browse methods (moved from files)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)

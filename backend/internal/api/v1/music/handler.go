@@ -44,7 +44,7 @@ func respondMusicError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_NOT_FOUND")})
 	case errors.Is(err, ErrTrackAlreadyInPlaylist):
 		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST")})
-	case errors.Is(err, ErrAutoPlaylistReadOnly), errors.Is(err, ErrInvalidPlayerQueue):
+	case errors.Is(err, ErrAutoPlaylistReadOnly), errors.Is(err, ErrInvalidPlayerQueue), errors.Is(err, ErrInvalidPlayRequest):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_OPERATION_FAILED")})
