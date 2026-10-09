@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"path/filepath"
 	"slices"
 	"testing"
 	"time"
@@ -10,9 +11,22 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
+var searchSeedMoment = time.Date(2026, 3, 10, 12, 0, 0, 0, time.UTC)
+
+func searchNames(t *testing.T, repo *Repository, query FileSearchQuery) (utils.PaginationResponse[FileModel], error) {
+	t.Helper()
+	if query.Page == 0 {
+		query.Page = 1
+	}
+	if query.PageSize == 0 {
+		query.PageSize = 50
+	}
+	return repo.SearchActiveFiles(query)
+}
+
 func insertSearchRow(t *testing.T, repo *Repository, name string, path string, parentPath string, fileType FileType) {
 	t.Helper()
-	moment := time.Now().UTC().Truncate(time.Second)
+	moment := searchSeedMoment
 	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
 		_, createErr := repo.CreateFile(tx, FileModel{
 			Name:       name,
@@ -60,16 +74,16 @@ func seedSearchTree(t *testing.T, repo *Repository) {
 	}
 }
 
-func TestPostgres_SearchGlobalIsCaseInsensitiveSkipsDeletedAndListsDirectoriesFirst(t *testing.T) {
+func TestPostgres_SearchGlobalIsCaseInsensitiveAndSkipsDeleted(t *testing.T) {
 	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("RELATORIO"), 1, 50)
+	page, err := searchNames(t, repo, FileSearchQuery{Query: "RELATORIO"})
 	if err != nil {
 		t.Fatalf("global search: %v", err)
 	}
-	expected := []string{"relatorios", "Relatorio.txt", "relatorio-final.txt", "relatorio-vizinho.txt"}
+	expected := []string{"Relatorio.txt", "relatorio-final.txt", "relatorios", "relatorio-vizinho.txt"}
 	if !slices.Equal(namesOf(page.Items), expected) {
 		t.Fatalf("expected %v, got %v", expected, namesOf(page.Items))
 	}
@@ -80,11 +94,11 @@ func TestPostgres_SearchUnderPathReturnsOnlyDescendants(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByNameUnderPath("/srv/docs/", utils.BuildContainsLikePattern("relatorio"), 1, 50)
+	page, err := searchNames(t, repo, FileSearchQuery{Query: "relatorio", Scope: SearchScopeDescendants, ScopePath: "/srv/docs/"})
 	if err != nil {
 		t.Fatalf("under path search: %v", err)
 	}
-	expected := []string{"relatorios", "Relatorio.txt", "relatorio-final.txt"}
+	expected := []string{"Relatorio.txt", "relatorio-final.txt", "relatorios"}
 	if !slices.Equal(namesOf(page.Items), expected) {
 		t.Fatalf("expected %v, got %v", expected, namesOf(page.Items))
 	}
@@ -97,7 +111,7 @@ func TestPostgres_SearchUnderPathMatchesWindowsPaths(t *testing.T) {
 	insertSearchRow(t, repo, "nota.txt", `D:\Pasta\sub\nota.txt`, `D:\Pasta\sub`, File)
 	insertSearchRow(t, repo, "nota.txt", `D:\Pasta2\nota.txt`, `D:\Pasta2`, File)
 
-	page, err := repo.SearchActiveFilesByNameUnderPath(`D:\Pasta\`, utils.BuildContainsLikePattern("nota"), 1, 50)
+	page, err := searchNames(t, repo, FileSearchQuery{Query: "nota", Scope: SearchScopeDescendants, ScopePath: `D:\Pasta\`})
 	if err != nil {
 		t.Fatalf("windows search: %v", err)
 	}
@@ -111,11 +125,11 @@ func TestPostgres_SearchChildrenReturnsOnlyDirectChildren(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveChildrenByName("/srv/docs", utils.BuildContainsLikePattern("relatorio"), 1, 50)
+	page, err := searchNames(t, repo, FileSearchQuery{Query: "relatorio", Scope: SearchScopeChildren, ScopePath: "/srv/docs"})
 	if err != nil {
 		t.Fatalf("children search: %v", err)
 	}
-	expected := []string{"relatorios", "Relatorio.txt"}
+	expected := []string{"Relatorio.txt", "relatorios"}
 	if !slices.Equal(namesOf(page.Items), expected) {
 		t.Fatalf("expected %v, got %v", expected, namesOf(page.Items))
 	}
@@ -126,7 +140,7 @@ func TestPostgres_SearchTreatsPercentAndUnderscoreLiterally(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("100%_"), 1, 50)
+	page, err := searchNames(t, repo, FileSearchQuery{Query: "100%_"})
 	if err != nil {
 		t.Fatalf("escaped search: %v", err)
 	}
@@ -140,11 +154,11 @@ func TestPostgres_SearchPaginatesCompleteResults(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	firstPage, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("relatorio"), 1, 2)
+	firstPage, err := searchNames(t, repo, FileSearchQuery{Query: "relatorio", Page: 1, PageSize: 2})
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
-	secondPage, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("relatorio"), 2, 2)
+	secondPage, err := searchNames(t, repo, FileSearchQuery{Query: "relatorio", Page: 2, PageSize: 2})
 	if err != nil {
 		t.Fatalf("second page: %v", err)
 	}
@@ -202,5 +216,244 @@ func TestPostgres_FolderStatsCountsOnlyActiveDescendantsOfTheFolder(t *testing.T
 	}
 	if emptyStats != (FolderStatsDto{}) {
 		t.Fatalf("expected zero stats for an unknown folder, got %+v", emptyStats)
+	}
+}
+
+type searchRowSpec struct {
+	name         string
+	path         string
+	format       string
+	fileType     FileType
+	size         int64
+	updatedAt    time.Time
+	isStarred    bool
+	physicalPath string
+}
+
+func seedSearchRows(t *testing.T, repo *Repository, rows []searchRowSpec) {
+	t.Helper()
+	truncateHomeFile(t, repo)
+	for _, row := range rows {
+		err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+			created, createErr := repo.CreateFile(tx, FileModel{
+				Name:       row.name,
+				Path:       row.path,
+				ParentPath: filepath.Dir(row.path),
+				Format:     row.format,
+				Size:       row.size,
+				UpdatedAt:  row.updatedAt,
+				CreatedAt:  row.updatedAt,
+				Type:       row.fileType,
+			})
+			if createErr != nil {
+				return createErr
+			}
+			_, updateErr := tx.Exec(
+				"UPDATE home_file SET starred = $1, physical_path = NULLIF($2, '') WHERE id = $3",
+				row.isStarred, row.physicalPath, created.ID,
+			)
+			return updateErr
+		})
+		if err != nil {
+			t.Fatalf("seed %q: %v", row.path, err)
+		}
+	}
+}
+
+func searchFilteredNames(t *testing.T, repo *Repository, searchText string, filter FileSearchFilter) []string {
+	t.Helper()
+	page, err := searchNames(t, repo, FileSearchQuery{Query: searchText, Filter: filter})
+	if err != nil {
+		t.Fatalf("filtered search: %v", err)
+	}
+	return namesOf(page.Items)
+}
+
+func seedFilterRows(t *testing.T, repo *Repository) {
+	t.Helper()
+	january := time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC)
+	february := time.Date(2026, 2, 15, 10, 0, 0, 0, time.UTC)
+	march := time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)
+	seedSearchRows(t, repo, []searchRowSpec{
+		{name: "dados pasta", path: "/srv/dados pasta", fileType: Directory, updatedAt: january},
+		{name: "dados.pdf", path: "/srv/dados.pdf", format: ".pdf", fileType: File, size: 500_000, updatedAt: january},
+		{name: "dados.png", path: "/srv/dados.png", format: ".png", fileType: File, size: 5_000_000, updatedAt: february, isStarred: true},
+		{name: "dados.mp3", path: "/srv/dados.mp3", format: ".mp3", fileType: File, size: 50_000_000, updatedAt: march},
+		{name: "dados.mp4", path: "/srv/dados.mp4", format: ".mp4", fileType: File, size: 2_000_000_000, updatedAt: march, physicalPath: "/cold/dados.mp4"},
+		{name: "dados.zip", path: "/srv/dados.zip", format: ".zip", fileType: File, size: 80_000, updatedAt: january},
+		{name: "dados.xyz", path: "/srv/dados.xyz", format: ".xyz", fileType: File, size: 10, updatedAt: february},
+	})
+}
+
+func sortedStrings(values []string) []string {
+	sorted := slices.Clone(values)
+	slices.Sort(sorted)
+	return sorted
+}
+
+func TestPostgres_SearchFiltersByKind(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+
+	tests := []struct {
+		name     string
+		kinds    []FileSearchKind
+		expected []string
+	}{
+		{"folder", []FileSearchKind{SearchKindFolder}, []string{"dados pasta"}},
+		{"document", []FileSearchKind{SearchKindDocument}, []string{"dados.pdf"}},
+		{"image", []FileSearchKind{SearchKindImage}, []string{"dados.png"}},
+		{"audio", []FileSearchKind{SearchKindAudio}, []string{"dados.mp3"}},
+		{"video", []FileSearchKind{SearchKindVideo}, []string{"dados.mp4"}},
+		{"archive", []FileSearchKind{SearchKindArchive}, []string{"dados.zip"}},
+		{"other", []FileSearchKind{SearchKindOther}, []string{"dados.xyz"}},
+		{"several", []FileSearchKind{SearchKindFolder, SearchKindImage, SearchKindOther}, []string{"dados pasta", "dados.png", "dados.xyz"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			names := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: tc.kinds})
+			if !slices.Equal(sortedStrings(names), sortedStrings(tc.expected)) {
+				t.Fatalf("expected %v, got %v", tc.expected, names)
+			}
+		})
+	}
+}
+
+func TestPostgres_SearchFiltersByModifiedRange(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+	february := time.Date(2026, 2, 15, 0, 0, 0, 0, time.UTC)
+
+	fromNames := searchFilteredNames(t, repo, "dados", FileSearchFilter{ModifiedFrom: &february})
+	if !slices.Equal(sortedStrings(fromNames), []string{"dados.mp3", "dados.mp4", "dados.png", "dados.xyz"}) {
+		t.Fatalf("modified_from: got %v", fromNames)
+	}
+	toNames := searchFilteredNames(t, repo, "dados", FileSearchFilter{ModifiedTo: &february})
+	if !slices.Equal(sortedStrings(toNames), []string{"dados pasta", "dados.pdf", "dados.png", "dados.xyz", "dados.zip"}) {
+		t.Fatalf("modified_to must include the whole last day, got %v", toNames)
+	}
+}
+
+func TestPostgres_SearchFiltersBySizeRange(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+	minSize, maxSize := int64(1_000_000), int64(100_000_000)
+
+	names := searchFilteredNames(t, repo, "dados", FileSearchFilter{MinSize: &minSize, MaxSize: &maxSize})
+	if !slices.Equal(sortedStrings(names), []string{"dados.mp3", "dados.png"}) {
+		t.Fatalf("size range: got %v", names)
+	}
+}
+
+func TestPostgres_SearchFiltersByTierAndStarred(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+
+	coldNames := searchFilteredNames(t, repo, "dados", FileSearchFilter{Tier: TierCold})
+	if !slices.Equal(coldNames, []string{"dados.mp4"}) {
+		t.Fatalf("cold tier: got %v", coldNames)
+	}
+	hotNames := searchFilteredNames(t, repo, "dados", FileSearchFilter{Tier: TierHot})
+	if len(hotNames) != 6 || slices.Contains(hotNames, "dados.mp4") {
+		t.Fatalf("hot tier: got %v", hotNames)
+	}
+	starredNames := searchFilteredNames(t, repo, "dados", FileSearchFilter{OnlyStarred: true})
+	if !slices.Equal(starredNames, []string{"dados.png"}) {
+		t.Fatalf("starred: got %v", starredNames)
+	}
+}
+
+func TestPostgres_SearchCombinesFiltersWithAnd(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+	minSize := int64(1_000_000)
+
+	names := searchFilteredNames(t, repo, "dados", FileSearchFilter{
+		Kinds:       []FileSearchKind{SearchKindImage, SearchKindVideo},
+		MinSize:     &minSize,
+		OnlyStarred: true,
+	})
+	if !slices.Equal(names, []string{"dados.png"}) {
+		t.Fatalf("combined filters: got %v", names)
+	}
+}
+
+func TestPostgres_SearchSortsByNameSizeAndModified(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedFilterRows(t, repo)
+	fileOnly := []FileSearchKind{SearchKindDocument, SearchKindImage, SearchKindAudio}
+
+	byNameAscending := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortName})
+	if !slices.Equal(byNameAscending, []string{"dados.mp3", "dados.pdf", "dados.png"}) {
+		t.Fatalf("name asc: got %v", byNameAscending)
+	}
+	byNameDescending := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortName, Order: SearchOrderDescending})
+	if !slices.Equal(byNameDescending, []string{"dados.png", "dados.pdf", "dados.mp3"}) {
+		t.Fatalf("name desc: got %v", byNameDescending)
+	}
+	bySizeDefault := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortSize})
+	if !slices.Equal(bySizeDefault, []string{"dados.mp3", "dados.png", "dados.pdf"}) {
+		t.Fatalf("size default (desc): got %v", bySizeDefault)
+	}
+	bySizeAscending := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortSize, Order: SearchOrderAscending})
+	if !slices.Equal(bySizeAscending, []string{"dados.pdf", "dados.png", "dados.mp3"}) {
+		t.Fatalf("size asc: got %v", bySizeAscending)
+	}
+	byModifiedDefault := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortModified})
+	if !slices.Equal(byModifiedDefault, []string{"dados.mp3", "dados.png", "dados.pdf"}) {
+		t.Fatalf("modified default (desc): got %v", byModifiedDefault)
+	}
+	byModifiedAscending := searchFilteredNames(t, repo, "dados", FileSearchFilter{Kinds: fileOnly, Sort: SearchSortModified, Order: SearchOrderAscending})
+	if !slices.Equal(byModifiedAscending, []string{"dados.pdf", "dados.png", "dados.mp3"}) {
+		t.Fatalf("modified asc: got %v", byModifiedAscending)
+	}
+}
+
+func TestPostgres_SearchRelevanceRanksExactThenPrefixThenSubstringThenStarredThenRecent(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	older := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	newer := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	seedSearchRows(t, repo, []searchRowSpec{
+		{name: "meu relatorio final", path: "/srv/a/meu relatorio final", format: ".txt", fileType: File, updatedAt: newer, isStarred: true},
+		{name: "relatorio antigo", path: "/srv/b/relatorio antigo", format: ".txt", fileType: File, updatedAt: older},
+		{name: "relatorio novo", path: "/srv/c/relatorio novo", format: ".txt", fileType: File, updatedAt: newer},
+		{name: "relatorio favorito", path: "/srv/d/relatorio favorito", format: ".txt", fileType: File, updatedAt: older, isStarred: true},
+		{name: "Relatorio", path: "/srv/e/Relatorio", format: ".txt", fileType: File, updatedAt: older},
+		{name: "outro relatorio", path: "/srv/f/outro relatorio", format: ".txt", fileType: File, updatedAt: older},
+	})
+
+	names := searchFilteredNames(t, repo, "relatorio", FileSearchFilter{})
+	expected := []string{
+		"Relatorio",
+		"relatorio favorito",
+		"relatorio novo",
+		"relatorio antigo",
+		"meu relatorio final",
+		"outro relatorio",
+	}
+	if !slices.Equal(names, expected) {
+		t.Fatalf("expected %v, got %v", expected, names)
+	}
+}
+
+func TestPostgres_SearchMatchesEveryTermInAnyOrder(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	seedSearchRows(t, repo, []searchRowSpec{
+		{name: "relatorio anual 2024.pdf", path: "/srv/relatorio anual 2024.pdf", format: ".pdf", fileType: File, updatedAt: searchSeedMoment},
+		{name: "2024 anual relatorio.pdf", path: "/srv/2024 anual relatorio.pdf", format: ".pdf", fileType: File, updatedAt: searchSeedMoment},
+		{name: "relatorio mensal 2024.pdf", path: "/srv/relatorio mensal 2024.pdf", format: ".pdf", fileType: File, updatedAt: searchSeedMoment},
+	})
+
+	names := searchFilteredNames(t, repo, "  Anual   relatorio ", FileSearchFilter{})
+	if !slices.Equal(sortedStrings(names), []string{"2024 anual relatorio.pdf", "relatorio anual 2024.pdf"}) {
+		t.Fatalf("multi-word AND match: got %v", names)
 	}
 }

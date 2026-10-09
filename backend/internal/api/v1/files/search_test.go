@@ -7,34 +7,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
 
-	queries "nas-go/api/pkg/database/queries/files"
 	"nas-go/api/pkg/utils"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
 )
 
-func (m *filesRepoMock) SearchActiveFilesByName(namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.searchByNameFn != nil {
-		return m.searchByNameFn(namePattern, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-
-func (m *filesRepoMock) SearchActiveFilesByNameUnderPath(pathPrefix string, namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.searchUnderPathFn != nil {
-		return m.searchUnderPathFn(pathPrefix, namePattern, page, pageSize)
-	}
-	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-}
-
-func (m *filesRepoMock) SearchActiveChildrenByName(parentPath string, namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	if m.searchChildrenFn != nil {
-		return m.searchChildrenFn(parentPath, namePattern, page, pageSize)
+func (m *filesRepoMock) SearchActiveFiles(query FileSearchQuery) (utils.PaginationResponse[FileModel], error) {
+	if m.searchActiveFilesFn != nil {
+		return m.searchActiveFilesFn(query)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
@@ -70,8 +56,8 @@ func TestSearchHandlerDecodesAllParams(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
 	}
-	expected := FileSearchParams{Query: "relatorio", ParentID: 7, IsRecursive: false, Page: 3, PageSize: 40}
-	if len(service.receivedParams) != 1 || service.receivedParams[0] != expected {
+	expected := FileSearchParams{Query: "relatorio", ParentID: 7, IsRecursive: false, Page: 3, PageSize: 40, Filter: FileSearchFilter{Sort: SearchSortRelevance, Kinds: []FileSearchKind{}}}
+	if len(service.receivedParams) != 1 || !reflect.DeepEqual(service.receivedParams[0], expected) {
 		t.Fatalf("expected %+v, got %+v", expected, service.receivedParams)
 	}
 	var body map[string]any
@@ -93,8 +79,8 @@ func TestSearchHandlerDefaultsToGlobalRecursiveSearch(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", recorder.Code)
 	}
-	expected := FileSearchParams{Query: "foto", ParentID: 0, IsRecursive: true, Page: 1, PageSize: 15}
-	if service.receivedParams[0] != expected {
+	expected := FileSearchParams{Query: "foto", ParentID: 0, IsRecursive: true, Page: 1, PageSize: 15, Filter: FileSearchFilter{Sort: SearchSortRelevance, Kinds: []FileSearchKind{}}}
+	if !reflect.DeepEqual(service.receivedParams[0], expected) {
 		t.Fatalf("expected %+v, got %+v", expected, service.receivedParams[0])
 	}
 }
@@ -111,6 +97,17 @@ func TestSearchHandlerRejectsInvalidRequests(t *testing.T) {
 		{name: "negative parent", route: "/files/search?q=ab&parent_id=-1"},
 		{name: "invalid recursive", route: "/files/search?q=ab&recursive=maybe"},
 		{name: "invalid page", route: "/files/search?q=ab&page=x"},
+		{name: "unknown kind", route: "/files/search?q=ab&kind=spreadsheet"},
+		{name: "invalid modified_from", route: "/files/search?q=ab&modified_from=10-01-2026"},
+		{name: "invalid modified_to", route: "/files/search?q=ab&modified_to=ontem"},
+		{name: "inverted dates", route: "/files/search?q=ab&modified_from=2026-02-01&modified_to=2026-01-01"},
+		{name: "invalid min_size", route: "/files/search?q=ab&min_size=big"},
+		{name: "negative max_size", route: "/files/search?q=ab&max_size=-1"},
+		{name: "inverted sizes", route: "/files/search?q=ab&min_size=10&max_size=5"},
+		{name: "invalid tier", route: "/files/search?q=ab&tier=lukewarm"},
+		{name: "invalid starred", route: "/files/search?q=ab&starred=yes"},
+		{name: "invalid sort", route: "/files/search?q=ab&sort=color"},
+		{name: "invalid order", route: "/files/search?q=ab&order=sideways"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -177,25 +174,44 @@ func searchFolderModel(id int, path string, fileType FileType) FileModel {
 	return model
 }
 
-func TestServiceSearchFilesByNameChoosesQueryVariant(t *testing.T) {
+func TestSearchHandlerDecodesFilterParams(t *testing.T) {
+	service := &searchServiceMock{}
+	route := "/files/search?q=ab&kind=image&kind=folder&modified_from=2026-01-01&modified_to=2026-01-31&min_size=10&max_size=20&tier=cold&starred=true&sort=size&order=asc"
+	recorder := performSearchRequest(service, route)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	modifiedFrom := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	modifiedTo := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
+	minSize, maxSize := int64(10), int64(20)
+	expected := FileSearchFilter{
+		Kinds:        []FileSearchKind{SearchKindImage, SearchKindFolder},
+		ModifiedFrom: &modifiedFrom,
+		ModifiedTo:   &modifiedTo,
+		MinSize:      &minSize,
+		MaxSize:      &maxSize,
+		Tier:         TierCold,
+		OnlyStarred:  true,
+		Sort:         SearchSortSize,
+		Order:        SearchOrderAscending,
+	}
+	if !reflect.DeepEqual(service.receivedParams[0].Filter, expected) {
+		t.Fatalf("expected %+v, got %+v", expected, service.receivedParams[0].Filter)
+	}
+}
+
+func TestServiceSearchFilesByNameChoosesScope(t *testing.T) {
 	separator := string(filepath.Separator)
 	folderPath := separator + "srv" + separator + "docs"
-	var calledVariants []string
+	var receivedQueries []FileSearchQuery
 	repo := &filesRepoMock{
 		getFileByIDFn: func(id int) (FileModel, bool, error) {
 			return searchFolderModel(id, folderPath, Directory), true, nil
 		},
-		searchByNameFn: func(namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			calledVariants = append(calledVariants, "global:"+namePattern)
+		searchActiveFilesFn: func(query FileSearchQuery) (utils.PaginationResponse[FileModel], error) {
+			receivedQueries = append(receivedQueries, query)
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(1, "a", File)}}, nil
-		},
-		searchUnderPathFn: func(pathPrefix string, namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			calledVariants = append(calledVariants, "under:"+pathPrefix+"|"+namePattern)
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
-		},
-		searchChildrenFn: func(parentPath string, namePattern string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-			calledVariants = append(calledVariants, "children:"+parentPath+"|"+namePattern)
-			return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 		},
 	}
 	service := newFilesServiceForTest(t, repo)
@@ -211,18 +227,13 @@ func TestServiceSearchFilesByNameChoosesQueryVariant(t *testing.T) {
 		}
 	}
 
-	expected := []string{
-		`global:%x\_%`,
-		"under:" + folderPath + separator + `|%x\_%`,
-		"children:" + folderPath + `|%x\_%`,
+	expected := []FileSearchQuery{
+		{Query: "x_", Scope: SearchScopeGlobal, Page: 1, PageSize: 10},
+		{Query: "x_", Scope: SearchScopeDescendants, ScopePath: folderPath + separator, Page: 1, PageSize: 10},
+		{Query: "x_", Scope: SearchScopeChildren, ScopePath: folderPath, Page: 1, PageSize: 10},
 	}
-	if len(calledVariants) != len(expected) {
-		t.Fatalf("expected %v, got %v", expected, calledVariants)
-	}
-	for index := range expected {
-		if calledVariants[index] != expected[index] {
-			t.Fatalf("expected %v, got %v", expected, calledVariants)
-		}
+	if !reflect.DeepEqual(receivedQueries, expected) {
+		t.Fatalf("expected %+v, got %+v", expected, receivedQueries)
 	}
 }
 
@@ -257,7 +268,7 @@ func TestServiceSearchFilesByNamePropagatesRepositoryFailures(t *testing.T) {
 	failure := errors.New("db down")
 	service := newFilesServiceForTest(t, &filesRepoMock{
 		getFileByIDFn: func(id int) (FileModel, bool, error) { return FileModel{}, false, failure },
-		searchByNameFn: func(string, int, int) (utils.PaginationResponse[FileModel], error) {
+		searchActiveFilesFn: func(FileSearchQuery) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, failure
 		},
 	})
@@ -269,36 +280,34 @@ func TestServiceSearchFilesByNamePropagatesRepositoryFailures(t *testing.T) {
 	}
 }
 
-func TestRepositorySearchQueriesBindPatternAndPagination(t *testing.T) {
+func TestRepositorySearchActiveFilesBindsBuiltStatementAndPagination(t *testing.T) {
 	repo, mock, db := newRepoWithMock(t)
 	defer db.Close()
 
+	searchQuery := FileSearchQuery{Query: "ab", Page: 2, PageSize: 10}
+	statement, _, err := buildSearchFilesQuery(searchQuery)
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchActiveFilesByNameQuery)).
-		WithArgs("%ab%", 11, 10).
+	mock.ExpectQuery(regexp.QuoteMeta(statement)).
+		WithArgs("%ab%", sqlmock.AnyArg(), "ab", "ab%", "%ab%", 11, 10).
 		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "ab", "/tmp/ab"))
 	mock.ExpectRollback()
-	globalPage, err := repo.SearchActiveFilesByName("%ab%", 2, 10)
-	if err != nil || len(globalPage.Items) != 1 {
-		t.Fatalf("global search: items=%v err=%v", globalPage.Items, err)
+	page, err := repo.SearchActiveFiles(searchQuery)
+	if err != nil || len(page.Items) != 1 {
+		t.Fatalf("search: items=%v err=%v", page.Items, err)
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchActiveFilesByNameUnderPathQuery)).
-		WithArgs("/tmp/", "%ab%", 11, 0).
-		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "ab", "/tmp/ab"))
+	mock.ExpectQuery(regexp.QuoteMeta(statement)).WillReturnError(errors.New("search failed"))
 	mock.ExpectRollback()
-	if underPage, err := repo.SearchActiveFilesByNameUnderPath("/tmp/", "%ab%", 1, 10); err != nil || len(underPage.Items) != 1 {
-		t.Fatalf("under path search: items=%v err=%v", underPage.Items, err)
+	if _, err := repo.SearchActiveFiles(searchQuery); err == nil {
+		t.Fatalf("expected search error")
 	}
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchActiveChildrenByNameQuery)).
-		WithArgs("/tmp", "%ab%", 11, 0).
-		WillReturnError(errors.New("children failed"))
-	mock.ExpectRollback()
-	if _, err := repo.SearchActiveChildrenByName("/tmp", "%ab%", 1, 10); err == nil {
-		t.Fatalf("expected children search error")
+	if _, err := repo.SearchActiveFiles(FileSearchQuery{Query: "   ", Page: 1, PageSize: 10}); err == nil {
+		t.Fatalf("expected an error for a query without terms")
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

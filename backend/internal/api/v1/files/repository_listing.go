@@ -44,6 +44,11 @@ func scanFileRows(rows *sql.Rows) ([]FileModel, error) {
 // queryFilesPage runs a paginated file query that ends in LIMIT/OFFSET,
 // fetching pageSize+1 rows so UpdatePagination can derive HasNext.
 func (r *Repository) queryFilesPage(query string, page int, pageSize int, args ...any) (utils.PaginationResponse[FileModel], error) {
+	queryArgs := append(args, pageSize+1, utils.CalculateOffset(page, pageSize))
+	return r.runFilesPageQuery(query, page, pageSize, queryArgs)
+}
+
+func (r *Repository) runFilesPageQuery(query string, page int, pageSize int, queryArgs []any) (utils.PaginationResponse[FileModel], error) {
 	response := utils.PaginationResponse[FileModel]{
 		Items: []FileModel{},
 		Pagination: utils.Pagination{
@@ -51,8 +56,6 @@ func (r *Repository) queryFilesPage(query string, page int, pageSize int, args .
 			PageSize: pageSize,
 		},
 	}
-
-	queryArgs := append(args, pageSize+1, utils.CalculateOffset(page, pageSize))
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
 		rows, err := tx.Query(query, queryArgs...)
