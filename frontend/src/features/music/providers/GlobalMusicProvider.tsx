@@ -12,6 +12,8 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';
+import usePlayReporting from './globalMusic/usePlayReporting';
+import { getTrackDurationSeconds } from '@/utils/music';
 import useMediaSession from './globalMusic/useMediaSession';
 import useMusicStateSync from './globalMusic/useMusicStateSync';
 import useMusicQueueHydration from './globalMusic/useMusicQueueHydration';
@@ -139,6 +141,14 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     }, [currentIndex, queue, repeatMode, shuffle]);
 
     const engine = useAudioEngine(handleTrackEnded);
+
+    usePlayReporting({
+        queueEntryId: currentTrack?.queueEntryId,
+        trackId: currentTrack?.id,
+        isPlaying: engine.isPlaying,
+        currentTime: engine.currentTime,
+        trackDurationSeconds: getTrackDurationSeconds(currentTrack?.metadata) || engine.duration,
+    });
 
     const { syncState } = useMusicStateSync({
         getCurrentTrackId: () => currentTrack?.id,

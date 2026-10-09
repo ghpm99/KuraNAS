@@ -15,6 +15,7 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import CoverArt from '@/features/music/components/CoverArt';
+import TrackStarButton from '@/features/music/components/trackStar/TrackStarButton';
 import { getTrackCoverUrl } from '@/service/musicCover';
 import { getMusicArtist, getMusicTitle } from '@/utils/music';
 import { formatPlaybackTime } from './formatPlaybackTime';
@@ -117,6 +118,12 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
                         {trackArtist}
                     </Typography>
                 </Box>
+
+                {currentTrack && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <TrackStarButton track={currentTrack} iconSize={22} />
+                    </Box>
+                )}
 
                 <Box className={styles.timeRow}>
                     <Typography variant="caption">{formatPlaybackTime(safeCurrentTime)}</Typography>

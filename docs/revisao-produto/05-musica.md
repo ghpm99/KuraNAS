@@ -29,7 +29,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 12. Playlists: renomear, reordenar, confirmar exclusão, aviso de faixa repetida, IA separada
 - [x] 13. Capa de álbum (embutida e `folder.jpg`) em listas, player, fila e Media Session
 - [x] 14. Páginas de álbum e de artista
-- [ ] 15. Favoritos dentro da música, histórico e mais tocadas
+- [x] 15. Favoritos dentro da música, histórico e mais tocadas
 - [ ] 16. Coletâneas e álbuns homônimos agrupados corretamente; gênero com acento inicial
 - [ ] 17. Transcodificação sob demanda para formatos não suportados
 - [ ] 18. Player: erro sem laço, seek ao soltar, shuffle por permutação, atalhos de teclado, Media Session completa, registro de acesso uma vez por reprodução

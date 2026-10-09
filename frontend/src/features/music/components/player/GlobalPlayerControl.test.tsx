@@ -13,6 +13,10 @@ jest.mock('@mui/material/useMediaQuery', () => ({
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
+jest.mock('@/features/music/components/trackStar/TrackStarButton', () => ({
+    __esModule: true,
+    default: () => null,
+}));
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({

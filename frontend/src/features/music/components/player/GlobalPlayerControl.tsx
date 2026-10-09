@@ -26,6 +26,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import CoverArt from '@/features/music/components/CoverArt';
 import { getTrackCoverUrl } from '@/service/musicCover';
+import TrackStarButton from '@/features/music/components/trackStar/TrackStarButton';
 import QueueDrawer from '@/features/music/components/playlist/QueueDrawer';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
@@ -195,7 +196,7 @@ const GlobalPlayerControl = () => {
                                 playbackIndicator
                             )}
                         </Box>
-                        <Box sx={{ minWidth: 0 }}>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
                             <Typography
                                 variant="body2"
                                 fontWeight={600}
@@ -224,6 +225,7 @@ const GlobalPlayerControl = () => {
                                 </Typography>
                             )}
                         </Box>
+                        {currentTrack && <TrackStarButton track={currentTrack} />}
                     </Box>
 
                     <Box
