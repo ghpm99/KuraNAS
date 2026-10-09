@@ -36,12 +36,24 @@ type AudioMetadataModel struct {
 	OriginalArtist      string  `json:"original_artist"`
 	Lyricist            string  `json:"lyricist"`
 	Lyrics              string  `json:"lyrics"`
+	DiscNumberText      string  `json:"disc_number"`
+	TrackNo             *int    `json:"-"`
+	TrackTotal          *int    `json:"-"`
+	DiscNumber          *int    `json:"-"`
+	DiscTotal           *int    `json:"-"`
 	CreatedAt           time.Time
 }
 
 // AudioWithoutMetadata identifies an active audio file that has no
 // audio_metadata row yet, so it is missing from the music library.
 type AudioWithoutMetadata struct {
+	FileID int
+	Path   string
+}
+
+// AudioWithStaleTags identifies an active audio file whose stored tags were
+// extracted by an older extractor version and still look empty.
+type AudioWithStaleTags struct {
 	FileID int
 	Path   string
 }

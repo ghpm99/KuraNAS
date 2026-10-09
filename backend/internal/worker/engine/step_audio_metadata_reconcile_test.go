@@ -22,6 +22,8 @@ type fakeAudioMetadataRepository struct {
 	mock          sqlmock.Sqlmock
 	missingByPage [][]musicdom.AudioWithoutMetadata
 	missingCalls  int
+	staleByPage   [][]musicdom.AudioWithStaleTags
+	staleCalls    int
 	listErr       error
 	upsertedPaths []string
 }
@@ -61,6 +63,15 @@ func (f *fakeAudioMetadataRepository) ListAudioWithoutMetadata(afterFileID int, 
 	}
 	page := f.missingByPage[f.missingCalls]
 	f.missingCalls++
+	return page, nil
+}
+
+func (f *fakeAudioMetadataRepository) ListAudioWithStaleTags(afterFileID int, limit int) ([]musicdom.AudioWithStaleTags, error) {
+	if f.staleCalls >= len(f.staleByPage) {
+		return nil, nil
+	}
+	page := f.staleByPage[f.staleCalls]
+	f.staleCalls++
 	return page, nil
 }
 
@@ -116,6 +127,27 @@ func TestExecuteAudioMetadataReconcileStep_RunsMetadataForEachMissingAudioAcross
 	}
 	if len(repository.upsertedPaths) != audioMetadataReconcilePageSize+1 {
 		t.Fatalf("expected %d audio metadata upserts, got %d", audioMetadataReconcilePageSize+1, len(repository.upsertedPaths))
+	}
+}
+
+func TestExecuteAudioMetadataReconcileStep_ReprocessesAudioWithStaleTags(t *testing.T) {
+	scan.SetPythonScriptRunnerForTesting(func(scriptType utils.ScriptType, filePath string) (string, error) {
+		payload, _ := json.Marshal(musicdom.AudioMetadataModel{Title: "T", Artist: "A"})
+		return string(payload), nil
+	})
+	t.Cleanup(func() { scan.SetPythonScriptRunnerForTesting(nil) })
+
+	repository := newFakeAudioMetadataRepository(t, 2)
+	repository.staleByPage = [][]musicdom.AudioWithStaleTags{{{FileID: 5, Path: "/stale.flac"}, {FileID: 6, Path: "/stale.ogg"}}}
+	filesService := &workerFilesServiceMock{getFileByIDFn: func(id int) (files.FileDto, error) {
+		return files.FileDto{ID: id, Name: "stale.flac", Path: "/stale.flac", Format: ".flac"}, nil
+	}}
+
+	if err := executeAudioMetadataReconcileStep(newAudioReconcileContext(repository, filesService), jobs.StepModel{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(repository.upsertedPaths) != 2 {
+		t.Fatalf("expected 2 re-extractions for stale tags, got %d", len(repository.upsertedPaths))
 	}
 }
 

@@ -75,6 +75,7 @@ func (r *AudioMetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataMod
 }
 
 func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
+	metadata.ResolveNumbering()
 	var id int
 	var createdAt time.Time
 
@@ -104,6 +105,11 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 		metadata.OriginalArtist,
 		metadata.Lyricist,
 		metadata.Lyrics,
+		nullableInt(metadata.DiscNumber),
+		nullableInt(metadata.TrackNo),
+		nullableInt(metadata.DiscTotal),
+		nullableInt(metadata.TrackTotal),
+		CurrentAudioTagsExtractedVersion,
 		time.Now(),
 	}
 
@@ -118,6 +124,13 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 	metadata.ID = id
 	metadata.CreatedAt = createdAt
 	return metadata, nil
+}
+
+func nullableInt(optionalNumber *int) any {
+	if optionalNumber == nil {
+		return nil
+	}
+	return *optionalNumber
 }
 
 func (r *AudioMetadataRepository) DeleteAudioMetadata(id int) error {
@@ -160,6 +173,34 @@ func (r *AudioMetadataRepository) ListAudioWithoutMetadata(afterFileID int, limi
 		return nil, fmt.Errorf("falha ao listar audios sem metadados: %w", err)
 	}
 	return missing, nil
+}
+
+// ListAudioWithStaleTags returns a keyset page (file_id > afterFileID) of
+// active audio files whose tags were extracted before
+// CurrentAudioTagsExtractedVersion and are still empty or lack a year.
+func (r *AudioMetadataRepository) ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error) {
+	staleAudioFiles := []AudioWithStaleTags{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectAudioWithStaleTagsQuery,
+			pq.Array(utils.AudioFormats), afterFileID, CurrentAudioTagsExtractedVersion, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var audioFile AudioWithStaleTags
+			if err := rows.Scan(&audioFile.FileID, &audioFile.Path); err != nil {
+				return err
+			}
+			staleAudioFiles = append(staleAudioFiles, audioFile)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar audios com tags desatualizadas: %w", err)
+	}
+	return staleAudioFiles, nil
 }
 
 // --- Browse queries (methods on the main Repository) ---

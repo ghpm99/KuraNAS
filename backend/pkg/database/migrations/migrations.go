@@ -182,6 +182,9 @@ var CreateSearchFoldFunctionAndIndexesQuery string
 //go:embed queries/0057_create_document_text_table.sql
 var CreateDocumentTextTableQuery string
 
+//go:embed queries/0058_add_audio_metadata_disc_track_numbers.sql
+var AddAudioMetadataDiscTrackNumbersQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -274,6 +277,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0057_create_document_text_table",
 		[]string{"0001_create_home_file_table", "0056_create_search_fold_function_and_indexes"},
 		defaultMigrationFunc(CreateDocumentTextTableQuery))
+
+	addMigrationRequiring("0058_add_audio_metadata_disc_track_numbers",
+		[]string{"0009_create_audio_metadata_table"},
+		defaultMigrationFunc(AddAudioMetadataDiscTrackNumbersQuery))
 }
 
 func diaryMigrationList() {
