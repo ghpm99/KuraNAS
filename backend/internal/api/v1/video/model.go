@@ -122,3 +122,10 @@ type VideoMetadataModel struct {
 	AudioBitRate    string  `json:"audio_bit_rate"`
 	CreatedAt       time.Time
 }
+
+// VideoWithoutMetadata identifies an active video file that has no
+// video_metadata row yet, so it lacks metadata and thumbnail.
+type VideoWithoutMetadata struct {
+	FileID int
+	Path   string
+}

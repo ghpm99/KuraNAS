@@ -26,6 +26,9 @@ func TestJobDomainValidation(t *testing.T) {
 	if !JobTypeImageMetadataReconcile.IsValid() || !JobTypeAudioMetadataReconcile.IsValid() || !JobTypeImageClassifyBackfill.IsValid() {
 		t.Fatalf("expected image job types to be valid")
 	}
+	if !JobTypeVideoMetadataReconcile.IsValid() || !StepTypeVideoMetadataReconcile.IsValid() {
+		t.Fatalf("expected video metadata reconcile job and step types to be valid")
+	}
 	if !StepTypeImageClassifyBatch.IsValid() || !StepTypeImageMetadataReconcile.IsValid() {
 		t.Fatalf("expected image step types to be valid")
 	}

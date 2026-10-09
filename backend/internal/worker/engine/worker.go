@@ -266,6 +266,10 @@ func startWorkersScheduler(context *WorkerContext) {
 		log.Printf("failed to enqueue audio_metadata_reconcile job: %v\n", err)
 	}
 
+	if err := enqueueVideoMetadataReconcileJob(context); err != nil {
+		log.Printf("failed to enqueue video_metadata_reconcile job: %v\n", err)
+	}
+
 	if err := enqueueDocumentTextIndexJob(context); err != nil {
 		log.Printf("failed to enqueue document_text_index job: %v\n", err)
 	}

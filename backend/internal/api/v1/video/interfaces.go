@@ -53,6 +53,7 @@ type VideoMetadataRepositoryInterface interface {
 	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
 	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 	DeleteVideoMetadata(id int) error
+	ListVideosWithoutMetadata(afterFileID int, limit int) ([]VideoWithoutMetadata, error)
 }
 
 type ServiceInterface interface {

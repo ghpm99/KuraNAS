@@ -123,3 +123,6 @@ var DeleteVideoMetadataQuery string
 
 //go:embed get_video_summary_by_file_id.sql
 var GetVideoSummaryByFileIDQuery string
+
+//go:embed select_videos_without_metadata.sql
+var SelectVideosWithoutMetadataQuery string
