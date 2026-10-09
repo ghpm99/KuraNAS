@@ -1,7 +1,13 @@
 import type { VideoFileDto } from '@/service/videoPlayback';
+import { getFileDownloadUrl } from '@/service/files';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, type ReactNode, type RefObject } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import {
+    getPlaybackErrorKindFromMediaErrorCode,
+    PLAYBACK_ERROR_MESSAGE_KEYS,
+    type PlaybackErrorKind,
+} from './playbackError';
 import styles from './VideoPlayer.module.css';
 
 interface VideoPlayerProps {
@@ -14,6 +20,9 @@ interface VideoPlayerProps {
     originBadgeLabel: string;
     contextDescription: string;
     metadataLine: string;
+    playbackError?: PlaybackErrorKind | null;
+    onPlaybackError?: (errorKind: PlaybackErrorKind) => void;
+    onRetryPlayback?: () => void;
     children?: ReactNode;
 }
 
@@ -27,6 +36,9 @@ const VideoPlayer = ({
     originBadgeLabel,
     contextDescription,
     metadataLine,
+    playbackError = null,
+    onPlaybackError,
+    onRetryPlayback,
     children,
 }: VideoPlayerProps) => {
     const { t } = useI18n();
@@ -43,16 +55,22 @@ const VideoPlayer = ({
             void onVideoEnded();
         };
 
+        const handleError = () => {
+            onPlaybackError?.(getPlaybackErrorKindFromMediaErrorCode(video.error?.code));
+        };
+
         video.addEventListener('timeupdate', updateTime);
         video.addEventListener('loadedmetadata', updateDuration);
         video.addEventListener('ended', handleEnded);
+        video.addEventListener('error', handleError);
 
         return () => {
             video.removeEventListener('timeupdate', updateTime);
             video.removeEventListener('loadedmetadata', updateDuration);
             video.removeEventListener('ended', handleEnded);
+            video.removeEventListener('error', handleError);
         };
-    }, [onVideoEnded, setCurrentTime, setDuration, videoRef]);
+    }, [onPlaybackError, onVideoEnded, setCurrentTime, setDuration, videoRef]);
 
     return (
         <div className={styles.player}>
@@ -75,6 +93,35 @@ const VideoPlayer = ({
                         {metadataLine ? <p className={styles.metadata}>{metadataLine}</p> : null}
                     </div>
                 </div>
+
+                {playbackError ? (
+                    <div className={styles.errorOverlay} role="alert">
+                        <p className={styles.errorMessage}>
+                            {t(PLAYBACK_ERROR_MESSAGE_KEYS[playbackError])}
+                        </p>
+                        {currentVideo ? (
+                            <p className={styles.errorFileName}>{currentVideo.name}</p>
+                        ) : null}
+                        <div className={styles.errorActions}>
+                            {currentVideo ? (
+                                <a
+                                    className={styles.errorAction}
+                                    href={getFileDownloadUrl(currentVideo.id)}
+                                    download
+                                >
+                                    {t('VIDEO_ERROR_DOWNLOAD_ORIGINAL')}
+                                </a>
+                            ) : null}
+                            <button
+                                type="button"
+                                className={styles.errorAction}
+                                onClick={onRetryPlayback}
+                            >
+                                {t('VIDEO_ERROR_RETRY')}
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
 
                 {children ? <div className={styles.controlsLayer}>{children}</div> : null}
             </div>

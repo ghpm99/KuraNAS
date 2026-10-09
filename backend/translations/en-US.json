@@ -1801,5 +1801,12 @@
 	"MUSIC_HOME_RECENT_PLAYS_EMPTY": "Tracks you just listened to will appear here.",
 	"MUSIC_HOME_PLAY_COUNT": "{{count}} plays",
 	"MUSIC_HOME_PLAY_TRACK": "Play {{name}}",
-	"MUSIC_VARIOUS_ARTISTS": "Various artists"
+	"MUSIC_VARIOUS_ARTISTS": "Various artists",
+	"VIDEO_ERROR_ABORTED": "Playback was interrupted before it finished.",
+	"VIDEO_ERROR_NETWORK": "A network error occurred while loading the video.",
+	"VIDEO_ERROR_DECODE": "The browser could not decode this video.",
+	"VIDEO_ERROR_UNSUPPORTED": "Format or codec not supported by this browser.",
+	"VIDEO_ERROR_UNKNOWN": "This video could not be played.",
+	"VIDEO_ERROR_DOWNLOAD_ORIGINAL": "Download original",
+	"VIDEO_ERROR_RETRY": "Try again"
 }

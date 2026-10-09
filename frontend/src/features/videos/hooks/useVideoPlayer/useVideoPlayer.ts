@@ -6,6 +6,10 @@ import {
     VideoPlaybackSessionDto,
 } from '@/service/videoPlayback';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    getPlaybackErrorKindFromPlayRejection,
+    type PlaybackErrorKind,
+} from '@/features/videos/videoPlayer/playbackError';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
@@ -26,6 +30,7 @@ const useVideoPlayer = ({
     const [playbackRate, setPlaybackRate] = useState(1);
     const [quality, setQuality] = useState('auto');
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const syncTimerRef = useRef<number | null>(null);
@@ -58,6 +63,7 @@ const useVideoPlayer = ({
 
     const attachVideoSource = useCallback((videoToPlayId: number, seekSeconds?: number) => {
         if (!videoRef.current) return;
+        setPlaybackError(null);
         videoRef.current.src = `${getApiV1BaseUrl()}/files/video-stream/${videoToPlayId}`;
         if (typeof seekSeconds === 'number' && seekSeconds > 0) {
             videoRef.current.currentTime = seekSeconds;
@@ -65,8 +71,23 @@ const useVideoPlayer = ({
         videoRef.current
             .play()
             .then(() => setStatus('playing'))
-            .catch(() => setStatus('paused'));
+            .catch((rejection: unknown) => {
+                setStatus('paused');
+                setPlaybackError(getPlaybackErrorKindFromPlayRejection(rejection));
+            });
     }, []);
+
+    const reportPlaybackError = useCallback((errorKind: PlaybackErrorKind) => {
+        setStatus('paused');
+        setPlaybackError(errorKind);
+    }, []);
+
+    const retryPlayback = useCallback(() => {
+        const latest = latestPlaybackRef.current;
+        const currentVideoId = latest.session?.playback_state.video_id;
+        if (!currentVideoId) return;
+        attachVideoSource(currentVideoId, latest.currentTime);
+    }, [attachVideoSource]);
 
     const syncState = useCallback(
         async (
@@ -243,6 +264,9 @@ const useVideoPlayer = ({
         playbackState,
         currentVideo,
         onVideoEnded,
+        playbackError,
+        reportPlaybackError,
+        retryPlayback,
     };
 };
 

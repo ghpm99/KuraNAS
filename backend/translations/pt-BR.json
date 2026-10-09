@@ -1801,5 +1801,12 @@
 	"MUSIC_HOME_RECENT_PLAYS_EMPTY": "As faixas que você acabou de ouvir aparecem aqui.",
 	"MUSIC_HOME_PLAY_COUNT": "{{count}} reproduções",
 	"MUSIC_HOME_PLAY_TRACK": "Tocar {{name}}",
-	"MUSIC_VARIOUS_ARTISTS": "Vários artistas"
+	"MUSIC_VARIOUS_ARTISTS": "Vários artistas",
+	"VIDEO_ERROR_ABORTED": "A reprodução foi interrompida antes de terminar.",
+	"VIDEO_ERROR_NETWORK": "Falha de rede ao carregar o vídeo.",
+	"VIDEO_ERROR_DECODE": "O navegador não conseguiu decodificar este vídeo.",
+	"VIDEO_ERROR_UNSUPPORTED": "Formato ou codec não suportado por este navegador.",
+	"VIDEO_ERROR_UNKNOWN": "Não foi possível reproduzir este vídeo.",
+	"VIDEO_ERROR_DOWNLOAD_ORIGINAL": "Baixar original",
+	"VIDEO_ERROR_RETRY": "Tentar novamente"
 }
