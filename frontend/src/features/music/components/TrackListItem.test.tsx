@@ -13,6 +13,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (track: any) => track.name,
     getMusicArtist: () => 'artist-9',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (duration: number) => `dur-${duration}`,
 }));
 
@@ -22,7 +23,7 @@ const baseTrack: any = {
     format: 'mp3',
     size: 1000,
     metadata: {
-        duration: 180,
+        length: 180,
     },
 };
 

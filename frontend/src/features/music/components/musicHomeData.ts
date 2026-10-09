@@ -101,7 +101,7 @@ export const buildMusicAlbumHighlights = (
         const existingAlbum = groupedAlbums.get(albumKey) ?? {
             album,
             artist,
-            year: track.metadata?.year ? String(track.metadata.year) : undefined,
+            year: track.metadata?.year || undefined,
             trackCount: 0,
             latestTimestamp: 0,
         };

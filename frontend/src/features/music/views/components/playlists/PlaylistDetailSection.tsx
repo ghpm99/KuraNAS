@@ -13,7 +13,7 @@ import { Playlist, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlaylistTrackHandlers } from '@/features/music/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
-import { formatMusicDuration } from '@/utils/music';
+import { formatMusicDuration, getTrackDurationSeconds } from '@/utils/music';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 
 type PlaylistDetailSectionProps = {
@@ -94,7 +94,7 @@ export default function PlaylistDetailSection({
                 <List sx={{ width: '100%' }}>
                     {tracks.map((track, index) => {
                         const isCurrentTrack = currentTrack?.id === track.file.id;
-                        const duration = track.file.metadata?.duration;
+                        const duration = getTrackDurationSeconds(track.file.metadata);
 
                         return (
                             <ListItem

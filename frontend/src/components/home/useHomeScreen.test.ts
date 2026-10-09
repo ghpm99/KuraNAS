@@ -409,7 +409,7 @@ describe('useHomeScreen', () => {
                                 id: 100,
                                 name: 'other.mp3',
                                 size: 100,
-                                metadata: { duration: 60 },
+                                metadata: { length: 60 },
                             },
                         },
                     ],
@@ -435,7 +435,7 @@ describe('useHomeScreen', () => {
                                 name: 'song.mp3',
                                 size: 500,
                                 updated_at: '2026-01-01',
-                                metadata: { duration: 200, title: 'Song' },
+                                metadata: { length: 200, title: 'Song' },
                             },
                         },
                     ],
@@ -464,7 +464,7 @@ describe('useHomeScreen', () => {
                 name: 'Live.mp3',
                 size: 1024,
                 updated_at: '2026-03-01',
-                metadata: { duration: 300, title: 'Live' },
+                metadata: { length: 300, title: 'Live' },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [track],
@@ -509,7 +509,7 @@ describe('useHomeScreen', () => {
                                 name: 'Track.mp3',
                                 size: 2048,
                                 updated_at: '2026-03-14',
-                                metadata: { duration: 240, title: 'Track', artist: 'Artist' },
+                                metadata: { length: 240, title: 'Track', artist: 'Artist' },
                             },
                         },
                     ],
@@ -533,7 +533,7 @@ describe('useHomeScreen', () => {
                                 name: 'T.mp3',
                                 size: 100,
                                 updated_at: '2026-01-01',
-                                metadata: { duration: 100 },
+                                metadata: { length: 100 },
                             },
                         },
                     ],
@@ -551,7 +551,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 100 },
+                metadata: { length: 100 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [],
@@ -587,7 +587,7 @@ describe('useHomeScreen', () => {
                                 name: 'T.mp3',
                                 size: 100,
                                 updated_at: '2026-01-01',
-                                metadata: { duration: 100 },
+                                metadata: { length: 100 },
                             },
                         },
                     ],
@@ -604,7 +604,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 400 },
+                metadata: { length: 400 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [track],
@@ -625,7 +625,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 100 },
+                metadata: { length: 100 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [track],
@@ -675,7 +675,7 @@ describe('useHomeScreen', () => {
                                 name: 'T.mp3',
                                 size: 100,
                                 updated_at: '2026-01-01',
-                                metadata: { duration: 180 },
+                                metadata: { length: 180 },
                             },
                         },
                     ],
@@ -720,7 +720,7 @@ describe('useHomeScreen', () => {
             name: 'T.mp3',
             size: 100,
             updated_at: '2026-01-01',
-            metadata: { duration: 100 },
+            metadata: { length: 100 },
         };
 
         it('uses queue.length when > 0', () => {
@@ -802,7 +802,7 @@ describe('useHomeScreen', () => {
                                 name: 'T.mp3',
                                 size: 100,
                                 updated_at: '2026-01-01',
-                                metadata: { duration: 100 },
+                                metadata: { length: 100 },
                             },
                         },
                     ],
@@ -820,7 +820,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 100 },
+                metadata: { length: 100 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [],
@@ -844,7 +844,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 100 },
+                metadata: { length: 100 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [],
@@ -869,7 +869,7 @@ describe('useHomeScreen', () => {
                 name: 'T.mp3',
                 size: 100,
                 updated_at: '2026-01-01',
-                metadata: { duration: 100 },
+                metadata: { length: 100 },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [],
@@ -1039,7 +1039,7 @@ describe('useHomeScreen', () => {
                 name: 'Now.mp3',
                 size: 512,
                 updated_at: '2026-03-15',
-                metadata: { duration: 300, title: 'Now', artist: 'Band' },
+                metadata: { length: 300, title: 'Now', artist: 'Band' },
             };
             mockedUseGlobalMusic.mockReturnValue({
                 queue: [currentTrack, { id: 11 }, { id: 12 }],

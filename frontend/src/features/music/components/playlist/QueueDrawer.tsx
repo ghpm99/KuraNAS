@@ -10,7 +10,12 @@ import {
 } from '@mui/material';
 import { ListMusic, Play, Pause, Trash2, X } from 'lucide-react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
+import {
+    getMusicTitle,
+    getMusicArtist,
+    formatMusicDuration,
+    getTrackDurationSeconds,
+} from '@/utils/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const DRAWER_WIDTH = 360;
@@ -141,13 +146,15 @@ const QueueDrawer = () => {
                                 </Typography>
                             )}
                         </Box>
-                        {currentTrack.metadata?.duration && (
+                        {getTrackDurationSeconds(currentTrack.metadata) > 0 && (
                             <Typography
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{ flexShrink: 0 }}
                             >
-                                {formatMusicDuration(currentTrack.metadata.duration)}
+                                {formatMusicDuration(
+                                    getTrackDurationSeconds(currentTrack.metadata)
+                                )}
                             </Typography>
                         )}
                     </Box>
@@ -204,13 +211,13 @@ const QueueDrawer = () => {
                                 }}
                                 secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
                             />
-                            {track.metadata?.duration && (
+                            {getTrackDurationSeconds(track.metadata) > 0 && (
                                 <Typography
                                     variant="caption"
                                     color="text.secondary"
                                     sx={{ ml: 1, flexShrink: 0 }}
                                 >
-                                    {formatMusicDuration(track.metadata.duration)}
+                                    {formatMusicDuration(getTrackDurationSeconds(track.metadata))}
                                 </Typography>
                             )}
                         </ListItemButton>

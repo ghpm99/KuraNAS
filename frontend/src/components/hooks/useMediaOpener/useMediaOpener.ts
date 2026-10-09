@@ -2,10 +2,8 @@ import { appRoutes } from '@/app/routes';
 import { createRouteMusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { IImageMetadata } from '@/types/image';
-import type {
-    IMusicData,
-    IMusicMetadata,
-} from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicMetadata } from '@/types/music';
 import { FileType, getFileTypeInfo, hasDedicatedMediaScreen } from '@/utils';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -53,7 +51,7 @@ const isMusicMetadata = (metadata: OpenableMediaFile['metadata']): metadata is I
         return false;
     }
 
-    return 'duration' in metadata || 'album' in metadata || 'artist' in metadata;
+    return 'length' in metadata || 'album' in metadata || 'artist' in metadata;
 };
 
 const isQueueableAudioFile = (file: OpenableMediaFile): boolean =>

@@ -1,7 +1,5 @@
-import type {
-    IMusicData,
-    IMusicMetadata,
-} from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicMetadata } from '@/types/music';
 import { formatSize } from '@/utils';
 
 export const getMusicTitle = (music: IMusicData): string => {
@@ -18,6 +16,13 @@ export const formatMusicDuration = (seconds: number): string => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+export const getTrackDurationSeconds = (metadata?: IMusicMetadata): number => {
+    const lengthSeconds = metadata?.length;
+    return typeof lengthSeconds === 'number' && Number.isFinite(lengthSeconds) && lengthSeconds > 0
+        ? lengthSeconds
+        : 0;
+};
+
 export const musicMetadata = (music: {
     format: string;
     size: number;
@@ -25,6 +30,7 @@ export const musicMetadata = (music: {
 }): string => {
     const format = music.format ? `${music.format} - ` : '';
     const fileSize = formatSize(music.size);
-    const dur = music.metadata?.duration ? formatMusicDuration(music.metadata.duration) : '';
+    const durationSeconds = getTrackDurationSeconds(music.metadata);
+    const dur = durationSeconds ? formatMusicDuration(durationSeconds) : '';
     return `${format}${fileSize}${dur ? ` - ${dur}` : ''}`;
 };

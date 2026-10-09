@@ -29,22 +29,10 @@ export const buildPlayableTrack = (track: GlobalSearchTrackResult): IMusicData =
     directory_content_count: 0,
     starred: false,
     metadata: {
-        id: 0,
-        fileId: track.file_id,
-        path: track.path,
-        format: extractFormat(track.path),
         title: track.title,
         artist: track.artist,
         album: track.album,
-        year: 0,
-        genre: '',
-        track: 0,
-        disc: 0,
-        duration: track.duration,
-        bitrate: 0,
-        sampleRate: 0,
-        channels: 0,
-        createdAt: '',
+        length: track.duration,
     },
 });
 

@@ -1,3 +1,30 @@
+export interface IMusicMetadata {
+    mime?: string;
+    length?: number;
+    bitrate?: number;
+    sample_rate?: number;
+    channels?: number;
+    bitrate_mode?: number;
+    encoder_info?: string;
+    bit_depth?: number;
+    title?: string;
+    artist?: string;
+    album?: string;
+    album_artist?: string;
+    track_number?: string;
+    genre?: string;
+    composer?: string;
+    year?: string;
+    recording_date?: string;
+    encoder?: string;
+    publisher?: string;
+    original_release_date?: string;
+    original_artist?: string;
+    lyricist?: string;
+    lyrics?: string;
+    disc_number?: string;
+}
+
 export interface MusicArtist {
     key: string;
     artist: string;

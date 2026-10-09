@@ -16,6 +16,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
@@ -124,11 +125,9 @@ const tracks: PlaylistTrack[] = [
             name: 'track-2',
             path: '/music/track-2.mp3',
             metadata: {
-                id: 2,
-                fileId: 101,
                 title: 'track-2',
                 artist: 'Artist 2',
-                duration: 120,
+                length: 120,
             },
         }),
     }),
@@ -356,7 +355,7 @@ describe('playlist sections', () => {
                 ...tracks[0]!.file,
                 metadata: {
                     ...tracks[0]!.file.metadata!,
-                    duration: 0,
+                    length: 0,
                 },
             },
         } satisfies PlaylistTrack;

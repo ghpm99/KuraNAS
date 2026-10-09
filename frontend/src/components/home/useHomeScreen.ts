@@ -7,6 +7,7 @@ import {
     fetchAnalyticsRecentFiles,
     fetchAnalyticsStorage,
 } from '@/service/analytics';
+import { getTrackDurationSeconds } from '@/utils/music';
 import { getStarredFiles } from '@/service/files';
 import { getImageFiles } from '@/service/image';
 import { getPlayerState } from '@/service/playerState';
@@ -172,6 +173,10 @@ const useHomeScreen = () => {
         );
     }, [nowPlayingTracksQuery.data, playerStateQuery.data?.current_file_id]);
 
+    const activeTrackDurationSeconds = getTrackDurationSeconds(
+        (currentTrack ?? fallbackMusicTrack)?.metadata
+    );
+
     const musicResume = useMemo<HomeMusicResume | null>(() => {
         const activeTrack = currentTrack ?? fallbackMusicTrack;
         if (!activeTrack) {
@@ -182,8 +187,8 @@ const useHomeScreen = () => {
             ? currentTime
             : (playerStateQuery.data?.current_position ?? 0);
         const durationSeconds = currentTrack
-            ? Math.max(duration, activeTrack.metadata?.duration ?? 0)
-            : (activeTrack.metadata?.duration ?? 0);
+            ? Math.max(duration, activeTrackDurationSeconds)
+            : activeTrackDurationSeconds;
         const queueCount =
             queue.length ||
             nowPlayingQuery.data?.track_count ||
@@ -199,6 +204,7 @@ const useHomeScreen = () => {
             isPlaying: currentTrack ? isPlaying : false,
         };
     }, [
+        activeTrackDurationSeconds,
         currentTime,
         currentTrack,
         duration,

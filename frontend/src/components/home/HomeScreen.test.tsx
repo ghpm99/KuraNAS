@@ -143,7 +143,7 @@ describe('components/home/HomeScreen', () => {
                     metadata: {
                         title: 'Track Title',
                         artist: 'Artist Name',
-                        duration: 220,
+                        length: 220,
                     },
                 },
                 progressSeconds: 40,
