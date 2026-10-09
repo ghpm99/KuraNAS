@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS image_album (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    cover_file_id INTEGER NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS image_album_item (
+    album_id INTEGER NOT NULL REFERENCES image_album (id) ON DELETE CASCADE,
+    file_id INTEGER NOT NULL REFERENCES home_file (id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (album_id, file_id)
+);
+
+CREATE INDEX IF NOT EXISTS image_album_item_file_id ON image_album_item (file_id);

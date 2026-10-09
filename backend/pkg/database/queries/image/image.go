@@ -108,3 +108,30 @@ var LibraryKeysetBeforeQuery string
 
 //go:embed library_order_taken_at_oldest_first.sql
 var LibraryOrderTakenAtOldestFirstQuery string
+
+//go:embed album_select.sql
+var AlbumSelectQuery string
+
+//go:embed album_filter_id.sql
+var AlbumFilterIDQuery string
+
+//go:embed album_order_page.sql
+var AlbumOrderPageQuery string
+
+//go:embed album_insert.sql
+var AlbumInsertQuery string
+
+//go:embed album_update.sql
+var AlbumUpdateQuery string
+
+//go:embed album_delete.sql
+var AlbumDeleteQuery string
+
+//go:embed album_items_add.sql
+var AlbumItemsAddQuery string
+
+//go:embed album_items_remove.sql
+var AlbumItemsRemoveQuery string
+
+//go:embed library_filter_album.sql
+var LibraryFilterAlbumQuery string

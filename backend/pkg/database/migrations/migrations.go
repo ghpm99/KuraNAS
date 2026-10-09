@@ -164,6 +164,9 @@ var AddImageTakenAtQuery string
 //go:embed queries/0051_create_image_library_indexes.sql
 var CreateImageLibraryIndexesQuery string
 
+//go:embed queries/0052_create_image_album_tables.sql
+var CreateImageAlbumTablesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -238,6 +241,8 @@ func fileMigrationList() {
 	addMigration("0051_create_image_library_indexes",
 		defaultMigrationFunc(CreateImageLibraryIndexesQuery))
 
+	addMigration("0052_create_image_album_tables",
+		defaultMigrationFunc(CreateImageAlbumTablesQuery))
 }
 
 func diaryMigrationList() {

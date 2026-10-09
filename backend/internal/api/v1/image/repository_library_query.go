@@ -57,6 +57,9 @@ func (builder *libraryQueryBuilder) addFilter(filter LibraryFilter) {
 	if filter.Folder != "" {
 		builder.addClause(queries.LibraryFilterFolderQuery, filter.Folder)
 	}
+	if filter.AlbumID > 0 {
+		builder.addClause(queries.LibraryFilterAlbumQuery, filter.AlbumID)
+	}
 }
 
 func (builder *libraryQueryBuilder) addPosition(query LibraryListQuery) {
