@@ -2,11 +2,13 @@ package music
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/music"
 	"nas-go/api/pkg/utils"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -76,7 +78,7 @@ func (r *Repository) getLibraryFiles(args ...any) ([]files.FileModel, error) {
 	return results, nil
 }
 
-func (r *Repository) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error) {
+func (r *Repository) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error) {
 	paginationResponse := utils.PaginationResponse[PlaylistModel]{
 		Items: []PlaylistModel{},
 		Pagination: utils.Pagination{
@@ -90,6 +92,7 @@ func (r *Repository) GetPlaylists(page int, pageSize int) (utils.PaginationRespo
 	args := []any{
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
+		strings.TrimSpace(nameSearch),
 	}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
@@ -349,15 +352,29 @@ func (r *Repository) GetPlaylistTracks(playlistID int, page int, pageSize int) (
 	return paginationResponse, nil
 }
 
+func lockPlaylist(tx *sql.Tx, playlistID int) error {
+	var lockedID int
+	if err := tx.QueryRow(queries.LockPlaylistQuery, playlistID).Scan(&lockedID); err != nil {
+		return fmt.Errorf("falha ao bloquear playlist: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) AddPlaylistTrack(tx *sql.Tx, playlistID int, fileID int) (PlaylistTrackModel, error) {
 	var track PlaylistTrackModel
 	track.PlaylistID = playlistID
 	track.FileID = fileID
 
+	if err := lockPlaylist(tx, playlistID); err != nil {
+		return track, err
+	}
+
 	err := tx.QueryRow(queries.AddPlaylistTrackQuery, playlistID, fileID).Scan(
 		&track.ID, &track.Position, &track.AddedAt,
 	)
-
+	if errors.Is(err, sql.ErrNoRows) {
+		return track, ErrTrackAlreadyInPlaylist
+	}
 	if err != nil {
 		return track, fmt.Errorf("falha ao adicionar track: %w", err)
 	}
@@ -366,6 +383,10 @@ func (r *Repository) AddPlaylistTrack(tx *sql.Tx, playlistID int, fileID int) (P
 }
 
 func (r *Repository) RemovePlaylistTrack(tx *sql.Tx, playlistID int, fileID int) error {
+	if err := lockPlaylist(tx, playlistID); err != nil {
+		return err
+	}
+
 	result, err := tx.Exec(queries.RemovePlaylistTrackQuery, playlistID, fileID)
 	if err != nil {
 		return fmt.Errorf("falha ao remover track: %w", err)
@@ -377,17 +398,34 @@ func (r *Repository) RemovePlaylistTrack(tx *sql.Tx, playlistID int, fileID int)
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("track não encontrada na playlist")
+		return fmt.Errorf("track não encontrada na playlist: %w", sql.ErrNoRows)
+	}
+
+	if _, err := tx.Exec(queries.CompactPlaylistPositionsQuery, playlistID); err != nil {
+		return fmt.Errorf("falha ao compactar posições: %w", err)
 	}
 
 	return nil
 }
 
 func (r *Repository) ReorderPlaylistTrack(tx *sql.Tx, playlistID int, fileID int, position int) error {
-	_, err := tx.Exec(queries.ReorderPlaylistTrackQuery, position, playlistID, fileID)
+	if err := lockPlaylist(tx, playlistID); err != nil {
+		return err
+	}
+
+	result, err := tx.Exec(queries.ReorderPlaylistTrackQuery, position, playlistID, fileID)
 	if err != nil {
 		return fmt.Errorf("falha ao reordenar track: %w", err)
 	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("falha ao verificar reordenação: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("track não encontrada na playlist: %w", sql.ErrNoRows)
+	}
+
 	return nil
 }
 

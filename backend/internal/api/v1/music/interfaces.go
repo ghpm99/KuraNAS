@@ -10,7 +10,7 @@ import (
 
 type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
-	GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error)
+	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error)
 	GetPlaylistByID(id int) (PlaylistModel, error)
 	CreatePlaylist(tx *sql.Tx, name string, description string, isSystem bool) (PlaylistModel, error)
 	UpdatePlaylist(tx *sql.Tx, id int, name string, description string) (PlaylistModel, error)
@@ -77,7 +77,7 @@ type AudioMetadataRepositoryInterface interface {
 }
 
 type ServiceInterface interface {
-	GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error)
+	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error)
 	GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error)
 	GetPlaylistByID(id int) (PlaylistDto, error)
 	CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)

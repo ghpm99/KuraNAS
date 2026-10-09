@@ -26,8 +26,8 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
-func (s *Service) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {
-	playlistsModel, err := s.Repository.GetPlaylists(page, pageSize)
+func (s *Service) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error) {
+	playlistsModel, err := s.Repository.GetPlaylists(page, pageSize, nameSearch)
 	if err != nil {
 		return utils.PaginationResponse[PlaylistDto]{}, err
 	}

@@ -33,6 +33,18 @@ func newMusicRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) 
 	return NewRepository(database.NewDbContext(db)), mock, db
 }
 
+func expectPlaylistLock(mock sqlmock.Sqlmock, playlistID int) {
+	mock.ExpectQuery(regexp.QuoteMeta(queries.LockPlaylistQuery)).
+		WithArgs(playlistID).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(playlistID))
+}
+
+func expectPlaylistCompaction(mock sqlmock.Sqlmock, playlistID int) {
+	mock.ExpectExec(regexp.QuoteMeta(queries.CompactPlaylistPositionsQuery)).
+		WithArgs(playlistID).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+}
+
 func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 	repo, mock, db := newMusicRepoWithMock(t)
 	defer db.Close()
@@ -47,7 +59,7 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
 			AddRow(1, "p", "d", false, now, now, 3, false))
 	mock.ExpectRollback()
-	playlists, err := repo.GetPlaylists(1, 10)
+	playlists, err := repo.GetPlaylists(1, 10, "")
 	if err != nil || len(playlists.Items) != 1 {
 		t.Fatalf("GetPlaylists failed len=%d err=%v", len(playlists.Items), err)
 	}
@@ -142,6 +154,7 @@ func TestMusicRepositoryWritePaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectQuery(regexp.QuoteMeta(queries.AddPlaylistTrackQuery)).
 		WithArgs(10, 20).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "position", "added_at"}).AddRow(1, 0, now))
@@ -161,9 +174,11 @@ func TestMusicRepositoryWritePaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectExec(regexp.QuoteMeta(queries.RemovePlaylistTrackQuery)).
 		WithArgs(10, 20).
 		WillReturnResult(sqlmock.NewResult(0, 1))
+	expectPlaylistCompaction(mock, 10)
 	mock.ExpectCommit()
 	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
 		return repo.RemovePlaylistTrack(tx, 10, 20)
@@ -173,6 +188,7 @@ func TestMusicRepositoryWritePaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistTrackQuery)).
 		WithArgs(2, 10, 20).
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -335,6 +351,7 @@ func TestMusicRepositoryWriteErrorBranches(t *testing.T) {
 	_ = tx.Rollback()
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectExec(regexp.QuoteMeta(queries.RemovePlaylistTrackQuery)).
 		WithArgs(10, 20).
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -348,6 +365,7 @@ func TestMusicRepositoryWriteErrorBranches(t *testing.T) {
 	_ = tx.Rollback()
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectExec(regexp.QuoteMeta(queries.RemovePlaylistTrackQuery)).
 		WithArgs(10, 20).
 		WillReturnError(errors.New("remove failed"))
@@ -361,6 +379,7 @@ func TestMusicRepositoryWriteErrorBranches(t *testing.T) {
 	_ = tx.Rollback()
 
 	mock.ExpectBegin()
+	expectPlaylistLock(mock, 10)
 	mock.ExpectExec(regexp.QuoteMeta(queries.ReorderPlaylistTrackQuery)).
 		WithArgs(2, 10, 20).
 		WillReturnError(errors.New("reorder failed"))
