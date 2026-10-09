@@ -100,3 +100,75 @@
     justify-content: flex-end;
     gap: var(--app-spacing-2);
 }
+
+.modeTabs {
+    min-height: 40px;
+}
+
+.contentStatus {
+    margin: 0;
+    padding: var(--app-spacing-4) var(--app-spacing-3);
+    color: var(--app-color-text-secondary);
+    text-align: center;
+}
+
+.documentList {
+    display: grid;
+    gap: var(--app-spacing-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.documentRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--app-spacing-3);
+    min-width: 0;
+    padding: var(--app-spacing-3);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
+    color: inherit;
+    text-decoration: none;
+}
+
+.documentRow:hover,
+.documentRow:focus-visible {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.documentRow:focus-visible {
+    outline: 2px solid var(--mui-palette-primary-main, var(--app-color-primary));
+    outline-offset: 2px;
+}
+
+.documentIcon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--app-color-text-secondary);
+}
+
+.documentBody {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--app-spacing-1);
+    min-width: 0;
+}
+
+.documentName {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.documentSnippet {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.documentMeta {
+    color: var(--app-color-text-secondary);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}

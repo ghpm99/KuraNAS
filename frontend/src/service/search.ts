@@ -1,4 +1,5 @@
 import { apiBase } from '.';
+import type { DocumentSearchResult } from './documents';
 
 export interface GlobalSearchFileResult {
     id: number;
@@ -91,6 +92,7 @@ export interface GlobalSearchResponse {
     videos: GlobalSearchVideoResult[];
     images: GlobalSearchImageResult[];
     tracks?: GlobalSearchTrackResult[];
+    documents?: DocumentSearchResult[];
 }
 
 export const searchGlobal = async (

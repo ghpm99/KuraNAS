@@ -1702,5 +1702,15 @@
 	"IMAGES_SELECTION_TOOLBAR": "Photo selection actions",
 	"IMAGES_SELECT_ALL_LOADED": "Select loaded",
 	"IMAGES_SELECT_IMAGE_ARIA": "Select {{name}}",
-	"IMAGES_SELECT_MONTH_ARIA": "Select month {{month}}"
+	"IMAGES_SELECT_MONTH_ARIA": "Select month {{month}}",
+	"GLOBAL_SEARCH_SECTION_DOCUMENTS": "Documents",
+	"GLOBAL_SEARCH_SEE_ALL_DOCUMENTS": "See all document results",
+	"GLOBAL_SEARCH_SEE_ALL_DOCUMENTS_DESCRIPTION": "Search \"{{query}}\" inside document contents",
+	"FILES_SEARCH_MODE_LABEL": "Search in",
+	"FILES_SEARCH_MODE_NAME": "Name",
+	"FILES_SEARCH_MODE_CONTENT": "Content",
+	"FILES_SEARCH_CONTENT_RESULTS_ONE": "1 document with \"{{query}}\"",
+	"FILES_SEARCH_CONTENT_RESULTS_TOTAL": "{{count}} documents with \"{{query}}\"",
+	"FILES_SEARCH_CONTENT_RESULTS_MORE": "{{count}}+ documents with \"{{query}}\"",
+	"FILES_SEARCH_CONTENT_EMPTY": "No document contains this text"
 }

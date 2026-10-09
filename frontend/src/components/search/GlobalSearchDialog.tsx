@@ -9,6 +9,7 @@ import {
 import {
     Aperture,
     ArrowRightLeft,
+    FileText,
     Folder,
     History,
     Image,
@@ -61,6 +62,8 @@ const buildOptionId = (itemId: string) => `global-search-option-${itemId}`;
 
 const getItemIcon = (kind: SearchItemKind) => {
     switch (kind) {
+        case 'document':
+            return <FileText size={18} />;
         case 'folder':
             return <Folder size={18} />;
         case 'track':
@@ -248,6 +251,11 @@ const GlobalSearchDialog = ({
                                                 <span className={styles.itemLabel}>
                                                     {renderHighlighted(item, item.label)}
                                                 </span>
+                                                {item.snippet ? (
+                                                    <span className={styles.itemSnippet}>
+                                                        {renderHighlighted(item, item.snippet)}
+                                                    </span>
+                                                ) : null}
                                                 <span className={styles.itemDescriptionRow}>
                                                     <span className={styles.itemDescription}>
                                                         {renderHighlighted(item, item.description)}

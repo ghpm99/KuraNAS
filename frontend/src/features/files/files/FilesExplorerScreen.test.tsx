@@ -31,6 +31,17 @@ jest.mock('@/features/files/search/useFileSearchResults', () => ({
     }),
 }));
 
+jest.mock('@/features/files/search/useDocumentSearchResults', () => ({
+    __esModule: true,
+    default: () => ({
+        items: [],
+        status: 'pending',
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: jest.fn(),
+    }),
+}));
+
 jest.mock('@/components/actionBar', () => () => {
     const useFileDetails = jest.requireActual(
         '@/features/files/fileDetails/useFileDetails'

@@ -25,4 +25,4 @@ Decisões tomadas na revisão: IA sai do caminho principal e vira ação explíc
 - [x] 10. Insensível a acento e tolerante a erro de digitação
 - [x] 11. Histórico de buscas recentes e destaque do trecho encontrado
 - [x] 12. Ações rápidas completas (Lixeira, Downloads, Capturas, Assistente, Notificações, Takeout, Diário, subseções, seções de Configurações)
-- [ ] 13. Busca pelo conteúdo de documentos (texto, Markdown, código, PDF, DOCX)
+- [x] 13. Busca pelo conteúdo de documentos (texto, Markdown, código, PDF, DOCX)

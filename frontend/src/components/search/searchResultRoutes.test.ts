@@ -6,6 +6,7 @@ import {
     getImageSearchRoute,
     getImagesQuerySearchRoute,
     getMusicQuerySearchRoute,
+    getFilesContentSearchRoute,
     getVideosQuerySearchRoute,
     getPlaylistSearchRoute,
 } from './searchResultRoutes';
@@ -101,5 +102,12 @@ describe('searchResultRoutes', () => {
         expect(
             getPlaylistSearchRoute(buildVideoPlaylist({ source_path: '/v', description: 'folder' }))
         ).toBe('/videos/folders/minha-serie?playlist=7');
+    });
+
+    it('builds the files content search route', () => {
+        expect(getFilesContentSearchRoute('rescisao')).toEqual({
+            pathname: '/files',
+            search: '?q=rescisao&in=content',
+        });
     });
 });

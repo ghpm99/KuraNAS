@@ -4,6 +4,7 @@ import {
     getAlbumSearchRoute,
     getArtistSearchRoute,
     getFileSearchRoute,
+    getFilesContentSearchRoute,
     getFilesQuerySearchRoute,
     getImageSearchRoute,
     getImagesQuerySearchRoute,
@@ -21,6 +22,7 @@ import {
     formatTrackDuration,
 } from './searchTrackPlayback';
 import { formatSize } from '@/shared/utils/formatSize';
+import { formatDocumentSnippet } from '@/shared/utils/formatDocumentSnippet';
 import { formatShortDate } from '@/shared/utils/formatShortDate';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -35,6 +37,7 @@ import {
 export type SearchItemKind =
     | 'action'
     | 'file'
+    | 'document'
     | 'folder'
     | 'artist'
     | 'album'
@@ -49,6 +52,7 @@ export type SearchDialogItem = {
     label: string;
     description: string;
     meta?: string;
+    snippet?: string;
     isStarred?: boolean;
     isCold?: boolean;
     keepsDialogOpen?: boolean;
@@ -220,6 +224,23 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        const documents = (data.documents ?? []).map<SearchDialogItem>((item) => ({
+            id: `document-${item.file_id}`,
+            kind: 'document',
+            label: item.name,
+            description: item.parent_path || item.path,
+            snippet: formatDocumentSnippet(item.snippet),
+            meta: item.format,
+            onSelect: () => navigate(getFileSearchRoute(item.path)),
+        }));
+        if (documents.length > 0) {
+            nextSections.push({
+                id: 'documents',
+                title: t('GLOBAL_SEARCH_SECTION_DOCUMENTS'),
+                items: documents,
+            });
+        }
+
         const tracks = (data.tracks ?? []).map<SearchDialogItem>((item) => {
             const albumRoute = item.album_key ? getAlbumSearchRoute(item.album_key) : undefined;
             return {
@@ -375,6 +396,17 @@ export const useGlobalSearchProvider = () => {
                     query: normalizedQuery,
                 }),
                 onSelect: () => navigate(getFilesQuerySearchRoute(normalizedQuery)),
+            });
+        }
+        if (documents.length > 0) {
+            seeAllItems.push({
+                id: 'documents-see-all-results',
+                kind: 'action',
+                label: t('GLOBAL_SEARCH_SEE_ALL_DOCUMENTS'),
+                description: t('GLOBAL_SEARCH_SEE_ALL_DOCUMENTS_DESCRIPTION', {
+                    query: normalizedQuery,
+                }),
+                onSelect: () => navigate(getFilesContentSearchRoute(normalizedQuery)),
             });
         }
         if (images.length > 0) {

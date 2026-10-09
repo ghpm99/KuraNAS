@@ -25,6 +25,11 @@ export const getFilesQuerySearchRoute = (searchText: string): SearchRoute => ({
     search: buildQueryString({ q: searchText }),
 });
 
+export const getFilesContentSearchRoute = (searchText: string): SearchRoute => ({
+    pathname: appRoutes.files,
+    search: buildQueryString({ q: searchText, in: 'content' }),
+});
+
 export const getImagesQuerySearchRoute = (searchText: string): SearchRoute => ({
     pathname: appRoutes.images,
     search: buildQueryString({ q: searchText }),

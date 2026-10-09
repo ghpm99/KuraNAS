@@ -5,9 +5,14 @@ import FilesExplorerScreen from './FilesExplorerScreen';
 
 const mockUseFile = jest.fn();
 const mockSearchFiles = jest.fn();
+const mockSearchDocuments = jest.fn();
 
 jest.mock('@/service/files', () => ({
     searchFiles: (...args: unknown[]) => mockSearchFiles(...args),
+}));
+
+jest.mock('@/service/documents', () => ({
+    searchDocuments: (...args: unknown[]) => mockSearchDocuments(...args),
 }));
 
 jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
@@ -73,6 +78,21 @@ describe('FilesExplorerScreen search', () => {
             fileListFilter: 'all',
             filesSort: { key: 'name', order: 'asc' },
             setFilesSort: jest.fn(),
+        });
+        mockSearchDocuments.mockResolvedValue({
+            items: [
+                {
+                    file_id: 31,
+                    name: 'ata.docx',
+                    path: '/Docs/ata.docx',
+                    parent_path: '/Docs',
+                    format: '.docx',
+                    size: 100,
+                    updated_at: '2026-03-04T10:00:00Z',
+                    snippet: 'definiu o relatorio anual',
+                },
+            ],
+            pagination: { page: 1, page_size: 20, has_next: false, has_prev: false },
         });
         mockSearchFiles.mockResolvedValue({
             items: [{ id: 1, name: 'relatorio.txt' }],
@@ -189,5 +209,63 @@ describe('FilesExplorerScreen search', () => {
 
         expect(screen.getByText('FolderListing')).toBeInTheDocument();
         expect(mockSearchFiles).not.toHaveBeenCalled();
+    });
+
+    it('shows the name tab by default and switches to document content results', async () => {
+        renderScreen('/files/docs?q=relatorio');
+        await screen.findByText('relatorio.txt');
+
+        expect(screen.getByRole('tab', { name: 'FILES_SEARCH_MODE_NAME' })).toHaveAttribute(
+            'aria-selected',
+            'true'
+        );
+        expect(mockSearchDocuments).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('tab', { name: 'FILES_SEARCH_MODE_CONTENT' }));
+
+        expect(await screen.findByText('ata.docx')).toBeInTheDocument();
+        expect(screen.getByTestId('location').textContent).toBe('?q=relatorio&in=content');
+        expect(screen.queryByText('relatorio.txt')).toBeNull();
+        expect(mockSearchDocuments).toHaveBeenCalledWith(
+            expect.objectContaining({ q: 'relatorio', page: 1, pageSize: 20 })
+        );
+
+        fireEvent.click(screen.getByRole('tab', { name: 'FILES_SEARCH_MODE_NAME' }));
+
+        expect(await screen.findByText('relatorio.txt')).toBeInTheDocument();
+        expect(screen.getByTestId('location').textContent).toBe('?q=relatorio');
+    });
+
+    it('opens directly in content mode from the url without name search or filters', async () => {
+        renderScreen('/files?q=relatorio&in=content');
+
+        expect(await screen.findByText('ata.docx')).toBeInTheDocument();
+        expect(mockSearchFiles).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: 'FILES_SEARCH_FILTER_STARRED' })).toBeNull();
+        expect(
+            screen.getByText('FILES_SEARCH_CONTENT_RESULTS_ONE:{"query":"relatorio"}')
+        ).toBeInTheDocument();
+        expect(screen.getByRole('link')).toHaveAttribute('href', '/files/Docs/ata.docx');
+    });
+
+    it('loads the next page of document results', async () => {
+        mockSearchDocuments.mockResolvedValueOnce({
+            items: [{ file_id: 1, name: 'um.txt', path: '/um.txt', snippet: 'x' }],
+            pagination: { page: 1, page_size: 20, has_next: true, has_prev: false },
+        });
+        mockSearchDocuments.mockResolvedValueOnce({
+            items: [{ file_id: 2, name: 'dois.txt', path: '/dois.txt', snippet: 'y' }],
+            pagination: { page: 2, page_size: 20, has_next: false, has_prev: true },
+        });
+        renderScreen('/files?q=relatorio&in=content');
+
+        await screen.findByText('um.txt');
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(await screen.findByText('dois.txt')).toBeInTheDocument();
+        expect(mockSearchDocuments).toHaveBeenLastCalledWith(
+            expect.objectContaining({ page: 2 })
+        );
+        expect(screen.getByText('um.txt')).toBeInTheDocument();
     });
 });
