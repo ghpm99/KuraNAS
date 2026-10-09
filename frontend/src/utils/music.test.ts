@@ -1,8 +1,15 @@
-import { getMusicTitle, getMusicArtist, formatMusicDuration, musicMetadata } from './music';
-import type {
-    IMusicData,
-    IMusicMetadata,
-} from '@/features/music/providers/musicProvider/musicProvider';
+import {
+    getMusicTitle,
+    getMusicArtist,
+    formatMusicDuration,
+    musicMetadata,
+    getTrackDurationSeconds,
+    formatTotalDuration,
+    parseDiscNumber,
+    parseTrackNumber,
+} from './music';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicMetadata } from '@/types/music';
 
 const createTrack = (overrides: Partial<IMusicData> = {}): IMusicData => ({
     id: 1,
@@ -23,22 +30,18 @@ const createTrack = (overrides: Partial<IMusicData> = {}): IMusicData => ({
 });
 
 const createMetadata = (overrides: Partial<IMusicMetadata> = {}): IMusicMetadata => ({
-    id: 1,
-    fileId: 1,
-    path: '/music/track-file.mp3',
-    format: 'mp3',
+    mime: 'audio/mpeg',
     title: 'My Song',
     artist: 'Cool Band',
     album: 'Greatest Hits',
-    year: 2024,
+    year: '2024',
     genre: 'Rock',
-    track: 1,
-    disc: 1,
-    duration: 245,
+    track_number: '1',
+    disc_number: '1',
+    length: 245,
     bitrate: 320,
-    sampleRate: 44100,
+    sample_rate: 44100,
     channels: 2,
-    createdAt: '',
     ...overrides,
 });
 
@@ -115,7 +118,7 @@ describe('musicMetadata', () => {
         const result = musicMetadata({
             format: 'mp3',
             size: 5242880,
-            metadata: createMetadata({ duration: 245 }),
+            metadata: createMetadata({ length: 245 }),
         });
         expect(result).toBe('mp3 - 5.00 MB - 4:05');
     });
@@ -133,7 +136,7 @@ describe('musicMetadata', () => {
         const result = musicMetadata({
             format: 'wav',
             size: 2048,
-            metadata: createMetadata({ duration: 0 }),
+            metadata: createMetadata({ length: 0 }),
         });
         expect(result).toBe('wav - 2.00 KB');
     });
@@ -142,7 +145,7 @@ describe('musicMetadata', () => {
         const result = musicMetadata({
             format: '',
             size: 512,
-            metadata: createMetadata({ duration: 30 }),
+            metadata: createMetadata({ length: 30 }),
         });
         expect(result).toBe('512 B - 0:30');
     });
@@ -154,5 +157,88 @@ describe('musicMetadata', () => {
             metadata: undefined,
         });
         expect(result).toBe('1.00 KB');
+    });
+});
+
+describe('backend audio metadata contract', () => {
+    const backendAudioMetadataJson = `{
+        "mime": "audio/flac",
+        "length": 213.4,
+        "bitrate": 960000,
+        "sample_rate": 44100,
+        "channels": 2,
+        "bitrate_mode": 0,
+        "encoder_info": "reference libFLAC",
+        "bit_depth": 16,
+        "title": "Time",
+        "artist": "Pink Floyd",
+        "album": "The Dark Side of the Moon",
+        "album_artist": "Pink Floyd",
+        "track_number": "4",
+        "genre": "Rock",
+        "composer": "Wright",
+        "year": "1973",
+        "recording_date": "1973",
+        "encoder": "",
+        "publisher": "",
+        "original_release_date": "",
+        "original_artist": "",
+        "lyricist": "",
+        "lyrics": "Ticking away",
+        "disc_number": "1"
+    }`;
+
+    const metadata: IMusicMetadata = JSON.parse(backendAudioMetadataJson);
+
+    it('reads the track duration from the length field', () => {
+        expect(getTrackDurationSeconds(metadata)).toBe(213.4);
+    });
+
+    it('formats the duration shown beside the file summary', () => {
+        const summary = musicMetadata({ format: 'flac', size: 1024, metadata });
+
+        expect(summary).toContain('3:33');
+    });
+
+    it('returns zero for missing, negative or non finite lengths', () => {
+        expect(getTrackDurationSeconds(undefined)).toBe(0);
+        expect(getTrackDurationSeconds({ length: -3 })).toBe(0);
+        expect(getTrackDurationSeconds({ length: Number.NaN })).toBe(0);
+    });
+});
+
+describe('track and disc numbers', () => {
+    it('reads the numeric part of "n/total" track numbers', () => {
+        expect(parseTrackNumber({ track_number: '2/12' })).toBe(2);
+        expect(parseTrackNumber({ track_number: ' 07 ' })).toBe(7);
+        expect(parseTrackNumber({ track_number: '3' })).toBe(3);
+    });
+
+    it('returns undefined when there is no track number', () => {
+        expect(parseTrackNumber(undefined)).toBeUndefined();
+        expect(parseTrackNumber({ track_number: '' })).toBeUndefined();
+        expect(parseTrackNumber({ track_number: 'A1' })).toBeUndefined();
+    });
+
+    it('defaults the disc to 1 and reads "n/total"', () => {
+        expect(parseDiscNumber(undefined)).toBe(1);
+        expect(parseDiscNumber({ disc_number: '' })).toBe(1);
+        expect(parseDiscNumber({ disc_number: '2/3' })).toBe(2);
+    });
+});
+
+describe('formatTotalDuration', () => {
+    const translate = (key: string, options?: Record<string, string>) =>
+        `${key}:${JSON.stringify(options)}`;
+
+    it('uses minutes only below one hour', () => {
+        expect(formatTotalDuration(125, translate)).toBe('MUSIC_DURATION_MINUTES:{"minutes":"2"}');
+        expect(formatTotalDuration(-5, translate)).toBe('MUSIC_DURATION_MINUTES:{"minutes":"0"}');
+    });
+
+    it('uses hours and padded minutes from one hour on', () => {
+        expect(formatTotalDuration(3600 + 5 * 60, translate)).toBe(
+            'MUSIC_DURATION_HOURS_MINUTES:{"hours":"1","minutes":"05"}'
+        );
     });
 });

@@ -15,8 +15,10 @@ import (
 
 func (handler *Handler) GetMusicHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusic", "Fetching music files", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := handler.service.GetMusic(page, pageSize)
 	if err != nil {
@@ -31,8 +33,10 @@ func (handler *Handler) GetMusicHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicArtists", "Fetching music artists", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := handler.service.GetMusicArtists(page, pageSize)
 	if err != nil {
@@ -47,8 +51,10 @@ func (handler *Handler) GetMusicArtistsHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByArtist", "Fetching music by artist", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	artist := c.Param("name")
 
 	pagination, err := handler.service.GetMusicByArtist(artist, page, pageSize)
@@ -64,8 +70,10 @@ func (handler *Handler) GetMusicByArtistHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicAlbums", "Fetching music albums", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := handler.service.GetMusicAlbums(page, pageSize)
 	if err != nil {
@@ -80,8 +88,10 @@ func (handler *Handler) GetMusicAlbumsHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByAlbum", "Fetching music by album", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	album := c.Param("name")
 
 	pagination, err := handler.service.GetMusicByAlbum(album, page, pageSize)
@@ -97,8 +107,10 @@ func (handler *Handler) GetMusicByAlbumHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicGenres", "Fetching music genres", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := handler.service.GetMusicGenres(page, pageSize)
 	if err != nil {
@@ -113,8 +125,10 @@ func (handler *Handler) GetMusicGenresHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicByGenre", "Fetching music by genre", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	genre := c.Param("name")
 
 	pagination, err := handler.service.GetMusicByGenre(genre, page, pageSize)
@@ -130,8 +144,10 @@ func (handler *Handler) GetMusicByGenreHandler(c *gin.Context) {
 
 func (handler *Handler) GetMusicFoldersHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetMusicFolders", "Fetching music folders", c), nil)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
 	pagination, err := handler.service.GetMusicFolders(page, pageSize)
 	if err != nil {
@@ -150,6 +166,10 @@ func (handler *Handler) StreamAudioHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("StreamAudio", "Streaming audio file", c), nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	file, err := handler.filesService.GetFileById(id)
 	if err != nil {

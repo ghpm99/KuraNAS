@@ -1,12 +1,18 @@
 jest.mock('./index', () => ({
     apiBase: {
         get: jest.fn(),
+        post: jest.fn(),
     },
 }));
 
 import { apiBase } from './index';
 import {
+    getMusicAlbumSummary,
     getMusicAlbums,
+    getMusicAlbumsByArtist,
+    getMusicArtistSummary,
+    getMusicFolderSummary,
+    getMusicGenreSummary,
     getMusicArtists,
     getMusicByAlbum,
     getMusicByArtist,
@@ -14,16 +20,33 @@ import {
     getMusicFolders,
     getMusicGenres,
     getMusicHomeCatalog,
+    getMusicQueueByAlbum,
+    getMusicQueueByArtist,
+    getMusicQueueByFolder,
+    getMusicQueueByGenre,
+    getMostPlayedTracks,
+    getRecentlyPlayedTracks,
+    recordMusicPlay,
+    searchMusicTracks,
 } from './music';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
+    post: jest.Mock;
 };
 
 describe('service/music', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedApi.get.mockResolvedValue({ data: { items: [], total: 0 } });
+        mockedApi.post.mockResolvedValue({ data: {} });
+    });
+
+    it('searches tracks with the term and pagination', async () => {
+        await searchMusicTracks('queen', 2, 50);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/search', {
+            params: { q: 'queen', page: 2, page_size: 50 },
+        });
     });
 
     it('gets artists list', async () => {
@@ -79,6 +102,101 @@ describe('service/music', () => {
         await getMusicHomeCatalog(4);
         expect(mockedApi.get).toHaveBeenCalledWith('/music/library/home', {
             params: { limit: 4 },
+        });
+    });
+
+    it.each([
+        ['artists', getMusicArtists, '/music/library/artists'],
+        ['albums', getMusicAlbums, '/music/library/albums'],
+        ['genres', getMusicGenres, '/music/library/genres'],
+        ['folders', getMusicFolders, '/music/library/folders'],
+    ])('sends sort and order to the %s list when given', async (_name, fetchList, path) => {
+        await fetchList(2, 50, { sort: 'recent', order: 'asc' });
+        expect(mockedApi.get).toHaveBeenCalledWith(path, {
+            params: { page: 2, page_size: 50, sort: 'recent', order: 'asc' },
+        });
+    });
+
+    it('sends the sort to the home catalog when given', async () => {
+        await getMusicHomeCatalog(4, { sort: 'recent', order: 'desc' });
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/home', {
+            params: { limit: 4, sort: 'recent', order: 'desc' },
+        });
+    });
+
+    it.each([
+        ['artist', getMusicQueueByArtist, 'AC/DC', '/music/library/artists/AC%2FDC/queue'],
+        [
+            'album',
+            getMusicQueueByAlbum,
+            'ac/dc::back',
+            '/music/library/albums/ac%2Fdc%3A%3Aback/queue',
+        ],
+        ['genre', getMusicQueueByGenre, 'r&b', '/music/library/genres/r%26b/queue'],
+        [
+            'folder',
+            getMusicQueueByFolder,
+            '/data/Rock',
+            '/music/library/folders/%2Fdata%2FRock/queue',
+        ],
+    ])('fetches the %s queue without pagination params', async (_, fetchQueue, key, path) => {
+        const queue = { items: [{ file_id: 1 }], truncated: false };
+        mockedApi.get.mockResolvedValueOnce({ data: queue });
+
+        const result = await fetchQueue(key);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(path);
+        expect(result).toEqual(queue);
+    });
+
+    it.each([
+        ['album', getMusicAlbumSummary, 'ac/dc::back', '/music/library/albums/ac%2Fdc%3A%3Aback'],
+        ['artist', getMusicArtistSummary, 'AC/DC', '/music/library/artists/AC%2FDC'],
+        ['genre', getMusicGenreSummary, 'r&b', '/music/library/genres/r%26b'],
+        ['folder', getMusicFolderSummary, '/data/Rock', '/music/library/folders/%2Fdata%2FRock'],
+    ])('fetches the %s summary without params', async (_, fetchSummary, key, path) => {
+        const summary = { key, name: 'Name', track_count: 3, total_length_seconds: 120 };
+        mockedApi.get.mockResolvedValueOnce({ data: summary });
+
+        const result = await fetchSummary(key);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(path);
+        expect(result).toEqual(summary);
+    });
+
+    it('gets the albums of an encoded artist with pagination', async () => {
+        await getMusicAlbumsByArtist('AC/DC', 2, 24);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/artists/AC%2FDC/albums', {
+            params: { page: 2, page_size: 24 },
+        });
+    });
+
+    it('records a play with the file id and played seconds payload', async () => {
+        await recordMusicPlay(12, 31);
+        expect(mockedApi.post).toHaveBeenCalledWith('/music/plays', {
+            file_id: 12,
+            played_seconds: 31,
+        });
+    });
+
+    it('gets the most played tracks for a period', async () => {
+        await getMostPlayedTracks(1, 6, '30d');
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/most-played', {
+            params: { page: 1, page_size: 6, period: '30d' },
+        });
+    });
+
+    it('defaults the most played period to all', async () => {
+        await getMostPlayedTracks(2, 10);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/most-played', {
+            params: { page: 2, page_size: 10, period: 'all' },
+        });
+    });
+
+    it('gets the recently played tracks', async () => {
+        await getRecentlyPlayedTracks(1, 6);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/recent-plays', {
+            params: { page: 1, page_size: 6 },
         });
     });
 });

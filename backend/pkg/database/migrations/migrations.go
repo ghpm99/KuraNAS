@@ -143,6 +143,60 @@ var ExpandCapturesTableQuery string
 //go:embed queries/0044_add_image_ai_classified_at.sql
 var AddImageAIClassifiedAtQuery string
 
+//go:embed queries/0045_create_home_file_children_sort_indexes.sql
+var CreateHomeFileChildrenSortIndexesQuery string
+
+//go:embed queries/0046_create_starred_and_recent_access_indexes.sql
+var CreateStarredAndRecentAccessIndexesQuery string
+
+//go:embed queries/0047_create_home_file_physical_path_index.sql
+var CreateHomeFilePhysicalPathIndexQuery string
+
+//go:embed queries/0048_create_home_file_name_trigram_index.sql
+var CreateHomeFileNameTrigramIndexQuery string
+
+//go:embed queries/0049_lowercase_home_file_format.sql
+var LowercaseHomeFileFormatQuery string
+
+//go:embed queries/0050_add_image_taken_at.sql
+var AddImageTakenAtQuery string
+
+//go:embed queries/0051_create_image_library_indexes.sql
+var CreateImageLibraryIndexesQuery string
+
+//go:embed queries/0052_create_image_album_tables.sql
+var CreateImageAlbumTablesQuery string
+
+//go:embed queries/0053_add_image_ai_content_search.sql
+var AddImageAIContentSearchQuery string
+
+//go:embed queries/0054_create_audio_metadata_search_trigram_indexes.sql
+var CreateAudioMetadataSearchTrigramIndexesQuery string
+
+//go:embed queries/0055_create_audio_metadata_title_trigram_index.sql
+var CreateAudioMetadataTitleTrigramIndexQuery string
+
+//go:embed queries/0056_create_search_fold_function_and_indexes.sql
+var CreateSearchFoldFunctionAndIndexesQuery string
+
+//go:embed queries/0057_create_document_text_table.sql
+var CreateDocumentTextTableQuery string
+
+//go:embed queries/0058_add_audio_metadata_disc_track_numbers.sql
+var AddAudioMetadataDiscTrackNumbersQuery string
+
+//go:embed queries/0059_add_audio_metadata_catalog_keys.sql
+var AddAudioMetadataCatalogKeysQuery string
+
+//go:embed queries/0060_create_player_queue_table.sql
+var CreatePlayerQueueTableQuery string
+
+//go:embed queries/0061_create_music_play_event_table.sql
+var CreateMusicPlayEventTableQuery string
+
+//go:embed queries/0062_add_audio_metadata_album_grouping.sql
+var AddAudioMetadataAlbumGroupingQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -196,6 +250,65 @@ func fileMigrationList() {
 	addMigration("0039_add_file_physical_path_column",
 		defaultMigrationFunc(AddFilePhysicalPathColumnQuery))
 
+	addMigration("0045_create_home_file_children_sort_indexes",
+		defaultMigrationFunc(CreateHomeFileChildrenSortIndexesQuery))
+
+	addMigration("0046_create_starred_and_recent_access_indexes",
+		defaultMigrationFunc(CreateStarredAndRecentAccessIndexesQuery))
+
+	addMigration("0047_create_home_file_physical_path_index",
+		defaultMigrationFunc(CreateHomeFilePhysicalPathIndexQuery))
+
+	addMigration("0048_create_home_file_name_trigram_index",
+		defaultMigrationFunc(CreateHomeFileNameTrigramIndexQuery))
+
+	addMigration("0049_lowercase_home_file_format",
+		defaultMigrationFunc(LowercaseHomeFileFormatQuery))
+
+	addMigration("0050_add_image_taken_at",
+		defaultMigrationFunc(AddImageTakenAtQuery))
+
+	addMigration("0051_create_image_library_indexes",
+		defaultMigrationFunc(CreateImageLibraryIndexesQuery))
+
+	addMigration("0052_create_image_album_tables",
+		defaultMigrationFunc(CreateImageAlbumTablesQuery))
+
+	addMigration("0053_add_image_ai_content_search",
+		defaultMigrationFunc(AddImageAIContentSearchQuery))
+
+	addMigration("0054_create_audio_metadata_search_trigram_indexes",
+		defaultMigrationFunc(CreateAudioMetadataSearchTrigramIndexesQuery))
+
+	addMigration("0055_create_audio_metadata_title_trigram_index",
+		defaultMigrationFunc(CreateAudioMetadataTitleTrigramIndexQuery))
+
+	addMigration("0056_create_search_fold_function_and_indexes",
+		defaultMigrationFunc(CreateSearchFoldFunctionAndIndexesQuery))
+
+	addMigrationRequiring("0057_create_document_text_table",
+		[]string{"0001_create_home_file_table", "0056_create_search_fold_function_and_indexes"},
+		defaultMigrationFunc(CreateDocumentTextTableQuery))
+
+	addMigrationRequiring("0058_add_audio_metadata_disc_track_numbers",
+		[]string{"0009_create_audio_metadata_table"},
+		defaultMigrationFunc(AddAudioMetadataDiscTrackNumbersQuery))
+
+	addMigrationRequiring("0059_add_audio_metadata_catalog_keys",
+		[]string{"0058_add_audio_metadata_disc_track_numbers", "0001_create_home_file_table"},
+		defaultMigrationFunc(AddAudioMetadataCatalogKeysQuery))
+
+	addMigrationRequiring("0060_create_player_queue_table",
+		[]string{"0013_create_player_state_table", "0001_create_home_file_table"},
+		defaultMigrationFunc(CreatePlayerQueueTableQuery))
+
+	addMigrationRequiring("0061_create_music_play_event_table",
+		[]string{"0001_create_home_file_table"},
+		defaultMigrationFunc(CreateMusicPlayEventTableQuery))
+
+	addMigrationRequiring("0062_add_audio_metadata_album_grouping",
+		[]string{"0059_add_audio_metadata_catalog_keys"},
+		defaultMigrationFunc(AddAudioMetadataAlbumGroupingQuery))
 }
 
 func diaryMigrationList() {

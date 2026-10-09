@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
-import { AnalyticsOverview, AnalyticsPeriod } from '@/types/analytics';
+import { AnalyticsOverview, AnalyticsPeriod, DuplicatesType } from '@/types/analytics';
 
 export interface AnalyticsContextType {
     period: AnalyticsPeriod;
+    duplicatesType?: DuplicatesType;
     data: AnalyticsOverview | null;
     loading: boolean;
     error: string;

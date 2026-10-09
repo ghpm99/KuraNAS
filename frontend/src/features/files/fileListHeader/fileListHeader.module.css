@@ -1,0 +1,52 @@
+.header {
+    display: grid;
+    grid-template-columns: var(--file-list-columns);
+    gap: 8px;
+    align-items: center;
+    padding: 4px 12px;
+    color: var(--app-color-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.nameColumn,
+.sizeColumn,
+.modifiedColumn,
+.typeColumn {
+    min-width: 0;
+}
+
+.sortButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    padding: 4px 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-transform: inherit;
+}
+
+.sortButton:hover,
+.sortButton:focus-visible {
+    color: var(--mui-palette-text-primary, inherit);
+}
+
+.sortArrow {
+    display: inline-flex;
+}
+
+@media (max-width: 899.95px) {
+    .typeColumn {
+        display: none;
+    }
+}
+
+@media (max-width: 599.95px) {
+    .header {
+        display: none;
+    }
+}

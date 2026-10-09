@@ -1,32 +1,14 @@
-import os
-import sys
 import json
+import os
+import re
+import sys
 import traceback
+
 from mutagen import File
-from mutagen.id3 import ID3
 
-# Mapeia nomes técnicos (ID3v2) para chaves amigáveis
-ID3_TAG_MAP = {
-    "TIT2": "title",
-    "TPE1": "artist",
-    "TALB": "album",
-    "TPE2": "album_artist",
-    "TRCK": "track_number",
-    "TCON": "genre",
-    "TCOM": "composer",
-    "TYER": "year",
-    "TDRC": "recording_date",
-    "TENC": "encoder",
-    "TPUB": "publisher",
-    "TDOR": "original_release_date",
-    "TOPE": "original_artist",
-    "TEXT": "lyricist",
-    "USLT": "lyrics",
-}
+MAX_LYRICS_LENGTH = 20000
 
-# Todas as chaves que sempre estarão presentes no JSON final
 OUTPUT_KEYS = {
-    # Técnicas
     "mime": "",
     "length": 0.0,
     "bitrate": 0,
@@ -35,12 +17,12 @@ OUTPUT_KEYS = {
     "bitrate_mode": 0,
     "encoder_info": "",
     "bit_depth": 0,
-    # Tags amigáveis
     "title": "",
     "artist": "",
     "album": "",
     "album_artist": "",
     "track_number": "",
+    "disc_number": "",
     "genre": "",
     "composer": "",
     "year": "",
@@ -53,15 +35,184 @@ OUTPUT_KEYS = {
     "lyrics": "",
 }
 
+EASY_TAG_KEYS = {
+    "title": ["title"],
+    "artist": ["artist"],
+    "album": ["album"],
+    "album_artist": ["albumartist"],
+    "track_number": ["tracknumber"],
+    "disc_number": ["discnumber"],
+    "genre": ["genre"],
+    "composer": ["composer"],
+    "recording_date": ["date"],
+    "encoder": ["encodedby", "encoder"],
+    "publisher": ["organization", "publisher", "label"],
+    "original_release_date": ["originaldate"],
+    "original_artist": ["originalartist"],
+    "lyricist": ["lyricist"],
+    "lyrics": ["lyrics", "unsyncedlyrics"],
+}
 
-def serialize_value(value):
-    if isinstance(value, (str, int, float)):
-        return value
-    elif isinstance(value, list):
-        return value[0] if len(value) > 0 and isinstance(value[0], (str, int, float)) else ""
-    elif hasattr(value, "text"):
-        return value.text[0] if isinstance(value.text, list) else value.text
-    return str(value) if value is not None else ""
+ID3_FRAME_KEYS = {
+    "title": ["TIT2"],
+    "artist": ["TPE1"],
+    "album": ["TALB"],
+    "album_artist": ["TPE2"],
+    "track_number": ["TRCK"],
+    "disc_number": ["TPOS"],
+    "genre": ["TCON"],
+    "composer": ["TCOM"],
+    "recording_date": ["TDRC", "TYER"],
+    "encoder": ["TENC"],
+    "publisher": ["TPUB"],
+    "original_release_date": ["TDOR", "TORY"],
+    "original_artist": ["TOPE"],
+    "lyricist": ["TEXT"],
+}
+
+MP4_ATOM_KEYS = {
+    "title": ["\xa9nam"],
+    "artist": ["\xa9ART"],
+    "album": ["\xa9alb"],
+    "album_artist": ["aART"],
+    "track_number": ["trkn"],
+    "disc_number": ["disk"],
+    "genre": ["\xa9gen"],
+    "composer": ["\xa9wrt"],
+    "recording_date": ["\xa9day"],
+    "encoder": ["\xa9too"],
+    "lyrics": ["\xa9lyr"],
+}
+
+YEAR_PATTERN = re.compile(r"\d{4}")
+
+
+def stringify_tag_value(raw_value):
+    if raw_value is None:
+        return ""
+    if isinstance(raw_value, bytes):
+        return raw_value.decode("utf-8", errors="ignore").strip()
+    if isinstance(raw_value, str):
+        return raw_value.strip()
+    if isinstance(raw_value, (int, float)):
+        return str(raw_value)
+    if isinstance(raw_value, tuple):
+        numbers = [str(number) for number in raw_value if number]
+        return "/".join(numbers)
+    if hasattr(raw_value, "text"):
+        return stringify_tag_value(raw_value.text)
+    if isinstance(raw_value, (list, set)):
+        for candidate in raw_value:
+            candidate_text = stringify_tag_value(candidate)
+            if candidate_text:
+                return candidate_text
+        return ""
+    return str(raw_value).strip()
+
+
+def first_non_empty_tag(tags, tag_keys):
+    for tag_key in tag_keys:
+        try:
+            raw_value = tags.get(tag_key)
+        except Exception:
+            continue
+        tag_text = stringify_tag_value(raw_value)
+        if tag_text:
+            return tag_text
+    return ""
+
+
+def extract_year(*date_candidates):
+    for date_candidate in date_candidates:
+        year_match = YEAR_PATTERN.search(date_candidate or "")
+        if year_match:
+            return year_match.group(0)
+    return ""
+
+
+def read_technical_info(audio, output):
+    mime_types = getattr(audio, "mime", None)
+    if mime_types:
+        output["mime"] = mime_types[0]
+
+    info = getattr(audio, "info", None)
+    if not info:
+        return
+
+    output["length"] = getattr(info, "length", 0.0)
+    output["bitrate"] = getattr(info, "bitrate", 0)
+    output["sample_rate"] = getattr(info, "sample_rate", 0)
+    output["channels"] = getattr(info, "channels", 0)
+    output["bitrate_mode"] = int(getattr(info, "bitrate_mode", 0) or 0)
+    output["encoder_info"] = str(getattr(info, "encoder_info", "") or "")
+    output["bit_depth"] = getattr(info, "bits_per_sample", 0)
+
+
+def read_easy_tags(path):
+    easy_audio = File(path, easy=True)
+    if easy_audio is None or easy_audio.tags is None:
+        return {}
+
+    return {
+        output_key: first_non_empty_tag(easy_audio.tags, tag_keys)
+        for output_key, tag_keys in EASY_TAG_KEYS.items()
+    }
+
+
+def read_id3_lyrics(tags):
+    for lyrics_frame in tags.getall("USLT"):
+        lyrics_text = stringify_tag_value(lyrics_frame.text)
+        if lyrics_text:
+            return lyrics_text
+    return ""
+
+
+def read_vorbis_lyrics(tags):
+    return first_non_empty_tag(tags, ["lyrics", "unsyncedlyrics"])
+
+
+def read_raw_tags(audio):
+    raw_tags = getattr(audio, "tags", None)
+    if raw_tags is None:
+        return {}
+
+    if hasattr(raw_tags, "getall"):
+        id3_values = {
+            output_key: first_non_empty_tag(raw_tags, frame_keys)
+            for output_key, frame_keys in ID3_FRAME_KEYS.items()
+        }
+        id3_values["lyrics"] = read_id3_lyrics(raw_tags)
+        id3_values["year"] = first_non_empty_tag(raw_tags, ["TYER", "TDRC"])
+        return id3_values
+
+    if any(isinstance(atom_key, str) and atom_key.startswith("\xa9") for atom_key in raw_tags.keys()):
+        return {
+            output_key: first_non_empty_tag(raw_tags, atom_keys)
+            for output_key, atom_keys in MP4_ATOM_KEYS.items()
+        }
+
+    return {"lyrics": read_vorbis_lyrics(raw_tags)}
+
+
+def merge_tags(preferred_tags, fallback_tags):
+    merged_tags = dict(fallback_tags)
+    for tag_name, tag_text in preferred_tags.items():
+        if tag_text:
+            merged_tags[tag_name] = tag_text
+    return merged_tags
+
+
+def apply_tags(tags, output):
+    for output_key in OUTPUT_KEYS:
+        if output_key in tags and isinstance(OUTPUT_KEYS[output_key], str):
+            output[output_key] = tags[output_key]
+
+    output["year"] = extract_year(
+        tags.get("recording_date"),
+        tags.get("year"),
+        tags.get("original_release_date"),
+    )
+    output["lyrics"] = output["lyrics"][:MAX_LYRICS_LENGTH]
 
 
 def extract_metadata(path):
@@ -69,72 +220,31 @@ def extract_metadata(path):
 
     try:
         audio = File(path, easy=False)
-        if audio is None:
-            return output
+    except Exception:
+        save_traceback(path)
+        return output
+    if audio is None:
+        return output
 
-        # MIME
-        if hasattr(audio, "mime") and audio.mime:
-            output["mime"] = audio.mime[0]
+    try:
+        read_technical_info(audio, output)
+    except Exception:
+        save_traceback(path)
 
-        # Info técnica
-        info = getattr(audio, "info", None)
-        if info:
-            output["length"] = getattr(info, "length", 0.0)
-            output["bitrate"] = getattr(info, "bitrate", 0)
-            output["sample_rate"] = getattr(info, "sample_rate", 0)
-            output["channels"] = getattr(info, "channels", 0)
-            output["bitrate_mode"] = getattr(info, "bitrate_mode", 0)
-            output["encoder_info"] = getattr(info, "encoder_info", "")
-            output["bit_depth"] = getattr(info, "bits_per_sample", 0)
+    easy_tags = {}
+    try:
+        easy_tags = read_easy_tags(path)
+    except Exception:
+        save_traceback(path)
 
-        # Tags
-        id3_tags = ID3(path)
-        if id3_tags is None:
-            return output
+    raw_tags = {}
+    try:
+        raw_tags = read_raw_tags(audio)
+    except Exception:
+        save_traceback(path)
 
-        output["title"] = serialize_value(
-            id3_tags.get("TIT2").text[0] if id3_tags.get("TIT2") and id3_tags.get("TIT2").text else ""
-        )
-        output["artist"] = serialize_value(
-            id3_tags.get("TPE1").text[0] if id3_tags.get("TPE1") and id3_tags.get("TPE1").text else ""
-        )
-        output["album"] = serialize_value(
-            id3_tags.get("TALB").text[0] if id3_tags.get("TALB") and id3_tags.get("TALB").text else ""
-        )
-        output["album_artist"] = serialize_value(
-            id3_tags.get("TPE2").text[0] if id3_tags.get("TPE2") and id3_tags.get("TPE2").text else ""
-        )
-        output["track_number"] = serialize_value(
-            id3_tags.get("TRCK").text[0] if id3_tags.get("TRCK") and id3_tags.get("TRCK").text else ""
-        )
-        output["genre"] = serialize_value(
-            id3_tags.get("TCON").text[0] if id3_tags.get("TCON") and id3_tags.get("TCON").text else ""
-        )
-        output["composer"] = serialize_value(
-            id3_tags.get("TCOM").text[0] if id3_tags.get("TCOM") and id3_tags.get("TCOM").text else ""
-        )
-        output["year"] = serialize_value(
-            id3_tags.get("TYER").text[0] if id3_tags.get("TYER") and id3_tags.get("TYER").text else ""
-        )
-        output["recording_date"] = serialize_value(
-            id3_tags.get("TDRC").text[0] if id3_tags.get("TDRC") and id3_tags.get("TDRC").text else ""
-        )
-        output["encoder"] = serialize_value(
-            id3_tags.get("TENC").text[0] if id3_tags.get("TENC") and id3_tags.get("TENC").text else ""
-        )
-        output["publisher"] = serialize_value(
-            id3_tags.get("TPUB").text[0] if id3_tags.get("TPUB") and id3_tags.get("TPUB").text else ""
-        )
-        output["original_release_date"] = serialize_value(
-            id3_tags.get("TDOR").text[0] if id3_tags.get("TDOR") and id3_tags.get("TDOR").text else ""
-        )
-        output["original_artist"] = serialize_value(
-            id3_tags.get("TOPE").text[0] if id3_tags.get("TOPE") and id3_tags.get("TOPE").text else ""
-        )
-        output["lyricist"] = serialize_value(
-            id3_tags.get("TEXT").text[0] if id3_tags.get("TEXT") and id3_tags.get("TEXT").text else ""
-        )
-
+    try:
+        apply_tags(merge_tags(easy_tags, raw_tags), output)
     except Exception:
         save_traceback(path)
 
@@ -153,8 +263,8 @@ def save_traceback(path):
 
 
 if __name__ == "__main__":
+    path = sys.argv[1] if len(sys.argv) > 1 else ""
     try:
-        path = sys.argv[1]
         metadata = extract_metadata(path)
         print(json.dumps(metadata, ensure_ascii=False))
     except Exception:

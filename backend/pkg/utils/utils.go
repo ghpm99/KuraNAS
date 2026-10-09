@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -206,15 +207,40 @@ type FormatType struct {
 	Description string
 }
 
-var ImageFormats = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp"}
-var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
-var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
+var RawPhotoFormats = []string{".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf", ".srw", ".pef"}
+var HeifFamilyFormats = []string{".heic", ".heif", ".avif"}
+var ImageFormats = append(
+	[]string{".jpg", ".jpeg", ".jfif", ".png", ".gif", ".bmp", ".svg", ".webp", ".tif", ".tiff"},
+	append(append([]string{}, HeifFamilyFormats...), RawPhotoFormats...)...,
+)
+var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac", ".m4a", ".ogg", ".oga", ".opus", ".wma", ".alac", ".aiff", ".aif", ".ape", ".wv"}
+var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".ogv"}
+var DocumentFormats = []string{".pdf", ".txt", ".html", ".htm", ".xml", ".json", ".csv"}
+var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz"}
+
+func NormalizeExtension(ext string) string {
+	return strings.ToLower(ext)
+}
+
+func ExtensionOf(fileName string) string {
+	return NormalizeExtension(filepath.Ext(fileName))
+}
 
 func GetFormatTypeByExtension(ext string) FormatType {
-	ext = strings.ToLower(ext)
+	ext = NormalizeExtension(ext)
 	switch ext {
-	case ".jpg", ".jpeg":
+	case ".jpg", ".jpeg", ".jfif":
 		return FormatType{Type: FormatTypeImage, Mime: "image/jpeg", Description: "IMAGE_JPEG"}
+	case ".tif", ".tiff":
+		return FormatType{Type: FormatTypeImage, Mime: "image/tiff", Description: "IMAGE_TIFF"}
+	case ".heic":
+		return FormatType{Type: FormatTypeImage, Mime: "image/heic", Description: "IMAGE_HEIC"}
+	case ".heif":
+		return FormatType{Type: FormatTypeImage, Mime: "image/heif", Description: "IMAGE_HEIC"}
+	case ".avif":
+		return FormatType{Type: FormatTypeImage, Mime: "image/avif", Description: "IMAGE_AVIF"}
+	case ".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf", ".srw", ".pef":
+		return FormatType{Type: FormatTypeImage, Mime: "image/x-raw", Description: "IMAGE_RAW"}
 	case ".png":
 		return FormatType{Type: FormatTypeImage, Mime: "image/png", Description: "IMAGE_PNG"}
 	case ".gif":
@@ -234,12 +260,26 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/aac", Description: "AUDIO_AAC"}
 	case ".flac":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/flac", Description: "AUDIO_FLAC"}
+	case ".m4a", ".alac":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/mp4", Description: "AUDIO_M4A"}
+	case ".ogg", ".oga":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/ogg", Description: "AUDIO_OGG"}
+	case ".opus":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/opus", Description: "AUDIO_OPUS"}
+	case ".wma":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-ms-wma", Description: "AUDIO_WMA"}
+	case ".aiff", ".aif":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/aiff", Description: "AUDIO_AIFF"}
+	case ".ape":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-ape", Description: "AUDIO_APE"}
+	case ".wv":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-wavpack", Description: "AUDIO_WAVPACK"}
 
 	case ".mp4":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/mp4", Description: "VIDEO_MP4"}
 	case ".webm":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/webm", Description: "VIDEO_WEBM"}
-	case ".ogg":
+	case ".ogv":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/ogg", Description: "VIDEO_OGG"}
 	case ".mov":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/quicktime", Description: "VIDEO_MOV"}
@@ -422,4 +462,12 @@ func GetDirectoryChecksum(dirPath string) (string, error) {
 	finalHash := sha256.Sum256([]byte(combinedChecksums))
 
 	return hex.EncodeToString(finalHash[:]), nil
+}
+
+func IsRawPhotoExtension(ext string) bool {
+	return slices.Contains(RawPhotoFormats, NormalizeExtension(ext))
+}
+
+func IsHeifFamilyExtension(ext string) bool {
+	return slices.Contains(HeifFamilyFormats, NormalizeExtension(ext))
 }

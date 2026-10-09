@@ -102,6 +102,7 @@ func TestConfigurationServiceUpdateSettingsPersistsNormalizedState(t *testing.T)
 		Appearance: AppearanceSettingsRequest{
 			AccentColor:  "cyan",
 			ReduceMotion: true,
+			ThemeMode:    "light",
 		},
 		Language: LanguageSettingsRequest{
 			Current: "en-US",
@@ -113,6 +114,9 @@ func TestConfigurationServiceUpdateSettingsPersistsNormalizedState(t *testing.T)
 
 	if settings.Appearance.AccentColor != "cyan" {
 		t.Fatalf("expected accent color to be persisted")
+	}
+	if settings.Appearance.ThemeMode != "light" {
+		t.Fatalf("expected theme mode to be persisted")
 	}
 	if settings.Players.ImageSlideshowSeconds != 8 {
 		t.Fatalf("expected slideshow seconds to be persisted")
@@ -327,6 +331,38 @@ func TestNormalizeAccentColor(t *testing.T) {
 	}
 	if got := normalizeAccentColor("blue", "violet"); got != "violet" {
 		t.Fatalf("expected fallback violet, got %s", got)
+	}
+}
+
+func TestNormalizeThemeMode(t *testing.T) {
+	if got := normalizeThemeMode("light", "dark"); got != "light" {
+		t.Fatalf("expected light, got %s", got)
+	}
+	if got := normalizeThemeMode("system", "dark"); got != "system" {
+		t.Fatalf("expected system, got %s", got)
+	}
+	if got := normalizeThemeMode("", "dark"); got != "dark" {
+		t.Fatalf("expected fallback dark for absent value, got %s", got)
+	}
+	if got := normalizeThemeMode("sepia", "dark"); got != "dark" {
+		t.Fatalf("expected fallback dark for unknown value, got %s", got)
+	}
+}
+
+func TestValidateThemeMode(t *testing.T) {
+	for _, accepted := range []string{"", "dark", "light", "system"} {
+		if err := validateThemeMode(accepted); err != nil {
+			t.Fatalf("expected %q to be accepted, got %v", accepted, err)
+		}
+	}
+	if err := validateThemeMode("sepia"); !errors.Is(err, ErrInvalidThemeMode) {
+		t.Fatalf("expected ErrInvalidThemeMode, got %v", err)
+	}
+}
+
+func TestBuildDefaultSettingsUsesDarkTheme(t *testing.T) {
+	if got := buildDefaultSettings([]string{"en-US"}).Appearance.ThemeMode; got != "dark" {
+		t.Fatalf("expected dark default, got %s", got)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	tierHot              = "hot"
 	defaultMinAgeDays    = 90
 	defaultMinSizeBytes  = 1 << 20 // 1 MiB — not worth tiering tiny files
 	defaultIntervalHours = 24
@@ -86,4 +87,17 @@ type TierCountsModel struct {
 	HotBytes  int64 `json:"hot_bytes"`
 	ColdFiles int   `json:"cold_files"`
 	ColdBytes int64 `json:"cold_bytes"`
+}
+
+// TieredFileModel is one active file's storage location; PhysicalPath is empty
+// when the bytes are on the hot disk.
+type TieredFileModel struct {
+	FileID       int
+	LogicalPath  string
+	PhysicalPath string
+	Size         int64
+}
+
+func (m TieredFileModel) isCold() bool {
+	return m.PhysicalPath != ""
 }

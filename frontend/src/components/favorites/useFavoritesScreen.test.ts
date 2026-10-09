@@ -183,4 +183,21 @@ describe('useFavoritesScreen', () => {
         expect(result.current.filteredItems.map((item) => item.name)).toEqual(['frame.jpg']);
         expect(result.current.itemCountLabel).toBe('1 ITEM');
     });
+
+    it('shows an open-ended count and exposes pagination while more pages exist', () => {
+        const fetchNextPage = jest.fn();
+        mockUseFile.mockReturnValue({
+            files: [],
+            selectedItem: null,
+            hasNextPage: true,
+            isFetchingNextPage: false,
+            fetchNextPage,
+        });
+
+        const { result } = renderHook(() => useFavoritesScreen());
+
+        expect(result.current.itemCountLabel).toBe('0+ ITENS');
+        expect(result.current.hasNextPage).toBe(true);
+        expect(result.current.fetchNextPage).toBe(fetchNextPage);
+    });
 });

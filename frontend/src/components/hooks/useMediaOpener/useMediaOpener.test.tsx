@@ -128,4 +128,71 @@ describe('components/hooks/useMediaOpener', () => {
             })
         ).toBe(false);
     });
+
+    it('enqueues the listed audio files starting at the clicked one', () => {
+        const { result } = renderHook(() => useMediaOpener());
+        const listedFiles = [
+            { id: 1, name: 'a.mp3', format: '.mp3', path: '/m/a.mp3' },
+            { id: 2, name: 'cover.jpg', format: '.jpg', path: '/m/cover.jpg' },
+            { id: 3, name: 'b.flac', format: '.flac', path: '/m/b.flac' },
+            { id: 4, name: 'sub', format: '', type: 1, path: '/m/sub' },
+            { id: 5, name: 'c.m4a', format: '.m4a', path: '/m/c.m4a' },
+            { id: 6, name: 'd.wav', format: '.wav', path: '/m/d.wav' },
+        ];
+
+        expect(result.current.openMediaItem(listedFiles[2]!, listedFiles)).toBe(true);
+
+        expect(mockReplaceQueue).toHaveBeenCalledWith(
+            [
+                expect.objectContaining({ id: 1 }),
+                expect.objectContaining({ id: 3 }),
+                expect.objectContaining({ id: 5 }),
+                expect.objectContaining({ id: 6 }),
+            ],
+            1,
+            expect.objectContaining({ href: '/files?filter=recent' })
+        );
+        expect(mockNavigate).toHaveBeenCalledWith('/music', {
+            state: { from: '/files?filter=recent' },
+        });
+    });
+
+    it('falls back to a single-item queue when the clicked file is not in the listing', () => {
+        const { result } = renderHook(() => useMediaOpener());
+
+        result.current.openMediaItem({ id: 9, name: 'solo.mp3', format: '.mp3' }, [
+            { id: 1, name: 'a.mp3', format: '.mp3' },
+        ]);
+
+        expect(mockReplaceQueue).toHaveBeenCalledWith(
+            [expect.objectContaining({ id: 9 })],
+            0,
+            expect.anything()
+        );
+    });
+
+    it('leaves formats without a dedicated screen to the in-place viewer', () => {
+        const { result } = renderHook(() => useMediaOpener());
+
+        for (const format of ['.m4v', '.md']) {
+            expect(result.current.openMediaItem({ id: 1, name: `f${format}`, format })).toBe(false);
+        }
+        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockReplaceQueue).not.toHaveBeenCalled();
+    });
+
+    it.each(['.heic', '.avif', '.tiff', '.jfif', '.cr2', '.nef', '.dng'])(
+        'opens %s on the images screen',
+        (format) => {
+            const { result } = renderHook(() => useMediaOpener());
+
+            expect(result.current.openMediaItem({ id: 5, name: `photo${format}`, format })).toBe(
+                true
+            );
+            expect(mockNavigate).toHaveBeenCalledWith(
+                expect.objectContaining({ search: '?image=5' }),
+                expect.anything()
+            );
+        }
+    );
 });

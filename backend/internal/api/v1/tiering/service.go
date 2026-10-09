@@ -14,15 +14,18 @@ import (
 var ErrInvalidColdDir = errors.New("tiering: invalid cold directory")
 
 type Service struct {
-	repository RepositoryInterface
-	// listRoots is injectable for tests; production reads the live registry.
-	listRoots func() []roots.Root
+	repository     RepositoryInterface
+	listRoots      func() []roots.Root
+	promote        func(promotion tieringengine.Promotion, setPhysical tieringengine.SetPhysicalPath) error
+	availableBytes func(path string) (int64, error)
 }
 
 func NewService(repository RepositoryInterface) *Service {
 	return &Service{
-		repository: repository,
-		listRoots:  roots.Enabled,
+		repository:     repository,
+		listRoots:      roots.Enabled,
+		promote:        tieringengine.Promote,
+		availableBytes: availableBytesAt,
 	}
 }
 

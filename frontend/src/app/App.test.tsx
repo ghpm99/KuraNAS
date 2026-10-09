@@ -6,10 +6,20 @@ const mockNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
     Routes: ({ children }: any) => <div data-testid="routes">{children}</div>,
-    Route: ({ element }: any) => <div>{element}</div>,
+    Route: ({ element, children }: any) => (
+        <div>
+            {element}
+            {children}
+        </div>
+    ),
     Navigate: () => <div>Navigate</div>,
+    Outlet: () => <div data-testid="outlet">Outlet</div>,
     useLocation: () => mockUseLocation(),
     useNavigate: () => mockNavigate,
+}));
+
+jest.mock('@/components/layout/AppShell/AppShell', () => ({
+    AppShell: ({ children }: any) => <div data-testid="app-shell">{children}</div>,
 }));
 
 jest.mock('@/components/providers/appProviders', () => ({ children }: any) => (
@@ -53,6 +63,7 @@ jest.mock('@/pages/favorites', () => () => <div>FavoritesPage</div>);
 jest.mock('@/pages/files', () => () => <div>FilePage</div>);
 jest.mock('@/pages/home', () => () => <div>HomePage</div>);
 jest.mock('@/pages/about', () => () => <div>AboutPage</div>);
+jest.mock('@/pages/configWizard', () => () => <div>ConfigWizardPage</div>);
 jest.mock('@/pages/images', () => () => <div>ImagesPage</div>);
 jest.mock('@/pages/music', () => () => <div>MusicPage</div>);
 jest.mock('@/features/music/components/MusicHomeScreen', () => () => <div>MusicHomeScreen</div>);
@@ -61,13 +72,16 @@ jest.mock('@/features/music/views/ArtistsView', () => () => <div>ArtistsView</di
 jest.mock('@/features/music/views/FoldersView', () => () => <div>FoldersView</div>);
 jest.mock('@/features/music/views/GenresView', () => () => <div>GenresView</div>);
 jest.mock('@/features/music/views/PlaylistsView', () => () => <div>PlaylistsView</div>);
+jest.mock('@/features/music/views/SearchView', () => () => <div>SearchView</div>);
 jest.mock('@/pages/notifications', () => () => <div>NotificationsPage</div>);
 jest.mock('@/pages/settings', () => () => <div>SettingsPage</div>);
 jest.mock('@/pages/videos/videos', () => () => <div>VideosPage</div>);
 jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</div>);
 jest.mock('@/pages/takeout', () => () => <div>TakeoutPage</div>);
+jest.mock('@/pages/captures', () => () => <div>CapturesPage</div>);
 jest.mock('@/pages/downloads', () => () => <div>DownloadsPage</div>);
 jest.mock('@/pages/trash', () => () => <div>TrashPage</div>);
+jest.mock('@/pages/assistant', () => () => <div>AssistantPage</div>);
 
 describe('App', () => {
     it('shows global player when route is not video', async () => {
@@ -75,7 +89,6 @@ describe('App', () => {
         render(<App />);
 
         expect(screen.getByTestId('app-providers')).toBeInTheDocument();
-        expect(screen.getByTestId('music-providers')).toBeInTheDocument();
         expect(await screen.findByText('GlobalPlayerControl')).toBeInTheDocument();
     });
 

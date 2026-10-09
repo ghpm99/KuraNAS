@@ -1,53 +1,3 @@
-.page {
-    display: flex;
-    flex-direction: column;
-    gap: var(--app-spacing-5);
-    padding: 18px 22px 22px;
-}
-
-.hero {
-    display: flex;
-    flex-direction: column;
-    gap: var(--app-spacing-4);
-    padding: clamp(20px, 3vw, 32px);
-    border: 1px solid var(--app-color-border-subtle);
-    border-radius: var(--app-radius-xl);
-    background:
-        radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 30%),
-        radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 34%),
-        linear-gradient(180deg, rgba(11, 18, 32, 0.96), rgba(15, 23, 42, 0.82));
-    box-shadow: var(--app-shadow-card);
-}
-
-.heroEyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    width: fit-content;
-    padding: 8px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--app-color-text-secondary);
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.heroTitle {
-    margin: 0;
-    font-size: clamp(1.8rem, 2.5vw, 2.6rem);
-    line-height: 1.05;
-}
-
-.heroDescription {
-    margin: 0;
-    max-width: 780px;
-    color: var(--app-color-text-secondary);
-    line-height: 1.6;
-}
-
 .workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -73,7 +23,7 @@
     border: 1px solid var(--app-color-border-subtle);
     border-radius: var(--app-radius-xl);
     background:
-        linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(10, 15, 28, 0.92)),
+        linear-gradient(180deg, rgba(var(--app-color-background-elevated-rgb), 0.72), rgba(var(--app-color-background-elevated-rgb), 0.92)),
         var(--app-background-panel);
     box-shadow: var(--app-shadow-card);
     min-width: 0;
@@ -93,36 +43,6 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-}
-
-.breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
-
-.breadcrumbButton {
-    border: none;
-    padding: 0;
-    background: transparent;
-    color: var(--app-color-text-primary);
-    cursor: pointer;
-    font: inherit;
-    font-weight: 600;
-}
-
-.breadcrumbButton:hover {
-    color: #7dd3fc;
-}
-
-.breadcrumbCurrent {
-    color: var(--app-color-text-secondary);
-    font-weight: 500;
-}
-
-.breadcrumbSeparator {
-    color: var(--app-color-text-secondary);
 }
 
 .contextMeta {
@@ -178,23 +98,26 @@
     padding: var(--app-spacing-3);
 }
 
+.detailsDrawerContent {
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
 .drawerTitle {
     margin: 0 0 var(--app-spacing-3);
     font-size: 1rem;
     font-weight: 700;
 }
 
-@media (max-width: 900px) {
-    .page {
-        padding: 10px 10px 14px;
-    }
-
+@media (max-width: 899.95px) {
     .treeButton {
         display: inline-flex;
     }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1199.95px) {
     .workspaceWithPreview {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -205,21 +128,13 @@
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .contextHeader {
         flex-direction: column;
     }
 
     .contextActions {
         justify-content: flex-start;
-    }
-
-    .hero {
-        padding: var(--app-spacing-3);
-    }
-
-    .heroTitle {
-        font-size: clamp(1.4rem, 5vw, 1.8rem);
     }
 
     .panel {
@@ -231,13 +146,3 @@
     }
 }
 
-@media (max-width: 480px) {
-    .page {
-        padding: 8px 6px 10px;
-    }
-
-    .breadcrumb {
-        gap: 4px;
-        font-size: 0.85rem;
-    }
-}

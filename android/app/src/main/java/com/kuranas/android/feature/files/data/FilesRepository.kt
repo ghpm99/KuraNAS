@@ -25,10 +25,6 @@ class FilesRepository @Inject constructor(
         api.getChildrenById(id).items
     }
 
-    suspend fun getImages(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getImages().items
-    }
-
     suspend fun createFolder(name: String, parentId: String?): AppResult<Unit> = safeApiCall {
         api.createFolder(CreateFolderRequest(name, parentId?.toIntOrNull()))
     }

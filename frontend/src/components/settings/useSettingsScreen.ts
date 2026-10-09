@@ -1,43 +1,13 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
-import type {
-    SettingsConfiguration,
-    UpdateSettingsConfigurationRequest,
-} from '@/service/configuration';
+import type { UpdateSettingsConfigurationRequest } from '@/service/configuration';
 import { useSnackbar } from 'notistack';
+import { buildDraftFromSettings } from './buildSettingsDraft';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const accentOptionValues = ['violet', 'cyan', 'rose'] as const;
+const themeModeOptionValues = ['dark', 'light', 'system'] as const;
 const slideshowOptionValues = [4, 8, 12, 20] as const;
-
-const buildDraftFromSettings = (
-    settings: SettingsConfiguration
-): UpdateSettingsConfigurationRequest => ({
-    indexing: {
-        scan_on_startup: settings.indexing.scan_on_startup,
-        extract_metadata: settings.indexing.extract_metadata,
-        generate_previews: settings.indexing.generate_previews,
-    },
-    captures: {
-        save_path: settings.captures.save_path,
-    },
-    ai: {
-        image_classification: settings.ai.image_classification,
-    },
-    players: {
-        remember_music_queue: settings.players.remember_music_queue,
-        remember_video_progress: settings.players.remember_video_progress,
-        autoplay_next_video: settings.players.autoplay_next_video,
-        image_slideshow_seconds: settings.players.image_slideshow_seconds,
-    },
-    appearance: {
-        accent_color: settings.appearance.accent_color,
-        reduce_motion: settings.appearance.reduce_motion,
-    },
-    language: {
-        current: settings.language.current,
-    },
-});
 
 const areSettingsEqual = (
     left: UpdateSettingsConfigurationRequest,
@@ -95,6 +65,15 @@ const useSettingsScreen = () => {
             accentOptionValues.map((value) => ({
                 value,
                 label: t(`SETTINGS_APPEARANCE_ACCENT_${value.toUpperCase()}`),
+            })),
+        [t]
+    );
+
+    const themeModeOptions = useMemo(
+        () =>
+            themeModeOptionValues.map((value) => ({
+                value,
+                label: t(`SETTINGS_APPEARANCE_THEME_${value.toUpperCase()}`),
             })),
         [t]
     );
@@ -223,6 +202,7 @@ const useSettingsScreen = () => {
         hasUnsavedChanges,
         languageOptions,
         accentOptions,
+        themeModeOptions,
         slideshowOptions,
         setIndexingField,
         setCapturesField,

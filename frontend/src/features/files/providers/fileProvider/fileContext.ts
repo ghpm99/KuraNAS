@@ -27,24 +27,41 @@ export type RecentAccessFile = {
     accessed_at: string;
 };
 
+export type FilesSortKey = 'name' | 'size' | 'updated_at' | 'created_at';
+
+export type FilesSortOrder = 'asc' | 'desc';
+
+export type FilesSort = {
+    key: FilesSortKey;
+    order: FilesSortOrder;
+};
+
 export type FileContextType = {
     files: FileData[];
     recentAccessFiles: RecentAccessFile[];
     isLoadingAccessData: boolean;
     status: string;
+    listingErrorMessage?: string;
+    retryListing: () => void;
     selectedItem: FileData | null;
     handleSelectItem: (item: FileData | null) => void;
     handleStarredItem: (itemId: number) => void;
-    uploadFiles: (files: FileList, targetFolderId?: number) => Promise<void>;
+    toggleStarred: (itemId: number) => Promise<void>;
     createFolder: (name: string, parentId?: number) => Promise<void>;
     moveFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string) => Promise<void>;
     copyFile: (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => Promise<void>;
     renameFile: (id: number, newName: string) => Promise<void>;
-    deleteFile: (id: number) => Promise<void>;
+    deleteFile: (id: number, permanent?: boolean) => Promise<void>;
+    promoteFileToHot: (id: number) => Promise<void>;
     rescanFiles: () => Promise<void>;
+    fetchNextPage: () => void;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
     expandedItems: number[];
     fileListFilter: FileListCategoryType;
     setFileListFilter: (filter: FileListCategoryType) => void;
+    filesSort: FilesSort;
+    setFilesSort: (sort: FilesSort) => void;
 };
 
 export type Pagination = {

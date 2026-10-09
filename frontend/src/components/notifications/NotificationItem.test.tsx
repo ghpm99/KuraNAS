@@ -12,14 +12,25 @@ const BASE_NOTIFICATION = {
 	is_grouped: false,
 };
 
+const relative = (amount: number, unit: Intl.RelativeTimeFormatUnit) =>
+	new Intl.RelativeTimeFormat('en-US', { numeric: 'auto', style: 'narrow' }).format(amount, unit);
+
 describe('components/notifications/NotificationItem', () => {
 	beforeEach(() => {
+		document.documentElement.lang = 'en-US';
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date('2026-04-01T12:00:00.000Z'));
 	});
 
 	afterEach(() => {
+		document.documentElement.lang = '';
 		jest.useRealTimers();
+	});
+
+	it('renders without i18n provider and without any service mock', () => {
+		render(<NotificationItem notification={BASE_NOTIFICATION} />);
+
+		expect(screen.getByText('Title')).toBeInTheDocument();
 	});
 
 	it('renders title/message and handles click when callback is provided', () => {
@@ -31,8 +42,21 @@ describe('components/notifications/NotificationItem', () => {
 		expect(screen.getByText('Message')).toBeInTheDocument();
 		expect(screen.getByText('now')).toBeInTheDocument();
 
-		fireEvent.click(screen.getByText('Title'));
+		fireEvent.click(screen.getByRole('button'));
 		expect(onClick).toHaveBeenCalled();
+	});
+
+	it('is not a button when there is no click handler and flags unread items to assistive tech', () => {
+		render(<NotificationItem notification={BASE_NOTIFICATION} />);
+
+		expect(screen.queryByRole('button')).not.toBeInTheDocument();
+		expect(screen.getByText('UNREAD')).toBeInTheDocument();
+	});
+
+	it('does not flag read items as unread', () => {
+		render(<NotificationItem notification={{ ...BASE_NOTIFICATION, is_read: true }} />);
+
+		expect(screen.queryByText('UNREAD')).not.toBeInTheDocument();
 	});
 
 	it('shows grouped badge only when grouped and count is greater than one', () => {
@@ -67,7 +91,7 @@ describe('components/notifications/NotificationItem', () => {
 				}}
 			/>
 		);
-		expect(screen.getByText('5m')).toBeInTheDocument();
+		expect(screen.getByText(relative(-5, 'minute'))).toBeInTheDocument();
 
 		rerender(
 			<NotificationItem
@@ -77,7 +101,7 @@ describe('components/notifications/NotificationItem', () => {
 				}}
 			/>
 		);
-		expect(screen.getByText('3h')).toBeInTheDocument();
+		expect(screen.getByText(relative(-3, 'hour'))).toBeInTheDocument();
 
 		rerender(
 			<NotificationItem
@@ -87,7 +111,7 @@ describe('components/notifications/NotificationItem', () => {
 				}}
 			/>
 		);
-		expect(screen.getByText('2d')).toBeInTheDocument();
+		expect(screen.getByText(relative(-2, 'day'))).toBeInTheDocument();
 
 		const oldDate = '2026-01-01T12:00:00.000Z';
 		rerender(

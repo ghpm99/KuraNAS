@@ -10,6 +10,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
@@ -37,7 +38,6 @@ describe('musicContent', () => {
 
         render(<MusicContent />);
         expect(screen.getByText('OutletView')).toBeInTheDocument();
-        expect(screen.getAllByText('MUSIC_QUEUE').length).toBeGreaterThan(0);
 
         mockUseGlobalMusic.mockReturnValue({
             hasQueue: false,

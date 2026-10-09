@@ -8,6 +8,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const extractBackendError = (error: unknown): string | undefined => {
 	if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -26,6 +27,8 @@ const useStorageRootsSettings = () => {
 
 	const rootsQuery = useQuery({
 		queryKey: ['storage-roots'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getStorageRoots,
 		retry: false,
 	});

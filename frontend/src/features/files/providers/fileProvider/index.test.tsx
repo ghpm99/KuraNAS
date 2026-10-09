@@ -15,7 +15,9 @@ jest.mock('@/service', () => ({
 jest.mock('@tanstack/react-query', () => ({
     useInfiniteQuery: jest.fn(),
     useQuery: jest.fn(),
+    useQueries: jest.fn(() => []),
     useMutation: jest.fn(),
+    useQueryClient: () => ({ invalidateQueries: jest.fn(), removeQueries: jest.fn() }),
 }));
 
 const mockedUseInfiniteQuery = useInfiniteQuery as jest.Mock;
@@ -161,6 +163,8 @@ describe('providers/fileProvider/index', () => {
                 file_parent: undefined,
                 page: 3,
                 category: 'all',
+                sort: 'name',
+                order: 'asc',
             },
         });
         await infiniteOptions.queryFn({});
@@ -170,6 +174,8 @@ describe('providers/fileProvider/index', () => {
                 file_parent: undefined,
                 page: 1,
                 category: 'all',
+                sort: 'name',
+                order: 'asc',
             },
         });
         expect(

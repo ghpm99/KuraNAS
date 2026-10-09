@@ -38,10 +38,19 @@ All service modules use the shared axios instance `apiBase` (`src/service/index.
 
 ## App structure
 
-- `src/app/App.tsx` — route table, **all pages lazy-loaded**, wrapped `AppProviders → ErrorBoundary → GlobalMusicProvider`, with a persistent `GlobalPlayerControl` mini-player (hidden on the video-player route). Route paths live in `src/app/routes`.
+- `src/app/App.tsx` — route table, **all pages lazy-loaded**, wrapped `AppProviders → ErrorBoundary → GlobalMusicProvider`, with a persistent `GlobalPlayerControl` mini-player (hidden on the video-player route). Route paths live in `src/app/routes`. **The `AppShell` is mounted once, by a layout route (`<Route element={<ShellLayout/>}>` with `<Outlet/>`)** — pages and feature layouts never wrap themselves in the shell; the video player is the only route outside it.
 - Heavier domains live under `src/features/{files,music,videos}/` and own **all** their domain UI (providers, views, components — e.g. `features/music/providers/GlobalMusicProvider`, `features/music/components/player/GlobalPlayerControl`). A domain's code never lives under `src/components/`.
 - Other dirs: `src/pages/<page>/` (route shells), `src/components/` (**shared/cross-domain UI only** — layout, tabs, search, settings…), `src/service/`, `src/types/`, `src/theme/`, `src/shared/`, `src/utils/`, `src/config/`.
 - Path alias `@` → `src` (configured in both `vite.config.ts` and `jest.config.js`'s `moduleNameMapper`).
+
+## Page layout system (issue #112 — no hero cards)
+
+Every screen is built from the shared layout primitives in `src/components/layout/`; sizes come from tokens in `src/theme/visualTokens.ts` (`--app-font-page-title`, `--app-content-max-width`, spacing/radius vars) — never hard-code a page-title font size or page padding:
+
+- **`PageContainer`** — the page wrapper: max-width, padding, vertical gap. Screens do not define their own `.page` padding.
+- **`PageHeader`** — the only page header: compact `h1` + optional one-line subtitle + `actions` slot. **Never reintroduce a "hero" card** (eyebrow + giant title + description in a gradient box) — that pattern was removed on purpose; a screen's description is a short subtitle, not a panel.
+- **`DomainPageLayout`** (`header` + `nav` + children) with **`DomainNavTabs`** — domain sections (Images/Music/Videos/Analytics) navigate via a tab strip under the header, **not** a second sidebar. The whole page scrolls in the shell's scroll area: no `overflow: hidden` page grids or nested scroll panes.
+- One `h1` per page (the `PageHeader`); inner section titles are `h2`+.
 
 ## User-facing text goes through i18n (mandatory)
 

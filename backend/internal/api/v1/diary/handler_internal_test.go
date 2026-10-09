@@ -66,6 +66,41 @@ func (m *diaryLoggerMock) CompleteWithErrorLog(log logger.LoggerModel, err error
 	return nil
 }
 
+type diaryDuplicateCapturingMock struct {
+	diaryHandlerServiceMock
+	capturedID int
+}
+
+func (m *diaryDuplicateCapturingMock) DuplicateDiary(id int) (DiaryDto, error) {
+	m.capturedID = id
+	return DiaryDto{ID: id, Name: "copy"}, nil
+}
+
+// TestDuplicateDiaryHandlerDecodesPayload pins the request seam: the frontend
+// sends {"id": n} to POST /diary/copy; this proves the handler decodes it into
+// DiaryId.ID (json:"id") and forwards it. Guards the casing alignment fixed in
+// service/activityDiary.ts (it used to send {"ID": n}, working only via Go's
+// case-insensitive JSON matching).
+func TestDuplicateDiaryHandlerDecodesPayload(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := &diaryDuplicateCapturingMock{}
+	handler := NewHandler(service, &diaryLoggerMock{})
+	router := gin.New()
+	router.POST("/diary/copy", handler.DuplicateDiaryHandler)
+
+	req := httptest.NewRequest(http.MethodPost, "/diary/copy", strings.NewReader(`{"id":7}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	if service.capturedID != 7 {
+		t.Fatalf("handler decoded id into %d, want 7", service.capturedID)
+	}
+}
+
 func TestDiaryHandlerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := NewHandler(&diaryHandlerServiceMock{}, &diaryLoggerMock{})

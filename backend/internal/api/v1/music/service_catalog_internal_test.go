@@ -9,36 +9,6 @@ import (
 	"time"
 )
 
-func catalogEntry(
-	fileID int,
-	title string,
-	artist string,
-	album string,
-	genre string,
-	parentPath string,
-	trackNumber string,
-	createdAt time.Time,
-	updatedAt time.Time,
-	lastInteraction sql.NullTime,
-	starred bool,
-) MusicLibraryIndexEntryModel {
-	return MusicLibraryIndexEntryModel{
-		FileID:          fileID,
-		FileName:        title + ".mp3",
-		FilePath:        parentPath + "/" + title + ".mp3",
-		ParentPath:      parentPath,
-		Starred:         starred,
-		CreatedAt:       createdAt,
-		UpdatedAt:       updatedAt,
-		LastInteraction: lastInteraction,
-		Title:           title,
-		Artist:          artist,
-		Album:           album,
-		Genre:           genre,
-		TrackNumber:     trackNumber,
-	}
-}
-
 func musicFileModel(id int, name string, parentPath string) files.FileModel {
 	now := time.Date(2026, time.March, 10, 10, 0, 0, 0, time.UTC)
 	return files.FileModel{
@@ -65,14 +35,7 @@ func musicFileModel(id int, name string, parentPath string) files.FileModel {
 	}
 }
 
-func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
-	base := time.Date(2026, time.March, 10, 8, 0, 0, 0, time.UTC)
-	entries := []MusicLibraryIndexEntryModel{
-		catalogEntry(1, "Beta", "Artist A", "Album One", "Lo-Fi", "/music/a", "2/12", base, base.Add(time.Hour), sql.NullTime{}, true),
-		catalogEntry(2, "Alpha", "Artist A", "Album One", "Hip Hop", "/music/a", "1/12", base.Add(2*time.Hour), base.Add(2*time.Hour), sql.NullTime{Valid: true, Time: base.Add(5 * time.Hour)}, false),
-		catalogEntry(3, "Gamma", "Artist B", "Album Two", "Hip Hop; Soundtrack", "/music/b/live", "3", base.Add(3*time.Hour), base.Add(3*time.Hour), sql.NullTime{Valid: true, Time: base.Add(4 * time.Hour)}, true),
-		catalogEntry(4, "Delta", "Artist C", "Album Three", "", "", "", base.Add(4*time.Hour), base.Add(4*time.Hour), sql.NullTime{Valid: true, Time: base.Add(6 * time.Hour)}, false),
-	}
+func TestCatalogHelpersNormalizeAndPaginate(t *testing.T) {
 	if got := normalizeText("  hello   world  "); got != "hello world" {
 		t.Fatalf("normalizeText returned %q", got)
 	}
@@ -85,16 +48,11 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 	if got := normalizeGenreLabels("hip hop; hip-hop | soundtrack"); len(got) != 2 || got[0] != "Hip-Hop" || got[1] != "Soundtrack" {
 		t.Fatalf("normalizeGenreLabels returned %+v", got)
 	}
-	withAlbumArtist := entries[0]
-	withAlbumArtist.AlbumArtist = " Album Artist "
-	if got := preferredArtist(withAlbumArtist); got != "Album Artist" {
+	if got := preferredArtist(" Album Artist ", "Artist"); got != "Album Artist" {
 		t.Fatalf("preferredArtist returned %q", got)
 	}
-	if got := entryTimestamp(entries[1]); !got.Equal(base.Add(2 * time.Hour)) {
-		t.Fatalf("entryTimestamp returned %v", got)
-	}
-	if got := parseTrackNumber("8/12"); got != 8 {
-		t.Fatalf("parseTrackNumber returned %d", got)
+	if got := preferredArtist("  ", " Artist  Name "); got != "Artist Name" {
+		t.Fatalf("preferredArtist fallback returned %q", got)
 	}
 
 	paginated := paginateItems([]int{1, 2, 3}, 2, 2)
@@ -102,65 +60,25 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 		t.Fatalf("paginateItems returned %+v", paginated)
 	}
 
-	artists := buildArtistGroups(entries)
-	if len(artists) != 3 || artists[0].Artist != "Artist A" || artists[0].TrackCount != 2 || artists[0].AlbumCount != 1 {
-		t.Fatalf("buildArtistGroups returned %+v", artists)
+	beyondEnd := paginateItems([]int{1, 2, 3}, 5, 2)
+	if len(beyondEnd.Items) != 0 || beyondEnd.Pagination.HasNext || !beyondEnd.Pagination.HasPrev {
+		t.Fatalf("paginateItems beyond end returned %+v", beyondEnd)
 	}
 
-	albums := buildAlbumGroups(entries)
-	if len(albums) != 3 || albums[0].Album != "Album One" || albums[0].TrackCount != 2 {
-		t.Fatalf("buildAlbumGroups returned %+v", albums)
-	}
-
-	genres := buildGenreGroups(entries)
-	if len(genres) != 3 || genres[0].Genre != "Hip-Hop" || genres[0].TrackCount != 2 {
-		t.Fatalf("buildGenreGroups returned %+v", genres)
-	}
-
-	folders := buildFolderGroups(entries)
-	if len(folders) != 3 || folders[0].Folder != "/music/a" || folders[1].Folder != "/" || folders[2].Folder != "/music/b/live" {
-		t.Fatalf("buildFolderGroups returned %+v", folders)
-	}
-
-	artistOrdered := append([]MusicLibraryIndexEntryModel(nil), entries[:3]...)
-	sortArtistTracks(artistOrdered)
-	if artistOrdered[0].FileID != 2 || artistOrdered[1].FileID != 1 {
-		t.Fatalf("sortArtistTracks returned %+v", artistOrdered)
-	}
-
-	albumOrdered := append([]MusicLibraryIndexEntryModel(nil), entries[:2]...)
-	sortAlbumTracks(albumOrdered)
-	if albumOrdered[0].FileID != 2 || albumOrdered[1].FileID != 1 {
-		t.Fatalf("sortAlbumTracks returned %+v", albumOrdered)
-	}
-
-	genreOrdered := append([]MusicLibraryIndexEntryModel(nil), entries[1:3]...)
-	sortGenreTracks(genreOrdered)
-	if genreOrdered[0].FileID != 2 || genreOrdered[1].FileID != 3 {
-		t.Fatalf("sortGenreTracks returned %+v", genreOrdered)
-	}
-
-	if ids := limitFileIDs([]MusicLibraryIndexEntryModel{entries[1], entries[1], entries[2]}, 2); len(ids) != 2 || ids[0] != 2 || ids[1] != 3 {
-		t.Fatalf("limitFileIDs returned %+v", ids)
-	}
-
-	recentIDs := buildRecentPlaylistTrackIDs(entries)
-	if len(recentIDs) != 4 || recentIDs[0] != 4 || recentIDs[1] != 3 {
-		t.Fatalf("buildRecentPlaylistTrackIDs returned %+v", recentIDs)
-	}
-
-	favoriteIDs := buildFavoritePlaylistTrackIDs(entries)
-	if len(favoriteIDs) != 2 || favoriteIDs[0] != 3 || favoriteIDs[1] != 1 {
-		t.Fatalf("buildFavoritePlaylistTrackIDs returned %+v", favoriteIDs)
+	if page, pageSize := normalizePagination(0, -3); page != 1 || pageSize != 1 {
+		t.Fatalf("normalizePagination returned %d/%d", page, pageSize)
 	}
 
 	state := &PlayerStateModel{
 		PlaylistID:    sql.NullInt64{Valid: true, Int64: 9},
 		CurrentFileID: sql.NullInt64{Valid: true, Int64: 3},
 	}
-	continueIDs := buildContinueListeningTrackIDs(entries, state, []PlaylistTrackModel{{FileID: 3}, {FileID: 2}})
+	continueIDs := buildContinueListeningTrackIDs([]int{2, 1, 4}, state, []PlaylistTrackModel{{FileID: 3}, {FileID: 2}})
 	if len(continueIDs) != 4 || continueIDs[0] != 3 || continueIDs[1] != 2 || continueIDs[2] != 1 || continueIDs[3] != 4 {
 		t.Fatalf("buildContinueListeningTrackIDs returned %+v", continueIDs)
+	}
+	if ids := buildContinueListeningTrackIDs([]int{1}, nil, nil); len(ids) != 0 {
+		t.Fatalf("expected no continue-listening tracks without player state, got %+v", ids)
 	}
 
 	playlist := buildAutomaticPlaylistDto(AutoPlaylistFavoritesID, "PLAYLIST_NAME", "PLAYLIST_DESC", autoPlaylistFavoritesKey, 2)
@@ -177,26 +95,52 @@ func TestCatalogHelpersNormalizeAggregateAndSort(t *testing.T) {
 	}
 }
 
-func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
-	base := time.Date(2026, time.March, 10, 8, 0, 0, 0, time.UTC)
-	entries := []MusicLibraryIndexEntryModel{
-		catalogEntry(1, "Beta", "Artist A", "Album One", "Lo-Fi", "/music/a", "2/12", base, base.Add(time.Hour), sql.NullTime{}, true),
-		catalogEntry(2, "Alpha", "Artist A", "Album One", "Hip Hop", "/music/a", "1/12", base.Add(2*time.Hour), base.Add(2*time.Hour), sql.NullTime{Valid: true, Time: base.Add(5 * time.Hour)}, false),
-		catalogEntry(3, "Gamma", "Artist B", "Album Two", "Hip Hop; Soundtrack", "/music/b/live", "3", base.Add(3*time.Hour), base.Add(3*time.Hour), sql.NullTime{Valid: true, Time: base.Add(4 * time.Hour)}, true),
-		catalogEntry(4, "Delta", "Artist C", "Album Three", "", "", "", base.Add(4*time.Hour), base.Add(4*time.Hour), sql.NullTime{Valid: true, Time: base.Add(6 * time.Hour)}, false),
-	}
-
+func TestCatalogServiceComposesPlaylistsHomeAndLibraryViews(t *testing.T) {
 	fileModels := map[int]files.FileModel{
 		1: musicFileModel(1, "Beta.mp3", "/music/a"),
 		2: musicFileModel(2, "Alpha.mp3", "/music/a"),
 		3: musicFileModel(3, "Gamma.mp3", "/music/b/live"),
-		4: musicFileModel(4, "Delta.mp3", "/music"),
+	}
+	requestedPages := []int{}
+	idPage := func(ids ...int) utils.PaginationResponse[int] {
+		return utils.PaginationResponse[int]{Items: ids, Pagination: utils.Pagination{Page: 1, PageSize: 10}}
 	}
 
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
-			return entries, nil
+		getLibrarySummaryFn: func() (MusicLibrarySummaryDto, error) {
+			return MusicLibrarySummaryDto{TotalTracks: 4, TotalArtists: 3, TotalAlbums: 3, TotalGenres: 3, TotalFolders: 3}, nil
 		},
+		getArtistGroupsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+			requestedPages = append(requestedPages, page, pageSize)
+			return utils.PaginationResponse[MusicArtistGroupDto]{Items: []MusicArtistGroupDto{{Key: "artist a", Artist: "Artist A", TrackCount: 2, AlbumCount: 1}}}, nil
+		},
+		getAlbumGroupsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+			return utils.PaginationResponse[MusicAlbumGroupDto]{Items: []MusicAlbumGroupDto{{Key: "artist a::album one", Album: "Album One"}}}, nil
+		},
+		getGenreGroupsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error) {
+			requestedPages = append(requestedPages, page, pageSize)
+			return utils.PaginationResponse[MusicGenreGroupDto]{Items: []MusicGenreGroupDto{{Key: "hip hop", Genre: "Hip-Hop", TrackCount: 2}}}, nil
+		},
+		getFolderGroupsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
+			return utils.PaginationResponse[MusicFolderGroupDto]{Items: []MusicFolderGroupDto{{Folder: "/music/a", TrackCount: 2}}}, nil
+		},
+		getTrackIDsByArtistFn: func(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			return idPage(2, 1), nil
+		},
+		getTrackIDsByAlbumFn: func(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			return idPage(2, 1), nil
+		},
+		getTrackIDsByGenreFn: func(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			return idPage(2, 3), nil
+		},
+		getTrackIDsByFolderFn: func(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			if folderPath != "/music/b" {
+				t.Fatalf("folder path must be trimmed, got %q", folderPath)
+			}
+			return idPage(3), nil
+		},
+		getRecentFileIDsFn:   func(limit int) ([]int, error) { return []int{4, 3, 2, 1}, nil },
+		getFavoriteFileIDsFn: func(limit int) ([]int, error) { return []int{3, 1}, nil },
 		getPlayerStateFn: func(clientID string) (PlayerStateModel, error) {
 			return PlayerStateModel{
 				ClientID:      clientID,
@@ -218,13 +162,8 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 		},
 		getLibraryTracksFn: func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 			return utils.PaginationResponse[files.FileModel]{
-				Items: []files.FileModel{fileModels[1], fileModels[2]},
-				Pagination: utils.Pagination{
-					Page:     page,
-					PageSize: pageSize,
-					HasNext:  false,
-					HasPrev:  false,
-				},
+				Items:      []files.FileModel{fileModels[1], fileModels[2]},
+				Pagination: utils.Pagination{Page: page, PageSize: pageSize},
 			}, nil
 		},
 	}
@@ -238,15 +177,18 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 		t.Fatalf("GetAutomaticPlaylists returned %+v", playlists)
 	}
 
-	home, err := service.GetHomeCatalog("client-1", 2)
+	home, err := service.GetHomeCatalog("client-1", 2, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetHomeCatalog returned error: %v", err)
 	}
 	if home.Summary.TotalTracks != 4 || home.Summary.TotalArtists != 3 || home.Summary.TotalAlbums != 3 || home.Summary.TotalGenres != 3 || home.Summary.TotalFolders != 3 {
 		t.Fatalf("GetHomeCatalog summary returned %+v", home.Summary)
 	}
-	if len(home.Playlists) != 2 || len(home.Artists) != 2 || len(home.Albums) != 2 {
+	if len(home.Playlists) != 2 || len(home.Artists) != 1 || len(home.Albums) != 1 {
 		t.Fatalf("GetHomeCatalog returned %+v", home)
+	}
+	if len(requestedPages) != 2 || requestedPages[0] != 1 || requestedPages[1] != 2 {
+		t.Fatalf("home artists must be a first page limited by the home limit, got %v", requestedPages)
 	}
 
 	tracks, err := service.GetLibraryTracks(1, 10)
@@ -254,23 +196,23 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 		t.Fatalf("GetLibraryTracks returned %+v err=%v", tracks, err)
 	}
 
-	artists, err := service.GetLibraryArtists(1, 10)
-	if err != nil || len(artists.Items) != 3 || artists.Items[0].Artist != "Artist A" {
+	artists, err := service.GetLibraryArtists(0, 0, DefaultCatalogSort())
+	if err != nil || len(artists.Items) != 1 || artists.Items[0].Artist != "Artist A" {
 		t.Fatalf("GetLibraryArtists returned %+v err=%v", artists, err)
 	}
 
-	albums, err := service.GetLibraryAlbums(1, 10)
-	if err != nil || len(albums.Items) != 3 || albums.Items[0].Album != "Album One" {
+	albums, err := service.GetLibraryAlbums(1, 10, DefaultCatalogSort())
+	if err != nil || len(albums.Items) != 1 || albums.Items[0].Album != "Album One" {
 		t.Fatalf("GetLibraryAlbums returned %+v err=%v", albums, err)
 	}
 
-	genres, err := service.GetLibraryGenres(1, 10)
-	if err != nil || len(genres.Items) != 3 || genres.Items[0].Genre != "Hip-Hop" {
+	genres, err := service.GetLibraryGenres(1, 10, DefaultCatalogSort())
+	if err != nil || len(genres.Items) != 1 || genres.Items[0].Genre != "Hip-Hop" {
 		t.Fatalf("GetLibraryGenres returned %+v err=%v", genres, err)
 	}
 
-	folders, err := service.GetLibraryFolders(1, 10)
-	if err != nil || len(folders.Items) != 3 || folders.Items[0].Folder != "/music/a" {
+	folders, err := service.GetLibraryFolders(1, 10, DefaultCatalogSort())
+	if err != nil || len(folders.Items) != 1 || folders.Items[0].Folder != "/music/a" {
 		t.Fatalf("GetLibraryFolders returned %+v err=%v", folders, err)
 	}
 
@@ -289,7 +231,7 @@ func TestCatalogServiceBuildsPlaylistsAndLibraryViews(t *testing.T) {
 		t.Fatalf("GetLibraryTracksByGenre returned %+v err=%v", genreTracks, err)
 	}
 
-	folderTracks, err := service.GetLibraryTracksByFolder("/music/b", 1, 10)
+	folderTracks, err := service.GetLibraryTracksByFolder(" /music/b ", 1, 10)
 	if err != nil || len(folderTracks.Items) != 1 || folderTracks.Items[0].ID != 3 {
 		t.Fatalf("GetLibraryTracksByFolder returned %+v err=%v", folderTracks, err)
 	}
@@ -343,31 +285,20 @@ func TestNormalizeGenreLabelAllBranches(t *testing.T) {
 	}
 }
 
-func TestSortGenreTracksAllFields(t *testing.T) {
-	base := time.Date(2026, time.March, 10, 8, 0, 0, 0, time.UTC)
-	entries := []MusicLibraryIndexEntryModel{
-		catalogEntry(1, "Zebra", "Artist B", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
-		catalogEntry(2, "Alpha", "Artist A", "Album A", "Pop", "/m", "1", base, base, sql.NullTime{}, false),
-		catalogEntry(3, "Beta", "Artist A", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
-		catalogEntry(4, "Alpha", "Artist A", "Album B", "Pop", "/m", "1", base, base, sql.NullTime{}, false),
-		catalogEntry(5, "Alpha", "Artist A", "Album A", "Pop", "/m", "2", base, base, sql.NullTime{}, false),
-	}
-
-	sortGenreTracks(entries)
-
-	expected := []int{2, 5, 3, 4, 1}
-	for i, e := range entries {
-		if e.FileID != expected[i] {
-			t.Fatalf("position %d: expected fileID %d, got %d", i, expected[i], e.FileID)
-		}
-	}
-}
-
 func TestCatalogServiceErrorBranchesAndFallbacks(t *testing.T) {
 	errBoom := errors.New("boom")
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
-			return nil, errBoom
+		getLibrarySummaryFn:  func() (MusicLibrarySummaryDto, error) { return MusicLibrarySummaryDto{}, errBoom },
+		getRecentFileIDsFn:   func(limit int) ([]int, error) { return nil, errBoom },
+		getFavoriteFileIDsFn: func(limit int) ([]int, error) { return nil, errBoom },
+		getArtistGroupsFn: func(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+			return utils.PaginationResponse[MusicArtistGroupDto]{}, errBoom
+		},
+		getTrackIDsByArtistFn: func(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			return utils.PaginationResponse[int]{}, errBoom
+		},
+		getTrackIDsByFolderFn: func(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+			return utils.PaginationResponse[int]{}, errBoom
 		},
 		getPlayerStateFn: func(clientID string) (PlayerStateModel, error) {
 			return PlayerStateModel{}, errBoom
@@ -384,16 +315,34 @@ func TestCatalogServiceErrorBranchesAndFallbacks(t *testing.T) {
 	if _, err := service.GetAutomaticPlaylists("client-1"); !errors.Is(err, errBoom) {
 		t.Fatalf("GetAutomaticPlaylists error = %v", err)
 	}
+	if _, err := service.GetHomeCatalog("client-1", 0, DefaultCatalogSort()); !errors.Is(err, errBoom) {
+		t.Fatalf("GetHomeCatalog error = %v", err)
+	}
+	if _, err := service.GetLibraryArtists(1, 10, DefaultCatalogSort()); !errors.Is(err, errBoom) {
+		t.Fatalf("GetLibraryArtists error = %v", err)
+	}
+	if _, err := service.GetLibraryTracksByArtist("a", 1, 10); !errors.Is(err, errBoom) {
+		t.Fatalf("GetLibraryTracksByArtist error = %v", err)
+	}
+	if _, err := service.GetLibraryTracksByFolder("/m", 1, 10); !errors.Is(err, errBoom) {
+		t.Fatalf("GetLibraryTracksByFolder error = %v", err)
+	}
 	if state := service.getOptionalPlayerState("client-1"); state != nil {
 		t.Fatalf("getOptionalPlayerState returned %+v", state)
 	}
 	if tracks := service.getContinueListeningSourceTracks(&PlayerStateModel{PlaylistID: sql.NullInt64{Valid: true, Int64: 10}}); tracks != nil {
 		t.Fatalf("getContinueListeningSourceTracks returned %+v", tracks)
 	}
-	if _, err := service.automaticPlaylistTrackIDs("client-1", 99, []MusicLibraryIndexEntryModel{}); !errors.Is(err, sql.ErrNoRows) {
+	if _, err := service.automaticPlaylistTrackIDs("client-1", 99); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("automaticPlaylistTrackIDs error = %v", err)
+	}
+	if _, err := service.automaticPlaylistTrackIDs("client-1", AutoPlaylistContinueListeningID); !errors.Is(err, errBoom) {
+		t.Fatalf("continue listening error = %v", err)
 	}
 	if _, err := service.loadPlaylistTracksByIDs([]int{1, 2}, 1, 10); !errors.Is(err, errBoom) {
 		t.Fatalf("loadPlaylistTracksByIDs error = %v", err)
+	}
+	if _, err := service.loadLibraryTracksOfIDPage(utils.PaginationResponse[int]{Items: []int{1}}); !errors.Is(err, errBoom) {
+		t.Fatalf("loadLibraryTracksOfIDPage error = %v", err)
 	}
 }

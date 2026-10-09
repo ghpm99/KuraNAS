@@ -10,9 +10,11 @@ import (
 )
 
 type serviceStub struct {
-	err            error
-	capturedPeriod string
-	capturedLimit  int
+	err                error
+	capturedPeriod     string
+	capturedLimit      int
+	calledImageSummary bool
+	calledImageGroups  bool
 }
 
 func (s *serviceStub) GetStorage(period string) (StorageStatsDto, error) {
@@ -45,6 +47,15 @@ func (s *serviceStub) GetDuplicatesSummary() (DuplicatesSummaryDto, error) {
 	return DuplicatesSummaryDto{}, s.err
 }
 func (s *serviceStub) GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
+	s.capturedLimit = limit
+	return nil, s.err
+}
+func (s *serviceStub) GetImageDuplicatesSummary() (DuplicatesSummaryDto, error) {
+	s.calledImageSummary = true
+	return DuplicatesSummaryDto{}, s.err
+}
+func (s *serviceStub) GetImageDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
+	s.calledImageGroups = true
 	s.capturedLimit = limit
 	return nil, s.err
 }
@@ -142,6 +153,31 @@ func TestHandlerLimitParsing(t *testing.T) {
 		}
 		if stub.capturedLimit != tc.want {
 			t.Fatalf("query %q: expected limit %d, got %d", tc.query, tc.want, stub.capturedLimit)
+		}
+	}
+}
+
+func TestHandlerDuplicatesTypeFilter(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	registerSummary := func(r *gin.Engine, h *Handler) { r.GET("/x", h.GetDuplicatesHandler) }
+	registerGroups := func(r *gin.Engine, h *Handler) { r.GET("/x", h.GetDuplicateGroupsHandler) }
+
+	stub, w := doRequest(t, registerSummary, "/x?type=image")
+	if w.Code != http.StatusOK || !stub.calledImageSummary {
+		t.Fatalf("expected image summary, got %d called=%v", w.Code, stub.calledImageSummary)
+	}
+	stub, w = doRequest(t, registerGroups, "/x?type=image&limit=7")
+	if w.Code != http.StatusOK || !stub.calledImageGroups || stub.capturedLimit != 7 {
+		t.Fatalf("expected image groups limit 7, got %d called=%v limit=%d", w.Code, stub.calledImageGroups, stub.capturedLimit)
+	}
+	stub, w = doRequest(t, registerGroups, "/x")
+	if w.Code != http.StatusOK || stub.calledImageGroups {
+		t.Fatalf("expected generic groups without type, got %d", w.Code)
+	}
+	for _, register := range []func(*gin.Engine, *Handler){registerSummary, registerGroups} {
+		stub, w = doRequest(t, register, "/x?type=video")
+		if w.Code != http.StatusBadRequest || stub.calledImageSummary || stub.calledImageGroups {
+			t.Fatalf("expected 400 for unknown type, got %d", w.Code)
 		}
 	}
 }

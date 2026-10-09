@@ -19,6 +19,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/distribution"
+	"nas-go/api/internal/api/v1/documenttext"
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
@@ -68,6 +69,7 @@ type AppContext struct {
 	Analytics     *AnalyticsContext
 	Configuration *ConfigurationContext
 	Search        *SearchContext
+	DocumentText  *DocumentTextContext
 	Notifications *NotificationContext
 	Captures      *CapturesContext
 	Libraries     *LibrariesContext
@@ -148,9 +150,12 @@ type FileContext struct {
 }
 
 type ImageContext struct {
-	Handler    *imagedom.Handler
-	Service    imagedom.ServiceInterface
-	Repository imagedom.RepositoryInterface
+	Handler        *imagedom.Handler
+	SummaryHandler *imagedom.ImageSummaryHandler
+	LibraryHandler *imagedom.LibraryHandler
+	AlbumHandler   *imagedom.AlbumHandler
+	Service        imagedom.ServiceInterface
+	Repository     imagedom.RepositoryInterface
 }
 
 type JobsContext struct {
@@ -167,6 +172,9 @@ type DiaryContext struct {
 
 type MusicContext struct {
 	Handler                 *music.Handler
+	SummaryHandler          *music.AudioSummaryHandler
+	CoverHandler            *music.CoverHandler
+	TranscodeHandler        *music.TranscodeHandler
 	Service                 music.ServiceInterface
 	Repository              music.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
@@ -174,6 +182,7 @@ type MusicContext struct {
 
 type VideoContext struct {
 	Handler            *video.Handler
+	SummaryHandler     *video.VideoSummaryHandler
 	Service            video.ServiceInterface
 	Repository         video.RepositoryInterface
 	MetadataRepository video.VideoMetadataRepositoryInterface
@@ -189,6 +198,12 @@ type ConfigurationContext struct {
 	Handler    *configuration.Handler
 	Service    configuration.ServiceInterface
 	Repository configuration.RepositoryInterface
+}
+
+type DocumentTextContext struct {
+	Handler    *documenttext.Handler
+	Service    documenttext.ServiceInterface
+	Repository documenttext.RepositoryInterface
 }
 
 type SearchContext struct {
@@ -277,7 +292,8 @@ func NewContext(db *sql.DB) *AppContext {
 	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
-	searchContext := newSearchContext(dbContext, aiService)
+	documentTextContext := newDocumentTextContext(dbContext)
+	searchContext := newSearchContext(dbContext, aiService, documentTextContext.Service)
 	notificationContext := newNotificationContext(dbContext)
 	librariesContext := newLibrariesContext(dbContext, loggerService)
 	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service, notificationContext.Service, librariesContext.Service, fileContext.Service)
@@ -323,6 +339,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Analytics:     analyticsContext,
 		Configuration: configurationContext,
 		Search:        searchContext,
+		DocumentText:  documentTextContext,
 		Notifications: notificationContext,
 		Captures:      capturesContext,
 		Libraries:     librariesContext,
@@ -415,6 +432,10 @@ func formatSearchResults(query string, result search.GlobalSearchResponseDto) st
 		fmt.Fprintf(&b, "- Imagem: %s (%s)\n", img.Name, img.Path)
 		total++
 	}
+	for _, track := range result.Tracks {
+		fmt.Fprintf(&b, "- Música: %s (%s)\n", track.Title, track.Path)
+		total++
+	}
 	for _, a := range result.Artists {
 		fmt.Fprintf(&b, "- Artista: %s (%d faixas)\n", a.Artist, a.TrackCount)
 		total++
@@ -457,10 +478,17 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	repository := imagedom.NewRepository(dbContext)
 	service := imagedom.NewService(repository, jobsRepository)
 	handler := imagedom.NewHandler(service, logger)
+	summaryHandler := imagedom.NewImageSummaryHandler(imagedom.NewImageSummaryService(imagedom.NewImageSummaryRepository(dbContext)), logger)
+	libraryService := imagedom.NewLibraryService(imagedom.NewLibraryRepository(dbContext))
+	libraryHandler := imagedom.NewLibraryHandler(libraryService, logger)
+	albumHandler := imagedom.NewAlbumHandler(imagedom.NewAlbumService(imagedom.NewAlbumRepository(dbContext), libraryService), logger)
 	return &ImageContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:        handler,
+		SummaryHandler: summaryHandler,
+		LibraryHandler: libraryHandler,
+		AlbumHandler:   albumHandler,
+		Service:        service,
+		Repository:     repository,
 	}
 }
 
@@ -469,8 +497,13 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	audioMetadataRepository := music.NewAudioMetadataRepository(dbContext)
 	service := music.NewService(repository, aiService)
 	handler := music.NewHandler(service, filesService, recentFileService, loggerSvc)
+	summaryHandler := music.NewAudioSummaryHandler(music.NewAudioSummaryService(music.NewAudioSummaryRepository(dbContext)), loggerSvc)
+	coverHandler := music.NewCoverHandler(music.NewCoverService(filesService, repository, config.GetBuildConfig("ThumbnailPath")), loggerSvc)
 	return &MusicContext{
 		Handler:                 handler,
+		SummaryHandler:          summaryHandler,
+		CoverHandler:            coverHandler,
+		TranscodeHandler:        music.NewFFmpegTranscodeHandler(filesService, loggerSvc),
 		Service:                 service,
 		Repository:              repository,
 		AudioMetadataRepository: audioMetadataRepository,
@@ -482,8 +515,10 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	metadataRepository := video.NewVideoMetadataRepository(dbContext)
 	service := video.NewService(repository, aiService)
 	handler := video.NewHandler(service, filesService, recentFileService, logger)
+	summaryHandler := video.NewVideoSummaryHandler(video.NewVideoSummaryService(video.NewVideoSummaryRepository(dbContext)), logger)
 	return &VideoContext{
 		Handler:            handler,
+		SummaryHandler:     summaryHandler,
 		Service:            service,
 		Repository:         repository,
 		MetadataRepository: metadataRepository,
@@ -539,9 +574,21 @@ func newNotificationContext(dbContext *database.DbContext) *NotificationContext 
 	}
 }
 
-func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterface) *SearchContext {
+func newDocumentTextContext(dbContext *database.DbContext) *DocumentTextContext {
+	repository := documenttext.NewRepository(dbContext)
+	service := documenttext.NewService(repository)
+	handler := documenttext.NewHandler(service)
+
+	return &DocumentTextContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterface, documentSearcher search.DocumentSearcher) *SearchContext {
 	repository := search.NewRepository(dbContext)
-	service := search.NewService(repository, aiService)
+	service := search.NewServiceWithDocuments(repository, aiService, documentSearcher)
 	handler := search.NewHandler(service)
 
 	return &SearchContext{

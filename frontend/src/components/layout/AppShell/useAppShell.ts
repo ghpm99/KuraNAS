@@ -5,6 +5,5 @@ export const useAppShell = () => {
 
     return {
         hasQueue,
-        showClock: false,
     };
 };

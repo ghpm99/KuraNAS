@@ -79,6 +79,23 @@ func ParseHTTPRange(rangeHeader string, fileSize int64) (int64, int64, bool) {
 	return start, end, true
 }
 
+var audioContentTypeByExtension = map[string]string{
+	".mp3":  "audio/mpeg",
+	".wav":  "audio/wav",
+	".aac":  "audio/aac",
+	".flac": "audio/flac",
+	".m4a":  "audio/mp4",
+	".alac": "audio/mp4",
+	".ogg":  "audio/ogg",
+	".oga":  "audio/ogg",
+	".opus": "audio/opus",
+	".wma":  "audio/x-ms-wma",
+	".aiff": "audio/aiff",
+	".aif":  "audio/aiff",
+	".ape":  "audio/x-ape",
+	".wv":   "audio/x-wavpack",
+}
+
 // ContentTypeByFormat resolves a MIME content type from a file extension
 // (with or without the leading dot), falling back when unknown.
 func ContentTypeByFormat(format string, fallback string) string {
@@ -89,7 +106,11 @@ func ContentTypeByFormat(format string, fallback string) string {
 	if !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
-	contentType := mime.TypeByExtension(strings.ToLower(ext))
+	normalizedExtension := strings.ToLower(ext)
+	if audioContentType, isKnownAudio := audioContentTypeByExtension[normalizedExtension]; isKnownAudio {
+		return audioContentType
+	}
+	contentType := mime.TypeByExtension(normalizedExtension)
 	if contentType == "" {
 		return fallback
 	}

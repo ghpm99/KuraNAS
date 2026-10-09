@@ -1,18 +1,55 @@
 import ActionBar from '@/components/actionBar';
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
+import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
+import FileSelectionToolbar from '@/features/files/selection/fileSelectionToolbar';
+import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
+import FilesSortControl from '@/features/files/filesSortControl/filesSortControl';
+import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import FolderTree from '@/components/layout/Sidebar/components/folderTree';
 import Tabs from '@/components/tabs';
-import { Button, Drawer, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { FolderOpen, LayoutGrid, List, PanelLeft } from 'lucide-react';
+import {
+    Button,
+    Drawer,
+    IconButton,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
+    useMediaQuery,
+} from '@mui/material';
+import { LayoutGrid, List, PanelLeft, Search } from 'lucide-react';
+import { useRef, useState } from 'react';
+import UploadDropZone from '@/features/files/upload/uploadDropZone';
+import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
+import { buildFilesUrl } from '@/app/routes';
+import FileSearchBar from '@/features/files/search/FileSearchBar';
+import FileSearchFilterBar from '@/features/files/search/FileSearchFilterBar';
+import FileSearchResultsHeader from '@/features/files/search/FileSearchResultsHeader';
+import useFileSearchFilters from '@/features/files/search/useFileSearchFilters';
+import { toFileSearchRefinements } from '@/features/files/search/fileSearchFilters';
+import DocumentSearchResults from '@/features/files/search/DocumentSearchResults';
+import FileSearchModeTabs from '@/features/files/search/FileSearchModeTabs';
+import useDocumentSearchResults from '@/features/files/search/useDocumentSearchResults';
+import useFileSearchMode from '@/features/files/search/useFileSearchMode';
+import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
+import useFileSearchResults from '@/features/files/search/useFileSearchResults';
+import FilesBreadcrumb from './FilesBreadcrumb';
 import useFilesExplorerScreen from './useFilesExplorerScreen';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './FilesExplorerScreen.module.css';
 
-const FilesExplorerScreen = () => {
+const phoneMediaQuery = viewportMediaQueries.belowPhone;
+
+const parentFolderPath = (parentPath: string | undefined): string =>
+    !parentPath || parentPath === '/' ? '' : parentPath;
+
+const FilesExplorerScreenContent = () => {
     const { t } = useI18n();
     const {
         breadcrumbSegments,
@@ -25,24 +62,55 @@ const FilesExplorerScreen = () => {
         setViewMode,
         viewMode,
     } = useFilesExplorerScreen();
+    const { filesSort, setFilesSort, handleSelectItem } = useFile();
+    const { hasSelection } = useFileSelectionContext();
+    const { explicitTarget, closeDetails } = useFileDetails();
+    const isPhone = useMediaQuery(phoneMediaQuery);
+    const [isFindByDiskPathOpen, setIsFindByDiskPathOpen] = useState(false);
     const navigate = useNavigate();
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
+    const [isSearchRecursive, setIsSearchRecursive] = useState(true);
+    const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery();
+    const { filters: searchFilters, setFilters: setSearchFilters, resetFilters } = useFileSearchFilters();
+    const searchFolderId = selectedItem?.type === FileType.Directory ? selectedItem.id : undefined;
+    const { searchMode, setSearchMode } = useFileSearchMode();
+    const isContentSearch = searchMode === 'content';
+    const documentResults = useDocumentSearchResults({
+        query: activeQuery,
+        isEnabled: isContentSearch,
+    });
+    const searchResults = useFileSearchResults({
+        query: isContentSearch ? '' : activeQuery,
+        parentId: searchFolderId,
+        isRecursive: isSearchRecursive,
+        refinements: toFileSearchRefinements(searchFilters),
+    });
+    const isSearchActive = activeQuery !== '';
     const isFileSelected = selectedItem?.type === FileType.File;
-    const workspaceClassName = isFileSelected
+    const openedFileDetailsTarget = isFileSelected && !isPhone ? selectedItem : null;
+    const detailsTarget = explicitTarget ?? openedFileDetailsTarget;
+    const isDetailsInSideColumn = detailsTarget !== null && !isPhone;
+    const isDetailsInDrawer = explicitTarget !== null && isPhone;
+    const workspaceClassName = isDetailsInSideColumn
         ? `${styles.workspace} ${styles.workspaceWithPreview}`
         : styles.workspace;
 
+    const goToParentFolder = selectedItem
+        ? () => navigate(buildFilesUrl(parentFolderPath(selectedItem.parent_path)))
+        : undefined;
+    const focusSearchInput = () => searchInputRef.current?.focus();
+
+    const closeDetailsPanel = () => {
+        const isShowingOpenedFile =
+            openedFileDetailsTarget !== null &&
+            (explicitTarget === null || explicitTarget.id === openedFileDetailsTarget.id);
+        closeDetails();
+        if (isShowingOpenedFile) handleSelectItem(null);
+    };
+
     return (
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroEyebrow}>
-                    <FolderOpen size={16} />
-                    <span>{t('FILES_EXPLORER_EYEBROW')}</span>
-                </div>
-                <div>
-                    <h1 className={styles.heroTitle}>{t('FILES_PAGE_TITLE')}</h1>
-                    <p className={styles.heroDescription}>{t('FILES_PAGE_DESCRIPTION')}</p>
-                </div>
-            </section>
+        <PageContainer width="full">
+            <PageHeader title={t('FILES_PAGE_TITLE')} subtitle={t('FILES_PAGE_DESCRIPTION')} />
 
             <div className={workspaceClassName}>
                 <div className={styles.mainColumn}>
@@ -50,41 +118,12 @@ const FilesExplorerScreen = () => {
                         <div className={styles.contextHeader}>
                             <div>
                                 <p className={styles.contextTitle}>{t('FILES_CURRENT_LOCATION')}</p>
-                                <nav
-                                    className={styles.breadcrumb}
-                                    aria-label={t('FILES_CURRENT_LOCATION')}
-                                >
-                                    {breadcrumbSegments.map((segment, index) => (
-                                        <div
-                                            key={`${segment.label}-${segment.id ?? 'root'}`}
-                                            className={styles.breadcrumb}
-                                        >
-                                            {segment.isCurrent ? (
-                                                <span className={styles.breadcrumbCurrent}>
-                                                    {segment.label}
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    className={styles.breadcrumbButton}
-                                                    onClick={() => {
-                                                        const url = segment.path
-                                                            ? `${appRoutes.files}${segment.path}`
-                                                            : appRoutes.files;
-                                                        navigate(url);
-                                                    }}
-                                                >
-                                                    {segment.label}
-                                                </button>
-                                            )}
-                                            {index < breadcrumbSegments.length - 1 ? (
-                                                <span className={styles.breadcrumbSeparator}>
-                                                    /
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                    ))}
-                                </nav>
+                                <FilesBreadcrumb
+                                    segments={breadcrumbSegments}
+                                    onNavigate={(segment) =>
+                                        navigate(buildFilesUrl(segment.path ?? ''))
+                                    }
+                                />
                             </div>
 
                             <div className={styles.contextActions}>
@@ -97,6 +136,16 @@ const FilesExplorerScreen = () => {
                                 >
                                     {t('FILES_OPEN_TREE')}
                                 </Button>
+                                <Tooltip title={t('FILES_FIND_BY_DISK_PATH')}>
+                                    <IconButton
+                                        size="small"
+                                        aria-label={t('FILES_FIND_BY_DISK_PATH')}
+                                        onClick={() => setIsFindByDiskPathOpen(true)}
+                                    >
+                                        <Search size={16} />
+                                    </IconButton>
+                                </Tooltip>
+                                <FilesSortControl sort={filesSort} onChange={setFilesSort} />
                                 <ToggleButtonGroup
                                     size="small"
                                     value={viewMode}
@@ -120,6 +169,16 @@ const FilesExplorerScreen = () => {
                             </div>
                         </div>
 
+                        <FileSearchBar
+                            value={inputValue}
+                            onChange={setInputValue}
+                            onClear={clearQuery}
+                            isFolderScope={searchFolderId !== undefined}
+                            isRecursive={isSearchRecursive}
+                            onRecursiveChange={setIsSearchRecursive}
+                            inputRef={searchInputRef}
+                        />
+
                         <div className={styles.contextMeta}>
                             <span>{contextLabel}</span>
                             <span>{itemCountLabel}</span>
@@ -128,28 +187,92 @@ const FilesExplorerScreen = () => {
                     </section>
 
                     <section className={`${styles.panel} ${styles.toolbarCard}`}>
-                        <ActionBar />
+                        {hasSelection ? <FileSelectionToolbar /> : <ActionBar />}
                     </section>
 
-                    {!isFileSelected ? (
+                    {!isFileSelected && !isSearchActive ? (
                         <section className={`${styles.panel} ${styles.tabsCard}`}>
                             <Tabs />
                         </section>
                     ) : null}
 
                     <section className={`${styles.panel} ${styles.contentCard}`}>
-                        <FileContent showHeading={false} viewMode={viewMode} />
+                        {isSearchActive ? (
+                            <>
+                                <FileSearchModeTabs mode={searchMode} onChange={setSearchMode} />
+                                {isContentSearch ? (
+                                    <>
+                                        <FileSearchResultsHeader
+                                            query={activeQuery}
+                                            resultCount={documentResults.items.length}
+                                            hasMoreResults={documentResults.hasNextPage}
+                                            isContentSearch
+                                            onClear={clearQuery}
+                                        />
+                                        <DocumentSearchResults
+                                            query={activeQuery}
+                                            {...documentResults}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileSearchResultsHeader
+                                            query={activeQuery}
+                                            resultCount={searchResults.items.length}
+                                            hasMoreResults={searchResults.hasNextPage}
+                                            onClear={clearQuery}
+                                        />
+                                        <FileSearchFilterBar
+                                            filters={searchFilters}
+                                            onChange={setSearchFilters}
+                                            onReset={resetFilters}
+                                        />
+                                        <FileContent
+                                            showHeading={false}
+                                            viewMode={viewMode}
+                                            searchListing={searchResults}
+                                            emptyStateMessage={t('FILES_SEARCH_EMPTY')}
+                                            onGoToParent={goToParentFolder}
+                                            onFocusSearch={focusSearchInput}
+                                        />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <UploadDropZone>
+                                <FileContent
+                                    showHeading={false}
+                                    viewMode={viewMode}
+                                    onGoToParent={goToParentFolder}
+                                    onFocusSearch={focusSearchInput}
+                                />
+                            </UploadDropZone>
+                        )}
                     </section>
                 </div>
 
-                {isFileSelected ? (
+                {isDetailsInSideColumn ? (
                     <aside className={styles.previewColumn}>
                         <section className={`${styles.panel} ${styles.previewCard}`}>
-                            <FileDetails />
+                            <FileDetails file={detailsTarget} onClose={closeDetailsPanel} />
                         </section>
                     </aside>
                 ) : null}
             </div>
+
+            <FindByDiskPathDialog
+                open={isFindByDiskPathOpen}
+                onClose={() => setIsFindByDiskPathOpen(false)}
+                onFileFound={handleSelectItem}
+            />
+
+            <Drawer anchor="bottom" open={isDetailsInDrawer} onClose={closeDetailsPanel}>
+                <div className={styles.detailsDrawerContent}>
+                    {explicitTarget ? (
+                        <FileDetails file={explicitTarget} onClose={closeDetailsPanel} />
+                    ) : null}
+                </div>
+            </Drawer>
 
             <Drawer anchor="left" open={mobileTreeOpen} onClose={closeMobileTree}>
                 <div className={styles.drawerContent}>
@@ -157,8 +280,14 @@ const FilesExplorerScreen = () => {
                     <FolderTree />
                 </div>
             </Drawer>
-        </div>
+        </PageContainer>
     );
 };
+
+const FilesExplorerScreen = () => (
+    <FileDetailsProvider>
+        <FilesExplorerScreenContent />
+    </FileDetailsProvider>
+);
 
 export default FilesExplorerScreen;

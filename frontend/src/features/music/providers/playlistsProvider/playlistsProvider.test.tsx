@@ -292,6 +292,34 @@ describe('PlaylistsProvider', () => {
         expect(result.current.selectedPlaylist?.id).toBe(10);
     });
 
+    it.each([-1, -2, -3])('selects automatic playlist with negative id %i', async (automaticId) => {
+        mockGetAutomaticPlaylists.mockResolvedValue([
+            createPlaylistItem({ id: -1, is_system: true, is_auto: true }),
+            createPlaylistItem({ id: -2, is_system: true, is_auto: true }),
+            createPlaylistItem({ id: -3, is_system: true, is_auto: true }),
+        ]);
+
+        const { result } = renderHook(() => usePlaylistsProvider(), {
+            wrapper: createWrapper([`/music/playlists?playlist=${automaticId}`]),
+        });
+
+        await waitFor(() => expect(result.current.selectedPlaylist?.id).toBe(automaticId));
+        await waitFor(() =>
+            expect(mockGetPlaylistTracks).toHaveBeenCalledWith(automaticId, 1, 50)
+        );
+    });
+
+    it('ignores a playlist param of zero or non numeric', async () => {
+        mockGetAutomaticPlaylists.mockResolvedValue([createPlaylistItem({ id: -1 })]);
+
+        const { result } = renderHook(() => usePlaylistsProvider(), {
+            wrapper: createWrapper(['/music/playlists?playlist=abc']),
+        });
+
+        await waitFor(() => expect(result.current.playlists).toHaveLength(1));
+        expect(result.current.selectedPlaylist).toBeNull();
+    });
+
     it('combines automatic and manual playlists', async () => {
         mockGetAutomaticPlaylists.mockResolvedValue([
             createPlaylistItem({ id: 100, name: 'Auto Playlist', is_system: true }),

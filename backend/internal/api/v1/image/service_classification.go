@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	imageClassifyBackfillJobType   = "image_classify_backfill"
-	imageClassifyEnumerateStepType = "image_classify_enumerate"
+	imageClassifyBackfillJobType = "image_classify_backfill"
+	imageClassifyBatchStepType   = "image_classify_batch"
 )
 
 // ErrBackfillUnavailable means the jobs subsystem is not wired in, so the
@@ -48,7 +48,7 @@ func (s *Service) EnqueueClassificationBackfill() (int, error) {
 		job, createErr := s.JobEnqueuer.CreateJob(tx, jobs.JobModel{
 			Type:            imageClassifyBackfillJobType,
 			Priority:        "low",
-			Scope:           []byte("{}"),
+			Scope:           []byte(`{"path":"` + AIClassificationJobScopePath + `"}`),
 			Status:          "queued",
 			CancelRequested: false,
 		})
@@ -59,7 +59,7 @@ func (s *Service) EnqueueClassificationBackfill() (int, error) {
 
 		_, stepErr := s.JobEnqueuer.CreateStep(tx, jobs.StepModel{
 			JobID:       createdJob.ID,
-			Type:        imageClassifyEnumerateStepType,
+			Type:        imageClassifyBatchStepType,
 			Status:      "queued",
 			DependsOn:   []byte("[]"),
 			Attempts:    0,

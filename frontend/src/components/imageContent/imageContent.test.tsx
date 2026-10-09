@@ -1,425 +1,873 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { ImageProvider } from '@/components/providers/imageProvider/imageProvider';
+import { apiBase } from '@/service';
+import type { ImageLibraryItem } from '@/types/imageLibrary';
+import {
+    defaultSettingsConfiguration,
+    SettingsContextProvider,
+} from '@/components/providers/settingsProvider/settingsContext';
 import ImageContent from './imageContent';
+import { buildImageLibraryItem } from './imageLibraryTestFixtures';
 
-const mockUseImage = jest.fn();
-const mockRef = jest.fn();
-const mockUseIntersectionObserver = jest.fn();
-const mockToggleStarredFile = jest.fn();
-const mockNavigate = jest.fn();
-const mockEnqueueSnackbar = jest.fn();
+jest.mock('@/service', () => ({
+    apiBase: { get: jest.fn(), post: jest.fn() },
+}));
 
-jest.mock('../providers/imageProvider/imageProvider', () => ({
-    useImage: () => mockUseImage(),
-}));
-jest.mock('../hooks/IntersectionObserver/useIntersectionObserver', () => ({
-    useIntersectionObserver: (...args: any[]) => mockUseIntersectionObserver(...args),
-}));
-jest.mock('notistack', () => ({
-    useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
-}));
-jest.mock('@/service/files', () => ({
-    toggleStarredFile: (...args: any[]) => mockToggleStarredFile(...args),
-}));
-jest.mock('react-router-dom', () => {
-    const actual = jest.requireActual('react-router-dom');
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
-});
 jest.mock('@/service/apiUrl', () => ({
     getApiV1BaseUrl: () => '/api/v1',
 }));
+
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+    ...jest.requireActual('react-router-dom'),
+    useNavigate: () => mockNavigate,
+}));
+
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({ enqueueSnackbar: jest.fn() }),
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
-        t: (key: string, params?: Record<string, string | number>) => {
-            const map: Record<string, string> = {
-                LOCALE: 'pt-BR',
-                IMAGES_SECTION_LIBRARY: 'Biblioteca',
-                IMAGES_SECTION_CAPTURES: 'Capturas',
-                IMAGES_SECTION_FOLDERS: 'Pastas',
-                IMAGES_SECTION_ALBUMS: 'Albuns automaticos',
-                IMAGES_ALBUM_OTHERS: 'Outros',
-                IMAGES_ALBUM_OTHERS_DESCRIPTION: 'Tudo que nao entrou nos temas principais',
-                IMAGES_FOLDERS_SUMMARY: `${params?.filtered ?? 0} de ${params?.total ?? 0} pastas`,
-                IMAGES_ALBUMS_SUMMARY: `${params?.filtered ?? 0} de ${params?.total ?? 0} albuns`,
-                IMAGES_COUNT_SUMMARY: `${params?.filtered ?? 0} de ${params?.total ?? 0} imagens`,
-                IMAGES_END_MESSAGE: 'Todas as imagens carregadas',
-                IMAGES_COLLECTION_OPEN: `Abrir ${params?.name ?? ''}`.trim(),
-                IMAGES_OPEN_IMAGE_ARIA: `Abrir ${params?.name ?? ''}`.trim(),
-                IMAGES_DETAILS_TITLE: 'Detalhes',
-                IMAGES_CLOSE_VIEWER: 'Fechar visualizador',
-                IMAGES_GROUP_BY_ARIA: 'Agrupar imagens por',
-                IMAGES_BACK_TO_FOLDERS: 'Voltar para pastas',
-                IMAGES_BACK_TO_ALBUMS: 'Voltar para albuns',
-                IMAGES_VIEWER_ADD_FAVORITE: 'Favoritar',
-                IMAGES_VIEWER_REMOVE_FAVORITE: 'Desfavoritar',
-                IMAGES_VIEWER_OPEN_FOLDER: 'Abrir pasta',
-                IMAGES_VIEWER_START_SLIDESHOW: 'Iniciar slideshow',
-                IMAGES_VIEWER_STOP_SLIDESHOW: 'Pausar slideshow',
-                IMAGES_VIEWER_HIDE_FILMSTRIP: 'Ocultar tira',
-                IMAGES_VIEWER_SHOW_FILMSTRIP: 'Mostrar tira',
-                IMAGES_VIEWER_HIDE_FILMSTRIP_SHORT: 'Tira off',
-                IMAGES_VIEWER_SHOW_FILMSTRIP_SHORT: 'Tira on',
-                IMAGES_TOGGLE_DETAILS: 'Alternar detalhes',
-                IMAGES_DECREASE_ZOOM: 'Reduzir zoom',
-                IMAGES_RESET_ZOOM: 'Resetar zoom',
-                IMAGES_INCREASE_ZOOM: 'Aumentar zoom',
-                IMAGES_VIEWER_KEYBOARD_HINT: 'Atalhos',
-                IMAGES_ZOOM_LABEL: 'Zoom',
-                IMAGES_PREVIOUS: 'Imagem anterior',
-                IMAGES_NEXT: 'Proxima imagem',
-                IMAGES_VIEWER_POSITION: `${params?.current ?? 1} de ${params?.total ?? 1}`,
-                IMAGES_VIEWER_FAVORITE_ADDED: 'Imagem adicionada aos favoritos',
-                IMAGES_VIEWER_FAVORITE_REMOVED: 'Imagem removida dos favoritos',
-                IMAGES_VIEWER_FAVORITE_ERROR: 'Erro ao atualizar favorito',
-                IMAGES_DETAILS_SECTION_LIBRARY: 'Biblioteca',
-                IMAGES_DETAILS_SECTION_CAPTURE: 'Captura',
-                IMAGES_DETAILS_SECTION_DEVICE: 'Dispositivo',
-                IMAGES_DETAIL_DATE: 'Data',
-                IMAGES_DETAIL_CREATED: 'Criado em',
-                IMAGES_DETAIL_SOFTWARE: 'Software',
-                IMAGES_DETAIL_DESCRIPTION: 'Descricao',
-                IMAGES_DETAIL_CATEGORY: 'Categoria',
-                IMAGES_DETAIL_CONFIDENCE: 'Confianca',
-                IMAGES_CLASSIFICATION_CAPTURE: 'Captura',
-                IMAGES_CLASSIFICATION_PHOTO: 'Foto',
-                IMAGES_CLASSIFICATION_OTHER: 'Outro',
-                IMAGES_FOLDERS_EMPTY_TITLE: 'Nenhuma pasta encontrada',
-                IMAGES_FOLDERS_EMPTY_DESC: 'Sem pastas',
-                IMAGES_ALBUMS_EMPTY_TITLE: 'Nenhum album encontrado',
-                IMAGES_ALBUMS_EMPTY_DESC: 'Sem albuns',
-            };
-            return map[key] ?? key;
-        },
-    }),
-}));
-jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
-    useSettings: () => ({
-        settings: {
-            indexing: {
-                workers_enabled: true,
-                scan_on_startup: true,
-                extract_metadata: true,
-                generate_previews: true,
-            },
-            ai: {
-                image_classification: true,
-            },
-            players: {
-                remember_music_queue: true,
-                remember_video_progress: true,
-                autoplay_next_video: true,
-                image_slideshow_seconds: 4,
-            },
-            appearance: { accent_color: 'violet', reduce_motion: false },
-            language: { current: 'pt-BR', available: ['en-US', 'pt-BR'] },
-        },
+        t: (key: string, params?: Record<string, string>) =>
+            key === 'LOCALE' ? 'en-US' : params ? `${key}:${Object.values(params).join(',')}` : key,
     }),
 }));
 
-const createQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
+const mockedApiGet = apiBase.get as jest.Mock;
+const mockedApiPost = apiBase.post as jest.Mock;
+
+class FakeIntersectionObserver {
+    static instances: FakeIntersectionObserver[] = [];
+    isDisconnected = false;
+    constructor(private readonly callback: (entries: { isIntersecting: boolean }[]) => void) {
+        FakeIntersectionObserver.instances.push(this);
+    }
+    observe = jest.fn();
+    unobserve = jest.fn();
+    disconnect = () => {
+        this.isDisconnected = true;
+    };
+    trigger = () => this.callback([{ isIntersecting: true }]);
+}
+
+const scrollToSentinel = () => {
+    const liveObservers = FakeIntersectionObserver.instances.filter(
+        (observer) => !observer.isDisconnected
+    );
+    act(() => liveObservers[liveObservers.length - 1]!.trigger());
+};
+
+const mockMatchMedia = (isDesktop: boolean) => {
+    Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: (query: string) => ({
+            matches: isDesktop,
+            media: query,
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+            addListener: jest.fn(),
+            removeListener: jest.fn(),
+            dispatchEvent: jest.fn(),
+            onchange: null,
+        }),
     });
+};
 
-const renderImageContent = (initialEntries: string[]) =>
+type LibraryPageResponse = {
+    items: ImageLibraryItem[];
+    next_cursor?: string;
+    has_next?: boolean;
+    page?: number;
+};
+
+const libraryPage = (response: LibraryPageResponse) => ({
+    data: { next_cursor: '', has_next: false, page_size: 60, ...response },
+});
+
+type FolderRow = { path: string; name: string; image_count: number; cover_file_id: number };
+type FolderPage = { items: FolderRow[]; hasNext: boolean };
+
+type InstallApiOptions = {
+    total?: number;
+    timeline?: unknown[];
+    cameraFacets?: unknown[];
+    formatFacets?: unknown[];
+    folders?: Record<string, FolderRow[]>;
+    folderPages?: FolderPage[];
+    metadataSummary?: Record<string, unknown>;
+};
+
+const folderResponse = (items: FolderRow[], page: number, hasNext: boolean) => ({
+    data: { items, pagination: { page, page_size: 48, has_next: hasNext, has_prev: page > 1 } },
+});
+
+const installApi = (pages: (LibraryPageResponse | Error)[], options: InstallApiOptions = {}) => {
+    let pageIndex = 0;
+    mockedApiGet.mockImplementation(
+        (
+            url: string,
+            config?: { params?: { page_size?: number; parent?: string; page: number } }
+        ) => {
+            if (url === '/image/library') {
+                if (config?.params?.page_size === 1) {
+                    return Promise.resolve(
+                        libraryPage({ items: [buildImageLibraryItem({ file_id: 900 })] })
+                    );
+                }
+                const page = pages[Math.min(pageIndex++, pages.length - 1)]!;
+                return page instanceof Error
+                    ? Promise.reject(page)
+                    : Promise.resolve(libraryPage(page));
+            }
+            if (url === '/image/library/folders') {
+                const params = config?.params as { parent?: string; page: number };
+                if (options.folderPages) {
+                    const folderPage = options.folderPages[params.page - 1]!;
+                    return Promise.resolve(
+                        folderResponse(folderPage.items, params.page, folderPage.hasNext)
+                    );
+                }
+                return Promise.resolve(
+                    folderResponse(options.folders?.[params.parent ?? ''] ?? [], params.page, false)
+                );
+            }
+            if (url === '/image/library/count') {
+                return Promise.resolve({ data: { total: options.total ?? 0 } });
+            }
+            if (url === '/image/library/facets/cameras') {
+                return Promise.resolve({ data: options.cameraFacets ?? [] });
+            }
+            if (url === '/image/library/facets/formats') {
+                return Promise.resolve({ data: options.formatFacets ?? [] });
+            }
+            if (url === '/image/library/timeline') {
+                return Promise.resolve({ data: options.timeline ?? [] });
+            }
+            if (url.startsWith('/image/metadata/') && options.metadataSummary) {
+                return Promise.resolve({ data: options.metadataSummary });
+            }
+            return Promise.reject(new Error(`unexpected GET ${url}`));
+        }
+    );
+};
+
+const libraryParams = () =>
+    mockedApiGet.mock.calls
+        .filter(([url, config]) => url === '/image/library' && config.params.page_size !== 1)
+        .map(([, config]) => config.params);
+
+const folderCalls = () =>
+    mockedApiGet.mock.calls
+        .filter(([url]) => url === '/image/library/folders')
+        .map(([, config]) => config.params as { parent?: string; page: number });
+
+const lastLibraryParams = () => {
+    const allParams = libraryParams();
+    return allParams[allParams.length - 1];
+};
+
+function LocationProbe() {
+    const location = useLocation();
+    return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
+}
+
+const settingsValue = {
+    settings: defaultSettingsConfiguration,
+    isLoading: false,
+    isSaving: false,
+    hasError: false,
+    refresh: jest.fn(),
+    saveSettings: jest.fn(),
+};
+
+const renderGallery = (route = '/images') =>
     render(
-        <QueryClientProvider client={createQueryClient()}>
-            <MemoryRouter initialEntries={initialEntries}>
-                <ImageContent />
+        <QueryClientProvider
+            client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+            <MemoryRouter initialEntries={[route]}>
+                <SettingsContextProvider value={settingsValue}>
+                    <ImageProvider>
+                        <ImageContent />
+                    </ImageProvider>
+                </SettingsContextProvider>
+                <LocationProbe />
             </MemoryRouter>
         </QueryClientProvider>
     );
 
-const createImage = (overrides: Record<string, any> = {}) => ({
-    id: 1,
-    name: 'img1',
-    path: '/photos/img1.jpg',
-    format: '.jpg',
-    size: 1024,
-    created_at: '2026-03-10T10:00:00Z',
-    updated_at: '2026-03-10T10:00:00Z',
-    metadata: {
-        width: 1600,
-        height: 900,
-        make: 'Sony',
-        model: 'A7',
-        classification: { category: 'photo', confidence: 0.9 },
-        ...overrides.metadata,
-    },
-    ...overrides,
-});
+const marchImages = [
+    buildImageLibraryItem({ file_id: 1, name: 'March-1.jpg', taken_at: '2026-03-20T10:00:00Z' }),
+    buildImageLibraryItem({ file_id: 2, name: 'March-2.jpg', taken_at: '2026-03-02T10:00:00Z' }),
+    buildImageLibraryItem({ file_id: 3, name: 'Feb-1.jpg', taken_at: '2026-02-11T10:00:00Z' }),
+    buildImageLibraryItem({ file_id: 4, name: 'Undated.jpg', taken_at: null }),
+];
 
-describe('imageContent', () => {
+describe('ImageContent', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockUseIntersectionObserver.mockImplementation(() => ({ ref: mockRef }));
-        mockToggleStarredFile.mockResolvedValue(undefined);
-        mockUseImage.mockReturnValue({
-            images: [createImage()],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: true,
+        FakeIntersectionObserver.instances = [];
+        Object.defineProperty(window, 'IntersectionObserver', {
+            configurable: true,
+            writable: true,
+            value: FakeIntersectionObserver,
         });
+        mockMatchMedia(false);
     });
 
-    it('renders grouped library and opens viewer with details', () => {
-        renderImageContent(['/images']);
-
-        expect(screen.getByText('Biblioteca')).toBeInTheDocument();
-        expect(screen.getByText('Todas as imagens carregadas')).toBeInTheDocument();
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('button', { name: /abrir img1/i }));
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Abrir pasta' })).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Fechar visualizador' }));
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('triggers infinite load on intersect when enabled', () => {
-        const fetchNextPage = jest.fn();
-        let optionsRef: any;
-        mockUseIntersectionObserver.mockImplementation((options: any) => {
-            optionsRef = options;
-            return { ref: mockRef };
-        });
-
-        mockUseImage.mockReturnValue({
-            images: [createImage()],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage,
-            hasNextPage: true,
-            isFetchingNextPage: false,
-        });
-
-        renderImageContent(['/images']);
-        optionsRef.onIntersect();
-
-        expect(fetchNextPage).toHaveBeenCalled();
-        expect(screen.queryByText('Todas as imagens carregadas')).not.toBeInTheDocument();
-    });
-
-    it('changes grouping through selector', () => {
-        const setImageGroupBy = jest.fn();
-        mockUseImage.mockReturnValue({
-            images: [createImage()],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy,
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
-        });
-
-        renderImageContent(['/images?image=1']);
-        fireEvent.change(screen.getByLabelText('Agrupar imagens por'), {
-            target: { value: 'type' },
-        });
-
-        expect(setImageGroupBy).toHaveBeenCalledWith('type');
-    });
-
-    it('uses persisted backend classification for the captures route', () => {
-        mockUseImage.mockReturnValue({
-            images: [
-                createImage({
-                    id: 1,
-                    name: 'Screenshot_local.png',
-                    path: '/photos/Screenshot_local.png',
-                    format: '.png',
-                    metadata: {
-                        width: 1600,
-                        height: 900,
-                        classification: { category: 'other', confidence: 0.2 },
-                    },
-                }),
-                createImage({
-                    id: 2,
-                    name: 'Trip.jpg',
-                    path: '/photos/Trip.jpg',
-                    metadata: {
-                        width: 1600,
-                        height: 900,
-                        classification: { category: 'capture', confidence: 0.98 },
-                    },
-                }),
+    it('groups images by month with the server total and the undated group last', async () => {
+        installApi([{ items: marchImages }], {
+            total: 120,
+            timeline: [
+                { year: 2026, month: 3, count: 80 },
+                { year: 2026, month: 2, count: 40 },
             ],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
         });
 
-        renderImageContent(['/images/captures']);
+        renderGallery();
+
+        const headings = await screen.findAllByRole('heading', { level: 3 });
+        expect(headings.map((heading) => heading.textContent)).toEqual([
+            'March 2026',
+            'February 2026',
+            'IMAGES_GROUP_NO_DATE',
+        ]);
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'IMAGES_SECTION_LIBRARY' })
+        ).toBeInTheDocument();
+        await waitFor(() => expect(screen.getAllByText('IMAGES_PHOTOS_COUNT:120')).toHaveLength(1));
+        expect(screen.getByText('IMAGES_PHOTOS_COUNT:80')).toBeInTheDocument();
+        expect(screen.getByText('IMAGES_PHOTOS_COUNT:40')).toBeInTheDocument();
+    });
+
+    it('loads the next page from the sentinel placed after the grid', async () => {
+        installApi([
+            { items: marchImages, has_next: true, next_cursor: 'cursor-1' },
+            {
+                items: [
+                    buildImageLibraryItem({
+                        file_id: 5,
+                        name: 'Older.jpg',
+                        taken_at: '2025-12-01T10:00:00Z',
+                    }),
+                ],
+            },
+        ]);
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        scrollToSentinel();
+
+        expect(await screen.findByRole('img', { name: 'Older.jpg' })).toBeInTheDocument();
+        expect(libraryParams()[1]).toEqual(expect.objectContaining({ cursor: 'cursor-1' }));
+        await waitFor(() => expect(screen.getByText('IMAGES_END_MESSAGE')).toBeInTheDocument());
+    });
+
+    it('keeps the sentinel alive when a filter leaves the first page empty but more pages exist', async () => {
+        installApi([
+            { items: [], has_next: true, next_cursor: 'cursor-1' },
+            { items: [buildImageLibraryItem({ file_id: 6, name: 'Late-hit.jpg' })] },
+        ]);
+
+        renderGallery('/images?q=late');
+        await screen.findByRole('button', { name: 'LOAD_MORE' });
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(await screen.findByRole('img', { name: 'Late-hit.jpg' })).toBeInTheDocument();
+    });
+
+    it('shows a backend error with retry and recovers on retry', async () => {
+        installApi([
+            Object.assign(new Error('failed'), { response: { data: { error: 'Server said no' } } }),
+            { items: marchImages },
+        ]);
+
+        renderGallery();
+
+        const alert = await screen.findByRole('alert');
+        expect(within(alert).getByText('IMAGES_ERROR_TITLE')).toBeInTheDocument();
+        expect(within(alert).getByText('Server said no')).toBeInTheDocument();
+
+        fireEvent.click(within(alert).getByRole('button', { name: 'TRY_AGAIN' }));
+
+        expect(await screen.findByRole('img', { name: 'March-1.jpg' })).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('keeps loaded images and retries the next page when it fails', async () => {
+        installApi([
+            { items: marchImages, has_next: true, next_cursor: 'cursor-1' },
+            new Error('page two failed'),
+            { items: [buildImageLibraryItem({ file_id: 5, name: 'Recovered.jpg' })] },
+        ]);
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+        const alert = await screen.findByRole('alert');
+        expect(screen.getByRole('img', { name: 'March-1.jpg' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+        fireEvent.click(within(alert).getByRole('button', { name: 'TRY_AGAIN' }));
+
+        expect(await screen.findByRole('img', { name: 'Recovered.jpg' })).toBeInTheDocument();
+        expect(libraryParams()[2]).toEqual(expect.objectContaining({ cursor: 'cursor-1' }));
+    });
+
+    it('tells an empty library apart from a filtered search without results', async () => {
+        installApi([{ items: [] }]);
+
+        const empty = renderGallery('/images');
+        expect(await screen.findByText('IMAGES_EMPTY_TITLE')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'IMAGES_FILTER_CLEAR' })
+        ).not.toBeInTheDocument();
+        empty.unmount();
+
+        renderGallery('/images?q=nothing');
+        expect(await screen.findByText('IMAGES_EMPTY_FILTERED_TITLE')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_FILTER_CLEAR' }));
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/images$/));
+    });
+
+    it('uses specific empty messages for favorites and for section presets', async () => {
+        installApi([{ items: [] }]);
+
+        const favorites = renderGallery('/images/favorites');
+        expect(await screen.findByText('IMAGES_EMPTY_FAVORITES_TITLE')).toBeInTheDocument();
+        favorites.unmount();
+
+        renderGallery('/images/captures');
+        expect(await screen.findByText('IMAGES_EMPTY_FILTERED_TITLE')).toBeInTheDocument();
+    });
+
+    it('sends the search term to the server after the debounce and keeps it in the URL', async () => {
+        installApi([{ items: marchImages }]);
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        await userEvent.type(screen.getByRole('searchbox'), 'beach');
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('?q=beach'));
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(expect.objectContaining({ q: 'beach' }))
+        );
+        expect(libraryParams().filter((params) => params.q === 'b')).toHaveLength(0);
+    });
+
+    it('applies period, format and sort chips as server filters', async () => {
+        installApi([{ items: marchImages }], {
+            formatFacets: [{ format: 'png', count: 4 }],
+            cameraFacets: [{ camera: 'Canon EOS R5', count: 9 }],
+        });
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        fireEvent.mouseDown(screen.getByRole('combobox', { name: 'IMAGES_FILTER_FORMATS_ARIA' }));
+        fireEvent.click(await screen.findByRole('option', { name: 'PNG (4)' }));
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(expect.objectContaining({ format: ['png'] }))
+        );
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+        const [fromInput] = Array.from(
+            document.querySelectorAll<HTMLInputElement>('input[type="date"]')
+        );
+        fireEvent.change(fromInput!, { target: { value: '2026-01-01' } });
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ taken_from: '2026-01-01' })
+            )
+        );
+
+        fireEvent.change(screen.getByDisplayValue('IMAGES_SORT_TAKEN_AT'), {
+            target: { value: 'name' },
+        });
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ sort: 'name', order: 'asc', page: 1 })
+            )
+        );
+        expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_SORT_ORDER_ASC' }));
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ sort: 'name', order: 'desc' })
+            )
+        );
+    });
+
+    it('filters the gallery by camera chosen from the facet list', async () => {
+        installApi([{ items: marchImages }], {
+            cameraFacets: [{ camera: 'Canon EOS R5', count: 9 }],
+        });
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        fireEvent.mouseDown(screen.getByRole('combobox', { name: 'IMAGES_FILTER_CAMERA' }));
+        fireEvent.click(await screen.findByRole('option', { name: 'Canon EOS R5 (9)' }));
+
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(expect.objectContaining({ camera: 'Canon EOS R5' }))
+        );
+        expect(screen.getByTestId('location')).toHaveTextContent('camera=Canon+EOS+R5');
+    });
+
+    it('jumps to a month from the phone sheet and goes back to the latest', async () => {
+        installApi([{ items: marchImages }], { timeline: [{ year: 2026, month: 3, count: 80 }] });
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        fireEvent.click(await screen.findByRole('button', { name: 'IMAGES_SCRUBBER_OPEN' }));
+        fireEvent.click(screen.getByRole('button', { name: /IMAGES_SCRUBBER_MONTH_ARIA/ }));
+
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ taken_before: '2026-04-01' })
+            )
+        );
+        expect(screen.getByTestId('location')).toHaveTextContent('before=2026-04-01');
+
+        fireEvent.click(await screen.findByRole('button', { name: 'IMAGES_JUMP_BACK_LATEST' }));
+
+        await waitFor(() =>
+            expect(screen.getByTestId('location')).not.toHaveTextContent('before=')
+        );
+        expect(
+            screen.queryByRole('button', { name: 'IMAGES_JUMP_BACK_LATEST' })
+        ).not.toBeInTheDocument();
+    });
+
+    it('shows the desktop date rail and hides the scrubber for non date orderings', async () => {
+        mockMatchMedia(true);
+        installApi([{ items: marchImages }], { timeline: [{ year: 2026, month: 3, count: 80 }] });
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
 
         expect(
-            screen.queryByRole('button', { name: /abrir screenshot_local\.png/i })
-        ).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /abrir trip\.jpg/i })).toBeInTheDocument();
+            await screen.findByRole('navigation', { name: 'IMAGES_SCRUBBER_ARIA' })
+        ).toBeInTheDocument();
+        fireEvent.change(screen.getByDisplayValue('IMAGES_SORT_TAKEN_AT'), {
+            target: { value: 'size' },
+        });
+
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('navigation', { name: 'IMAGES_SCRUBBER_ARIA' })
+            ).not.toBeInTheDocument()
+        );
     });
 
-    it('renders folder overview and allows entering a folder collection', () => {
-        mockUseImage.mockReturnValue({
-            images: [
-                createImage({
-                    id: 1,
-                    name: 'Trip.jpg',
-                    path: '/photos/travel/Trip.jpg',
-                }),
-                createImage({
-                    id: 2,
-                    name: 'Family.jpg',
-                    path: '/photos/family/Family.jpg',
-                }),
+    it('stars a card optimistically and posts the toggle', async () => {
+        installApi([{ items: marchImages }]);
+        mockedApiPost.mockResolvedValue({});
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        const starButtons = screen.getAllByRole('button', {
+            name: 'IMAGES_STAR_ADD_ARIA:March-1.jpg',
+        });
+        fireEvent.click(starButtons[0]!);
+
+        await waitFor(() =>
+            expect(
+                screen.getByRole('button', { name: 'IMAGES_STAR_REMOVE_ARIA:March-1.jpg' })
+            ).toHaveAttribute('aria-pressed', 'true')
+        );
+        expect(mockedApiPost).toHaveBeenCalledWith('/files/starred/1');
+    });
+
+    it('lists server preset collections with counts and opens one as a filtered grid', async () => {
+        installApi([{ items: [buildImageLibraryItem({ file_id: 31, name: 'Receipt.jpg' })] }], {
+            total: 7,
+        });
+
+        renderGallery('/images/albums');
+
+        const documentsCard = await screen.findByRole('button', {
+            name: 'IMAGES_COLLECTION_OPEN:IMAGES_ALBUM_DOCUMENTS',
+        });
+        await waitFor(() =>
+            expect(within(documentsCard).getByText('IMAGES_PHOTOS_COUNT:7')).toBeInTheDocument()
+        );
+        expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+        expect(libraryParams()).toHaveLength(0);
+
+        fireEvent.click(documentsCard);
+
+        expect(await screen.findByRole('img', { name: 'Receipt.jpg' })).toBeInTheDocument();
+        expect(libraryParams()[0]).toEqual(
+            expect.objectContaining({ category: ['document', 'receipt'] })
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_BACK_TO_ALBUMS' }));
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:IMAGES_ALBUM_MEMES' })
+        ).toBeInTheDocument();
+    });
+
+    it('lists my albums above the presets and opens one as a grid with album selection actions', async () => {
+        const tripAlbum = {
+            id: 4,
+            name: 'Trip',
+            cover_file_id: 31,
+            item_count: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+        };
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/image/albums') {
+                return Promise.resolve({
+                    data: { items: [tripAlbum], pagination: { has_next: false } },
+                });
+            }
+            if (url === '/image/albums/4') {
+                return Promise.resolve({ data: tripAlbum });
+            }
+            if (url === '/image/albums/4/items') {
+                return Promise.resolve(
+                    libraryPage({
+                        items: [buildImageLibraryItem({ file_id: 31, name: 'Beach.jpg' })],
+                    })
+                );
+            }
+            if (url === '/image/library/count') {
+                return Promise.resolve({ data: { total: 0 } });
+            }
+            return Promise.resolve(libraryPage({ items: [] }));
+        });
+
+        renderGallery('/images/albums');
+
+        expect(await screen.findByText('IMAGES_MY_ALBUMS_TITLE')).toBeInTheDocument();
+        expect(screen.getByText('IMAGES_SMART_ALBUMS_TITLE')).toBeInTheDocument();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:Trip' }));
+
+        expect(await screen.findByRole('img', { name: 'Beach.jpg' })).toBeInTheDocument();
+        expect(screen.getByTestId('location')).toHaveTextContent('userAlbum=4');
+        expect(await screen.findByRole('heading', { name: 'Trip' })).toBeInTheDocument();
+        expect(libraryParams()).toHaveLength(0);
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_BACK_TO_ALBUMS' }));
+        expect(screen.getByTestId('location')).not.toHaveTextContent('userAlbum');
+        expect(await screen.findByText('IMAGES_MY_ALBUMS_TITLE')).toBeInTheDocument();
+    });
+
+    it('explains an empty user album', async () => {
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/image/albums/4') {
+                return Promise.resolve({ data: { id: 4, name: 'Trip', item_count: 0 } });
+            }
+            return Promise.resolve(libraryPage({ items: [] }));
+        });
+
+        renderGallery('/images/albums?userAlbum=4');
+
+        expect(await screen.findByText('IMAGES_ALBUM_EMPTY_TITLE')).toBeInTheDocument();
+    });
+
+    it('lists server folders with real counts and covers, then browses into a subfolder', async () => {
+        installApi([{ items: [buildImageLibraryItem({ file_id: 5, name: 'Inside.jpg' })] }], {
+            total: 1,
+            folders: {
+                '': [{ path: '/photos', name: 'photos', image_count: 12, cover_file_id: 77 }],
+                '/photos': [
+                    { path: '/photos/trip', name: 'trip', image_count: 4, cover_file_id: 78 },
+                ],
+            },
+        });
+
+        renderGallery('/images/folders');
+
+        const photosCard = await screen.findByRole('button', {
+            name: 'IMAGES_COLLECTION_OPEN:photos',
+        });
+        expect(within(photosCard).getByText('IMAGES_PHOTOS_COUNT:12')).toBeInTheDocument();
+        expect(within(photosCard).getByRole('img', { name: 'photos' })).toHaveAttribute(
+            'src',
+            expect.stringContaining('/files/thumbnail/77')
+        );
+        expect(libraryParams()).toHaveLength(0);
+
+        fireEvent.click(photosCard);
+
+        expect(await screen.findByRole('img', { name: 'Inside.jpg' })).toBeInTheDocument();
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:trip' })
+        ).toBeInTheDocument();
+        expect(lastLibraryParams()).toEqual(expect.objectContaining({ folder: '/photos' }));
+        expect(folderCalls()).toContainEqual(
+            expect.objectContaining({ parent: '/photos', page: 1 })
+        );
+        expect(screen.getByTestId('location')).toHaveTextContent('folder=%2Fphotos');
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_SECTION_FOLDERS' }));
+        await waitFor(() =>
+            expect(screen.getByTestId('location')).not.toHaveTextContent('folder=')
+        );
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:photos' })
+        ).toBeInTheDocument();
+    });
+
+    it('loads more folders when the folder list sentinel is reached', async () => {
+        installApi([], {
+            folderPages: [
+                {
+                    items: [{ path: '/a', name: 'a', image_count: 1, cover_file_id: 1 }],
+                    hasNext: true,
+                },
+                {
+                    items: [{ path: '/b', name: 'b', image_count: 2, cover_file_id: 2 }],
+                    hasNext: false,
+                },
             ],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
         });
 
-        renderImageContent(['/images/folders']);
+        renderGallery('/images/folders');
+        await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:a' });
 
-        expect(screen.getByText('Pastas')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: /abrir travel/i }));
+        scrollToSentinel();
 
-        expect(screen.getByText('/photos/travel')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Voltar para pastas' })).toBeInTheDocument();
+        expect(
+            await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:b' })
+        ).toBeInTheDocument();
+        expect(folderCalls().map((params) => params.page)).toEqual([1, 2]);
     });
 
-    it('renders album overview, enters a selected album, and returns to the overview', () => {
-        mockUseImage.mockReturnValue({
-            images: [
-                createImage({
-                    id: 1,
-                    name: 'misc.jpg',
-                    path: '/photos/random/misc.jpg',
-                    metadata: {
-                        width: 1200,
-                        height: 900,
-                        classification: { category: 'photo', confidence: 0.9 },
-                    },
-                }),
-            ],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
+    it('shows the empty state when the server has no folders with images', async () => {
+        installApi([], { folders: { '': [] } });
+
+        renderGallery('/images/folders');
+
+        expect(await screen.findByText('IMAGES_FOLDERS_EMPTY_TITLE')).toBeInTheDocument();
+    });
+
+    it('shows a retryable error when the folder list fails', async () => {
+        mockedApiGet.mockRejectedValue(new Error('down'));
+
+        renderGallery('/images/folders');
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+    });
+
+    it('opens the viewer from a card, navigates and closes it', async () => {
+        installApi([{ items: marchImages }]);
+
+        renderGallery();
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'IMAGES_OPEN_IMAGE_ARIA:March-2.jpg' })
+        );
+
+        const dialog = await screen.findByRole('dialog', { name: 'March-2.jpg' });
+        expect(screen.getByTestId('location')).toHaveTextContent('image=2');
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+        expect(await screen.findByRole('dialog', { name: 'Feb-1.jpg' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_CLOSE_VIEWER' }));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(screen.getByTestId('location')).not.toHaveTextContent('image=');
+    });
+
+    it('searches the gallery for a tag clicked in the viewer details and closes the viewer', async () => {
+        installApi([{ items: marchImages }], {
+            metadataSummary: { caption: 'A red car', tags: ['car', 'red'], ocr_text: '' },
         });
 
-        renderImageContent(['/images/albums']);
+        renderGallery();
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'IMAGES_OPEN_IMAGE_ARIA:March-2.jpg' })
+        );
+        const dialog = await screen.findByRole('dialog', { name: 'March-2.jpg' });
+        expect(await within(dialog).findByText('A red car')).toBeInTheDocument();
 
-        expect(screen.queryByLabelText('Agrupar imagens por')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: /abrir outros/i }));
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'IMAGES_DETAIL_TAG_SEARCH:red' })
+        );
 
-        expect(screen.getByText('Tudo que nao entrou nos temas principais')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: 'Voltar para albuns' }));
-
-        expect(screen.getByRole('button', { name: /abrir outros/i })).toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('?q=red'));
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ q: 'red', content: 'red', match: 'all' })
+            )
+        );
     });
 
-    it('back button in folders section clears folder selection', () => {
-        mockUseImage.mockReturnValue({
-            images: [
-                createImage({
-                    id: 1,
-                    name: 'Trip.jpg',
-                    path: '/photos/travel/Trip.jpg',
-                }),
-            ],
-            status: 'success',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
+    it('opens the viewer from the image deep link and toggles its favorite state', async () => {
+        installApi([{ items: marchImages }]);
+        mockedApiPost.mockResolvedValue({});
+
+        renderGallery('/images?image=3');
+
+        const dialog = await screen.findByRole('dialog', { name: 'Feb-1.jpg' });
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_VIEWER_ADD_FAVORITE' }));
+
+        await waitFor(() => expect(mockedApiPost).toHaveBeenCalledWith('/files/starred/3'));
+        await waitFor(() =>
+            expect(
+                within(screen.getByRole('dialog')).getByRole('button', {
+                    name: 'IMAGES_VIEWER_REMOVE_FAVORITE',
+                })
+            ).toBeInTheDocument()
+        );
+    });
+
+    it('resolves a deep-linked image that is not in the loaded pages through its path', async () => {
+        installApi([{ items: marchImages }]);
+        const deepLinked = {
+            id: 99,
+            name: 'Far-away.jpg',
+            path: '/old/Far-away.jpg',
+            parent_path: '/old',
+            type: 2,
+            format: '.jpg',
+            size: 5,
+            updated_at: '',
+            created_at: '',
+            deleted_at: '',
+            last_interaction: '',
+            last_backup: '',
+            check_sum: '',
+            directory_content_count: 0,
+            starred: false,
+        };
+        const defaultImplementation = mockedApiGet.getMockImplementation()!;
+        mockedApiGet.mockImplementation((url: string, config?: unknown) =>
+            url === '/files/path'
+                ? Promise.resolve({ data: { items: [deepLinked] } })
+                : defaultImplementation(url, config)
+        );
+
+        renderGallery('/images?image=99&imagePath=%2Fold%2FFar-away.jpg');
+
+        expect(await screen.findByRole('dialog', { name: 'Far-away.jpg' })).toBeInTheDocument();
+        expect(mockedApiGet).toHaveBeenCalledWith('/files/path', {
+            params: { path: '/old/Far-away.jpg' },
+        });
+    });
+
+    it('fetches the next gallery page when next is pressed on the last loaded image', async () => {
+        const firstPage = marchImages.slice(0, 2);
+        const secondPage = marchImages.slice(2, 3);
+        installApi([
+            { items: firstPage, has_next: true, next_cursor: 'cursor-1' },
+            { items: secondPage },
+        ]);
+
+        renderGallery();
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'IMAGES_OPEN_IMAGE_ARIA:March-2.jpg' })
+        );
+        const dialog = await screen.findByRole('dialog', { name: 'March-2.jpg' });
+        expect(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' })).toBeEnabled();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Feb-1.jpg' })).toBeInTheDocument();
+        expect(libraryParams()).toHaveLength(2);
+        expect(lastLibraryParams().cursor).toBe('cursor-1');
+        expect(screen.getByRole('button', { name: 'IMAGES_NEXT' })).toBeDisabled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        expect(await screen.findByRole('dialog', { name: 'March-2.jpg' })).toBeInTheDocument();
+    });
+
+    it('does not wrap around at the true end or the true start of the gallery', async () => {
+        installApi([{ items: marchImages.slice(0, 2) }]);
+
+        renderGallery('/images?image=1');
+        const dialog = await screen.findByRole('dialog', { name: 'March-1.jpg' });
+        expect(within(dialog).getByRole('button', { name: 'IMAGES_PREVIOUS' })).toBeDisabled();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+        expect(await screen.findByRole('dialog', { name: 'March-2.jpg' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'IMAGES_NEXT' })).toBeDisabled();
+        expect(libraryParams()).toHaveLength(1);
+    });
+
+    it('navigates around a deep-linked image that is not loaded using the neighbors endpoint', async () => {
+        installApi([{ items: marchImages }]);
+        const deepLinked = {
+            id: 99,
+            name: 'Far-away.jpg',
+            path: '/old/Far-away.jpg',
+            parent_path: '/old',
+            type: 2,
+            format: '.jpg',
+            size: 5,
+            updated_at: '',
+            created_at: '',
+            deleted_at: '',
+            last_interaction: '',
+            last_backup: '',
+            check_sum: '',
+            directory_content_count: 0,
+            starred: false,
+        };
+        const neighbors = {
+            before: [buildImageLibraryItem({ file_id: 100, name: 'Newer.jpg' })],
+            after: [buildImageLibraryItem({ file_id: 98, name: 'Older.jpg' })],
+        };
+        const defaultImplementation = mockedApiGet.getMockImplementation()!;
+        mockedApiGet.mockImplementation((url: string, config?: unknown) => {
+            if (url === '/files/path') {
+                return Promise.resolve({ data: { items: [deepLinked] } });
+            }
+            if (url === '/image/library/neighbors/99') {
+                return Promise.resolve({ data: neighbors });
+            }
+            return defaultImplementation(url, config);
         });
 
-        renderImageContent(['/images/folders']);
+        renderGallery('/images?image=99&imagePath=%2Fold%2FFar-away.jpg');
 
-        fireEvent.click(screen.getByRole('button', { name: /abrir travel/i }));
-        expect(screen.getByRole('button', { name: 'Voltar para pastas' })).toBeInTheDocument();
+        const dialog = await screen.findByRole('dialog', { name: 'Far-away.jpg' });
+        await waitFor(() =>
+            expect(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' })).toBeEnabled()
+        );
+        expect(mockedApiGet).toHaveBeenCalledWith(
+            '/image/library/neighbors/99',
+            expect.objectContaining({ params: expect.objectContaining({ count: 20 }) })
+        );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Voltar para pastas' }));
-        expect(screen.getByRole('button', { name: /abrir travel/i })).toBeInTheDocument();
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+        expect(await screen.findByRole('dialog', { name: 'Older.jpg' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        expect(await screen.findByRole('dialog', { name: 'Newer.jpg' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' })).toBeDisabled();
     });
 
-    it('toggles details and filmstrip in the viewer', () => {
-        renderImageContent(['/images?image=1']);
+    it('opens the folder of the viewed image in the files page', async () => {
+        installApi([{ items: marchImages }]);
 
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-        const detailsButton = screen.getByRole('button', {
-            name: 'Alternar detalhes',
-        });
-        fireEvent.click(detailsButton);
-
-        const filmstripButton = screen.getByRole('button', {
-            name: /mostrar tira|ocultar tira/i,
-        });
-        fireEvent.click(filmstripButton);
-    });
-
-    it('renders the initial loading state for grid sections without images', () => {
-        mockUseImage.mockReturnValue({
-            images: [],
-            status: 'pending',
-            imageGroupBy: 'date',
-            setImageGroupBy: jest.fn(),
-            fetchNextPage: jest.fn(),
-            hasNextPage: false,
-            isFetchingNextPage: false,
-        });
-
-        renderImageContent(['/images']);
-
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-        expect(screen.queryByText('IMAGES_EMPTY_TITLE')).not.toBeInTheDocument();
-    });
-
-    it('opens the viewer from the image search param', () => {
-        renderImageContent(['/images?image=1']);
-
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-
-    it('favorites the active image from the viewer and shows feedback', async () => {
-        renderImageContent(['/images?image=1']);
-
-        fireEvent.click(screen.getByRole('button', { name: 'Favoritar' }));
-
-        await waitFor(() => expect(mockToggleStarredFile).toHaveBeenCalledWith(1));
-    });
-
-    it('opens the current folder in files from the viewer', () => {
-        renderImageContent(['/images?image=1']);
-
-        fireEvent.click(screen.getByRole('button', { name: 'Abrir pasta' }));
+        renderGallery('/images?image=1');
+        fireEvent.click(await screen.findByRole('button', { name: 'IMAGES_VIEWER_OPEN_FOLDER' }));
 
         expect(mockNavigate).toHaveBeenCalledWith({
             pathname: '/files',
-            search: '?path=%2Fphotos',
+            search: '?path=%2Fphotos%2Ftravel',
         });
     });
 });

@@ -10,16 +10,16 @@
 
 .navItem:hover {
     border-color: var(--app-color-border-subtle) !important;
-    background-color: rgba(18, 26, 41, 0.66) !important;
+    background-color: rgba(var(--app-color-surface-2-rgb), 0.66) !important;
     color: var(--app-color-text-primary) !important;
 }
 
 .selected {
-    border-color: rgba(109, 93, 246, 0.4) !important;
+    border-color: rgba(var(--app-color-primary-rgb), 0.4) !important;
     background: linear-gradient(
         90deg,
-        rgba(109, 93, 246, 0.18) 0%,
-        rgba(24, 34, 52, 0.72) 100%
+        rgba(var(--app-color-primary-rgb), 0.18) 0%,
+        rgba(var(--app-color-surface-3-rgb), 0.72) 100%
     ) !important;
     box-shadow: var(--app-shadow-active-primary);
     color: var(--app-color-text-primary) !important;
@@ -42,7 +42,7 @@
     text-overflow: ellipsis;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .navItem {
         padding: var(--app-spacing-3) var(--app-spacing-4) !important;
         min-height: 48px;
@@ -61,4 +61,13 @@
     .label {
         font-size: 0.95rem;
     }
+}
+
+.iconOnly {
+    justify-content: center;
+    padding-inline: 0 !important;
+}
+
+.iconOnly .icon {
+    justify-content: center;
 }

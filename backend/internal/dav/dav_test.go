@@ -28,7 +28,7 @@ func setupDAV(t *testing.T) (http.Handler, string, string) {
 		{ID: 1, Path: dataRoot, Label: "Dados", Enabled: true},
 		{ID: 2, Path: mediaRoot, Label: "Midia", Enabled: true},
 	})
-	return NewHandler(), dataRoot, mediaRoot
+	return NewHandler(nil), dataRoot, mediaRoot
 }
 
 func doDAV(handler http.Handler, method string, target string, body string, headers map[string]string) *httptest.ResponseRecorder {

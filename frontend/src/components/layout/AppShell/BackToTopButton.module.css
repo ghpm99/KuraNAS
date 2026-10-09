@@ -1,0 +1,40 @@
+.button {
+    position: fixed;
+    right: var(--app-spacing-5);
+    bottom: calc(var(--app-safe-area-bottom) + var(--app-spacing-5));
+    z-index: 1050;
+    background-color: var(--app-color-surface-3) !important;
+    color: var(--app-color-text-primary) !important;
+    border: 1px solid var(--app-color-border-strong) !important;
+    box-shadow: var(--app-shadow-floating);
+}
+
+.buttonWithPlayer {
+    bottom: calc(
+        var(--app-shell-player-height) + var(--app-safe-area-bottom) + var(--app-spacing-5)
+    );
+}
+
+@media (max-width: 899.95px) {
+    .button {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-spacing-5)
+        );
+    }
+
+    .buttonWithPlayer {
+        bottom: calc(
+            var(--app-shell-player-height) + var(--app-shell-bottom-nav-height) +
+                var(--app-safe-area-bottom) + var(--app-spacing-5)
+        );
+    }
+}
+
+@media (max-width: 599.95px) {
+    .buttonWithPlayer {
+        bottom: calc(
+            var(--app-shell-player-height-mobile) + var(--app-shell-bottom-nav-height) +
+                var(--app-safe-area-bottom) + var(--app-spacing-5)
+        );
+    }
+}

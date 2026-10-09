@@ -88,6 +88,42 @@ func TestUpdateProviderHandlerNotFound(t *testing.T) {
 	}
 }
 
+// TestUpdateProviderHandlerDecodesPayload pins the request seam: it captures the
+// whole UpdateProviderDto the handler decodes (service/aiProviders.ts → PUT
+// /ai/providers/:name), including the nested params, and asserts every field
+// plus the name path param. A json tag drift in params fails here instead of
+// silently dropping the tuning in production.
+func TestUpdateProviderHandlerDecodesPayload(t *testing.T) {
+	var capturedName ProviderName
+	var captured UpdateProviderDto
+	handler := NewHandler(&serviceMock{
+		updateFn: func(name ProviderName, dto UpdateProviderDto) (ProviderDto, error) {
+			capturedName = name
+			captured = dto
+			return ProviderDto{Name: string(name)}, nil
+		},
+	})
+	body := bytes.NewBufferString(`{"enabled":true,"model":"llama3.1","base_url":"http://host:11434","priority":3,"params":{"timeout_seconds":120,"max_retries":4,"retry_backoff_ms":500,"keep_alive":"5m"}}`)
+	ctx, rec := newTestContext(http.MethodPut, "/ai/providers/ollama", body)
+	ctx.Params = gin.Params{{Key: "name", Value: "ollama"}}
+
+	handler.UpdateProviderHandler(ctx)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if capturedName != "ollama" {
+		t.Fatalf("name path param did not reach the service: %q", capturedName)
+	}
+	if !captured.Enabled || captured.Model != "llama3.1" || captured.BaseURL != "http://host:11434" || captured.Priority != 3 {
+		t.Fatalf("top-level fields did not decode: %+v", captured)
+	}
+	if captured.Params.TimeoutSeconds != 120 || captured.Params.MaxRetries != 4 ||
+		captured.Params.RetryBackoffMS != 500 || captured.Params.KeepAlive != "5m" {
+		t.Fatalf("nested params did not decode: %+v", captured.Params)
+	}
+}
+
 func TestUpdateProviderHandlerSuccess(t *testing.T) {
 	handler := NewHandler(&serviceMock{
 		updateFn: func(name ProviderName, dto UpdateProviderDto) (ProviderDto, error) {

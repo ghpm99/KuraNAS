@@ -117,6 +117,16 @@ describe('components/settings/useSettingsScreen', () => {
         ]);
     });
 
+    it('computes theme mode options from constant values', () => {
+        const { result } = renderHook(() => useSettingsScreen());
+
+        expect(result.current.themeModeOptions).toEqual([
+            { value: 'dark', label: 'SETTINGS_APPEARANCE_THEME_DARK' },
+            { value: 'light', label: 'SETTINGS_APPEARANCE_THEME_LIGHT' },
+            { value: 'system', label: 'SETTINGS_APPEARANCE_THEME_SYSTEM' },
+        ]);
+    });
+
     it('computes slideshow options from constant values', () => {
         const { result } = renderHook(() => useSettingsScreen());
 

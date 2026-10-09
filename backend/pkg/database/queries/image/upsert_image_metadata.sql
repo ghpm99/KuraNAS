@@ -52,7 +52,8 @@ INSERT INTO
         classification_confidence,
         classification_suggested_name,
         created_at,
-        ai_classified_at
+        ai_classified_at,
+        taken_at
     )
 VALUES
     (
@@ -108,7 +109,8 @@ VALUES
         $50,
         $51,
         $52,
-        $53
+        $53,
+        COALESCE($54::TIMESTAMPTZ, (SELECT file.updated_at FROM home_file AS file WHERE file.id = $1))
     ) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
@@ -159,10 +161,23 @@ SET
     user_comment = EXCLUDED.user_comment,
     copyright = EXCLUDED.copyright,
     artist = EXCLUDED.artist,
-    classification_category = EXCLUDED.classification_category,
-    classification_confidence = EXCLUDED.classification_confidence,
-    classification_suggested_name = EXCLUDED.classification_suggested_name,
-    ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at)
+    classification_category = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_category
+        ELSE EXCLUDED.classification_category
+    END,
+    classification_confidence = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_confidence
+        ELSE EXCLUDED.classification_confidence
+    END,
+    classification_suggested_name = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_suggested_name
+        ELSE EXCLUDED.classification_suggested_name
+    END,
+    ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at),
+    taken_at = EXCLUDED.taken_at
 RETURNING
     id,
     created_at;

@@ -18,7 +18,10 @@ const createEngineMock = () => ({
         } as { currentTime: number; play: jest.Mock } | null,
     },
     loadAndPlayUrl: jest.fn(),
+    loadUrlPaused: jest.fn(),
     preloadUrl: jest.fn(),
+    canPlayType: jest.fn().mockReturnValue('maybe'),
+    getPositionSeconds: jest.fn().mockReturnValue(0),
     togglePlayPause: jest.fn(),
     seek: jest.fn(),
     setVolume: jest.fn(),
@@ -29,15 +32,32 @@ const createEngineMock = () => ({
     volume: 1,
 });
 
-let engineMock = createEngineMock();
+const linkEnginePositionToAudio = (engine: ReturnType<typeof createEngineMock>) => {
+    engine.getPositionSeconds.mockImplementation(() => engine.audioRef.current?.currentTime ?? 0);
+    engine.seek.mockImplementation((seconds: number) => {
+        if (engine.audioRef.current) engine.audioRef.current.currentTime = seconds;
+    });
+    return engine;
+};
+
+let engineMock = linkEnginePositionToAudio(createEngineMock());
 const mockSyncState = jest.fn();
 const mockQueueHydration = jest.fn();
+const mockQueuePersistence = jest.fn();
+let mockHasHydrationSettled = false;
 let capturedOnTrackEnded: (() => void) | undefined;
+let capturedOnPlaybackFailure: (() => void) | undefined;
+const mockEnqueueSnackbar = jest.fn();
+
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
+}));
 
 jest.mock('./globalMusic/useAudioEngine', () => ({
     __esModule: true,
-    default: (onTrackEnded: () => void) => {
+    default: (onTrackEnded: () => void, onPlaybackFailure: () => void) => {
         capturedOnTrackEnded = onTrackEnded;
+        capturedOnPlaybackFailure = onPlaybackFailure;
         return engineMock;
     },
 }));
@@ -58,7 +78,15 @@ jest.mock('./globalMusic/useMusicStateSync', () => ({
 
 jest.mock('./globalMusic/useMusicQueueHydration', () => ({
     __esModule: true,
-    default: (enabled: boolean, callbacks: unknown) => mockQueueHydration(enabled, callbacks),
+    default: (enabled: boolean, callbacks: unknown) => {
+        mockQueueHydration(enabled, callbacks);
+        return { hasSettled: mockHasHydrationSettled };
+    },
+}));
+
+jest.mock('./globalMusic/useMusicQueuePersistence', () => ({
+    __esModule: true,
+    default: (params: unknown) => mockQueuePersistence(params),
 }));
 
 jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({
@@ -97,13 +125,57 @@ const createTrack = (id: number): IMusicData => ({
 describe('GlobalMusicProvider', () => {
     beforeEach(() => {
         jest.useFakeTimers();
-        engineMock = createEngineMock();
+        engineMock = linkEnginePositionToAudio(createEngineMock());
         mockSyncState.mockReset();
+        mockEnqueueSnackbar.mockReset();
         mockQueueHydration.mockReset();
+        mockQueuePersistence.mockReset();
+        mockHasHydrationSettled = false;
     });
 
     afterEach(() => {
         jest.useRealTimers();
+    });
+
+    it('restores the saved player through the hydration callbacks without autoplay', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const [isHydrationEnabled, hydrationCallbacks] = mockQueueHydration.mock.calls[0];
+
+        act(() => {
+            hydrationCallbacks.setQueue([createTrack(4), createTrack(5)]);
+            hydrationCallbacks.setCurrentIndex(1);
+            hydrationCallbacks.setShuffle(true);
+            hydrationCallbacks.setRepeatMode('all');
+            hydrationCallbacks.setVolume(0.3);
+            hydrationCallbacks.loadPausedTrack(5, 12);
+        });
+
+        expect(isHydrationEnabled).toBe(true);
+        expect(result.current.queue).toHaveLength(2);
+        expect(result.current.currentIndex).toBe(1);
+        expect(result.current.shuffle).toBe(true);
+        expect(result.current.repeatMode).toBe('all');
+        expect(engineMock.setVolume).toHaveBeenCalledWith(0.3);
+        expect(engineMock.loadUrlPaused).toHaveBeenCalledWith(
+            expect.stringContaining('/files/stream/5'),
+            12,
+            undefined
+        );
+        expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
+    });
+
+    it('persists the queue only after hydration settled', () => {
+        const { rerender } = renderHook(() => useGlobalMusic(), { wrapper });
+        expect(mockQueuePersistence).toHaveBeenLastCalledWith(
+            expect.objectContaining({ isEnabled: false })
+        );
+
+        mockHasHydrationSettled = true;
+        rerender();
+
+        expect(mockQueuePersistence).toHaveBeenLastCalledWith(
+            expect.objectContaining({ isEnabled: true, queue: [], currentIndex: undefined })
+        );
     });
 
     it('manages queue operations and shuffle/previous flows', () => {
@@ -114,27 +186,27 @@ describe('GlobalMusicProvider', () => {
 
         act(() => {
             result.current.addToQueue(
-                trackA,
+                [trackA],
                 createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
             );
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
-        expect(result.current.queue).toEqual([trackA]);
+        expect(result.current.queue).toEqual([expect.objectContaining({ id: trackA.id })]);
         expect(result.current.currentIndex).toBe(0);
         expect(result.current.playbackContext).toEqual(
             createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
         );
 
         act(() => {
-            result.current.addToQueue(trackA);
-            result.current.addToQueue(trackB);
+            result.current.addToQueue([trackA]);
+            result.current.addToQueue([trackB]);
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
-        expect(result.current.queue).toHaveLength(2);
+        expect(result.current.queue).toHaveLength(3);
 
         act(() => {
             result.current.replaceQueue(
@@ -143,10 +215,11 @@ describe('GlobalMusicProvider', () => {
                 createPlaylistPlaybackContext({ id: 22, name: 'Queue 22' })
             );
         });
-        expect(result.current.queue[1]).toEqual(trackC);
+        expect(result.current.queue[1]).toEqual(expect.objectContaining({ id: trackC.id }));
         expect(result.current.currentIndex).toBe(1);
         expect(engineMock.loadAndPlayUrl).toHaveBeenLastCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
         expect(mockSyncState).toHaveBeenCalledWith(
             expect.objectContaining({ fileId: 3, position: 0, playlistId: 22 })
@@ -192,7 +265,7 @@ describe('GlobalMusicProvider', () => {
         expect(result.current.queue).toEqual([]);
 
         act(() => {
-            result.current.addToQueue(track);
+            result.current.addToQueue([track]);
         });
         act(() => {
             jest.runOnlyPendingTimers();
@@ -221,6 +294,51 @@ describe('GlobalMusicProvider', () => {
         expect(engineMock.stop).toHaveBeenCalled();
     });
 
+    it('starts a track whose format the browser cannot play through the transcode URL', () => {
+        engineMock.canPlayType.mockReturnValue('');
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const wmaTrack = { ...createTrack(8), format: '.wma', metadata: { length: 180 } as never };
+
+        act(() => {
+            result.current.replaceQueue([wmaTrack], 0);
+        });
+
+        expect(engineMock.canPlayType).toHaveBeenCalledWith('audio/x-ms-wma');
+        expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
+            expect.stringContaining('/music/tracks/8/stream?format=mp3'),
+            expect.objectContaining({ durationSeconds: 180 })
+        );
+    });
+
+    it('shows an error snackbar when playback keeps failing', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([{ ...createTrack(5), metadata: { title: 'Broken' } as never }], 0);
+        });
+        act(() => {
+            capturedOnPlaybackFailure?.();
+        });
+
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith('MUSIC_PLAYBACK_FAILED', {
+            variant: 'error',
+        });
+    });
+
+    it('does not preload the next track when it needs transcoding', () => {
+        engineMock.canPlayType.mockImplementation((mimeType: string) =>
+            mimeType === 'audio/x-ms-wma' ? '' : 'maybe'
+        );
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const tracks = [createTrack(1), { ...createTrack(2), format: 'wma' }, createTrack(3)];
+
+        act(() => {
+            result.current.replaceQueue(tracks, 0);
+        });
+
+        expect(engineMock.preloadUrl).not.toHaveBeenCalled();
+    });
+
     it('removeFromQueue adjusts currentIndex when removing before current', () => {
         const { result } = renderHook(() => useGlobalMusic(), { wrapper });
         const tracks = [createTrack(1), createTrack(2), createTrack(3)];
@@ -232,7 +350,7 @@ describe('GlobalMusicProvider', () => {
 
         // Remove track before current index: index should shift down by 1
         act(() => {
-            result.current.removeFromQueue(0);
+            result.current.removeFromQueue(result.current.queue[0]!.queueEntryId);
         });
         expect(result.current.currentIndex).toBe(1);
         expect(result.current.queue).toHaveLength(2);
@@ -249,11 +367,12 @@ describe('GlobalMusicProvider', () => {
 
         // Remove the currently playing track (index 1)
         act(() => {
-            result.current.removeFromQueue(1);
+            result.current.removeFromQueue(result.current.queue[1]!.queueEntryId);
         });
         // Should load the next track (track 3 is now at index 1)
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
         expect(result.current.queue).toHaveLength(2);
     });
@@ -269,12 +388,13 @@ describe('GlobalMusicProvider', () => {
 
         // Remove the last track which is also the current track
         act(() => {
-            result.current.removeFromQueue(1);
+            result.current.removeFromQueue(result.current.queue[1]!.queueEntryId);
         });
         // currentIndex should clamp to newQueue.length - 1 = 0
         expect(result.current.currentIndex).toBe(0);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/1')
+            expect.stringContaining('/files/stream/1'),
+            undefined
         );
     });
 
@@ -287,7 +407,7 @@ describe('GlobalMusicProvider', () => {
         });
 
         act(() => {
-            result.current.removeFromQueue(2);
+            result.current.removeFromQueue(result.current.queue[2]!.queueEntryId);
         });
         expect(result.current.currentIndex).toBe(0);
         expect(result.current.queue).toHaveLength(2);
@@ -301,7 +421,7 @@ describe('GlobalMusicProvider', () => {
         });
 
         act(() => {
-            result.current.removeFromQueue(0);
+            result.current.removeFromQueue(result.current.queue[0]!.queueEntryId);
         });
         expect(result.current.queue).toHaveLength(0);
         expect(result.current.currentIndex).toBeUndefined();
@@ -323,7 +443,8 @@ describe('GlobalMusicProvider', () => {
         // (1 + 1) % 2 = 0
         expect(result.current.currentIndex).toBe(0);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/1')
+            expect.stringContaining('/files/stream/1'),
+            undefined
         );
     });
 
@@ -361,7 +482,8 @@ describe('GlobalMusicProvider', () => {
         // Should wrap to last track
         expect(result.current.currentIndex).toBe(2);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
     });
 
@@ -407,23 +529,26 @@ describe('GlobalMusicProvider', () => {
         expect(result.current.queueOpen).toBe(false);
     });
 
-    it('addToQueue does not add duplicate tracks', () => {
+    it('addToQueue allows the same track to be queued twice with distinct entry ids', () => {
         const { result } = renderHook(() => useGlobalMusic(), { wrapper });
         const track = createTrack(1);
 
         act(() => {
-            result.current.addToQueue(track);
+            result.current.addToQueue([track]);
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
         act(() => {
-            result.current.addToQueue(track);
+            result.current.addToQueue([track]);
         });
         act(() => {
             jest.runOnlyPendingTimers();
         });
-        expect(result.current.queue).toHaveLength(1);
+        expect(result.current.queue).toHaveLength(2);
+        expect(result.current.queue[0]!.queueEntryId).not.toBe(
+            result.current.queue[1]!.queueEntryId
+        );
     });
 
     it('addToQueue does not overwrite playbackContext when queue is already playing', () => {
@@ -431,7 +556,7 @@ describe('GlobalMusicProvider', () => {
 
         act(() => {
             result.current.addToQueue(
-                createTrack(1),
+                [createTrack(1)],
                 createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
             );
         });
@@ -445,7 +570,7 @@ describe('GlobalMusicProvider', () => {
         // Adding another track with a different context should NOT change playbackContext
         act(() => {
             result.current.addToQueue(
-                createTrack(2),
+                [createTrack(2)],
                 createPlaylistPlaybackContext({ id: 20, name: 'Queue 20' })
             );
         });
@@ -455,6 +580,112 @@ describe('GlobalMusicProvider', () => {
         expect(result.current.playbackContext).toEqual(
             createPlaylistPlaybackContext({ id: 10, name: 'Queue 10' })
         );
+    });
+
+    it('playNext inserts right after the current track and keeps the current index', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([createTrack(1), createTrack(2), createTrack(3)], 1);
+        });
+        engineMock.loadAndPlayUrl.mockClear();
+        act(() => {
+            result.current.playNext([createTrack(8), createTrack(9)]);
+        });
+
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([1, 2, 8, 9, 3]);
+        expect(result.current.currentIndex).toBe(1);
+        expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
+    });
+
+    it('playNext starts playback when the queue is empty', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.playNext([createTrack(4)]);
+        });
+
+        expect(result.current.currentIndex).toBe(0);
+        expect(engineMock.loadAndPlayUrl).toHaveBeenCalledTimes(1);
+    });
+
+    it('addToQueue appends to the end without touching playback', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([createTrack(1), createTrack(2)], 0);
+        });
+        engineMock.loadAndPlayUrl.mockClear();
+        act(() => {
+            result.current.addToQueue([createTrack(1), createTrack(7)]);
+        });
+
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([1, 2, 1, 7]);
+        expect(result.current.currentIndex).toBe(0);
+        expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
+    });
+
+    it('moveQueueItem reorders and keeps following the current track', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([createTrack(1), createTrack(2), createTrack(3)], 0);
+        });
+        act(() => {
+            result.current.moveQueueItem(2, 0);
+        });
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([3, 1, 2]);
+        expect(result.current.currentIndex).toBe(1);
+        expect(result.current.currentTrack?.id).toBe(1);
+
+        act(() => {
+            result.current.moveQueueItem(1, 2);
+        });
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([3, 2, 1]);
+        expect(result.current.currentIndex).toBe(2);
+
+        act(() => {
+            result.current.moveQueueItem(0, 9);
+        });
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([3, 2, 1]);
+    });
+
+    it('removeFromQueue removes only the chosen duplicate entry and ignores unknown ids', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([createTrack(1), createTrack(2), createTrack(1)], 0);
+        });
+        const lastEntryId = result.current.queue[2]!.queueEntryId;
+        act(() => {
+            result.current.removeFromQueue('missing');
+            result.current.removeFromQueue(lastEntryId);
+        });
+
+        expect(result.current.queue.map((entry) => entry.id)).toEqual([1, 2]);
+    });
+
+    it('runs playback side effects once per operation', () => {
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+
+        act(() => {
+            result.current.replaceQueue([createTrack(1), createTrack(2)], 0);
+        });
+        engineMock.loadAndPlayUrl.mockClear();
+        act(() => {
+            result.current.removeFromQueue(result.current.queue[0]!.queueEntryId);
+        });
+        expect(engineMock.loadAndPlayUrl).toHaveBeenCalledTimes(1);
+
+        engineMock.loadAndPlayUrl.mockClear();
+        act(() => {
+            result.current.clearQueue();
+            result.current.addToQueue([createTrack(5)]);
+        });
+        act(() => {
+            jest.runOnlyPendingTimers();
+        });
+        expect(engineMock.loadAndPlayUrl).toHaveBeenCalledTimes(1);
     });
 
     it('replaceQueue with empty array is a no-op', () => {
@@ -521,7 +752,7 @@ describe('GlobalMusicProvider', () => {
         act(() => {
             result.current.replaceQueue(tracks, 1);
         });
-        expect(result.current.currentTrack).toEqual(tracks[1]);
+        expect(result.current.currentTrack).toEqual(expect.objectContaining({ id: 2 }));
     });
 
     it('throws when useGlobalMusic is used outside provider', () => {
@@ -615,7 +846,8 @@ describe('GlobalMusicProvider', () => {
 
             expect(result.current.currentIndex).toBe(1);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/2')
+                expect.stringContaining('/files/stream/2'),
+                undefined
             );
             expect(mockSyncState).toHaveBeenCalledWith(
                 expect.objectContaining({ fileId: 2, position: 0 })
@@ -658,7 +890,8 @@ describe('GlobalMusicProvider', () => {
 
             expect(result.current.currentIndex).toBe(0);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/1')
+                expect.stringContaining('/files/stream/1'),
+                undefined
             );
             expect(mockSyncState).toHaveBeenCalledWith(
                 expect.objectContaining({ fileId: 1, position: 0 })
@@ -720,7 +953,8 @@ describe('GlobalMusicProvider', () => {
             // getShuffledIndex returns 0 for single-track queue
             expect(result.current.currentIndex).toBe(0);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/1')
+                expect.stringContaining('/files/stream/1'),
+                undefined
             );
         });
 

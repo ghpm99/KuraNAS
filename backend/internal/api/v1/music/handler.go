@@ -42,7 +42,9 @@ func respondMusicError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_NOT_FOUND")})
-	case errors.Is(err, ErrAutoPlaylistReadOnly):
+	case errors.Is(err, ErrTrackAlreadyInPlaylist):
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST")})
+	case errors.Is(err, ErrAutoPlaylistReadOnly), errors.Is(err, ErrInvalidPlayerQueue), errors.Is(err, ErrInvalidPlayRequest):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_OPERATION_FAILED")})
@@ -58,10 +60,12 @@ func (handler *Handler) GetPlaylistsHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
-	pagination, err := handler.service.GetPlaylists(page, pageSize)
+	pagination, err := handler.service.GetPlaylists(page, pageSize, c.Query("q"))
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)
@@ -82,6 +86,10 @@ func (handler *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	playlist, err := handler.service.GetPlaylistByID(id)
 	if err != nil {
@@ -131,6 +139,10 @@ func (handler *Handler) UpdatePlaylistHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	var req UpdatePlaylistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -160,6 +172,10 @@ func (handler *Handler) DeletePlaylistHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	err := handler.service.DeletePlaylist(id)
 	if err != nil {
@@ -182,10 +198,21 @@ func (handler *Handler) GetPlaylistTracksHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 
-	pagination, err := handler.service.GetPlaylistTracks(c.ClientIP(), id, page, pageSize)
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
+	pagination, err := handler.service.GetPlaylistTracks(clientID, id, page, pageSize)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)
@@ -206,6 +233,10 @@ func (handler *Handler) AddPlaylistTrackHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	var req AddTrackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -236,6 +267,10 @@ func (handler *Handler) RemovePlaylistTrackHandler(c *gin.Context) {
 
 	id := utils.ParseInt(c.Param("id"), c)
 	fileId := utils.ParseInt(c.Param("fileId"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	err := handler.service.RemovePlaylistTrack(id, fileId)
 	if err != nil {
@@ -258,6 +293,10 @@ func (handler *Handler) ReorderPlaylistTracksHandler(c *gin.Context) {
 	}, nil)
 
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	var req ReorderTrackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -306,7 +345,11 @@ func (handler *Handler) GetPlayerStateHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	clientID := c.ClientIP()
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
 
 	state, err := handler.service.GetPlayerState(clientID)
 	if err != nil {
@@ -328,7 +371,11 @@ func (handler *Handler) UpdatePlayerStateHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	clientID := c.ClientIP()
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
 
 	var req UpdatePlayerStateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

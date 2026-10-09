@@ -17,12 +17,12 @@
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-secondary, #b8c2d9);
+    color: var(--text-secondary, var(--app-color-text-secondary));
 }
 
 .updated {
     font-size: 13px;
-    color: var(--text-secondary, #b8c2d9);
+    color: var(--text-secondary, var(--app-color-text-secondary));
 }
 
 .actions {

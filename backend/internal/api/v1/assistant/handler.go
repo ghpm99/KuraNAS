@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"net/http"
 	"strconv"
@@ -21,7 +22,7 @@ func NewHandler(service ServiceInterface) *Handler {
 
 func (handler *Handler) ChatHandler(c *gin.Context) {
 	if handler.service == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+		handler.serviceUnavailable(c)
 		return
 	}
 
@@ -45,7 +46,7 @@ func (handler *Handler) ChatHandler(c *gin.Context) {
 // event if generation fails after the stream has started).
 func (handler *Handler) ChatStreamHandler(c *gin.Context) {
 	if handler.service == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+		handler.serviceUnavailable(c)
 		return
 	}
 
@@ -57,6 +58,7 @@ func (handler *Handler) ChatStreamHandler(c *gin.Context) {
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
+		applog.Error("assistant: response writer is not a flusher", "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 		return
 	}
@@ -76,6 +78,7 @@ func (handler *Handler) ChatStreamHandler(c *gin.Context) {
 
 	response, err := handler.service.ChatStream(req, onDelta)
 	if err != nil {
+		applog.ErrorWithStack("assistant: chat stream failed", err, "ip", c.ClientIP())
 		writeSSE(c.Writer, "error", StreamErrorDto{Error: i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 		flusher.Flush()
 		return
@@ -87,12 +90,13 @@ func (handler *Handler) ChatStreamHandler(c *gin.Context) {
 
 func (handler *Handler) ListConversationsHandler(c *gin.Context) {
 	if handler.service == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+		handler.serviceUnavailable(c)
 		return
 	}
 
 	conversations, err := handler.service.ListConversations()
 	if err != nil {
+		applog.ErrorWithStack("assistant: list conversations failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 		return
 	}
@@ -102,7 +106,7 @@ func (handler *Handler) ListConversationsHandler(c *gin.Context) {
 
 func (handler *Handler) GetMessagesHandler(c *gin.Context) {
 	if handler.service == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+		handler.serviceUnavailable(c)
 		return
 	}
 
@@ -123,7 +127,7 @@ func (handler *Handler) GetMessagesHandler(c *gin.Context) {
 
 func (handler *Handler) DeleteConversationHandler(c *gin.Context) {
 	if handler.service == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+		handler.serviceUnavailable(c)
 		return
 	}
 
@@ -141,6 +145,14 @@ func (handler *Handler) DeleteConversationHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
+// serviceUnavailable answers 500 when the assistant has no AI service wired
+// (config-time issue). It is logged because a silently 500-ing assistant is
+// otherwise invisible in the forensic log.
+func (handler *Handler) serviceUnavailable(c *gin.Context) {
+	applog.Error("assistant: service unavailable (AI not configured)", "path", c.FullPath(), "ip", c.ClientIP())
+	c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
+}
+
 func writeServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrInvalidConversation):
@@ -150,6 +162,7 @@ func writeServiceError(c *gin.Context, err error) {
 	case errors.Is(err, ErrAIUnavailable):
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 	default:
+		applog.ErrorWithStack("assistant: service error", err, "path", c.FullPath(), "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
 	}
 }

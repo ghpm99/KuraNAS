@@ -7,7 +7,7 @@ const FolderTree = () => {
     const { status, handleSelectItem, files, expandedItems, selectedItem } = useFile();
     const { t } = useI18n();
 
-    if (status === 'loading') {
+    if (status === 'pending') {
         return (
             <Box sx={{ p: 1.5 }}>
                 <CircularProgress size={16} />

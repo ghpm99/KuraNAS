@@ -18,6 +18,7 @@ import (
 	"nas-go/api/internal/api/v1/trash"
 	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/worker/scan"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
@@ -86,7 +87,19 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 		return executeCapturePromoteStep(context, step)
 	}
 	executors[job.StepTypeImageClassifyEnumerate] = func(step jobs.StepModel) error {
-		return executeImageClassifyEnumerateStep(context, step)
+		return executeImageClassifyBatchStep(context, step)
+	}
+	executors[job.StepTypeImageClassifyBatch] = func(step jobs.StepModel) error {
+		return executeImageClassifyBatchStep(context, step)
+	}
+	executors[job.StepTypeImageMetadataReconcile] = func(step jobs.StepModel) error {
+		return executeImageMetadataReconcileStep(context, step)
+	}
+	executors[job.StepTypeAudioMetadataReconcile] = func(step jobs.StepModel) error {
+		return executeAudioMetadataReconcileStep(context, step)
+	}
+	executors[job.StepTypeDocumentTextIndex] = func(step jobs.StepModel) error {
+		return executeDocumentTextIndexStep(context, step)
 	}
 
 	return executors
@@ -167,7 +180,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 
-	metadata, err := scan.GetMetadata(fileDto, scan.PythonScriptRunner, aiServiceForImageClassification(context))
+	metadata, err := scan.GetMetadata(fileDto, scan.PythonScriptRunner)
 	if err != nil {
 		return err
 	}
@@ -195,6 +208,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 			if upsertErr != nil {
 				return fmt.Errorf("metadata step: upsert image metadata: %w", upsertErr)
 			}
+			enqueueImageAIClassifyIfNeeded(context, imgMeta.Classification, fileDto.Path)
 		}
 		return nil
 	}
@@ -211,6 +225,9 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 			})
 			if upsertErr != nil {
 				return fmt.Errorf("metadata step: upsert audio metadata: %w", upsertErr)
+			}
+			if enqueueErr := enqueueAudioMetadataReconcileJob(context); enqueueErr != nil {
+				applog.Warn("audio album groupings reconcile enqueue failed", "error", enqueueErr.Error())
 			}
 		}
 		return nil
@@ -304,13 +321,21 @@ func executePersistStep(context *WorkerContext, step jobs.StepModel) error {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			_, createErr := scan.CreateFileRecord(context.FilesService, fileDto)
-			return createErr
+			if createErr != nil {
+				return createErr
+			}
+			enqueueDocumentTextIndexIfDocument(context, fileDto)
+			return nil
 		}
 		return err
 	}
 
 	_, err = scan.UpdateFileRecord(context.FilesService, fileDto, existingRecord)
-	return err
+	if err != nil {
+		return err
+	}
+	enqueueDocumentTextIndexIfDocument(context, fileDto)
+	return nil
 }
 
 func executeThumbnailStep(context *WorkerContext, step jobs.StepModel) error {

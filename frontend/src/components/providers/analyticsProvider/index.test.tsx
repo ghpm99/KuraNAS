@@ -81,10 +81,11 @@ const routeResponse = (url: string) => {
 };
 
 const Consumer = () => {
-    const { period, loading, error, data, setPeriod, refresh } = useAnalyticsOverview();
+    const { period, duplicatesType, loading, error, data, setPeriod, refresh } = useAnalyticsOverview();
     return (
         <div>
             <span data-testid="period">{period}</span>
+            <span data-testid="duplicates-type">{duplicatesType ?? 'all'}</span>
             <span data-testid="loading">{loading ? 'yes' : 'no'}</span>
             <span data-testid="error">{error}</span>
             <span data-testid="files">{data?.counts.files_total ?? 0}</span>
@@ -98,6 +99,42 @@ describe('providers/analyticsProvider', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedApiGet.mockImplementation((url: string) => Promise.resolve(routeResponse(url)));
+    });
+
+    it('requests duplicates without a type filter by default', async () => {
+        render(
+            <QueryClientProvider client={createQueryClient()}>
+                <AnalyticsProvider>
+                    <Consumer />
+                </AnalyticsProvider>
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
+        expect(screen.getByTestId('duplicates-type')).toHaveTextContent('all');
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/duplicates', { params: undefined });
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/duplicates/groups', {
+            params: undefined,
+        });
+    });
+
+    it('passes the images-only duplicates filter to both duplicates endpoints', async () => {
+        render(
+            <QueryClientProvider client={createQueryClient()}>
+                <AnalyticsProvider duplicatesType="image">
+                    <Consumer />
+                </AnalyticsProvider>
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
+        expect(screen.getByTestId('duplicates-type')).toHaveTextContent('image');
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/duplicates', {
+            params: { type: 'image' },
+        });
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/duplicates/groups', {
+            params: { type: 'image' },
+        });
     });
 
     it('loads default period and composes data from slice endpoints', async () => {

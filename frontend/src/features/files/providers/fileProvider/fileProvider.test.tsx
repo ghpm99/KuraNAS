@@ -2,11 +2,11 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
     addChildrenToTree,
-    buildFilesUrl,
     extractFilePath,
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
+import { buildFilesUrl } from '@/app/routes';
 import type { FileData, FileContextType, PaginationResponse } from './fileContext';
 
 // --- mocks ---
@@ -28,23 +28,25 @@ jest.mock('react-router-dom', () => ({
 
 const mockGetFileByPath = jest.fn<Promise<FileData | null>, [string]>();
 const mockGetFilesTree = jest.fn<Promise<PaginationResponse>, [any]>();
+const mockGetStarredFiles = jest.fn<Promise<PaginationResponse>, [any]>();
+const mockGetRecentlyAccessedFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
 const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
-const mockUploadFiles = jest.fn<Promise<void>, [FileList, number?]>();
 const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
-const mockMoveFile = jest.fn<Promise<void>, [number, number?, string?]>();
+const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
 const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
-const mockRenameFile = jest.fn<Promise<void>, [number, string]>();
-const mockDeleteFile = jest.fn<Promise<void>, [number]>();
+const mockRenameFile = jest.fn<Promise<string | void>, [number, string]>();
+const mockDeleteFile = jest.fn<Promise<void>, [number, boolean?]>();
 
 jest.mock('@/service/files', () => ({
     getFileByPath: mockGetFileByPath,
     getFilesTree: mockGetFilesTree,
+    getStarredFiles: mockGetStarredFiles,
+    getRecentlyAccessedFiles: mockGetRecentlyAccessedFiles,
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     toggleStarredFile: mockToggleStarredFile,
     rescanFiles: mockRescanFiles,
-    uploadFiles: mockUploadFiles,
     createFolder: mockCreateFolder,
     moveFile: mockMoveFile,
     copyFile: mockCopyFile,
@@ -231,11 +233,12 @@ describe('FileProvider', () => {
         capturedContext = null;
         mockPathname = '/files';
         mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+        mockGetStarredFiles.mockResolvedValue(makePaginationResponse([]));
+        mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([]));
         mockGetRecentAccessByFileId.mockResolvedValue([]);
         mockGetFileByPath.mockResolvedValue(null);
         mockToggleStarredFile.mockResolvedValue(undefined);
         mockRescanFiles.mockResolvedValue(undefined);
-        mockUploadFiles.mockResolvedValue(undefined);
         mockCreateFolder.mockResolvedValue(undefined);
         mockMoveFile.mockResolvedValue(undefined);
         mockCopyFile.mockResolvedValue(undefined);
@@ -332,7 +335,18 @@ describe('FileProvider', () => {
         await act(async () => {
             await capturedContext!.deleteFile(42);
         });
-        expect(mockDeleteFile).toHaveBeenCalledWith(42);
+        expect(mockDeleteFile).toHaveBeenCalledWith(42, false);
+    });
+
+    it('deleteFile forwards the permanent flag to the service', async () => {
+        mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        await act(async () => {
+            await capturedContext!.deleteFile(42, true);
+        });
+        expect(mockDeleteFile).toHaveBeenCalledWith(42, true);
     });
 
     it('moveFile calls service with correct args', async () => {
@@ -365,15 +379,120 @@ describe('FileProvider', () => {
         expect(mockRenameFile).toHaveBeenCalledWith(5, 'new-name');
     });
 
-    it('uploadFiles calls service with correct args', async () => {
-        renderProvider();
-        await waitFor(() => expect(capturedContext).not.toBeNull());
-
-        const files = { length: 0, item: () => null } as unknown as FileList;
-        await act(async () => {
-            await capturedContext!.uploadFiles(files, 10);
+    describe('mutations on the opened item', () => {
+        const openedFolder = createNode(7, {
+            name: 'report',
+            path: '/docs/report',
+            parent_path: '/docs',
         });
-        expect(mockUploadFiles).toHaveBeenCalledWith(files, 10);
+
+        const renderWithOpenedFolder = async () => {
+            mockPathname = '/files/docs/report';
+            mockGetFileByPath.mockResolvedValue(openedFolder);
+            mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+            const queryClient = createQueryClient();
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const removeSpy = jest.spyOn(queryClient, 'removeQueries');
+            renderProvider(queryClient);
+            await waitFor(() => expect(capturedContext!.selectedItem?.id).toBe(7));
+            mockNavigate.mockClear();
+            return { invalidateSpy, removeSpy };
+        };
+
+        it('deleting the opened item navigates to its parent and drops its cached path', async () => {
+            const { invalidateSpy, removeSpy } = await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(7);
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files-path'] });
+        });
+
+        it('deleting a top-level opened item navigates to the files root', async () => {
+            mockPathname = '/files/report';
+            mockGetFileByPath.mockResolvedValue({ ...openedFolder, path: '/report', parent_path: '/' });
+            mockGetFilesTree.mockResolvedValue(makePaginationResponse([]));
+            renderProvider();
+            await waitFor(() => expect(capturedContext!.selectedItem?.id).toBe(7));
+            mockNavigate.mockClear();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(7);
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files');
+        });
+
+        it('deleting another item keeps the current location', async () => {
+            const { removeSpy } = await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.deleteFile(99);
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(removeSpy).not.toHaveBeenCalled();
+        });
+
+        it('renaming the opened item navigates to the path returned by the backend', async () => {
+            const { removeSpy, invalidateSpy } = await renderWithOpenedFolder();
+            mockRenameFile.mockResolvedValueOnce('/docs/renamed');
+
+            await act(async () => {
+                await capturedContext!.renameFile(7, 'renamed');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs/renamed');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files-path'] });
+        });
+
+        it('renaming the opened item computes the path when the backend omits it', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.renameFile(7, 'renamed');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/docs/renamed');
+        });
+
+        it('renaming another item keeps the current location', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.renameFile(99, 'renamed');
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('moving the opened item navigates to the new path and drops the old cached path', async () => {
+            const { removeSpy, invalidateSpy } = await renderWithOpenedFolder();
+            mockMoveFile.mockResolvedValueOnce('/archive/report');
+
+            await act(async () => {
+                await capturedContext!.moveFile(7, 3, '/archive');
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/archive/report');
+            expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['files-path', '/docs/report'] });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files'] });
+        });
+
+        it('moving another item keeps the current location', async () => {
+            await renderWithOpenedFolder();
+
+            await act(async () => {
+                await capturedContext!.moveFile(99, 3, '/archive');
+            });
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
     });
 
     it('rescanFiles calls service and refetches', async () => {
@@ -395,6 +514,90 @@ describe('FileProvider', () => {
             capturedContext!.setFileListFilter('starred');
         });
         await waitFor(() => expect(capturedContext!.fileListFilter).toBe('starred'));
+    });
+
+    it('lists starred files globally at the top of the starred view and paginates', async () => {
+        mockGetStarredFiles.mockResolvedValueOnce(
+            makePaginationResponse([createNode(7, { starred: true })], true, 1)
+        );
+        mockGetStarredFiles.mockResolvedValueOnce(
+            makePaginationResponse([createNode(8, { starred: true })], false, 2)
+        );
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('starred');
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7]));
+        expect(mockGetStarredFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(capturedContext!.hasNextPage).toBe(true);
+
+        act(() => {
+            capturedContext!.fetchNextPage();
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7, 8]));
+        expect(mockGetStarredFiles).toHaveBeenLastCalledWith({ page: 2, pageSize: 200 });
+        expect(mockGetFilesTree).not.toHaveBeenCalledWith(
+            expect.objectContaining({ category: 'starred' })
+        );
+    });
+
+    it('lists recently accessed files globally at the top of the recent view', async () => {
+        mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([createNode(9)]));
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('recent');
+        });
+
+        await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([9]));
+        expect(mockGetRecentlyAccessedFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+    });
+
+    it('falls back to the folder tree with category when a folder is open in the starred view', async () => {
+        mockPathname = '/files/docs';
+        mockGetFileByPath.mockResolvedValue(createNode(5, { path: '/docs' }));
+        renderProvider();
+        await waitFor(() => expect(capturedContext!.selectedItem).not.toBeNull());
+
+        act(() => {
+            capturedContext!.setFileListFilter('starred');
+        });
+
+        await waitFor(() =>
+            expect(mockGetFilesTree).toHaveBeenCalledWith(
+                expect.objectContaining({ category: 'starred', fileParent: 5 })
+            )
+        );
+        expect(mockGetStarredFiles).not.toHaveBeenCalled();
+    });
+
+    it('setFilesSort refetches the tree with the new sort params and persists the choice', async () => {
+        window.localStorage.clear();
+        renderProvider();
+        await waitFor(() => expect(mockGetFilesTree).toHaveBeenCalled());
+        expect(mockGetFilesTree.mock.calls[0]![0]).toMatchObject({
+            sort: { key: 'name', order: 'asc' },
+        });
+
+        act(() => {
+            capturedContext!.setFilesSort({ key: 'size', order: 'desc' });
+        });
+
+        await waitFor(() =>
+            expect(mockGetFilesTree).toHaveBeenLastCalledWith(
+                expect.objectContaining({ sort: { key: 'size', order: 'desc' } })
+            )
+        );
+        expect(capturedContext!.filesSort).toEqual({ key: 'size', order: 'desc' });
+        expect(window.localStorage.getItem('kuranas.files.sort')).toBe(
+            JSON.stringify({ key: 'size', order: 'desc' })
+        );
+        window.localStorage.clear();
     });
 
     it('provides default status as pending initially', async () => {

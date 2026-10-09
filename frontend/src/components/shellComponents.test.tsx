@@ -1,12 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Header from '@/components/layout/Header/Header';
-import { Layout } from '@/components/layout/Layout/Layout';
+import { AppShell } from '@/components/layout/AppShell/AppShell';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
 import NavItem from '@/components/layout/Sidebar/components/navItem';
 import Tabs from '@/components/tabs/tabs';
 import ActionBar from '@/components/actionBar/actionBar';
-import ActivePageListener from '@/components/activePageListener';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Message from '@/components/ui/Message/Message';
@@ -23,26 +22,16 @@ import VideoPlayerPage from '@/pages/videoPlayer/videoPlayer';
 import AnalyticsPage from '@/pages/analytics';
 
 const mockUseFile = jest.fn();
-const mockUseUI = jest.fn();
 const mockUseLocation = jest.fn();
 const mockUseParams = jest.fn();
 const mockNavigate = jest.fn();
 const mockUseAnalyticsOverview = jest.fn();
 const mockOpenSearch = jest.fn();
-const mockOnOpenMobileMenu = jest.fn();
 
 jest.mock('@/features/files/providers/fileProvider/fileContext', () => ({
     __esModule: true,
     default: () => mockUseFile(),
 }));
-
-jest.mock('@/components/providers/uiProvider/uiContext', () => {
-    const actual = jest.requireActual('@/components/providers/uiProvider/uiContext');
-    return {
-        ...actual,
-        useUI: () => mockUseUI(),
-    };
-});
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -82,14 +71,9 @@ jest.mock('react-router-dom', () => {
 jest.mock('@/components/layout/Sidebar/components/folderTree', () => () => (
     <div>FolderTreeMock</div>
 ));
-jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ children }: any) => (
-    <div>{children}</div>
+jest.mock('@/components/layout/Sidebar/components/navItem', () => ({ label }: any) => (
+    <div>{label}</div>
 ));
-jest.mock('@/components/layout/Layout', () => ({
-    __esModule: true,
-    default: ({ children }: any) => <div data-testid="analytics-layout">{children}</div>,
-}));
-
 jest.mock('@/components/providers/activityDiaryProvider/ActivityDiaryContext', () => ({
     useActivityDiary: () => ({ currentTime: new Date('2026-01-01T00:00:00Z') }),
 }));
@@ -118,16 +102,13 @@ jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => (
 jest.mock('@/features/music/components/musicLayout', () => ({ children }: any) => (
     <div data-testid="music-layout">{children}</div>
 ));
-jest.mock('@/features/music/components/MusicSidebar', () => () => <div>MusicSidebarMock</div>);
+jest.mock('@/features/music/components/MusicDomainNav', () => () => <div>MusicDomainNavMock</div>);
 jest.mock('@/features/music/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
 jest.mock('@/components/settings/SettingsScreen', () => () => <div>SETTINGS_PAGE_TITLE</div>);
 
-jest.mock('@/features/videos/components/videoLayout', () => ({ children }: any) => (
-    <div data-testid="video-layout">{children}</div>
-));
 jest.mock('@/features/videos/components/VideoDomainHeader', () => () => <div>VideoDomainHeaderMock</div>);
-jest.mock('@/features/videos/components/VideoSidebar', () => () => <div>VideoSidebarMock</div>);
+jest.mock('@/features/videos/components/VideoDomainNav', () => () => <div>VideoDomainNavMock</div>);
 jest.mock('@/features/videos/components/videoContent/videoContent', () => () => <div>VideoContentMock</div>);
 
 jest.mock('@/features/videos/videoPlayer/VideoPlayerScreen', () => () => (
@@ -170,8 +151,7 @@ beforeEach(() => {
         expandedItems: [],
         files: [],
     });
-    mockUseUI.mockReturnValue({ activePage: 'files', setActivePage: jest.fn() });
-    mockUseLocation.mockReturnValue({ pathname: '/files', state: null });
+    mockUseLocation.mockReturnValue({ pathname: '/files', search: '', state: null });
     mockUseParams.mockReturnValue({ id: '10' });
     mockUseAnalyticsOverview.mockReturnValue({
         period: '7d',
@@ -252,7 +232,7 @@ describe('shell components and pages', () => {
     it('renders header, layout and sidebar', () => {
         render(
             <MemoryRouter>
-                <Header showClock onOpenMobileMenu={mockOnOpenMobileMenu} />
+                <Header />
             </MemoryRouter>
         );
         expect(screen.getByText('SEARCH_PLACEHOLDER')).toBeInTheDocument();
@@ -260,9 +240,9 @@ describe('shell components and pages', () => {
 
         render(
             <MemoryRouter>
-                <Layout>
+                <AppShell>
                     <div>child</div>
-                </Layout>
+                </AppShell>
             </MemoryRouter>
         );
         expect(screen.getByText('child')).toBeInTheDocument();
@@ -272,18 +252,16 @@ describe('shell components and pages', () => {
                 <Sidebar />
             </MemoryRouter>
         );
-        expect(screen.getAllByText('FolderTreeMock').length).toBeGreaterThan(0);
+        expect(screen.queryByText('FolderTreeMock')).not.toBeInTheDocument();
     });
 
     it('renders folder tree states and folder item formatting', () => {
         expect(screen.queryByText('FolderTreeMock')).not.toBeInTheDocument();
     });
 
-    it('renders nav item, tabs, action bar and active page listener', () => {
+    it('renders nav item, tabs and action bar', () => {
         render(
-            <NavItem href="/files" icon={<span>x</span>}>
-                Home
-            </NavItem>
+            <NavItem href="/files" icon={<span>x</span>} label="Home" />
         );
         expect(screen.getByText('Home')).toBeInTheDocument();
 
@@ -291,42 +269,8 @@ describe('shell components and pages', () => {
         expect(screen.getByText('ALL_FILES')).toBeInTheDocument();
 
         render(<ActionBar />);
-        expect(screen.getByText('NEW_FILE')).toBeInTheDocument();
+        expect(screen.getByText('UPLOAD_FILE')).toBeInTheDocument();
 
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('files');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/home' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('home');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/favorites' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('favorites');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/settings' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('settings');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/music/playlists' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('music');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/videos/series' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('videos');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/analytics/library' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('analytics');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/activity-diary' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
-
-        mockUseLocation.mockReturnValueOnce({ pathname: '/unknown' });
-        render(<ActivePageListener />);
-        expect(mockUseUI().setActivePage).toHaveBeenCalledWith('unknown');
     });
 
     it('renders reusable ui components', () => {
@@ -364,7 +308,6 @@ describe('shell components and pages', () => {
 
     it('renders composition pages and video back behavior', () => {
         render(<HomePage />);
-        expect(screen.getByTestId('analytics-layout')).toBeInTheDocument();
         expect(screen.getByText('HomeScreenMock')).toBeInTheDocument();
 
         render(<FilesPage />);
@@ -383,16 +326,14 @@ describe('shell components and pages', () => {
         expect(screen.getByTestId('music-layout')).toBeInTheDocument();
 
         render(<VideosPage />);
-        expect(screen.getByTestId('video-layout')).toBeInTheDocument();
         expect(screen.getByText('VideoDomainHeaderMock')).toBeInTheDocument();
-        expect(screen.getByText('VideoSidebarMock')).toBeInTheDocument();
+        expect(screen.getByText('VideoDomainNavMock')).toBeInTheDocument();
 
         render(<AboutPage />);
         expect(screen.getByTestId('about-layout')).toBeInTheDocument();
         expect(screen.getByText('AboutScreenMock')).toBeInTheDocument();
 
         render(<AnalyticsPage />);
-        expect(screen.getAllByTestId('analytics-layout').length).toBeGreaterThan(0);
         expect(
             screen.getByRole('heading', { name: 'ANALYTICS_SECTION_OVERVIEW' })
         ).toBeInTheDocument();

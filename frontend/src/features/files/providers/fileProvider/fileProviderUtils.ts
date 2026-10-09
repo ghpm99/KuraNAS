@@ -3,20 +3,13 @@ import { FileData } from './fileContext';
 
 const FILES_PREFIX = appRoutes.files;
 
+export { fileQueryKeys } from '@/shared/queryKeys/fileQueryKeys';
+
 export const extractFilePath = (pathname: string): string => {
     if (!pathname.startsWith(FILES_PREFIX)) return '';
     const rest = pathname.slice(FILES_PREFIX.length);
     if (!rest || rest === '/') return '';
     return decodeURIComponent(rest);
-};
-
-export const buildFilesUrl = (filePath: string): string => {
-    if (!filePath) return FILES_PREFIX;
-    const encoded = filePath
-        .split('/')
-        .map((segment) => encodeURIComponent(segment))
-        .join('/');
-    return `${FILES_PREFIX}${encoded.startsWith('/') ? '' : '/'}${encoded}`;
 };
 
 export const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
@@ -69,3 +62,32 @@ export const findTrailByIdInTree = (nodes: FileData[], targetId: number): FileDa
     }
     return null;
 };
+
+export const mergeChildrenIntoTree = (
+    tree: FileData[],
+    parentId: number,
+    children: FileData[]
+): FileData[] =>
+    tree.map((node) => {
+        if (node.id === parentId) {
+            const loadedGrandchildrenById = new Map(
+                (node.file_children ?? []).map((child) => [child.id, child.file_children])
+            );
+            return {
+                ...node,
+                file_children: children.map((child) => {
+                    const loadedGrandchildren = loadedGrandchildrenById.get(child.id);
+                    return loadedGrandchildren
+                        ? { ...child, file_children: loadedGrandchildren }
+                        : child;
+                }),
+            };
+        }
+        if (node.file_children) {
+            return {
+                ...node,
+                file_children: mergeChildrenIntoTree(node.file_children, parentId, children),
+            };
+        }
+        return node;
+    });

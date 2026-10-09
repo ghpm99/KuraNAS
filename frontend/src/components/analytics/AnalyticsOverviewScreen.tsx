@@ -36,6 +36,7 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
         reclaimablePercent,
         healthStatusLabel,
         healthStatusColor,
+        duplicatesType,
         refresh,
     } = state;
 
@@ -267,6 +268,13 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                         empty={!data?.duplicates.top_groups.length}
                     >
                         <Box className={styles.inlineSummary}>
+                            {duplicatesType === 'image' && (
+                                <Chip
+                                    size="small"
+                                    label={t('ANALYTICS_DUPLICATES_FILTER_IMAGES')}
+                                    onDelete={() => navigate(appRoutes.analytics)}
+                                />
+                            )}
                             <Typography variant="body2" color="text.secondary">
                                 {t('ANALYTICS_WASTED_SPACE')}:{' '}
                                 {formatBytes(data?.duplicates.reclaimable_size ?? 0)} (

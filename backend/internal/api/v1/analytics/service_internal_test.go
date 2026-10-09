@@ -70,6 +70,14 @@ func (stub *repositoryStub) GetDuplicatesSummary() (DuplicatesSummaryModel, erro
 	return stub.duplicatesSum, stub.err
 }
 
+func (stub *repositoryStub) GetImageDuplicatesSummary() (DuplicatesSummaryModel, error) {
+	return stub.duplicatesSum, stub.err
+}
+
+func (stub *repositoryStub) GetImageDuplicateGroups(limit int) ([]DuplicateGroupModel, error) {
+	return stub.duplicateGroups, stub.err
+}
+
 func (stub *repositoryStub) GetDuplicateGroups(limit int) ([]DuplicateGroupModel, error) {
 	stub.capturedLimit = limit
 	return stub.duplicateGroups, stub.err
@@ -254,6 +262,31 @@ func TestServiceGetDuplicatesSummary(t *testing.T) {
 
 	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetDuplicatesSummary(); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestServiceGetImageDuplicates(t *testing.T) {
+	stub := &repositoryStub{
+		duplicatesSum:   DuplicatesSummaryModel{GroupsTotal: 1, FilesTotal: 2, ReclaimableBytes: 10},
+		duplicateGroups: []DuplicateGroupModel{{Signature: "abc", Copies: 2}},
+	}
+	service := NewService(stub, nil)
+
+	summary, err := service.GetImageDuplicatesSummary()
+	if err != nil || summary.Groups != 1 || summary.Files != 2 || summary.ReclaimableSize != 10 {
+		t.Fatalf("unexpected summary %+v err=%v", summary, err)
+	}
+	groups, err := service.GetImageDuplicateGroups(5)
+	if err != nil || len(groups) != 1 || groups[0].Copies != 2 {
+		t.Fatalf("unexpected groups %+v err=%v", groups, err)
+	}
+
+	failing := NewService(&repositoryStub{err: sql.ErrConnDone}, nil)
+	if _, err := failing.GetImageDuplicatesSummary(); err == nil {
+		t.Fatal("expected summary error")
+	}
+	if _, err := failing.GetImageDuplicateGroups(5); err == nil {
+		t.Fatal("expected groups error")
 	}
 }
 

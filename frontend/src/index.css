@@ -10,7 +10,6 @@ body {
     padding: 0;
     margin: 0;
     line-height: 1.5;
-    color-scheme: dark;
 }
 
 html[data-app-motion='reduced'] *,
@@ -20,6 +19,17 @@ html[data-app-motion='reduced'] *::after {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html:not([data-app-motion='full']) *,
+    html:not([data-app-motion='full']) *::before,
+    html:not([data-app-motion='full']) *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 a {
@@ -35,4 +45,28 @@ button {
 img {
     max-width: 100%;
     height: auto;
+}
+
+@media (max-width: 899.95px) {
+    .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-toast-gap)
+        ) !important;
+    }
+
+    html[data-global-player='visible'] .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) +
+                var(--app-shell-player-height) + var(--app-toast-gap)
+        ) !important;
+    }
+}
+
+@media (max-width: 599.95px) {
+    html[data-global-player='visible'] .notistack-SnackbarContainer.bottom {
+        bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) +
+                var(--app-shell-player-height-mobile) + var(--app-toast-gap)
+        ) !important;
+    }
 }

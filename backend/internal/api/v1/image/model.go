@@ -73,13 +73,22 @@ type ClassificationModel struct {
 	// ClassifiedByAI is an in-process signal (not persisted directly) telling the
 	// repository to stamp ai_classified_at = now() on upsert. It is true only when
 	// the AI service actually ran and returned a result for this image.
-	ClassifiedByAI bool `json:"-"`
+	ClassifiedByAI bool               `json:"-"`
+	Content        ContentDescription `json:"-"`
 }
 
 // PendingImageClassification identifies an indexed image still awaiting AI
 // classification (ai_classified_at IS NULL and heuristic confidence below the
 // threshold where the AI would take over).
 type PendingImageClassification struct {
+	FileID     int
+	Path       string
+	MetadataID int
+}
+
+// ImageWithoutMetadata identifies an active image file that has no
+// image_metadata row yet, so it is invisible to the image library.
+type ImageWithoutMetadata struct {
 	FileID int
 	Path   string
 }

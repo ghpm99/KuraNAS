@@ -45,7 +45,7 @@ O usuário cadastra N raízes de armazenamento (ex.: `D:\Arquivos`, `E:\Midia`);
 
 - [x] Instalação existente migra sozinha: `ENTRY_POINT` vira a primeira raiz e tudo segue funcionando igual.
 - [x] Cadastrar uma segunda raiz dispara indexação dela e ela aparece como nó de topo na árvore.
-- [x] Operações de arquivo (upload, move, rename, delete) funcionam em qualquer raiz e recusam paths fora de todas (400, mensagem i18n). Mover **entre** raízes é recusado com mensagem clara (copiar+excluir fica para depois).
+- [x] Operações de arquivo (upload, move, rename, delete) funcionam em qualquer raiz e recusam paths fora de todas (400, mensagem i18n). Mover **entre** raízes é feito como cópia verificada (tamanhos e checksum) seguida da remoção da origem.
 - [x] Raiz sobreposta a outra (ancestral/descendente) é recusada no cadastro.
 - [x] Desabilitar uma raiz a tira da navegação sem apagar dados indexados.
 - [x] `make ci` verde (backend + frontend).

@@ -3,10 +3,10 @@
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
-    border: 1px solid #2f323b;
+    border: 1px solid var(--app-color-border-strong);
     border-radius: 10px;
-    background: #10131a;
-    color: #c6c9d2;
+    background: var(--app-color-surface-1);
+    color: var(--app-color-text-secondary);
     font-size: 0.85rem;
 }
 
@@ -15,15 +15,15 @@
 }
 
 .groupingSelect select {
-    background: #0b0f17;
-    color: #f9fafb;
-    border: 1px solid #374151;
+    background: var(--app-color-background-elevated);
+    color: var(--app-color-text-primary);
+    border: 1px solid var(--app-color-border-strong);
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 0.85rem;
 }
 
 .groupingSelect select:focus {
-    outline: 2px solid rgba(43, 138, 239, 0.45);
+    outline: 2px solid rgba(var(--app-color-primary-rgb), 0.45);
     outline-offset: 2px;
 }

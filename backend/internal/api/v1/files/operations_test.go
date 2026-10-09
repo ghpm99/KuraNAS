@@ -7,7 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"nas-go/api/internal/config"
-	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1100,41 +1100,6 @@ func TestCreateFolderEmptyName(t *testing.T) {
 	requireOperationError(t, err, http.StatusBadRequest, "ERROR_FOLDER_NAME_REQUIRED")
 }
 
-func TestMoveFileAcrossRootsIsRefused(t *testing.T) {
-	primaryRoot := t.TempDir()
-	secondRoot := t.TempDir()
-	setEntryPointForTest(t, primaryRoot)
-	t.Cleanup(roots.Reset)
-	roots.Set([]roots.Root{
-		{ID: 1, Path: primaryRoot, Label: "Principal", Enabled: true},
-		{ID: 2, Path: secondRoot, Label: "Midia", Enabled: true},
-	})
-
-	sourceFile := filepath.Join(primaryRoot, "video.mp4")
-	if err := os.WriteFile(sourceFile, []byte("bytes"), 0644); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-	destDir := filepath.Join(secondRoot, "filmes")
-	if err := os.Mkdir(destDir, 0755); err != nil {
-		t.Fatalf("Mkdir failed: %v", err)
-	}
-
-	records := []FileModel{
-		{ID: 1, Name: "video.mp4", Path: sourceFile, Type: File},
-		{ID: 2, Name: "filmes", Path: destDir, Type: Directory},
-	}
-	service := newTestServiceWithFileRecords(t, primaryRoot, records)
-
-	destFolderID := 2
-	_, err := service.MoveFile(1, &destFolderID, "")
-	requireOperationError(t, err, http.StatusBadRequest, "ERROR_MOVE_ACROSS_ROOTS")
-
-	// The source must be untouched after the refusal.
-	if _, statErr := os.Stat(sourceFile); statErr != nil {
-		t.Fatalf("source vanished after refused move: %v", statErr)
-	}
-}
-
 // --- Tiered files (task 13) -------------------------------------------------
 // A tiered file has no bytes at its logical path; they live on the cold volume
 // (PhysicalPath). The logical operations must act on the path in the DB and the
@@ -1261,5 +1226,135 @@ func TestDeleteFileFromDiskTieredPermanentRemovesColdCopy(t *testing.T) {
 	}
 	if _, err := os.Stat(coldPath); !os.IsNotExist(err) {
 		t.Fatalf("permanent delete must remove the cold copy, stat err=%v", err)
+	}
+}
+
+func TestCopyFileTieredCopiesColdBytesToHotDestination(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	coldPath := filepath.Join(t.TempDir(), "doc.txt")
+	if err := os.WriteFile(coldPath, []byte("cold bytes"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	logicalPath := filepath.Join(entryPoint, "doc.txt")
+	destDir := filepath.Join(entryPoint, "sub")
+	if err := os.Mkdir(destDir, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "doc.txt", Path: logicalPath, Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+		{ID: 2, Name: "sub", Path: destDir, Type: Directory},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+
+	destFolderID := 2
+	copied, err := service.CopyFile(1, &destFolderID, "", "")
+	if err != nil {
+		t.Fatalf("CopyFile (tiered) returned error: %v", err)
+	}
+	if copied != filepath.Join(destDir, "doc.txt") {
+		t.Fatalf("CopyFile returned %q", copied)
+	}
+	if data, err := os.ReadFile(copied); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("copy must hold the cold bytes, got %q err=%v", data, err)
+	}
+	if data, err := os.ReadFile(coldPath); err != nil || string(data) != "cold bytes" {
+		t.Fatalf("cold bytes must be untouched, got %q err=%v", data, err)
+	}
+}
+
+func TestCopyFileDirectoryIncludesColdChildren(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceDir := filepath.Join(entryPoint, "album")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "nested"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "hot.txt"), []byte("hot"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	coldPath := filepath.Join(t.TempDir(), "cold.txt")
+	if err := os.WriteFile(coldPath, []byte("cold"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	coldNestedPath := filepath.Join(t.TempDir(), "deep.txt")
+	if err := os.WriteFile(coldNestedPath, []byte("deep"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	records := []FileModel{
+		{ID: 1, Name: "album", Path: sourceDir, Type: Directory},
+	}
+	descendants := []FileModel{
+		{ID: 2, Name: "cold.txt", Path: filepath.Join(sourceDir, "cold.txt"), Type: File,
+			PhysicalPath: sql.NullString{String: coldPath, Valid: true}},
+		{ID: 3, Name: "deep.txt", Path: filepath.Join(sourceDir, "nested", "deep.txt"), Type: File,
+			PhysicalPath: sql.NullString{String: coldNestedPath, Valid: true}},
+		{ID: 4, Name: "hot.txt", Path: filepath.Join(sourceDir, "hot.txt"), Type: File},
+	}
+	repo := &filesRepoMock{
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			for _, record := range records {
+				if record.ID == id {
+					return record, true, nil
+				}
+			}
+			return FileModel{}, false, nil
+		},
+		getFilesByPathPrefixFn: func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+			return utils.PaginationResponse[FileModel]{Items: descendants}, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+	service.JobsRepository = newFilesJobsRepoMockForTest(t)
+
+	copied, err := service.CopyFile(1, nil, "", "album-copy")
+	if err != nil {
+		t.Fatalf("CopyFile (directory with cold children) returned error: %v", err)
+	}
+
+	expectedContents := map[string]string{
+		filepath.Join(copied, "hot.txt"):            "hot",
+		filepath.Join(copied, "cold.txt"):           "cold",
+		filepath.Join(copied, "nested", "deep.txt"): "deep",
+	}
+	for path, expectedContent := range expectedContents {
+		if data, err := os.ReadFile(path); err != nil || string(data) != expectedContent {
+			t.Fatalf("expected %q at %s, got %q err=%v", expectedContent, path, data, err)
+		}
+	}
+}
+
+func TestRenameFileStoresLowercaseFormatForUppercaseExtension(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+
+	sourceFile := filepath.Join(entryPoint, "old.txt")
+	if err := os.WriteFile(sourceFile, []byte("data"), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	var updatedRows []FileModel
+	repo := &filesRepoMock{
+		getFileByIDFn: func(id int) (FileModel, bool, error) {
+			return FileModel{ID: 1, Name: "old.txt", Path: sourceFile, ParentPath: entryPoint, Type: File, Format: ".txt"}, true, nil
+		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			updatedRows = append(updatedRows, file)
+			return true, nil
+		},
+	}
+	service := newFilesServiceForTest(t, repo)
+
+	if _, err := service.RenameFile(1, "IMG_0001.JPG"); err != nil {
+		t.Fatalf("RenameFile returned error: %v", err)
+	}
+
+	if len(updatedRows) != 1 || updatedRows[0].Format != ".jpg" {
+		t.Fatalf("expected lowercase format .jpg, got %+v", updatedRows)
 	}
 }

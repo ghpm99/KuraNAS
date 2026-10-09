@@ -1,21 +1,11 @@
-import {
-    Box,
-    Button,
-    CircularProgress,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-} from '@mui/material';
-import { ListMusic, Play, Plus, Trash2 } from 'lucide-react';
-import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
+import { useState } from 'react';
+import { Box, Button, CircularProgress, List, Typography } from '@mui/material';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import { Plus } from 'lucide-react';
 import { Playlist } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { getPlaylistTracks } from '@/service/playlist';
+import DeletePlaylistDialog from './DeletePlaylistDialog';
+import PlaylistRow from './PlaylistRow';
 
 type PlaylistListSectionProps = {
     playlists: Playlist[];
@@ -39,24 +29,7 @@ export default function PlaylistListSection({
     onCreateOpen,
 }: PlaylistListSectionProps) {
     const { t } = useI18n();
-    const { replaceQueue } = useGlobalMusic();
-
-    const handleListItemKeyDown = (
-        event: React.KeyboardEvent<HTMLElement>,
-        onActivate: () => void
-    ) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onActivate();
-        }
-    };
-
-    const handlePlayPlaylist = async (e: React.MouseEvent, playlist: Playlist) => {
-        e.stopPropagation();
-        const data = await getPlaylistTracks(playlist.id, 1, 200);
-        const tracks = data.items.map((item) => item.file);
-        if (tracks.length > 0) replaceQueue(tracks, 0, createPlaylistPlaybackContext(playlist));
-    };
+    const [playlistPendingDeletion, setPlaylistPendingDeletion] = useState<Playlist | null>(null);
 
     if (isLoading) {
         return (
@@ -65,6 +38,14 @@ export default function PlaylistListSection({
             </Box>
         );
     }
+
+    const ownPlaylists = playlists.filter((playlist) => !playlist.is_ai_generated);
+    const suggestedPlaylists = playlists.filter((playlist) => playlist.is_ai_generated);
+
+    const confirmDeletion = () => {
+        if (playlistPendingDeletion) onDelete(playlistPendingDeletion.id);
+        setPlaylistPendingDeletion(null);
+    };
 
     return (
         <Box sx={{ p: 1 }}>
@@ -91,87 +72,18 @@ export default function PlaylistListSection({
             </Box>
 
             <List sx={{ width: '100%' }}>
-                {playlists.map((playlist) => (
-                    <ListItem
+                {ownPlaylists.map((playlist) => (
+                    <PlaylistRow
                         key={playlist.id}
-                        disablePadding
-                        sx={{
-                            '&:hover .playlist-actions': { opacity: 1 },
-                        }}
-                    >
-                        <ListItemButton
-                            component="div"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onSelect(playlist)}
-                            onKeyDown={(event) =>
-                                handleListItemKeyDown(event, () => onSelect(playlist))
-                            }
-                            sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
-                        >
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                                <Box
-                                    sx={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 1,
-                                        bgcolor: playlist.is_system
-                                            ? 'rgba(167, 139, 250, 0.15)'
-                                            : 'rgba(99, 102, 241, 0.12)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <ListMusic
-                                        size={20}
-                                        color={playlist.is_system ? '#a78bfa' : '#6366f1'}
-                                    />
-                                </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={playlist.name}
-                                secondary={`${playlist.track_count} ${t('MUSIC_TRACKS_COUNT')}${playlist.description ? ` · ${playlist.description}` : ''}`}
-                                primaryTypographyProps={{ fontWeight: 500 }}
-                            />
-                            <Box
-                                className="playlist-actions"
-                                sx={{
-                                    display: 'flex',
-                                    gap: 0.5,
-                                    opacity: 0,
-                                    transition: 'opacity 0.2s ease',
-                                }}
-                            >
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => handlePlayPlaylist(e, playlist)}
-                                    sx={{ color: 'primary.main' }}
-                                >
-                                    <Play size={16} fill="#6366f1" />
-                                </IconButton>
-                                {!playlist.is_system && (
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(playlist.id);
-                                        }}
-                                        sx={{
-                                            color: 'text.secondary',
-                                            '&:hover': { color: 'error.main' },
-                                        }}
-                                    >
-                                        <Trash2 size={16} />
-                                    </IconButton>
-                                )}
-                            </Box>
-                        </ListItemButton>
-                    </ListItem>
+                        playlist={playlist}
+                        canDelete={!playlist.is_system}
+                        onSelect={onSelect}
+                        onDeleteRequest={setPlaylistPendingDeletion}
+                    />
                 ))}
             </List>
 
-            {playlists.length === 0 && (
+            {ownPlaylists.length === 0 && (
                 <Typography
                     variant="body2"
                     color="text.secondary"
@@ -181,25 +93,36 @@ export default function PlaylistListSection({
                 </Typography>
             )}
 
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={onLoadMore}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
+            {suggestedPlaylists.length > 0 && (
+                <Box component="section" aria-label={t('MUSIC_PLAYLISTS_SUGGESTIONS')} sx={{ mt: 2 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ p: 1 }}>
+                        {t('MUSIC_PLAYLISTS_SUGGESTIONS')}
                     </Typography>
+                    <List sx={{ width: '100%' }}>
+                        {suggestedPlaylists.map((playlist) => (
+                            <PlaylistRow
+                                key={playlist.id}
+                                playlist={playlist}
+                                canDelete={false}
+                                onSelect={onSelect}
+                                onDeleteRequest={setPlaylistPendingDeletion}
+                            />
+                        ))}
+                    </List>
                 </Box>
             )}
+
+            <LoadMoreSentinel
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={onLoadMore}
+            />
+
+            <DeletePlaylistDialog
+                playlistName={playlistPendingDeletion?.name ?? null}
+                onConfirm={confirmDeletion}
+                onCancel={() => setPlaylistPendingDeletion(null)}
+            />
         </Box>
     );
 }

@@ -18,4 +18,8 @@ type ServiceInterface interface {
 	GetTranslationFilePath() (string, error)
 	ApplyRuntimeSettings() error
 	IsAIImageClassificationEnabled() (bool, error)
+	GetEnvConfig() (EnvConfigDto, error)
+	UpdateEnvConfig(request UpdateEnvConfigRequest) (EnvConfigDto, error)
+	TestDatabaseConnection(request TestDatabaseRequest) error
+	TestPath(request TestPathRequest) error
 }

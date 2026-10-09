@@ -1,63 +1,79 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { IMusicData } from '../musicProvider/musicProvider';
-import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
-import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
-import { getPlayerState } from '@/service/playerState';
-import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
+import { queueToTracks } from '@/features/music/components/musicQueueTracks';
+import { getPlayerQueue, getPlayerState, type PlayerStateDto } from '@/service/playerState';
+import { parseRepeatMode, type RepeatMode } from './repeatMode';
 
 type HydrationCallbacks = {
     setQueue: (queue: IMusicData[]) => void;
     setCurrentIndex: (index: number) => void;
-    setPlaybackContext: (context: MusicPlaybackContext) => void;
+    setShuffle: (isShuffleEnabled: boolean) => void;
+    setRepeatMode: (repeatMode: RepeatMode) => void;
+    setVolume: (volume: number) => void;
+    loadPausedTrack: (trackId: number, startPositionSeconds: number) => void;
 };
+
+const clampIndex = (index: number, queueLength: number) =>
+    Math.min(Math.max(Number.isInteger(index) ? index : 0, 0), queueLength - 1);
+
+const isValidVolume = (volume: number | undefined): volume is number =>
+    typeof volume === 'number' && Number.isFinite(volume) && volume >= 0 && volume <= 1;
+
+const fetchSavedPlayerState = (): Promise<PlayerStateDto | null> =>
+    getPlayerState().catch(() => null);
 
 export default function useMusicQueueHydration(enabled: boolean, callbacks: HydrationCallbacks) {
     const hasHydratedRef = useRef(false);
+    const isMountedRef = useRef(true);
+    const [hasSettled, setHasSettled] = useState(false);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (!enabled || hasHydratedRef.current) {
             return;
         }
-
         hasHydratedRef.current = true;
-        let cancelled = false;
 
-        const hydrateQueue = async () => {
-            try {
-                const [playerState, nowPlayingPlaylist] = await Promise.all([
-                    getPlayerState(),
-                    getNowPlayingPlaylist(),
-                ]);
+        const restoreSavedPlayer = async () => {
+            const [savedState, savedQueue] = await Promise.all([
+                fetchSavedPlayerState(),
+                getPlayerQueue(),
+            ]);
+            if (!isMountedRef.current) return;
 
-                if (!nowPlayingPlaylist.id || !playerState.current_file_id) {
-                    return;
-                }
+            const tracks = queueToTracks(savedQueue);
+            if (tracks.length === 0) return;
 
-                const playlistTracks = await getPlaylistTracks(
-                    nowPlayingPlaylist.id,
-                    1,
-                    Math.max(nowPlayingPlaylist.track_count, 1)
-                );
-                if (cancelled) return;
+            const startIndex = clampIndex(savedQueue.current_index, tracks.length);
+            const startTrack = tracks[startIndex]!;
+            const isStateForStartTrack = savedState?.current_file_id === startTrack.id;
 
-                const hydratedQueue = playlistTracks.items.map((item) => item.file);
-                const startIndex = hydratedQueue.findIndex(
-                    (track) => track.id === playerState.current_file_id
-                );
-                if (hydratedQueue.length === 0 || startIndex < 0) return;
-
-                callbacks.setQueue(hydratedQueue);
-                callbacks.setCurrentIndex(startIndex);
-                callbacks.setPlaybackContext(createPlaylistPlaybackContext(nowPlayingPlaylist));
-            } catch {
-                // best effort hydration
+            callbacks.setQueue(tracks);
+            callbacks.setCurrentIndex(startIndex);
+            callbacks.loadPausedTrack(
+                startTrack.id,
+                isStateForStartTrack ? Math.max(savedState.current_position ?? 0, 0) : 0
+            );
+            if (!savedState) return;
+            callbacks.setShuffle(Boolean(savedState.shuffle));
+            callbacks.setRepeatMode(parseRepeatMode(savedState.repeat_mode));
+            if (isValidVolume(savedState.volume)) {
+                callbacks.setVolume(savedState.volume);
             }
         };
 
-        void hydrateQueue();
-
-        return () => {
-            cancelled = true;
-        };
+        restoreSavedPlayer()
+            .catch(() => undefined)
+            .finally(() => {
+                if (isMountedRef.current) setHasSettled(true);
+            });
     }, [enabled, callbacks]);
+
+    return { hasSettled };
 }

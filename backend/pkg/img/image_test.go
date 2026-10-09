@@ -33,10 +33,6 @@ func TestThumbnailAndResize(t *testing.T) {
 		t.Fatalf("expected default 320x320 thumbnail, got %dx%d", thumbDefault.Bounds().Dx(), thumbDefault.Bounds().Dy())
 	}
 
-	resized := resizeBilinear(src, 50, 25)
-	if resized.Bounds().Dx() != 50 || resized.Bounds().Dy() != 25 {
-		t.Fatalf("expected 50x25 resized image")
-	}
 }
 
 func TestOpenDecodeAndEncode(t *testing.T) {

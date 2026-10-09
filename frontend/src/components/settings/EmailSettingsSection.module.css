@@ -68,7 +68,7 @@
 	overflow-wrap: anywhere;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899.95px) {
 	.row {
 		grid-template-columns: 1fr;
 	}

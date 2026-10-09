@@ -1,10 +1,5 @@
 package music
 
-import (
-	"database/sql"
-	"time"
-)
-
 const (
 	AutoPlaylistContinueListeningID = -1
 	AutoPlaylistRecentlyAddedID     = -2
@@ -23,24 +18,6 @@ const (
 	autoPlaylistRecentlyAddedKey     = "recently-added"
 	autoPlaylistFavoritesKey         = "favorites"
 )
-
-type MusicLibraryIndexEntryModel struct {
-	FileID          int
-	FileName        string
-	FilePath        string
-	ParentPath      string
-	Starred         bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	LastInteraction sql.NullTime
-	Title           string
-	Artist          string
-	AlbumArtist     string
-	Album           string
-	Genre           string
-	Year            string
-	TrackNumber     string
-}
 
 type MusicArtistGroupDto struct {
 	Key        string `json:"key"`
@@ -66,6 +43,31 @@ type MusicGenreGroupDto struct {
 type MusicFolderGroupDto struct {
 	Folder     string `json:"folder"`
 	TrackCount int    `json:"track_count"`
+}
+
+type MusicAlbumSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	Artist             string `json:"artist"`
+	Year               string `json:"year"`
+	TrackCount         int    `json:"track_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
+	DiscCount          int    `json:"disc_count"`
+}
+
+type MusicArtistSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	TrackCount         int    `json:"track_count"`
+	AlbumCount         int    `json:"album_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
+}
+
+type MusicGroupSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	TrackCount         int    `json:"track_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
 }
 
 type MusicLibrarySummaryDto struct {

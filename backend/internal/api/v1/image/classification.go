@@ -4,15 +4,19 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/img"
 	"regexp"
 	"strings"
 )
+
+const defaultContentLanguage = "en-US"
 
 // visionMaxDimension caps the longest edge of the image sent to the AI. A
 // downscaled copy is enough for recognition and keeps the base64 payload (and
@@ -45,6 +49,13 @@ const (
 // the AI classifier takes over. The backfill targets exactly the images that
 // would have gone to the AI under normal indexing (confidence below this).
 const AIClassificationConfidenceThreshold = 0.70
+
+// AIClassificationJobScopePath is the fixed scope path shared by every job that
+// drains the AI classification backlog, so at most one such job is pending.
+const AIClassificationJobScopePath = "image_ai_classify"
+
+// ErrAIServiceUnavailable means no AI service is wired in for classification.
+var ErrAIServiceUnavailable = errors.New("AI service is unavailable for image classification")
 
 var screenshotKeywords = []string{
 	"screenshot",
@@ -114,50 +125,34 @@ var validAICategories = map[ClassificationCategory]bool{
 	ClassificationCategoryScreenshot: true,
 }
 
-// ClassifyImageWithAI enhances classification with AI when heuristic confidence is low.
-// If aiService is nil or AI fails, it falls back to the heuristic ClassifyImage.
-func ClassifyImageWithAI(file files.FileDto, metadata MetadataModel, aiService ai.ServiceInterface) ClassificationModel {
-	heuristic := ClassifyImage(file, metadata)
-
+// ClassifyImageByAI asks the vision model to classify an image, honoring the
+// deadline carried by ctx. It returns an error when the service is missing, the
+// call fails or the answer cannot be parsed, so the caller decides how to record
+// the failure.
+func ClassifyImageByAI(ctx context.Context, file files.FileDto, metadata MetadataModel, aiService ai.ServiceInterface) (ClassificationModel, error) {
 	if aiService == nil {
-		return heuristic
+		return ClassificationModel{}, ErrAIServiceUnavailable
 	}
 
-	if heuristic.Confidence >= AIClassificationConfidenceThreshold {
-		return heuristic
-	}
-
-	prompt := buildClassificationPrompt(file, metadata)
-
-	// Send a downscaled copy of the image so a vision model (e.g. gemma3) can
-	// classify and name it from the actual content. If encoding fails we still
-	// run a text-only request rather than dropping AI entirely.
-	images := encodeImageForAI(file.ResolveContentPath())
-
-	// No per-request deadline: how long the model may take is bounded solely by
-	// the provider's HTTP timeout, configured at runtime in the ai_providers
-	// table. Vision models are slow, so a hardcoded ceiling only fought it.
-	resp, err := aiService.Execute(context.Background(), ai.Request{
+	response, err := aiService.Execute(ctx, ai.Request{
 		TaskType:     ai.TaskClassification,
 		SystemPrompt: prompts.ImageClassificationSystemPrompt(),
-		Prompt:       prompt,
-		MaxTokens:    200,
+		Prompt:       buildClassificationPrompt(file, metadata),
+		MaxTokens:    1200,
 		Temperature:  0.1,
-		Images:       images,
+		Images:       encodeImageForAI(file.ResolveContentPath()),
 	})
 	if err != nil {
-		log.Printf("AI image classification failed, using heuristic: %v\n", err)
-		return heuristic
+		return ClassificationModel{}, fmt.Errorf("AI image classification failed: %w", err)
 	}
 
-	result, err := parseAIClassificationResponse(resp.Content)
+	classification, err := parseAIClassificationResponse(response.Content)
 	if err != nil {
-		log.Printf("AI classification response parse error, using heuristic: %v\n", err)
-		return heuristic
+		return ClassificationModel{}, err
 	}
 
-	result.ClassifiedByAI = true
-	return result
+	classification.ClassifiedByAI = true
+	return classification, nil
 }
 
 // encodeImageForAI loads an image, downscales it and returns it as a one-element
@@ -218,13 +213,23 @@ func buildClassificationPrompt(file files.FileDto, metadata MetadataModel) strin
 		parts = append(parts, fmt.Sprintf("Description: %s", metadata.ImageDescription))
 	}
 
-	return prompts.ImageClassificationUserPrompt(strings.Join(parts, "\n"))
+	return prompts.ImageClassificationUserPrompt(strings.Join(parts, "\n"), contentLanguage())
+}
+
+func contentLanguage() string {
+	if configuredLanguage := strings.TrimSpace(config.AppConfig.Lang); configuredLanguage != "" {
+		return configuredLanguage
+	}
+	return defaultContentLanguage
 }
 
 type aiClassificationResponse struct {
-	Category      string  `json:"category"`
-	Confidence    float64 `json:"confidence"`
-	SuggestedName string  `json:"suggested_name"`
+	Category      string    `json:"category"`
+	Confidence    float64   `json:"confidence"`
+	SuggestedName string    `json:"suggested_name"`
+	Caption       *string   `json:"caption"`
+	Tags          *[]string `json:"tags"`
+	OCRText       *string   `json:"ocr_text"`
 }
 
 func parseAIClassificationResponse(content string) (ClassificationModel, error) {
@@ -252,6 +257,11 @@ func parseAIClassificationResponse(content string) (ClassificationModel, error) 
 		return ClassificationModel{}, fmt.Errorf("unknown AI category: %s", resp.Category)
 	}
 
+	contentDescription, err := buildContentDescription(resp.Caption, resp.Tags, resp.OCRText)
+	if err != nil {
+		return ClassificationModel{}, err
+	}
+
 	confidence := resp.Confidence
 	if confidence <= 0 || confidence > 1 {
 		confidence = 0.75
@@ -261,6 +271,7 @@ func parseAIClassificationResponse(content string) (ClassificationModel, error) 
 		Category:      category,
 		Confidence:    confidence,
 		SuggestedName: sanitizeSuggestedName(resp.SuggestedName),
+		Content:       contentDescription,
 	}, nil
 }
 
@@ -303,4 +314,27 @@ func photoConfidence(file files.FileDto, metadata MetadataModel) float64 {
 	default:
 		return 0
 	}
+}
+
+var allClassificationCategories = []ClassificationCategory{
+	ClassificationCategoryCapture,
+	ClassificationCategoryPhoto,
+	ClassificationCategoryOther,
+	ClassificationCategoryDocument,
+	ClassificationCategoryReceipt,
+	ClassificationCategoryLandscape,
+	ClassificationCategoryPortrait,
+	ClassificationCategoryMeme,
+	ClassificationCategoryArt,
+	ClassificationCategoryScreenshot,
+}
+
+func ParseClassificationCategory(rawCategory string) (ClassificationCategory, bool) {
+	category := ClassificationCategory(strings.ToLower(strings.TrimSpace(rawCategory)))
+	for _, knownCategory := range allClassificationCategories {
+		if category == knownCategory {
+			return category, true
+		}
+	}
+	return "", false
 }

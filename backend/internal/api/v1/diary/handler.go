@@ -104,8 +104,10 @@ func (handler *Handler) GetDiaryHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "100"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 100)
+	if !isPaginationValid {
+		return
+	}
 
 	filter := DiaryFilter{}
 

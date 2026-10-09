@@ -27,7 +27,12 @@ jest.mock('@/features/files/fileContent', () => ({ viewMode, title, emptyStateMe
     </div>
 ));
 
-jest.mock('@/features/files/fileDetails', () => () => <div>FileDetailsMock</div>);
+jest.mock('@/features/files/fileDetails', () => ({ file, onClose }: any) => (
+    <div>
+        FileDetailsMock:{file.name}
+        <button onClick={onClose}>CloseDetailsMock</button>
+    </div>
+));
 
 describe('FavoritesScreen', () => {
     beforeEach(() => {
@@ -56,6 +61,43 @@ describe('FavoritesScreen', () => {
         });
     });
 
+    it('loads the next page through the sentinel at the top of the favorites list', () => {
+        const fetchNextPage = jest.fn();
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: null,
+            hasNextPage: true,
+            isFetchingNextPage: false,
+            fetchNextPage,
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+        expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the sentinel while a folder is open', () => {
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: { id: 10, type: 1, name: 'Projects' },
+            hasNextPage: true,
+            fetchNextPage: jest.fn(),
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
+
     it('renders the dedicated favorites layout and delegates filter changes', () => {
         render(
             <MemoryRouter>
@@ -65,7 +107,7 @@ describe('FavoritesScreen', () => {
 
         expect(screen.getByText('FAVORITES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByText('FAVORITES_PAGE_DESCRIPTION')).toBeInTheDocument();
-        expect(screen.getByText('FAVORITES_EYEBROW')).toBeInTheDocument();
+        expect(screen.getByText('FAVORITES_PAGE_TITLE')).toBeInTheDocument();
         expect(screen.getByTestId('favorites-file-content')).toHaveAttribute(
             'data-view-mode',
             'grid'
@@ -122,6 +164,24 @@ describe('FavoritesScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByText('FileDetailsMock')).toBeInTheDocument();
+        expect(screen.getByText(/FileDetailsMock:Invoice.pdf/)).toBeInTheDocument();
+    });
+
+    it('closes the selected item from the details panel', () => {
+        const closeSelectedItem = jest.fn();
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            selectedItem: { id: 99, type: 2, name: 'Invoice.pdf' },
+            closeSelectedItem,
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+        fireEvent.click(screen.getByText('CloseDetailsMock'));
+
+        expect(closeSelectedItem).toHaveBeenCalledTimes(1);
     });
 });

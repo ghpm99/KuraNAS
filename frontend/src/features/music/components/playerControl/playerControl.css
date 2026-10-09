@@ -1,7 +1,7 @@
 .player-control {
-    background: rgba(33, 33, 33, 0.95);
+    background: rgba(var(--app-color-surface-2-rgb), 0.95);
     backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(var(--app-color-ink-rgb), 0.1);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -10,18 +10,18 @@
 }
 
 .player-control .MuiIconButton-root {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(var(--app-color-ink-rgb), 0.7);
     transition: all 0.2s ease;
 }
 
 .player-control .MuiIconButton-root:hover {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--app-color-text-primary);
+    background-color: rgba(var(--app-color-ink-rgb), 0.1);
 }
 
 .player-control .MuiIconButton-root.Mui-selected {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--app-color-text-primary);
+    background-color: rgba(var(--app-color-ink-rgb), 0.2);
 }
 
 .player-control .MuiSlider-root {
@@ -37,13 +37,13 @@
 }
 
 .player-control .MuiSlider-rail {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(var(--app-color-ink-rgb), 0.3);
 }
 
 .player-control .MuiTypography-root {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(var(--app-color-ink-rgb), 0.9);
 }
 
 .player-control .MuiTypography-caption {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(var(--app-color-ink-rgb), 0.6);
 }

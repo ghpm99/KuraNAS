@@ -1,0 +1,33 @@
+.dropZone {
+    position: relative;
+    min-width: 0;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--app-spacing-4);
+    border: 2px dashed var(--app-color-border-strong, currentColor);
+    border-radius: var(--app-radius-xl);
+    background: rgba(var(--app-color-background-elevated-rgb), 0.85);
+    pointer-events: none;
+}
+
+.overlayText {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.liveRegion {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

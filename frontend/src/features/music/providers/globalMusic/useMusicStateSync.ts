@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { updatePlayerState } from '@/service/playerState';
+import { updatePlayerState, type UpdatePlayerStateRequest } from '@/service/playerState';
+import { flushPlayerState } from '@/service/playerStateFlush';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 
 const SYNC_DEBOUNCE_MS = 2000;
@@ -28,29 +29,49 @@ export default function useMusicStateSync(deps: SyncDeps) {
         depsRef.current = deps;
     });
 
-    const syncState = useCallback((overrides?: SyncOverrides) => {
-        if (syncTimeoutRef.current) {
-            clearTimeout(syncTimeoutRef.current);
-        }
-        syncTimeoutRef.current = setTimeout(() => {
-            const d = depsRef.current;
-            updatePlayerState({
-                playlist_id:
-                    overrides?.playlistId !== undefined
-                        ? overrides.playlistId
-                        : (d.playbackContext?.playlistId ?? null),
-                current_file_id:
-                    overrides?.fileId !== undefined
-                        ? overrides.fileId
-                        : (d.getCurrentTrackId() ?? null),
-                current_position:
-                    overrides?.position !== undefined ? overrides.position : d.getCurrentTime(),
-                volume: overrides?.vol !== undefined ? overrides.vol : d.volume,
-                shuffle: d.shuffle,
-                repeat_mode: d.repeatMode,
-            }).catch(() => {});
-        }, SYNC_DEBOUNCE_MS);
+    const buildStateRequest = useCallback((overrides?: SyncOverrides): UpdatePlayerStateRequest => {
+        const currentDeps = depsRef.current;
+        return {
+            playlist_id:
+                overrides?.playlistId !== undefined
+                    ? overrides.playlistId
+                    : (currentDeps.playbackContext?.playlistId ?? null),
+            current_file_id:
+                overrides?.fileId !== undefined
+                    ? overrides.fileId
+                    : (currentDeps.getCurrentTrackId() ?? null),
+            current_position:
+                overrides?.position !== undefined
+                    ? overrides.position
+                    : currentDeps.getCurrentTime(),
+            volume: overrides?.vol !== undefined ? overrides.vol : currentDeps.volume,
+            shuffle: currentDeps.shuffle,
+            repeat_mode: currentDeps.repeatMode,
+        };
     }, []);
+
+    const syncState = useCallback(
+        (overrides?: SyncOverrides) => {
+            if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current);
+            }
+            syncTimeoutRef.current = setTimeout(() => {
+                updatePlayerState(buildStateRequest(overrides)).catch(() => {});
+            }, SYNC_DEBOUNCE_MS);
+        },
+        [buildStateRequest]
+    );
+
+    useEffect(() => {
+        const flushCurrentState = () => {
+            if (depsRef.current.getCurrentTrackId() === undefined) return;
+            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+            flushPlayerState(buildStateRequest());
+        };
+
+        window.addEventListener('pagehide', flushCurrentState);
+        return () => window.removeEventListener('pagehide', flushCurrentState);
+    }, [buildStateRequest]);
 
     return { syncState };
 }

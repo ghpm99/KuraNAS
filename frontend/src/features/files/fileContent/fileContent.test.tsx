@@ -22,8 +22,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: (k: string) => k }),
 }));
 
-jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar }: any) => (
-    <div>
+jest.mock('../fileCard', () => ({ title, metadata, onClick, onClickStar, isCold }: any) => (
+    <div data-cold={String(Boolean(isCold))} data-testid={`card-${title}`}>
         <button onClick={onClick}>{title}</button>
         <button onClick={onClickStar}>star-{title}</button>
         <span>{metadata}</span>
@@ -73,7 +73,7 @@ describe('fileContent', () => {
             files: [],
         });
         render(<FileContent />);
-        expect(screen.getByText('ERROR_LOADING_FILES')).toBeInTheDocument();
+        expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
     });
 
     it('renders root files, directory and file preview branches', () => {
@@ -102,7 +102,11 @@ describe('fileContent', () => {
         expect(screen.getByText(/FOLDER - 1 ITEM/)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'song' }));
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 1, name: 'song' })
+            expect.objectContaining({ id: 1, name: 'song' }),
+            expect.arrayContaining([
+                expect.objectContaining({ id: 1 }),
+                expect.objectContaining({ id: 4 }),
+            ])
         );
         expect(rootHandleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
         fireEvent.click(screen.getByRole('button', { name: 'star-song' }));
@@ -150,7 +154,8 @@ describe('fileContent', () => {
         expect(screen.getByText(/FOLDER - 3 ITENS/)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'child' }));
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 3, name: 'child' })
+            expect.objectContaining({ id: 3, name: 'child' }),
+            expect.arrayContaining([expect.objectContaining({ id: 3 })])
         );
         expect(handleSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }));
         fireEvent.click(screen.getByRole('button', { name: 'star-child' }));
@@ -196,7 +201,8 @@ describe('fileContent', () => {
         fireEvent.click(screen.getByRole('button', { name: 'movie.mp4' }));
 
         expect(mockOpenMediaItem).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 1, name: 'movie.mp4' })
+            expect.objectContaining({ id: 1, name: 'movie.mp4' }),
+            [expect.objectContaining({ id: 1 })]
         );
         expect(handleSelectItem).not.toHaveBeenCalled();
     });
@@ -220,7 +226,57 @@ describe('fileContent', () => {
 
         render(<FileContent viewMode="list" showHeading={false} />);
         expect(screen.queryByText('FILES')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'song' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'song' })).toHaveAttribute(
+            'href',
+            '/files/library/song.mp3'
+        );
+        expect(screen.getByRole('columnheader', { name: 'NAME' })).toBeInTheDocument();
+    });
+
+    it('sorts through the header columns of the list view', () => {
+        const setFilesSort = jest.fn();
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            fileListFilter: 'all',
+            files: [createFile({ id: 1, name: 'song' })],
+            filesSort: { key: 'name', order: 'asc' },
+            setFilesSort,
+        });
+
+        render(<FileContent viewMode="list" showHeading={false} />);
+        fireEvent.click(screen.getByRole('button', { name: 'NAME' }));
+        fireEvent.click(screen.getByRole('button', { name: 'MODIFIED' }));
+
+        expect(setFilesSort).toHaveBeenNthCalledWith(1, { key: 'name', order: 'desc' });
+        expect(setFilesSort).toHaveBeenNthCalledWith(2, { key: 'updated_at', order: 'asc' });
+    });
+
+    it('flags cold files in the grid cards and shows the indicator in list rows', () => {
+        const baseContext = {
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            fileListFilter: 'all',
+            files: [
+                createFile({ id: 1, name: 'cold.txt', tier: 'cold' }),
+                createFile({ id: 2, name: 'hot.txt', tier: 'hot' }),
+                createFile({ id: 3, name: 'legacy.txt' }),
+            ],
+        };
+        mockUseFile.mockReturnValue(baseContext);
+
+        const grid = render(<FileContent />);
+        expect(screen.getByTestId('card-cold.txt')).toHaveAttribute('data-cold', 'true');
+        expect(screen.getByTestId('card-hot.txt')).toHaveAttribute('data-cold', 'false');
+        expect(screen.getByTestId('card-legacy.txt')).toHaveAttribute('data-cold', 'false');
+        grid.unmount();
+
+        render(<FileContent viewMode="list" />);
+        expect(screen.getAllByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toHaveLength(1);
     });
 
     it('supports custom collection data and empty state messages', () => {
@@ -257,5 +313,40 @@ describe('fileContent', () => {
             <FileContent title="Favorites scope" items={[]} emptyStateMessage="EMPTY_FAVORITES" />
         );
         expect(screen.getByText('EMPTY_FAVORITES')).toBeInTheDocument();
+    });
+
+    it('offers a load more button that fetches the next page while pages remain', () => {
+        const fetchNextPage = jest.fn();
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            files: [createFile({ id: 1, name: 'song' })],
+            fetchNextPage,
+            hasNextPage: true,
+            isFetchingNextPage: false,
+        });
+        render(<FileContent />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the load more button when there is no next page', () => {
+        mockUseFile.mockReturnValue({
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            files: [createFile({ id: 1, name: 'song' })],
+            fetchNextPage: jest.fn(),
+            hasNextPage: false,
+            isFetchingNextPage: false,
+        });
+        render(<FileContent />);
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
     });
 });

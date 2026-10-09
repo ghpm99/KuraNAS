@@ -20,7 +20,7 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.6;
-    color: var(--text-secondary, #b8c2d9);
+    color: var(--text-secondary, var(--app-color-text-secondary));
 }
 
 .actions {
@@ -75,14 +75,14 @@
     flex-wrap: wrap;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1199.95px) {
     .span4,
     .span6 {
         grid-column: span 12;
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .grid {
         gap: 12px;
     }

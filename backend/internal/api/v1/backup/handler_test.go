@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -62,6 +63,38 @@ func TestGetSettingsHandler(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsHandlerDecodesPayload pins the request seam: it proves the
+// handler decodes the exact JSON the frontend service sends (service/backup.ts
+// → PUT /backup/settings) into the right SettingsDto fields, and echoes the
+// saved settings back. If a json tag drifts on either side, `captured` loses a
+// field and this fails — instead of the integration breaking silently in prod.
+func TestUpdateSettingsHandlerDecodesPayload(t *testing.T) {
+	var captured SettingsDto
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) {
+			captured = dto
+			return dto, nil
+		},
+	})
+
+	body := `{"enabled":true,"destination_path":"/mnt/cold","retention_days":15,"interval_hours":12}`
+	response := performRequest(router, http.MethodPut, "/backup/settings", body)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+
+	want := SettingsDto{Enabled: true, DestinationPath: "/mnt/cold", RetentionDays: 15, IntervalHours: 12}
+	if captured != want {
+		t.Fatalf("handler decoded payload into %#v, want %#v", captured, want)
+	}
+
+	if !strings.Contains(response.Body.String(), `"destination_path":"/mnt/cold"`) ||
+		!strings.Contains(response.Body.String(), `"interval_hours":12`) {
+		t.Fatalf("response did not echo the saved settings: %s", response.Body.String())
+	}
+}
+
 func TestUpdateSettingsHandlerInvalidDestination(t *testing.T) {
 	router := newTestRouter(&mockService{
 		updateFn: func(dto SettingsDto) (SettingsDto, error) {
@@ -107,5 +140,33 @@ func TestGetPendingHandler(t *testing.T) {
 	response := performRequest(router, http.MethodGet, "/backup/pending", "")
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "5") {
 		t.Fatalf("unexpected response: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestBackupHandlersServerErrors(t *testing.T) {
+	boom := errors.New("boom")
+	router := newTestRouter(&mockService{
+		getFn:     func() (SettingsDto, error) { return SettingsDto{}, boom },
+		updateFn:  func(dto SettingsDto) (SettingsDto, error) { return SettingsDto{}, boom },
+		statusFn:  func() (StatusDto, error) { return StatusDto{}, boom },
+		pendingFn: func() (PendingDto, error) { return PendingDto{}, boom },
+	})
+
+	cases := []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/backup/settings", ""},
+		{http.MethodPut, "/backup/settings", `{"enabled":true,"destination_path":"/mnt/backup"}`},
+		{http.MethodGet, "/backup/status", ""},
+		{http.MethodGet, "/backup/pending", ""},
+	}
+
+	for _, tc := range cases {
+		response := performRequest(router, tc.method, tc.path, tc.body)
+		if response.Code != http.StatusInternalServerError {
+			t.Fatalf("%s %s: expected 500, got %d", tc.method, tc.path, response.Code)
+		}
 	}
 }

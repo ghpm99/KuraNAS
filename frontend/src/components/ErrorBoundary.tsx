@@ -1,12 +1,20 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import ErrorTechnicalDetails from '@/components/ErrorTechnicalDetails';
+
+export interface ErrorFallbackProps {
+    error: Error | null;
+    onReset: () => void;
+}
 
 interface Props {
     children: ReactNode;
+    resetKey?: string;
+    renderFallback?: (fallbackProps: ErrorFallbackProps) => ReactNode;
 }
 
-const ErrorFallback = ({ message, onReset }: { message?: string; onReset: () => void }) => {
+const GlobalErrorFallback = ({ error, onReset }: ErrorFallbackProps) => {
     const { t } = useI18n();
     return (
         <Box
@@ -26,11 +34,12 @@ const ErrorFallback = ({ message, onReset }: { message?: string; onReset: () => 
                 color="text.secondary"
                 sx={{ maxWidth: 600, textAlign: 'center' }}
             >
-                {message}
+                {t('ROUTE_ERROR_DESCRIPTION')}
             </Typography>
             <Button variant="contained" onClick={onReset}>
                 {t('TRY_AGAIN')}
             </Button>
+            <ErrorTechnicalDetails error={error} />
         </Box>
     );
 };
@@ -54,21 +63,23 @@ class ErrorBoundary extends Component<Props, State> {
         console.error('ErrorBoundary caught:', error, errorInfo);
     }
 
+    componentDidUpdate(previousProps: Props) {
+        const hasResetKeyChanged = previousProps.resetKey !== this.props.resetKey;
+        if (this.state.hasError && hasResetKeyChanged) {
+            this.handleReset();
+        }
+    }
+
     handleReset = () => {
         this.setState({ hasError: false, error: null });
     };
 
     render() {
-        if (this.state.hasError) {
-            return (
-                <ErrorFallback
-                    message={this.state.error?.message}
-                    onReset={this.handleReset}
-                />
-            );
-        }
+        if (!this.state.hasError) return this.props.children;
 
-        return this.props.children;
+        const fallbackProps = { error: this.state.error, onReset: this.handleReset };
+        if (this.props.renderFallback) return this.props.renderFallback(fallbackProps);
+        return <GlobalErrorFallback {...fallbackProps} />;
     }
 }
 

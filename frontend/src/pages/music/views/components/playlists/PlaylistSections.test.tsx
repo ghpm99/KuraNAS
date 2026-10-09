@@ -6,7 +6,7 @@ import type { Playlist, PlaylistTrack } from '@/types/playlist';
 
 const mockUseGlobalMusic = jest.fn();
 const mockReplaceQueue = jest.fn();
-const mockGetPlaylistTracks = jest.fn();
+const mockGetPlaylistQueue = jest.fn();
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
@@ -16,6 +16,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
@@ -28,7 +29,7 @@ jest.mock('@/features/music/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandl
 }));
 
 jest.mock('@/service/playlist', () => ({
-    getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
+    getPlaylistQueue: (...args: any[]) => mockGetPlaylistQueue(...args),
 }));
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -124,15 +125,27 @@ const tracks: PlaylistTrack[] = [
             name: 'track-2',
             path: '/music/track-2.mp3',
             metadata: {
-                id: 2,
-                fileId: 101,
                 title: 'track-2',
                 artist: 'Artist 2',
-                duration: 120,
+                length: 120,
             },
         }),
     }),
 ];
+
+const queueOf = (playlistTracks: PlaylistTrack[]) => ({
+    items: playlistTracks.map((playlistTrack) => ({
+        file_id: playlistTrack.file.id,
+        name: playlistTrack.file.name,
+        path: playlistTrack.file.path,
+        format: playlistTrack.file.format,
+        title: playlistTrack.file.name,
+        artist: 'Artist',
+        album: 'Album',
+        length: 120,
+    })),
+    truncated: false,
+});
 
 describe('playlist sections', () => {
     beforeEach(() => {
@@ -142,10 +155,26 @@ describe('playlist sections', () => {
             currentTrack: { id: 200 },
             isPlaying: false,
         });
-        mockGetPlaylistTracks.mockResolvedValue({
-            items: tracks,
-            pagination: { page: 1, has_next: false, has_prev: false },
-        });
+        mockGetPlaylistQueue.mockResolvedValue(queueOf(tracks));
+    });
+
+    it('hides remove-track actions for automatic playlists with negative ids', () => {
+        const automaticPlaylist = { ...systemPlaylist, id: -1 };
+        const { container } = render(
+            <PlaylistDetailSection
+                playlist={automaticPlaylist}
+                tracks={tracks}
+                isLoading={false}
+                hasNextPage={false}
+                isFetchingNextPage={false}
+                onBack={jest.fn()}
+                onRemoveTrack={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('track-1')).toBeInTheDocument();
+        expect(container.querySelector('svg.lucide-trash2')).toBeNull();
     });
 
     it('handles list section actions and play context', async () => {
@@ -172,7 +201,7 @@ describe('playlist sections', () => {
 
         const playButtons = container.querySelectorAll('svg.lucide-play');
         fireEvent.click(playButtons[0]!.closest('button') as HTMLElement);
-        expect(mockGetPlaylistTracks).toHaveBeenCalledWith(1, 1, 200);
+        expect(mockGetPlaylistQueue).toHaveBeenCalledWith(1);
         await waitFor(() =>
             expect(mockReplaceQueue).toHaveBeenCalledWith(
                 [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
@@ -183,16 +212,19 @@ describe('playlist sections', () => {
 
         const deleteButtons = container.querySelectorAll('svg.lucide-trash2');
         fireEvent.click(deleteButtons[0]!.closest('button') as HTMLElement);
+        expect(onDelete).not.toHaveBeenCalled();
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'DELETE' }));
         expect(onDelete).toHaveBeenCalledWith(1);
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: 'MUSIC_NEW' }));
         expect(onCreateOpen).toHaveBeenCalled();
 
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(onLoadMore).toHaveBeenCalled();
     });
 
-    it('handles detail section actions, empty state, and loading state', () => {
+    it('handles detail section actions, empty state, and loading state', async () => {
         const onBack = jest.fn();
         const onRemoveTrack = jest.fn();
         const onLoadMore = jest.fn();
@@ -210,10 +242,12 @@ describe('playlist sections', () => {
         );
 
         fireEvent.click(screen.getByText('track-2'));
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
-            1,
-            expect.objectContaining({ kind: 'playlist' })
+        await waitFor(() =>
+            expect(mockReplaceQueue).toHaveBeenCalledWith(
+                [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
+                1,
+                expect.objectContaining({ kind: 'playlist' })
+            )
         );
 
         const actionButtons = screen.getAllByRole('button');
@@ -221,18 +255,22 @@ describe('playlist sections', () => {
         fireEvent.click(actionButtons[1]!);
         fireEvent.click(actionButtons[2]!);
         expect(onBack).toHaveBeenCalled();
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
-            0,
-            expect.objectContaining({ kind: 'playlist' })
+        await waitFor(() =>
+            expect(mockReplaceQueue).toHaveBeenCalledWith(
+                [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
+                0,
+                expect.objectContaining({ kind: 'playlist' })
+            )
         );
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            expect.arrayContaining([
-                expect.objectContaining({ id: 100 }),
-                expect.objectContaining({ id: 101 }),
-            ]),
-            0,
-            expect.objectContaining({ kind: 'playlist' })
+        await waitFor(() =>
+            expect(mockReplaceQueue).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({ id: 100 }),
+                    expect.objectContaining({ id: 101 }),
+                ]),
+                0,
+                expect.objectContaining({ kind: 'playlist' })
+            )
         );
 
         const removeButton = container
@@ -241,7 +279,7 @@ describe('playlist sections', () => {
         fireEvent.click(removeButton);
         expect(onRemoveTrack).toHaveBeenCalledWith(100);
 
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(onLoadMore).toHaveBeenCalled();
 
         rerender(
@@ -317,15 +355,12 @@ describe('playlist sections', () => {
         expect(onSelect).toHaveBeenCalledTimes(3);
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
 
-        mockGetPlaylistTracks.mockResolvedValueOnce({
-            items: [],
-            pagination: { page: 1, has_next: false, has_prev: false },
-        });
+        mockGetPlaylistQueue.mockResolvedValueOnce(queueOf([]));
         fireEvent.click(
             container.querySelector('svg.lucide-play')?.closest('button') as HTMLElement
         );
         await waitFor(() => {
-            expect(mockGetPlaylistTracks).toHaveBeenCalledWith(1, 1, 200);
+            expect(mockGetPlaylistQueue).toHaveBeenCalledWith(1);
         });
         expect(mockReplaceQueue).not.toHaveBeenCalled();
 
@@ -345,7 +380,7 @@ describe('playlist sections', () => {
         expect(screen.getByText('MUSIC_NO_PLAYLISTS_MSG')).toBeInTheDocument();
     });
 
-    it('covers detail section keyboard, active-track states, and no-track actions', () => {
+    it('covers detail section keyboard, active-track states, and no-track actions', async () => {
         const onBack = jest.fn();
         const onRemoveTrack = jest.fn();
         const onLoadMore = jest.fn();
@@ -356,7 +391,7 @@ describe('playlist sections', () => {
                 ...tracks[0]!.file,
                 metadata: {
                     ...tracks[0]!.file.metadata!,
-                    duration: 0,
+                    length: 0,
                 },
             },
         } satisfies PlaylistTrack;
@@ -378,10 +413,12 @@ describe('playlist sections', () => {
         fireEvent.keyDown(firstTrackRow, { key: 'Enter' });
         fireEvent.keyDown(firstTrackRow, { key: ' ' });
         fireEvent.keyDown(firstTrackRow, { key: 'Escape' });
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
-            0,
-            expect.objectContaining({ kind: 'playlist' })
+        await waitFor(() =>
+            expect(mockReplaceQueue).toHaveBeenCalledWith(
+                [expect.objectContaining({ id: 100 }), expect.objectContaining({ id: 101 })],
+                0,
+                expect.objectContaining({ kind: 'playlist' })
+            )
         );
         expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0);
         expect(screen.queryByText('favorites')).not.toBeInTheDocument();
@@ -430,7 +467,9 @@ describe('playlist sections', () => {
         expect(within(playingTrackRow).queryByText('3:00')).not.toBeInTheDocument();
         expect(container.querySelector('svg.lucide-pause')).not.toBeInTheDocument();
 
+        await waitFor(() => expect(mockGetPlaylistQueue).toHaveBeenCalled());
         const replaceQueueCallCount = mockReplaceQueue.mock.calls.length;
+        mockGetPlaylistQueue.mockResolvedValue(queueOf([]));
         rerender(
             <PlaylistDetailSection
                 playlist={playlistWithoutDescription}
@@ -445,8 +484,42 @@ describe('playlist sections', () => {
         );
 
         const buttons = screen.getAllByRole('button');
+        const callsBeforeEmptyPlay = mockGetPlaylistQueue.mock.calls.length;
         fireEvent.click(buttons[1]!);
         fireEvent.click(buttons[2]!);
+        await waitFor(() =>
+            expect(mockGetPlaylistQueue).toHaveBeenCalledTimes(callsBeforeEmptyPlay + 2)
+        );
         expect(mockReplaceQueue).toHaveBeenCalledTimes(replaceQueueCallCount);
+    });
+
+    it('plays the full playlist queue even when only the first page is loaded', async () => {
+        const remoteTracks = Array.from({ length: 5 }, (_, index) =>
+            createPlaylistTrack({
+                id: 50 + index,
+                file: createTrackFile({ id: 200 + index, name: `remote-${index}` }),
+            })
+        );
+        mockGetPlaylistQueue.mockResolvedValue(queueOf(remoteTracks));
+
+        render(
+            <PlaylistDetailSection
+                playlist={playlist}
+                tracks={tracks}
+                isLoading={false}
+                hasNextPage={true}
+                isFetchingNextPage={false}
+                onBack={jest.fn()}
+                onRemoveTrack={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getAllByRole('button')[1]!);
+
+        await waitFor(() => expect(mockReplaceQueue).toHaveBeenCalledTimes(1));
+        const [queuedTracks, startIndex] = mockReplaceQueue.mock.calls[0]!;
+        expect(queuedTracks).toHaveLength(5);
+        expect(startIndex).toBe(0);
     });
 });

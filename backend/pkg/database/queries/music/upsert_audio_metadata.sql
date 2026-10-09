@@ -25,10 +25,22 @@ INSERT INTO
         original_artist,
         lyricist,
         lyrics,
-        created_at
+        disc_number,
+        track_no,
+        disc_total,
+        track_total,
+        tags_extracted_version,
+        created_at,
+        catalog_artist_key,
+        catalog_artist_label,
+        catalog_album_key,
+        catalog_album_label,
+        catalog_genre_keys,
+        catalog_genre_labels,
+        catalog_album_base_key
     )
 VALUES
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) ON CONFLICT (file_id, PATH)
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
 SET
@@ -54,7 +66,20 @@ SET
     original_release_date = EXCLUDED.original_release_date,
     original_artist = EXCLUDED.original_artist,
     lyricist = EXCLUDED.lyricist,
-    lyrics = EXCLUDED.lyrics
+    lyrics = EXCLUDED.lyrics,
+    disc_number = EXCLUDED.disc_number,
+    track_no = EXCLUDED.track_no,
+    disc_total = EXCLUDED.disc_total,
+    track_total = EXCLUDED.track_total,
+    tags_extracted_version = EXCLUDED.tags_extracted_version,
+    catalog_artist_key = EXCLUDED.catalog_artist_key,
+    catalog_artist_label = EXCLUDED.catalog_artist_label,
+    catalog_album_key = EXCLUDED.catalog_album_key,
+    catalog_album_base_key = EXCLUDED.catalog_album_base_key,
+    catalog_album_artist_label = NULL,
+    catalog_album_label = EXCLUDED.catalog_album_label,
+    catalog_genre_keys = EXCLUDED.catalog_genre_keys,
+    catalog_genre_labels = EXCLUDED.catalog_genre_labels
 RETURNING
     id,
     created_at;

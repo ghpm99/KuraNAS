@@ -9,6 +9,7 @@ import type { BackupSettings } from '@/types/backup';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const defaultSettings: BackupSettings = {
 	enabled: false,
@@ -46,6 +47,8 @@ const useBackupSettings = () => {
 
 	const settingsQuery = useQuery({
 		queryKey: ['backup-settings'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getBackupSettings,
 		retry: false,
 	});

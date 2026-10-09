@@ -114,7 +114,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} />);
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByRole('combobox');
         fireEvent.change(input, { target: { value: 'hello' } });
 
         expect(props.onQueryChange).toHaveBeenCalledWith('hello');
@@ -124,7 +124,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} />);
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByRole('combobox');
         fireEvent.keyDown(input, { key: 'ArrowDown' });
 
         expect(props.onInputKeyDown).toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} sections={[section]} />);
 
-        fireEvent.mouseEnter(screen.getByRole('button', { name: /Hover/i }));
+        fireEvent.mouseEnter(screen.getByRole('option', { name: /Hover/i }));
 
         expect(props.onItemHover).toHaveBeenCalledWith('hover-item');
     });
@@ -147,7 +147,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} sections={[section]} />);
 
-        fireEvent.click(screen.getByRole('button', { name: /Clickable/i }));
+        fireEvent.click(screen.getByRole('option', { name: /Clickable/i }));
 
         expect(props.onItemSelect).toHaveBeenCalledWith(item);
     });
@@ -158,7 +158,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} sections={[section]} activeItemId="active-1" />);
 
-        const button = screen.getByRole('button', { name: /Active Item/i });
+        const button = screen.getByRole('option', { name: /Active Item/i });
         expect(button.className).toContain('itemActive');
     });
 
@@ -168,7 +168,7 @@ describe('GlobalSearchDialog', () => {
         const props = defaultProps();
         render(<GlobalSearchDialog {...props} sections={[section]} activeItemId="different-id" />);
 
-        const button = screen.getByRole('button', { name: /Other Item/i });
+        const button = screen.getByRole('option', { name: /Other Item/i });
         expect(button.className).not.toContain('itemActive');
     });
 
@@ -184,5 +184,136 @@ describe('GlobalSearchDialog', () => {
 
         const metaSpans = container.querySelectorAll('[class*="itemMeta"]');
         expect(metaSpans).toHaveLength(0);
+    });
+
+    it('exposes the combobox pattern wired to the listbox and the active option', () => {
+        const items = [
+            createItem({ id: 'a', label: 'Alpha' }),
+            createItem({ id: 'b', label: 'Beta' }),
+        ];
+        const props = defaultProps();
+        render(
+            <GlobalSearchDialog
+                {...props}
+                sections={[createSection({ items })]}
+                activeItemId="b"
+            />
+        );
+
+        const combobox = screen.getByRole('combobox');
+        const listbox = screen.getByRole('listbox');
+        const activeOption = screen.getByRole('option', { name: /Beta/i });
+
+        expect(combobox).toHaveAttribute('aria-expanded', 'true');
+        expect(combobox).toHaveAttribute('aria-controls', listbox.id);
+        expect(combobox).toHaveAttribute('aria-activedescendant', activeOption.id);
+        expect(activeOption).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('option', { name: /Alpha/i })).toHaveAttribute(
+            'aria-selected',
+            'false'
+        );
+    });
+
+    it('reports a collapsed combobox without an active descendant when there are no results', () => {
+        render(<GlobalSearchDialog {...defaultProps()} />);
+
+        const combobox = screen.getByRole('combobox');
+        expect(combobox).toHaveAttribute('aria-expanded', 'false');
+        expect(combobox).not.toHaveAttribute('aria-activedescendant');
+    });
+
+    it('goes full screen on phone-sized viewports', () => {
+        const originalMatchMedia = window.matchMedia;
+        window.matchMedia = ((query: string) => ({
+            matches: query.includes('max-width:599.95px'),
+            media: query,
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+            addListener: jest.fn(),
+            removeListener: jest.fn(),
+        })) as unknown as typeof window.matchMedia;
+
+        render(<GlobalSearchDialog {...defaultProps()} />);
+
+        expect(document.querySelector('.MuiDialog-paperFullScreen')).toBeInTheDocument();
+        window.matchMedia = originalMatchMedia;
+    });
+});
+
+describe('GlobalSearchDialog suggestion', () => {
+    it('renders the backend suggestion text verbatim when present', () => {
+        render(<GlobalSearchDialog {...defaultProps()} suggestion="Try the holiday folder" />);
+        expect(screen.getByText('Try the holiday folder')).toBeInTheDocument();
+    });
+
+    it('omits the suggestion block when absent', () => {
+        render(<GlobalSearchDialog {...defaultProps()} />);
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('renders the secondary action without selecting the item', () => {
+        const onSecondaryAction = jest.fn();
+        const onItemSelect = jest.fn();
+        const item = createItem({
+            kind: 'track',
+            secondaryAction: { label: 'Open album', onSelect: jest.fn() },
+        });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+                onItemSelect={onItemSelect}
+                onItemSecondaryAction={onSecondaryAction}
+            />
+        );
+        fireEvent.click(screen.getByText('Open album'));
+
+        expect(onSecondaryAction).toHaveBeenCalledWith(item);
+        expect(onItemSelect).not.toHaveBeenCalled();
+    });
+
+    it('tolerates a secondary action click without a handler', () => {
+        const item = createItem({
+            kind: 'track',
+            secondaryAction: { label: 'Open album', onSelect: jest.fn() },
+        });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+            />
+        );
+
+        expect(() => fireEvent.click(screen.getByText('Open album'))).not.toThrow();
+    });
+
+    it('shows the starred and cold-tier indicators beside the description', () => {
+        const item = createItem({ isStarred: true, isCold: true });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+            />
+        );
+
+        expect(screen.getByRole('img', { name: 'STARRED_FILES' })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toBeInTheDocument();
+    });
+
+    it('omits the starred and cold-tier indicators for plain items', () => {
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [createItem()] })]}
+            />
+        );
+
+        expect(screen.queryByRole('img', { name: 'STARRED_FILES' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })
+        ).not.toBeInTheDocument();
     });
 });

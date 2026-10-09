@@ -49,7 +49,8 @@ WHERE
     AND am.artist = $2
 ORDER BY
     am.album,
-    am.track_number,
+    COALESCE(am.disc_number, 1),
+    am.track_no NULLS LAST,
     hf.NAME
 LIMIT
     $3

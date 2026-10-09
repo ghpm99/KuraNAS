@@ -138,6 +138,22 @@ describe('AnalyticsOverviewScreen', () => {
         mockNavigate.mockReset();
     });
 
+    it('hides the images-only chip when no duplicates filter is active', () => {
+        render(<AnalyticsOverviewScreen state={createState()} />);
+
+        expect(screen.queryByText('ANALYTICS_DUPLICATES_FILTER_IMAGES')).not.toBeInTheDocument();
+    });
+
+    it('shows a removable images-only chip that clears the filter', () => {
+        render(<AnalyticsOverviewScreen state={createState({ duplicatesType: 'image' })} />);
+
+        const chip = screen.getByText('ANALYTICS_DUPLICATES_FILTER_IMAGES');
+        expect(chip).toBeInTheDocument();
+        fireEvent.click(chip.parentElement!.querySelector('svg')!);
+
+        expect(mockNavigate).toHaveBeenCalledWith('/analytics');
+    });
+
     it('renders all 7 KPI cards', () => {
         const state = createState();
         render(<AnalyticsOverviewScreen state={state} />);

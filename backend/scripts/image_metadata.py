@@ -9,10 +9,23 @@ from io import BytesIO
 from PIL import ExifTags, Image, ImageCms
 from PIL.TiffImagePlugin import IFDRational
 
+try:
+    import pillow_heif
+
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
+
 warnings.filterwarnings("ignore", category=UserWarning, module="PIL.TiffImagePlugin")
 
-# Mapeia os nomes legíveis das tags EXIF
 EXIF_TAGS = {v: k for k, v in ExifTags.TAGS.items()}
+
+EXIF_IFD_POINTER = 0x8769
+GPS_IFD_POINTER = 0x8825
+RAW_EXTENSIONS = {".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf", ".srw", ".pef"}
+RAW_SCAN_LIMIT_BYTES = 64 * 1024 * 1024
+JPEG_SIGNATURE = b"\xff\xd8\xff"
+JPEG_DECODABLE_FRAME_MARKERS = {0xC0, 0xC1, 0xC2}
 
 RESULT_DEFAULT = {
     "format": "",
@@ -134,10 +147,122 @@ def format_gps_time(gps_time):
     return ""
 
 
+def measure_jpeg_stream(data, start):
+    position = start + 2
+    is_decodable = False
+    while position + 2 <= len(data):
+        if data[position] != 0xFF:
+            return 0
+        marker = data[position + 1]
+        if marker == 0xFF:
+            position += 1
+            continue
+        if marker == 0xD9:
+            return position + 2 - start if is_decodable else 0
+        if marker == 0x01 or 0xD0 <= marker <= 0xD7:
+            position += 2
+            continue
+        if position + 4 > len(data):
+            return 0
+        segment_length = int.from_bytes(data[position + 2 : position + 4], "big")
+        if segment_length < 2 or position + 2 + segment_length > len(data):
+            return 0
+        if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+            is_decodable = marker in JPEG_DECODABLE_FRAME_MARKERS
+        position += 2 + segment_length
+        if marker == 0xDA:
+            position = skip_entropy_coded_data(data, position)
+    return 0
+
+
+def skip_entropy_coded_data(data, position):
+    while position + 1 < len(data):
+        if data[position] != 0xFF:
+            position += 1
+            continue
+        next_byte = data[position + 1]
+        if next_byte != 0x00 and not 0xD0 <= next_byte <= 0xD7:
+            return position
+        position += 2
+    return len(data)
+
+
+def find_largest_embedded_jpeg(image_path):
+    with open(image_path, "rb") as source:
+        content = source.read(RAW_SCAN_LIMIT_BYTES)
+
+    largest = b""
+    search_from = 0
+    while True:
+        start = content.find(JPEG_SIGNATURE, search_from)
+        if start < 0:
+            break
+        length = measure_jpeg_stream(content, start)
+        if length == 0:
+            search_from = start + 1
+            continue
+        if length > len(largest):
+            largest = content[start : start + length]
+        search_from = start + length
+    return largest
+
+
+def open_image(image_path):
+    try:
+        return Image.open(image_path)
+    except Exception:
+        if os.path.splitext(image_path)[1].lower() not in RAW_EXTENSIONS:
+            raise
+    embedded_jpeg = find_largest_embedded_jpeg(image_path)
+    if not embedded_jpeg:
+        raise ValueError("no embedded preview")
+    return Image.open(BytesIO(embedded_jpeg))
+
+
+def read_exif_tags(img):
+    if hasattr(img, "_getexif"):
+        raw_exif = img._getexif() or {}
+        return {ExifTags.TAGS.get(tag, tag): safe_decode(value) for tag, value in raw_exif.items()}
+
+    exif = img.getexif()
+    raw_exif = dict(exif)
+    raw_exif.update(exif.get_ifd(EXIF_IFD_POINTER))
+    exif_data = {ExifTags.TAGS.get(tag, tag): safe_decode(value) for tag, value in raw_exif.items()}
+    gps_ifd = exif.get_ifd(GPS_IFD_POINTER)
+    if gps_ifd:
+        exif_data["GPSInfo"] = str({key: tuple_of_floats(value) for key, value in gps_ifd.items()})
+    return exif_data
+
+
+def tuple_of_floats(value):
+    if isinstance(value, tuple):
+        return tuple(float(part) if hasattr(part, "numerator") else part for part in value)
+    if hasattr(value, "numerator"):
+        return float(value)
+    return value
+
+
+def read_gps_fields(exif_data, result):
+    gps = exif_data.get("GPSInfo", {})
+    if not gps:
+        return
+    try:
+        gps_dict = ast.literal_eval(gps)
+        gps_tags = {ExifTags.GPSTAGS.get(key, key): value for key, value in gps_dict.items()}
+
+        result["gps_latitude"] = parse_coord(gps_tags.get("GPSLatitude", []), gps_tags.get("GPSLatitudeRef", 0))
+        result["gps_longitude"] = parse_coord(gps_tags.get("GPSLongitude", []), gps_tags.get("GPSLongitudeRef", 0))
+        result["gps_altitude"] = safe_decode(gps_tags.get("GPSAltitude", 0))
+        result["gps_date"] = gps_tags.get("GPSDateStamp", "")
+        result["gps_time"] = format_gps_time(gps_tags.get("GPSTimeStamp", ""))
+    except Exception:
+        save_traceback("gps")
+
+
 def extract_metadata(image_path):
     result = RESULT_DEFAULT.copy()
     try:
-        with Image.open(image_path) as img:
+        with open_image(image_path) as img:
             result["format"] = img.format or ""
             result["mode"] = img.mode or ""
             result["width"] = img.width or 0
@@ -153,13 +278,7 @@ def extract_metadata(image_path):
                 parse_icc_profile(img.info.get("icc_profile", b"")) if "icc_profile" in img.info else ""
             )
 
-            exif_data = {}
-            if hasattr(img, "_getexif"):
-                raw_exif = img._getexif()
-                if raw_exif:
-                    for tag, val in raw_exif.items():
-                        tag_name = ExifTags.TAGS.get(tag, tag)
-                        exif_data[tag_name] = safe_decode(val)
+            exif_data = read_exif_tags(img)
 
             def get(tag, default=""):
                 return safe_decode(exif_data.get(tag, default))
@@ -199,22 +318,7 @@ def extract_metadata(image_path):
             result["exposure_program"] = get("ExposureProgram", 0)
             result["max_aperture_value"] = get("MaxApertureValue", 0)
 
-            # GPS
-            gps = exif_data.get("GPSInfo", {})
-            if gps:
-                gps_dict = ast.literal_eval(gps)
-                gps_tags = {}
-                for key in gps_dict.keys():
-                    decode = ExifTags.GPSTAGS.get(key, key)
-                    gps_tags[decode] = gps_dict[key]
-
-                result["gps_latitude"] = parse_coord(gps_tags.get("GPSLatitude", []), gps_tags.get("GPSLatitudeRef", 0))
-                result["gps_longitude"] = parse_coord(
-                    gps_tags.get("GPSLongitude", []), gps_tags.get("GPSLongitudeRef", 0)
-                )
-                result["gps_altitude"] = safe_decode(gps_tags.get("GPSAltitude", 0))
-                result["gps_date"] = gps_tags.get("GPSDateStamp", "")
-                result["gps_time"] = format_gps_time(gps_tags.get("GPSTimeStamp", ""))
+            read_gps_fields(exif_data, result)
 
             result["image_description"] = get("ImageDescription")
             result["user_comment"] = get("UserComment")

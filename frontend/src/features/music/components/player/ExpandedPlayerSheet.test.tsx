@@ -1,0 +1,138 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import ExpandedPlayerSheet from './ExpandedPlayerSheet';
+import { supportsProgrammaticVolume } from './supportsProgrammaticVolume';
+
+const mockUseGlobalMusic = jest.fn();
+
+jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
+    useGlobalMusic: () => mockUseGlobalMusic(),
+}));
+jest.mock('@/components/i18n/provider/i18nContext', () => ({
+    __esModule: true,
+    default: () => ({ t: (key: string) => key }),
+}));
+jest.mock('./supportsProgrammaticVolume', () => ({
+    supportsProgrammaticVolume: jest.fn(() => true),
+}));
+
+const buildPlayer = () => ({
+    isPlaying: false,
+    currentTime: 30,
+    duration: 120,
+    volume: 0.5,
+    shuffle: false,
+    repeatMode: 'none',
+    togglePlayPause: jest.fn(),
+    next: jest.fn(),
+    previous: jest.fn(),
+    seek: jest.fn(),
+    setVolume: jest.fn(),
+    toggleShuffle: jest.fn(),
+    setRepeatMode: jest.fn(),
+    setQueueOpen: jest.fn(),
+    currentTrack: { name: 'Song', metadata: { title: 'Song Title', artist: 'Song Artist' } },
+});
+
+const renderSheet = (onClose = jest.fn()) =>
+    render(<ExpandedPlayerSheet isOpen onOpen={jest.fn()} onClose={onClose} />);
+
+describe('ExpandedPlayerSheet', () => {
+    afterEach(() => {
+        document.documentElement.removeAttribute('data-app-motion');
+    });
+
+    it('renders without a current track or finite timings', () => {
+        mockUseGlobalMusic.mockReturnValue({
+            ...buildPlayer(),
+            currentTrack: undefined,
+            currentTime: NaN,
+            duration: NaN,
+        });
+        renderSheet();
+        expect(screen.getByLabelText('PLAYER_ARIA_SEEK')).toBeInTheDocument();
+    });
+
+    it('shows track info and times', () => {
+        mockUseGlobalMusic.mockReturnValue({ ...buildPlayer(), isPlaying: true });
+        renderSheet();
+        expect(screen.getByText('Song Title')).toBeInTheDocument();
+        expect(screen.getByText('Song Artist')).toBeInTheDocument();
+        expect(screen.getByText('0:30')).toBeInTheDocument();
+        expect(screen.getByText('2:00')).toBeInTheDocument();
+        expect(screen.getByLabelText('PLAYER_ARIA_PAUSE')).toBeInTheDocument();
+    });
+
+    it('calls the player context for every control', () => {
+        const player = buildPlayer();
+        mockUseGlobalMusic.mockReturnValue(player);
+        renderSheet();
+
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_PLAY'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_NEXT'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_PREVIOUS'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_SHUFFLE'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_REPEAT'));
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_MUTE'));
+
+        expect(player.togglePlayPause).toHaveBeenCalled();
+        expect(player.next).toHaveBeenCalled();
+        expect(player.previous).toHaveBeenCalled();
+        expect(player.toggleShuffle).toHaveBeenCalled();
+        expect(player.setRepeatMode).toHaveBeenCalledWith('all');
+        expect(player.setVolume).toHaveBeenCalledWith(0);
+    });
+
+    it('seeks and changes volume through the sliders', () => {
+        const player = buildPlayer();
+        mockUseGlobalMusic.mockReturnValue(player);
+        renderSheet();
+
+        const seekSlider = screen.getByRole('slider', { name: 'PLAYER_ARIA_SEEK' });
+        fireEvent.change(seekSlider, { target: { value: 60 } });
+        expect(player.seek).toHaveBeenCalledWith(60);
+
+        const volumeSlider = screen.getByRole('slider', { name: 'PLAYER_ARIA_VOLUME' });
+        fireEvent.change(volumeSlider, { target: { value: 0.2 } });
+        expect(player.setVolume).toHaveBeenCalledWith(0.2);
+    });
+
+    it('unmutes to 0.7 and reflects active repeat one', () => {
+        const player = { ...buildPlayer(), volume: 0, repeatMode: 'one', shuffle: true };
+        mockUseGlobalMusic.mockReturnValue(player);
+        renderSheet();
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_UNMUTE'));
+        expect(player.setVolume).toHaveBeenCalledWith(0.7);
+    });
+
+    it('hides volume controls when the platform cannot set volume', () => {
+        (supportsProgrammaticVolume as jest.Mock).mockReturnValueOnce(false);
+        mockUseGlobalMusic.mockReturnValue(buildPlayer());
+        renderSheet();
+        expect(screen.queryByLabelText('PLAYER_ARIA_VOLUME')).not.toBeInTheDocument();
+    });
+
+    it('opens the queue and closes the sheet', () => {
+        const player = buildPlayer();
+        const onClose = jest.fn();
+        mockUseGlobalMusic.mockReturnValue(player);
+        renderSheet(onClose);
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_QUEUE'));
+        expect(onClose).toHaveBeenCalled();
+        expect(player.setQueueOpen).toHaveBeenCalledWith(true);
+    });
+
+    it('closes through the collapse button', () => {
+        const onClose = jest.fn();
+        mockUseGlobalMusic.mockReturnValue(buildPlayer());
+        renderSheet(onClose);
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_CLOSE_EXPANDED'));
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    it('renders when reduced motion is requested', () => {
+        document.documentElement.setAttribute('data-app-motion', 'reduced');
+        mockUseGlobalMusic.mockReturnValue(buildPlayer());
+        renderSheet();
+        expect(screen.getByLabelText('PLAYER_ARIA_SEEK')).toBeInTheDocument();
+    });
+});

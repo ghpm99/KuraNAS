@@ -4,8 +4,12 @@ import (
 	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/health"
+	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
+	"nas-go/api/pkg/i18n"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -20,7 +24,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	// WebDAV registers before the gzip middleware on purpose: compressing
 	// PUT/PROPFIND bodies corrupts them for native clients. It still sits
 	// behind the IP whitelist installed above.
-	registerWebDAVRoutes(router)
+	registerWebDAVRoutes(router, context)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	registerSwaggerRoutes(router)
 	routesV1 := router.Group("/api/v1")
@@ -33,6 +37,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	RegisterSearchRoutes(routesV1, context)
+	RegisterDocumentTextRoutes(routesV1, context)
 	RegisterNotificationRoutes(routesV1, context)
 	RegisterCapturesRoutes(routesV1, context)
 	RegisterLibrariesRoutes(routesV1, context)
@@ -57,12 +62,16 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 // registerWebDAVRoutes mounts the WebDAV tree under /dav when enabled
 // (WEBDAV_ENABLED env, default off). With the flag off the route simply does
 // not exist.
-func registerWebDAVRoutes(router *gin.Engine) {
+func registerWebDAVRoutes(router *gin.Engine, context *AppContext) {
 	if !config.AppConfig.EnableWebDAV {
 		return
 	}
 
-	handler := dav.NewHandler()
+	var coldFiles dav.ColdFileCatalog
+	if context != nil && context.DB != nil {
+		coldFiles = dav.NewColdFileRepository(context.DB)
+	}
+	handler := dav.NewHandler(coldFiles)
 	router.Any(dav.Prefix+"/*path", gin.WrapH(handler))
 	// Mount-point requests arrive without the trailing slash.
 	router.Any(dav.Prefix, gin.WrapH(handler))
@@ -148,6 +157,7 @@ func RegisterTieringRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.PUT("/settings", context.Tiering.Handler.UpdateSettingsHandler)
 	group.GET("/status", context.Tiering.Handler.GetStatusHandler)
 	group.GET("/usage", context.Tiering.Handler.GetUsageHandler)
+	group.POST("/promote/:file_id", context.Tiering.Handler.PromoteFileHandler)
 }
 
 func RegisterAutoShutdownRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -190,13 +200,22 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	files.GET("/", context.Files.Handler.GetFilesHandler)
 	files.GET("/tree", context.Files.Handler.GetFilesTreeHandler)
+	files.GET("/search", context.Files.Handler.SearchFilesHandler)
 	files.GET("/:id", context.Files.Handler.GetChildrenByIdHandler)
+	files.GET("/starred", context.Files.Handler.GetStarredFilesHandler)
+	files.GET("/recent-files", context.Files.Handler.GetRecentlyAccessedFilesHandler)
 	files.GET("/recent", context.Files.Handler.GetRecentFilesHandler)
 	files.GET("/recent/:id", context.Files.Handler.GetRecentAccessByFileHandler)
+	files.GET("/ancestors/:id", context.Files.Handler.GetFileAncestorsHandler)
+	files.GET("/folder-stats/:id", context.Files.Handler.GetFolderStatsHandler)
+	files.GET("/location/:id", context.Files.Handler.GetFileLocationHandler)
+	files.GET("/by-disk-path", context.Files.Handler.GetFileByDiskPathHandler)
 	files.GET("/path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/path/:path", context.Files.Handler.GetFilesByPathHandler)
 	files.GET("/thumbnail/:id", context.Files.Handler.GetFileThumbnailHandler)
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
+	files.GET("/download/:id", context.Files.Handler.DownloadFileHandler)
+	files.GET("/download-zip", context.Files.Handler.DownloadZipHandler)
 	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/upload", context.Files.Handler.UploadFilesHandler)
 	files.POST("/folder", context.Files.Handler.CreateFolderHandler)
@@ -215,6 +234,28 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 		files.GET("/images", context.Image.Handler.GetImagesHandler)
 		files.GET("/images/classification/pending-count", context.Image.Handler.GetPendingAIClassificationCountHandler)
 		files.POST("/images/classification/backfill", context.Image.Handler.EnqueueClassificationBackfillHandler)
+		if context.Image.SummaryHandler != nil {
+			router.GET("/image/metadata/:file_id", context.Image.SummaryHandler.GetImageSummaryHandler)
+		}
+		if context.Image.LibraryHandler != nil {
+			router.GET("/image/library", context.Image.LibraryHandler.ListLibraryImagesHandler)
+			router.GET("/image/library/count", context.Image.LibraryHandler.CountLibraryImagesHandler)
+			router.GET("/image/library/neighbors/:file_id", context.Image.LibraryHandler.ListLibraryNeighborsHandler)
+			router.GET("/image/library/timeline", context.Image.LibraryHandler.ListLibraryTimelineHandler)
+			router.GET("/image/library/facets/cameras", context.Image.LibraryHandler.ListLibraryCameraFacetsHandler)
+			router.GET("/image/library/facets/formats", context.Image.LibraryHandler.ListLibraryFormatFacetsHandler)
+			router.GET("/image/library/folders", context.Image.LibraryHandler.ListLibraryFoldersHandler)
+		}
+		if context.Image.AlbumHandler != nil {
+			router.GET("/image/albums", context.Image.AlbumHandler.ListAlbumsHandler)
+			router.POST("/image/albums", context.Image.AlbumHandler.CreateAlbumHandler)
+			router.GET("/image/albums/:id", context.Image.AlbumHandler.GetAlbumHandler)
+			router.PUT("/image/albums/:id", context.Image.AlbumHandler.UpdateAlbumHandler)
+			router.DELETE("/image/albums/:id", context.Image.AlbumHandler.DeleteAlbumHandler)
+			router.GET("/image/albums/:id/items", context.Image.AlbumHandler.ListAlbumItemsHandler)
+			router.POST("/image/albums/:id/items", context.Image.AlbumHandler.AddAlbumItemsHandler)
+			router.DELETE("/image/albums/:id/items", context.Image.AlbumHandler.RemoveAlbumItemsHandler)
+		}
 	}
 }
 
@@ -235,6 +276,9 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	filesGroup := router.Group("/files")
 	filesGroup.GET("/music", context.Music.Handler.GetMusicHandler)
 	filesGroup.GET("/stream/:id", context.Music.Handler.StreamAudioHandler)
+	if context.Music.SummaryHandler != nil {
+		router.GET("/music/metadata/:file_id", context.Music.SummaryHandler.GetAudioSummaryHandler)
+	}
 	musicBrowse := filesGroup.Group("/music")
 	musicBrowse.GET("/artists", context.Music.Handler.GetMusicArtistsHandler)
 	musicBrowse.GET("/artists/:name", context.Music.Handler.GetMusicByArtistHandler)
@@ -247,6 +291,8 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists := router.Group("/music/playlists")
 	library := router.Group("/music/library")
 
+	router.GET("/music/search", context.Music.Handler.SearchLibraryTracksHandler)
+
 	playlists.GET("/", context.Music.Handler.GetPlaylistsHandler)
 	playlists.POST("/", context.Music.Handler.CreatePlaylistHandler)
 	playlists.GET("/now-playing", context.Music.Handler.GetNowPlayingHandler)
@@ -255,6 +301,7 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.PUT("/:id", context.Music.Handler.UpdatePlaylistHandler)
 	playlists.DELETE("/:id", context.Music.Handler.DeletePlaylistHandler)
 	playlists.GET("/:id/tracks", context.Music.Handler.GetPlaylistTracksHandler)
+	playlists.GET("/:id/queue", context.Music.Handler.GetPlaylistQueueHandler)
 	playlists.POST("/:id/tracks", context.Music.Handler.AddPlaylistTrackHandler)
 	playlists.DELETE("/:id/tracks/:fileId", context.Music.Handler.RemovePlaylistTrackHandler)
 	playlists.PUT("/:id/tracks/reorder", context.Music.Handler.ReorderPlaylistTracksHandler)
@@ -262,18 +309,41 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("", context.Music.Handler.GetLibraryTracksHandler)
 	library.GET("/", context.Music.Handler.GetLibraryTracksHandler)
 	library.GET("/home", context.Music.Handler.GetHomeCatalogHandler)
+	library.GET("/most-played", context.Music.Handler.GetMostPlayedTracksHandler)
+	library.GET("/recent-plays", context.Music.Handler.GetRecentlyPlayedTracksHandler)
+	router.POST("/music/plays", context.Music.Handler.RecordPlayHandler)
 	library.GET("/artists", context.Music.Handler.GetLibraryArtistsHandler)
+	library.GET("/artists/:key", context.Music.Handler.GetLibraryArtistSummaryHandler)
+	library.GET("/artists/:key/albums", context.Music.Handler.GetLibraryAlbumsByArtistHandler)
 	library.GET("/artists/:key/tracks", context.Music.Handler.GetLibraryTracksByArtistHandler)
+	library.GET("/artists/:key/queue", context.Music.Handler.GetLibraryQueueByArtistHandler)
 	library.GET("/albums", context.Music.Handler.GetLibraryAlbumsHandler)
+	library.GET("/albums/:key", context.Music.Handler.GetLibraryAlbumSummaryHandler)
 	library.GET("/albums/:key/tracks", context.Music.Handler.GetLibraryTracksByAlbumHandler)
+	library.GET("/albums/:key/queue", context.Music.Handler.GetLibraryQueueByAlbumHandler)
+	if context.Music.CoverHandler != nil {
+		router.GET("/music/tracks/:file_id/cover", context.Music.CoverHandler.GetTrackCoverHandler)
+		library.GET("/albums/:key/cover", context.Music.CoverHandler.GetAlbumCoverHandler)
+	}
+	if context.Music.TranscodeHandler != nil {
+		router.GET("/music/tracks/:file_id/stream", context.Music.TranscodeHandler.StreamTranscodedTrackHandler)
+	}
 	library.GET("/genres", context.Music.Handler.GetLibraryGenresHandler)
+	library.GET("/genres/:key", context.Music.Handler.GetLibraryGenreSummaryHandler)
 	library.GET("/genres/:key/tracks", context.Music.Handler.GetLibraryTracksByGenreHandler)
+	library.GET("/genres/:key/queue", context.Music.Handler.GetLibraryQueueByGenreHandler)
 	library.GET("/folders", context.Music.Handler.GetLibraryFoldersHandler)
+	library.GET("/folders/:key", context.Music.Handler.GetLibraryFolderSummaryHandler)
 	library.GET("/folders/:key/tracks", context.Music.Handler.GetLibraryTracksByFolderHandler)
+	library.GET("/folders/:key/queue", context.Music.Handler.GetLibraryQueueByFolderHandler)
 
 	playerState := router.Group("/music/player-state")
 	playerState.GET("/", context.Music.Handler.GetPlayerStateHandler)
 	playerState.PUT("/", context.Music.Handler.UpdatePlayerStateHandler)
+	playerState.POST("/", context.Music.Handler.UpdatePlayerStateHandler)
+	playerState.GET("/queue", context.Music.Handler.GetPlayerQueueHandler)
+	playerState.PUT("/queue", context.Music.Handler.ReplacePlayerQueueHandler)
+	playerState.POST("/queue", context.Music.Handler.ReplacePlayerQueueHandler)
 }
 
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -283,6 +353,33 @@ func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
 	configurations.GET("/about", context.Configuration.Handler.GetAboutHandler)
 	configurations.GET("/settings", context.Configuration.Handler.GetSettingsHandler)
 	configurations.PUT("/settings", context.Configuration.Handler.UpdateSettingsHandler)
+
+	// The .env editor writes secrets and bootstrap settings (DB, CORS) to disk,
+	// so it is gated to loopback only — it must be operated on the server host
+	// itself, never from another LAN device behind the IP whitelist.
+	env := configurations.Group("/env", loopbackOnlyMiddleware())
+	env.GET("", context.Configuration.Handler.GetEnvConfigHandler)
+	env.PUT("", context.Configuration.Handler.UpdateEnvConfigHandler)
+	env.POST("/test-db", context.Configuration.Handler.TestEnvDatabaseHandler)
+	env.POST("/test-path", context.Configuration.Handler.TestEnvPathHandler)
+}
+
+// loopbackOnlyMiddleware rejects any request whose TCP peer is not the loopback
+// interface. It reads RemoteAddr directly (not X-Forwarded-For) so a forged
+// header cannot grant access to the .env editor.
+func loopbackOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+		if err != nil {
+			host = c.Request.RemoteAddr
+		}
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": i18n.GetMessage("ERROR_ENV_LOOPBACK_ONLY")})
+			return
+		}
+		c.Next()
+	}
 }
 
 func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -291,6 +388,9 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	filesGroup := router.Group("/files")
 	filesGroup.GET("/videos", context.Video.Handler.GetVideosHandler)
 	filesGroup.GET("/video-stream/:id", context.Video.Handler.StreamVideoHandler)
+	if context.Video.SummaryHandler != nil {
+		router.GET("/video/metadata/:file_id", context.Video.SummaryHandler.GetVideoSummaryHandler)
+	}
 	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
 	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)
 
@@ -335,6 +435,7 @@ func RegisterSearchRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	search := router.Group("/search")
 	search.GET("/global", context.Search.Handler.SearchGlobalHandler)
+	search.GET("/global/ai", context.Search.Handler.SearchGlobalWithAIHandler)
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -534,8 +635,17 @@ func registerCorsRoutes(router *gin.Engine, context *AppContext) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
 		AllowMethods:  []string{"GET", "PUT", "POST", "DELETE"},
-		AllowHeaders:  []string{"Origin", "Content-Type"},
+		AllowHeaders:  []string{"Origin", "Content-Type", music.PlayerClientIDHeader},
 		ExposeHeaders: []string{"Content-Length"},
 		MaxAge:        12 * time.Hour,
 	}))
+}
+
+func RegisterDocumentTextRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.DocumentText == nil || context.DocumentText.Handler == nil {
+		return
+	}
+
+	documents := router.Group("/documents")
+	documents.GET("/search", context.DocumentText.Handler.SearchDocumentsHandler)
 }

@@ -85,4 +85,45 @@ describe('i18n/provider/index', () => {
         await expect(options.queryFn()).resolves.toEqual({ HELLO: 'Ola' });
         expect(mockedApiGet).toHaveBeenCalledWith('/configuration/translation');
     });
+
+    it('uses the embedded fallback catalog when translations never loaded', () => {
+        mockedUseQuery.mockReturnValue({ status: 'error', data: undefined });
+
+        render(
+            <I18nProvider>
+                <Consumer keyName="NOT_FOUND_REQUESTED_PATH" options={{ path: '/x' }} />
+            </I18nProvider>
+        );
+
+        expect(screen.getByTestId('value')).toHaveTextContent('Endereço solicitado: /x');
+    });
+
+    it('prefers server translations over the fallback catalog', () => {
+        mockedUseQuery.mockReturnValue({
+            status: 'success',
+            data: { TRY_AGAIN: 'Retry' },
+        });
+
+        render(
+            <I18nProvider>
+                <Consumer keyName="TRY_AGAIN" />
+            </I18nProvider>
+        );
+
+        expect(screen.getByTestId('value')).toHaveTextContent('Retry');
+    });
+
+    it('retries translations with backoff', () => {
+        mockedUseQuery.mockReturnValue({ status: 'loading', data: undefined });
+
+        render(
+            <I18nProvider>
+                <Consumer keyName="HELLO" />
+            </I18nProvider>
+        );
+
+        const options = mockedUseQuery.mock.calls[0][0];
+        expect(options.retry).toBeGreaterThan(1);
+        expect(options.retryDelay(0)).toBe(1000);
+    });
 });

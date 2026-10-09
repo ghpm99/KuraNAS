@@ -1,7 +1,14 @@
 .shell {
     display: grid;
-    grid-template-columns: var(--app-shell-sidebar-width) minmax(0, 1fr);
-    grid-template-rows: var(--app-shell-header-height) minmax(0, 1fr);
+    grid-template-columns: var(
+            --app-shell-sidebar-current-width,
+            var(--app-shell-sidebar-width)
+        ) minmax(0, 1fr);
+    transition: grid-template-columns var(--app-motion-base) ease;
+    grid-template-rows: calc(var(--app-shell-header-height) + var(--app-safe-area-top)) minmax(
+            0,
+            1fr
+        );
     grid-template-areas:
         'sidebar header'
         'sidebar main';
@@ -12,30 +19,42 @@
 .sidebarPane {
     grid-area: sidebar;
     min-height: 0;
+    overflow: hidden;
 }
 
 .mainPane {
     grid-area: main;
     min-width: 0;
     min-height: 0;
-    background: linear-gradient(180deg, rgba(18, 26, 41, 0.88) 0%, rgba(15, 22, 35, 0.96) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(var(--app-color-surface-2-rgb), 0.88) 0%,
+        rgba(var(--app-color-surface-1-rgb), 0.96) 100%
+    );
     border-top: 1px solid var(--app-color-border-subtle);
     border-left: 1px solid var(--app-color-border-subtle);
+    display: flex;
+    flex-direction: column;
 }
 
 .scrollArea {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
 .scrollAreaWithPlayer {
-    padding-bottom: calc(88px + var(--app-spacing-4));
+    padding-bottom: calc(
+        var(--app-shell-player-height) + var(--app-safe-area-bottom) + var(--app-spacing-4)
+    );
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.95px) {
     .shell {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: var(--app-shell-header-height-mobile) minmax(0, 1fr);
+        grid-template-rows:
+            calc(var(--app-shell-header-height-mobile) + var(--app-safe-area-top))
+            minmax(0, 1fr);
         grid-template-areas:
             'header'
             'main';
@@ -50,17 +69,25 @@
     }
 
     .scrollArea {
-        padding-bottom: calc(var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
+        padding-bottom: calc(
+            var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom) + var(--app-spacing-4)
+        );
     }
 
     .scrollAreaWithPlayer {
-        padding-bottom: calc(80px + var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
+        padding-bottom: calc(
+            var(--app-shell-player-height) + var(--app-shell-bottom-nav-height) +
+                var(--app-safe-area-bottom) + var(--app-spacing-4)
+        );
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 599.95px) {
     .scrollAreaWithPlayer {
-        padding-bottom: calc(72px + var(--app-shell-bottom-nav-height) + var(--app-spacing-4));
+        padding-bottom: calc(
+            var(--app-shell-player-height-mobile) + var(--app-shell-bottom-nav-height) +
+                var(--app-safe-area-bottom) + var(--app-spacing-4)
+        );
     }
 }
 
@@ -69,4 +96,37 @@
     background: var(--app-glass-medium-background);
     backdrop-filter: var(--app-glass-medium-backdrop);
     border-right: 1px solid var(--app-color-border-subtle);
+}
+
+.mainPane:focus {
+    outline: none;
+}
+
+.skipLink {
+    position: fixed;
+    top: var(--app-spacing-2);
+    left: var(--app-spacing-2);
+    z-index: 2000;
+    padding: var(--app-spacing-2) var(--app-spacing-4);
+    border-radius: var(--app-radius-pill);
+    background: var(--app-color-primary);
+    color: var(--app-color-on-primary, #fff);
+    font-weight: 600;
+    transform: translateY(-200%);
+}
+
+.skipLink:focus {
+    transform: translateY(0);
+}
+
+.visuallyHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }

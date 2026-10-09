@@ -9,6 +9,7 @@ import (
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/icons"
@@ -26,6 +27,14 @@ type Service struct {
 	JobsRepository jobs.RepositoryInterface
 	Tasks          chan utils.Task
 	TrashBin       TrashBinInterface
+	StillConverter img.StillImageConverter
+}
+
+func (s *Service) stillImageConverter() img.StillImageConverter {
+	if s.StillConverter == nil {
+		s.StillConverter = img.NewFFmpegStillConverter()
+	}
+	return s.StillConverter
 }
 
 // SetTrashBin wires the trash domain in after construction (the trash service
@@ -88,13 +97,26 @@ func (s *Service) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return s.Repository.GetFileStatByPath(path)
 }
 
-func (s *Service) getDirectoryContentCount(file FileDto) int {
-	contentCount, err := s.Repository.GetDirectoryContentCount(file.ID, file.Path)
-	if err != nil {
-		return 0
+func (s *Service) fillDirectoryContentCounts(files []FileDto) {
+	directoryIndexes := make([]int, 0, len(files))
+	directoryPaths := make([]string, 0, len(files))
+	for index := range files {
+		if files[index].Type == Directory {
+			directoryIndexes = append(directoryIndexes, index)
+			directoryPaths = append(directoryPaths, files[index].Path)
+		}
+	}
+	if len(directoryPaths) == 0 {
+		return
 	}
 
-	return contentCount
+	countsByParentPath, err := s.Repository.GetDirectoryContentCounts(directoryPaths)
+	if err != nil {
+		return
+	}
+	for _, index := range directoryIndexes {
+		files[index].DirectoryContentCount = countsByParentPath[files[index].Path]
+	}
 }
 
 // toDtoPageWithCounts converts a model page to the DTO shape served by the
@@ -104,18 +126,14 @@ func (s *Service) toDtoPageWithCounts(models utils.PaginationResponse[FileModel]
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
 	}
-	for index := range page.Items {
-		if page.Items[index].Type == Directory {
-			page.Items[index].DirectoryContentCount = s.getDirectoryContentCount(page.Items[index])
-		}
-	}
+	s.fillDirectoryContentCounts(page.Items)
 	return page, nil
 }
 
 // GetChildrenByParentPath lists the active children of a directory (the tree),
 // optionally narrowed by category (all / starred / recent).
-func (s *Service) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	models, err := s.Repository.GetActiveChildrenByParentPath(parentPath, category, page, pageSize)
+func (s *Service) GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetActiveChildrenByParentPath(parentPath, category, childrenSort, page, pageSize)
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
 	}
@@ -139,9 +157,9 @@ func (s *Service) GetRootNodes() ([]FileDto, error) {
 			continue
 		}
 		node.Name = root.Label
-		node.DirectoryContentCount = s.getDirectoryContentCount(node)
 		nodes = append(nodes, node)
 	}
+	s.fillDirectoryContentCounts(nodes)
 	return nodes, nil
 }
 
@@ -557,7 +575,7 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 
 	for hasNext {
 
-		filesInDirectory, err := s.Repository.GetActiveChildrenByParentPath(fileDto.Path, AllCategory, page, 1000)
+		filesInDirectory, err := s.Repository.GetActiveChildrenByParentPath(fileDto.Path, AllCategory, DefaultChildrenSort, page, 1000)
 
 		if err != nil {
 			return err
@@ -590,92 +608,78 @@ func (s *Service) updateDirectoryCheckSum(fileDto FileDto) error {
 }
 
 func (s *Service) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
-	if width <= 0 {
-		width = 320
-	}
-	if width > 2048 {
-		width = 2048
-	}
+	width = normalizeThumbnailSize(width)
+	height = normalizeThumbnailSize(height)
 
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheKey := fmt.Sprintf("%d_%d.png", fileDto.ID, width)
-	cachePath := filepath.Join(cacheDir, cacheKey)
-
-	if data, err := os.ReadFile(cachePath); err == nil {
-		return data, nil
+	if cachedData, isCached := readCachedThumbnail(cacheDir, fileDto, width, height); isCached {
+		return cachedData, nil
 	}
 
-	var thumbnailImg image.Image
-
-	if fileDto.Type == Directory {
-		iconImg, err := icons.FolderIcon()
-		if err != nil {
-			return nil, err
-		}
-		thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-	} else {
-		contentPath := fileDto.ResolveContentPath()
-		exists := s.CheckFileExistsByPath(contentPath)
-		if !exists {
-			err := s.DeleteFile(fileDto, true)
-			if err != nil {
-				return nil, fmt.Errorf("%w: %w", ErrDatabase, err)
-			}
-			return nil, fmt.Errorf("%w: %s", ErrFileMissingDisk, fileDto.Path)
-		}
-
-		srcImg, format, err := img.OpenImageFromFile(contentPath)
-		if err != nil {
-			switch strings.ToLower(fileDto.Format) {
-			case ".pdf":
-				iconImg, _ := icons.PdfIcon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
-				iconImg, _ := icons.Mp3Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			case ".mp4", ".avi", ".mkv", ".mov", ".webm":
-				iconImg, _ := icons.Mp4Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			default:
-				iconImg, _ := icons.Icon()
-				thumbnailImg = img.Thumbnail(iconImg, uint(width), uint(height))
-			}
-		} else {
-			thumbnailImg = img.Thumbnail(srcImg, uint(width), uint(height))
-			_ = format
-		}
-	}
-
-	data, err := img.EncodePNG(thumbnailImg)
+	thumbnailData, extension, err := s.renderThumbnail(fileDto, width, height)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode thumbnail: %w", err)
+		return nil, err
 	}
 
 	_ = os.MkdirAll(cacheDir, 0755)
-	_ = os.WriteFile(cachePath, data, 0644)
+	removeStaleThumbnails(cacheDir, fileDto, width, height, extension)
+	_ = os.WriteFile(filepath.Join(cacheDir, thumbnailCacheFileName(fileDto, width, height, extension)), thumbnailData, 0644)
 
-	return data, nil
+	return thumbnailData, nil
 }
 
-func (s *Service) GetFileBlobById(fileId int) (FileBlob, error) {
-
-	file, err := s.GetFileById(fileId)
-
-	if err != nil {
-		return FileBlob{}, err
+func (s *Service) renderThumbnail(fileDto FileDto, width, height int) ([]byte, string, error) {
+	if fileDto.Type == Directory {
+		iconImg, err := icons.FolderIcon()
+		if err != nil {
+			return nil, "", err
+		}
+		return encodeIconThumbnail(iconImg, width, height)
 	}
 
-	data, err := os.ReadFile(file.ResolveContentPath())
-
-	if err != nil {
-		return FileBlob{}, err
+	contentPath := fileDto.ResolveContentPath()
+	if !s.CheckFileExistsByPath(contentPath) {
+		applog.Warn("files: thumbnail source missing on disk", "file_id", fileDto.ID, "content_path", contentPath)
+		return nil, "", fmt.Errorf("%w: %s", ErrFileMissingDisk, contentPath)
 	}
 
-	return FileBlob{
-		ID:     file.ID,
-		Blob:   data,
-		Format: file.Format,
-	}, nil
+	preview, err := img.OpenPreview(contentPath, fileDto.Format, s.stillImageConverter())
+	if err != nil {
+		iconImg, _ := iconForUnreadableFormat(fileDto.Format)
+		return encodeIconThumbnail(iconImg, width, height)
+	}
+
+	sourceImg := preview.Image
+	fitted := img.FitWithinBox(sourceImg, width, height, preview.Orientation)
+
+	if !img.IsOpaque(sourceImg) {
+		return encodeThumbnail(fitted, img.EncodePNG, thumbnailPNGExtension)
+	}
+	return encodeThumbnail(fitted, img.EncodeJPEG, thumbnailJPEGExtension)
+}
+
+func iconForUnreadableFormat(format string) (image.Image, error) {
+	switch strings.ToLower(format) {
+	case ".pdf":
+		return icons.PdfIcon()
+	case ".mp3", ".flac", ".wav", ".ogg", ".m4a":
+		return icons.Mp3Icon()
+	case ".mp4", ".avi", ".mkv", ".mov", ".webm":
+		return icons.Mp4Icon()
+	}
+	return icons.Icon()
+}
+
+func encodeIconThumbnail(iconImg image.Image, width, height int) ([]byte, string, error) {
+	return encodeThumbnail(img.Thumbnail(iconImg, uint(width), uint(height)), img.EncodePNG, thumbnailPNGExtension)
+}
+
+func encodeThumbnail(thumbnailImg image.Image, encode func(image.Image) ([]byte, error), extension string) ([]byte, string, error) {
+	encoded, err := encode(thumbnailImg)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+	return encoded, extension, nil
 }
 
 func (s *Service) GetTotalSpaceUsed() (int, error) {

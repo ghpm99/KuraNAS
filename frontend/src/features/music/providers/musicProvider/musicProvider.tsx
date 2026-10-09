@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Pagination } from '@/types/pagination';
+import type { IMusicMetadata } from '@/types/music';
 import {
     FetchNextPageOptions,
     InfiniteData,
@@ -9,25 +10,7 @@ import {
 import { createContext, useContext } from 'react';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
 import { getMusic } from '@/service/music';
-
-export interface IMusicMetadata {
-    id: number;
-    fileId: number;
-    path: string;
-    format: string;
-    title: string;
-    artist: string;
-    album: string;
-    year: number;
-    genre: string;
-    track: number;
-    disc: number;
-    duration: number;
-    bitrate: number;
-    sampleRate: number;
-    channels: number;
-    createdAt: string;
-}
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 export interface IMusicData {
     id: number;
@@ -77,7 +60,7 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return undefined;
         },
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
 
     const { ref: lastItemRef } = useIntersectionObserver<HTMLLIElement>({

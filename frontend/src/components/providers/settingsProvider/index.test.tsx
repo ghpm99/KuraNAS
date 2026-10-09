@@ -85,7 +85,7 @@ describe('components/providers/settingsProvider', () => {
         mockedGetSettingsConfiguration.mockResolvedValue(fullSettings());
         mockedUpdateSettingsConfiguration.mockResolvedValue(
             fullSettings({
-                appearance: { accent_color: 'rose', reduce_motion: true },
+                appearance: { accent_color: 'rose', reduce_motion: true, theme_mode: 'dark' },
                 language: { current: 'pt-BR', available: ['en-US', 'pt-BR'] },
             })
         );
@@ -115,7 +115,7 @@ describe('components/providers/settingsProvider', () => {
                     autoplay_next_video: false,
                     image_slideshow_seconds: 12,
                 },
-                appearance: { accent_color: 'rose', reduce_motion: true },
+                appearance: { accent_color: 'rose', reduce_motion: true, theme_mode: 'dark' },
                 language: { current: 'pt-BR' },
             });
         });
@@ -291,7 +291,7 @@ describe('components/providers/settingsProvider', () => {
                     autoplay_next_video: true,
                     image_slideshow_seconds: 4,
                 },
-                appearance: { accent_color: 'cyan', reduce_motion: false },
+                appearance: { accent_color: 'cyan', reduce_motion: false, theme_mode: 'dark' },
                 language: { current: 'en-US' },
             });
         });

@@ -1,12 +1,7 @@
-import Layout from '@/components/layout/Layout';
 import NotificationsScreen from '@/components/notifications/NotificationsScreen';
 
 const NotificationsPage = () => {
-    return (
-        <Layout>
-            <NotificationsScreen />
-        </Layout>
-    );
+    return <NotificationsScreen />;
 };
 
 export default NotificationsPage;

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 export const useAnalyticsScreenState = () => {
     const { t } = useI18n();
     const { formatBytes, formatPercent, formatDate } = useAnalyticsFormatters();
-    const { period, setPeriod, data, loading, error, refresh } = useAnalyticsOverview();
+    const { period, duplicatesType, setPeriod, data, loading, error, refresh } = useAnalyticsOverview();
     const { usedPercent, reclaimablePercent } = useAnalyticsDerived(data);
     const [now, setNow] = useState(() => Date.now());
 
@@ -56,6 +56,7 @@ export const useAnalyticsScreenState = () => {
     return {
         t,
         period,
+        duplicatesType,
         setPeriod,
         data,
         loading,

@@ -25,9 +25,32 @@ type musicRepoMock struct {
 	getNowPlayingFn        func() (PlaylistModel, error)
 	getPlayerStateFn       func(clientID string) (PlayerStateModel, error)
 	upsertPlayerStateFn    func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	replacePlayerQueueFn   func(clientID string, fileIDs []int, currentIndex int) error
+	playerQueueEntries     []MusicQueueEntryModel
+	playerQueueIndex       int
+	playerQueueFailure     error
+	searchLibraryTracksFn  func(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
-	getLibraryIndexFn      func() ([]MusicLibraryIndexEntryModel, error)
+	getLibrarySummaryFn    func() (MusicLibrarySummaryDto, error)
+	getArtistGroupsFn      func(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	getAlbumGroupsFn       func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	getGenreGroupsFn       func(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	getFolderGroupsFn      func(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	getTrackIDsByArtistFn  func(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByAlbumFn   func(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByGenreFn   func(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByFolderFn  func(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getRecentFileIDsFn     func(limit int) ([]int, error)
+	getFavoriteFileIDsFn   func(limit int) ([]int, error)
+	getClusterInputsFn     func() ([]artistClusterInput, error)
+	getFileIDsByArtistsFn  func(artistKeys []string) ([]int, error)
 	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
+
+	queueEntries     []MusicQueueEntryModel
+	queueFailure     error
+	receivedQueueKey string
+	receivedLimit    int
+	receivedFileIDs  []int
 
 	getMusicFn         func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getMusicArtistsFn  func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
@@ -47,7 +70,7 @@ type musicRepoMock struct {
 }
 
 func (m *musicRepoMock) GetDbContext() *database.DbContext { return m.db }
-func (m *musicRepoMock) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error) {
+func (m *musicRepoMock) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error) {
 	if m.getPlaylistsFn != nil {
 		return m.getPlaylistsFn(page, pageSize)
 	}
@@ -125,11 +148,89 @@ func (m *musicRepoMock) GetLibraryTracks(page int, pageSize int) (utils.Paginati
 	}
 	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
 }
-func (m *musicRepoMock) GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error) {
-	if m.getLibraryIndexFn != nil {
-		return m.getLibraryIndexFn()
+func (m *musicRepoMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.searchLibraryTracksFn != nil {
+		return m.searchLibraryTracksFn(searchText, page, pageSize)
 	}
-	return []MusicLibraryIndexEntryModel{}, nil
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) GetLibrarySummary() (MusicLibrarySummaryDto, error) {
+	if m.getLibrarySummaryFn != nil {
+		return m.getLibrarySummaryFn()
+	}
+	return MusicLibrarySummaryDto{}, nil
+}
+func (m *musicRepoMock) GetLibraryArtistGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+	if m.getArtistGroupsFn != nil {
+		return m.getArtistGroupsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicArtistGroupDto]{Items: []MusicArtistGroupDto{}}, nil
+}
+func (m *musicRepoMock) GetLibraryAlbumGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+	if m.getAlbumGroupsFn != nil {
+		return m.getAlbumGroupsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicAlbumGroupDto]{Items: []MusicAlbumGroupDto{}}, nil
+}
+func (m *musicRepoMock) GetLibraryGenreGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error) {
+	if m.getGenreGroupsFn != nil {
+		return m.getGenreGroupsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicGenreGroupDto]{Items: []MusicGenreGroupDto{}}, nil
+}
+func (m *musicRepoMock) GetLibraryFolderGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error) {
+	if m.getFolderGroupsFn != nil {
+		return m.getFolderGroupsFn(page, pageSize)
+	}
+	return utils.PaginationResponse[MusicFolderGroupDto]{Items: []MusicFolderGroupDto{}}, nil
+}
+func (m *musicRepoMock) GetLibraryTrackIDsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+	if m.getTrackIDsByArtistFn != nil {
+		return m.getTrackIDsByArtistFn(artistKey, page, pageSize)
+	}
+	return utils.PaginationResponse[int]{Items: []int{}}, nil
+}
+func (m *musicRepoMock) GetLibraryTrackIDsByAlbum(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+	if m.getTrackIDsByAlbumFn != nil {
+		return m.getTrackIDsByAlbumFn(albumKey, page, pageSize)
+	}
+	return utils.PaginationResponse[int]{Items: []int{}}, nil
+}
+func (m *musicRepoMock) GetLibraryTrackIDsByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+	if m.getTrackIDsByGenreFn != nil {
+		return m.getTrackIDsByGenreFn(genreKey, page, pageSize)
+	}
+	return utils.PaginationResponse[int]{Items: []int{}}, nil
+}
+func (m *musicRepoMock) GetLibraryTrackIDsByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error) {
+	if m.getTrackIDsByFolderFn != nil {
+		return m.getTrackIDsByFolderFn(folderPath, page, pageSize)
+	}
+	return utils.PaginationResponse[int]{Items: []int{}}, nil
+}
+func (m *musicRepoMock) GetRecentLibraryFileIDs(limit int) ([]int, error) {
+	if m.getRecentFileIDsFn != nil {
+		return m.getRecentFileIDsFn(limit)
+	}
+	return []int{}, nil
+}
+func (m *musicRepoMock) GetFavoriteLibraryFileIDs(limit int) ([]int, error) {
+	if m.getFavoriteFileIDsFn != nil {
+		return m.getFavoriteFileIDsFn(limit)
+	}
+	return []int{}, nil
+}
+func (m *musicRepoMock) GetArtistClusterInputs() ([]artistClusterInput, error) {
+	if m.getClusterInputsFn != nil {
+		return m.getClusterInputsFn()
+	}
+	return []artistClusterInput{}, nil
+}
+func (m *musicRepoMock) GetLibraryFileIDsByArtistKeys(artistKeys []string) ([]int, error) {
+	if m.getFileIDsByArtistsFn != nil {
+		return m.getFileIDsByArtistsFn(artistKeys)
+	}
+	return []int{}, nil
 }
 func (m *musicRepoMock) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error) {
 	if m.getLibraryFilesByIDsFn != nil {
@@ -248,7 +349,7 @@ func TestMusicService_PlaylistsCRUD(t *testing.T) {
 	}
 	svc := newMusicServiceForTest(t, repo)
 
-	playlists, err := svc.GetPlaylists(1, 10)
+	playlists, err := svc.GetPlaylists(1, 10, "")
 	if err != nil || len(playlists.Items) != 1 {
 		t.Fatalf("expected playlists success, err=%v", err)
 	}
@@ -397,7 +498,7 @@ func TestMusicService_ErrorPaths(t *testing.T) {
 	}
 	svc := newMusicServiceForTest(t, repo)
 
-	if _, err := svc.GetPlaylists(1, 10); err == nil {
+	if _, err := svc.GetPlaylists(1, 10, ""); err == nil {
 		t.Fatalf("expected get playlists error")
 	}
 	if err := svc.DeletePlaylist(1); err == nil {

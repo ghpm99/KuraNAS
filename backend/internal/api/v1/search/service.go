@@ -1,14 +1,11 @@
 package search
 
 import (
-	"context"
-	"encoding/json"
-	"log"
+	"nas-go/api/internal/api/v1/documenttext"
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
-	"nas-go/api/pkg/ai/prompts"
+	"nas-go/api/pkg/applog"
 	"strings"
-	"time"
 )
 
 const (
@@ -17,15 +14,19 @@ const (
 )
 
 type Service struct {
-	Repository RepositoryInterface
-	AIService  ai.ServiceInterface
+	Repository     RepositoryInterface
+	AIService      ai.ServiceInterface
+	Documents      DocumentSearcher
+	expansionCache *expansionCache
 }
 
 func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
-	return &Service{Repository: repository, AIService: aiService}
+	return &Service{Repository: repository, AIService: aiService, expansionCache: newExpansionCache(expansionCacheCapacity, expansionCacheTTL)}
 }
 
-const aiQueryMinWords = 2
+func NewServiceWithDocuments(repository RepositoryInterface, aiService ai.ServiceInterface, documents DocumentSearcher) ServiceInterface {
+	return &Service{Repository: repository, AIService: aiService, Documents: documents, expansionCache: newExpansionCache(expansionCacheCapacity, expansionCacheTTL)}
+}
 
 func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto, error) {
 	normalizedQuery := strings.TrimSpace(query)
@@ -38,6 +39,8 @@ func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto
 		Playlists: []PlaylistResultDto{},
 		Videos:    []VideoResultDto{},
 		Images:    []ImageResultDto{},
+		Tracks:    []TrackResultDto{},
+		Documents: []documenttext.DocumentSearchResultDto{},
 	}
 
 	if normalizedQuery == "" {
@@ -51,15 +54,35 @@ func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto
 		return response, err
 	}
 
-	aiKeywords, suggestion := s.expandQueryWithAI(normalizedQuery)
-	if suggestion != "" {
-		response.Suggestion = suggestion
+	if response.isEmpty() {
+		return s.applyFuzzyFallback(normalizedQuery, effectiveLimit, response)
 	}
 
-	if len(aiKeywords) > 0 {
-		response = s.mergeAIResults(response, aiKeywords, effectiveLimit)
+	return response, nil
+}
+
+func (s *Service) applyFuzzyFallback(query string, limit int, response GlobalSearchResponseDto) (GlobalSearchResponseDto, error) {
+	if !s.Repository.IsFuzzySearchAvailable() {
+		return response, nil
 	}
 
+	files, err := s.Repository.SearchFilesFuzzy(query, limit)
+	if err != nil {
+		return response, err
+	}
+
+	folders, err := s.Repository.SearchFoldersFuzzy(query, limit)
+	if err != nil {
+		return response, err
+	}
+
+	if len(files) == 0 && len(folders) == 0 {
+		return response, nil
+	}
+
+	response.Files = mapFiles(files)
+	response.Folders = mapFolders(folders)
+	response.Fuzzy = true
 	return response, nil
 }
 
@@ -104,6 +127,11 @@ func (s *Service) executeSearch(query string, limit int, response GlobalSearchRe
 		return response, err
 	}
 
+	tracks, err := s.Repository.SearchTracks(query, limit)
+	if err != nil {
+		return response, err
+	}
+
 	response.Files = mapFiles(files)
 	response.Folders = mapFolders(folders)
 	response.Artists = mapArtists(artists)
@@ -111,125 +139,23 @@ func (s *Service) executeSearch(query string, limit int, response GlobalSearchRe
 	response.Playlists = append(mapMusicPlaylists(musicPlaylists), mapVideoPlaylists(videoPlaylists)...)
 	response.Videos = mapVideos(videos)
 	response.Images = mapImages(images)
+	response.Tracks = mapTracks(tracks)
+	response.Documents = s.searchDocuments(query, limit)
 
 	return response, nil
 }
 
-type aiSearchExpansion struct {
-	Keywords   []string `json:"keywords"`
-	Suggestion string   `json:"suggestion"`
-}
-
-func (s *Service) expandQueryWithAI(query string) ([]string, string) {
-	if s.AIService == nil {
-		return nil, ""
+func (s *Service) searchDocuments(query string, limit int) []documenttext.DocumentSearchResultDto {
+	if s.Documents == nil {
+		return []documenttext.DocumentSearchResultDto{}
 	}
 
-	words := strings.Fields(query)
-	if len(words) < aiQueryMinWords {
-		return nil, ""
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	prompt := prompts.SearchExtractionUserPrompt(query)
-
-	resp, err := s.AIService.Execute(ctx, ai.Request{
-		TaskType:     ai.TaskExtraction,
-		SystemPrompt: prompts.SearchExtractionSystemPrompt(),
-		Prompt:       prompt,
-		MaxTokens:    150,
-		Temperature:  0.1,
-	})
+	documents, err := s.Documents.SearchTopDocuments(query, limit)
 	if err != nil {
-		log.Printf("AI search expansion failed: %v\n", err)
-		return nil, ""
+		applog.ErrorWithStack("search: document content search failed", err)
+		return []documenttext.DocumentSearchResultDto{}
 	}
-
-	content := strings.TrimSpace(resp.Content)
-	if strings.HasPrefix(content, "```") {
-		lines := strings.Split(content, "\n")
-		filtered := make([]string, 0, len(lines))
-		for _, line := range lines {
-			if !strings.HasPrefix(strings.TrimSpace(line), "```") {
-				filtered = append(filtered, line)
-			}
-		}
-		content = strings.Join(filtered, "\n")
-	}
-
-	var expansion aiSearchExpansion
-	if err := json.Unmarshal([]byte(content), &expansion); err != nil {
-		log.Printf("AI search expansion parse error: %v\n", err)
-		return nil, ""
-	}
-
-	return expansion.Keywords, expansion.Suggestion
-}
-
-func (s *Service) mergeAIResults(response GlobalSearchResponseDto, keywords []string, limit int) GlobalSearchResponseDto {
-	existingFileIDs := make(map[int]bool)
-	for _, f := range response.Files {
-		existingFileIDs[f.ID] = true
-	}
-	existingFolderIDs := make(map[int]bool)
-	for _, f := range response.Folders {
-		existingFolderIDs[f.ID] = true
-	}
-	existingVideoIDs := make(map[int]bool)
-	for _, v := range response.Videos {
-		existingVideoIDs[v.ID] = true
-	}
-	existingImageIDs := make(map[int]bool)
-	for _, i := range response.Images {
-		existingImageIDs[i.ID] = true
-	}
-
-	for _, keyword := range keywords {
-		keyword = strings.TrimSpace(keyword)
-		if keyword == "" {
-			continue
-		}
-
-		if files, err := s.Repository.SearchFiles(keyword, limit); err == nil {
-			for _, f := range files {
-				if !existingFileIDs[f.ID] {
-					existingFileIDs[f.ID] = true
-					response.Files = append(response.Files, mapFiles([]FileResultModel{f})...)
-				}
-			}
-		}
-
-		if folders, err := s.Repository.SearchFolders(keyword, limit); err == nil {
-			for _, f := range folders {
-				if !existingFolderIDs[f.ID] {
-					existingFolderIDs[f.ID] = true
-					response.Folders = append(response.Folders, mapFolders([]FolderResultModel{f})...)
-				}
-			}
-		}
-
-		if videos, err := s.Repository.SearchVideos(keyword, limit); err == nil {
-			for _, v := range videos {
-				if !existingVideoIDs[v.ID] {
-					existingVideoIDs[v.ID] = true
-					response.Videos = append(response.Videos, mapVideos([]VideoResultModel{v})...)
-				}
-			}
-		}
-
-		if images, err := s.Repository.SearchImages(keyword, limit); err == nil {
-			for _, i := range images {
-				if !existingImageIDs[i.ID] {
-					existingImageIDs[i.ID] = true
-					response.Images = append(response.Images, mapImages([]ImageResultModel{i})...)
-				}
-			}
-		}
-	}
-
-	return response
+	return documents
 }
 
 func clampLimit(limit int) int {
@@ -252,9 +178,19 @@ func mapFiles(items []FileResultModel) []FileResultDto {
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 			Starred:    item.Starred,
+			Size:       item.Size,
+			UpdatedAt:  item.UpdatedAt,
+			Tier:       resolveTier(item.IsCold),
 		})
 	}
 	return results
+}
+
+func resolveTier(isCold bool) string {
+	if isCold {
+		return TierCold
+	}
+	return TierHot
 }
 
 func mapFolders(items []FolderResultModel) []FolderResultDto {
@@ -266,6 +202,9 @@ func mapFolders(items []FolderResultModel) []FolderResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Starred:    item.Starred,
+			Size:       item.Size,
+			UpdatedAt:  item.UpdatedAt,
+			Tier:       resolveTier(item.IsCold),
 		})
 	}
 	return results
@@ -340,6 +279,7 @@ func mapVideos(items []VideoResultModel) []VideoResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
+			UpdatedAt:  item.UpdatedAt,
 		})
 	}
 	return results
@@ -354,11 +294,35 @@ func mapImages(items []ImageResultModel) []ImageResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
+			UpdatedAt:  item.UpdatedAt,
 			Category:   item.Category,
 			Context:    item.Context,
 		})
 	}
 	return results
+}
+
+func mapTracks(items []TrackResultModel) []TrackResultDto {
+	results := make([]TrackResultDto, 0, len(items))
+	for _, item := range items {
+		results = append(results, TrackResultDto{
+			FileID:   item.FileID,
+			Title:    item.Title,
+			Artist:   item.Artist,
+			Album:    item.Album,
+			AlbumKey: buildTrackAlbumKey(item),
+			Duration: item.Duration,
+			Path:     roots.ToRelativePath(item.Path),
+		})
+	}
+	return results
+}
+
+func buildTrackAlbumKey(track TrackResultModel) string {
+	if track.Album == "" || track.AlbumOwner == "" {
+		return ""
+	}
+	return normalizeLookupKey(track.AlbumOwner + "::" + track.Album)
 }
 
 func normalizeLookupKey(value string) string {

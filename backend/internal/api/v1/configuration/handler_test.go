@@ -44,6 +44,10 @@ type serviceMock struct {
 	getSettingsFn          func() (SettingsDto, error)
 	updateSettingsFn       func(request UpdateSettingsRequest) (SettingsDto, error)
 	getTranslationFilePath func() (string, error)
+	getEnvConfigFn         func() (EnvConfigDto, error)
+	updateEnvConfigFn      func(request UpdateEnvConfigRequest) (EnvConfigDto, error)
+	testDatabaseFn         func(request TestDatabaseRequest) error
+	testPathFn             func(request TestPathRequest) error
 }
 
 func (m *serviceMock) GetSettings() (SettingsDto, error) {
@@ -73,6 +77,34 @@ func (m *serviceMock) ApplyRuntimeSettings() error {
 
 func (m *serviceMock) IsAIImageClassificationEnabled() (bool, error) {
 	return true, nil
+}
+
+func (m *serviceMock) GetEnvConfig() (EnvConfigDto, error) {
+	if m.getEnvConfigFn != nil {
+		return m.getEnvConfigFn()
+	}
+	return EnvConfigDto{}, nil
+}
+
+func (m *serviceMock) UpdateEnvConfig(request UpdateEnvConfigRequest) (EnvConfigDto, error) {
+	if m.updateEnvConfigFn != nil {
+		return m.updateEnvConfigFn(request)
+	}
+	return EnvConfigDto{}, nil
+}
+
+func (m *serviceMock) TestDatabaseConnection(request TestDatabaseRequest) error {
+	if m.testDatabaseFn != nil {
+		return m.testDatabaseFn(request)
+	}
+	return nil
+}
+
+func (m *serviceMock) TestPath(request TestPathRequest) error {
+	if m.testPathFn != nil {
+		return m.testPathFn(request)
+	}
+	return nil
 }
 
 func newTestContext(method string, body *bytes.Buffer) (*gin.Context, *httptest.ResponseRecorder) {
@@ -220,6 +252,59 @@ func TestUpdateSettingsHandler(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsHandlerDecodesNestedPayload pins the request seam for the
+// nested settings DTO: it captures the whole UpdateSettingsRequest the handler
+// decodes from the body the Settings screen sends (service/configuration.ts →
+// PUT settings) and asserts fields across every group. A json tag drift in any
+// group fails here instead of silently dropping that setting in production.
+func TestUpdateSettingsHandlerDecodesNestedPayload(t *testing.T) {
+	var captured UpdateSettingsRequest
+	l := &loggerMock{}
+	h := NewHandler(&serviceMock{
+		updateSettingsFn: func(request UpdateSettingsRequest) (SettingsDto, error) {
+			captured = request
+			return SettingsDto{}, nil
+		},
+	}, l)
+
+	body := bytes.NewBufferString(`{
+		"indexing": {"scan_on_startup": true, "extract_metadata": false, "generate_previews": true},
+		"captures": {"save_path": "/data/Capturas"},
+		"ai": {"image_classification": true},
+		"players": {"remember_music_queue": true, "remember_video_progress": false, "autoplay_next_video": true, "image_slideshow_seconds": 7},
+		"appearance": {"accent_color": "violet", "reduce_motion": true, "theme_mode": "system"},
+		"language": {"current": "pt-BR"}
+	}`)
+	ctx, rec := newTestContext(http.MethodPut, body)
+
+	h.UpdateSettingsHandler(ctx)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !captured.Indexing.ScanOnStartup || captured.Indexing.ExtractMetadata || !captured.Indexing.GeneratePreviews {
+		t.Fatalf("indexing group did not decode: %+v", captured.Indexing)
+	}
+	if captured.Captures.SavePath != "/data/Capturas" {
+		t.Fatalf("captures.save_path did not decode: %q", captured.Captures.SavePath)
+	}
+	if !captured.AI.ImageClassification {
+		t.Fatalf("ai.image_classification did not decode: %+v", captured.AI)
+	}
+	if captured.Players.ImageSlideshowSeconds != 7 || !captured.Players.AutoplayNextVideo {
+		t.Fatalf("players group did not decode: %+v", captured.Players)
+	}
+	if captured.Appearance.AccentColor != "violet" || !captured.Appearance.ReduceMotion {
+		t.Fatalf("appearance group did not decode: %+v", captured.Appearance)
+	}
+	if captured.Appearance.ThemeMode != "system" {
+		t.Fatalf("appearance.theme_mode did not decode: %+v", captured.Appearance)
+	}
+	if captured.Language.Current != "pt-BR" {
+		t.Fatalf("language.current did not decode: %q", captured.Language.Current)
+	}
+}
+
 func TestUpdateSettingsHandlerInvalidJSON(t *testing.T) {
 	l := &loggerMock{}
 	h := NewHandler(&serviceMock{}, l)
@@ -229,5 +314,22 @@ func TestUpdateSettingsHandlerInvalidJSON(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestUpdateSettingsHandlerRejectsInvalidThemeMode(t *testing.T) {
+	h := NewHandler(&serviceMock{
+		updateSettingsFn: func(request UpdateSettingsRequest) (SettingsDto, error) {
+			return SettingsDto{}, ErrInvalidThemeMode
+		},
+	}, &loggerMock{})
+
+	body := bytes.NewBufferString(`{"appearance": {"accent_color": "violet", "theme_mode": "sepia"}}`)
+	ctx, rec := newTestContext(http.MethodPut, body)
+
+	h.UpdateSettingsHandler(ctx)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 }

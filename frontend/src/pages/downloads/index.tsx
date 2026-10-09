@@ -1,12 +1,7 @@
-import Layout from '@/components/layout/Layout';
 import DownloadsScreen from '@/components/downloads/DownloadsScreen';
 
 const DownloadsPage = () => {
-    return (
-        <Layout>
-            <DownloadsScreen />
-        </Layout>
-    );
+    return <DownloadsScreen />;
 };
 
 export default DownloadsPage;

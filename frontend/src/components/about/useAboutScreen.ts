@@ -6,6 +6,7 @@ import { UpdateStatus } from '@/types/update';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 type AboutDetail = {
     label: string;
@@ -113,6 +114,7 @@ export const useAboutScreen = () => {
     } = useQuery<UpdateStatus>({
         queryKey: ['updateStatus'],
         queryFn: getUpdateStatus,
+        staleTime: settingsStaleTimeMs,
         refetchOnWindowFocus: false,
     });
 

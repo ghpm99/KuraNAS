@@ -11,6 +11,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"os"
 	"os/exec"
@@ -75,7 +76,7 @@ func (s *Service) PromoteCapture(captureID int) error {
 		Path:       finalPath,
 		ParentPath: finalDir,
 		Type:       files.File,
-		Format:     filepath.Ext(finalName),
+		Format:     utils.ExtensionOf(finalName),
 		Size:       capture.Size,
 		CreatedAt:  now,
 		UpdatedAt:  now,

@@ -1,0 +1,309 @@
+jest.mock('./index', () => ({
+    apiBase: {
+        get: jest.fn(),
+    },
+}));
+
+import axios from 'axios';
+import type { ImageLibraryFilters } from '@/types/imageLibrary';
+import { apiBase } from './index';
+import {
+    getImageCameraFacets,
+    getImageFiles,
+    getImageFormatFacets,
+    getImageLibraryCount,
+    getImageLibraryFolders,
+    getImageLibraryNeighbors,
+    getImageLibraryPage,
+    getImageLibraryTimeline,
+    getImageMetadataSummary,
+} from './image';
+
+const mockedApi = apiBase as unknown as { get: jest.Mock };
+
+const noFilters: ImageLibraryFilters = {
+    nameQuery: '',
+    categories: [],
+    isStarredOnly: false,
+    formats: [],
+    camera: '',
+    takenFrom: '',
+    takenTo: '',
+    folder: '',
+};
+
+const allFilters: ImageLibraryFilters = {
+    nameQuery: 'beach',
+    categories: ['capture', 'screenshot_app'],
+    isStarredOnly: true,
+    formats: ['jpg', 'png'],
+    camera: '',
+    takenFrom: '2026-01-01',
+    takenTo: '2026-02-01',
+    folder: '/photos/trip',
+};
+
+const repeatedKeys = { indexes: null };
+
+describe('service/image', () => {
+    it('lists the photos of a user album from the album items endpoint', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 30,
+            albumId: 4,
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith(
+            '/image/albums/4/items',
+            expect.objectContaining({
+                params: expect.objectContaining({ page_size: 30, sort: 'taken_at' }),
+            })
+        );
+    });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('gets image files grouped as requested', async () => {
+        const payload = { items: [], total: 0 };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const result = await getImageFiles(1, 30, 'date');
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/images', {
+            params: { page: 1, page_size: 30, group_by: 'date' },
+        });
+        expect(result).toEqual(payload);
+    });
+
+    it('omits empty filters and sends only ordering and page size by default', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], has_next: false } });
+
+        await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 60,
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library', {
+            params: {
+                q: undefined,
+                content: undefined,
+                match: undefined,
+                category: undefined,
+                starred: undefined,
+                format: undefined,
+                taken_from: undefined,
+                taken_to: undefined,
+                folder: undefined,
+                sort: 'taken_at',
+                order: 'desc',
+                page_size: 60,
+                cursor: undefined,
+                page: undefined,
+                taken_before: undefined,
+            },
+            paramsSerializer: repeatedKeys,
+        });
+    });
+
+    it('maps every filter to its server parameter and repeats list keys', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], has_next: false } });
+
+        await getImageLibraryPage({
+            filters: allFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 60,
+            cursor: 'cursor-token',
+            takenBefore: '2025-04-01',
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library', {
+            params: expect.objectContaining({
+                q: 'beach',
+                content: 'beach',
+                match: 'all',
+                category: ['capture', 'screenshot_app'],
+                starred: true,
+                format: ['jpg', 'png'],
+                taken_from: '2026-01-01',
+                taken_to: '2026-02-01',
+                folder: '/photos/trip',
+                cursor: 'cursor-token',
+                taken_before: '2025-04-01',
+            }),
+            paramsSerializer: repeatedKeys,
+        });
+
+        const [url, requestConfig] = mockedApi.get.mock.calls[0]!;
+        const queryString = axios.getUri({ url, ...requestConfig });
+        expect(queryString).toContain('category=capture&category=screenshot_app');
+        expect(queryString).toContain('format=jpg&format=png');
+        expect(queryString).toContain('q=beach');
+        expect(queryString).toContain('content=beach');
+        expect(queryString).toContain('match=all');
+        expect(queryString).not.toContain('[]');
+    });
+
+    it('omits the content search parameters when the search box is empty', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], has_next: false } });
+
+        await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 60,
+        });
+
+        const [url, requestConfig] = mockedApi.get.mock.calls[0]!;
+        const queryString = axios.getUri({ url, ...requestConfig });
+        expect(queryString).not.toContain('content=');
+        expect(queryString).not.toContain('match=');
+        expect(queryString).not.toContain('q=');
+    });
+
+    it('requests numbered pages for non keyset orderings', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], has_next: true, page: 2 } });
+
+        const page = await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'name', order: 'asc' },
+            pageSize: 60,
+            page: 2,
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library', {
+            params: expect.objectContaining({ sort: 'name', order: 'asc', page: 2 }),
+            paramsSerializer: repeatedKeys,
+        });
+        expect(page.page).toBe(2);
+    });
+
+    it('reads the total from the count endpoint with the same filters', async () => {
+        mockedApi.get.mockResolvedValue({ data: { total: 42 } });
+
+        const total = await getImageLibraryCount(allFilters);
+
+        expect(total).toBe(42);
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library/count', {
+            params: expect.objectContaining({
+                q: 'beach',
+                category: ['capture', 'screenshot_app'],
+            }),
+            paramsSerializer: repeatedKeys,
+        });
+    });
+
+    it('reads timeline buckets and tolerates an empty payload', async () => {
+        mockedApi.get.mockResolvedValueOnce({ data: [{ year: 2026, month: 3, count: 5 }] });
+        mockedApi.get.mockResolvedValueOnce({ data: null });
+
+        expect(await getImageLibraryTimeline(allFilters)).toEqual([
+            { year: 2026, month: 3, count: 5 },
+        ]);
+        expect(await getImageLibraryTimeline(noFilters)).toEqual([]);
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library/timeline', {
+            params: expect.objectContaining({ starred: true }),
+            paramsSerializer: repeatedKeys,
+        });
+    });
+
+    it('reads the EXIF summary of one image', async () => {
+        mockedApi.get.mockResolvedValue({ data: { make: 'Sony' } });
+
+        const summary = await getImageMetadataSummary(9);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/metadata/9');
+        expect(summary).toEqual({ make: 'Sony' });
+    });
+
+    it('requests the folders under a parent with pagination and omits an empty parent', async () => {
+        const payload = { items: [], pagination: { page: 2, page_size: 48, has_next: false } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const nested = await getImageLibraryFolders('/photos', 2, 48);
+        await getImageLibraryFolders('', 1, 48);
+
+        expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/image/library/folders', {
+            params: { parent: '/photos', page: 2, page_size: 48 },
+        });
+        expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/image/library/folders', {
+            params: { parent: undefined, page: 1, page_size: 48 },
+        });
+        expect(nested).toEqual(payload);
+    });
+
+    it('requests the neighbors of an image with the gallery filters and the count', async () => {
+        mockedApi.get.mockResolvedValue({ data: { before: [{ file_id: 9 }], after: [] } });
+
+        const neighbors = await getImageLibraryNeighbors(7, allFilters, 5);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library/neighbors/7', {
+            params: expect.objectContaining({
+                q: 'beach',
+                starred: true,
+                folder: '/photos/trip',
+                count: 5,
+            }),
+            paramsSerializer: repeatedKeys,
+        });
+        const [url, requestConfig] = mockedApi.get.mock.calls[0]!;
+        const queryString = axios.getUri({ url, ...requestConfig });
+        expect(queryString).toContain('format=jpg&format=png');
+        expect(queryString).toContain('count=5');
+        expect(neighbors.before).toEqual([{ file_id: 9 }]);
+    });
+
+    it('defaults the neighbors count and tolerates a partial payload', async () => {
+        mockedApi.get.mockResolvedValue({ data: {} });
+
+        const neighbors = await getImageLibraryNeighbors(7, noFilters);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(
+            '/image/library/neighbors/7',
+            expect.objectContaining({ params: expect.objectContaining({ count: 20 }) })
+        );
+        expect(neighbors).toEqual({ before: [], after: [] });
+    });
+});
+
+describe('image library facets', () => {
+    beforeEach(() => mockedApi.get.mockReset());
+
+    it('requests camera facets with the shared filter params', async () => {
+        mockedApi.get.mockResolvedValue({ data: [{ camera: 'Canon EOS', count: 3 }] });
+
+        const cameras = await getImageCameraFacets({ ...allFilters, camera: 'Sony A7' });
+
+        expect(cameras).toEqual([{ camera: 'Canon EOS', count: 3 }]);
+        const [url, config] = mockedApi.get.mock.calls[0];
+        expect(url).toBe('/image/library/facets/cameras');
+        expect(config.params).toMatchObject({ format: ['jpg', 'png'], camera: 'Sony A7' });
+    });
+
+    it('requests format facets and tolerates an empty body', async () => {
+        mockedApi.get.mockResolvedValue({ data: undefined });
+
+        const formats = await getImageFormatFacets(noFilters);
+
+        expect(formats).toEqual([]);
+        const [url, config] = mockedApi.get.mock.calls[0];
+        expect(url).toBe('/image/library/facets/formats');
+        expect(config.params.camera).toBeUndefined();
+    });
+
+    it('sends the camera filter on the library listing', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getImageLibraryPage({
+            filters: { ...noFilters, camera: 'Canon EOS' },
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 10,
+        });
+
+        expect(mockedApi.get.mock.calls[0][1].params.camera).toBe('Canon EOS');
+    });
+});

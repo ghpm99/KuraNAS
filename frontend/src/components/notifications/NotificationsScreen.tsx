@@ -1,93 +1,160 @@
-import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Tab, Tabs } from '@mui/material';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bell } from 'lucide-react';
 import { useState } from 'react';
-import { getNotifications, markAllNotificationsAsRead, markNotificationAsRead } from '@/service/notifications';
+import { useNavigate } from 'react-router-dom';
+import EmptyState from '@/components/emptyState/emptyState';
+import ErrorState from '@/components/errorState/errorState';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import type { NotificationType } from '@/types/notification';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import {
+    getNotifications,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+} from '@/service/notifications';
+import type { Notification, NotificationType } from '@/types/notification';
 import NotificationItem from './NotificationItem';
+import { resolveNotificationTargetRoute } from './notificationTargetRoute';
 
 type FilterTab = 'all' | 'unread' | NotificationType;
 
 const PAGE_SIZE = 20;
 
+const buildFilterParams = (activeTab: FilterTab) => {
+    if (activeTab === 'all') return {};
+    if (activeTab === 'unread') return { is_read: false };
+    return { type: activeTab };
+};
+
 export default function NotificationsScreen() {
     const { t } = useI18n();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
-    const getQueryParams = () => {
-        const params: { pageSize: number; type?: string; is_read?: boolean } = { pageSize: PAGE_SIZE };
-        if (activeTab === 'unread') {
-            params.is_read = false;
-        } else if (activeTab !== 'all') {
-            params.type = activeTab;
-        }
-        return params;
-    };
-
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    const {
+        data,
+        isLoading,
+        isError,
+        error,
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
         queryKey: ['notifications-page', activeTab],
-        queryFn: async ({ pageParam = 1 }) => {
-            const params = getQueryParams();
-            return getNotifications({ page: pageParam, ...params });
-        },
+        queryFn: ({ pageParam }) =>
+            getNotifications({
+                page: pageParam,
+                pageSize: PAGE_SIZE,
+                ...buildFilterParams(activeTab),
+            }),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
-            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
     });
+
+    const invalidateNotificationQueries = async () => {
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['notifications-page'] }),
+            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] }),
+            queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+        ]);
+    };
 
     const markOneMutation = useMutation({
         mutationFn: markNotificationAsRead,
-        onSuccess: async () => {
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ['notifications-page'] }),
-                queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] }),
-                queryClient.invalidateQueries({ queryKey: ['notifications'] }),
-            ]);
-        },
+        onSuccess: invalidateNotificationQueries,
     });
 
     const markAllMutation = useMutation({
         mutationFn: markAllNotificationsAsRead,
-        onSuccess: async () => {
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ['notifications-page'] }),
-                queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] }),
-                queryClient.invalidateQueries({ queryKey: ['notifications'] }),
-            ]);
-        },
+        onSuccess: invalidateNotificationQueries,
     });
 
-    const allNotifications = data?.pages.flatMap((page) => page.items) ?? [];
+    const allNotifications = data?.pages.flatMap((page) => page?.items ?? []) ?? [];
 
-    const handleItemClick = async (id: number, isRead: boolean) => {
-        if (!isRead) {
-            await markOneMutation.mutateAsync(id);
+    const handleItemClick = (notification: Notification) => {
+        const targetRoute = resolveNotificationTargetRoute(notification);
+        if (!notification.is_read) {
+            markOneMutation.mutate(notification.id);
+        }
+        if (targetRoute) {
+            navigate(targetRoute);
         }
     };
 
+    const renderBody = () => {
+        if (isLoading) {
+            return (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress size={24} role="progressbar" aria-label={t('LOADING')} />
+                </Box>
+            );
+        }
+        if (isError) {
+            return (
+                <ErrorState
+                    title={t('NOTIFICATIONS_LOAD_ERROR')}
+                    backendMessage={extractBackendErrorMessage(error)}
+                    onRetry={() => void refetch()}
+                />
+            );
+        }
+        if (allNotifications.length === 0) {
+            return (
+                <EmptyState
+                    title={t('NO_NOTIFICATIONS')}
+                    icon={<Bell size={32} aria-hidden="true" />}
+                />
+            );
+        }
+        return (
+            <>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {allNotifications.map((notification) => (
+                        <NotificationItem
+                            key={notification.id}
+                            notification={notification}
+                            onClick={() => handleItemClick(notification)}
+                        />
+                    ))}
+                </Box>
+                <LoadMoreSentinel
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    fetchNextPage={() => void fetchNextPage()}
+                />
+            </>
+        );
+    };
+
     return (
-        <Box sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 720, mx: 'auto' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {t('NOTIFICATIONS')}
-                </Typography>
-                <Button
-                    size="small"
-                    onClick={() => markAllMutation.mutate()}
-                    disabled={markAllMutation.isPending}
-                    sx={{ textTransform: 'none' }}
-                >
-                    {t('MARK_ALL_AS_READ')}
-                </Button>
-            </Box>
+        <PageContainer>
+            <PageHeader
+                title={t('NOTIFICATIONS')}
+                subtitle={t('NOTIFICATIONS_SUBTITLE')}
+                actions={
+                    <Button
+                        size="small"
+                        onClick={() => markAllMutation.mutate()}
+                        disabled={markAllMutation.isPending}
+                    >
+                        {t('MARK_ALL_AS_READ')}
+                    </Button>
+                }
+            />
 
             <Tabs
                 value={activeTab}
-                onChange={(_, v) => setActiveTab(v)}
+                onChange={(_, selectedTab: FilterTab) => setActiveTab(selectedTab)}
                 variant="scrollable"
                 scrollButtons="auto"
-                sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
+                aria-label={t('NOTIFICATIONS')}
+                sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
             >
                 <Tab label={t('ALL')} value="all" />
                 <Tab label={t('UNREAD')} value="unread" />
@@ -97,42 +164,7 @@ export default function NotificationsScreen() {
                 <Tab label={t('NOTIFICATION_TYPE_ERROR')} value="error" />
             </Tabs>
 
-            {isLoading ? (
-                <Box sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {t('LOADING')}
-                    </Typography>
-                </Box>
-            ) : allNotifications.length === 0 ? (
-                <Box sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {t('NO_NOTIFICATIONS')}
-                    </Typography>
-                </Box>
-            ) : (
-                <>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {allNotifications.map((notification) => (
-                            <NotificationItem
-                                key={notification.id}
-                                notification={notification}
-                                onClick={() => handleItemClick(notification.id, notification.is_read)}
-                            />
-                        ))}
-                    </Box>
-                    {hasNextPage && (
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                            <Button
-                                onClick={() => fetchNextPage()}
-                                disabled={isFetchingNextPage}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                {isFetchingNextPage ? t('LOADING') : t('LOAD_MORE')}
-                            </Button>
-                        </Box>
-                    )}
-                </>
-            )}
-        </Box>
+            {renderBody()}
+        </PageContainer>
     );
 }

@@ -28,6 +28,12 @@ var AddPlaylistTrackQuery string
 //go:embed remove_playlist_track.sql
 var RemovePlaylistTrackQuery string
 
+//go:embed lock_playlist.sql
+var LockPlaylistQuery string
+
+//go:embed compact_playlist_positions.sql
+var CompactPlaylistPositionsQuery string
+
 //go:embed reorder_playlist_track.sql
 var ReorderPlaylistTrackQuery string
 
@@ -40,11 +46,86 @@ var GetPlayerStateQuery string
 //go:embed upsert_player_state.sql
 var UpsertPlayerStateQuery string
 
+//go:embed delete_player_queue.sql
+var DeletePlayerQueueQuery string
+
+//go:embed insert_player_queue.sql
+var InsertPlayerQueueQuery string
+
+//go:embed upsert_player_queue_index.sql
+var UpsertPlayerQueueIndexQuery string
+
+//go:embed get_player_queue.sql
+var GetPlayerQueueQuery string
+
+//go:embed get_player_queue_current_index.sql
+var GetPlayerQueueCurrentIndexQuery string
+
 //go:embed get_library_tracks.sql
 var GetLibraryTracksQuery string
 
-//go:embed get_library_index_entries.sql
-var GetLibraryIndexEntriesQuery string
+//go:embed get_library_artist_groups.sql
+var GetLibraryArtistGroupsQuery string
+
+//go:embed get_library_album_groups.sql
+var GetLibraryAlbumGroupsQuery string
+
+//go:embed get_library_genre_groups.sql
+var GetLibraryGenreGroupsQuery string
+
+//go:embed get_library_folder_groups.sql
+var GetLibraryFolderGroupsQuery string
+
+//go:embed get_library_summary.sql
+var GetLibrarySummaryQuery string
+
+//go:embed get_library_album_summary.sql
+var GetLibraryAlbumSummaryQuery string
+
+//go:embed get_library_artist_summary.sql
+var GetLibraryArtistSummaryQuery string
+
+//go:embed get_library_genre_summary.sql
+var GetLibraryGenreSummaryQuery string
+
+//go:embed get_library_folder_summary.sql
+var GetLibraryFolderSummaryQuery string
+
+//go:embed get_library_album_groups_by_artist.sql
+var GetLibraryAlbumGroupsByArtistQuery string
+
+//go:embed get_library_track_ids_by_artist.sql
+var GetLibraryTrackIDsByArtistQuery string
+
+//go:embed get_library_track_ids_by_album.sql
+var GetLibraryTrackIDsByAlbumQuery string
+
+//go:embed get_library_track_ids_by_genre.sql
+var GetLibraryTrackIDsByGenreQuery string
+
+//go:embed get_library_track_ids_by_folder.sql
+var GetLibraryTrackIDsByFolderQuery string
+
+//go:embed get_recent_library_file_ids.sql
+var GetRecentLibraryFileIDsQuery string
+
+//go:embed get_favorite_library_file_ids.sql
+var GetFavoriteLibraryFileIDsQuery string
+
+//go:embed get_artist_cluster_inputs.sql
+var GetArtistClusterInputsQuery string
+
+//go:embed get_library_file_ids_by_artist_keys.sql
+var GetLibraryFileIDsByArtistKeysQuery string
+
+//go:embed select_audio_without_catalog_keys.sql
+var SelectAudioWithoutCatalogKeysQuery string
+
+//go:embed reconcile_audio_album_groupings.sql
+var ReconcileAudioAlbumGroupingsQuery string
+
+//go:embed update_audio_catalog_keys.sql
+var UpdateAudioCatalogKeysQuery string
 
 //go:embed get_library_files_by_ids.sql
 var GetLibraryFilesByIDsQuery string
@@ -102,3 +183,42 @@ var GetMusicByGenreQuery string
 
 //go:embed get_music_folders.sql
 var GetMusicFoldersQuery string
+
+//go:embed get_audio_summary_by_file_id.sql
+var GetAudioSummaryByFileIDQuery string
+
+//go:embed search_library_tracks.sql
+var SearchLibraryTracksQuery string
+
+//go:embed select_audio_without_metadata.sql
+var SelectAudioWithoutMetadataQuery string
+
+//go:embed select_audio_with_stale_tags.sql
+var SelectAudioWithStaleTagsQuery string
+
+//go:embed get_library_queue_by_artist.sql
+var GetLibraryQueueByArtistQuery string
+
+//go:embed get_library_queue_by_album.sql
+var GetLibraryQueueByAlbumQuery string
+
+//go:embed get_library_queue_by_genre.sql
+var GetLibraryQueueByGenreQuery string
+
+//go:embed get_library_queue_by_folder.sql
+var GetLibraryQueueByFolderQuery string
+
+//go:embed get_playlist_queue.sql
+var GetPlaylistQueueQuery string
+
+//go:embed get_library_queue_by_file_ids.sql
+var GetLibraryQueueByFileIDsQuery string
+
+//go:embed insert_music_play_event.sql
+var InsertMusicPlayEventQuery string
+
+//go:embed get_most_played_tracks.sql
+var GetMostPlayedTracksQuery string
+
+//go:embed get_recently_played_tracks.sql
+var GetRecentlyPlayedTracksQuery string
