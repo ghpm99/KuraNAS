@@ -1542,6 +1542,8 @@
 	"GLOBAL_SEARCH_SECTION_MORE": "Mais resultados",
 	"GLOBAL_SEARCH_SEE_ALL_FILES": "Ver todos os resultados de arquivos",
 	"GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION": "Buscar \"{{query}}\" em todas as pastas",
+	"GLOBAL_SEARCH_WITH_AI": "Buscar com IA",
+	"GLOBAL_SEARCH_WITH_AI_DESCRIPTION": "Expandir \"{{query}}\" com palavras-chave sugeridas pela IA",
 	"FILES_DELETE_TRASH_NOTICE": "Os itens vão para a Lixeira e podem ser restaurados.",
 	"FILES_DELETE_OPEN_TRASH": "Abrir Lixeira",
 	"FILES_DELETE_PERMANENTLY": "Excluir permanentemente",

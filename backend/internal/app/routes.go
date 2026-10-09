@@ -407,6 +407,7 @@ func RegisterSearchRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	search := router.Group("/search")
 	search.GET("/global", context.Search.Handler.SearchGlobalHandler)
+	search.GET("/global/ai", context.Search.Handler.SearchGlobalWithAIHandler)
 }
 
 func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
