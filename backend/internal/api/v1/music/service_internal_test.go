@@ -70,7 +70,7 @@ type musicRepoMock struct {
 }
 
 func (m *musicRepoMock) GetDbContext() *database.DbContext { return m.db }
-func (m *musicRepoMock) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error) {
+func (m *musicRepoMock) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error) {
 	if m.getPlaylistsFn != nil {
 		return m.getPlaylistsFn(page, pageSize)
 	}
@@ -349,7 +349,7 @@ func TestMusicService_PlaylistsCRUD(t *testing.T) {
 	}
 	svc := newMusicServiceForTest(t, repo)
 
-	playlists, err := svc.GetPlaylists(1, 10)
+	playlists, err := svc.GetPlaylists(1, 10, "")
 	if err != nil || len(playlists.Items) != 1 {
 		t.Fatalf("expected playlists success, err=%v", err)
 	}
@@ -498,7 +498,7 @@ func TestMusicService_ErrorPaths(t *testing.T) {
 	}
 	svc := newMusicServiceForTest(t, repo)
 
-	if _, err := svc.GetPlaylists(1, 10); err == nil {
+	if _, err := svc.GetPlaylists(1, 10, ""); err == nil {
 		t.Fatalf("expected get playlists error")
 	}
 	if err := svc.DeletePlaylist(1); err == nil {

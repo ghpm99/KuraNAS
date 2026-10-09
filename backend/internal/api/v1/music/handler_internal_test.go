@@ -30,7 +30,7 @@ func (m *musicRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]files.Re
 
 type musicHandlerServiceMock struct{}
 
-func (m *musicHandlerServiceMock) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {
+func (m *musicHandlerServiceMock) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error) {
 	return utils.PaginationResponse[PlaylistDto]{Items: []PlaylistDto{{ID: 1, Name: "p"}}}, nil
 }
 func (m *musicHandlerServiceMock) GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error) {
@@ -133,7 +133,7 @@ type musicHandlerErrServiceMock struct {
 	musicHandlerServiceMock
 }
 
-func (m *musicHandlerErrServiceMock) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {
+func (m *musicHandlerErrServiceMock) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error) {
 	return utils.PaginationResponse[PlaylistDto]{}, errors.New("list error")
 }
 func (m *musicHandlerErrServiceMock) GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error) {

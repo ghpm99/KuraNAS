@@ -28,6 +28,12 @@ var AddPlaylistTrackQuery string
 //go:embed remove_playlist_track.sql
 var RemovePlaylistTrackQuery string
 
+//go:embed lock_playlist.sql
+var LockPlaylistQuery string
+
+//go:embed compact_playlist_positions.sql
+var CompactPlaylistPositionsQuery string
+
 //go:embed reorder_playlist_track.sql
 var ReorderPlaylistTrackQuery string
 

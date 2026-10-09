@@ -11,6 +11,7 @@ FROM
     playlist p
 WHERE
     p.is_system = FALSE
+    AND ($3::text = '' OR strpos(LOWER(p.name), LOWER($3::text)) > 0)
 ORDER BY
     p.updated_at DESC
 LIMIT
