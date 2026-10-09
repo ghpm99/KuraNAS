@@ -1,12 +1,14 @@
-import {
-    useEffect,
-    useMemo,
-    useState,
-    type KeyboardEvent as ReactKeyboardEvent,
-} from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
-import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/features/videos/components/navigation';
+import {
+    getAlbumSearchRoute,
+    getArtistSearchRoute,
+    getFileSearchRoute,
+    getFilesQuerySearchRoute,
+    getImageSearchRoute,
+    getPlaylistSearchRoute,
+} from './searchResultRoutes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -45,14 +47,6 @@ const searchMinCharacters = 2;
 const searchDebounceMs = 250;
 
 const countWords = (value: string) => value.split(/\s+/).filter(Boolean).length;
-
-const slugify = (value: string) =>
-    value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
 
 const normalizeForMatching = (value: string) =>
     value
@@ -232,7 +226,9 @@ export const useGlobalSearchProvider = () => {
     const isUpdating = Boolean(data) && (isFetching || isDebouncing || isBasePlaceholderData);
     const searchError = (isAiRequested ? aiError : null) ?? (hasSearchableQuery ? baseError : null);
     const hasSearchError = Boolean(searchError) && !isFetching;
-    const searchErrorMessage = hasSearchError ? extractBackendErrorMessage(searchError) ?? '' : '';
+    const searchErrorMessage = hasSearchError
+        ? (extractBackendErrorMessage(searchError) ?? '')
+        : '';
     const suggestion = aiData?.suggestion ?? '';
     const canOfferAiSearch =
         Boolean(baseData) &&
@@ -275,7 +271,7 @@ export const useGlobalSearchProvider = () => {
             label: item.name,
             description: item.path,
             meta: item.format,
-            onSelect: () => navigate(`${appRoutes.files}${item.path}`),
+            onSelect: () => navigate(getFileSearchRoute(item.path)),
         }));
         if (files.length > 0) {
             nextSections.push({
@@ -290,7 +286,7 @@ export const useGlobalSearchProvider = () => {
             kind: 'folder',
             label: item.name,
             description: item.path,
-            onSelect: () => navigate(`${appRoutes.files}${item.path}`),
+            onSelect: () => navigate(getFileSearchRoute(item.path)),
         }));
         if (folders.length > 0) {
             nextSections.push({
@@ -306,11 +302,7 @@ export const useGlobalSearchProvider = () => {
             label: item.name,
             description: item.path,
             meta: item.context || item.category,
-            onSelect: () =>
-                navigate({
-                    pathname: appRoutes.images,
-                    search: `?image=${item.id}&imagePath=${encodeURIComponent(item.path)}`,
-                }),
+            onSelect: () => navigate(getImageSearchRoute(item.id, item.path)),
         }));
         if (images.length > 0) {
             nextSections.push({
@@ -347,11 +339,7 @@ export const useGlobalSearchProvider = () => {
                 tracks: String(item.track_count),
                 albums: String(item.album_count),
             }),
-            onSelect: () =>
-                navigate({
-                    pathname: getMusicRoute('artists'),
-                    search: `?artist=${encodeURIComponent(item.key)}`,
-                }),
+            onSelect: () => navigate(getArtistSearchRoute(item.key)),
         }));
         if (artists.length > 0) {
             nextSections.push({
@@ -370,11 +358,7 @@ export const useGlobalSearchProvider = () => {
                 tracks: String(item.track_count),
             }),
             meta: item.year,
-            onSelect: () =>
-                navigate({
-                    pathname: getMusicRoute('albums'),
-                    search: `?album=${encodeURIComponent(item.key)}`,
-                }),
+            onSelect: () => navigate(getAlbumSearchRoute(item.key)),
         }));
         if (albums.length > 0) {
             nextSections.push({
@@ -399,21 +383,7 @@ export const useGlobalSearchProvider = () => {
                           count: String(item.count),
                       }),
             meta: item.scope === 'video' ? item.classification : item.description,
-            onSelect: () => {
-                if (item.scope === 'music') {
-                    navigate({
-                        pathname: getMusicRoute('playlists'),
-                        search: `?playlist=${item.id}`,
-                    });
-                    return;
-                }
-
-                const section = getVideoSectionForPlaylist({
-                    type: item.source_path ? item.description : 'custom',
-                    classification: item.classification,
-                });
-                navigate(getVideoDetailRoute(section, slugify(item.name)));
-            },
+            onSelect: () => navigate(getPlaylistSearchRoute(item)),
         }));
         if (playlists.length > 0) {
             nextSections.push({
@@ -435,8 +405,7 @@ export const useGlobalSearchProvider = () => {
                         description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
                             query: normalizedQuery,
                         }),
-                        onSelect: () =>
-                            navigate(`${appRoutes.files}?q=${encodeURIComponent(normalizedQuery)}`),
+                        onSelect: () => navigate(getFilesQuerySearchRoute(normalizedQuery)),
                     },
                 ],
             });

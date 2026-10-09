@@ -73,8 +73,26 @@ export const getVideoDetailSlugFromPath = (pathname: string) => {
     return decodeURIComponent(segments[2] ?? '');
 };
 
-export const getVideoDetailRoute = (section: Exclude<VideoSection, 'home'>, slug: string) =>
-    `${getVideoRoute(section)}/${encodeURIComponent(slug)}`;
+export const videoPlaylistQueryParam = 'playlist';
+
+export const getVideoDetailRoute = (
+    section: Exclude<VideoSection, 'home'>,
+    slug: string,
+    playlistId?: number
+) => {
+    const detailRoute = `${getVideoRoute(section)}/${encodeURIComponent(slug)}`;
+    if (!playlistId) {
+        return detailRoute;
+    }
+
+    const params = new URLSearchParams({ [videoPlaylistQueryParam]: String(playlistId) });
+    return `${detailRoute}?${params.toString()}`;
+};
+
+export const getVideoPlaylistIdFromSearch = (search: string): number | null => {
+    const playlistId = Number(new URLSearchParams(search).get(videoPlaylistQueryParam));
+    return Number.isInteger(playlistId) && playlistId > 0 ? playlistId : null;
+};
 
 export const getVideoSectionForPlaylist = (
     playlist: Pick<{ type: string; classification: string }, 'type' | 'classification'>

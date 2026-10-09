@@ -12,15 +12,6 @@ export const extractFilePath = (pathname: string): string => {
     return decodeURIComponent(rest);
 };
 
-export const buildFilesUrl = (filePath: string): string => {
-    if (!filePath) return FILES_PREFIX;
-    const encoded = filePath
-        .split('/')
-        .map((segment) => encodeURIComponent(segment))
-        .join('/');
-    return `${FILES_PREFIX}${encoded.startsWith('/') ? '' : '/'}${encoded}`;
-};
-
 export const findItemInTree = (data: FileData[], itemId: number | null): FileData | null => {
     if (!itemId) return null;
     for (const item of data) {

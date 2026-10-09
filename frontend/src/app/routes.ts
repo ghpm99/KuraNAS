@@ -97,3 +97,12 @@ export const getFileBrowserRootPath = (pathname: string) => {
 
     return appRoutes.files;
 };
+
+export const buildFilesUrl = (filePath: string): string => {
+    if (!filePath) return appRoutes.files;
+    const encodedPath = filePath
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+    return `${appRoutes.files}${encodedPath.startsWith('/') ? '' : '/'}${encodedPath}`;
+};
