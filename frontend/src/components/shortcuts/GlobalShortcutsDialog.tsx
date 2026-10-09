@@ -60,6 +60,20 @@ const ShortcutsSection = ({ titleKey, shortcuts }: ShortcutsSectionProps) => {
     );
 };
 
+const groupShortcutsBySection = (
+    shortcuts: ShortcutDefinition[]
+): Map<string, ShortcutDefinition[]> => {
+    const shortcutsBySectionTitleKey = new Map<string, ShortcutDefinition[]>();
+    shortcuts.forEach((shortcut) => {
+        const sectionTitleKey = shortcut.sectionTitleKey ?? 'SHORTCUTS_SECTION_CURRENT_PAGE';
+        shortcutsBySectionTitleKey.set(sectionTitleKey, [
+            ...(shortcutsBySectionTitleKey.get(sectionTitleKey) ?? []),
+            shortcut,
+        ]);
+    });
+    return shortcutsBySectionTitleKey;
+};
+
 const GlobalShortcutsDialog = ({
     isOpen,
     onClose,
@@ -73,12 +87,15 @@ const GlobalShortcutsDialog = ({
             <DialogTitle>{t('SHORTCUTS_DIALOG_TITLE')}</DialogTitle>
             <DialogContent>
                 <ShortcutsSection titleKey="SHORTCUTS_SECTION_GLOBAL" shortcuts={globalShortcuts} />
-                {pageShortcuts.length > 0 ? (
-                    <ShortcutsSection
-                        titleKey="SHORTCUTS_SECTION_CURRENT_PAGE"
-                        shortcuts={pageShortcuts}
-                    />
-                ) : null}
+                {Array.from(groupShortcutsBySection(pageShortcuts)).map(
+                    ([sectionTitleKey, sectionShortcuts]) => (
+                        <ShortcutsSection
+                            key={sectionTitleKey}
+                            titleKey={sectionTitleKey}
+                            shortcuts={sectionShortcuts}
+                        />
+                    )
+                )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>{t('CLOSE')}</Button>
