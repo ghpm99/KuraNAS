@@ -1,0 +1,27 @@
+.searchField {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 320px;
+    max-width: 100%;
+    padding: 2px 8px 2px 12px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-xl);
+    min-width: 0;
+}
+
+.searchIcon {
+    flex-shrink: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.searchInput {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 599.95px) {
+    .searchField {
+        width: 100%;
+    }
+}

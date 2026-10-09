@@ -52,6 +52,18 @@ func isActiveColdFile(file FileModel) bool {
 }
 
 func copyColdFile(coldPath string, destinationPath string) error {
+	containedColdPath, err := resolveColdContentPath(coldPath)
+	if err != nil {
+		return err
+	}
+	containedDestinationPath, err := resolveContainedPath(destinationPath)
+	if err != nil {
+		return err
+	}
+	return copyValidatedColdFile(containedColdPath, containedDestinationPath)
+}
+
+func copyValidatedColdFile(coldPath string, destinationPath string) error {
 	coldInfo, err := os.Stat(coldPath)
 	if err != nil {
 		return err

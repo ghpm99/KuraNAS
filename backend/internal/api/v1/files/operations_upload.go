@@ -223,7 +223,7 @@ func (s *Service) storeUploadedFile(targetPath string, pending pendingUpload, po
 		return UploadFileResult{}, err
 	}
 
-	destinationPath, err := resolvePathInRoots(filepath.Join(directoryPath, pending.fileName))
+	destinationPath, err := resolveContainedPath(filepath.Join(directoryPath, pending.fileName))
 	if err != nil {
 		return UploadFileResult{}, newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -314,7 +314,7 @@ func (s *Service) findExistingEntry(path string, shouldCheckTiered bool) existin
 func (s *Service) ensureUploadDirectory(targetPath string, segments []string) (string, error) {
 	currentPath := targetPath
 	for _, segment := range segments {
-		nextPath, err := resolvePathInRoots(filepath.Join(currentPath, segment))
+		nextPath, err := resolveContainedPath(filepath.Join(currentPath, segment))
 		if err != nil {
 			return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 		}

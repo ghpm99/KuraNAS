@@ -3,7 +3,6 @@ import AboutLayout from './about/aboutLayout';
 import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
 import FilesLayout from '@/features/files/files/filesLayout';
 import ImagesLayout from './images/imagesLayout';
-import MusicLayout from '@/features/music/components/musicLayout';
 import MusicDomainNav from '@/features/music/components/MusicDomainNav';
 import NavItem from './layout/Sidebar/components/navItem';
 import Button from './ui/Button/Button';
@@ -26,7 +25,7 @@ jest.mock('react-router-dom', () => ({
 describe('layout wrappers and export indexes', () => {
     it('layout wrappers return JSX containing their children', () => {
         const child = <span>child</span>;
-        const layouts = [AboutLayout, ActivityDiaryLayout, FilesLayout, ImagesLayout, MusicLayout];
+        const layouts = [AboutLayout, ActivityDiaryLayout, FilesLayout, ImagesLayout];
 
         for (const Layout of layouts) {
             const result = (Layout as any)({ children: child });

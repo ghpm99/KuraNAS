@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { IMusicMetadata } from '@/types/music';
 import { formatSize } from '@/utils';
 
@@ -6,8 +6,8 @@ export const getMusicTitle = (music: IMusicData): string => {
     return music.metadata?.title || music.name;
 };
 
-export const getMusicArtist = (music: IMusicData): string => {
-    return music.metadata?.artist || 'Unknown Artist';
+export const getMusicArtist = (music: IMusicData, unknownArtistLabel: string): string => {
+    return music.metadata?.artist || unknownArtistLabel;
 };
 
 export const formatMusicDuration = (seconds: number): string => {

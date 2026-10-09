@@ -13,6 +13,11 @@ export const musicNavigationItems: MusicNavigationItem[] = [
         descriptionKey: 'MUSIC_HOME_DESCRIPTION',
     },
     {
+        key: 'tracks',
+        labelKey: 'MUSIC_TRACKS',
+        descriptionKey: 'MUSIC_TRACKS_DESCRIPTION',
+    },
+    {
         key: 'playlists',
         labelKey: 'MUSIC_PLAYLISTS',
         descriptionKey: 'MUSIC_PLAYLISTS_DESCRIPTION',
@@ -39,7 +44,13 @@ export const musicNavigationItems: MusicNavigationItem[] = [
     },
 ];
 
-const musicRouteEntries = musicNavigationItems.map(
+const musicSearchSectionMeta: MusicNavigationItem = {
+    key: 'search',
+    labelKey: 'GLOBAL_SEARCH_ACTION_MUSIC_SEARCH',
+    descriptionKey: 'MUSIC_SEARCH_DESCRIPTION',
+};
+
+const musicRouteEntries = [...musicNavigationItems, musicSearchSectionMeta].map(
     (item) => [getMusicRoute(item.key), item.key] as const
 );
 
@@ -50,7 +61,9 @@ export const getMusicSectionFromPath = (pathname: string): MusicSection => {
 };
 
 export const getMusicSectionMeta = (section: MusicSection) => {
-    const matchedItem = musicNavigationItems.find((item) => item.key === section);
+    const matchedItem = [...musicNavigationItems, musicSearchSectionMeta].find(
+        (item) => item.key === section
+    );
 
     if (matchedItem) {
         return matchedItem;

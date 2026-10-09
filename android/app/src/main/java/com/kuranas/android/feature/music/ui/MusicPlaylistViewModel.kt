@@ -1,15 +1,12 @@
 package com.kuranas.android.feature.music.ui
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.TrackDto
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,17 +14,12 @@ class MusicPlaylistViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val player: PlayerConnection,
 ) : ViewModel() {
-    private val _tracks = mutableStateOf<List<TrackDto>?>(null)
-    val tracks: State<List<TrackDto>?> = _tracks
+    private val tracksLoader = PagedListLoader<TrackDto>(viewModelScope) { it.id }
+    val state: StateFlow<PagedListState<TrackDto>> = tracksLoader.state
 
-    fun load(id: Int) {
-        viewModelScope.launch {
-            when (val r = repository.getPlaylistTracks(id)) {
-                is AppResult.Success -> _tracks.value = r.data
-                is AppResult.Error -> _tracks.value = emptyList()
-            }
-        }
-    }
+    fun load(id: Int) = tracksLoader.load { page -> repository.getPlaylistTracks(id, page) }
 
-    fun play(track: TrackDto) = player.play(track, _tracks.value ?: emptyList())
+    fun loadMore() = tracksLoader.loadMore()
+
+    fun play(track: TrackDto) = player.play(track, state.value.items)
 }

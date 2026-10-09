@@ -160,6 +160,23 @@ func (s *Service) GetLibraryTracks(page int, pageSize int) (utils.PaginationResp
 	return files.ParsePaginationToDto(&tracks)
 }
 
+func (s *Service) GetLibraryTrackByID(fileID int) (files.FileDto, error) {
+	fileModels, err := s.Repository.GetLibraryFilesByIDs([]int{fileID})
+	if err != nil {
+		return files.FileDto{}, err
+	}
+	if len(fileModels) == 0 {
+		return files.FileDto{}, sql.ErrNoRows
+	}
+
+	trackDto, err := fileModels[0].ToDto()
+	if err != nil {
+		return files.FileDto{}, err
+	}
+	trackDto.Metadata = fileModels[0].Metadata
+	return trackDto, nil
+}
+
 func (s *Service) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	tracks, err := s.Repository.SearchLibraryTracks(searchText, page, pageSize)
 	if err != nil {

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import TrackListItem from '../TrackListItem';
 
 jest.mock('@/components/providers/settingsProvider/settingsContext', () => ({

@@ -105,7 +105,7 @@ export default function QueueTrackRow({
                 </Box>
                 <ListItemText
                     primary={trackTitle}
-                    secondary={getMusicArtist(track)}
+                    secondary={getMusicArtist(track, t('MUSIC_UNKNOWN_ARTIST'))}
                     primaryTypographyProps={{ variant: 'body2', noWrap: true, fontWeight: 500 }}
                     secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
                 />

@@ -37,7 +37,11 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 18.3. Embaralhar como permutação com histórico para "anterior"
 - [x] 18.4. Atalhos de teclado do player
 - [x] 18.5. Media Session com avançar/voltar 10 s e parar
-- [ ] 18.6. Registro de acesso/log uma vez por reprodução, não a cada Range
-- [ ] 19. Letras no player expandido
-- [ ] 20. Aba "Faixas", busca dentro da Música, código morto e i18n (`Unknown Artist`)
-- [ ] 21. Android: paginação e faixa por id
+- [x] 18.6. Registro de acesso/log uma vez por reprodução, não a cada Range
+- [x] 19. Letras no player expandido
+- [x] 20.1. Aba "Faixas" com todas as músicas
+- [x] 20.2. Busca dentro da tela de Música
+- [x] 20.3. Código morto da Música (`MusicProvider` sem uso, `musicHomeData`, `playerControl`, chaves i18n órfãs)
+- [x] 20.4. `Unknown Artist` literal vira i18n
+- [x] 21.1. Android: paginação nas listas de música
+- [x] 21.2. Android: faixa por id sem varrer a primeira página

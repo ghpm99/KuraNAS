@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ChevronRight
@@ -55,22 +56,34 @@ fun MusicScreen(
     onOpenFolder: (String) -> Unit,
     viewModel: MusicViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val tab by viewModel.tab.collectAsStateWithLifecycle()
+    val tracks by viewModel.tracks.collectAsStateWithLifecycle()
+    val artists by viewModel.artists.collectAsStateWithLifecycle()
+    val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val folders by viewModel.folders.collectAsStateWithLifecycle()
+    val currentList = when (tab) {
+        MusicTab.TRACKS -> tracks.toListStatus()
+        MusicTab.ARTISTS -> artists.toListStatus()
+        MusicTab.ALBUMS -> albums.toListStatus()
+        MusicTab.PLAYLISTS -> playlists.toListStatus()
+        MusicTab.FOLDERS -> folders.toListStatus()
+    }
     val tabs = MusicTab.entries
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(title = stringResource(R.string.nav_music))
         ScrollableTabRow(
-            selectedTabIndex = state.tab.ordinal,
+            selectedTabIndex = tab.ordinal,
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
         ) {
-            tabs.forEach { tab ->
+            tabs.forEach { tabEntry ->
                 Tab(
-                    selected = state.tab == tab,
-                    onClick = { viewModel.selectTab(tab) },
+                    selected = tab == tabEntry,
+                    onClick = { viewModel.selectTab(tabEntry) },
                     text = {
                         Text(
-                            when (tab) {
+                            when (tabEntry) {
                                 MusicTab.TRACKS -> stringResource(R.string.music_tab_tracks)
                                 MusicTab.ARTISTS -> stringResource(R.string.music_tab_artists)
                                 MusicTab.ALBUMS -> stringResource(R.string.music_tab_albums)
@@ -84,20 +97,20 @@ fun MusicScreen(
         }
 
         PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
+            isRefreshing = currentList.isRefreshing,
             onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize(),
         ) {
             when {
-                state.isLoading -> LoadingView()
-                state.error != null -> ErrorView(state.error!!)
-                else -> when (state.tab) {
-                    MusicTab.ARTISTS -> ArtistsList(state.artists, onOpenArtist)
-                    MusicTab.ALBUMS -> AlbumsList(state.albums, onOpenAlbum)
-                    MusicTab.PLAYLISTS -> PlaylistsList(state.playlists, onOpenPlaylist)
-                    MusicTab.FOLDERS -> FoldersList(state.folders, onOpenFolder)
-                    MusicTab.TRACKS -> TracksList(state.tracks) { track ->
-                        viewModel.play(track, state.tracks)
+                currentList.isLoading -> LoadingView()
+                currentList.error != null -> ErrorView(currentList.error)
+                else -> when (tab) {
+                    MusicTab.ARTISTS -> ArtistsList(artists, onOpenArtist, viewModel::loadMoreArtists)
+                    MusicTab.ALBUMS -> AlbumsList(albums, onOpenAlbum, viewModel::loadMoreAlbums)
+                    MusicTab.PLAYLISTS -> PlaylistsList(playlists, onOpenPlaylist, viewModel::loadMorePlaylists)
+                    MusicTab.FOLDERS -> FoldersList(folders, onOpenFolder, viewModel::loadMoreFolders)
+                    MusicTab.TRACKS -> TracksList(tracks, viewModel::loadMoreTracks) { track ->
+                        viewModel.play(track, tracks.items)
                         onOpenPlayer()
                     }
                 }
@@ -106,10 +119,17 @@ fun MusicScreen(
     }
 }
 
+private data class ListStatus(val isLoading: Boolean, val isRefreshing: Boolean, val error: String?)
+
+private fun PagedListState<*>.toListStatus() = ListStatus(isLoading, isRefreshing, error)
+
 @Composable
-private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
+private fun ArtistsList(pagedState: PagedListState<ArtistDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+    val artists = pagedState.items
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, artists.size, pagedState.hasMore, onLoadMore)
     if (artists.isEmpty()) { EmptyView(stringResource(R.string.music_no_artists)); return }
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(artists, key = { it.key }) { artist ->
             Row(
                 modifier = Modifier
@@ -134,9 +154,12 @@ private fun ArtistsList(artists: List<ArtistDto>, onOpen: (String) -> Unit) {
 }
 
 @Composable
-private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
+private fun AlbumsList(pagedState: PagedListState<AlbumDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+    val albums = pagedState.items
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, albums.size, pagedState.hasMore, onLoadMore)
     if (albums.isEmpty()) { EmptyView(stringResource(R.string.music_no_albums)); return }
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(albums, key = { it.key }) { album ->
             Row(
                 modifier = Modifier
@@ -161,9 +184,12 @@ private fun AlbumsList(albums: List<AlbumDto>, onOpen: (String) -> Unit) {
 }
 
 @Composable
-private fun TracksList(tracks: List<TrackDto>, onPlay: (TrackDto) -> Unit) {
+private fun TracksList(pagedState: PagedListState<TrackDto>, onLoadMore: () -> Unit, onPlay: (TrackDto) -> Unit) {
+    val tracks = pagedState.items
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, tracks.size, pagedState.hasMore, onLoadMore)
     if (tracks.isEmpty()) { EmptyView(stringResource(R.string.music_no_tracks)); return }
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(tracks, key = { it.id }) { track ->
             TrackListItem(track = track, onClick = { onPlay(track) })
         }
@@ -171,9 +197,12 @@ private fun TracksList(tracks: List<TrackDto>, onPlay: (TrackDto) -> Unit) {
 }
 
 @Composable
-private fun FoldersList(folders: List<FolderDto>, onOpen: (String) -> Unit) {
+private fun FoldersList(pagedState: PagedListState<FolderDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+    val folders = pagedState.items
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, folders.size, pagedState.hasMore, onLoadMore)
     if (folders.isEmpty()) { EmptyView(stringResource(R.string.music_no_folders)); return }
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(folders, key = { it.folder }) { folder ->
             Row(
                 modifier = Modifier
@@ -198,9 +227,12 @@ private fun FoldersList(folders: List<FolderDto>, onOpen: (String) -> Unit) {
 }
 
 @Composable
-private fun PlaylistsList(playlists: List<PlaylistDto>, onOpen: (Int) -> Unit) {
+private fun PlaylistsList(pagedState: PagedListState<PlaylistDto>, onOpen: (Int) -> Unit, onLoadMore: () -> Unit) {
+    val playlists = pagedState.items
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, playlists.size, pagedState.hasMore, onLoadMore)
     if (playlists.isEmpty()) { EmptyView(stringResource(R.string.music_no_playlists)); return }
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(playlists, key = { it.id }) { playlist ->
             Row(
                 modifier = Modifier

@@ -78,6 +78,17 @@ func (handler *Handler) GetLibraryTracksHandler(c *gin.Context) {
 	})
 }
 
+func (handler *Handler) GetLibraryTrackByIDHandler(c *gin.Context) {
+	fileID := utils.ParseInt(c.Param("file_id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+	handler.respondLibraryTracks(c, "GetMusicLibraryTrackByID", "Fetching music library track", func() (any, error) {
+		return handler.service.GetLibraryTrackByID(fileID)
+	})
+}
+
 func (handler *Handler) SearchLibraryTracksHandler(c *gin.Context) {
 	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
 	if !isPaginationValid {

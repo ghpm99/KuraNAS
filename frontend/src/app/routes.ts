@@ -36,6 +36,7 @@ export type ImageSection =
 export type MusicSection =
     | 'home'
     | 'search'
+    | 'tracks'
     | 'playlists'
     | 'artists'
     | 'albums'

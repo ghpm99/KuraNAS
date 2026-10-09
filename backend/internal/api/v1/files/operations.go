@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
-	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
@@ -251,17 +250,6 @@ func newFileOperationError(statusCode int, messageKey string, err error) *FileOp
 	}
 }
 
-func normalizePathSeparators(path string) string {
-	return strings.ReplaceAll(path, "\\", "/")
-}
-
-// resolvePathInRoots validates that a path (absolute, or client-relative)
-// lands under some enabled storage root and returns its absolute clean form.
-func resolvePathInRoots(inputPath string) (string, error) {
-	candidate := normalizePathSeparators(strings.TrimSpace(inputPath))
-	return roots.ResolveAbsolute(candidate)
-}
-
 // resolveTargetFolder resolves a folder from ID or creates from path.
 // If folderID is non-nil and > 0, looks up by ID and validates it's a directory.
 // If folderID is nil/0 and path is empty, returns entry point (root).
@@ -278,7 +266,7 @@ func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (strin
 		if folder.Type != Directory {
 			return "", newFileOperationError(http.StatusBadRequest, "ERROR_TARGET_NOT_DIRECTORY", fmt.Errorf("target is not a directory"))
 		}
-		resolved, err := resolvePathInRoots(folder.Path)
+		resolved, err := resolveContainedPath(folder.Path)
 		if err != nil {
 			return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 		}
@@ -287,10 +275,10 @@ func (s *Service) resolveTargetFolder(folderID *int, relativePath string) (strin
 
 	trimmedPath := strings.TrimSpace(relativePath)
 	if trimmedPath == "" {
-		return resolvePathInRoots("")
+		return resolveContainedPath("")
 	}
 
-	resolved, err := resolvePathInRoots(trimmedPath)
+	resolved, err := resolveContainedPath(trimmedPath)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -319,7 +307,7 @@ func (s *Service) CreateFolder(parentID *int, name string) (string, error) {
 }
 
 func (s *Service) createFolderAt(resolvedParentPath string, name string) (string, error) {
-	createdPath, err := resolvePathInRoots(filepath.Join(resolvedParentPath, name))
+	createdPath, err := resolveContainedPath(filepath.Join(resolvedParentPath, name))
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -352,7 +340,7 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInRoots(sourceFile.Path)
+	resolvedSourcePath, err := resolveContainedPath(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -362,8 +350,7 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", err
 	}
 
-	resolvedDestPath := filepath.Join(resolvedDestDir, sourceFile.Name)
-	resolvedDestPath, err = resolvePathInRoots(resolvedDestPath)
+	resolvedDestPath, err := resolveContainedChildPath(resolvedDestDir, sourceFile.Name)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -437,12 +424,12 @@ func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 		return newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedPath, err := resolvePathInRoots(file.Path)
+	resolvedPath, err := resolveContainedPath(file.Path)
 	if err != nil {
 		return newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
 
-	entryPoint, err := resolvePathInRoots("")
+	entryPoint, err := resolveContainedPath("")
 	if err != nil {
 		return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 	}
@@ -515,7 +502,7 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInRoots(file.Path)
+	resolvedSourcePath, err := resolveContainedPath(file.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -532,7 +519,7 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 		}
 	}
 
-	destPath, err := resolvePathInRoots(filepath.Join(filepath.Dir(resolvedSourcePath), trimmedName))
+	destPath, err := resolveContainedChildPath(filepath.Dir(resolvedSourcePath), trimmedName)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -571,7 +558,7 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_SOURCE_NOT_FOUND", err)
 	}
 
-	resolvedSourcePath, err := resolvePathInRoots(sourceFile.Path)
+	resolvedSourcePath, err := resolveContainedPath(sourceFile.Path)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -586,8 +573,7 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		fileName = sourceFile.Name
 	}
 
-	resolvedDestPath := filepath.Join(resolvedDestDir, fileName)
-	resolvedDestPath, err = resolvePathInRoots(resolvedDestPath)
+	resolvedDestPath, err := resolveContainedChildPath(resolvedDestDir, fileName)
 	if err != nil {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_PATH", err)
 	}
@@ -639,7 +625,15 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 	return resolvedDestPath, nil
 }
 
-func copyPathRecursive(sourcePath string, destinationPath string) error {
+func copyPathRecursive(requestedSourcePath string, requestedDestinationPath string) error {
+	sourcePath, err := resolveContainedSourcePath(requestedSourcePath)
+	if err != nil {
+		return err
+	}
+	destinationPath, err := resolveContainedPath(requestedDestinationPath)
+	if err != nil {
+		return err
+	}
 	info, err := os.Stat(sourcePath)
 	if err != nil {
 		return err

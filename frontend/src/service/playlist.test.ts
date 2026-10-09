@@ -12,8 +12,6 @@ import {
     addTrackToPlaylist,
     createPlaylist,
     deletePlaylist,
-    getNowPlayingPlaylist,
-    getPlaylistById,
     getPlaylistQueue,
     getPlaylists,
     getPlaylistTracks,
@@ -64,26 +62,6 @@ describe('service/playlist', () => {
         expect(mockedApi.put).toHaveBeenCalledWith('/music/playlists/4/tracks/reorder', {
             tracks: [{ file_id: 77, position: 3 }],
         });
-    });
-
-    it('gets now playing playlist', async () => {
-        const payload = { id: 9, name: 'Now Playing' };
-        mockedApi.get.mockResolvedValue({ data: payload });
-
-        const result = await getNowPlayingPlaylist();
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/music/playlists/now-playing');
-        expect(result).toEqual(payload);
-    });
-
-    it('gets playlist by id', async () => {
-        const payload = { id: 11, name: 'Mix' };
-        mockedApi.get.mockResolvedValue({ data: payload });
-
-        const result = await getPlaylistById(11);
-
-        expect(mockedApi.get).toHaveBeenCalledWith('/music/playlists/11');
-        expect(result).toEqual(payload);
     });
 
     it('creates and updates a playlist', async () => {

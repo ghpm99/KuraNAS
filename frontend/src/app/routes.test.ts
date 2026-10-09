@@ -19,6 +19,7 @@ describe('app routes helpers', () => {
     it('builds music section routes and detects nested music paths', () => {
         expect(getMusicRoute('home')).toBe(appRoutes.music);
         expect(getMusicRoute('genres')).toBe('/music/genres');
+        expect(getMusicRoute('tracks')).toBe('/music/tracks');
         expect(isMusicRoute('/music')).toBe(true);
         expect(isMusicRoute('/music/playlists')).toBe(true);
         expect(isMusicRoute('/videos')).toBe(false);

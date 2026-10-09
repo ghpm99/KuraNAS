@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { replacePlayerQueue, type ReplacePlayerQueueRequest } from '@/service/playerState';
 import { flushPlayerQueue } from '@/service/playerStateFlush';
 

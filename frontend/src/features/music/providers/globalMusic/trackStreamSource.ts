@@ -1,5 +1,5 @@
 import { getApiV1BaseUrl } from '@/service/apiUrl';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { getTrackDurationSeconds } from '@/utils/music';
 
 export interface TranscodedStream {
