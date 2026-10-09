@@ -4,6 +4,9 @@ import {
     formatMusicDuration,
     musicMetadata,
     getTrackDurationSeconds,
+    formatTotalDuration,
+    parseDiscNumber,
+    parseTrackNumber,
 } from './music';
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import type { IMusicMetadata } from '@/types/music';
@@ -201,5 +204,41 @@ describe('backend audio metadata contract', () => {
         expect(getTrackDurationSeconds(undefined)).toBe(0);
         expect(getTrackDurationSeconds({ length: -3 })).toBe(0);
         expect(getTrackDurationSeconds({ length: Number.NaN })).toBe(0);
+    });
+});
+
+describe('track and disc numbers', () => {
+    it('reads the numeric part of "n/total" track numbers', () => {
+        expect(parseTrackNumber({ track_number: '2/12' })).toBe(2);
+        expect(parseTrackNumber({ track_number: ' 07 ' })).toBe(7);
+        expect(parseTrackNumber({ track_number: '3' })).toBe(3);
+    });
+
+    it('returns undefined when there is no track number', () => {
+        expect(parseTrackNumber(undefined)).toBeUndefined();
+        expect(parseTrackNumber({ track_number: '' })).toBeUndefined();
+        expect(parseTrackNumber({ track_number: 'A1' })).toBeUndefined();
+    });
+
+    it('defaults the disc to 1 and reads "n/total"', () => {
+        expect(parseDiscNumber(undefined)).toBe(1);
+        expect(parseDiscNumber({ disc_number: '' })).toBe(1);
+        expect(parseDiscNumber({ disc_number: '2/3' })).toBe(2);
+    });
+});
+
+describe('formatTotalDuration', () => {
+    const translate = (key: string, options?: Record<string, string>) =>
+        `${key}:${JSON.stringify(options)}`;
+
+    it('uses minutes only below one hour', () => {
+        expect(formatTotalDuration(125, translate)).toBe('MUSIC_DURATION_MINUTES:{"minutes":"2"}');
+        expect(formatTotalDuration(-5, translate)).toBe('MUSIC_DURATION_MINUTES:{"minutes":"0"}');
+    });
+
+    it('uses hours and padded minutes from one hour on', () => {
+        expect(formatTotalDuration(3600 + 5 * 60, translate)).toBe(
+            'MUSIC_DURATION_HOURS_MINUTES:{"hours":"1","minutes":"05"}'
+        );
     });
 });

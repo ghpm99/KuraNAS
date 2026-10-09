@@ -23,3 +23,8 @@ export const getTrackAlbumKey = (track: IMusicData): string => {
     if (artistLabel === '' || albumLabel === '') return '';
     return normalizeLookupKey(`${artistLabel}::${albumLabel}`);
 };
+
+export const getArtistKeyFromLabel = (artistLabel: string): string => {
+    const collapsedLabel = collapseSpaces(artistLabel);
+    return collapsedLabel === '' ? '' : normalizeLookupKey(collapsedLabel);
+};

@@ -14,6 +14,7 @@ const mockGetMusicArtists = jest.fn();
 const mockGetMusicByArtist = jest.fn();
 const mockGetMusicAlbums = jest.fn();
 const mockGetMusicByAlbum = jest.fn();
+const mockGetMusicAlbumsByArtist = jest.fn();
 const mockGetMusicGenres = jest.fn();
 const mockGetMusicByGenre = jest.fn();
 const mockGetMusicFolders = jest.fn();
@@ -31,6 +32,7 @@ jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 jest.mock('@/utils/music', () => ({
+    ...jest.requireActual('@/utils/music'),
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
@@ -48,6 +50,11 @@ jest.mock('@/service/music', () => ({
     getMusicByArtist: (...args: any[]) => mockGetMusicByArtist(...args),
     getMusicAlbums: (...args: any[]) => mockGetMusicAlbums(...args),
     getMusicByAlbum: (...args: any[]) => mockGetMusicByAlbum(...args),
+    getMusicAlbumsByArtist: (...args: any[]) => mockGetMusicAlbumsByArtist(...args),
+    getMusicAlbumSummary: jest.fn(),
+    getMusicArtistSummary: jest.fn(),
+    getMusicGenreSummary: jest.fn(),
+    getMusicFolderSummary: jest.fn(),
     getMusicGenres: (...args: any[]) => mockGetMusicGenres(...args),
     getMusicByGenre: (...args: any[]) => mockGetMusicByGenre(...args),
     getMusicFolders: (...args: any[]) => mockGetMusicFolders(...args),

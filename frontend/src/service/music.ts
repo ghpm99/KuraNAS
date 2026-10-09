@@ -1,9 +1,12 @@
 import { Pagination } from '@/types/pagination';
 import {
     MusicAlbum,
+    MusicAlbumSummary,
     MusicArtist,
+    MusicArtistSummary,
     MusicFolder,
     MusicGenre,
+    MusicGroupSummary,
     MusicHomeCatalog,
     MusicListSort,
     MusicQueue,
@@ -99,6 +102,31 @@ export const getMusicByFolder = async (folder: string, page: number, pageSize: n
         {
             params: { page, page_size: pageSize },
         }
+    );
+    return response.data;
+};
+
+const getLibrarySummary = async <SummaryType>(groupPath: string) => {
+    const response = await apiBase.get<SummaryType>(`/music/library/${groupPath}`);
+    return response.data;
+};
+
+export const getMusicAlbumSummary = (albumKey: string) =>
+    getLibrarySummary<MusicAlbumSummary>(`albums/${encodeURIComponent(albumKey)}`);
+
+export const getMusicArtistSummary = (artistKey: string) =>
+    getLibrarySummary<MusicArtistSummary>(`artists/${encodeURIComponent(artistKey)}`);
+
+export const getMusicGenreSummary = (genreKey: string) =>
+    getLibrarySummary<MusicGroupSummary>(`genres/${encodeURIComponent(genreKey)}`);
+
+export const getMusicFolderSummary = (folderPath: string) =>
+    getLibrarySummary<MusicGroupSummary>(`folders/${encodeURIComponent(folderPath)}`);
+
+export const getMusicAlbumsByArtist = async (artistKey: string, page: number, pageSize: number) => {
+    const response = await apiBase.get<Pagination<MusicAlbum>>(
+        `/music/library/artists/${encodeURIComponent(artistKey)}/albums`,
+        { params: { page, page_size: pageSize } }
     );
     return response.data;
 };

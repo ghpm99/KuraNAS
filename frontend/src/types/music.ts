@@ -51,6 +51,31 @@ export interface MusicFolder {
     track_count: number;
 }
 
+export interface MusicAlbumSummary {
+    key: string;
+    name: string;
+    artist: string;
+    year: string;
+    track_count: number;
+    total_length_seconds: number;
+    disc_count: number;
+}
+
+export interface MusicArtistSummary {
+    key: string;
+    name: string;
+    track_count: number;
+    album_count: number;
+    total_length_seconds: number;
+}
+
+export interface MusicGroupSummary {
+    key: string;
+    name: string;
+    track_count: number;
+    total_length_seconds: number;
+}
+
 export interface MusicHomeCatalog {
     summary: {
         total_tracks: number;
