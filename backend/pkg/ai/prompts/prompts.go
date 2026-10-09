@@ -79,8 +79,8 @@ func ImageClassificationSystemPrompt() string {
 	return strings.TrimSpace(imageClassificationSystemPrompt)
 }
 
-func ImageClassificationUserPrompt(metadata string) string {
-	return fmt.Sprintf(strings.TrimSpace(imageClassificationUserPromptTemplate), metadata)
+func ImageClassificationUserPrompt(metadata string, language string) string {
+	return fmt.Sprintf(strings.TrimSpace(imageClassificationUserPromptTemplate), metadata, language)
 }
 
 func MusicArtistClustersSystemPrompt() string {

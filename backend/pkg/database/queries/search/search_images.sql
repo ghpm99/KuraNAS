@@ -19,6 +19,7 @@ WHERE
         OR COALESCE(im.model, '') ILIKE '%' || $1 || '%'
         OR COALESCE(im.artist, '') ILIKE '%' || $1 || '%'
         OR COALESCE(im.image_description, '') ILIKE '%' || $1 || '%'
+        OR COALESCE(im.ai_search_text, '') LIKE '%' || LOWER($1) || '%'
     )
 ORDER BY
     CASE

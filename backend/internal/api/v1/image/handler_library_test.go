@@ -162,20 +162,22 @@ func TestListLibraryImagesHandlerDefaultOrderPerSort(t *testing.T) {
 
 func TestLibraryHandlersRejectInvalidParameters(t *testing.T) {
 	invalidQueries := map[string]string{
-		"cursor":         "cursor=%21%21",
-		"category":       "category=nope",
-		"format":         "format=exe",
-		"taken_from":     "taken_from=yesterday",
-		"taken_to":       "taken_to=2021-13-45",
-		"taken_before":   "taken_before=soon",
-		"sort":           "sort=color",
-		"order":          "order=sideways",
-		"starred":        "starred=maybe",
-		"query too long": "q=" + url.QueryEscape(repeatLetter('a', maxLibraryNameQueryLength+1)),
-		"cursor w/ name": "sort=name&cursor=" + LibraryCursor{FileID: 1}.Encode(),
-		"seek w/ size":   "sort=size&taken_before=2020-01-01",
-		"cursor w/ asc":  "order=asc&cursor=" + LibraryCursor{FileID: 1}.Encode(),
-		"page":           "page=abc",
+		"cursor":           "cursor=%21%21",
+		"category":         "category=nope",
+		"format":           "format=exe",
+		"taken_from":       "taken_from=yesterday",
+		"taken_to":         "taken_to=2021-13-45",
+		"taken_before":     "taken_before=soon",
+		"sort":             "sort=color",
+		"order":            "order=sideways",
+		"starred":          "starred=maybe",
+		"query too long":   "q=" + url.QueryEscape(repeatLetter('a', maxLibraryNameQueryLength+1)),
+		"content too long": "content=" + url.QueryEscape(repeatLetter('a', maxLibraryNameQueryLength+1)),
+		"match":            "match=maybe",
+		"cursor w/ name":   "sort=name&cursor=" + LibraryCursor{FileID: 1}.Encode(),
+		"seek w/ size":     "sort=size&taken_before=2020-01-01",
+		"cursor w/ asc":    "order=asc&cursor=" + LibraryCursor{FileID: 1}.Encode(),
+		"page":             "page=abc",
 	}
 
 	for name, rawQuery := range invalidQueries {
@@ -200,7 +202,7 @@ func TestLibraryHandlersRejectInvalidParameters(t *testing.T) {
 }
 
 var libraryFilterParameterNames = map[string]bool{
-	"category": true, "format": true, "taken_from": true, "taken_to": true, "starred": true, "query too long": true,
+	"category": true, "format": true, "taken_from": true, "taken_to": true, "starred": true, "query too long": true, "content too long": true, "match": true,
 }
 
 func repeatLetter(letter byte, count int) string {
@@ -375,5 +377,31 @@ func TestListLibraryNeighborsHandlerMapsServiceErrors(t *testing.T) {
 	internal := serveLibraryRequest(&fakeLibraryService{err: errors.New("db down")}, "/image/library/neighbors/7")
 	if internal.Code != http.StatusInternalServerError {
 		t.Fatalf("internal status = %d", internal.Code)
+	}
+}
+
+func TestLibraryHandlerDecodesContentAndMatchParameters(t *testing.T) {
+	testCases := []struct {
+		label            string
+		rawQuery         string
+		expectedContent  string
+		expectedName     string
+		expectedBothMust bool
+	}{
+		{"content only", "content=" + url.QueryEscape("  Red Car "), "red car", "", false},
+		{"name and content default to any", "q=car&content=car", "car", "car", false},
+		{"explicit all", "q=car&content=car&match=all", "car", "car", false},
+		{"both", "q=car&content=red&match=both", "red", "car", true},
+	}
+	for _, testCase := range testCases {
+		service := &fakeLibraryService{}
+		recorder := serveLibraryRequest(service, "/image/library?"+testCase.rawQuery)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s: status = %d body %s", testCase.label, recorder.Code, recorder.Body.String())
+		}
+		filter := service.listRequest.Filter
+		if filter.ContentQuery != testCase.expectedContent || filter.NameQuery != testCase.expectedName || filter.MustMatchNameAndContent != testCase.expectedBothMust {
+			t.Fatalf("%s: unexpected filter %+v", testCase.label, filter)
+		}
 	}
 }

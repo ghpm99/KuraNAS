@@ -31,7 +31,10 @@ SELECT
         ELSE gps_longitude
     END,
     classification_confidence,
-    COALESCE(classification_suggested_name, '')
+    COALESCE(classification_suggested_name, ''),
+    COALESCE(ai_caption, ''),
+    COALESCE(ai_tags, '{}'),
+    COALESCE(ai_ocr_text, '')
 FROM
     image_metadata
 WHERE

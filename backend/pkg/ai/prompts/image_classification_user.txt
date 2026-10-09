@@ -2,7 +2,12 @@ Classify this image into one of: capture, photo, document, receipt, screenshot_a
 
 Look at the image if one is attached. Identify the main subject (people, characters, objects, place, text) and propose a short descriptive filename for it.
 
-Image metadata:
-%s
+Also describe the image:
+- "caption": one short sentence saying what the image shows, written in %[2]s.
+- "tags": up to 15 lowercase single words or short expressions (objects, scene, colors, activity), written in %[2]s. Use an empty array when nothing is recognizable.
+- "ocr_text": the text visible in the image, exactly as written, at most 2000 characters. Use an empty string when there is no visible text.
 
-Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>, "suggested_name": "<short_descriptive_name_no_extension>"}
+Image metadata:
+%[1]s
+
+Respond with JSON: {"category": "<category>", "confidence": <0.0-1.0>, "suggested_name": "<short_descriptive_name_no_extension>", "caption": "<one short sentence>", "tags": ["<tag>", "<tag>"], "ocr_text": "<visible text or empty>"}

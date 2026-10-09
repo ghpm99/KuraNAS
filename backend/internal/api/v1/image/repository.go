@@ -254,6 +254,10 @@ func (r *Repository) UpdateAIClassification(fileID int, classification Classific
 			classification.Category,
 			classification.Confidence,
 			classification.SuggestedName,
+			classification.Content.Caption,
+			pq.Array(classification.Content.Tags),
+			classification.Content.OCRText,
+			classification.Content.SearchText(),
 		)
 		return execErr
 	})

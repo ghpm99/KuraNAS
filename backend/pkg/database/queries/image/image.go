@@ -40,6 +40,12 @@ var LibraryScopeQuery string
 //go:embed library_filter_name.sql
 var LibraryFilterNameQuery string
 
+//go:embed library_filter_content.sql
+var LibraryFilterContentQuery string
+
+//go:embed library_filter_name_or_content.sql
+var LibraryFilterNameOrContentQuery string
+
 //go:embed library_filter_category.sql
 var LibraryFilterCategoryQuery string
 

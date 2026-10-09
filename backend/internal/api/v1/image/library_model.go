@@ -23,15 +23,17 @@ const (
 // AlbumID restricts the listing to the photos of one user album; it is never
 // read from the gallery query string, only set by the album service.
 type LibraryFilter struct {
-	NameQuery   string
-	Categories  []ClassificationCategory
-	OnlyStarred bool
-	Formats     []string
-	TakenFrom   *time.Time
-	TakenTo     *time.Time
-	Camera      string
-	Folder      string
-	AlbumID     int
+	NameQuery               string
+	ContentQuery            string
+	MustMatchNameAndContent bool
+	Categories              []ClassificationCategory
+	OnlyStarred             bool
+	Formats                 []string
+	TakenFrom               *time.Time
+	TakenTo                 *time.Time
+	Camera                  string
+	Folder                  string
+	AlbumID                 int
 }
 
 // LibraryListQuery is one page request against the gallery listing.
