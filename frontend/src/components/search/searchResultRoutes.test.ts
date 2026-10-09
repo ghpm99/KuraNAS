@@ -4,6 +4,9 @@ import {
     getFileSearchRoute,
     getFilesQuerySearchRoute,
     getImageSearchRoute,
+    getImagesQuerySearchRoute,
+    getMusicQuerySearchRoute,
+    getVideosQuerySearchRoute,
     getPlaylistSearchRoute,
 } from './searchResultRoutes';
 import type { GlobalSearchPlaylistResult } from '@/service/search';
@@ -23,6 +26,21 @@ const buildVideoPlaylist = (
 });
 
 describe('searchResultRoutes', () => {
+    it('builds the library search routes carrying the encoded term', () => {
+        expect(getImagesQuerySearchRoute('praia & sol')).toEqual({
+            pathname: '/images',
+            search: '?q=praia+%26+sol',
+        });
+        expect(getVideosQuerySearchRoute('praia')).toEqual({
+            pathname: '/videos/folders',
+            search: '?q=praia',
+        });
+        expect(getMusicQuerySearchRoute('praia')).toEqual({
+            pathname: '/music/search',
+            search: '?q=praia',
+        });
+    });
+
     it('encodes file and folder names with reserved characters', () => {
         expect(getFileSearchRoute('/docs/a#b/c?d/100%.txt')).toBe(
             '/files/docs/a%23b/c%3Fd/100%25.txt'

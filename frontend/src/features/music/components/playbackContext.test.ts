@@ -6,9 +6,18 @@ import {
     createGenrePlaybackContext,
     createPlaylistPlaybackContext,
     createRouteMusicPlaybackContext,
+    createSearchPlaybackContext,
 } from './playbackContext';
 
 describe('music playback context helpers', () => {
+    it('builds the search context pointing back to the encoded search page', () => {
+        expect(createSearchPlaybackContext('rock & roll')).toMatchObject({
+            labelKey: 'MUSIC_PLAYBACK_CONTEXT_SEARCH',
+            labelParams: { query: 'rock & roll' },
+            href: '/music/search?q=rock+%26+roll',
+        });
+    });
+
     it('builds domain contexts with the expected routes and labels', () => {
         expect(createAllTracksPlaybackContext()).toMatchObject({
             labelKey: 'MUSIC_ALL_TRACKS',

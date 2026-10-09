@@ -24,7 +24,14 @@ import {
     getVideoSectionFromPath,
 } from '@/features/videos/components/navigation';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
@@ -94,7 +101,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
-    const [videoSearch, setVideoSearch] = useState('');
+    const searchTextFromUrl = new URLSearchParams(location.search).get('q') ?? '';
+    const [videoSearch, setVideoSearch] = useState(searchTextFromUrl);
+    useEffect(() => {
+        setVideoSearch(searchTextFromUrl);
+    }, [searchTextFromUrl]);
     const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<
         Record<number, number>
     >({});

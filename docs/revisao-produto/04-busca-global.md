@@ -19,7 +19,7 @@ Decisões tomadas na revisão: IA sai do caminho principal e vira ação explíc
 - [x] 04. Enter abre o melhor resultado de dado; ações depois dos dados quando há consulta
 - [x] 05. Navegação com caminho codificado e playlist de vídeo sem colisão por nome
 - [x] 06. Faixas de música como grupo próprio (tocar/abrir álbum); mídia fora do grupo "Arquivos"
-- [ ] 07. "Ver todos" para cada grupo (fotos, vídeos, música, arquivos)
+- [x] 07. "Ver todos" para cada grupo (fotos, vídeos, música, arquivos)
 - [ ] 08. Página completa de resultados de arquivos com filtros (tipo, data, tamanho, tier) e ordenação por relevância
 - [ ] 09. Resultados com tamanho, data, favorito e tier
 - [ ] 10. Insensível a acento e tolerante a erro de digitação

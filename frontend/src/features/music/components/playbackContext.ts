@@ -55,6 +55,13 @@ export const createFolderPlaybackContext = (folder: string): MusicPlaybackContex
     href: getMusicRoute('folders'),
 });
 
+export const createSearchPlaybackContext = (searchText: string): MusicPlaybackContext => ({
+    kind: 'route',
+    labelKey: 'MUSIC_PLAYBACK_CONTEXT_SEARCH',
+    labelParams: { query: searchText },
+    href: `${getMusicRoute('search')}?${new URLSearchParams({ q: searchText }).toString()}`,
+});
+
 export const createRouteMusicPlaybackContext = (
     pathname: string,
     search = ''
