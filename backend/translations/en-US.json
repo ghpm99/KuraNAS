@@ -1786,6 +1786,7 @@
 	"MUSIC_DISC_HEADING": "Disc {{number}}",
 	"MUSIC_ARTIST_ALL_TRACKS": "All tracks",
 	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
+	"MUSIC_UNKNOWN_ARTIST": "Unknown artist",
 	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
 	"MUSIC_GROUP_BACK": "Back",
 	"MUSIC_TRACK_STAR": "Add {{name}} to favorites",

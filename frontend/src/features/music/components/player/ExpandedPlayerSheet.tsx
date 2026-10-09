@@ -68,7 +68,7 @@ const ExpandedPlayerSheet = ({
     } = useGlobalMusic();
 
     const trackTitle = currentTrack ? getMusicTitle(currentTrack) : '';
-    const trackArtist = currentTrack ? getMusicArtist(currentTrack) : '';
+    const trackArtist = currentTrack ? getMusicArtist(currentTrack, t('MUSIC_UNKNOWN_ARTIST')) : '';
     const safeCurrentTime = Number.isFinite(currentTime) ? currentTime : 0;
     const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
     const { sliderPosition, handleSliderChange, handleSliderCommit } = useSeekSlider({

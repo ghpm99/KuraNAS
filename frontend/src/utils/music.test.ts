@@ -69,17 +69,17 @@ describe('getMusicArtist', () => {
         const track = createTrack({
             metadata: createMetadata({ artist: 'The Artist' }),
         });
-        expect(getMusicArtist(track)).toBe('The Artist');
+        expect(getMusicArtist(track, 'Unknown artist')).toBe('The Artist');
     });
 
-    it('returns "Unknown Artist" when metadata has no artist', () => {
+    it('returns the unknown artist label when metadata has no artist', () => {
         const track = createTrack({ metadata: createMetadata({ artist: '' }) });
-        expect(getMusicArtist(track)).toBe('Unknown Artist');
+        expect(getMusicArtist(track, 'Unknown artist')).toBe('Unknown artist');
     });
 
-    it('returns "Unknown Artist" when metadata is undefined', () => {
+    it('returns the unknown artist label when metadata is undefined', () => {
         const track = createTrack({ metadata: undefined });
-        expect(getMusicArtist(track)).toBe('Unknown Artist');
+        expect(getMusicArtist(track, 'Unknown artist')).toBe('Unknown artist');
     });
 });
 

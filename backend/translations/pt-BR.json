@@ -1786,6 +1786,7 @@
 	"MUSIC_DISC_HEADING": "Disco {{number}}",
 	"MUSIC_ARTIST_ALL_TRACKS": "Todas as faixas",
 	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
+	"MUSIC_UNKNOWN_ARTIST": "Artista desconhecido",
 	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
 	"MUSIC_GROUP_BACK": "Voltar",
 	"MUSIC_TRACK_STAR": "Adicionar {{name}} aos favoritos",

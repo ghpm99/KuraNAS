@@ -89,7 +89,7 @@ const GlobalPlayerControl = () => {
         ? getMusicTitle(currentTrack!)
         : currentTrack?.metadata?.title || currentTrack?.name || '';
     const currentTrackArtist = getMusicArtist
-        ? getMusicArtist(currentTrack!)
+        ? getMusicArtist(currentTrack!, t('MUSIC_UNKNOWN_ARTIST'))
         : currentTrack?.metadata?.artist || '';
     const playbackContextLabel = playbackContext
         ? t(playbackContext.labelKey, playbackContext.labelParams)
