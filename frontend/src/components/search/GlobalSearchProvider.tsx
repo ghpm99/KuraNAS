@@ -9,6 +9,10 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         query,
         sections,
         isFetching,
+        isUpdating,
+        hasSearchError,
+        searchErrorMessage,
+        retrySearch,
         suggestion,
         activeItemId,
         shortcut,
@@ -31,6 +35,10 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                 query={query}
                 sections={sections}
                 isFetching={isFetching}
+                isUpdating={isUpdating}
+                hasSearchError={hasSearchError}
+                searchErrorMessage={searchErrorMessage}
+                onRetry={retrySearch}
                 suggestion={suggestion}
                 activeItemId={activeItemId}
                 shortcut={shortcut}

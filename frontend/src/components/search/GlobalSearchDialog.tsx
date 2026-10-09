@@ -1,5 +1,6 @@
 import { CircularProgress, Dialog, DialogContent, InputBase, useMediaQuery, useTheme } from '@mui/material';
 import { Aperture, ArrowRightLeft, Folder, Image, Music2, Search, Video } from 'lucide-react';
+import ErrorState from '@/components/errorState/errorState';
 import type {
     SearchDialogItem,
     SearchDialogSection,
@@ -13,6 +14,10 @@ interface GlobalSearchDialogProps {
     query: string;
     sections: SearchDialogSection[];
     isFetching: boolean;
+    isUpdating?: boolean;
+    hasSearchError?: boolean;
+    searchErrorMessage?: string;
+    onRetry?: () => void;
     suggestion?: string;
     activeItemId: string;
     shortcut: string;
@@ -53,6 +58,10 @@ const GlobalSearchDialog = ({
     query,
     sections,
     isFetching,
+    isUpdating = false,
+    hasSearchError = false,
+    searchErrorMessage = '',
+    onRetry,
     suggestion = '',
     activeItemId,
     shortcut,
@@ -104,7 +113,19 @@ const GlobalSearchDialog = ({
                     )}
                 </div>
 
-                <div className={styles.results}>
+                <div className={styles.results} aria-busy={isUpdating}>
+                    {isUpdating ? (
+                        <span className={styles.updating} role="status">
+                            {t('GLOBAL_SEARCH_UPDATING')}
+                        </span>
+                    ) : null}
+                    {hasSearchError ? (
+                        <ErrorState
+                            title={t('GLOBAL_SEARCH_ERROR_TITLE')}
+                            backendMessage={searchErrorMessage || undefined}
+                            onRetry={onRetry}
+                        />
+                    ) : null}
                     {suggestion ? (
                         <div className={styles.suggestion} role="status">
                             <span className={styles.sectionTitle}>{t('AI_SEARCH_SUGGESTION')}</span>

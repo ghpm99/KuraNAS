@@ -1,14 +1,15 @@
 import {
-    useDeferredValue,
     useEffect,
     useMemo,
     useState,
     type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
 import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/features/videos/components/navigation';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -40,6 +41,8 @@ export type SearchDialogSection = {
 
 const searchResultLimit = 6;
 const aiSearchMinWords = 2;
+const searchMinCharacters = 2;
+const searchDebounceMs = 250;
 
 const countWords = (value: string) => value.split(/\s+/).filter(Boolean).length;
 
@@ -68,8 +71,10 @@ export const useGlobalSearchProvider = () => {
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [aiRequestedQuery, setAiRequestedQuery] = useState('');
-    const deferredQuery = useDeferredValue(query);
-    const normalizedQuery = deferredQuery.trim();
+    const debouncedQuery = useDebouncedValue(query, searchDebounceMs);
+    const normalizedQuery = debouncedQuery.trim();
+    const isDebouncing = query.trim() !== normalizedQuery;
+    const hasSearchableQuery = normalizedQuery.length >= searchMinCharacters;
 
     const shortcut = useMemo(() => {
         if (typeof window === 'undefined') {
@@ -186,28 +191,53 @@ export const useGlobalSearchProvider = () => {
         [navigate, t]
     );
 
-    const { data: baseData, isFetching: isBaseFetching } = useQuery({
+    const {
+        data: baseQueryData,
+        isFetching: isBaseFetching,
+        isPlaceholderData: isBasePlaceholderData,
+        error: baseError,
+        refetch: refetchBase,
+    } = useQuery({
         queryKey: ['global-search', normalizedQuery],
-        queryFn: () => searchGlobal(normalizedQuery, searchResultLimit),
-        enabled: open && normalizedQuery.length >= 2,
+        queryFn: ({ signal }) => searchGlobal(normalizedQuery, searchResultLimit, signal),
+        enabled: open && hasSearchableQuery,
+        placeholderData: keepPreviousData,
     });
 
     const isAiRequested = aiRequestedQuery !== '' && aiRequestedQuery === normalizedQuery;
-    const { data: aiData, isFetching: isAiFetching } = useQuery({
+    const {
+        data: aiData,
+        isFetching: isAiFetching,
+        error: aiError,
+        refetch: refetchAi,
+    } = useQuery({
         queryKey: ['global-search-ai', normalizedQuery],
-        queryFn: () => searchGlobalWithAI(normalizedQuery, searchResultLimit),
+        queryFn: ({ signal }) => searchGlobalWithAI(normalizedQuery, searchResultLimit, signal),
         enabled: open && isAiRequested,
         staleTime: 10 * 60 * 1000,
     });
 
+    const baseData = hasSearchableQuery ? baseQueryData : undefined;
     const data = aiData ?? baseData;
     const isFetching = isBaseFetching || isAiFetching;
+    const isUpdating = Boolean(data) && (isFetching || isDebouncing || isBasePlaceholderData);
+    const searchError = (isAiRequested ? aiError : null) ?? (hasSearchableQuery ? baseError : null);
+    const hasSearchError = Boolean(searchError) && !isFetching;
+    const searchErrorMessage = hasSearchError ? extractBackendErrorMessage(searchError) ?? '' : '';
     const suggestion = aiData?.suggestion ?? '';
     const canOfferAiSearch =
         Boolean(baseData) &&
         !aiData &&
         !isAiFetching &&
         countWords(normalizedQuery) >= aiSearchMinWords;
+
+    const retrySearch = () => {
+        if (isAiRequested && aiError) {
+            void refetchAi();
+            return;
+        }
+        void refetchBase();
+    };
 
     const sections = useMemo<SearchDialogSection[]>(() => {
         const nextSections: SearchDialogSection[] = [];
@@ -495,10 +525,19 @@ export const useGlobalSearchProvider = () => {
         query,
         sections,
         isFetching,
+        isUpdating,
+        hasSearchError,
+        searchErrorMessage,
+        retrySearch,
         suggestion,
         activeItemId,
         shortcut,
-        showEmptyState: normalizedQuery.length >= 2 && !isFetching && sections.length === 0,
+        showEmptyState:
+            hasSearchableQuery &&
+            !isFetching &&
+            !isDebouncing &&
+            !hasSearchError &&
+            sections.length === 0,
         openSearch,
         closeSearch,
         setQuery: updateQuery,

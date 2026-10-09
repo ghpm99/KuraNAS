@@ -89,6 +89,7 @@ describe('components/search/GlobalSearchProvider (seam)', () => {
         expect(await screen.findByText('trip.jpg')).toBeInTheDocument();
         expect(mockedApi.get).toHaveBeenCalledWith('/search/global', {
             params: { q: 'my trip', limit: 6 },
+            signal: expect.any(AbortSignal),
         });
         expect(mockedApi.get).not.toHaveBeenCalledWith('/search/global/ai', expect.anything());
     });
@@ -110,6 +111,7 @@ describe('components/search/GlobalSearchProvider (seam)', () => {
         expect(await screen.findByText('holiday.jpg')).toBeInTheDocument();
         expect(mockedApi.get).toHaveBeenCalledWith('/search/global/ai', {
             params: { q: 'my trip', limit: 6 },
+            signal: expect.any(AbortSignal),
         });
         expect(screen.getByText('Try the holiday folder')).toBeInTheDocument();
         await waitFor(() =>
