@@ -96,6 +96,29 @@ describe('ExpandedPlayerSheet', () => {
         expect(player.setVolume).toHaveBeenCalledWith(0.2);
     });
 
+    it('keeps seek silent while dragging and seeks once on release', () => {
+        const player = buildPlayer();
+        mockUseGlobalMusic.mockReturnValue(player);
+        renderSheet();
+
+        const seekSlider = screen.getByRole('slider', { name: 'PLAYER_ARIA_SEEK' });
+        const sliderRoot = seekSlider.closest('.MuiSlider-root') as HTMLElement;
+        sliderRoot.getBoundingClientRect = () =>
+            ({ left: 0, width: 100, top: 0, height: 10, right: 100, bottom: 10 }) as DOMRect;
+
+        fireEvent.mouseDown(sliderRoot, { clientX: 50, clientY: 5 });
+        fireEvent.mouseMove(document, { clientX: 75, clientY: 5, buttons: 1 });
+
+        expect(screen.getByText('1:30')).toBeInTheDocument();
+        expect(player.seek).not.toHaveBeenCalled();
+
+        fireEvent.mouseUp(document, { clientX: 75, clientY: 5 });
+
+        expect(player.seek).toHaveBeenCalledTimes(1);
+        expect(player.seek).toHaveBeenCalledWith(90);
+        expect(screen.getByText('0:30')).toBeInTheDocument();
+    });
+
     it('unmutes to 0.7 and reflects active repeat one', () => {
         const player = { ...buildPlayer(), volume: 0, repeatMode: 'one', shuffle: true };
         mockUseGlobalMusic.mockReturnValue(player);
