@@ -18,12 +18,10 @@ import (
 // category. Safe to call repeatedly: a run with no new artists only refreshes
 // track membership of the existing playlists.
 func (s *Service) RebuildAIClusters(ctx context.Context) error {
-	indexEntries, err := s.Repository.GetLibraryIndexEntries()
+	inputs, err := s.Repository.GetArtistClusterInputs()
 	if err != nil {
 		return err
 	}
-
-	inputs, entriesByArtist := buildArtistClusterInputs(indexEntries)
 
 	persisted, err := s.Repository.GetArtistClusters()
 	if err != nil {
@@ -69,7 +67,7 @@ func (s *Service) RebuildAIClusters(ctx context.Context) error {
 		return err
 	}
 
-	return s.materializeClusterPlaylists(mapping, entriesByArtist)
+	return s.materializeClusterPlaylists(mapping)
 }
 
 // clusterArtists runs the model over the unclustered artists in small batches,
@@ -155,8 +153,11 @@ func (s *Service) pruneArtistClusters(mapping map[string]string) error {
 // materializeClusterPlaylists projects the artist -> category mapping onto real
 // playlist rows: it creates a flagged playlist per category, refreshes its
 // tracks, and deletes AI playlists whose category no longer exists.
-func (s *Service) materializeClusterPlaylists(mapping map[string]string, entriesByArtist map[string][]MusicLibraryIndexEntryModel) error {
-	clusterTracks := buildClusterTrackIDs(mapping, entriesByArtist)
+func (s *Service) materializeClusterPlaylists(mapping map[string]string) error {
+	clusterTracks, err := s.loadClusterTrackIDs(mapping)
+	if err != nil {
+		return err
+	}
 
 	existingPlaylists, err := s.Repository.GetAIPlaylists()
 	if err != nil {
@@ -207,74 +208,6 @@ func (s *Service) materializeClusterPlaylists(mapping map[string]string, entries
 	})
 }
 
-// buildArtistClusterInputs aggregates the library into one record per artist,
-// carrying a track count and a representative genre hint (the artist's most
-// common genre tag). It also returns the per-artist entries used to materialize
-// each playlist's tracks.
-func buildArtistClusterInputs(indexEntries []MusicLibraryIndexEntryModel) ([]artistClusterInput, map[string][]MusicLibraryIndexEntryModel) {
-	type accumulator struct {
-		artist     string
-		trackCount int
-		genres     map[string]int
-	}
-
-	accumulators := map[string]*accumulator{}
-	entriesByArtist := map[string][]MusicLibraryIndexEntryModel{}
-
-	for _, entry := range indexEntries {
-		artist := preferredArtist(entry)
-		if artist == "" {
-			continue
-		}
-
-		key := normalizeLookupKey(artist)
-		acc := accumulators[key]
-		if acc == nil {
-			acc = &accumulator{artist: artist, genres: map[string]int{}}
-			accumulators[key] = acc
-		}
-
-		acc.trackCount++
-		for _, genre := range normalizeGenreLabels(entry.Genre) {
-			acc.genres[genre]++
-		}
-		entriesByArtist[key] = append(entriesByArtist[key], entry)
-	}
-
-	inputs := make([]artistClusterInput, 0, len(accumulators))
-	for key, acc := range accumulators {
-		inputs = append(inputs, artistClusterInput{
-			Key:        key,
-			Artist:     acc.artist,
-			GenreHint:  topGenre(acc.genres),
-			TrackCount: acc.trackCount,
-		})
-	}
-
-	sort.Slice(inputs, func(left, right int) bool {
-		if inputs[left].TrackCount != inputs[right].TrackCount {
-			return inputs[left].TrackCount > inputs[right].TrackCount
-		}
-		return inputs[left].Artist < inputs[right].Artist
-	})
-
-	return inputs, entriesByArtist
-}
-
-// topGenre returns the most frequent genre, breaking ties lexicographically so
-// the hint is deterministic.
-func topGenre(genres map[string]int) string {
-	best := ""
-	bestCount := 0
-	for genre, count := range genres {
-		if count > bestCount || (count == bestCount && best != "" && genre < best) {
-			best = genre
-			bestCount = count
-		}
-	}
-	return best
-}
-
 // distinctClusterNames lists the unique category names currently in the mapping,
 // sorted for stable prompts.
 func distinctClusterNames(mapping map[string]string) []string {
@@ -292,38 +225,39 @@ func distinctClusterNames(mapping map[string]string) []string {
 	return names
 }
 
-// buildClusterTrackIDs groups artists by their assigned category and produces
-// the ordered, de-duplicated file IDs for each playlist. Tracks are ordered by
-// artist, then album, then track number, so an artist plays as a contiguous run
-// rather than being scattered across the playlist.
-func buildClusterTrackIDs(mapping map[string]string, entriesByArtist map[string][]MusicLibraryIndexEntryModel) map[string][]int {
-	clusterEntries := map[string][]MusicLibraryIndexEntryModel{}
-	for artistKey, cluster := range mapping {
-		name := normalizeText(cluster)
-		if name == "" {
+func groupArtistKeysByClusterName(mapping map[string]string) map[string][]string {
+	artistKeysByCluster := map[string][]string{}
+	for artistKey, clusterName := range mapping {
+		normalizedName := normalizeText(clusterName)
+		if normalizedName == "" {
 			continue
 		}
-		clusterEntries[name] = append(clusterEntries[name], entriesByArtist[artistKey]...)
+		artistKeysByCluster[normalizedName] = append(artistKeysByCluster[normalizedName], artistKey)
 	}
-
-	result := make(map[string][]int, len(clusterEntries))
-	for name, entries := range clusterEntries {
-		sortGenreTracks(entries)
-		result[name] = uniqueFileIDs(entries)
-	}
-
-	return result
+	return artistKeysByCluster
 }
 
-func uniqueFileIDs(entries []MusicLibraryIndexEntryModel) []int {
-	ids := make([]int, 0, len(entries))
-	seen := map[int]bool{}
-	for _, entry := range entries {
-		if seen[entry.FileID] {
+func (s *Service) loadClusterTrackIDs(mapping map[string]string) (map[string][]int, error) {
+	trackIDsByCluster := map[string][]int{}
+	for clusterName, artistKeys := range groupArtistKeysByClusterName(mapping) {
+		fileIDs, err := s.Repository.GetLibraryFileIDsByArtistKeys(artistKeys)
+		if err != nil {
+			return nil, err
+		}
+		trackIDsByCluster[clusterName] = uniqueFileIDs(fileIDs)
+	}
+	return trackIDsByCluster, nil
+}
+
+func uniqueFileIDs(fileIDs []int) []int {
+	uniqueIDs := make([]int, 0, len(fileIDs))
+	seenIDs := map[int]bool{}
+	for _, fileID := range fileIDs {
+		if seenIDs[fileID] {
 			continue
 		}
-		seen[entry.FileID] = true
-		ids = append(ids, entry.FileID)
+		seenIDs[fileID] = true
+		uniqueIDs = append(uniqueIDs, fileID)
 	}
-	return ids
+	return uniqueIDs
 }

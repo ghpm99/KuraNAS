@@ -76,6 +76,7 @@ func (r *AudioMetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataMod
 
 func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
 	metadata.ResolveNumbering()
+	groupingKeys := BuildCatalogGroupingKeys(metadata.Artist, metadata.AlbumArtist, metadata.Album, metadata.Genre)
 	var id int
 	var createdAt time.Time
 
@@ -111,6 +112,12 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 		nullableInt(metadata.TrackTotal),
 		CurrentAudioTagsExtractedVersion,
 		time.Now(),
+		groupingKeys.ArtistKey,
+		groupingKeys.ArtistLabel,
+		groupingKeys.AlbumKey,
+		groupingKeys.AlbumLabel,
+		pq.Array(groupingKeys.GenreKeys),
+		pq.Array(groupingKeys.GenreLabels),
 	}
 
 	row := tx.QueryRow(queries.UpsertAudioMetadataQuery, args...)

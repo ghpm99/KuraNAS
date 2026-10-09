@@ -209,49 +209,6 @@ func (r *Repository) SearchLibraryTracks(searchText string, page int, pageSize i
 	return paginationResponse, nil
 }
 
-func (r *Repository) GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error) {
-	results := []MusicLibraryIndexEntryModel{}
-
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetLibraryIndexEntriesQuery, pq.Array(utils.AudioFormats))
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var item MusicLibraryIndexEntryModel
-			if err := rows.Scan(
-				&item.FileID,
-				&item.FileName,
-				&item.FilePath,
-				&item.ParentPath,
-				&item.Starred,
-				&item.CreatedAt,
-				&item.UpdatedAt,
-				&item.LastInteraction,
-				&item.Title,
-				&item.Artist,
-				&item.AlbumArtist,
-				&item.Album,
-				&item.Genre,
-				&item.Year,
-				&item.TrackNumber,
-			); err != nil {
-				return err
-			}
-			results = append(results, item)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("falha ao buscar indice da biblioteca de musica: %w", err)
-	}
-
-	return results, nil
-}
-
 func (r *Repository) GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error) {
 	if len(fileIDs) == 0 {
 		return []files.FileModel{}, nil

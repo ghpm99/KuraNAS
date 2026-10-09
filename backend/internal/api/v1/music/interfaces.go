@@ -24,7 +24,19 @@ type RepositoryInterface interface {
 	UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
-	GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error)
+	GetLibrarySummary() (MusicLibrarySummaryDto, error)
+	GetLibraryArtistGroups(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	GetLibraryAlbumGroups(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	GetLibraryGenreGroups(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	GetLibraryFolderGroups(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	GetLibraryTrackIDsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByAlbum(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetRecentLibraryFileIDs(limit int) ([]int, error)
+	GetFavoriteLibraryFileIDs(limit int) ([]int, error)
+	GetArtistClusterInputs() ([]artistClusterInput, error)
+	GetLibraryFileIDsByArtistKeys(artistKeys []string) ([]int, error)
 	GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error)
 	GetArtistClusters() ([]ArtistClusterModel, error)
 	UpsertArtistCluster(tx *sql.Tx, cluster ArtistClusterModel) error
@@ -51,6 +63,8 @@ type AudioMetadataRepositoryInterface interface {
 	DeleteAudioMetadata(id int) error
 	ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error)
 	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
+	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error)
+	UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error
 }
 
 type ServiceInterface interface {
