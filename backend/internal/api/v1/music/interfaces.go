@@ -50,6 +50,7 @@ type AudioMetadataRepositoryInterface interface {
 	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	DeleteAudioMetadata(id int) error
 	ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error)
+	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
 }
 
 type ServiceInterface interface {

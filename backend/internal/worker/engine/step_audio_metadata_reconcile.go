@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
-	musicdom "nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/worker/job"
 	"nas-go/api/pkg/applog"
 )
@@ -37,43 +36,79 @@ func executeAudioMetadataReconcileStep(workerContext *WorkerContext, step jobs.S
 	return nil
 }
 
+type audioReconcileCandidate struct {
+	fileID int
+	path   string
+}
+
+type audioReconcileCandidateLister func(afterFileID int, limit int) ([]audioReconcileCandidate, error)
+
 func reconcileAudioWithoutMetadata(workerContext *WorkerContext) (audioMetadataReconcileOutcome, error) {
+	repository := workerContext.AudioMetadataRepository
+	missingOutcome, err := reconcileAudioCandidates(workerContext, "list audio without metadata", func(afterFileID int, limit int) ([]audioReconcileCandidate, error) {
+		missingAudioFiles, listErr := repository.ListAudioWithoutMetadata(afterFileID, limit)
+		candidates := make([]audioReconcileCandidate, 0, len(missingAudioFiles))
+		for _, missingAudio := range missingAudioFiles {
+			candidates = append(candidates, audioReconcileCandidate{fileID: missingAudio.FileID, path: missingAudio.Path})
+		}
+		return candidates, listErr
+	})
+	if err != nil {
+		return missingOutcome, err
+	}
+
+	staleOutcome, err := reconcileAudioCandidates(workerContext, "list audio with stale tags", func(afterFileID int, limit int) ([]audioReconcileCandidate, error) {
+		staleAudioFiles, listErr := repository.ListAudioWithStaleTags(afterFileID, limit)
+		candidates := make([]audioReconcileCandidate, 0, len(staleAudioFiles))
+		for _, staleAudio := range staleAudioFiles {
+			candidates = append(candidates, audioReconcileCandidate{fileID: staleAudio.FileID, path: staleAudio.Path})
+		}
+		return candidates, listErr
+	})
+
+	return audioMetadataReconcileOutcome{
+		reconciled: missingOutcome.reconciled + staleOutcome.reconciled,
+		failed:     missingOutcome.failed + staleOutcome.failed,
+	}, err
+}
+
+func reconcileAudioCandidates(workerContext *WorkerContext, listDescription string, listCandidates audioReconcileCandidateLister) (audioMetadataReconcileOutcome, error) {
 	outcome := audioMetadataReconcileOutcome{}
 	afterFileID := 0
 
 	for {
-		missingAudioFiles, err := workerContext.AudioMetadataRepository.ListAudioWithoutMetadata(afterFileID, audioMetadataReconcilePageSize)
+		candidates, err := listCandidates(afterFileID, audioMetadataReconcilePageSize)
 		if err != nil {
-			return outcome, fmt.Errorf("audio metadata reconcile: list audio without metadata: %w", err)
+			return outcome, fmt.Errorf("audio metadata reconcile: %s: %w", listDescription, err)
 		}
-		if len(missingAudioFiles) == 0 {
+		if len(candidates) == 0 {
 			return outcome, nil
 		}
 
-		for _, missingAudio := range missingAudioFiles {
-			afterFileID = missingAudio.FileID
+		for _, candidate := range candidates {
+			afterFileID = candidate.fileID
 
-			reconcileErr := reconcileAudioMetadata(workerContext, missingAudio)
+			reconcileErr := reconcileAudioMetadata(workerContext, candidate)
 			if errors.Is(reconcileErr, ErrStepSkipped) {
 				continue
 			}
 			if reconcileErr != nil {
 				outcome.failed++
 				applog.Warn("audio metadata reconcile failed",
-					"file_id", missingAudio.FileID, "path", missingAudio.Path, "error", reconcileErr.Error())
+					"file_id", candidate.fileID, "path", candidate.path, "error", reconcileErr.Error())
 				continue
 			}
 			outcome.reconciled++
 		}
 
-		if len(missingAudioFiles) < audioMetadataReconcilePageSize {
+		if len(candidates) < audioMetadataReconcilePageSize {
 			return outcome, nil
 		}
 	}
 }
 
-func reconcileAudioMetadata(workerContext *WorkerContext, missingAudio musicdom.AudioWithoutMetadata) error {
-	payload, err := marshalPayload(StepFilePayload{FileID: missingAudio.FileID, Path: missingAudio.Path})
+func reconcileAudioMetadata(workerContext *WorkerContext, candidate audioReconcileCandidate) error {
+	payload, err := marshalPayload(StepFilePayload{FileID: candidate.fileID, Path: candidate.path})
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 ## Lacunas
 
 - [x] 01. Formatos de áudio (`.m4a/.ogg/.oga/.opus/.wma/.alac`) reconhecidos
-- [ ] 02. Tags por formato (Vorbis/MP4/ID3 via mutagen easy) com disco, ano (`date`/`TDRC`), letras; reprocessar faixas sem tags
+- [x] 02. Tags por formato (Vorbis/MP4/ID3 via mutagen easy) com disco, ano (`date`/`TDRC`), letras; reprocessar faixas sem tags
 - [ ] 03. Duração aparece na web (`length`), tipos alinhados ao contrato real
 - [ ] 04. Chaves com `/` funcionam (pastas, artistas, álbuns)
 - [ ] 05. Catálogo agregado no SQL com paginação e índices (sem carregar a biblioteca por request)
