@@ -34,7 +34,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 17. Transcodificação sob demanda para formatos não suportados
 - [x] 18. Player: erro de reprodução não percorre a fila em laço (para após 3 falhas e avisa)
 - [x] 18.2. Seek aplicado ao soltar o controle (sem dezenas de Range ao arrastar)
-- [ ] 18.3. Embaralhar como permutação com histórico para "anterior"
+- [x] 18.3. Embaralhar como permutação com histórico para "anterior"
 - [ ] 18.4. Atalhos de teclado do player
 - [ ] 18.5. Media Session com avançar/voltar 10 s e parar
 - [ ] 18.6. Registro de acesso/log uma vez por reprodução, não a cada Range
