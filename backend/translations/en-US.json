@@ -796,6 +796,8 @@
 	"MUSIC_SEARCH_TITLE": "Search results for \"{{query}}\"",
 	"MUSIC_SEARCH_EMPTY": "No tracks found",
 	"MUSIC_SEARCH_PROMPT": "Type something in the global search to find tracks",
+	"MUSIC_SEARCH_PLACEHOLDER": "Search tracks",
+	"MUSIC_SEARCH_CLEAR": "Clear search",
 	"MUSIC_PLAYBACK_CONTEXT_SEARCH": "Search: {{query}}",
 	"MUSIC_TRACK_ADDED": "Track added to playlist",
 	"MUSIC_TRACK_ADD_FAILED": "Failed to add track",
