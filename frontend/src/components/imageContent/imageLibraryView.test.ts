@@ -86,6 +86,16 @@ describe('imageLibraryView', () => {
         expect(parse('photos', 'album=memes').selectedAlbum).toBeNull();
     });
 
+    it('reads the user album id only inside the albums section and without a preset', () => {
+        expect(parse('albums', 'userAlbum=7').userAlbumId).toBe(7);
+        expect(parse('albums', 'userAlbum=abc').userAlbumId).toBeNull();
+        expect(parse('albums', 'userAlbum=-3').userAlbumId).toBeNull();
+        expect(parse('albums', 'userAlbum=1.5').userAlbumId).toBeNull();
+        expect(parse('albums', '').userAlbumId).toBeNull();
+        expect(parse('photos', 'userAlbum=7').userAlbumId).toBeNull();
+        expect(parse('albums', 'album=memes&userAlbum=7').userAlbumId).toBeNull();
+    });
+
     it('exposes the five album presets backed by server categories', () => {
         expect(imageAlbumPresets.map((preset) => preset.id)).toEqual([
             'documents',

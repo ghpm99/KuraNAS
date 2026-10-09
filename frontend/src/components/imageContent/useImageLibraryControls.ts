@@ -147,9 +147,23 @@ export const useImageLibraryControls = (view: ImageLibraryView) => {
 
     const selectAlbum = useCallback(
         (albumId: string | null) =>
-            updateFilterParams((nextParams) =>
-                writeOrDelete(nextParams, imageSearchParamNames.album, albumId)
-            ),
+            updateFilterParams((nextParams) => {
+                nextParams.delete(imageSearchParamNames.userAlbum);
+                writeOrDelete(nextParams, imageSearchParamNames.album, albumId);
+            }),
+        [updateFilterParams]
+    );
+
+    const selectUserAlbum = useCallback(
+        (albumId: number | null) =>
+            updateFilterParams((nextParams) => {
+                nextParams.delete(imageSearchParamNames.album);
+                writeOrDelete(
+                    nextParams,
+                    imageSearchParamNames.userAlbum,
+                    albumId === null ? null : String(albumId)
+                );
+            }),
         [updateFilterParams]
     );
 
@@ -179,6 +193,7 @@ export const useImageLibraryControls = (view: ImageLibraryView) => {
         clearJump,
         selectFolder,
         selectAlbum,
+        selectUserAlbum,
         openImageParam,
         closeImageParam,
     };

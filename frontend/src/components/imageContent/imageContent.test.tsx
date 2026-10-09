@@ -485,6 +485,67 @@ describe('ImageContent', () => {
         ).toBeInTheDocument();
     });
 
+    it('lists my albums above the presets and opens one as a grid with album selection actions', async () => {
+        const tripAlbum = {
+            id: 4,
+            name: 'Trip',
+            cover_file_id: 31,
+            item_count: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+        };
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/image/albums') {
+                return Promise.resolve({
+                    data: { items: [tripAlbum], pagination: { has_next: false } },
+                });
+            }
+            if (url === '/image/albums/4') {
+                return Promise.resolve({ data: tripAlbum });
+            }
+            if (url === '/image/albums/4/items') {
+                return Promise.resolve(
+                    libraryPage({
+                        items: [buildImageLibraryItem({ file_id: 31, name: 'Beach.jpg' })],
+                    })
+                );
+            }
+            if (url === '/image/library/count') {
+                return Promise.resolve({ data: { total: 0 } });
+            }
+            return Promise.resolve(libraryPage({ items: [] }));
+        });
+
+        renderGallery('/images/albums');
+
+        expect(await screen.findByText('IMAGES_MY_ALBUMS_TITLE')).toBeInTheDocument();
+        expect(screen.getByText('IMAGES_SMART_ALBUMS_TITLE')).toBeInTheDocument();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'IMAGES_COLLECTION_OPEN:Trip' }));
+
+        expect(await screen.findByRole('img', { name: 'Beach.jpg' })).toBeInTheDocument();
+        expect(screen.getByTestId('location')).toHaveTextContent('userAlbum=4');
+        expect(await screen.findByRole('heading', { name: 'Trip' })).toBeInTheDocument();
+        expect(libraryParams()).toHaveLength(0);
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_BACK_TO_ALBUMS' }));
+        expect(screen.getByTestId('location')).not.toHaveTextContent('userAlbum');
+        expect(await screen.findByText('IMAGES_MY_ALBUMS_TITLE')).toBeInTheDocument();
+    });
+
+    it('explains an empty user album', async () => {
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/image/albums/4') {
+                return Promise.resolve({ data: { id: 4, name: 'Trip', item_count: 0 } });
+            }
+            return Promise.resolve(libraryPage({ items: [] }));
+        });
+
+        renderGallery('/images/albums?userAlbum=4');
+
+        expect(await screen.findByText('IMAGES_ALBUM_EMPTY_TITLE')).toBeInTheDocument();
+    });
+
     it('lists server folders with real counts and covers, then browses into a subfolder', async () => {
         installApi([{ items: [buildImageLibraryItem({ file_id: 5, name: 'Inside.jpg' })] }], {
             total: 1,

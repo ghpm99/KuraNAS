@@ -27,7 +27,7 @@ import { useImageSelection } from './useImageSelection';
 import { useImageStarToggle } from './useImageStarToggle';
 import { useImageViewerNeighbors } from './useImageViewerNeighbors';
 
-export type ImageEmptyKind = 'library' | 'filtered' | 'favorites';
+export type ImageEmptyKind = 'library' | 'filtered' | 'favorites' | 'album';
 
 const sectionTitleKeys = {
     library: 'IMAGES_SECTION_LIBRARY',
@@ -41,11 +41,15 @@ const sectionTitleKeys = {
 
 const resolveEmptyKind = (
     section: string,
+    isUserAlbum: boolean,
     hasUserFilters: boolean,
     hasSectionFilter: boolean
 ): ImageEmptyKind => {
     if (hasUserFilters) {
         return 'filtered';
+    }
+    if (isUserAlbum) {
+        return 'album';
     }
     if (section === 'favorites') {
         return 'favorites';
@@ -66,6 +70,7 @@ export const useImageContent = () => {
         isFetchNextPageError,
         total,
         timeline,
+        userAlbum,
         fetchNextPage,
         refetch,
         hasNextPage,
@@ -79,7 +84,7 @@ export const useImageContent = () => {
         controls.setNameQuery
     );
     const locale = t('LOCALE');
-    const { section, selectedFolder, selectedAlbum, ordering } = view;
+    const { section, selectedFolder, selectedAlbum, userAlbumId, ordering } = view;
 
     const requestedImageId = Number(searchParams.get('image') ?? '');
     const requestedImagePath = searchParams.get('imagePath')?.trim() ?? '';
@@ -144,7 +149,7 @@ export const useImageContent = () => {
     const viewMode =
         section === 'folders' && !selectedFolder
             ? 'folders'
-            : section === 'albums' && !selectedAlbum
+            : section === 'albums' && !selectedAlbum && userAlbumId === null
               ? 'albums'
               : 'grid';
 
@@ -171,6 +176,7 @@ export const useImageContent = () => {
         view.takenBefore,
         selectedFolder,
         selectedAlbum?.id ?? null,
+        userAlbumId,
     ]);
     const selection = useImageSelection(selectionScopeKey);
 
@@ -273,8 +279,8 @@ export const useImageContent = () => {
         fetchNextFolderPage();
     }, [fetchNextFolderPage]);
 
-    const selectedCollectionTitle =
-        section === 'albums' && selectedAlbum ? t(selectedAlbum.titleKey) : selectedFolder;
+    const selectedAlbumTitle = selectedAlbum ? t(selectedAlbum.titleKey) : userAlbum?.name;
+    const selectedCollectionTitle = section === 'albums' ? selectedAlbumTitle : selectedFolder;
     const title = selectedCollectionTitle || t(sectionTitleKeys[section]);
 
     const summary =
@@ -308,6 +314,7 @@ export const useImageContent = () => {
         folderCards,
         albumCards,
         timeline,
+        userAlbumId,
         status,
         hasLoadError,
         loadErrorMessage,
@@ -321,7 +328,12 @@ export const useImageContent = () => {
         hasMoreFolders: folders.hasNextPage && !hasFolderLoadError,
         isFetchingMoreFolders: folders.isFetchingNextPage,
         loadNextFolderPage,
-        emptyKind: resolveEmptyKind(section, view.hasUserFilters, hasSectionFilter),
+        emptyKind: resolveEmptyKind(
+            section,
+            userAlbumId !== null,
+            view.hasUserFilters,
+            hasSectionFilter
+        ),
         typedNameQuery,
         setTypedNameQuery,
         controls,

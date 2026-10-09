@@ -1,29 +1,47 @@
 import { useState } from 'react';
 import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material';
-import { CheckCheck, Download, MoveRight, Star, Trash2, X } from 'lucide-react';
+import {
+    CheckCheck,
+    Download,
+    FolderMinus,
+    FolderPlus,
+    Image as ImageIcon,
+    MoveRight,
+    Star,
+    Trash2,
+    X,
+} from 'lucide-react';
 import DeleteItemsDialog from '@/components/deleteItemsDialog/deleteItemsDialog';
 import FolderPicker from '@/components/folderPicker/folderPicker';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
+import { useImageAlbumMutations } from '../useImageAlbumMutations';
 import { shouldUnfavorite, useImageBulkActions } from '../useImageBulkActions';
 import type { ImageSelection } from '../useImageSelection';
+import ImageAddToAlbumDialog from './ImageAddToAlbumDialog';
 import styles from '../ImageContent.module.css';
 
 type ImageSelectionToolbarProps = {
     selection: ImageSelection;
     loadedImages: ImageLibraryItem[];
+    userAlbumId?: number;
 };
 
-type PendingDialog = 'move' | 'delete' | null;
+type PendingDialog = 'move' | 'delete' | 'album' | null;
 
 export default function ImageSelectionToolbar({
     selection,
     loadedImages,
+    userAlbumId,
 }: ImageSelectionToolbarProps) {
     const { t } = useI18n();
     const [pendingDialog, setPendingDialog] = useState<PendingDialog>(null);
     const { selectedItems, selectedCount, deselect, selectAll, clear } = selection;
-    const { moveImages, deleteImages, toggleFavorites, downloadImages } = useImageBulkActions(deselect);
+    const { moveImages, deleteImages, toggleFavorites, downloadImages } =
+        useImageBulkActions(deselect);
+
+    const { addPhotos, removePhotos, setAlbumCover } = useImageAlbumMutations();
+    const selectedFileIds = selectedItems.map((image) => image.file_id);
 
     const closeDialog = () => setPendingDialog(null);
     const isUnfavoriteAction = shouldUnfavorite(selectedItems);
@@ -76,6 +94,40 @@ export default function ImageSelectionToolbar({
             </Button>
             <Button
                 size="small"
+                variant="outlined"
+                startIcon={<FolderPlus size={16} />}
+                onClick={() => setPendingDialog('album')}
+            >
+                {t('IMAGES_ALBUM_ADD_TO')}
+            </Button>
+            {userAlbumId !== undefined && (
+                <>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<FolderMinus size={16} />}
+                        onClick={async () => {
+                            const change = await removePhotos(userAlbumId, selectedFileIds);
+                            if (change) {
+                                clear();
+                            }
+                        }}
+                    >
+                        {t('IMAGES_ALBUM_REMOVE_FROM')}
+                    </Button>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={selectedCount !== 1}
+                        startIcon={<ImageIcon size={16} />}
+                        onClick={() => setAlbumCover(userAlbumId, selectedFileIds[0] as number)}
+                    >
+                        {t('IMAGES_ALBUM_SET_COVER')}
+                    </Button>
+                </>
+            )}
+            <Button
+                size="small"
                 color="error"
                 variant="outlined"
                 startIcon={<Trash2 size={16} />}
@@ -83,6 +135,17 @@ export default function ImageSelectionToolbar({
             >
                 {t('DELETE')}
             </Button>
+            <ImageAddToAlbumDialog
+                isOpen={pendingDialog === 'album'}
+                onClose={closeDialog}
+                onPickAlbum={async (album) => {
+                    closeDialog();
+                    const change = await addPhotos(album, selectedFileIds);
+                    if (change) {
+                        clear();
+                    }
+                }}
+            />
             <FolderPicker
                 open={pendingDialog === 'move'}
                 mode="move"

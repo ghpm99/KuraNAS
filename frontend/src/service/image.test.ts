@@ -42,6 +42,24 @@ const allFilters: ImageLibraryFilters = {
 const repeatedKeys = { indexes: null };
 
 describe('service/image', () => {
+    it('lists the photos of a user album from the album items endpoint', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 30,
+            albumId: 4,
+        });
+
+        expect(mockedApi.get).toHaveBeenCalledWith(
+            '/image/albums/4/items',
+            expect.objectContaining({
+                params: expect.objectContaining({ page_size: 30, sort: 'taken_at' }),
+            })
+        );
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
     });
