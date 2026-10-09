@@ -237,3 +237,76 @@ func TestSearchTracksScansRowsAndWrapsErrors(t *testing.T) {
 		t.Fatalf("blank SearchTracks returned %+v err=%v", items, err)
 	}
 }
+
+func TestSearchRepositoryFuzzyPaths(t *testing.T) {
+	repository, mock := newSearchRepositoryForTest(t)
+	now := time.Now()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CheckFuzzySearchSupportQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesFuzzyQuery)).
+		WithArgs("relatoro", 5, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred", "size", "updated_at", "is_cold"}).
+			AddRow(1, "relatorio.pdf", "/docs/relatorio.pdf", "/docs", ".pdf", false, int64(10), now, false))
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFoldersFuzzyQuery)).
+		WithArgs("relatoro", 5).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "starred", "size", "updated_at", "is_cold"}).
+			AddRow(2, "relatorios", "/docs/relatorios", "/docs", false, int64(0), now, true))
+	mock.ExpectRollback()
+
+	if !repository.IsFuzzySearchAvailable() || !repository.IsFuzzySearchAvailable() {
+		t.Fatal("expected fuzzy search to be available and probed once")
+	}
+	files, err := repository.SearchFilesFuzzy("  Relatoro ", 5)
+	if err != nil || len(files) != 1 || files[0].Name != "relatorio.pdf" {
+		t.Fatalf("unexpected fuzzy files: %+v err=%v", files, err)
+	}
+	folders, err := repository.SearchFoldersFuzzy("relatoro", 5)
+	if err != nil || len(folders) != 1 || !folders[0].IsCold {
+		t.Fatalf("unexpected fuzzy folders: %+v err=%v", folders, err)
+	}
+	if blank, blankErr := repository.SearchFilesFuzzy("   ", 5); blankErr != nil || len(blank) != 0 {
+		t.Fatalf("blank fuzzy query must be empty, got %+v err=%v", blank, blankErr)
+	}
+	if blank, blankErr := repository.SearchFoldersFuzzy("   ", 5); blankErr != nil || len(blank) != 0 {
+		t.Fatalf("blank fuzzy query must be empty, got %+v err=%v", blank, blankErr)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestSearchRepositoryFuzzyProbeFailureDisablesFuzzySearch(t *testing.T) {
+	repository, mock := newSearchRepositoryForTest(t)
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CheckFuzzySearchSupportQuery)).WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+
+	if repository.IsFuzzySearchAvailable() {
+		t.Fatal("probe failure must disable fuzzy search")
+	}
+}
+
+func TestSearchRepositoryFuzzyQueryErrorsAreWrapped(t *testing.T) {
+	repository, mock := newSearchRepositoryForTest(t)
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesFuzzyQuery)).WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFoldersFuzzyQuery)).WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+
+	if _, err := repository.SearchFilesFuzzy("abc", 5); err == nil {
+		t.Fatal("expected files error")
+	}
+	if _, err := repository.SearchFoldersFuzzy("abc", 5); err == nil {
+		t.Fatal("expected folders error")
+	}
+}

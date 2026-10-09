@@ -1,8 +1,8 @@
 ORDER BY
     CASE
-        WHEN lower(hf.name) = @1 THEN 0
-        WHEN lower(hf.name) LIKE @2 THEN 1
-        WHEN lower(hf.name) LIKE @3 THEN 2
+        WHEN kuranas_fold(hf.name) = kuranas_fold(@1) THEN 0
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold(@2) THEN 1
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold(@3) THEN 2
         ELSE 3
     END,
     hf.starred DESC,

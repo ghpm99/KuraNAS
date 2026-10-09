@@ -46,6 +46,35 @@ func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto
 		return response, err
 	}
 
+	if response.isEmpty() {
+		return s.applyFuzzyFallback(normalizedQuery, effectiveLimit, response)
+	}
+
+	return response, nil
+}
+
+func (s *Service) applyFuzzyFallback(query string, limit int, response GlobalSearchResponseDto) (GlobalSearchResponseDto, error) {
+	if !s.Repository.IsFuzzySearchAvailable() {
+		return response, nil
+	}
+
+	files, err := s.Repository.SearchFilesFuzzy(query, limit)
+	if err != nil {
+		return response, err
+	}
+
+	folders, err := s.Repository.SearchFoldersFuzzy(query, limit)
+	if err != nil {
+		return response, err
+	}
+
+	if len(files) == 0 && len(folders) == 0 {
+		return response, nil
+	}
+
+	response.Files = mapFiles(files)
+	response.Folders = mapFolders(folders)
+	response.Fuzzy = true
 	return response, nil
 }
 

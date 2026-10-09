@@ -82,6 +82,7 @@ export interface GlobalSearchTrackResult {
 export interface GlobalSearchResponse {
     query: string;
     suggestion?: string;
+    fuzzy?: boolean;
     files: GlobalSearchFileResult[];
     folders: GlobalSearchFolderResult[];
     artists: GlobalSearchArtistResult[];

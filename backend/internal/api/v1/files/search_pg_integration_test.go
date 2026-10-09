@@ -180,7 +180,7 @@ func TestPostgres_NameTrigramIndexExistsWhenExtensionIsAvailable(t *testing.T) {
 		if scanErr := tx.QueryRow("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm')").Scan(&hasExtension); scanErr != nil {
 			return scanErr
 		}
-		return tx.QueryRow("SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'home_file_active_name_trigram')").Scan(&hasIndex)
+		return tx.QueryRow("SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'home_file_active_name_fold_trigram')").Scan(&hasIndex)
 	})
 	if err != nil {
 		t.Fatalf("inspect index: %v", err)

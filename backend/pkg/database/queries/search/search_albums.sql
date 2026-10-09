@@ -15,29 +15,29 @@ WITH ranked_albums AS (
         AND am.file_id IN (
             SELECT album_match.file_id
             FROM audio_metadata album_match
-            WHERE lower(album_match.album) LIKE $1
-                AND lower(album_match.album) LIKE ALL ($2::text[])
+            WHERE kuranas_fold(album_match.album) LIKE kuranas_fold($1)
+                AND kuranas_fold(album_match.album) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
             SELECT album_artist_match.file_id
             FROM audio_metadata album_artist_match
-            WHERE lower(album_artist_match.album_artist) LIKE $1
-                AND lower(album_artist_match.album_artist) LIKE ALL ($2::text[])
+            WHERE kuranas_fold(album_artist_match.album_artist) LIKE kuranas_fold($1)
+                AND kuranas_fold(album_artist_match.album_artist) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
             SELECT artist_match.file_id
             FROM audio_metadata artist_match
-            WHERE lower(artist_match.artist) LIKE $1
-                AND lower(artist_match.artist) LIKE ALL ($2::text[])
+            WHERE kuranas_fold(artist_match.artist) LIKE kuranas_fold($1)
+                AND kuranas_fold(artist_match.artist) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
             SELECT name_match.id
             FROM home_file name_match
             WHERE name_match.deleted_at IS NULL
-                AND lower(name_match.name) LIKE $1
-                AND lower(name_match.name) LIKE ALL ($2::text[])
+                AND kuranas_fold(name_match.name) LIKE kuranas_fold($1)
+                AND kuranas_fold(name_match.name) LIKE ALL (kuranas_fold_terms($2::text[]))
         )
         AND (
-            lower(TRIM(am.album)) LIKE ALL ($2::text[])
-            OR lower(COALESCE(NULLIF(TRIM(am.album_artist), ''), NULLIF(TRIM(am.artist), ''))) LIKE ALL ($2::text[])
-            OR lower(hf.name) LIKE ALL ($2::text[])
+            kuranas_fold(TRIM(am.album)) LIKE ALL (kuranas_fold_terms($2::text[]))
+            OR kuranas_fold(COALESCE(NULLIF(TRIM(am.album_artist), ''), NULLIF(TRIM(am.artist), ''))) LIKE ALL (kuranas_fold_terms($2::text[]))
+            OR kuranas_fold(hf.name) LIKE ALL (kuranas_fold_terms($2::text[]))
         )
     GROUP BY
         COALESCE(NULLIF(TRIM(am.album_artist), ''), NULLIF(TRIM(am.artist), '')),
@@ -52,8 +52,8 @@ FROM
     ranked_albums
 ORDER BY
     CASE
-        WHEN lower(album) = $3 THEN 0
-        WHEN lower(album) LIKE $4 THEN 1
+        WHEN kuranas_fold(album) = kuranas_fold($3) THEN 0
+        WHEN kuranas_fold(album) LIKE kuranas_fold($4) THEN 1
         ELSE 2
     END,
     track_count DESC,

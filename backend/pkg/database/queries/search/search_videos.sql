@@ -10,13 +10,13 @@ FROM
 WHERE
     hf.deleted_at IS NULL
     AND hf.format = ANY($6)
-    AND lower(hf.name) LIKE $1
-    AND lower(hf.name) LIKE ALL ($2::text[])
+    AND kuranas_fold(hf.name) LIKE kuranas_fold($1)
+    AND kuranas_fold(hf.name) LIKE ALL (kuranas_fold_terms($2::text[]))
 ORDER BY
     CASE
-        WHEN lower(hf.name) = $3 THEN 0
-        WHEN lower(hf.name) LIKE $4 THEN 1
-        WHEN lower(hf.name) LIKE $5 THEN 2
+        WHEN kuranas_fold(hf.name) = kuranas_fold($3) THEN 0
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold($4) THEN 1
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold($5) THEN 2
         ELSE 3
     END,
     hf.starred DESC,

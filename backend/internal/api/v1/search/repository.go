@@ -7,12 +7,16 @@ import (
 	queries "nas-go/api/pkg/database/queries/search"
 	"nas-go/api/pkg/utils"
 	"slices"
+	"sync"
 
 	"github.com/lib/pq"
 )
 
 type Repository struct {
 	DbContext *database.DbContext
+
+	fuzzySupportProbe sync.Once
+	isFuzzySupported  bool
 }
 
 func NewRepository(database *database.DbContext) *Repository {

@@ -1,1 +1,1 @@
-lower(hf.name) LIKE lower(@1)
+kuranas_fold(hf.name) LIKE kuranas_fold(@1)

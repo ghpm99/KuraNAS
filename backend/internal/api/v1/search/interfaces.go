@@ -10,6 +10,9 @@ type RepositoryInterface interface {
 	SearchVideos(query string, limit int) ([]VideoResultModel, error)
 	SearchImages(query string, limit int) ([]ImageResultModel, error)
 	SearchTracks(query string, limit int) ([]TrackResultModel, error)
+	IsFuzzySearchAvailable() bool
+	SearchFilesFuzzy(query string, limit int) ([]FileResultModel, error)
+	SearchFoldersFuzzy(query string, limit int) ([]FolderResultModel, error)
 }
 
 type ServiceInterface interface {
