@@ -20,6 +20,8 @@ const (
 // LibraryFilter holds the combinable gallery filters. Zero values mean the
 // filter is not applied. Folder lists direct children only; it is a client-visible
 // path in requests and an absolute disk path once the service resolved it.
+// AlbumID restricts the listing to the photos of one user album; it is never
+// read from the gallery query string, only set by the album service.
 type LibraryFilter struct {
 	NameQuery   string
 	Categories  []ClassificationCategory
@@ -29,6 +31,7 @@ type LibraryFilter struct {
 	TakenTo     *time.Time
 	Camera      string
 	Folder      string
+	AlbumID     int
 }
 
 // LibraryListQuery is one page request against the gallery listing.

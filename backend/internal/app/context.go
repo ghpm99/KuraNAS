@@ -151,6 +151,7 @@ type ImageContext struct {
 	Handler        *imagedom.Handler
 	SummaryHandler *imagedom.ImageSummaryHandler
 	LibraryHandler *imagedom.LibraryHandler
+	AlbumHandler   *imagedom.AlbumHandler
 	Service        imagedom.ServiceInterface
 	Repository     imagedom.RepositoryInterface
 }
@@ -462,11 +463,14 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	service := imagedom.NewService(repository, jobsRepository)
 	handler := imagedom.NewHandler(service, logger)
 	summaryHandler := imagedom.NewImageSummaryHandler(imagedom.NewImageSummaryService(imagedom.NewImageSummaryRepository(dbContext)), logger)
-	libraryHandler := imagedom.NewLibraryHandler(imagedom.NewLibraryService(imagedom.NewLibraryRepository(dbContext)), logger)
+	libraryService := imagedom.NewLibraryService(imagedom.NewLibraryRepository(dbContext))
+	libraryHandler := imagedom.NewLibraryHandler(libraryService, logger)
+	albumHandler := imagedom.NewAlbumHandler(imagedom.NewAlbumService(imagedom.NewAlbumRepository(dbContext), libraryService), logger)
 	return &ImageContext{
 		Handler:        handler,
 		SummaryHandler: summaryHandler,
 		LibraryHandler: libraryHandler,
+		AlbumHandler:   albumHandler,
 		Service:        service,
 		Repository:     repository,
 	}

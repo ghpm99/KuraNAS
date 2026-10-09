@@ -242,6 +242,16 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 			router.GET("/image/library/timeline", context.Image.LibraryHandler.ListLibraryTimelineHandler)
 			router.GET("/image/library/folders", context.Image.LibraryHandler.ListLibraryFoldersHandler)
 		}
+		if context.Image.AlbumHandler != nil {
+			router.GET("/image/albums", context.Image.AlbumHandler.ListAlbumsHandler)
+			router.POST("/image/albums", context.Image.AlbumHandler.CreateAlbumHandler)
+			router.GET("/image/albums/:id", context.Image.AlbumHandler.GetAlbumHandler)
+			router.PUT("/image/albums/:id", context.Image.AlbumHandler.UpdateAlbumHandler)
+			router.DELETE("/image/albums/:id", context.Image.AlbumHandler.DeleteAlbumHandler)
+			router.GET("/image/albums/:id/items", context.Image.AlbumHandler.ListAlbumItemsHandler)
+			router.POST("/image/albums/:id/items", context.Image.AlbumHandler.AddAlbumItemsHandler)
+			router.DELETE("/image/albums/:id/items", context.Image.AlbumHandler.RemoveAlbumItemsHandler)
+		}
 	}
 }
 
