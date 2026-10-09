@@ -21,6 +21,9 @@ type RepositoryInterface interface {
 	ReorderPlaylistTrack(tx *sql.Tx, playlistID int, fileID int, position int) error
 	GetNowPlaying() (PlaylistModel, error)
 	GetPlayerState(clientID string) (PlayerStateModel, error)
+	ReplacePlayerQueue(tx *sql.Tx, clientID string, fileIDs []int, currentIndex int) error
+	GetPlayerQueue(clientID string) ([]MusicQueueEntryModel, error)
+	GetPlayerQueueCurrentIndex(clientID string) (int, error)
 	UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
@@ -102,6 +105,8 @@ type ServiceInterface interface {
 	GetLibraryQueueByFolder(folderPath string) (MusicQueueDto, error)
 	GetPlaylistQueue(clientID string, playlistID int) (MusicQueueDto, error)
 	GetPlayerState(clientID string) (PlayerStateDto, error)
+	ReplacePlayerQueue(clientID string, request ReplacePlayerQueueRequest) error
+	GetPlayerQueue(clientID string) (PlayerQueueDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 	RebuildAIClusters(ctx context.Context) error
 	// Browse methods (moved from files)

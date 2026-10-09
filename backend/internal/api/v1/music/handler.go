@@ -42,7 +42,7 @@ func respondMusicError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_NOT_FOUND")})
-	case errors.Is(err, ErrAutoPlaylistReadOnly):
+	case errors.Is(err, ErrAutoPlaylistReadOnly), errors.Is(err, ErrInvalidPlayerQueue):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_OPERATION_FAILED")})
@@ -205,7 +205,12 @@ func (handler *Handler) GetPlaylistTracksHandler(c *gin.Context) {
 		return
 	}
 
-	pagination, err := handler.service.GetPlaylistTracks(c.ClientIP(), id, page, pageSize)
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
+	pagination, err := handler.service.GetPlaylistTracks(clientID, id, page, pageSize)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)
@@ -338,7 +343,11 @@ func (handler *Handler) GetPlayerStateHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	clientID := c.ClientIP()
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
 
 	state, err := handler.service.GetPlayerState(clientID)
 	if err != nil {
@@ -360,7 +369,11 @@ func (handler *Handler) UpdatePlayerStateHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	clientID := c.ClientIP()
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
 
 	var req UpdatePlayerStateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

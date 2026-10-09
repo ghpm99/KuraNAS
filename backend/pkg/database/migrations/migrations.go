@@ -188,6 +188,9 @@ var AddAudioMetadataDiscTrackNumbersQuery string
 //go:embed queries/0059_add_audio_metadata_catalog_keys.sql
 var AddAudioMetadataCatalogKeysQuery string
 
+//go:embed queries/0060_create_player_queue_table.sql
+var CreatePlayerQueueTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -288,6 +291,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0059_add_audio_metadata_catalog_keys",
 		[]string{"0058_add_audio_metadata_disc_track_numbers", "0001_create_home_file_table"},
 		defaultMigrationFunc(AddAudioMetadataCatalogKeysQuery))
+
+	addMigrationRequiring("0060_create_player_queue_table",
+		[]string{"0013_create_player_state_table", "0001_create_home_file_table"},
+		defaultMigrationFunc(CreatePlayerQueueTableQuery))
 }
 
 func diaryMigrationList() {
