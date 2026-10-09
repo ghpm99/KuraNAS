@@ -151,7 +151,7 @@ beforeEach(() => {
         expandedItems: [],
         files: [],
     });
-    mockUseLocation.mockReturnValue({ pathname: '/files', state: null });
+    mockUseLocation.mockReturnValue({ pathname: '/files', search: '', state: null });
     mockUseParams.mockReturnValue({ id: '10' });
     mockUseAnalyticsOverview.mockReturnValue({
         period: '7d',

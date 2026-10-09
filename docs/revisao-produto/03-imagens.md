@@ -34,5 +34,5 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [x] 15. Indexação: IA fora do caminho crítico do metadata
 - [x] 16. Facetas de câmera e formato como filtros
 - [x] 17. Desempenho do cliente: sem recomputar pastas/álbuns sobre tudo, refetch no foco limitado
-- [ ] 18. Duplicadas acessíveis a partir da galeria
+- [x] 18. Duplicadas acessíveis a partir da galeria
 - [x] 19. Código morto (`ImageCategoryTabs`, chaves `IMAGES_CATEGORY_*`, `fileId`/`createdAt` desalinhados)

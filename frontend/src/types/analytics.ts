@@ -60,6 +60,8 @@ export interface RecentFile {
     updated_at: string;
 }
 
+export type DuplicatesType = 'image';
+
 export interface DuplicatesSummary {
     groups: number;
     files: number;
