@@ -898,4 +898,118 @@ describe('useGlobalSearchProvider', () => {
             expect(sectionIds).toContain('images');
         });
     });
+
+    describe('section ordering and action matching with a query', () => {
+        const arrowDown = () => ({ key: 'ArrowDown', preventDefault: jest.fn() }) as any;
+        const enterKey = () => ({ key: 'Enter', preventDefault: jest.fn() }) as any;
+
+        it('keeps quick actions first when the query is empty', () => {
+            mockUseQueryReturn = { data: undefined, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+            });
+
+            expect(result.current.sections.map((section) => section.id)).toEqual(['actions']);
+        });
+
+        it('orders data groups first and quick actions last when there is a query', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+
+            expect(result.current.sections.map((section) => section.id)).toEqual([
+                'files',
+                'folders',
+                'images',
+                'videos',
+                'artists',
+                'albums',
+                'playlists',
+                'files-see-all',
+                'actions',
+            ]);
+        });
+
+        it('opens the first data result on Enter instead of the matching action', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+
+            expect(result.current.activeItemId).toBe('file-1');
+            act(() => {
+                result.current.handleInputKeyDown(enterKey());
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/path/file');
+            expect(mockNavigate).not.toHaveBeenCalledWith('/home');
+        });
+
+        it('reaches the trailing action with ArrowUp from the first result', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+            act(() => {
+                result.current.handleInputKeyDown({ key: 'ArrowUp', preventDefault: jest.fn() } as any);
+            });
+
+            expect(result.current.activeItemId).toBe('action-home');
+        });
+
+        it('matches actions by word prefix only', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('ome');
+            });
+
+            expect(result.current.sections).toEqual([]);
+        });
+
+        it('matches actions ignoring accents', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+            });
+            act(() => {
+                result.current.setQuery('séttings');
+            });
+            expect(result.current.sections[0]?.items[0]?.id).toBe('action-settings');
+        });
+
+        it('resets the active index when the query changes', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+            act(() => {
+                result.current.handleInputKeyDown(arrowDown());
+            });
+            expect(result.current.activeItemId).toBe('folder-2');
+
+            act(() => {
+                result.current.setQuery('homes');
+            });
+
+            expect(result.current.activeItemId).toBe('file-1');
+        });
+    });
 });
