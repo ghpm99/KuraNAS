@@ -156,3 +156,21 @@ var SelectAudioWithoutMetadataQuery string
 
 //go:embed select_audio_with_stale_tags.sql
 var SelectAudioWithStaleTagsQuery string
+
+//go:embed get_library_queue_by_artist.sql
+var GetLibraryQueueByArtistQuery string
+
+//go:embed get_library_queue_by_album.sql
+var GetLibraryQueueByAlbumQuery string
+
+//go:embed get_library_queue_by_genre.sql
+var GetLibraryQueueByGenreQuery string
+
+//go:embed get_library_queue_by_folder.sql
+var GetLibraryQueueByFolderQuery string
+
+//go:embed get_playlist_queue.sql
+var GetPlaylistQueueQuery string
+
+//go:embed get_library_queue_by_file_ids.sql
+var GetLibraryQueueByFileIDsQuery string

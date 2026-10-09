@@ -150,3 +150,14 @@ type PlaylistTrackModel struct {
 	MetadataLyrics              string
 	MetadataCreatedAt           time.Time
 }
+
+type MusicQueueEntryModel struct {
+	FileID        int
+	Name          string
+	Path          string
+	Format        string
+	Title         string
+	Artist        string
+	Album         string
+	LengthSeconds float64
+}
