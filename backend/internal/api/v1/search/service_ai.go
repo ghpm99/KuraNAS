@@ -175,6 +175,7 @@ func trimToLimit(response GlobalSearchResponseDto, limit int) GlobalSearchRespon
 	response.Folders = firstN(response.Folders, limit)
 	response.Videos = firstN(response.Videos, limit)
 	response.Images = firstN(response.Images, limit)
+	response.Documents = firstN(response.Documents, limit)
 	return response
 }
 

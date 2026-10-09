@@ -19,11 +19,12 @@ const (
 	JobTypeCaptureProcess         JobType = "capture_process"
 	JobTypeImageClassifyBackfill  JobType = "image_classify_backfill"
 	JobTypeImageMetadataReconcile JobType = "image_metadata_reconcile"
+	JobTypeDocumentTextIndex      JobType = "document_text_index"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill, JobTypeImageMetadataReconcile:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill, JobTypeImageMetadataReconcile, JobTypeDocumentTextIndex:
 		return true
 	default:
 		return false
@@ -54,11 +55,12 @@ const (
 	StepTypeImageClassifyEnumerate StepType = "image_classify_enumerate"
 	StepTypeImageClassifyBatch     StepType = "image_classify_batch"
 	StepTypeImageMetadataReconcile StepType = "image_metadata_reconcile"
+	StepTypeDocumentTextIndex      StepType = "document_text_index"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile, StepTypeDocumentTextIndex:
 		return true
 	default:
 		return false

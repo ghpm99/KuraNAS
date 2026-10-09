@@ -1,5 +1,7 @@
 package search
 
+import "nas-go/api/internal/api/v1/documenttext"
+
 type RepositoryInterface interface {
 	SearchFiles(query string, limit int) ([]FileResultModel, error)
 	SearchFolders(query string, limit int) ([]FolderResultModel, error)
@@ -18,4 +20,8 @@ type RepositoryInterface interface {
 type ServiceInterface interface {
 	SearchGlobal(query string, limit int) (GlobalSearchResponseDto, error)
 	SearchGlobalWithAI(query string, limit int) (GlobalSearchResponseDto, error)
+}
+
+type DocumentSearcher interface {
+	SearchTopDocuments(query string, limit int) ([]documenttext.DocumentSearchResultDto, error)
 }

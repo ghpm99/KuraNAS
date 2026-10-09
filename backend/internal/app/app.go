@@ -134,6 +134,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Image != nil {
 		workerFileContext.ImageRepository = appContext.Image.Repository
 	}
+	if appContext.DocumentText != nil {
+		workerFileContext.DocumentTextRepository = appContext.DocumentText.Repository
+	}
 	if librariesService != nil {
 		workerFileContext.LibrariesService = librariesService.Service
 	}
