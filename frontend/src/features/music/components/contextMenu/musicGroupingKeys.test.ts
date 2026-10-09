@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { getTrackAlbumKey, getTrackArtistKey } from './musicGroupingKeys';
 
 const trackWith = (metadata: IMusicData['metadata']) => ({ id: 1, metadata }) as IMusicData;

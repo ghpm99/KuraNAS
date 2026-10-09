@@ -15,7 +15,7 @@ import { createGenrePlaybackContext } from '@/features/music/components/playback
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     getMusicByGenre,

@@ -162,7 +162,7 @@ const QueueDrawer = () => {
                                 {getMusicTitle(currentTrack)}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" noWrap>
-                                {getMusicArtist(currentTrack)}
+                                {getMusicArtist(currentTrack, t('MUSIC_UNKNOWN_ARTIST'))}
                             </Typography>
                             {playbackContextLabel && (
                                 <Typography

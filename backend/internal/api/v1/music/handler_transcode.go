@@ -46,8 +46,6 @@ func NewFFmpegTranscodeHandler(trackSource TranscodeTrackSource, logService logg
 }
 
 func (handler *TranscodeHandler) StreamTranscodedTrackHandler(c *gin.Context) {
-	loggerModel, _ := handler.logService.CreateLog(logEntry("StreamTranscodedTrack", "Streaming transcoded track", c), nil)
-
 	fileID := utils.ParseInt(c.Param("file_id"), c)
 	if c.IsAborted() {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
@@ -60,20 +58,22 @@ func (handler *TranscodeHandler) StreamTranscodedTrackHandler(c *gin.Context) {
 		return
 	}
 
+	playback := openPlaybackLog(handler.logService, logEntry("StreamTranscodedTrack", "Streaming transcoded track", c), startSeconds == 0)
+
 	trackFile, err := handler.trackSource.GetFileById(fileID)
 	if err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		playback.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	sourcePath := trackFile.ResolveContentPath()
 	if _, err := os.Stat(sourcePath); err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		playback.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	if !handler.isTranscoderPresent() {
-		handler.logService.CompleteWithErrorLog(loggerModel, errors.New("ffmpeg not available"))
+		playback.fail(errors.New("ffmpeg not available"))
 		c.JSON(http.StatusNotImplemented, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_TRANSCODE_UNAVAILABLE")})
 		return
 	}
@@ -88,17 +88,17 @@ func (handler *TranscodeHandler) StreamTranscodedTrackHandler(c *gin.Context) {
 	arguments := BuildTranscodeArguments(sourcePath, transcodeFormat, startSeconds)
 	runErr := handler.runTranscode(c.Request.Context(), arguments, responseStream)
 	if c.Request.Context().Err() != nil {
-		handler.logService.CompleteWithSuccessLog(loggerModel)
+		playback.succeed()
 		return
 	}
 	if runErr != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, runErr)
+		playback.fail(runErr)
 		if !responseStream.hasStarted {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_OPERATION_FAILED")})
 		}
 		return
 	}
-	handler.logService.CompleteWithSuccessLog(loggerModel)
+	playback.succeed()
 }
 
 func (handler *TranscodeHandler) tryAcquireSlot() bool {

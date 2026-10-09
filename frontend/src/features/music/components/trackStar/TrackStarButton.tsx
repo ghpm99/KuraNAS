@@ -2,7 +2,7 @@ import { IconButton } from '@mui/material';
 import { Star } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getMusicTitle } from '@/utils/music';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import useTrackStar from './useTrackStar';
 
 interface TrackStarButtonProps {

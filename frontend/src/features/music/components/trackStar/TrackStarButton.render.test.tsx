@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import TrackStarButton from './TrackStarButton';
 
 describe('TrackStarButton without mocks', () => {

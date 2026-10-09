@@ -278,7 +278,7 @@ export default function PlaylistDetailSection({
                                             noWrap
                                             component="div"
                                         >
-                                            {getMusicArtist(track.file)}
+                                            {getMusicArtist(track.file, t('MUSIC_UNKNOWN_ARTIST'))}
                                         </Typography>
                                     </Box>
 

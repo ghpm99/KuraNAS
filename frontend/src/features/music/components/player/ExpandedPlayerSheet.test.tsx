@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
 import { supportsProgrammaticVolume } from './supportsProgrammaticVolume';
 
@@ -33,8 +35,17 @@ const buildPlayer = () => ({
     currentTrack: { name: 'Song', metadata: { title: 'Song Title', artist: 'Song Artist' } },
 });
 
-const renderSheet = (onClose = jest.fn()) =>
-    render(<ExpandedPlayerSheet isOpen onOpen={jest.fn()} onClose={onClose} />);
+const renderSheet = (
+    onClose = jest.fn(),
+    props: Partial<ComponentProps<typeof ExpandedPlayerSheet>> = {}
+) =>
+    render(
+        <QueryClientProvider
+            client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+            <ExpandedPlayerSheet isOpen onOpen={jest.fn()} onClose={onClose} {...props} />
+        </QueryClientProvider>
+    );
 
 describe('ExpandedPlayerSheet', () => {
     afterEach(() => {
@@ -157,5 +168,31 @@ describe('ExpandedPlayerSheet', () => {
         mockUseGlobalMusic.mockReturnValue(buildPlayer());
         renderSheet();
         expect(screen.getByLabelText('PLAYER_ARIA_SEEK')).toBeInTheDocument();
+    });
+
+    it('toggles between artwork and lyrics through the lyrics button', () => {
+        const onViewChange = jest.fn();
+        mockUseGlobalMusic.mockReturnValue(buildPlayer());
+        renderSheet(jest.fn(), { onViewChange });
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_LYRICS'));
+        expect(onViewChange).toHaveBeenCalledWith('lyrics');
+    });
+
+    it('shows the lyrics panel and returns to artwork from the lyrics view', () => {
+        const onViewChange = jest.fn();
+        mockUseGlobalMusic.mockReturnValue({
+            ...buildPlayer(),
+            currentTrack: { id: 3, name: 'Song', metadata: { lyrics: 'first line' } },
+        });
+        renderSheet(jest.fn(), { view: 'lyrics', onViewChange });
+        expect(screen.getByText('first line')).toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_LYRICS'));
+        expect(onViewChange).toHaveBeenCalledWith('artwork');
+    });
+
+    it('ignores the lyrics button when no view handler is provided', () => {
+        mockUseGlobalMusic.mockReturnValue(buildPlayer());
+        renderSheet();
+        expect(() => fireEvent.click(screen.getByLabelText('PLAYER_ARIA_LYRICS'))).not.toThrow();
     });
 });

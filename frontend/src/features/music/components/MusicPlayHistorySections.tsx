@@ -47,7 +47,7 @@ const PlayHistorySection = ({
                                 </div>
                                 <h3 className={styles.cardTitle}>{trackTitle}</h3>
                                 <p className={styles.cardDescription}>
-                                    {getMusicArtist(playedTrack.track)}
+                                    {getMusicArtist(playedTrack.track, t('MUSIC_UNKNOWN_ARTIST'))}
                                 </p>
                                 <span className={styles.metricCaption}>
                                     {t('MUSIC_HOME_PLAY_COUNT', {

@@ -10,6 +10,7 @@ import { getPlaylistQueue } from '@/service/playlist';
 import { getMusicHomeCatalog, getMusicQueueByAlbum, getMusicQueueByArtist } from '@/service/music';
 import { queueToTracks } from '@/features/music/components/musicQueueTracks';
 import { useQuery } from '@tanstack/react-query';
+import useI18n from '@/components/i18n/provider/i18nContext';
 import { useCallback, useState } from 'react';
 import type { MusicAlbum, MusicArtist, MusicListSort } from '@/types/music';
 
@@ -20,6 +21,7 @@ const getActionKey = (type: 'playlist' | 'artist' | 'album', value: string | num
     `${type}-${value}`;
 
 export const useMusicHomeScreen = () => {
+    const { t } = useI18n();
     const {
         currentIndex,
         currentTrack,
@@ -109,14 +111,14 @@ export const useMusicHomeScreen = () => {
     );
 
     const currentTrackTitle = currentTrack ? getMusicTitle(currentTrack) : '';
-    const currentTrackArtist = currentTrack ? getMusicArtist(currentTrack) : '';
+    const currentTrackArtist = currentTrack ? getMusicArtist(currentTrack, t('MUSIC_UNKNOWN_ARTIST')) : '';
     const nextTracks = queue
         .filter((_, index) => currentIndex !== undefined && index > currentIndex)
         .slice(0, 3)
         .map((track) => ({
             id: track.id,
             title: getMusicTitle(track),
-            artist: getMusicArtist(track),
+            artist: getMusicArtist(track, t('MUSIC_UNKNOWN_ARTIST')),
         }));
 
     return {

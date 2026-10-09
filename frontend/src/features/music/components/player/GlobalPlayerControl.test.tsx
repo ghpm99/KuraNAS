@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import GlobalPlayerControl from './GlobalPlayerControl';
 import * as musicUtils from '@/utils/music';
@@ -75,8 +76,8 @@ describe('GlobalPlayerControl', () => {
                 track.metadata?.title || track.name
         );
         mockGetMusicArtist.mockImplementation(
-            (track: { metadata?: { artist?: string } }) =>
-                track.metadata?.artist || 'Unknown Artist'
+            (track: { metadata?: { artist?: string } }, unknownArtistLabel: string) =>
+                track.metadata?.artist || unknownArtistLabel
         );
     });
 
@@ -132,14 +133,13 @@ describe('GlobalPlayerControl', () => {
         expect(screen.getByText('Meta Artist')).toBeInTheDocument();
     });
 
-    // Branch: getMusicArtist falls back to "Unknown Artist" when no metadata.artist
-    it('displays Unknown Artist when metadata.artist is missing', () => {
+    it('displays the unknown artist label when metadata.artist is missing', () => {
         mockUseGlobalMusic.mockReturnValue({
             ...baseApi(),
             currentTrack: { name: 'Song', metadata: {} },
         });
         render(<GlobalPlayerControl />);
-        expect(screen.getByText('Unknown Artist')).toBeInTheDocument();
+        expect(screen.getByText('MUSIC_UNKNOWN_ARTIST')).toBeInTheDocument();
     });
 
     // Branch: playbackContext truthy => show context label
@@ -428,6 +428,21 @@ describe('GlobalPlayerControl', () => {
         render(<GlobalPlayerControl />);
         fireEvent.click(screen.getByLabelText('PLAYER_ARIA_QUEUE'));
         expect(api.toggleQueue).toHaveBeenCalled();
+    });
+
+    it('opens the expanded sheet on the lyrics view from the desktop lyrics button', () => {
+        mockUseGlobalMusic.mockReturnValue({
+            ...baseApi(),
+            currentTrack: { name: 'Test Song', metadata: { lyrics: 'sing along' } },
+        });
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <GlobalPlayerControl />
+            </QueryClientProvider>
+        );
+        expect(screen.queryByText('sing along')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_LYRICS'));
+        expect(screen.getByText('sing along')).toBeInTheDocument();
     });
 
     // Slider interactions

@@ -1,6 +1,7 @@
 package com.kuranas.android.feature.music.data
 
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.core.network.PageDto
 import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.server.ServerStore
 import dagger.Module
@@ -11,32 +12,38 @@ import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class MusicPage<T>(val items: List<T>, val hasNext: Boolean)
+
+private fun <T> PageDto<T>.toMusicPage() = MusicPage(items, pagination.hasNext)
+
 class MusicRepository @Inject constructor(
     private val api: MusicApi,
     private val serverStore: ServerStore,
 ) {
-    suspend fun getAllTracks(): AppResult<List<TrackDto>> = safeApiCall { api.getAllTracks().items }
+    suspend fun getAllTracks(page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toMusicPage() }
 
     /**
-     * Resolve uma faixa pelo id do arquivo (usado ao tocar a partir de Arquivos/Início/Busca,
-     * onde só temos o id). Procura na biblioteca de música para ter título/artista; se o
-     * arquivo ainda não foi indexado como música, devolve uma faixa mínima — o player só
-     * precisa do id para montar a URL de stream, então a reprodução funciona mesmo assim.
+     * Resolve uma faixa pelo id do arquivo consultando o servidor diretamente, para trazer
+     * título/artista. Se a consulta falhar (sem conexão ou arquivo não indexado como música),
+     * devolve uma faixa mínima: o player só precisa do id para montar a URL de stream.
      */
-    suspend fun getTrackById(id: Int): TrackDto = when (val r = getAllTracks()) {
-        is AppResult.Success -> r.data.firstOrNull { it.id == id } ?: TrackDto(id = id)
+    suspend fun getTrackById(id: Int): TrackDto = when (val lookup = safeApiCall { api.getTrackById(id) }) {
+        is AppResult.Success -> lookup.data
         is AppResult.Error -> TrackDto(id = id)
     }
-    suspend fun getArtists(): AppResult<List<ArtistDto>> = safeApiCall { api.getArtists().items }
-    suspend fun getAlbums(): AppResult<List<AlbumDto>> = safeApiCall { api.getAlbums().items }
-    suspend fun getGenres(): AppResult<List<GenreDto>> = safeApiCall { api.getGenres().items }
-    suspend fun getTracksByArtist(key: String): AppResult<List<TrackDto>> = safeApiCall { api.getTracksByArtist(key).items }
-    suspend fun getTracksByAlbum(key: String): AppResult<List<TrackDto>> = safeApiCall { api.getTracksByAlbum(key).items }
-    suspend fun getTracksByGenre(key: String): AppResult<List<TrackDto>> = safeApiCall { api.getTracksByGenre(key).items }
-    suspend fun getFolders(): AppResult<List<FolderDto>> = safeApiCall { api.getFolders().items }
-    suspend fun getTracksByFolder(key: String): AppResult<List<TrackDto>> = safeApiCall { api.getTracksByFolder(key).items }
-    suspend fun getPlaylists(): AppResult<List<PlaylistDto>> = safeApiCall { api.getPlaylists().items }
-    suspend fun getPlaylistTracks(id: Int): AppResult<List<TrackDto>> = safeApiCall { api.getPlaylistTracks(id).items.map { it.file } }
+    suspend fun getArtists(page: Int): AppResult<MusicPage<ArtistDto>> = safeApiCall { api.getArtists(page).toMusicPage() }
+    suspend fun getAlbums(page: Int): AppResult<MusicPage<AlbumDto>> = safeApiCall { api.getAlbums(page).toMusicPage() }
+    suspend fun getGenres(page: Int): AppResult<MusicPage<GenreDto>> = safeApiCall { api.getGenres(page).toMusicPage() }
+    suspend fun getTracksByArtist(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByArtist(key, page).toMusicPage() }
+    suspend fun getTracksByAlbum(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByAlbum(key, page).toMusicPage() }
+    suspend fun getTracksByGenre(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByGenre(key, page).toMusicPage() }
+    suspend fun getFolders(page: Int): AppResult<MusicPage<FolderDto>> = safeApiCall { api.getFolders(page).toMusicPage() }
+    suspend fun getTracksByFolder(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByFolder(key, page).toMusicPage() }
+    suspend fun getPlaylists(page: Int): AppResult<MusicPage<PlaylistDto>> = safeApiCall { api.getPlaylists(page).toMusicPage() }
+    suspend fun getPlaylistTracks(id: Int, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall {
+        val playlistPage = api.getPlaylistTracks(id, page)
+        MusicPage(playlistPage.items.map { it.file }, playlistPage.pagination.hasNext)
+    }
     suspend fun createPlaylist(name: String): AppResult<PlaylistDto> = safeApiCall { api.createPlaylist(CreatePlaylistRequest(name)) }
     suspend fun deletePlaylist(id: Int): AppResult<Unit> = safeApiCall { api.deletePlaylist(id) }
     suspend fun addTrackToPlaylist(playlistId: Int, trackId: Int): AppResult<Unit> = safeApiCall { api.addTrackToPlaylist(playlistId, AddTrackRequest(trackId)) }
@@ -62,6 +69,8 @@ class MusicRepository @Inject constructor(
         return if (hasPort) withScheme else "$withScheme:8000"
     }
 }
+
+const val FIRST_PAGE = 1
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)

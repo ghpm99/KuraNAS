@@ -1,6 +1,6 @@
 import { Disc, ListEnd, ListPlus, ListStart, User } from 'lucide-react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { getMusicRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import MusicContextMenu, { type MusicContextMenuAction } from './MusicContextMenu';

@@ -2,7 +2,7 @@ import { List, Typography } from '@mui/material';
 import { useState } from 'react';
 import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import TrackListItem from '@/features/music/components/TrackListItem';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { parseTrackNumber } from '@/utils/music';
 import { groupTracksByDisc } from '../groupTracksByDisc';

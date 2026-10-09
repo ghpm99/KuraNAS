@@ -9,42 +9,82 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
+
+const val MUSIC_PAGE_SIZE = 100
 
 interface MusicApi {
     // Library
     @GET("api/v1/music/library/")
-    suspend fun getAllTracks(): PageDto<TrackDto>
+    suspend fun getAllTracks(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<TrackDto>
+
+    @GET("api/v1/music/library/tracks/{fileId}")
+    suspend fun getTrackById(@Path("fileId") fileId: Int): TrackDto
 
     @GET("api/v1/music/library/home")
     suspend fun getHomeCatalog(): MusicHomeCatalogDto
 
     @GET("api/v1/music/library/artists")
-    suspend fun getArtists(): PageDto<ArtistDto>
+    suspend fun getArtists(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<ArtistDto>
 
     @GET("api/v1/music/library/artists/{key}/tracks")
-    suspend fun getTracksByArtist(@Path("key") key: String): PageDto<TrackDto>
+    suspend fun getTracksByArtist(
+        @Path("key") key: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<TrackDto>
 
     @GET("api/v1/music/library/albums")
-    suspend fun getAlbums(): PageDto<AlbumDto>
+    suspend fun getAlbums(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<AlbumDto>
 
     @GET("api/v1/music/library/albums/{key}/tracks")
-    suspend fun getTracksByAlbum(@Path("key") key: String): PageDto<TrackDto>
+    suspend fun getTracksByAlbum(
+        @Path("key") key: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<TrackDto>
 
     @GET("api/v1/music/library/genres")
-    suspend fun getGenres(): PageDto<GenreDto>
+    suspend fun getGenres(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<GenreDto>
 
     @GET("api/v1/music/library/genres/{key}/tracks")
-    suspend fun getTracksByGenre(@Path("key") key: String): PageDto<TrackDto>
+    suspend fun getTracksByGenre(
+        @Path("key") key: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<TrackDto>
 
     @GET("api/v1/music/library/folders")
-    suspend fun getFolders(): PageDto<FolderDto>
+    suspend fun getFolders(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<FolderDto>
 
     @GET("api/v1/music/library/folders/{key}/tracks")
-    suspend fun getTracksByFolder(@Path("key") key: String): PageDto<TrackDto>
+    suspend fun getTracksByFolder(
+        @Path("key") key: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<TrackDto>
 
     // Playlists
     @GET("api/v1/music/playlists/")
-    suspend fun getPlaylists(): PageDto<PlaylistDto>
+    suspend fun getPlaylists(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<PlaylistDto>
 
     @POST("api/v1/music/playlists/")
     suspend fun createPlaylist(@Body body: CreatePlaylistRequest): PlaylistDto
@@ -60,7 +100,11 @@ interface MusicApi {
     suspend fun deletePlaylist(@Path("id") id: Int)
 
     @GET("api/v1/music/playlists/{id}/tracks")
-    suspend fun getPlaylistTracks(@Path("id") id: Int): PageDto<PlaylistTrackDto>
+    suspend fun getPlaylistTracks(
+        @Path("id") id: Int,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
+    ): PageDto<PlaylistTrackDto>
 
     @POST("api/v1/music/playlists/{id}/tracks")
     suspend fun addTrackToPlaylist(@Path("id") id: Int, @Body body: AddTrackRequest)

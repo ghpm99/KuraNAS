@@ -1,7 +1,7 @@
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import type { IImageData } from '@/types/image';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import {
     fetchAnalyticsHealth,
     fetchAnalyticsRecentFiles,

@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import {
     ListMusic,
+    MicVocal,
     Pause,
     Play,
     Repeat,
@@ -30,13 +31,14 @@ import TrackStarButton from '@/features/music/components/trackStar/TrackStarButt
 import QueueDrawer from '@/features/music/components/playlist/QueueDrawer';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
+import type { ExpandedSheetView } from './ExpandedPlayerSheet';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
 import { usePlayerShortcuts } from './usePlayerShortcuts';
 import { useSeekSlider } from './useSeekSlider';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './GlobalPlayerControl.module.css';
-import '../playerControl/playerControl.css';
+import './playerControl.css';
 
 const COMPACT_PLAYER_MEDIA_QUERY = viewportMediaQueries.belowPhone;
 const GLOBAL_PLAYER_VISIBILITY_ATTRIBUTE = 'data-global-player';
@@ -67,6 +69,7 @@ const GlobalPlayerControl = () => {
     usePlayerShortcuts();
     const isCompactPlayer = useMediaQuery(COMPACT_PLAYER_MEDIA_QUERY);
     const [isExpandedSheetOpen, setIsExpandedSheetOpen] = useState(false);
+    const [expandedSheetView, setExpandedSheetView] = useState<ExpandedSheetView>('artwork');
     const playbackPosition = Number.isFinite(currentTime) ? currentTime : 0;
     const { sliderPosition, handleSliderChange, handleSliderCommit } = useSeekSlider({
         playbackPosition,
@@ -86,7 +89,7 @@ const GlobalPlayerControl = () => {
         ? getMusicTitle(currentTrack!)
         : currentTrack?.metadata?.title || currentTrack?.name || '';
     const currentTrackArtist = getMusicArtist
-        ? getMusicArtist(currentTrack!)
+        ? getMusicArtist(currentTrack!, t('MUSIC_UNKNOWN_ARTIST'))
         : currentTrack?.metadata?.artist || '';
     const playbackContextLabel = playbackContext
         ? t(playbackContext.labelKey, playbackContext.labelParams)
@@ -96,7 +99,14 @@ const GlobalPlayerControl = () => {
 
     const progressPercent = safeDuration > 0 ? (safeCurrentTime / safeDuration) * 100 : 0;
 
-    const openExpandedSheet = () => setIsExpandedSheetOpen(true);
+    const openExpandedSheet = () => {
+        setExpandedSheetView('artwork');
+        setIsExpandedSheetOpen(true);
+    };
+    const openLyricsSheet = () => {
+        setExpandedSheetView('lyrics');
+        setIsExpandedSheetOpen(true);
+    };
     const closeExpandedSheet = () => setIsExpandedSheetOpen(false);
 
     const openExpandedSheetFromCard = (event: MouseEvent<HTMLElement>) => {
@@ -360,6 +370,14 @@ const GlobalPlayerControl = () => {
                     >
                         <IconButton
                             size="small"
+                            onClick={openLyricsSheet}
+                            aria-label={t('PLAYER_ARIA_LYRICS')}
+                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                        >
+                            <MicVocal size={18} />
+                        </IconButton>
+                        <IconButton
+                            size="small"
                             onClick={toggleQueue}
                             aria-label={t('PLAYER_ARIA_QUEUE')}
                             sx={{
@@ -413,9 +431,11 @@ const GlobalPlayerControl = () => {
                     </Box>
                 </CardContent>
             </Card>
-            {isCompactPlayer && (
+            {(isCompactPlayer || isExpandedSheetOpen) && (
                 <ExpandedPlayerSheet
                     isOpen={isExpandedSheetOpen}
+                    view={expandedSheetView}
+                    onViewChange={setExpandedSheetView}
                     onOpen={openExpandedSheet}
                     onClose={closeExpandedSheet}
                 />

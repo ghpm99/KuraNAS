@@ -7,7 +7,7 @@ import {
     useRef,
     useState,
 } from 'react';
-import type { IMusicData } from './musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';

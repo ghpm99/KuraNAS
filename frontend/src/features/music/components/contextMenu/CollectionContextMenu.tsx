@@ -3,7 +3,7 @@ import { ListEnd, ListStart, MoreVertical } from 'lucide-react';
 import { useSnackbar } from 'notistack';
 import type { ReactNode } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import MusicContextMenu from './MusicContextMenu';

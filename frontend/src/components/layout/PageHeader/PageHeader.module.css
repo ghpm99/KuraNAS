@@ -39,3 +39,10 @@
 .title:focus {
     outline: none;
 }
+
+@media (max-width: 599.95px) {
+    .actions {
+        flex-shrink: 1;
+        width: 100%;
+    }
+}

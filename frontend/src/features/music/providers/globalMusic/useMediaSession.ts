@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import type { IMusicData } from '@/types/music';
 import { getTrackCoverArtwork } from '@/service/musicCover';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 
@@ -28,6 +29,7 @@ export default function useMediaSession({
     currentTime,
     duration,
 }: MediaSessionOptions) {
+    const { t } = useI18n();
     const onPlayRef = useRef(onPlay);
     const onPauseRef = useRef(onPause);
     const onNextRef = useRef(onNext);
@@ -117,11 +119,11 @@ export default function useMediaSession({
 
         navigator.mediaSession.metadata = new MediaMetadata({
             title: getMusicTitle(currentTrack),
-            artist: getMusicArtist(currentTrack),
+            artist: getMusicArtist(currentTrack, t('MUSIC_UNKNOWN_ARTIST')),
             album: currentTrack.metadata?.album || '',
             artwork: getTrackCoverArtwork(currentTrack.id),
         });
-    }, [currentTrack]);
+    }, [currentTrack, t]);
 
     // Update playback state
     useEffect(() => {

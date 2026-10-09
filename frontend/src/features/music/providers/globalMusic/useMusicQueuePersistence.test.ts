@@ -5,7 +5,7 @@ import useMusicQueuePersistence, {
 } from './useMusicQueuePersistence';
 import { replacePlayerQueue } from '@/service/playerState';
 import { flushPlayerQueue } from '@/service/playerStateFlush';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 
 jest.mock('@/service/playerState', () => ({
     replacePlayerQueue: jest.fn(),
