@@ -8,6 +8,8 @@ import {
     Typography,
 } from '@mui/material';
 import { Disc, Play } from 'lucide-react';
+import CoverArt from '@/features/music/components/CoverArt';
+import { getAlbumCoverUrl } from '@/service/musicCover';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
@@ -183,6 +185,7 @@ function AlbumListView({
                                         <Box
                                             sx={{
                                                 height: 140,
+                                                overflow: 'hidden',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -191,7 +194,10 @@ function AlbumListView({
                                                     'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
                                             }}
                                         >
-                                            <Disc size={48} opacity={0.5} />
+                                            <CoverArt
+                                                src={getAlbumCoverUrl(album.key, 256)}
+                                                fallback={<Disc size={48} opacity={0.5} />}
+                                            />
                                         </Box>
                                         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                                             <Typography variant="subtitle2" fontWeight={600} noWrap>

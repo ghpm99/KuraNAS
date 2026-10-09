@@ -15,6 +15,7 @@
     aspect-ratio: 1;
     border-radius: var(--app-radius-lg);
     background: var(--app-color-primary);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -245,3 +245,15 @@
         border-radius: 14px;
     }
 }
+
+.cardCover {
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--app-color-ink-rgb), 0.06);
+}

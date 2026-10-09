@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { IMusicData } from '../musicProvider/musicProvider';
+import { getTrackCoverArtwork } from '@/service/musicCover';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 
 interface MediaSessionOptions {
@@ -74,6 +75,7 @@ export default function useMediaSession({
             title: getMusicTitle(currentTrack),
             artist: getMusicArtist(currentTrack),
             album: currentTrack.metadata?.album || '',
+            artwork: getTrackCoverArtwork(currentTrack.id),
         });
     }, [currentTrack]);
 
