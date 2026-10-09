@@ -315,6 +315,10 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("/albums", context.Music.Handler.GetLibraryAlbumsHandler)
 	library.GET("/albums/:key/tracks", context.Music.Handler.GetLibraryTracksByAlbumHandler)
 	library.GET("/albums/:key/queue", context.Music.Handler.GetLibraryQueueByAlbumHandler)
+	if context.Music.CoverHandler != nil {
+		router.GET("/music/tracks/:file_id/cover", context.Music.CoverHandler.GetTrackCoverHandler)
+		library.GET("/albums/:key/cover", context.Music.CoverHandler.GetAlbumCoverHandler)
+	}
 	library.GET("/genres", context.Music.Handler.GetLibraryGenresHandler)
 	library.GET("/genres/:key/tracks", context.Music.Handler.GetLibraryTracksByGenreHandler)
 	library.GET("/genres/:key/queue", context.Music.Handler.GetLibraryQueueByGenreHandler)
