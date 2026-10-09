@@ -1,14 +1,6 @@
-import {
-    Box,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemText,
-    Typography,
-} from '@mui/material';
-import { ListMusic, Play, Pause, Trash2, X } from 'lucide-react';
+import { Box, Button, Drawer, IconButton, List, Typography } from '@mui/material';
+import { ChevronDown, ChevronRight, ListMusic, Play, Pause, Save, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import {
     getMusicTitle,
@@ -17,6 +9,9 @@ import {
     getTrackDurationSeconds,
 } from '@/utils/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import ClearQueueDialog from './ClearQueueDialog';
+import QueueTrackRow from './QueueTrackRow';
+import SaveQueueAsPlaylistDialog from './SaveQueueAsPlaylistDialog';
 
 const DRAWER_WIDTH = 360;
 
@@ -28,6 +23,7 @@ const QueueDrawer = () => {
         setQueueOpen,
         playTrackFromQueue,
         removeFromQueue,
+        moveQueueItem,
         clearQueue,
         isPlaying,
         playbackContext,
@@ -37,10 +33,28 @@ const QueueDrawer = () => {
         ? t(playbackContext.labelKey, playbackContext.labelParams)
         : '';
 
+    const [isPlayedSectionOpen, setIsPlayedSectionOpen] = useState(false);
+    const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const [draggedQueueIndex, setDraggedQueueIndex] = useState<number | undefined>(undefined);
+
     const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
-    const upcomingTracks = queue
-        .map((track, index) => ({ track, index }))
-        .filter(({ index }) => index !== currentIndex);
+    const firstUpcomingIndex = currentIndex !== undefined ? currentIndex + 1 : 0;
+    const playedTracks = queue.slice(0, currentIndex ?? 0);
+    const upcomingTracks = queue.slice(firstUpcomingIndex);
+    const hasQueueEntries = queue.length > 0;
+
+    const dropOnQueueIndex = (targetIndex: number) => {
+        if (draggedQueueIndex !== undefined) {
+            moveQueueItem(draggedQueueIndex, targetIndex);
+        }
+        setDraggedQueueIndex(undefined);
+    };
+
+    const confirmClearQueue = () => {
+        setIsClearDialogOpen(false);
+        clearQueue();
+    };
 
     return (
         <Drawer
@@ -77,12 +91,27 @@ const QueueDrawer = () => {
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <IconButton
                         size="small"
-                        onClick={clearQueue}
+                        aria-label={t('MUSIC_QUEUE_SAVE_AS_PLAYLIST')}
+                        disabled={!hasQueueEntries}
+                        onClick={() => setIsSaveDialogOpen(true)}
+                        sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+                    >
+                        <Save size={16} />
+                    </IconButton>
+                    <IconButton
+                        size="small"
+                        aria-label={t('MUSIC_QUEUE_CLEAR')}
+                        disabled={!hasQueueEntries}
+                        onClick={() => setIsClearDialogOpen(true)}
                         sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
                     >
                         <Trash2 size={16} />
                     </IconButton>
-                    <IconButton size="small" onClick={() => setQueueOpen(false)}>
+                    <IconButton
+                        size="small"
+                        aria-label={t('MUSIC_QUEUE_CLOSE')}
+                        onClick={() => setQueueOpen(false)}
+                    >
                         <X size={18} />
                     </IconButton>
                 </Box>
@@ -173,57 +202,82 @@ const QueueDrawer = () => {
                 </Box>
             )}
 
-            <List sx={{ flex: 1, overflowY: 'auto', px: 1, pt: 0 }}>
-                {upcomingTracks.map(({ track, index }) => (
-                    <ListItem
-                        key={`${track.id}-${index}`}
-                        disablePadding
-                        secondaryAction={
-                            <IconButton
-                                edge="end"
-                                size="small"
-                                onClick={() => removeFromQueue(index)}
-                                sx={{
-                                    color: 'text.secondary',
-                                    opacity: 0,
-                                    '&:hover': { color: 'error.main', opacity: 1 },
-                                }}
-                            >
-                                <Trash2 size={14} />
-                            </IconButton>
-                        }
-                        sx={{
-                            '&:hover .MuiIconButton-root': { opacity: 1 },
-                            borderRadius: 1,
-                        }}
-                    >
-                        <ListItemButton
-                            onClick={() => playTrackFromQueue(index)}
-                            sx={{ borderRadius: 1, py: 0.5, px: 1 }}
-                        >
-                            <ListItemText
-                                primary={getMusicTitle(track)}
-                                secondary={getMusicArtist(track)}
-                                primaryTypographyProps={{
-                                    variant: 'body2',
-                                    noWrap: true,
-                                    fontWeight: 500,
-                                }}
-                                secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-                            />
-                            {getTrackDurationSeconds(track.metadata) > 0 && (
-                                <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ ml: 1, flexShrink: 0 }}
-                                >
-                                    {formatMusicDuration(getTrackDurationSeconds(track.metadata))}
-                                </Typography>
-                            )}
-                        </ListItemButton>
-                    </ListItem>
-                ))}
+            <List sx={{ overflowY: 'auto', px: 1, pt: 0 }}>
+                {upcomingTracks.map((track, upcomingPosition) => {
+                    const queueIndex = firstUpcomingIndex + upcomingPosition;
+                    return (
+                        <QueueTrackRow
+                            key={track.queueEntryId}
+                            track={track}
+                            isReorderable
+                            canMoveUp={upcomingPosition > 0}
+                            canMoveDown={upcomingPosition < upcomingTracks.length - 1}
+                            isDragged={draggedQueueIndex === queueIndex}
+                            onPlay={() => playTrackFromQueue(queueIndex)}
+                            onRemove={() => removeFromQueue(track.queueEntryId)}
+                            onMoveUp={() => moveQueueItem(queueIndex, queueIndex - 1)}
+                            onMoveDown={() => moveQueueItem(queueIndex, queueIndex + 1)}
+                            onDragStart={() => setDraggedQueueIndex(queueIndex)}
+                            onDragEnd={() => setDraggedQueueIndex(undefined)}
+                            onDrop={() => dropOnQueueIndex(queueIndex)}
+                        />
+                    );
+                })}
             </List>
+
+            {playedTracks.length > 0 && (
+                <Box sx={{ px: 1, pt: 1 }}>
+                    <Button
+                        size="small"
+                        color="inherit"
+                        aria-expanded={isPlayedSectionOpen}
+                        onClick={() => setIsPlayedSectionOpen((isOpen) => !isOpen)}
+                        startIcon={
+                            isPlayedSectionOpen ? (
+                                <ChevronDown size={14} />
+                            ) : (
+                                <ChevronRight size={14} />
+                            )
+                        }
+                        sx={{ color: 'text.secondary', fontSize: '0.65rem' }}
+                    >
+                        {t('MUSIC_QUEUE_PLAYED')} ({playedTracks.length})
+                    </Button>
+                    {isPlayedSectionOpen && (
+                        <List sx={{ pt: 0 }}>
+                            {playedTracks.map((track, playedPosition) => (
+                                <QueueTrackRow
+                                    key={track.queueEntryId}
+                                    track={track}
+                                    isReorderable={false}
+                                    canMoveUp={false}
+                                    canMoveDown={false}
+                                    isDragged={false}
+                                    onPlay={() => playTrackFromQueue(playedPosition)}
+                                    onRemove={() => removeFromQueue(track.queueEntryId)}
+                                    onMoveUp={() => undefined}
+                                    onMoveDown={() => undefined}
+                                    onDragStart={() => undefined}
+                                    onDragEnd={() => undefined}
+                                    onDrop={() => undefined}
+                                />
+                            ))}
+                        </List>
+                    )}
+                </Box>
+            )}
+
+            <ClearQueueDialog
+                isOpen={isClearDialogOpen}
+                onConfirm={confirmClearQueue}
+                onCancel={() => setIsClearDialogOpen(false)}
+            />
+            {isSaveDialogOpen && (
+                <SaveQueueAsPlaylistDialog
+                    fileIds={queue.map((track) => track.id)}
+                    onClose={() => setIsSaveDialogOpen(false)}
+                />
+            )}
         </Drawer>
     );
 };

@@ -10,6 +10,7 @@ import {
 import { Play, Tag } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createGenrePlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -176,76 +177,96 @@ function GenreListView({
                         const color = getGenreColor(genre.genre);
                         return (
                             <Grid key={genre.genre} size={{ xs: 6, sm: 4, md: 3 }}>
-                                <Card
-                                    sx={{
-                                        bgcolor: 'background.paper',
-                                        transition: 'all 0.2s ease',
-                                        overflow: 'hidden',
-                                        '&:hover': {
-                                            bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)',
-                                        },
-                                        '&:hover .play-overlay': {
-                                            opacity: 1,
-                                            transform: 'translateY(0)',
-                                        },
-                                    }}
+                                <CollectionContextMenu
+                                    collectionName={genre.genre}
+                                    playbackContext={createGenrePlaybackContext(genre.genre)}
+                                    loadTracks={() => loadGenreTracks(genre.key)}
+                                    layout="card"
                                 >
-                                    <CardActionArea
-                                        component="div"
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => onSelect(genre)}
-                                        onKeyDown={(event) =>
-                                            handleKeyboardActivation(event, () => onSelect(genre))
-                                        }
-                                        sx={{ position: 'relative' }}
+                                    <Card
+                                        sx={{
+                                            bgcolor: 'background.paper',
+                                            transition: 'all 0.2s ease',
+                                            overflow: 'hidden',
+                                            '&:hover': {
+                                                bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)',
+                                            },
+                                            '&:hover .play-overlay': {
+                                                opacity: 1,
+                                                transform: 'translateY(0)',
+                                            },
+                                        }}
                                     >
-                                        <Box
-                                            sx={{
-                                                height: 90,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                background: `linear-gradient(135deg, ${color}cc 0%, ${color}66 100%)`,
-                                                position: 'relative',
-                                            }}
+                                        <CardActionArea
+                                            component="div"
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => onSelect(genre)}
+                                            onKeyDown={(event) =>
+                                                handleKeyboardActivation(event, () =>
+                                                    onSelect(genre)
+                                                )
+                                            }
+                                            sx={{ position: 'relative' }}
                                         >
-                                            <Tag size={32} opacity={0.4} />
-                                        </Box>
-                                        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                            <Typography variant="subtitle2" fontWeight={600} noWrap>
-                                                {genre.genre}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {genre.track_count} {t('MUSIC_TRACKS_COUNT')}
-                                            </Typography>
-                                        </CardContent>
-                                        <IconButton
-                                            className="play-overlay"
-                                            onClick={(event) => void handlePlayGenre(event, genre)}
-                                            sx={{
-                                                position: 'absolute',
-                                                bottom: 42,
-                                                right: 8,
-                                                bgcolor: 'primary.main',
-                                                color: 'white',
-                                                width: 34,
-                                                height: 34,
-                                                opacity: 0,
-                                                transform: 'translateY(8px)',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow:
-                                                    '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
-                                                '&:hover': {
-                                                    bgcolor: 'primary.light',
-                                                    transform: 'translateY(0) scale(1.05)',
-                                                },
-                                            }}
-                                        >
-                                            <Play size={14} fill="white" />
-                                        </IconButton>
-                                    </CardActionArea>
-                                </Card>
+                                            <Box
+                                                sx={{
+                                                    height: 90,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: `linear-gradient(135deg, ${color}cc 0%, ${color}66 100%)`,
+                                                    position: 'relative',
+                                                }}
+                                            >
+                                                <Tag size={32} opacity={0.4} />
+                                            </Box>
+                                            <CardContent
+                                                sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}
+                                            >
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    fontWeight={600}
+                                                    noWrap
+                                                >
+                                                    {genre.genre}
+                                                </Typography>
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                >
+                                                    {genre.track_count} {t('MUSIC_TRACKS_COUNT')}
+                                                </Typography>
+                                            </CardContent>
+                                            <IconButton
+                                                className="play-overlay"
+                                                onClick={(event) =>
+                                                    void handlePlayGenre(event, genre)
+                                                }
+                                                sx={{
+                                                    position: 'absolute',
+                                                    bottom: 42,
+                                                    right: 8,
+                                                    bgcolor: 'primary.main',
+                                                    color: 'white',
+                                                    width: 34,
+                                                    height: 34,
+                                                    opacity: 0,
+                                                    transform: 'translateY(8px)',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow:
+                                                        '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
+                                                    '&:hover': {
+                                                        bgcolor: 'primary.light',
+                                                        transform: 'translateY(0) scale(1.05)',
+                                                    },
+                                                }}
+                                            >
+                                                <Play size={14} fill="white" />
+                                            </IconButton>
+                                        </CardActionArea>
+                                    </Card>
+                                </CollectionContextMenu>
                             </Grid>
                         );
                     })}

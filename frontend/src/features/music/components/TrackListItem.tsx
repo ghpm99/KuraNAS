@@ -1,5 +1,6 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
-import { ListPlus, Pause, Play } from 'lucide-react';
+import { ListPlus, MoreVertical, Pause, Play } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import {
     getMusicTitle,
@@ -8,6 +9,10 @@ import {
     getTrackDurationSeconds,
 } from '@/utils/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import AddToPlaylistMenu from './AddToPlaylistMenu';
+import TrackContextMenu from './contextMenu/TrackContextMenu';
+import useMenuPosition from './contextMenu/useMenuPosition';
 
 interface TrackListItemProps {
     track: IMusicData;
@@ -29,9 +34,20 @@ const TrackListItem = ({
     const duration = getTrackDurationSeconds(track.metadata);
     const trackTitle = getMusicTitle(track);
     const trackArtist = getMusicArtist(track);
+    const { t } = useI18n();
+    const rowRef = useRef<HTMLLIElement>(null);
+    const { position, openFromButton, openFromContextMenuEvent, close } = useMenuPosition();
+    const [hasOpenedPlaylistMenu, setHasOpenedPlaylistMenu] = useState(false);
+    const [playlistMenuAnchor, setPlaylistMenuAnchor] = useState<HTMLElement | null>(null);
+
+    const openPlaylistMenu = () => {
+        setHasOpenedPlaylistMenu(true);
+        setPlaylistMenuAnchor(rowRef.current);
+    };
 
     return (
         <ListItem
+            ref={rowRef}
             disablePadding
             sx={{
                 px: 0,
@@ -41,6 +57,7 @@ const TrackListItem = ({
         >
             <ListItemButton
                 onClick={() => onPlay(track, index)}
+                onContextMenu={openFromContextMenuEvent}
                 aria-label={`play ${trackTitle}`}
                 sx={{
                     borderRadius: 1,
@@ -116,7 +133,6 @@ const TrackListItem = ({
                     )}
                 </Box>
 
-                {/* Track info */}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                         variant="body2"
@@ -133,7 +149,6 @@ const TrackListItem = ({
                     )}
                 </Box>
 
-                {/* Actions */}
                 {onAddToPlaylist && (
                     <IconButton
                         size="small"
@@ -153,7 +168,6 @@ const TrackListItem = ({
                     </IconButton>
                 )}
 
-                {/* Duration */}
                 {duration ? (
                     <Typography
                         variant="caption"
@@ -170,7 +184,31 @@ const TrackListItem = ({
                 ) : (
                     <Box sx={{ width: 36 }} />
                 )}
+
+                <IconButton
+                    size="small"
+                    aria-label={t('MUSIC_TRACK_MORE_ACTIONS', { name: trackTitle })}
+                    aria-haspopup="menu"
+                    onClick={openFromButton}
+                    sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                >
+                    <MoreVertical size={16} />
+                </IconButton>
             </ListItemButton>
+
+            <TrackContextMenu
+                track={track}
+                position={position}
+                onClose={close}
+                onAddToPlaylist={openPlaylistMenu}
+            />
+            {hasOpenedPlaylistMenu && (
+                <AddToPlaylistMenu
+                    fileId={track.id}
+                    anchorEl={playlistMenuAnchor}
+                    onClose={() => setPlaylistMenuAnchor(null)}
+                />
+            )}
         </ListItem>
     );
 };
