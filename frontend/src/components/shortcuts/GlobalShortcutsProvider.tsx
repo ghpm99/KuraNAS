@@ -1,4 +1,5 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { subscribeToShortcutsHelp } from '@/components/layout/appCommandEvents';
 import GlobalShortcutsDialog from './GlobalShortcutsDialog';
 import { globalShortcutDefinitions } from './globalShortcutDefinitions';
 import ShortcutRegistryProvider from './ShortcutRegistryProvider';
@@ -11,6 +12,7 @@ const GlobalShortcutsHost = ({ children }: { children: ReactNode }) => {
     const openDialog = useCallback(() => setIsDialogOpen(true), []);
     const closeDialog = useCallback(() => setIsDialogOpen(false), []);
     useGlobalShortcuts(openDialog);
+    useEffect(() => subscribeToShortcutsHelp(openDialog), [openDialog]);
 
     return (
         <>

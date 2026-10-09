@@ -56,3 +56,5 @@ export const useSettings = () => {
     }
     return context;
 };
+
+export const useOptionalSettings = () => useContext(SettingsContext);

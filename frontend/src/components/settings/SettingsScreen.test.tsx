@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsScreen from './SettingsScreen';
+import { settingsSections } from './settingsSections';
 
 const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
@@ -202,6 +203,31 @@ describe('components/settings/SettingsScreen', () => {
 
         expect(mockHandleReset).toHaveBeenCalledTimes(1);
         expect(mockHandleSave).toHaveBeenCalledTimes(1);
+    });
+
+    it('exposes an anchor for every deep-linkable settings section', () => {
+        render(
+            <MemoryRouter>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        settingsSections.forEach((section) => {
+            expect(document.getElementById(section.id)).not.toBeNull();
+        });
+    });
+
+    it('scrolls to the section named by the url hash', () => {
+        const scrollIntoView = jest.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+
+        render(
+            <MemoryRouter initialEntries={['/settings#appearance']}>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('appearance'));
     });
 
     it('renders fallback summaries and disabled warnings when runtime configuration is unavailable', () => {

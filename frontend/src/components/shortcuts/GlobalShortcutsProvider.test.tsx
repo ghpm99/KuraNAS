@@ -4,6 +4,7 @@ import GlobalShortcutsProvider from './GlobalShortcutsProvider';
 import { globalShortcutDefinitions } from './globalShortcutDefinitions';
 import { useRegisterPageShortcuts } from './shortcutRegistry';
 import { appRoutes } from '@/app/routes';
+import { requestShortcutsHelp } from '@/components/layout/appCommandEvents';
 
 const LocationProbe = () => <p data-testid="pathname">{useLocation().pathname}</p>;
 
@@ -34,6 +35,14 @@ const press = (key: string, init: KeyboardEventInit = {}, target: Element | Docu
 describe('GlobalShortcutsProvider', () => {
     afterEach(() => {
         jest.useRealTimers();
+    });
+
+    it('opens the help dialog when the shortcuts help command is requested', async () => {
+        renderProvider();
+
+        act(() => requestShortcutsHelp());
+
+        expect(await screen.findByText('SHORTCUTS_DIALOG_TITLE')).toBeInTheDocument();
     });
 
     it('renders its children without a backend and keeps the dialog closed', () => {
