@@ -86,7 +86,7 @@ describe('components/search/GlobalSearchProvider (seam)', () => {
         renderProvider();
         openAndType('my trip');
 
-        expect(await screen.findByText('trip.jpg')).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: /trip\s*\.jpg/ })).toBeInTheDocument();
         expect(mockedApi.get).toHaveBeenCalledWith('/search/global', {
             params: { q: 'my trip', limit: 6 },
             signal: expect.any(AbortSignal),
@@ -98,7 +98,7 @@ describe('components/search/GlobalSearchProvider (seam)', () => {
         renderProvider();
         openAndType('trip');
 
-        expect(await screen.findByText('trip.jpg')).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: /trip\s*\.jpg/ })).toBeInTheDocument();
         expect(screen.queryByText('GLOBAL_SEARCH_WITH_AI')).not.toBeInTheDocument();
     });
 
@@ -108,7 +108,7 @@ describe('components/search/GlobalSearchProvider (seam)', () => {
 
         fireEvent.click(await screen.findByText('GLOBAL_SEARCH_WITH_AI'));
 
-        expect(await screen.findByText('holiday.jpg')).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: /holiday\s*\.jpg/ })).toBeInTheDocument();
         expect(mockedApi.get).toHaveBeenCalledWith('/search/global/ai', {
             params: { q: 'my trip', limit: 6 },
             signal: expect.any(AbortSignal),

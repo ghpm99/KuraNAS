@@ -179,7 +179,7 @@ describe('components/search/GlobalSearchProvider tracks', () => {
         renderProvider();
         openAndType('notes');
 
-        expect(await screen.findByText('notes.txt')).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: /notes\s*\.txt/ })).toBeInTheDocument();
         expect(screen.queryByText('GLOBAL_SEARCH_SECTION_TRACKS')).not.toBeInTheDocument();
     });
 });

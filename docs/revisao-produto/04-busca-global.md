@@ -23,6 +23,6 @@ Decisões tomadas na revisão: IA sai do caminho principal e vira ação explíc
 - [x] 08. Página completa de resultados de arquivos com filtros (tipo, data, tamanho, tier) e ordenação por relevância
 - [x] 09. Resultados com tamanho, data, favorito e tier
 - [x] 10. Insensível a acento e tolerante a erro de digitação
-- [ ] 11. Histórico de buscas recentes e destaque do trecho encontrado
+- [x] 11. Histórico de buscas recentes e destaque do trecho encontrado
 - [ ] 12. Ações rápidas completas (Lixeira, Downloads, Capturas, Assistente, Notificações, Takeout, Diário, subseções, seções de Configurações)
 - [ ] 13. Busca pelo conteúdo de documentos (texto, Markdown, código, PDF, DOCX)
