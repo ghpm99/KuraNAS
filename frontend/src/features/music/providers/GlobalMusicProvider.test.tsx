@@ -314,7 +314,10 @@ describe('GlobalMusicProvider', () => {
         const { result } = renderHook(() => useGlobalMusic(), { wrapper });
 
         act(() => {
-            result.current.replaceQueue([{ ...createTrack(5), metadata: { title: 'Broken' } as never }], 0);
+            result.current.replaceQueue(
+                [{ ...createTrack(5), metadata: { title: 'Broken' } as never }],
+                0
+            );
         });
         act(() => {
             capturedOnPlaybackFailure?.();
@@ -935,7 +938,7 @@ describe('GlobalMusicProvider', () => {
             expect(engineMock.stop).not.toHaveBeenCalled();
         });
 
-        it('shuffle with single-track queue returns index 0 (getShuffledIndex <= 1)', () => {
+        it('shuffle with single-track queue replays it when repeat is all', () => {
             const { result } = renderHook(() => useGlobalMusic(), { wrapper });
 
             act(() => {
@@ -943,6 +946,7 @@ describe('GlobalMusicProvider', () => {
             });
             act(() => {
                 result.current.toggleShuffle();
+                result.current.setRepeatMode('all');
             });
             engineMock.loadAndPlayUrl.mockClear();
 
@@ -950,7 +954,6 @@ describe('GlobalMusicProvider', () => {
                 capturedOnTrackEnded!();
             });
 
-            // getShuffledIndex returns 0 for single-track queue
             expect(result.current.currentIndex).toBe(0);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
                 expect.stringContaining('/files/stream/1'),
@@ -974,6 +977,206 @@ describe('GlobalMusicProvider', () => {
             });
 
             expect(result.current.currentIndex).toBe(0);
+        });
+    });
+
+    describe('shuffle as a permutation', () => {
+        const tracks = [1, 2, 3, 4, 5].map(createTrack);
+
+        const startShuffledQueue = () => {
+            const rendered = renderHook(() => useGlobalMusic(), { wrapper });
+            act(() => {
+                rendered.result.current.replaceQueue(tracks, 0);
+            });
+            act(() => {
+                rendered.result.current.toggleShuffle();
+            });
+            return rendered.result;
+        };
+
+        const currentTrackId = (result: ReturnType<typeof startShuffledQueue>) =>
+            result.current.currentTrack?.id;
+
+        const advanceThroughTrackEnds = (
+            result: ReturnType<typeof startShuffledQueue>,
+            count: number
+        ) => {
+            const playedTrackIds = [currentTrackId(result)];
+            for (let step = 0; step < count; step += 1) {
+                act(() => {
+                    capturedOnTrackEnded!();
+                });
+                playedTrackIds.push(currentTrackId(result));
+            }
+            return playedTrackIds;
+        };
+
+        it('plays every track once before stopping at the end of the order', () => {
+            const result = startShuffledQueue();
+            const playedTrackIds = advanceThroughTrackEnds(result, 4);
+
+            expect([...playedTrackIds].sort()).toEqual([1, 2, 3, 4, 5]);
+
+            engineMock.stop.mockClear();
+            act(() => {
+                capturedOnTrackEnded!();
+            });
+            expect(engineMock.stop).toHaveBeenCalled();
+        });
+
+        it('reshuffles at the end of the order when repeat is all', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.setRepeatMode('all');
+            });
+            const lastTrackId = advanceThroughTrackEnds(result, 4).pop();
+            engineMock.stop.mockClear();
+
+            const secondRound = advanceThroughTrackEnds(result, 5);
+
+            expect(engineMock.stop).not.toHaveBeenCalled();
+            expect(secondRound[1]).not.toBe(lastTrackId);
+            expect([...secondRound.slice(1)].sort()).toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it('previous returns to the previously played track', () => {
+            const result = startShuffledQueue();
+            const playedTrackIds = advanceThroughTrackEnds(result, 2);
+
+            act(() => {
+                result.current.previous();
+            });
+            expect(currentTrackId(result)).toBe(playedTrackIds[1]);
+
+            act(() => {
+                result.current.previous();
+            });
+            expect(currentTrackId(result)).toBe(playedTrackIds[0]);
+        });
+
+        it('next walks the same order as track end', () => {
+            const result = startShuffledQueue();
+            const firstNextTrackIds: (number | undefined)[] = [];
+            act(() => {
+                result.current.next();
+            });
+            firstNextTrackIds.push(currentTrackId(result));
+            act(() => {
+                result.current.next();
+            });
+            firstNextTrackIds.push(currentTrackId(result));
+
+            expect(new Set([0, ...firstNextTrackIds]).size).toBe(3);
+            expect(firstNextTrackIds).not.toContain(1);
+        });
+
+        it('turning shuffle off continues in natural order after the current track', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.playTrackFromQueue(2);
+            });
+            act(() => {
+                result.current.next();
+            });
+            const currentNaturalIndex = 2;
+            act(() => {
+                result.current.playTrackFromQueue(currentNaturalIndex);
+            });
+            act(() => {
+                result.current.toggleShuffle();
+            });
+            act(() => {
+                capturedOnTrackEnded!();
+            });
+
+            expect(result.current.currentIndex).toBe((currentNaturalIndex + 1) % tracks.length);
+        });
+
+        it('turning shuffle on again builds a fresh order starting from the current track', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.toggleShuffle();
+            });
+            act(() => {
+                result.current.playTrackFromQueue(2);
+            });
+            act(() => {
+                result.current.toggleShuffle();
+            });
+            const playedTrackIds = advanceThroughTrackEnds(result, 4);
+
+            expect(playedTrackIds[0]).toBe(3);
+            expect([...playedTrackIds].sort()).toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it('playNext plays the inserted tracks right after the current one', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.playNext([createTrack(90), createTrack(91)]);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 2);
+
+            expect(playedTrackIds.slice(1)).toEqual([90, 91]);
+        });
+
+        it('addToQueue plays the appended tracks at the end of the order', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.addToQueue([createTrack(90)]);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 5);
+
+            expect(playedTrackIds[5]).toBe(90);
+        });
+
+        it('moving a queue item keeps the order intact', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.moveQueueItem(4, 1);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 4);
+
+            expect([...playedTrackIds].sort()).toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it('removed tracks are never played', () => {
+            const result = startShuffledQueue();
+            const removedEntryId = result.current.queue[3]!.queueEntryId;
+            act(() => {
+                result.current.removeFromQueue(removedEntryId);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 3);
+
+            expect([...playedTrackIds].sort()).toEqual([1, 2, 3, 5]);
+        });
+
+        it('removing the current track rebuilds the order from the replacement track', () => {
+            const result = startShuffledQueue();
+            const currentEntryId = result.current.queue[result.current.currentIndex!]!.queueEntryId;
+            act(() => {
+                result.current.removeFromQueue(currentEntryId);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 3);
+
+            expect(new Set(playedTrackIds).size).toBe(4);
+            expect(playedTrackIds).not.toContain(1);
+        });
+
+        it('replacing the queue while shuffling starts the new order at the chosen track', () => {
+            const result = startShuffledQueue();
+            act(() => {
+                result.current.replaceQueue([createTrack(7), createTrack(8), createTrack(9)], 1);
+            });
+
+            const playedTrackIds = advanceThroughTrackEnds(result, 2);
+
+            expect(playedTrackIds[0]).toBe(8);
+            expect([...playedTrackIds].sort()).toEqual([7, 8, 9]);
         });
     });
 });

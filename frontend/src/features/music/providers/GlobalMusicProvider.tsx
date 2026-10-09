@@ -31,6 +31,16 @@ import {
     moveQueueEntry,
     type QueueTrack,
 } from './globalMusic/queueEntries';
+import {
+    appendEntries,
+    findEntryAfter,
+    findEntryBefore,
+    insertAfterEntry,
+    reconcileShuffleOrder,
+    removeEntry,
+    reshuffleOrder,
+    type ShuffleOrder,
+} from './globalMusic/shufflePlan';
 
 const RESTART_THRESHOLD_SECONDS = 3;
 
@@ -71,14 +81,6 @@ export interface IGlobalMusicContext {
 
 const GlobalMusicContext = createContext<IGlobalMusicContext | undefined>(undefined);
 
-const getShuffledIndex = (queueLength: number, currentIndex: number | undefined): number => {
-    if (queueLength <= 1) return 0;
-    const candidates = Array.from({ length: queueLength }, (_, i) => i).filter(
-        (i) => i !== currentIndex
-    );
-    return candidates[Math.floor(Math.random() * candidates.length)]!;
-};
-
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
     const { settings, isLoading: isLoadingSettings } = useSettings();
     const { t } = useI18n();
@@ -87,6 +89,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
     const queueRef = useRef<QueueTrack[]>([]);
     const currentIndexRef = useRef<number | undefined>(undefined);
+    const shuffleOrderRef = useRef<ShuffleOrder>([]);
 
     const commitQueue = useCallback((nextQueue: QueueTrack[]) => {
         queueRef.current = nextQueue;
@@ -106,6 +109,40 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined;
 
+    const resolveShuffleOrder = useCallback(
+        (trackQueue: QueueTrack[], currentEntryId: string | undefined): ShuffleOrder => {
+            const order = reconcileShuffleOrder(
+                shuffleOrderRef.current,
+                trackQueue,
+                currentEntryId
+            );
+            shuffleOrderRef.current = order;
+            return order;
+        },
+        []
+    );
+
+    const findShuffleSuccessorIndex = useCallback(
+        (trackQueue: QueueTrack[], playingIndex: number): number | undefined => {
+            const currentEntryId = trackQueue[playingIndex]?.queueEntryId;
+            if (currentEntryId === undefined) return undefined;
+            const order = resolveShuffleOrder(trackQueue, currentEntryId);
+            const successorEntryId = findEntryAfter(order, currentEntryId);
+            if (successorEntryId === undefined) return undefined;
+            return trackQueue.findIndex((entry) => entry.queueEntryId === successorEntryId);
+        },
+        [resolveShuffleOrder]
+    );
+
+    const findReshuffledStartIndex = useCallback(
+        (trackQueue: QueueTrack[], playingIndex: number): number => {
+            const order = reshuffleOrder(trackQueue, trackQueue[playingIndex]?.queueEntryId);
+            shuffleOrderRef.current = order;
+            return trackQueue.findIndex((entry) => entry.queueEntryId === order[0]);
+        },
+        []
+    );
+
     const handleTrackEnded = useCallback(() => {
         if (repeatMode === 'one') {
             engine.seek(0);
@@ -114,10 +151,18 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         }
         if (currentIndex === undefined) return;
         if (shuffle) {
-            const idx = getShuffledIndex(queue.length, currentIndex);
-            const track = queue[idx];
+            const successorIndex = findShuffleSuccessorIndex(queue, currentIndex);
+            const isEndOfOrder = successorIndex === undefined;
+            if (isEndOfOrder && repeatMode !== 'all') {
+                engine.stop();
+                return;
+            }
+            const nextShuffledIndex = isEndOfOrder
+                ? findReshuffledStartIndex(queue, currentIndex)
+                : successorIndex;
+            const track = queue[nextShuffledIndex];
             if (track) {
-                commitCurrentIndex(idx);
+                commitCurrentIndex(nextShuffledIndex);
                 playTrack(track);
                 syncState({ fileId: track.id, position: 0 });
             }
@@ -252,9 +297,20 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
                 startQueueWith(tracks, nextPlaybackContext);
                 return;
             }
-            commitQueue([...queueRef.current, ...createQueueEntries(tracks)]);
+            const appendedEntries = createQueueEntries(tracks);
+            if (shuffle) {
+                const order = resolveShuffleOrder(
+                    queueRef.current,
+                    queueRef.current[currentIndexRef.current]?.queueEntryId
+                );
+                shuffleOrderRef.current = appendEntries(
+                    order,
+                    appendedEntries.map((entry) => entry.queueEntryId)
+                );
+            }
+            commitQueue([...queueRef.current, ...appendedEntries]);
         },
-        [commitQueue, startQueueWith]
+        [commitQueue, startQueueWith, shuffle, resolveShuffleOrder]
     );
 
     const playNext = useCallback(
@@ -264,15 +320,21 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
                 startQueueWith(tracks, nextPlaybackContext);
                 return;
             }
+            const insertedEntries = createQueueEntries(tracks);
+            if (shuffle) {
+                const currentEntryId = queueRef.current[currentIndexRef.current]?.queueEntryId;
+                const order = resolveShuffleOrder(queueRef.current, currentEntryId);
+                shuffleOrderRef.current = insertAfterEntry(
+                    order,
+                    currentEntryId,
+                    insertedEntries.map((entry) => entry.queueEntryId)
+                );
+            }
             commitQueue(
-                insertAfterIndex(
-                    queueRef.current,
-                    currentIndexRef.current,
-                    createQueueEntries(tracks)
-                )
+                insertAfterIndex(queueRef.current, currentIndexRef.current, insertedEntries)
             );
         },
-        [commitQueue, startQueueWith]
+        [commitQueue, startQueueWith, shuffle, resolveShuffleOrder]
     );
 
     const moveQueueItem = useCallback(
@@ -329,6 +391,10 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
                 (entry) => entry.queueEntryId !== queueEntryId
             );
             const playingIndex = currentIndexRef.current;
+            const isRemovingCurrentEntry = removedIndex === playingIndex;
+            shuffleOrderRef.current = isRemovingCurrentEntry
+                ? []
+                : removeEntry(shuffleOrderRef.current, queueEntryId);
             commitQueue(remainingQueue);
 
             if (remainingQueue.length === 0) {
@@ -352,11 +418,19 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     const next = useCallback(() => {
         if (queue.length === 0 || currentIndex === undefined) return;
         if (shuffle) {
-            loadAndPlay(getShuffledIndex(queue.length, currentIndex));
+            const successorIndex = findShuffleSuccessorIndex(queue, currentIndex);
+            loadAndPlay(successorIndex ?? findReshuffledStartIndex(queue, currentIndex));
             return;
         }
         loadAndPlay((currentIndex + 1) % queue.length);
-    }, [currentIndex, queue.length, shuffle, loadAndPlay]);
+    }, [
+        currentIndex,
+        queue,
+        shuffle,
+        loadAndPlay,
+        findShuffleSuccessorIndex,
+        findReshuffledStartIndex,
+    ]);
 
     const previous = useCallback(() => {
         if (queue.length === 0 || currentIndex === undefined) return;
@@ -364,9 +438,17 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             engine.seek(0);
             return;
         }
+        if (shuffle) {
+            const currentEntryId = queue[currentIndex]?.queueEntryId;
+            if (currentEntryId === undefined) return;
+            const order = resolveShuffleOrder(queue, currentEntryId);
+            const previousEntryId = findEntryBefore(order, currentEntryId);
+            loadAndPlay(queue.findIndex((entry) => entry.queueEntryId === previousEntryId));
+            return;
+        }
         const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
         loadAndPlay(prevIndex);
-    }, [currentIndex, queue.length, loadAndPlay, engine]);
+    }, [currentIndex, queue, shuffle, loadAndPlay, engine, resolveShuffleOrder]);
 
     const seek = useCallback(
         (time: number) => {
@@ -385,7 +467,8 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     );
 
     const toggleShuffle = useCallback(() => {
-        setShuffle((prev) => !prev);
+        shuffleOrderRef.current = [];
+        setShuffle((isShuffleOn) => !isShuffleOn);
     }, []);
 
     const toggleQueue = useCallback(() => {
