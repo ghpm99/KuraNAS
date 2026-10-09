@@ -372,3 +372,6 @@ export const useGlobalMusic = () => {
     }
     return context;
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useOptionalGlobalMusic = () => useContext(GlobalMusicContext);

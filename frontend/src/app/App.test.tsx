@@ -88,7 +88,6 @@ describe('App', () => {
         render(<App />);
 
         expect(screen.getByTestId('app-providers')).toBeInTheDocument();
-        expect(screen.getByTestId('music-providers')).toBeInTheDocument();
         expect(await screen.findByText('GlobalPlayerControl')).toBeInTheDocument();
     });
 

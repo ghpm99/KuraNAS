@@ -27,6 +27,7 @@ interface GlobalSearchDialogProps {
     onInputKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onItemHover: (itemId: string) => void;
     onItemSelect: (item: SearchDialogItem) => void;
+    onItemSecondaryAction?: (item: SearchDialogItem) => void;
 }
 
 const listboxId = 'global-search-listbox';
@@ -37,6 +38,7 @@ const getItemIcon = (kind: SearchItemKind) => {
     switch (kind) {
         case 'folder':
             return <Folder size={18} />;
+        case 'track':
         case 'artist':
         case 'album':
         case 'playlist':
@@ -71,6 +73,7 @@ const GlobalSearchDialog = ({
     onInputKeyDown,
     onItemHover,
     onItemSelect,
+    onItemSecondaryAction,
 }: GlobalSearchDialogProps) => {
     const { t } = useI18n();
     const theme = useTheme();
@@ -173,6 +176,19 @@ const GlobalSearchDialog = ({
                                             </span>
                                             {item.meta ? (
                                                 <span className={styles.itemMeta}>{item.meta}</span>
+                                            ) : null}
+                                            {item.secondaryAction ? (
+                                                <button
+                                                    type="button"
+                                                    tabIndex={-1}
+                                                    className={styles.itemSecondaryAction}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onItemSecondaryAction?.(item);
+                                                    }}
+                                                >
+                                                    {item.secondaryAction.label}
+                                                </button>
                                             ) : null}
                                         </div>
                                     );

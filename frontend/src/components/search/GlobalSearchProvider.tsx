@@ -23,6 +23,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         setActiveIndex,
         handleInputKeyDown,
         activateItem,
+        activateSecondaryAction,
     } = useGlobalSearchProvider();
 
     const flattenedItems = sections.flatMap((section) => section.items);
@@ -53,6 +54,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }}
                 onItemSelect={activateItem}
+                onItemSecondaryAction={activateSecondaryAction}
             />
         </GlobalSearchContext.Provider>
     );

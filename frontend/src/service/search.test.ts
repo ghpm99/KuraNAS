@@ -17,6 +17,7 @@ const emptySearchResult = {
     playlists: [],
     videos: [],
     images: [],
+    tracks: [],
 };
 
 describe('service/search', () => {
@@ -80,5 +81,24 @@ describe('service/search', () => {
             params: { q: 'my trip', limit: 6 },
             signal,
         });
+    });
+
+    it('passes the tracks group through unchanged', async () => {
+        const tracks = [
+            {
+                file_id: 7,
+                title: 'Time',
+                artist: 'Pink Floyd',
+                album: 'The Dark Side',
+                album_key: 'pink floyd::the dark side',
+                duration: 413.5,
+                path: '/Music/time.mp3',
+            },
+        ];
+        mockedApiGet.mockResolvedValue({ data: { ...emptySearchResult, tracks } });
+
+        const result = await searchGlobal('time');
+
+        expect(result.tracks).toEqual(tracks);
     });
 });
