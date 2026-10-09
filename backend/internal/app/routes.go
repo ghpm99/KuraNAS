@@ -310,9 +310,12 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("/", context.Music.Handler.GetLibraryTracksHandler)
 	library.GET("/home", context.Music.Handler.GetHomeCatalogHandler)
 	library.GET("/artists", context.Music.Handler.GetLibraryArtistsHandler)
+	library.GET("/artists/:key", context.Music.Handler.GetLibraryArtistSummaryHandler)
+	library.GET("/artists/:key/albums", context.Music.Handler.GetLibraryAlbumsByArtistHandler)
 	library.GET("/artists/:key/tracks", context.Music.Handler.GetLibraryTracksByArtistHandler)
 	library.GET("/artists/:key/queue", context.Music.Handler.GetLibraryQueueByArtistHandler)
 	library.GET("/albums", context.Music.Handler.GetLibraryAlbumsHandler)
+	library.GET("/albums/:key", context.Music.Handler.GetLibraryAlbumSummaryHandler)
 	library.GET("/albums/:key/tracks", context.Music.Handler.GetLibraryTracksByAlbumHandler)
 	library.GET("/albums/:key/queue", context.Music.Handler.GetLibraryQueueByAlbumHandler)
 	if context.Music.CoverHandler != nil {
@@ -320,9 +323,11 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 		library.GET("/albums/:key/cover", context.Music.CoverHandler.GetAlbumCoverHandler)
 	}
 	library.GET("/genres", context.Music.Handler.GetLibraryGenresHandler)
+	library.GET("/genres/:key", context.Music.Handler.GetLibraryGenreSummaryHandler)
 	library.GET("/genres/:key/tracks", context.Music.Handler.GetLibraryTracksByGenreHandler)
 	library.GET("/genres/:key/queue", context.Music.Handler.GetLibraryQueueByGenreHandler)
 	library.GET("/folders", context.Music.Handler.GetLibraryFoldersHandler)
+	library.GET("/folders/:key", context.Music.Handler.GetLibraryFolderSummaryHandler)
 	library.GET("/folders/:key/tracks", context.Music.Handler.GetLibraryTracksByFolderHandler)
 	library.GET("/folders/:key/queue", context.Music.Handler.GetLibraryQueueByFolderHandler)
 

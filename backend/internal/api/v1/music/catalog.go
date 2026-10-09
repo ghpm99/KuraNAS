@@ -45,6 +45,31 @@ type MusicFolderGroupDto struct {
 	TrackCount int    `json:"track_count"`
 }
 
+type MusicAlbumSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	Artist             string `json:"artist"`
+	Year               string `json:"year"`
+	TrackCount         int    `json:"track_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
+	DiscCount          int    `json:"disc_count"`
+}
+
+type MusicArtistSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	TrackCount         int    `json:"track_count"`
+	AlbumCount         int    `json:"album_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
+}
+
+type MusicGroupSummaryDto struct {
+	Key                string `json:"key"`
+	Name               string `json:"name"`
+	TrackCount         int    `json:"track_count"`
+	TotalLengthSeconds int64  `json:"total_length_seconds"`
+}
+
 type MusicLibrarySummaryDto struct {
 	TotalTracks  int `json:"total_tracks"`
 	TotalArtists int `json:"total_artists"`

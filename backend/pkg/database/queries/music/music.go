@@ -79,6 +79,21 @@ var GetLibraryFolderGroupsQuery string
 //go:embed get_library_summary.sql
 var GetLibrarySummaryQuery string
 
+//go:embed get_library_album_summary.sql
+var GetLibraryAlbumSummaryQuery string
+
+//go:embed get_library_artist_summary.sql
+var GetLibraryArtistSummaryQuery string
+
+//go:embed get_library_genre_summary.sql
+var GetLibraryGenreSummaryQuery string
+
+//go:embed get_library_folder_summary.sql
+var GetLibraryFolderSummaryQuery string
+
+//go:embed get_library_album_groups_by_artist.sql
+var GetLibraryAlbumGroupsByArtistQuery string
+
 //go:embed get_library_track_ids_by_artist.sql
 var GetLibraryTrackIDsByArtistQuery string
 

@@ -400,3 +400,28 @@ func (s *Service) GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error) 
 		),
 	}, nil
 }
+
+func (s *Service) GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error) {
+	return s.Repository.GetLibraryAlbumSummary(albumKey)
+}
+
+func (s *Service) GetLibraryArtistSummary(artistKey string) (MusicArtistSummaryDto, error) {
+	return s.Repository.GetLibraryArtistSummary(artistKey)
+}
+
+func (s *Service) GetLibraryGenreSummary(genreKey string) (MusicGroupSummaryDto, error) {
+	return s.Repository.GetLibraryGenreSummary(genreKey)
+}
+
+func (s *Service) GetLibraryFolderSummary(folderPath string) (MusicGroupSummaryDto, error) {
+	trimmedFolder := strings.TrimSpace(folderPath)
+	if trimmedFolder == "" {
+		return MusicGroupSummaryDto{}, sql.ErrNoRows
+	}
+	return s.Repository.GetLibraryFolderSummary(trimmedFolder)
+}
+
+func (s *Service) GetLibraryAlbumsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	return s.Repository.GetLibraryAlbumGroupsByArtist(artistKey, page, pageSize)
+}
