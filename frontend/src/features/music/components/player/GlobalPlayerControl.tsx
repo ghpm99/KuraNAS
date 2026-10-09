@@ -32,6 +32,8 @@ import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
+import { usePlayerShortcuts } from './usePlayerShortcuts';
+import { useSeekSlider } from './useSeekSlider';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './GlobalPlayerControl.module.css';
 import '../playerControl/playerControl.css';
@@ -62,8 +64,14 @@ const GlobalPlayerControl = () => {
         toggleQueue,
         queueOpen,
     } = useGlobalMusic();
+    usePlayerShortcuts();
     const isCompactPlayer = useMediaQuery(COMPACT_PLAYER_MEDIA_QUERY);
     const [isExpandedSheetOpen, setIsExpandedSheetOpen] = useState(false);
+    const playbackPosition = Number.isFinite(currentTime) ? currentTime : 0;
+    const { sliderPosition, handleSliderChange, handleSliderCommit } = useSeekSlider({
+        playbackPosition,
+        seek,
+    });
 
     useEffect(() => {
         if (!hasQueue) return;
@@ -313,14 +321,15 @@ const GlobalPlayerControl = () => {
                                 variant="caption"
                                 sx={{ minWidth: 36, textAlign: 'right', fontSize: '0.7rem' }}
                             >
-                                {formatPlaybackTime(currentTime)}
+                                {formatPlaybackTime(sliderPosition)}
                             </Typography>
                             <Slider
                                 size="small"
                                 aria-label={t('PLAYER_ARIA_SEEK')}
-                                value={safeCurrentTime}
+                                value={sliderPosition}
                                 max={safeDuration || 100}
-                                onChange={(_, value) => seek(value as number)}
+                                onChange={handleSliderChange}
+                                onChangeCommitted={handleSliderCommit}
                                 sx={{
                                     flexGrow: 1,
                                     height: 4,

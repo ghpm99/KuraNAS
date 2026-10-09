@@ -5,7 +5,7 @@ import { isModalOpen, isTextEntryTarget } from './keyboardEventContext';
 
 const GO_SEQUENCE_KEY = 'g';
 const HELP_KEY = '?';
-const GO_SEQUENCE_TIMEOUT_MS = 1500;
+export const GO_SEQUENCE_TIMEOUT_MS = 1500;
 
 export const routesByGoSequenceKey: Record<string, string> = {
     h: appRoutes.home,
