@@ -118,6 +118,7 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 		groupingKeys.AlbumLabel,
 		pq.Array(groupingKeys.GenreKeys),
 		pq.Array(groupingKeys.GenreLabels),
+		groupingKeys.AlbumKey,
 	}
 
 	row := tx.QueryRow(queries.UpsertAudioMetadataQuery, args...)

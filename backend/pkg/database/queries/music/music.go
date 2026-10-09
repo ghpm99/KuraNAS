@@ -121,6 +121,9 @@ var GetLibraryFileIDsByArtistKeysQuery string
 //go:embed select_audio_without_catalog_keys.sql
 var SelectAudioWithoutCatalogKeysQuery string
 
+//go:embed reconcile_audio_album_groupings.sql
+var ReconcileAudioAlbumGroupingsQuery string
+
 //go:embed update_audio_catalog_keys.sql
 var UpdateAudioCatalogKeysQuery string
 

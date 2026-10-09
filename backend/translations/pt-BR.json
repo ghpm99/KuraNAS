@@ -1777,5 +1777,6 @@
 	"MUSIC_HOME_RECENT_PLAYS": "Tocadas recentemente",
 	"MUSIC_HOME_RECENT_PLAYS_EMPTY": "As faixas que você acabou de ouvir aparecem aqui.",
 	"MUSIC_HOME_PLAY_COUNT": "{{count}} reproduções",
-	"MUSIC_HOME_PLAY_TRACK": "Tocar {{name}}"
+	"MUSIC_HOME_PLAY_TRACK": "Tocar {{name}}",
+	"MUSIC_VARIOUS_ARTISTS": "Vários artistas"
 }
