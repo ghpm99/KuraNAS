@@ -326,10 +326,24 @@ describe('hooks/useVideoPlayer', () => {
         expect(result.current.playbackError).toBeNull();
     });
 
-    it('flags unsupported when play is rejected with NotSupportedError', async () => {
-        const { result } = await startWithRejectingNextPlay(
+    it('falls back to remux when play is rejected with NotSupportedError', async () => {
+        const { result, fakeVideo } = await startWithRejectingNextPlay(
             new DOMException('nope', 'NotSupportedError')
         );
+        expect(fakeVideo.src).toContain('/video/stream/8/remux');
+        expect(result.current.playbackError).toBeNull();
+    });
+
+    it('flags unsupported when remux play is also rejected', async () => {
+        const { result, fakeVideo } = await startWithRejectingNextPlay(
+            new DOMException('nope', 'NotSupportedError')
+        );
+        fakeVideo.play.mockImplementationOnce(() =>
+            Promise.reject(new DOMException('nope', 'NotSupportedError'))
+        );
+        await act(async () => {
+            result.current.seekTo(30);
+        });
         expect(result.current.playbackError).toBe('unsupported');
     });
 

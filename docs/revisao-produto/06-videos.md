@@ -21,7 +21,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 03. Extensões ausentes (`.m4v .mpg .mpeg .m2ts .3gp .vob`)
 - [x] 04. MIME explícito para formatos de vídeo
 - [x] 05. Erro de reprodução visível no player com ação "baixar original"
-- [ ] 06. Remux sob demanda (mkv/avi com H.264 → MP4 fragmentado)
+- [x] 06. Remux sob demanda (mkv/avi com H.264 → MP4 fragmentado)
 - [ ] 07. Transcode sob demanda de codecs não suportados (HEVC etc.) → H.264/AAC
 
 ### Retomada, continuar assistindo e assistido
@@ -83,6 +83,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [ ] 57. Menu de configurações morto removido ou ligado ao player real
 - [ ] 58. Autoplay do próximo com contagem regressiva e cancelar
 - [ ] 59. Stream com 416, ETag e If-Range
+- [ ] 59.1. `GetVideoMetadataByID` com SELECT de 22 colunas e Scan de 21 (consulta por id de metadata quebrada)
 
 ### i18n e limpeza
 - [ ] 60. Nomes de playlists e seções do backend traduzidos (slug + i18n)
