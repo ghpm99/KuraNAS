@@ -140,7 +140,23 @@
     font-weight: 600;
 }
 
+.itemDescriptionRow {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-2);
+    min-width: 0;
+}
+
+.itemStar {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: var(--app-color-warning, currentColor);
+}
+
 .itemDescription {
+    flex: 0 1 auto;
+    min-width: 0;
     color: var(--app-color-text-secondary);
     font-size: 0.875rem;
     overflow: hidden;

@@ -1,5 +1,6 @@
 import { CircularProgress, Dialog, DialogContent, InputBase, useMediaQuery, useTheme } from '@mui/material';
-import { Aperture, ArrowRightLeft, Folder, Image, Music2, Search, Video } from 'lucide-react';
+import { Aperture, ArrowRightLeft, Folder, Image, Music2, Search, Star, Video } from 'lucide-react';
+import ColdTierIndicator from '@/components/coldTierIndicator/coldTierIndicator';
 import ErrorState from '@/components/errorState/errorState';
 import type {
     SearchDialogItem,
@@ -170,8 +171,20 @@ const GlobalSearchDialog = ({
                                             </span>
                                             <span className={styles.itemBody}>
                                                 <span className={styles.itemLabel}>{item.label}</span>
-                                                <span className={styles.itemDescription}>
-                                                    {item.description}
+                                                <span className={styles.itemDescriptionRow}>
+                                                    <span className={styles.itemDescription}>
+                                                        {item.description}
+                                                    </span>
+                                                    {item.isStarred ? (
+                                                        <span
+                                                            role="img"
+                                                            aria-label={t('STARRED_FILES')}
+                                                            className={styles.itemStar}
+                                                        >
+                                                            <Star size={14} fill="currentColor" />
+                                                        </span>
+                                                    ) : null}
+                                                    {item.isCold ? <ColdTierIndicator /> : null}
                                                 </span>
                                             </span>
                                             {item.meta ? (

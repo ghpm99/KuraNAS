@@ -288,4 +288,32 @@ describe('GlobalSearchDialog suggestion', () => {
 
         expect(() => fireEvent.click(screen.getByText('Open album'))).not.toThrow();
     });
+
+    it('shows the starred and cold-tier indicators beside the description', () => {
+        const item = createItem({ isStarred: true, isCold: true });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+            />
+        );
+
+        expect(screen.getByRole('img', { name: 'STARRED_FILES' })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })).toBeInTheDocument();
+    });
+
+    it('omits the starred and cold-tier indicators for plain items', () => {
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [createItem()] })]}
+            />
+        );
+
+        expect(screen.queryByRole('img', { name: 'STARRED_FILES' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })
+        ).not.toBeInTheDocument();
+    });
 });
