@@ -169,4 +169,141 @@ describe('useImageViewerModal', () => {
             'IMAGES_CLASSIFICATION_OTHER'
         );
     });
+
+    describe('extended details', () => {
+        const mockEndpoints = (
+            summary: Record<string, unknown>,
+            location?: Record<string, unknown>
+        ) => {
+            mockedApiGet.mockImplementation((url: string) => {
+                if (url.startsWith('/files/location/')) {
+                    return location
+                        ? Promise.resolve({ data: location })
+                        : Promise.reject(new Error('offline'));
+                }
+                return Promise.resolve({ data: summary });
+            });
+        };
+
+        const renderDetails = (totalImages: number | null = 1) =>
+            renderHook(
+                () =>
+                    useImageViewerModal({
+                        activeImage: buildImageLibraryItem(),
+                        activeImageDate: null,
+                        activeIndex: 0,
+                        totalImages,
+                        dateFormatter,
+                    }),
+                { wrapper }
+            );
+
+        const findItem = (
+            sections: ReturnType<typeof useImageViewerModal>['details'],
+            label: string
+        ) => sections.flatMap((section) => section.items).find((item) => item.label === label);
+
+        it('shows the coordinates with a user-clicked OpenStreetMap link', async () => {
+            mockEndpoints({ gps_latitude: -23.55, gps_longitude: -46.63 });
+
+            const { result } = renderDetails();
+
+            await waitFor(() =>
+                expect(findItem(result.current.details, 'IMAGES_DETAIL_GPS')?.link).toBeDefined()
+            );
+            const gpsItem = findItem(result.current.details, 'IMAGES_DETAIL_GPS');
+            expect(gpsItem?.value).toBe('-23.550000, -46.630000');
+            expect(gpsItem?.link?.href).toBe(
+                'https://www.openstreetmap.org/?mlat=-23.550000&mlon=-46.630000#map=15/-23.550000/-46.630000'
+            );
+            expect(gpsItem?.link?.label).toBe('IMAGES_DETAIL_GPS_OPEN_MAP');
+        });
+
+        it.each([
+            ['absent', {}],
+            ['null', { gps_latitude: null, gps_longitude: null }],
+            ['exact zero zero', { gps_latitude: 0, gps_longitude: 0 }],
+            ['only latitude', { gps_latitude: 10 }],
+            ['not finite', { gps_latitude: Number.NaN, gps_longitude: 10 }],
+        ])('shows no link when the GPS is %s', async (_label, summary) => {
+            mockEndpoints(summary);
+
+            const { result } = renderDetails();
+
+            await waitFor(() => expect(mockedApiGet).toHaveBeenCalledWith('/image/metadata/7'));
+            const gpsItem = findItem(result.current.details, 'IMAGES_DETAIL_GPS');
+            expect(gpsItem?.value).toBe('COMMON_NOT_AVAILABLE');
+            expect(gpsItem?.link).toBeUndefined();
+        });
+
+        it('keeps a real coordinate that has a zero axis', async () => {
+            mockEndpoints({ gps_latitude: 0, gps_longitude: 12.5 });
+
+            const { result } = renderDetails();
+
+            await waitFor(() =>
+                expect(findItem(result.current.details, 'IMAGES_DETAIL_GPS')?.link).toBeDefined()
+            );
+        });
+
+        it('exposes the disk location with a copy value from the location endpoint', async () => {
+            mockEndpoints({}, { disk_path: 'D:\\photos\\Trip.jpg' });
+
+            const { result } = renderDetails();
+
+            await waitFor(() =>
+                expect(findItem(result.current.details, 'IMAGES_DETAIL_DISK_LOCATION')?.value).toBe(
+                    'D:\\photos\\Trip.jpg'
+                )
+            );
+            expect(mockedApiGet).toHaveBeenCalledWith('/files/location/7');
+            expect(findItem(result.current.details, 'IMAGES_DETAIL_DISK_LOCATION')?.copyValue).toBe(
+                'D:\\photos\\Trip.jpg'
+            );
+        });
+
+        it('has no copy value while the location is unavailable', () => {
+            mockEndpoints({});
+
+            const { result } = renderDetails();
+
+            const locationItem = findItem(result.current.details, 'IMAGES_DETAIL_DISK_LOCATION');
+            expect(locationItem?.value).toBe('COMMON_NOT_AVAILABLE');
+            expect(locationItem?.copyValue).toBeUndefined();
+        });
+
+        it('shows software, description, classification and the capture date from the summary', async () => {
+            mockEndpoints({
+                software: 'Lightroom',
+                image_description: 'Sunset',
+                taken_at: '2026-03-10T10:00:00Z',
+                classification_confidence: 0.834,
+                suggested_name: 'sunset-beach',
+            });
+
+            const { result } = renderDetails();
+
+            await waitFor(() =>
+                expect(findValue(result.current.details, 'IMAGES_DETAIL_SOFTWARE')).toBe(
+                    'Lightroom'
+                )
+            );
+            expect(findValue(result.current.details, 'IMAGES_DETAIL_DESCRIPTION')).toBe('Sunset');
+            expect(findValue(result.current.details, 'IMAGES_DETAIL_CONFIDENCE')).toBe('83%');
+            expect(findValue(result.current.details, 'IMAGES_DETAIL_SUGGESTED_NAME')).toBe(
+                'sunset-beach'
+            );
+            expect(findValue(result.current.details, 'IMAGES_DETAIL_DATE')).toBe(
+                dateFormatter.format(new Date('2026-03-10T10:00:00Z'))
+            );
+        });
+
+        it('omits the position label when the total is unknown', () => {
+            mockEndpoints({});
+
+            const { result } = renderDetails(null);
+
+            expect(result.current.positionLabel).toBe('');
+        });
+    });
 });

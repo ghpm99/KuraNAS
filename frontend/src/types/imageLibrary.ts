@@ -102,6 +102,18 @@ export type ImageMetadataSummary = {
     f_number: number;
     iso: number;
     focal_length: number;
+    software?: string;
+    image_description?: string;
+    taken_at?: string | null;
+    gps_latitude?: number | null;
+    gps_longitude?: number | null;
+    classification_confidence?: number;
+    suggested_name?: string;
+};
+
+export type ImageLibraryNeighbors = {
+    before: ImageLibraryItem[];
+    after: ImageLibraryItem[];
 };
 
 export type ImageLibraryFolder = {

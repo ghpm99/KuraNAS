@@ -5,6 +5,7 @@ import type {
     ImageLibraryFilters,
     ImageLibraryOrdering,
     ImageLibraryPage,
+    ImageLibraryNeighbors,
     ImageMetadataSummary,
     ImageTimelineBucket,
 } from '@/types/imageLibrary';
@@ -67,6 +68,26 @@ export const getImageLibraryPage = async ({
         paramsSerializer: repeatedKeysSerializer,
     });
     return response.data;
+};
+
+export const defaultImageNeighborsCount = 20;
+
+export const getImageLibraryNeighbors = async (
+    fileId: number,
+    filters: ImageLibraryFilters,
+    count = defaultImageNeighborsCount
+): Promise<ImageLibraryNeighbors> => {
+    const response = await apiBase.get<ImageLibraryNeighbors>(
+        `/image/library/neighbors/${fileId}`,
+        {
+            params: { ...buildFilterParams(filters), count },
+            paramsSerializer: repeatedKeysSerializer,
+        }
+    );
+    return {
+        before: response.data?.before ?? [],
+        after: response.data?.after ?? [],
+    };
 };
 
 export const getImageLibraryCount = async (filters: ImageLibraryFilters): Promise<number> => {

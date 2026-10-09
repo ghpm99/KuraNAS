@@ -2,14 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
+import { getFileLocation } from '@/service/files';
 import { getImageMetadataSummary } from '@/service/image';
-import type { ImageLibraryItem } from '@/types/imageLibrary';
+import type { ImageLibraryItem, ImageMetadataSummary } from '@/types/imageLibrary';
 import { formatSize } from '@/utils';
 import { getImageCategoryLabelKey } from '../imageCategoryLabels';
+import { parseTakenAt } from '../imageDateGroups';
 
-type ViewerDetailItem = {
+export type ViewerDetailItem = {
     label: string;
     value: string;
+    link?: { href: string; label: string };
+    copyValue?: string;
 };
 
 export type ViewerDetailSection = {
@@ -21,7 +25,7 @@ type UseImageViewerModalParams = {
     activeImage: ImageLibraryItem;
     activeImageDate: Date | null;
     activeIndex: number;
-    totalImages: number;
+    totalImages: number | null;
     dateFormatter: Intl.DateTimeFormat;
 };
 
@@ -45,6 +49,28 @@ const formatExposureValue = (exposureSeconds?: number) => {
     return `${exposureSeconds}s`;
 };
 
+const gpsCoordinateDecimals = 6;
+
+const buildOpenStreetMapUrl = (latitude: number, longitude: number) => {
+    const latitudeText = latitude.toFixed(gpsCoordinateDecimals);
+    const longitudeText = longitude.toFixed(gpsCoordinateDecimals);
+    return `https://www.openstreetmap.org/?mlat=${latitudeText}&mlon=${longitudeText}#map=15/${latitudeText}/${longitudeText}`;
+};
+
+type GpsCoordinates = { latitude: number; longitude: number };
+
+const readGpsCoordinates = (summary?: ImageMetadataSummary): GpsCoordinates | null => {
+    const latitude = summary?.gps_latitude;
+    const longitude = summary?.gps_longitude;
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+        return null;
+    }
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+    return latitude === 0 && longitude === 0 ? null : { latitude, longitude };
+};
+
 const buildValue = (rawValue: string | undefined, fallback: string) => rawValue?.trim() || fallback;
 
 export const useImageViewerModal = ({
@@ -63,6 +89,14 @@ export const useImageViewerModal = ({
         retry: false,
     });
 
+    const { data: fileLocation } = useQuery({
+        queryKey: ['images', 'location', activeImage.file_id],
+        queryFn: () => getFileLocation(activeImage.file_id),
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
+        retry: false,
+    });
+
     return useMemo(() => {
         const notAvailable = t('COMMON_NOT_AVAILABLE');
         const folderPath = activeImage.parent_path;
@@ -75,10 +109,30 @@ export const useImageViewerModal = ({
             .join(' ');
         const focalLength = formatNumberValue(metadataSummary?.focal_length);
         const aperture = formatNumberValue(metadataSummary?.f_number);
-        const positionLabel = t('IMAGES_VIEWER_POSITION', {
-            current: String(activeIndex + 1),
-            total: String(totalImages),
-        });
+        const positionLabel =
+            totalImages === null
+                ? ''
+                : t('IMAGES_VIEWER_POSITION', {
+                      current: String(activeIndex + 1),
+                      total: String(totalImages),
+                  });
+        const diskPath = fileLocation?.disk_path?.trim() ?? '';
+        const capturedAt = activeImageDate ?? parseTakenAt(metadataSummary?.taken_at ?? null);
+        const gpsCoordinates = readGpsCoordinates(metadataSummary);
+        const gpsItem: ViewerDetailItem = gpsCoordinates
+            ? {
+                  label: t('IMAGES_DETAIL_GPS'),
+                  value: `${gpsCoordinates.latitude.toFixed(gpsCoordinateDecimals)}, ${gpsCoordinates.longitude.toFixed(gpsCoordinateDecimals)}`,
+                  link: {
+                      href: buildOpenStreetMapUrl(
+                          gpsCoordinates.latitude,
+                          gpsCoordinates.longitude
+                      ),
+                      label: t('IMAGES_DETAIL_GPS_OPEN_MAP'),
+                  },
+              }
+            : { label: t('IMAGES_DETAIL_GPS'), value: notAvailable };
+        const classificationConfidence = metadataSummary?.classification_confidence;
 
         const details: ViewerDetailSection[] = [
             {
@@ -91,6 +145,11 @@ export const useImageViewerModal = ({
                     {
                         label: t('IMAGES_DETAIL_FORMAT'),
                         value: buildValue(activeImage.format, notAvailable),
+                    },
+                    {
+                        label: t('IMAGES_DETAIL_DISK_LOCATION'),
+                        value: buildValue(diskPath, notAvailable),
+                        copyValue: diskPath || undefined,
                     },
                     { label: t('IMAGES_DETAIL_SIZE'), value: formatSize(activeImage.size) },
                     { label: t('IMAGES_DETAIL_DIMENSIONS'), value: resolution },
@@ -105,9 +164,18 @@ export const useImageViewerModal = ({
                 items: [
                     {
                         label: t('IMAGES_DETAIL_DATE'),
-                        value: activeImageDate
-                            ? dateFormatter.format(activeImageDate)
+                        value: capturedAt
+                            ? dateFormatter.format(capturedAt)
                             : t('IMAGES_DATE_UNAVAILABLE'),
+                    },
+                    gpsItem,
+                    {
+                        label: t('IMAGES_DETAIL_SOFTWARE'),
+                        value: buildValue(metadataSummary?.software, notAvailable),
+                    },
+                    {
+                        label: t('IMAGES_DETAIL_DESCRIPTION'),
+                        value: buildValue(metadataSummary?.image_description, notAvailable),
                     },
                 ],
             },
@@ -140,6 +208,21 @@ export const useImageViewerModal = ({
                     },
                 ],
             },
+            {
+                title: t('IMAGES_DETAILS_SECTION_AI'),
+                items: [
+                    {
+                        label: t('IMAGES_DETAIL_CONFIDENCE'),
+                        value: classificationConfidence
+                            ? `${Math.round(classificationConfidence * 100)}%`
+                            : notAvailable,
+                    },
+                    {
+                        label: t('IMAGES_DETAIL_SUGGESTED_NAME'),
+                        value: buildValue(metadataSummary?.suggested_name, notAvailable),
+                    },
+                ],
+            },
         ];
 
         return {
@@ -147,5 +230,14 @@ export const useImageViewerModal = ({
             folderPath,
             positionLabel,
         };
-    }, [activeImage, activeImageDate, activeIndex, dateFormatter, metadataSummary, t, totalImages]);
+    }, [
+        activeImage,
+        activeImageDate,
+        activeIndex,
+        dateFormatter,
+        fileLocation,
+        metadataSummary,
+        t,
+        totalImages,
+    ]);
 };

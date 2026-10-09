@@ -56,6 +56,7 @@ export default function ImageContent() {
         controls,
         dateFormatter,
         viewerImages,
+        viewerTotalImages,
         viewer,
         activeImageDate,
         isFavoritePending,
@@ -214,6 +215,11 @@ export default function ImageContent() {
                     dateFormatter={dateFormatter}
                     filteredImages={viewerImages}
                     zoom={viewer.zoom}
+                    pan={viewer.pan}
+                    rotation={viewer.rotation}
+                    totalImages={viewerTotalImages}
+                    canGoPrevious={viewer.canGoPrevious}
+                    canGoNext={viewer.canGoNext}
                     showDetails={viewer.showDetails}
                     showFilmstrip={viewer.showFilmstrip}
                     isSlideshowPlaying={viewer.isSlideshowPlaying}
@@ -226,6 +232,9 @@ export default function ImageContent() {
                     onDecreaseZoom={viewer.decreaseZoom}
                     onResetZoom={viewer.resetZoom}
                     onIncreaseZoom={viewer.increaseZoom}
+                    onZoomChange={viewer.setZoomLevel}
+                    onPanChange={viewer.setPan}
+                    onRotate={viewer.rotateClockwise}
                     onClose={handleCloseViewer}
                     onPrevious={viewer.goPrevious}
                     onNext={viewer.goNext}

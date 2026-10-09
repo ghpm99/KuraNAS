@@ -156,7 +156,14 @@
     justify-content: center;
     min-height: 0;
     padding: 0 56px;
-    overflow: auto;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.stageFrame:active {
+    cursor: grabbing;
 }
 
 .image {
@@ -164,7 +171,7 @@
     max-height: calc(100vh - 260px);
     object-fit: contain;
     transform-origin: center center;
-    transition: transform 0.16s ease;
+    -webkit-user-drag: none;
 }
 
 .navButton {
@@ -406,4 +413,28 @@
         border-radius: 16px;
         padding: 10px;
     }
+}
+
+.detailsLink {
+    color: rgba(147, 175, 255, 0.95);
+    font-size: 0.84rem;
+    text-decoration: underline;
+}
+
+.detailsCopyButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-self: start;
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.detailsCopyButton:hover {
+    background: rgba(255, 255, 255, 0.1);
 }

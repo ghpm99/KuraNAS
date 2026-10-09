@@ -642,6 +642,99 @@ describe('ImageContent', () => {
         });
     });
 
+    it('fetches the next gallery page when next is pressed on the last loaded image', async () => {
+        const firstPage = marchImages.slice(0, 2);
+        const secondPage = marchImages.slice(2, 3);
+        installApi([
+            { items: firstPage, has_next: true, next_cursor: 'cursor-1' },
+            { items: secondPage },
+        ]);
+
+        renderGallery();
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'IMAGES_OPEN_IMAGE_ARIA:March-2.jpg' })
+        );
+        const dialog = await screen.findByRole('dialog', { name: 'March-2.jpg' });
+        expect(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' })).toBeEnabled();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Feb-1.jpg' })).toBeInTheDocument();
+        expect(libraryParams()).toHaveLength(2);
+        expect(lastLibraryParams().cursor).toBe('cursor-1');
+        expect(screen.getByRole('button', { name: 'IMAGES_NEXT' })).toBeDisabled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        expect(await screen.findByRole('dialog', { name: 'March-2.jpg' })).toBeInTheDocument();
+    });
+
+    it('does not wrap around at the true end or the true start of the gallery', async () => {
+        installApi([{ items: marchImages.slice(0, 2) }]);
+
+        renderGallery('/images?image=1');
+        const dialog = await screen.findByRole('dialog', { name: 'March-1.jpg' });
+        expect(within(dialog).getByRole('button', { name: 'IMAGES_PREVIOUS' })).toBeDisabled();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+        expect(await screen.findByRole('dialog', { name: 'March-2.jpg' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'IMAGES_NEXT' })).toBeDisabled();
+        expect(libraryParams()).toHaveLength(1);
+    });
+
+    it('navigates around a deep-linked image that is not loaded using the neighbors endpoint', async () => {
+        installApi([{ items: marchImages }]);
+        const deepLinked = {
+            id: 99,
+            name: 'Far-away.jpg',
+            path: '/old/Far-away.jpg',
+            parent_path: '/old',
+            type: 2,
+            format: '.jpg',
+            size: 5,
+            updated_at: '',
+            created_at: '',
+            deleted_at: '',
+            last_interaction: '',
+            last_backup: '',
+            check_sum: '',
+            directory_content_count: 0,
+            starred: false,
+        };
+        const neighbors = {
+            before: [buildImageLibraryItem({ file_id: 100, name: 'Newer.jpg' })],
+            after: [buildImageLibraryItem({ file_id: 98, name: 'Older.jpg' })],
+        };
+        const defaultImplementation = mockedApiGet.getMockImplementation()!;
+        mockedApiGet.mockImplementation((url: string, config?: unknown) => {
+            if (url === '/files/path') {
+                return Promise.resolve({ data: { items: [deepLinked] } });
+            }
+            if (url === '/image/library/neighbors/99') {
+                return Promise.resolve({ data: neighbors });
+            }
+            return defaultImplementation(url, config);
+        });
+
+        renderGallery('/images?image=99&imagePath=%2Fold%2FFar-away.jpg');
+
+        const dialog = await screen.findByRole('dialog', { name: 'Far-away.jpg' });
+        await waitFor(() =>
+            expect(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' })).toBeEnabled()
+        );
+        expect(mockedApiGet).toHaveBeenCalledWith(
+            '/image/library/neighbors/99',
+            expect.objectContaining({ params: expect.objectContaining({ count: 20 }) })
+        );
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'IMAGES_NEXT' }));
+        expect(await screen.findByRole('dialog', { name: 'Older.jpg' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        fireEvent.click(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' }));
+        expect(await screen.findByRole('dialog', { name: 'Newer.jpg' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'IMAGES_PREVIOUS' })).toBeDisabled();
+    });
+
     it('opens the folder of the viewed image in the files page', async () => {
         installApi([{ items: marchImages }]);
 
