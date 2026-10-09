@@ -6,6 +6,8 @@ import (
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/image"
+
+	"github.com/lib/pq"
 )
 
 type ImageSummaryRepositoryInterface interface {
@@ -45,9 +47,15 @@ func (r *ImageSummaryRepository) GetImageSummaryByFileID(fileID int) (ImageSumma
 			&gpsLongitude,
 			&summary.ClassificationConfidence,
 			&summary.SuggestedName,
+			&summary.Caption,
+			pq.Array(&summary.Tags),
+			&summary.OCRText,
 		)
 		if scanErr != nil {
 			return scanErr
+		}
+		if summary.Tags == nil {
+			summary.Tags = []string{}
 		}
 		if takenAt.Valid {
 			summary.TakenAt = &takenAt.Time

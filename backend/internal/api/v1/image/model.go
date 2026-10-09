@@ -73,7 +73,8 @@ type ClassificationModel struct {
 	// ClassifiedByAI is an in-process signal (not persisted directly) telling the
 	// repository to stamp ai_classified_at = now() on upsert. It is true only when
 	// the AI service actually ran and returned a result for this image.
-	ClassifiedByAI bool `json:"-"`
+	ClassifiedByAI bool               `json:"-"`
+	Content        ContentDescription `json:"-"`
 }
 
 // PendingImageClassification identifies an indexed image still awaiting AI

@@ -16,6 +16,8 @@ const (
 	maxLibraryNameQueryLength   = 200
 	defaultLibraryNeighborCount = 20
 	maxLibraryNeighborCount     = 50
+	libraryMatchAll             = "all"
+	libraryMatchBoth            = "both"
 )
 
 var (
@@ -25,6 +27,7 @@ var (
 	errInvalidLibrarySort     = errors.New("invalid library sort")
 	errInvalidLibraryOrder    = errors.New("invalid library order")
 	errInvalidLibraryStarred  = errors.New("invalid library starred")
+	errInvalidLibraryMatch    = errors.New("invalid library match")
 	errInvalidLibraryQuery    = errors.New("invalid library query")
 	errInvalidLibraryFolder   = errors.New("invalid library folder")
 	errInvalidLibraryFileID   = errors.New("invalid library file id")
@@ -41,6 +44,7 @@ var libraryErrorMessageKeys = map[error]string{
 	errInvalidLibraryOrder:    "ERROR_IMAGE_LIBRARY_INVALID_ORDER",
 	errInvalidLibraryStarred:  "ERROR_IMAGE_LIBRARY_INVALID_STARRED",
 	errInvalidLibraryQuery:    "ERROR_IMAGE_LIBRARY_INVALID_QUERY",
+	errInvalidLibraryMatch:    "ERROR_IMAGE_LIBRARY_INVALID_MATCH",
 	errInvalidLibraryFolder:   "ERROR_IMAGE_LIBRARY_INVALID_FOLDER",
 	errInvalidLibraryCount:    "ERROR_IMAGE_LIBRARY_INVALID_COUNT",
 	errLibraryKeysetOnly:      "ERROR_IMAGE_LIBRARY_KEYSET_REQUIRES_DATE_SORT",
@@ -57,15 +61,19 @@ func libraryErrorMessageKey(err error) string {
 
 func parseLibraryFilter(c *gin.Context) (LibraryFilter, error) {
 	filter := LibraryFilter{
-		NameQuery: strings.ToLower(strings.TrimSpace(c.Query("q"))),
-		Camera:    strings.TrimSpace(c.Query("camera")),
-		Folder:    strings.TrimSpace(c.Query("folder")),
+		NameQuery:    strings.ToLower(strings.TrimSpace(c.Query("q"))),
+		ContentQuery: strings.ToLower(strings.TrimSpace(c.Query("content"))),
+		Camera:       strings.TrimSpace(c.Query("camera")),
+		Folder:       strings.TrimSpace(c.Query("folder")),
 	}
-	if len(filter.NameQuery) > maxLibraryNameQueryLength {
+	if len(filter.NameQuery) > maxLibraryNameQueryLength || len(filter.ContentQuery) > maxLibraryNameQueryLength {
 		return LibraryFilter{}, errInvalidLibraryQuery
 	}
 
 	var err error
+	if filter.MustMatchNameAndContent, err = parseLibraryMatchMode(c.Query("match")); err != nil {
+		return LibraryFilter{}, err
+	}
 	if filter.Categories, err = parseLibraryCategories(c.QueryArray("category")); err != nil {
 		return LibraryFilter{}, err
 	}
@@ -143,6 +151,17 @@ func parseLibraryFormats(rawFormats []string) ([]string, error) {
 		formats = append(formats, format)
 	}
 	return formats, nil
+}
+
+func parseLibraryMatchMode(rawMatch string) (bool, error) {
+	switch rawMatch {
+	case "", libraryMatchAll:
+		return false, nil
+	case libraryMatchBoth:
+		return true, nil
+	default:
+		return false, errInvalidLibraryMatch
+	}
 }
 
 func parseLibraryStarred(rawStarred string) (bool, error) {

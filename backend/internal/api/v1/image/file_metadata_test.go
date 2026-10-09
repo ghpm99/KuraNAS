@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func performImageSummaryRequest(service *imageSummaryServiceMock, route string) 
 }
 
 func TestImageSummaryHandlerDecodesFileIDAndReturnsSummary(t *testing.T) {
-	service := &imageSummaryServiceMock{summary: ImageSummaryDto{Width: 1920}}
+	service := &imageSummaryServiceMock{summary: ImageSummaryDto{Width: 1920, Caption: "a dog", Tags: []string{"dog", "park"}, OCRText: "stop"}}
 
 	recorder := performImageSummaryRequest(service, "/image/metadata/42")
 
@@ -55,8 +56,13 @@ func TestImageSummaryHandlerDecodesFileIDAndReturnsSummary(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if _, hasKey := body["width"]; !hasKey {
-		t.Fatalf("response must expose the width key, got %v", body)
+	for _, key := range []string{"width", "caption", "tags", "ocr_text"} {
+		if _, hasKey := body[key]; !hasKey {
+			t.Fatalf("response must expose the %s key, got %v", key, body)
+		}
+	}
+	if tags, isList := body["tags"].([]any); !isList || len(tags) != 2 {
+		t.Fatalf("tags must be a list of two entries, got %v", body["tags"])
 	}
 }
 
@@ -95,10 +101,10 @@ func (m *imageSummaryRepositoryMock) GetImageSummaryByFileID(fileID int) (ImageS
 }
 
 func TestImageSummaryServiceDelegatesToRepository(t *testing.T) {
-	expected := ImageSummaryDto{Width: 1920}
+	expected := ImageSummaryDto{Width: 1920, Caption: "a dog", Tags: []string{"dog"}, OCRText: "stop"}
 	service := NewImageSummaryService(&imageSummaryRepositoryMock{summary: expected})
 	summary, err := service.GetImageSummary(1)
-	if err != nil || summary != expected {
+	if err != nil || !reflect.DeepEqual(summary, expected) {
 		t.Fatalf("unexpected summary %+v err=%v", summary, err)
 	}
 
@@ -108,7 +114,7 @@ func TestImageSummaryServiceDelegatesToRepository(t *testing.T) {
 	}
 }
 
-var imageSummaryColumns = []string{"width", "height", "make", "model", "lens_model", "datetime_original", "exposure_time", "f_number", "iso", "focal_length", "software", "image_description", "taken_at", "gps_latitude", "gps_longitude", "classification_confidence", "classification_suggested_name"}
+var imageSummaryColumns = []string{"width", "height", "make", "model", "lens_model", "datetime_original", "exposure_time", "f_number", "iso", "focal_length", "software", "image_description", "taken_at", "gps_latitude", "gps_longitude", "classification_confidence", "classification_suggested_name", "ai_caption", "ai_tags", "ai_ocr_text"}
 
 func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	db, mock, err := sqlmock.New()
@@ -122,7 +128,7 @@ func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageSummaryByFileIDQuery)).
 		WithArgs(9).
-		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1920, 1080, "Canon", "R5", "RF50", "2026:01:01", 0.01, 1.8, 200.0, 50.0, "Lightroom", "A trip", takenAt, -23.55, -46.63, 0.8, "sunset-beach"))
+		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1920, 1080, "Canon", "R5", "RF50", "2026:01:01", 0.01, 1.8, 200.0, 50.0, "Lightroom", "A trip", takenAt, -23.55, -46.63, 0.8, "sunset-beach", "a beach", "{beach,sunset}", "EXIT"))
 	mock.ExpectRollback()
 	summary, err := repo.GetImageSummaryByFileID(9)
 	if err != nil || summary.Width != 1920 || summary.Make != "Canon" || summary.ISO != 200 {
@@ -134,6 +140,9 @@ func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	if summary.GPSLatitude == nil || *summary.GPSLatitude != -23.55 || summary.GPSLongitude == nil || *summary.GPSLongitude != -46.63 {
 		t.Fatalf("unexpected gps %+v", summary)
 	}
+	if summary.Caption != "a beach" || !reflect.DeepEqual(summary.Tags, []string{"beach", "sunset"}) || summary.OCRText != "EXIT" {
+		t.Fatalf("unexpected content fields %+v", summary)
+	}
 	if summary.ClassificationConfidence != 0.8 || summary.SuggestedName != "sunset-beach" {
 		t.Fatalf("unexpected ai fields %+v", summary)
 	}
@@ -141,7 +150,7 @@ func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageSummaryByFileIDQuery)).
 		WithArgs(11).
-		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1, 1, "", "", "", "", 0, 0, 0, 0, "", "", nil, nil, nil, 0, ""))
+		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1, 1, "", "", "", "", 0, 0, 0, 0, "", "", nil, nil, nil, 0, "", "", "{}", ""))
 	mock.ExpectRollback()
 	withoutGPS, err := repo.GetImageSummaryByFileID(11)
 	if err != nil || withoutGPS.GPSLatitude != nil || withoutGPS.GPSLongitude != nil || withoutGPS.TakenAt != nil {

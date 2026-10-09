@@ -20,4 +20,7 @@ type ImageSummaryDto struct {
 	GPSLongitude             *float64   `json:"gps_longitude"`
 	ClassificationConfidence float64    `json:"classification_confidence"`
 	SuggestedName            string     `json:"suggested_name"`
+	Caption                  string     `json:"caption"`
+	Tags                     []string   `json:"tags"`
+	OCRText                  string     `json:"ocr_text"`
 }

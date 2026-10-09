@@ -32,10 +32,24 @@ func (builder *libraryQueryBuilder) addClause(fragment string, values ...any) {
 	builder.clauses = append(builder.clauses, builder.bind(fragment, values...))
 }
 
-func (builder *libraryQueryBuilder) addFilter(filter LibraryFilter) {
-	if filter.NameQuery != "" {
+func (builder *libraryQueryBuilder) addTextFilter(filter LibraryFilter) {
+	hasName := filter.NameQuery != ""
+	hasContent := filter.ContentQuery != ""
+	switch {
+	case hasName && hasContent && !filter.MustMatchNameAndContent:
+		builder.addClause(queries.LibraryFilterNameOrContentQuery, likeContainsPattern(filter.NameQuery), likeContainsPattern(filter.ContentQuery))
+	case hasName && hasContent:
 		builder.addClause(queries.LibraryFilterNameQuery, likeContainsPattern(filter.NameQuery))
+		builder.addClause(queries.LibraryFilterContentQuery, likeContainsPattern(filter.ContentQuery))
+	case hasName:
+		builder.addClause(queries.LibraryFilterNameQuery, likeContainsPattern(filter.NameQuery))
+	case hasContent:
+		builder.addClause(queries.LibraryFilterContentQuery, likeContainsPattern(filter.ContentQuery))
 	}
+}
+
+func (builder *libraryQueryBuilder) addFilter(filter LibraryFilter) {
+	builder.addTextFilter(filter)
 	if len(filter.Categories) > 0 {
 		builder.addClause(queries.LibraryFilterCategoryQuery, pq.Array(categoryNames(filter.Categories)))
 	}

@@ -8,12 +8,15 @@ import (
 	"fmt"
 	"log"
 	"nas-go/api/internal/api/v1/files"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/img"
 	"regexp"
 	"strings"
 )
+
+const defaultContentLanguage = "en-US"
 
 // visionMaxDimension caps the longest edge of the image sent to the AI. A
 // downscaled copy is enough for recognition and keeps the base64 payload (and
@@ -135,7 +138,7 @@ func ClassifyImageByAI(ctx context.Context, file files.FileDto, metadata Metadat
 		TaskType:     ai.TaskClassification,
 		SystemPrompt: prompts.ImageClassificationSystemPrompt(),
 		Prompt:       buildClassificationPrompt(file, metadata),
-		MaxTokens:    200,
+		MaxTokens:    1200,
 		Temperature:  0.1,
 		Images:       encodeImageForAI(file.ResolveContentPath()),
 	})
@@ -210,13 +213,23 @@ func buildClassificationPrompt(file files.FileDto, metadata MetadataModel) strin
 		parts = append(parts, fmt.Sprintf("Description: %s", metadata.ImageDescription))
 	}
 
-	return prompts.ImageClassificationUserPrompt(strings.Join(parts, "\n"))
+	return prompts.ImageClassificationUserPrompt(strings.Join(parts, "\n"), contentLanguage())
+}
+
+func contentLanguage() string {
+	if configuredLanguage := strings.TrimSpace(config.AppConfig.Lang); configuredLanguage != "" {
+		return configuredLanguage
+	}
+	return defaultContentLanguage
 }
 
 type aiClassificationResponse struct {
-	Category      string  `json:"category"`
-	Confidence    float64 `json:"confidence"`
-	SuggestedName string  `json:"suggested_name"`
+	Category      string    `json:"category"`
+	Confidence    float64   `json:"confidence"`
+	SuggestedName string    `json:"suggested_name"`
+	Caption       *string   `json:"caption"`
+	Tags          *[]string `json:"tags"`
+	OCRText       *string   `json:"ocr_text"`
 }
 
 func parseAIClassificationResponse(content string) (ClassificationModel, error) {
@@ -244,6 +257,11 @@ func parseAIClassificationResponse(content string) (ClassificationModel, error) 
 		return ClassificationModel{}, fmt.Errorf("unknown AI category: %s", resp.Category)
 	}
 
+	contentDescription, err := buildContentDescription(resp.Caption, resp.Tags, resp.OCRText)
+	if err != nil {
+		return ClassificationModel{}, err
+	}
+
 	confidence := resp.Confidence
 	if confidence <= 0 || confidence > 1 {
 		confidence = 0.75
@@ -253,6 +271,7 @@ func parseAIClassificationResponse(content string) (ClassificationModel, error) 
 		Category:      category,
 		Confidence:    confidence,
 		SuggestedName: sanitizeSuggestedName(resp.SuggestedName),
+		Content:       contentDescription,
 	}, nil
 }
 

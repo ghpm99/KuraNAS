@@ -11,6 +11,8 @@ import (
 	"nas-go/api/pkg/ai"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -69,7 +71,7 @@ func TestEncodeImageForAI(t *testing.T) {
 }
 
 func TestParseAIClassificationResponseSuggestedName(t *testing.T) {
-	result, err := parseAIClassificationResponse(`{"category":"art","confidence":0.9,"suggested_name":"Rikka Takanashi"}`)
+	result, err := parseAIClassificationResponse(`{"category":"art","confidence":0.9,"suggested_name":"Rikka Takanashi",` + validContentFields + `}`)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -147,6 +149,8 @@ func TestClassifyImage(t *testing.T) {
 	}
 }
 
+const validContentFields = `"caption": "a dog in the park", "tags": ["Dog", "park"], "ocr_text": ""`
+
 func classifyWithAnswer(t *testing.T, content string) (ClassificationModel, error) {
 	t.Helper()
 	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
@@ -173,7 +177,7 @@ func TestClassifyImageByAI_SuccessMarksClassifiedByAI(t *testing.T) {
 			if req.TaskType != ai.TaskClassification {
 				t.Fatalf("expected classification task, got %s", req.TaskType)
 			}
-			return ai.Response{Content: `{"category": "landscape", "confidence": 0.85}`}, nil
+			return ai.Response{Content: `{"category": "landscape", "confidence": 0.85, ` + validContentFields + `}`}, nil
 		},
 	}
 	classification, err := ClassifyImageByAI(context.Background(), file, MetadataModel{}, mock)
@@ -215,14 +219,14 @@ func TestClassifyImageByAI_UnknownCategoryReturnsError(t *testing.T) {
 }
 
 func TestClassifyImageByAI_MarkdownCodeFenceStripped(t *testing.T) {
-	classification, err := classifyWithAnswer(t, "```json\n{\"category\": \"meme\", \"confidence\": 0.80}\n```")
+	classification, err := classifyWithAnswer(t, "```json\n{\"category\": \"meme\", \"confidence\": 0.80, "+validContentFields+"}\n```")
 	if err != nil || classification.Category != ClassificationCategoryMeme {
 		t.Fatalf("expected meme, got %+v err=%v", classification, err)
 	}
 }
 
 func TestClassifyImageByAI_InvalidConfidenceDefaultsTo075(t *testing.T) {
-	classification, err := classifyWithAnswer(t, `{"category": "art", "confidence": -1}`)
+	classification, err := classifyWithAnswer(t, `{"category": "art", "confidence": -1, `+validContentFields+`}`)
 	if err != nil || classification.Category != ClassificationCategoryArt {
 		t.Fatalf("expected art, got %+v err=%v", classification, err)
 	}
@@ -256,7 +260,7 @@ func TestBuildClassificationPrompt(t *testing.T) {
 func TestParseAIClassificationResponse_AllValidCategories(t *testing.T) {
 	categories := []string{"capture", "photo", "other", "document", "receipt", "landscape", "portrait", "meme", "art", "screenshot_app"}
 	for _, cat := range categories {
-		result, err := parseAIClassificationResponse(`{"category": "` + cat + `", "confidence": 0.8}`)
+		result, err := parseAIClassificationResponse(`{"category": "` + cat + `", "confidence": 0.8, ` + validContentFields + `}`)
 		if err != nil {
 			t.Fatalf("unexpected error for category %s: %v", cat, err)
 		}
@@ -273,4 +277,68 @@ func containsStr(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestParseAIClassificationResponseExtractsContent(t *testing.T) {
+	longText := strings.Repeat("a", 2500)
+	result, err := parseAIClassificationResponse(`{"category":"photo","confidence":0.9,"caption":"  A dog in the park ","tags":["Dog"," park ","dog",""],"ocr_text":"` + longText + `"}`)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if result.Content.Caption != "A dog in the park" {
+		t.Fatalf("unexpected caption %q", result.Content.Caption)
+	}
+	if !reflect.DeepEqual(result.Content.Tags, []string{"dog", "park"}) {
+		t.Fatalf("expected normalized deduplicated tags, got %v", result.Content.Tags)
+	}
+	if len(result.Content.OCRText) != 2000 {
+		t.Fatalf("expected OCR text truncated to 2000, got %d", len(result.Content.OCRText))
+	}
+	if result.Content.SearchText() != "a dog in the park dog park "+result.Content.OCRText {
+		t.Fatalf("unexpected search text %q", result.Content.SearchText())
+	}
+}
+
+func TestParseAIClassificationResponseRejectsInvalidContent(t *testing.T) {
+	manyTags := strings.TrimSuffix(strings.Repeat(`"tag",`, 16), ",")
+	cases := map[string]string{
+		"missing caption":   `{"category":"art","tags":[],"ocr_text":""}`,
+		"empty caption":     `{"category":"art","caption":"  ","tags":[],"ocr_text":""}`,
+		"missing tags":      `{"category":"art","caption":"x","ocr_text":""}`,
+		"missing ocr":       `{"category":"art","caption":"x","tags":[]}`,
+		"tags not a list":   `{"category":"art","caption":"x","tags":"dog","ocr_text":""}`,
+		"tag not a string":  `{"category":"art","caption":"x","tags":[1],"ocr_text":""}`,
+		"too many tags":     `{"category":"art","caption":"x","tags":[` + manyTags + `],"ocr_text":""}`,
+		"oversized tag":     `{"category":"art","caption":"x","tags":["` + strings.Repeat("a", 41) + `"],"ocr_text":""}`,
+		"caption not text":  `{"category":"art","caption":3,"tags":[],"ocr_text":""}`,
+		"ocr text not text": `{"category":"art","caption":"x","tags":[],"ocr_text":[]}`,
+	}
+	for name, content := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := parseAIClassificationResponse(content); err == nil {
+				t.Fatalf("expected error for %s", name)
+			}
+		})
+	}
+}
+
+func TestClassifyImageByAI_RequestsContentInSingleCall(t *testing.T) {
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	calls := 0
+	mock := &aiServiceMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			calls++
+			if !strings.Contains(req.Prompt, "ocr_text") || !strings.Contains(req.Prompt, "written in") {
+				t.Fatalf("prompt must ask for content in the configured language, got %q", req.Prompt)
+			}
+			return ai.Response{Content: `{"category":"photo","confidence":0.9,` + validContentFields + `}`}, nil
+		},
+	}
+	classification, err := ClassifyImageByAI(context.Background(), file, MetadataModel{}, mock)
+	if err != nil || calls != 1 {
+		t.Fatalf("expected one successful call, calls=%d err=%v", calls, err)
+	}
+	if classification.Content.Caption != "a dog in the park" {
+		t.Fatalf("unexpected content %+v", classification.Content)
+	}
 }

@@ -141,3 +141,28 @@ func TestBuildLibraryListQueryNewerThanListsOldestFirstAfterThePivot(t *testing.
 		t.Fatalf("unexpected query or arguments %v:\n%s", arguments, query)
 	}
 }
+
+func TestBuildLibraryTextFilterShapes(t *testing.T) {
+	testCases := []struct {
+		label             string
+		filter            LibraryFilter
+		expectedFragments []string
+		expectedArguments int
+	}{
+		{"name only", LibraryFilter{NameQuery: "car"}, []string{"lower(hf.name) LIKE lower($2)"}, 2},
+		{"content only", LibraryFilter{ContentQuery: "car"}, []string{"im.ai_search_text LIKE $2"}, 2},
+		{"name or content uses union", LibraryFilter{NameQuery: "car", ContentQuery: "car"}, []string{"UNION", "lower(name_match.name) LIKE lower($2)", "content_match.ai_search_text LIKE $3"}, 3},
+		{"name and content", LibraryFilter{NameQuery: "car", ContentQuery: "red", MustMatchNameAndContent: true}, []string{"lower(hf.name) LIKE lower($2)", "im.ai_search_text LIKE $3"}, 3},
+	}
+	for _, testCase := range testCases {
+		query, arguments := buildLibraryCountQuery(testCase.filter)
+		for _, fragment := range testCase.expectedFragments {
+			if !strings.Contains(query, fragment) {
+				t.Fatalf("%s: expected %q in query:\n%s", testCase.label, fragment, query)
+			}
+		}
+		if len(arguments) != testCase.expectedArguments || strings.Contains(query, "@") {
+			t.Fatalf("%s: unexpected arguments %v in query:\n%s", testCase.label, arguments, query)
+		}
+	}
+}

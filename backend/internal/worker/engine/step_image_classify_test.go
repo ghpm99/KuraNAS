@@ -79,7 +79,7 @@ func (f *fakeVisionService) Execute(ctx context.Context, req ai.Request) (ai.Res
 	if f.executeFn != nil {
 		return f.executeFn(ctx, req)
 	}
-	return ai.Response{Content: `{"category": "landscape", "confidence": 0.9}`}, nil
+	return ai.Response{Content: `{"category": "landscape", "confidence": 0.9, "caption": "a lake", "tags": ["lake"], "ocr_text": ""}`}, nil
 }
 
 func newClassifyContext(repo imagedom.RepositoryInterface, vision ai.ServiceInterface, settings AISettingsReader) *WorkerContext {
@@ -146,6 +146,27 @@ func TestExecuteImageClassifyBatchStep_StoresAIClassification(t *testing.T) {
 	}
 	if repo.stored[1].Category != imagedom.ClassificationCategoryLandscape {
 		t.Fatalf("unexpected stored classification: %+v", repo.stored[1])
+	}
+	if repo.stored[1].Content.Caption != "a lake" || len(repo.stored[1].Content.Tags) != 1 {
+		t.Fatalf("expected stored content, got %+v", repo.stored[1].Content)
+	}
+}
+
+type fakeContentlessVisionService struct{}
+
+func (fakeContentlessVisionService) Execute(ctx context.Context, req ai.Request) (ai.Response, error) {
+	return ai.Response{Content: `{"category": "landscape", "confidence": 0.9}`}, nil
+}
+
+func TestExecuteImageClassifyBatchStep_AnswerWithoutContentStoresNothing(t *testing.T) {
+	repo := &fakeClassifyImageRepo{pendingPages: [][]imagedom.PendingImageClassification{pendingImages(1)}}
+	ctx := newClassifyContext(repo, fakeContentlessVisionService{}, stubAISettings{enabled: true})
+
+	if err := executeImageClassifyBatchStep(ctx, jobs.StepModel{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(repo.stored) != 0 {
+		t.Fatalf("invalid AI answer must store nothing, got %+v", repo.stored)
 	}
 }
 
@@ -216,7 +237,7 @@ func TestExecuteImageClassifyBatchStep_SuccessResetsFailureStreak(t *testing.T) 
 		if attempt.Add(1)%2 == 1 {
 			return ai.Response{}, errors.New("flaky")
 		}
-		return ai.Response{Content: `{"category": "art", "confidence": 0.8}`}, nil
+		return ai.Response{Content: `{"category": "art", "confidence": 0.8, "caption": "a lake", "tags": ["lake"], "ocr_text": ""}`}, nil
 	}}
 	repo := &fakeClassifyImageRepo{pendingPages: [][]imagedom.PendingImageClassification{pendingImages(1, 2, 3, 4, 5, 6, 7, 8)}}
 	ctx := newClassifyContext(repo, vision, stubAISettings{enabled: true})
