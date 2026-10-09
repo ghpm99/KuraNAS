@@ -124,3 +124,58 @@ func TestCatchAllPathsKeepSpacesHashAndEncodedSlashes(t *testing.T) {
 		})
 	}
 }
+
+func (service *catalogKeyRecorderService) recordQueue(catalog string, key string) (music.MusicQueueDto, error) {
+	service.receivedKeys[catalog] = key
+	return music.MusicQueueDto{Items: []music.MusicQueueEntryDto{}}, nil
+}
+
+func (service *catalogKeyRecorderService) GetLibraryQueueByFolder(folderKey string) (music.MusicQueueDto, error) {
+	return service.recordQueue("folders", folderKey)
+}
+
+func (service *catalogKeyRecorderService) GetLibraryQueueByArtist(artistKey string) (music.MusicQueueDto, error) {
+	return service.recordQueue("artists", artistKey)
+}
+
+func (service *catalogKeyRecorderService) GetLibraryQueueByAlbum(albumKey string) (music.MusicQueueDto, error) {
+	return service.recordQueue("albums", albumKey)
+}
+
+func (service *catalogKeyRecorderService) GetLibraryQueueByGenre(genreKey string) (music.MusicQueueDto, error) {
+	return service.recordQueue("genres", genreKey)
+}
+
+func TestMusicQueueRoutesDecodeCatalogKeys(t *testing.T) {
+	testCases := []struct {
+		catalog     string
+		encodedKey  string
+		expectedKey string
+	}{
+		{"folders", "%2Fdata%2FRock", "/data/Rock"},
+		{"artists", "AC%2FDC", "AC/DC"},
+		{"albums", "100%25%20Hits", "100% Hits"},
+		{"genres", "M%C3%BAsica%20Popular", "Música Popular"},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.catalog, func(t *testing.T) {
+			recorder := &catalogKeyRecorderService{receivedKeys: map[string]string{}}
+			context := buildRouteContext()
+			context.Music.Handler = music.NewHandler(recorder, nil, nil, silentLogService{})
+			router := SetUpRouter()
+			RegisterMusicRoutes(router.Group("/api/v1"), context)
+
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/music/library/"+testCase.catalog+"/"+testCase.encodedKey+"/queue", nil)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+
+			if response.Code != http.StatusOK {
+				t.Fatalf("expected status 200, got %d: %s", response.Code, response.Body.String())
+			}
+			if recorder.receivedKeys[testCase.catalog] != testCase.expectedKey {
+				t.Fatalf("expected key %q, got %q", testCase.expectedKey, recorder.receivedKeys[testCase.catalog])
+			}
+		})
+	}
+}

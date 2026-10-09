@@ -264,3 +264,32 @@ func ParseTrackPaginationToDto(pagination *utils.PaginationResponse[PlaylistTrac
 
 	return paginationResponse, nil
 }
+
+type MusicQueueEntryDto struct {
+	FileID        int     `json:"file_id"`
+	Name          string  `json:"name"`
+	Path          string  `json:"path"`
+	Format        string  `json:"format"`
+	Title         string  `json:"title"`
+	Artist        string  `json:"artist"`
+	Album         string  `json:"album"`
+	LengthSeconds float64 `json:"length"`
+}
+
+type MusicQueueDto struct {
+	Items     []MusicQueueEntryDto `json:"items"`
+	Truncated bool                 `json:"truncated"`
+}
+
+func (entry MusicQueueEntryModel) ToDto() MusicQueueEntryDto {
+	return MusicQueueEntryDto{
+		FileID:        entry.FileID,
+		Name:          entry.Name,
+		Path:          entry.Path,
+		Format:        entry.Format,
+		Title:         entry.Title,
+		Artist:        entry.Artist,
+		Album:         entry.Album,
+		LengthSeconds: entry.LengthSeconds,
+	}
+}

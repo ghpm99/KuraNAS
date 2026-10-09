@@ -42,6 +42,12 @@ type musicRepoMock struct {
 	getFileIDsByArtistsFn  func(artistKeys []string) ([]int, error)
 	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
 
+	queueEntries     []MusicQueueEntryModel
+	queueFailure     error
+	receivedQueueKey string
+	receivedLimit    int
+	receivedFileIDs  []int
+
 	getMusicFn         func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getMusicArtistsFn  func(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)
 	getMusicByArtistFn func(artist string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
