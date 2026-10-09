@@ -135,3 +135,9 @@ var AlbumItemsRemoveQuery string
 
 //go:embed library_filter_album.sql
 var LibraryFilterAlbumQuery string
+
+//go:embed update_image_ai_classification.sql
+var UpdateImageAIClassificationQuery string
+
+//go:embed select_images_without_metadata.sql
+var SelectImagesWithoutMetadataQuery string

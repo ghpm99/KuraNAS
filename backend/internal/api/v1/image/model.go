@@ -80,6 +80,14 @@ type ClassificationModel struct {
 // classification (ai_classified_at IS NULL and heuristic confidence below the
 // threshold where the AI would take over).
 type PendingImageClassification struct {
+	FileID     int
+	Path       string
+	MetadataID int
+}
+
+// ImageWithoutMetadata identifies an active image file that has no
+// image_metadata row yet, so it is invisible to the image library.
+type ImageWithoutMetadata struct {
 	FileID int
 	Path   string
 }

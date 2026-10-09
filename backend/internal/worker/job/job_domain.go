@@ -5,24 +5,25 @@ import "time"
 type JobType string
 
 const (
-	JobTypeStartupScan           JobType = "startup_scan"
-	JobTypeUploadProcess         JobType = "upload_process"
-	JobTypeFSEvent               JobType = "fs_event"
-	JobTypeReindexFolder         JobType = "reindex_folder"
-	JobTypeTakeoutImport         JobType = "takeout_import"
-	JobTypeOllamaPull            JobType = "ollama_pull"
-	JobTypeAIPlaylistCluster     JobType = "ai_playlist_cluster"
-	JobTypeBackupRun             JobType = "backup_run"
-	JobTypeTierMigration         JobType = "tier_migration"
-	JobTypeEmailSync             JobType = "email_sync"
-	JobTypeRemoteFetch           JobType = "remote_fetch"
-	JobTypeCaptureProcess        JobType = "capture_process"
-	JobTypeImageClassifyBackfill JobType = "image_classify_backfill"
+	JobTypeStartupScan            JobType = "startup_scan"
+	JobTypeUploadProcess          JobType = "upload_process"
+	JobTypeFSEvent                JobType = "fs_event"
+	JobTypeReindexFolder          JobType = "reindex_folder"
+	JobTypeTakeoutImport          JobType = "takeout_import"
+	JobTypeOllamaPull             JobType = "ollama_pull"
+	JobTypeAIPlaylistCluster      JobType = "ai_playlist_cluster"
+	JobTypeBackupRun              JobType = "backup_run"
+	JobTypeTierMigration          JobType = "tier_migration"
+	JobTypeEmailSync              JobType = "email_sync"
+	JobTypeRemoteFetch            JobType = "remote_fetch"
+	JobTypeCaptureProcess         JobType = "capture_process"
+	JobTypeImageClassifyBackfill  JobType = "image_classify_backfill"
+	JobTypeImageMetadataReconcile JobType = "image_metadata_reconcile"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill, JobTypeImageMetadataReconcile:
 		return true
 	default:
 		return false
@@ -51,11 +52,13 @@ const (
 	StepTypeRemoteFetch            StepType = "remote_fetch"
 	StepTypeCapturePromote         StepType = "capture_promote"
 	StepTypeImageClassifyEnumerate StepType = "image_classify_enumerate"
+	StepTypeImageClassifyBatch     StepType = "image_classify_batch"
+	StepTypeImageMetadataReconcile StepType = "image_metadata_reconcile"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile:
 		return true
 	default:
 		return false

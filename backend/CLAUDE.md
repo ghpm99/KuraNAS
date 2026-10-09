@@ -85,8 +85,9 @@ Because the client only ever sees a generic translated `error` string, the **rea
 ## Worker subsystem (`internal/worker`)
 
 Started by `StartWorkers` (gated by `ENABLE_WORKERS`). The **Job/Step orchestrator is the only indexing pipeline** — `JobsRepository` is mandatory; without it `StartWorkers` logs an explicit error and refuses to start (no silent fallback; the legacy channel-based scan pipeline was removed in task 07 of `docs/melhorias/`). It persists a DAG of jobs and steps to `worker_job*` tables. Enumerated in `job_domain.go`, each with an `IsValid()` guard:
-   - Job types: `startup_scan`, `upload_process`, `fs_event`, `reindex_folder`, `takeout_import`, `ollama_pull`.
-   - Step types: `scan_filesystem`, `diff_against_db`, `metadata`, `checksum`, `persist`, `thumbnail`, `playlist_index`, `mark_deleted`, `takeout_extract`, `ollama_model_pull`.
+   - Job types: `startup_scan`, `upload_process`, `fs_event`, `reindex_folder`, `takeout_import`, `ollama_pull`, `image_classify_backfill`, `image_metadata_reconcile` (plus others in `job_domain.go`).
+   - Step types: `scan_filesystem`, `diff_against_db`, `metadata`, `checksum`, `persist`, `thumbnail`, `playlist_index`, `mark_deleted`, `takeout_extract`, `ollama_model_pull`, `image_classify_batch`, `image_metadata_reconcile` (plus others in `job_domain.go`).
+   - Image AI classification is never in the metadata step: metadata persists only the heuristic and enqueues one deduplicated low-priority `image_classify_backfill` job, whose single step pages through pending images (per-call timeout, failures logged, aborts after consecutive failures). A startup `image_metadata_reconcile` job indexes active image files lacking an `image_metadata` row.
    - Steps carry `DependsOn` and `MaxAttempts`; jobs/steps have priority (`low`/`normal`/`high`, weighted) and status enums.
 
 The task channel (`chan utils.Task`) still exists, but only for auxiliary work: `UpdateCheckSum`, `CreateThumbnail`, `GenerateVideoPlaylists`. `ScanFiles`/`ScanDir` tasks are translated by the pool into `fs_event` jobs. The entry-point watcher uses OS-native filesystem events (`fsnotify` via `recursive_watcher.go`) with a debounced dispatch and a low-frequency full reconciliation (`WATCHER_RECONCILE_HOURS`, default 24h); watcher errors/overflow automatically enqueue a full `fs_event` reconciliation.

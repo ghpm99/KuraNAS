@@ -86,7 +86,13 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 		return executeCapturePromoteStep(context, step)
 	}
 	executors[job.StepTypeImageClassifyEnumerate] = func(step jobs.StepModel) error {
-		return executeImageClassifyEnumerateStep(context, step)
+		return executeImageClassifyBatchStep(context, step)
+	}
+	executors[job.StepTypeImageClassifyBatch] = func(step jobs.StepModel) error {
+		return executeImageClassifyBatchStep(context, step)
+	}
+	executors[job.StepTypeImageMetadataReconcile] = func(step jobs.StepModel) error {
+		return executeImageMetadataReconcileStep(context, step)
 	}
 
 	return executors
@@ -167,7 +173,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 
-	metadata, err := scan.GetMetadata(fileDto, scan.PythonScriptRunner, aiServiceForImageClassification(context))
+	metadata, err := scan.GetMetadata(fileDto, scan.PythonScriptRunner)
 	if err != nil {
 		return err
 	}
@@ -195,6 +201,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 			if upsertErr != nil {
 				return fmt.Errorf("metadata step: upsert image metadata: %w", upsertErr)
 			}
+			enqueueImageAIClassifyIfNeeded(context, imgMeta.Classification, fileDto.Path)
 		}
 		return nil
 	}

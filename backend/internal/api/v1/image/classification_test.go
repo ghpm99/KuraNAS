@@ -147,32 +147,26 @@ func TestClassifyImage(t *testing.T) {
 	}
 }
 
-func TestClassifyImageWithAI_NilServiceUsesHeuristic(t *testing.T) {
+func classifyWithAnswer(t *testing.T, content string) (ClassificationModel, error) {
+	t.Helper()
 	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	result := ClassifyImageWithAI(file, MetadataModel{}, nil)
-	if result.Category != ClassificationCategoryOther {
-		t.Fatalf("expected other category, got %s", result.Category)
-	}
-}
-
-func TestClassifyImageWithAI_HighConfidenceSkipsAI(t *testing.T) {
-	file := files.FileDto{
-		Name: "Screenshot_2026-03-14.png",
-		Path: "/library/screens/Screenshot_2026-03-14.png",
-	}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			t.Fatal("AI should not be called for high confidence heuristic")
-			return ai.Response{}, nil
+			return ai.Response{Content: content}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryCapture {
-		t.Fatalf("expected capture, got %s", result.Category)
+	return ClassifyImageByAI(context.Background(), file, MetadataModel{}, mock)
+}
+
+func TestClassifyImageByAI_NilServiceReturnsUnavailable(t *testing.T) {
+	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
+	_, err := ClassifyImageByAI(context.Background(), file, MetadataModel{}, nil)
+	if !errors.Is(err, ErrAIServiceUnavailable) {
+		t.Fatalf("expected ErrAIServiceUnavailable, got %v", err)
 	}
 }
 
-func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
+func TestClassifyImageByAI_SuccessMarksClassifiedByAI(t *testing.T) {
 	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
 	mock := &aiServiceMock{
 		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
@@ -182,91 +176,58 @@ func TestClassifyImageWithAI_LowConfidenceCallsAI(t *testing.T) {
 			return ai.Response{Content: `{"category": "landscape", "confidence": 0.85}`}, nil
 		},
 	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryLandscape {
-		t.Fatalf("expected landscape, got %s", result.Category)
+	classification, err := ClassifyImageByAI(context.Background(), file, MetadataModel{}, mock)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Confidence != 0.85 {
-		t.Fatalf("expected 0.85 confidence, got %f", result.Confidence)
+	if classification.Category != ClassificationCategoryLandscape || classification.Confidence != 0.85 {
+		t.Fatalf("unexpected classification: %+v", classification)
 	}
-	if !result.ClassifiedByAI {
+	if !classification.ClassifiedByAI {
 		t.Fatal("expected ClassifiedByAI to be true when the AI service answered")
 	}
 }
 
-func TestClassifyImageWithAI_HeuristicDoesNotSetClassifiedByAI(t *testing.T) {
+func TestClassifyImageByAI_ProviderErrorIsReturned(t *testing.T) {
 	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	result := ClassifyImageWithAI(file, MetadataModel{}, nil)
-	if result.ClassifiedByAI {
-		t.Fatal("expected ClassifiedByAI to be false on the heuristic path")
+	providerErr := errors.New("provider timeout")
+	mock := &aiServiceMock{
+		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
+			return ai.Response{}, providerErr
+		},
+	}
+	_, err := ClassifyImageByAI(context.Background(), file, MetadataModel{}, mock)
+	if !errors.Is(err, providerErr) {
+		t.Fatalf("expected provider error, got %v", err)
 	}
 }
 
-func TestClassifyImageWithAI_AIErrorFallsBackToHeuristic(t *testing.T) {
-	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	mock := &aiServiceMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{}, errors.New("provider timeout")
-		},
-	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryOther {
-		t.Fatalf("expected fallback to other, got %s", result.Category)
+func TestClassifyImageByAI_InvalidJSONReturnsError(t *testing.T) {
+	if _, err := classifyWithAnswer(t, "not json"); err == nil {
+		t.Fatal("expected error for invalid JSON")
 	}
 }
 
-func TestClassifyImageWithAI_InvalidJSONFallsBackToHeuristic(t *testing.T) {
-	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	mock := &aiServiceMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: "not json"}, nil
-		},
-	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryOther {
-		t.Fatalf("expected fallback to other, got %s", result.Category)
+func TestClassifyImageByAI_UnknownCategoryReturnsError(t *testing.T) {
+	if _, err := classifyWithAnswer(t, `{"category": "unknown_cat", "confidence": 0.9}`); err == nil {
+		t.Fatal("expected error for unknown category")
 	}
 }
 
-func TestClassifyImageWithAI_UnknownCategoryFallsBackToHeuristic(t *testing.T) {
-	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	mock := &aiServiceMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: `{"category": "unknown_cat", "confidence": 0.9}`}, nil
-		},
-	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryOther {
-		t.Fatalf("expected fallback to other, got %s", result.Category)
+func TestClassifyImageByAI_MarkdownCodeFenceStripped(t *testing.T) {
+	classification, err := classifyWithAnswer(t, "```json\n{\"category\": \"meme\", \"confidence\": 0.80}\n```")
+	if err != nil || classification.Category != ClassificationCategoryMeme {
+		t.Fatalf("expected meme, got %+v err=%v", classification, err)
 	}
 }
 
-func TestClassifyImageWithAI_MarkdownCodeFenceStripped(t *testing.T) {
-	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	mock := &aiServiceMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: "```json\n{\"category\": \"meme\", \"confidence\": 0.80}\n```"}, nil
-		},
+func TestClassifyImageByAI_InvalidConfidenceDefaultsTo075(t *testing.T) {
+	classification, err := classifyWithAnswer(t, `{"category": "art", "confidence": -1}`)
+	if err != nil || classification.Category != ClassificationCategoryArt {
+		t.Fatalf("expected art, got %+v err=%v", classification, err)
 	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryMeme {
-		t.Fatalf("expected meme, got %s", result.Category)
-	}
-}
-
-func TestClassifyImageWithAI_InvalidConfidenceDefaultsTo075(t *testing.T) {
-	file := files.FileDto{Name: "wallpaper.png", Path: "/downloads/wallpaper.png"}
-	mock := &aiServiceMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: `{"category": "art", "confidence": -1}`}, nil
-		},
-	}
-	result := ClassifyImageWithAI(file, MetadataModel{}, mock)
-	if result.Category != ClassificationCategoryArt {
-		t.Fatalf("expected art, got %s", result.Category)
-	}
-	if result.Confidence != 0.75 {
-		t.Fatalf("expected 0.75 default confidence, got %f", result.Confidence)
+	if classification.Confidence != 0.75 {
+		t.Fatalf("expected 0.75 default confidence, got %f", classification.Confidence)
 	}
 }
 
