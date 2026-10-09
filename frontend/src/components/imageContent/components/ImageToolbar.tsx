@@ -1,4 +1,6 @@
-import { Search } from 'lucide-react';
+import { Copy, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getAnalyticsImageDuplicatesRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import styles from '../ImageContent.module.css';
 
@@ -18,6 +20,7 @@ export default function ImageToolbar({
     onSearchChange,
 }: ImageToolbarProps) {
     const { t } = useI18n();
+    const navigate = useNavigate();
 
     return (
         <div className={styles.toolbar}>
@@ -25,6 +28,14 @@ export default function ImageToolbar({
                 <h2>{title}</h2>
                 <p>{summary}</p>
             </div>
+            <button
+                type="button"
+                className={styles.toolbarAction}
+                onClick={() => navigate(getAnalyticsImageDuplicatesRoute())}
+            >
+                <Copy size={16} />
+                {t('IMAGES_DUPLICATES_ACTION')}
+            </button>
             {isSearchVisible && (
                 <label className={styles.search}>
                     <Search size={16} />

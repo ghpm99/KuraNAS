@@ -85,6 +85,8 @@ export const getAnalyticsRoute = (section: AnalyticsSection) => {
     return `${appRoutes.analytics}/${section}`;
 };
 
+export const getAnalyticsImageDuplicatesRoute = () => `${appRoutes.analytics}?type=image`;
+
 export const isAnalyticsRoute = (pathname: string) =>
     pathname === appRoutes.analytics || pathname.startsWith(`${appRoutes.analytics}/`);
 

@@ -4,6 +4,7 @@ import {
     AnalyticsPeriod,
     DuplicateGroup,
     DuplicatesSummary,
+    DuplicatesType,
     ExtensionStat,
     FolderUsage,
     HealthStatus,
@@ -70,16 +71,21 @@ export const fetchAnalyticsHotFolders = async (
     return response.data;
 };
 
-export const fetchAnalyticsDuplicates = async (): Promise<DuplicatesSummary> => {
-    const response = await apiBase.get<DuplicatesSummary>('/analytics/duplicates');
+export const fetchAnalyticsDuplicates = async (
+    type?: DuplicatesType
+): Promise<DuplicatesSummary> => {
+    const response = await apiBase.get<DuplicatesSummary>('/analytics/duplicates', {
+        params: type ? { type } : undefined,
+    });
     return response.data;
 };
 
 export const fetchAnalyticsDuplicateGroups = async (
-    limit?: number
+    limit?: number,
+    type?: DuplicatesType
 ): Promise<DuplicateGroup[]> => {
     const response = await apiBase.get<DuplicateGroup[]>('/analytics/duplicates/groups', {
-        params: limit ? { limit } : undefined,
+        params: limit || type ? { ...(limit ? { limit } : {}), ...(type ? { type } : {}) } : undefined,
     });
     return response.data;
 };
