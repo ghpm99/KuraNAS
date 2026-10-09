@@ -375,3 +375,15 @@
         opacity: 1;
     }
 }
+
+.smartAlbums {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.smartAlbums h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}

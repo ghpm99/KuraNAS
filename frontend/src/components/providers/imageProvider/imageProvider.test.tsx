@@ -101,6 +101,35 @@ describe('providers/imageProvider', () => {
         expect(screen.getByTestId('has-next')).toHaveTextContent('false');
     });
 
+    it('lists an opened user album from its own endpoint with the album item count as total', async () => {
+        mockedApiGet.mockImplementation((url: string) => {
+            if (url === '/image/albums/5/items') {
+                return Promise.resolve({
+                    data: {
+                        items: [buildImageLibraryItem({ file_id: 9 })],
+                        next_cursor: '',
+                        has_next: false,
+                        page_size: 60,
+                    },
+                });
+            }
+            if (url === '/image/albums/5') {
+                return Promise.resolve({
+                    data: { id: 5, name: 'Trip', cover_file_id: 9, item_count: 1 },
+                });
+            }
+            return Promise.reject(new Error(`unexpected ${url}`));
+        });
+
+        renderProvider('/images/albums?userAlbum=5');
+
+        await waitFor(() => expect(screen.getByTestId('ids')).toHaveTextContent('9'));
+        await waitFor(() => expect(screen.getByTestId('total')).toHaveTextContent('1'));
+        expect(callsTo('/image/library')).toHaveLength(0);
+        expect(callsTo('/image/library/count')).toHaveLength(0);
+        expect(callsTo('/image/library/timeline')).toHaveLength(0);
+    });
+
     it('continues with the server cursor and never repeats taken_before after the first page', async () => {
         routeResponses([
             {

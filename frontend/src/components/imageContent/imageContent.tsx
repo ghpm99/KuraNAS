@@ -8,6 +8,7 @@ import ImageDateScrubber from './components/ImageDateScrubber';
 import ImageFolderBreadcrumb from './components/ImageFolderBreadcrumb';
 import ImageFilterBar from './components/ImageFilterBar';
 import ImageGroupsGrid from './components/ImageGroupsGrid';
+import ImageUserAlbumsSection from './components/ImageUserAlbumsSection';
 import ImageSelectionToolbar from './components/ImageSelectionToolbar';
 import ImageToolbar from './components/ImageToolbar';
 import ImageViewerModal from './components/ImageViewerModal';
@@ -24,6 +25,7 @@ const emptyStateKeys: Record<ImageEmptyKind, { titleKey: string; descriptionKey:
         titleKey: 'IMAGES_EMPTY_FAVORITES_TITLE',
         descriptionKey: 'IMAGES_EMPTY_FAVORITES_DESC',
     },
+    album: { titleKey: 'IMAGES_ALBUM_EMPTY_TITLE', descriptionKey: 'IMAGES_ALBUM_EMPTY_DESC' },
 };
 
 export default function ImageContent() {
@@ -38,6 +40,7 @@ export default function ImageContent() {
         selection,
         folderCards,
         albumCards,
+        userAlbumId,
         timeline,
         hasLoadError,
         loadErrorMessage,
@@ -100,7 +103,7 @@ export default function ImageContent() {
                     onSelectFolder={controls.selectFolder}
                 />
             )}
-            {view.selectedAlbum && (
+            {(view.selectedAlbum || userAlbumId !== null) && (
                 <div className={styles.selectionSummary}>
                     <button
                         type="button"
@@ -122,13 +125,17 @@ export default function ImageContent() {
                     </button>
                 </div>
             )}
+            {isAlbumPicker && <ImageUserAlbumsSection onOpenAlbum={controls.selectUserAlbum} />}
             {isAlbumPicker && (
-                <ImageCollectionsPanel
-                    cards={albumCards}
-                    emptyTitle={t('IMAGES_ALBUMS_EMPTY_TITLE')}
-                    emptyDescription={t('IMAGES_ALBUMS_EMPTY_DESC')}
-                    onSelect={controls.selectAlbum}
-                />
+                <section className={styles.smartAlbums}>
+                    <h3>{t('IMAGES_SMART_ALBUMS_TITLE')}</h3>
+                    <ImageCollectionsPanel
+                        cards={albumCards}
+                        emptyTitle={t('IMAGES_ALBUMS_EMPTY_TITLE')}
+                        emptyDescription={t('IMAGES_ALBUMS_EMPTY_DESC')}
+                        onSelect={controls.selectAlbum}
+                    />
+                </section>
             )}
             {isInitialLoading && (
                 <div className={styles.loading}>
@@ -179,6 +186,7 @@ export default function ImageContent() {
                             <ImageSelectionToolbar
                                 selection={selection}
                                 loadedImages={loadedImages}
+                                userAlbumId={userAlbumId ?? undefined}
                             />
                         )}
                         <ImageGroupsGrid

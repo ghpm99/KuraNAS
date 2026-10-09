@@ -29,7 +29,7 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [x] 10. Formatos: WebP/BMP/TIFF/HEIC/HEIF/AVIF/JFIF/RAW reconhecidos, com miniatura/preview
 - [x] 11. Seleção múltipla e ações em lote na galeria
 - [x] 12. Viewer: navegar além do carregado (vizinhos), pan/pinça/swipe, baixar original, girar, local no disco, GPS, atalhos ignoram campos de texto
-- [ ] 13. Álbuns reais (criar, renomear, apagar, adicionar/remover, capa)
+- [x] 13. Álbuns reais (criar, renomear, apagar, adicionar/remover, capa)
 - [ ] 14. Busca por conteúdo: tags, legenda e OCR pela IA em passo assíncrono, pesquisáveis
 - [ ] 15. Indexação: IA fora do caminho crítico do metadata
 - [ ] 16. Facetas de câmera e formato como filtros

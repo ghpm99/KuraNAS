@@ -109,4 +109,20 @@ describe('useImageLibraryControls', () => {
         act(() => result.current.controls.selectAlbum(null));
         expect(result.current.searchParams.has('album')).toBe(false);
     });
+
+    it('opens a user album in the URL and leaves it when going back to the albums list', () => {
+        const { result } = setup('/images?album=memes&image=3');
+
+        act(() => result.current.controls.selectUserAlbum(12));
+        expect(result.current.searchParams.get('userAlbum')).toBe('12');
+        expect(result.current.searchParams.has('album')).toBe(false);
+        expect(result.current.searchParams.has('image')).toBe(false);
+
+        act(() => result.current.controls.selectAlbum(null));
+        expect(result.current.searchParams.has('userAlbum')).toBe(false);
+
+        act(() => result.current.controls.selectUserAlbum(12));
+        act(() => result.current.controls.selectUserAlbum(null));
+        expect(result.current.searchParams.has('userAlbum')).toBe(false);
+    });
 });

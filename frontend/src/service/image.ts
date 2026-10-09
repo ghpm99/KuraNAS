@@ -19,6 +19,7 @@ export type ImageLibraryPageRequest = {
     cursor?: string;
     page?: number;
     takenBefore?: string;
+    albumId?: number;
 };
 
 const repeatedKeysSerializer = { indexes: null };
@@ -54,8 +55,10 @@ export const getImageLibraryPage = async ({
     cursor,
     page,
     takenBefore,
+    albumId,
 }: ImageLibraryPageRequest): Promise<ImageLibraryPage> => {
-    const response = await apiBase.get<ImageLibraryPage>('/image/library', {
+    const listingUrl = albumId === undefined ? '/image/library' : `/image/albums/${albumId}/items`;
+    const response = await apiBase.get<ImageLibraryPage>(listingUrl, {
         params: {
             ...buildFilterParams(filters),
             sort: ordering.sort,

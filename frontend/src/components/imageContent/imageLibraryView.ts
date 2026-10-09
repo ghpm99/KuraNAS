@@ -60,6 +60,7 @@ export const imageSearchParamNames = {
     jumpBefore: 'before',
     folder: 'folder',
     album: 'album',
+    userAlbum: 'userAlbum',
 } as const;
 
 export type ImageLibraryView = {
@@ -69,6 +70,7 @@ export type ImageLibraryView = {
     takenBefore: string;
     selectedFolder: string;
     selectedAlbum: ImageAlbumPreset | null;
+    userAlbumId: number | null;
     hasUserFilters: boolean;
     isKeyset: boolean;
 };
@@ -94,6 +96,11 @@ const toDateOnly = (instant: Date) => instant.toISOString().slice(0, 10);
 
 const readDateOnly = (rawValue: string | null) =>
     rawValue && dateOnlyPattern.test(rawValue) ? rawValue : '';
+
+const readUserAlbumId = (searchParams: URLSearchParams): number | null => {
+    const albumId = Number(searchParams.get(imageSearchParamNames.userAlbum));
+    return Number.isInteger(albumId) && albumId > 0 ? albumId : null;
+};
 
 const readOrdering = (searchParams: URLSearchParams): ImageLibraryOrdering => {
     const rawSort = searchParams.get(imageSearchParamNames.sort) as ImageLibrarySort | null;
@@ -128,6 +135,9 @@ export const parseImageLibraryView = (
             ? (imageAlbumPresets.find((preset) => preset.id === albumId) ?? null)
             : null;
 
+    const userAlbumId =
+        section === 'albums' && !selectedAlbum ? readUserAlbumId(searchParams) : null;
+
     const recentTakenFrom =
         section === 'recent'
             ? toDateOnly(new Date(now.getTime() - recentWindowInDays * millisecondsPerDay))
@@ -152,6 +162,7 @@ export const parseImageLibraryView = (
             : '',
         selectedFolder,
         selectedAlbum,
+        userAlbumId,
         hasUserFilters: Boolean(nameQuery || userTakenFrom || takenTo || formats.length > 0),
         isKeyset,
     };

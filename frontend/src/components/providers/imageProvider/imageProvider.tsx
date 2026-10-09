@@ -20,6 +20,8 @@ import {
     getImageLibraryPage,
     getImageLibraryTimeline,
 } from '@/service/image';
+import { getImageAlbum } from '@/service/imageAlbum';
+import type { ImageAlbum } from '@/types/imageAlbum';
 import type { ImageLibraryItem, ImageLibraryPage, ImageTimelineBucket } from '@/types/imageLibrary';
 
 export const imageLibraryPageSize = 60;
@@ -33,6 +35,7 @@ export interface IImageContext {
     error: unknown;
     isFetchNextPageError: boolean;
     total: number | null;
+    userAlbum?: ImageAlbum | null;
     timeline: ImageTimelineBucket[];
     fetchNextPage: (
         options?: FetchNextPageOptions | undefined
@@ -57,7 +60,8 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
         [section, searchParams]
     );
     const { filters, ordering, takenBefore, isKeyset } = view;
-    const isAlbumPicker = section === 'albums' && !view.selectedAlbum;
+    const { userAlbumId } = view;
+    const isAlbumPicker = section === 'albums' && !view.selectedAlbum && userAlbumId === null;
     const isFolderRoot = section === 'folders' && !view.selectedFolder;
     const isListingDisabled = isAlbumPicker || isFolderRoot;
 
@@ -71,7 +75,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery({
-        queryKey: ['images', 'library', filters, ordering, takenBefore],
+        queryKey: ['images', 'library', filters, ordering, takenBefore, userAlbumId],
         queryFn: ({ pageParam }): Promise<ImageLibraryPage> =>
             getImageLibraryPage({
                 filters,
@@ -80,6 +84,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
                 cursor: pageParam.cursor,
                 page: isKeyset ? undefined : pageParam.page,
                 takenBefore: pageParam.cursor ? undefined : takenBefore,
+                albumId: userAlbumId ?? undefined,
             }),
         initialPageParam: firstPageParam,
         getNextPageParam: (lastPage, loadedPages): ImageLibraryPageParam | undefined => {
@@ -101,7 +106,7 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
     const countQuery = useQuery({
         queryKey: ['images', 'count', filters],
         queryFn: () => getImageLibraryCount(filters),
-        enabled: !isListingDisabled,
+        enabled: !isListingDisabled && userAlbumId === null,
         staleTime: listingStaleTimeMs,
         refetchOnWindowFocus: false,
     });
@@ -109,10 +114,25 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
     const timelineQuery = useQuery({
         queryKey: ['images', 'timeline', filters],
         queryFn: () => getImageLibraryTimeline(filters),
-        enabled: !isListingDisabled && isKeyset,
+        enabled: !isListingDisabled && isKeyset && userAlbumId === null,
         staleTime: listingStaleTimeMs,
         refetchOnWindowFocus: false,
     });
+
+    const userAlbumQuery = useQuery({
+        queryKey: ['images', 'albums', 'detail', userAlbumId],
+        queryFn: () => getImageAlbum(userAlbumId as number),
+        enabled: userAlbumId !== null,
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
+    });
+    const userAlbum = userAlbumQuery.data ?? null;
+    const total =
+        userAlbumId === null
+            ? (countQuery.data ?? null)
+            : view.hasUserFilters
+              ? null
+              : (userAlbum?.item_count ?? null);
 
     const items = useMemo(
         () => libraryData?.pages.flatMap((page) => page.items ?? []) ?? [],
@@ -126,7 +146,8 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
             status,
             error,
             isFetchNextPageError,
-            total: countQuery.data ?? null,
+            total,
+            userAlbum,
             timeline: timelineQuery.data ?? [],
             fetchNextPage,
             refetch,
@@ -139,7 +160,8 @@ export const ImageProvider = ({ children }: { children: ReactNode }) => {
             status,
             error,
             isFetchNextPageError,
-            countQuery.data,
+            total,
+            userAlbum,
             timelineQuery.data,
             fetchNextPage,
             refetch,
