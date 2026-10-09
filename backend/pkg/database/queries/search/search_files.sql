@@ -10,6 +10,7 @@ FROM
 WHERE
     hf.deleted_at IS NULL
     AND hf.type = 2
+    AND NOT (hf.format = ANY($6))
     AND lower(hf.name) LIKE $1
     AND lower(hf.name) LIKE ALL ($2::text[])
 ORDER BY
@@ -23,4 +24,4 @@ ORDER BY
     hf.updated_at DESC,
     hf.name ASC
 LIMIT
-    $6;
+    $7;

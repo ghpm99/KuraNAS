@@ -173,6 +173,9 @@ var AddImageAIContentSearchQuery string
 //go:embed queries/0054_create_audio_metadata_search_trigram_indexes.sql
 var CreateAudioMetadataSearchTrigramIndexesQuery string
 
+//go:embed queries/0055_create_audio_metadata_title_trigram_index.sql
+var CreateAudioMetadataTitleTrigramIndexQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -255,6 +258,9 @@ func fileMigrationList() {
 
 	addMigration("0054_create_audio_metadata_search_trigram_indexes",
 		defaultMigrationFunc(CreateAudioMetadataSearchTrigramIndexesQuery))
+
+	addMigration("0055_create_audio_metadata_title_trigram_index",
+		defaultMigrationFunc(CreateAudioMetadataTitleTrigramIndexQuery))
 }
 
 func diaryMigrationList() {

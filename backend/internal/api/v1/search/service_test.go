@@ -17,6 +17,7 @@ type searchRepositoryMock struct {
 	searchVideoPlaylistsFn func(query string, limit int) ([]VideoPlaylistResultModel, error)
 	searchVideosFn         func(query string, limit int) ([]VideoResultModel, error)
 	searchImagesFn         func(query string, limit int) ([]ImageResultModel, error)
+	searchTracksFn         func(query string, limit int) ([]TrackResultModel, error)
 }
 
 func (m *searchRepositoryMock) SearchFiles(query string, limit int) ([]FileResultModel, error) {
@@ -42,6 +43,13 @@ func (m *searchRepositoryMock) SearchVideos(query string, limit int) ([]VideoRes
 }
 func (m *searchRepositoryMock) SearchImages(query string, limit int) ([]ImageResultModel, error) {
 	return m.searchImagesFn(query, limit)
+}
+
+func (m *searchRepositoryMock) SearchTracks(query string, limit int) ([]TrackResultModel, error) {
+	if m.searchTracksFn == nil {
+		return nil, nil
+	}
+	return m.searchTracksFn(query, limit)
 }
 
 type searchAIMock struct {
@@ -411,5 +419,42 @@ func TestExpansionCacheExpiresAndBoundsSize(t *testing.T) {
 	currentTime = currentTime.Add(2 * time.Minute)
 	if _, isCached := cache.get("three"); isCached {
 		t.Fatal("expected entry to expire after ttl")
+	}
+}
+
+func TestSearchServiceMapsTracksAndPropagatesTrackErrors(t *testing.T) {
+	repository := emptyRepo()
+	repository.searchTracksFn = func(string, int) ([]TrackResultModel, error) {
+		return []TrackResultModel{{FileID: 7, Title: "Time", Artist: "Pink Floyd", Album: "The Dark Side", AlbumOwner: "Pink Floyd", Duration: 413.5, Path: "/media/time.mp3"}}, nil
+	}
+
+	response, err := NewService(repository, nil).SearchGlobal("time", 5)
+	if err != nil {
+		t.Fatalf("SearchGlobal: %v", err)
+	}
+	expected := TrackResultDto{FileID: 7, Title: "Time", Artist: "Pink Floyd", Album: "The Dark Side", AlbumKey: "pink floyd::the dark side", Duration: 413.5, Path: "/media/time.mp3"}
+	if len(response.Tracks) != 1 || response.Tracks[0] != expected {
+		t.Fatalf("tracks = %+v", response.Tracks)
+	}
+
+	repository.searchTracksFn = func(string, int) ([]TrackResultModel, error) { return nil, errors.New("boom") }
+	if _, err := NewService(repository, nil).SearchGlobal("time", 5); err == nil {
+		t.Fatalf("expected track search error")
+	}
+}
+
+func TestSearchServiceBlankQueryReturnsEmptyTracks(t *testing.T) {
+	response, err := NewService(emptyRepo(), nil).SearchGlobal("  ", 5)
+	if err != nil || response.Tracks == nil || len(response.Tracks) != 0 {
+		t.Fatalf("tracks = %+v err=%v", response.Tracks, err)
+	}
+}
+
+func TestBuildTrackAlbumKeyIsEmptyWithoutAlbumOrOwner(t *testing.T) {
+	if key := buildTrackAlbumKey(TrackResultModel{Album: "", AlbumOwner: "Artist"}); key != "" {
+		t.Fatalf("key without album = %q", key)
+	}
+	if key := buildTrackAlbumKey(TrackResultModel{Album: "Album", AlbumOwner: ""}); key != "" {
+		t.Fatalf("key without owner = %q", key)
 	}
 }

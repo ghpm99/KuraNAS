@@ -6,6 +6,7 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/search"
 	"nas-go/api/pkg/utils"
+	"slices"
 
 	"github.com/lib/pq"
 )
@@ -36,6 +37,8 @@ func (r *Repository) scanRows(query string, scanFn func(*sql.Rows) error, args .
 	})
 }
 
+var mediaFormats = slices.Concat(utils.ImageFormats, utils.AudioFormats, utils.VideoFormats)
+
 func (r *Repository) SearchFiles(query string, limit int) ([]FileResultModel, error) {
 	match, hasTerms := buildNameMatch(query)
 	if !hasTerms {
@@ -49,7 +52,7 @@ func (r *Repository) SearchFiles(query string, limit int) ([]FileResultModel, er
 		}
 		results = append(results, item)
 		return nil
-	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(mediaFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar arquivos: %w", err)
 	}
@@ -193,6 +196,26 @@ func (r *Repository) SearchImages(query string, limit int) ([]ImageResultModel, 
 	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(utils.ImageFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar imagens: %w", err)
+	}
+	return results, nil
+}
+
+func (r *Repository) SearchTracks(query string, limit int) ([]TrackResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []TrackResultModel{}, nil
+	}
+	results := []TrackResultModel{}
+	err := r.scanRows(queries.SearchTracksQuery, func(rows *sql.Rows) error {
+		var item TrackResultModel
+		if err := rows.Scan(&item.FileID, &item.Title, &item.Artist, &item.Album, &item.AlbumOwner, &item.Duration, &item.Path); err != nil {
+			return err
+		}
+		results = append(results, item)
+		return nil
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(utils.AudioFormats), limit)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar faixas: %w", err)
 	}
 	return results, nil
 }

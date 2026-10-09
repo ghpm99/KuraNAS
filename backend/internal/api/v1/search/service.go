@@ -32,6 +32,7 @@ func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto
 		Playlists: []PlaylistResultDto{},
 		Videos:    []VideoResultDto{},
 		Images:    []ImageResultDto{},
+		Tracks:    []TrackResultDto{},
 	}
 
 	if normalizedQuery == "" {
@@ -89,6 +90,11 @@ func (s *Service) executeSearch(query string, limit int, response GlobalSearchRe
 		return response, err
 	}
 
+	tracks, err := s.Repository.SearchTracks(query, limit)
+	if err != nil {
+		return response, err
+	}
+
 	response.Files = mapFiles(files)
 	response.Folders = mapFolders(folders)
 	response.Artists = mapArtists(artists)
@@ -96,6 +102,7 @@ func (s *Service) executeSearch(query string, limit int, response GlobalSearchRe
 	response.Playlists = append(mapMusicPlaylists(musicPlaylists), mapVideoPlaylists(videoPlaylists)...)
 	response.Videos = mapVideos(videos)
 	response.Images = mapImages(images)
+	response.Tracks = mapTracks(tracks)
 
 	return response, nil
 }
@@ -227,6 +234,29 @@ func mapImages(items []ImageResultModel) []ImageResultDto {
 		})
 	}
 	return results
+}
+
+func mapTracks(items []TrackResultModel) []TrackResultDto {
+	results := make([]TrackResultDto, 0, len(items))
+	for _, item := range items {
+		results = append(results, TrackResultDto{
+			FileID:   item.FileID,
+			Title:    item.Title,
+			Artist:   item.Artist,
+			Album:    item.Album,
+			AlbumKey: buildTrackAlbumKey(item),
+			Duration: item.Duration,
+			Path:     roots.ToRelativePath(item.Path),
+		})
+	}
+	return results
+}
+
+func buildTrackAlbumKey(track TrackResultModel) string {
+	if track.Album == "" || track.AlbumOwner == "" {
+		return ""
+	}
+	return normalizeLookupKey(track.AlbumOwner + "::" + track.Album)
 }
 
 func normalizeLookupKey(value string) string {

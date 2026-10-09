@@ -9,6 +9,7 @@ type RepositoryInterface interface {
 	SearchVideoPlaylists(query string, limit int) ([]VideoPlaylistResultModel, error)
 	SearchVideos(query string, limit int) ([]VideoResultModel, error)
 	SearchImages(query string, limit int) ([]ImageResultModel, error)
+	SearchTracks(query string, limit int) ([]TrackResultModel, error)
 }
 
 type ServiceInterface interface {

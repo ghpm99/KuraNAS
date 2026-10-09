@@ -105,6 +105,8 @@
 	"GLOBAL_SEARCH_SECTION_ALBUMS": "Albums",
 	"GLOBAL_SEARCH_SECTION_PLAYLISTS": "Playlists",
 	"GLOBAL_SEARCH_SECTION_VIDEOS": "Videos",
+	"GLOBAL_SEARCH_SECTION_TRACKS": "Music",
+	"GLOBAL_SEARCH_OPEN_ALBUM": "Open album",
 	"GLOBAL_SEARCH_SECTION_IMAGES": "Images",
 	"GLOBAL_SEARCH_ARTIST_META": "{{tracks}} tracks across {{albums}} albums",
 	"GLOBAL_SEARCH_ALBUM_META": "{{artist}} · {{tracks}} tracks",
