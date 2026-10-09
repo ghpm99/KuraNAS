@@ -32,6 +32,7 @@ import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
+import { usePlayerShortcuts } from './usePlayerShortcuts';
 import { useSeekSlider } from './useSeekSlider';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './GlobalPlayerControl.module.css';
@@ -63,6 +64,7 @@ const GlobalPlayerControl = () => {
         toggleQueue,
         queueOpen,
     } = useGlobalMusic();
+    usePlayerShortcuts();
     const isCompactPlayer = useMediaQuery(COMPACT_PLAYER_MEDIA_QUERY);
     const [isExpandedSheetOpen, setIsExpandedSheetOpen] = useState(false);
     const playbackPosition = Number.isFinite(currentTime) ? currentTime : 0;
