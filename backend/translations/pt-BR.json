@@ -1764,5 +1764,10 @@
 	"MUSIC_PLAYLIST_DELETE_CONFIRM_MESSAGE": "A playlist {{name}} será excluída. As faixas continuam na biblioteca.",
 	"MUSIC_PLAYLISTS_SUGGESTIONS": "Sugestões",
 	"MUSIC_PLAYLIST_SEARCH": "Buscar playlist",
-	"MUSIC_PLAYLIST_SEARCH_EMPTY": "Nenhuma playlist encontrada"
+	"MUSIC_PLAYLIST_SEARCH_EMPTY": "Nenhuma playlist encontrada",
+	"MUSIC_DISC_HEADING": "Disco {{number}}",
+	"MUSIC_ARTIST_ALL_TRACKS": "Todas as faixas",
+	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
+	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
+	"MUSIC_GROUP_BACK": "Voltar"
 }

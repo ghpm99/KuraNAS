@@ -1764,5 +1764,10 @@
 	"MUSIC_PLAYLIST_DELETE_CONFIRM_MESSAGE": "The playlist {{name}} will be deleted. The tracks stay in the library.",
 	"MUSIC_PLAYLISTS_SUGGESTIONS": "Suggestions",
 	"MUSIC_PLAYLIST_SEARCH": "Search playlists",
-	"MUSIC_PLAYLIST_SEARCH_EMPTY": "No playlists found"
+	"MUSIC_PLAYLIST_SEARCH_EMPTY": "No playlists found",
+	"MUSIC_DISC_HEADING": "Disc {{number}}",
+	"MUSIC_ARTIST_ALL_TRACKS": "All tracks",
+	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
+	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
+	"MUSIC_GROUP_BACK": "Back"
 }

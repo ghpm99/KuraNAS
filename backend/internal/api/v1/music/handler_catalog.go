@@ -217,3 +217,42 @@ func (handler *Handler) respondLibraryTracks(c *gin.Context, name string, descri
 	handler.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, payload)
 }
+
+func (handler *Handler) GetLibraryAlbumSummaryHandler(c *gin.Context) {
+	albumKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicAlbumSummary", "Fetching music album summary", func() (any, error) {
+		return handler.service.GetLibraryAlbumSummary(albumKey)
+	})
+}
+
+func (handler *Handler) GetLibraryArtistSummaryHandler(c *gin.Context) {
+	artistKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicArtistSummary", "Fetching music artist summary", func() (any, error) {
+		return handler.service.GetLibraryArtistSummary(artistKey)
+	})
+}
+
+func (handler *Handler) GetLibraryGenreSummaryHandler(c *gin.Context) {
+	genreKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicGenreSummary", "Fetching music genre summary", func() (any, error) {
+		return handler.service.GetLibraryGenreSummary(genreKey)
+	})
+}
+
+func (handler *Handler) GetLibraryFolderSummaryHandler(c *gin.Context) {
+	folderKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicFolderSummary", "Fetching music folder summary", func() (any, error) {
+		return handler.service.GetLibraryFolderSummary(folderKey)
+	})
+}
+
+func (handler *Handler) GetLibraryAlbumsByArtistHandler(c *gin.Context) {
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
+	artistKey := c.Param("key")
+	handler.respondLibraryTracks(c, "GetMusicAlbumsByArtist", "Fetching music albums by artist", func() (any, error) {
+		return handler.service.GetLibraryAlbumsByArtist(artistKey, page, pageSize)
+	})
+}

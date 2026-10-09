@@ -126,11 +126,7 @@ func (r *Repository) GetLibraryArtistGroups(page int, pageSize int, sort Catalog
 func (r *Repository) GetLibraryAlbumGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
 	paginatedGroups, err := queryCatalogPage(r.DbContext, queries.GetLibraryAlbumGroupsQuery,
 		catalogSortArgs(sort), page, pageSize,
-		func(rows *sql.Rows) (MusicAlbumGroupDto, error) {
-			var group MusicAlbumGroupDto
-			err := rows.Scan(&group.Key, &group.Album, &group.Artist, &group.Year, &group.TrackCount)
-			return group, err
-		})
+		scanAlbumGroup)
 	if err != nil {
 		return paginatedGroups, fmt.Errorf("falha ao listar albuns da biblioteca: %w", err)
 	}
@@ -178,11 +174,7 @@ func (r *Repository) GetLibraryTrackIDsByGenre(genreKey string, page int, pageSi
 }
 
 func (r *Repository) GetLibraryTrackIDsByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error) {
-	subfolderPrefix := folderPath
-	if !strings.HasSuffix(subfolderPrefix, "/") {
-		subfolderPrefix += "/"
-	}
-	subfolderPattern := likePatternEscaper.Replace(subfolderPrefix) + "%"
+	subfolderPattern := subfolderLikePattern(folderPath)
 
 	paginatedIDs, err := queryCatalogPage(r.DbContext, queries.GetLibraryTrackIDsByFolderQuery,
 		[]any{pq.Array(utils.AudioFormats), folderPath, subfolderPattern}, page, pageSize, scanFileID)
