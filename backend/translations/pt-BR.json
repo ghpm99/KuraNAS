@@ -402,6 +402,7 @@
 	"ERROR_TARGET_NOT_DIRECTORY": "O destino precisa ser uma pasta válida",
 	"ERROR_NO_FILES_UPLOADED": "Nenhum arquivo foi enviado",
 	"ERROR_CONFIGURATION_LOAD_FAILED": "Falha ao carregar configurações.",
+	"ERROR_DOCUMENT_SEARCH_FAILED": "Falha ao buscar no conteúdo dos documentos.",
 	"ERROR_CONFIGURATION_UPDATE_FAILED": "Falha ao atualizar configurações.",
 	"ERROR_INVALID_THEME_MODE": "O modo de tema deve ser escuro, claro ou sistema.",
 	"ERROR_CAPTURES_PATH_INSIDE_ROOT": "O caminho das capturas deve ficar fora das raízes de armazenamento (não pode ser uma raiz nem subpasta de uma).",

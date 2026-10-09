@@ -1,6 +1,10 @@
 package search
 
-import "time"
+import (
+	"time"
+
+	"nas-go/api/internal/api/v1/documenttext"
+)
 
 const (
 	TierHot  = "hot"
@@ -19,6 +23,8 @@ type GlobalSearchResponseDto struct {
 	Videos     []VideoResultDto    `json:"videos"`
 	Images     []ImageResultDto    `json:"images"`
 	Tracks     []TrackResultDto    `json:"tracks"`
+
+	Documents []documenttext.DocumentSearchResultDto `json:"documents"`
 }
 
 type FileResultDto struct {
@@ -108,5 +114,6 @@ func (response GlobalSearchResponseDto) isEmpty() bool {
 		len(response.Playlists) == 0 &&
 		len(response.Videos) == 0 &&
 		len(response.Images) == 0 &&
-		len(response.Tracks) == 0
+		len(response.Tracks) == 0 &&
+		len(response.Documents) == 0
 }

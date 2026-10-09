@@ -1,8 +1,10 @@
 package search
 
 import (
+	"nas-go/api/internal/api/v1/documenttext"
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/applog"
 	"strings"
 )
 
@@ -14,11 +16,16 @@ const (
 type Service struct {
 	Repository     RepositoryInterface
 	AIService      ai.ServiceInterface
+	Documents      DocumentSearcher
 	expansionCache *expansionCache
 }
 
 func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
 	return &Service{Repository: repository, AIService: aiService, expansionCache: newExpansionCache(expansionCacheCapacity, expansionCacheTTL)}
+}
+
+func NewServiceWithDocuments(repository RepositoryInterface, aiService ai.ServiceInterface, documents DocumentSearcher) ServiceInterface {
+	return &Service{Repository: repository, AIService: aiService, Documents: documents, expansionCache: newExpansionCache(expansionCacheCapacity, expansionCacheTTL)}
 }
 
 func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto, error) {
@@ -33,6 +40,7 @@ func (s *Service) SearchGlobal(query string, limit int) (GlobalSearchResponseDto
 		Videos:    []VideoResultDto{},
 		Images:    []ImageResultDto{},
 		Tracks:    []TrackResultDto{},
+		Documents: []documenttext.DocumentSearchResultDto{},
 	}
 
 	if normalizedQuery == "" {
@@ -132,8 +140,22 @@ func (s *Service) executeSearch(query string, limit int, response GlobalSearchRe
 	response.Videos = mapVideos(videos)
 	response.Images = mapImages(images)
 	response.Tracks = mapTracks(tracks)
+	response.Documents = s.searchDocuments(query, limit)
 
 	return response, nil
+}
+
+func (s *Service) searchDocuments(query string, limit int) []documenttext.DocumentSearchResultDto {
+	if s.Documents == nil {
+		return []documenttext.DocumentSearchResultDto{}
+	}
+
+	documents, err := s.Documents.SearchTopDocuments(query, limit)
+	if err != nil {
+		applog.ErrorWithStack("search: document content search failed", err)
+		return []documenttext.DocumentSearchResultDto{}
+	}
+	return documents
 }
 
 func clampLimit(limit int) int {

@@ -19,6 +19,7 @@ import (
 	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/diary"
 	"nas-go/api/internal/api/v1/distribution"
+	"nas-go/api/internal/api/v1/documenttext"
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
@@ -68,6 +69,7 @@ type AppContext struct {
 	Analytics     *AnalyticsContext
 	Configuration *ConfigurationContext
 	Search        *SearchContext
+	DocumentText  *DocumentTextContext
 	Notifications *NotificationContext
 	Captures      *CapturesContext
 	Libraries     *LibrariesContext
@@ -196,6 +198,12 @@ type ConfigurationContext struct {
 	Repository configuration.RepositoryInterface
 }
 
+type DocumentTextContext struct {
+	Handler    *documenttext.Handler
+	Service    documenttext.ServiceInterface
+	Repository documenttext.RepositoryInterface
+}
+
 type SearchContext struct {
 	Handler    *search.Handler
 	Service    search.ServiceInterface
@@ -282,7 +290,8 @@ func NewContext(db *sql.DB) *AppContext {
 	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
-	searchContext := newSearchContext(dbContext, aiService)
+	documentTextContext := newDocumentTextContext(dbContext)
+	searchContext := newSearchContext(dbContext, aiService, documentTextContext.Service)
 	notificationContext := newNotificationContext(dbContext)
 	librariesContext := newLibrariesContext(dbContext, loggerService)
 	capturesContext := newCapturesContext(dbContext, loggerService, fileContext.Service, notificationContext.Service, librariesContext.Service, fileContext.Service)
@@ -328,6 +337,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Analytics:     analyticsContext,
 		Configuration: configurationContext,
 		Search:        searchContext,
+		DocumentText:  documentTextContext,
 		Notifications: notificationContext,
 		Captures:      capturesContext,
 		Libraries:     librariesContext,
@@ -559,9 +569,21 @@ func newNotificationContext(dbContext *database.DbContext) *NotificationContext 
 	}
 }
 
-func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterface) *SearchContext {
+func newDocumentTextContext(dbContext *database.DbContext) *DocumentTextContext {
+	repository := documenttext.NewRepository(dbContext)
+	service := documenttext.NewService(repository)
+	handler := documenttext.NewHandler(service)
+
+	return &DocumentTextContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newSearchContext(dbContext *database.DbContext, aiService ai.ServiceInterface, documentSearcher search.DocumentSearcher) *SearchContext {
 	repository := search.NewRepository(dbContext)
-	service := search.NewService(repository, aiService)
+	service := search.NewServiceWithDocuments(repository, aiService, documentSearcher)
 	handler := search.NewHandler(service)
 
 	return &SearchContext{

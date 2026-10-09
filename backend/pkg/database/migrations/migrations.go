@@ -179,6 +179,9 @@ var CreateAudioMetadataTitleTrigramIndexQuery string
 //go:embed queries/0056_create_search_fold_function_and_indexes.sql
 var CreateSearchFoldFunctionAndIndexesQuery string
 
+//go:embed queries/0057_create_document_text_table.sql
+var CreateDocumentTextTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -267,6 +270,10 @@ func fileMigrationList() {
 
 	addMigration("0056_create_search_fold_function_and_indexes",
 		defaultMigrationFunc(CreateSearchFoldFunctionAndIndexesQuery))
+
+	addMigrationRequiring("0057_create_document_text_table",
+		[]string{"0001_create_home_file_table", "0056_create_search_fold_function_and_indexes"},
+		defaultMigrationFunc(CreateDocumentTextTableQuery))
 }
 
 func diaryMigrationList() {

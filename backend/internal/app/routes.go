@@ -36,6 +36,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterConfigRoutes(routesV1, context)
 	RegisterUpdateRoutes(routesV1, context)
 	RegisterSearchRoutes(routesV1, context)
+	RegisterDocumentTextRoutes(routesV1, context)
 	RegisterNotificationRoutes(routesV1, context)
 	RegisterCapturesRoutes(routesV1, context)
 	RegisterLibrariesRoutes(routesV1, context)
@@ -613,4 +614,13 @@ func registerCorsRoutes(router *gin.Engine, context *AppContext) {
 		ExposeHeaders: []string{"Content-Length"},
 		MaxAge:        12 * time.Hour,
 	}))
+}
+
+func RegisterDocumentTextRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.DocumentText == nil || context.DocumentText.Handler == nil {
+		return
+	}
+
+	documents := router.Group("/documents")
+	documents.GET("/search", context.DocumentText.Handler.SearchDocumentsHandler)
 }

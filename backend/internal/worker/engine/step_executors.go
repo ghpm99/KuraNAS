@@ -94,6 +94,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeImageMetadataReconcile] = func(step jobs.StepModel) error {
 		return executeImageMetadataReconcileStep(context, step)
 	}
+	executors[job.StepTypeDocumentTextIndex] = func(step jobs.StepModel) error {
+		return executeDocumentTextIndexStep(context, step)
+	}
 
 	return executors
 }
@@ -311,13 +314,21 @@ func executePersistStep(context *WorkerContext, step jobs.StepModel) error {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			_, createErr := scan.CreateFileRecord(context.FilesService, fileDto)
-			return createErr
+			if createErr != nil {
+				return createErr
+			}
+			enqueueDocumentTextIndexIfDocument(context, fileDto)
+			return nil
 		}
 		return err
 	}
 
 	_, err = scan.UpdateFileRecord(context.FilesService, fileDto, existingRecord)
-	return err
+	if err != nil {
+		return err
+	}
+	enqueueDocumentTextIndexIfDocument(context, fileDto)
+	return nil
 }
 
 func executeThumbnailStep(context *WorkerContext, step jobs.StepModel) error {
