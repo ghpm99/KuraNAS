@@ -2,7 +2,10 @@ WITH album_groups AS (
     SELECT
         am.catalog_album_key AS album_key,
         MIN(am.catalog_album_label COLLATE "C") AS album_label,
-        MIN(am.catalog_artist_label COLLATE "C") AS artist_label,
+        COALESCE(
+        MIN(am.catalog_album_artist_label COLLATE "C"),
+        MIN(am.catalog_artist_label COLLATE "C")
+    ) AS artist_label,
         COUNT(*) AS track_count,
         MAX(hf.created_at) AS latest_added_at,
         MAX(NULLIF(substring(TRIM(COALESCE(am.year, '')) FROM '^\d{4}'), '')::INT) AS sort_year

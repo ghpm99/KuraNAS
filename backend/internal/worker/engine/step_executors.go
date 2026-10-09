@@ -18,6 +18,7 @@ import (
 	"nas-go/api/internal/api/v1/trash"
 	videodom "nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/worker/scan"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 )
@@ -224,6 +225,9 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 			})
 			if upsertErr != nil {
 				return fmt.Errorf("metadata step: upsert audio metadata: %w", upsertErr)
+			}
+			if enqueueErr := enqueueAudioMetadataReconcileJob(context); enqueueErr != nil {
+				applog.Warn("audio album groupings reconcile enqueue failed", "error", enqueueErr.Error())
 			}
 		}
 		return nil

@@ -93,6 +93,10 @@ func (f *fakeAudioMetadataRepository) UpdateAudioCatalogKeys(tx *sql.Tx, audioMe
 	return nil
 }
 
+func (f *fakeAudioMetadataRepository) ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error) {
+	return 0, nil
+}
+
 func newAudioReconcileContext(repository *fakeAudioMetadataRepository, filesService *workerFilesServiceMock) *WorkerContext {
 	return &WorkerContext{
 		AudioMetadataRepository: repository,

@@ -274,6 +274,25 @@ func (r *AudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadata
 	return pendingRows, nil
 }
 
+func (r *AudioMetadataRepository) ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error) {
+	var regroupedCount int64
+
+	err := r.Db.ExecTx(func(tx *sql.Tx) error {
+		reconcileResult, execErr := tx.Exec(queries.ReconcileAudioAlbumGroupingsQuery, compilationArtistLabel)
+		if execErr != nil {
+			return execErr
+		}
+		var rowsErr error
+		regroupedCount, rowsErr = reconcileResult.RowsAffected()
+		return rowsErr
+	})
+	if err != nil {
+		return 0, fmt.Errorf("falha ao reconciliar agrupamento de albuns: %w", err)
+	}
+
+	return regroupedCount, nil
+}
+
 func (r *AudioMetadataRepository) UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error {
 	_, err := tx.Exec(queries.UpdateAudioCatalogKeysQuery,
 		audioMetadataID,

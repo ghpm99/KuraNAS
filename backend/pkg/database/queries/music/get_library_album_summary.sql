@@ -1,7 +1,10 @@
 SELECT
     am.catalog_album_key,
     MIN(am.catalog_album_label COLLATE "C") AS album_label,
-    MIN(am.catalog_artist_label COLLATE "C") AS artist_label,
+    COALESCE(
+        MIN(am.catalog_album_artist_label COLLATE "C"),
+        MIN(am.catalog_artist_label COLLATE "C")
+    ) AS artist_label,
     COALESCE(
         (
             ARRAY_AGG(

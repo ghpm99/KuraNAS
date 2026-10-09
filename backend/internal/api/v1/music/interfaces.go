@@ -83,6 +83,7 @@ type AudioMetadataRepositoryInterface interface {
 	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
 	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error)
 	UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error
+	ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error)
 }
 
 type ServiceInterface interface {

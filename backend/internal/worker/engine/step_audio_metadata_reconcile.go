@@ -7,6 +7,7 @@ import (
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/worker/job"
 	"nas-go/api/pkg/applog"
+	"nas-go/api/pkg/i18n"
 )
 
 const (
@@ -18,6 +19,7 @@ type audioMetadataReconcileOutcome struct {
 	reconciled int
 	failed     int
 	backfilled int
+	regrouped  int64
 }
 
 func executeAudioMetadataReconcileStep(workerContext *WorkerContext, step jobs.StepModel) error {
@@ -30,8 +32,8 @@ func executeAudioMetadataReconcileStep(workerContext *WorkerContext, step jobs.S
 		return err
 	}
 
-	applog.Info("audio metadata reconcile finished", "reconciled", outcome.reconciled, "failed", outcome.failed, "catalog_keys_backfilled", outcome.backfilled)
-	if outcome.reconciled == 0 && outcome.failed == 0 && outcome.backfilled == 0 {
+	applog.Info("audio metadata reconcile finished", "reconciled", outcome.reconciled, "failed", outcome.failed, "catalog_keys_backfilled", outcome.backfilled, "albums_regrouped", outcome.regrouped)
+	if outcome.reconciled == 0 && outcome.failed == 0 && outcome.backfilled == 0 && outcome.regrouped == 0 {
 		return ErrStepSkipped
 	}
 	return nil
@@ -76,7 +78,20 @@ func reconcileAudioWithoutMetadata(workerContext *WorkerContext) (audioMetadataR
 	}
 
 	outcome.backfilled, err = backfillAudioCatalogKeys(workerContext)
+	if err != nil {
+		return outcome, err
+	}
+
+	outcome.regrouped, err = reconcileAudioAlbumGroupings(workerContext)
 	return outcome, err
+}
+
+func reconcileAudioAlbumGroupings(workerContext *WorkerContext) (int64, error) {
+	regroupedCount, err := workerContext.AudioMetadataRepository.ReconcileAlbumGroupings(i18n.GetMessage("MUSIC_VARIOUS_ARTISTS"))
+	if err != nil {
+		return 0, fmt.Errorf("audio album groupings reconcile: %w", err)
+	}
+	return regroupedCount, nil
 }
 
 func reconcileAudioCandidates(workerContext *WorkerContext, listDescription string, listCandidates audioReconcileCandidateLister) (audioMetadataReconcileOutcome, error) {
