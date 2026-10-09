@@ -4,6 +4,7 @@ import (
 	"nas-go/api/internal/api/v1/accesscontrol"
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/health"
+	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
 	"nas-go/api/pkg/i18n"
@@ -324,6 +325,10 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playerState := router.Group("/music/player-state")
 	playerState.GET("/", context.Music.Handler.GetPlayerStateHandler)
 	playerState.PUT("/", context.Music.Handler.UpdatePlayerStateHandler)
+	playerState.POST("/", context.Music.Handler.UpdatePlayerStateHandler)
+	playerState.GET("/queue", context.Music.Handler.GetPlayerQueueHandler)
+	playerState.PUT("/queue", context.Music.Handler.ReplacePlayerQueueHandler)
+	playerState.POST("/queue", context.Music.Handler.ReplacePlayerQueueHandler)
 }
 
 func RegisterConfigRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -615,7 +620,7 @@ func registerCorsRoutes(router *gin.Engine, context *AppContext) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
 		AllowMethods:  []string{"GET", "PUT", "POST", "DELETE"},
-		AllowHeaders:  []string{"Origin", "Content-Type"},
+		AllowHeaders:  []string{"Origin", "Content-Type", music.PlayerClientIDHeader},
 		ExposeHeaders: []string{"Content-Length"},
 		MaxAge:        12 * time.Hour,
 	}))

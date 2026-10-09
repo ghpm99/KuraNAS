@@ -25,6 +25,10 @@ type musicRepoMock struct {
 	getNowPlayingFn        func() (PlaylistModel, error)
 	getPlayerStateFn       func(clientID string) (PlayerStateModel, error)
 	upsertPlayerStateFn    func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	replacePlayerQueueFn   func(clientID string, fileIDs []int, currentIndex int) error
+	playerQueueEntries     []MusicQueueEntryModel
+	playerQueueIndex       int
+	playerQueueFailure     error
 	searchLibraryTracksFn  func(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibrarySummaryFn    func() (MusicLibrarySummaryDto, error)

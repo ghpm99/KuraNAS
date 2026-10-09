@@ -18,7 +18,12 @@ func (handler *Handler) GetAutomaticPlaylistsHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	playlists, err := handler.service.GetAutomaticPlaylists(c.ClientIP())
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
+	playlists, err := handler.service.GetAutomaticPlaylists(clientID)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)
@@ -47,7 +52,12 @@ func (handler *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	if !isSortValid {
 		return
 	}
-	catalog, err := handler.service.GetHomeCatalog(c.ClientIP(), limit, sort)
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
+	catalog, err := handler.service.GetHomeCatalog(clientID, limit, sort)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)

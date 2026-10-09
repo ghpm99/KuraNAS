@@ -40,6 +40,21 @@ var GetPlayerStateQuery string
 //go:embed upsert_player_state.sql
 var UpsertPlayerStateQuery string
 
+//go:embed delete_player_queue.sql
+var DeletePlayerQueueQuery string
+
+//go:embed insert_player_queue.sql
+var InsertPlayerQueueQuery string
+
+//go:embed upsert_player_queue_index.sql
+var UpsertPlayerQueueIndexQuery string
+
+//go:embed get_player_queue.sql
+var GetPlayerQueueQuery string
+
+//go:embed get_player_queue_current_index.sql
+var GetPlayerQueueCurrentIndexQuery string
+
 //go:embed get_library_tracks.sql
 var GetLibraryTracksQuery string
 

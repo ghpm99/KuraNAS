@@ -42,7 +42,11 @@ func (handler *Handler) GetPlaylistQueueHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
-	clientID := c.ClientIP()
+	clientID, isClientIDValid := resolvePlayerClientID(c)
+	if !isClientIDValid {
+		respondInvalidRequest(c)
+		return
+	}
 	handler.respondLibraryTracks(c, "GetPlaylistQueue", "Fetching playlist queue", func() (any, error) {
 		return handler.service.GetPlaylistQueue(clientID, playlistID)
 	})
