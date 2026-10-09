@@ -3,7 +3,8 @@ SELECT
     hf.name,
     hf.path,
     hf.parent_path,
-    hf.format
+    hf.format,
+    hf.updated_at
 FROM
     home_file hf
 WHERE

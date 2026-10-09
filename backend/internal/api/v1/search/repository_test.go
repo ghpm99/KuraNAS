@@ -50,15 +50,15 @@ func TestSearchRepositorySuccessPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesQuery)).
 		WithArgs(singleTermFilesMatchArgs(5)...).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred"}).
-			AddRow(1, "song.mp3", "/media/song.mp3", "/media", ".mp3", true))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred", "size", "updated_at", "is_cold"}).
+			AddRow(1, "song.mp3", "/media/song.mp3", "/media", ".mp3", true, int64(2048), now, true))
 	mock.ExpectRollback()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFoldersQuery)).
 		WithArgs(singleTermMatchArgs(5)...).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "starred"}).
-			AddRow(2, "Photos", "/photos", "/", false))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "starred", "size", "updated_at", "is_cold"}).
+			AddRow(2, "Photos", "/photos", "/", false, int64(0), now, false))
 	mock.ExpectRollback()
 
 	mock.ExpectBegin()
@@ -92,25 +92,25 @@ func TestSearchRepositorySuccessPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchVideosQuery)).
 		WithArgs(singleTermMatchArgsWithFormats(5)...).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format"}).
-			AddRow(5, "Episode 01", "/videos/episode-01.mkv", "/videos", ".mkv"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "updated_at"}).
+			AddRow(5, "Episode 01", "/videos/episode-01.mkv", "/videos", ".mkv", now))
 	mock.ExpectRollback()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchImagesQuery)).
 		WithArgs(singleTermMatchArgsWithFormats(5)...).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "category", "context"}).
-			AddRow(6, "Vacation", "/photos/vacation.jpg", "/photos", ".jpg", "photo", "Canon"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "updated_at", "category", "context"}).
+			AddRow(6, "Vacation", "/photos/vacation.jpg", "/photos", ".jpg", now, "photo", "Canon"))
 	mock.ExpectRollback()
 
 	if repository.DbContext == nil {
 		t.Fatalf("expected repository DbContext")
 	}
 
-	if items, err := repository.SearchFiles("mix", 5); err != nil || len(items) != 1 || items[0].ID != 1 {
+	if items, err := repository.SearchFiles("mix", 5); err != nil || len(items) != 1 || items[0].ID != 1 || items[0].Size != 2048 || !items[0].IsCold || !items[0].UpdatedAt.Equal(now) {
 		t.Fatalf("SearchFiles returned %+v err=%v", items, err)
 	}
-	if items, err := repository.SearchFolders("mix", 5); err != nil || len(items) != 1 || items[0].ID != 2 {
+	if items, err := repository.SearchFolders("mix", 5); err != nil || len(items) != 1 || items[0].ID != 2 || items[0].IsCold || !items[0].UpdatedAt.Equal(now) {
 		t.Fatalf("SearchFolders returned %+v err=%v", items, err)
 	}
 	if items, err := repository.SearchArtists("mix", 5); err != nil || len(items) != 1 || items[0].Artist != "Artist" {
@@ -198,7 +198,7 @@ func TestSearchRepositoryMultiWordQueryBuildsPatternsPerTerm(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesQuery)).
 		WithArgs("%holiday%", sqlmock.AnyArg(), "beach holiday", "beach holiday%", "%beach holiday%", sqlmock.AnyArg(), 5).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred"}))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred", "size", "updated_at", "is_cold"}))
 	mock.ExpectRollback()
 
 	if _, err := repository.SearchFiles("  Beach   Holiday ", 5); err != nil {

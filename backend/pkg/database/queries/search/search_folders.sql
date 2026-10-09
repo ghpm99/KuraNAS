@@ -3,7 +3,10 @@ SELECT
     hf.name,
     hf.path,
     hf.parent_path,
-    hf.starred
+    hf.starred,
+    hf.size,
+    hf.updated_at,
+    COALESCE(hf.physical_path, '') <> '' AS is_cold
 FROM
     home_file hf
 WHERE

@@ -9,6 +9,9 @@ type FileResultModel struct {
 	ParentPath string
 	Format     string
 	Starred    bool
+	Size       int64
+	UpdatedAt  time.Time
+	IsCold     bool
 }
 
 type FolderResultModel struct {
@@ -17,6 +20,9 @@ type FolderResultModel struct {
 	Path       string
 	ParentPath string
 	Starred    bool
+	Size       int64
+	UpdatedAt  time.Time
+	IsCold     bool
 }
 
 type ArtistResultModel struct {
@@ -58,6 +64,7 @@ type VideoResultModel struct {
 	Path       string
 	ParentPath string
 	Format     string
+	UpdatedAt  time.Time
 }
 
 type ImageResultModel struct {
@@ -66,6 +73,7 @@ type ImageResultModel struct {
 	Path       string
 	ParentPath string
 	Format     string
+	UpdatedAt  time.Time
 	Category   string
 	Context    string
 }

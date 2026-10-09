@@ -127,9 +127,19 @@ func mapFiles(items []FileResultModel) []FileResultDto {
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 			Starred:    item.Starred,
+			Size:       item.Size,
+			UpdatedAt:  item.UpdatedAt,
+			Tier:       resolveTier(item.IsCold),
 		})
 	}
 	return results
+}
+
+func resolveTier(isCold bool) string {
+	if isCold {
+		return TierCold
+	}
+	return TierHot
 }
 
 func mapFolders(items []FolderResultModel) []FolderResultDto {
@@ -141,6 +151,9 @@ func mapFolders(items []FolderResultModel) []FolderResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Starred:    item.Starred,
+			Size:       item.Size,
+			UpdatedAt:  item.UpdatedAt,
+			Tier:       resolveTier(item.IsCold),
 		})
 	}
 	return results
@@ -215,6 +228,7 @@ func mapVideos(items []VideoResultModel) []VideoResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
+			UpdatedAt:  item.UpdatedAt,
 		})
 	}
 	return results
@@ -229,6 +243,7 @@ func mapImages(items []ImageResultModel) []ImageResultDto {
 			Path:       roots.ToRelativePath(item.Path),
 			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
+			UpdatedAt:  item.UpdatedAt,
 			Category:   item.Category,
 			Context:    item.Context,
 		})

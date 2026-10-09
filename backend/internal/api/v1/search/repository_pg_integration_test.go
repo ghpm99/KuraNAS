@@ -11,12 +11,13 @@ import (
 )
 
 type searchSeedFile struct {
-	name      string
-	format    string
-	fileType  int
-	starred   bool
-	updatedAt time.Time
-	isDeleted bool
+	name         string
+	format       string
+	fileType     int
+	starred      bool
+	updatedAt    time.Time
+	isDeleted    bool
+	physicalPath string
 }
 
 func seedHomeFile(t *testing.T, dbContext *database.DbContext, seed searchSeedFile) int {
@@ -24,9 +25,9 @@ func seedHomeFile(t *testing.T, dbContext *database.DbContext, seed searchSeedFi
 	var fileID int
 	err := dbContext.ExecTx(func(tx *sql.Tx) error {
 		deletedAt := sql.NullTime{Time: seed.updatedAt, Valid: seed.isDeleted}
-		return tx.QueryRow(`INSERT INTO home_file (name, path, parent_path, format, size, updated_at, created_at, type, checksum, starred, deleted_at)
-			VALUES ($1, $2, '/lib', $3, 1, $4, now(), $5, '', $6, $7) RETURNING id`,
-			seed.name, "/lib/"+seed.name, seed.format, seed.updatedAt, seed.fileType, seed.starred, deletedAt).Scan(&fileID)
+		return tx.QueryRow(`INSERT INTO home_file (name, path, parent_path, format, size, updated_at, created_at, type, checksum, starred, deleted_at, physical_path)
+			VALUES ($1, $2, '/lib', $3, 1, $4, now(), $5, '', $6, $7, NULLIF($8, '')) RETURNING id`,
+			seed.name, "/lib/"+seed.name, seed.format, seed.updatedAt, seed.fileType, seed.starred, deletedAt, seed.physicalPath).Scan(&fileID)
 	})
 	if err != nil {
 		t.Fatalf("seed %q: %v", seed.name, err)
@@ -366,5 +367,27 @@ func TestSearchTracksRequiresAllTermsAcrossFields_Postgres(t *testing.T) {
 	}
 	if len(results) != 1 || results[0].FileID != match {
 		t.Fatalf("results = %+v", results)
+	}
+}
+
+func TestSearchFilesReportsSizeUpdatedAtAndColdTier_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	now := time.Now().UTC().Truncate(time.Second)
+	seedHomeFile(t, dbContext, searchSeedFile{name: "report cold.txt", format: ".txt", fileType: 2, updatedAt: now, physicalPath: "/cold/report cold.txt"})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "report hot.txt", format: ".txt", fileType: 2, updatedAt: now.Add(-time.Hour)})
+
+	results, err := repository.SearchFiles("report", 10)
+	if err != nil {
+		t.Fatalf("SearchFiles: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results, got %+v", results)
+	}
+	coldFile, hotFile := results[0], results[1]
+	if coldFile.Name != "report cold.txt" || !coldFile.IsCold || coldFile.Size != 1 || !coldFile.UpdatedAt.Equal(now) {
+		t.Fatalf("unexpected cold file: %+v", coldFile)
+	}
+	if hotFile.IsCold {
+		t.Fatalf("hot file reported as cold: %+v", hotFile)
 	}
 }
