@@ -210,3 +210,12 @@ var GetPlaylistQueueQuery string
 
 //go:embed get_library_queue_by_file_ids.sql
 var GetLibraryQueueByFileIDsQuery string
+
+//go:embed insert_music_play_event.sql
+var InsertMusicPlayEventQuery string
+
+//go:embed get_most_played_tracks.sql
+var GetMostPlayedTracksQuery string
+
+//go:embed get_recently_played_tracks.sql
+var GetRecentlyPlayedTracksQuery string

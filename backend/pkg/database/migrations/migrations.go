@@ -191,6 +191,9 @@ var AddAudioMetadataCatalogKeysQuery string
 //go:embed queries/0060_create_player_queue_table.sql
 var CreatePlayerQueueTableQuery string
 
+//go:embed queries/0061_create_music_play_event_table.sql
+var CreateMusicPlayEventTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -295,6 +298,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0060_create_player_queue_table",
 		[]string{"0013_create_player_state_table", "0001_create_home_file_table"},
 		defaultMigrationFunc(CreatePlayerQueueTableQuery))
+
+	addMigrationRequiring("0061_create_music_play_event_table",
+		[]string{"0001_create_home_file_table"},
+		defaultMigrationFunc(CreateMusicPlayEventTableQuery))
 }
 
 func diaryMigrationList() {

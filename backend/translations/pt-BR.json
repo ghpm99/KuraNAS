@@ -1769,5 +1769,13 @@
 	"MUSIC_ARTIST_ALL_TRACKS": "Todas as faixas",
 	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
 	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
-	"MUSIC_GROUP_BACK": "Voltar"
+	"MUSIC_GROUP_BACK": "Voltar",
+	"MUSIC_TRACK_STAR": "Adicionar {{name}} aos favoritos",
+	"MUSIC_TRACK_UNSTAR": "Remover {{name}} dos favoritos",
+	"MUSIC_HOME_MOST_PLAYED": "Mais tocadas",
+	"MUSIC_HOME_MOST_PLAYED_EMPTY": "As faixas que você mais ouve aparecem aqui.",
+	"MUSIC_HOME_RECENT_PLAYS": "Tocadas recentemente",
+	"MUSIC_HOME_RECENT_PLAYS_EMPTY": "As faixas que você acabou de ouvir aparecem aqui.",
+	"MUSIC_HOME_PLAY_COUNT": "{{count}} reproduções",
+	"MUSIC_HOME_PLAY_TRACK": "Tocar {{name}}"
 }

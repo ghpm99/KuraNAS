@@ -1769,5 +1769,13 @@
 	"MUSIC_ARTIST_ALL_TRACKS": "All tracks",
 	"MUSIC_DURATION_HOURS_MINUTES": "{{hours}} h {{minutes}} min",
 	"MUSIC_DURATION_MINUTES": "{{minutes}} min",
-	"MUSIC_GROUP_BACK": "Back"
+	"MUSIC_GROUP_BACK": "Back",
+	"MUSIC_TRACK_STAR": "Add {{name}} to favorites",
+	"MUSIC_TRACK_UNSTAR": "Remove {{name}} from favorites",
+	"MUSIC_HOME_MOST_PLAYED": "Most played",
+	"MUSIC_HOME_MOST_PLAYED_EMPTY": "Tracks you listen to the most will appear here.",
+	"MUSIC_HOME_RECENT_PLAYS": "Recently played",
+	"MUSIC_HOME_RECENT_PLAYS_EMPTY": "Tracks you just listened to will appear here.",
+	"MUSIC_HOME_PLAY_COUNT": "{{count}} plays",
+	"MUSIC_HOME_PLAY_TRACK": "Play {{name}}"
 }
