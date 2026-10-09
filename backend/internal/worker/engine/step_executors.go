@@ -94,6 +94,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeImageMetadataReconcile] = func(step jobs.StepModel) error {
 		return executeImageMetadataReconcileStep(context, step)
 	}
+	executors[job.StepTypeAudioMetadataReconcile] = func(step jobs.StepModel) error {
+		return executeAudioMetadataReconcileStep(context, step)
+	}
 	executors[job.StepTypeDocumentTextIndex] = func(step jobs.StepModel) error {
 		return executeDocumentTextIndexStep(context, step)
 	}

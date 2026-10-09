@@ -108,3 +108,6 @@ var GetAudioSummaryByFileIDQuery string
 
 //go:embed search_library_tracks.sql
 var SearchLibraryTracksQuery string
+
+//go:embed select_audio_without_metadata.sql
+var SelectAudioWithoutMetadataQuery string
