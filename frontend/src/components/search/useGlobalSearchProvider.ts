@@ -12,6 +12,12 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import { useOptionalGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
+import {
+    buildPlayableTrack,
+    buildTrackPlaybackContext,
+    formatTrackDuration,
+} from './searchTrackPlayback';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -21,6 +27,7 @@ export type SearchItemKind =
     | 'folder'
     | 'artist'
     | 'album'
+    | 'track'
     | 'playlist'
     | 'video'
     | 'image';
@@ -32,6 +39,7 @@ export type SearchDialogItem = {
     description: string;
     meta?: string;
     keepsDialogOpen?: boolean;
+    secondaryAction?: { label: string; onSelect: () => void };
     onSelect: () => void;
 };
 
@@ -70,6 +78,8 @@ export const useGlobalSearchProvider = () => {
     const { t } = useI18n();
     const navigate = useNavigate();
     const location = useLocation();
+    const globalMusic = useOptionalGlobalMusic();
+    const replaceQueue = globalMusic?.replaceQueue;
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
@@ -281,6 +291,37 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        const tracks = (data.tracks ?? []).map<SearchDialogItem>((item) => {
+            const albumRoute = item.album_key ? getAlbumSearchRoute(item.album_key) : undefined;
+            return {
+                id: `track-${item.file_id}`,
+                kind: 'track',
+                label: item.title,
+                description: [item.artist, item.album].filter(Boolean).join(' · ') || item.path,
+                meta: formatTrackDuration(item.duration),
+                secondaryAction: albumRoute
+                    ? {
+                          label: t('GLOBAL_SEARCH_OPEN_ALBUM'),
+                          onSelect: () => navigate(albumRoute),
+                      }
+                    : undefined,
+                onSelect: () => {
+                    if (!replaceQueue) {
+                        navigate(getFileSearchRoute(item.path));
+                        return;
+                    }
+                    replaceQueue([buildPlayableTrack(item)], 0, buildTrackPlaybackContext(item));
+                },
+            };
+        });
+        if (tracks.length > 0) {
+            nextSections.push({
+                id: 'tracks',
+                title: t('GLOBAL_SEARCH_SECTION_TRACKS'),
+                items: tracks,
+            });
+        }
+
         const folders = data.folders.map<SearchDialogItem>((item) => ({
             id: `folder-${item.id}`,
             kind: 'folder',
@@ -432,7 +473,7 @@ export const useGlobalSearchProvider = () => {
 
         appendActionsSection();
         return nextSections;
-    }, [canOfferAiSearch, currentRoute, data, navigate, normalizedQuery, quickActions, t]);
+    }, [canOfferAiSearch, currentRoute, data, navigate, normalizedQuery, quickActions, replaceQueue, t]);
 
     const flattenedItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
     const activeItemId = flattenedItems[activeIndex]?.id ?? '';
@@ -472,6 +513,14 @@ export const useGlobalSearchProvider = () => {
         }
     };
 
+    const activateSecondaryAction = (item: SearchDialogItem) => {
+        if (!item.secondaryAction) {
+            return;
+        }
+        item.secondaryAction.onSelect();
+        closeSearch();
+    };
+
     const handleInputKeyDown = (
         event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
@@ -496,9 +545,14 @@ export const useGlobalSearchProvider = () => {
         if (event.key === 'Enter') {
             event.preventDefault();
             const currentItem = flattenedItems[activeIndex];
-            if (currentItem) {
-                activateItem(currentItem);
+            if (!currentItem) {
+                return;
             }
+            if (event.shiftKey) {
+                activateSecondaryAction(currentItem);
+                return;
+            }
+            activateItem(currentItem);
         }
     };
 
@@ -526,6 +580,7 @@ export const useGlobalSearchProvider = () => {
         setActiveIndex,
         handleInputKeyDown,
         activateItem,
+        activateSecondaryAction,
     };
 };
 

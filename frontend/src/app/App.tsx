@@ -4,7 +4,6 @@ import AppProviders from '@/components/providers/appProviders';
 import { appRoutes, getMusicRoute, isVideoPlayerRoute } from '@/app/routes';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell/AppShell';
-import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import GlobalPlayerControl from '@/features/music/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ConnectionBanner from '@/components/layout/ConnectionBanner/ConnectionBanner';
@@ -104,9 +103,7 @@ export default function App() {
     return (
         <AppProviders>
             <ErrorBoundary>
-                <GlobalMusicProvider>
-                    <AppContent />
-                </GlobalMusicProvider>
+                <AppContent />
             </ErrorBoundary>
         </AppProviders>
     );

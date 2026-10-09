@@ -250,4 +250,42 @@ describe('GlobalSearchDialog suggestion', () => {
         render(<GlobalSearchDialog {...defaultProps()} />);
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
+
+    it('renders the secondary action without selecting the item', () => {
+        const onSecondaryAction = jest.fn();
+        const onItemSelect = jest.fn();
+        const item = createItem({
+            kind: 'track',
+            secondaryAction: { label: 'Open album', onSelect: jest.fn() },
+        });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+                onItemSelect={onItemSelect}
+                onItemSecondaryAction={onSecondaryAction}
+            />
+        );
+        fireEvent.click(screen.getByText('Open album'));
+
+        expect(onSecondaryAction).toHaveBeenCalledWith(item);
+        expect(onItemSelect).not.toHaveBeenCalled();
+    });
+
+    it('tolerates a secondary action click without a handler', () => {
+        const item = createItem({
+            kind: 'track',
+            secondaryAction: { label: 'Open album', onSelect: jest.fn() },
+        });
+
+        render(
+            <GlobalSearchDialog
+                {...defaultProps()}
+                sections={[createSection({ items: [item] })]}
+            />
+        );
+
+        expect(() => fireEvent.click(screen.getByText('Open album'))).not.toThrow();
+    });
 });

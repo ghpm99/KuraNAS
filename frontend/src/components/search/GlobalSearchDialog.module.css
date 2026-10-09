@@ -231,3 +231,20 @@
     font-size: 0.8rem;
     color: var(--app-color-text-secondary);
 }
+
+.itemSecondaryAction {
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 var(--app-spacing-3);
+    border: 1px solid rgba(var(--app-color-ink-rgb), 0.22);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--app-color-text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.itemSecondaryAction:hover {
+    background-color: rgba(var(--app-color-ink-rgb), 0.1);
+}

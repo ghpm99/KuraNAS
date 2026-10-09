@@ -61,6 +61,16 @@ export interface GlobalSearchImageResult {
     context: string;
 }
 
+export interface GlobalSearchTrackResult {
+    file_id: number;
+    title: string;
+    artist: string;
+    album: string;
+    album_key: string;
+    duration: number;
+    path: string;
+}
+
 export interface GlobalSearchResponse {
     query: string;
     suggestion?: string;
@@ -71,6 +81,7 @@ export interface GlobalSearchResponse {
     playlists: GlobalSearchPlaylistResult[];
     videos: GlobalSearchVideoResult[];
     images: GlobalSearchImageResult[];
+    tracks?: GlobalSearchTrackResult[];
 }
 
 export const searchGlobal = async (
