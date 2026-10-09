@@ -213,8 +213,8 @@ var ImageFormats = append(
 	[]string{".jpg", ".jpeg", ".jfif", ".png", ".gif", ".bmp", ".svg", ".webp", ".tif", ".tiff"},
 	append(append([]string{}, HeifFamilyFormats...), RawPhotoFormats...)...,
 )
-var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
-var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
+var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac", ".m4a", ".ogg", ".oga", ".opus", ".wma", ".alac", ".aiff", ".aif", ".ape", ".wv"}
+var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".ogv"}
 var DocumentFormats = []string{".pdf", ".txt", ".html", ".htm", ".xml", ".json", ".csv"}
 var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz"}
 
@@ -260,12 +260,26 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/aac", Description: "AUDIO_AAC"}
 	case ".flac":
 		return FormatType{Type: FormatTypeAudio, Mime: "audio/flac", Description: "AUDIO_FLAC"}
+	case ".m4a", ".alac":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/mp4", Description: "AUDIO_M4A"}
+	case ".ogg", ".oga":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/ogg", Description: "AUDIO_OGG"}
+	case ".opus":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/opus", Description: "AUDIO_OPUS"}
+	case ".wma":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-ms-wma", Description: "AUDIO_WMA"}
+	case ".aiff", ".aif":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/aiff", Description: "AUDIO_AIFF"}
+	case ".ape":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-ape", Description: "AUDIO_APE"}
+	case ".wv":
+		return FormatType{Type: FormatTypeAudio, Mime: "audio/x-wavpack", Description: "AUDIO_WAVPACK"}
 
 	case ".mp4":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/mp4", Description: "VIDEO_MP4"}
 	case ".webm":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/webm", Description: "VIDEO_WEBM"}
-	case ".ogg":
+	case ".ogv":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/ogg", Description: "VIDEO_OGG"}
 	case ".mov":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/quicktime", Description: "VIDEO_MOV"}

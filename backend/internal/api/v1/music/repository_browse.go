@@ -136,6 +136,32 @@ func (r *AudioMetadataRepository) DeleteAudioMetadata(id int) error {
 	return nil
 }
 
+// ListAudioWithoutMetadata returns a keyset page (file_id > afterFileID) of
+// active audio files lacking an audio_metadata row, ordered by file_id.
+func (r *AudioMetadataRepository) ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error) {
+	missing := []AudioWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectAudioWithoutMetadataQuery, pq.Array(utils.AudioFormats), afterFileID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var audioFile AudioWithoutMetadata
+			if err := rows.Scan(&audioFile.FileID, &audioFile.Path); err != nil {
+				return err
+			}
+			missing = append(missing, audioFile)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar audios sem metadados: %w", err)
+	}
+	return missing, nil
+}
+
 // --- Browse queries (methods on the main Repository) ---
 
 func (r *Repository) GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {

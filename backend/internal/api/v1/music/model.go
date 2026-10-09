@@ -39,6 +39,13 @@ type AudioMetadataModel struct {
 	CreatedAt           time.Time
 }
 
+// AudioWithoutMetadata identifies an active audio file that has no
+// audio_metadata row yet, so it is missing from the music library.
+type AudioWithoutMetadata struct {
+	FileID int
+	Path   string
+}
+
 type PlayerStateModel struct {
 	ID              int
 	ClientID        string

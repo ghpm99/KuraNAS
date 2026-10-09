@@ -18,7 +18,7 @@ var categorySlugs = map[LibraryCategory][]string{
 
 var categoryExtensions = map[LibraryCategory][]string{
 	LibraryCategoryImages:    append([]string{".raw"}, utils.ImageFormats...),
-	LibraryCategoryMusic:     {".mp3", ".flac", ".wav", ".aac", ".ogg", ".wma", ".m4a", ".opus"},
+	LibraryCategoryMusic:     utils.AudioFormats,
 	LibraryCategoryVideos:    {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts"},
 	LibraryCategoryDocuments: {".pdf", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".csv", ".md"},
 }
