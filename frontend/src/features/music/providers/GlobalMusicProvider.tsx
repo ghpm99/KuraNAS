@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import type { IMusicData } from './musicProvider/musicProvider';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
@@ -9,13 +17,21 @@ import useMusicStateSync from './globalMusic/useMusicStateSync';
 import useMusicQueueHydration from './globalMusic/useMusicQueueHydration';
 import useMusicQueuePersistence from './globalMusic/useMusicQueuePersistence';
 import type { RepeatMode } from './globalMusic/repeatMode';
+import {
+    createQueueEntries,
+    insertAfterIndex,
+    moveQueueEntry,
+    type QueueTrack,
+} from './globalMusic/queueEntries';
 
 const RESTART_THRESHOLD_SECONDS = 3;
 
 export interface IGlobalMusicContext {
-    queue: IMusicData[];
+    queue: QueueTrack[];
     currentIndex: number | undefined;
-    addToQueue: (track: IMusicData, playbackContext?: MusicPlaybackContext) => void;
+    addToQueue: (tracks: IMusicData[], playbackContext?: MusicPlaybackContext) => void;
+    playNext: (tracks: IMusicData[], playbackContext?: MusicPlaybackContext) => void;
+    moveQueueItem: (fromIndex: number, toIndex: number) => void;
     replaceQueue: (
         tracks: IMusicData[],
         startIndex?: number,
@@ -23,7 +39,7 @@ export interface IGlobalMusicContext {
     ) => void;
     playTrackFromQueue: (index: number) => void;
     clearQueue: () => void;
-    removeFromQueue: (index: number) => void;
+    removeFromQueue: (queueEntryId: string) => void;
     queueOpen: boolean;
     setQueueOpen: (open: boolean) => void;
     toggleQueue: () => void;
@@ -59,8 +75,20 @@ const buildStreamUrl = (trackId: number) => `${getApiV1BaseUrl()}/files/stream/$
 
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
     const { settings, isLoading: isLoadingSettings } = useSettings();
-    const [queue, setQueue] = useState<IMusicData[]>([]);
+    const [queue, setQueue] = useState<QueueTrack[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
+    const queueRef = useRef<QueueTrack[]>([]);
+    const currentIndexRef = useRef<number | undefined>(undefined);
+
+    const commitQueue = useCallback((nextQueue: QueueTrack[]) => {
+        queueRef.current = nextQueue;
+        setQueue(nextQueue);
+    }, []);
+
+    const commitCurrentIndex = useCallback((nextIndex: number | undefined) => {
+        currentIndexRef.current = nextIndex;
+        setCurrentIndex(nextIndex);
+    }, []);
     const [shuffle, setShuffle] = useState(false);
     const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
     const [queueOpen, setQueueOpen] = useState(false);
@@ -83,7 +111,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             const idx = getShuffledIndex(queue.length, currentIndex);
             const track = queue[idx];
             if (track) {
-                setCurrentIndex(idx);
+                commitCurrentIndex(idx);
                 engine.loadAndPlayUrl(buildStreamUrl(track.id));
                 syncState({ fileId: track.id, position: 0 });
             }
@@ -93,14 +121,14 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         if (nextIndex < queue.length) {
             const track = queue[nextIndex];
             if (track) {
-                setCurrentIndex(nextIndex);
+                commitCurrentIndex(nextIndex);
                 engine.loadAndPlayUrl(buildStreamUrl(track.id));
                 syncState({ fileId: track.id, position: 0 });
             }
         } else if (repeatMode === 'all') {
             const track = queue[0];
             if (track) {
-                setCurrentIndex(0);
+                commitCurrentIndex(0);
                 engine.loadAndPlayUrl(buildStreamUrl(track.id));
                 syncState({ fileId: track.id, position: 0 });
             }
@@ -124,15 +152,15 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     const { loadUrlPaused, setVolume: setEngineVolume } = engine;
     const hydrationCallbacks = useMemo(
         () => ({
-            setQueue,
-            setCurrentIndex,
+            setQueue: (tracks: IMusicData[]) => commitQueue(createQueueEntries(tracks)),
+            setCurrentIndex: commitCurrentIndex,
             setShuffle,
             setRepeatMode,
             setVolume: setEngineVolume,
             loadPausedTrack: (trackId: number, startPositionSeconds: number) =>
                 loadUrlPaused(buildStreamUrl(trackId), startPositionSeconds),
         }),
-        [loadUrlPaused, setEngineVolume]
+        [loadUrlPaused, setEngineVolume, commitQueue, commitCurrentIndex]
     );
 
     const isRememberQueueEnabled = !isLoadingSettings && settings.players.remember_music_queue;
@@ -147,89 +175,134 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         currentIndex,
     });
 
-    const loadAndPlay = useCallback(
-        (index: number) => {
-            if (index < 0 || index >= queue.length) return;
-            const track = queue[index];
+    const startTrackAt = useCallback(
+        (index: number, trackQueue: QueueTrack[]) => {
+            const track = trackQueue[index];
             if (!track) return;
-            setCurrentIndex(index);
+            commitCurrentIndex(index);
             engine.loadAndPlayUrl(buildStreamUrl(track.id));
             syncState({ fileId: track.id, position: 0 });
         },
-        [queue, engine, syncState]
+        [commitCurrentIndex, engine, syncState]
+    );
+
+    const loadAndPlay = useCallback(
+        (index: number) => startTrackAt(index, queueRef.current),
+        [startTrackAt]
+    );
+
+    const startQueueWith = useCallback(
+        (tracks: IMusicData[], nextPlaybackContext?: MusicPlaybackContext) => {
+            const entries = createQueueEntries(tracks);
+            commitQueue(entries);
+            setPlaybackContext(nextPlaybackContext);
+            startTrackAt(0, entries);
+        },
+        [commitQueue, startTrackAt]
     );
 
     const addToQueue = useCallback(
-        (track: IMusicData, nextPlaybackContext?: MusicPlaybackContext) => {
-            if (currentIndex === undefined && nextPlaybackContext) {
-                setPlaybackContext(nextPlaybackContext);
+        (tracks: IMusicData[], nextPlaybackContext?: MusicPlaybackContext) => {
+            if (tracks.length === 0) return;
+            if (currentIndexRef.current === undefined) {
+                startQueueWith(tracks, nextPlaybackContext);
+                return;
             }
-            setQueue((prev) => {
-                if (prev.some((t) => t.id === track.id)) return prev;
-                const newQueue = [...prev, track];
-                if (currentIndex === undefined) {
-                    setTimeout(() => loadAndPlay(newQueue.length - 1), 0);
-                }
-                return newQueue;
-            });
-            if (currentIndex === undefined) {
-                setCurrentIndex(0);
+            commitQueue([...queueRef.current, ...createQueueEntries(tracks)]);
+        },
+        [commitQueue, startQueueWith]
+    );
+
+    const playNext = useCallback(
+        (tracks: IMusicData[], nextPlaybackContext?: MusicPlaybackContext) => {
+            if (tracks.length === 0) return;
+            if (currentIndexRef.current === undefined) {
+                startQueueWith(tracks, nextPlaybackContext);
+                return;
+            }
+            commitQueue(
+                insertAfterIndex(
+                    queueRef.current,
+                    currentIndexRef.current,
+                    createQueueEntries(tracks)
+                )
+            );
+        },
+        [commitQueue, startQueueWith]
+    );
+
+    const moveQueueItem = useCallback(
+        (fromIndex: number, toIndex: number) => {
+            const reorderedQueue = moveQueueEntry(queueRef.current, fromIndex, toIndex);
+            if (reorderedQueue === queueRef.current) return;
+            const currentEntryId =
+                currentIndexRef.current !== undefined
+                    ? queueRef.current[currentIndexRef.current]?.queueEntryId
+                    : undefined;
+            commitQueue(reorderedQueue);
+            if (currentEntryId !== undefined) {
+                commitCurrentIndex(
+                    reorderedQueue.findIndex((entry) => entry.queueEntryId === currentEntryId)
+                );
             }
         },
-        [currentIndex, loadAndPlay]
+        [commitQueue, commitCurrentIndex]
     );
 
     const replaceQueue = useCallback(
         (tracks: IMusicData[], startIndex = 0, nextPlaybackContext?: MusicPlaybackContext) => {
             if (tracks.length === 0) return;
-            setQueue(tracks);
-            setCurrentIndex(startIndex);
+            const entries = createQueueEntries(tracks);
+            commitQueue(entries);
             setPlaybackContext(nextPlaybackContext);
-            const track = tracks[startIndex];
-            if (track) {
-                engine.loadAndPlayUrl(buildStreamUrl(track.id));
-                syncState({
-                    fileId: track.id,
-                    position: 0,
-                    playlistId: nextPlaybackContext?.playlistId ?? null,
-                });
-            }
+            commitCurrentIndex(startIndex);
+            const track = entries[startIndex];
+            if (!track) return;
+            engine.loadAndPlayUrl(buildStreamUrl(track.id));
+            syncState({
+                fileId: track.id,
+                position: 0,
+                playlistId: nextPlaybackContext?.playlistId ?? null,
+            });
         },
-        [engine, syncState]
+        [commitQueue, commitCurrentIndex, engine, syncState]
     );
 
     const clearQueue = useCallback(() => {
         engine.stop();
-        setQueue([]);
-        setCurrentIndex(undefined);
+        commitQueue([]);
+        commitCurrentIndex(undefined);
         setPlaybackContext(undefined);
-    }, [engine]);
+    }, [engine, commitQueue, commitCurrentIndex]);
 
     const removeFromQueue = useCallback(
-        (index: number) => {
-            setQueue((prev) => {
-                const newQueue = prev.filter((_, i) => i !== index);
-                if (newQueue.length === 0) {
-                    engine.stop();
-                    setCurrentIndex(undefined);
-                    setPlaybackContext(undefined);
-                } else if (currentIndex !== undefined) {
-                    if (index < currentIndex) {
-                        setCurrentIndex(currentIndex - 1);
-                    } else if (index === currentIndex) {
-                        if (currentIndex >= newQueue.length) {
-                            setCurrentIndex(newQueue.length - 1);
-                        }
-                        const nextTrack = newQueue[Math.min(currentIndex, newQueue.length - 1)];
-                        if (nextTrack) {
-                            engine.loadAndPlayUrl(buildStreamUrl(nextTrack.id));
-                        }
-                    }
-                }
-                return newQueue;
-            });
+        (queueEntryId: string) => {
+            const removedIndex = queueRef.current.findIndex(
+                (entry) => entry.queueEntryId === queueEntryId
+            );
+            if (removedIndex === -1) return;
+            const remainingQueue = queueRef.current.filter(
+                (entry) => entry.queueEntryId !== queueEntryId
+            );
+            const playingIndex = currentIndexRef.current;
+            commitQueue(remainingQueue);
+
+            if (remainingQueue.length === 0) {
+                engine.stop();
+                commitCurrentIndex(undefined);
+                setPlaybackContext(undefined);
+                return;
+            }
+            if (playingIndex === undefined || removedIndex > playingIndex) return;
+            if (removedIndex < playingIndex) {
+                commitCurrentIndex(playingIndex - 1);
+                return;
+            }
+            const replacementIndex = Math.min(playingIndex, remainingQueue.length - 1);
+            commitCurrentIndex(replacementIndex);
+            engine.loadAndPlayUrl(buildStreamUrl(remainingQueue[replacementIndex]!.id));
         },
-        [currentIndex, engine]
+        [engine, commitQueue, commitCurrentIndex]
     );
 
     const next = useCallback(() => {
@@ -317,6 +390,8 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             queue,
             currentIndex,
             addToQueue,
+            playNext,
+            moveQueueItem,
             replaceQueue,
             playTrackFromQueue: loadAndPlay,
             clearQueue,
@@ -345,6 +420,8 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             queue,
             currentIndex,
             addToQueue,
+            playNext,
+            moveQueueItem,
             replaceQueue,
             loadAndPlay,
             clearQueue,

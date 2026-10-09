@@ -10,6 +10,7 @@ import {
 import { Folder, Play } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createFolderPlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -150,59 +151,71 @@ function FolderListView({
             <Box sx={{ p: 1 }}>
                 <List sx={{ width: '100%' }}>
                     {folders.map((folder) => (
-                        <ListItem
+                        <CollectionContextMenu
                             key={folder.folder}
-                            disablePadding
-                            sx={{
-                                '&:hover .folder-play': { opacity: 1 },
-                            }}
+                            collectionName={getFolderName(folder.folder)}
+                            playbackContext={createFolderPlaybackContext(folder.folder)}
+                            loadTracks={() => loadFolderTracks(folder.folder)}
+                            layout="row"
                         >
-                            <ListItemButton
-                                component="div"
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onSelect(folder.folder)}
-                                onKeyDown={(event) =>
-                                    handleKeyboardActivation(event, () => onSelect(folder.folder))
-                                }
-                                sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
+                            <ListItem
+                                key={folder.folder}
+                                disablePadding
+                                sx={{
+                                    '&:hover .folder-play': { opacity: 1 },
+                                }}
                             >
-                                <ListItemIcon sx={{ minWidth: 40 }}>
-                                    <Box
+                                <ListItemButton
+                                    component="div"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelect(folder.folder)}
+                                    onKeyDown={(event) =>
+                                        handleKeyboardActivation(event, () =>
+                                            onSelect(folder.folder)
+                                        )
+                                    }
+                                    sx={{ borderRadius: 1.5, py: 1, pl: 1.5, pr: 6, gap: 1 }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 40 }}>
+                                        <Box
+                                            sx={{
+                                                width: 40,
+                                                height: 40,
+                                                borderRadius: 1,
+                                                bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <Folder size={20} color="var(--app-color-primary)" />
+                                        </Box>
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={getFolderName(folder.folder)}
+                                        secondary={`${folder.track_count} ${t('MUSIC_TRACKS_COUNT')}`}
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                    />
+                                    <IconButton
+                                        className="folder-play"
+                                        onClick={(event) =>
+                                            void handlePlayFolder(event, folder.folder)
+                                        }
                                         sx={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 1,
-                                            bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
+                                            opacity: 0,
+                                            transition: 'all 0.2s ease',
+                                            color: 'primary.main',
+                                            '&:hover': {
+                                                bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                            },
                                         }}
                                     >
-                                        <Folder size={20} color="var(--app-color-primary)" />
-                                    </Box>
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={getFolderName(folder.folder)}
-                                    secondary={`${folder.track_count} ${t('MUSIC_TRACKS_COUNT')}`}
-                                    primaryTypographyProps={{ fontWeight: 500 }}
-                                />
-                                <IconButton
-                                    className="folder-play"
-                                    onClick={(event) => void handlePlayFolder(event, folder.folder)}
-                                    sx={{
-                                        opacity: 0,
-                                        transition: 'all 0.2s ease',
-                                        color: 'primary.main',
-                                        '&:hover': {
-                                            bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
-                                        },
-                                    }}
-                                >
-                                    <Play size={18} fill="var(--app-color-primary)" />
-                                </IconButton>
-                            </ListItemButton>
-                        </ListItem>
+                                        <Play size={18} fill="var(--app-color-primary)" />
+                                    </IconButton>
+                                </ListItemButton>
+                            </ListItem>
+                        </CollectionContextMenu>
                     ))}
                 </List>
             </Box>

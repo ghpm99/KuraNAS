@@ -10,6 +10,7 @@ import {
 import { Play, User } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createArtistPlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -150,91 +151,100 @@ function ArtistListView({
                 <Grid container spacing={2}>
                     {artists.map((artist) => (
                         <Grid key={artist.artist} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
-                            <Card
-                                sx={{
-                                    bgcolor: 'background.paper',
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)',
-                                    },
-                                    '&:hover .play-overlay': {
-                                        opacity: 1,
-                                        transform: 'translateY(0)',
-                                    },
-                                }}
+                            <CollectionContextMenu
+                                collectionName={artist.artist}
+                                playbackContext={createArtistPlaybackContext(artist.artist)}
+                                loadTracks={() => loadArtistTracks(artist.key)}
+                                layout="card"
                             >
-                                <CardActionArea
-                                    component="div"
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => onSelect(artist)}
-                                    onKeyDown={(event) =>
-                                        handleKeyboardActivation(event, () => onSelect(artist))
-                                    }
-                                    sx={{ position: 'relative' }}
+                                <Card
+                                    sx={{
+                                        bgcolor: 'background.paper',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)',
+                                        },
+                                        '&:hover .play-overlay': {
+                                            opacity: 1,
+                                            transform: 'translateY(0)',
+                                        },
+                                    }}
                                 >
-                                    <Box
-                                        sx={{
-                                            pt: 2,
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                        }}
+                                    <CardActionArea
+                                        component="div"
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onSelect(artist)}
+                                        onKeyDown={(event) =>
+                                            handleKeyboardActivation(event, () => onSelect(artist))
+                                        }
+                                        sx={{ position: 'relative' }}
                                     >
                                         <Box
                                             sx={{
-                                                width: 100,
-                                                height: 100,
-                                                borderRadius: '50%',
+                                                pt: 2,
                                                 display: 'flex',
-                                                alignItems: 'center',
                                                 justifyContent: 'center',
-                                                bgcolor: 'primary.dark',
-                                                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
                                             }}
                                         >
-                                            <User size={40} opacity={0.7} />
+                                            <Box
+                                                sx={{
+                                                    width: 100,
+                                                    height: 100,
+                                                    borderRadius: '50%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    bgcolor: 'primary.dark',
+                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                                                }}
+                                            >
+                                                <User size={40} opacity={0.7} />
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                    <CardContent
-                                        sx={{
-                                            p: 1.5,
-                                            textAlign: 'center',
-                                            '&:last-child': { pb: 1.5 },
-                                        }}
-                                    >
-                                        <Typography variant="subtitle2" fontWeight={600} noWrap>
-                                            {artist.artist}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {artist.album_count} {t('MUSIC_ALBUMS')}
-                                        </Typography>
-                                    </CardContent>
-                                    <IconButton
-                                        className="play-overlay"
-                                        onClick={(event) => void handlePlayArtist(event, artist)}
-                                        sx={{
-                                            position: 'absolute',
-                                            bottom: 50,
-                                            right: 8,
-                                            bgcolor: 'primary.main',
-                                            color: 'white',
-                                            width: 36,
-                                            height: 36,
-                                            opacity: 0,
-                                            transform: 'translateY(8px)',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow:
-                                                '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
-                                            '&:hover': {
-                                                bgcolor: 'primary.light',
-                                                transform: 'translateY(0) scale(1.05)',
-                                            },
-                                        }}
-                                    >
-                                        <Play size={16} fill="white" />
-                                    </IconButton>
-                                </CardActionArea>
-                            </Card>
+                                        <CardContent
+                                            sx={{
+                                                p: 1.5,
+                                                textAlign: 'center',
+                                                '&:last-child': { pb: 1.5 },
+                                            }}
+                                        >
+                                            <Typography variant="subtitle2" fontWeight={600} noWrap>
+                                                {artist.artist}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {artist.album_count} {t('MUSIC_ALBUMS')}
+                                            </Typography>
+                                        </CardContent>
+                                        <IconButton
+                                            className="play-overlay"
+                                            onClick={(event) =>
+                                                void handlePlayArtist(event, artist)
+                                            }
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 50,
+                                                right: 8,
+                                                bgcolor: 'primary.main',
+                                                color: 'white',
+                                                width: 36,
+                                                height: 36,
+                                                opacity: 0,
+                                                transform: 'translateY(8px)',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow:
+                                                    '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
+                                                '&:hover': {
+                                                    bgcolor: 'primary.light',
+                                                    transform: 'translateY(0) scale(1.05)',
+                                                },
+                                            }}
+                                        >
+                                            <Play size={16} fill="white" />
+                                        </IconButton>
+                                    </CardActionArea>
+                                </Card>
+                            </CollectionContextMenu>
                         </Grid>
                     ))}
                 </Grid>

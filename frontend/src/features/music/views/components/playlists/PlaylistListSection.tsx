@@ -12,12 +12,15 @@ import {
 } from '@mui/material';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { ListMusic, Play, Plus, Trash2 } from 'lucide-react';
+import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getPlaylistQueue } from '@/service/playlist';
 import { queueToTracks } from '@/features/music/components/musicQueueTracks';
+
+const loadPlaylistTracks = (playlistId: number) => getPlaylistQueue(playlistId).then(queueToTracks);
 
 type PlaylistListSectionProps = {
     playlists: Playlist[];
@@ -55,7 +58,7 @@ export default function PlaylistListSection({
 
     const handlePlayPlaylist = async (e: React.MouseEvent, playlist: Playlist) => {
         e.stopPropagation();
-        const tracks = queueToTracks(await getPlaylistQueue(playlist.id));
+        const tracks = await loadPlaylistTracks(playlist.id);
         if (tracks.length > 0) replaceQueue(tracks, 0, createPlaylistPlaybackContext(playlist));
     };
 
@@ -93,82 +96,90 @@ export default function PlaylistListSection({
 
             <List sx={{ width: '100%' }}>
                 {playlists.map((playlist) => (
-                    <ListItem
+                    <CollectionContextMenu
                         key={playlist.id}
-                        disablePadding
-                        sx={{
-                            '&:hover .playlist-actions': { opacity: 1 },
-                        }}
+                        collectionName={playlist.name}
+                        playbackContext={createPlaylistPlaybackContext(playlist)}
+                        loadTracks={() => loadPlaylistTracks(playlist.id)}
+                        layout="row"
                     >
-                        <ListItemButton
-                            component="div"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onSelect(playlist)}
-                            onKeyDown={(event) =>
-                                handleListItemKeyDown(event, () => onSelect(playlist))
-                            }
-                            sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
+                        <ListItem
+                            key={playlist.id}
+                            disablePadding
+                            sx={{
+                                '&:hover .playlist-actions': { opacity: 1 },
+                            }}
                         >
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                                <Box
-                                    sx={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 1,
-                                        bgcolor: playlist.is_system
-                                            ? 'rgba(167, 139, 250, 0.15)'
-                                            : 'rgba(var(--app-color-primary-rgb), 0.12)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <ListMusic
-                                        size={20}
-                                        color={playlist.is_system ? '#a78bfa' : '#6366f1'}
-                                    />
-                                </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={playlist.name}
-                                secondary={`${playlist.track_count} ${t('MUSIC_TRACKS_COUNT')}${playlist.description ? ` · ${playlist.description}` : ''}`}
-                                primaryTypographyProps={{ fontWeight: 500 }}
-                            />
-                            <Box
-                                className="playlist-actions"
-                                sx={{
-                                    display: 'flex',
-                                    gap: 0.5,
-                                    opacity: 0,
-                                    transition: 'opacity 0.2s ease',
-                                }}
+                            <ListItemButton
+                                component="div"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => onSelect(playlist)}
+                                onKeyDown={(event) =>
+                                    handleListItemKeyDown(event, () => onSelect(playlist))
+                                }
+                                sx={{ borderRadius: 1.5, py: 1, pl: 1.5, pr: 6, gap: 1 }}
                             >
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => handlePlayPlaylist(e, playlist)}
-                                    sx={{ color: 'primary.main' }}
-                                >
-                                    <Play size={16} fill="var(--app-color-primary)" />
-                                </IconButton>
-                                {!playlist.is_system && (
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(playlist.id);
-                                        }}
+                                <ListItemIcon sx={{ minWidth: 40 }}>
+                                    <Box
                                         sx={{
-                                            color: 'text.secondary',
-                                            '&:hover': { color: 'error.main' },
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 1,
+                                            bgcolor: playlist.is_system
+                                                ? 'rgba(167, 139, 250, 0.15)'
+                                                : 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                         }}
                                     >
-                                        <Trash2 size={16} />
+                                        <ListMusic
+                                            size={20}
+                                            color={playlist.is_system ? '#a78bfa' : '#6366f1'}
+                                        />
+                                    </Box>
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={playlist.name}
+                                    secondary={`${playlist.track_count} ${t('MUSIC_TRACKS_COUNT')}${playlist.description ? ` · ${playlist.description}` : ''}`}
+                                    primaryTypographyProps={{ fontWeight: 500 }}
+                                />
+                                <Box
+                                    className="playlist-actions"
+                                    sx={{
+                                        display: 'flex',
+                                        gap: 0.5,
+                                        opacity: 0,
+                                        transition: 'opacity 0.2s ease',
+                                    }}
+                                >
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => handlePlayPlaylist(e, playlist)}
+                                        sx={{ color: 'primary.main' }}
+                                    >
+                                        <Play size={16} fill="var(--app-color-primary)" />
                                     </IconButton>
-                                )}
-                            </Box>
-                        </ListItemButton>
-                    </ListItem>
+                                    {!playlist.is_system && (
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDelete(playlist.id);
+                                            }}
+                                            sx={{
+                                                color: 'text.secondary',
+                                                '&:hover': { color: 'error.main' },
+                                            }}
+                                        >
+                                            <Trash2 size={16} />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            </ListItemButton>
+                        </ListItem>
+                    </CollectionContextMenu>
                 ))}
             </List>
 
