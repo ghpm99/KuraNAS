@@ -22,6 +22,8 @@ export type ImageLibraryPageRequest = {
     albumId?: number;
 };
 
+const searchNameOrContentMatch = 'all';
+
 const repeatedKeysSerializer = { indexes: null };
 
 const emptyToUndefined = (value: string) => (value === '' ? undefined : value);
@@ -29,6 +31,8 @@ const listToUndefined = <T>(values: T[]) => (values.length === 0 ? undefined : v
 
 const buildFilterParams = (filters: ImageLibraryFilters) => ({
     q: emptyToUndefined(filters.nameQuery),
+    content: emptyToUndefined(filters.nameQuery),
+    match: filters.nameQuery === '' ? undefined : searchNameOrContentMatch,
     category: listToUndefined(filters.categories),
     starred: filters.isStarredOnly ? true : undefined,
     format: listToUndefined(filters.formats),

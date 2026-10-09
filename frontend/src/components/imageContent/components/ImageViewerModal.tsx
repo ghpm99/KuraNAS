@@ -14,6 +14,7 @@ import {
     X,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import ImageViewerContentSection from './ImageViewerContentSection';
 import ImageViewerDetailItem from './ImageViewerDetailItem';
 import { useImageViewerGestures } from './useImageViewerGestures';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
@@ -58,12 +59,14 @@ type ImageViewerModalProps = {
     onPrevious: () => void;
     onNext: () => void;
     onOpenImage: (id: number) => void;
+    onSearchTag?: (tag: string) => void;
 };
 
 const noPan = { x: 0, y: 0 };
 const ignoreZoomChange = () => undefined;
 const ignorePanChange = () => undefined;
 const ignoreRotate = () => undefined;
+const ignoreSearchTag = () => undefined;
 
 export default function ImageViewerModal({
     activeImage,
@@ -96,9 +99,10 @@ export default function ImageViewerModal({
     onPrevious,
     onNext,
     onOpenImage,
+    onSearchTag = ignoreSearchTag,
 }: ImageViewerModalProps) {
     const { t } = useI18n();
-    const { details, folderPath, positionLabel } = useImageViewerModal({
+    const { details, content, folderPath, positionLabel } = useImageViewerModal({
         activeImage,
         activeImageDate,
         activeIndex,
@@ -326,6 +330,7 @@ export default function ImageViewerModal({
 
                 {showDetails ? (
                     <aside className={styles.detailsPanel}>
+                        <ImageViewerContentSection content={content} onSearchTag={onSearchTag} />
                         {details.map((section) => (
                             <section key={section.title} className={styles.detailsSection}>
                                 <h4>{section.title}</h4>

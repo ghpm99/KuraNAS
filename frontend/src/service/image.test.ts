@@ -88,6 +88,8 @@ describe('service/image', () => {
         expect(mockedApi.get).toHaveBeenCalledWith('/image/library', {
             params: {
                 q: undefined,
+                content: undefined,
+                match: undefined,
                 category: undefined,
                 starred: undefined,
                 format: undefined,
@@ -119,6 +121,8 @@ describe('service/image', () => {
         expect(mockedApi.get).toHaveBeenCalledWith('/image/library', {
             params: expect.objectContaining({
                 q: 'beach',
+                content: 'beach',
+                match: 'all',
                 category: ['capture', 'screenshot_app'],
                 starred: true,
                 format: ['jpg', 'png'],
@@ -135,7 +139,26 @@ describe('service/image', () => {
         const queryString = axios.getUri({ url, ...requestConfig });
         expect(queryString).toContain('category=capture&category=screenshot_app');
         expect(queryString).toContain('format=jpg&format=png');
+        expect(queryString).toContain('q=beach');
+        expect(queryString).toContain('content=beach');
+        expect(queryString).toContain('match=all');
         expect(queryString).not.toContain('[]');
+    });
+
+    it('omits the content search parameters when the search box is empty', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], has_next: false } });
+
+        await getImageLibraryPage({
+            filters: noFilters,
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 60,
+        });
+
+        const [url, requestConfig] = mockedApi.get.mock.calls[0]!;
+        const queryString = axios.getUri({ url, ...requestConfig });
+        expect(queryString).not.toContain('content=');
+        expect(queryString).not.toContain('match=');
+        expect(queryString).not.toContain('q=');
     });
 
     it('requests numbered pages for non keyset orderings', async () => {

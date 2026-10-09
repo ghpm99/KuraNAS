@@ -77,7 +77,7 @@ export const useImageContent = () => {
         isFetchingNextPage,
     } = useImage();
     const controls = useImageLibraryControls(view);
-    const { openImageParam, closeImageParam } = controls;
+    const { openImageParam, closeImageParam, setNameQuery } = controls;
     const { toggleStar, isStarTogglePending } = useImageStarToggle();
     const { typedNameQuery, setTypedNameQuery } = useDebouncedNameQuery(
         view.filters.nameQuery,
@@ -206,6 +206,15 @@ export const useImageContent = () => {
         closeImageParam();
         clearNeighbors();
     }, [closeViewer, closeImageParam, clearNeighbors]);
+
+    const handleSearchByTag = useCallback(
+        (tag: string) => {
+            closeViewer();
+            clearNeighbors();
+            setNameQuery(tag);
+        },
+        [closeViewer, clearNeighbors, setNameQuery]
+    );
 
     const handleToggleFavoriteOfActiveImage = useCallback(() => {
         if (!activeImage || isStarTogglePending) {
@@ -347,6 +356,7 @@ export const useImageContent = () => {
         toggleStar,
         handleOpenImage,
         handleCloseViewer,
+        handleSearchByTag,
         handleToggleFavoriteOfActiveImage,
         handleOpenActiveImageFolder,
     };

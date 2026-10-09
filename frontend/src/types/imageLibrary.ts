@@ -109,6 +109,9 @@ export type ImageMetadataSummary = {
     gps_longitude?: number | null;
     classification_confidence?: number;
     suggested_name?: string;
+    caption?: string;
+    tags?: string[];
+    ocr_text?: string;
 };
 
 export type ImageLibraryNeighbors = {

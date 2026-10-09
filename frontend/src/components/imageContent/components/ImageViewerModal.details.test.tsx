@@ -91,6 +91,17 @@ describe('ImageViewerModal details panel', () => {
         expect(screen.queryByRole('link', { name: 'IMAGES_DETAIL_GPS_OPEN_MAP' })).toBeNull();
     });
 
+    it('shows caption, tags and OCR text from the metadata summary', async () => {
+        mockEndpoints({ caption: 'A red car', tags: ['car', 'red'], ocr_text: 'PLATE 42' }, {});
+
+        renderViewer();
+
+        expect(await screen.findByText('A red car')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'IMAGES_DETAIL_TAG_SEARCH' })).toHaveLength(2);
+        expect(screen.getByRole('button', { name: 'IMAGES_DETAIL_OCR_SHOW' })).toBeInTheDocument();
+        expect(screen.queryByText('PLATE 42')).not.toBeInTheDocument();
+    });
+
     it('shows the location on disk and copies it', async () => {
         const writeText = jest.fn().mockResolvedValue(undefined);
         Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });

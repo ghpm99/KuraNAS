@@ -65,6 +65,7 @@ export default function ImageContent() {
         isFavoritePending,
         toggleStar,
         handleOpenImage,
+        handleSearchByTag,
         handleCloseViewer,
         handleToggleFavoriteOfActiveImage,
         handleOpenActiveImageFolder,
@@ -247,6 +248,7 @@ export default function ImageContent() {
                     onPrevious={viewer.goPrevious}
                     onNext={viewer.goNext}
                     onOpenImage={handleOpenImage}
+                    onSearchTag={handleSearchByTag}
                 />
             )}
         </div>
