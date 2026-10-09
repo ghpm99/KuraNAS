@@ -1,5 +1,7 @@
 import type { ImageGroupBy, IImageData } from '@/types/image';
 import type {
+    ImageCameraFacet,
+    ImageFormatFacet,
     ImageLibraryCount,
     ImageLibraryFolder,
     ImageLibraryFilters,
@@ -36,6 +38,7 @@ const buildFilterParams = (filters: ImageLibraryFilters) => ({
     category: listToUndefined(filters.categories),
     starred: filters.isStarredOnly ? true : undefined,
     format: listToUndefined(filters.formats),
+    camera: emptyToUndefined(filters.camera),
     taken_from: emptyToUndefined(filters.takenFrom),
     taken_to: emptyToUndefined(filters.takenTo),
     folder: emptyToUndefined(filters.folder),
@@ -113,6 +116,26 @@ export const getImageLibraryTimeline = async (
         paramsSerializer: repeatedKeysSerializer,
     });
     return response.data ?? [];
+};
+
+export const getImageCameraFacets = async (
+    filters: ImageLibraryFilters
+): Promise<ImageCameraFacet[]> => {
+    const response = await apiBase.get<ImageCameraFacet[]>('/image/library/facets/cameras', {
+        params: buildFilterParams(filters),
+        paramsSerializer: repeatedKeysSerializer,
+    });
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+export const getImageFormatFacets = async (
+    filters: ImageLibraryFilters
+): Promise<ImageFormatFacet[]> => {
+    const response = await apiBase.get<ImageFormatFacet[]>('/image/library/facets/formats', {
+        params: buildFilterParams(filters),
+        paramsSerializer: repeatedKeysSerializer,
+    });
+    return Array.isArray(response.data) ? response.data : [];
 };
 
 export const getImageMetadataSummary = async (fileId: number): Promise<ImageMetadataSummary> => {

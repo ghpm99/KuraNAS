@@ -28,6 +28,7 @@ const emptyFilters: ImageLibraryFilters = {
     categories: [],
     isStarredOnly: false,
     formats: [],
+    camera: '',
     takenFrom: '',
     takenTo: '',
     folder: '',

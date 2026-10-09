@@ -19,6 +19,7 @@ describe('imageLibraryView', () => {
             categories: [],
             isStarredOnly: false,
             formats: [],
+            camera: '',
             takenFrom: '',
             takenTo: '',
             folder: '',
@@ -44,6 +45,16 @@ describe('imageLibraryView', () => {
 
     it('maps favorites to the starred filter', () => {
         expect(parse('favorites').filters.isStarredOnly).toBe(true);
+    });
+
+    it('reads the camera filter and counts it as a user filter', () => {
+        const view = parseImageLibraryView(
+            'library',
+            new URLSearchParams('camera=%20Canon%20EOS%20')
+        );
+
+        expect(view.filters.camera).toBe('Canon EOS');
+        expect(view.hasUserFilters).toBe(true);
     });
 
     it('reads search, period, formats and ignores invalid values', () => {

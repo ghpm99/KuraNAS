@@ -96,6 +96,8 @@ type FolderPage = { items: FolderRow[]; hasNext: boolean };
 type InstallApiOptions = {
     total?: number;
     timeline?: unknown[];
+    cameraFacets?: unknown[];
+    formatFacets?: unknown[];
     folders?: Record<string, FolderRow[]>;
     folderPages?: FolderPage[];
     metadataSummary?: Record<string, unknown>;
@@ -137,6 +139,12 @@ const installApi = (pages: (LibraryPageResponse | Error)[], options: InstallApiO
             }
             if (url === '/image/library/count') {
                 return Promise.resolve({ data: { total: options.total ?? 0 } });
+            }
+            if (url === '/image/library/facets/cameras') {
+                return Promise.resolve({ data: options.cameraFacets ?? [] });
+            }
+            if (url === '/image/library/facets/formats') {
+                return Promise.resolve({ data: options.formatFacets ?? [] });
             }
             if (url === '/image/library/timeline') {
                 return Promise.resolve({ data: options.timeline ?? [] });
@@ -359,15 +367,20 @@ describe('ImageContent', () => {
     });
 
     it('applies period, format and sort chips as server filters', async () => {
-        installApi([{ items: marchImages }]);
+        installApi([{ items: marchImages }], {
+            formatFacets: [{ format: 'png', count: 4 }],
+            cameraFacets: [{ camera: 'Canon EOS R5', count: 9 }],
+        });
 
         renderGallery();
         await screen.findByRole('img', { name: 'March-1.jpg' });
 
-        fireEvent.click(screen.getByRole('button', { name: 'PNG' }));
+        fireEvent.mouseDown(screen.getByRole('combobox', { name: 'IMAGES_FILTER_FORMATS_ARIA' }));
+        fireEvent.click(await screen.findByRole('option', { name: 'PNG (4)' }));
         await waitFor(() =>
             expect(lastLibraryParams()).toEqual(expect.objectContaining({ format: ['png'] }))
         );
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
 
         const [fromInput] = Array.from(
             document.querySelectorAll<HTMLInputElement>('input[type="date"]')
@@ -379,7 +392,9 @@ describe('ImageContent', () => {
             )
         );
 
-        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'name' } });
+        fireEvent.change(screen.getByDisplayValue('IMAGES_SORT_TAKEN_AT'), {
+            target: { value: 'name' },
+        });
         await waitFor(() =>
             expect(lastLibraryParams()).toEqual(
                 expect.objectContaining({ sort: 'name', order: 'asc', page: 1 })
@@ -393,6 +408,23 @@ describe('ImageContent', () => {
                 expect.objectContaining({ sort: 'name', order: 'desc' })
             )
         );
+    });
+
+    it('filters the gallery by camera chosen from the facet list', async () => {
+        installApi([{ items: marchImages }], {
+            cameraFacets: [{ camera: 'Canon EOS R5', count: 9 }],
+        });
+
+        renderGallery();
+        await screen.findByRole('img', { name: 'March-1.jpg' });
+
+        fireEvent.mouseDown(screen.getByRole('combobox', { name: 'IMAGES_FILTER_CAMERA' }));
+        fireEvent.click(await screen.findByRole('option', { name: 'Canon EOS R5 (9)' }));
+
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(expect.objectContaining({ camera: 'Canon EOS R5' }))
+        );
+        expect(screen.getByTestId('location')).toHaveTextContent('camera=Canon+EOS+R5');
     });
 
     it('jumps to a month from the phone sheet and goes back to the latest', async () => {
@@ -431,7 +463,9 @@ describe('ImageContent', () => {
         expect(
             await screen.findByRole('navigation', { name: 'IMAGES_SCRUBBER_ARIA' })
         ).toBeInTheDocument();
-        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'size' } });
+        fireEvent.change(screen.getByDisplayValue('IMAGES_SORT_TAKEN_AT'), {
+            target: { value: 'size' },
+        });
 
         await waitFor(() =>
             expect(

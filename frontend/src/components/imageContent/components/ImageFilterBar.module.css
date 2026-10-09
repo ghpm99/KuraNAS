@@ -87,3 +87,11 @@
         flex: 1 1 140px;
     }
 }
+
+.cameraField {
+    min-width: 200px;
+}
+
+.formatField {
+    min-width: 150px;
+}

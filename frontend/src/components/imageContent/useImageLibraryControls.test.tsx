@@ -55,6 +55,16 @@ describe('useImageLibraryControls', () => {
         expect(result.current.searchParams.getAll('format')).toEqual(['png']);
     });
 
+    it('sets and clears the camera filter', () => {
+        const { result } = setup('/images');
+
+        act(() => result.current.controls.setCamera(' Canon EOS R5 '));
+        expect(result.current.searchParams.get('camera')).toBe('Canon EOS R5');
+
+        act(() => result.current.controls.setCamera(''));
+        expect(result.current.searchParams.has('camera')).toBe(false);
+    });
+
     it('changes sort and flips the order', () => {
         const { result } = setup('/images?order=asc');
 
@@ -70,7 +80,9 @@ describe('useImageLibraryControls', () => {
     });
 
     it('clears only the user filters', () => {
-        const { result } = setup('/images?q=a&from=2026-01-01&to=2026-02-01&format=jpg&sort=name');
+        const { result } = setup(
+            '/images?q=a&from=2026-01-01&to=2026-02-01&format=jpg&camera=Sony&sort=name'
+        );
 
         act(() => result.current.controls.clearUserFilters());
 
