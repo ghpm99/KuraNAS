@@ -1,4 +1,4 @@
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 
 export interface Playlist {
     id: number;

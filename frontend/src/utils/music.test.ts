@@ -8,7 +8,7 @@ import {
     parseDiscNumber,
     parseTrackNumber,
 } from './music';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { IMusicMetadata } from '@/types/music';
 
 const createTrack = (overrides: Partial<IMusicData> = {}): IMusicData => ({

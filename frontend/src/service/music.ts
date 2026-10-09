@@ -13,7 +13,7 @@ import {
     MusicPlayedTrack,
     MusicQueue,
 } from '@/types/music';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { apiBase } from '.';
 
 const toSortParams = (listSort?: MusicListSort) =>

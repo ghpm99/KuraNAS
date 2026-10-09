@@ -9,7 +9,7 @@ import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createArtistPlaybackContext } from '@/features/music/components/playbackContext';
 import { findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { getMusicAlbumsByArtist, getMusicArtistSummary, getMusicByArtist } from '@/service/music';
 import { MusicAlbum, MusicArtistSummary } from '@/types/music';
 import { shuffleItems } from '@/utils/shuffleItems';

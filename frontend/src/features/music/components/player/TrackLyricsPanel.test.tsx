@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { getAudioSummary } from '@/service/fileTypeMetadata';
 import TrackLyricsPanel from './TrackLyricsPanel';
 

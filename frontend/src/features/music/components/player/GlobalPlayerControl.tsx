@@ -38,7 +38,7 @@ import { usePlayerShortcuts } from './usePlayerShortcuts';
 import { useSeekSlider } from './useSeekSlider';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import styles from './GlobalPlayerControl.module.css';
-import '../playerControl/playerControl.css';
+import './playerControl.css';
 
 const COMPACT_PLAYER_MEDIA_QUERY = viewportMediaQueries.belowPhone;
 const GLOBAL_PLAYER_VISIBILITY_ATTRIBUTE = 'data-global-player';

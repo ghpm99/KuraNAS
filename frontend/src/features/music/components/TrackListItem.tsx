@@ -8,7 +8,7 @@ import {
     formatMusicDuration,
     getTrackDurationSeconds,
 } from '@/utils/music';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { getTrackCoverUrl } from '@/service/musicCover';
 import CoverArt from './CoverArt';
 import useI18n from '@/components/i18n/provider/i18nContext';

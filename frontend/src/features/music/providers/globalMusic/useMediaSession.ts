@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { getTrackCoverArtwork } from '@/service/musicCover';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 

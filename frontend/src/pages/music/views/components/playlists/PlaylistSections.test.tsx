@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import PlaylistDetailSection from '@/features/music/views/components/playlists/PlaylistDetailSection';
 import PlaylistListSection from '@/features/music/views/components/playlists/PlaylistListSection';
 import type { Playlist, PlaylistTrack } from '@/types/playlist';

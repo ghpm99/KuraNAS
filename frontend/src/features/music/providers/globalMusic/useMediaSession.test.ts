@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import useMediaSession from './useMediaSession';
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 
 const buildOptions = (currentTrack: IMusicData | undefined) => ({
     currentTrack,

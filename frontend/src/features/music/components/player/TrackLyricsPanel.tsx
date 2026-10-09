@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import { useTrackLyrics } from './useTrackLyrics';
 import styles from './TrackLyricsPanel.module.css';
 

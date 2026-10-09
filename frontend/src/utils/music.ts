@@ -1,4 +1,4 @@
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { IMusicMetadata } from '@/types/music';
 import { formatSize } from '@/utils';
 

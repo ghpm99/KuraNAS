@@ -4,7 +4,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { createAllTracksPlaybackContext } from '@/features/music/components/playbackContext';
 import { findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { getMusic } from '@/service/music';
 import { shuffleItems } from '@/utils/shuffleItems';
 import MusicCollectionTrackList from './components/MusicCollectionTrackList';

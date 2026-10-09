@@ -99,9 +99,6 @@ jest.mock('@/components/images/imagesLayout', () => ({ children }: any) => (
     <div data-testid="images-layout">{children}</div>
 ));
 
-jest.mock('@/features/music/components/musicLayout', () => ({ children }: any) => (
-    <div data-testid="music-layout">{children}</div>
-));
 jest.mock('@/features/music/components/MusicDomainNav', () => () => <div>MusicDomainNavMock</div>);
 jest.mock('@/features/music/components/musicContent', () => () => <div>MusicContentMock</div>);
 jest.mock('@/components/home/HomeScreen', () => () => <div>HomeScreenMock</div>);
@@ -323,7 +320,7 @@ describe('shell components and pages', () => {
         expect(screen.getByTestId('images-layout')).toBeInTheDocument();
 
         render(<MusicPage />);
-        expect(screen.getByTestId('music-layout')).toBeInTheDocument();
+        expect(screen.getByText('MusicContentMock')).toBeInTheDocument();
 
         render(<VideosPage />);
         expect(screen.getByText('VideoDomainHeaderMock')).toBeInTheDocument();

@@ -8,7 +8,7 @@ import { getArtistKeyFromLabel } from '@/features/music/components/contextMenu/m
 import { createAlbumPlaybackContext } from '@/features/music/components/playbackContext';
 import { findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { IMusicData } from '@/types/music';
 import { getMusicAlbumSummary, getMusicByAlbum } from '@/service/music';
 import { getAlbumCoverUrl } from '@/service/musicCover';
 import { MusicAlbumSummary } from '@/types/music';

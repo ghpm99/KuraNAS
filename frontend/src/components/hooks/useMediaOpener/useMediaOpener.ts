@@ -2,7 +2,7 @@ import { appRoutes } from '@/app/routes';
 import { createRouteMusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { IImageMetadata } from '@/types/image';
-import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 import type { IMusicMetadata } from '@/types/music';
 import { FileType, getFileTypeInfo, hasDedicatedMediaScreen } from '@/utils';
 import { useCallback } from 'react';

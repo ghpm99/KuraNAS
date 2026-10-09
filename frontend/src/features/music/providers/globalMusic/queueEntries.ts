@@ -1,4 +1,4 @@
-import type { IMusicData } from '../musicProvider/musicProvider';
+import type { IMusicData } from '@/types/music';
 
 export type QueueTrack = IMusicData & { queueEntryId: string };
 
