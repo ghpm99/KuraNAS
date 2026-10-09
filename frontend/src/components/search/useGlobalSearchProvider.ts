@@ -54,13 +54,22 @@ const slugify = (value: string) =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 
-const matchesQuery = (query: string, ...values: Array<string | undefined>) => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
+const normalizeForMatching = (value: string) =>
+    value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+const isActionMatchingQuery = (query: string, label: string) => {
+    const queryWords = normalizeForMatching(query).split(/\s+/).filter(Boolean);
+    if (queryWords.length === 0) {
         return true;
     }
 
-    return values.some((value) => value?.toLowerCase().includes(normalizedQuery));
+    const labelWords = normalizeForMatching(label).split(/\s+/).filter(Boolean);
+    return queryWords.every((queryWord) =>
+        labelWords.some((labelWord) => labelWord.startsWith(queryWord))
+    );
 };
 
 export const useGlobalSearchProvider = () => {
@@ -241,19 +250,22 @@ export const useGlobalSearchProvider = () => {
 
     const sections = useMemo<SearchDialogSection[]>(() => {
         const nextSections: SearchDialogSection[] = [];
-
-        const filteredActions = quickActions.filter((action) =>
-            matchesQuery(normalizedQuery, action.label, action.description)
-        );
-        if (filteredActions.length > 0) {
+        const appendActionsSection = () => {
+            const matchingActions = quickActions.filter((action) =>
+                isActionMatchingQuery(normalizedQuery, action.label)
+            );
+            if (matchingActions.length === 0) {
+                return;
+            }
             nextSections.push({
                 id: 'actions',
                 title: t('GLOBAL_SEARCH_SECTION_ACTIONS'),
-                items: filteredActions,
+                items: matchingActions,
             });
-        }
+        };
 
         if (!data) {
+            appendActionsSection();
             return nextSections;
         }
 
@@ -288,22 +300,42 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
-        if (files.length > 0 || folders.length > 0) {
+        const images = data.images.map<SearchDialogItem>((item) => ({
+            id: `image-${item.id}`,
+            kind: 'image',
+            label: item.name,
+            description: item.path,
+            meta: item.context || item.category,
+            onSelect: () =>
+                navigate({
+                    pathname: appRoutes.images,
+                    search: `?image=${item.id}&imagePath=${encodeURIComponent(item.path)}`,
+                }),
+        }));
+        if (images.length > 0) {
             nextSections.push({
-                id: 'files-see-all',
-                title: t('GLOBAL_SEARCH_SECTION_MORE'),
-                items: [
-                    {
-                        id: 'files-see-all-results',
-                        kind: 'action',
-                        label: t('GLOBAL_SEARCH_SEE_ALL_FILES'),
-                        description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
-                            query: normalizedQuery,
-                        }),
-                        onSelect: () =>
-                            navigate(`${appRoutes.files}?q=${encodeURIComponent(normalizedQuery)}`),
-                    },
-                ],
+                id: 'images',
+                title: t('GLOBAL_SEARCH_SECTION_IMAGES'),
+                items: images,
+            });
+        }
+
+        const videos = data.videos.map<SearchDialogItem>((item) => ({
+            id: `video-${item.id}`,
+            kind: 'video',
+            label: item.name,
+            description: item.path,
+            meta: item.format,
+            onSelect: () =>
+                navigate(`/video/${item.id}`, {
+                    state: { from: currentRoute, playlistId: null },
+                }),
+        }));
+        if (videos.length > 0) {
+            nextSections.push({
+                id: 'videos',
+                title: t('GLOBAL_SEARCH_SECTION_VIDEOS'),
+                items: videos,
             });
         }
 
@@ -391,42 +423,22 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
-        const videos = data.videos.map<SearchDialogItem>((item) => ({
-            id: `video-${item.id}`,
-            kind: 'video',
-            label: item.name,
-            description: item.path,
-            meta: item.format,
-            onSelect: () =>
-                navigate(`/video/${item.id}`, {
-                    state: { from: currentRoute, playlistId: null },
-                }),
-        }));
-        if (videos.length > 0) {
+        if (files.length > 0 || folders.length > 0) {
             nextSections.push({
-                id: 'videos',
-                title: t('GLOBAL_SEARCH_SECTION_VIDEOS'),
-                items: videos,
-            });
-        }
-
-        const images = data.images.map<SearchDialogItem>((item) => ({
-            id: `image-${item.id}`,
-            kind: 'image',
-            label: item.name,
-            description: item.path,
-            meta: item.context || item.category,
-            onSelect: () =>
-                navigate({
-                    pathname: appRoutes.images,
-                    search: `?image=${item.id}&imagePath=${encodeURIComponent(item.path)}`,
-                }),
-        }));
-        if (images.length > 0) {
-            nextSections.push({
-                id: 'images',
-                title: t('GLOBAL_SEARCH_SECTION_IMAGES'),
-                items: images,
+                id: 'files-see-all',
+                title: t('GLOBAL_SEARCH_SECTION_MORE'),
+                items: [
+                    {
+                        id: 'files-see-all-results',
+                        kind: 'action',
+                        label: t('GLOBAL_SEARCH_SEE_ALL_FILES'),
+                        description: t('GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION', {
+                            query: normalizedQuery,
+                        }),
+                        onSelect: () =>
+                            navigate(`${appRoutes.files}?q=${encodeURIComponent(normalizedQuery)}`),
+                    },
+                ],
             });
         }
 
@@ -449,6 +461,7 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        appendActionsSection();
         return nextSections;
     }, [canOfferAiSearch, currentRoute, data, navigate, normalizedQuery, quickActions, t]);
 
