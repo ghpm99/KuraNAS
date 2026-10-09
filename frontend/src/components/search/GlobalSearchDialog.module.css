@@ -164,6 +164,17 @@
     white-space: nowrap;
 }
 
+.itemSnippet {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--app-color-text-primary);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
 .itemMeta {
     display: inline-flex;
     align-items: center;

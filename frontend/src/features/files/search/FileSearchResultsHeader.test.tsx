@@ -33,4 +33,10 @@ describe('FileSearchResultsHeader', () => {
 
         expect(onClear).toHaveBeenCalled();
     });
+
+    it('uses the document labels in content mode', () => {
+        render(<FileSearchResultsHeader query="foto" resultCount={20} hasMoreResults isContentSearch />);
+
+        expect(screen.getByText('FILES_SEARCH_CONTENT_RESULTS_MORE')).toBeInTheDocument();
+    });
 });

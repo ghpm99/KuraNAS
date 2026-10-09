@@ -33,6 +33,10 @@ import FileSearchFilterBar from '@/features/files/search/FileSearchFilterBar';
 import FileSearchResultsHeader from '@/features/files/search/FileSearchResultsHeader';
 import useFileSearchFilters from '@/features/files/search/useFileSearchFilters';
 import { toFileSearchRefinements } from '@/features/files/search/fileSearchFilters';
+import DocumentSearchResults from '@/features/files/search/DocumentSearchResults';
+import FileSearchModeTabs from '@/features/files/search/FileSearchModeTabs';
+import useDocumentSearchResults from '@/features/files/search/useDocumentSearchResults';
+import useFileSearchMode from '@/features/files/search/useFileSearchMode';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useFileSearchResults from '@/features/files/search/useFileSearchResults';
 import FilesBreadcrumb from './FilesBreadcrumb';
@@ -69,8 +73,14 @@ const FilesExplorerScreenContent = () => {
     const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery();
     const { filters: searchFilters, setFilters: setSearchFilters, resetFilters } = useFileSearchFilters();
     const searchFolderId = selectedItem?.type === FileType.Directory ? selectedItem.id : undefined;
-    const searchResults = useFileSearchResults({
+    const { searchMode, setSearchMode } = useFileSearchMode();
+    const isContentSearch = searchMode === 'content';
+    const documentResults = useDocumentSearchResults({
         query: activeQuery,
+        isEnabled: isContentSearch,
+    });
+    const searchResults = useFileSearchResults({
+        query: isContentSearch ? '' : activeQuery,
         parentId: searchFolderId,
         isRecursive: isSearchRecursive,
         refinements: toFileSearchRefinements(searchFilters),
@@ -189,25 +199,44 @@ const FilesExplorerScreenContent = () => {
                     <section className={`${styles.panel} ${styles.contentCard}`}>
                         {isSearchActive ? (
                             <>
-                                <FileSearchResultsHeader
-                                    query={activeQuery}
-                                    resultCount={searchResults.items.length}
-                                    hasMoreResults={searchResults.hasNextPage}
-                                    onClear={clearQuery}
-                                />
-                                <FileSearchFilterBar
-                                    filters={searchFilters}
-                                    onChange={setSearchFilters}
-                                    onReset={resetFilters}
-                                />
-                                <FileContent
-                                    showHeading={false}
-                                    viewMode={viewMode}
-                                    searchListing={searchResults}
-                                    emptyStateMessage={t('FILES_SEARCH_EMPTY')}
-                                    onGoToParent={goToParentFolder}
-                                    onFocusSearch={focusSearchInput}
-                                />
+                                <FileSearchModeTabs mode={searchMode} onChange={setSearchMode} />
+                                {isContentSearch ? (
+                                    <>
+                                        <FileSearchResultsHeader
+                                            query={activeQuery}
+                                            resultCount={documentResults.items.length}
+                                            hasMoreResults={documentResults.hasNextPage}
+                                            isContentSearch
+                                            onClear={clearQuery}
+                                        />
+                                        <DocumentSearchResults
+                                            query={activeQuery}
+                                            {...documentResults}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileSearchResultsHeader
+                                            query={activeQuery}
+                                            resultCount={searchResults.items.length}
+                                            hasMoreResults={searchResults.hasNextPage}
+                                            onClear={clearQuery}
+                                        />
+                                        <FileSearchFilterBar
+                                            filters={searchFilters}
+                                            onChange={setSearchFilters}
+                                            onReset={resetFilters}
+                                        />
+                                        <FileContent
+                                            showHeading={false}
+                                            viewMode={viewMode}
+                                            searchListing={searchResults}
+                                            emptyStateMessage={t('FILES_SEARCH_EMPTY')}
+                                            onGoToParent={goToParentFolder}
+                                            onFocusSearch={focusSearchInput}
+                                        />
+                                    </>
+                                )}
                             </>
                         ) : (
                             <UploadDropZone>
