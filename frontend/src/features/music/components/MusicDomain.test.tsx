@@ -28,6 +28,11 @@ jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 
+jest.mock('@/features/music/components/MusicPlayHistorySections', () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
 jest.mock('@/utils/music', () => ({
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',

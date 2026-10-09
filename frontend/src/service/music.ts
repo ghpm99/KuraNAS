@@ -9,6 +9,8 @@ import {
     MusicGroupSummary,
     MusicHomeCatalog,
     MusicListSort,
+    MusicMostPlayedPeriod,
+    MusicPlayedTrack,
     MusicQueue,
 } from '@/types/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
@@ -147,3 +149,26 @@ export const getMusicQueueByGenre = (genreKey: string) =>
 
 export const getMusicQueueByFolder = (folderPath: string) =>
     getMusicQueue(`folders/${encodeURIComponent(folderPath)}`);
+
+export const recordMusicPlay = async (fileId: number, playedSeconds: number): Promise<void> => {
+    await apiBase.post('/music/plays', { file_id: fileId, played_seconds: playedSeconds });
+};
+
+export const getMostPlayedTracks = async (
+    page: number,
+    pageSize: number,
+    period: MusicMostPlayedPeriod = 'all'
+) => {
+    const response = await apiBase.get<Pagination<MusicPlayedTrack>>('/music/library/most-played', {
+        params: { page, page_size: pageSize, period },
+    });
+    return response.data;
+};
+
+export const getRecentlyPlayedTracks = async (page: number, pageSize: number) => {
+    const response = await apiBase.get<Pagination<MusicPlayedTrack>>(
+        '/music/library/recent-plays',
+        { params: { page, page_size: pageSize } }
+    );
+    return response.data;
+};

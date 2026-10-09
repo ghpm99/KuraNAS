@@ -1,6 +1,7 @@
 jest.mock('./index', () => ({
     apiBase: {
         get: jest.fn(),
+        post: jest.fn(),
     },
 }));
 
@@ -23,17 +24,22 @@ import {
     getMusicQueueByArtist,
     getMusicQueueByFolder,
     getMusicQueueByGenre,
+    getMostPlayedTracks,
+    getRecentlyPlayedTracks,
+    recordMusicPlay,
     searchMusicTracks,
 } from './music';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
+    post: jest.Mock;
 };
 
 describe('service/music', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedApi.get.mockResolvedValue({ data: { items: [], total: 0 } });
+        mockedApi.post.mockResolvedValue({ data: {} });
     });
 
     it('searches tracks with the term and pagination', async () => {
@@ -162,6 +168,35 @@ describe('service/music', () => {
         await getMusicAlbumsByArtist('AC/DC', 2, 24);
         expect(mockedApi.get).toHaveBeenCalledWith('/music/library/artists/AC%2FDC/albums', {
             params: { page: 2, page_size: 24 },
+        });
+    });
+
+    it('records a play with the file id and played seconds payload', async () => {
+        await recordMusicPlay(12, 31);
+        expect(mockedApi.post).toHaveBeenCalledWith('/music/plays', {
+            file_id: 12,
+            played_seconds: 31,
+        });
+    });
+
+    it('gets the most played tracks for a period', async () => {
+        await getMostPlayedTracks(1, 6, '30d');
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/most-played', {
+            params: { page: 1, page_size: 6, period: '30d' },
+        });
+    });
+
+    it('defaults the most played period to all', async () => {
+        await getMostPlayedTracks(2, 10);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/most-played', {
+            params: { page: 2, page_size: 10, period: 'all' },
+        });
+    });
+
+    it('gets the recently played tracks', async () => {
+        await getRecentlyPlayedTracks(1, 6);
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/recent-plays', {
+            params: { page: 1, page_size: 6 },
         });
     });
 });

@@ -65,6 +65,8 @@ jest.mock('@/service/music', () => ({
     getMusicQueueByFolder: (...args: any[]) => mockGetMusicQueueByFolder(...args),
 }));
 
+jest.mock('@/features/music/components/trackStar/TrackStarButton', () => () => null);
+
 jest.mock('@/features/music/components/AddToPlaylistMenu', () => (props: any) => (
     <div>
         <span>AddToPlaylistMenu-{String(props.fileId)}</span>

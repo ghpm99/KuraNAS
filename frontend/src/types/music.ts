@@ -1,3 +1,5 @@
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+
 export interface IMusicMetadata {
     mime?: string;
     length?: number;
@@ -75,6 +77,14 @@ export interface MusicGroupSummary {
     track_count: number;
     total_length_seconds: number;
 }
+
+export interface MusicPlayedTrack {
+    track: IMusicData;
+    play_count: number;
+    last_played_at: string;
+}
+
+export type MusicMostPlayedPeriod = 'all' | '30d';
 
 export interface MusicHomeCatalog {
     summary: {

@@ -5,6 +5,7 @@ import { getMusicRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useMusicHomeScreen } from '@/features/music/components/useMusicHomeScreen';
 import CoverArt from '@/features/music/components/CoverArt';
+import MusicPlayHistorySections from '@/features/music/components/MusicPlayHistorySections';
 import { getAlbumCoverUrl } from '@/service/musicCover';
 import styles from './MusicHomeScreen.module.css';
 
@@ -202,6 +203,8 @@ const MusicHomeScreen = () => {
                     )}
                 </div>
             </section>
+
+            <MusicPlayHistorySections />
 
             <section className={styles.section}>
                 <div className={styles.sectionHeader}>

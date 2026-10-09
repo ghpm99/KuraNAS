@@ -15,6 +15,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import AddToPlaylistMenu from './AddToPlaylistMenu';
 import TrackContextMenu from './contextMenu/TrackContextMenu';
 import useMenuPosition from './contextMenu/useMenuPosition';
+import TrackStarButton from './trackStar/TrackStarButton';
 
 interface TrackListItemProps {
     track: IMusicData;
@@ -171,6 +172,8 @@ const TrackListItem = ({
                         </Typography>
                     )}
                 </Box>
+
+                <TrackStarButton track={track} isRevealedOnRowHover />
 
                 {onAddToPlaylist && (
                     <IconButton
