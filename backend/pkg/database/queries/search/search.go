@@ -27,3 +27,6 @@ var SearchVideosQuery string
 
 //go:embed search_images.sql
 var SearchImagesQuery string
+
+//go:embed search_tracks.sql
+var SearchTracksQuery string

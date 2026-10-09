@@ -420,6 +420,10 @@ func formatSearchResults(query string, result search.GlobalSearchResponseDto) st
 		fmt.Fprintf(&b, "- Imagem: %s (%s)\n", img.Name, img.Path)
 		total++
 	}
+	for _, track := range result.Tracks {
+		fmt.Fprintf(&b, "- Música: %s (%s)\n", track.Title, track.Path)
+		total++
+	}
 	for _, a := range result.Artists {
 		fmt.Fprintf(&b, "- Artista: %s (%d faixas)\n", a.Artist, a.TrackCount)
 		total++

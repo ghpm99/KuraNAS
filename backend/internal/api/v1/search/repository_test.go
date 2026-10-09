@@ -35,6 +35,10 @@ func singleTermMatchArgsWithFormats(limit int) []driver.Value {
 	return []driver.Value{"%mix%", sqlmock.AnyArg(), "mix", "mix%", "%mix%", sqlmock.AnyArg(), limit}
 }
 
+func singleTermFilesMatchArgs(limit int) []driver.Value {
+	return singleTermMatchArgsWithFormats(limit)
+}
+
 func singleTermAudioMatchArgs(limit int) []driver.Value {
 	return []driver.Value{"%mix%", sqlmock.AnyArg(), "mix", "mix%", sqlmock.AnyArg(), limit}
 }
@@ -45,7 +49,7 @@ func TestSearchRepositorySuccessPaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesQuery)).
-		WithArgs(singleTermMatchArgs(5)...).
+		WithArgs(singleTermFilesMatchArgs(5)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred"}).
 			AddRow(1, "song.mp3", "/media/song.mp3", "/media", ".mp3", true))
 	mock.ExpectRollback()
@@ -139,7 +143,7 @@ func TestSearchRepositoryErrorPaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesQuery)).
-		WithArgs(singleTermMatchArgs(5)...).
+		WithArgs(singleTermFilesMatchArgs(5)...).
 		WillReturnError(errBoom)
 	mock.ExpectRollback()
 
@@ -193,7 +197,7 @@ func TestSearchRepositoryMultiWordQueryBuildsPatternsPerTerm(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchFilesQuery)).
-		WithArgs("%holiday%", sqlmock.AnyArg(), "beach holiday", "beach holiday%", "%beach holiday%", 5).
+		WithArgs("%holiday%", sqlmock.AnyArg(), "beach holiday", "beach holiday%", "%beach holiday%", sqlmock.AnyArg(), 5).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "path", "parent_path", "format", "starred"}))
 	mock.ExpectRollback()
 
@@ -202,5 +206,34 @@ func TestSearchRepositoryMultiWordQueryBuildsPatternsPerTerm(t *testing.T) {
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestSearchTracksScansRowsAndWrapsErrors(t *testing.T) {
+	errBoom := errors.New("query failed")
+	repository, mock := newSearchRepositoryForTest(t)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchTracksQuery)).
+		WithArgs(singleTermMatchArgsWithFormats(5)...).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "album_owner", "duration", "path"}).
+			AddRow(9, "Mix", "Artist", "Album", "Artist", 120.5, "/media/mix.mp3"))
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchTracksQuery)).
+		WithArgs(singleTermMatchArgsWithFormats(5)...).
+		WillReturnError(errBoom)
+	mock.ExpectRollback()
+
+	items, err := repository.SearchTracks("mix", 5)
+	if err != nil || len(items) != 1 || items[0].FileID != 9 || items[0].Duration != 120.5 {
+		t.Fatalf("SearchTracks returned %+v err=%v", items, err)
+	}
+	if _, err := repository.SearchTracks("mix", 5); !errors.Is(err, errBoom) {
+		t.Fatalf("expected SearchTracks error, got %v", err)
+	}
+	if items, err := repository.SearchTracks("   ", 5); err != nil || len(items) != 0 {
+		t.Fatalf("blank SearchTracks returned %+v err=%v", items, err)
 	}
 }

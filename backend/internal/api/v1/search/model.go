@@ -69,3 +69,13 @@ type ImageResultModel struct {
 	Category   string
 	Context    string
 }
+
+type TrackResultModel struct {
+	FileID     int
+	Title      string
+	Artist     string
+	Album      string
+	AlbumOwner string
+	Duration   float64
+	Path       string
+}

@@ -46,6 +46,26 @@ func seedAudioMetadata(t *testing.T, dbContext *database.DbContext, fileID int, 
 	}
 }
 
+func seedAudioTrackMetadata(t *testing.T, dbContext *database.DbContext, fileID int, title string, artist string, album string) {
+	t.Helper()
+	err := dbContext.ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec(`INSERT INTO audio_metadata (file_id, path, title, artist, album, length)
+			VALUES ($1, $2, $3, $4, $5, 215.5)`, fileID, "/lib/track", title, artist, album)
+		return execErr
+	})
+	if err != nil {
+		t.Fatalf("seed audio track metadata: %v", err)
+	}
+}
+
+func trackTitles(results []TrackResultModel) []string {
+	titles := make([]string, 0, len(results))
+	for _, result := range results {
+		titles = append(titles, result.Title)
+	}
+	return titles
+}
+
 func seedImageMetadata(t *testing.T, dbContext *database.DbContext, fileID int, aiSearchText string) {
 	t.Helper()
 	err := dbContext.ExecTx(func(tx *sql.Tx) error {
@@ -252,5 +272,99 @@ func TestSearchArtistsAndAlbumsGroupMatchingTracks_Postgres(t *testing.T) {
 	}
 	if len(albums) != 1 || albums[0].Album != "The Wall" || albums[0].TrackCount != 2 {
 		t.Fatalf("albums = %+v", albums)
+	}
+}
+
+func TestSearchFilesExcludesMediaFormats_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	now := time.Now().UTC()
+	seedHomeFile(t, dbContext, searchSeedFile{name: "holiday notes.txt", format: ".txt", fileType: 2, updatedAt: now})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "holiday song.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "holiday clip.mp4", format: ".mp4", fileType: 2, updatedAt: now})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "holiday photo.jpg", format: ".jpg", fileType: 2, updatedAt: now})
+
+	results, err := repository.SearchFiles("holiday", 10)
+	if err != nil {
+		t.Fatalf("SearchFiles: %v", err)
+	}
+	if got := fileNames(results); !slices.Equal(got, []string{"holiday notes.txt"}) {
+		t.Fatalf("names = %v", got)
+	}
+}
+
+func TestSearchTracksMatchesTitleArtistAlbumAndFileName_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	now := time.Now().UTC()
+	byTitle := seedHomeFile(t, dbContext, searchSeedFile{name: "01.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	byArtist := seedHomeFile(t, dbContext, searchSeedFile{name: "02.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	byAlbum := seedHomeFile(t, dbContext, searchSeedFile{name: "03.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "floyd untagged.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	other := seedHomeFile(t, dbContext, searchSeedFile{name: "04.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	seedHomeFile(t, dbContext, searchSeedFile{name: "floyd video.mp4", format: ".mp4", fileType: 2, updatedAt: now})
+	deleted := seedHomeFile(t, dbContext, searchSeedFile{name: "05.mp3", format: ".mp3", fileType: 2, updatedAt: now, isDeleted: true})
+	seedAudioTrackMetadata(t, dbContext, byTitle, "Floyd Song", "Someone", "Other")
+	seedAudioTrackMetadata(t, dbContext, byArtist, "Money", "Pink Floyd", "Other")
+	seedAudioTrackMetadata(t, dbContext, byAlbum, "Time", "Someone", "Floyd Hits")
+	seedAudioTrackMetadata(t, dbContext, other, "Unrelated", "Nobody", "Nothing")
+	seedAudioTrackMetadata(t, dbContext, deleted, "Floyd Deleted", "Nobody", "Nothing")
+
+	results, err := repository.SearchTracks("floyd", 10)
+	if err != nil {
+		t.Fatalf("SearchTracks: %v", err)
+	}
+	titles := trackTitles(results)
+	expectedTitles := []string{"Floyd Song", "floyd untagged.mp3", "Money", "Time"}
+	slices.Sort(titles)
+	slices.Sort(expectedTitles)
+	if !slices.Equal(titles, expectedTitles) {
+		t.Fatalf("titles = %v, want %v", titles, expectedTitles)
+	}
+	for _, result := range results {
+		if result.Title == "Money" && (result.Artist != "Pink Floyd" || result.Album != "Other" || result.AlbumOwner != "Pink Floyd" || result.Duration != 215.5 || result.Path != "/lib/02.mp3") {
+			t.Fatalf("money track = %+v", result)
+		}
+		if result.Title == "floyd untagged.mp3" && (result.Artist != "" || result.Duration != 0) {
+			t.Fatalf("untagged track = %+v", result)
+		}
+	}
+}
+
+func TestSearchTracksRanksExactThenPrefixThenSubstringAndHonorsLimit_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	now := time.Now().UTC()
+	titles := []string{"My Love Story", "Love Story", "Love", "Lovely Day"}
+	for _, title := range titles {
+		fileID := seedHomeFile(t, dbContext, searchSeedFile{name: title + ".mp3", format: ".mp3", fileType: 2, updatedAt: now})
+		seedAudioTrackMetadata(t, dbContext, fileID, title, "Artist", "Album")
+	}
+
+	results, err := repository.SearchTracks("love", 10)
+	if err != nil {
+		t.Fatalf("SearchTracks: %v", err)
+	}
+	if got := trackTitles(results); !slices.Equal(got, []string{"Love", "Love Story", "Lovely Day", "My Love Story"}) {
+		t.Fatalf("ranked titles = %v", got)
+	}
+
+	limited, err := repository.SearchTracks("love", 2)
+	if err != nil || len(limited) != 2 {
+		t.Fatalf("limited = %+v err=%v", limited, err)
+	}
+}
+
+func TestSearchTracksRequiresAllTermsAcrossFields_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	now := time.Now().UTC()
+	match := seedHomeFile(t, dbContext, searchSeedFile{name: "a.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	artistOnly := seedHomeFile(t, dbContext, searchSeedFile{name: "b.mp3", format: ".mp3", fileType: 2, updatedAt: now})
+	seedAudioTrackMetadata(t, dbContext, match, "Money", "Pink Floyd", "Dark Side")
+	seedAudioTrackMetadata(t, dbContext, artistOnly, "Time", "Pink Floyd", "Dark Side")
+
+	results, err := repository.SearchTracks("floyd MONEY", 10)
+	if err != nil {
+		t.Fatalf("SearchTracks: %v", err)
+	}
+	if len(results) != 1 || results[0].FileID != match {
+		t.Fatalf("results = %+v", results)
 	}
 }

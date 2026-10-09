@@ -10,6 +10,7 @@ type GlobalSearchResponseDto struct {
 	Playlists  []PlaylistResultDto `json:"playlists"`
 	Videos     []VideoResultDto    `json:"videos"`
 	Images     []ImageResultDto    `json:"images"`
+	Tracks     []TrackResultDto    `json:"tracks"`
 }
 
 type FileResultDto struct {
@@ -71,4 +72,14 @@ type ImageResultDto struct {
 	Format     string `json:"format"`
 	Category   string `json:"category"`
 	Context    string `json:"context"`
+}
+
+type TrackResultDto struct {
+	FileID   int     `json:"file_id"`
+	Title    string  `json:"title"`
+	Artist   string  `json:"artist"`
+	Album    string  `json:"album"`
+	AlbumKey string  `json:"album_key"`
+	Duration float64 `json:"duration"`
+	Path     string  `json:"path"`
 }
