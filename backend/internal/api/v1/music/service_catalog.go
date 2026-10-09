@@ -114,7 +114,7 @@ func (s *Service) loadPlaylistTracksByIDs(fileIDs []int, page int, pageSize int)
 	}, nil
 }
 
-func (s *Service) GetHomeCatalog(clientID string, limit int) (MusicHomeCatalogDto, error) {
+func (s *Service) GetHomeCatalog(clientID string, limit int, sort CatalogSort) (MusicHomeCatalogDto, error) {
 	if limit <= 0 {
 		limit = defaultMusicHomeLimit
 	}
@@ -132,12 +132,12 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (MusicHomeCatalogDt
 		playlists = playlists[:limit]
 	}
 
-	artists, err := s.Repository.GetLibraryArtistGroups(1, limit)
+	artists, err := s.Repository.GetLibraryArtistGroups(1, limit, sort)
 	if err != nil {
 		return MusicHomeCatalogDto{}, err
 	}
 
-	albums, err := s.Repository.GetLibraryAlbumGroups(1, limit)
+	albums, err := s.Repository.GetLibraryAlbumGroups(1, limit, sort)
 	if err != nil {
 		return MusicHomeCatalogDto{}, err
 	}
@@ -166,24 +166,24 @@ func (s *Service) SearchLibraryTracks(searchText string, page int, pageSize int)
 	return files.ParsePaginationToDto(&tracks)
 }
 
-func (s *Service) GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+func (s *Service) GetLibraryArtists(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	return s.Repository.GetLibraryArtistGroups(page, pageSize)
+	return s.Repository.GetLibraryArtistGroups(page, pageSize, sort)
 }
 
-func (s *Service) GetLibraryAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+func (s *Service) GetLibraryAlbums(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	return s.Repository.GetLibraryAlbumGroups(page, pageSize)
+	return s.Repository.GetLibraryAlbumGroups(page, pageSize, sort)
 }
 
-func (s *Service) GetLibraryGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error) {
+func (s *Service) GetLibraryGenres(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	return s.Repository.GetLibraryGenreGroups(page, pageSize)
+	return s.Repository.GetLibraryGenreGroups(page, pageSize, sort)
 }
 
-func (s *Service) GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
+func (s *Service) GetLibraryFolders(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	return s.Repository.GetLibraryFolderGroups(page, pageSize)
+	return s.Repository.GetLibraryFolderGroups(page, pageSize, sort)
 }
 
 func (s *Service) loadLibraryTracksOfIDPage(paginatedIDs utils.PaginationResponse[int]) (utils.PaginationResponse[files.FileDto], error) {

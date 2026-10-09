@@ -85,6 +85,11 @@ func scanFileID(rows *sql.Rows) (int, error) {
 	return fileID, err
 }
 
+func catalogSortArgs(sort CatalogSort) []any {
+	normalizedSort := sort.normalized()
+	return []any{pq.Array(utils.AudioFormats), string(normalizedSort.Field), normalizedSort.IsDescending}
+}
+
 func (r *Repository) GetLibrarySummary() (MusicLibrarySummaryDto, error) {
 	var summary MusicLibrarySummaryDto
 
@@ -104,9 +109,9 @@ func (r *Repository) GetLibrarySummary() (MusicLibrarySummaryDto, error) {
 	return summary, nil
 }
 
-func (r *Repository) GetLibraryArtistGroups(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+func (r *Repository) GetLibraryArtistGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	paginatedGroups, err := queryCatalogPage(r.DbContext, queries.GetLibraryArtistGroupsQuery,
-		[]any{pq.Array(utils.AudioFormats)}, page, pageSize,
+		catalogSortArgs(sort), page, pageSize,
 		func(rows *sql.Rows) (MusicArtistGroupDto, error) {
 			var group MusicArtistGroupDto
 			err := rows.Scan(&group.Key, &group.Artist, &group.TrackCount, &group.AlbumCount)
@@ -118,9 +123,9 @@ func (r *Repository) GetLibraryArtistGroups(page int, pageSize int) (utils.Pagin
 	return paginatedGroups, nil
 }
 
-func (r *Repository) GetLibraryAlbumGroups(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+func (r *Repository) GetLibraryAlbumGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
 	paginatedGroups, err := queryCatalogPage(r.DbContext, queries.GetLibraryAlbumGroupsQuery,
-		[]any{pq.Array(utils.AudioFormats)}, page, pageSize,
+		catalogSortArgs(sort), page, pageSize,
 		func(rows *sql.Rows) (MusicAlbumGroupDto, error) {
 			var group MusicAlbumGroupDto
 			err := rows.Scan(&group.Key, &group.Album, &group.Artist, &group.Year, &group.TrackCount)
@@ -132,9 +137,9 @@ func (r *Repository) GetLibraryAlbumGroups(page int, pageSize int) (utils.Pagina
 	return paginatedGroups, nil
 }
 
-func (r *Repository) GetLibraryGenreGroups(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error) {
+func (r *Repository) GetLibraryGenreGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error) {
 	paginatedGroups, err := queryCatalogPage(r.DbContext, queries.GetLibraryGenreGroupsQuery,
-		[]any{pq.Array(utils.AudioFormats)}, page, pageSize,
+		catalogSortArgs(sort), page, pageSize,
 		func(rows *sql.Rows) (MusicGenreGroupDto, error) {
 			var group MusicGenreGroupDto
 			err := rows.Scan(&group.Key, &group.Genre, &group.TrackCount)
@@ -146,9 +151,9 @@ func (r *Repository) GetLibraryGenreGroups(page int, pageSize int) (utils.Pagina
 	return paginatedGroups, nil
 }
 
-func (r *Repository) GetLibraryFolderGroups(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
+func (r *Repository) GetLibraryFolderGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error) {
 	paginatedGroups, err := queryCatalogPage(r.DbContext, queries.GetLibraryFolderGroupsQuery,
-		[]any{pq.Array(utils.AudioFormats)}, page, pageSize,
+		catalogSortArgs(sort), page, pageSize,
 		func(rows *sql.Rows) (MusicFolderGroupDto, error) {
 			var group MusicFolderGroupDto
 			err := rows.Scan(&group.Folder, &group.TrackCount)

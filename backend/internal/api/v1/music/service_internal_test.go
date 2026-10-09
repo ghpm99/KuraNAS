@@ -150,25 +150,25 @@ func (m *musicRepoMock) GetLibrarySummary() (MusicLibrarySummaryDto, error) {
 	}
 	return MusicLibrarySummaryDto{}, nil
 }
-func (m *musicRepoMock) GetLibraryArtistGroups(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
+func (m *musicRepoMock) GetLibraryArtistGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	if m.getArtistGroupsFn != nil {
 		return m.getArtistGroupsFn(page, pageSize)
 	}
 	return utils.PaginationResponse[MusicArtistGroupDto]{Items: []MusicArtistGroupDto{}}, nil
 }
-func (m *musicRepoMock) GetLibraryAlbumGroups(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
+func (m *musicRepoMock) GetLibraryAlbumGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error) {
 	if m.getAlbumGroupsFn != nil {
 		return m.getAlbumGroupsFn(page, pageSize)
 	}
 	return utils.PaginationResponse[MusicAlbumGroupDto]{Items: []MusicAlbumGroupDto{}}, nil
 }
-func (m *musicRepoMock) GetLibraryGenreGroups(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error) {
+func (m *musicRepoMock) GetLibraryGenreGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error) {
 	if m.getGenreGroupsFn != nil {
 		return m.getGenreGroupsFn(page, pageSize)
 	}
 	return utils.PaginationResponse[MusicGenreGroupDto]{Items: []MusicGenreGroupDto{}}, nil
 }
-func (m *musicRepoMock) GetLibraryFolderGroups(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error) {
+func (m *musicRepoMock) GetLibraryFolderGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error) {
 	if m.getFolderGroupsFn != nil {
 		return m.getFolderGroupsFn(page, pageSize)
 	}

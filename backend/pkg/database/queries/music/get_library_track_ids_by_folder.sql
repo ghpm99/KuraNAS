@@ -12,8 +12,8 @@ WHERE
     )
 ORDER BY
     hf.parent_path COLLATE "C" ASC,
-    COALESCE(NULLIF(TRIM(am.album), ''), '') COLLATE "C" ASC,
-    COALESCE(NULLIF(TRIM(am.track_number), ''), '') COLLATE "C" ASC,
+    COALESCE(am.disc_number, 1) ASC,
+    am.track_no ASC NULLS LAST,
     hf."name" COLLATE "C" ASC,
     hf.id ASC
 LIMIT
