@@ -189,7 +189,7 @@ func TestGlobalImageSearchMatchesAIContent_Postgres(t *testing.T) {
 
 	var matchedFileIDs []int
 	err := libraryRepository.Db.QueryTx(func(tx *sql.Tx) error {
-		rows, queryErr := tx.Query(searchqueries.SearchImagesQuery, "Beach", pq.Array([]string{".jpg"}), 10)
+		rows, queryErr := tx.Query(searchqueries.SearchImagesQuery, "%beach%", pq.Array([]string{"%beach%"}), "beach", "beach%", "%beach%", pq.Array([]string{".jpg"}), 10)
 		if queryErr != nil {
 			return queryErr
 		}
