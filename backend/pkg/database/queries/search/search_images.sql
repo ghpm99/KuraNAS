@@ -17,19 +17,19 @@ WHERE
         SELECT name_match.id
         FROM home_file name_match
         WHERE name_match.deleted_at IS NULL
-            AND lower(name_match.name) LIKE $1
-            AND lower(name_match.name) LIKE ALL ($2::text[])
+            AND kuranas_fold(name_match.name) LIKE kuranas_fold($1)
+            AND kuranas_fold(name_match.name) LIKE ALL (kuranas_fold_terms($2::text[]))
         UNION
         SELECT content_match.file_id
         FROM image_metadata content_match
-        WHERE content_match.ai_search_text LIKE $1
-            AND content_match.ai_search_text LIKE ALL ($2::text[])
+        WHERE kuranas_fold(content_match.ai_search_text) LIKE kuranas_fold($1)
+            AND kuranas_fold(content_match.ai_search_text) LIKE ALL (kuranas_fold_terms($2::text[]))
     )
 ORDER BY
     CASE
-        WHEN lower(hf.name) = $3 THEN 0
-        WHEN lower(hf.name) LIKE $4 THEN 1
-        WHEN lower(hf.name) LIKE $5 THEN 2
+        WHEN kuranas_fold(hf.name) = kuranas_fold($3) THEN 0
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold($4) THEN 1
+        WHEN kuranas_fold(hf.name) LIKE kuranas_fold($5) THEN 2
         ELSE 3
     END,
     hf.updated_at DESC,

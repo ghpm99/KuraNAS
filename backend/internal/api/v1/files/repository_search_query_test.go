@@ -20,10 +20,10 @@ func buildForTest(t *testing.T, query FileSearchQuery) (string, []any) {
 func TestBuildSearchFilesQueryWithoutFiltersUsesOnlyNameTermsAndRelevance(t *testing.T) {
 	statement, arguments := buildForTest(t, FileSearchQuery{Query: "Foo bar", Page: 1, PageSize: 10})
 
-	if !strings.Contains(statement, "lower(hf.name) LIKE $1") || !strings.Contains(statement, "LIKE ALL ($2::text[])") {
+	if !strings.Contains(statement, "kuranas_fold(hf.name) LIKE kuranas_fold($1)") || !strings.Contains(statement, "LIKE ALL (kuranas_fold_terms($2::text[]))") {
 		t.Fatalf("expected driving + all-terms name match, got %s", statement)
 	}
-	if !strings.Contains(statement, "WHEN lower(hf.name) = $3 THEN 0") {
+	if !strings.Contains(statement, "WHEN kuranas_fold(hf.name) = kuranas_fold($3) THEN 0") {
 		t.Fatalf("expected relevance ordering, got %s", statement)
 	}
 	if strings.Contains(statement, "@") {

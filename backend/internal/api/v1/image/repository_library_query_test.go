@@ -149,10 +149,10 @@ func TestBuildLibraryTextFilterShapes(t *testing.T) {
 		expectedFragments []string
 		expectedArguments int
 	}{
-		{"name only", LibraryFilter{NameQuery: "car"}, []string{"lower(hf.name) LIKE lower($2)"}, 2},
-		{"content only", LibraryFilter{ContentQuery: "car"}, []string{"im.ai_search_text LIKE $2"}, 2},
-		{"name or content uses union", LibraryFilter{NameQuery: "car", ContentQuery: "car"}, []string{"UNION", "lower(name_match.name) LIKE lower($2)", "content_match.ai_search_text LIKE $3"}, 3},
-		{"name and content", LibraryFilter{NameQuery: "car", ContentQuery: "red", MustMatchNameAndContent: true}, []string{"lower(hf.name) LIKE lower($2)", "im.ai_search_text LIKE $3"}, 3},
+		{"name only", LibraryFilter{NameQuery: "car"}, []string{"kuranas_fold(hf.name) LIKE kuranas_fold($2)"}, 2},
+		{"content only", LibraryFilter{ContentQuery: "car"}, []string{"kuranas_fold(im.ai_search_text) LIKE kuranas_fold($2)"}, 2},
+		{"name or content uses union", LibraryFilter{NameQuery: "car", ContentQuery: "car"}, []string{"UNION", "kuranas_fold(name_match.name) LIKE kuranas_fold($2)", "kuranas_fold(content_match.ai_search_text) LIKE kuranas_fold($3)"}, 3},
+		{"name and content", LibraryFilter{NameQuery: "car", ContentQuery: "red", MustMatchNameAndContent: true}, []string{"kuranas_fold(hf.name) LIKE kuranas_fold($2)", "kuranas_fold(im.ai_search_text) LIKE kuranas_fold($3)"}, 3},
 	}
 	for _, testCase := range testCases {
 		query, arguments := buildLibraryCountQuery(testCase.filter)

@@ -18,6 +18,20 @@ type searchRepositoryMock struct {
 	searchVideosFn         func(query string, limit int) ([]VideoResultModel, error)
 	searchImagesFn         func(query string, limit int) ([]ImageResultModel, error)
 	searchTracksFn         func(query string, limit int) ([]TrackResultModel, error)
+	isFuzzyAvailable       bool
+	searchFilesFuzzyFn     func(query string, limit int) ([]FileResultModel, error)
+	searchFoldersFuzzyFn   func(query string, limit int) ([]FolderResultModel, error)
+}
+
+func (m *searchRepositoryMock) IsFuzzySearchAvailable() bool { return m.isFuzzyAvailable }
+func (m *searchRepositoryMock) SearchFilesFuzzy(query string, limit int) ([]FileResultModel, error) {
+	return m.searchFilesFuzzyFn(query, limit)
+}
+func (m *searchRepositoryMock) SearchFoldersFuzzy(query string, limit int) ([]FolderResultModel, error) {
+	if m.searchFoldersFuzzyFn == nil {
+		return nil, nil
+	}
+	return m.searchFoldersFuzzyFn(query, limit)
 }
 
 func (m *searchRepositoryMock) SearchFiles(query string, limit int) ([]FileResultModel, error) {
@@ -468,5 +482,58 @@ func TestBuildTrackAlbumKeyIsEmptyWithoutAlbumOrOwner(t *testing.T) {
 	}
 	if key := buildTrackAlbumKey(TrackResultModel{Album: "Album", AlbumOwner: ""}); key != "" {
 		t.Fatalf("key without owner = %q", key)
+	}
+}
+
+func TestSearchServiceFuzzyFallbackMarksResponseWhenNothingMatches(t *testing.T) {
+	repository := emptyRepo()
+	repository.isFuzzyAvailable = true
+	repository.searchFilesFuzzyFn = func(query string, limit int) ([]FileResultModel, error) {
+		return []FileResultModel{{ID: 7, Name: "relatorio.pdf"}}, nil
+	}
+
+	response, err := NewService(repository, nil).SearchGlobal("relatoro", 6)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !response.Fuzzy || len(response.Files) != 1 || response.Files[0].ID != 7 {
+		t.Fatalf("expected fuzzy file result, got %+v", response)
+	}
+}
+
+func TestSearchServiceSkipsFuzzyFallbackWhenUnavailableOrWhenExactMatchesExist(t *testing.T) {
+	unavailable := emptyRepo()
+	unavailable.searchFilesFuzzyFn = func(string, int) ([]FileResultModel, error) {
+		t.Fatal("fuzzy must not run when unavailable")
+		return nil, nil
+	}
+	response, err := NewService(unavailable, nil).SearchGlobal("relatoro", 6)
+	if err != nil || response.Fuzzy {
+		t.Fatalf("expected plain empty response, got %+v err=%v", response, err)
+	}
+
+	withExactMatch := emptyRepo()
+	withExactMatch.isFuzzyAvailable = true
+	withExactMatch.searchFilesFn = func(string, int) ([]FileResultModel, error) {
+		return []FileResultModel{{ID: 1, Name: "relatorio.pdf"}}, nil
+	}
+	withExactMatch.searchFilesFuzzyFn = func(string, int) ([]FileResultModel, error) {
+		t.Fatal("fuzzy must not run when exact matches exist")
+		return nil, nil
+	}
+	response, err = NewService(withExactMatch, nil).SearchGlobal("relatorio", 6)
+	if err != nil || response.Fuzzy || len(response.Files) != 1 {
+		t.Fatalf("expected exact response, got %+v err=%v", response, err)
+	}
+}
+
+func TestSearchServiceFuzzyFallbackPropagatesRepositoryError(t *testing.T) {
+	repository := emptyRepo()
+	repository.isFuzzyAvailable = true
+	repository.searchFilesFuzzyFn = func(string, int) ([]FileResultModel, error) {
+		return nil, errors.New("boom")
+	}
+	if _, err := NewService(repository, nil).SearchGlobal("relatoro", 6); err == nil {
+		t.Fatal("expected error")
 	}
 }

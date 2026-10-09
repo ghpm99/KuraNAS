@@ -30,3 +30,12 @@ var SearchImagesQuery string
 
 //go:embed search_tracks.sql
 var SearchTracksQuery string
+
+//go:embed search_files_fuzzy.sql
+var SearchFilesFuzzyQuery string
+
+//go:embed search_folders_fuzzy.sql
+var SearchFoldersFuzzyQuery string
+
+//go:embed check_fuzzy_search_support.sql
+var CheckFuzzySearchSupportQuery string

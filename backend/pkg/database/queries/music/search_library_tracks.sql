@@ -49,22 +49,22 @@ WHERE
     AND hf.id IN (
         SELECT title_match.file_id
         FROM audio_metadata title_match
-        WHERE lower(title_match.title) LIKE $4
+        WHERE kuranas_fold(title_match.title) LIKE kuranas_fold($4)
         UNION
         SELECT artist_match.file_id
         FROM audio_metadata artist_match
-        WHERE lower(artist_match.artist) LIKE $4
+        WHERE kuranas_fold(artist_match.artist) LIKE kuranas_fold($4)
         UNION
         SELECT album_match.file_id
         FROM audio_metadata album_match
-        WHERE lower(album_match.album) LIKE $4
+        WHERE kuranas_fold(album_match.album) LIKE kuranas_fold($4)
         UNION
         SELECT name_match.id
         FROM home_file name_match
         WHERE name_match.deleted_at IS NULL
-            AND lower(name_match.name) LIKE $4
+            AND kuranas_fold(name_match.name) LIKE kuranas_fold($4)
     )
-    AND lower(concat_ws(' ', am.title, am.artist, am.album, hf.name)) LIKE ALL ($5::text[])
+    AND kuranas_fold(concat_ws(' ', am.title, am.artist, am.album, hf.name)) LIKE ALL (kuranas_fold_terms($5::text[]))
 ORDER BY
     hf.starred DESC,
     hf.NAME,

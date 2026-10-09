@@ -10,6 +10,7 @@ const (
 type GlobalSearchResponseDto struct {
 	Query      string              `json:"query"`
 	Suggestion string              `json:"suggestion,omitempty"`
+	Fuzzy      bool                `json:"fuzzy,omitempty"`
 	Files      []FileResultDto     `json:"files"`
 	Folders    []FolderResultDto   `json:"folders"`
 	Artists    []ArtistResultDto   `json:"artists"`
@@ -97,4 +98,15 @@ type TrackResultDto struct {
 	AlbumKey string  `json:"album_key"`
 	Duration float64 `json:"duration"`
 	Path     string  `json:"path"`
+}
+
+func (response GlobalSearchResponseDto) isEmpty() bool {
+	return len(response.Files) == 0 &&
+		len(response.Folders) == 0 &&
+		len(response.Artists) == 0 &&
+		len(response.Albums) == 0 &&
+		len(response.Playlists) == 0 &&
+		len(response.Videos) == 0 &&
+		len(response.Images) == 0 &&
+		len(response.Tracks) == 0
 }

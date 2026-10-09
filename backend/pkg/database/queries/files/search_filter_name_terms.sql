@@ -1,2 +1,2 @@
-lower(hf.name) LIKE @1
-    AND lower(hf.name) LIKE ALL (@2::text[])
+kuranas_fold(hf.name) LIKE kuranas_fold(@1)
+    AND kuranas_fold(hf.name) LIKE ALL (kuranas_fold_terms(@2::text[]))

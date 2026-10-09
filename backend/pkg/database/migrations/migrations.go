@@ -176,6 +176,9 @@ var CreateAudioMetadataSearchTrigramIndexesQuery string
 //go:embed queries/0055_create_audio_metadata_title_trigram_index.sql
 var CreateAudioMetadataTitleTrigramIndexQuery string
 
+//go:embed queries/0056_create_search_fold_function_and_indexes.sql
+var CreateSearchFoldFunctionAndIndexesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -261,6 +264,9 @@ func fileMigrationList() {
 
 	addMigration("0055_create_audio_metadata_title_trigram_index",
 		defaultMigrationFunc(CreateAudioMetadataTitleTrigramIndexQuery))
+
+	addMigration("0056_create_search_fold_function_and_indexes",
+		defaultMigrationFunc(CreateSearchFoldFunctionAndIndexesQuery))
 }
 
 func diaryMigrationList() {

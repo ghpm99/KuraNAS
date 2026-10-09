@@ -35,3 +35,7 @@ func buildNameMatch(query string) (nameMatch, bool) {
 func (match nameMatch) allPatternsArg() any {
 	return pq.Array(match.AllPatterns)
 }
+
+func normalizeFuzzyQuery(query string) string {
+	return strings.Join(strings.Fields(strings.ToLower(query)), " ")
+}
