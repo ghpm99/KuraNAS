@@ -80,3 +80,16 @@ func TestTypeScriptExtensionIsNotClassifiedAsVideo(t *testing.T) {
 		t.Error(".ts must not be classified as video")
 	}
 }
+
+func TestContentTypeByFormatMatchesClassificationForEveryMediaFormat(t *testing.T) {
+	const fallbackContentType = "application/x-fallback-sentinel"
+	for _, extension := range slices.Concat(AudioFormats, VideoFormats) {
+		classificationMime := GetFormatTypeByExtension(extension).Mime
+		if classificationMime == "" {
+			t.Errorf("%s has no classification MIME", extension)
+		}
+		if got := ContentTypeByFormat(extension, fallbackContentType); got != classificationMime {
+			t.Errorf("%s: expected %s, got %s", extension, classificationMime, got)
+		}
+	}
+}

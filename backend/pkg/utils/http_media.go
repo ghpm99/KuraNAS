@@ -79,25 +79,22 @@ func ParseHTTPRange(rangeHeader string, fileSize int64) (int64, int64, bool) {
 	return start, end, true
 }
 
-var audioContentTypeByExtension = map[string]string{
-	".mp3":  "audio/mpeg",
-	".wav":  "audio/wav",
-	".aac":  "audio/aac",
-	".flac": "audio/flac",
-	".m4a":  "audio/mp4",
-	".alac": "audio/mp4",
-	".ogg":  "audio/ogg",
-	".oga":  "audio/ogg",
-	".opus": "audio/opus",
-	".wma":  "audio/x-ms-wma",
-	".aiff": "audio/aiff",
-	".aif":  "audio/aiff",
-	".ape":  "audio/x-ape",
-	".wv":   "audio/x-wavpack",
+var mediaContentTypeByExtension = buildMediaContentTypeByExtension()
+
+func buildMediaContentTypeByExtension() map[string]string {
+	contentTypeByExtension := make(map[string]string, len(AudioFormats)+len(VideoFormats))
+	for _, extension := range AudioFormats {
+		contentTypeByExtension[extension] = GetFormatTypeByExtension(extension).Mime
+	}
+	for _, extension := range VideoFormats {
+		contentTypeByExtension[extension] = GetFormatTypeByExtension(extension).Mime
+	}
+	return contentTypeByExtension
 }
 
 // ContentTypeByFormat resolves a MIME content type from a file extension
-// (with or without the leading dot), falling back when unknown.
+// (with or without the leading dot). Audio and video extensions resolve from
+// the classification table; others use the OS MIME table, then fallback.
 func ContentTypeByFormat(format string, fallback string) string {
 	ext := strings.TrimSpace(format)
 	if ext == "" {
@@ -107,8 +104,8 @@ func ContentTypeByFormat(format string, fallback string) string {
 		ext = "." + ext
 	}
 	normalizedExtension := strings.ToLower(ext)
-	if audioContentType, isKnownAudio := audioContentTypeByExtension[normalizedExtension]; isKnownAudio {
-		return audioContentType
+	if mediaContentType, isKnownMedia := mediaContentTypeByExtension[normalizedExtension]; isKnownMedia {
+		return mediaContentType
 	}
 	contentType := mime.TypeByExtension(normalizedExtension)
 	if contentType == "" {
