@@ -55,3 +55,11 @@ func TestContentTypeByFormatResolvesEveryAudioFormatExplicitly(t *testing.T) {
 		t.Errorf("uppercase extension: got %s", got)
 	}
 }
+
+func TestVideoFormatListAgreesWithClassification(t *testing.T) {
+	for _, extension := range VideoFormats {
+		if GetFormatTypeByExtension(extension).Type != FormatTypeVideo {
+			t.Errorf("%s listed in VideoFormats but not classified as video", extension)
+		}
+	}
+}

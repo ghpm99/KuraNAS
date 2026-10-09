@@ -283,6 +283,14 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeVideo, Mime: "video/ogg", Description: "VIDEO_OGG"}
 	case ".mov":
 		return FormatType{Type: FormatTypeVideo, Mime: "video/quicktime", Description: "VIDEO_MOV"}
+	case ".mkv":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/x-matroska", Description: "VIDEO_MKV"}
+	case ".avi":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/x-msvideo", Description: "VIDEO_AVI"}
+	case ".wmv":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/x-ms-wmv", Description: "VIDEO_WMV"}
+	case ".flv":
+		return FormatType{Type: FormatTypeVideo, Mime: "video/x-flv", Description: "VIDEO_FLV"}
 
 	case ".pdf":
 		return FormatType{Type: FormatTypeDocument, Mime: "application/pdf", Description: "DOCUMENT_PDF"}
