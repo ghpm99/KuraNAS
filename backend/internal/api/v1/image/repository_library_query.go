@@ -11,6 +11,8 @@ import (
 	"github.com/lib/pq"
 )
 
+const libraryCameraFacetLimit = 50
+
 type libraryQueryBuilder struct {
 	arguments []any
 	clauses   []string
@@ -136,6 +138,22 @@ func buildLibraryTimelineQuery(filter LibraryFilter) (string, []any) {
 	builder.addFilter(filter)
 	builder.addClause(queries.LibraryFilterDatedOnlyQuery)
 	return builder.assemble(queries.LibraryTimelineSelectQuery, queries.LibraryTimelineGroupQuery), builder.arguments
+}
+
+func buildLibraryCameraFacetQuery(filter LibraryFilter) (string, []any) {
+	filter.Camera = ""
+	builder := newLibraryQueryBuilder()
+	builder.addFilter(filter)
+	builder.addClause(queries.LibraryFilterHasCameraQuery)
+	limitFragment := builder.bind(queries.LibraryLimitQuery, libraryCameraFacetLimit)
+	return builder.assemble(queries.LibraryCamerasFacetSelectQuery, queries.LibraryCamerasFacetGroupQuery, limitFragment), builder.arguments
+}
+
+func buildLibraryFormatFacetQuery(filter LibraryFilter) (string, []any) {
+	filter.Formats = nil
+	builder := newLibraryQueryBuilder()
+	builder.addFilter(filter)
+	return builder.assemble(queries.LibraryFormatsFacetSelectQuery, queries.LibraryFormatsFacetGroupQuery), builder.arguments
 }
 
 func libraryOrderFragment(sort LibrarySort, order LibrarySortOrder) (string, error) {

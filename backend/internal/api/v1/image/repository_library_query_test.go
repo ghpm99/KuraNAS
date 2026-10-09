@@ -166,3 +166,28 @@ func TestBuildLibraryTextFilterShapes(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildLibraryFacetQueriesIgnoreTheirOwnFilter(t *testing.T) {
+	filter := LibraryFilter{Camera: "Canon EOS", Formats: []string{".jpg"}, OnlyStarred: true}
+
+	cameraQuery, cameraArguments := buildLibraryCameraFacetQuery(filter)
+	for _, expected := range []string{"GROUP BY 1", "ORDER BY 2 DESC", "<> ''", "hf.format = ANY($2)", "LIMIT $3"} {
+		if !strings.Contains(cameraQuery, expected) {
+			t.Fatalf("expected %q in camera facet query:\n%s", expected, cameraQuery)
+		}
+	}
+	if strings.Contains(cameraQuery, "NULLIF(im.model, '')) = $") {
+		t.Fatalf("camera facet query must not filter by camera:\n%s", cameraQuery)
+	}
+	if len(cameraArguments) != 3 {
+		t.Fatalf("unexpected camera arguments %v", cameraArguments)
+	}
+
+	formatQuery, formatArguments := buildLibraryFormatFacetQuery(filter)
+	if !strings.Contains(formatQuery, "GROUP BY 1") || !strings.Contains(formatQuery, "NULLIF(im.model, '')) = $2") {
+		t.Fatalf("unexpected format facet query:\n%s", formatQuery)
+	}
+	if strings.Contains(formatQuery, "hf.format = ANY($2)") || len(formatArguments) != 2 {
+		t.Fatalf("format facet query must not filter by format:\n%s %v", formatQuery, formatArguments)
+	}
+}

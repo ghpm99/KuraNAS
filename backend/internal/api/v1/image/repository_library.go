@@ -119,3 +119,55 @@ func (r *LibraryRepository) ListLibraryTimeline(filter LibraryFilter) ([]Library
 	}
 	return buckets, nil
 }
+
+func (r *LibraryRepository) ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetModel, error) {
+	facetQuery, arguments := buildLibraryCameraFacetQuery(filter)
+
+	facets := []LibraryCameraFacetModel{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(facetQuery, arguments...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var facet LibraryCameraFacetModel
+			if err := rows.Scan(&facet.Camera, &facet.Count); err != nil {
+				return err
+			}
+			facets = append(facets, facet)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ListLibraryCameraFacets: %w", err)
+	}
+	return facets, nil
+}
+
+func (r *LibraryRepository) ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetModel, error) {
+	facetQuery, arguments := buildLibraryFormatFacetQuery(filter)
+
+	facets := []LibraryFormatFacetModel{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(facetQuery, arguments...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var facet LibraryFormatFacetModel
+			if err := rows.Scan(&facet.Format, &facet.Count); err != nil {
+				return err
+			}
+			facets = append(facets, facet)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ListLibraryFormatFacets: %w", err)
+	}
+	return facets, nil
+}

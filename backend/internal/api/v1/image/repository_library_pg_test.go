@@ -461,3 +461,58 @@ func TestLibraryItemCursorIgnoresMissingDeletedAndNonImages_Postgres(t *testing.
 		}
 	}
 }
+
+func TestLibraryFacetsCountPerFacetAndIgnoreOwnFilter_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	seedLibraryImages(t, repository, []seededImage{
+		{name: "a.jpg", folder: "/lib", format: ".jpg", make: "Canon", model: "EOS R5"},
+		{name: "b.jpg", folder: "/lib", format: ".jpg", make: "Canon", model: "EOS R5"},
+		{name: "c.png", folder: "/lib", format: ".png", make: "Sony", model: "A7"},
+		{name: "d.heic", folder: "/lib", format: ".heic", make: "Apple"},
+		{name: "e.cr2", folder: "/lib", format: ".cr2", model: "Solo"},
+		{name: "f.jpg", folder: "/lib", format: ".jpg"},
+		{name: "gone.jpg", folder: "/lib", format: ".jpg", make: "Nikon", model: "Z6", deleted: true},
+	})
+
+	cameras, err := repository.ListLibraryCameraFacets(LibraryFilter{})
+	if err != nil {
+		t.Fatalf("cameras: %v", err)
+	}
+	expectedCameras := []LibraryCameraFacetModel{{"Canon EOS R5", 2}, {"Apple", 1}, {"Solo", 1}, {"Sony A7", 1}}
+	if fmt.Sprint(cameras) != fmt.Sprint(expectedCameras) {
+		t.Fatalf("cameras = %v, want %v", cameras, expectedCameras)
+	}
+
+	formats, err := repository.ListLibraryFormatFacets(LibraryFilter{})
+	if err != nil {
+		t.Fatalf("formats: %v", err)
+	}
+	expectedFormats := []LibraryFormatFacetModel{{".jpg", 3}, {".cr2", 1}, {".heic", 1}, {".png", 1}}
+	if fmt.Sprint(formats) != fmt.Sprint(expectedFormats) {
+		t.Fatalf("formats = %v, want %v", formats, expectedFormats)
+	}
+
+	jpgOnlyCameras, err := repository.ListLibraryCameraFacets(LibraryFilter{Formats: []string{".jpg"}, Camera: "Sony A7"})
+	if err != nil || fmt.Sprint(jpgOnlyCameras) != fmt.Sprint([]LibraryCameraFacetModel{{"Canon EOS R5", 2}}) {
+		t.Fatalf("jpg cameras = %v err %v", jpgOnlyCameras, err)
+	}
+
+	canonFormats, err := repository.ListLibraryFormatFacets(LibraryFilter{Camera: "Canon EOS R5", Formats: []string{".png"}})
+	if err != nil || fmt.Sprint(canonFormats) != fmt.Sprint([]LibraryFormatFacetModel{{".jpg", 2}}) {
+		t.Fatalf("canon formats = %v err %v", canonFormats, err)
+	}
+}
+
+func TestLibraryCameraFacetsAreCappedAtFifty_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	seeds := make([]seededImage, 0, 60)
+	for index := 0; index < 60; index++ {
+		seeds = append(seeds, seededImage{name: fmt.Sprintf("p%02d.jpg", index), folder: "/lib", format: ".jpg", make: "Make", model: fmt.Sprintf("M%02d", index)})
+	}
+	seedLibraryImages(t, repository, seeds)
+
+	cameras, err := repository.ListLibraryCameraFacets(LibraryFilter{})
+	if err != nil || len(cameras) != 50 {
+		t.Fatalf("cameras = %d err %v", len(cameras), err)
+	}
+}

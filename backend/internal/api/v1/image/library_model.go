@@ -66,6 +66,16 @@ type LibraryItemModel struct {
 	UpdatedAt  time.Time
 }
 
+type LibraryCameraFacetModel struct {
+	Camera string
+	Count  int
+}
+
+type LibraryFormatFacetModel struct {
+	Format string
+	Count  int
+}
+
 type LibraryTimelineBucketModel struct {
 	Year  int
 	Month int

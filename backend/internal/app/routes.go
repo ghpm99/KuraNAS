@@ -240,6 +240,8 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 			router.GET("/image/library/count", context.Image.LibraryHandler.CountLibraryImagesHandler)
 			router.GET("/image/library/neighbors/:file_id", context.Image.LibraryHandler.ListLibraryNeighborsHandler)
 			router.GET("/image/library/timeline", context.Image.LibraryHandler.ListLibraryTimelineHandler)
+			router.GET("/image/library/facets/cameras", context.Image.LibraryHandler.ListLibraryCameraFacetsHandler)
+			router.GET("/image/library/facets/formats", context.Image.LibraryHandler.ListLibraryFormatFacetsHandler)
 			router.GET("/image/library/folders", context.Image.LibraryHandler.ListLibraryFoldersHandler)
 		}
 		if context.Image.AlbumHandler != nil {

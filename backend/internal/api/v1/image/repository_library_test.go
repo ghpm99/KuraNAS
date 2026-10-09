@@ -200,3 +200,58 @@ func TestGetLibraryItemCursorScansDatedAndUndatedRows(t *testing.T) {
 		t.Fatalf("expected sql.ErrNoRows to survive wrapping, got %v", err)
 	}
 }
+
+func TestListLibraryFacets(t *testing.T) {
+	repo, mock, db := newLibraryRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnRows(sqlmock.NewRows([]string{"camera", "count"}).AddRow("Canon EOS", 4).AddRow("Sony A7", 2))
+	mock.ExpectRollback()
+	cameras, err := repo.ListLibraryCameraFacets(LibraryFilter{})
+	if err != nil || len(cameras) != 2 || cameras[0].Camera != "Canon EOS" || cameras[1].Count != 2 {
+		t.Fatalf("cameras = %+v, err = %v", cameras, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnRows(sqlmock.NewRows([]string{"format", "count"}).AddRow(".jpg", 6))
+	mock.ExpectRollback()
+	formats, err := repo.ListLibraryFormatFacets(LibraryFilter{})
+	if err != nil || len(formats) != 1 || formats[0].Format != ".jpg" || formats[0].Count != 6 {
+		t.Fatalf("formats = %+v, err = %v", formats, err)
+	}
+}
+
+func TestListLibraryFacetsReportScanAndQueryErrors(t *testing.T) {
+	repo, mock, db := newLibraryRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnRows(sqlmock.NewRows([]string{"camera"}).AddRow("Canon"))
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryCameraFacets(LibraryFilter{}); err == nil {
+		t.Fatal("expected camera scan error")
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnRows(sqlmock.NewRows([]string{"format"}).AddRow(".jpg"))
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryFormatFacets(LibraryFilter{}); err == nil {
+		t.Fatal("expected format scan error")
+	}
+
+	facetErr := errors.New("facet failed")
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnError(facetErr)
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryCameraFacets(LibraryFilter{}); !errors.Is(err, facetErr) {
+		t.Fatalf("expected camera error, got %v", err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("GROUP BY").WillReturnError(facetErr)
+	mock.ExpectRollback()
+	if _, err := repo.ListLibraryFormatFacets(LibraryFilter{}); !errors.Is(err, facetErr) {
+		t.Fatalf("expected format error, got %v", err)
+	}
+}
