@@ -18,7 +18,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 ### Conteúdo que não toca ou não aparece
 - [x] 01. `.avi/.mkv/.wmv/.flv` reconhecidos como vídeo no pipeline
 - [x] 02. Reconciliação de vídeos existentes sem `video_metadata`
-- [ ] 03. Extensões ausentes (`.m4v .mpg .mpeg .m2ts .3gp .vob`)
+- [x] 03. Extensões ausentes (`.m4v .mpg .mpeg .m2ts .3gp .vob`)
 - [ ] 04. MIME explícito para formatos de vídeo
 - [ ] 05. Erro de reprodução visível no player com ação "baixar original"
 - [ ] 06. Remux sob demanda (mkv/avi com H.264 → MP4 fragmentado)
