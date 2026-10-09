@@ -23,13 +23,12 @@ class MusicRepository @Inject constructor(
     suspend fun getAllTracks(page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toMusicPage() }
 
     /**
-     * Resolve uma faixa pelo id do arquivo (usado ao tocar a partir de Arquivos/Início/Busca,
-     * onde só temos o id). Procura na biblioteca de música para ter título/artista; se o
-     * arquivo ainda não foi indexado como música, devolve uma faixa mínima — o player só
-     * precisa do id para montar a URL de stream, então a reprodução funciona mesmo assim.
+     * Resolve uma faixa pelo id do arquivo consultando o servidor diretamente, para trazer
+     * título/artista. Se a consulta falhar (sem conexão ou arquivo não indexado como música),
+     * devolve uma faixa mínima: o player só precisa do id para montar a URL de stream.
      */
-    suspend fun getTrackById(id: Int): TrackDto = when (val r = getAllTracks(FIRST_PAGE)) {
-        is AppResult.Success -> r.data.items.firstOrNull { it.id == id } ?: TrackDto(id = id)
+    suspend fun getTrackById(id: Int): TrackDto = when (val lookup = safeApiCall { api.getTrackById(id) }) {
+        is AppResult.Success -> lookup.data
         is AppResult.Error -> TrackDto(id = id)
     }
     suspend fun getArtists(page: Int): AppResult<MusicPage<ArtistDto>> = safeApiCall { api.getArtists(page).toMusicPage() }

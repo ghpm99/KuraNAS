@@ -21,6 +21,9 @@ interface MusicApi {
         @Query("page_size") pageSize: Int = MUSIC_PAGE_SIZE,
     ): PageDto<TrackDto>
 
+    @GET("api/v1/music/library/tracks/{fileId}")
+    suspend fun getTrackById(@Path("fileId") fileId: Int): TrackDto
+
     @GET("api/v1/music/library/home")
     suspend fun getHomeCatalog(): MusicHomeCatalogDto
 
