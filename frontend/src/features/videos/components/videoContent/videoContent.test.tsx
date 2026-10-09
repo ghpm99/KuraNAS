@@ -437,11 +437,17 @@ describe('components/videos/videoContent', () => {
         fireEvent.click(screen.getAllByRole('button', { name: /Clip Playlist/i })[0]!);
         fireEvent.click(screen.getAllByRole('button', { name: /Folder Playlist/i })[0]!);
 
-        expect(mockNavigate).toHaveBeenNthCalledWith(1, '/videos/series/playlist-one');
-        expect(mockNavigate).toHaveBeenNthCalledWith(2, '/videos/movies/movie-playlist');
-        expect(mockNavigate).toHaveBeenNthCalledWith(3, '/videos/personal/personal-playlist');
-        expect(mockNavigate).toHaveBeenNthCalledWith(4, '/videos/clips/clip-playlist');
-        expect(mockNavigate).toHaveBeenNthCalledWith(5, '/videos/folders/folder-playlist');
+        expect(mockNavigate).toHaveBeenNthCalledWith(1, '/videos/series/playlist-one?playlist=1');
+        expect(mockNavigate).toHaveBeenNthCalledWith(2, '/videos/movies/movie-playlist?playlist=4');
+        expect(mockNavigate).toHaveBeenNthCalledWith(
+            3,
+            '/videos/personal/personal-playlist?playlist=5'
+        );
+        expect(mockNavigate).toHaveBeenNthCalledWith(4, '/videos/clips/clip-playlist?playlist=3');
+        expect(mockNavigate).toHaveBeenNthCalledWith(
+            5,
+            '/videos/folders/folder-playlist?playlist=2'
+        );
     });
 
     it('renders folders section and handles add/play/search actions', async () => {
@@ -487,6 +493,27 @@ describe('components/videos/videoContent', () => {
                 state: { from: '/videos/series/playlist-one', playlistId: 1 },
             }
         );
+    });
+
+    it('selects the playlist by id when two playlists share the same name', () => {
+        playlistsData = [playlist, { ...playlist, id: 99 }];
+        mockLocation.pathname = '/videos/series/playlist-one';
+        mockLocation.search = '?playlist=99';
+
+        render(<VideoContent />);
+
+        expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(99);
+        expect(mockGetVideoPlaylistById).not.toHaveBeenCalledWith(1);
+    });
+
+    it('falls back to the name slug when the playlist id is not in the url', () => {
+        playlistsData = [{ ...playlist, id: 99 }, playlist];
+        mockLocation.pathname = '/videos/series/playlist-one';
+        mockLocation.search = '?playlist=abc';
+
+        render(<VideoContent />);
+
+        expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(99);
     });
 
     it('renders folder detail branch and actions', () => {

@@ -19,6 +19,7 @@ import { type VideoSection } from '@/app/routes';
 import {
     getVideoDetailRoute,
     getVideoDetailSlugFromPath,
+    getVideoPlaylistIdFromSearch,
     getVideoSectionForPlaylist,
     getVideoSectionFromPath,
 } from '@/features/videos/components/navigation';
@@ -140,10 +141,20 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
 
     const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
+    const playlistIdFromSearch = getVideoPlaylistIdFromSearch(location.search);
     const selectedPlaylistSummary = useMemo(() => {
         if (!playlistSlug) return null;
-        return playlists.find((playlist) => slugify(playlist.name) === playlistSlug) ?? null;
-    }, [playlistSlug, playlists]);
+        const playlistById = playlistIdFromSearch
+            ? playlists.find((playlist) => playlist.id === playlistIdFromSearch)
+            : undefined;
+        return (
+            playlistById ??
+            playlists.find(
+                (playlist) => (slugify(playlist.name) || String(playlist.id)) === playlistSlug
+            ) ??
+            null
+        );
+    }, [playlistIdFromSearch, playlistSlug, playlists]);
 
     const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } = useQuery({
         queryKey: videoQueryKeys.playlistDetail(selectedPlaylistSummary?.id),
@@ -391,7 +402,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             }
         },
         selectPlaylist: (playlist) =>
-            navigate(getVideoDetailRoute(resolvePlaylistSection(playlist), slugify(playlist.name))),
+            navigate(
+                getVideoDetailRoute(
+                    resolvePlaylistSection(playlist),
+                    slugify(playlist.name) || String(playlist.id),
+                    playlist.id
+                )
+            ),
         clearSelectedPlaylist: () => {
             if (currentSection === 'home') {
                 navigate('/videos');

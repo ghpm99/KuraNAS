@@ -102,7 +102,11 @@ export default function useVideoPlayerScreen() {
             return appRoutes.videos;
         }
 
-        return getVideoDetailRoute(getVideoSectionForPlaylist(playlist), slugify(playlist.name));
+        return getVideoDetailRoute(
+            getVideoSectionForPlaylist(playlist),
+            slugify(playlist.name) || String(playlist.id),
+            playlist.id
+        );
     }, [playlist]);
 
     const fromParam = searchParams.get('from');

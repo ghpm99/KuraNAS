@@ -27,7 +27,7 @@ import UploadDropZone from '@/features/files/upload/uploadDropZone';
 import FindByDiskPathDialog from '@/features/files/findByDiskPath/findByDiskPathDialog';
 import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
-import { buildFilesUrl } from '@/features/files/providers/fileProvider/fileProviderUtils';
+import { buildFilesUrl } from '@/app/routes';
 import FileSearchBar from '@/features/files/search/FileSearchBar';
 import FileSearchResultsHeader from '@/features/files/search/FileSearchResultsHeader';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';

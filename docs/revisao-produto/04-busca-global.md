@@ -17,7 +17,7 @@ Decisões tomadas na revisão: IA sai do caminho principal e vira ação explíc
 - [x] 02. IA fora do caminho principal: resposta imediata, expansão sob demanda, merge respeitando o limite, `suggestion` exibida
 - [x] 03. Dialog: debounce, cancelamento, mantém o resultado anterior, estado de erro com tentar de novo
 - [x] 04. Enter abre o melhor resultado de dado; ações depois dos dados quando há consulta
-- [ ] 05. Navegação com caminho codificado e playlist de vídeo sem colisão por nome
+- [x] 05. Navegação com caminho codificado e playlist de vídeo sem colisão por nome
 - [ ] 06. Faixas de música como grupo próprio (tocar/abrir álbum); mídia fora do grupo "Arquivos"
 - [ ] 07. "Ver todos" para cada grupo (fotos, vídeos, música, arquivos)
 - [ ] 08. Página completa de resultados de arquivos com filtros (tipo, data, tamanho, tier) e ordenação por relevância

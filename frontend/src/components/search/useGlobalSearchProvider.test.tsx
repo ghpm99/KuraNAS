@@ -103,6 +103,7 @@ jest.mock('@/features/videos/components/navigation', () => ({
 }));
 
 jest.mock('@/app/routes', () => ({
+    ...jest.requireActual('@/app/routes'),
     appRoutes: {
         home: '/home',
         files: '/files',
@@ -337,9 +338,10 @@ describe('useGlobalSearchProvider', () => {
             act(() => {
                 result.current.activateItem(seeAllItem);
             });
-            expect(mockNavigate).toHaveBeenCalledWith(
-                `/files?q=${encodeURIComponent('relatório 2024')}`
-            );
+            expect(mockNavigate).toHaveBeenCalledWith({
+                pathname: '/files',
+                search: '?q=relat%C3%B3rio+2024',
+            });
         });
 
         it('omits the see-all-files action when no file or folder matched', () => {
@@ -451,7 +453,7 @@ describe('useGlobalSearchProvider', () => {
                 type: 'folder',
                 classification: 'series',
             });
-            expect(mockGetVideoDetailRoute).toHaveBeenCalledWith('series', 'video-playlist');
+            expect(mockGetVideoDetailRoute).toHaveBeenCalledWith('series', 'video-playlist', 4);
             expect(mockNavigate).toHaveBeenCalled();
         });
 
@@ -696,7 +698,9 @@ describe('useGlobalSearchProvider', () => {
             }
 
             // Verify we're at the last item
-            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
+            const lastItem = getRequired(
+                result.current.sections.flatMap((s) => s.items)[totalItems - 1]
+            );
             expect(result.current.activeItemId).toBe(lastItem.id);
 
             // One more ArrowDown should wrap to first
@@ -728,7 +732,9 @@ describe('useGlobalSearchProvider', () => {
             });
             expect(event.preventDefault).toHaveBeenCalled();
 
-            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
+            const lastItem = getRequired(
+                result.current.sections.flatMap((s) => s.items)[totalItems - 1]
+            );
             expect(result.current.activeItemId).toBe(lastItem.id);
         });
 
@@ -963,7 +969,10 @@ describe('useGlobalSearchProvider', () => {
                 result.current.setQuery('home');
             });
             act(() => {
-                result.current.handleInputKeyDown({ key: 'ArrowUp', preventDefault: jest.fn() } as any);
+                result.current.handleInputKeyDown({
+                    key: 'ArrowUp',
+                    preventDefault: jest.fn(),
+                } as any);
             });
 
             expect(result.current.activeItemId).toBe('action-home');

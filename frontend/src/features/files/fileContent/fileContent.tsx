@@ -4,7 +4,7 @@ import { formatSize } from '@/shared/utils/formatSize';
 import FileCard from '../fileCard';
 import FileListRow from '../fileListRow';
 import FileListHeader from '../fileListHeader/fileListHeader';
-import { buildFilesUrl } from '@/features/files/providers/fileProvider/fileProviderUtils';
+import { buildFilesUrl } from '@/app/routes';
 import { formatModifiedDate, formatSizeColumn, formatTypeColumn } from './fileListFormatting';
 import { isNewTabClick } from './fileLinkNavigation';
 import FileContextMenu, { type FileContextMenuAnchor } from '../fileContextMenu/fileContextMenu';

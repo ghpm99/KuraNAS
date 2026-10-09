@@ -29,11 +29,11 @@ import FileSelectionProvider from '../../selection/fileSelectionProvider';
 import { loadFilesSort, saveFilesSort } from './filesSortPreference';
 import {
     addChildrenToTree,
-    buildFilesUrl,
     extractFilePath,
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
+import { buildFilesUrl } from '@/app/routes';
 import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
