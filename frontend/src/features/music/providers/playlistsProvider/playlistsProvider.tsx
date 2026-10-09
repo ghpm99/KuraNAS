@@ -56,7 +56,7 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
     const selectedPlaylistId = Number(searchParams.get('playlist') ?? '');
     const selectedPlaylist = useMemo(
         () =>
-            Number.isFinite(selectedPlaylistId) && selectedPlaylistId > 0
+            Number.isInteger(selectedPlaylistId) && selectedPlaylistId !== 0
                 ? (playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null)
                 : null,
         [playlists, selectedPlaylistId]

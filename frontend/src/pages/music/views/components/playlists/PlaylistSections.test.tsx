@@ -147,6 +147,25 @@ describe('playlist sections', () => {
         });
     });
 
+    it('hides remove-track actions for automatic playlists with negative ids', () => {
+        const automaticPlaylist = { ...systemPlaylist, id: -1 };
+        const { container } = render(
+            <PlaylistDetailSection
+                playlist={automaticPlaylist}
+                tracks={tracks}
+                isLoading={false}
+                hasNextPage={false}
+                isFetchingNextPage={false}
+                onBack={jest.fn()}
+                onRemoveTrack={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('track-1')).toBeInTheDocument();
+        expect(container.querySelector('svg.lucide-trash2')).toBeNull();
+    });
+
     it('handles list section actions and play context', async () => {
         const onSelect = jest.fn();
         const onDelete = jest.fn();
