@@ -5,7 +5,11 @@ import {
     updateVideoPlaybackState,
     VideoPlaybackSessionDto,
 } from '@/service/videoPlayback';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    buildDirectVideoStreamUrl,
+    buildRemuxVideoStreamUrl,
+    isContainerUnplayableByBrowser,
+} from '@/features/videos/videoPlayer/videoStreamSource';
 import {
     getPlaybackErrorKindFromPlayRejection,
     type PlaybackErrorKind,
@@ -13,6 +17,11 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
+
+type StreamMode = 'direct' | 'remux';
+
+const findVideoFormat = (session: VideoPlaybackSessionDto | null, videoId: number) =>
+    session?.playlist.items.find((item) => item.video.id === videoId)?.video.format;
 
 const useVideoPlayer = ({
     videoId,
@@ -33,6 +42,10 @@ const useVideoPlayer = ({
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const remuxOffsetSecondsRef = useRef<number | null>(null);
+    const fallBackToRemuxRef = useRef<(videoToPlayId: number, seekSeconds: number) => void>(
+        () => undefined
+    );
     const syncTimerRef = useRef<number | null>(null);
     const latestPlaybackRef = useRef({
         currentTime: 0,
@@ -61,32 +74,85 @@ const useVideoPlayer = ({
     const playlist = session?.playlist ?? null;
     const playbackState = session?.playback_state ?? null;
 
-    const attachVideoSource = useCallback((videoToPlayId: number, seekSeconds?: number) => {
-        if (!videoRef.current) return;
-        setPlaybackError(null);
-        videoRef.current.src = `${getApiV1BaseUrl()}/files/video-stream/${videoToPlayId}`;
-        if (typeof seekSeconds === 'number' && seekSeconds > 0) {
-            videoRef.current.currentTime = seekSeconds;
-        }
-        videoRef.current
-            .play()
-            .then(() => setStatus('playing'))
-            .catch((rejection: unknown) => {
-                setStatus('paused');
-                setPlaybackError(getPlaybackErrorKindFromPlayRejection(rejection));
-            });
-    }, []);
+    const loadStreamSource = useCallback(
+        (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => {
+            const videoElement = videoRef.current;
+            if (!videoElement) return;
+            setPlaybackError(null);
+            if (streamMode === 'remux') {
+                remuxOffsetSecondsRef.current = seekSeconds;
+                videoElement.src = buildRemuxVideoStreamUrl(videoToPlayId, seekSeconds);
+                setCurrentTime(seekSeconds);
+            } else {
+                remuxOffsetSecondsRef.current = null;
+                videoElement.src = buildDirectVideoStreamUrl(videoToPlayId);
+                if (seekSeconds > 0) {
+                    videoElement.currentTime = seekSeconds;
+                }
+            }
+            videoElement
+                .play()
+                .then(() => setStatus('playing'))
+                .catch((rejection: unknown) => {
+                    const errorKind = getPlaybackErrorKindFromPlayRejection(rejection);
+                    if (streamMode === 'direct' && errorKind === 'unsupported') {
+                        fallBackToRemuxRef.current(videoToPlayId, seekSeconds);
+                        return;
+                    }
+                    setStatus('paused');
+                    setPlaybackError(errorKind);
+                });
+        },
+        []
+    );
 
-    const reportPlaybackError = useCallback((errorKind: PlaybackErrorKind) => {
-        setStatus('paused');
-        setPlaybackError(errorKind);
-    }, []);
+    useEffect(() => {
+        fallBackToRemuxRef.current = (videoToPlayId, seekSeconds) =>
+            loadStreamSource(videoToPlayId, seekSeconds, 'remux');
+    }, [loadStreamSource]);
+
+    const attachVideoSource = useCallback(
+        (videoToPlayId: number, seekSeconds: number, format?: string) => {
+            const isContainerUnplayable = isContainerUnplayableByBrowser(
+                format,
+                videoRef.current?.canPlayType?.bind(videoRef.current)
+            );
+            loadStreamSource(
+                videoToPlayId,
+                seekSeconds,
+                isContainerUnplayable ? 'remux' : 'direct'
+            );
+        },
+        [loadStreamSource]
+    );
+
+    const reportPlaybackError = useCallback(
+        (errorKind: PlaybackErrorKind) => {
+            const latest = latestPlaybackRef.current;
+            const currentVideoId = latest.session?.playback_state.video_id;
+            const canFallBackToRemux =
+                errorKind === 'unsupported' &&
+                remuxOffsetSecondsRef.current === null &&
+                Boolean(currentVideoId);
+            if (canFallBackToRemux && currentVideoId) {
+                loadStreamSource(currentVideoId, latest.currentTime, 'remux');
+                return;
+            }
+            setStatus('paused');
+            setPlaybackError(errorKind);
+        },
+        [loadStreamSource]
+    );
 
     const retryPlayback = useCallback(() => {
         const latest = latestPlaybackRef.current;
         const currentVideoId = latest.session?.playback_state.video_id;
         if (!currentVideoId) return;
-        attachVideoSource(currentVideoId, latest.currentTime);
+        attachVideoSource(
+            currentVideoId,
+            latest.currentTime,
+            findVideoFormat(latest.session, currentVideoId)
+        );
     }, [attachVideoSource]);
 
     const syncState = useCallback(
@@ -129,7 +195,11 @@ const useVideoPlayer = ({
         setCurrentTime(resumeTime);
         setDuration(response.playback_state.duration || 0);
         if (response.playback_state.video_id) {
-            attachVideoSource(response.playback_state.video_id, resumeTime);
+            attachVideoSource(
+                response.playback_state.video_id,
+                resumeTime,
+                findVideoFormat(response, response.playback_state.video_id)
+            );
             if (!persistProgress) {
                 void syncState({ currentTime: 0, completed: false, isPaused: false });
             }
@@ -152,12 +222,19 @@ const useVideoPlayer = ({
         }
     }, [syncState]);
 
-    const seekTo = useCallback((time: number) => {
-        if (videoRef.current) {
+    const seekTo = useCallback(
+        (time: number) => {
+            if (!videoRef.current) return;
+            const currentVideoId = latestPlaybackRef.current.session?.playback_state.video_id;
+            if (remuxOffsetSecondsRef.current !== null && currentVideoId) {
+                loadStreamSource(currentVideoId, time, 'remux');
+                return;
+            }
             videoRef.current.currentTime = time;
             setCurrentTime(time);
-        }
-    }, []);
+        },
+        [loadStreamSource]
+    );
 
     const setVolumeHandler = useCallback((newVolume: number) => {
         if (videoRef.current) {
@@ -189,7 +266,11 @@ const useVideoPlayer = ({
         setCurrentTime(0);
         setDuration(0);
         if (response.playback_state.video_id) {
-            attachVideoSource(response.playback_state.video_id, 0);
+            attachVideoSource(
+                response.playback_state.video_id,
+                0,
+                findVideoFormat(response, response.playback_state.video_id)
+            );
         }
     }, [attachVideoSource]);
 
@@ -199,7 +280,11 @@ const useVideoPlayer = ({
         setCurrentTime(0);
         setDuration(0);
         if (response.playback_state.video_id) {
-            attachVideoSource(response.playback_state.video_id, 0);
+            attachVideoSource(
+                response.playback_state.video_id,
+                0,
+                findVideoFormat(response, response.playback_state.video_id)
+            );
         }
     }, [attachVideoSource]);
 
@@ -212,11 +297,20 @@ const useVideoPlayer = ({
     }, [pause, resume, status]);
 
     const setCurrentTimeHandler = useCallback((time: number) => {
-        setCurrentTime(time);
+        setCurrentTime(time + (remuxOffsetSecondsRef.current ?? 0));
     }, []);
 
-    const setDurationHandler = useCallback((newDuration: number) => {
-        setDuration(newDuration);
+    const setDurationHandler = useCallback((loadedDuration: number) => {
+        const remuxOffsetSeconds = remuxOffsetSecondsRef.current;
+        if (remuxOffsetSeconds === null) {
+            setDuration(loadedDuration);
+            return;
+        }
+        const hasMetadataDuration = latestPlaybackRef.current.duration > 0;
+        const hasLoadedDuration = Number.isFinite(loadedDuration) && loadedDuration > 0;
+        if (!hasMetadataDuration && hasLoadedDuration) {
+            setDuration(loadedDuration + remuxOffsetSeconds);
+        }
     }, []);
 
     const onVideoEnded = useCallback(async () => {
