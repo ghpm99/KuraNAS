@@ -166,6 +166,18 @@
     white-space: nowrap;
 }
 
+.suggestion {
+    display: grid;
+    gap: var(--app-spacing-1);
+    padding: var(--app-spacing-2);
+    border-radius: 12px;
+    color: var(--app-color-text-secondary);
+}
+
+.suggestion p {
+    margin: 0;
+}
+
 .emptyState {
     display: grid;
     place-items: center;

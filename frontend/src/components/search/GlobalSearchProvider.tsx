@@ -9,6 +9,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         query,
         sections,
         isFetching,
+        suggestion,
         activeItemId,
         shortcut,
         showEmptyState,
@@ -30,6 +31,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                 query={query}
                 sections={sections}
                 isFetching={isFetching}
+                suggestion={suggestion}
                 activeItemId={activeItemId}
                 shortcut={shortcut}
                 showEmptyState={showEmptyState}

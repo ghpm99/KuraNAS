@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { appRoutes, getAnalyticsRoute, getMusicRoute, getVideoRoute } from '@/app/routes';
 import { getVideoDetailRoute, getVideoSectionForPlaylist } from '@/features/videos/components/navigation';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { searchGlobal } from '@/service/search';
+import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export type SearchItemKind =
@@ -28,6 +28,7 @@ export type SearchDialogItem = {
     label: string;
     description: string;
     meta?: string;
+    keepsDialogOpen?: boolean;
     onSelect: () => void;
 };
 
@@ -38,6 +39,9 @@ export type SearchDialogSection = {
 };
 
 const searchResultLimit = 6;
+const aiSearchMinWords = 2;
+
+const countWords = (value: string) => value.split(/\s+/).filter(Boolean).length;
 
 const slugify = (value: string) =>
     value
@@ -63,6 +67,7 @@ export const useGlobalSearchProvider = () => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
+    const [aiRequestedQuery, setAiRequestedQuery] = useState('');
     const deferredQuery = useDeferredValue(query);
     const normalizedQuery = deferredQuery.trim();
 
@@ -181,11 +186,28 @@ export const useGlobalSearchProvider = () => {
         [navigate, t]
     );
 
-    const { data, isFetching } = useQuery({
+    const { data: baseData, isFetching: isBaseFetching } = useQuery({
         queryKey: ['global-search', normalizedQuery],
         queryFn: () => searchGlobal(normalizedQuery, searchResultLimit),
         enabled: open && normalizedQuery.length >= 2,
     });
+
+    const isAiRequested = aiRequestedQuery !== '' && aiRequestedQuery === normalizedQuery;
+    const { data: aiData, isFetching: isAiFetching } = useQuery({
+        queryKey: ['global-search-ai', normalizedQuery],
+        queryFn: () => searchGlobalWithAI(normalizedQuery, searchResultLimit),
+        enabled: open && isAiRequested,
+        staleTime: 10 * 60 * 1000,
+    });
+
+    const data = aiData ?? baseData;
+    const isFetching = isBaseFetching || isAiFetching;
+    const suggestion = aiData?.suggestion ?? '';
+    const canOfferAiSearch =
+        Boolean(baseData) &&
+        !aiData &&
+        !isAiFetching &&
+        countWords(normalizedQuery) >= aiSearchMinWords;
 
     const sections = useMemo<SearchDialogSection[]>(() => {
         const nextSections: SearchDialogSection[] = [];
@@ -378,8 +400,27 @@ export const useGlobalSearchProvider = () => {
             });
         }
 
+        if (canOfferAiSearch) {
+            nextSections.push({
+                id: 'ai-search',
+                title: t('GLOBAL_SEARCH_SECTION_MORE'),
+                items: [
+                    {
+                        id: 'ai-search-expand',
+                        kind: 'action',
+                        label: t('GLOBAL_SEARCH_WITH_AI'),
+                        description: t('GLOBAL_SEARCH_WITH_AI_DESCRIPTION', {
+                            query: normalizedQuery,
+                        }),
+                        keepsDialogOpen: true,
+                        onSelect: () => setAiRequestedQuery(normalizedQuery),
+                    },
+                ],
+            });
+        }
+
         return nextSections;
-    }, [currentRoute, data, navigate, normalizedQuery, quickActions, t]);
+    }, [canOfferAiSearch, currentRoute, data, navigate, normalizedQuery, quickActions, t]);
 
     const flattenedItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
     const activeItemId = flattenedItems[activeIndex]?.id ?? '';
@@ -414,7 +455,9 @@ export const useGlobalSearchProvider = () => {
 
     const activateItem = (item: SearchDialogItem) => {
         item.onSelect();
-        closeSearch();
+        if (!item.keepsDialogOpen) {
+            closeSearch();
+        }
     };
 
     const handleInputKeyDown = (
@@ -452,6 +495,7 @@ export const useGlobalSearchProvider = () => {
         query,
         sections,
         isFetching,
+        suggestion,
         activeItemId,
         shortcut,
         showEmptyState: normalizedQuery.length >= 2 && !isFetching && sections.length === 0,
