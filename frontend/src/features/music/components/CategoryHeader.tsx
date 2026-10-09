@@ -5,7 +5,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 interface CategoryHeaderProps {
     title: string;
     subtitle?: string;
-    trackCount: number;
+    trackCount?: number;
     icon: React.ReactNode;
     gradientFrom?: string;
     gradientTo?: string;
@@ -67,9 +67,11 @@ const CategoryHeader = ({
                             {subtitle}
                         </Typography>
                     )}
-                    <Typography variant="caption" color="text.secondary">
-                        {trackCount} {t('MUSIC_TRACKS_COUNT')}
-                    </Typography>
+                    {trackCount !== undefined && (
+                        <Typography variant="caption" color="text.secondary">
+                            {trackCount} {t('MUSIC_TRACKS_COUNT')}
+                        </Typography>
+                    )}
                 </Box>
             </Box>
 

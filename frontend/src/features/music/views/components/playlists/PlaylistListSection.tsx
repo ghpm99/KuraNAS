@@ -10,6 +10,7 @@ import {
     ListItemText,
     Typography,
 } from '@mui/material';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { ListMusic, Play, Plus, Trash2 } from 'lucide-react';
 import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist } from '@/types/playlist';
@@ -181,25 +182,11 @@ export default function PlaylistListSection({
                 </Typography>
             )}
 
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={onLoadMore}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
+            <LoadMoreSentinel
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={onLoadMore}
+            />
         </Box>
     );
 }

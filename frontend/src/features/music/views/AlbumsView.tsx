@@ -3,30 +3,30 @@ import {
     Card,
     CardActionArea,
     CardContent,
-    CircularProgress,
     Grid,
     IconButton,
-    List,
     Typography,
 } from '@mui/material';
 import { Disc, Play } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
-import TrackListItem from '@/features/music/components/TrackListItem';
 import { createAlbumPlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
-import useI18n from '@/components/i18n/provider/i18nContext';
 import { getMusicAlbums, getMusicByAlbum, getMusicQueueByAlbum } from '@/service/music';
 import { MusicAlbum } from '@/types/music';
-import { Pagination } from '@/types/pagination';
-import { handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
+import {
+    handleKeyboardActivation,
+    MUSIC_COLLECTION_PAGE_SIZE,
+    resolveCollectionTrackCount,
+} from './shared';
+import MusicCollectionListFeedback from './components/MusicCollectionListFeedback';
+import MusicCollectionTrackList from './components/MusicCollectionTrackList';
 import MusicSortControl from './components/MusicSortControl';
+import { useMusicInfinitePages } from './useMusicInfinitePages';
 import { useMusicListSort } from './useMusicListSort';
 
 const loadAlbumTracks = (albumKey: string) => getMusicQueueByAlbum(albumKey).then(queueToTracks);
@@ -35,16 +35,12 @@ export default function AlbumsView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedAlbumKey = searchParams.get('album') ?? '';
     const { listSort, changeField, toggleOrder } = useMusicListSort('albums');
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-albums', listSort],
-        queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicAlbum>> =>
-            getMusicAlbums(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) =>
-            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
-    });
-    const albums = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
-    const selectedAlbum = useMemo(
+    const albumsQuery = useMusicInfinitePages<MusicAlbum>(
+        ['music-albums', listSort],
+        (pageNumber) => getMusicAlbums(pageNumber, MUSIC_COLLECTION_PAGE_SIZE, listSort)
+    );
+    const albums = albumsQuery.items;
+    const knownAlbum = useMemo(
         () => albums.find((album) => album.key === selectedAlbumKey) ?? null,
         [albums, selectedAlbumKey]
     );
@@ -68,8 +64,14 @@ export default function AlbumsView() {
         );
     };
 
-    if (selectedAlbum) {
-        return <AlbumTracksView album={selectedAlbum} onBack={handleBack} />;
+    if (selectedAlbumKey) {
+        return (
+            <AlbumTracksView
+                albumKey={selectedAlbumKey}
+                knownAlbum={knownAlbum}
+                onBack={handleBack}
+            />
+        );
     }
 
     return (
@@ -82,10 +84,13 @@ export default function AlbumsView() {
             />
             <AlbumListView
                 albums={albums}
-                isLoading={isLoading}
-                fetchNextPage={fetchNextPage}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
+                isLoading={albumsQuery.isLoading}
+                isError={albumsQuery.isError}
+                errorMessage={albumsQuery.errorMessage}
+                onRetry={albumsQuery.retry}
+                fetchNextPage={albumsQuery.fetchNextPage}
+                hasNextPage={albumsQuery.hasNextPage}
+                isFetchingNextPage={albumsQuery.isFetchingNextPage}
                 onSelect={handleSelectAlbum}
             />
         </>
@@ -95,7 +100,10 @@ export default function AlbumsView() {
 type AlbumListViewProps = {
     albums: MusicAlbum[];
     isLoading: boolean;
-    fetchNextPage: () => Promise<unknown>;
+    isError: boolean;
+    errorMessage?: string;
+    onRetry: () => void;
+    fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     onSelect: (album: MusicAlbum) => void;
@@ -104,12 +112,14 @@ type AlbumListViewProps = {
 function AlbumListView({
     albums,
     isLoading,
+    isError,
+    errorMessage,
+    onRetry,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     onSelect,
 }: AlbumListViewProps) {
-    const { t } = useI18n();
     const { replaceQueue } = useGlobalMusic();
 
     const handlePlayAlbum = async (event: React.MouseEvent, album: MusicAlbum) => {
@@ -120,144 +130,127 @@ function AlbumListView({
         }
     };
 
-    if (isLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
     return (
-        <Box sx={{ p: 2 }}>
-            <Grid container spacing={2}>
-                {albums.map((album) => (
-                    <Grid
-                        key={`${album.album}-${album.artist}`}
-                        size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}
-                    >
-                        <Card
-                            sx={{
-                                bgcolor: 'background.paper',
-                                transition: 'all 0.2s ease',
-                                '&:hover': { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' },
-                                '&:hover .play-overlay': {
-                                    opacity: 1,
-                                    transform: 'translateY(0)',
-                                },
-                            }}
+        <MusicCollectionListFeedback
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={errorMessage}
+            isEmpty={albums.length === 0}
+            emptyTitleKey="MUSIC_ALBUMS_EMPTY"
+            errorTitleKey="MUSIC_LIST_ERROR_TITLE"
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onRetry={onRetry}
+            fetchNextPage={fetchNextPage}
+        >
+            <Box sx={{ p: 2 }}>
+                <Grid container spacing={2}>
+                    {albums.map((album) => (
+                        <Grid
+                            key={`${album.album}-${album.artist}`}
+                            size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}
                         >
-                            <CardActionArea
-                                component="div"
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onSelect(album)}
-                                onKeyDown={(event) =>
-                                    handleKeyboardActivation(event, () => onSelect(album))
-                                }
-                                sx={{ position: 'relative' }}
+                            <Card
+                                sx={{
+                                    bgcolor: 'background.paper',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { bgcolor: 'rgba(var(--app-color-ink-rgb), 0.04)' },
+                                    '&:hover .play-overlay': {
+                                        opacity: 1,
+                                        transform: 'translateY(0)',
+                                    },
+                                }}
                             >
-                                <Box
-                                    sx={{
-                                        height: 140,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        bgcolor: 'secondary.dark',
-                                        background:
-                                            'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                                    }}
+                                <CardActionArea
+                                    component="div"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelect(album)}
+                                    onKeyDown={(event) =>
+                                        handleKeyboardActivation(event, () => onSelect(album))
+                                    }
+                                    sx={{ position: 'relative' }}
                                 >
-                                    <Disc size={48} opacity={0.5} />
-                                </Box>
-                                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                    <Typography variant="subtitle2" fontWeight={600} noWrap>
-                                        {album.album}
-                                    </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        noWrap
-                                        component="div"
+                                    <Box
+                                        sx={{
+                                            height: 140,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: 'secondary.dark',
+                                            background:
+                                                'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                                        }}
                                     >
-                                        {album.artist} {album.year ? `· ${album.year}` : ''}
-                                    </Typography>
-                                </CardContent>
-                                <IconButton
-                                    className="play-overlay"
-                                    onClick={(event) => void handlePlayAlbum(event, album)}
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: 50,
-                                        right: 8,
-                                        bgcolor: 'primary.main',
-                                        color: 'white',
-                                        width: 36,
-                                        height: 36,
-                                        opacity: 0,
-                                        transform: 'translateY(8px)',
-                                        transition: 'all 0.2s ease',
-                                        boxShadow:
-                                            '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
-                                        '&:hover': {
-                                            bgcolor: 'primary.light',
-                                            transform: 'translateY(0) scale(1.05)',
-                                        },
-                                    }}
-                                >
-                                    <Play size={16} fill="white" />
-                                </IconButton>
-                            </CardActionArea>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
-
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={() => fetchNextPage()}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
-        </Box>
+                                        <Disc size={48} opacity={0.5} />
+                                    </Box>
+                                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                        <Typography variant="subtitle2" fontWeight={600} noWrap>
+                                            {album.album}
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            noWrap
+                                            component="div"
+                                        >
+                                            {album.artist} {album.year ? `· ${album.year}` : ''}
+                                        </Typography>
+                                    </CardContent>
+                                    <IconButton
+                                        className="play-overlay"
+                                        onClick={(event) => void handlePlayAlbum(event, album)}
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: 50,
+                                            right: 8,
+                                            bgcolor: 'primary.main',
+                                            color: 'white',
+                                            width: 36,
+                                            height: 36,
+                                            opacity: 0,
+                                            transform: 'translateY(8px)',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow:
+                                                '0 4px 12px rgba(var(--app-color-primary-rgb), 0.4)',
+                                            '&:hover': {
+                                                bgcolor: 'primary.light',
+                                                transform: 'translateY(0) scale(1.05)',
+                                            },
+                                        }}
+                                    >
+                                        <Play size={16} fill="white" />
+                                    </IconButton>
+                                </CardActionArea>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
+        </MusicCollectionListFeedback>
     );
 }
 
-function AlbumTracksView({ album, onBack }: { album: MusicAlbum; onBack: () => void }) {
-    const { t } = useI18n();
+function AlbumTracksView({
+    albumKey,
+    knownAlbum,
+    onBack,
+}: {
+    albumKey: string;
+    knownAlbum: MusicAlbum | null;
+    onBack: () => void;
+}) {
     const { replaceQueue } = useGlobalMusic();
-    const [menuAnchor, setMenuAnchor] = useState<{
-        el: HTMLElement;
-        fileId: number;
-    } | null>(null);
-    const playbackContext = createAlbumPlaybackContext(album.album);
-
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-by-album', album.key],
-        queryFn: async ({ pageParam = 1 }): Promise<Pagination<IMusicData>> =>
-            getMusicByAlbum(album.key, pageParam, MUSIC_COLLECTION_PAGE_SIZE),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) =>
-            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
-    });
-
-    const tracks = data?.pages.flatMap((page) => page.items) ?? [];
+    const tracksQuery = useMusicInfinitePages<IMusicData>(
+        ['music-by-album', albumKey],
+        (pageNumber) => getMusicByAlbum(albumKey, pageNumber, MUSIC_COLLECTION_PAGE_SIZE)
+    );
+    const tracks = tracksQuery.items;
+    const albumName = knownAlbum?.album ?? tracks[0]?.metadata?.album ?? albumKey;
+    const playbackContext = createAlbumPlaybackContext(albumName);
 
     const queueAlbumTracks = async (trackId?: number, shuffle = false) => {
-        const allTracks = await loadAlbumTracks(album.key);
+        const allTracks = await loadAlbumTracks(albumKey);
         if (allTracks.length === 0) {
             return;
         }
@@ -274,9 +267,17 @@ function AlbumTracksView({ album, onBack }: { album: MusicAlbum; onBack: () => v
     return (
         <Box sx={{ p: 2 }}>
             <CategoryHeader
-                title={album.album}
-                subtitle={album.artist}
-                trackCount={tracks.length}
+                title={albumName}
+                subtitle={
+                    knownAlbum?.artist ??
+                    tracks[0]?.metadata?.album_artist ??
+                    tracks[0]?.metadata?.artist
+                }
+                trackCount={resolveCollectionTrackCount(
+                    knownAlbum?.track_count,
+                    tracks.length,
+                    tracksQuery.isFullyLoaded
+                )}
                 icon={<Disc size={48} opacity={0.7} />}
                 gradientFrom="#7c3aed"
                 onBack={onBack}
@@ -284,54 +285,17 @@ function AlbumTracksView({ album, onBack }: { album: MusicAlbum; onBack: () => v
                 onShuffleAll={() => void queueAlbumTracks(undefined, true)}
             />
 
-            {isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                    <CircularProgress />
-                </Box>
-            ) : (
-                <List sx={{ width: '100%' }}>
-                    {tracks.map((item, index) => (
-                        <TrackListItem
-                            key={item.id}
-                            track={item}
-                            index={index}
-                            onPlay={(track) => void queueAlbumTracks(track.id)}
-                            onAddToPlaylist={(event, fileId) =>
-                                setMenuAnchor({
-                                    el: event.currentTarget as HTMLElement,
-                                    fileId,
-                                })
-                            }
-                        />
-                    ))}
-                </List>
-            )}
-
-            <AddToPlaylistMenu
-                fileId={menuAnchor?.fileId ?? 0}
-                anchorEl={menuAnchor?.el ?? null}
-                onClose={() => setMenuAnchor(null)}
+            <MusicCollectionTrackList
+                tracks={tracks}
+                isLoading={tracksQuery.isLoading}
+                isError={tracksQuery.isError}
+                errorMessage={tracksQuery.errorMessage}
+                hasNextPage={tracksQuery.hasNextPage}
+                isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                onPlayTrack={(track) => void queueAlbumTracks(track.id)}
+                onRetry={tracksQuery.retry}
+                fetchNextPage={tracksQuery.fetchNextPage}
             />
-
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={() => fetchNextPage()}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
         </Box>
     );
 }
