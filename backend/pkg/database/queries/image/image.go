@@ -99,3 +99,12 @@ var LibraryTimelineGroupQuery string
 
 //go:embed library_folders.sql
 var LibraryFoldersQuery string
+
+//go:embed library_item_cursor.sql
+var LibraryItemCursorQuery string
+
+//go:embed library_keyset_before.sql
+var LibraryKeysetBeforeQuery string
+
+//go:embed library_order_taken_at_oldest_first.sql
+var LibraryOrderTakenAtOldestFirstQuery string

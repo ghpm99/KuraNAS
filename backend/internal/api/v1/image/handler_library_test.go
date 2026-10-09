@@ -1,8 +1,10 @@
 package image
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,6 +27,14 @@ type fakeLibraryService struct {
 	callCount     int
 	folderPage    utils.PaginationResponse[LibraryFolderDto]
 	folderRequest LibraryFolderRequest
+	neighbors     LibraryNeighborsDto
+	neighborsReq  LibraryNeighborsRequest
+}
+
+func (f *fakeLibraryService) ListLibraryNeighbors(request LibraryNeighborsRequest) (LibraryNeighborsDto, error) {
+	f.callCount++
+	f.neighborsReq = request
+	return f.neighbors, f.err
 }
 
 func (f *fakeLibraryService) ListLibraryImages(request LibraryListRequest) (LibraryPageDto, error) {
@@ -56,6 +66,7 @@ func serveLibraryRequest(service *fakeLibraryService, requestURL string) *httpte
 	handler := NewLibraryHandler(service, &imageLoggerMock{})
 	router := gin.New()
 	router.GET("/image/library", handler.ListLibraryImagesHandler)
+	router.GET("/image/library/neighbors/:file_id", handler.ListLibraryNeighborsHandler)
 	router.GET("/image/library/count", handler.CountLibraryImagesHandler)
 	router.GET("/image/library/folders", handler.ListLibraryFoldersHandler)
 	router.GET("/image/library/timeline", handler.ListLibraryTimelineHandler)
@@ -302,5 +313,67 @@ func TestListLibraryFoldersHandlerMapsServiceErrorToInternal(t *testing.T) {
 	recorder := serveLibraryRequest(service, "/image/library/folders")
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d", recorder.Code)
+	}
+}
+
+func TestListLibraryNeighborsHandlerDecodesFileFilterAndCount(t *testing.T) {
+	service := &fakeLibraryService{neighbors: LibraryNeighborsDto{
+		Before: []LibraryItemDto{{FileID: 8}},
+		After:  []LibraryItemDto{{FileID: 6}},
+	}}
+
+	recorder := serveLibraryRequest(service, "/image/library/neighbors/7?starred=true&folder=/photos&count=5")
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body %s", recorder.Code, recorder.Body.String())
+	}
+	request := service.neighborsReq
+	if request.FileID != 7 || request.Count != 5 || !request.Filter.OnlyStarred || request.Filter.Folder != "/photos" {
+		t.Fatalf("unexpected request %+v", request)
+	}
+	var body map[string][]LibraryItemDto
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(body["before"]) != 1 || body["before"][0].FileID != 8 || len(body["after"]) != 1 || body["after"][0].FileID != 6 {
+		t.Fatalf("response must expose before and after, got %s", recorder.Body.String())
+	}
+}
+
+func TestListLibraryNeighborsHandlerDefaultsCount(t *testing.T) {
+	service := &fakeLibraryService{}
+	recorder := serveLibraryRequest(service, "/image/library/neighbors/7")
+
+	if recorder.Code != http.StatusOK || service.neighborsReq.Count != defaultLibraryNeighborCount {
+		t.Fatalf("status = %d request %+v", recorder.Code, service.neighborsReq)
+	}
+}
+
+func TestListLibraryNeighborsHandlerRejectsInvalidInput(t *testing.T) {
+	for _, requestURL := range []string{
+		"/image/library/neighbors/abc",
+		"/image/library/neighbors/0",
+		"/image/library/neighbors/7?count=0",
+		"/image/library/neighbors/7?count=51",
+		"/image/library/neighbors/7?count=x",
+		"/image/library/neighbors/7?category=nope",
+	} {
+		service := &fakeLibraryService{}
+		recorder := serveLibraryRequest(service, requestURL)
+		if recorder.Code != http.StatusBadRequest || service.callCount != 0 {
+			t.Fatalf("%s: status = %d calls = %d", requestURL, recorder.Code, service.callCount)
+		}
+	}
+}
+
+func TestListLibraryNeighborsHandlerMapsServiceErrors(t *testing.T) {
+	notFound := serveLibraryRequest(&fakeLibraryService{err: fmt.Errorf("wrapped: %w", sql.ErrNoRows)}, "/image/library/neighbors/7")
+	if notFound.Code != http.StatusNotFound {
+		t.Fatalf("missing image status = %d", notFound.Code)
+	}
+
+	internal := serveLibraryRequest(&fakeLibraryService{err: errors.New("db down")}, "/image/library/neighbors/7")
+	if internal.Code != http.StatusInternalServerError {
+		t.Fatalf("internal status = %d", internal.Code)
 	}
 }

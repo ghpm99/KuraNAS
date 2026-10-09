@@ -1,7 +1,10 @@
 package image
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
+	"strconv"
 
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
@@ -70,6 +73,41 @@ func (h *LibraryHandler) ListLibraryImagesHandler(c *gin.Context) {
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, libraryPage)
+}
+
+// ListLibraryNeighborsHandler serves GET /image/library/neighbors/:file_id.
+func (h *LibraryHandler) ListLibraryNeighborsHandler(c *gin.Context) {
+	loggerModel := h.startLog(c, "ListLibraryNeighbors", "Listing gallery neighbors of an image")
+
+	fileID, err := strconv.Atoi(c.Param("file_id"))
+	if err != nil || fileID < 1 {
+		h.rejectInvalidRequest(c, loggerModel, errInvalidLibraryFileID)
+		return
+	}
+	filter, err := parseLibraryFilter(c)
+	if err != nil {
+		h.rejectInvalidRequest(c, loggerModel, err)
+		return
+	}
+	count, err := parseLibraryNeighborCount(c.Query("count"))
+	if err != nil {
+		h.rejectInvalidRequest(c, loggerModel, err)
+		return
+	}
+
+	neighbors, err := h.service.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: fileID, Filter: filter, Count: count})
+	if errors.Is(err, sql.ErrNoRows) {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_METADATA_NOT_FOUND")})
+		return
+	}
+	if err != nil {
+		h.failInternally(c, loggerModel, err)
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, neighbors)
 }
 
 // CountLibraryImagesHandler serves GET /image/library/count.

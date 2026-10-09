@@ -2,6 +2,7 @@ package image
 
 import (
 	"fmt"
+	"slices"
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/roots"
@@ -52,6 +53,40 @@ func (s *LibraryService) ListLibraryImages(request LibraryListRequest) (LibraryP
 		page.NextCursor = CursorFromItem(itemModels[len(itemModels)-1]).Encode()
 	}
 	return page, nil
+}
+
+func (s *LibraryService) ListLibraryNeighbors(request LibraryNeighborsRequest) (LibraryNeighborsDto, error) {
+	pivot, err := s.repository.GetLibraryItemCursor(request.FileID)
+	if err != nil {
+		return LibraryNeighborsDto{}, fmt.Errorf("ListLibraryNeighbors: %w", err)
+	}
+
+	neighborsQuery := LibraryListQuery{
+		Filter: resolveFolderOnDisk(request.Filter),
+		Sort:   LibrarySortTakenAt,
+		Order:  LibrarySortOrderDesc,
+		Limit:  request.Count,
+	}
+
+	olderQuery := neighborsQuery
+	olderQuery.Cursor = &pivot
+	olderModels, err := s.repository.ListLibraryImages(olderQuery)
+	if err != nil {
+		return LibraryNeighborsDto{}, fmt.Errorf("ListLibraryNeighbors: %w", err)
+	}
+
+	newerQuery := neighborsQuery
+	newerQuery.NewerThan = &pivot
+	newerModels, err := s.repository.ListLibraryImages(newerQuery)
+	if err != nil {
+		return LibraryNeighborsDto{}, fmt.Errorf("ListLibraryNeighbors: %w", err)
+	}
+	slices.Reverse(newerModels)
+
+	return LibraryNeighborsDto{
+		Before: toLibraryItemDtos(newerModels),
+		After:  toLibraryItemDtos(olderModels),
+	}, nil
 }
 
 func (s *LibraryService) CountLibraryImages(filter LibraryFilter) (LibraryCountDto, error) {

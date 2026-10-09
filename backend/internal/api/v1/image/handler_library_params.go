@@ -12,7 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const maxLibraryNameQueryLength = 200
+const (
+	maxLibraryNameQueryLength   = 200
+	defaultLibraryNeighborCount = 20
+	maxLibraryNeighborCount     = 50
+)
 
 var (
 	errInvalidLibraryCategory = errors.New("invalid library category")
@@ -23,6 +27,8 @@ var (
 	errInvalidLibraryStarred  = errors.New("invalid library starred")
 	errInvalidLibraryQuery    = errors.New("invalid library query")
 	errInvalidLibraryFolder   = errors.New("invalid library folder")
+	errInvalidLibraryFileID   = errors.New("invalid library file id")
+	errInvalidLibraryCount    = errors.New("invalid library neighbors count")
 	errLibraryKeysetOnly      = errors.New("library cursor requires taken_at desc ordering")
 )
 
@@ -36,6 +42,7 @@ var libraryErrorMessageKeys = map[error]string{
 	errInvalidLibraryStarred:  "ERROR_IMAGE_LIBRARY_INVALID_STARRED",
 	errInvalidLibraryQuery:    "ERROR_IMAGE_LIBRARY_INVALID_QUERY",
 	errInvalidLibraryFolder:   "ERROR_IMAGE_LIBRARY_INVALID_FOLDER",
+	errInvalidLibraryCount:    "ERROR_IMAGE_LIBRARY_INVALID_COUNT",
 	errLibraryKeysetOnly:      "ERROR_IMAGE_LIBRARY_KEYSET_REQUIRES_DATE_SORT",
 }
 
@@ -196,4 +203,15 @@ func parseLibraryDate(rawDate string, isEndOfDayWhenDateOnly bool) (*time.Time, 
 	}
 	instant = instant.UTC()
 	return &instant, nil
+}
+
+func parseLibraryNeighborCount(rawCount string) (int, error) {
+	if rawCount == "" {
+		return defaultLibraryNeighborCount, nil
+	}
+	count, err := strconv.Atoi(rawCount)
+	if err != nil || count < 1 || count > maxLibraryNeighborCount {
+		return 0, errInvalidLibraryCount
+	}
+	return count, nil
 }

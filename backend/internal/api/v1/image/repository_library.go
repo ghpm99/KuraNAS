@@ -5,6 +5,10 @@ import (
 	"fmt"
 
 	"nas-go/api/pkg/database"
+	queries "nas-go/api/pkg/database/queries/image"
+	"nas-go/api/pkg/utils"
+
+	"github.com/lib/pq"
 )
 
 type LibraryRepository struct {
@@ -60,6 +64,21 @@ func (r *LibraryRepository) ListLibraryImages(query LibraryListQuery) ([]Library
 		return nil, fmt.Errorf("ListLibraryImages: %w", err)
 	}
 	return items, nil
+}
+
+func (r *LibraryRepository) GetLibraryItemCursor(fileID int) (LibraryCursor, error) {
+	var takenAt sql.NullTime
+	var cursor LibraryCursor
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.LibraryItemCursorQuery, pq.Array(utils.ImageFormats), fileID).Scan(&takenAt, &cursor.FileID)
+	})
+	if err != nil {
+		return LibraryCursor{}, fmt.Errorf("GetLibraryItemCursor: %w", err)
+	}
+	if takenAt.Valid {
+		cursor.TakenAt = &takenAt.Time
+	}
+	return cursor, nil
 }
 
 func (r *LibraryRepository) CountLibraryImages(filter LibraryFilter) (int, error) {

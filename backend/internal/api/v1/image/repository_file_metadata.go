@@ -22,10 +22,12 @@ func NewImageSummaryRepository(db *database.DbContext) *ImageSummaryRepository {
 
 func (r *ImageSummaryRepository) GetImageSummaryByFileID(fileID int) (ImageSummaryDto, error) {
 	var summary ImageSummaryDto
+	var takenAt sql.NullTime
+	var gpsLatitude, gpsLongitude sql.NullFloat64
 
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
 		row := tx.QueryRow(queries.GetImageSummaryByFileIDQuery, fileID)
-		return row.Scan(
+		scanErr := row.Scan(
 			&summary.Width,
 			&summary.Height,
 			&summary.Make,
@@ -36,7 +38,25 @@ func (r *ImageSummaryRepository) GetImageSummaryByFileID(fileID int) (ImageSumma
 			&summary.FNumber,
 			&summary.ISO,
 			&summary.FocalLength,
+			&summary.Software,
+			&summary.Description,
+			&takenAt,
+			&gpsLatitude,
+			&gpsLongitude,
+			&summary.ClassificationConfidence,
+			&summary.SuggestedName,
 		)
+		if scanErr != nil {
+			return scanErr
+		}
+		if takenAt.Valid {
+			summary.TakenAt = &takenAt.Time
+		}
+		if gpsLatitude.Valid && gpsLongitude.Valid {
+			summary.GPSLatitude = &gpsLatitude.Float64
+			summary.GPSLongitude = &gpsLongitude.Float64
+		}
+		return nil
 	})
 	if err != nil {
 		return ImageSummaryDto{}, fmt.Errorf("GetImageSummaryByFileID: %w", err)
