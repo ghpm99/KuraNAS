@@ -57,4 +57,28 @@ describe('service/search', () => {
         });
         expect(result).toEqual(response);
     });
+
+    it('forwards the abort signal to the global search request', async () => {
+        mockedApiGet.mockResolvedValue({ data: emptySearchResult });
+        const { signal } = new AbortController();
+
+        await searchGlobal('mix', 6, signal);
+
+        expect(mockedApiGet).toHaveBeenCalledWith('/search/global', {
+            params: { q: 'mix', limit: 6 },
+            signal,
+        });
+    });
+
+    it('forwards the abort signal to the AI search request', async () => {
+        mockedApiGet.mockResolvedValue({ data: emptySearchResult });
+        const { signal } = new AbortController();
+
+        await searchGlobalWithAI('my trip', 6, signal);
+
+        expect(mockedApiGet).toHaveBeenCalledWith('/search/global/ai', {
+            params: { q: 'my trip', limit: 6 },
+            signal,
+        });
+    });
 });

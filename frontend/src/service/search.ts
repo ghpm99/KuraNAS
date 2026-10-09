@@ -73,25 +73,32 @@ export interface GlobalSearchResponse {
     images: GlobalSearchImageResult[];
 }
 
-export const searchGlobal = async (query: string, limit = 6): Promise<GlobalSearchResponse> => {
+export const searchGlobal = async (
+    query: string,
+    limit = 6,
+    signal?: AbortSignal
+): Promise<GlobalSearchResponse> => {
     const response = await apiBase.get<GlobalSearchResponse>('/search/global', {
         params: {
             q: query,
             limit,
         },
+        signal,
     });
     return response.data;
 };
 
 export const searchGlobalWithAI = async (
     query: string,
-    limit = 6
+    limit = 6,
+    signal?: AbortSignal
 ): Promise<GlobalSearchResponse> => {
     const response = await apiBase.get<GlobalSearchResponse>('/search/global/ai', {
         params: {
             q: query,
             limit,
         },
+        signal,
     });
     return response.data;
 };

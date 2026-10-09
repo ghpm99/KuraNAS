@@ -111,6 +111,8 @@
 	"GLOBAL_SEARCH_PLAYLIST_META": "{{scope}} · {{count}} items",
 	"GLOBAL_SEARCH_EMPTY_TITLE": "Nothing matched this search",
 	"GLOBAL_SEARCH_EMPTY_DESCRIPTION": "Try another title, folder, artist, or use one of the quick actions.",
+	"GLOBAL_SEARCH_ERROR_TITLE": "Could not search right now",
+	"GLOBAL_SEARCH_UPDATING": "Updating results…",
 	"OPEN_NAVIGATION_MENU": "Open navigation menu",
 	"NOTIFICATIONS": "Notifications",
 	"AVATAR_ALT": "Avatar",

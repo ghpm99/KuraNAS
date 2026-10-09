@@ -3,6 +3,11 @@ import useGlobalSearchProvider from './useGlobalSearchProvider';
 
 const mockNavigate = jest.fn();
 
+jest.mock('@/components/hooks/useDebouncedValue/useDebouncedValue', () => ({
+    __esModule: true,
+    default: <TValue,>(value: TValue) => value,
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
