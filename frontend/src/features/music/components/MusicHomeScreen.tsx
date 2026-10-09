@@ -1,8 +1,11 @@
 import { Button } from '@mui/material';
+import { Disc } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getMusicRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useMusicHomeScreen } from '@/features/music/components/useMusicHomeScreen';
+import CoverArt from '@/features/music/components/CoverArt';
+import { getAlbumCoverUrl } from '@/service/musicCover';
 import styles from './MusicHomeScreen.module.css';
 
 const MusicHomeScreen = () => {
@@ -283,6 +286,12 @@ const MusicHomeScreen = () => {
                                 key={`${album.artist}-${album.album}`}
                                 className={styles.sectionCard}
                             >
+                                <div className={styles.cardCover}>
+                                    <CoverArt
+                                        src={getAlbumCoverUrl(album.key, 256)}
+                                        fallback={<Disc size={40} opacity={0.5} />}
+                                    />
+                                </div>
                                 <span className={styles.cardEyebrow}>{t('MUSIC_ALBUMS')}</span>
                                 <h3 className={styles.cardTitle}>{album.album}</h3>
                                 <p className={styles.cardDescription}>

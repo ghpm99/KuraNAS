@@ -1,5 +1,5 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
-import { ListPlus, MoreVertical, Pause, Play } from 'lucide-react';
+import { ListPlus, MoreVertical, Music, Pause, Play } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import {
@@ -9,6 +9,8 @@ import {
     getTrackDurationSeconds,
 } from '@/utils/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { getTrackCoverUrl } from '@/service/musicCover';
+import CoverArt from './CoverArt';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import AddToPlaylistMenu from './AddToPlaylistMenu';
 import TrackContextMenu from './contextMenu/TrackContextMenu';
@@ -131,6 +133,25 @@ const TrackListItem = ({
                             </Box>
                         </>
                     )}
+                </Box>
+
+                <Box
+                    sx={{
+                        width: 36,
+                        height: 36,
+                        flexShrink: 0,
+                        borderRadius: 0.5,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'action.hover',
+                    }}
+                >
+                    <CoverArt
+                        src={getTrackCoverUrl(track.id, 96)}
+                        fallback={<Music size={16} opacity={0.5} />}
+                    />
                 </Box>
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>

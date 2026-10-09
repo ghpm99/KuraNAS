@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
+import CoverArt from '@/features/music/components/CoverArt';
+import { getTrackCoverUrl } from '@/service/musicCover';
 import QueueDrawer from '@/features/music/components/playlist/QueueDrawer';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 import ExpandedPlayerSheet from './ExpandedPlayerSheet';
@@ -104,6 +106,36 @@ const GlobalPlayerControl = () => {
 
     const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
 
+    const playbackIndicator = isPlaying ? (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '2px',
+                height: 18,
+            }}
+        >
+            {[1, 2, 3].map((bar) => (
+                <Box
+                    key={bar}
+                    sx={{
+                        width: 3,
+                        bgcolor: 'white',
+                        borderRadius: 1,
+                        height: '10px',
+                        animation: `eqPlayer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
+                        '@keyframes eqPlayer': {
+                            '0%': { height: '4px' },
+                            '100%': { height: '16px' },
+                        },
+                    }}
+                />
+            ))}
+        </Box>
+    ) : (
+        <Volume2 size={22} color="white" />
+    );
+
     return (
         <>
             <Card
@@ -147,40 +179,20 @@ const GlobalPlayerControl = () => {
                                 height: { xs: 38, sm: 46 },
                                 bgcolor: 'primary.dark',
                                 borderRadius: 1.5,
+                                overflow: 'hidden',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 flexShrink: 0,
                             }}
                         >
-                            {isPlaying ? (
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'flex-end',
-                                        gap: '2px',
-                                        height: 18,
-                                    }}
-                                >
-                                    {[1, 2, 3].map((bar) => (
-                                        <Box
-                                            key={bar}
-                                            sx={{
-                                                width: 3,
-                                                bgcolor: 'white',
-                                                borderRadius: 1,
-                                                height: '10px',
-                                                animation: `eqPlayer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
-                                                '@keyframes eqPlayer': {
-                                                    '0%': { height: '4px' },
-                                                    '100%': { height: '16px' },
-                                                },
-                                            }}
-                                        />
-                                    ))}
-                                </Box>
+                            {currentTrack ? (
+                                <CoverArt
+                                    src={getTrackCoverUrl(currentTrack.id, 96)}
+                                    fallback={playbackIndicator}
+                                />
                             ) : (
-                                <Volume2 size={22} color="white" />
+                                playbackIndicator
                             )}
                         </Box>
                         <Box sx={{ minWidth: 0 }}>

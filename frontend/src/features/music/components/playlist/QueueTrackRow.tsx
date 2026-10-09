@@ -1,5 +1,5 @@
 import { Box, IconButton, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
-import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, GripVertical, Music, Trash2 } from 'lucide-react';
 import type { DragEvent } from 'react';
 import type { QueueTrack } from '@/features/music/providers/globalMusic/queueEntries';
 import {
@@ -8,6 +8,8 @@ import {
     formatMusicDuration,
     getTrackDurationSeconds,
 } from '@/utils/music';
+import { getTrackCoverUrl } from '@/service/musicCover';
+import CoverArt from '../CoverArt';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 type QueueTrackRowProps = {
@@ -82,7 +84,25 @@ export default function QueueTrackRow({
                     <GripVertical size={14} />
                 </Box>
             )}
-            <ListItemButton onClick={onPlay} sx={{ borderRadius: 1, py: 0.5, px: 1, minWidth: 0 }}>
+            <ListItemButton onClick={onPlay} sx={{ borderRadius: 1, py: 0.5, px: 1, minWidth: 0, gap: 1 }}>
+                <Box
+                    sx={{
+                        width: 32,
+                        height: 32,
+                        flexShrink: 0,
+                        borderRadius: 0.5,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'action.hover',
+                    }}
+                >
+                    <CoverArt
+                        src={getTrackCoverUrl(track.id, 96)}
+                        fallback={<Music size={14} opacity={0.5} />}
+                    />
+                </Box>
                 <ListItemText
                     primary={trackTitle}
                     secondary={getMusicArtist(track)}

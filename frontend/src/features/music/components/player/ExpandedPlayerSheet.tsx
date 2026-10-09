@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
+import CoverArt from '@/features/music/components/CoverArt';
+import { getTrackCoverUrl } from '@/service/musicCover';
 import { getMusicArtist, getMusicTitle } from '@/utils/music';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
@@ -58,6 +60,12 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
     const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
     const isRepeatActive = repeatMode !== 'none';
 
+    const playbackIcon = isPlaying ? (
+        <Pause size={48} color="white" />
+    ) : (
+        <Play size={48} color="white" />
+    );
+
     const openQueue = () => {
         onClose();
         setQueueOpen(true);
@@ -91,10 +99,13 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
                 </Box>
 
                 <Box className={styles.artwork}>
-                    {isPlaying ? (
-                        <Pause size={48} color="white" />
+                    {currentTrack ? (
+                        <CoverArt
+                            src={getTrackCoverUrl(currentTrack.id, 512)}
+                            fallback={playbackIcon}
+                        />
                     ) : (
-                        <Play size={48} color="white" />
+                        playbackIcon
                     )}
                 </Box>
 
