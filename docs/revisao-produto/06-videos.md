@@ -20,7 +20,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 02. Reconciliação de vídeos existentes sem `video_metadata`
 - [x] 03. Extensões ausentes (`.m4v .mpg .mpeg .m2ts .3gp .vob`)
 - [x] 04. MIME explícito para formatos de vídeo
-- [ ] 05. Erro de reprodução visível no player com ação "baixar original"
+- [x] 05. Erro de reprodução visível no player com ação "baixar original"
 - [ ] 06. Remux sob demanda (mkv/avi com H.264 → MP4 fragmentado)
 - [ ] 07. Transcode sob demanda de codecs não suportados (HEVC etc.) → H.264/AAC
 

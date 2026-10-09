@@ -90,6 +90,9 @@ export default function useVideoPlayerScreen() {
         playlist,
         playbackState,
         onVideoEnded,
+        playbackError,
+        reportPlaybackError,
+        retryPlayback,
     } = useVideoPlayer({
         videoId,
         playlistId: resolvedPlaylistId,
@@ -317,5 +320,8 @@ export default function useVideoPlayerScreen() {
         isFullscreen,
         setCurrentTime,
         setDuration,
+        playbackError,
+        reportPlaybackError,
+        retryPlayback,
     };
 }

@@ -302,6 +302,68 @@ describe('hooks/useVideoPlayer', () => {
         expect(result.current.status).toBe('paused');
     });
 
+    const startWithRejectingNextPlay = async (rejection: unknown) => {
+        const rendered = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        const fakeVideo = createFakeVideo();
+        act(() => {
+            rendered.result.current.videoRef.current = fakeVideo;
+        });
+        await act(async () => {
+            await rendered.result.current.playVideo();
+        });
+        fakeVideo.play.mockImplementationOnce(() => Promise.reject(rejection));
+        await act(async () => {
+            await rendered.result.current.nextVideo();
+        });
+        return { ...rendered, fakeVideo };
+    };
+
+    it('does not flag an error when play is rejected by the autoplay policy', async () => {
+        const { result } = await startWithRejectingNextPlay(
+            new DOMException('blocked', 'NotAllowedError')
+        );
+        expect(result.current.status).toBe('paused');
+        expect(result.current.playbackError).toBeNull();
+    });
+
+    it('flags unsupported when play is rejected with NotSupportedError', async () => {
+        const { result } = await startWithRejectingNextPlay(
+            new DOMException('nope', 'NotSupportedError')
+        );
+        expect(result.current.playbackError).toBe('unsupported');
+    });
+
+    it('flags unknown when play is rejected with another error', async () => {
+        const { result } = await startWithRejectingNextPlay(new Error('play failed'));
+        expect(result.current.playbackError).toBe('unknown');
+    });
+
+    it('reports a playback error and retries by reattaching the source', async () => {
+        const { result, fakeVideo } = await startWithRejectingNextPlay(new Error('play failed'));
+        expect(result.current.playbackError).toBe('unknown');
+
+        act(() => {
+            result.current.reportPlaybackError('network');
+        });
+        expect(result.current.playbackError).toBe('network');
+        expect(result.current.status).toBe('paused');
+
+        fakeVideo.src = '';
+        await act(async () => {
+            result.current.retryPlayback();
+        });
+        expect(fakeVideo.src).toContain('/files/video-stream/8');
+        expect(result.current.playbackError).toBeNull();
+    });
+
+    it('ignores retry before any session is loaded', () => {
+        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
+        act(() => {
+            result.current.retryPlayback();
+        });
+        expect(result.current.playbackError).toBeNull();
+    });
+
     it('tolerates null videoRef for control operations', async () => {
         mockStartVideoPlayback.mockResolvedValue({
             ...makeSession(0),

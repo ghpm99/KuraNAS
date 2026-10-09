@@ -44,6 +44,9 @@ export default function VideoPlayerScreen() {
         isFullscreen,
         setCurrentTime,
         setDuration,
+        playbackError,
+        reportPlaybackError,
+        retryPlayback,
     } = useVideoPlayerScreen();
     useDocumentTitle(contextTitle);
 
@@ -64,6 +67,9 @@ export default function VideoPlayerScreen() {
                     originBadgeLabel={originBadgeLabel}
                     contextDescription={contextDescription}
                     metadataLine={metadataLine}
+                    playbackError={playbackError}
+                    onPlaybackError={reportPlaybackError}
+                    onRetryPlayback={retryPlayback}
                 >
                     <VideoControls
                         currentTime={currentTime}
