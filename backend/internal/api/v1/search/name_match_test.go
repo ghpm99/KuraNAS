@@ -5,28 +5,6 @@ import (
 	"testing"
 )
 
-func TestSplitSearchTermsLowercasesDedupesAndCapsTerms(t *testing.T) {
-	cases := []struct {
-		name     string
-		query    string
-		expected []string
-	}{
-		{"single", "Beach", []string{"beach"}},
-		{"multiple spaces and tabs", "  Beach \t Holiday\n", []string{"beach", "holiday"}},
-		{"duplicates ignored", "trip TRIP trip", []string{"trip"}},
-		{"keeps one letter terms", "a b", []string{"a", "b"}},
-		{"caps at five terms", "a b c d e f g", []string{"a", "b", "c", "d", "e"}},
-		{"blank", "   ", []string{}},
-	}
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			if got := splitSearchTerms(testCase.query); !reflect.DeepEqual(got, testCase.expected) {
-				t.Fatalf("splitSearchTerms(%q) = %v, want %v", testCase.query, got, testCase.expected)
-			}
-		})
-	}
-}
-
 func TestBuildNameMatchEscapesWildcardsAndPicksLongestTermAsDriver(t *testing.T) {
 	match, hasTerms := buildNameMatch("100%_ Holiday")
 	if !hasTerms {

@@ -172,7 +172,7 @@ func (r *Repository) SearchLibraryTracks(searchText string, page int, pageSize i
 		},
 	}
 
-	patterns, hasTerms := buildTrackSearchPatterns(searchText)
+	patterns, hasTerms := utils.BuildSearchTermPatterns(searchText)
 	if !hasTerms {
 		return paginationResponse, nil
 	}
@@ -181,8 +181,8 @@ func (r *Repository) SearchLibraryTracks(searchText string, page int, pageSize i
 		pq.Array(utils.AudioFormats),
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
-		patterns.drivingPattern,
-		pq.Array(patterns.allPatterns),
+		patterns.DrivingPattern,
+		pq.Array(patterns.AllPatterns),
 	}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
