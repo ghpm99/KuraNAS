@@ -161,20 +161,6 @@ func TestSearchHandlerMapsServiceFailures(t *testing.T) {
 	}
 }
 
-func TestBuildContainsNamePatternEscapesLikeWildcards(t *testing.T) {
-	tests := map[string]string{
-		"relatorio": "%relatorio%",
-		"100%":      `%100\%%`,
-		"a_b":       `%a\_b%`,
-		`c\d`:       `%c\\d%`,
-	}
-	for query, expected := range tests {
-		if pattern := buildContainsNamePattern(query); pattern != expected {
-			t.Fatalf("query %q: expected %q, got %q", query, expected, pattern)
-		}
-	}
-}
-
 func TestBuildDescendantsPathPrefixAppendsSeparatorOnce(t *testing.T) {
 	separator := string(filepath.Separator)
 	if prefix := buildDescendantsPathPrefix(separator + "srv"); prefix != separator+"srv"+separator {

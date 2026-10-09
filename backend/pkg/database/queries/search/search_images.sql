@@ -11,23 +11,27 @@ FROM
     LEFT JOIN image_metadata im ON hf.id = im.file_id
 WHERE
     hf.deleted_at IS NULL
-    AND hf.format = ANY($2)
-    AND (
-        hf.name ILIKE '%' || $1 || '%'
-        OR hf.path ILIKE '%' || $1 || '%'
-        OR COALESCE(im.make, '') ILIKE '%' || $1 || '%'
-        OR COALESCE(im.model, '') ILIKE '%' || $1 || '%'
-        OR COALESCE(im.artist, '') ILIKE '%' || $1 || '%'
-        OR COALESCE(im.image_description, '') ILIKE '%' || $1 || '%'
-        OR COALESCE(im.ai_search_text, '') LIKE '%' || LOWER($1) || '%'
+    AND hf.format = ANY($6)
+    AND hf.id IN (
+        SELECT name_match.id
+        FROM home_file name_match
+        WHERE name_match.deleted_at IS NULL
+            AND lower(name_match.name) LIKE $1
+            AND lower(name_match.name) LIKE ALL ($2::text[])
+        UNION
+        SELECT content_match.file_id
+        FROM image_metadata content_match
+        WHERE content_match.ai_search_text LIKE $1
+            AND content_match.ai_search_text LIKE ALL ($2::text[])
     )
 ORDER BY
     CASE
-        WHEN LOWER(hf.name) = LOWER($1) THEN 0
-        WHEN hf.name ILIKE $1 || '%' THEN 1
-        ELSE 2
+        WHEN lower(hf.name) = $3 THEN 0
+        WHEN lower(hf.name) LIKE $4 THEN 1
+        WHEN lower(hf.name) LIKE $5 THEN 2
+        ELSE 3
     END,
     hf.updated_at DESC,
     hf.name ASC
 LIMIT
-    $3;
+    $7;

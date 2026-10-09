@@ -9,12 +9,6 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
-var likeWildcardEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
-
-func buildContainsNamePattern(query string) string {
-	return "%" + likeWildcardEscaper.Replace(query) + "%"
-}
-
 func buildDescendantsPathPrefix(folderPath string) string {
 	separator := string(filepath.Separator)
 	if strings.HasSuffix(folderPath, separator) {
@@ -24,7 +18,7 @@ func buildDescendantsPathPrefix(folderPath string) string {
 }
 
 func (s *Service) SearchFilesByName(params FileSearchParams) (utils.PaginationResponse[FileDto], error) {
-	namePattern := buildContainsNamePattern(params.Query)
+	namePattern := utils.BuildContainsLikePattern(params.Query)
 
 	if params.ParentID == 0 {
 		models, err := s.Repository.SearchActiveFilesByName(namePattern, params.Page, params.PageSize)

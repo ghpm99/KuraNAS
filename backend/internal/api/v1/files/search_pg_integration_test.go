@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/testutil"
+	"nas-go/api/pkg/utils"
 )
 
 func insertSearchRow(t *testing.T, repo *Repository, name string, path string, parentPath string, fileType FileType) {
@@ -64,7 +65,7 @@ func TestPostgres_SearchGlobalIsCaseInsensitiveSkipsDeletedAndListsDirectoriesFi
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByName(buildContainsNamePattern("RELATORIO"), 1, 50)
+	page, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("RELATORIO"), 1, 50)
 	if err != nil {
 		t.Fatalf("global search: %v", err)
 	}
@@ -79,7 +80,7 @@ func TestPostgres_SearchUnderPathReturnsOnlyDescendants(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByNameUnderPath("/srv/docs/", buildContainsNamePattern("relatorio"), 1, 50)
+	page, err := repo.SearchActiveFilesByNameUnderPath("/srv/docs/", utils.BuildContainsLikePattern("relatorio"), 1, 50)
 	if err != nil {
 		t.Fatalf("under path search: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestPostgres_SearchUnderPathMatchesWindowsPaths(t *testing.T) {
 	insertSearchRow(t, repo, "nota.txt", `D:\Pasta\sub\nota.txt`, `D:\Pasta\sub`, File)
 	insertSearchRow(t, repo, "nota.txt", `D:\Pasta2\nota.txt`, `D:\Pasta2`, File)
 
-	page, err := repo.SearchActiveFilesByNameUnderPath(`D:\Pasta\`, buildContainsNamePattern("nota"), 1, 50)
+	page, err := repo.SearchActiveFilesByNameUnderPath(`D:\Pasta\`, utils.BuildContainsLikePattern("nota"), 1, 50)
 	if err != nil {
 		t.Fatalf("windows search: %v", err)
 	}
@@ -110,7 +111,7 @@ func TestPostgres_SearchChildrenReturnsOnlyDirectChildren(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveChildrenByName("/srv/docs", buildContainsNamePattern("relatorio"), 1, 50)
+	page, err := repo.SearchActiveChildrenByName("/srv/docs", utils.BuildContainsLikePattern("relatorio"), 1, 50)
 	if err != nil {
 		t.Fatalf("children search: %v", err)
 	}
@@ -125,7 +126,7 @@ func TestPostgres_SearchTreatsPercentAndUnderscoreLiterally(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	page, err := repo.SearchActiveFilesByName(buildContainsNamePattern("100%_"), 1, 50)
+	page, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("100%_"), 1, 50)
 	if err != nil {
 		t.Fatalf("escaped search: %v", err)
 	}
@@ -139,11 +140,11 @@ func TestPostgres_SearchPaginatesCompleteResults(t *testing.T) {
 	repo := NewRepository(ctx)
 	seedSearchTree(t, repo)
 
-	firstPage, err := repo.SearchActiveFilesByName(buildContainsNamePattern("relatorio"), 1, 2)
+	firstPage, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("relatorio"), 1, 2)
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
-	secondPage, err := repo.SearchActiveFilesByName(buildContainsNamePattern("relatorio"), 2, 2)
+	secondPage, err := repo.SearchActiveFilesByName(utils.BuildContainsLikePattern("relatorio"), 2, 2)
 	if err != nil {
 		t.Fatalf("second page: %v", err)
 	}

@@ -8,18 +8,18 @@ FROM
     home_file hf
 WHERE
     hf.deleted_at IS NULL
-    AND hf.format = ANY($2)
-    AND (
-        hf.name ILIKE '%' || $1 || '%'
-        OR hf.path ILIKE '%' || $1 || '%'
-    )
+    AND hf.format = ANY($6)
+    AND lower(hf.name) LIKE $1
+    AND lower(hf.name) LIKE ALL ($2::text[])
 ORDER BY
     CASE
-        WHEN LOWER(hf.name) = LOWER($1) THEN 0
-        WHEN hf.name ILIKE $1 || '%' THEN 1
-        ELSE 2
+        WHEN lower(hf.name) = $3 THEN 0
+        WHEN lower(hf.name) LIKE $4 THEN 1
+        WHEN lower(hf.name) LIKE $5 THEN 2
+        ELSE 3
     END,
+    hf.starred DESC,
     hf.updated_at DESC,
     hf.name ASC
 LIMIT
-    $3;
+    $7;
