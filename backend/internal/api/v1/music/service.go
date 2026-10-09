@@ -109,12 +109,7 @@ func (s *Service) DeletePlaylist(id int) error {
 
 func (s *Service) GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error) {
 	if playlistID < 0 {
-		indexEntries, err := s.Repository.GetLibraryIndexEntries()
-		if err != nil {
-			return utils.PaginationResponse[PlaylistTrackDto]{}, err
-		}
-
-		fileIDs, err := s.automaticPlaylistTrackIDs(clientID, playlistID, indexEntries)
+		fileIDs, err := s.automaticPlaylistTrackIDs(clientID, playlistID)
 		if err != nil {
 			return utils.PaginationResponse[PlaylistTrackDto]{}, err
 		}

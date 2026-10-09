@@ -1,10 +1,5 @@
 package music
 
-import (
-	"database/sql"
-	"time"
-)
-
 const (
 	AutoPlaylistContinueListeningID = -1
 	AutoPlaylistRecentlyAddedID     = -2
@@ -23,24 +18,6 @@ const (
 	autoPlaylistRecentlyAddedKey     = "recently-added"
 	autoPlaylistFavoritesKey         = "favorites"
 )
-
-type MusicLibraryIndexEntryModel struct {
-	FileID          int
-	FileName        string
-	FilePath        string
-	ParentPath      string
-	Starred         bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	LastInteraction sql.NullTime
-	Title           string
-	Artist          string
-	AlbumArtist     string
-	Album           string
-	Genre           string
-	Year            string
-	TrackNumber     string
-}
 
 type MusicArtistGroupDto struct {
 	Key        string `json:"key"`

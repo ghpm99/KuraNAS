@@ -43,8 +43,50 @@ var UpsertPlayerStateQuery string
 //go:embed get_library_tracks.sql
 var GetLibraryTracksQuery string
 
-//go:embed get_library_index_entries.sql
-var GetLibraryIndexEntriesQuery string
+//go:embed get_library_artist_groups.sql
+var GetLibraryArtistGroupsQuery string
+
+//go:embed get_library_album_groups.sql
+var GetLibraryAlbumGroupsQuery string
+
+//go:embed get_library_genre_groups.sql
+var GetLibraryGenreGroupsQuery string
+
+//go:embed get_library_folder_groups.sql
+var GetLibraryFolderGroupsQuery string
+
+//go:embed get_library_summary.sql
+var GetLibrarySummaryQuery string
+
+//go:embed get_library_track_ids_by_artist.sql
+var GetLibraryTrackIDsByArtistQuery string
+
+//go:embed get_library_track_ids_by_album.sql
+var GetLibraryTrackIDsByAlbumQuery string
+
+//go:embed get_library_track_ids_by_genre.sql
+var GetLibraryTrackIDsByGenreQuery string
+
+//go:embed get_library_track_ids_by_folder.sql
+var GetLibraryTrackIDsByFolderQuery string
+
+//go:embed get_recent_library_file_ids.sql
+var GetRecentLibraryFileIDsQuery string
+
+//go:embed get_favorite_library_file_ids.sql
+var GetFavoriteLibraryFileIDsQuery string
+
+//go:embed get_artist_cluster_inputs.sql
+var GetArtistClusterInputsQuery string
+
+//go:embed get_library_file_ids_by_artist_keys.sql
+var GetLibraryFileIDsByArtistKeysQuery string
+
+//go:embed select_audio_without_catalog_keys.sql
+var SelectAudioWithoutCatalogKeysQuery string
+
+//go:embed update_audio_catalog_keys.sql
+var UpdateAudioCatalogKeysQuery string
 
 //go:embed get_library_files_by_ids.sql
 var GetLibraryFilesByIDsQuery string

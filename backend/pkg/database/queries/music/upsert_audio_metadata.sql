@@ -30,10 +30,16 @@ INSERT INTO
         disc_total,
         track_total,
         tags_extracted_version,
-        created_at
+        created_at,
+        catalog_artist_key,
+        catalog_artist_label,
+        catalog_album_key,
+        catalog_album_label,
+        catalog_genre_keys,
+        catalog_genre_labels
     )
 VALUES
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31) ON CONFLICT (file_id, PATH)
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
 SET
@@ -64,7 +70,13 @@ SET
     track_no = EXCLUDED.track_no,
     disc_total = EXCLUDED.disc_total,
     track_total = EXCLUDED.track_total,
-    tags_extracted_version = EXCLUDED.tags_extracted_version
+    tags_extracted_version = EXCLUDED.tags_extracted_version,
+    catalog_artist_key = EXCLUDED.catalog_artist_key,
+    catalog_artist_label = EXCLUDED.catalog_artist_label,
+    catalog_album_key = EXCLUDED.catalog_album_key,
+    catalog_album_label = EXCLUDED.catalog_album_label,
+    catalog_genre_keys = EXCLUDED.catalog_genre_keys,
+    catalog_genre_labels = EXCLUDED.catalog_genre_labels
 RETURNING
     id,
     created_at;

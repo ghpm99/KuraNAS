@@ -25,6 +25,10 @@ type fakeAudioMetadataRepository struct {
 	staleByPage   [][]musicdom.AudioWithStaleTags
 	staleCalls    int
 	listErr       error
+
+	catalogKeysByPage  [][]musicdom.AudioCatalogKeySource
+	catalogKeysCalls   int
+	catalogKeysUpdates []musicdom.CatalogGroupingKeys
 	upsertedPaths []string
 }
 
@@ -73,6 +77,20 @@ func (f *fakeAudioMetadataRepository) ListAudioWithStaleTags(afterFileID int, li
 	page := f.staleByPage[f.staleCalls]
 	f.staleCalls++
 	return page, nil
+}
+
+func (f *fakeAudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]musicdom.AudioCatalogKeySource, error) {
+	if f.catalogKeysCalls >= len(f.catalogKeysByPage) {
+		return nil, nil
+	}
+	page := f.catalogKeysByPage[f.catalogKeysCalls]
+	f.catalogKeysCalls++
+	return page, nil
+}
+
+func (f *fakeAudioMetadataRepository) UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys musicdom.CatalogGroupingKeys) error {
+	f.catalogKeysUpdates = append(f.catalogKeysUpdates, groupingKeys)
+	return nil
 }
 
 func newAudioReconcileContext(repository *fakeAudioMetadataRepository, filesService *workerFilesServiceMock) *WorkerContext {
@@ -183,5 +201,29 @@ func TestEnqueueAudioMetadataReconcileJob_SkipsWithoutDependenciesAndEnqueuesWit
 	ctx := newAudioReconcileContext(newFakeAudioMetadataRepository(t, 0), &workerFilesServiceMock{})
 	if err := enqueueAudioMetadataReconcileJob(ctx); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestExecuteAudioMetadataReconcileStep_BackfillsCatalogKeysFromStoredTags(t *testing.T) {
+	repository := newFakeAudioMetadataRepository(t, 1)
+	repository.catalogKeysByPage = [][]musicdom.AudioCatalogKeySource{{
+		{AudioMetadataID: 7, Artist: " The  Beatles ", AlbumArtist: "", Album: "Abbey Road", Genre: "Hip Hop; Rock"},
+		{AudioMetadataID: 8},
+	}}
+
+	err := executeAudioMetadataReconcileStep(newAudioReconcileContext(repository, &workerFilesServiceMock{}), jobs.StepModel{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(repository.catalogKeysUpdates) != 2 {
+		t.Fatalf("expected 2 catalog key updates, got %d", len(repository.catalogKeysUpdates))
+	}
+	firstKeys := repository.catalogKeysUpdates[0]
+	if firstKeys.ArtistKey != "the beatles" || firstKeys.AlbumKey != "the beatles::abbey road" || len(firstKeys.GenreKeys) != 2 || firstKeys.GenreKeys[0] != "hip hop" {
+		t.Fatalf("unexpected backfilled keys: %+v", firstKeys)
+	}
+	emptyKeys := repository.catalogKeysUpdates[1]
+	if emptyKeys.ArtistKey != "" || emptyKeys.GenreKeys == nil {
+		t.Fatalf("a row without tags must still get non-null empty keys: %+v", emptyKeys)
 	}
 }

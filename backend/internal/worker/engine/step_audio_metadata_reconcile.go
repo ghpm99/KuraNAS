@@ -17,6 +17,7 @@ const (
 type audioMetadataReconcileOutcome struct {
 	reconciled int
 	failed     int
+	backfilled int
 }
 
 func executeAudioMetadataReconcileStep(workerContext *WorkerContext, step jobs.StepModel) error {
@@ -29,8 +30,8 @@ func executeAudioMetadataReconcileStep(workerContext *WorkerContext, step jobs.S
 		return err
 	}
 
-	applog.Info("audio metadata reconcile finished", "reconciled", outcome.reconciled, "failed", outcome.failed)
-	if outcome.reconciled == 0 && outcome.failed == 0 {
+	applog.Info("audio metadata reconcile finished", "reconciled", outcome.reconciled, "failed", outcome.failed, "catalog_keys_backfilled", outcome.backfilled)
+	if outcome.reconciled == 0 && outcome.failed == 0 && outcome.backfilled == 0 {
 		return ErrStepSkipped
 	}
 	return nil
@@ -66,10 +67,16 @@ func reconcileAudioWithoutMetadata(workerContext *WorkerContext) (audioMetadataR
 		return candidates, listErr
 	})
 
-	return audioMetadataReconcileOutcome{
+	outcome := audioMetadataReconcileOutcome{
 		reconciled: missingOutcome.reconciled + staleOutcome.reconciled,
 		failed:     missingOutcome.failed + staleOutcome.failed,
-	}, err
+	}
+	if err != nil {
+		return outcome, err
+	}
+
+	outcome.backfilled, err = backfillAudioCatalogKeys(workerContext)
+	return outcome, err
 }
 
 func reconcileAudioCandidates(workerContext *WorkerContext, listDescription string, listCandidates audioReconcileCandidateLister) (audioMetadataReconcileOutcome, error) {
