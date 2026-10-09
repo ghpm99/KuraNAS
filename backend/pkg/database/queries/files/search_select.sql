@@ -17,14 +17,4 @@ SELECT
 FROM
     home_file hf
 WHERE
-    hf.parent_path = $1
-    AND hf.deleted_at IS NULL
-    AND lower(hf.name) LIKE lower($2)
-ORDER BY
-    hf.type,
-    hf.name,
-    hf.id DESC
-LIMIT
-    $3
-OFFSET
-    $4;
+    hf.deleted_at IS NULL

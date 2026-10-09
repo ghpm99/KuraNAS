@@ -57,3 +57,16 @@ func TestPhotoFamilyPredicates(t *testing.T) {
 		t.Fatal("unexpected heif predicate result")
 	}
 }
+
+func TestDocumentAndArchiveFormatsMatchTheirFormatType(t *testing.T) {
+	for _, extension := range DocumentFormats {
+		if GetFormatTypeByExtension(extension).Type != FormatTypeDocument {
+			t.Fatalf("%s listed in DocumentFormats but not detected as document", extension)
+		}
+	}
+	for _, extension := range ArchiveFormats {
+		if GetFormatTypeByExtension(extension).Type != FormatTypeArchive {
+			t.Fatalf("%s listed in ArchiveFormats but not detected as archive", extension)
+		}
+	}
+}

@@ -18,25 +18,30 @@ func buildDescendantsPathPrefix(folderPath string) string {
 }
 
 func (s *Service) SearchFilesByName(params FileSearchParams) (utils.PaginationResponse[FileDto], error) {
-	namePattern := utils.BuildContainsLikePattern(params.Query)
-
-	if params.ParentID == 0 {
-		models, err := s.Repository.SearchActiveFilesByName(namePattern, params.Page, params.PageSize)
-		return s.toSearchDtoPage(models, err)
+	query := FileSearchQuery{
+		Query:    params.Query,
+		Filter:   params.Filter,
+		Page:     params.Page,
+		PageSize: params.PageSize,
 	}
 
-	parentFolder, err := s.findActiveFolder(params.ParentID)
-	if err != nil {
-		return utils.PaginationResponse[FileDto]{}, err
+	if params.ParentID != 0 {
+		parentFolder, err := s.findActiveFolder(params.ParentID)
+		if err != nil {
+			return utils.PaginationResponse[FileDto]{}, err
+		}
+		query.Scope, query.ScopePath = searchScopeOf(parentFolder, params.IsRecursive)
 	}
 
-	if params.IsRecursive {
-		models, searchErr := s.Repository.SearchActiveFilesByNameUnderPath(buildDescendantsPathPrefix(parentFolder.Path), namePattern, params.Page, params.PageSize)
-		return s.toSearchDtoPage(models, searchErr)
-	}
-
-	models, err := s.Repository.SearchActiveChildrenByName(parentFolder.Path, namePattern, params.Page, params.PageSize)
+	models, err := s.Repository.SearchActiveFiles(query)
 	return s.toSearchDtoPage(models, err)
+}
+
+func searchScopeOf(parentFolder FileDto, isRecursive bool) (FileSearchScope, string) {
+	if isRecursive {
+		return SearchScopeDescendants, buildDescendantsPathPrefix(parentFolder.Path)
+	}
+	return SearchScopeChildren, parentFolder.Path
 }
 
 func (s *Service) findActiveFolder(folderID int) (FileDto, error) {

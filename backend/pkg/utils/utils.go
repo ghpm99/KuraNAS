@@ -215,6 +215,8 @@ var ImageFormats = append(
 )
 var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac"}
 var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm"}
+var DocumentFormats = []string{".pdf", ".txt", ".html", ".htm", ".xml", ".json", ".csv"}
+var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz"}
 
 func NormalizeExtension(ext string) string {
 	return strings.ToLower(ext)

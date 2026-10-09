@@ -62,6 +62,12 @@ func (handler *Handler) SearchFilesHandler(c *gin.Context) {
 		return
 	}
 
+	filter, filterErrorKey := parseSearchFilter(c)
+	if filterErrorKey != "" {
+		handler.respondSearchBadRequest(c, loggerModel, filterErrorKey)
+		return
+	}
+
 	loggerModel.SetExtraData(logger.LogExtraData{
 		Data: map[string]any{"parent_id": parentID, "recursive": isRecursive, "page": page, "page_size": pageSize},
 	})
@@ -72,6 +78,7 @@ func (handler *Handler) SearchFilesHandler(c *gin.Context) {
 		IsRecursive: isRecursive,
 		Page:        page,
 		PageSize:    pageSize,
+		Filter:      filter,
 	})
 	if errors.Is(err, ErrFileNotFound) {
 		handler.respondNotFound(c, loggerModel, "ERROR_FILE_NOT_FOUND")
