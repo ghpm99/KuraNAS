@@ -5,6 +5,7 @@ import type {
     PaginationResponse as FilePaginationResponse,
     RecentAccessFile,
 } from '@/features/files/providers/fileProvider/fileContext';
+import type { FileSearchRefinements } from '@/types/fileSearch';
 import type { FileAncestor } from '@/types/fileAncestor';
 import type { FileLocation } from '@/types/fileLocation';
 import type { FolderStats } from '@/types/folderStats';
@@ -45,7 +46,10 @@ type SearchFilesParams = {
     recursive?: boolean;
     page: number;
     pageSize: number;
+    refinements?: FileSearchRefinements;
 };
+
+const repeatedKeysSerializer = { indexes: null };
 
 export const searchFiles = async ({
     q,
@@ -53,6 +57,7 @@ export const searchFiles = async ({
     recursive,
     page,
     pageSize,
+    refinements = {},
 }: SearchFilesParams): Promise<FilePaginationResponse> => {
     const response = await apiBase.get<FilePaginationResponse>('/files/search', {
         params: {
@@ -61,7 +66,17 @@ export const searchFiles = async ({
             recursive,
             page,
             page_size: pageSize,
+            kind: refinements.kinds,
+            modified_from: refinements.modifiedFrom,
+            modified_to: refinements.modifiedTo,
+            min_size: refinements.minSize,
+            max_size: refinements.maxSize,
+            tier: refinements.tier,
+            starred: refinements.starred,
+            sort: refinements.sort,
+            order: refinements.order,
         },
+        paramsSerializer: repeatedKeysSerializer,
     });
     return response.data;
 };
