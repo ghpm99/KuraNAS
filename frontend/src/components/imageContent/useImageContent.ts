@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { appRoutes } from '@/app/routes';
-import { useImageViewer } from '@/components/hooks/useImageViewer/useImageViewer';
+import {
+    useImageViewer,
+    type ImageViewerPaging,
+} from '@/components/hooks/useImageViewer/useImageViewer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useImage } from '@/components/providers/imageProvider/imageProvider';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import { getFileByPath } from '@/service/files';
+import type { ImageLibraryItem } from '@/types/imageLibrary';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import {
     buildTimelineCountsByMonth,
@@ -21,6 +25,7 @@ import { useImageFolderCards } from './useImageFolderCards';
 import { useImageLibraryControls } from './useImageLibraryControls';
 import { useImageSelection } from './useImageSelection';
 import { useImageStarToggle } from './useImageStarToggle';
+import { useImageViewerNeighbors } from './useImageViewerNeighbors';
 
 export type ImageEmptyKind = 'library' | 'filtered' | 'favorites';
 
@@ -89,13 +94,42 @@ export const useImageContent = () => {
         queryFn: () => getFileByPath(requestedImagePath),
         enabled: shouldResolveRequestedImage,
     });
-    const resolvedRequestedImage =
-        requestedImageQuery.data && requestedImageQuery.data.id === requestedImageId
-            ? mapFileDataToLibraryItem(requestedImageQuery.data)
-            : null;
-    const viewerImages = useMemo(
-        () => (resolvedRequestedImage ? [...items, resolvedRequestedImage] : items),
-        [items, resolvedRequestedImage]
+    const requestedImageData = requestedImageQuery.data;
+    const resolvedRequestedImage = useMemo(
+        () =>
+            requestedImageData && requestedImageData.id === requestedImageId
+                ? mapFileDataToLibraryItem(requestedImageData)
+                : null,
+        [requestedImageData, requestedImageId]
+    );
+    const { neighborImages, neighborsPaging, clearNeighbors } = useImageViewerNeighbors({
+        pivot: resolvedRequestedImage,
+        filters: view.filters,
+    });
+    const isViewingNeighbors = neighborImages.length > 0;
+    const viewerImages = useMemo(() => {
+        if (isViewingNeighbors) {
+            return neighborImages;
+        }
+        return resolvedRequestedImage ? [...items, resolvedRequestedImage] : items;
+    }, [isViewingNeighbors, neighborImages, items, resolvedRequestedImage]);
+    const viewerTotalImages = isViewingNeighbors ? null : (total ?? undefined);
+
+    const loadedItemsPaging = useMemo<ImageViewerPaging<ImageLibraryItem>>(
+        () => ({
+            hasNext: hasNextPage,
+            hasPrevious: false,
+            isLoading: isFetchingNextPage,
+            loadNext: async () => {
+                const nextPageResult = await fetchNextPage();
+                if (nextPageResult.isError) {
+                    return undefined;
+                }
+                return nextPageResult.data?.pages.flatMap((page) => page.items ?? []);
+            },
+            loadPrevious: () => Promise.resolve(undefined),
+        }),
+        [hasNextPage, isFetchingNextPage, fetchNextPage]
     );
 
     const monthFormatter = useMemo(
@@ -147,7 +181,8 @@ export const useImageContent = () => {
     const viewer = useImageViewer(
         viewerImages,
         settings.players.image_slideshow_seconds * 1000,
-        readImageLibraryItemId
+        readImageLibraryItemId,
+        isViewingNeighbors ? neighborsPaging : loadedItemsPaging
     );
     const { activeImage, openImage, closeViewer } = viewer;
     const activeImageDate = activeImage ? parseTakenAt(activeImage.taken_at) : null;
@@ -163,7 +198,8 @@ export const useImageContent = () => {
     const handleCloseViewer = useCallback(() => {
         closeViewer();
         closeImageParam();
-    }, [closeViewer, closeImageParam]);
+        clearNeighbors();
+    }, [closeViewer, closeImageParam, clearNeighbors]);
 
     const handleToggleFavoriteOfActiveImage = useCallback(() => {
         if (!activeImage || isStarTogglePending) {
@@ -183,11 +219,19 @@ export const useImageContent = () => {
         });
     }, [activeImage, handleCloseViewer, navigate]);
 
+    const openedRequestedImageId = useRef<number | null>(null);
     useEffect(() => {
-        if (Number.isFinite(requestedImageId) && requestedImageId > 0) {
-            if (viewerImages.some((image) => image.file_id === requestedImageId)) {
-                openImage(requestedImageId);
-            }
+        const isImageRequested = Number.isFinite(requestedImageId) && requestedImageId > 0;
+        if (!isImageRequested) {
+            openedRequestedImageId.current = null;
+            return;
+        }
+        if (openedRequestedImageId.current === requestedImageId) {
+            return;
+        }
+        if (viewerImages.some((image) => image.file_id === requestedImageId)) {
+            openedRequestedImageId.current = requestedImageId;
+            openImage(requestedImageId);
         }
     }, [viewerImages, openImage, requestedImageId]);
 
@@ -284,6 +328,7 @@ export const useImageContent = () => {
         dateFormatter,
         monthFormatter,
         viewerImages,
+        viewerTotalImages,
         viewer,
         activeImageDate,
         isFavoritePending: isStarTogglePending,

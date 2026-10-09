@@ -9,10 +9,13 @@ import {
     Pause,
     Play,
     Plus,
+    RotateCw,
     Star,
     X,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import ImageViewerDetailItem from './ImageViewerDetailItem';
+import { useImageViewerGestures } from './useImageViewerGestures';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -31,6 +34,11 @@ type ImageViewerModalProps = {
     dateFormatter: Intl.DateTimeFormat;
     filteredImages: ImageLibraryItem[];
     zoom: number;
+    totalImages?: number | null;
+    rotation?: number;
+    pan?: { x: number; y: number };
+    canGoPrevious?: boolean;
+    canGoNext?: boolean;
     showDetails: boolean;
     showFilmstrip: boolean;
     isSlideshowPlaying: boolean;
@@ -43,11 +51,19 @@ type ImageViewerModalProps = {
     onDecreaseZoom: () => void;
     onResetZoom: () => void;
     onIncreaseZoom: () => void;
+    onZoomChange?: (zoom: number) => void;
+    onPanChange?: (panX: number, panY: number) => void;
+    onRotate?: () => void;
     onClose: () => void;
     onPrevious: () => void;
     onNext: () => void;
     onOpenImage: (id: number) => void;
 };
+
+const noPan = { x: 0, y: 0 };
+const ignoreZoomChange = () => undefined;
+const ignorePanChange = () => undefined;
+const ignoreRotate = () => undefined;
 
 export default function ImageViewerModal({
     activeImage,
@@ -56,6 +72,11 @@ export default function ImageViewerModal({
     dateFormatter,
     filteredImages,
     zoom,
+    totalImages,
+    rotation = 0,
+    pan = noPan,
+    canGoPrevious = true,
+    canGoNext = true,
     showDetails,
     showFilmstrip,
     isSlideshowPlaying,
@@ -68,6 +89,9 @@ export default function ImageViewerModal({
     onDecreaseZoom,
     onResetZoom,
     onIncreaseZoom,
+    onZoomChange = ignoreZoomChange,
+    onPanChange = ignorePanChange,
+    onRotate = ignoreRotate,
     onClose,
     onPrevious,
     onNext,
@@ -78,8 +102,16 @@ export default function ImageViewerModal({
         activeImage,
         activeImageDate,
         activeIndex,
-        totalImages: filteredImages.length,
+        totalImages: totalImages === undefined ? filteredImages.length : totalImages,
         dateFormatter,
+    });
+    const gestureHandlers = useImageViewerGestures({
+        zoom,
+        pan,
+        onZoomChange,
+        onPanChange,
+        onPrevious,
+        onNext,
     });
     const isFavorite = activeImage.starred;
     const canToggleSlideshow = filteredImages.length > 1;
@@ -95,7 +127,7 @@ export default function ImageViewerModal({
                 <div className={styles.headerContent}>
                     <strong className={styles.title}>{activeImage.name}</strong>
                     <div className={styles.subtitleRow}>
-                        <span>{positionLabel}</span>
+                        {positionLabel ? <span>{positionLabel}</span> : null}
                         <span>
                             {activeImageDate
                                 ? dateFormatter.format(activeImageDate)
@@ -190,6 +222,14 @@ export default function ImageViewerModal({
                         <button
                             type="button"
                             className={styles.iconButton}
+                            onClick={onRotate}
+                            aria-label={t('IMAGES_VIEWER_ROTATE')}
+                        >
+                            <RotateCw size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.iconButton}
                             onClick={onDecreaseZoom}
                             aria-label={t('IMAGES_DECREASE_ZOOM')}
                         >
@@ -246,22 +286,31 @@ export default function ImageViewerModal({
                         type="button"
                         className={`${styles.navButton} ${styles.navButtonLeft}`}
                         onClick={onPrevious}
+                        disabled={!canGoPrevious}
                         aria-label={t('IMAGES_PREVIOUS')}
                     >
                         <ChevronLeft size={26} />
                     </button>
-                    <div className={styles.stageFrame}>
+                    <div
+                        className={styles.stageFrame}
+                        data-testid="image-viewer-stage"
+                        {...gestureHandlers}
+                    >
                         <img
                             src={viewerImageUrl(activeImage.file_id, zoom, activeImage.format)}
                             alt={activeImage.name}
                             className={styles.image}
-                            style={{ transform: `scale(${zoom})` }}
+                            draggable={false}
+                            style={{
+                                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+                            }}
                         />
                     </div>
                     <button
                         type="button"
                         className={`${styles.navButton} ${styles.navButtonRight}`}
                         onClick={onNext}
+                        disabled={!canGoNext}
                         aria-label={t('IMAGES_NEXT')}
                     >
                         <ChevronRight size={26} />
@@ -270,7 +319,7 @@ export default function ImageViewerModal({
                         <span>
                             {t('IMAGES_ZOOM_LABEL')}: {Math.round(zoom * 100)}%
                         </span>
-                        <span>{positionLabel}</span>
+                        {positionLabel ? <span>{positionLabel}</span> : null}
                         <span>{t('IMAGES_VIEWER_KEYBOARD_HINT')}</span>
                     </div>
                 </section>
@@ -282,17 +331,10 @@ export default function ImageViewerModal({
                                 <h4>{section.title}</h4>
                                 <div className={styles.detailsList}>
                                     {section.items.map((item) => (
-                                        <div
+                                        <ImageViewerDetailItem
                                             key={`${section.title}-${item.label}`}
-                                            className={styles.detailsItem}
-                                        >
-                                            <span className={styles.detailsLabel}>
-                                                {item.label}
-                                            </span>
-                                            <span className={styles.detailsValue}>
-                                                {item.value}
-                                            </span>
-                                        </div>
+                                            item={item}
+                                        />
                                     ))}
                                 </div>
                             </section>

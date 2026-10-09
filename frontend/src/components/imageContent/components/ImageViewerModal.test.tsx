@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
+import { installPointerEvents } from '@/shared/test/installPointerEvents';
 import { buildImageLibraryItem } from '../imageLibraryTestFixtures';
 import ImageViewerModal from './ImageViewerModal';
 
@@ -35,6 +36,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 IMAGES_VIEWER_HIDE_FILMSTRIP_SHORT: 'Tira off',
                 IMAGES_VIEWER_SHOW_FILMSTRIP_SHORT: 'Tira on',
                 IMAGES_VIEWER_KEYBOARD_HINT: 'Atalhos',
+                IMAGES_VIEWER_ROTATE: 'Girar',
                 IMAGES_DETAILS_SECTION_LIBRARY: 'Biblioteca',
                 IMAGES_DETAILS_SECTION_CAPTURE: 'Captura',
                 IMAGES_DETAILS_SECTION_DEVICE: 'Dispositivo',
@@ -376,5 +378,145 @@ describe('ImageViewerModal', () => {
             name: 'Iniciar slideshow',
         });
         expect(slideshowButton).toBeDisabled();
+    });
+
+    describe('rotation, gestures and navigation limits', () => {
+        const baseProps = {
+            activeImage: createImage({ file_id: 11 }),
+            activeIndex: 0,
+            activeImageDate: null,
+            dateFormatter: new Intl.DateTimeFormat('pt-BR'),
+            filteredImages: [createImage({ file_id: 11 })],
+            zoom: 1,
+            showDetails: false,
+            showFilmstrip: false,
+            isSlideshowPlaying: false,
+            isFavoritePending: false,
+            onToggleDetails: jest.fn(),
+            onToggleFilmstrip: jest.fn(),
+            onToggleSlideshow: jest.fn(),
+            onToggleFavorite: jest.fn(),
+            onOpenFolder: jest.fn(),
+            onDecreaseZoom: jest.fn(),
+            onResetZoom: jest.fn(),
+            onIncreaseZoom: jest.fn(),
+            onClose: jest.fn(),
+            onPrevious: jest.fn(),
+            onNext: jest.fn(),
+            onOpenImage: jest.fn(),
+        };
+        const stageImage = () =>
+            document.querySelector<HTMLImageElement>('img[class*="image"]') as HTMLImageElement;
+
+        let restorePointerEvents: () => void;
+        beforeEach(() => {
+            restorePointerEvents = installPointerEvents();
+        });
+        afterEach(() => {
+            restorePointerEvents();
+        });
+
+        it('rotates through the rotate button and applies rotation and pan to the image', () => {
+            const onRotate = jest.fn();
+            renderWithQuery(
+                <ImageViewerModal
+                    {...baseProps}
+                    zoom={2}
+                    rotation={90}
+                    pan={{ x: 12, y: -8 }}
+                    onRotate={onRotate}
+                />
+            );
+
+            fireEvent.click(screen.getByRole('button', { name: 'Girar' }));
+
+            expect(onRotate).toHaveBeenCalledTimes(1);
+            expect(stageImage().style.transform).toBe(
+                'translate(12px, -8px) scale(2) rotate(90deg)'
+            );
+        });
+
+        it('disables previous and next at the ends and hides the position when unknown', () => {
+            renderWithQuery(
+                <ImageViewerModal
+                    {...baseProps}
+                    canGoPrevious={false}
+                    canGoNext={false}
+                    totalImages={null}
+                />
+            );
+
+            expect(screen.getByRole('button', { name: 'Imagem anterior' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Proxima imagem' })).toBeDisabled();
+            expect(screen.queryByText(/ de /)).not.toBeInTheDocument();
+        });
+
+        it('swipes to the next and previous image on the stage', () => {
+            const onNext = jest.fn();
+            const onPrevious = jest.fn();
+            renderWithQuery(
+                <ImageViewerModal {...baseProps} onNext={onNext} onPrevious={onPrevious} />
+            );
+            const stage = screen.getByTestId('image-viewer-stage');
+
+            fireEvent.pointerDown(stage, {
+                pointerId: 1,
+                pointerType: 'touch',
+                clientX: 300,
+                clientY: 50,
+            });
+            fireEvent.pointerUp(stage, {
+                pointerId: 1,
+                pointerType: 'touch',
+                clientX: 100,
+                clientY: 50,
+            });
+            expect(onNext).toHaveBeenCalledTimes(1);
+
+            fireEvent.pointerDown(stage, {
+                pointerId: 2,
+                pointerType: 'touch',
+                clientX: 100,
+                clientY: 50,
+            });
+            fireEvent.pointerUp(stage, {
+                pointerId: 2,
+                pointerType: 'touch',
+                clientX: 300,
+                clientY: 50,
+            });
+            expect(onPrevious).toHaveBeenCalledTimes(1);
+        });
+
+        it('pans while zoomed and zooms on a double click', () => {
+            const onPanChange = jest.fn();
+            const onZoomChange = jest.fn();
+            renderWithQuery(
+                <ImageViewerModal
+                    {...baseProps}
+                    zoom={2}
+                    onPanChange={onPanChange}
+                    onZoomChange={onZoomChange}
+                />
+            );
+            const stage = screen.getByTestId('image-viewer-stage');
+
+            fireEvent.pointerDown(stage, {
+                pointerId: 1,
+                pointerType: 'mouse',
+                clientX: 10,
+                clientY: 10,
+            });
+            fireEvent.pointerMove(stage, {
+                pointerId: 1,
+                pointerType: 'mouse',
+                clientX: 30,
+                clientY: 25,
+            });
+            fireEvent.doubleClick(stage);
+
+            expect(onPanChange).toHaveBeenCalledWith(20, 15);
+            expect(onZoomChange).toHaveBeenCalledWith(1);
+        });
     });
 });

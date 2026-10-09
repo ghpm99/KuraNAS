@@ -11,6 +11,7 @@ import {
     getImageFiles,
     getImageLibraryCount,
     getImageLibraryFolders,
+    getImageLibraryNeighbors,
     getImageLibraryPage,
     getImageLibraryTimeline,
     getImageMetadataSummary,
@@ -188,5 +189,38 @@ describe('service/image', () => {
             params: { parent: undefined, page: 1, page_size: 48 },
         });
         expect(nested).toEqual(payload);
+    });
+
+    it('requests the neighbors of an image with the gallery filters and the count', async () => {
+        mockedApi.get.mockResolvedValue({ data: { before: [{ file_id: 9 }], after: [] } });
+
+        const neighbors = await getImageLibraryNeighbors(7, allFilters, 5);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/image/library/neighbors/7', {
+            params: expect.objectContaining({
+                q: 'beach',
+                starred: true,
+                folder: '/photos/trip',
+                count: 5,
+            }),
+            paramsSerializer: repeatedKeys,
+        });
+        const [url, requestConfig] = mockedApi.get.mock.calls[0]!;
+        const queryString = axios.getUri({ url, ...requestConfig });
+        expect(queryString).toContain('format=jpg&format=png');
+        expect(queryString).toContain('count=5');
+        expect(neighbors.before).toEqual([{ file_id: 9 }]);
+    });
+
+    it('defaults the neighbors count and tolerates a partial payload', async () => {
+        mockedApi.get.mockResolvedValue({ data: {} });
+
+        const neighbors = await getImageLibraryNeighbors(7, noFilters);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(
+            '/image/library/neighbors/7',
+            expect.objectContaining({ params: expect.objectContaining({ count: 20 }) })
+        );
+        expect(neighbors).toEqual({ before: [], after: [] });
     });
 });
