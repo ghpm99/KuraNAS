@@ -13,6 +13,11 @@ export const musicNavigationItems: MusicNavigationItem[] = [
         descriptionKey: 'MUSIC_HOME_DESCRIPTION',
     },
     {
+        key: 'tracks',
+        labelKey: 'MUSIC_TRACKS',
+        descriptionKey: 'MUSIC_TRACKS_DESCRIPTION',
+    },
+    {
         key: 'playlists',
         labelKey: 'MUSIC_PLAYLISTS',
         descriptionKey: 'MUSIC_PLAYLISTS_DESCRIPTION',

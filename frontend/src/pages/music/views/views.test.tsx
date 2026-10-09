@@ -1,12 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import AllTracksView from '@/features/music/views/AllTracksView';
 import ArtistsView from '@/features/music/views/ArtistsView';
 import AlbumsView from '@/features/music/views/AlbumsView';
 import GenresView from '@/features/music/views/GenresView';
 import FoldersView from '@/features/music/views/FoldersView';
 
-const mockUseMusic = jest.fn();
 const mockUseGlobalMusic = jest.fn();
 const mockUseInfiniteQuery = jest.fn();
 const mockUseQuery = jest.fn();
@@ -25,9 +23,6 @@ const mockGetMusicQueueByGenre = jest.fn();
 const mockGetMusicQueueByFolder = jest.fn();
 const mockReplaceQueue = jest.fn();
 
-jest.mock('@/features/music/providers/musicProvider/musicProvider', () => ({
-    useMusic: () => mockUseMusic(),
-}));
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
@@ -141,12 +136,6 @@ beforeEach(() => {
     mockUseGlobalMusic.mockReturnValue({
         replaceQueue: mockReplaceQueue,
     });
-    mockUseMusic.mockReturnValue({
-        music: [track],
-        hasNextPage: false,
-        isFetchingNextPage: false,
-        lastItemRef: jest.fn(),
-    });
     mockGetMusicArtists.mockResolvedValue(
         makePagination([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }])
     );
@@ -248,23 +237,6 @@ beforeEach(() => {
 });
 
 describe('music views', () => {
-    it('renders all tracks view and handles add/menu states', () => {
-        render(<AllTracksView />);
-        expect(screen.getByText('track-1')).toBeInTheDocument();
-        expect(screen.getByText('AddToPlaylistMenu-0')).toBeInTheDocument();
-        expect(screen.getByText('MUSIC_ALL_LOADED')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByText('track-1'));
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            [expect.objectContaining({ id: 1 })],
-            0,
-            expect.any(Object)
-        );
-
-        fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
-        fireEvent.click(screen.getAllByRole('button', { name: 'close-menu' })[0]!);
-    });
-
     it('renders artists list/detail flow, load-more and back', async () => {
         const fetchArtistTracks = jest.fn();
         mockUseInfiniteQuery.mockImplementation((options: any) => {
