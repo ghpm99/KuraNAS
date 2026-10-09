@@ -29,6 +29,8 @@ import {
     MUSIC_COLLECTION_PAGE_SIZE,
     shuffleTracks,
 } from './shared';
+import MusicSortControl from './components/MusicSortControl';
+import { useMusicListSort } from './useMusicListSort';
 
 const loadArtistTracks = (artistKey: string) =>
     loadAllTracks((page, pageSize) => getMusicByArtist(artistKey, page, pageSize));
@@ -36,10 +38,11 @@ const loadArtistTracks = (artistKey: string) =>
 export default function ArtistsView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedArtistKey = searchParams.get('artist') ?? '';
+    const { listSort, changeField, toggleOrder } = useMusicListSort('artists');
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-artists'],
+        queryKey: ['music-artists', listSort],
         queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicArtist>> =>
-            getMusicArtists(pageParam, MUSIC_COLLECTION_PAGE_SIZE),
+            getMusicArtists(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
@@ -74,14 +77,22 @@ export default function ArtistsView() {
     }
 
     return (
-        <ArtistListView
-            artists={artists}
-            isLoading={isLoading}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSelect={handleSelectArtist}
-        />
+        <>
+            <MusicSortControl
+                view="artists"
+                listSort={listSort}
+                onFieldChange={changeField}
+                onOrderToggle={toggleOrder}
+            />
+            <ArtistListView
+                artists={artists}
+                isLoading={isLoading}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onSelect={handleSelectArtist}
+            />
+        </>
     );
 }
 

@@ -10,9 +10,10 @@ import { getPlaylistTracks } from '@/service/playlist';
 import { getMusicByAlbum, getMusicByArtist, getMusicHomeCatalog } from '@/service/music';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import type { MusicAlbum, MusicArtist } from '@/types/music';
+import type { MusicAlbum, MusicArtist, MusicListSort } from '@/types/music';
 
 const featuredPlaylistPageSize = 4;
+const recentHighlightsSort: MusicListSort = { sort: 'recent', order: 'desc' };
 
 const getActionKey = (type: 'playlist' | 'artist' | 'album', value: string | number) =>
     `${type}-${value}`;
@@ -35,7 +36,7 @@ export const useMusicHomeScreen = () => {
         status,
     } = useQuery({
         queryKey: ['music-home', 'catalog'],
-        queryFn: () => getMusicHomeCatalog(featuredPlaylistPageSize),
+        queryFn: () => getMusicHomeCatalog(featuredPlaylistPageSize, recentHighlightsSort),
     });
 
     const featuredPlaylists = homeCatalog?.playlists ?? [];

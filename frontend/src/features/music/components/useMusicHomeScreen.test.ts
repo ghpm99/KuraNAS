@@ -191,4 +191,13 @@ describe('useMusicHomeScreen', () => {
         });
         expect(replaceQueue).not.toHaveBeenCalled();
     });
+
+    it('requests the artist and album highlights ordered by most recently added', async () => {
+        renderHook(() => useMusicHomeScreen());
+
+        const { queryFn } = mockUseQuery.mock.calls[0][0];
+        await queryFn();
+
+        expect(mockGetMusicHomeCatalog).toHaveBeenCalledWith(4, { sort: 'recent', order: 'desc' });
+    });
 });

@@ -89,4 +89,23 @@ describe('service/music', () => {
             params: { limit: 4 },
         });
     });
+
+    it.each([
+        ['artists', getMusicArtists, '/music/library/artists'],
+        ['albums', getMusicAlbums, '/music/library/albums'],
+        ['genres', getMusicGenres, '/music/library/genres'],
+        ['folders', getMusicFolders, '/music/library/folders'],
+    ])('sends sort and order to the %s list when given', async (_name, fetchList, path) => {
+        await fetchList(2, 50, { sort: 'recent', order: 'asc' });
+        expect(mockedApi.get).toHaveBeenCalledWith(path, {
+            params: { page: 2, page_size: 50, sort: 'recent', order: 'asc' },
+        });
+    });
+
+    it('sends the sort to the home catalog when given', async () => {
+        await getMusicHomeCatalog(4, { sort: 'recent', order: 'desc' });
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/library/home', {
+            params: { limit: 4, sort: 'recent', order: 'desc' },
+        });
+    });
 });
