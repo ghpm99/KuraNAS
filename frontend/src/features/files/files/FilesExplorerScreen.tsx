@@ -29,7 +29,10 @@ import { FileType } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { buildFilesUrl } from '@/app/routes';
 import FileSearchBar from '@/features/files/search/FileSearchBar';
+import FileSearchFilterBar from '@/features/files/search/FileSearchFilterBar';
 import FileSearchResultsHeader from '@/features/files/search/FileSearchResultsHeader';
+import useFileSearchFilters from '@/features/files/search/useFileSearchFilters';
+import { toFileSearchRefinements } from '@/features/files/search/fileSearchFilters';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useFileSearchResults from '@/features/files/search/useFileSearchResults';
 import FilesBreadcrumb from './FilesBreadcrumb';
@@ -64,11 +67,13 @@ const FilesExplorerScreenContent = () => {
     const searchInputRef = useRef<HTMLInputElement | null>(null);
     const [isSearchRecursive, setIsSearchRecursive] = useState(true);
     const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery();
+    const { filters: searchFilters, setFilters: setSearchFilters, resetFilters } = useFileSearchFilters();
     const searchFolderId = selectedItem?.type === FileType.Directory ? selectedItem.id : undefined;
     const searchResults = useFileSearchResults({
         query: activeQuery,
         parentId: searchFolderId,
         isRecursive: isSearchRecursive,
+        refinements: toFileSearchRefinements(searchFilters),
     });
     const isSearchActive = activeQuery !== '';
     const isFileSelected = selectedItem?.type === FileType.File;
@@ -189,6 +194,11 @@ const FilesExplorerScreenContent = () => {
                                     resultCount={searchResults.items.length}
                                     hasMoreResults={searchResults.hasNextPage}
                                     onClear={clearQuery}
+                                />
+                                <FileSearchFilterBar
+                                    filters={searchFilters}
+                                    onChange={setSearchFilters}
+                                    onReset={resetFilters}
                                 />
                                 <FileContent
                                     showHeading={false}

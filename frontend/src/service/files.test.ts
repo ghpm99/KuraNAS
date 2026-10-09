@@ -116,6 +116,7 @@ describe('service/files', () => {
                 page: 2,
                 page_size: 100,
             },
+            paramsSerializer: { indexes: null },
         });
     });
 
@@ -132,6 +133,7 @@ describe('service/files', () => {
                 page: 1,
                 page_size: 50,
             },
+            paramsSerializer: { indexes: null },
         });
     });
 

@@ -35,6 +35,7 @@ describe('file search seam', () => {
                 page: 1,
                 page_size: 100,
             },
+            paramsSerializer: { indexes: null },
         });
     });
 
@@ -49,6 +50,7 @@ describe('file search seam', () => {
         await waitFor(() => expect(mockGet).toHaveBeenCalled());
         expect(mockGet.mock.calls[0]?.[1]).toEqual({
             params: expect.objectContaining({ parent_id: 7, recursive: false }),
+            paramsSerializer: { indexes: null },
         });
     });
 
@@ -61,5 +63,50 @@ describe('file search seam', () => {
 
         await waitFor(() => expect(mockGet).toHaveBeenCalled());
         expect(mockGet.mock.calls[0]?.[1].params.parent_id).toBeUndefined();
+    });
+
+    it('sends every refinement with the exact names the backend decodes', async () => {
+        mockGet.mockResolvedValue({ data: { items: [], pagination: { page: 1, hasNext: false } } });
+
+        renderHook(
+            () =>
+                useFileSearchResults({
+                    query: 'relatorio',
+                    isRecursive: true,
+                    refinements: {
+                        kinds: ['image', 'folder'],
+                        modifiedFrom: '2026-01-01',
+                        modifiedTo: '2026-01-31',
+                        minSize: 1048576,
+                        maxSize: 104857599,
+                        tier: 'cold',
+                        starred: true,
+                        sort: 'size',
+                        order: 'asc',
+                    },
+                }),
+            { wrapper }
+        );
+
+        await waitFor(() => expect(mockGet).toHaveBeenCalled());
+        expect(mockGet).toHaveBeenCalledWith('/files/search', {
+            params: {
+                q: 'relatorio',
+                parent_id: undefined,
+                recursive: true,
+                page: 1,
+                page_size: 100,
+                kind: ['image', 'folder'],
+                modified_from: '2026-01-01',
+                modified_to: '2026-01-31',
+                min_size: 1048576,
+                max_size: 104857599,
+                tier: 'cold',
+                starred: true,
+                sort: 'size',
+                order: 'asc',
+            },
+            paramsSerializer: { indexes: null },
+        });
     });
 });

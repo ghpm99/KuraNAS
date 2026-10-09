@@ -55,3 +55,48 @@
     color: var(--app-color-text-secondary);
     font-size: 0.92rem;
 }
+
+.filterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.filterControls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.sortControls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filterPopover {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+    padding: var(--app-spacing-3);
+}
+
+.filterDrawer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+    padding: var(--app-spacing-4);
+}
+
+.filterDrawerTitle {
+    margin: 0;
+    font-weight: 600;
+}
+
+.filterDrawerActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--app-spacing-2);
+}

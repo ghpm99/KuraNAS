@@ -99,11 +99,37 @@ describe('FilesExplorerScreen search', () => {
             recursive: true,
             page: 1,
             pageSize: 100,
+            refinements: expect.objectContaining({ kinds: undefined, tier: undefined }),
         });
         expect(
             screen.getByText('FILES_SEARCH_RESULTS_ONE:{"query":"relatorio"}')
         ).toBeInTheDocument();
         expect(screen.queryByText('TabsMock')).toBeNull();
+        expect(screen.getByRole('button', { name: 'FILES_SEARCH_FILTER_STARRED' })).toBeInTheDocument();
+    });
+
+    it('sends the filters kept in the url with the search', async () => {
+        renderScreen('/files/docs?q=relatorio&kind=image&tier=cold&starred=true&sort=size');
+
+        await screen.findByText('relatorio.txt');
+
+        expect(mockSearchFiles).toHaveBeenCalledWith(
+            expect.objectContaining({
+                refinements: expect.objectContaining({
+                    kinds: ['image'],
+                    tier: 'cold',
+                    starred: true,
+                    sort: 'size',
+                }),
+            })
+        );
+    });
+
+    it('hides the filter bar when there is no search', async () => {
+        renderScreen('/files/docs');
+
+        expect(await screen.findByText('TabsMock')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'FILES_SEARCH_FILTER_STARRED' })).toBeNull();
     });
 
     it('searches only direct children after unticking include subfolders', async () => {
