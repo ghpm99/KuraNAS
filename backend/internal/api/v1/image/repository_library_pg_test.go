@@ -2,6 +2,7 @@ package image
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -386,5 +387,77 @@ func TestLibraryFoldersCountRecursivelyAndPickNewestCover_Postgres(t *testing.T)
 	secondPage, err := repository.ListLibraryFolders(LibraryFolderQuery{Scopes: roots, Separator: "/", Limit: 2, Offset: 2})
 	if err != nil || len(secondPage) != 1 || secondPage[0].Name != "trip" {
 		t.Fatalf("second page %+v err %v", secondPage, err)
+	}
+}
+
+func listNeighborNames(t *testing.T, repository *LibraryRepository, filter LibraryFilter, pivot LibraryCursor, limit int) (older []string, newer []string) {
+	t.Helper()
+	baseQuery := LibraryListQuery{Filter: filter, Sort: LibrarySortTakenAt, Order: LibrarySortOrderDesc, Limit: limit}
+	olderQuery := baseQuery
+	olderQuery.Cursor = &pivot
+	newerQuery := baseQuery
+	newerQuery.NewerThan = &pivot
+	return listNames(t, repository, olderQuery), listNames(t, repository, newerQuery)
+}
+
+func TestLibraryNeighborsListNewerNearestFirstAndOlderInListOrder_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	sameInstant := utcTime(2022, 5, 5)
+	ids := seedLibraryImages(t, repository, []seededImage{
+		{name: "oldest.jpg", folder: "/lib", format: ".jpg", takenAt: utcTime(2019, 1, 1)},
+		{name: "tie_a.jpg", folder: "/lib", format: ".jpg", takenAt: sameInstant},
+		{name: "tie_b.jpg", folder: "/lib", format: ".jpg", takenAt: sameInstant},
+		{name: "tie_c.jpg", folder: "/lib", format: ".jpg", takenAt: sameInstant},
+		{name: "undated.jpg", folder: "/lib", format: ".jpg"},
+		{name: "newest.jpg", folder: "/lib", format: ".jpg", takenAt: utcTime(2024, 1, 1)},
+		{name: "gone.jpg", folder: "/lib", format: ".jpg", takenAt: utcTime(2023, 1, 1), deleted: true},
+	})
+
+	pivot, err := repository.GetLibraryItemCursor(ids["tie_b.jpg"])
+	if err != nil || pivot.FileID != ids["tie_b.jpg"] || pivot.TakenAt == nil {
+		t.Fatalf("pivot = %+v err %v", pivot, err)
+	}
+
+	older, newer := listNeighborNames(t, repository, LibraryFilter{}, pivot, 10)
+	assertNames(t, "older", older, []string{"tie_a.jpg", "oldest.jpg", "undated.jpg"})
+	assertNames(t, "newer nearest first", newer, []string{"tie_c.jpg", "newest.jpg"})
+
+	older, newer = listNeighborNames(t, repository, LibraryFilter{}, pivot, 1)
+	assertNames(t, "older limited", older, []string{"tie_a.jpg"})
+	assertNames(t, "newer limited", newer, []string{"tie_c.jpg"})
+}
+
+func TestLibraryNeighborsOfUndatedAndFilteredItems_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	ids := seedLibraryImages(t, repository, []seededImage{
+		{name: "dated.png", folder: "/lib", format: ".png", takenAt: utcTime(2021, 1, 1)},
+		{name: "undated_a.jpg", folder: "/lib", format: ".jpg"},
+		{name: "undated_b.jpg", folder: "/lib", format: ".jpg"},
+		{name: "other.jpg", folder: "/lib", format: ".jpg", takenAt: utcTime(2022, 1, 1)},
+	})
+
+	undatedPivot, err := repository.GetLibraryItemCursor(ids["undated_a.jpg"])
+	if err != nil || undatedPivot.TakenAt != nil {
+		t.Fatalf("undated pivot = %+v err %v", undatedPivot, err)
+	}
+	older, newer := listNeighborNames(t, repository, LibraryFilter{}, undatedPivot, 10)
+	assertNames(t, "older of undated", older, []string{})
+	assertNames(t, "newer of undated", newer, []string{"undated_b.jpg", "dated.png", "other.jpg"})
+
+	_, newerJpg := listNeighborNames(t, repository, LibraryFilter{Formats: []string{".jpg"}}, undatedPivot, 10)
+	assertNames(t, "filters apply to neighbors", newerJpg, []string{"undated_b.jpg", "other.jpg"})
+}
+
+func TestLibraryItemCursorIgnoresMissingDeletedAndNonImages_Postgres(t *testing.T) {
+	repository := newLibraryPostgresRepository(t)
+	ids := seedLibraryImages(t, repository, []seededImage{
+		{name: "gone.jpg", folder: "/lib", format: ".jpg", takenAt: utcTime(2022, 1, 1), deleted: true},
+		{name: "clip.mp4", folder: "/lib", format: ".mp4", takenAt: utcTime(2022, 1, 2)},
+	})
+
+	for _, fileID := range []int{ids["gone.jpg"], ids["clip.mp4"], 999999} {
+		if _, err := repository.GetLibraryItemCursor(fileID); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("file %d: expected sql.ErrNoRows, got %v", fileID, err)
+		}
 	}
 }

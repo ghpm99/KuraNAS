@@ -1,6 +1,7 @@
 package image
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -18,11 +19,23 @@ type fakeLibraryRepository struct {
 	folders     []LibraryFolderModel
 	folderQuery LibraryFolderQuery
 	folderCalls int
+	newerItems  []LibraryItemModel
+	pivot       LibraryCursor
+	pivotErr    error
+	listQueries []LibraryListQuery
 }
 
 func (f *fakeLibraryRepository) ListLibraryImages(query LibraryListQuery) ([]LibraryItemModel, error) {
 	f.listQuery = query
+	f.listQueries = append(f.listQueries, query)
+	if query.NewerThan != nil {
+		return f.newerItems, f.err
+	}
 	return f.items, f.err
+}
+
+func (f *fakeLibraryRepository) GetLibraryItemCursor(fileID int) (LibraryCursor, error) {
+	return f.pivot, f.pivotErr
 }
 
 func (f *fakeLibraryRepository) CountLibraryImages(filter LibraryFilter) (int, error) {
@@ -225,5 +238,75 @@ func TestListLibraryFoldersWrapsRepositoryError(t *testing.T) {
 
 	if _, err := NewLibraryService(repository).ListLibraryFolders(LibraryFolderRequest{ParentPath: "/photos", Page: 1, PageSize: 10}); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestListLibraryNeighborsReturnsNewerBeforeAndOlderAfterInListOrder(t *testing.T) {
+	useLibraryTestRoot(t)
+	pivotTakenAt := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+	repository := &fakeLibraryRepository{
+		pivot:      LibraryCursor{TakenAt: &pivotTakenAt, FileID: 50},
+		newerItems: []LibraryItemModel{{FileID: 51, Path: "/data/p/a.jpg"}, {FileID: 52, Path: "/data/p/b.jpg"}},
+		items:      []LibraryItemModel{{FileID: 49, Path: "/data/p/c.jpg"}},
+	}
+	service := NewLibraryService(repository)
+
+	neighbors, err := service.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 50, Filter: LibraryFilter{Folder: "/p"}, Count: 2})
+	if err != nil {
+		t.Fatalf("neighbors: %v", err)
+	}
+
+	if len(neighbors.Before) != 2 || neighbors.Before[0].FileID != 52 || neighbors.Before[1].FileID != 51 {
+		t.Fatalf("before must list the farthest newer item first and end next to the pivot, got %+v", neighbors.Before)
+	}
+	if len(neighbors.After) != 1 || neighbors.After[0].FileID != 49 || neighbors.After[0].Path != "/p/c.jpg" {
+		t.Fatalf("unexpected after %+v", neighbors.After)
+	}
+	if len(repository.listQueries) != 2 {
+		t.Fatalf("expected one query per side, got %d", len(repository.listQueries))
+	}
+	for _, query := range repository.listQueries {
+		if query.Limit != 2 || query.Sort != LibrarySortTakenAt || query.Order != LibrarySortOrderDesc || query.Filter.Folder != "/data/p" {
+			t.Fatalf("unexpected neighbors query %+v", query)
+		}
+	}
+}
+
+func TestListLibraryNeighborsEmptySidesAreEmptyLists(t *testing.T) {
+	service := NewLibraryService(&fakeLibraryRepository{})
+
+	neighbors, err := service.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 1, Count: 5})
+	if err != nil || neighbors.Before == nil || neighbors.After == nil {
+		t.Fatalf("sides must be empty lists, got %+v err %v", neighbors, err)
+	}
+}
+
+func TestListLibraryNeighborsPropagatesPivotAndListErrors(t *testing.T) {
+	missing := NewLibraryService(&fakeLibraryRepository{pivotErr: sql.ErrNoRows})
+	if _, err := missing.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 1, Count: 5}); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows, got %v", err)
+	}
+
+	failing := NewLibraryService(&fakeLibraryRepository{err: errors.New("db down")})
+	if _, err := failing.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 1, Count: 5}); err == nil {
+		t.Fatal("expected the list error")
+	}
+}
+
+type olderFailingLibraryRepository struct {
+	fakeLibraryRepository
+}
+
+func (f *olderFailingLibraryRepository) ListLibraryImages(query LibraryListQuery) ([]LibraryItemModel, error) {
+	if query.NewerThan != nil {
+		return nil, errors.New("newer side down")
+	}
+	return nil, nil
+}
+
+func TestListLibraryNeighborsPropagatesNewerSideError(t *testing.T) {
+	service := NewLibraryService(&olderFailingLibraryRepository{})
+	if _, err := service.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 1, Count: 5}); err == nil {
+		t.Fatal("expected the newer side error")
 	}
 }

@@ -108,6 +108,8 @@ func TestImageSummaryServiceDelegatesToRepository(t *testing.T) {
 	}
 }
 
+var imageSummaryColumns = []string{"width", "height", "make", "model", "lens_model", "datetime_original", "exposure_time", "f_number", "iso", "focal_length", "software", "image_description", "taken_at", "gps_latitude", "gps_longitude", "classification_confidence", "classification_suggested_name"}
+
 func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -115,21 +117,41 @@ func TestImageSummaryRepositoryBindsFileID(t *testing.T) {
 	}
 	defer db.Close()
 	repo := NewImageSummaryRepository(database.NewDbContext(db))
+	takenAt := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageSummaryByFileIDQuery)).
 		WithArgs(9).
-		WillReturnRows(sqlmock.NewRows([]string{"width", "height", "make", "model", "lens_model", "datetime_original", "exposure_time", "f_number", "iso", "focal_length"}).AddRow(1920, 1080, "Canon", "R5", "RF50", "2026:01:01", 0.01, 1.8, 200.0, 50.0))
+		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1920, 1080, "Canon", "R5", "RF50", "2026:01:01", 0.01, 1.8, 200.0, 50.0, "Lightroom", "A trip", takenAt, -23.55, -46.63, 0.8, "sunset-beach"))
 	mock.ExpectRollback()
 	summary, err := repo.GetImageSummaryByFileID(9)
 	if err != nil || summary.Width != 1920 || summary.Make != "Canon" || summary.ISO != 200 {
 		t.Fatalf("unexpected summary %+v err=%v", summary, err)
 	}
+	if summary.Software != "Lightroom" || summary.Description != "A trip" || summary.TakenAt == nil || !summary.TakenAt.Equal(takenAt) {
+		t.Fatalf("unexpected extra fields %+v", summary)
+	}
+	if summary.GPSLatitude == nil || *summary.GPSLatitude != -23.55 || summary.GPSLongitude == nil || *summary.GPSLongitude != -46.63 {
+		t.Fatalf("unexpected gps %+v", summary)
+	}
+	if summary.ClassificationConfidence != 0.8 || summary.SuggestedName != "sunset-beach" {
+		t.Fatalf("unexpected ai fields %+v", summary)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageSummaryByFileIDQuery)).
+		WithArgs(11).
+		WillReturnRows(sqlmock.NewRows(imageSummaryColumns).AddRow(1, 1, "", "", "", "", 0, 0, 0, 0, "", "", nil, nil, nil, 0, ""))
+	mock.ExpectRollback()
+	withoutGPS, err := repo.GetImageSummaryByFileID(11)
+	if err != nil || withoutGPS.GPSLatitude != nil || withoutGPS.GPSLongitude != nil || withoutGPS.TakenAt != nil {
+		t.Fatalf("absent gps and date must stay nil, got %+v err=%v", withoutGPS, err)
+	}
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetImageSummaryByFileIDQuery)).
 		WithArgs(10).
-		WillReturnRows(sqlmock.NewRows([]string{"width", "height", "make", "model", "lens_model", "datetime_original", "exposure_time", "f_number", "iso", "focal_length"}))
+		WillReturnRows(sqlmock.NewRows(imageSummaryColumns))
 	mock.ExpectRollback()
 	if _, err := repo.GetImageSummaryByFileID(10); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows to survive wrapping, got %v", err)
@@ -167,5 +189,54 @@ func TestPostgres_ImageSummaryByFileID(t *testing.T) {
 	}
 	if _, err := repo.GetImageSummaryByFileID(fileID + 1000); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows for a file without metadata, got %v", err)
+	}
+}
+
+func TestPostgres_ImageSummaryGPSTreatsZeroZeroAsAbsent(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_image_summary_gps_it")
+	moment := time.Now().UTC().Truncate(time.Second)
+	idsByName := map[string]int{}
+	err := ctx.ExecTx(func(tx *sql.Tx) error {
+		for _, seed := range []struct {
+			name      string
+			latitude  float64
+			longitude float64
+		}{{"rio.jpg", -22.9, -43.2}, {"zero.jpg", 0, 0}, {"equator.jpg", 0, -43.2}} {
+			created, createErr := files.NewRepository(ctx).CreateFile(tx, files.FileModel{
+				Name: seed.name, Path: "/srv/" + seed.name, ParentPath: "/srv", Format: ".jpg",
+				UpdatedAt: moment, CreatedAt: moment, Type: files.File,
+			})
+			if createErr != nil {
+				return createErr
+			}
+			idsByName[seed.name] = created.ID
+			if _, upsertErr := NewRepository(ctx).UpsertImageMetadata(tx, MetadataModel{
+				FileId: created.ID, Path: "/srv/" + seed.name, GPSLatitude: seed.latitude, GPSLongitude: seed.longitude,
+				Software: "Editor", Classification: ClassificationModel{Confidence: 0.5, SuggestedName: "suggestion"},
+			}); upsertErr != nil {
+				return upsertErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := NewImageSummaryRepository(ctx)
+	rio, err := repo.GetImageSummaryByFileID(idsByName["rio.jpg"])
+	if err != nil || rio.GPSLatitude == nil || rio.GPSLongitude == nil || *rio.GPSLongitude > -43.1 || *rio.GPSLongitude < -43.3 {
+		t.Fatalf("expected rio coordinates, got %+v err=%v", rio, err)
+	}
+	if rio.Software != "Editor" || rio.SuggestedName != "suggestion" || rio.ClassificationConfidence != 0.5 {
+		t.Fatalf("unexpected extra fields %+v", rio)
+	}
+	zero, err := repo.GetImageSummaryByFileID(idsByName["zero.jpg"])
+	if err != nil || zero.GPSLatitude != nil || zero.GPSLongitude != nil {
+		t.Fatalf("exact 0,0 must be absent, got %+v err=%v", zero, err)
+	}
+	equator, err := repo.GetImageSummaryByFileID(idsByName["equator.jpg"])
+	if err != nil || equator.GPSLatitude == nil || *equator.GPSLatitude != 0 {
+		t.Fatalf("a real coordinate with a zero axis must be kept, got %+v err=%v", equator, err)
 	}
 }

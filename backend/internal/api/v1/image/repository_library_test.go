@@ -171,3 +171,32 @@ func TestListLibraryFoldersWrapsQueryAndScanErrors(t *testing.T) {
 		t.Fatal("expected scan error")
 	}
 }
+
+func TestGetLibraryItemCursorScansDatedAndUndatedRows(t *testing.T) {
+	repo, mock, db := newLibraryRepoWithMock(t)
+	defer db.Close()
+	takenAt := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"taken_at", "file_id"}).AddRow(takenAt, 7))
+	mock.ExpectRollback()
+	dated, err := repo.GetLibraryItemCursor(7)
+	if err != nil || dated.FileID != 7 || dated.TakenAt == nil || !dated.TakenAt.Equal(takenAt) {
+		t.Fatalf("dated cursor = %+v err %v", dated, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"taken_at", "file_id"}).AddRow(nil, 8))
+	mock.ExpectRollback()
+	undated, err := repo.GetLibraryItemCursor(8)
+	if err != nil || undated.FileID != 8 || undated.TakenAt != nil {
+		t.Fatalf("undated cursor = %+v err %v", undated, err)
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"taken_at", "file_id"}))
+	mock.ExpectRollback()
+	if _, err := repo.GetLibraryItemCursor(9); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows to survive wrapping, got %v", err)
+	}
+}

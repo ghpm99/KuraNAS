@@ -26,6 +26,11 @@ type LibraryPageDto struct {
 	PageSize   int              `json:"page_size"`
 }
 
+type LibraryNeighborsDto struct {
+	Before []LibraryItemDto `json:"before"`
+	After  []LibraryItemDto `json:"after"`
+}
+
 type LibraryCountDto struct {
 	Total int `json:"total"`
 }

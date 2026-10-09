@@ -63,10 +63,12 @@ func (builder *libraryQueryBuilder) addPosition(query LibraryListQuery) {
 	if query.TakenBefore != nil {
 		builder.addClause(queries.LibrarySeekTakenBeforeQuery, *query.TakenBefore)
 	}
-	if query.Cursor == nil {
-		return
+	if query.NewerThan != nil {
+		builder.addClause(queries.LibraryKeysetBeforeQuery, query.NewerThan.sortKey(), query.NewerThan.FileID)
 	}
-	builder.addClause(queries.LibraryKeysetAfterQuery, query.Cursor.sortKey(), query.Cursor.FileID)
+	if query.Cursor != nil {
+		builder.addClause(queries.LibraryKeysetAfterQuery, query.Cursor.sortKey(), query.Cursor.FileID)
+	}
 }
 
 func (builder *libraryQueryBuilder) assemble(selectFragment string, tailFragments ...string) string {
@@ -88,6 +90,9 @@ func buildLibraryListQuery(query LibraryListQuery) (string, []any, error) {
 	orderFragment, err := libraryOrderFragment(query.Sort, query.Order)
 	if err != nil {
 		return "", nil, err
+	}
+	if query.NewerThan != nil && IsKeysetOrdering(query.Sort, query.Order) {
+		orderFragment = queries.LibraryOrderTakenAtOldestFirstQuery
 	}
 
 	builder := newLibraryQueryBuilder()

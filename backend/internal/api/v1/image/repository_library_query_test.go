@@ -120,3 +120,24 @@ func TestBuildLibraryCountAndTimelineQueries(t *testing.T) {
 		t.Fatalf("unexpected timeline arguments %v", timelineArguments)
 	}
 }
+
+func TestBuildLibraryListQueryNewerThanListsOldestFirstAfterThePivot(t *testing.T) {
+	takenAt := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+	query, arguments, err := buildLibraryListQuery(LibraryListQuery{
+		Sort:      LibrarySortTakenAt,
+		Order:     LibrarySortOrderDesc,
+		NewerThan: &LibraryCursor{TakenAt: &takenAt, FileID: 9},
+		Limit:     4,
+	})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	for _, expected := range []string{"> ($2::timestamptz, $3)", "ASC, im.file_id ASC", "LIMIT $4"} {
+		if !strings.Contains(query, expected) {
+			t.Fatalf("expected %q in query:\n%s", expected, query)
+		}
+	}
+	if strings.Contains(query, "DESC") || len(arguments) != 4 || arguments[2] != 9 {
+		t.Fatalf("unexpected query or arguments %v:\n%s", arguments, query)
+	}
+}

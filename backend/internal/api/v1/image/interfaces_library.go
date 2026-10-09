@@ -8,6 +8,7 @@ import (
 
 type LibraryRepositoryInterface interface {
 	ListLibraryImages(query LibraryListQuery) ([]LibraryItemModel, error)
+	GetLibraryItemCursor(fileID int) (LibraryCursor, error)
 	CountLibraryImages(filter LibraryFilter) (int, error)
 	ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketModel, error)
 	ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error)
@@ -33,8 +34,15 @@ type LibraryFolderRequest struct {
 	PageSize   int
 }
 
+type LibraryNeighborsRequest struct {
+	FileID int
+	Filter LibraryFilter
+	Count  int
+}
+
 type LibraryServiceInterface interface {
 	ListLibraryImages(request LibraryListRequest) (LibraryPageDto, error)
+	ListLibraryNeighbors(request LibraryNeighborsRequest) (LibraryNeighborsDto, error)
 	CountLibraryImages(filter LibraryFilter) (LibraryCountDto, error)
 	ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketDto, error)
 	ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error)

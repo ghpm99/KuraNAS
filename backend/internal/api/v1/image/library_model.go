@@ -32,12 +32,14 @@ type LibraryFilter struct {
 }
 
 // LibraryListQuery is one page request against the gallery listing.
-// Cursor and TakenBefore are only honored for the taken_at/desc ordering.
+// Cursor, NewerThan and TakenBefore are only honored for the taken_at/desc ordering;
+// NewerThan lists the items listed before that position, nearest first.
 type LibraryListQuery struct {
 	Filter      LibraryFilter
 	Sort        LibrarySort
 	Order       LibrarySortOrder
 	Cursor      *LibraryCursor
+	NewerThan   *LibraryCursor
 	TakenBefore *time.Time
 	Limit       int
 	Offset      int
