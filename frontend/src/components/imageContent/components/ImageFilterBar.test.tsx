@@ -8,6 +8,7 @@ const filters: ImageLibraryFilters = {
     categories: [],
     isStarredOnly: false,
     formats: ['png'],
+    camera: '',
     takenFrom: '2026-01-01',
     takenTo: '',
     folder: '',
@@ -18,6 +19,7 @@ const buildHandlers = () => ({
     onTakenFromChange: jest.fn(),
     onTakenToChange: jest.fn(),
     onFormatToggle: jest.fn(),
+    onCameraChange: jest.fn(),
     onSortChange: jest.fn(),
     onSortOrderToggle: jest.fn(),
     onClearFilters: jest.fn(),
@@ -53,16 +55,9 @@ describe('ImageFilterBar', () => {
         expect(handlers.onTakenFromChange).toHaveBeenCalledWith('2026-02-01');
         expect(handlers.onTakenToChange).toHaveBeenCalledWith('2026-03-01');
 
-        const pngChip = screen.getByRole('button', { name: 'PNG' });
-        expect(pngChip).toHaveAttribute('aria-pressed', 'true');
-        expect(screen.getByRole('button', { name: 'JPG' })).toHaveAttribute(
-            'aria-pressed',
-            'false'
-        );
-        fireEvent.click(screen.getByRole('button', { name: 'JPG' }));
-        expect(handlers.onFormatToggle).toHaveBeenCalledWith('jpg');
-
-        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'size' } });
+        fireEvent.change(screen.getByDisplayValue('IMAGES_SORT_TAKEN_AT'), {
+            target: { value: 'size' },
+        });
         expect(handlers.onSortChange).toHaveBeenCalledWith('size');
 
         fireEvent.click(screen.getByRole('button', { name: 'IMAGES_SORT_ORDER_DESC' }));

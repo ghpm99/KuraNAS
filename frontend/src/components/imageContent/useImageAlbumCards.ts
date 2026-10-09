@@ -13,6 +13,7 @@ const buildPresetFilters = (preset: ImageAlbumPreset): ImageLibraryFilters => ({
     categories: preset.categories,
     isStarredOnly: false,
     formats: [],
+    camera: '',
     takenFrom: '',
     takenTo: '',
     folder: '',

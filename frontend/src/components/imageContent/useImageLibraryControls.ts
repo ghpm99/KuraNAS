@@ -87,6 +87,14 @@ export const useImageLibraryControls = (view: ImageLibraryView) => {
         [updateFilterParams]
     );
 
+    const setCamera = useCallback(
+        (camera: string) =>
+            updateFilterParams((nextParams) =>
+                writeOrDelete(nextParams, imageSearchParamNames.camera, camera.trim())
+            ),
+        [updateFilterParams]
+    );
+
     const setSort = useCallback(
         (sort: ImageLibrarySort) =>
             updateFilterParams((nextParams) => {
@@ -118,6 +126,7 @@ export const useImageLibraryControls = (view: ImageLibraryView) => {
                 nextParams.delete(imageSearchParamNames.takenFrom);
                 nextParams.delete(imageSearchParamNames.takenTo);
                 nextParams.delete(imageSearchParamNames.format);
+                nextParams.delete(imageSearchParamNames.camera);
             }),
         [updateFilterParams]
     );
@@ -186,6 +195,7 @@ export const useImageLibraryControls = (view: ImageLibraryView) => {
         setTakenFrom,
         setTakenTo,
         toggleFormat,
+        setCamera,
         setSort,
         toggleSortOrder,
         clearUserFilters,

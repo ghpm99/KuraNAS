@@ -8,7 +8,9 @@ import axios from 'axios';
 import type { ImageLibraryFilters } from '@/types/imageLibrary';
 import { apiBase } from './index';
 import {
+    getImageCameraFacets,
     getImageFiles,
+    getImageFormatFacets,
     getImageLibraryCount,
     getImageLibraryFolders,
     getImageLibraryNeighbors,
@@ -24,6 +26,7 @@ const noFilters: ImageLibraryFilters = {
     categories: [],
     isStarredOnly: false,
     formats: [],
+    camera: '',
     takenFrom: '',
     takenTo: '',
     folder: '',
@@ -34,6 +37,7 @@ const allFilters: ImageLibraryFilters = {
     categories: ['capture', 'screenshot_app'],
     isStarredOnly: true,
     formats: ['jpg', 'png'],
+    camera: '',
     takenFrom: '2026-01-01',
     takenTo: '2026-02-01',
     folder: '/photos/trip',
@@ -263,5 +267,43 @@ describe('service/image', () => {
             expect.objectContaining({ params: expect.objectContaining({ count: 20 }) })
         );
         expect(neighbors).toEqual({ before: [], after: [] });
+    });
+});
+
+describe('image library facets', () => {
+    beforeEach(() => mockedApi.get.mockReset());
+
+    it('requests camera facets with the shared filter params', async () => {
+        mockedApi.get.mockResolvedValue({ data: [{ camera: 'Canon EOS', count: 3 }] });
+
+        const cameras = await getImageCameraFacets({ ...allFilters, camera: 'Sony A7' });
+
+        expect(cameras).toEqual([{ camera: 'Canon EOS', count: 3 }]);
+        const [url, config] = mockedApi.get.mock.calls[0];
+        expect(url).toBe('/image/library/facets/cameras');
+        expect(config.params).toMatchObject({ format: ['jpg', 'png'], camera: 'Sony A7' });
+    });
+
+    it('requests format facets and tolerates an empty body', async () => {
+        mockedApi.get.mockResolvedValue({ data: undefined });
+
+        const formats = await getImageFormatFacets(noFilters);
+
+        expect(formats).toEqual([]);
+        const [url, config] = mockedApi.get.mock.calls[0];
+        expect(url).toBe('/image/library/facets/formats');
+        expect(config.params.camera).toBeUndefined();
+    });
+
+    it('sends the camera filter on the library listing', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getImageLibraryPage({
+            filters: { ...noFilters, camera: 'Canon EOS' },
+            ordering: { sort: 'taken_at', order: 'desc' },
+            pageSize: 10,
+        });
+
+        expect(mockedApi.get.mock.calls[0][1].params.camera).toBe('Canon EOS');
     });
 });

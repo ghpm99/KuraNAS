@@ -54,6 +54,7 @@ export type ImageLibraryFilters = {
     categories: ImageCategory[];
     isStarredOnly: boolean;
     formats: string[];
+    camera: string;
     takenFrom: string;
     takenTo: string;
     folder: string;
@@ -88,6 +89,16 @@ export type ImageLibraryCount = { total: number };
 export type ImageTimelineBucket = {
     year: number;
     month: number;
+    count: number;
+};
+
+export type ImageCameraFacet = {
+    camera: string;
+    count: number;
+};
+
+export type ImageFormatFacet = {
+    format: string;
     count: number;
 };
 

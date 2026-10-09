@@ -93,6 +93,7 @@ export default function ImageContent() {
                     onTakenFromChange={controls.setTakenFrom}
                     onTakenToChange={controls.setTakenTo}
                     onFormatToggle={controls.toggleFormat}
+                    onCameraChange={controls.setCamera}
                     onSortChange={controls.setSort}
                     onSortOrderToggle={controls.toggleSortOrder}
                     onClearFilters={controls.clearUserFilters}

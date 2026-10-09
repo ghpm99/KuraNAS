@@ -55,6 +55,7 @@ export const imageSearchParamNames = {
     takenFrom: 'from',
     takenTo: 'to',
     format: 'format',
+    camera: 'camera',
     sort: 'sort',
     order: 'order',
     jumpBefore: 'before',
@@ -124,6 +125,7 @@ export const parseImageLibraryView = (
     const userTakenFrom = readDateOnly(searchParams.get(imageSearchParamNames.takenFrom));
     const takenTo = readDateOnly(searchParams.get(imageSearchParamNames.takenTo));
     const formats = readFormats(searchParams);
+    const camera = searchParams.get(imageSearchParamNames.camera)?.trim() ?? '';
     const ordering = readOrdering(searchParams);
     const isKeyset = isKeysetOrdering(ordering);
 
@@ -148,6 +150,7 @@ export const parseImageLibraryView = (
         categories: selectedAlbum?.categories ?? sectionCategories[section] ?? [],
         isStarredOnly: section === 'favorites',
         formats,
+        camera,
         takenFrom: userTakenFrom || recentTakenFrom,
         takenTo,
         folder: selectedFolder,
@@ -163,7 +166,9 @@ export const parseImageLibraryView = (
         selectedFolder,
         selectedAlbum,
         userAlbumId,
-        hasUserFilters: Boolean(nameQuery || userTakenFrom || takenTo || formats.length > 0),
+        hasUserFilters: Boolean(
+            nameQuery || userTakenFrom || takenTo || camera || formats.length > 0
+        ),
         isKeyset,
     };
 };
