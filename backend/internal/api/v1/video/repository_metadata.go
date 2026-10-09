@@ -8,6 +8,9 @@ import (
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/video"
+	"nas-go/api/pkg/utils"
+
+	"github.com/lib/pq"
 )
 
 // VideoMetadataRepository is the write-side for the video_metadata complement table.
@@ -119,4 +122,30 @@ func (r *VideoMetadataRepository) DeleteVideoMetadata(id int) error {
 	}
 
 	return nil
+}
+
+// ListVideosWithoutMetadata returns a keyset page (file_id > afterFileID) of
+// active video files lacking a video_metadata row, ordered by file_id.
+func (r *VideoMetadataRepository) ListVideosWithoutMetadata(afterFileID int, limit int) ([]VideoWithoutMetadata, error) {
+	missingVideos := []VideoWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectVideosWithoutMetadataQuery, pq.Array(utils.VideoFormats), afterFileID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var missingVideo VideoWithoutMetadata
+			if err := rows.Scan(&missingVideo.FileID, &missingVideo.Path); err != nil {
+				return err
+			}
+			missingVideos = append(missingVideos, missingVideo)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar videos sem metadados: %w", err)
+	}
+	return missingVideos, nil
 }
