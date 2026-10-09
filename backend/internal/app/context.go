@@ -183,6 +183,7 @@ type MusicContext struct {
 type VideoContext struct {
 	Handler            *video.Handler
 	SummaryHandler     *video.VideoSummaryHandler
+	RemuxHandler       *video.RemuxHandler
 	Service            video.ServiceInterface
 	Repository         video.RepositoryInterface
 	MetadataRepository video.VideoMetadataRepositoryInterface
@@ -515,8 +516,11 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	metadataRepository := video.NewVideoMetadataRepository(dbContext)
 	service := video.NewService(repository, aiService)
 	handler := video.NewHandler(service, filesService, recentFileService, logger)
-	summaryHandler := video.NewVideoSummaryHandler(video.NewVideoSummaryService(video.NewVideoSummaryRepository(dbContext)), logger)
+	summaryService := video.NewVideoSummaryService(video.NewVideoSummaryRepository(dbContext))
+	summaryHandler := video.NewVideoSummaryHandler(summaryService, logger)
+	remuxHandler := video.NewFFmpegRemuxHandler(filesService, summaryService, logger)
 	return &VideoContext{
+		RemuxHandler:       remuxHandler,
 		Handler:            handler,
 		SummaryHandler:     summaryHandler,
 		Service:            service,
