@@ -702,6 +702,14 @@ func (s *Service) GetLibraryTracks(page int, pageSize int) (utils.PaginationResp
 	return files.ParsePaginationToDto(&tracks)
 }
 
+func (s *Service) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
+	tracks, err := s.Repository.SearchLibraryTracks(searchText, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[files.FileDto]{}, err
+	}
+	return files.ParsePaginationToDto(&tracks)
+}
+
 func (s *Service) GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error) {
 	indexEntries, err := s.Repository.GetLibraryIndexEntries()
 	if err != nil {

@@ -163,6 +163,52 @@ func (r *Repository) GetLibraryTracks(page int, pageSize int) (utils.PaginationR
 	return paginationResponse, nil
 }
 
+func (r *Repository) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	paginationResponse := utils.PaginationResponse[files.FileModel]{
+		Items: []files.FileModel{},
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+		},
+	}
+
+	patterns, hasTerms := buildTrackSearchPatterns(searchText)
+	if !hasTerms {
+		return paginationResponse, nil
+	}
+
+	args := []any{
+		pq.Array(utils.AudioFormats),
+		pageSize + 1,
+		utils.CalculateOffset(page, pageSize),
+		patterns.drivingPattern,
+		pq.Array(patterns.allPatterns),
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SearchLibraryTracksQuery, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var file files.FileModel
+			if err := scanMusicFile(rows, &file); err != nil {
+				return err
+			}
+			paginationResponse.Items = append(paginationResponse.Items, file)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return paginationResponse, fmt.Errorf("falha ao buscar faixas de musica: %w", err)
+	}
+
+	paginationResponse.UpdatePagination()
+	return paginationResponse, nil
+}
+
 func (r *Repository) GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error) {
 	results := []MusicLibraryIndexEntryModel{}
 

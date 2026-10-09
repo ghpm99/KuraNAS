@@ -25,6 +25,7 @@ type musicRepoMock struct {
 	getNowPlayingFn        func() (PlaylistModel, error)
 	getPlayerStateFn       func(clientID string) (PlayerStateModel, error)
 	upsertPlayerStateFn    func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	searchLibraryTracksFn  func(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	getLibraryIndexFn      func() ([]MusicLibraryIndexEntryModel, error)
 	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
@@ -122,6 +123,12 @@ func (m *musicRepoMock) UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (P
 func (m *musicRepoMock) GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
 	if m.getLibraryTracksFn != nil {
 		return m.getLibraryTracksFn(page, pageSize)
+	}
+	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
+}
+func (m *musicRepoMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error) {
+	if m.searchLibraryTracksFn != nil {
+		return m.searchLibraryTracksFn(searchText, page, pageSize)
 	}
 	return utils.PaginationResponse[files.FileModel]{Items: []files.FileModel{}}, nil
 }

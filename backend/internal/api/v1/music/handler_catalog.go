@@ -64,6 +64,17 @@ func (handler *Handler) GetLibraryTracksHandler(c *gin.Context) {
 	})
 }
 
+func (handler *Handler) SearchLibraryTracksHandler(c *gin.Context) {
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
+	searchText := c.Query("q")
+	handler.respondLibraryTracks(c, "SearchMusicLibraryTracks", "Searching music library tracks", func() (any, error) {
+		return handler.service.SearchLibraryTracks(searchText, page, pageSize)
+	})
+}
+
 func (handler *Handler) GetLibraryArtistsHandler(c *gin.Context) {
 	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
 	if !isPaginationValid {

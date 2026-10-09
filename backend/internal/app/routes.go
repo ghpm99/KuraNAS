@@ -289,6 +289,8 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists := router.Group("/music/playlists")
 	library := router.Group("/music/library")
 
+	router.GET("/music/search", context.Music.Handler.SearchLibraryTracksHandler)
+
 	playlists.GET("/", context.Music.Handler.GetPlaylistsHandler)
 	playlists.POST("/", context.Music.Handler.CreatePlaylistHandler)
 	playlists.GET("/now-playing", context.Music.Handler.GetNowPlayingHandler)
