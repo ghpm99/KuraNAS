@@ -796,6 +796,8 @@
 	"MUSIC_SEARCH_TITLE": "Resultados para \"{{query}}\"",
 	"MUSIC_SEARCH_EMPTY": "Nenhuma faixa encontrada",
 	"MUSIC_SEARCH_PROMPT": "Digite algo na busca global para encontrar faixas",
+	"MUSIC_SEARCH_PLACEHOLDER": "Buscar faixas",
+	"MUSIC_SEARCH_CLEAR": "Limpar busca",
 	"MUSIC_PLAYBACK_CONTEXT_SEARCH": "Busca: {{query}}",
 	"MUSIC_TRACK_ADDED": "Faixa adicionada à playlist",
 	"MUSIC_TRACK_ADD_FAILED": "Falha ao adicionar faixa",
