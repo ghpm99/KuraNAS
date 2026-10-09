@@ -723,6 +723,7 @@
 	"ANALYTICS_THUMBNAIL_LABEL": "Thumbnail",
 	"ERROR_ANALYTICS_LOAD": "Failed to load analytics overview",
 	"ERROR_MUSIC_NOT_FOUND": "Music resource not found",
+	"ERROR_MUSIC_COVER_NOT_FOUND": "Cover art not found",
 	"ERROR_MUSIC_OPERATION_FAILED": "Failed to process music request",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "This track is already in the playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Video resource not found",

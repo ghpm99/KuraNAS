@@ -173,6 +173,7 @@ type DiaryContext struct {
 type MusicContext struct {
 	Handler                 *music.Handler
 	SummaryHandler          *music.AudioSummaryHandler
+	CoverHandler            *music.CoverHandler
 	Service                 music.ServiceInterface
 	Repository              music.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
@@ -496,9 +497,11 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	service := music.NewService(repository, aiService)
 	handler := music.NewHandler(service, filesService, recentFileService, loggerSvc)
 	summaryHandler := music.NewAudioSummaryHandler(music.NewAudioSummaryService(music.NewAudioSummaryRepository(dbContext)), loggerSvc)
+	coverHandler := music.NewCoverHandler(music.NewCoverService(filesService, repository, config.GetBuildConfig("ThumbnailPath")), loggerSvc)
 	return &MusicContext{
 		Handler:                 handler,
 		SummaryHandler:          summaryHandler,
+		CoverHandler:            coverHandler,
 		Service:                 service,
 		Repository:              repository,
 		AudioMetadataRepository: audioMetadataRepository,
