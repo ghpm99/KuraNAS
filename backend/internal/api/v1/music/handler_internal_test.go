@@ -283,6 +283,8 @@ func TestMusicHandlerEndpoints(t *testing.T) {
 		{http.MethodPut, "/music/playlists/1", `{"name":"n2"}`, http.StatusOK},
 		{http.MethodDelete, "/music/playlists/1", "", http.StatusOK},
 		{http.MethodGet, "/music/playlists/1/tracks", "", http.StatusOK},
+		{http.MethodGet, "/music/playlists/-1", "", http.StatusOK},
+		{http.MethodGet, "/music/playlists/-3/tracks?page=2&page_size=10", "", http.StatusOK},
 		{http.MethodPost, "/music/playlists/1/tracks", `{"file_id":2}`, http.StatusCreated},
 		{http.MethodDelete, "/music/playlists/1/tracks/2", "", http.StatusOK},
 		{http.MethodPut, "/music/playlists/1/tracks/reorder", `{"tracks":[{"file_id":2,"position":0}]}`, http.StatusOK},
