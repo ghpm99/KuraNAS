@@ -7,6 +7,7 @@ import (
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/analytics"
+	"nas-go/api/pkg/utils"
 
 	"github.com/lib/pq"
 )
@@ -182,9 +183,17 @@ func (r *Repository) GetHotFolders(period PeriodConfig, limit int) ([]FolderHotM
 }
 
 func (r *Repository) GetDuplicatesSummary() (DuplicatesSummaryModel, error) {
+	return r.queryDuplicatesSummary(queries.DuplicatesSummaryQuery)
+}
+
+func (r *Repository) GetImageDuplicatesSummary() (DuplicatesSummaryModel, error) {
+	return r.queryDuplicatesSummary(queries.DuplicatesSummaryImagesQuery, pq.Array(utils.ImageFormats))
+}
+
+func (r *Repository) queryDuplicatesSummary(query string, args ...any) (DuplicatesSummaryModel, error) {
 	var result DuplicatesSummaryModel
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		return tx.QueryRow(queries.DuplicatesSummaryQuery).Scan(
+		return tx.QueryRow(query, args...).Scan(
 			&result.GroupsTotal,
 			&result.FilesTotal,
 			&result.ReclaimableBytes,
@@ -197,9 +206,17 @@ func (r *Repository) GetDuplicatesSummary() (DuplicatesSummaryModel, error) {
 }
 
 func (r *Repository) GetDuplicateGroups(limit int) ([]DuplicateGroupModel, error) {
+	return r.queryDuplicateGroups(queries.DuplicatesTopGroupsQuery, limit)
+}
+
+func (r *Repository) GetImageDuplicateGroups(limit int) ([]DuplicateGroupModel, error) {
+	return r.queryDuplicateGroups(queries.DuplicatesTopGroupsImagesQuery, pq.Array(utils.ImageFormats), limit)
+}
+
+func (r *Repository) queryDuplicateGroups(query string, args ...any) ([]DuplicateGroupModel, error) {
 	result := []DuplicateGroupModel{}
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.DuplicatesTopGroupsQuery, limit)
+		rows, err := tx.Query(query, args...)
 		if err != nil {
 			return err
 		}

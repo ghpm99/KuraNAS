@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const duplicatesTypeImage = "image"
+
 type Handler struct {
 	service ServiceInterface
 }
@@ -78,13 +80,34 @@ func (handler *Handler) GetHotFoldersHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetDuplicatesHandler(c *gin.Context) {
-	result, err := handler.service.GetDuplicatesSummary()
-	handler.respond(c, result, err)
+	switch c.Query("type") {
+	case "":
+		result, err := handler.service.GetDuplicatesSummary()
+		handler.respond(c, result, err)
+	case duplicatesTypeImage:
+		result, err := handler.service.GetImageDuplicatesSummary()
+		handler.respond(c, result, err)
+	default:
+		handler.respondInvalidDuplicatesType(c)
+	}
 }
 
 func (handler *Handler) GetDuplicateGroupsHandler(c *gin.Context) {
-	result, err := handler.service.GetDuplicateGroups(parseLimit(c, 20, 100))
-	handler.respond(c, result, err)
+	limit := parseLimit(c, 20, 100)
+	switch c.Query("type") {
+	case "":
+		result, err := handler.service.GetDuplicateGroups(limit)
+		handler.respond(c, result, err)
+	case duplicatesTypeImage:
+		result, err := handler.service.GetImageDuplicateGroups(limit)
+		handler.respond(c, result, err)
+	default:
+		handler.respondInvalidDuplicatesType(c)
+	}
+}
+
+func (handler *Handler) respondInvalidDuplicatesType(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_INVALID_DUPLICATES_TYPE")})
 }
 
 func (handler *Handler) GetLibraryHandler(c *gin.Context) {
