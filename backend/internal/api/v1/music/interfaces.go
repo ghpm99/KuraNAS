@@ -6,11 +6,12 @@ import (
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
+	"time"
 )
 
 type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
-	GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error)
+	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error)
 	GetPlaylistByID(id int) (PlaylistModel, error)
 	CreatePlaylist(tx *sql.Tx, name string, description string, isSystem bool) (PlaylistModel, error)
 	UpdatePlaylist(tx *sql.Tx, id int, name string, description string) (PlaylistModel, error)
@@ -21,9 +22,39 @@ type RepositoryInterface interface {
 	ReorderPlaylistTrack(tx *sql.Tx, playlistID int, fileID int, position int) error
 	GetNowPlaying() (PlaylistModel, error)
 	GetPlayerState(clientID string) (PlayerStateModel, error)
+	ReplacePlayerQueue(tx *sql.Tx, clientID string, fileIDs []int, currentIndex int) error
+	GetPlayerQueue(clientID string) ([]MusicQueueEntryModel, error)
+	GetPlayerQueueCurrentIndex(clientID string) (int, error)
 	UpsertPlayerState(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
-	GetLibraryIndexEntries() ([]MusicLibraryIndexEntryModel, error)
+	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	GetLibrarySummary() (MusicLibrarySummaryDto, error)
+	GetLibraryArtistGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	GetLibraryAlbumGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	GetLibraryGenreGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	GetLibraryFolderGroups(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error)
+	GetLibraryArtistSummary(artistKey string) (MusicArtistSummaryDto, error)
+	GetLibraryGenreSummary(genreKey string) (MusicGroupSummaryDto, error)
+	GetLibraryFolderSummary(folderPath string) (MusicGroupSummaryDto, error)
+	GetLibraryAlbumGroupsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	GetLibraryTrackIDsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByAlbum(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryTrackIDsByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	GetLibraryQueueByArtist(artistKey string, limit int) ([]MusicQueueEntryModel, error)
+	GetLibraryQueueByAlbum(albumKey string, limit int) ([]MusicQueueEntryModel, error)
+	GetLibraryQueueByGenre(genreKey string, limit int) ([]MusicQueueEntryModel, error)
+	GetLibraryQueueByFolder(folderPath string, limit int) ([]MusicQueueEntryModel, error)
+	GetPlaylistQueue(playlistID int, limit int) ([]MusicQueueEntryModel, error)
+	GetLibraryQueueByFileIDs(fileIDs []int) ([]MusicQueueEntryModel, error)
+	GetRecentLibraryFileIDs(limit int) ([]int, error)
+	InsertPlayEvent(tx *sql.Tx, clientID string, fileID int, playedSeconds int) error
+	GetMostPlayedTracks(earliestPlayedAt *time.Time, page int, pageSize int) (utils.PaginationResponse[PlayedTrackModel], error)
+	GetRecentlyPlayedTracks(page int, pageSize int) (utils.PaginationResponse[PlayedTrackModel], error)
+	GetFavoriteLibraryFileIDs(limit int) ([]int, error)
+	GetArtistClusterInputs() ([]artistClusterInput, error)
+	GetLibraryFileIDsByArtistKeys(artistKeys []string) ([]int, error)
 	GetLibraryFilesByIDs(fileIDs []int) ([]files.FileModel, error)
 	GetArtistClusters() ([]ArtistClusterModel, error)
 	UpsertArtistCluster(tx *sql.Tx, cluster ArtistClusterModel) error
@@ -48,10 +79,15 @@ type AudioMetadataRepositoryInterface interface {
 	GetAudioMetadataByID(id int) (AudioMetadataModel, error)
 	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	DeleteAudioMetadata(id int) error
+	ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error)
+	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
+	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error)
+	UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error
+	ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error)
 }
 
 type ServiceInterface interface {
-	GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error)
+	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error)
 	GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error)
 	GetPlaylistByID(id int) (PlaylistDto, error)
 	CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)
@@ -62,19 +98,35 @@ type ServiceInterface interface {
 	RemovePlaylistTrack(playlistID int, fileID int) error
 	ReorderPlaylistTracks(playlistID int, tracks []ReorderTrackItem) error
 	GetOrCreateNowPlaying() (PlaylistDto, error)
-	GetHomeCatalog(clientID string, limit int) (MusicHomeCatalogDto, error)
+	GetHomeCatalog(clientID string, limit int, sort CatalogSort) (MusicHomeCatalogDto, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
-	GetLibraryArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryArtists(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error)
+	GetLibraryArtistSummary(artistKey string) (MusicArtistSummaryDto, error)
+	GetLibraryGenreSummary(genreKey string) (MusicGroupSummaryDto, error)
+	GetLibraryFolderSummary(folderPath string) (MusicGroupSummaryDto, error)
+	GetLibraryAlbumsByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
 	GetLibraryTracksByArtist(artistKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
-	GetLibraryAlbums(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	GetLibraryAlbums(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicAlbumGroupDto], error)
 	GetLibraryTracksByAlbum(albumKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
-	GetLibraryGenres(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	GetLibraryGenres(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicGenreGroupDto], error)
 	GetLibraryTracksByGenre(genreKey string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
-	GetLibraryFolders(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	GetLibraryFolders(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicFolderGroupDto], error)
 	GetLibraryTracksByFolder(folderPath string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryQueueByArtist(artistKey string) (MusicQueueDto, error)
+	GetLibraryQueueByAlbum(albumKey string) (MusicQueueDto, error)
+	GetLibraryQueueByGenre(genreKey string) (MusicQueueDto, error)
+	GetLibraryQueueByFolder(folderPath string) (MusicQueueDto, error)
+	GetPlaylistQueue(clientID string, playlistID int) (MusicQueueDto, error)
 	GetPlayerState(clientID string) (PlayerStateDto, error)
+	ReplacePlayerQueue(clientID string, request ReplacePlayerQueueRequest) error
+	GetPlayerQueue(clientID string) (PlayerQueueDto, error)
 	UpdatePlayerState(clientID string, req UpdatePlayerStateRequest) (PlayerStateDto, error)
 	RebuildAIClusters(ctx context.Context) error
+	RecordPlay(clientID string, request RecordPlayRequest) error
+	GetMostPlayedTracks(period PlayPeriod, page int, pageSize int) (utils.PaginationResponse[MusicPlayedTrackDto], error)
+	GetRecentlyPlayedTracks(page int, pageSize int) (utils.PaginationResponse[MusicPlayedTrackDto], error)
 	// Browse methods (moved from files)
 	GetMusic(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetMusicArtists(page int, pageSize int) (utils.PaginationResponse[MusicArtistDto], error)

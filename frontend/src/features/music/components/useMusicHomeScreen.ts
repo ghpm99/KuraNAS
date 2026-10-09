@@ -6,13 +6,15 @@ import {
 } from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
-import { getPlaylistTracks } from '@/service/playlist';
-import { getMusicByAlbum, getMusicByArtist, getMusicHomeCatalog } from '@/service/music';
+import { getPlaylistQueue } from '@/service/playlist';
+import { getMusicHomeCatalog, getMusicQueueByAlbum, getMusicQueueByArtist } from '@/service/music';
+import { queueToTracks } from '@/features/music/components/musicQueueTracks';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import type { MusicAlbum, MusicArtist } from '@/types/music';
+import type { MusicAlbum, MusicArtist, MusicListSort } from '@/types/music';
 
 const featuredPlaylistPageSize = 4;
+const recentHighlightsSort: MusicListSort = { sort: 'recent', order: 'desc' };
 
 const getActionKey = (type: 'playlist' | 'artist' | 'album', value: string | number) =>
     `${type}-${value}`;
@@ -35,7 +37,7 @@ export const useMusicHomeScreen = () => {
         status,
     } = useQuery({
         queryKey: ['music-home', 'catalog'],
-        queryFn: () => getMusicHomeCatalog(featuredPlaylistPageSize),
+        queryFn: () => getMusicHomeCatalog(featuredPlaylistPageSize, recentHighlightsSort),
     });
 
     const featuredPlaylists = homeCatalog?.playlists ?? [];
@@ -51,8 +53,7 @@ export const useMusicHomeScreen = () => {
             setPendingActionKey(actionKey);
 
             try {
-                const response = await getPlaylistTracks(playlistId, 1, 200);
-                const playlistTracks = response.items.map((item) => item.file);
+                const playlistTracks = queueToTracks(await getPlaylistQueue(playlistId));
 
                 if (playlistTracks.length > 0) {
                     replaceQueue(
@@ -77,10 +78,10 @@ export const useMusicHomeScreen = () => {
             setPendingActionKey(actionKey);
 
             try {
-                const response = await getMusicByArtist(artist.key, 1, 200);
+                const artistTracks = queueToTracks(await getMusicQueueByArtist(artist.key));
 
-                if (response.items.length > 0) {
-                    replaceQueue(response.items, 0, createArtistPlaybackContext(artist.artist));
+                if (artistTracks.length > 0) {
+                    replaceQueue(artistTracks, 0, createArtistPlaybackContext(artist.artist));
                 }
             } finally {
                 setPendingActionKey((currentKey) => (currentKey === actionKey ? null : currentKey));
@@ -95,10 +96,10 @@ export const useMusicHomeScreen = () => {
             setPendingActionKey(actionKey);
 
             try {
-                const response = await getMusicByAlbum(album.key, 1, 200);
+                const albumTracks = queueToTracks(await getMusicQueueByAlbum(album.key));
 
-                if (response.items.length > 0) {
-                    replaceQueue(response.items, 0, createAlbumPlaybackContext(album.album));
+                if (albumTracks.length > 0) {
+                    replaceQueue(albumTracks, 0, createAlbumPlaybackContext(album.album));
                 }
             } finally {
                 setPendingActionKey((currentKey) => (currentKey === actionKey ? null : currentKey));

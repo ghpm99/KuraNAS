@@ -7,6 +7,7 @@ import (
 	"time"
 
 	backupapi "nas-go/api/internal/api/v1/backup"
+	"nas-go/api/internal/api/v1/documenttext"
 	emailapi "nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
@@ -49,6 +50,7 @@ type WorkerContext struct {
 	JobsRepository          jobs.RepositoryInterface
 	VideoMetadataRepository video.VideoMetadataRepositoryInterface
 	ImageRepository         imagedom.RepositoryInterface
+	DocumentTextRepository  documenttext.RepositoryInterface
 	AudioMetadataRepository music.AudioMetadataRepositoryInterface
 	Logger                  logger.LoggerServiceInterface
 	NotificationService     notifications.ServiceInterface
@@ -254,6 +256,18 @@ func startWorkersScheduler(context *WorkerContext) {
 			i18n.GetMessage("NOTIFICATION_STARTUP_FILE_SCAN_ENQUEUED_MESSAGE"),
 			"file_scan",
 		)
+	}
+
+	if err := enqueueImageMetadataReconcileJob(context); err != nil {
+		log.Printf("failed to enqueue image_metadata_reconcile job: %v\n", err)
+	}
+
+	if err := enqueueAudioMetadataReconcileJob(context); err != nil {
+		log.Printf("failed to enqueue audio_metadata_reconcile job: %v\n", err)
+	}
+
+	if err := enqueueDocumentTextIndexJob(context); err != nil {
+		log.Printf("failed to enqueue document_text_index job: %v\n", err)
 	}
 
 	if err := enqueueAIPlaylistClusterJob(context); err != nil {

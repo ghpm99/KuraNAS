@@ -1,0 +1,15 @@
+.sortControl {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sortSelect {
+    min-width: 120px;
+}
+
+@media (max-width: 599.95px) {
+    .sortSelect {
+        min-width: 96px;
+    }
+}

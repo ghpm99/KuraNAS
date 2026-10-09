@@ -44,6 +44,11 @@ func scanFileRows(rows *sql.Rows) ([]FileModel, error) {
 // queryFilesPage runs a paginated file query that ends in LIMIT/OFFSET,
 // fetching pageSize+1 rows so UpdatePagination can derive HasNext.
 func (r *Repository) queryFilesPage(query string, page int, pageSize int, args ...any) (utils.PaginationResponse[FileModel], error) {
+	queryArgs := append(args, pageSize+1, utils.CalculateOffset(page, pageSize))
+	return r.runFilesPageQuery(query, page, pageSize, queryArgs)
+}
+
+func (r *Repository) runFilesPageQuery(query string, page int, pageSize int, queryArgs []any) (utils.PaginationResponse[FileModel], error) {
 	response := utils.PaginationResponse[FileModel]{
 		Items: []FileModel{},
 		Pagination: utils.Pagination{
@@ -51,8 +56,6 @@ func (r *Repository) queryFilesPage(query string, page int, pageSize int, args .
 			PageSize: pageSize,
 		},
 	}
-
-	queryArgs := append(args, pageSize+1, utils.CalculateOffset(page, pageSize))
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
 		rows, err := tx.Query(query, queryArgs...)
@@ -134,9 +137,10 @@ func (r *Repository) GetFilesByNameAndPath(name string, path string, limit int) 
 }
 
 // GetActiveChildrenByParentPath lists the active children of a directory,
-// optionally narrowed to a category (starred / recently accessed).
-func (r *Repository) GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	query := queries.GetChildrenByParentPathQuery
+// optionally narrowed to a category (starred / recently accessed). The sort
+// applies to the all-files category only.
+func (r *Repository) GetActiveChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	query := childrenSort.childrenQuery()
 	switch category {
 	case StarredCategory:
 		query = queries.GetStarredChildrenByParentPathQuery

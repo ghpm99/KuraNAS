@@ -1,0 +1,174 @@
+.searchBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-3);
+}
+
+.searchField {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 280px;
+    max-width: 480px;
+    padding: 2px 8px 2px 12px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-xl);
+    min-width: 0;
+}
+
+.searchIcon {
+    flex-shrink: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.searchInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.recursiveToggle {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}
+
+@media (max-width: 599.95px) {
+    .searchBar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .searchField {
+        flex-basis: 100%;
+        max-width: none;
+        width: 100%;
+    }
+}
+
+.resultsHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-2);
+    padding: var(--app-spacing-2) var(--app-spacing-3);
+    color: var(--app-color-text-secondary);
+    font-size: 0.92rem;
+}
+
+.filterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.filterControls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.sortControls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filterPopover {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+    padding: var(--app-spacing-3);
+}
+
+.filterDrawer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+    padding: var(--app-spacing-4);
+}
+
+.filterDrawerTitle {
+    margin: 0;
+    font-weight: 600;
+}
+
+.filterDrawerActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--app-spacing-2);
+}
+
+.modeTabs {
+    min-height: 40px;
+}
+
+.contentStatus {
+    margin: 0;
+    padding: var(--app-spacing-4) var(--app-spacing-3);
+    color: var(--app-color-text-secondary);
+    text-align: center;
+}
+
+.documentList {
+    display: grid;
+    gap: var(--app-spacing-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.documentRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--app-spacing-3);
+    min-width: 0;
+    padding: var(--app-spacing-3);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
+    color: inherit;
+    text-decoration: none;
+}
+
+.documentRow:hover,
+.documentRow:focus-visible {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.documentRow:focus-visible {
+    outline: 2px solid var(--mui-palette-primary-main, var(--app-color-primary));
+    outline-offset: 2px;
+}
+
+.documentIcon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--app-color-text-secondary);
+}
+
+.documentBody {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--app-spacing-1);
+    min-width: 0;
+}
+
+.documentName {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.documentSnippet {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.documentMeta {
+    color: var(--app-color-text-secondary);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}

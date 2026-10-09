@@ -1,0 +1,44 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.cardSlot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.cardSlot > button:first-child {
+    flex: 1;
+}
+
+.menuButton {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(var(--app-color-background-elevated-rgb), 0.72);
+}
+
+.albumList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}

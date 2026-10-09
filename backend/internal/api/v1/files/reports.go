@@ -105,6 +105,10 @@ func (handler *Handler) GetTopFilesBySizeHandler(c *gin.Context) {
 	}, nil)
 
 	limit := utils.ParseInt(c.DefaultQuery("limit", "5"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	topFiles, err := handler.service.GetTopFilesBySize(limit)
 
@@ -131,8 +135,10 @@ func (handler *Handler) GetDuplicateFilesHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "15"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
+	if !isPaginationValid {
+		return
+	}
 
 	report, err := handler.service.GetDuplicateFiles(page, pageSize)
 

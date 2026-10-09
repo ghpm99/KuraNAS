@@ -1,0 +1,6 @@
+.message {
+    margin: var(--app-spacing-2) 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--app-color-text-muted);
+}

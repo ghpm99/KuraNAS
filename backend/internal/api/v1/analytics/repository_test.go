@@ -3,13 +3,16 @@ package analytics
 import (
 	"database/sql"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/analytics"
+	"nas-go/api/pkg/utils"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 )
 
 func newAnalyticsRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
@@ -221,6 +224,56 @@ func TestRepositoryGetDuplicateGroups(t *testing.T) {
 	}
 	if len(result) != 1 || result[0].Copies != 3 || len(result[0].Paths) != 3 {
 		t.Fatalf("unexpected duplicate groups: %+v", result)
+	}
+}
+
+func TestRepositoryGetImageDuplicatesSummaryFiltersByImageFormats(t *testing.T) {
+	repo, mock, db := newAnalyticsRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.DuplicatesSummaryImagesQuery)).
+		WithArgs(pq.Array(utils.ImageFormats)).
+		WillReturnRows(sqlmock.NewRows([]string{"groups", "files", "reclaimable"}).AddRow(1, 2, 512))
+	mock.ExpectRollback()
+
+	result, err := repo.GetImageDuplicatesSummary()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.GroupsTotal != 1 || result.FilesTotal != 2 || result.ReclaimableBytes != 512 {
+		t.Fatalf("unexpected image duplicates summary: %+v", result)
+	}
+}
+
+func TestRepositoryGetImageDuplicateGroupsFiltersByImageFormats(t *testing.T) {
+	repo, mock, db := newAnalyticsRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.DuplicatesTopGroupsImagesQuery)).
+		WithArgs(pq.Array(utils.ImageFormats), 20).
+		WillReturnRows(sqlmock.NewRows([]string{"sig", "copies", "size", "reclaimable", "paths"}).
+			AddRow("abc", 2, 1024, 1024, "{/a.jpg,/b.jpg}"))
+	mock.ExpectRollback()
+
+	result, err := repo.GetImageDuplicateGroups(20)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 || result[0].Copies != 2 || len(result[0].Paths) != 2 {
+		t.Fatalf("unexpected image duplicate groups: %+v", result)
+	}
+}
+
+func TestImageDuplicatesQueriesRestrictToImageFormats(t *testing.T) {
+	for name, query := range map[string]string{
+		"summary": queries.DuplicatesSummaryImagesQuery,
+		"groups":  queries.DuplicatesTopGroupsImagesQuery,
+	} {
+		if !strings.Contains(query, "lower(format) = ANY($1)") {
+			t.Fatalf("%s query must filter by image formats", name)
+		}
 	}
 }
 

@@ -89,6 +89,9 @@ describe('components/about/AboutScreen', () => {
         expect(links).toHaveLength(2);
         expect(links[0]).toHaveAttribute('href', '/analytics');
         expect(links[1]).toHaveAttribute('href', '/settings');
+
+        const wizardLink = screen.getByRole('link', { name: /ENV_WIZARD_OPEN/ });
+        expect(wizardLink).toHaveAttribute('href', '/internal/config-wizard');
     });
 
     it('copies the commit hash and shows feedback', async () => {

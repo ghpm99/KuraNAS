@@ -6,12 +6,17 @@ import (
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/search"
 	"nas-go/api/pkg/utils"
+	"slices"
+	"sync"
 
 	"github.com/lib/pq"
 )
 
 type Repository struct {
 	DbContext *database.DbContext
+
+	fuzzySupportProbe sync.Once
+	isFuzzySupported  bool
 }
 
 func NewRepository(database *database.DbContext) *Repository {
@@ -36,16 +41,22 @@ func (r *Repository) scanRows(query string, scanFn func(*sql.Rows) error, args .
 	})
 }
 
+var mediaFormats = slices.Concat(utils.ImageFormats, utils.AudioFormats, utils.VideoFormats)
+
 func (r *Repository) SearchFiles(query string, limit int) ([]FileResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []FileResultModel{}, nil
+	}
 	results := []FileResultModel{}
 	err := r.scanRows(queries.SearchFilesQuery, func(rows *sql.Rows) error {
 		var item FileResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Starred); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Starred, &item.Size, &item.UpdatedAt, &item.IsCold); err != nil {
 			return err
 		}
 		results = append(results, item)
 		return nil
-	}, query, limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(mediaFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar arquivos: %w", err)
 	}
@@ -53,15 +64,19 @@ func (r *Repository) SearchFiles(query string, limit int) ([]FileResultModel, er
 }
 
 func (r *Repository) SearchFolders(query string, limit int) ([]FolderResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []FolderResultModel{}, nil
+	}
 	results := []FolderResultModel{}
 	err := r.scanRows(queries.SearchFoldersQuery, func(rows *sql.Rows) error {
 		var item FolderResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Starred); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Starred, &item.Size, &item.UpdatedAt, &item.IsCold); err != nil {
 			return err
 		}
 		results = append(results, item)
 		return nil
-	}, query, limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar pastas: %w", err)
 	}
@@ -69,6 +84,10 @@ func (r *Repository) SearchFolders(query string, limit int) ([]FolderResultModel
 }
 
 func (r *Repository) SearchArtists(query string, limit int) ([]ArtistResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []ArtistResultModel{}, nil
+	}
 	results := []ArtistResultModel{}
 	err := r.scanRows(queries.SearchArtistsQuery, func(rows *sql.Rows) error {
 		var item ArtistResultModel
@@ -77,7 +96,7 @@ func (r *Repository) SearchArtists(query string, limit int) ([]ArtistResultModel
 		}
 		results = append(results, item)
 		return nil
-	}, query, pq.Array(utils.AudioFormats), limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, pq.Array(utils.AudioFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar artistas: %w", err)
 	}
@@ -85,6 +104,10 @@ func (r *Repository) SearchArtists(query string, limit int) ([]ArtistResultModel
 }
 
 func (r *Repository) SearchAlbums(query string, limit int) ([]AlbumResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []AlbumResultModel{}, nil
+	}
 	results := []AlbumResultModel{}
 	err := r.scanRows(queries.SearchAlbumsQuery, func(rows *sql.Rows) error {
 		var item AlbumResultModel
@@ -93,7 +116,7 @@ func (r *Repository) SearchAlbums(query string, limit int) ([]AlbumResultModel, 
 		}
 		results = append(results, item)
 		return nil
-	}, query, pq.Array(utils.AudioFormats), limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, pq.Array(utils.AudioFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar albuns: %w", err)
 	}
@@ -142,15 +165,19 @@ func (r *Repository) SearchVideoPlaylists(query string, limit int) ([]VideoPlayl
 }
 
 func (r *Repository) SearchVideos(query string, limit int) ([]VideoResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []VideoResultModel{}, nil
+	}
 	results := []VideoResultModel{}
 	err := r.scanRows(queries.SearchVideosQuery, func(rows *sql.Rows) error {
 		var item VideoResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.UpdatedAt); err != nil {
 			return err
 		}
 		results = append(results, item)
 		return nil
-	}, query, pq.Array(utils.VideoFormats), limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(utils.VideoFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar videos: %w", err)
 	}
@@ -158,17 +185,41 @@ func (r *Repository) SearchVideos(query string, limit int) ([]VideoResultModel, 
 }
 
 func (r *Repository) SearchImages(query string, limit int) ([]ImageResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []ImageResultModel{}, nil
+	}
 	results := []ImageResultModel{}
 	err := r.scanRows(queries.SearchImagesQuery, func(rows *sql.Rows) error {
 		var item ImageResultModel
-		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.Category, &item.Context); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Path, &item.ParentPath, &item.Format, &item.UpdatedAt, &item.Category, &item.Context); err != nil {
 			return err
 		}
 		results = append(results, item)
 		return nil
-	}, query, pq.Array(utils.ImageFormats), limit)
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(utils.ImageFormats), limit)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar imagens: %w", err)
+	}
+	return results, nil
+}
+
+func (r *Repository) SearchTracks(query string, limit int) ([]TrackResultModel, error) {
+	match, hasTerms := buildNameMatch(query)
+	if !hasTerms {
+		return []TrackResultModel{}, nil
+	}
+	results := []TrackResultModel{}
+	err := r.scanRows(queries.SearchTracksQuery, func(rows *sql.Rows) error {
+		var item TrackResultModel
+		if err := rows.Scan(&item.FileID, &item.Title, &item.Artist, &item.Album, &item.AlbumOwner, &item.Duration, &item.Path); err != nil {
+			return err
+		}
+		results = append(results, item)
+		return nil
+	}, match.DrivingPattern, match.allPatternsArg(), match.ExactName, match.PrefixPattern, match.ContainsPattern, pq.Array(utils.AudioFormats), limit)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar faixas: %w", err)
 	}
 	return results, nil
 }

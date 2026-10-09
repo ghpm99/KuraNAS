@@ -64,9 +64,17 @@ func TestUserPromptFormatting(t *testing.T) {
 	}
 
 	metadata := "Filename: photo.jpg\nDimensions: 4000x3000"
-	imagePrompt := ImageClassificationUserPrompt(metadata)
+	imagePrompt := ImageClassificationUserPrompt(metadata, "pt-BR")
 	if !strings.Contains(imagePrompt, metadata) {
 		t.Fatalf("image prompt missing metadata payload")
+	}
+	if !strings.Contains(imagePrompt, "written in pt-BR") {
+		t.Fatalf("image prompt missing language")
+	}
+	for _, field := range []string{`"caption"`, `"tags"`, `"ocr_text"`} {
+		if !strings.Contains(imagePrompt, field) {
+			t.Fatalf("image prompt missing field %s", field)
+		}
 	}
 
 	formattedPrompts := []string{searchPrompt, analyticsPrompt, videoPrompt, imagePrompt}

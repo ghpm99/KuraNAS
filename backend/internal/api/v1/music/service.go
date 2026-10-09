@@ -26,8 +26,8 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return database.ExecOptionalTx(s.Repository.GetDbContext(), fn)
 }
 
-func (s *Service) GetPlaylists(page int, pageSize int) (utils.PaginationResponse[PlaylistDto], error) {
-	playlistsModel, err := s.Repository.GetPlaylists(page, pageSize)
+func (s *Service) GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error) {
+	playlistsModel, err := s.Repository.GetPlaylists(page, pageSize, nameSearch)
 	if err != nil {
 		return utils.PaginationResponse[PlaylistDto]{}, err
 	}
@@ -109,12 +109,7 @@ func (s *Service) DeletePlaylist(id int) error {
 
 func (s *Service) GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error) {
 	if playlistID < 0 {
-		indexEntries, err := s.Repository.GetLibraryIndexEntries()
-		if err != nil {
-			return utils.PaginationResponse[PlaylistTrackDto]{}, err
-		}
-
-		fileIDs, err := s.automaticPlaylistTrackIDs(clientID, playlistID, indexEntries)
+		fileIDs, err := s.automaticPlaylistTrackIDs(clientID, playlistID)
 		if err != nil {
 			return utils.PaginationResponse[PlaylistTrackDto]{}, err
 		}

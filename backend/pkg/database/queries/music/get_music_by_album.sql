@@ -48,7 +48,8 @@ WHERE
     AND hf.deleted_at IS NULL
     AND am.album = $2
 ORDER BY
-    am.track_number,
+    COALESCE(am.disc_number, 1),
+    am.track_no NULLS LAST,
     hf.NAME
 LIMIT
     $3

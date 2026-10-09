@@ -1,15 +1,17 @@
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { FileData } from '@/features/files/providers/fileProvider/fileContext';
-import type { IImageData } from '@/components/providers/imageProvider/imageProvider';
+import type { IImageData } from '@/types/image';
 import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import {
     fetchAnalyticsHealth,
     fetchAnalyticsRecentFiles,
     fetchAnalyticsStorage,
 } from '@/service/analytics';
-import { getFilesTree, getImageFiles } from '@/service/files';
-import { getPlayerState } from '@/service/playerState';
-import { getNowPlayingPlaylist, getPlaylistTracks } from '@/service/playlist';
+import { getTrackDurationSeconds } from '@/utils/music';
+import { getStarredFiles } from '@/service/files';
+import { getImageFiles } from '@/service/image';
+import { getPlayerQueue, getPlayerState } from '@/service/playerState';
+import { queueEntryToTrack } from '@/features/music/components/musicQueueTracks';
 import {
     getVideoHomeCatalog,
     getVideoPlaybackState,
@@ -18,9 +20,9 @@ import {
 } from '@/service/videoPlayback';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { analyticsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const homeAnalyticsPeriod = '30d' as const;
-const nowPlayingPageSize = 200;
 const videoHomeLimit = 12;
 const homeFavoritesLimit = 6;
 const homeImagesLimit = 6;
@@ -77,15 +79,15 @@ const useHomeScreen = () => {
                 recent_files: recentFiles,
             };
         },
+        staleTime: analyticsStaleTimeMs,
         retry: false,
     });
     const favoritesQuery = useQuery({
         queryKey: ['home', 'favorites'],
         queryFn: () =>
-            getFilesTree({
+            getStarredFiles({
                 page: 1,
                 pageSize: homeFavoritesLimit,
-                category: 'starred',
             }),
     });
     const imagesQuery = useQuery({
@@ -110,16 +112,9 @@ const useHomeScreen = () => {
         retry: false,
     });
 
-    const nowPlayingQuery = useQuery({
-        queryKey: ['home', 'music-now-playing'],
-        queryFn: () => getNowPlayingPlaylist(),
-        retry: false,
-    });
-
-    const nowPlayingTracksQuery = useQuery({
-        queryKey: ['home', 'music-now-playing-tracks', nowPlayingQuery.data?.id],
-        queryFn: () => getPlaylistTracks(nowPlayingQuery.data!.id, 1, nowPlayingPageSize),
-        enabled: Boolean(nowPlayingQuery.data?.id),
+    const playerQueueQuery = useQuery({
+        queryKey: ['home', 'music-player-queue'],
+        queryFn: () => getPlayerQueue(),
         retry: false,
     });
 
@@ -159,16 +154,13 @@ const useHomeScreen = () => {
     }, [videoPlaybackQuery.data]);
 
     const fallbackMusicTrack = useMemo(() => {
-        const currentFileId = playerStateQuery.data?.current_file_id;
-        if (!currentFileId) {
-            return null;
-        }
+        const savedEntry = playerQueueQuery.data?.items?.[playerQueueQuery.data.current_index];
+        return savedEntry ? queueEntryToTrack(savedEntry) : null;
+    }, [playerQueueQuery.data]);
 
-        return (
-            nowPlayingTracksQuery.data?.items.find((item) => item.file.id === currentFileId)
-                ?.file ?? null
-        );
-    }, [nowPlayingTracksQuery.data, playerStateQuery.data?.current_file_id]);
+    const activeTrackDurationSeconds = getTrackDurationSeconds(
+        (currentTrack ?? fallbackMusicTrack)?.metadata
+    );
 
     const musicResume = useMemo<HomeMusicResume | null>(() => {
         const activeTrack = currentTrack ?? fallbackMusicTrack;
@@ -180,13 +172,9 @@ const useHomeScreen = () => {
             ? currentTime
             : (playerStateQuery.data?.current_position ?? 0);
         const durationSeconds = currentTrack
-            ? Math.max(duration, activeTrack.metadata?.duration ?? 0)
-            : (activeTrack.metadata?.duration ?? 0);
-        const queueCount =
-            queue.length ||
-            nowPlayingQuery.data?.track_count ||
-            nowPlayingTracksQuery.data?.items.length ||
-            0;
+            ? Math.max(duration, activeTrackDurationSeconds)
+            : activeTrackDurationSeconds;
+        const queueCount = queue.length || playerQueueQuery.data?.items?.length || 0;
 
         return {
             track: activeTrack,
@@ -197,13 +185,13 @@ const useHomeScreen = () => {
             isPlaying: currentTrack ? isPlaying : false,
         };
     }, [
+        activeTrackDurationSeconds,
         currentTime,
         currentTrack,
         duration,
         fallbackMusicTrack,
         isPlaying,
-        nowPlayingQuery.data?.track_count,
-        nowPlayingTracksQuery.data?.items.length,
+        playerQueueQuery.data?.items?.length,
         playerStateQuery.data?.current_position,
         queue.length,
     ]);
@@ -226,10 +214,7 @@ const useHomeScreen = () => {
         isFavoritesLoading: favoritesQuery.isLoading,
         isImagesLoading: imagesQuery.isLoading,
         isVideoLoading: videoCatalogQuery.isLoading || videoPlaybackQuery.isLoading,
-        isMusicLoading:
-            playerStateQuery.isLoading ||
-            nowPlayingQuery.isLoading ||
-            nowPlayingTracksQuery.isLoading,
+        isMusicLoading: playerStateQuery.isLoading || playerQueueQuery.isLoading,
     };
 };
 

@@ -36,7 +36,34 @@ type AudioMetadataModel struct {
 	OriginalArtist      string  `json:"original_artist"`
 	Lyricist            string  `json:"lyricist"`
 	Lyrics              string  `json:"lyrics"`
+	DiscNumberText      string  `json:"disc_number"`
+	TrackNo             *int    `json:"-"`
+	TrackTotal          *int    `json:"-"`
+	DiscNumber          *int    `json:"-"`
+	DiscTotal           *int    `json:"-"`
 	CreatedAt           time.Time
+}
+
+// AudioWithoutMetadata identifies an active audio file that has no
+// audio_metadata row yet, so it is missing from the music library.
+type AudioWithoutMetadata struct {
+	FileID int
+	Path   string
+}
+
+// AudioWithStaleTags identifies an active audio file whose stored tags were
+// extracted by an older extractor version and still look empty.
+type AudioWithStaleTags struct {
+	FileID int
+	Path   string
+}
+
+type AudioCatalogKeySource struct {
+	AudioMetadataID int
+	Artist          string
+	AlbumArtist     string
+	Album           string
+	Genre           string
 }
 
 type PlayerStateModel struct {
@@ -122,4 +149,15 @@ type PlaylistTrackModel struct {
 	MetadataLyricist            string
 	MetadataLyrics              string
 	MetadataCreatedAt           time.Time
+}
+
+type MusicQueueEntryModel struct {
+	FileID        int
+	Name          string
+	Path          string
+	Format        string
+	Title         string
+	Artist        string
+	Album         string
+	LengthSeconds float64
 }

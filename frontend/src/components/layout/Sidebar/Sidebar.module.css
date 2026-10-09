@@ -10,6 +10,7 @@
 }
 
 .brand {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: var(--app-spacing-3);
@@ -23,14 +24,14 @@
     height: 14px;
     border-radius: 999px;
     background:
-        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.78), transparent 32%),
+        radial-gradient(circle at 35% 35%, rgba(var(--app-color-ink-rgb), 0.78), transparent 32%),
         linear-gradient(
             135deg,
             var(--app-color-pink-accent) 0%,
             var(--app-color-primary) 52%,
             var(--app-color-cyan-accent) 100%
         );
-    box-shadow: 0 0 24px rgba(109, 93, 246, 0.3);
+    box-shadow: 0 0 24px rgba(var(--app-color-primary-rgb), 0.3);
 }
 
 .brandText {
@@ -46,19 +47,55 @@
 
 .navList {
     padding: 0 !important;
-}
-
-.treeSection {
     flex: 1;
     min-height: 0;
-    margin-top: var(--app-spacing-4);
-    padding-top: var(--app-spacing-4);
-    border-top: 1px solid var(--app-color-border-subtle);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--app-color-border-subtle) transparent;
+}
+
+.navList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.navList::-webkit-scrollbar-thumb {
+    background: var(--app-color-border-subtle);
+    border-radius: 999px;
+}
+
+.navList::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .mobile {
     border-right: none;
     padding: var(--app-spacing-5);
     background: transparent;
+}
+
+.collapseToggle {
+    margin-left: auto !important;
+    flex-shrink: 0;
+    color: var(--app-color-text-secondary) !important;
+}
+
+.collapseToggle:hover {
+    color: var(--app-color-text-primary) !important;
+}
+
+.collapsed {
+    padding-inline: var(--app-spacing-3);
+}
+
+.collapsed .brand {
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+}
+
+.collapsed .brandText {
+    display: none;
+}
+
+.collapsed .collapseToggle {
+    margin-left: 0;
 }

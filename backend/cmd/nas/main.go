@@ -5,21 +5,20 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"nas-go/api/internal/app"
+	"nas-go/api/internal/config"
 	"nas-go/api/pkg/applog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 )
 
 func main() {
-	applog.Setup(applog.Options{
-		Writer:    os.Stdout,
-		Level:     applog.ParseLevel(os.Getenv("LOG_LEVEL")),
-		AddSource: true,
-	})
+	setupDevFileLogger()
 
 	log.Println("[MAIN][DEV] Iniciando Kuranas")
 
@@ -57,4 +56,37 @@ func main() {
 			log.Println("[MAIN][DEV] Timeout aguardando encerramento do servidor")
 		}
 	}
+}
+
+// setupDevFileLogger points the forensic sink at <projectRoot>/log so that
+// log/kuranas-*.log exists and survives `go run` restarts during development —
+// unlike os.Executable()-derived paths, which land in the ephemeral build temp
+// dir under `go run`. It still echoes to stdout so `make run` shows logs live.
+func setupDevFileLogger() {
+	opts := applog.Options{
+		Writer:    os.Stdout,
+		Level:     applog.ParseLevel(os.Getenv("LOG_LEVEL")),
+		AddSource: true,
+	}
+
+	root := config.FindProjectRoot()
+	if root == "" {
+		applog.Setup(opts)
+		return
+	}
+
+	logDir := filepath.Join(root, "log")
+	rotating, err := applog.NewRotatingFile(applog.RotateConfig{
+		Dir:    logDir,
+		Prefix: "kuranas-",
+	})
+	if err != nil {
+		log.Printf("[MAIN][DEV] Falha ao iniciar log forense em arquivo: %v", err)
+		applog.Setup(opts)
+		return
+	}
+
+	opts.Writer = io.MultiWriter(os.Stdout, rotating)
+	applog.Setup(opts)
+	applog.Info("forensic log started (dev)", "dir", logDir)
 }

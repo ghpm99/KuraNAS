@@ -24,3 +24,6 @@ var GetLastTieringJobQuery string
 
 //go:embed get_tier_counts.sql
 var GetTierCountsQuery string
+
+//go:embed get_tiering_file_by_id.sql
+var GetTieringFileByIdQuery string

@@ -104,7 +104,7 @@ lint-backend:
 	@$(MAKE) prepare-backend-go-cache
 	@echo ""
 	@echo "======== Backend Lint (gofmt) ========"
-	@cd $(BACKEND_DIR) && BADFILES=$$(rg --files -g '*.go' | while IFS= read -r f; do \
+	@cd $(BACKEND_DIR) && BADFILES=$$(git ls-files --cached --others --exclude-standard -- '*.go' | while IFS= read -r f; do \
 		TMP_FMT=$$(mktemp) && TMP_SRC=$$(mktemp) && \
 		gofmt "$$f" > "$$TMP_FMT" && \
 		tr -d '\r' < "$$f" > "$$TMP_SRC" && \

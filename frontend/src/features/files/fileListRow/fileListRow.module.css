@@ -1,0 +1,153 @@
+.listRow {
+    display: grid;
+    grid-template-columns: var(
+        --file-list-columns,
+        40px minmax(0, 1fr) 100px 170px 80px 88px
+    );
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto var(--app-intrinsic-file-row-height);
+}
+
+.listRowSelected {
+    border-color: var(--mui-palette-primary-main, var(--app-color-primary));
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.selectionControl {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+}
+
+.selectionControlVisible,
+.listRow:hover .selectionControl,
+.listRow:focus-within .selectionControl {
+    opacity: 1;
+}
+
+.nameCell {
+    min-width: 0;
+}
+
+.listLink {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+}
+
+.listLink:focus-visible {
+    outline: 2px solid var(--mui-palette-primary-main, var(--app-color-primary));
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.dataCell {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--app-color-text-secondary);
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.phoneSummary {
+    display: none;
+}
+
+.listThumbnail {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(var(--app-color-ink-rgb), 0.05);
+}
+
+.listContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.listTitle {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.listMetadata {
+    color: var(--app-color-text-secondary);
+    font-size: 0.88rem;
+}
+
+.rowActions {
+    display: flex;
+    align-items: center;
+}
+
+.listStarButton {
+    border: none;
+    padding: 8px;
+    background: transparent;
+    color: #fbbf24;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+@media (hover: none) {
+    .selectionControl {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 899.95px) {
+    .typeCell {
+        display: none;
+    }
+
+    .listRow {
+        grid-template-columns: var(
+            --file-list-columns,
+            40px minmax(0, 1fr) 100px 170px 88px
+        );
+    }
+}
+
+@media (max-width: 599.95px) {
+    .listRow {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        padding: 6px 8px;
+        gap: 4px;
+    }
+
+    .sizeCell,
+    .modifiedCell {
+        display: none;
+    }
+
+    .phoneSummary {
+        display: block;
+    }
+
+    .listThumbnail {
+        width: 36px;
+        height: 36px;
+    }
+
+    .listLink {
+        gap: 10px;
+    }
+}

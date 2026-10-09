@@ -21,6 +21,9 @@ type RepositoryInterface interface {
 	SetPhysicalPath(fileID int, physicalPath string) error
 	GetLastRun() (LastRunModel, bool, error)
 	GetTierCounts() (TierCountsModel, error)
+	// GetFileById returns an active file's storage location; found is false
+	// for an unknown or deleted file.
+	GetFileById(fileID int) (TieredFileModel, bool, error)
 }
 
 type ServiceInterface interface {
@@ -28,6 +31,9 @@ type ServiceInterface interface {
 	UpdateSettings(dto SettingsDto) (SettingsDto, error)
 	Status() (StatusDto, error)
 	Usage() (TierUsageDto, error)
+	// PromoteFile brings one cold file back to the hot disk synchronously,
+	// reusing the engine's copy-verify-swap promotion.
+	PromoteFile(fileID int) (FileLocationDto, error)
 	WorkerInterface
 }
 

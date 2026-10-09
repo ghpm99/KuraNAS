@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsScreen from './SettingsScreen';
+import { settingsSections } from './settingsSections';
 
 const mockHandleReset = jest.fn();
 const mockHandleSave = jest.fn();
@@ -97,6 +98,7 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             SETTINGS_APPEARANCE_ACCENT_VIOLET: 'Violet',
             SETTINGS_APPEARANCE_ACCENT_CYAN: 'Cyan',
             SETTINGS_APPEARANCE_ACCENT_ROSE: 'Rose',
+            SETTINGS_APPEARANCE_THEME: 'Theme',
             SETTINGS_APPEARANCE_REDUCE_MOTION: 'Reduce motion',
             SETTINGS_SECTION_LANGUAGE: 'Language',
             SETTINGS_SECTION_LANGUAGE_DESCRIPTION: 'Language selection.',
@@ -141,7 +143,7 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             autoplay_next_video: true,
             image_slideshow_seconds: 8,
         },
-        appearance: { accent_color: 'violet', reduce_motion: false },
+        appearance: { accent_color: 'violet', reduce_motion: false, theme_mode: 'dark' },
         language: { current: 'en-US' },
     },
     isLoading: false,
@@ -155,6 +157,11 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
     accentOptions: [
         { value: 'violet', label: 'Violet' },
         { value: 'cyan', label: 'Cyan' },
+    ],
+    themeModeOptions: [
+        { value: 'dark', label: 'Dark' },
+        { value: 'light', label: 'Light' },
+        { value: 'system', label: 'System' },
     ],
     slideshowOptions: [
         { value: 4, label: '4 seconds' },
@@ -198,6 +205,31 @@ describe('components/settings/SettingsScreen', () => {
         expect(mockHandleSave).toHaveBeenCalledTimes(1);
     });
 
+    it('exposes an anchor for every deep-linkable settings section', () => {
+        render(
+            <MemoryRouter>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        settingsSections.forEach((section) => {
+            expect(document.getElementById(section.id)).not.toBeNull();
+        });
+    });
+
+    it('scrolls to the section named by the url hash', () => {
+        const scrollIntoView = jest.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+
+        render(
+            <MemoryRouter initialEntries={['/settings#appearance']}>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('appearance'));
+    });
+
     it('renders fallback summaries and disabled warnings when runtime configuration is unavailable', () => {
         mockUseSettingsScreen.mockReturnValue(
             createScreenState({
@@ -224,7 +256,7 @@ describe('components/settings/SettingsScreen', () => {
                         autoplay_next_video: false,
                         image_slideshow_seconds: 4,
                     },
-                    appearance: { accent_color: 'cyan', reduce_motion: true },
+                    appearance: { accent_color: 'cyan', reduce_motion: true, theme_mode: 'system' },
                     language: { current: 'pt-BR' },
                 },
                 languageOptions: [{ value: 'pt-BR', label: 'Portuguese' }],
@@ -390,7 +422,7 @@ describe('components/settings/SettingsScreen', () => {
                         autoplay_next_video: true,
                         image_slideshow_seconds: 8,
                     },
-                    appearance: { accent_color: 'violet', reduce_motion: false },
+                    appearance: { accent_color: 'violet', reduce_motion: false, theme_mode: 'dark' },
                     language: { current: 'en-US' },
                 },
             })
@@ -438,6 +470,19 @@ describe('components/settings/SettingsScreen', () => {
         fireEvent.click(option);
 
         expect(mockSetAppearanceField).toHaveBeenCalledWith('accent_color', 'cyan');
+    });
+
+    it('triggers setAppearanceField when theme select changes', () => {
+        render(
+            <MemoryRouter>
+                <SettingsScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.mouseDown(screen.getByLabelText('Theme'));
+        fireEvent.click(screen.getByRole('option', { name: 'Light' }));
+
+        expect(mockSetAppearanceField).toHaveBeenCalledWith('theme_mode', 'light');
     });
 
     it('triggers setLanguageField when language select changes', () => {

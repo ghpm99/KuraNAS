@@ -1,10 +1,10 @@
 import FileProvider from '@/features/files/providers/fileProvider';
-import Layout from '@/components/layout/Layout';
+import UploadQueueProvider from '@/features/files/upload/uploadQueueProvider';
 
 const FilesLayout = ({ children }: { children: React.ReactNode }) => {
     return (
         <FileProvider>
-            <Layout>{children}</Layout>
+            <UploadQueueProvider>{children}</UploadQueueProvider>
         </FileProvider>
     );
 };

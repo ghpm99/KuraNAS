@@ -120,3 +120,6 @@ var UpsertVideoMetadataQuery string
 
 //go:embed delete_video_metadata.sql
 var DeleteVideoMetadataQuery string
+
+//go:embed get_video_summary_by_file_id.sql
+var GetVideoSummaryByFileIDQuery string

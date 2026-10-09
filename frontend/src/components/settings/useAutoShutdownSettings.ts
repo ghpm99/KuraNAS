@@ -8,6 +8,7 @@ import type { AutoShutdownSettings, SuggestedShutdownTime } from '@/types/autoSh
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const defaultSettings: AutoShutdownSettings = {
 	enabled: false,
@@ -33,6 +34,8 @@ const useAutoShutdownSettings = () => {
 
 	const settingsQuery = useQuery({
 		queryKey: ['auto-shutdown-settings'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getAutoShutdownSettings,
 		retry: false,
 	});

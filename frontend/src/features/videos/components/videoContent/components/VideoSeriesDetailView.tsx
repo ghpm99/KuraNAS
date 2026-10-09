@@ -58,7 +58,7 @@ export default function VideoSeriesDetailView({
                         <span>{t('VIDEO_BACK_TO_VIDEOS')}</span>
                     </button>
                     <p className={styles.heroEyebrow}>{t('VIDEO_DETAIL_SERIES_EYEBROW')}</p>
-                    <h1 className={styles.heroTitle}>{playlist.name}</h1>
+                    <h2 className={styles.heroTitle}>{playlist.name}</h2>
                     <p className={styles.heroMeta}>
                         {t('VIDEO_DETAIL_SERIES_PROGRESS', {
                             completed: String(completedCount),

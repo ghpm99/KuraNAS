@@ -2,6 +2,7 @@ package tiering
 
 import (
 	"database/sql"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -174,5 +175,63 @@ func TestRepositoryGetTierCounts(t *testing.T) {
 	counts, err := repo.GetTierCounts()
 	if err != nil || counts.HotFiles != 10 || counts.ColdBytes != 400 {
 		t.Fatalf("unexpected counts: %+v %v", counts, err)
+	}
+}
+
+func TestRepositoryGetFileByIdFoundCold(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTieringFileByIdQuery)).
+		WithArgs(7).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "path", "physical_path", "size"}).
+			AddRow(7, "/data/a.pdf", "/cold/a.pdf", 99))
+	mock.ExpectRollback()
+
+	file, found, err := repo.GetFileById(7)
+
+	if err != nil || !found || !file.isCold() || file.PhysicalPath != "/cold/a.pdf" || file.Size != 99 {
+		t.Fatalf("unexpected result: %+v %v %v", file, found, err)
+	}
+}
+
+func TestRepositoryGetFileByIdHotAndMissing(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTieringFileByIdQuery)).
+		WithArgs(8).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "path", "physical_path", "size"}).
+			AddRow(8, "/data/b.pdf", nil, 10))
+	mock.ExpectRollback()
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTieringFileByIdQuery)).
+		WithArgs(9).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectRollback()
+
+	hotFile, hotFound, hotErr := repo.GetFileById(8)
+	_, missingFound, missingErr := repo.GetFileById(9)
+
+	if hotErr != nil || !hotFound || hotFile.isCold() {
+		t.Fatalf("expected hot file, got %+v %v %v", hotFile, hotFound, hotErr)
+	}
+	if missingErr != nil || missingFound {
+		t.Fatalf("expected clean miss, got found=%v err=%v", missingFound, missingErr)
+	}
+}
+
+func TestRepositoryGetFileByIdWrapsError(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTieringFileByIdQuery)).WillReturnError(errors.New("boom"))
+	mock.ExpectRollback()
+
+	if _, _, err := repo.GetFileById(1); err == nil {
+		t.Fatalf("expected error")
 	}
 }

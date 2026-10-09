@@ -1,3 +1,32 @@
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+
+export interface IMusicMetadata {
+    mime?: string;
+    length?: number;
+    bitrate?: number;
+    sample_rate?: number;
+    channels?: number;
+    bitrate_mode?: number;
+    encoder_info?: string;
+    bit_depth?: number;
+    title?: string;
+    artist?: string;
+    album?: string;
+    album_artist?: string;
+    track_number?: string;
+    genre?: string;
+    composer?: string;
+    year?: string;
+    recording_date?: string;
+    encoder?: string;
+    publisher?: string;
+    original_release_date?: string;
+    original_artist?: string;
+    lyricist?: string;
+    lyrics?: string;
+    disc_number?: string;
+}
+
 export interface MusicArtist {
     key: string;
     artist: string;
@@ -24,6 +53,39 @@ export interface MusicFolder {
     track_count: number;
 }
 
+export interface MusicAlbumSummary {
+    key: string;
+    name: string;
+    artist: string;
+    year: string;
+    track_count: number;
+    total_length_seconds: number;
+    disc_count: number;
+}
+
+export interface MusicArtistSummary {
+    key: string;
+    name: string;
+    track_count: number;
+    album_count: number;
+    total_length_seconds: number;
+}
+
+export interface MusicGroupSummary {
+    key: string;
+    name: string;
+    track_count: number;
+    total_length_seconds: number;
+}
+
+export interface MusicPlayedTrack {
+    track: IMusicData;
+    play_count: number;
+    last_played_at: string;
+}
+
+export type MusicMostPlayedPeriod = 'all' | '30d';
+
 export interface MusicHomeCatalog {
     summary: {
         total_tracks: number;
@@ -46,4 +108,34 @@ export interface MusicHomeCatalog {
     }>;
     artists: MusicArtist[];
     albums: MusicAlbum[];
+}
+
+export type MusicListSortField = 'tracks' | 'name' | 'recent' | 'year';
+
+export type MusicListSortOrder = 'asc' | 'desc';
+
+export interface MusicListSort {
+    sort: MusicListSortField;
+    order: MusicListSortOrder;
+}
+
+export interface MusicQueueEntry {
+    file_id: number;
+    name: string;
+    path: string;
+    format: string;
+    title: string;
+    artist: string;
+    album: string;
+    length: number;
+}
+
+export interface MusicQueue {
+    items: MusicQueueEntry[];
+    truncated: boolean;
+}
+
+export interface PlayerQueue {
+    items: MusicQueueEntry[];
+    current_index: number;
 }

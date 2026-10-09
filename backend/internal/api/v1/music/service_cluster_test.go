@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"nas-go/api/pkg/ai"
 )
@@ -26,53 +25,42 @@ func (f *fakeAIService) Execute(ctx context.Context, req ai.Request) (ai.Respons
 	return ai.Response{}, nil
 }
 
-func clusterTestEntries() []MusicLibraryIndexEntryModel {
-	base := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	return []MusicLibraryIndexEntryModel{
-		catalogEntry(1, "Come Together", "The Beatles", "Abbey Road", "Rock", "/m", "1", base, base, sql.NullTime{}, false),
-		catalogEntry(2, "Something", "The Beatles", "Abbey Road", "Rock", "/m", "2", base, base, sql.NullTime{}, false),
-		catalogEntry(3, "Nemo", "Nightwish", "Once", "Rock", "/m", "1", base, base, sql.NullTime{}, false),
-		catalogEntry(4, "Hurt", "Johnny Cash", "American IV", "Country", "/m", "1", base, base, sql.NullTime{}, false),
+func clusterTestInputs() []artistClusterInput {
+	return []artistClusterInput{
+		{Key: "the beatles", Artist: "The Beatles", GenreHint: "Rock", TrackCount: 2},
+		{Key: "johnny cash", Artist: "Johnny Cash", GenreHint: "Country", TrackCount: 1},
+		{Key: "nightwish", Artist: "Nightwish", GenreHint: "Rock", TrackCount: 1},
 	}
 }
 
-func TestBuildArtistClusterInputs(t *testing.T) {
-	inputs, entriesByArtist := buildArtistClusterInputs(clusterTestEntries())
-
-	if len(inputs) != 3 {
-		t.Fatalf("expected 3 artists, got %d", len(inputs))
+func clusterTestFileIDsByArtistKeys(artistKeys []string) ([]int, error) {
+	fileIDsByArtistKey := map[string][]int{
+		"the beatles": {1, 2},
+		"nightwish":   {3},
+		"johnny cash": {4},
 	}
-	// The Beatles has the most tracks, so it sorts first.
-	if inputs[0].Artist != "The Beatles" || inputs[0].TrackCount != 2 {
-		t.Fatalf("unexpected leading artist: %+v", inputs[0])
+	sortedKeys := append([]string(nil), artistKeys...)
+	sort.Strings(sortedKeys)
+	fileIDs := []int{}
+	for _, artistKey := range sortedKeys {
+		fileIDs = append(fileIDs, fileIDsByArtistKey[artistKey]...)
 	}
-	if inputs[0].GenreHint != "Rock" {
-		t.Fatalf("expected Rock hint, got %q", inputs[0].GenreHint)
-	}
-	if len(entriesByArtist[normalizeLookupKey("The Beatles")]) != 2 {
-		t.Fatalf("expected 2 Beatles entries")
-	}
+	return fileIDs, nil
 }
 
-func TestTopGenre(t *testing.T) {
-	if got := topGenre(map[string]int{}); got != "" {
-		t.Fatalf("expected empty top genre, got %q", got)
-	}
-	got := topGenre(map[string]int{"Rock": 3, "Pop": 3, "Jazz": 1})
-	if got != "Pop" {
-		t.Fatalf("expected lexicographic tie-break Pop, got %q", got)
-	}
-}
-
-func TestBuildClusterTrackIDs(t *testing.T) {
-	_, entriesByArtist := buildArtistClusterInputs(clusterTestEntries())
+func TestLoadClusterTrackIDs(t *testing.T) {
+	repo := &musicRepoMock{getFileIDsByArtistsFn: clusterTestFileIDsByArtistKeys}
+	svc := newMusicServiceForTest(t, repo)
 	mapping := map[string]string{
-		normalizeLookupKey("The Beatles"): "Classic Rock",
-		normalizeLookupKey("Nightwish"):   "Metal",
-		normalizeLookupKey("Johnny Cash"): "",
+		"the beatles": "Classic Rock",
+		"nightwish":   "Metal",
+		"johnny cash": "",
 	}
 
-	tracks := buildClusterTrackIDs(mapping, entriesByArtist)
+	tracks, err := svc.loadClusterTrackIDs(mapping)
+	if err != nil {
+		t.Fatalf("loadClusterTrackIDs failed: %v", err)
+	}
 	if _, ok := tracks[""]; ok {
 		t.Fatalf("empty cluster name must be skipped")
 	}
@@ -81,6 +69,20 @@ func TestBuildClusterTrackIDs(t *testing.T) {
 	}
 	if !reflect.DeepEqual(tracks["Metal"], []int{3}) {
 		t.Fatalf("unexpected Metal tracks: %v", tracks["Metal"])
+	}
+}
+
+func TestLoadClusterTrackIDsPropagatesError(t *testing.T) {
+	repo := &musicRepoMock{getFileIDsByArtistsFn: func([]string) ([]int, error) { return nil, errors.New("boom") }}
+	svc := newMusicServiceForTest(t, repo)
+	if _, err := svc.loadClusterTrackIDs(map[string]string{"a": "Rock"}); err == nil {
+		t.Fatalf("expected error to propagate")
+	}
+}
+
+func TestUniqueFileIDsKeepsFirstOccurrenceOrder(t *testing.T) {
+	if got := uniqueFileIDs([]int{3, 1, 3, 2, 1}); !reflect.DeepEqual(got, []int{3, 1, 2}) {
+		t.Fatalf("unexpected unique ids: %v", got)
 	}
 }
 
@@ -106,9 +108,8 @@ func TestRebuildAIClustersEndToEnd(t *testing.T) {
 	nextID := 100
 
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
-			return clusterTestEntries(), nil
-		},
+		getClusterInputsFn:    func() ([]artistClusterInput, error) { return clusterTestInputs(), nil },
+		getFileIDsByArtistsFn: clusterTestFileIDsByArtistKeys,
 		getArtistClustersFn: func() ([]ArtistClusterModel, error) {
 			return []ArtistClusterModel{}, nil
 		},
@@ -168,9 +169,8 @@ func TestRebuildAIClustersEndToEnd(t *testing.T) {
 func TestRebuildAIClustersIncrementalSkipsKnownArtists(t *testing.T) {
 	deletedPlaylists := []int{}
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
-			return clusterTestEntries(), nil
-		},
+		getClusterInputsFn:    func() ([]artistClusterInput, error) { return clusterTestInputs(), nil },
+		getFileIDsByArtistsFn: clusterTestFileIDsByArtistKeys,
 		getArtistClustersFn: func() ([]ArtistClusterModel, error) {
 			// Every current artist is already mapped, so no AI call is needed.
 			return []ArtistClusterModel{
@@ -215,10 +215,9 @@ func TestRebuildAIClustersIncrementalSkipsKnownArtists(t *testing.T) {
 
 func TestRebuildAIClustersWithoutAIServiceIsNoop(t *testing.T) {
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
-			return clusterTestEntries(), nil
-		},
-		getArtistClustersFn: func() ([]ArtistClusterModel, error) { return []ArtistClusterModel{}, nil },
+		getClusterInputsFn:    func() ([]artistClusterInput, error) { return clusterTestInputs(), nil },
+		getFileIDsByArtistsFn: clusterTestFileIDsByArtistKeys,
+		getArtistClustersFn:   func() ([]ArtistClusterModel, error) { return []ArtistClusterModel{}, nil },
 		createAIPlaylistFn: func(_ *sql.Tx, name string, _ string) (PlaylistModel, error) {
 			t.Fatalf("no playlist should be created without an AI service")
 			return PlaylistModel{}, nil
@@ -233,7 +232,7 @@ func TestRebuildAIClustersWithoutAIServiceIsNoop(t *testing.T) {
 
 func TestRebuildAIClustersPropagatesIndexError(t *testing.T) {
 	repo := &musicRepoMock{
-		getLibraryIndexFn: func() ([]MusicLibraryIndexEntryModel, error) {
+		getClusterInputsFn: func() ([]artistClusterInput, error) {
 			return nil, errors.New("boom")
 		},
 	}

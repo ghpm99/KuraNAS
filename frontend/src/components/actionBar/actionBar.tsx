@@ -2,7 +2,10 @@ import { appRoutes } from '@/app/routes';
 import {
     ArrowLeft,
     Copy,
+    Download,
     FolderPlus,
+    FolderUp,
+    Info,
     MoveRight,
     Pencil,
     RefreshCcw,
@@ -11,45 +14,28 @@ import {
 } from 'lucide-react';
 import useI18n from '../i18n/provider/i18nContext';
 import useFile from '@/features/files/providers/fileProvider/fileContext';
-import { FileType } from '@/utils';
-import {
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    TextField,
-    Typography,
-} from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useRef, useState, type ChangeEvent } from 'react';
-import { useSnackbar } from 'notistack';
-import { downloadFileBlob } from '@/service/files';
-import FolderPicker, { type FolderPickerResult } from '@/components/folderPicker/folderPicker';
+import ConflictPolicySelect from '@/features/files/upload/conflictPolicySelect';
+import useUploadPickers from '@/features/files/upload/useUploadPickers';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
+import useFileActionFlow from '@/features/files/fileActions/useFileActionFlow';
+import useFileOperations from '@/features/files/fileActions/useFileOperations';
+import useCreateFolderFlow from '@/features/files/fileActions/useCreateFolderFlow';
+import ActionBarButton from './actionBarButton';
+import ActionBarMoreMenu, { type ActionBarMenuEntry } from './actionBarMoreMenu';
+import useActionBarLayout from './useActionBarLayout';
 
 export const ActionBar = () => {
-    const {
-        selectedItem,
-        uploadFiles,
-        createFolder,
-        moveFile,
-        copyFile,
-        renameFile,
-        deleteFile,
-        rescanFiles,
-        fileListFilter,
-    } = useFile();
+    const { selectedItem, rescanFiles, fileListFilter } = useFile();
     const { t } = useI18n();
     const navigate = useNavigate();
-    const { enqueueSnackbar } = useSnackbar();
-    const uploadInputRef = useRef<HTMLInputElement | null>(null);
-    const [openDialog, setOpenDialog] = useState<
-        'createFolder' | 'move' | 'copy' | 'rename' | 'delete' | null
-    >(null);
-    const [folderName, setFolderName] = useState('');
-    const [renameName, setRenameName] = useState('');
+    const { openFilePicker, openFolderPicker, pickerInputs } = useUploadPickers();
+    const { openCreateFolderDialog, createFolderDialog } = useCreateFolderFlow();
+    const { startAction, dialogs } = useFileActionFlow();
+    const { downloadFiles } = useFileOperations();
+    const { isAvailable: isDetailsAvailable, openDetails } = useFileDetails();
+    const { isIconOnly, isSecondaryCollapsed } = useActionBarLayout();
     const currentListTitle =
         fileListFilter === 'starred'
             ? t('STARRED_FILES')
@@ -57,133 +43,88 @@ export const ActionBar = () => {
               ? t('RECENT_FILES')
               : t('FILES');
 
-    const currentFolderId =
-        selectedItem && selectedItem.type === FileType.Directory
-            ? selectedItem.id
-            : undefined;
-
-    const handleUploadClick = () => uploadInputRef.current?.click();
-
-    const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        const inputFiles = event.target.files;
-        if (!inputFiles || inputFiles.length === 0) return;
-        try {
-            await uploadFiles(inputFiles, currentFolderId);
-            enqueueSnackbar(t('ACTION_UPLOAD_SUCCESS'), { variant: 'success' });
-        } catch {
-            enqueueSnackbar(t('ERROR_UPLOAD_FAILED'), { variant: 'error' });
-        } finally {
-            event.target.value = '';
-        }
-    };
-
-    const handleCreateFolder = async () => {
-        if (folderName.trim() === '') return;
-        try {
-            await createFolder(folderName.trim(), currentFolderId);
-            enqueueSnackbar(t('ACTION_CREATE_FOLDER_SUCCESS'), {
-                variant: 'success',
-            });
-            setOpenDialog(null);
-            setFolderName('');
-        } catch {
-            enqueueSnackbar(t('ERROR_CREATE_FOLDER_FAILED'), { variant: 'error' });
-        }
-    };
-
-    const handleMoveSelected = async (result: FolderPickerResult) => {
+    const startActionOnOpenedItem = (action: 'move' | 'copy' | 'rename' | 'delete') => {
         if (!selectedItem) return;
-        try {
-            await moveFile(selectedItem.id, result.folderId, result.path);
-            enqueueSnackbar(t('ACTION_MOVE_SUCCESS'), { variant: 'success' });
-            setOpenDialog(null);
-        } catch {
-            enqueueSnackbar(t('ERROR_MOVE_FAILED'), { variant: 'error' });
-        }
+        startAction(action, [selectedItem]);
     };
 
-    const handleDeleteSelected = async () => {
+    const handleDownloadSelected = () => {
         if (!selectedItem) return;
-        try {
-            await deleteFile(selectedItem.id);
-            enqueueSnackbar(t('ACTION_DELETE_SUCCESS'), { variant: 'success' });
-            setOpenDialog(null);
-        } catch {
-            enqueueSnackbar(t('ERROR_DELETE_FAILED'), { variant: 'error' });
-        }
+        downloadFiles([selectedItem]);
     };
 
-    const handleCopySelected = async (result: FolderPickerResult) => {
-        if (!selectedItem) return;
-        try {
-            await copyFile(selectedItem.id, result.folderId, result.path);
-            enqueueSnackbar(t('ACTION_COPY_SUCCESS'), { variant: 'success' });
-            setOpenDialog(null);
-        } catch {
-            enqueueSnackbar(t('ERROR_COPY_FAILED'), { variant: 'error' });
-        }
+    const detailsEntries: ActionBarMenuEntry[] =
+        selectedItem && isDetailsAvailable
+            ? [
+                  {
+                      key: 'details',
+                      label: t('FILES_DETAILS'),
+                      icon: <Info size={16} />,
+                      onSelect: () => openDetails(selectedItem),
+                  },
+              ]
+            : [];
+
+    const openedItemEntries: ActionBarMenuEntry[] = selectedItem
+        ? [
+              ...detailsEntries,
+              {
+                  key: 'move',
+                  label: t('MOVE'),
+                  icon: <MoveRight size={16} />,
+                  onSelect: () => startActionOnOpenedItem('move'),
+              },
+              {
+                  key: 'copy',
+                  label: t('COPY'),
+                  icon: <Copy size={16} />,
+                  onSelect: () => startActionOnOpenedItem('copy'),
+              },
+              {
+                  key: 'rename',
+                  label: t('RENAME'),
+                  icon: <Pencil size={16} />,
+                  onSelect: () => startActionOnOpenedItem('rename'),
+              },
+              {
+                  key: 'delete',
+                  label: t('DELETE'),
+                  icon: <Trash2 size={16} />,
+                  onSelect: () => startActionOnOpenedItem('delete'),
+                  isDestructive: true,
+              },
+              {
+                  key: 'download',
+                  label: t('DOWNLOAD'),
+                  icon: <Download size={16} />,
+                  onSelect: handleDownloadSelected,
+              },
+          ]
+        : [];
+
+    const rescanEntry: ActionBarMenuEntry = {
+        key: 'rescan',
+        label: t('FILES_RESCAN_FOLDER'),
+        icon: <RefreshCcw size={16} />,
+        onSelect: rescanFiles,
     };
 
-    const handleRenameSelected = async () => {
-        if (!selectedItem) return;
-        if (renameName.trim() === '' || renameName.trim() === selectedItem.name) return;
-        try {
-            await renameFile(selectedItem.id, renameName.trim());
-            enqueueSnackbar(t('ACTION_RENAME_SUCCESS'), { variant: 'success' });
-            setOpenDialog(null);
-        } catch {
-            enqueueSnackbar(t('ERROR_RENAME_FAILED'), { variant: 'error' });
-        }
-    };
-
-    const openCreateFolderDialog = () => {
-        setFolderName('');
-        setOpenDialog('createFolder');
-    };
-
-    const openMoveDialog = () => {
-        if (!selectedItem) return;
-        setOpenDialog('move');
-    };
-
-    const openCopyDialog = () => {
-        if (!selectedItem) return;
-        setOpenDialog('copy');
-    };
-
-    const openRenameDialog = () => {
-        if (!selectedItem) return;
-        setRenameName(selectedItem.name);
-        setOpenDialog('rename');
-    };
-
-    const handleDownloadSelected = async () => {
-        if (!selectedItem || selectedItem.type !== FileType.File) return;
-        try {
-            const fileBlob = await downloadFileBlob(selectedItem.id);
-            const blobUrl = URL.createObjectURL(fileBlob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = selectedItem.name;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(blobUrl);
-        } catch {
-            enqueueSnackbar(t('ERROR_LOADING_FILES'), { variant: 'error' });
-        }
-    };
+    const moreMenuEntries = isSecondaryCollapsed
+        ? [...openedItemEntries, rescanEntry]
+        : [rescanEntry];
 
     return (
         <Box
             sx={{
                 display: 'flex',
+                flexWrap: 'wrap',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: 1,
                 mb: 2,
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                 {selectedItem && (
                     <IconButton
                         size="small"
@@ -199,172 +140,45 @@ export const ActionBar = () => {
                         <ArrowLeft size={16} />
                     </IconButton>
                 )}
-                <Typography variant="h6">{selectedItem?.name ?? currentListTitle}</Typography>
+                <Typography variant="h6" noWrap>{selectedItem?.name ?? currentListTitle}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-                <input
-                    ref={uploadInputRef}
-                    type="file"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={handleUploadChange}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                {pickerInputs}
+                <ActionBarButton
+                    label={t('UPLOAD_FILE')}
+                    icon={<Upload size={16} />}
+                    onClick={openFilePicker}
+                    isIconOnly={isIconOnly}
                 />
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<RefreshCcw size={16} />}
-                    onClick={rescanFiles}
-                >
-                    {t('NEW_FILE')}
-                </Button>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Upload size={16} />}
-                    onClick={handleUploadClick}
-                >
-                    {t('UPLOAD_FILE')}
-                </Button>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FolderPlus size={16} />}
+                <ActionBarButton
+                    label={t('FILES_UPLOAD_FOLDER')}
+                    icon={<FolderUp size={16} />}
+                    onClick={openFolderPicker}
+                    isIconOnly={isIconOnly}
+                />
+                <ConflictPolicySelect />
+                <ActionBarButton
+                    label={t('NEW_FOLDER')}
+                    icon={<FolderPlus size={16} />}
                     onClick={openCreateFolderDialog}
-                >
-                    {t('NEW_FOLDER')}
-                </Button>
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<MoveRight size={16} />}
-                        onClick={openMoveDialog}
-                    >
-                        {t('MOVE')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Copy size={16} />}
-                        onClick={openCopyDialog}
-                    >
-                        {t('COPY')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Pencil size={16} />}
-                        onClick={openRenameDialog}
-                    >
-                        {t('RENAME')}
-                    </Button>
-                )}
-                {selectedItem && (
-                    <Button
-                        color="error"
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Trash2 size={16} />}
-                        onClick={() => setOpenDialog('delete')}
-                    >
-                        {t('DELETE')}
-                    </Button>
-                )}
-                {selectedItem?.type === FileType.File && (
-                    <Button variant="outlined" size="small" onClick={handleDownloadSelected}>
-                        {t('DOWNLOAD')}
-                    </Button>
-                )}
+                    isIconOnly={isIconOnly}
+                />
+                {isSecondaryCollapsed
+                    ? null
+                    : openedItemEntries.map((entry) => (
+                          <ActionBarButton
+                              key={entry.key}
+                              label={entry.label}
+                              icon={entry.icon}
+                              onClick={entry.onSelect}
+                              isIconOnly={isIconOnly}
+                              isDestructive={entry.isDestructive}
+                          />
+                      ))}
+                <ActionBarMoreMenu entries={moreMenuEntries} />
             </Box>
-            <Dialog
-                open={openDialog === 'createFolder'}
-                onClose={() => setOpenDialog(null)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>{t('NEW_FOLDER')}</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={t('NAME')}
-                        fullWidth
-                        value={folderName}
-                        onChange={(event) => setFolderName(event.target.value)}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
-                    <Button
-                        onClick={handleCreateFolder}
-                        variant="contained"
-                        disabled={folderName.trim() === ''}
-                    >
-                        {t('NEW_FOLDER')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <FolderPicker
-                open={openDialog === 'move'}
-                onClose={() => setOpenDialog(null)}
-                onSelect={handleMoveSelected}
-            />
-            <FolderPicker
-                open={openDialog === 'copy'}
-                onClose={() => setOpenDialog(null)}
-                onSelect={handleCopySelected}
-            />
-            <Dialog
-                open={openDialog === 'rename'}
-                onClose={() => setOpenDialog(null)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>{t('RENAME')}</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label={t('NAME')}
-                        fullWidth
-                        value={renameName}
-                        onChange={(event) => setRenameName(event.target.value)}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
-                    <Button
-                        onClick={handleRenameSelected}
-                        variant="contained"
-                        disabled={
-                            renameName.trim() === '' || renameName.trim() === selectedItem?.name
-                        }
-                    >
-                        {t('RENAME')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <Dialog
-                open={openDialog === 'delete'}
-                onClose={() => setOpenDialog(null)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle>{t('DELETE')}</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2">{t('CONFIRM_DELETE')}</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(null)}>{t('ACTION_CANCEL')}</Button>
-                    <Button onClick={handleDeleteSelected} variant="contained" color="error">
-                        {t('DELETE')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {createFolderDialog}
+            {dialogs}
         </Box>
     );
 };

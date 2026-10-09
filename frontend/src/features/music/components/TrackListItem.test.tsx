@@ -4,6 +4,8 @@ import TrackListItem from './TrackListItem';
 const mockUseGlobalMusic = jest.fn();
 const mockOnPlay = jest.fn();
 const mockOnAddToPlaylist = jest.fn();
+const mockPlayNext = jest.fn();
+const mockAddToQueue = jest.fn();
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
@@ -13,6 +15,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (track: any) => track.name,
     getMusicArtist: () => 'artist-9',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (duration: number) => `dur-${duration}`,
 }));
 
@@ -22,7 +25,7 @@ const baseTrack: any = {
     format: 'mp3',
     size: 1000,
     metadata: {
-        duration: 180,
+        length: 180,
     },
 };
 
@@ -32,7 +35,22 @@ describe('TrackListItem', () => {
         mockUseGlobalMusic.mockReturnValue({
             currentTrack: { id: 9 },
             isPlaying: true,
+            playNext: mockPlayNext,
+            addToQueue: mockAddToQueue,
         });
+    });
+
+    it('opens the context menu from the more actions button and from right click', () => {
+        render(<TrackListItem track={baseTrack} index={0} onPlay={mockOnPlay} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'MUSIC_TRACK_MORE_ACTIONS' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'MUSIC_PLAY_NEXT' }));
+        expect(mockPlayNext).toHaveBeenCalledWith([baseTrack]);
+        expect(mockOnPlay).not.toHaveBeenCalled();
+
+        fireEvent.contextMenu(screen.getByRole('button', { name: 'play track-9' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'MUSIC_ADD_TO_QUEUE' }));
+        expect(mockAddToQueue).toHaveBeenCalledWith([baseTrack]);
     });
 
     it('renders playing state and playlist action', () => {

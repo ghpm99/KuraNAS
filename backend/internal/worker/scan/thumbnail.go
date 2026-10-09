@@ -40,7 +40,7 @@ func CreateThumbnailWorker(service files.ServiceInterface, videoService videodom
 		return
 	}
 
-	if _, err := service.GetFileThumbnail(fileDto, 320, 320); err != nil {
+	if _, err := service.GetFileThumbnail(fileDto, files.GridThumbnailSize, files.GridThumbnailSize); err != nil {
 		log.Printf("CreateThumbnailWorker: erro ao gerar thumbnail padrao fileID=%d: %v\n", fileID, err)
 	}
 }

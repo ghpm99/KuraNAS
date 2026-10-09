@@ -100,7 +100,7 @@ func Run(coldDir string, promotions []Promotion, demotions []Demotion, setPhysic
 	}
 
 	for _, item := range promotions {
-		if err := promoteOne(item, setPhysical); err != nil {
+		if err := Promote(item, setPhysical); err != nil {
 			log.Printf("[tiering] failed to promote %q: %v\n", item.HotPath, err)
 			stats.Failures++
 			continue
@@ -140,10 +140,10 @@ func demoteOne(item Demotion, setPhysical SetPhysicalPath) error {
 	return nil
 }
 
-// promoteOne is the inverse: copy+verify back to the hot path, clear
+// Promote is the inverse: copy+verify back to the hot path, clear
 // physical_path, then delete the cold copy. Same crash guarantee — the bytes
 // always survive on at least one tier.
-func promoteOne(item Promotion, setPhysical SetPhysicalPath) error {
+func Promote(item Promotion, setPhysical SetPhysicalPath) error {
 	if err := copyVerified(item.ColdPath, item.HotPath); err != nil {
 		return err
 	}

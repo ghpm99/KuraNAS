@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Button, Chip, CircularProgress } from '@mui/material';
-import { Copy, Download, ExternalLink } from 'lucide-react';
+import { Copy, Download, ExternalLink, Wand2 } from 'lucide-react';
+import { appRoutes } from '@/app/routes';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
 import styles from './AboutScreen.module.css';
 import { useAboutScreen } from './useAboutScreen';
 
@@ -23,27 +26,25 @@ const AboutScreen = () => {
     } = useAboutScreen();
 
     return (
-        <div className={styles.page}>
-            <header className={styles.hero}>
-                <div>
-                    <p className={styles.eyebrow}>{t('ABOUT_PAGE_EYEBROW')}</p>
-                    <h1 className={styles.title}>{t('ABOUT_PAGE_TITLE')}</h1>
-                    <p className={styles.description}>{t('ABOUT_PAGE_DESCRIPTION')}</p>
-                </div>
-
-                <div className={styles.heroMeta}>
-                    <Chip
-                        label={`${t('ABOUT_RUNTIME_VERSION')}: ${version}`}
-                        color="primary"
-                        variant="outlined"
-                    />
-                    <Chip
-                        label={workersEnabled ? t('ABOUT_WORKERS_ON') : t('ABOUT_WORKERS_OFF')}
-                        color={workersEnabled ? 'success' : 'default'}
-                        variant="outlined"
-                    />
-                </div>
-            </header>
+        <PageContainer>
+            <PageHeader
+                title={t('ABOUT_PAGE_TITLE')}
+                subtitle={t('ABOUT_PAGE_DESCRIPTION')}
+                actions={
+                    <>
+                        <Chip
+                            label={`${t('ABOUT_RUNTIME_VERSION')}: ${version}`}
+                            color="primary"
+                            variant="outlined"
+                        />
+                        <Chip
+                            label={workersEnabled ? t('ABOUT_WORKERS_ON') : t('ABOUT_WORKERS_OFF')}
+                            color={workersEnabled ? 'success' : 'default'}
+                            variant="outlined"
+                        />
+                    </>
+                }
+            />
 
             <div className={styles.grid}>
                 <section className={styles.panel}>
@@ -193,6 +194,20 @@ const AboutScreen = () => {
                             {t('ABOUT_SECTION_TOOLS_DESCRIPTION')}
                         </p>
                     </div>
+                    <article className={styles.toolCard}>
+                        <div>
+                            <h3 className={styles.toolTitle}>{t('ENV_WIZARD_TITLE')}</h3>
+                            <p className={styles.toolDescription}>{t('ENV_WIZARD_DESCRIPTION')}</p>
+                        </div>
+                        <Button
+                            component={Link}
+                            to={appRoutes.configWizard}
+                            variant="contained"
+                            startIcon={<Wand2 size={14} />}
+                        >
+                            {t('ENV_WIZARD_OPEN')}
+                        </Button>
+                    </article>
                     <div className={styles.toolsGrid}>
                         {tools.map((tool) => (
                             <article key={tool.href} className={styles.toolCard}>
@@ -213,7 +228,7 @@ const AboutScreen = () => {
                     </div>
                 </section>
             </div>
-        </div>
+        </PageContainer>
     );
 };
 

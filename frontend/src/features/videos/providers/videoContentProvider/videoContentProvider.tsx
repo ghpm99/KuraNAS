@@ -19,11 +19,19 @@ import { type VideoSection } from '@/app/routes';
 import {
     getVideoDetailRoute,
     getVideoDetailSlugFromPath,
+    getVideoPlaylistIdFromSearch,
     getVideoSectionForPlaylist,
     getVideoSectionFromPath,
 } from '@/features/videos/components/navigation';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
@@ -93,7 +101,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
-    const [videoSearch, setVideoSearch] = useState('');
+    const searchTextFromUrl = new URLSearchParams(location.search).get('q') ?? '';
+    const [videoSearch, setVideoSearch] = useState(searchTextFromUrl);
+    useEffect(() => {
+        setVideoSearch(searchTextFromUrl);
+    }, [searchTextFromUrl]);
     const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<
         Record<number, number>
     >({});
@@ -140,10 +152,20 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
 
     const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
+    const playlistIdFromSearch = getVideoPlaylistIdFromSearch(location.search);
     const selectedPlaylistSummary = useMemo(() => {
         if (!playlistSlug) return null;
-        return playlists.find((playlist) => slugify(playlist.name) === playlistSlug) ?? null;
-    }, [playlistSlug, playlists]);
+        const playlistById = playlistIdFromSearch
+            ? playlists.find((playlist) => playlist.id === playlistIdFromSearch)
+            : undefined;
+        return (
+            playlistById ??
+            playlists.find(
+                (playlist) => (slugify(playlist.name) || String(playlist.id)) === playlistSlug
+            ) ??
+            null
+        );
+    }, [playlistIdFromSearch, playlistSlug, playlists]);
 
     const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } = useQuery({
         queryKey: videoQueryKeys.playlistDetail(selectedPlaylistSummary?.id),
@@ -391,7 +413,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             }
         },
         selectPlaylist: (playlist) =>
-            navigate(getVideoDetailRoute(resolvePlaylistSection(playlist), slugify(playlist.name))),
+            navigate(
+                getVideoDetailRoute(
+                    resolvePlaylistSection(playlist),
+                    slugify(playlist.name) || String(playlist.id),
+                    playlist.id
+                )
+            ),
         clearSelectedPlaylist: () => {
             if (currentSection === 'home') {
                 navigate('/videos');

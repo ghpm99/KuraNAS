@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const extractBackendError = (error: unknown): string | undefined => {
 	if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -27,6 +28,8 @@ const useAccessControlSettings = () => {
 
 	const allowedIPsQuery = useQuery({
 		queryKey: ['access-control', 'ips'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getAllowedIPs,
 		retry: false,
 	});

@@ -15,6 +15,7 @@ export default function PlaylistsScreen() {
         isFetchingNextPlaylistPage,
         isFetchingNextTrackPage,
         isCreatingPlaylist,
+        isRenamingPlaylist,
         createOpen,
         newName,
         newDescription,
@@ -29,6 +30,8 @@ export default function PlaylistsScreen() {
         submitCreatePlaylist,
         deletePlaylistById,
         removeTrackByFileId,
+        renameSelectedPlaylist,
+        moveTrackToPosition,
     } = usePlaylistsProvider();
 
     if (selectedPlaylist) {
@@ -41,6 +44,9 @@ export default function PlaylistsScreen() {
                 isFetchingNextPage={isFetchingNextTrackPage}
                 onBack={backToList}
                 onRemoveTrack={removeTrackByFileId}
+                isRenaming={isRenamingPlaylist}
+                onRenamePlaylist={renameSelectedPlaylist}
+                onMoveTrack={moveTrackToPosition}
                 onLoadMore={() => void fetchNextTrackPage()}
             />
         );

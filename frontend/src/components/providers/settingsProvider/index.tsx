@@ -7,23 +7,27 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { defaultSettingsConfiguration, SettingsContextProvider } from './settingsContext';
+import { settingsStaleTimeMs } from '../queryFreshness';
 
 const accentPalette: Record<
     SettingsConfiguration['appearance']['accent_color'],
-    { primary: string; hover: string; glow: string }
+    { primary: string; hover: string; glow: string; channels: string }
 > = {
     violet: {
         primary: '#6D5DF6',
+        channels: '109, 93, 246',
         hover: '#7C70FF',
         glow: '0 0 0 1px rgba(109, 93, 246, 0.6), 0 8px 30px rgba(109, 93, 246, 0.18)',
     },
     cyan: {
         primary: '#06B6D4',
+        channels: '6, 182, 212',
         hover: '#22D3EE',
         glow: '0 0 0 1px rgba(6, 182, 212, 0.58), 0 8px 30px rgba(6, 182, 212, 0.18)',
     },
     rose: {
         primary: '#E11D48',
+        channels: '225, 29, 72',
         hover: '#FB7185',
         glow: '0 0 0 1px rgba(225, 29, 72, 0.58), 0 8px 30px rgba(225, 29, 72, 0.18)',
     },
@@ -58,6 +62,7 @@ const applyAppearanceSettings = (settings: SettingsConfiguration) => {
 
     root.style.setProperty('--app-color-primary', accent.primary);
     root.style.setProperty('--app-color-primary-hover', accent.hover);
+    root.style.setProperty('--app-color-primary-rgb', accent.channels);
     root.style.setProperty('--app-shadow-active-primary', accent.glow);
 
     if (settings.appearance.reduce_motion) {
@@ -73,6 +78,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const settingsQuery = useQuery({
         queryKey: ['configuration', 'settings'],
         queryFn: getSettingsConfiguration,
+        staleTime: settingsStaleTimeMs,
+        refetchOnWindowFocus: false,
         retry: false,
     });
 

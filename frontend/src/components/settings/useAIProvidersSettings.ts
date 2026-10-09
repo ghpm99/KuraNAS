@@ -7,6 +7,7 @@ import { isJobFinished } from '@/types/jobs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 type ProviderEdits = Partial<Record<AIProviderName, Partial<AIProviderDto>>>;
 
@@ -25,6 +26,8 @@ const useAIProvidersSettings = () => {
 
 	const providersQuery = useQuery({
 		queryKey: ['ai-providers'],
+		staleTime: settingsStaleTimeMs,
+		refetchOnWindowFocus: false,
 		queryFn: getAIProviders,
 		retry: false,
 	});

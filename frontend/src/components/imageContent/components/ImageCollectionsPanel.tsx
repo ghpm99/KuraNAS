@@ -1,18 +1,17 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    GRID_THUMBNAIL_SIZE,
+    gridThumbnailSizes,
+    thumbnailSrcSet,
+    thumbnailUrl,
+} from '../imageThumbnailSources';
 import styles from './ImageCollectionsPanel.module.css';
-
-const thumbnailWidth = 960;
-const thumbnailHeight = 720;
-
-const thumbnailUrl = (id: number) =>
-    `${getApiV1BaseUrl()}/files/thumbnail/${id}?width=${thumbnailWidth}&height=${thumbnailHeight}`;
 
 export type ImageCollectionCard = {
     id: string;
     title: string;
     description: string;
-    imageCount: number;
+    imageCount?: number;
     coverImageId?: number;
 };
 
@@ -57,7 +56,9 @@ const ImageCollectionsPanel = ({
                     <div className={styles.cover}>
                         {card.coverImageId ? (
                             <img
-                                src={thumbnailUrl(card.coverImageId)}
+                                src={thumbnailUrl(card.coverImageId, GRID_THUMBNAIL_SIZE)}
+                                srcSet={thumbnailSrcSet(card.coverImageId, GRID_THUMBNAIL_SIZE)}
+                                sizes={gridThumbnailSizes}
                                 alt={card.title}
                                 loading="lazy"
                             />
@@ -72,9 +73,11 @@ const ImageCollectionsPanel = ({
                             <h3>{card.title}</h3>
                             <p>{card.description}</p>
                         </div>
-                        <span className={styles.count}>
-                            {t('IMAGES_PHOTOS_COUNT', { count: String(card.imageCount) })}
-                        </span>
+                        {card.imageCount === undefined ? null : (
+                            <span className={styles.count}>
+                                {t('IMAGES_PHOTOS_COUNT', { count: String(card.imageCount) })}
+                            </span>
+                        )}
                     </div>
                 </button>
             ))}

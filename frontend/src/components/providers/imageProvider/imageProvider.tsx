@@ -1,148 +1,176 @@
 /* eslint-disable react-refresh/only-export-components */
-import { Pagination } from '@/types/pagination';
 import {
-    FetchNextPageOptions,
-    InfiniteData,
-    InfiniteQueryObserverResult,
     useInfiniteQuery,
+    useQuery,
+    type FetchNextPageOptions,
+    type InfiniteData,
+    type InfiniteQueryObserverResult,
+    type QueryObserverResult,
 } from '@tanstack/react-query';
-import { createContext, useContext } from 'react';
-import { useState } from 'react';
-import { getImageFiles } from '@/service/files';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { getImageSectionFromPath } from '@/components/images/navigation';
+import {
+    parseImageLibraryView,
+    type ImageLibraryView,
+} from '@/components/imageContent/imageLibraryView';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
+import {
+    getImageLibraryCount,
+    getImageLibraryPage,
+    getImageLibraryTimeline,
+} from '@/service/image';
+import { getImageAlbum } from '@/service/imageAlbum';
+import type { ImageAlbum } from '@/types/imageAlbum';
+import type { ImageLibraryItem, ImageLibraryPage, ImageTimelineBucket } from '@/types/imageLibrary';
 
-export type PersistedImageCategory = 'capture' | 'photo' | 'other';
+export const imageLibraryPageSize = 60;
 
-export interface IImageClassification {
-    category: PersistedImageCategory;
-    confidence: number;
-    suggested_name?: string;
-}
-
-export interface IImageMetadata {
-    id: number;
-    fileId: number;
-    path: string;
-    format: string;
-    mode: string;
-    width: number;
-    height: number;
-    dpi_x: number;
-    dpi_y: number;
-    x_resolution: number;
-    y_resolution: number;
-    resolution_unit: number;
-    orientation: number;
-    compression: number;
-    photometric_interpretation: number;
-    color_space: number;
-    components_configuration: string;
-    icc_profile: string;
-    make: string;
-    model: string;
-    software: string;
-    lens_model: string;
-    serial_number: string;
-    datetime: string;
-    datetime_original: string;
-    datetime_digitized: string;
-    subsec_time: string;
-    exposure_time: number;
-    f_number: number;
-    iso: number;
-    shutter_speed: number;
-    aperture_value: number;
-    brightness_value: number;
-    exposure_bias: number;
-    metering_mode: number;
-    flash: number;
-    focal_length: number;
-    white_balance: number;
-    exposure_program: number;
-    max_aperture_value: number;
-    gps_latitude: number;
-    gps_longitude: number;
-    gps_altitude: number;
-    gps_date: string;
-    gps_time: string;
-    image_description: string;
-    user_comment: string;
-    copyright: string;
-    artist: string;
-    classification: IImageClassification;
-    createdAt: string;
-}
-export interface IImageData {
-    id: number;
-    name: string;
-    path: string;
-    type: number;
-    format: string;
-    size: number;
-    updated_at: string;
-    created_at: string;
-    deleted_at: string;
-    last_interaction: string;
-    last_backup: string;
-    check_sum: string;
-    directory_content_count: number;
-    starred: boolean;
-    metadata?: IImageMetadata;
-}
+export type ImageLibraryPageParam = { cursor?: string; page: number };
 
 export interface IImageContext {
-    images: IImageData[];
+    view: ImageLibraryView;
+    items: ImageLibraryItem[];
     status: 'error' | 'success' | 'pending';
-    imageGroupBy: ImageGroupBy;
-    setImageGroupBy: (groupBy: ImageGroupBy) => void;
+    error: unknown;
+    isFetchNextPageError: boolean;
+    total: number | null;
+    userAlbum?: ImageAlbum | null;
+    timeline: ImageTimelineBucket[];
     fetchNextPage: (
         options?: FetchNextPageOptions | undefined
-    ) => Promise<InfiniteQueryObserverResult<InfiniteData<PaginationResponse, unknown>, Error>>;
+    ) => Promise<InfiniteQueryObserverResult<InfiniteData<ImageLibraryPage, unknown>, Error>>;
+    refetch: () => Promise<QueryObserverResult<InfiniteData<ImageLibraryPage, unknown>, Error>>;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
 }
-
-type PaginationResponse = Pagination<IImageData>;
-export type ImageGroupBy = 'date' | 'type' | 'name';
 
 const ImageContext = createContext<IImageContext | undefined>(undefined);
 
 export const ImageContextProvider = ImageContext.Provider;
 
-const pageSize = 200;
+const firstPageParam: ImageLibraryPageParam = { page: 1 };
 
-export const ImageProvider = ({ children }: { children: React.ReactNode }) => {
-    const [imageGroupBy, setImageGroupBy] = useState<ImageGroupBy>('date');
-    const { status, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['images', imageGroupBy],
-        queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
-            getImageFiles(pageParam, pageSize, imageGroupBy),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) => {
-            if (lastPage.pagination.has_next) {
-                return lastPage.pagination.page + 1;
+export const ImageProvider = ({ children }: { children: ReactNode }) => {
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const section = getImageSectionFromPath(location.pathname);
+    const view = useMemo(
+        () => parseImageLibraryView(section, searchParams),
+        [section, searchParams]
+    );
+    const { filters, ordering, takenBefore, isKeyset } = view;
+    const { userAlbumId } = view;
+    const isAlbumPicker = section === 'albums' && !view.selectedAlbum && userAlbumId === null;
+    const isFolderRoot = section === 'folders' && !view.selectedFolder;
+    const isListingDisabled = isAlbumPicker || isFolderRoot;
+
+    const {
+        data: libraryData,
+        status,
+        error,
+        isFetchNextPageError,
+        fetchNextPage,
+        refetch,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
+        queryKey: ['images', 'library', filters, ordering, takenBefore, userAlbumId],
+        queryFn: ({ pageParam }): Promise<ImageLibraryPage> =>
+            getImageLibraryPage({
+                filters,
+                ordering,
+                pageSize: imageLibraryPageSize,
+                cursor: pageParam.cursor,
+                page: isKeyset ? undefined : pageParam.page,
+                takenBefore: pageParam.cursor ? undefined : takenBefore,
+                albumId: userAlbumId ?? undefined,
+            }),
+        initialPageParam: firstPageParam,
+        getNextPageParam: (lastPage, loadedPages): ImageLibraryPageParam | undefined => {
+            if (!lastPage.has_next) {
+                return undefined;
             }
-            return undefined;
+            if (!isKeyset) {
+                return { page: (lastPage.page ?? loadedPages.length) + 1 };
+            }
+            return lastPage.next_cursor
+                ? { cursor: lastPage.next_cursor, page: loadedPages.length + 1 }
+                : undefined;
         },
-        staleTime: 0,
+        enabled: !isListingDisabled,
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
     });
 
-    const allImages = data?.pages.flatMap((page) => page.items) ?? [];
+    const countQuery = useQuery({
+        queryKey: ['images', 'count', filters],
+        queryFn: () => getImageLibraryCount(filters),
+        enabled: !isListingDisabled && userAlbumId === null,
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
+    });
 
-    return (
-        <ImageContextProvider
-            value={{
-                images: allImages,
-                status,
-                imageGroupBy,
-                setImageGroupBy,
-                fetchNextPage,
-                hasNextPage,
-                isFetchingNextPage,
-            }}
-        >
-            {children}
-        </ImageContextProvider>
+    const timelineQuery = useQuery({
+        queryKey: ['images', 'timeline', filters],
+        queryFn: () => getImageLibraryTimeline(filters),
+        enabled: !isListingDisabled && isKeyset && userAlbumId === null,
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
+    });
+
+    const userAlbumQuery = useQuery({
+        queryKey: ['images', 'albums', 'detail', userAlbumId],
+        queryFn: () => getImageAlbum(userAlbumId as number),
+        enabled: userAlbumId !== null,
+        staleTime: listingStaleTimeMs,
+        refetchOnWindowFocus: false,
+    });
+    const userAlbum = userAlbumQuery.data ?? null;
+    const total =
+        userAlbumId === null
+            ? (countQuery.data ?? null)
+            : view.hasUserFilters
+              ? null
+              : (userAlbum?.item_count ?? null);
+
+    const items = useMemo(
+        () => libraryData?.pages.flatMap((page) => page.items ?? []) ?? [],
+        [libraryData]
     );
+
+    const contextValue = useMemo<IImageContext>(
+        () => ({
+            view,
+            items,
+            status,
+            error,
+            isFetchNextPageError,
+            total,
+            userAlbum,
+            timeline: timelineQuery.data ?? [],
+            fetchNextPage,
+            refetch,
+            hasNextPage,
+            isFetchingNextPage,
+        }),
+        [
+            view,
+            items,
+            status,
+            error,
+            isFetchNextPageError,
+            total,
+            userAlbum,
+            timelineQuery.data,
+            fetchNextPage,
+            refetch,
+            hasNextPage,
+            isFetchingNextPage,
+        ]
+    );
+
+    return <ImageContextProvider value={contextValue}>{children}</ImageContextProvider>;
 };
 
 export const useImage = () => {

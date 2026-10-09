@@ -11,10 +11,13 @@ import {
     deletePlaylist,
     getPlaylistTracks,
     getPlaylists,
+    moveTrackInPlaylist,
     removeTrackFromPlaylist,
+    updatePlaylist,
 } from '@/service/playlist';
 import { PlaylistsContextData } from './playlistsContext';
 import { useSearchParams } from 'react-router-dom';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 
 const PlaylistsContext = createContext<PlaylistsContextData | undefined>(undefined);
 
@@ -56,7 +59,7 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
     const selectedPlaylistId = Number(searchParams.get('playlist') ?? '');
     const selectedPlaylist = useMemo(
         () =>
-            Number.isFinite(selectedPlaylistId) && selectedPlaylistId > 0
+            Number.isInteger(selectedPlaylistId) && selectedPlaylistId !== 0
                 ? (playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null)
                 : null,
         [playlists, selectedPlaylistId]
@@ -136,6 +139,47 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
         },
     });
 
+    const renameMutation = useMutation({
+        mutationFn: ({ name, description }: { name: string; description: string }) => {
+            if (!selectedPlaylist) {
+                return Promise.resolve(null);
+            }
+            return updatePlaylist(selectedPlaylist.id, { name, description });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['playlists'] });
+            enqueueSnackbar(t('MUSIC_PLAYLIST_UPDATED'), { variant: 'success' });
+        },
+        onError: (error) => {
+            enqueueSnackbar(extractBackendErrorMessage(error) ?? t('MUSIC_PLAYLIST_UPDATE_FAILED'), {
+                variant: 'error',
+            });
+        },
+    });
+
+    const moveTrackMutation = useMutation({
+        mutationFn: ({ fileId, position }: { fileId: number; position: number }) => {
+            if (!selectedPlaylist) {
+                return Promise.resolve();
+            }
+            return moveTrackInPlaylist(selectedPlaylist.id, fileId, position);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['playlist-tracks', selectedPlaylist?.id],
+            });
+        },
+        onError: (error) => {
+            enqueueSnackbar(
+                extractBackendErrorMessage(error) ?? t('MUSIC_PLAYLIST_REORDER_FAILED'),
+                { variant: 'error' }
+            );
+            queryClient.invalidateQueries({
+                queryKey: ['playlist-tracks', selectedPlaylist?.id],
+            });
+        },
+    });
+
     const tracks = useMemo(
         () => tracksQuery.data?.pages.flatMap((page) => page.items) ?? [],
         [tracksQuery.data]
@@ -154,6 +198,8 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
         isCreatingPlaylist: createMutation.isPending,
         isDeletingPlaylist: deleteMutation.isPending,
         isRemovingTrack: removeMutation.isPending,
+        isRenamingPlaylist: renameMutation.isPending,
+        isMovingTrack: moveTrackMutation.isPending,
         createOpen,
         newName,
         newDescription,
@@ -183,6 +229,10 @@ export function PlaylistsProvider({ children }: { children: ReactNode }) {
         submitCreatePlaylist: () => createMutation.mutate(),
         deletePlaylistById: (id) => deleteMutation.mutate(id),
         removeTrackByFileId: (fileId) => removeMutation.mutate(fileId),
+        renameSelectedPlaylist: (name, description, onSaved) =>
+            renameMutation.mutate({ name, description }, { onSuccess: onSaved }),
+        moveTrackToPosition: (fileId, position) =>
+            moveTrackMutation.mutate({ fileId, position }),
         playlistQueryFn,
         playlistTracksQueryFn,
     };

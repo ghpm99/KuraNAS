@@ -30,6 +30,42 @@ func TestSetupRoutesStructuredAndStdLogToWriter(t *testing.T) {
 	}
 }
 
+func TestErrorWithStackRecordsErrorAndStack(t *testing.T) {
+	var buf bytes.Buffer
+	Setup(Options{Writer: &buf, Level: slog.LevelInfo})
+
+	ErrorWithStack("operation failed", os.ErrPermission, "op", "delete")
+
+	out := buf.String()
+	if !strings.Contains(out, "operation failed") {
+		t.Fatalf("expected message in output, got: %q", out)
+	}
+	if !strings.Contains(out, "permission denied") {
+		t.Fatalf("expected error text in output, got: %q", out)
+	}
+	if !strings.Contains(out, "op=delete") {
+		t.Fatalf("expected extra field in output, got: %q", out)
+	}
+	if !strings.Contains(out, "stack=") {
+		t.Fatalf("expected stack trace in output, got: %q", out)
+	}
+}
+
+func TestErrorWithStackHandlesNilError(t *testing.T) {
+	var buf bytes.Buffer
+	Setup(Options{Writer: &buf, Level: slog.LevelInfo})
+
+	ErrorWithStack("guard tripped", nil)
+
+	out := buf.String()
+	if !strings.Contains(out, "guard tripped") {
+		t.Fatalf("expected message in output, got: %q", out)
+	}
+	if !strings.Contains(out, "stack=") {
+		t.Fatalf("expected stack trace even with nil error, got: %q", out)
+	}
+}
+
 func TestSetLevelFiltersBelowThreshold(t *testing.T) {
 	var buf bytes.Buffer
 	Setup(Options{Writer: &buf, Level: slog.LevelInfo})

@@ -6,6 +6,7 @@ export interface Playlist {
     description: string;
     is_system: boolean;
     is_auto: boolean;
+    is_ai_generated?: boolean;
     kind: string;
     source_key: string;
     created_at: string;

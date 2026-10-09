@@ -139,6 +139,8 @@ func respondConfigurationError(c *gin.Context, err error, defaultMessageKey stri
 	switch {
 	case errors.Is(err, ErrCapturesPathInsideRoot):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURES_PATH_INSIDE_ROOT")})
+	case errors.Is(err, ErrInvalidThemeMode):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_THEME_MODE")})
 	case errors.Is(err, ErrInvalidSettingsRequest):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	case errors.Is(err, sql.ErrNoRows):

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	files "nas-go/api/internal/api/v1/files"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -39,6 +40,7 @@ func respondVideoError(c *gin.Context, err error) {
 	case errors.Is(err, ErrNoVideosForContext):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 	default:
+		applog.ErrorWithStack("video: operation failed", err, "path", c.FullPath(), "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_OPERATION_FAILED")})
 	}
 }
@@ -104,6 +106,10 @@ func (h *Handler) PreviousVideoHandler(c *gin.Context) {
 func (h *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	const maxLimit = 100
 	limit := utils.ParseInt(c.DefaultQuery("limit", "24"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	if limit <= 0 || limit > maxLimit {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_LIMIT")})
 		return
@@ -147,6 +153,10 @@ func (h *Handler) GetPlaylistMembershipsHandler(c *gin.Context) {
 
 func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	playlist, err := h.service.GetPlaylistByID(c.ClientIP(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
@@ -157,6 +167,10 @@ func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 
 func (h *Handler) SetPlaylistHiddenHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	var req SetPlaylistHiddenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
@@ -171,6 +185,10 @@ func (h *Handler) SetPlaylistHiddenHandler(c *gin.Context) {
 
 func (h *Handler) AddPlaylistVideoHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	var req AddPlaylistVideoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
@@ -186,6 +204,10 @@ func (h *Handler) AddPlaylistVideoHandler(c *gin.Context) {
 func (h *Handler) RemovePlaylistVideoHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	videoID := utils.ParseInt(c.Param("videoId"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	if err := h.service.RemoveVideoFromPlaylist(id, videoID); err != nil {
 		respondVideoError(c, err)
 		return
@@ -195,6 +217,10 @@ func (h *Handler) RemovePlaylistVideoHandler(c *gin.Context) {
 
 func (h *Handler) UpdatePlaylistHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	var req UpdatePlaylistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
@@ -209,6 +235,10 @@ func (h *Handler) UpdatePlaylistHandler(c *gin.Context) {
 
 func (h *Handler) ReorderPlaylistHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	var req ReorderPlaylistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
@@ -237,6 +267,10 @@ func (h *Handler) TrackBehaviorEventHandler(c *gin.Context) {
 
 func (h *Handler) GetUnassignedVideosHandler(c *gin.Context) {
 	limit := utils.ParseInt(c.DefaultQuery("limit", "2000"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 	videos, err := h.service.GetUnassignedVideos(limit)
 	if err != nil {
 		respondVideoError(c, err)
@@ -246,8 +280,10 @@ func (h *Handler) GetUnassignedVideosHandler(c *gin.Context) {
 }
 
 func (h *Handler) ListLibraryVideosHandler(c *gin.Context) {
-	page := utils.ParseInt(c.DefaultQuery("page", "1"), c)
-	pageSize := utils.ParseInt(c.DefaultQuery("page_size", "50"), c)
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, 50)
+	if !isPaginationValid {
+		return
+	}
 	query := c.DefaultQuery("query", "")
 
 	videos, err := h.service.ListLibraryVideos(page, pageSize, query)

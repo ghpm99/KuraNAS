@@ -12,6 +12,7 @@ package dav
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -34,10 +35,13 @@ const trashDirName = ".kuranas-trash"
 const Prefix = "/dav"
 
 // NewHandler builds the WebDAV handler serving the enabled storage roots.
-func NewHandler() http.Handler {
+// coldFiles may be nil, in which case files demoted to the cold tier are not
+// surfaced; with a catalog they are listed, stat'ed and read from their
+// physical location, and read-only for writes, renames and deletes.
+func NewHandler(coldFiles ColdFileCatalog) http.Handler {
 	return &webdav.Handler{
 		Prefix:     Prefix,
-		FileSystem: &rootsFS{},
+		FileSystem: &rootsFS{coldFiles: coldFiles},
 		LockSystem: webdav.NewMemLS(),
 	}
 }
@@ -45,7 +49,9 @@ func NewHandler() http.Handler {
 // rootsFS is a webdav.FileSystem whose level zero is the list of enabled
 // storage roots; everything below dispatches into the owning root's disk
 // directory. The registry is re-read per call, so root changes apply live.
-type rootsFS struct{}
+type rootsFS struct {
+	coldFiles ColdFileCatalog
+}
 
 var errCrossRoot = fmt.Errorf("dav: rename across storage roots is not supported")
 
@@ -93,7 +99,7 @@ func resolve(name string) (webdav.Dir, string, error) {
 	return "", "", os.ErrNotExist
 }
 
-func (rootsFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
+func (filesystem rootsFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
 	dir, rest, err := resolve(name)
 	if err != nil {
 		if err == os.ErrInvalid {
@@ -102,13 +108,15 @@ func (rootsFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
 		return err
 	}
 	if rest == "/" {
-		// The root labels themselves are managed in Settings, not via DAV.
 		return os.ErrPermission
+	}
+	if filesystem.isColdOnly(ctx, dir, rest) {
+		return os.ErrExist
 	}
 	return dir.Mkdir(ctx, rest, perm)
 }
 
-func (rootsFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
+func (filesystem rootsFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
 	dir, rest, err := resolve(name)
 	if err != nil {
 		if err == os.ErrInvalid {
@@ -119,14 +127,19 @@ func (rootsFS) OpenFile(ctx context.Context, name string, flag int, perm os.File
 		}
 		return nil, err
 	}
-	file, openErr := dir.OpenFile(ctx, rest, flag, perm)
+	file, openErr := filesystem.openWithTierFallback(ctx, dir, rest, flag, perm)
 	if openErr != nil {
 		return nil, openErr
 	}
-	return &trashHidingFile{File: file}, nil
+	return &tieredDirFile{
+		File:       file,
+		logicalDir: logicalDiskPath(dir, rest),
+		coldFiles:  filesystem.coldFiles,
+		hotNames:   map[string]bool{},
+	}, nil
 }
 
-func (rootsFS) RemoveAll(ctx context.Context, name string) error {
+func (filesystem rootsFS) RemoveAll(ctx context.Context, name string) error {
 	dir, rest, err := resolve(name)
 	if err != nil {
 		if err == os.ErrInvalid {
@@ -137,10 +150,13 @@ func (rootsFS) RemoveAll(ctx context.Context, name string) error {
 	if rest == "/" {
 		return os.ErrPermission
 	}
+	if filesystem.isColdOnly(ctx, dir, rest) {
+		return os.ErrPermission
+	}
 	return dir.RemoveAll(ctx, rest)
 }
 
-func (rootsFS) Rename(ctx context.Context, oldName string, newName string) error {
+func (filesystem rootsFS) Rename(ctx context.Context, oldName string, newName string) error {
 	oldDir, oldRest, err := resolve(oldName)
 	if err != nil {
 		if err == os.ErrInvalid {
@@ -159,13 +175,15 @@ func (rootsFS) Rename(ctx context.Context, oldName string, newName string) error
 		return os.ErrPermission
 	}
 	if oldDir != newDir {
-		// Different roots usually mean different volumes (EXDEV).
 		return errCrossRoot
+	}
+	if filesystem.isColdOnly(ctx, oldDir, oldRest) {
+		return os.ErrPermission
 	}
 	return oldDir.Rename(ctx, oldRest, newRest)
 }
 
-func (rootsFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+func (filesystem rootsFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 	dir, rest, err := resolve(name)
 	if err != nil {
 		if err == os.ErrInvalid {
@@ -174,35 +192,19 @@ func (rootsFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 		return nil, err
 	}
 	info, statErr := dir.Stat(ctx, rest)
+	if errors.Is(statErr, os.ErrNotExist) {
+		if coldFile, isCold := filesystem.findColdFile(dir, rest); isCold {
+			return statColdFile(coldFile)
+		}
+	}
 	if statErr != nil {
 		return nil, statErr
 	}
 	if rest == "/" {
-		// Surface the registered label, not the on-disk base name.
 		label, _, _ := splitPath(name)
-		return renamedDirInfo{FileInfo: info, label: label}, nil
+		return renamedFileInfo{FileInfo: info, name: label}, nil
 	}
 	return info, nil
-}
-
-// trashHidingFile filters the internal trash dir out of directory listings.
-type trashHidingFile struct {
-	webdav.File
-}
-
-func (f *trashHidingFile) Readdir(count int) ([]fs.FileInfo, error) {
-	entries, err := f.File.Readdir(count)
-	if err != nil {
-		return entries, err
-	}
-	filtered := entries[:0]
-	for _, entry := range entries {
-		if entry.Name() == trashDirName {
-			continue
-		}
-		filtered = append(filtered, entry)
-	}
-	return filtered, nil
 }
 
 // virtualDirInfo is the FileInfo of the synthetic level-zero directory and of
@@ -219,13 +221,14 @@ func (i virtualDirInfo) ModTime() time.Time { return i.modTime }
 func (i virtualDirInfo) IsDir() bool        { return true }
 func (i virtualDirInfo) Sys() any           { return nil }
 
-// renamedDirInfo decorates a real directory's FileInfo with the root label.
-type renamedDirInfo struct {
+// renamedFileInfo decorates a real FileInfo with the name clients should see:
+// the root label for a root directory, the logical name for a cold file.
+type renamedFileInfo struct {
 	os.FileInfo
-	label string
+	name string
 }
 
-func (i renamedDirInfo) Name() string { return i.label }
+func (i renamedFileInfo) Name() string { return i.name }
 
 // virtualRootDir is the read-only level-zero directory listing the enabled
 // roots, one entry per registered label.

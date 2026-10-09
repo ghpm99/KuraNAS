@@ -1,8 +1,11 @@
 import FileContent from '@/features/files/fileContent';
 import FileDetails from '@/features/files/fileDetails';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { FileType } from '@/utils';
-import { Heart, LayoutGrid, List, Sparkles } from 'lucide-react';
+import { LayoutGrid, List, Sparkles } from 'lucide-react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { appRoutes } from '@/app/routes';
@@ -15,10 +18,14 @@ const FavoritesScreen = () => {
         activeFilter,
         activeFilterLabel,
         breadcrumbSegments,
+        closeSelectedItem,
         contextPath,
         currentTitle,
+        fetchNextPage,
         filterOptions,
         filteredItems,
+        hasNextPage,
+        isFetchingNextPage,
         itemCountLabel,
         selectedItem,
         setActiveFilter,
@@ -32,32 +39,11 @@ const FavoritesScreen = () => {
         : styles.workspace;
 
     return (
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroCopy}>
-                    <div className={styles.heroEyebrow}>
-                        <Heart size={16} />
-                        <span>{t('FAVORITES_EYEBROW')}</span>
-                    </div>
-                    <h1 className={styles.heroTitle}>{t('FAVORITES_PAGE_TITLE')}</h1>
-                    <p className={styles.heroDescription}>{t('FAVORITES_PAGE_DESCRIPTION')}</p>
-                </div>
-
-                <div className={styles.heroMeta}>
-                    <div className={styles.heroMetric}>
-                        <span className={styles.heroMetricLabel}>{t('FAVORITES_SCOPE_LABEL')}</span>
-                        <span className={styles.heroMetricValue}>{currentTitle}</span>
-                        <span className={styles.heroMetricHelp}>{contextPath}</span>
-                    </div>
-                    <div className={styles.heroMetric}>
-                        <span className={styles.heroMetricLabel}>
-                            {t('FAVORITES_ACTIVE_FILTER_LABEL')}
-                        </span>
-                        <span className={styles.heroMetricValue}>{activeFilterLabel}</span>
-                        <span className={styles.heroMetricHelp}>{itemCountLabel}</span>
-                    </div>
-                </div>
-            </section>
+        <PageContainer>
+            <PageHeader
+                title={t('FAVORITES_PAGE_TITLE')}
+                subtitle={t('FAVORITES_PAGE_DESCRIPTION')}
+            />
 
             <div className={workspaceClassName}>
                 <div className={styles.mainColumn}>
@@ -171,18 +157,25 @@ const FavoritesScreen = () => {
                             title={currentTitle}
                             emptyStateMessage={t('FAVORITES_EMPTY_STATE')}
                         />
+                        {selectedItem ? null : (
+                            <LoadMoreSentinel
+                                hasNextPage={hasNextPage}
+                                isFetchingNextPage={isFetchingNextPage}
+                                fetchNextPage={fetchNextPage}
+                            />
+                        )}
                     </section>
                 </div>
 
-                {isFileSelected ? (
+                {isFileSelected && selectedItem ? (
                     <aside className={styles.previewColumn}>
                         <section className={`${styles.panel} ${styles.previewCard}`}>
-                            <FileDetails />
+                            <FileDetails file={selectedItem} onClose={closeSelectedItem} />
                         </section>
                     </aside>
                 ) : null}
             </div>
-        </div>
+        </PageContainer>
     );
 };
 

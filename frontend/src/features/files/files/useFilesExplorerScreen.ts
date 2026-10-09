@@ -1,10 +1,14 @@
 import useFile from '@/features/files/providers/fileProvider/fileContext';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { FileType } from '@/utils';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import useFileAncestors from '@/features/files/providers/fileProvider/useFileAncestors';
 import { findTrailById } from './fileNavigation';
+import { loadFilesViewMode, saveFilesViewMode, type FilesViewMode } from './filesViewModePreference';
 
-export type FilesViewMode = 'grid' | 'list';
+const primaryRootPath = '/';
+
+export type { FilesViewMode };
 
 export type BreadcrumbSegment = {
     id: number | null;
@@ -15,9 +19,15 @@ export type BreadcrumbSegment = {
 
 const useFilesExplorerScreen = () => {
     const { t } = useI18n();
-    const { files, selectedItem, fileListFilter } = useFile();
-    const [viewMode, setViewMode] = useState<FilesViewMode>('grid');
+    const { files, selectedItem, fileListFilter, hasNextPage } = useFile();
+    const [viewMode, setViewModeState] = useState<FilesViewMode>(loadFilesViewMode);
+    const { data: ancestors } = useFileAncestors(selectedItem?.id ?? null);
     const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
+
+    const setViewMode = useCallback((nextViewMode: FilesViewMode) => {
+        setViewModeState(nextViewMode);
+        saveFilesViewMode(nextViewMode);
+    }, []);
 
     const currentListTitle = useMemo(() => {
         if (fileListFilter === 'starred') {
@@ -55,6 +65,24 @@ const useFilesExplorerScreen = () => {
             return [rootSegment];
         }
 
+        if (ancestors) {
+            const currentSegment: BreadcrumbSegment = {
+                id: selectedItem.id,
+                label: selectedItem.name,
+                path: selectedItem.path,
+                isCurrent: true,
+            };
+            const ancestorSegments = ancestors
+                .filter((ancestor) => ancestor.path !== primaryRootPath)
+                .map((ancestor) => ({
+                    id: ancestor.id,
+                    label: ancestor.name,
+                    path: ancestor.path,
+                    isCurrent: false,
+                }));
+            return [rootSegment, ...ancestorSegments, currentSegment];
+        }
+
         const trail = findTrailById(files, selectedItem.id) ?? [];
         if (trail.length === 0) {
             return [
@@ -77,12 +105,30 @@ const useFilesExplorerScreen = () => {
                 isCurrent: index === trail.length - 1,
             })),
         ];
-    }, [files, selectedItem, t]);
+    }, [ancestors, files, selectedItem, t]);
 
     const itemCountLabel = useMemo(() => {
-        const count = currentItems.length;
-        return `${count} ${count === 1 ? t('ITEM') : t('ITENS')}`;
-    }, [currentItems.length, t]);
+        const loadedCount = currentItems.length;
+        const folderTotalCount =
+            selectedItem?.type === FileType.Directory &&
+            typeof selectedItem.directory_content_count === 'number'
+                ? selectedItem.directory_content_count
+                : null;
+
+        const isFolderTotalReliable =
+            folderTotalCount !== null && (folderTotalCount > loadedCount || !hasNextPage);
+
+        if (isFolderTotalReliable) {
+            const totalCount = Math.max(folderTotalCount, loadedCount);
+            return `${totalCount} ${totalCount === 1 ? t('ITEM') : t('ITENS')}`;
+        }
+
+        if (hasNextPage) {
+            return `${loadedCount}+ ${t('ITENS')}`;
+        }
+
+        return `${loadedCount} ${loadedCount === 1 ? t('ITEM') : t('ITENS')}`;
+    }, [currentItems.length, hasNextPage, selectedItem, t]);
 
     const contextLabel = selectedItem
         ? selectedItem.type === FileType.File

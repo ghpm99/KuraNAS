@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"nas-go/api/internal/roots"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -43,7 +44,7 @@ func (m *filesHandlerServiceMock) listingPage(page int, pageSize int) (utils.Pag
 		},
 	}, nil
 }
-func (m *filesHandlerServiceMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+func (m *filesHandlerServiceMock) GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
 }
 func (m *filesHandlerServiceMock) GetRootNodes() ([]FileDto, error) {
@@ -62,8 +63,29 @@ func (m *filesHandlerServiceMock) GetActiveFilesPage(page int, pageSize int) (ut
 func (m *filesHandlerServiceMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
 }
+func (m *filesHandlerServiceMock) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) GetRecentlyAccessedFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(page, pageSize)
+}
+func (m *filesHandlerServiceMock) SearchFilesByName(params FileSearchParams) (utils.PaginationResponse[FileDto], error) {
+	return m.listingPage(params.Page, params.PageSize)
+}
 func (m *filesHandlerServiceMock) GetFileStatByPath(path string) (FileStat, bool, error) {
 	return FileStat{}, false, nil
+}
+func (m *filesHandlerServiceMock) GetFileLocation(id int) (FileLocationDto, error) {
+	return FileLocationDto{FileID: id}, nil
+}
+func (m *filesHandlerServiceMock) GetFolderStats(id int) (FolderStatsDto, error) {
+	return FolderStatsDto{}, nil
+}
+func (m *filesHandlerServiceMock) GetFileAncestors(id int) ([]FileAncestorDto, error) {
+	return []FileAncestorDto{}, nil
+}
+func (m *filesHandlerServiceMock) GetActiveFileByDiskPath(diskPath string) (FileDto, error) {
+	return FileDto{ID: 1, Name: "disk", Path: diskPath}, nil
 }
 func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { return true, nil }
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
@@ -80,9 +102,6 @@ func (m *filesHandlerServiceMock) DeleteFileRecord(id int) error {
 }
 func (m *filesHandlerServiceMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
 	return []byte("png"), nil
-}
-func (m *filesHandlerServiceMock) GetFileBlobById(fileId int) (FileBlob, error) {
-	return FileBlob{ID: fileId, Blob: []byte("data"), Format: ".txt"}, nil
 }
 func (m *filesHandlerServiceMock) GetTotalSpaceUsed() (int, error) { return 123, nil }
 func (m *filesHandlerServiceMock) GetTotalFiles() (int, error)     { return 9, nil }
@@ -106,6 +125,9 @@ func (m *filesHandlerServiceMock) CheckFileExistsByPath(path string) bool       
 func (m *filesHandlerServiceMock) DeleteFile(file FileDto, bySystem bool) error { return nil }
 func (m *filesHandlerServiceMock) RestoreSubtree(path string) error             { return nil }
 func (m *filesHandlerServiceMock) UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error) {
+	return UploadFilesResult{}, nil
+}
+func (m *filesHandlerServiceMock) UploadFilesWithOptions(targetFolderID int, files []*multipart.FileHeader, options UploadOptions) (UploadFilesResult, error) {
 	return UploadFilesResult{}, nil
 }
 func (m *filesHandlerServiceMock) CreateFolder(parentID *int, name string) (string, error) {
@@ -136,25 +158,34 @@ func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFi
 
 type filesHandlerServiceFuncMock struct {
 	filesHandlerServiceMock
-	getChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getFilesByPathFn     func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getActiveFilesFn     func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getFileByIdFn        func(id int) (FileDto, error)
-	updateFileFn         func(file FileDto) (bool, error)
-	getFileBlobByIdFn    func(fileId int) (FileBlob, error)
-	getTotalSpaceUsedFn  func() (int, error)
-	getTotalFilesFn      func() (int, error)
-	getTotalDirectoryFn  func() (int, error)
-	getReportSizeByFmtFn func() ([]SizeReportDto, error)
-	getTopFilesBySizeFn  func(limit int) ([]FileDto, error)
-	getDuplicateFilesFn  func(page int, pageSize int) (DuplicateFileReportDto, error)
+	requestedChildrenSort ChildrenSort
+	getChildrenFn         func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFilesByPathFn      func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getActiveFilesFn      func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFileByIdFn         func(id int) (FileDto, error)
+	updateFileFn          func(file FileDto) (bool, error)
+	getTotalSpaceUsedFn   func() (int, error)
+	getTotalFilesFn       func() (int, error)
+	getTotalDirectoryFn   func() (int, error)
+	getReportSizeByFmtFn  func() ([]SizeReportDto, error)
+	getTopFilesBySizeFn   func(limit int) ([]FileDto, error)
+	getDuplicateFilesFn   func(page int, pageSize int) (DuplicateFileReportDto, error)
+	getFileThumbnailFn    func(fileDto FileDto, width, height int) ([]byte, error)
 }
 
-func (m *filesHandlerServiceFuncMock) GetChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+func (m *filesHandlerServiceFuncMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
+	if m.getFileThumbnailFn != nil {
+		return m.getFileThumbnailFn(fileDto, width, height)
+	}
+	return m.filesHandlerServiceMock.GetFileThumbnail(fileDto, width, height)
+}
+
+func (m *filesHandlerServiceFuncMock) GetChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	m.requestedChildrenSort = childrenSort
 	if m.getChildrenFn != nil {
 		return m.getChildrenFn(parentPath, category, page, pageSize)
 	}
-	return m.filesHandlerServiceMock.GetChildrenByParentPath(parentPath, category, page, pageSize)
+	return m.filesHandlerServiceMock.GetChildrenByParentPath(parentPath, category, childrenSort, page, pageSize)
 }
 func (m *filesHandlerServiceFuncMock) GetFilesByPath(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	if m.getFilesByPathFn != nil {
@@ -179,12 +210,6 @@ func (m *filesHandlerServiceFuncMock) UpdateFile(file FileDto) (bool, error) {
 		return m.updateFileFn(file)
 	}
 	return m.filesHandlerServiceMock.UpdateFile(file)
-}
-func (m *filesHandlerServiceFuncMock) GetFileBlobById(fileId int) (FileBlob, error) {
-	if m.getFileBlobByIdFn != nil {
-		return m.getFileBlobByIdFn(fileId)
-	}
-	return m.filesHandlerServiceMock.GetFileBlobById(fileId)
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -299,7 +324,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodPost, path: "/files/update", body: "data=/tmp", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/blob/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusOK},
 		{method: http.MethodPost, path: "/files/starred/1", code: http.StatusOK},
@@ -379,6 +403,33 @@ func TestFilesHandlerThumbnailMissingSource(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 for missing thumbnail source, got %d", w.Code)
 	}
+	if w.Header().Get("ETag") != "" {
+		t.Fatalf("a failed thumbnail must not advertise an ETag")
+	}
+	if !strings.Contains(w.Body.String(), i18n.GetMessage("ERROR_FILE_NOT_FOUND")) {
+		t.Fatalf("expected translated not-found error, got %s", w.Body.String())
+	}
+}
+
+func TestFilesHandlerThumbnailRevalidatesWithETag(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		getFileByIdFn: func(id int) (FileDto, error) {
+			return FileDto{ID: id, UpdatedAt: time.Unix(1000, 0), Type: File}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := gin.New()
+	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
+	expectedETag := ThumbnailETag(FileDto{ID: 3, UpdatedAt: time.Unix(1000, 0)}, 320, 320)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/thumbnail/3", nil)
+	req.Header.Set("If-None-Match", expectedETag)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotModified {
+		t.Fatalf("expected 304 for matching ETag, got %d", w.Code)
+	}
 }
 
 func TestFilesHandlerGetChildrenByIdNotFound(t *testing.T) {
@@ -441,9 +492,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		},
 		updateFileFn: func(file FileDto) (bool, error) {
 			return false, errBoom
-		},
-		getFileBlobByIdFn: func(fileId int) (FileBlob, error) {
-			return FileBlob{}, errBoom
 		},
 		getTotalSpaceUsedFn: func() (int, error) { return 0, errBoom },
 		getTotalFilesFn:     func() (int, error) { return 0, errBoom },
@@ -539,5 +587,86 @@ func TestGetFilesTreeHandlerMultiRootLevelZero(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 for child listing, got %d", w.Code)
+	}
+}
+
+func TestGetFilesTreeHandlerInvalidPageRespondsOnceWithBadRequest(t *testing.T) {
+	handler := NewHandler(&filesHandlerServiceMock{}, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/tree?page=abc", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("expected a single JSON document, got %q: %v", recorder.Body.String(), err)
+	}
+	if body["error"] == "" {
+		t.Fatalf("expected translated error message, got %q", recorder.Body.String())
+	}
+}
+
+func TestGetFilesHandlerClampsOversizedPageSize(t *testing.T) {
+	receivedPageSizes := []int{}
+	service := &filesHandlerServiceFuncMock{
+		getChildrenFn: func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			receivedPageSizes = append(receivedPageSizes, pageSize)
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+		},
+		getActiveFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+			receivedPageSizes = append(receivedPageSizes, pageSize)
+			return utils.PaginationResponse[FileDto]{Items: []FileDto{}}, nil
+		},
+	}
+	handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files?page=0&page_size=100000", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if len(receivedPageSizes) != 1 || receivedPageSizes[0] != utils.MaxPageSize {
+		t.Fatalf("expected page size clamped to %d, got %v", utils.MaxPageSize, receivedPageSizes)
+	}
+}
+
+func TestGetFilesTreeHandlerParsesSortParams(t *testing.T) {
+	tests := []struct {
+		name         string
+		query        string
+		expectedSort ChildrenSort
+	}{
+		{"absent params keep default", "", DefaultChildrenSort},
+		{"known key and order", "?sort=size&order=desc", ChildrenSort{Key: SortBySize, Direction: SortDescending}},
+		{"known key without order is ascending", "?sort=updated_at", ChildrenSort{Key: SortByUpdatedAt, Direction: SortAscending}},
+		{"unknown order is ascending", "?sort=created_at&order=sideways", ChildrenSort{Key: SortByCreatedAt, Direction: SortAscending}},
+		{"unknown key falls back to default", "?sort=bogus&order=desc", DefaultChildrenSort},
+		{"order alone falls back to default", "?order=desc", DefaultChildrenSort},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			service := &filesHandlerServiceFuncMock{}
+			handler := NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{})
+			router := newFilesHandlerRouter(handler)
+
+			req := httptest.NewRequest(http.MethodGet, "/files/tree"+testCase.query, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("expected 200, got %d body=%s", w.Code, w.Body.String())
+			}
+			if service.requestedChildrenSort != testCase.expectedSort {
+				t.Fatalf("expected sort %+v, got %+v", testCase.expectedSort, service.requestedChildrenSort)
+			}
+		})
 	}
 }

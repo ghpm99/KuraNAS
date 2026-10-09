@@ -446,3 +446,58 @@ func TestWritePosterSource(t *testing.T) {
 		t.Fatalf("unexpected poster content: %q", string(data))
 	}
 }
+
+func TestPromoteCapturePreRegistersLowercaseFormatForUppercaseExtension(t *testing.T) {
+	dir := t.TempDir()
+	videosDir := filepath.Join(dir, "videos")
+	stagingDir := filepath.Join(dir, "capturas", "my_show")
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	stagingFile := filepath.Join(stagingDir, "recording.MP4")
+	if err := os.WriteFile(stagingFile, []byte("video-bytes"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	swapRemux(t, func(src, dest string) error {
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dest, data, 0644)
+	})
+
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) {
+			return CaptureModel{
+				ID:          id,
+				Name:        "my_show",
+				FileName:    "recording.MP4",
+				FilePath:    stagingFile,
+				Size:        11,
+				RawMetadata: json.RawMessage(`{"title":"My Show"}`),
+			}, nil
+		},
+		updatePromotionFn: func(tx *sql.Tx, capture CaptureModel) error { return nil },
+	}
+	lib := &librariesProviderMock{
+		getByCategoryFn: func(category libraries.LibraryCategory) (libraries.LibraryDto, error) {
+			return libraries.LibraryDto{Path: videosDir}, nil
+		},
+	}
+	var registeredFormat string
+	fp := &filesProviderMock{
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			registeredFormat = fileDto.Format
+			fileDto.ID = 99
+			return fileDto, nil
+		},
+	}
+	service := newPromoteServiceForTest(mock, lib, fp)
+
+	if err := service.PromoteCapture(1); err != nil {
+		t.Fatalf("PromoteCapture returned error: %v", err)
+	}
+	if registeredFormat != ".mp4" {
+		t.Fatalf("expected registered format .mp4, got %q", registeredFormat)
+	}
+}

@@ -59,7 +59,7 @@ export default function VideoPlaylistDetailView({
                     <p className={styles.heroEyebrow}>
                         {(playlist.classification || 'personal').toUpperCase()}
                     </p>
-                    <h1 className={styles.heroTitle}>{playlist.name}</h1>
+                    <h2 className={styles.heroTitle}>{playlist.name}</h2>
                     <p className={styles.heroMeta}>
                         {t('VIDEO_PLAYLIST_META', { count: String(playlist.item_count) })}
                     </p>

@@ -9,6 +9,16 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         query,
         sections,
         isFetching,
+        isUpdating,
+        hasSearchError,
+        searchErrorMessage,
+        retrySearch,
+        suggestion,
+        isFuzzyResult,
+        recentSearches,
+        rerunRecentSearch,
+        forgetRecentSearch,
+        clearRecentSearches,
         activeItemId,
         shortcut,
         showEmptyState,
@@ -18,6 +28,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
         setActiveIndex,
         handleInputKeyDown,
         activateItem,
+        activateSecondaryAction,
     } = useGlobalSearchProvider();
 
     const flattenedItems = sections.flatMap((section) => section.items);
@@ -30,6 +41,16 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                 query={query}
                 sections={sections}
                 isFetching={isFetching}
+                isUpdating={isUpdating}
+                hasSearchError={hasSearchError}
+                searchErrorMessage={searchErrorMessage}
+                onRetry={retrySearch}
+                suggestion={suggestion}
+                isFuzzyResult={isFuzzyResult}
+                recentSearches={recentSearches}
+                onRecentSearchSelect={rerunRecentSearch}
+                onRecentSearchRemove={forgetRecentSearch}
+                onRecentSearchesClear={clearRecentSearches}
                 activeItemId={activeItemId}
                 shortcut={shortcut}
                 showEmptyState={showEmptyState}
@@ -43,6 +64,7 @@ export const GlobalSearchProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }}
                 onItemSelect={activateItem}
+                onItemSecondaryAction={activateSecondaryAction}
             />
         </GlobalSearchContext.Provider>
     );

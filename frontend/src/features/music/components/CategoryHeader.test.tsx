@@ -51,4 +51,70 @@ describe('CategoryHeader', () => {
         expect(screen.queryByText('Artist A')).not.toBeInTheDocument();
         expect(screen.getByText('1 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
     });
+
+    it('omits the track count when the total is unknown', () => {
+        render(
+            <CategoryHeader
+                title="Album C"
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('Album C')).toBeInTheDocument();
+        expect(screen.queryByText(/MUSIC_TRACKS_COUNT/)).not.toBeInTheDocument();
+    });
+
+    it('renders extra actions next to the playback controls', () => {
+        render(
+            <CategoryHeader
+                title="Album D"
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+                actions={<button type="button">extra-action</button>}
+            />
+        );
+
+        expect(screen.getByRole('button', { name: 'extra-action' })).toBeInTheDocument();
+    });
+
+    it('shows the total duration next to the track count and accepts a node subtitle', () => {
+        render(
+            <CategoryHeader
+                title="Album E"
+                subtitle={<a href="/artist">Artist E</a>}
+                trackCount={4}
+                totalLengthSeconds={3725}
+                iconSize={220}
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+            />
+        );
+
+        expect(screen.getByRole('link', { name: 'Artist E' })).toBeInTheDocument();
+        expect(screen.getByText('4 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
+        expect(screen.getByText(/MUSIC_DURATION_HOURS_MINUTES/)).toBeInTheDocument();
+    });
+
+    it('omits the duration when the total length is unknown or zero', () => {
+        render(
+            <CategoryHeader
+                title="Album F"
+                trackCount={2}
+                totalLengthSeconds={0}
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+            />
+        );
+
+        expect(screen.queryByText(/MUSIC_DURATION/)).not.toBeInTheDocument();
+    });
 });

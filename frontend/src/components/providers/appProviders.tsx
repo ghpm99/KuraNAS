@@ -1,26 +1,36 @@
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { appTheme } from '@/theme/appTheme';
 import I18nProvider from '../i18n/provider';
+import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
+import GlobalShortcutsProvider from '../shortcuts/GlobalShortcutsProvider';
+import DocumentLanguageSync from '../layout/documentMetadata/DocumentLanguageSync';
 import NotificationProvider from './notificationProvider';
+import ColorSchemeProvider from './colorSchemeProvider';
 import SettingsProvider from './settingsProvider';
+import { shouldRetryQuery } from './queryRetryPolicy';
+import { listingStaleTimeMs } from './queryFreshness';
+import { viewportMediaQueries } from '@/theme/visualTokens';
 
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            staleTime: 1000 * 60 * 5, // 5 minutes
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
+            retry: shouldRetryQuery,
+            staleTime: listingStaleTimeMs,
         },
     },
 });
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
+    const isCompactViewport = useMediaQuery(viewportMediaQueries.belowTablet);
+    const toastHorizontalAnchor = isCompactViewport ? 'center' : 'right';
+
     return (
         <QueryClientProvider client={queryClient}>
             <StrictMode>
@@ -28,16 +38,23 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                     <SettingsProvider>
                         <SnackbarProvider
                             maxSnack={3}
-                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: toastHorizontalAnchor }}
                         >
-                            <ThemeProvider theme={appTheme}>
+                            <ColorSchemeProvider>
                                 <CssBaseline />
+                                <DocumentLanguageSync />
                                 <BrowserRouter>
                                     <NotificationProvider>
-                                        <GlobalSearchProvider>{children}</GlobalSearchProvider>
+                                        <GlobalMusicProvider>
+                                            <GlobalSearchProvider>
+                                                <GlobalShortcutsProvider>
+                                                    {children}
+                                                </GlobalShortcutsProvider>
+                                            </GlobalSearchProvider>
+                                        </GlobalMusicProvider>
                                     </NotificationProvider>
                                 </BrowserRouter>
-                            </ThemeProvider>
+                            </ColorSchemeProvider>
                         </SnackbarProvider>
                     </SettingsProvider>
                 </I18nProvider>

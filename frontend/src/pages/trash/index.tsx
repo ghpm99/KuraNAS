@@ -1,12 +1,7 @@
-import Layout from '@/components/layout/Layout';
 import TrashScreen from '@/components/trash/TrashScreen';
 
 const TrashPage = () => {
-    return (
-        <Layout>
-            <TrashScreen />
-        </Layout>
-    );
+    return <TrashScreen />;
 };
 
 export default TrashPage;

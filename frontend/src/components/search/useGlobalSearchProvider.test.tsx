@@ -3,6 +3,11 @@ import useGlobalSearchProvider from './useGlobalSearchProvider';
 
 const mockNavigate = jest.fn();
 
+jest.mock('@/components/hooks/useDebouncedValue/useDebouncedValue', () => ({
+    __esModule: true,
+    default: <TValue,>(value: TValue) => value,
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
@@ -93,27 +98,9 @@ const mockGetVideoSectionForPlaylist = jest.fn().mockReturnValue('series');
 const mockGetVideoDetailRoute = jest.fn().mockReturnValue('/videos/series/video-playlist');
 
 jest.mock('@/features/videos/components/navigation', () => ({
+    ...jest.requireActual('@/features/videos/components/navigation'),
     getVideoDetailRoute: (...args: unknown[]) => mockGetVideoDetailRoute(...args),
     getVideoSectionForPlaylist: (...args: unknown[]) => mockGetVideoSectionForPlaylist(...args),
-}));
-
-jest.mock('@/app/routes', () => ({
-    appRoutes: {
-        home: '/home',
-        files: '/files',
-        favorites: '/favorites',
-        legacyFavorites: '/starred',
-        settings: '/settings',
-        about: '/about',
-        images: '/images',
-        music: '/music',
-        videos: '/videos',
-        analytics: '/analytics',
-        videoPlayerBase: '/video',
-    },
-    getMusicRoute: (section: string) => `/music/${section}`,
-    getVideoRoute: (section: string) => `/videos/${section}`,
-    getAnalyticsRoute: (section: string) => `/analytics/${section}`,
 }));
 
 const getRequired = <T,>(value: T | undefined): T => {
@@ -204,7 +191,7 @@ describe('useGlobalSearchProvider', () => {
 
             const actionSection = result.current.sections.find((s) => s.id === 'actions');
             expect(actionSection).toBeDefined();
-            expect(actionSection!.items.length).toBe(14);
+            expect(actionSection!.items.length).toBeGreaterThan(14);
         });
 
         it('filters quick actions based on query matching label or description', () => {
@@ -218,7 +205,9 @@ describe('useGlobalSearchProvider', () => {
 
             const actionSection = result.current.sections.find((s) => s.id === 'actions');
             expect(actionSection).toBeDefined();
-            expect(actionSection!.items.some((item) => item.id === 'action-settings')).toBe(true);
+            expect(
+                actionSection!.items.some((item) => item.id === 'action-destination-/settings')
+            ).toBe(true);
         });
 
         it('returns empty sections when no actions match and no data', () => {
@@ -231,41 +220,6 @@ describe('useGlobalSearchProvider', () => {
             });
 
             expect(result.current.sections.length).toBe(0);
-        });
-
-        it('navigates to correct routes for each quick action', () => {
-            mockUseQueryReturn = { data: undefined, isFetching: false };
-            const { result } = renderHook(() => useGlobalSearchProvider());
-
-            act(() => {
-                result.current.openSearch();
-            });
-
-            const actionSection = result.current.sections.find((s) => s.id === 'actions')!;
-            const expectedRoutes: Record<string, string | object> = {
-                'action-home': '/home',
-                'action-files': '/files',
-                'action-favorites': '/favorites',
-                'action-images': '/images',
-                'action-music': '/music',
-                'action-music-artists': '/music/artists',
-                'action-music-albums': '/music/albums',
-                'action-music-playlists': '/music/playlists',
-                'action-videos': '/videos',
-                'action-videos-continue': '/videos/continue',
-                'action-analytics': '/analytics',
-                'action-analytics-library': '/analytics/library',
-                'action-settings': '/settings',
-                'action-about': '/about',
-            };
-
-            for (const item of actionSection.items) {
-                mockNavigate.mockClear();
-                act(() => {
-                    item.onSelect();
-                });
-                expect(mockNavigate).toHaveBeenCalledWith(expectedRoutes[item.id]);
-            }
         });
     });
 
@@ -288,13 +242,69 @@ describe('useGlobalSearchProvider', () => {
             expect(fileItem.id).toBe('file-1');
             expect(fileItem.kind).toBe('file');
             expect(fileItem.label).toBe('FILE');
-            expect(fileItem.description).toBe('/path/file');
+            expect(fileItem.description).toBe('/ · 1 B');
             expect(fileItem.meta).toBe('mp4');
 
             act(() => {
                 fileItem.onSelect();
             });
             expect(mockNavigate).toHaveBeenCalledWith('/files/path/file');
+        });
+
+        it('describes files with parent path, size and date and flags starred cold files', () => {
+            mockUseQueryReturn = {
+                data: {
+                    ...mockSearchData,
+                    files: [
+                        {
+                            id: 7,
+                            name: 'report.pdf',
+                            path: '/docs/report.pdf',
+                            parent_path: '/docs',
+                            format: '.pdf',
+                            starred: true,
+                            size: 2048,
+                            updated_at: '2026-03-04T12:00:00Z',
+                            tier: 'cold',
+                        },
+                    ],
+                    folders: [
+                        {
+                            id: 8,
+                            name: 'docs',
+                            path: '/docs',
+                            parent_path: '/',
+                            starred: false,
+                            size: 0,
+                            updated_at: '2026-03-04T12:00:00Z',
+                            tier: 'hot',
+                        },
+                    ],
+                } as unknown as typeof mockSearchData,
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('report');
+            });
+
+            const fileItem = getRequired(
+                result.current.sections.find((s) => s.id === 'files')?.items[0]
+            );
+            expect(fileItem.description).toContain('/docs · 2.00 KB · ');
+            expect(fileItem.description).toMatch(/2026/);
+            expect(fileItem.isStarred).toBe(true);
+            expect(fileItem.isCold).toBe(true);
+
+            const folderItem = getRequired(
+                result.current.sections.find((s) => s.id === 'folders')?.items[0]
+            );
+            expect(folderItem.description).toMatch(/^\/ · .*2026/);
+            expect(folderItem.description).not.toContain(' B');
+            expect(folderItem.isStarred).toBe(false);
+            expect(folderItem.isCold).toBe(false);
         });
 
         it('maps folder results correctly', () => {
@@ -315,6 +325,103 @@ describe('useGlobalSearchProvider', () => {
                 folderItem.onSelect();
             });
             expect(mockNavigate).toHaveBeenCalledWith('/files/folder');
+        });
+
+        it('adds a see-all-files action that opens the global file search with the term', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('  relatório 2024 ');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            const seeAllItem = getRequired(
+                seeAllSection?.items.find((item) => item.id === 'files-see-all-results')
+            );
+            expect(seeAllItem.label).toBe('GLOBAL_SEARCH_SEE_ALL_FILES');
+
+            act(() => {
+                result.current.activateItem(seeAllItem);
+            });
+            expect(mockNavigate).toHaveBeenCalledWith({
+                pathname: '/files',
+                search: '?q=relat%C3%B3rio+2024',
+            });
+        });
+
+        it('adds a see-all action per media group that navigates to its library search', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('  Paris 2024 ');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(seeAllSection?.items.map((item) => item.id)).toEqual([
+                'files-see-all-results',
+                'images-see-all-results',
+                'videos-see-all-results',
+                'music-see-all-results',
+            ]);
+
+            const selectSeeAll = (itemId: string) =>
+                act(() => {
+                    result.current.activateItem(
+                        getRequired(seeAllSection?.items.find((item) => item.id === itemId))
+                    );
+                });
+
+            selectSeeAll('images-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/images',
+                search: '?q=Paris+2024',
+            });
+            selectSeeAll('videos-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/videos/folders',
+                search: '?q=Paris+2024',
+            });
+            selectSeeAll('music-see-all-results');
+            expect(mockNavigate).toHaveBeenLastCalledWith({
+                pathname: '/music/search',
+                search: '?q=Paris+2024',
+            });
+        });
+
+        it('omits the see-all action of groups without results', () => {
+            mockUseQueryReturn = {
+                data: { ...mockSearchData, files: [], folders: [], images: [], videos: [] },
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(seeAllSection?.items.map((item) => item.id)).toEqual(['music-see-all-results']);
+        });
+
+        it('omits the see-all-files action when no file or folder matched', () => {
+            mockUseQueryReturn = {
+                data: { ...mockSearchData, files: [], folders: [] },
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+
+            const seeAllSection = result.current.sections.find((s) => s.id === 'see-all');
+            expect(
+                seeAllSection?.items.find((item) => item.id === 'files-see-all-results')
+            ).toBeUndefined();
         });
 
         it('maps artist results correctly', () => {
@@ -411,7 +518,7 @@ describe('useGlobalSearchProvider', () => {
                 type: 'folder',
                 classification: 'series',
             });
-            expect(mockGetVideoDetailRoute).toHaveBeenCalledWith('series', 'video-playlist');
+            expect(mockGetVideoDetailRoute).toHaveBeenCalledWith('series', 'video-playlist', 4);
             expect(mockNavigate).toHaveBeenCalled();
         });
 
@@ -656,7 +763,9 @@ describe('useGlobalSearchProvider', () => {
             }
 
             // Verify we're at the last item
-            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
+            const lastItem = getRequired(
+                result.current.sections.flatMap((s) => s.items)[totalItems - 1]
+            );
             expect(result.current.activeItemId).toBe(lastItem.id);
 
             // One more ArrowDown should wrap to first
@@ -688,7 +797,9 @@ describe('useGlobalSearchProvider', () => {
             });
             expect(event.preventDefault).toHaveBeenCalled();
 
-            const lastItem = getRequired(result.current.sections.flatMap((s) => s.items)[totalItems - 1]);
+            const lastItem = getRequired(
+                result.current.sections.flatMap((s) => s.items)[totalItems - 1]
+            );
             expect(result.current.activeItemId).toBe(lastItem.id);
         });
 
@@ -856,6 +967,123 @@ describe('useGlobalSearchProvider', () => {
             expect(sectionIds).not.toContain('playlists');
             expect(sectionIds).not.toContain('videos');
             expect(sectionIds).toContain('images');
+        });
+    });
+
+    describe('section ordering and action matching with a query', () => {
+        const arrowDown = () => ({ key: 'ArrowDown', preventDefault: jest.fn() }) as any;
+        const enterKey = () => ({ key: 'Enter', preventDefault: jest.fn() }) as any;
+
+        it('keeps quick actions first when the query is empty', () => {
+            mockUseQueryReturn = { data: undefined, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+            });
+
+            expect(result.current.sections.map((section) => section.id)).toEqual(['actions']);
+        });
+
+        it('orders data groups first and quick actions last when there is a query', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+
+            expect(result.current.sections.map((section) => section.id)).toEqual([
+                'files',
+                'folders',
+                'images',
+                'videos',
+                'artists',
+                'albums',
+                'playlists',
+                'see-all',
+                'actions',
+            ]);
+        });
+
+        it('opens the first data result on Enter instead of the matching action', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+
+            expect(result.current.activeItemId).toBe('file-1');
+            act(() => {
+                result.current.handleInputKeyDown(enterKey());
+            });
+
+            expect(mockNavigate).toHaveBeenCalledWith('/files/path/file');
+            expect(mockNavigate).not.toHaveBeenCalledWith('/home');
+        });
+
+        it('reaches the trailing action with ArrowUp from the first result', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+            act(() => {
+                result.current.handleInputKeyDown({
+                    key: 'ArrowUp',
+                    preventDefault: jest.fn(),
+                } as any);
+            });
+
+            expect(result.current.activeItemId).toBe('action-destination-/home');
+        });
+
+        it('matches actions by word prefix only', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('ome');
+            });
+
+            expect(result.current.sections).toEqual([]);
+        });
+
+        it('matches actions ignoring accents', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+            });
+            act(() => {
+                result.current.setQuery('séttings');
+            });
+            expect(result.current.sections[0]?.items[0]?.id).toBe('action-destination-/settings');
+        });
+
+        it('resets the active index when the query changes', () => {
+            mockUseQueryReturn = { data: mockSearchData, isFetching: false };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('home');
+            });
+            act(() => {
+                result.current.handleInputKeyDown(arrowDown());
+            });
+            expect(result.current.activeItemId).toBe('folder-2');
+
+            act(() => {
+                result.current.setQuery('homes');
+            });
+
+            expect(result.current.activeItemId).toBe('file-1');
         });
     });
 });

@@ -2,23 +2,42 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MusicDomainHeader from './MusicDomainHeader';
+import MusicDomainNav from './MusicDomainNav';
 import MusicHomeScreen from './MusicHomeScreen';
-import MusicSidebar from './MusicSidebar';
 
 const mockUseGlobalMusic = jest.fn();
 const mockUseQuery = useQuery as jest.Mock;
-const mockGetPlaylistTracks = jest.fn();
-const mockGetMusicByArtist = jest.fn();
-const mockGetMusicByAlbum = jest.fn();
+const queueOf = (...fileIds: number[]) => ({
+    items: fileIds.map((fileId) => ({
+        file_id: fileId,
+        name: `song-${fileId}`,
+        path: `/music/song-${fileId}.mp3`,
+        format: '.mp3',
+        title: `Song ${fileId}`,
+        artist: 'Artist A',
+        album: 'Album A',
+        length: 180,
+    })),
+    truncated: false,
+});
+const mockGetPlaylistQueue = jest.fn();
+const mockGetMusicQueueByArtist = jest.fn();
+const mockGetMusicQueueByAlbum = jest.fn();
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
+}));
+
+jest.mock('@/features/music/components/MusicPlayHistorySections', () => ({
+    __esModule: true,
+    default: () => null,
 }));
 
 jest.mock('@/utils/music', () => ({
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
@@ -28,12 +47,12 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/service/playlist', () => ({
-    getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
+    getPlaylistQueue: (...args: any[]) => mockGetPlaylistQueue(...args),
 }));
 
 jest.mock('@/service/music', () => ({
-    getMusicByArtist: (...args: any[]) => mockGetMusicByArtist(...args),
-    getMusicByAlbum: (...args: any[]) => mockGetMusicByAlbum(...args),
+    getMusicQueueByArtist: (...args: any[]) => mockGetMusicQueueByArtist(...args),
+    getMusicQueueByAlbum: (...args: any[]) => mockGetMusicQueueByAlbum(...args),
     getMusicHomeCatalog: jest.fn(),
 }));
 
@@ -100,43 +119,9 @@ describe('components/music domain shell', () => {
             isLoading: false,
             status: 'success',
         });
-        mockGetPlaylistTracks.mockResolvedValue({
-            items: [
-                {
-                    file: {
-                        id: 20,
-                        name: 'Playlist Song',
-                        metadata: { title: 'Playlist Song', artist: 'Playlist Artist' },
-                    },
-                },
-            ],
-        });
-        mockGetMusicByArtist.mockResolvedValue({
-            items: [
-                {
-                    id: 30,
-                    name: 'Artist Song',
-                    metadata: {
-                        title: 'Artist Song',
-                        artist: 'Artist A',
-                        album: 'Album A',
-                    },
-                },
-            ],
-        });
-        mockGetMusicByAlbum.mockResolvedValue({
-            items: [
-                {
-                    id: 40,
-                    name: 'Album Song',
-                    metadata: {
-                        title: 'Album Song',
-                        artist: 'Artist A',
-                        album: 'Album A',
-                    },
-                },
-            ],
-        });
+        mockGetPlaylistQueue.mockResolvedValue(queueOf(20));
+        mockGetMusicQueueByArtist.mockResolvedValue(queueOf(30));
+        mockGetMusicQueueByAlbum.mockResolvedValue(queueOf(40));
         mockUseGlobalMusic.mockReturnValue({
             currentIndex: 0,
             currentTrack: { id: 10, name: 'Song A' },
@@ -152,20 +137,19 @@ describe('components/music domain shell', () => {
         });
     });
 
-    it('renders contextual header and active sidebar item from route', () => {
+    it('renders contextual header and active nav tab from route', () => {
         render(
             <MemoryRouter initialEntries={['/music/albums']}>
                 <MusicDomainHeader />
-                <MusicSidebar />
+                <MusicDomainNav />
             </MemoryRouter>
         );
 
         expect(screen.getByRole('heading', { name: 'MUSIC_ALBUMS' })).toBeInTheDocument();
-        expect(screen.getAllByText('MUSIC_ALBUMS_DESCRIPTION')[0]).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /MUSIC_ALBUMS/i })).toHaveAttribute(
-            'href',
-            '/music/albums'
-        );
+        expect(screen.getByText('MUSIC_ALBUMS_DESCRIPTION')).toBeInTheDocument();
+        const activeLink = screen.getByRole('link', { name: /MUSIC_ALBUMS/i });
+        expect(activeLink).toHaveAttribute('href', '/music/albums');
+        expect(activeLink).toHaveAttribute('aria-current', 'page');
     });
 
     it('renders music home with queue, playback context, and content sections', () => {
@@ -235,9 +219,9 @@ describe('components/music domain shell', () => {
         fireEvent.click(playButtons[2]!);
 
         await waitFor(() => {
-            expect(mockGetPlaylistTracks).toHaveBeenCalledWith(5, 1, 200);
-            expect(mockGetMusicByArtist).toHaveBeenCalledWith('artist-a', 1, 200);
-            expect(mockGetMusicByAlbum).toHaveBeenCalledWith('artist-a::album-a', 1, 200);
+            expect(mockGetPlaylistQueue).toHaveBeenCalledWith(5);
+            expect(mockGetMusicQueueByArtist).toHaveBeenCalledWith('artist-a');
+            expect(mockGetMusicQueueByAlbum).toHaveBeenCalledWith('artist-a::album-a');
             expect(replaceQueue).toHaveBeenCalledWith(
                 [expect.objectContaining({ id: 20 })],
                 0,

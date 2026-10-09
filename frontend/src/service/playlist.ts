@@ -1,4 +1,5 @@
 import { Pagination } from '@/types/pagination';
+import { MusicQueue } from '@/types/music';
 import {
     Playlist,
     PlaylistTrack,
@@ -7,9 +8,14 @@ import {
 } from '@/types/playlist';
 import { apiBase } from '.';
 
-export const getPlaylists = async (page: number, pageSize: number) => {
+export const getPlaylists = async (page: number, pageSize: number, nameSearch = '') => {
+    const trimmedSearch = nameSearch.trim();
     const response = await apiBase.get<Pagination<Playlist>>('/music/playlists/', {
-        params: { page, page_size: pageSize },
+        params: {
+            page,
+            page_size: pageSize,
+            ...(trimmedSearch ? { q: trimmedSearch } : {}),
+        },
     });
     return response.data;
 };
@@ -59,4 +65,19 @@ export const addTrackToPlaylist = async (playlistId: number, fileId: number) => 
 
 export const removeTrackFromPlaylist = async (playlistId: number, fileId: number) => {
     await apiBase.delete(`/music/playlists/${playlistId}/tracks/${fileId}`);
+};
+
+export const moveTrackInPlaylist = async (
+    playlistId: number,
+    fileId: number,
+    targetPosition: number
+) => {
+    await apiBase.put(`/music/playlists/${playlistId}/tracks/reorder`, {
+        tracks: [{ file_id: fileId, position: targetPosition }],
+    });
+};
+
+export const getPlaylistQueue = async (id: number) => {
+    const response = await apiBase.get<MusicQueue>(`/music/playlists/${id}/queue`);
+    return response.data;
 };

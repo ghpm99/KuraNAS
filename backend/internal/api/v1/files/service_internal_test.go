@@ -66,25 +66,31 @@ func ensureTestIcons(t *testing.T) {
 type filesRepoMock struct {
 	db *database.DbContext
 
-	createFileFn               func(transaction *sql.Tx, file FileModel) (FileModel, error)
-	deleteFileByIDFn           func(transaction *sql.Tx, id int) error
-	getFileByIDFn              func(id int) (FileModel, bool, error)
-	getFilesByNameAndPathFn    func(name string, path string, limit int) ([]FileModel, error)
-	getActiveChildrenFn        func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getActiveFilesByPathFn     func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getActiveFilesFn           func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getFilesByPathPrefixFn     func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
-	getFileStatByPathFn        func(path string) (FileStat, bool, error)
-	updateFileFn               func(transaction *sql.Tx, file FileModel) (bool, error)
-	updateDescendantPathsFn    func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
-	markDeletedSubtreeFn       func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
-	restoreSubtreeFn           func(transaction *sql.Tx, path string) (int64, error)
-	getDirectoryContentCountFn func(fileId int, parentPath string) (int, error)
-	getCountByTypeFn           func(fileType FileType) (int, error)
-	getTotalSpaceUsedFn        func() (int, error)
-	getReportSizeByFormatFn    func() ([]SizeReportModel, error)
-	getTopFilesBySizeFn        func(limit int) ([]FileModel, error)
-	getDuplicateFilesFn        func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
+	createFileFn                func(transaction *sql.Tx, file FileModel) (FileModel, error)
+	deleteFileByIDFn            func(transaction *sql.Tx, id int) error
+	getFileByIDFn               func(id int) (FileModel, bool, error)
+	getActiveByPathOrPhysicalFn func(path string) (FileModel, bool, error)
+	getActiveFilesByPathsFn     func(paths []string) ([]FileModel, error)
+	getFilesByNameAndPathFn     func(name string, path string, limit int) ([]FileModel, error)
+	getActiveChildrenFn         func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getActiveFilesByPathFn      func(path string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getActiveFilesFn            func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getFilesByPathPrefixFn      func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	searchActiveFilesFn         func(query FileSearchQuery) (utils.PaginationResponse[FileModel], error)
+	getStarredFilesFn           func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getRecentlyAccessedFilesFn  func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getFileStatByPathFn         func(path string) (FileStat, bool, error)
+	updateFileFn                func(transaction *sql.Tx, file FileModel) (bool, error)
+	updateDescendantPathsFn     func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
+	markDeletedSubtreeFn        func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
+	restoreSubtreeFn            func(transaction *sql.Tx, path string) (int64, error)
+	getDirectoryContentCountsFn func(parentPaths []string) (map[string]int, error)
+	getFolderStatsFn            func(descendantPathPrefix string) (FolderStatsDto, error)
+	getCountByTypeFn            func(fileType FileType) (int, error)
+	getTotalSpaceUsedFn         func() (int, error)
+	getReportSizeByFormatFn     func() ([]SizeReportModel, error)
+	getTopFilesBySizeFn         func(limit int) ([]FileModel, error)
+	getDuplicateFilesFn         func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 }
 
 func (m *filesRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -106,13 +112,25 @@ func (m *filesRepoMock) GetFileByID(id int) (FileModel, bool, error) {
 	}
 	return FileModel{}, false, nil
 }
+func (m *filesRepoMock) GetActiveFileByPathOrPhysicalPath(path string) (FileModel, bool, error) {
+	if m.getActiveByPathOrPhysicalFn != nil {
+		return m.getActiveByPathOrPhysicalFn(path)
+	}
+	return FileModel{}, false, nil
+}
+func (m *filesRepoMock) GetActiveFilesByPaths(paths []string) ([]FileModel, error) {
+	if m.getActiveFilesByPathsFn != nil {
+		return m.getActiveFilesByPathsFn(paths)
+	}
+	return nil, nil
+}
 func (m *filesRepoMock) GetFilesByNameAndPath(name string, path string, limit int) ([]FileModel, error) {
 	if m.getFilesByNameAndPathFn != nil {
 		return m.getFilesByNameAndPathFn(name, path, limit)
 	}
 	return nil, nil
 }
-func (m *filesRepoMock) GetActiveChildrenByParentPath(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+func (m *filesRepoMock) GetActiveChildrenByParentPath(parentPath string, category FileCategory, childrenSort ChildrenSort, page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getActiveChildrenFn != nil {
 		return m.getActiveChildrenFn(parentPath, category, page, pageSize)
 	}
@@ -127,6 +145,18 @@ func (m *filesRepoMock) GetActiveFilesByPath(path string, page int, pageSize int
 func (m *filesRepoMock) GetActiveFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
 	if m.getActiveFilesFn != nil {
 		return m.getActiveFilesFn(page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getStarredFilesFn != nil {
+		return m.getStarredFilesFn(page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
+}
+func (m *filesRepoMock) GetRecentlyAccessedFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getRecentlyAccessedFilesFn != nil {
+		return m.getRecentlyAccessedFilesFn(page, pageSize)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
@@ -166,11 +196,17 @@ func (m *filesRepoMock) RestoreSubtree(transaction *sql.Tx, path string) (int64,
 	}
 	return 0, nil
 }
-func (m *filesRepoMock) GetDirectoryContentCount(fileId int, parentPath string) (int, error) {
-	if m.getDirectoryContentCountFn != nil {
-		return m.getDirectoryContentCountFn(fileId, parentPath)
+func (m *filesRepoMock) GetDirectoryContentCounts(parentPaths []string) (map[string]int, error) {
+	if m.getDirectoryContentCountsFn != nil {
+		return m.getDirectoryContentCountsFn(parentPaths)
 	}
-	return 0, nil
+	return map[string]int{}, nil
+}
+func (m *filesRepoMock) GetFolderStats(descendantPathPrefix string) (FolderStatsDto, error) {
+	if m.getFolderStatsFn != nil {
+		return m.getFolderStatsFn(descendantPathPrefix)
+	}
+	return FolderStatsDto{}, nil
 }
 func (m *filesRepoMock) GetCountByType(fileType FileType) (int, error) {
 	if m.getCountByTypeFn != nil {
@@ -403,16 +439,16 @@ func TestFileService_GetChildrenAndDirectoryCount(t *testing.T) {
 				Pagination: utils.Pagination{Page: 1, PageSize: 10},
 			}, nil
 		},
-		getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
-			if fileId == 1 {
-				return 4, nil
+		getDirectoryContentCountsFn: func(parentPaths []string) (map[string]int, error) {
+			if len(parentPaths) != 1 || parentPaths[0] != "/tmp/dir" {
+				t.Fatalf("expected one batched lookup for the directory only, got %v", parentPaths)
 			}
-			return 0, errors.New("not directory")
+			return map[string]int{"/tmp/dir": 4}, nil
 		},
 	}
 	s := newFilesServiceForTest(t, repo)
 
-	result, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
+	result, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -432,8 +468,8 @@ func TestFileService_DecomposedListings(t *testing.T) {
 					Items: []FileModel{sampleModel(1, "dir", Directory)},
 				}, nil
 			},
-			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
-				return 3, nil
+			getDirectoryContentCountsFn: func(parentPaths []string) (map[string]int, error) {
+				return map[string]int{"/tmp/dir": 3}, nil
 			},
 		})
 
@@ -495,9 +531,9 @@ func TestFileService_DecomposedListings(t *testing.T) {
 					Items: []FileModel{sampleModel(3, "dir", Directory)},
 				}, nil
 			},
-			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
+			getDirectoryContentCountsFn: func(parentPaths []string) (map[string]int, error) {
 				t.Fatalf("prefix walk must not count directory contents")
-				return 0, nil
+				return nil, nil
 			},
 		})
 
@@ -621,10 +657,6 @@ func TestFileService_ScanAndExistsAndBlob(t *testing.T) {
 		}, true, nil
 	}
 
-	blob, err := s.GetFileBlobById(10)
-	if err != nil || len(blob.Blob) == 0 {
-		t.Fatalf("expected blob bytes, err=%v", err)
-	}
 	if !s.CheckFileExists(10) {
 		t.Fatalf("expected CheckFileExists true for existing file")
 	}
@@ -876,7 +908,7 @@ func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	setProgramFilesForTest(t)
 	s := newFilesServiceForTest(t, &filesRepoMock{})
 	cacheDir := config.GetBuildConfig("ThumbnailPath")
-	cacheFile := filepath.Join(cacheDir, "42_320.png")
+	cacheFile := filepath.Join(cacheDir, thumbnailCacheFileName(FileDto{ID: 42}, 0, 100, thumbnailPNGExtension))
 	cached := []byte("cached-png")
 
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
@@ -900,11 +932,14 @@ func TestFileService_GetFileThumbnailCacheHit(t *testing.T) {
 	}
 }
 
-func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
+func TestFileService_GetFileThumbnailMissingFileIsReadOnly(t *testing.T) {
+	setProgramFilesForTest(t)
 	tmpDir := t.TempDir()
+	repositoryWrites := 0
 	s := newFilesServiceForTest(t, &filesRepoMock{
 		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
-			return false, errors.New("update failure")
+			repositoryWrites++
+			return true, nil
 		},
 	})
 
@@ -914,11 +949,69 @@ func TestFileService_GetFileThumbnailMissingFileDeleteFailure(t *testing.T) {
 		Type:   File,
 		Format: ".txt",
 	}, 100, 100)
-	if err == nil {
-		t.Fatalf("expected error for missing file with delete failure")
+
+	if !errors.Is(err, ErrFileMissingDisk) {
+		t.Fatalf("expected ErrFileMissingDisk, got %v", err)
 	}
-	if !errors.Is(err, ErrDatabase) {
-		t.Fatalf("expected ErrDatabase wrapping, got %v", err)
+	if repositoryWrites != 0 {
+		t.Fatalf("thumbnail request must not write to the repository, got %d writes", repositoryWrites)
+	}
+}
+
+func TestFileService_GetFileThumbnailColdFileUsesPhysicalPath(t *testing.T) {
+	setProgramFilesForTest(t)
+	ensureTestIcons(t)
+	coldFile := filepath.Join(t.TempDir(), "cold.txt")
+	if err := os.WriteFile(coldFile, []byte("cold bytes"), 0644); err != nil {
+		t.Fatalf("failed to create cold file: %v", err)
+	}
+	s := newFilesServiceForTest(t, &filesRepoMock{})
+
+	data, err := s.GetFileThumbnail(FileDto{
+		ID:           7001,
+		Path:         filepath.Join(t.TempDir(), "hot-gone.txt"),
+		PhysicalPath: coldFile,
+		Type:         File,
+		Format:       ".txt",
+	}, 100, 100)
+
+	if err != nil || len(data) == 0 {
+		t.Fatalf("expected thumbnail generated from the cold content path, got %v", err)
+	}
+}
+
+func TestFileService_GetFileThumbnailCacheKeyChangesWithUpdatedAt(t *testing.T) {
+	setProgramFilesForTest(t)
+	ensureTestIcons(t)
+	existingFile := filepath.Join(t.TempDir(), "file.txt")
+	if err := os.WriteFile(existingFile, []byte("plain"), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	s := newFilesServiceForTest(t, &filesRepoMock{})
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	firstVersion := FileDto{ID: 7002, Path: existingFile, Type: File, Format: ".txt", UpdatedAt: time.Unix(1000, 0)}
+	secondVersion := firstVersion
+	secondVersion.UpdatedAt = time.Unix(2000, 0)
+
+	if _, err := s.GetFileThumbnail(firstVersion, 100, 100); err != nil {
+		t.Fatalf("first thumbnail failed: %v", err)
+	}
+	firstCachePath := filepath.Join(cacheDir, thumbnailCacheFileName(firstVersion, 100, 100, thumbnailPNGExtension))
+	if _, err := os.Stat(firstCachePath); err != nil {
+		t.Fatalf("expected first version cached: %v", err)
+	}
+
+	if _, err := s.GetFileThumbnail(secondVersion, 100, 100); err != nil {
+		t.Fatalf("second thumbnail failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cacheDir, thumbnailCacheFileName(secondVersion, 100, 100, thumbnailPNGExtension))); err != nil {
+		t.Fatalf("expected new version cached under a new key: %v", err)
+	}
+	if _, err := os.Stat(firstCachePath); !os.IsNotExist(err) {
+		t.Fatalf("expected the stale cached version to be removed, got %v", err)
+	}
+	if ThumbnailETag(firstVersion, 100, 100) == ThumbnailETag(secondVersion, 100, 100) {
+		t.Fatalf("expected ETag to change when updated_at changes")
 	}
 }
 
@@ -935,7 +1028,7 @@ func TestFileService_ErrorBranches(t *testing.T) {
 		},
 	})
 
-	if _, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10); err == nil {
+	if _, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10); err == nil {
 		t.Fatalf("expected GetChildrenByParentPath error")
 	}
 	if _, err := s.CreateFile(FileDto{Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
@@ -943,18 +1036,6 @@ func TestFileService_ErrorBranches(t *testing.T) {
 	}
 	if _, err := s.UpdateFile(FileDto{ID: 1, Name: "x", Path: "/tmp/x", ParentPath: "/tmp", Type: File}); err == nil {
 		t.Fatalf("expected UpdateFile error")
-	}
-}
-
-func TestFileService_GetFileBlobByIdReadError(t *testing.T) {
-	s := newFilesServiceForTest(t, &filesRepoMock{
-		getFileByIDFn: func(id int) (FileModel, bool, error) {
-			return sampleModel(999, "missing.bin", File), true, nil
-		},
-	})
-
-	if _, err := s.GetFileBlobById(999); err == nil {
-		t.Fatalf("expected GetFileBlobById read error")
 	}
 }
 
@@ -966,12 +1047,12 @@ func TestFileService_AdditionalErrorAndEdgeBranches(t *testing.T) {
 					Items: []FileModel{sampleModel(1, "dir", Directory)},
 				}, nil
 			},
-			getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) {
-				return 0, errors.New("count failed")
+			getDirectoryContentCountsFn: func(parentPaths []string) (map[string]int, error) {
+				return nil, errors.New("count failed")
 			},
 		})
 
-		out, err := s.GetChildrenByParentPath("/tmp", AllCategory, 1, 10)
+		out, err := s.GetChildrenByParentPath("/tmp", AllCategory, DefaultChildrenSort, 1, 10)
 		if err != nil {
 			t.Fatalf("expected GetChildrenByParentPath success, got %v", err)
 		}
@@ -1158,6 +1239,7 @@ func TestGetRootNodesListsRevivesAndSelfHeals(t *testing.T) {
 	})
 	config.AppConfig.EntryPoint = ""
 
+	batchedLookups := 0
 	indexedRoot := t.TempDir()                             // already has an active row
 	freshRoot := t.TempDir()                               // no row yet → created on the fly
 	missingRoot := filepath.Join(t.TempDir(), "unplugged") // not on disk → skipped
@@ -1183,7 +1265,10 @@ func TestGetRootNodesListsRevivesAndSelfHeals(t *testing.T) {
 			created = append(created, file)
 			return file, nil
 		},
-		getDirectoryContentCountFn: func(fileId int, parentPath string) (int, error) { return 3, nil },
+		getDirectoryContentCountsFn: func(parentPaths []string) (map[string]int, error) {
+			batchedLookups++
+			return map[string]int{indexedRoot: 3, freshRoot: 5}, nil
+		},
 	}
 	service := &Service{Repository: repo}
 
@@ -1201,8 +1286,11 @@ func TestGetRootNodesListsRevivesAndSelfHeals(t *testing.T) {
 	if nodes[1].ID != 22 || nodes[1].Name != "Midia" || nodes[1].Path != freshRoot {
 		t.Fatalf("unexpected second node: %+v", nodes[1])
 	}
-	if nodes[0].DirectoryContentCount != 3 {
-		t.Fatalf("expected content count filled, got %+v", nodes[0])
+	if nodes[0].DirectoryContentCount != 3 || nodes[1].DirectoryContentCount != 5 {
+		t.Fatalf("expected content counts filled, got %+v", nodes)
+	}
+	if batchedLookups != 1 {
+		t.Fatalf("expected a single batched count lookup, got %d", batchedLookups)
 	}
 	if len(created) != 1 || created[0].Path != freshRoot || created[0].Type != Directory {
 		t.Fatalf("expected the fresh root row to be self-created, got %+v", created)

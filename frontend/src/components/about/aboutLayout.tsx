@@ -1,12 +1,7 @@
 import { AboutProvider } from '../providers/aboutProvider';
-import Layout from '../layout/Layout';
 
 const AboutLayout = ({ children }: { children: React.ReactNode }) => {
-    return (
-        <AboutProvider>
-            <Layout>{children}</Layout>
-        </AboutProvider>
-    );
+    return <AboutProvider>{children}</AboutProvider>;
 };
 
 export default AboutLayout;

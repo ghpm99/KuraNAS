@@ -14,6 +14,8 @@ export interface PlaylistsContextData {
     isCreatingPlaylist: boolean;
     isDeletingPlaylist: boolean;
     isRemovingTrack: boolean;
+    isRenamingPlaylist: boolean;
+    isMovingTrack: boolean;
     createOpen: boolean;
     newName: string;
     newDescription: string;
@@ -28,6 +30,8 @@ export interface PlaylistsContextData {
     submitCreatePlaylist: () => void;
     deletePlaylistById: (id: number) => void;
     removeTrackByFileId: (fileId: number) => void;
+    renameSelectedPlaylist: (name: string, description: string, onSaved?: () => void) => void;
+    moveTrackToPosition: (fileId: number, position: number) => void;
     playlistQueryFn: (pageParam: number) => Promise<Pagination<Playlist>>;
     playlistTracksQueryFn: (pageParam: number) => Promise<Pagination<PlaylistTrack>>;
 }

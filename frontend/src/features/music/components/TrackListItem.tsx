@@ -1,12 +1,26 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
-import { ListPlus, Pause, Play } from 'lucide-react';
+import { ListPlus, MoreVertical, Music, Pause, Play } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
+import {
+    getMusicTitle,
+    getMusicArtist,
+    formatMusicDuration,
+    getTrackDurationSeconds,
+} from '@/utils/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import { getTrackCoverUrl } from '@/service/musicCover';
+import CoverArt from './CoverArt';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import AddToPlaylistMenu from './AddToPlaylistMenu';
+import TrackContextMenu from './contextMenu/TrackContextMenu';
+import useMenuPosition from './contextMenu/useMenuPosition';
+import TrackStarButton from './trackStar/TrackStarButton';
 
 interface TrackListItemProps {
     track: IMusicData;
     index: number;
+    trackNumber?: number;
     onPlay: (track: IMusicData, index: number) => void;
     onAddToPlaylist?: (e: React.MouseEvent<HTMLElement>, fileId: number) => void;
     showArtist?: boolean;
@@ -15,35 +29,58 @@ interface TrackListItemProps {
 const TrackListItem = ({
     track,
     index,
+    trackNumber,
     onPlay,
     onAddToPlaylist,
     showArtist = true,
 }: TrackListItemProps) => {
     const { currentTrack, isPlaying } = useGlobalMusic();
     const isCurrentTrack = currentTrack?.id === track.id;
-    const duration = track.metadata?.duration;
+    const duration = getTrackDurationSeconds(track.metadata);
     const trackTitle = getMusicTitle(track);
     const trackArtist = getMusicArtist(track);
+    const { t } = useI18n();
+    const rowRef = useRef<HTMLLIElement>(null);
+    const { position, openFromButton, openFromContextMenuEvent, close } = useMenuPosition();
+    const [hasOpenedPlaylistMenu, setHasOpenedPlaylistMenu] = useState(false);
+    const [playlistMenuAnchor, setPlaylistMenuAnchor] = useState<HTMLElement | null>(null);
+
+    const openPlaylistMenu = () => {
+        setHasOpenedPlaylistMenu(true);
+        setPlaylistMenuAnchor(rowRef.current);
+    };
 
     return (
-        <ListItem disablePadding sx={{ px: 0 }}>
+        <ListItem
+            ref={rowRef}
+            disablePadding
+            sx={{
+                px: 0,
+                contentVisibility: 'auto',
+                containIntrinsicBlockSize: 'auto var(--app-intrinsic-track-row-height)',
+            }}
+        >
             <ListItemButton
                 onClick={() => onPlay(track, index)}
+                onContextMenu={openFromContextMenuEvent}
                 aria-label={`play ${trackTitle}`}
                 sx={{
                     borderRadius: 1,
                     py: 0.5,
                     px: 1,
                     gap: 1.5,
-                    bgcolor: isCurrentTrack ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                    bgcolor: isCurrentTrack
+                        ? 'rgba(var(--app-color-primary-rgb), 0.08)'
+                        : 'transparent',
                     '&:hover': {
-                        bgcolor: isCurrentTrack ? 'rgba(99, 102, 241, 0.12)' : undefined,
+                        bgcolor: isCurrentTrack
+                            ? 'rgba(var(--app-color-primary-rgb), 0.12)'
+                            : undefined,
                     },
                     '&:hover .track-index': { display: 'none' },
                     '&:hover .track-play-icon': { display: 'flex' },
                 }}
             >
-                {/* Track number / playing indicator */}
                 <Box
                     sx={{
                         width: 32,
@@ -69,6 +106,7 @@ const TrackListItem = ({
                                         width: 3,
                                         bgcolor: 'primary.main',
                                         borderRadius: 1,
+                                        height: '10px',
                                         animation: `equalizer ${0.4 + bar * 0.15}s ease-in-out infinite alternate`,
                                         '@keyframes equalizer': {
                                             '0%': { height: '4px' },
@@ -79,7 +117,7 @@ const TrackListItem = ({
                             ))}
                         </Box>
                     ) : isCurrentTrack ? (
-                        <Pause size={14} color="#6366f1" />
+                        <Pause size={14} color="var(--app-color-primary)" />
                     ) : (
                         <>
                             <Typography
@@ -88,7 +126,7 @@ const TrackListItem = ({
                                 color="text.secondary"
                                 sx={{ fontVariantNumeric: 'tabular-nums' }}
                             >
-                                {index + 1}
+                                {trackNumber ?? index + 1}
                             </Typography>
                             <Box
                                 className="track-play-icon"
@@ -100,7 +138,25 @@ const TrackListItem = ({
                     )}
                 </Box>
 
-                {/* Track info */}
+                <Box
+                    sx={{
+                        width: 36,
+                        height: 36,
+                        flexShrink: 0,
+                        borderRadius: 0.5,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'action.hover',
+                    }}
+                >
+                    <CoverArt
+                        src={getTrackCoverUrl(track.id, 96)}
+                        fallback={<Music size={16} opacity={0.5} />}
+                    />
+                </Box>
+
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                         variant="body2"
@@ -117,7 +173,8 @@ const TrackListItem = ({
                     )}
                 </Box>
 
-                {/* Actions */}
+                <TrackStarButton track={track} isRevealedOnRowHover />
+
                 {onAddToPlaylist && (
                     <IconButton
                         size="small"
@@ -137,7 +194,6 @@ const TrackListItem = ({
                     </IconButton>
                 )}
 
-                {/* Duration */}
                 {duration ? (
                     <Typography
                         variant="caption"
@@ -154,7 +210,31 @@ const TrackListItem = ({
                 ) : (
                     <Box sx={{ width: 36 }} />
                 )}
+
+                <IconButton
+                    size="small"
+                    aria-label={t('MUSIC_TRACK_MORE_ACTIONS', { name: trackTitle })}
+                    aria-haspopup="menu"
+                    onClick={openFromButton}
+                    sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                >
+                    <MoreVertical size={16} />
+                </IconButton>
             </ListItemButton>
+
+            <TrackContextMenu
+                track={track}
+                position={position}
+                onClose={close}
+                onAddToPlaylist={openPlaylistMenu}
+            />
+            {hasOpenedPlaylistMenu && (
+                <AddToPlaylistMenu
+                    fileId={track.id}
+                    anchorEl={playlistMenuAnchor}
+                    onClose={() => setPlaylistMenuAnchor(null)}
+                />
+            )}
         </ListItem>
     );
 };

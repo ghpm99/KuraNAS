@@ -14,10 +14,15 @@ const mockGetMusicArtists = jest.fn();
 const mockGetMusicByArtist = jest.fn();
 const mockGetMusicAlbums = jest.fn();
 const mockGetMusicByAlbum = jest.fn();
+const mockGetMusicAlbumsByArtist = jest.fn();
 const mockGetMusicGenres = jest.fn();
 const mockGetMusicByGenre = jest.fn();
 const mockGetMusicFolders = jest.fn();
 const mockGetMusicByFolder = jest.fn();
+const mockGetMusicQueueByArtist = jest.fn();
+const mockGetMusicQueueByAlbum = jest.fn();
+const mockGetMusicQueueByGenre = jest.fn();
+const mockGetMusicQueueByFolder = jest.fn();
 const mockReplaceQueue = jest.fn();
 
 jest.mock('@/features/music/providers/musicProvider/musicProvider', () => ({
@@ -27,9 +32,11 @@ jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
     useGlobalMusic: () => mockUseGlobalMusic(),
 }));
 jest.mock('@/utils/music', () => ({
+    ...jest.requireActual('@/utils/music'),
     getMusicTitle: (m: any) => m.name ?? m.metadata?.title ?? '',
     getMusicArtist: (m: any) => m.metadata?.artist ?? 'Unknown Artist',
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
 }));
@@ -43,11 +50,22 @@ jest.mock('@/service/music', () => ({
     getMusicByArtist: (...args: any[]) => mockGetMusicByArtist(...args),
     getMusicAlbums: (...args: any[]) => mockGetMusicAlbums(...args),
     getMusicByAlbum: (...args: any[]) => mockGetMusicByAlbum(...args),
+    getMusicAlbumsByArtist: (...args: any[]) => mockGetMusicAlbumsByArtist(...args),
+    getMusicAlbumSummary: jest.fn(),
+    getMusicArtistSummary: jest.fn(),
+    getMusicGenreSummary: jest.fn(),
+    getMusicFolderSummary: jest.fn(),
     getMusicGenres: (...args: any[]) => mockGetMusicGenres(...args),
     getMusicByGenre: (...args: any[]) => mockGetMusicByGenre(...args),
     getMusicFolders: (...args: any[]) => mockGetMusicFolders(...args),
     getMusicByFolder: (...args: any[]) => mockGetMusicByFolder(...args),
+    getMusicQueueByArtist: (...args: any[]) => mockGetMusicQueueByArtist(...args),
+    getMusicQueueByAlbum: (...args: any[]) => mockGetMusicQueueByAlbum(...args),
+    getMusicQueueByGenre: (...args: any[]) => mockGetMusicQueueByGenre(...args),
+    getMusicQueueByFolder: (...args: any[]) => mockGetMusicQueueByFolder(...args),
 }));
+
+jest.mock('@/features/music/components/trackStar/TrackStarButton', () => () => null);
 
 jest.mock('@/features/music/components/AddToPlaylistMenu', () => (props: any) => (
     <div>
@@ -74,6 +92,20 @@ const track = {
     parent_path: '/root/folder',
     size: 1024,
 };
+
+const makeQueue = (fileIds: number[]) => ({
+    items: fileIds.map((fileId) => ({
+        file_id: fileId,
+        name: `track-${fileId}`,
+        path: `/root/folder/track-${fileId}.mp3`,
+        format: 'mp3',
+        title: `title-${fileId}`,
+        artist: 'artist-1',
+        album: 'album-1',
+        length: 120,
+    })),
+    truncated: false,
+});
 
 const makePagination = (items: any[], hasNext = false, pageNo = 1) => ({
     items,
@@ -119,6 +151,10 @@ beforeEach(() => {
         makePagination([{ key: 'artist-1', artist: 'artist-1', album_count: 1, track_count: 1 }])
     );
     mockGetMusicByArtist.mockResolvedValue(makePagination([track]));
+    mockGetMusicQueueByArtist.mockResolvedValue(makeQueue([1]));
+    mockGetMusicQueueByAlbum.mockResolvedValue(makeQueue([1]));
+    mockGetMusicQueueByGenre.mockResolvedValue(makeQueue([1]));
+    mockGetMusicQueueByFolder.mockResolvedValue(makeQueue([1, 2]));
     mockGetMusicAlbums.mockResolvedValue(
         makePagination([
             {
@@ -282,7 +318,7 @@ describe('music views', () => {
             expect.any(Object)
         );
         expect(mockReplaceQueue).toHaveBeenCalled();
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistTracks).toHaveBeenCalled();
         fireEvent.click(screen.getAllByRole('button')[0]!);
         expect(screen.getByText('artist-1')).toBeInTheDocument();
@@ -357,7 +393,7 @@ describe('music views', () => {
         const detailButtons = screen.getAllByRole('button');
         fireEvent.click(detailButtons[1]!);
         fireEvent.click(detailButtons[2]!);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchGenreTracks).toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
@@ -664,10 +700,10 @@ describe('music views', () => {
         });
 
         const { container: albumsContainer, unmount } = renderWithRouter(<AlbumsView />);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchAlbumsList).toHaveBeenCalled();
         fireEvent.click(screen.getByText('album-1'));
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchAlbumsTracks).toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
         expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
@@ -675,10 +711,10 @@ describe('music views', () => {
         unmount();
 
         const artistsRender = renderWithRouter(<ArtistsView />);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistsList).toHaveBeenCalled();
         fireEvent.click(screen.getByText('artist-1'));
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistsTracks).toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
         expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
@@ -735,18 +771,18 @@ describe('music views', () => {
         ).not.toBeInTheDocument();
 
         mockReplaceQueue.mockClear();
-        mockGetMusicByGenre.mockClear();
-        mockGetMusicByGenre.mockResolvedValueOnce(makePagination([]));
+        mockGetMusicQueueByGenre.mockClear();
+        mockGetMusicQueueByGenre.mockResolvedValueOnce(makeQueue([]));
         fireEvent.click(
             secondRender.container
                 .querySelector('svg.lucide-play')
                 ?.closest('button') as HTMLElement
         );
         await waitFor(() => {
-            expect(mockGetMusicByGenre).toHaveBeenCalledWith('genre-1', 1, 200);
+            expect(mockGetMusicQueueByGenre).toHaveBeenCalledWith('genre-1');
         });
         expect(mockReplaceQueue).not.toHaveBeenCalled();
-        expect(screen.getByText('ACTION_LOAD_MORE')).toBeInTheDocument();
+        expect(screen.getByText('LOAD_MORE')).toBeInTheDocument();
     });
 
     it('covers empty and loading genre detail branches', () => {

@@ -15,6 +15,13 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     default: () => ({ t: mockT }),
 }));
 
+const mockUseFileAncestors = jest.fn();
+
+jest.mock('@/features/files/providers/fileProvider/useFileAncestors', () => ({
+    __esModule: true,
+    default: (fileId: number | null) => mockUseFileAncestors(fileId),
+}));
+
 import useFilesExplorerScreen from './useFilesExplorerScreen';
 
 const makeFile = (overrides: Partial<FileData> & { id: number; name: string }): FileData => ({
@@ -51,7 +58,9 @@ const rootDir = makeFile({
 
 describe('useFilesExplorerScreen', () => {
     beforeEach(() => {
+        window.localStorage.clear();
         jest.clearAllMocks();
+        mockUseFileAncestors.mockReturnValue({ data: undefined });
         mockUseFile.mockReturnValue({
             files: [rootDir],
             selectedItem: null,
@@ -122,6 +131,68 @@ describe('useFilesExplorerScreen', () => {
         const { result } = renderHook(() => useFilesExplorerScreen());
         // The itemCountLabel should show 0 items
         expect(result.current.itemCountLabel).toBe('0 ITENS');
+    });
+
+    it('uses the directory content count when more items exist than are loaded', () => {
+        const largeDir = { ...rootDir, directory_content_count: 120 };
+        mockUseFile.mockReturnValue({
+            files: [largeDir],
+            selectedItem: largeDir,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('120 ITENS');
+    });
+
+    it('uses the singular label when the directory holds one item', () => {
+        const singleDir = { ...rootDir, directory_content_count: 1 };
+        mockUseFile.mockReturnValue({
+            files: [singleDir],
+            selectedItem: singleDir,
+            fileListFilter: 'all',
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('falls back to the loaded length when the directory count is absent', () => {
+        const { directory_content_count: _omitted, ...dirWithoutCount } = rootDir;
+        mockUseFile.mockReturnValue({
+            files: [dirWithoutCount],
+            selectedItem: dirWithoutCount,
+            fileListFilter: 'all',
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('marks the count as partial when more pages exist and no count is known', () => {
+        mockUseFile.mockReturnValue({
+            files: [rootDir],
+            selectedItem: null,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1+ ITENS');
+    });
+
+    it('marks the count as partial when the known count is stale and more pages exist', () => {
+        const staleDir = { ...rootDir, directory_content_count: 0, file_children: [rootDir] };
+        mockUseFile.mockReturnValue({
+            files: [staleDir],
+            selectedItem: staleDir,
+            fileListFilter: 'all',
+            hasNextPage: true,
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.itemCountLabel).toBe('1+ ITENS');
     });
 
     it('returns empty array when selectedItem is a file', () => {
@@ -224,5 +295,53 @@ describe('useFilesExplorerScreen', () => {
 
         const { result } = renderHook(() => useFilesExplorerScreen());
         expect(result.current.itemCountLabel).toBe('1 ITEM');
+    });
+
+    it('builds the breadcrumb from the loaded ancestors, dropping the primary root', () => {
+        const deepFile = makeFile({
+            id: 9,
+            name: 'viagem',
+            type: FileType.Directory,
+            path: '/fotos/2024/viagem',
+        });
+        mockUseFile.mockReturnValue({ files: [], selectedItem: deepFile, fileListFilter: 'all' });
+        mockUseFileAncestors.mockReturnValue({
+            data: [
+                { id: 1, name: 'main', path: '/', type: FileType.Directory },
+                { id: 2, name: 'fotos', path: '/fotos', type: FileType.Directory },
+                { id: 3, name: '2024', path: '/fotos/2024', type: FileType.Directory },
+            ],
+        });
+
+        const { result } = renderHook(() => useFilesExplorerScreen());
+
+        expect(mockUseFileAncestors).toHaveBeenCalledWith(9);
+        expect(
+            result.current.breadcrumbSegments.map((segment) => [segment.label, segment.isCurrent])
+        ).toEqual([
+            ['FILES', false],
+            ['fotos', false],
+            ['2024', false],
+            ['viagem', true],
+        ]);
+        expect(result.current.breadcrumbSegments[2]?.path).toBe('/fotos/2024');
+    });
+
+    it('requests no ancestors when nothing is selected', () => {
+        renderHook(() => useFilesExplorerScreen());
+
+        expect(mockUseFileAncestors).toHaveBeenCalledWith(null);
+    });
+
+    it('defaults to the grid view and persists the chosen view mode', () => {
+        const { result, unmount } = renderHook(() => useFilesExplorerScreen());
+        expect(result.current.viewMode).toBe('grid');
+
+        act(() => result.current.setViewMode('list'));
+        expect(result.current.viewMode).toBe('list');
+        unmount();
+
+        const { result: reopened } = renderHook(() => useFilesExplorerScreen());
+        expect(reopened.current.viewMode).toBe('list');
     });
 });

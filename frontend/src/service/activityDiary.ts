@@ -11,8 +11,18 @@ export const getActivityDiarySummary = async (): Promise<ActivityDiarySummary> =
     return response.data;
 };
 
-export const getActivityDiaryEntries = async (): Promise<Pagination<ActivityDiaryData>> => {
-    const response = await apiBase.get<Pagination<ActivityDiaryData>>('/diary/');
+type ListActivityDiaryEntriesParams = {
+    page?: number;
+    pageSize?: number;
+};
+
+export const getActivityDiaryEntries = async ({
+    page = 1,
+    pageSize = 20,
+}: ListActivityDiaryEntriesParams = {}): Promise<Pagination<ActivityDiaryData>> => {
+    const response = await apiBase.get<Pagination<ActivityDiaryData>>('/diary/', {
+        params: { page, page_size: pageSize },
+    });
     return response.data;
 };
 
@@ -28,7 +38,7 @@ export const createActivityDiaryEntry = async (
 
 export const duplicateActivityDiaryEntry = async (diaryId: number): Promise<ActivityDiaryData> => {
     const response = await apiBase.post<ActivityDiaryData>('/diary/copy', {
-        ID: diaryId,
+        id: diaryId,
     });
     return response.data;
 };

@@ -1,5 +1,10 @@
 import { apiBase } from '@/service';
-import type { TieringSettings, TieringStatus, TieringUsage } from '@/types/tiering';
+import type {
+	TieringFileLocation,
+	TieringSettings,
+	TieringStatus,
+	TieringUsage,
+} from '@/types/tiering';
 
 export const getTieringSettings = async (): Promise<TieringSettings> => {
 	const response = await apiBase.get<TieringSettings>('/tiering/settings');
@@ -18,5 +23,10 @@ export const getTieringStatus = async (): Promise<TieringStatus> => {
 
 export const getTieringUsage = async (): Promise<TieringUsage> => {
 	const response = await apiBase.get<TieringUsage>('/tiering/usage');
+	return response.data;
+};
+
+export const promoteFileToHot = async (fileId: number): Promise<TieringFileLocation> => {
+	const response = await apiBase.post<TieringFileLocation>(`/tiering/promote/${fileId}`);
 	return response.data;
 };

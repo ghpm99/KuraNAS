@@ -9,11 +9,13 @@ export const appRoutes = {
     legacyActivityDiary: '/activity-diary',
     analytics: '/analytics',
     about: '/about',
+    configWizard: '/internal/config-wizard',
     images: '/images',
     music: '/music',
     videos: '/videos',
     assistant: '/assistant',
     takeout: '/takeout',
+    captures: '/captures',
     downloads: '/downloads',
     trash: '/trash',
     videoPlayerBase: '/video',
@@ -23,8 +25,22 @@ export const appRoutes = {
 export const isVideoPlayerRoute = (pathname: string) =>
     pathname.startsWith(`${appRoutes.videoPlayerBase}/`);
 
-export type ImageSection = 'library' | 'recent' | 'captures' | 'photos' | 'folders' | 'albums';
-export type MusicSection = 'home' | 'playlists' | 'artists' | 'albums' | 'genres' | 'folders';
+export type ImageSection =
+    | 'library'
+    | 'recent'
+    | 'captures'
+    | 'photos'
+    | 'favorites'
+    | 'folders'
+    | 'albums';
+export type MusicSection =
+    | 'home'
+    | 'search'
+    | 'playlists'
+    | 'artists'
+    | 'albums'
+    | 'genres'
+    | 'folders';
 export type VideoSection =
     | 'home'
     | 'continue'
@@ -76,6 +92,8 @@ export const getAnalyticsRoute = (section: AnalyticsSection) => {
     return `${appRoutes.analytics}/${section}`;
 };
 
+export const getAnalyticsImageDuplicatesRoute = () => `${appRoutes.analytics}?type=image`;
+
 export const isAnalyticsRoute = (pathname: string) =>
     pathname === appRoutes.analytics || pathname.startsWith(`${appRoutes.analytics}/`);
 
@@ -85,4 +103,13 @@ export const getFileBrowserRootPath = (pathname: string) => {
     }
 
     return appRoutes.files;
+};
+
+export const buildFilesUrl = (filePath: string): string => {
+    if (!filePath) return appRoutes.files;
+    const encodedPath = filePath
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+    return `${appRoutes.files}${encodedPath.startsWith('/') ? '' : '/'}${encodedPath}`;
 };

@@ -3,9 +3,8 @@ import AboutLayout from './about/aboutLayout';
 import ActivityDiaryLayout from './activityDiary/activityDiaryLayout';
 import FilesLayout from '@/features/files/files/filesLayout';
 import ImagesLayout from './images/imagesLayout';
-import VideoLayout from '@/features/videos/components/videoLayout';
 import MusicLayout from '@/features/music/components/musicLayout';
-import MusicSidebar from '@/features/music/components/MusicSidebar';
+import MusicDomainNav from '@/features/music/components/MusicDomainNav';
 import NavItem from './layout/Sidebar/components/navItem';
 import Button from './ui/Button/Button';
 
@@ -27,7 +26,7 @@ jest.mock('react-router-dom', () => ({
 describe('layout wrappers and export indexes', () => {
     it('layout wrappers return JSX containing their children', () => {
         const child = <span>child</span>;
-        const layouts = [AboutLayout, ActivityDiaryLayout, FilesLayout, ImagesLayout, VideoLayout, MusicLayout];
+        const layouts = [AboutLayout, ActivityDiaryLayout, FilesLayout, ImagesLayout, MusicLayout];
 
         for (const Layout of layouts) {
             const result = (Layout as any)({ children: child });
@@ -36,8 +35,8 @@ describe('layout wrappers and export indexes', () => {
         }
     });
 
-    it('renders music sidebar links', () => {
-        render(<MusicSidebar />);
+    it('renders music domain nav links', () => {
+        render(<MusicDomainNav />);
         expect(screen.getByRole('link', { name: /MUSIC_ARTISTS/i })).toHaveAttribute(
             'href',
             '/music/artists'
@@ -50,9 +49,7 @@ describe('layout wrappers and export indexes', () => {
 
     it('renders nav item link and generic button', () => {
         render(
-            <NavItem href="/images" icon={<span>icon</span>}>
-                Images
-            </NavItem>
+            <NavItem href="/images" icon={<span>icon</span>} label="Images" />
         );
         expect(screen.getByRole('link', { name: /Images/ })).toBeInTheDocument();
 

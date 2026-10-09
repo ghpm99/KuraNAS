@@ -1,0 +1,36 @@
+.player {
+    position: fixed;
+    bottom: 0;
+    left: var(--app-shell-sidebar-current-width, var(--app-shell-sidebar-width));
+    right: 0;
+    transition: left var(--app-motion-base) ease;
+    min-height: var(--app-shell-player-height);
+    padding-bottom: var(--app-safe-area-bottom);
+    overflow: hidden;
+}
+
+.progressBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.expandableInfo {
+    cursor: pointer;
+}
+
+@media (max-width: 899.95px) {
+    .player {
+        left: 0;
+        bottom: calc(var(--app-shell-bottom-nav-height) + var(--app-safe-area-bottom));
+        padding-bottom: 0;
+    }
+}
+
+@media (max-width: 599.95px) {
+    .player {
+        min-height: var(--app-shell-player-height-mobile);
+    }
+}

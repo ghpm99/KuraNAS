@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func NewHandler(service ServiceInterface) *Handler {
 func (h *Handler) GetSettingsHandler(c *gin.Context) {
 	settings, err := h.service.GetSettings()
 	if err != nil {
+		applog.ErrorWithStack("autoshutdown: load settings failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_AUTO_SHUTDOWN_LOAD_FAILED")})
 		return
 	}
@@ -39,6 +41,7 @@ func (h *Handler) UpdateSettingsHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 			return
 		}
+		applog.ErrorWithStack("autoshutdown: update settings failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_AUTO_SHUTDOWN_UPDATE_FAILED")})
 		return
 	}
@@ -49,6 +52,7 @@ func (h *Handler) UpdateSettingsHandler(c *gin.Context) {
 func (h *Handler) GetSuggestedTimeHandler(c *gin.Context) {
 	suggestion, err := h.service.SuggestedTime()
 	if err != nil {
+		applog.ErrorWithStack("autoshutdown: suggested time failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_AUTO_SHUTDOWN_LOAD_FAILED")})
 		return
 	}

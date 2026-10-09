@@ -37,8 +37,8 @@ var GetFileStatByPathQuery string
 //go:embed update_file.sql
 var UpdateFileQuery string
 
-//go:embed get_children_count.sql
-var GetChildrenCountQuery string
+//go:embed get_children_counts_by_parent_paths.sql
+var GetChildrenCountsByParentPathsQuery string
 
 //go:embed update_descendant_paths.sql
 var UpdateDescendantPathsQuery string
@@ -78,3 +78,108 @@ var GetDuplicateFilesQuery string
 
 //go:embed delete_file_by_id.sql
 var DeleteFileByIDQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_name_asc.sql
+var GetChildrenSortedByNameAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_name_desc.sql
+var GetChildrenSortedByNameDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_size_asc.sql
+var GetChildrenSortedBySizeAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_size_desc.sql
+var GetChildrenSortedBySizeDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_updated_at_asc.sql
+var GetChildrenSortedByUpdatedAtAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_updated_at_desc.sql
+var GetChildrenSortedByUpdatedAtDescQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_created_at_asc.sql
+var GetChildrenSortedByCreatedAtAscQuery string
+
+//go:embed get_children_by_parent_path_sorted_by_created_at_desc.sql
+var GetChildrenSortedByCreatedAtDescQuery string
+
+//go:embed get_starred_files.sql
+var GetStarredFilesQuery string
+
+//go:embed get_recently_accessed_files.sql
+var GetRecentlyAccessedFilesQuery string
+
+//go:embed get_active_file_by_path_or_physical_path.sql
+var GetActiveFileByPathOrPhysicalPathQuery string
+
+//go:embed get_active_files_by_paths.sql
+var GetActiveFilesByPathsQuery string
+
+//go:embed search_select.sql
+var SearchSelectQuery string
+
+//go:embed search_filter_name_terms.sql
+var SearchFilterNameTermsQuery string
+
+//go:embed search_scope_descendants.sql
+var SearchScopeDescendantsQuery string
+
+//go:embed search_scope_children.sql
+var SearchScopeChildrenQuery string
+
+//go:embed search_filter_kind_folder.sql
+var SearchFilterKindFolderQuery string
+
+//go:embed search_filter_kind_format.sql
+var SearchFilterKindFormatQuery string
+
+//go:embed search_filter_kind_other.sql
+var SearchFilterKindOtherQuery string
+
+//go:embed search_filter_modified_from.sql
+var SearchFilterModifiedFromQuery string
+
+//go:embed search_filter_modified_before.sql
+var SearchFilterModifiedBeforeQuery string
+
+//go:embed search_filter_min_size.sql
+var SearchFilterMinSizeQuery string
+
+//go:embed search_filter_max_size.sql
+var SearchFilterMaxSizeQuery string
+
+//go:embed search_filter_tier_hot.sql
+var SearchFilterTierHotQuery string
+
+//go:embed search_filter_tier_cold.sql
+var SearchFilterTierColdQuery string
+
+//go:embed search_filter_starred.sql
+var SearchFilterStarredQuery string
+
+//go:embed search_order_relevance.sql
+var SearchOrderRelevanceQuery string
+
+//go:embed search_order_name_asc.sql
+var SearchOrderNameAscQuery string
+
+//go:embed search_order_name_desc.sql
+var SearchOrderNameDescQuery string
+
+//go:embed search_order_size_asc.sql
+var SearchOrderSizeAscQuery string
+
+//go:embed search_order_size_desc.sql
+var SearchOrderSizeDescQuery string
+
+//go:embed search_order_modified_asc.sql
+var SearchOrderModifiedAscQuery string
+
+//go:embed search_order_modified_desc.sql
+var SearchOrderModifiedDescQuery string
+
+//go:embed search_page.sql
+var SearchPageQuery string
+
+//go:embed get_folder_stats.sql
+var GetFolderStatsQuery string

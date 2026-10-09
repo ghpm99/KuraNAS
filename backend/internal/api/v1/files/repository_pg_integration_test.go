@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
@@ -192,7 +193,7 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 		t.Fatalf("soft-delete row: %v", err)
 	}
 
-	children, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, 1, 50)
+	children, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, DefaultChildrenSort, 1, 50)
 	if err != nil {
 		t.Fatalf("GetActiveChildrenByParentPath: %v", err)
 	}
@@ -206,6 +207,14 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 	}
 	if len(byPath.Items) != 0 {
 		t.Fatalf("path lookup must hide soft-deleted rows, got %+v", byPath.Items)
+	}
+
+	countsByParentPath, err := repo.GetDirectoryContentCounts([]string{parent, "/srv/vazio"})
+	if err != nil {
+		t.Fatalf("GetDirectoryContentCounts: %v", err)
+	}
+	if countsByParentPath[parent] != 1 || countsByParentPath["/srv/vazio"] != 0 {
+		t.Fatalf("content counts must ignore soft-deleted rows, got %v", countsByParentPath)
 	}
 
 	walk, err := repo.GetFilesByPathPrefix(parent, 1, 50)
@@ -222,5 +231,193 @@ func TestPostgres_DeletedSemanticsOfDecomposedQueries(t *testing.T) {
 	}
 	if len(byNamePath) != 1 || !byNamePath[0].DeletedAt.Valid {
 		t.Fatalf("name+path lookup must see the soft-deleted row, got %+v", byNamePath)
+	}
+}
+
+func TestPostgres_ChildrenSortKeepsDirectoriesFirstAndOrdersByKey(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	parent := "/srv/ordenacao"
+	baseTime := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "b.txt", parent+"/b.txt", parent, 30, baseTime.Add(2*time.Hour))
+	insertFileRow(t, repo, "a.txt", parent+"/a.txt", parent, 20, baseTime.Add(3*time.Hour))
+	insertFileRow(t, repo, "c.txt", parent+"/c.txt", parent, 10, baseTime.Add(1*time.Hour))
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, createErr := repo.CreateFile(tx, FileModel{
+			Name: "z-dir", Path: parent + "/z-dir", ParentPath: parent,
+			Size: 0, UpdatedAt: baseTime, CreatedAt: baseTime, Type: Directory,
+		})
+		return createErr
+	})
+	if err != nil {
+		t.Fatalf("insert directory: %v", err)
+	}
+
+	tests := []struct {
+		childrenSort  ChildrenSort
+		expectedNames []string
+	}{
+		{DefaultChildrenSort, []string{"z-dir", "a.txt", "b.txt", "c.txt"}},
+		{ChildrenSort{SortByName, SortDescending}, []string{"z-dir", "c.txt", "b.txt", "a.txt"}},
+		{ChildrenSort{SortBySize, SortAscending}, []string{"z-dir", "c.txt", "a.txt", "b.txt"}},
+		{ChildrenSort{SortBySize, SortDescending}, []string{"z-dir", "b.txt", "a.txt", "c.txt"}},
+		{ChildrenSort{SortByUpdatedAt, SortDescending}, []string{"z-dir", "a.txt", "b.txt", "c.txt"}},
+		{ChildrenSort{SortByCreatedAt, SortAscending}, []string{"z-dir", "c.txt", "b.txt", "a.txt"}},
+	}
+
+	for _, testCase := range tests {
+		page, err := repo.GetActiveChildrenByParentPath(parent, AllCategory, testCase.childrenSort, 1, 50)
+		if err != nil {
+			t.Fatalf("sort %+v: %v", testCase.childrenSort, err)
+		}
+		names := make([]string, 0, len(page.Items))
+		for _, child := range page.Items {
+			names = append(names, child.Name)
+		}
+		if !slices.Equal(names, testCase.expectedNames) {
+			t.Fatalf("sort %+v: expected %v, got %v", testCase.childrenSort, testCase.expectedNames, names)
+		}
+	}
+}
+
+func TestPostgres_StarredAndRecentListAcrossFoldersAndSkipDeleted(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "raiz.txt", "/srv/raiz.txt", "/srv", 1, mod)
+	insertFileRow(t, repo, "fundo.txt", "/srv/a/b/fundo.txt", "/srv/a/b", 1, mod)
+	insertFileRow(t, repo, "apagado.txt", "/srv/a/apagado.txt", "/srv/a", 1, mod)
+	insertFileRow(t, repo, "comum.txt", "/srv/comum.txt", "/srv", 1, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		statements := []string{
+			"UPDATE home_file SET starred = TRUE WHERE name IN ('raiz.txt', 'fundo.txt', 'apagado.txt')",
+			"UPDATE home_file SET deleted_at = now() WHERE name = 'apagado.txt'",
+			"TRUNCATE recent_file",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() - interval '3 hours' FROM home_file WHERE name = 'raiz.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.2', id, now() - interval '1 hours' FROM home_file WHERE name = 'raiz.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() - interval '2 hours' FROM home_file WHERE name = 'fundo.txt'",
+			"INSERT INTO recent_file (ip_address, file_id, accessed_at) SELECT '10.0.0.1', id, now() FROM home_file WHERE name = 'apagado.txt'",
+		}
+		for _, statement := range statements {
+			if _, execErr := tx.Exec(statement); execErr != nil {
+				return execErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed starred and recent: %v", err)
+	}
+
+	starred, err := repo.GetStarredFiles(1, 50)
+	if err != nil {
+		t.Fatalf("GetStarredFiles: %v", err)
+	}
+	starredNames := []string{}
+	for _, file := range starred.Items {
+		starredNames = append(starredNames, file.Name)
+	}
+	if !slices.Equal(starredNames, []string{"fundo.txt", "raiz.txt"}) {
+		t.Fatalf("starred must span folders and hide deleted rows, got %v", starredNames)
+	}
+
+	recent, err := repo.GetRecentlyAccessedFiles(1, 50)
+	if err != nil {
+		t.Fatalf("GetRecentlyAccessedFiles: %v", err)
+	}
+	recentNames := []string{}
+	for _, file := range recent.Items {
+		recentNames = append(recentNames, file.Name)
+	}
+	if !slices.Equal(recentNames, []string{"raiz.txt", "fundo.txt"}) {
+		t.Fatalf("recent must be distinct, newest first and hide deleted rows, got %v", recentNames)
+	}
+
+	firstRecentPage, err := repo.GetRecentlyAccessedFiles(1, 1)
+	if err != nil || len(firstRecentPage.Items) != 1 || !firstRecentPage.Pagination.HasNext {
+		t.Fatalf("expected paginated recent with next page, got %+v err=%v", firstRecentPage, err)
+	}
+}
+
+func TestPostgres_ActiveFileByPathOrPhysicalPathMatchesBothLocationsAndSkipsDeleted(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	insertFileRow(t, repo, "frio.txt", "/srv/docs/frio.txt", "/srv/docs", 1, mod)
+	insertFileRow(t, repo, "quente.txt", "/srv/docs/quente.txt", "/srv/docs", 1, mod)
+	insertFileRow(t, repo, "apagado.txt", "/srv/docs/apagado.txt", "/srv/docs", 1, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		statements := []string{
+			"UPDATE home_file SET physical_path = '/cold/main/docs/frio.txt' WHERE name = 'frio.txt'",
+			"UPDATE home_file SET physical_path = '/cold/main/docs/apagado.txt', deleted_at = now() WHERE name = 'apagado.txt'",
+		}
+		for _, statement := range statements {
+			if _, execErr := tx.Exec(statement); execErr != nil {
+				return execErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed tiered rows: %v", err)
+	}
+
+	byPhysical, found, err := repo.GetActiveFileByPathOrPhysicalPath("/cold/main/docs/frio.txt")
+	if err != nil || !found || byPhysical.Name != "frio.txt" {
+		t.Fatalf("physical path must resolve the cold file, got %+v found=%v err=%v", byPhysical, found, err)
+	}
+	byLogical, found, err := repo.GetActiveFileByPathOrPhysicalPath("/srv/docs/frio.txt")
+	if err != nil || !found || byLogical.Name != "frio.txt" {
+		t.Fatalf("logical path must resolve the cold file, got %+v found=%v err=%v", byLogical, found, err)
+	}
+	hot, found, err := repo.GetActiveFileByPathOrPhysicalPath("/srv/docs/quente.txt")
+	if err != nil || !found || hot.Name != "quente.txt" {
+		t.Fatalf("hot file must resolve by its path, got %+v found=%v err=%v", hot, found, err)
+	}
+	for _, hiddenPath := range []string{"/cold/main/docs/apagado.txt", "/srv/docs/apagado.txt", "/srv/docs/inexistente.txt"} {
+		if _, found, err := repo.GetActiveFileByPathOrPhysicalPath(hiddenPath); err != nil || found {
+			t.Fatalf("%s must not resolve, found=%v err=%v", hiddenPath, found, err)
+		}
+	}
+}
+
+func TestPostgres_GetActiveFilesByPathsReturnsOnlyActiveMatches(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Now().UTC().Truncate(time.Second)
+	insertFileRow(t, repo, "srv", "/srv", "/", 0, mod)
+	insertFileRow(t, repo, "docs", "/srv/docs", "/srv", 0, mod)
+	insertFileRow(t, repo, "apagada", "/srv/apagada", "/srv", 0, mod)
+	insertFileRow(t, repo, "outra", "/srv/outra", "/srv", 0, mod)
+
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec("UPDATE home_file SET deleted_at = now() WHERE name = 'apagada'")
+		return execErr
+	})
+	if err != nil {
+		t.Fatalf("soft delete row: %v", err)
+	}
+
+	matched, err := repo.GetActiveFilesByPaths([]string{"/srv", "/srv/docs", "/srv/apagada", "/srv/inexistente"})
+	if err != nil {
+		t.Fatalf("GetActiveFilesByPaths: %v", err)
+	}
+	matchedPaths := []string{}
+	for _, file := range matched {
+		matchedPaths = append(matchedPaths, file.Path)
+	}
+	slices.Sort(matchedPaths)
+	if !slices.Equal(matchedPaths, []string{"/srv", "/srv/docs"}) {
+		t.Fatalf("expected only active requested paths, got %v", matchedPaths)
 	}
 }

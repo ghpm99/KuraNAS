@@ -1,12 +1,15 @@
 package scan
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
 	videodom "nas-go/api/internal/api/v1/video"
-	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/applog"
+	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
 )
 
@@ -28,12 +31,12 @@ func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, fi
 	PythonScriptRunner = runner
 }
 
-func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {
+func GetMetadata(fileDto files.FileDto, runner ScriptRunner) (any, error) {
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
 
 	switch formatType.Type {
 	case utils.FormatTypeImage:
-		return getImageMetadata(fileDto, runner, aiService)
+		return getImageMetadata(fileDto, runner)
 	case utils.FormatTypeAudio:
 		return getAudioMetadata(fileDto, runner)
 	case utils.FormatTypeVideo:
@@ -43,25 +46,55 @@ func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.Servic
 	}
 }
 
-func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (imagedom.MetadataModel, error) {
+var imageStillConverter img.StillImageConverter = img.NewFFmpegStillConverter()
+
+func SetImageStillConverterForTesting(converter img.StillImageConverter) {
+	if converter == nil {
+		imageStillConverter = img.NewFFmpegStillConverter()
+		return
+	}
+	imageStillConverter = converter
+}
+
+func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (imagedom.MetadataModel, error) {
 	metadata := imagedom.MetadataModel{
 		FileId: fileDto.ID,
 		Path:   fileDto.Path,
 	}
 
-	result, err := runner(utils.ImageMetadata, fileDto.ResolveContentPath())
-	if err != nil {
-		return metadata, err
+	contentPath := fileDto.ResolveContentPath()
+	scriptErr := loadImageScriptMetadata(&metadata, runner, contentPath)
+	if errors.Is(scriptErr, context.DeadlineExceeded) {
+		return metadata, scriptErr
+	}
+	if scriptErr != nil {
+		applog.Warn("scan: image metadata script unusable, falling back to decoded preview", "path", contentPath, "error", scriptErr.Error())
 	}
 
-	err = json.Unmarshal([]byte(result), &metadata)
-	if err != nil {
-		return metadata, err
-	}
-
-	metadata.Classification = imagedom.ClassifyImageWithAI(fileDto, metadata, aiService)
+	fillMissingImageDimensions(&metadata, contentPath, fileDto.Format)
+	metadata.Classification = imagedom.ClassifyImage(fileDto, metadata)
 
 	return metadata, nil
+}
+
+func loadImageScriptMetadata(metadata *imagedom.MetadataModel, runner ScriptRunner, contentPath string) error {
+	scriptOutput, err := runner(utils.ImageMetadata, contentPath)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(scriptOutput), metadata)
+}
+
+func fillMissingImageDimensions(metadata *imagedom.MetadataModel, contentPath string, extension string) {
+	if metadata.Width > 0 && metadata.Height > 0 {
+		return
+	}
+	width, height, err := img.PreviewDimensions(contentPath, extension, imageStillConverter)
+	if err != nil {
+		applog.Warn("scan: could not read image dimensions from preview", "path", contentPath, "error", err.Error())
+		return
+	}
+	metadata.Width, metadata.Height = width, height
 }
 
 func getAudioMetadata(fileDto files.FileDto, runner ScriptRunner) (musicdom.AudioMetadataModel, error) {

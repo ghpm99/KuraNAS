@@ -17,6 +17,8 @@ type RepositoryInterface interface {
 	GetImages(page int, pageSize int, groupBy ImageGroupBy) (utils.PaginationResponse[files.FileModel], error)
 	CountPendingAIClassification(confidenceThreshold float64) (int, error)
 	ListPendingAIClassification(confidenceThreshold float64, afterFileID int, limit int) ([]PendingImageClassification, error)
+	UpdateAIClassification(fileID int, classification ClassificationModel) error
+	ListImagesWithoutMetadata(afterFileID int, limit int) ([]ImageWithoutMetadata, error)
 }
 
 // ServiceInterface is the business-logic contract for the image domain.

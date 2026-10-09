@@ -1,5 +1,5 @@
 import { FileType } from '@/utils';
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -9,32 +9,53 @@ import {
     getFileByPath,
     getFilesTree,
     getRecentAccessByFileId,
+    getRecentlyAccessedFiles,
+    getStarredFiles,
     moveFile as moveFileService,
     renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
     toggleStarredFile,
-    uploadFiles as uploadFilesService,
 } from '@/service/files';
+import { promoteFileToHot as promoteFileToHotService } from '@/service/tiering';
 import {
     FileContextProvider,
     FileContextType,
     FileData,
     FileListCategoryType,
+    FilesSort,
     PaginationResponse,
 } from './fileContext';
+import FileSelectionProvider from '../../selection/fileSelectionProvider';
+import { loadFilesSort, saveFilesSort } from './filesSortPreference';
 import {
     addChildrenToTree,
-    buildFilesUrl,
     extractFilePath,
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
+import { buildFilesUrl } from '@/app/routes';
+import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
+import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
+import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const pageSize = 200;
+
+const joinPath = (parentPath: string | undefined, name: string | undefined) =>
+    `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
+
+const isGlobalListing = (filter: FileListCategoryType, parentId: number | null) =>
+    parentId === null && filter !== 'all';
+
+const fetchGlobalListing = (filter: FileListCategoryType, page: number): Promise<PaginationResponse> => {
+    const params = { page, pageSize };
+    return filter === 'starred' ? getStarredFiles(params) : getRecentlyAccessedFiles(params);
+};
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // URL → path extraction
     const currentFilePath = extractFilePath(location.pathname);
@@ -52,6 +73,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const [fileTree, setFileTree] = useState<FileData[]>([]);
     const [fileListFilter, setFileListFilter] = useState<FileListCategoryType>('all');
+    const [filesSort, setFilesSortState] = useState<FilesSort>(loadFilesSort);
+
+    const setFilesSort = useCallback((nextSort: FilesSort) => {
+        saveFilesSort(nextSort);
+        setFilesSortState(nextSort);
+    }, []);
+
+    useExpandTreeAlongAncestors({ selectedItemId, filesSort, setFileTree });
 
     // Snapshot derived from resolvedItem — no state/effect needed
     const selectedItemSnapshot = currentFilePath ? (resolvedItem ?? null) : null;
@@ -64,15 +93,18 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [selectedItemId]
     );
 
-    const { status, data, refetch } = useInfiniteQuery({
-        queryKey: ['files', queryParams, fileListFilter],
+    const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+        queryKey: ['files', queryParams, fileListFilter, filesSort],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
-            getFilesTree({
-                page: pageParam,
-                pageSize,
-                fileParent: selectedItemId ?? undefined,
-                category: fileListFilter,
-            }),
+            isGlobalListing(fileListFilter, selectedItemId)
+                ? fetchGlobalListing(fileListFilter, pageParam)
+                : getFilesTree({
+                      page: pageParam,
+                      pageSize,
+                      fileParent: selectedItemId ?? undefined,
+                      category: fileListFilter,
+                      sort: filesSort,
+                  }),
         initialPageParam: 1,
         getNextPageParam: (lastPage) => {
             if (lastPage.pagination.hasNext) {
@@ -80,8 +112,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return undefined;
         },
-        staleTime: 0,
+        staleTime: listingStaleTimeMs,
     });
+
+    const loadedItems = useMemo(
+        () => data?.pages.flatMap((page) => page?.items ?? []) ?? [],
+        [data]
+    );
 
     const { data: fileAccessData, isLoading: isLoadingAccessData } = useQuery({
         queryKey: ['filesRecent', 'tree', selectedItemId],
@@ -100,21 +137,38 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         mutationFn: (itemId: number) => toggleStarredFile(itemId),
         onSuccess: () => {
             refetch();
+            queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
         },
     });
+
+    const invalidateFileQueries = useCallback(async () => {
+        await Promise.all(
+            allFileQueryKeys.map((queryKey) =>
+                queryClient.invalidateQueries({ queryKey: [queryKey] })
+            )
+        );
+    }, [queryClient]);
+
+    const toggleStarred = useCallback(
+        async (itemId: number) => {
+            await toggleStarredFile(itemId);
+            await invalidateFileQueries();
+        },
+        [invalidateFileQueries]
+    );
+
+    const promoteFileToHot = useCallback(
+        async (id: number) => {
+            await promoteFileToHotService(id);
+            await invalidateFileQueries();
+        },
+        [invalidateFileQueries]
+    );
 
     const rescanFiles = useCallback(async () => {
         await requestFilesRescan();
         await refetch();
     }, [refetch]);
-
-    const uploadFiles = useCallback(
-        async (files: FileList, targetFolderId?: number) => {
-            await uploadFilesService(files, targetFolderId);
-            await refetch();
-        },
-        [refetch]
-    );
 
     const createFolder = useCallback(
         async (name: string, parentId?: number) => {
@@ -124,12 +178,24 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [refetch]
     );
 
+    const openedItemId = currentFilePath ? resolvedItem?.id : undefined;
+    const openedItemParentPath = resolvedItem?.parent_path;
+    const openedItemName = resolvedItem?.name;
+
+    const discardOpenedItemPathQuery = useCallback(() => {
+        queryClient.removeQueries({ queryKey: ['files-path', currentFilePath] });
+    }, [queryClient, currentFilePath]);
+
     const moveFile = useCallback(
         async (sourceId: number, destinationFolderId?: number, destinationPath?: string) => {
-            await moveFileService(sourceId, destinationFolderId, destinationPath);
-            await refetch();
+            const movedPath = await moveFileService(sourceId, destinationFolderId, destinationPath);
+            if (sourceId === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(buildFilesUrl(movedPath));
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [openedItemId, discardOpenedItemPathQuery, navigate, invalidateFileQueries]
     );
 
     const copyFile = useCallback(
@@ -142,24 +208,49 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const renameFile = useCallback(
         async (id: number, newName: string) => {
-            await renameFileService(id, newName);
-            await refetch();
+            const renamedPath = await renameFileService(id, newName);
+            if (id === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(
+                    buildFilesUrl(
+                        renamedPath || joinPath(openedItemParentPath, newName || openedItemName)
+                    )
+                );
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [
+            openedItemId,
+            openedItemParentPath,
+            openedItemName,
+            discardOpenedItemPathQuery,
+            navigate,
+            invalidateFileQueries,
+        ]
     );
 
     const deleteFile = useCallback(
-        async (id: number) => {
-            await deleteFileService(id);
-            await refetch();
+        async (id: number, permanent = false) => {
+            await deleteFileService(id, permanent);
+            if (id === openedItemId) {
+                discardOpenedItemPathQuery();
+                navigate(buildFilesUrl(openedItemParentPath === '/' ? '' : (openedItemParentPath ?? '')));
+            }
+            await invalidateFileQueries();
         },
-        [refetch]
+        [
+            openedItemId,
+            openedItemParentPath,
+            discardOpenedItemPathQuery,
+            navigate,
+            invalidateFileQueries,
+        ]
     );
 
     // Update file tree when data arrives (deferred to avoid cascading renders)
     useEffect(() => {
         if (!data) return;
-        const nextItems = data?.pages[0]?.items ?? [];
+        const nextItems = loadedItems;
         let cancelled = false;
         if (selectedItemId) {
             queueMicrotask(() => {
@@ -180,7 +271,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         return () => {
             cancelled = true;
         };
-    }, [data, selectedItemId]);
+    }, [data, loadedItems, selectedItemId]);
 
     // Compute expanded items from the selected item's trail in the tree (derived, not state)
     const expandedItems = useMemo(() => {
@@ -200,12 +291,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         if (fromTree) return fromTree;
 
         if (selectedItemSnapshot && selectedItemSnapshot.type === FileType.Directory && data) {
-            const nextItems = data.pages[0]?.items ?? [];
-            return { ...selectedItemSnapshot, file_children: nextItems };
+            return { ...selectedItemSnapshot, file_children: loadedItems };
         }
 
         return selectedItemSnapshot;
-    }, [selectedItemId, fileTree, selectedItemSnapshot, data]);
+    }, [selectedItemId, fileTree, selectedItemSnapshot, data, loadedItems]);
 
     // Navigate via URL (push for browser history)
     const handleSelectItem = useCallback(
@@ -230,6 +320,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         () => ({
             files: fileTree || [],
             status: status,
+            listingErrorMessage: extractBackendErrorMessage(error),
+            retryListing: () => {
+                refetch();
+            },
             selectedItem: effectiveSelectedItem,
             handleSelectItem,
             expandedItems,
@@ -237,35 +331,57 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             isLoadingAccessData: isLoadingAccessData,
             fileListFilter,
             setFileListFilter,
+            filesSort,
+            setFilesSort,
             handleStarredItem,
-            uploadFiles,
+            toggleStarred,
             createFolder,
             moveFile,
             copyFile,
             renameFile,
             deleteFile,
+            promoteFileToHot,
             rescanFiles,
+            fetchNextPage: () => {
+                fetchNextPage();
+            },
+            hasNextPage: Boolean(hasNextPage),
+            isFetchingNextPage: Boolean(isFetchingNextPage),
         }),
         [
             fileTree,
             status,
+            error,
+            refetch,
             effectiveSelectedItem,
             handleSelectItem,
             expandedItems,
             fileAccessData,
             isLoadingAccessData,
             fileListFilter,
+            filesSort,
+            setFilesSort,
             handleStarredItem,
-            uploadFiles,
+            toggleStarred,
             createFolder,
             moveFile,
             copyFile,
             renameFile,
             deleteFile,
+            promoteFileToHot,
             rescanFiles,
+            fetchNextPage,
+            hasNextPage,
+            isFetchingNextPage,
         ]
     );
-    return <FileContextProvider value={contextValue}>{children}</FileContextProvider>;
+    const selectionScopeKey = `${selectedItemId ?? 'root'}:${fileListFilter}`;
+
+    return (
+        <FileContextProvider value={contextValue}>
+            <FileSelectionProvider scopeKey={selectionScopeKey}>{children}</FileSelectionProvider>
+        </FileContextProvider>
+    );
 };
 
 export default FileProvider;

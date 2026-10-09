@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import VideoDomainHeader from './VideoDomainHeader';
-import VideoSidebar from './VideoSidebar';
+import VideoDomainNav from './VideoDomainNav';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -11,19 +11,18 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 }));
 
 describe('features/videos domain shell', () => {
-    it('renders contextual header and active sidebar item from route', () => {
+    it('renders contextual header and active nav tab from route', () => {
         render(
             <MemoryRouter initialEntries={['/videos/folders/archive-home']}>
                 <VideoDomainHeader />
-                <VideoSidebar />
+                <VideoDomainNav />
             </MemoryRouter>
         );
 
         expect(screen.getByRole('heading', { name: 'VIDEO_SECTION_FOLDERS' })).toBeInTheDocument();
-        expect(screen.getAllByText('VIDEO_SECTION_FOLDERS_DESCRIPTION')[0]).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /VIDEO_SECTION_FOLDERS/i })).toHaveAttribute(
-            'href',
-            '/videos/folders'
-        );
+        expect(screen.getByText('VIDEO_SECTION_FOLDERS_DESCRIPTION')).toBeInTheDocument();
+        const activeLink = screen.getByRole('link', { name: /VIDEO_SECTION_FOLDERS/i });
+        expect(activeLink).toHaveAttribute('href', '/videos/folders');
+        expect(activeLink).toHaveAttribute('aria-current', 'page');
     });
 });

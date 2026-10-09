@@ -1,12 +1,10 @@
 import { appRoutes } from '@/app/routes';
 import { createRouteMusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import type { IImageMetadata } from '@/components/providers/imageProvider/imageProvider';
-import type {
-    IMusicData,
-    IMusicMetadata,
-} from '@/features/music/providers/musicProvider/musicProvider';
-import { FileType, getFileTypeInfo } from '@/utils';
+import type { IImageMetadata } from '@/types/image';
+import type { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
+import type { IMusicMetadata } from '@/types/music';
+import { FileType, getFileTypeInfo, hasDedicatedMediaScreen } from '@/utils';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -53,7 +51,24 @@ const isMusicMetadata = (metadata: OpenableMediaFile['metadata']): metadata is I
         return false;
     }
 
-    return 'duration' in metadata || 'album' in metadata || 'artist' in metadata;
+    return 'length' in metadata || 'album' in metadata || 'artist' in metadata;
+};
+
+const isQueueableAudioFile = (file: OpenableMediaFile): boolean =>
+    file.type !== FileType.Directory &&
+    hasDedicatedMediaScreen(file.format) &&
+    getFileTypeInfo(file.format).type === 'audio';
+
+const buildAudioQueue = (
+    clickedFile: OpenableMediaFile,
+    listedFiles: OpenableMediaFile[]
+): { tracks: IMusicData[]; startIndex: number } => {
+    const listedAudioFiles = listedFiles.filter(isQueueableAudioFile);
+    const clickedIndex = listedAudioFiles.findIndex((audioFile) => audioFile.id === clickedFile.id);
+    if (clickedIndex === -1) {
+        return { tracks: [toMusicTrack(clickedFile)], startIndex: 0 };
+    }
+    return { tracks: listedAudioFiles.map(toMusicTrack), startIndex: clickedIndex };
 };
 
 export default function useMediaOpener() {
@@ -61,9 +76,21 @@ export default function useMediaOpener() {
     const location = useLocation();
     const { replaceQueue } = useGlobalMusic();
 
+    const enqueueAudioFiles = useCallback(
+        (clickedFile: OpenableMediaFile, listedFiles: OpenableMediaFile[]) => {
+            const { tracks, startIndex } = buildAudioQueue(clickedFile, listedFiles);
+            replaceQueue(
+                tracks,
+                startIndex,
+                createRouteMusicPlaybackContext(location.pathname, location.search)
+            );
+        },
+        [location.pathname, location.search, replaceQueue]
+    );
+
     const openMediaItem = useCallback(
-        (file: OpenableMediaFile) => {
-            if (file.type === FileType.Directory) {
+        (file: OpenableMediaFile, listedFiles: OpenableMediaFile[] = []) => {
+            if (file.type === FileType.Directory || !hasDedicatedMediaScreen(file.format)) {
                 return false;
             }
 
@@ -90,11 +117,7 @@ export default function useMediaOpener() {
                     );
                     return true;
                 case 'audio':
-                    replaceQueue(
-                        [toMusicTrack(file)],
-                        0,
-                        createRouteMusicPlaybackContext(location.pathname, location.search)
-                    );
+                    enqueueAudioFiles(file, listedFiles);
                     navigate(appRoutes.music, {
                         state: { from: currentRoute },
                     });
@@ -103,7 +126,7 @@ export default function useMediaOpener() {
                     return false;
             }
         },
-        [location.pathname, location.search, navigate, replaceQueue]
+        [location.pathname, location.search, navigate, enqueueAudioFiles]
     );
 
     return {
