@@ -7,8 +7,9 @@ import {
     ListItemButton,
     Typography,
 } from '@mui/material';
+import { useState } from 'react';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
-import { ListMusic, Pause, Play, Trash2 } from 'lucide-react';
+import { GripVertical, ListMusic, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -19,6 +20,8 @@ import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { getPlaylistQueue } from '@/service/playlist';
 import { findStartIndex, queueToTracks } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
+import PlaylistEditDialog from './PlaylistEditDialog';
+import PlaylistTrackMoveButtons from './PlaylistTrackMoveButtons';
 
 type PlaylistDetailSectionProps = {
     playlist: Playlist;
@@ -29,6 +32,9 @@ type PlaylistDetailSectionProps = {
     onBack: () => void;
     onRemoveTrack: (fileId: number) => void;
     onLoadMore: () => void;
+    isRenaming?: boolean;
+    onRenamePlaylist?: (name: string, description: string, onSaved: () => void) => void;
+    onMoveTrack?: (fileId: number, targetPosition: number) => void;
 };
 
 export default function PlaylistDetailSection({
@@ -40,8 +46,13 @@ export default function PlaylistDetailSection({
     onBack,
     onRemoveTrack,
     onLoadMore,
+    isRenaming = false,
+    onRenamePlaylist,
+    onMoveTrack,
 }: PlaylistDetailSectionProps) {
     const { t } = useI18n();
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const { getMusicArtist, getMusicTitle } = usePlaylistTrackHandlers();
     const { currentTrack, isPlaying, replaceQueue } = useGlobalMusic();
     const handleListItemKeyDown = (
@@ -56,6 +67,22 @@ export default function PlaylistDetailSection({
 
     const playbackContext = createPlaylistPlaybackContext(playlist);
     const canRemoveTracks = !playlist.is_system && !playlist.is_auto;
+    const isUserPlaylist = canRemoveTracks && !playlist.is_ai_generated;
+    const canRename = isUserPlaylist && onRenamePlaylist !== undefined;
+    const canReorder = isUserPlaylist && onMoveTrack !== undefined;
+
+    const moveTrackToIndex = (fileId: number, fromIndex: number, toIndex: number) => {
+        if (!onMoveTrack || fromIndex === toIndex) return;
+        onMoveTrack(fileId, toIndex + 1);
+    };
+
+    const handleDrop = (targetIndex: number) => {
+        const sourceIndex = draggedIndex;
+        setDraggedIndex(null);
+        const draggedTrack = sourceIndex === null ? undefined : tracks[sourceIndex];
+        if (sourceIndex === null || !draggedTrack) return;
+        moveTrackToIndex(draggedTrack.file.id, sourceIndex, targetIndex);
+    };
 
     const startPlaylistQueue = async (startFileId?: number, shouldShuffle = false) => {
         const queueTracks = queueToTracks(await getPlaylistQueue(playlist.id));
@@ -82,7 +109,30 @@ export default function PlaylistDetailSection({
                 onBack={onBack}
                 onPlayAll={handlePlayAll}
                 onShuffleAll={handleShuffleAll}
+                actions={
+                    canRename ? (
+                        <IconButton
+                            aria-label={t('MUSIC_PLAYLIST_EDIT')}
+                            onClick={() => setIsEditOpen(true)}
+                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                        >
+                            <Pencil size={18} />
+                        </IconButton>
+                    ) : undefined
+                }
             />
+
+            {canRename && isEditOpen && (
+                <PlaylistEditDialog
+                    currentName={playlist.name}
+                    currentDescription={playlist.description ?? ''}
+                    isSubmitting={isRenaming}
+                    onClose={() => setIsEditOpen(false)}
+                    onSubmit={(name, description) =>
+                        onRenamePlaylist?.(name, description, () => setIsEditOpen(false))
+                    }
+                />
+            )}
 
             {isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -106,7 +156,18 @@ export default function PlaylistDetailSection({
                             <ListItem
                                 key={track.id}
                                 disablePadding
+                                draggable={canReorder}
+                                onDragStart={() => setDraggedIndex(index)}
+                                onDragEnd={() => setDraggedIndex(null)}
+                                onDragOver={(event) => {
+                                    if (draggedIndex !== null) event.preventDefault();
+                                }}
+                                onDrop={(event) => {
+                                    event.preventDefault();
+                                    handleDrop(index);
+                                }}
                                 sx={{
+                                    opacity: draggedIndex === index ? 0.5 : 1,
                                     '&:hover .remove-btn': { opacity: 1 },
                                 }}
                             >
@@ -138,6 +199,13 @@ export default function PlaylistDetailSection({
                                         '&:hover .track-play-icon': { display: 'flex' },
                                     }}
                                 >
+                                    {canReorder && (
+                                        <GripVertical
+                                            size={14}
+                                            aria-hidden
+                                            style={{ cursor: 'grab', flexShrink: 0 }}
+                                        />
+                                    )}
                                     <Box
                                         sx={{
                                             width: 32,
@@ -213,6 +281,19 @@ export default function PlaylistDetailSection({
                                             {getMusicArtist(track.file)}
                                         </Typography>
                                     </Box>
+
+                                    {canReorder && (
+                                        <PlaylistTrackMoveButtons
+                                            canMoveUp={index > 0}
+                                            canMoveDown={index < tracks.length - 1 || hasNextPage}
+                                            onMoveUp={() =>
+                                                moveTrackToIndex(track.file.id, index, index - 1)
+                                            }
+                                            onMoveDown={() =>
+                                                moveTrackToIndex(track.file.id, index, index + 1)
+                                            }
+                                        />
+                                    )}
 
                                     {canRemoveTracks && (
                                         <IconButton

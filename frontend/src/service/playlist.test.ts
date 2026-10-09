@@ -17,6 +17,7 @@ import {
     getPlaylistQueue,
     getPlaylists,
     getPlaylistTracks,
+    moveTrackInPlaylist,
     removeTrackFromPlaylist,
     updatePlaylist,
 } from './playlist';
@@ -43,6 +44,26 @@ describe('service/playlist', () => {
             params: { page: 2, page_size: 25 },
         });
         expect(result).toEqual(payload);
+    });
+
+    it('sends the trimmed name search only when present', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getPlaylists(1, 30, '  road ');
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/music/playlists/', {
+            params: { page: 1, page_size: 30, q: 'road' },
+        });
+    });
+
+    it('moves a track by sending one reorder item with the target position', async () => {
+        mockedApi.put.mockResolvedValue({ data: { success: true } });
+
+        await moveTrackInPlaylist(4, 77, 3);
+
+        expect(mockedApi.put).toHaveBeenCalledWith('/music/playlists/4/tracks/reorder', {
+            tracks: [{ file_id: 77, position: 3 }],
+        });
     });
 
     it('gets now playing playlist', async () => {

@@ -12,6 +12,7 @@ interface CategoryHeaderProps {
     onBack: () => void;
     onPlayAll: () => void;
     onShuffleAll: () => void;
+    actions?: React.ReactNode;
 }
 
 const CategoryHeader = ({
@@ -24,6 +25,7 @@ const CategoryHeader = ({
     onBack,
     onPlayAll,
     onShuffleAll,
+    actions,
 }: CategoryHeaderProps) => {
     const { t } = useI18n();
 
@@ -98,6 +100,7 @@ const CategoryHeader = ({
                 >
                     <Shuffle size={20} />
                 </IconButton>
+                {actions}
             </Box>
         </Box>
     );

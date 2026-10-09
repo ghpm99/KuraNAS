@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import PlaylistsView from '@/features/music/views/PlaylistsView';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -201,6 +201,8 @@ describe('pages/music/views/PlaylistsView', () => {
             .querySelector('svg.lucide-trash2')
             ?.closest('button') as HTMLElement;
         fireEvent.click(deleteButton);
+        expect(mockDeletePlaylist).not.toHaveBeenCalled();
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'DELETE' }));
         expect(mockDeletePlaylist).toHaveBeenCalledWith(1);
         expect(mockEnqueueSnackbar).toHaveBeenCalledWith('MUSIC_PLAYLIST_DELETED', {
             variant: 'success',
