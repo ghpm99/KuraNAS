@@ -38,8 +38,8 @@ const TrackListItem = ({
     const isCurrentTrack = currentTrack?.id === track.id;
     const duration = getTrackDurationSeconds(track.metadata);
     const trackTitle = getMusicTitle(track);
-    const trackArtist = getMusicArtist(track);
     const { t } = useI18n();
+    const trackArtist = getMusicArtist(track, t('MUSIC_UNKNOWN_ARTIST'));
     const rowRef = useRef<HTMLLIElement>(null);
     const { position, openFromButton, openFromContextMenuEvent, close } = useMenuPosition();
     const [hasOpenedPlaylistMenu, setHasOpenedPlaylistMenu] = useState(false);
