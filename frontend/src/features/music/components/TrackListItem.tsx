@@ -1,7 +1,12 @@
 import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
 import { ListPlus, Pause, Play } from 'lucide-react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
-import { getMusicTitle, getMusicArtist, formatMusicDuration } from '@/utils/music';
+import {
+    getMusicTitle,
+    getMusicArtist,
+    formatMusicDuration,
+    getTrackDurationSeconds,
+} from '@/utils/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 
 interface TrackListItemProps {
@@ -21,7 +26,7 @@ const TrackListItem = ({
 }: TrackListItemProps) => {
     const { currentTrack, isPlaying } = useGlobalMusic();
     const isCurrentTrack = currentTrack?.id === track.id;
-    const duration = track.metadata?.duration;
+    const duration = getTrackDurationSeconds(track.metadata);
     const trackTitle = getMusicTitle(track);
     const trackArtist = getMusicArtist(track);
 

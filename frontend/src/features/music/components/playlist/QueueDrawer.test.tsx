@@ -15,6 +15,7 @@ jest.mock('@/utils/music', () => ({
     getMusicTitle: (track: any) => `title-${track.id}`,
     getMusicArtist: (track: any) => `artist-${track.id}`,
     musicMetadata: () => 'meta',
+    getTrackDurationSeconds: (metadata?: any) => metadata?.length ?? 0,
     formatMusicDuration: (duration: number) => `dur-${duration}`,
 }));
 
@@ -38,8 +39,8 @@ describe('QueueDrawer', () => {
         jest.clearAllMocks();
         mockUseGlobalMusic.mockReturnValue({
             queue: [
-                { id: 1, metadata: { duration: 180 } },
-                { id: 2, metadata: { duration: 120 } },
+                { id: 1, metadata: { length: 180 } },
+                { id: 2, metadata: { length: 120 } },
                 { id: 3 },
             ],
             currentIndex: 0,

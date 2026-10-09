@@ -31,7 +31,7 @@ const buildTrack = (id: number, title: string) => ({
     path: `/m/${title}.mp3`,
     format: '.mp3',
     size: 1,
-    metadata: { title, artist: 'Queen', duration: 120 },
+    metadata: { title, artist: 'Queen', length: 120 },
 });
 
 const renderSearchView = (initialEntry: string) => {

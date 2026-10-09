@@ -23,11 +23,10 @@ describe('components/search/searchTrackPlayback', () => {
         expect(playable.format).toBe('.mp3');
         expect(playable.metadata).toEqual(
             expect.objectContaining({
-                fileId: 7,
                 title: 'Time',
                 artist: 'Pink Floyd',
                 album: 'The Dark Side',
-                duration: 413.5,
+                length: 413.5,
             })
         );
     });
