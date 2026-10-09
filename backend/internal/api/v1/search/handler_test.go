@@ -4,13 +4,19 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 )
 
 type searchServiceMock struct {
-	searchGlobalFn func(query string, limit int) (GlobalSearchResponseDto, error)
+	searchGlobalFn       func(query string, limit int) (GlobalSearchResponseDto, error)
+	searchGlobalWithAIFn func(query string, limit int) (GlobalSearchResponseDto, error)
+}
+
+func (m *searchServiceMock) SearchGlobalWithAI(query string, limit int) (GlobalSearchResponseDto, error) {
+	return m.searchGlobalWithAIFn(query, limit)
 }
 
 func (m *searchServiceMock) SearchGlobal(query string, limit int) (GlobalSearchResponseDto, error) {
@@ -96,5 +102,65 @@ func TestSearchHandlerReturnsServerErrorOnServiceFailureAndDefaultLimit(t *testi
 	}
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestSearchHandlerAIEndpointUsesAIExpansion(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&searchServiceMock{
+		searchGlobalFn: func(string, int) (GlobalSearchResponseDto, error) {
+			t.Fatal("AI endpoint must not use the base search")
+			return GlobalSearchResponseDto{}, nil
+		},
+		searchGlobalWithAIFn: func(query string, limit int) (GlobalSearchResponseDto, error) {
+			if query != "my photos" || limit != 4 {
+				t.Fatalf("unexpected input query=%q limit=%d", query, limit)
+			}
+			return GlobalSearchResponseDto{Query: query, Suggestion: "tip"}, nil
+		},
+	})
+
+	router := gin.New()
+	router.GET("/search/global/ai", handler.SearchGlobalWithAIHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/search/global/ai?q=my+photos&limit=4", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), `"suggestion":"tip"`) {
+		t.Fatalf("expected suggestion in body, got %q", w.Body.String())
+	}
+}
+
+func TestSearchHandlerAIEndpointValidatesInputAndFailures(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/search/global/ai", NewHandler(&searchServiceMock{
+		searchGlobalWithAIFn: func(string, int) (GlobalSearchResponseDto, error) {
+			return GlobalSearchResponseDto{}, errors.New("boom")
+		},
+	}).SearchGlobalWithAIHandler)
+
+	invalid := httptest.NewRecorder()
+	router.ServeHTTP(invalid, httptest.NewRequest(http.MethodGet, "/search/global/ai?limit=oops", nil))
+	if invalid.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", invalid.Code)
+	}
+
+	failing := httptest.NewRecorder()
+	router.ServeHTTP(failing, httptest.NewRequest(http.MethodGet, "/search/global/ai?q=a+b", nil))
+	if failing.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", failing.Code)
+	}
+
+	routerNil := gin.New()
+	routerNil.GET("/search/global/ai", NewHandler(nil).SearchGlobalWithAIHandler)
+	unavailable := httptest.NewRecorder()
+	routerNil.ServeHTTP(unavailable, httptest.NewRequest(http.MethodGet, "/search/global/ai", nil))
+	if unavailable.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", unavailable.Code)
 	}
 }

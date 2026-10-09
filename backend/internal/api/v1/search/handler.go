@@ -20,6 +20,16 @@ func NewHandler(service ServiceInterface) *Handler {
 }
 
 func (handler *Handler) SearchGlobalHandler(c *gin.Context) {
+	handler.respondWithSearch(c, func(service ServiceInterface) searchFunc { return service.SearchGlobal })
+}
+
+func (handler *Handler) SearchGlobalWithAIHandler(c *gin.Context) {
+	handler.respondWithSearch(c, func(service ServiceInterface) searchFunc { return service.SearchGlobalWithAI })
+}
+
+type searchFunc func(query string, limit int) (GlobalSearchResponseDto, error)
+
+func (handler *Handler) respondWithSearch(c *gin.Context, pickSearch func(ServiceInterface) searchFunc) {
 	if handler.service == nil {
 		applog.Error("search: service unavailable", "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})
@@ -33,7 +43,7 @@ func (handler *Handler) SearchGlobalHandler(c *gin.Context) {
 		return
 	}
 
-	response, err := handler.service.SearchGlobal(query, limit)
+	response, err := pickSearch(handler.service)(query, limit)
 	if err != nil {
 		applog.ErrorWithStack("search: global search failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CONFIGURATION_LOAD_FAILED")})

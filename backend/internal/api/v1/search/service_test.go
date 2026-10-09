@@ -5,6 +5,7 @@ import (
 	"errors"
 	"nas-go/api/pkg/ai"
 	"testing"
+	"time"
 )
 
 type searchRepositoryMock struct {
@@ -208,7 +209,7 @@ func TestSearchWithAIExpansionMergesResults(t *testing.T) {
 	}
 
 	service := NewService(repo, aiMock)
-	response, err := service.SearchGlobal("my photos", 6)
+	response, err := service.SearchGlobalWithAI("my photos", 6)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -228,7 +229,7 @@ func TestSearchWithAINilServiceSkipsExpansion(t *testing.T) {
 	}
 
 	service := NewService(repo, nil)
-	response, err := service.SearchGlobal("my files", 6)
+	response, err := service.SearchGlobalWithAI("my files", 6)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -250,7 +251,7 @@ func TestSearchWithAIErrorFallsBackGracefully(t *testing.T) {
 	}
 
 	service := NewService(repo, aiMock)
-	response, err := service.SearchGlobal("my files", 6)
+	response, err := service.SearchGlobalWithAI("my files", 6)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -270,7 +271,7 @@ func TestSearchWithAISingleWordSkipsExpansion(t *testing.T) {
 	}
 
 	service := NewService(repo, aiMock)
-	_, err := service.SearchGlobal("photo", 6)
+	_, err := service.SearchGlobalWithAI("photo", 6)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -288,11 +289,127 @@ func TestSearchWithAIInvalidJSONFallsBack(t *testing.T) {
 	}
 
 	service := NewService(repo, aiMock)
-	response, err := service.SearchGlobal("my files", 6)
+	response, err := service.SearchGlobalWithAI("my files", 6)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if response.Suggestion != "" {
 		t.Fatalf("expected no suggestion on parse error")
+	}
+}
+
+func TestSearchGlobalBasePathNeverCallsAI(t *testing.T) {
+	aiMock := &searchAIMock{
+		executeFn: func(context.Context, ai.Request) (ai.Response, error) {
+			t.Fatal("base search must not call the AI provider")
+			return ai.Response{}, nil
+		},
+	}
+
+	service := NewService(emptyRepo(), aiMock)
+	if _, err := service.SearchGlobal("my photos from trip", 6); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSearchWithAICachesExpansionPerNormalizedQuery(t *testing.T) {
+	aiCalls := 0
+	aiMock := &searchAIMock{
+		executeFn: func(context.Context, ai.Request) (ai.Response, error) {
+			aiCalls++
+			return ai.Response{Content: `{"keywords": ["photos"], "suggestion": "tip"}`}, nil
+		},
+	}
+
+	service := NewService(emptyRepo(), aiMock)
+	for _, query := range []string{"my photos", "  My   Photos ", "my photos"} {
+		response, err := service.SearchGlobalWithAI(query, 6)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if response.Suggestion != "tip" {
+			t.Fatalf("expected cached suggestion, got %q", response.Suggestion)
+		}
+	}
+
+	if aiCalls != 1 {
+		t.Fatalf("expected a single AI call, got %d", aiCalls)
+	}
+}
+
+func TestSearchWithAIDoesNotCacheFailures(t *testing.T) {
+	aiCalls := 0
+	aiMock := &searchAIMock{
+		executeFn: func(context.Context, ai.Request) (ai.Response, error) {
+			aiCalls++
+			return ai.Response{}, errors.New("provider timeout")
+		},
+	}
+
+	service := NewService(emptyRepo(), aiMock)
+	_, _ = service.SearchGlobalWithAI("my files", 6)
+	_, _ = service.SearchGlobalWithAI("my files", 6)
+
+	if aiCalls != 2 {
+		t.Fatalf("expected failures to be retried, got %d calls", aiCalls)
+	}
+}
+
+func TestSearchWithAITrimsMergedGroupsToLimitAndKeywordCount(t *testing.T) {
+	searchedKeywords := []string{}
+	repo := emptyRepo()
+	repo.searchFilesFn = func(query string, limit int) ([]FileResultModel, error) {
+		searchedKeywords = append(searchedKeywords, query)
+		switch query {
+		case "my photos":
+			return []FileResultModel{{ID: 1}}, nil
+		default:
+			return []FileResultModel{{ID: 10 + len(searchedKeywords)}, {ID: 20 + len(searchedKeywords)}}, nil
+		}
+	}
+	aiMock := &searchAIMock{
+		executeFn: func(context.Context, ai.Request) (ai.Response, error) {
+			return ai.Response{Content: "```json\n{\"keywords\": [\"a\", \"b\", \"c\", \"d\"], \"suggestion\": \"tip\"}\n```"}, nil
+		},
+	}
+
+	service := NewService(repo, aiMock)
+	response, err := service.SearchGlobalWithAI("my photos", 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(response.Files) != 3 {
+		t.Fatalf("expected files trimmed to limit 3, got %d", len(response.Files))
+	}
+	if response.Files[0].ID != 1 {
+		t.Fatalf("expected base results first, got %+v", response.Files)
+	}
+	if len(searchedKeywords) != 1+aiMaxKeywords {
+		t.Fatalf("expected base query plus %d keywords, got %v", aiMaxKeywords, searchedKeywords)
+	}
+}
+
+func TestExpansionCacheExpiresAndBoundsSize(t *testing.T) {
+	currentTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	cache := newExpansionCache(2, time.Minute)
+	cache.now = func() time.Time { return currentTime }
+
+	cache.put("one", aiSearchExpansion{Suggestion: "1"})
+	currentTime = currentTime.Add(10 * time.Second)
+	cache.put("two", aiSearchExpansion{Suggestion: "2"})
+	currentTime = currentTime.Add(10 * time.Second)
+	cache.put("three", aiSearchExpansion{Suggestion: "3"})
+
+	if _, isCached := cache.get("one"); isCached {
+		t.Fatal("expected oldest entry to be evicted at capacity")
+	}
+	if _, isCached := cache.get("three"); !isCached {
+		t.Fatal("expected newest entry to be cached")
+	}
+
+	currentTime = currentTime.Add(2 * time.Minute)
+	if _, isCached := cache.get("three"); isCached {
+		t.Fatal("expected entry to expire after ttl")
 	}
 }

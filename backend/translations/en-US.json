@@ -1542,6 +1542,8 @@
 	"GLOBAL_SEARCH_SECTION_MORE": "More results",
 	"GLOBAL_SEARCH_SEE_ALL_FILES": "See all file results",
 	"GLOBAL_SEARCH_SEE_ALL_FILES_DESCRIPTION": "Search \"{{query}}\" in all folders",
+	"GLOBAL_SEARCH_WITH_AI": "Search with AI",
+	"GLOBAL_SEARCH_WITH_AI_DESCRIPTION": "Expand \"{{query}}\" with AI-suggested keywords",
 	"FILES_DELETE_TRASH_NOTICE": "Items go to the Trash and can be restored.",
 	"FILES_DELETE_OPEN_TRASH": "Open Trash",
 	"FILES_DELETE_PERMANENTLY": "Delete permanently",

@@ -80,6 +80,7 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		{method: http.MethodPut, path: "/api/v1/configuration/settings"},
 		{method: http.MethodPost, path: "/api/v1/update/apply"},
 		{method: http.MethodGet, path: "/api/v1/search/global"},
+		{method: http.MethodGet, path: "/api/v1/search/global/ai"},
 		{method: http.MethodGet, path: "/api/v1/notifications"},
 		{method: http.MethodGet, path: "/api/v1/notifications/unread-count"},
 		{method: http.MethodGet, path: "/api/v1/notifications/:id"},

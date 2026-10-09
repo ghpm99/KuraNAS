@@ -13,4 +13,5 @@ type RepositoryInterface interface {
 
 type ServiceInterface interface {
 	SearchGlobal(query string, limit int) (GlobalSearchResponseDto, error)
+	SearchGlobalWithAI(query string, limit int) (GlobalSearchResponseDto, error)
 }
