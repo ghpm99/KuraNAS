@@ -239,3 +239,15 @@ describe('GlobalSearchDialog', () => {
         window.matchMedia = originalMatchMedia;
     });
 });
+
+describe('GlobalSearchDialog suggestion', () => {
+    it('renders the backend suggestion text verbatim when present', () => {
+        render(<GlobalSearchDialog {...defaultProps()} suggestion="Try the holiday folder" />);
+        expect(screen.getByText('Try the holiday folder')).toBeInTheDocument();
+    });
+
+    it('omits the suggestion block when absent', () => {
+        render(<GlobalSearchDialog {...defaultProps()} />);
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+});

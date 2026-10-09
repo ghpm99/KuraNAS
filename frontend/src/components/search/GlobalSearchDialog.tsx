@@ -13,6 +13,7 @@ interface GlobalSearchDialogProps {
     query: string;
     sections: SearchDialogSection[];
     isFetching: boolean;
+    suggestion?: string;
     activeItemId: string;
     shortcut: string;
     showEmptyState: boolean;
@@ -52,6 +53,7 @@ const GlobalSearchDialog = ({
     query,
     sections,
     isFetching,
+    suggestion = '',
     activeItemId,
     shortcut,
     showEmptyState,
@@ -103,6 +105,12 @@ const GlobalSearchDialog = ({
                 </div>
 
                 <div className={styles.results}>
+                    {suggestion ? (
+                        <div className={styles.suggestion} role="status">
+                            <span className={styles.sectionTitle}>{t('AI_SEARCH_SUGGESTION')}</span>
+                            <p>{suggestion}</p>
+                        </div>
+                    ) : null}
                     <div id={listboxId} role="listbox" aria-label={t('GLOBAL_SEARCH_OPEN')}>
                         {sections.map((section) => (
                             <div

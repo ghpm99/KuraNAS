@@ -63,6 +63,7 @@ export interface GlobalSearchImageResult {
 
 export interface GlobalSearchResponse {
     query: string;
+    suggestion?: string;
     files: GlobalSearchFileResult[];
     folders: GlobalSearchFolderResult[];
     artists: GlobalSearchArtistResult[];
@@ -74,6 +75,19 @@ export interface GlobalSearchResponse {
 
 export const searchGlobal = async (query: string, limit = 6): Promise<GlobalSearchResponse> => {
     const response = await apiBase.get<GlobalSearchResponse>('/search/global', {
+        params: {
+            q: query,
+            limit,
+        },
+    });
+    return response.data;
+};
+
+export const searchGlobalWithAI = async (
+    query: string,
+    limit = 6
+): Promise<GlobalSearchResponse> => {
+    const response = await apiBase.get<GlobalSearchResponse>('/search/global/ai', {
         params: {
             q: query,
             limit,

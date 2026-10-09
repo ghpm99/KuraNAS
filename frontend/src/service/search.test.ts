@@ -5,7 +5,7 @@ jest.mock('.', () => ({
 }));
 
 import { apiBase } from '.';
-import { searchGlobal } from './search';
+import { searchGlobal, searchGlobalWithAI } from './search';
 
 const mockedApiGet = apiBase.get as jest.Mock;
 
@@ -43,6 +43,18 @@ describe('service/search', () => {
         const result = await fn();
 
         expect(mockedApiGet).toHaveBeenCalledWith('/search/global', { params });
+        expect(result).toEqual(response);
+    });
+
+    it('requests the AI endpoint with query and limit', async () => {
+        const response = { ...emptySearchResult, query: 'my trip', suggestion: 'tip' };
+        mockedApiGet.mockResolvedValue({ data: response });
+
+        const result = await searchGlobalWithAI('my trip', 4);
+
+        expect(mockedApiGet).toHaveBeenCalledWith('/search/global/ai', {
+            params: { q: 'my trip', limit: 4 },
+        });
         expect(result).toEqual(response);
     });
 });
