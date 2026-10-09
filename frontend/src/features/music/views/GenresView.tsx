@@ -17,18 +17,15 @@ import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import TrackListItem from '@/features/music/components/TrackListItem';
 import { createGenrePlaybackContext } from '@/features/music/components/playbackContext';
+import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
+import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getMusicByGenre, getMusicGenres } from '@/service/music';
+import { getMusicByGenre, getMusicGenres, getMusicQueueByGenre } from '@/service/music';
 import { MusicGenre } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import {
-    handleKeyboardActivation,
-    loadAllTracks,
-    MUSIC_COLLECTION_PAGE_SIZE,
-    shuffleTracks,
-} from './shared';
+import { handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
 import MusicSortControl from './components/MusicSortControl';
 import { useMusicListSort } from './useMusicListSort';
 
@@ -57,8 +54,7 @@ const getGenreColor = (genre: string) => {
     return GENRE_COLORS[Math.abs(hash) % GENRE_COLORS.length];
 };
 
-const loadGenreTracks = (genreKey: string) =>
-    loadAllTracks((page, pageSize) => getMusicByGenre(genreKey, page, pageSize));
+const loadGenreTracks = (genreKey: string) => getMusicQueueByGenre(genreKey).then(queueToTracks);
 
 export default function GenresView() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -288,16 +284,11 @@ function GenreTracksView({ genre, onBack }: { genre: MusicGenre; onBack: () => v
         }
 
         if (shuffle) {
-            replaceQueue(shuffleTracks(allTracks), 0, playbackContext);
+            replaceQueue(shuffleItems(allTracks), 0, playbackContext);
             return;
         }
 
-        const startIndex = trackId
-            ? Math.max(
-                  allTracks.findIndex((item) => item.id === trackId),
-                  0
-              )
-            : 0;
+        const startIndex = findStartIndex(allTracks, trackId);
         replaceQueue(allTracks, startIndex, playbackContext);
     };
 

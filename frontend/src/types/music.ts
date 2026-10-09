@@ -83,3 +83,19 @@ export interface MusicListSort {
     sort: MusicListSortField;
     order: MusicListSortOrder;
 }
+
+export interface MusicQueueEntry {
+    file_id: number;
+    name: string;
+    path: string;
+    format: string;
+    title: string;
+    artist: string;
+    album: string;
+    length: number;
+}
+
+export interface MusicQueue {
+    items: MusicQueueEntry[];
+    truncated: boolean;
+}

@@ -15,6 +15,9 @@ import { usePlaylistTrackHandlers } from '@/features/music/hooks/usePlaylistTrac
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { formatMusicDuration, getTrackDurationSeconds } from '@/utils/music';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
+import { getPlaylistQueue } from '@/service/playlist';
+import { findStartIndex, queueToTracks } from '@/features/music/components/musicQueueTracks';
+import { shuffleItems } from '@/utils/shuffleItems';
 
 type PlaylistDetailSectionProps = {
     playlist: Playlist;
@@ -50,20 +53,22 @@ export default function PlaylistDetailSection({
         }
     };
 
-    const allFiles = tracks.map((track) => track.file);
     const playbackContext = createPlaylistPlaybackContext(playlist);
     const canRemoveTracks = !playlist.is_system && !playlist.is_auto;
 
-    const handlePlayAll = () => {
-        if (allFiles.length > 0) replaceQueue(allFiles, 0, playbackContext);
+    const startPlaylistQueue = async (startFileId?: number, shouldShuffle = false) => {
+        const queueTracks = queueToTracks(await getPlaylistQueue(playlist.id));
+        if (queueTracks.length === 0) return;
+
+        if (shouldShuffle) {
+            replaceQueue(shuffleItems(queueTracks), 0, playbackContext);
+            return;
+        }
+        replaceQueue(queueTracks, findStartIndex(queueTracks, startFileId), playbackContext);
     };
 
-    const handleShuffleAll = () => {
-        if (allFiles.length > 0) {
-            const shuffled = [...allFiles].sort(() => Math.random() - 0.5);
-            replaceQueue(shuffled, 0, playbackContext);
-        }
-    };
+    const handlePlayAll = () => void startPlaylistQueue();
+    const handleShuffleAll = () => void startPlaylistQueue(undefined, true);
 
     return (
         <Box sx={{ p: 2 }}>
@@ -108,10 +113,11 @@ export default function PlaylistDetailSection({
                                     component="div"
                                     role="button"
                                     tabIndex={0}
-                                    onClick={() => replaceQueue(allFiles, index, playbackContext)}
+                                    onClick={() => void startPlaylistQueue(track.file.id)}
                                     onKeyDown={(event) =>
-                                        handleListItemKeyDown(event, () =>
-                                            replaceQueue(allFiles, index, playbackContext)
+                                        handleListItemKeyDown(
+                                            event,
+                                            () => void startPlaylistQueue(track.file.id)
                                         )
                                     }
                                     sx={{

@@ -17,23 +17,20 @@ import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import TrackListItem from '@/features/music/components/TrackListItem';
 import { createArtistPlaybackContext } from '@/features/music/components/playbackContext';
+import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
+import { shuffleItems } from '@/utils/shuffleItems';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getMusicArtists, getMusicByArtist } from '@/service/music';
+import { getMusicArtists, getMusicByArtist, getMusicQueueByArtist } from '@/service/music';
 import { MusicArtist } from '@/types/music';
 import { Pagination } from '@/types/pagination';
-import {
-    handleKeyboardActivation,
-    loadAllTracks,
-    MUSIC_COLLECTION_PAGE_SIZE,
-    shuffleTracks,
-} from './shared';
+import { handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
 import MusicSortControl from './components/MusicSortControl';
 import { useMusicListSort } from './useMusicListSort';
 
 const loadArtistTracks = (artistKey: string) =>
-    loadAllTracks((page, pageSize) => getMusicByArtist(artistKey, page, pageSize));
+    getMusicQueueByArtist(artistKey).then(queueToTracks);
 
 export default function ArtistsView() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -276,16 +273,11 @@ function ArtistTracksView({ artist, onBack }: { artist: MusicArtist; onBack: () 
         }
 
         if (shuffle) {
-            replaceQueue(shuffleTracks(allTracks), 0, playbackContext);
+            replaceQueue(shuffleItems(allTracks), 0, playbackContext);
             return;
         }
 
-        const startIndex = trackId
-            ? Math.max(
-                  allTracks.findIndex((item) => item.id === trackId),
-                  0
-              )
-            : 0;
+        const startIndex = findStartIndex(allTracks, trackId);
         replaceQueue(allTracks, startIndex, playbackContext);
     };
 

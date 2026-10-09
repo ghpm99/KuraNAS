@@ -14,6 +14,7 @@ import {
     deletePlaylist,
     getNowPlayingPlaylist,
     getPlaylistById,
+    getPlaylistQueue,
     getPlaylists,
     getPlaylistTracks,
     removeTrackFromPlaylist,
@@ -112,5 +113,15 @@ describe('service/playlist', () => {
         });
         expect(mockedApi.delete).toHaveBeenCalledWith('/music/playlists/2/tracks/10');
         expect(created).toEqual(payload);
+    });
+
+    it.each([5, -2])('fetches the queue of playlist %i', async (playlistId) => {
+        const queue = { items: [], truncated: true };
+        mockedApi.get.mockResolvedValueOnce({ data: queue });
+
+        const result = await getPlaylistQueue(playlistId);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(`/music/playlists/${playlistId}/queue`);
+        expect(result).toEqual(queue);
     });
 });

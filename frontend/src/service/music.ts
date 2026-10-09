@@ -6,6 +6,7 @@ import {
     MusicGenre,
     MusicHomeCatalog,
     MusicListSort,
+    MusicQueue,
 } from '@/types/music';
 import { IMusicData } from '@/features/music/providers/musicProvider/musicProvider';
 import { apiBase } from '.';
@@ -101,3 +102,20 @@ export const getMusicByFolder = async (folder: string, page: number, pageSize: n
     );
     return response.data;
 };
+
+const getMusicQueue = async (contextPath: string) => {
+    const response = await apiBase.get<MusicQueue>(`/music/library/${contextPath}/queue`);
+    return response.data;
+};
+
+export const getMusicQueueByArtist = (artistKey: string) =>
+    getMusicQueue(`artists/${encodeURIComponent(artistKey)}`);
+
+export const getMusicQueueByAlbum = (albumKey: string) =>
+    getMusicQueue(`albums/${encodeURIComponent(albumKey)}`);
+
+export const getMusicQueueByGenre = (genreKey: string) =>
+    getMusicQueue(`genres/${encodeURIComponent(genreKey)}`);
+
+export const getMusicQueueByFolder = (folderPath: string) =>
+    getMusicQueue(`folders/${encodeURIComponent(folderPath)}`);

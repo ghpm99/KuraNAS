@@ -14,6 +14,10 @@ import {
     getMusicFolders,
     getMusicGenres,
     getMusicHomeCatalog,
+    getMusicQueueByAlbum,
+    getMusicQueueByArtist,
+    getMusicQueueByFolder,
+    getMusicQueueByGenre,
     searchMusicTracks,
 } from './music';
 
@@ -107,5 +111,30 @@ describe('service/music', () => {
         expect(mockedApi.get).toHaveBeenCalledWith('/music/library/home', {
             params: { limit: 4, sort: 'recent', order: 'desc' },
         });
+    });
+
+    it.each([
+        ['artist', getMusicQueueByArtist, 'AC/DC', '/music/library/artists/AC%2FDC/queue'],
+        [
+            'album',
+            getMusicQueueByAlbum,
+            'ac/dc::back',
+            '/music/library/albums/ac%2Fdc%3A%3Aback/queue',
+        ],
+        ['genre', getMusicQueueByGenre, 'r&b', '/music/library/genres/r%26b/queue'],
+        [
+            'folder',
+            getMusicQueueByFolder,
+            '/data/Rock',
+            '/music/library/folders/%2Fdata%2FRock/queue',
+        ],
+    ])('fetches the %s queue without pagination params', async (_, fetchQueue, key, path) => {
+        const queue = { items: [{ file_id: 1 }], truncated: false };
+        mockedApi.get.mockResolvedValueOnce({ data: queue });
+
+        const result = await fetchQueue(key);
+
+        expect(mockedApi.get).toHaveBeenCalledWith(path);
+        expect(result).toEqual(queue);
     });
 });

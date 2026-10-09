@@ -22,7 +22,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 05. Catálogo agregado no SQL com paginação e índices (sem carregar a biblioteca por request)
 - [x] 06. Ordenação de faixas por disco/faixa numéricos; opções de ordenação nas listas
 - [x] 07. Playlists automáticas abrem
-- [ ] 08. "Tocar tudo" sem truncar: fila por contexto (todas as faixas, payload leve)
+- [x] 08. "Tocar tudo" sem truncar: fila por contexto (todas as faixas, payload leve)
 - [ ] 09. Scroll infinito acessível em todas as listas de música + estados de erro/vazio
 - [ ] 10. Persistência da fila e do estado (posição, volume, shuffle, repeat) por dispositivo
 - [ ] 11. Fila: tocar a seguir, adicionar ao fim, reordenar, salvar como playlist

@@ -1,4 +1,5 @@
 import { Pagination } from '@/types/pagination';
+import { MusicQueue } from '@/types/music';
 import {
     Playlist,
     PlaylistTrack,
@@ -59,4 +60,9 @@ export const addTrackToPlaylist = async (playlistId: number, fileId: number) => 
 
 export const removeTrackFromPlaylist = async (playlistId: number, fileId: number) => {
     await apiBase.delete(`/music/playlists/${playlistId}/tracks/${fileId}`);
+};
+
+export const getPlaylistQueue = async (id: number) => {
+    const response = await apiBase.get<MusicQueue>(`/music/playlists/${id}/queue`);
+    return response.data;
 };

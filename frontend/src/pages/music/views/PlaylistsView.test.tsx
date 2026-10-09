@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import PlaylistsView from '@/features/music/views/PlaylistsView';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ const mockGetAutomaticPlaylists = jest.fn();
 const mockCreatePlaylist = jest.fn();
 const mockDeletePlaylist = jest.fn();
 const mockGetPlaylistTracks = jest.fn();
+const mockGetPlaylistQueue = jest.fn();
 const mockRemoveTrackFromPlaylist = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
@@ -29,6 +30,7 @@ jest.mock('@/service/playlist', () => ({
     createPlaylist: (...args: any[]) => mockCreatePlaylist(...args),
     deletePlaylist: (...args: any[]) => mockDeletePlaylist(...args),
     getPlaylistTracks: (...args: any[]) => mockGetPlaylistTracks(...args),
+    getPlaylistQueue: (...args: any[]) => mockGetPlaylistQueue(...args),
     removeTrackFromPlaylist: (...args: any[]) => mockRemoveTrackFromPlaylist(...args),
 }));
 
@@ -121,6 +123,21 @@ describe('pages/music/views/PlaylistsView', () => {
                 total_items: 1,
             },
         });
+        mockGetPlaylistQueue.mockResolvedValue({
+            items: [
+                {
+                    file_id: 90,
+                    name: 'track-1',
+                    path: '/music/track-1.mp3',
+                    format: 'mp3',
+                    title: 'track-1',
+                    artist: 'Artist',
+                    album: 'Album',
+                    length: 100,
+                },
+            ],
+            truncated: false,
+        });
         mockCreatePlaylist.mockResolvedValue({ id: 10, name: 'created' });
         mockDeletePlaylist.mockResolvedValue({});
         mockRemoveTrackFromPlaylist.mockResolvedValue({});
@@ -190,15 +207,17 @@ describe('pages/music/views/PlaylistsView', () => {
         });
     });
 
-    it('renders detail view and handles remove flow', () => {
+    it('renders detail view and handles remove flow', async () => {
         const { container } = renderPlaylistsView();
         fireEvent.click(screen.getByText('P1'));
         expect(screen.getByText('track-1')).toBeInTheDocument();
         fireEvent.click(screen.getByText('track-1'));
-        expect(mockReplaceQueue).toHaveBeenCalledWith(
-            [expect.objectContaining({ id: 90 })],
-            0,
-            expect.any(Object)
+        await waitFor(() =>
+            expect(mockReplaceQueue).toHaveBeenCalledWith(
+                [expect.objectContaining({ id: 90 })],
+                0,
+                expect.any(Object)
+            )
         );
 
         const removeButton = container
