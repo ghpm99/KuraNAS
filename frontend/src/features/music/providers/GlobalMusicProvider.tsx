@@ -8,12 +8,16 @@ import {
     useState,
 } from 'react';
 import type { IMusicData } from './musicProvider/musicProvider';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { MusicPlaybackContext } from '@/features/music/components/playbackContext';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
 import useAudioEngine from './globalMusic/useAudioEngine';
 import usePlayReporting from './globalMusic/usePlayReporting';
 import { getTrackDurationSeconds } from '@/utils/music';
+import {
+    buildDirectStreamUrl,
+    resolveTrackStreamSource,
+    type TrackStreamSource,
+} from './globalMusic/trackStreamSource';
 import useMediaSession from './globalMusic/useMediaSession';
 import useMusicStateSync from './globalMusic/useMusicStateSync';
 import useMusicQueueHydration from './globalMusic/useMusicQueueHydration';
@@ -73,8 +77,6 @@ const getShuffledIndex = (queueLength: number, currentIndex: number | undefined)
     return candidates[Math.floor(Math.random() * candidates.length)]!;
 };
 
-const buildStreamUrl = (trackId: number) => `${getApiV1BaseUrl()}/files/stream/${trackId}`;
-
 export const GlobalMusicProvider = ({ children }: { children: React.ReactNode }) => {
     const { settings, isLoading: isLoadingSettings } = useSettings();
     const [queue, setQueue] = useState<QueueTrack[]>([]);
@@ -102,9 +104,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const handleTrackEnded = useCallback(() => {
         if (repeatMode === 'one') {
-            if (engine.audioRef.current) {
-                engine.audioRef.current.currentTime = 0;
-            }
+            engine.seek(0);
             engine.audioRef.current?.play().catch(() => {});
             return;
         }
@@ -114,7 +114,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             const track = queue[idx];
             if (track) {
                 commitCurrentIndex(idx);
-                engine.loadAndPlayUrl(buildStreamUrl(track.id));
+                playTrack(track);
                 syncState({ fileId: track.id, position: 0 });
             }
             return;
@@ -124,14 +124,14 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             const track = queue[nextIndex];
             if (track) {
                 commitCurrentIndex(nextIndex);
-                engine.loadAndPlayUrl(buildStreamUrl(track.id));
+                playTrack(track);
                 syncState({ fileId: track.id, position: 0 });
             }
         } else if (repeatMode === 'all') {
             const track = queue[0];
             if (track) {
                 commitCurrentIndex(0);
-                engine.loadAndPlayUrl(buildStreamUrl(track.id));
+                playTrack(track);
                 syncState({ fileId: track.id, position: 0 });
             }
         } else {
@@ -141,6 +141,21 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
     }, [currentIndex, queue, repeatMode, shuffle]);
 
     const engine = useAudioEngine(handleTrackEnded);
+
+    const { canPlayType, loadAndPlayUrl } = engine;
+
+    const resolveStreamSource = useCallback(
+        (track: IMusicData): TrackStreamSource => resolveTrackStreamSource(track, canPlayType),
+        [canPlayType]
+    );
+
+    const playTrack = useCallback(
+        (track: IMusicData) => {
+            const streamSource = resolveStreamSource(track);
+            loadAndPlayUrl(streamSource.url, streamSource.transcodedStream);
+        },
+        [resolveStreamSource, loadAndPlayUrl]
+    );
 
     usePlayReporting({
         queueEntryId: currentTrack?.queueEntryId,
@@ -152,7 +167,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const { syncState } = useMusicStateSync({
         getCurrentTrackId: () => currentTrack?.id,
-        getCurrentTime: () => engine.audioRef.current?.currentTime ?? 0,
+        getCurrentTime: () => engine.getPositionSeconds(),
         volume: engine.volume,
         shuffle,
         repeatMode,
@@ -167,10 +182,19 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             setShuffle,
             setRepeatMode,
             setVolume: setEngineVolume,
-            loadPausedTrack: (trackId: number, startPositionSeconds: number) =>
-                loadUrlPaused(buildStreamUrl(trackId), startPositionSeconds),
+            loadPausedTrack: (trackId: number, startPositionSeconds: number) => {
+                const pausedTrack = queueRef.current.find((entry) => entry.id === trackId);
+                const streamSource = pausedTrack
+                    ? resolveTrackStreamSource(pausedTrack, canPlayType)
+                    : { url: buildDirectStreamUrl(trackId) };
+                loadUrlPaused(
+                    streamSource.url,
+                    startPositionSeconds,
+                    streamSource.transcodedStream
+                );
+            },
         }),
-        [loadUrlPaused, setEngineVolume, commitQueue, commitCurrentIndex]
+        [loadUrlPaused, canPlayType, setEngineVolume, commitQueue, commitCurrentIndex]
     );
 
     const isRememberQueueEnabled = !isLoadingSettings && settings.players.remember_music_queue;
@@ -190,10 +214,10 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             const track = trackQueue[index];
             if (!track) return;
             commitCurrentIndex(index);
-            engine.loadAndPlayUrl(buildStreamUrl(track.id));
+            playTrack(track);
             syncState({ fileId: track.id, position: 0 });
         },
-        [commitCurrentIndex, engine, syncState]
+        [commitCurrentIndex, playTrack, syncState]
     );
 
     const loadAndPlay = useCallback(
@@ -268,14 +292,14 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             commitCurrentIndex(startIndex);
             const track = entries[startIndex];
             if (!track) return;
-            engine.loadAndPlayUrl(buildStreamUrl(track.id));
+            playTrack(track);
             syncState({
                 fileId: track.id,
                 position: 0,
                 playlistId: nextPlaybackContext?.playlistId ?? null,
             });
         },
-        [commitQueue, commitCurrentIndex, engine, syncState]
+        [commitQueue, commitCurrentIndex, playTrack, syncState]
     );
 
     const clearQueue = useCallback(() => {
@@ -310,9 +334,9 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             }
             const replacementIndex = Math.min(playingIndex, remainingQueue.length - 1);
             commitCurrentIndex(replacementIndex);
-            engine.loadAndPlayUrl(buildStreamUrl(remainingQueue[replacementIndex]!.id));
+            playTrack(remainingQueue[replacementIndex]!);
         },
-        [engine, commitQueue, commitCurrentIndex]
+        [engine, playTrack, commitQueue, commitCurrentIndex]
     );
 
     const next = useCallback(() => {
@@ -326,11 +350,8 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
 
     const previous = useCallback(() => {
         if (queue.length === 0 || currentIndex === undefined) return;
-        if (
-            engine.audioRef.current &&
-            engine.audioRef.current.currentTime > RESTART_THRESHOLD_SECONDS
-        ) {
-            engine.audioRef.current.currentTime = 0;
+        if (engine.getPositionSeconds() > RESTART_THRESHOLD_SECONDS) {
+            engine.seek(0);
             return;
         }
         const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
@@ -374,10 +395,11 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             return;
         }
         const nextTrack = queue[nextIndex];
-        if (nextTrack) {
-            engine.preloadUrl(buildStreamUrl(nextTrack.id));
-        }
-    }, [currentIndex, queue, shuffle, repeatMode, engine]);
+        if (!nextTrack) return;
+        const nextStreamSource = resolveStreamSource(nextTrack);
+        if (nextStreamSource.transcodedStream) return;
+        engine.preloadUrl(nextStreamSource.url);
+    }, [currentIndex, queue, shuffle, repeatMode, engine, resolveStreamSource]);
 
     useMediaSession({
         currentTrack,
