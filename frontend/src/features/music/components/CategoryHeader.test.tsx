@@ -51,4 +51,19 @@ describe('CategoryHeader', () => {
         expect(screen.queryByText('Artist A')).not.toBeInTheDocument();
         expect(screen.getByText('1 MUSIC_TRACKS_COUNT')).toBeInTheDocument();
     });
+
+    it('omits the track count when the total is unknown', () => {
+        render(
+            <CategoryHeader
+                title="Album C"
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('Album C')).toBeInTheDocument();
+        expect(screen.queryByText(/MUSIC_TRACKS_COUNT/)).not.toBeInTheDocument();
+    });
 });

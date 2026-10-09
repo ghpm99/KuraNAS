@@ -217,7 +217,7 @@ describe('playlist sections', () => {
         fireEvent.click(screen.getByRole('button', { name: 'MUSIC_NEW' }));
         expect(onCreateOpen).toHaveBeenCalled();
 
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(onLoadMore).toHaveBeenCalled();
     });
 
@@ -276,7 +276,7 @@ describe('playlist sections', () => {
         fireEvent.click(removeButton);
         expect(onRemoveTrack).toHaveBeenCalledWith(100);
 
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(onLoadMore).toHaveBeenCalled();
 
         rerender(

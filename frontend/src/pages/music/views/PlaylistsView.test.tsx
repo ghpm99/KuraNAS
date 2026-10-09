@@ -313,7 +313,7 @@ describe('pages/music/views/PlaylistsView', () => {
         });
 
         renderPlaylistsView();
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchNextPage).toHaveBeenCalled();
     });
 
@@ -349,7 +349,7 @@ describe('pages/music/views/PlaylistsView', () => {
         });
         renderPlaylistsView();
         fireEvent.click(screen.getByText('P1'));
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchTracksNext).toHaveBeenCalled();
     });
 });

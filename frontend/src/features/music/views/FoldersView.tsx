@@ -1,21 +1,16 @@
 import {
     Box,
-    CircularProgress,
     IconButton,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    Typography,
 } from '@mui/material';
 import { Folder, Play } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
-import TrackListItem from '@/features/music/components/TrackListItem';
 import { createFolderPlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
@@ -24,9 +19,16 @@ import { IMusicData } from '@/features/music/providers/musicProvider/musicProvid
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getMusicByFolder, getMusicFolders, getMusicQueueByFolder } from '@/service/music';
 import { MusicFolder } from '@/types/music';
-import { Pagination } from '@/types/pagination';
-import { getFolderName, handleKeyboardActivation, MUSIC_COLLECTION_PAGE_SIZE } from './shared';
+import {
+    getFolderName,
+    handleKeyboardActivation,
+    MUSIC_COLLECTION_PAGE_SIZE,
+    resolveCollectionTrackCount,
+} from './shared';
+import MusicCollectionListFeedback from './components/MusicCollectionListFeedback';
+import MusicCollectionTrackList from './components/MusicCollectionTrackList';
 import MusicSortControl from './components/MusicSortControl';
+import { useMusicInfinitePages } from './useMusicInfinitePages';
 import { useMusicListSort } from './useMusicListSort';
 
 const loadFolderTracks = (folderPath: string) =>
@@ -36,15 +38,15 @@ export default function FoldersView() {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedFolderPath = searchParams.get('folder') ?? '';
     const { listSort, changeField, toggleOrder } = useMusicListSort('folders');
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-folders', listSort],
-        queryFn: async ({ pageParam = 1 }): Promise<Pagination<MusicFolder>> =>
-            getMusicFolders(pageParam, MUSIC_COLLECTION_PAGE_SIZE, listSort),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) =>
-            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
-    });
-    const folders = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+    const foldersQuery = useMusicInfinitePages<MusicFolder>(
+        ['music-folders', listSort],
+        (pageNumber) => getMusicFolders(pageNumber, MUSIC_COLLECTION_PAGE_SIZE, listSort)
+    );
+    const folders = foldersQuery.items;
+    const knownFolder = useMemo(
+        () => folders.find((folder) => folder.folder === selectedFolderPath) ?? null,
+        [folders, selectedFolderPath]
+    );
 
     const handleSelectFolder = (folder: string) => {
         setSearchParams((current) => {
@@ -66,7 +68,13 @@ export default function FoldersView() {
     };
 
     if (selectedFolderPath) {
-        return <FolderTracksView folder={selectedFolderPath} onBack={handleBack} />;
+        return (
+            <FolderTracksView
+                folder={selectedFolderPath}
+                knownFolder={knownFolder}
+                onBack={handleBack}
+            />
+        );
     }
 
     return (
@@ -79,10 +87,13 @@ export default function FoldersView() {
             />
             <FolderListView
                 folders={folders}
-                isLoading={isLoading}
-                fetchNextPage={fetchNextPage}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
+                isLoading={foldersQuery.isLoading}
+                isError={foldersQuery.isError}
+                errorMessage={foldersQuery.errorMessage}
+                onRetry={foldersQuery.retry}
+                fetchNextPage={foldersQuery.fetchNextPage}
+                hasNextPage={foldersQuery.hasNextPage}
+                isFetchingNextPage={foldersQuery.isFetchingNextPage}
                 onSelect={handleSelectFolder}
             />
         </>
@@ -92,7 +103,10 @@ export default function FoldersView() {
 type FolderListViewProps = {
     folders: MusicFolder[];
     isLoading: boolean;
-    fetchNextPage: () => Promise<unknown>;
+    isError: boolean;
+    errorMessage?: string;
+    onRetry: () => void;
+    fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     onSelect: (folder: string) => void;
@@ -101,6 +115,9 @@ type FolderListViewProps = {
 function FolderListView({
     folders,
     isLoading,
+    isError,
+    errorMessage,
+    onRetry,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -117,116 +134,98 @@ function FolderListView({
         }
     };
 
-    if (isLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
     return (
-        <Box sx={{ p: 1 }}>
-            <List sx={{ width: '100%' }}>
-                {folders.map((folder) => (
-                    <ListItem
-                        key={folder.folder}
-                        disablePadding
-                        sx={{
-                            '&:hover .folder-play': { opacity: 1 },
-                        }}
-                    >
-                        <ListItemButton
-                            component="div"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onSelect(folder.folder)}
-                            onKeyDown={(event) =>
-                                handleKeyboardActivation(event, () => onSelect(folder.folder))
-                            }
-                            sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
+        <MusicCollectionListFeedback
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={errorMessage}
+            isEmpty={folders.length === 0}
+            emptyTitleKey="MUSIC_FOLDERS_EMPTY"
+            errorTitleKey="MUSIC_LIST_ERROR_TITLE"
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onRetry={onRetry}
+            fetchNextPage={fetchNextPage}
+        >
+            <Box sx={{ p: 1 }}>
+                <List sx={{ width: '100%' }}>
+                    {folders.map((folder) => (
+                        <ListItem
+                            key={folder.folder}
+                            disablePadding
+                            sx={{
+                                '&:hover .folder-play': { opacity: 1 },
+                            }}
                         >
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                                <Box
+                            <ListItemButton
+                                component="div"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => onSelect(folder.folder)}
+                                onKeyDown={(event) =>
+                                    handleKeyboardActivation(event, () => onSelect(folder.folder))
+                                }
+                                sx={{ borderRadius: 1.5, py: 1, px: 1.5, gap: 1 }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 40 }}>
+                                    <Box
+                                        sx={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 1,
+                                            bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <Folder size={20} color="var(--app-color-primary)" />
+                                    </Box>
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={getFolderName(folder.folder)}
+                                    secondary={`${folder.track_count} ${t('MUSIC_TRACKS_COUNT')}`}
+                                    primaryTypographyProps={{ fontWeight: 500 }}
+                                />
+                                <IconButton
+                                    className="folder-play"
+                                    onClick={(event) => void handlePlayFolder(event, folder.folder)}
                                     sx={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 1,
-                                        bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
+                                        opacity: 0,
+                                        transition: 'all 0.2s ease',
+                                        color: 'primary.main',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
+                                        },
                                     }}
                                 >
-                                    <Folder size={20} color="var(--app-color-primary)" />
-                                </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={getFolderName(folder.folder)}
-                                secondary={`${folder.track_count} ${t('MUSIC_TRACKS_COUNT')}`}
-                                primaryTypographyProps={{ fontWeight: 500 }}
-                            />
-                            <IconButton
-                                className="folder-play"
-                                onClick={(event) => void handlePlayFolder(event, folder.folder)}
-                                sx={{
-                                    opacity: 0,
-                                    transition: 'all 0.2s ease',
-                                    color: 'primary.main',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(var(--app-color-primary-rgb), 0.12)',
-                                    },
-                                }}
-                            >
-                                <Play size={18} fill="var(--app-color-primary)" />
-                            </IconButton>
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-            </List>
-
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={() => fetchNextPage()}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
-        </Box>
+                                    <Play size={18} fill="var(--app-color-primary)" />
+                                </IconButton>
+                            </ListItemButton>
+                        </ListItem>
+                    ))}
+                </List>
+            </Box>
+        </MusicCollectionListFeedback>
     );
 }
 
-function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => void }) {
-    const { t } = useI18n();
+function FolderTracksView({
+    folder,
+    knownFolder,
+    onBack,
+}: {
+    folder: string;
+    knownFolder: MusicFolder | null;
+    onBack: () => void;
+}) {
     const { replaceQueue } = useGlobalMusic();
-    const [menuAnchor, setMenuAnchor] = useState<{
-        el: HTMLElement;
-        fileId: number;
-    } | null>(null);
+    const tracksQuery = useMusicInfinitePages<IMusicData>(
+        ['music-by-folder', folder],
+        (pageNumber) => getMusicByFolder(folder, pageNumber, MUSIC_COLLECTION_PAGE_SIZE)
+    );
+    const tracks = tracksQuery.items;
     const playbackContext = createFolderPlaybackContext(folder);
-
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['music-by-folder', folder],
-        queryFn: async ({ pageParam = 1 }): Promise<Pagination<IMusicData>> =>
-            getMusicByFolder(folder, pageParam, MUSIC_COLLECTION_PAGE_SIZE),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) =>
-            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
-    });
-
-    const tracks = data?.pages.flatMap((page) => page.items) ?? [];
 
     const queueFolderTracks = async (trackId?: number, shuffle = false) => {
         const allTracks = await loadFolderTracks(folder);
@@ -248,7 +247,11 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
             <CategoryHeader
                 title={getFolderName(folder)}
                 subtitle={folder}
-                trackCount={tracks.length}
+                trackCount={resolveCollectionTrackCount(
+                    knownFolder?.track_count,
+                    tracks.length,
+                    tracksQuery.isFullyLoaded
+                )}
                 icon={<Folder size={48} opacity={0.7} />}
                 gradientFrom="var(--app-color-primary)"
                 onBack={onBack}
@@ -256,54 +259,17 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
                 onShuffleAll={() => void queueFolderTracks(undefined, true)}
             />
 
-            {isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                    <CircularProgress />
-                </Box>
-            ) : (
-                <List sx={{ width: '100%' }}>
-                    {tracks.map((item, index) => (
-                        <TrackListItem
-                            key={item.id}
-                            track={item}
-                            index={index}
-                            onPlay={(track) => void queueFolderTracks(track.id)}
-                            onAddToPlaylist={(event, fileId) =>
-                                setMenuAnchor({
-                                    el: event.currentTarget as HTMLElement,
-                                    fileId,
-                                })
-                            }
-                        />
-                    ))}
-                </List>
-            )}
-
-            <AddToPlaylistMenu
-                fileId={menuAnchor?.fileId ?? 0}
-                anchorEl={menuAnchor?.el ?? null}
-                onClose={() => setMenuAnchor(null)}
+            <MusicCollectionTrackList
+                tracks={tracks}
+                isLoading={tracksQuery.isLoading}
+                isError={tracksQuery.isError}
+                errorMessage={tracksQuery.errorMessage}
+                hasNextPage={tracksQuery.hasNextPage}
+                isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                onPlayTrack={(track) => void queueFolderTracks(track.id)}
+                onRetry={tracksQuery.retry}
+                fetchNextPage={tracksQuery.fetchNextPage}
             />
-
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={() => fetchNextPage()}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
         </Box>
     );
 }

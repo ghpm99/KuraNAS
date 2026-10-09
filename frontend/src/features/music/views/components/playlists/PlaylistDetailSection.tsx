@@ -7,6 +7,7 @@ import {
     ListItemButton,
     Typography,
 } from '@mui/material';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { ListMusic, Pause, Play, Trash2 } from 'lucide-react';
 import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
 import { Playlist, PlaylistTrack } from '@/types/playlist';
@@ -75,7 +76,7 @@ export default function PlaylistDetailSection({
             <CategoryHeader
                 title={playlist.name}
                 subtitle={playlist.description || undefined}
-                trackCount={tracks.length}
+                trackCount={playlist.track_count}
                 icon={<ListMusic size={48} opacity={0.7} />}
                 gradientFrom="var(--app-color-primary)"
                 onBack={onBack}
@@ -254,25 +255,11 @@ export default function PlaylistDetailSection({
                 </List>
             )}
 
-            {hasNextPage && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            cursor: 'pointer',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={onLoadMore}
-                    >
-                        {isFetchingNextPage ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            t('ACTION_LOAD_MORE')
-                        )}
-                    </Typography>
-                </Box>
-            )}
+            <LoadMoreSentinel
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={onLoadMore}
+            />
         </Box>
     );
 }

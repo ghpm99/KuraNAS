@@ -309,7 +309,7 @@ describe('music views', () => {
             expect.any(Object)
         );
         expect(mockReplaceQueue).toHaveBeenCalled();
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistTracks).toHaveBeenCalled();
         fireEvent.click(screen.getAllByRole('button')[0]!);
         expect(screen.getByText('artist-1')).toBeInTheDocument();
@@ -384,7 +384,7 @@ describe('music views', () => {
         const detailButtons = screen.getAllByRole('button');
         fireEvent.click(detailButtons[1]!);
         fireEvent.click(detailButtons[2]!);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchGenreTracks).toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
@@ -691,10 +691,10 @@ describe('music views', () => {
         });
 
         const { container: albumsContainer, unmount } = renderWithRouter(<AlbumsView />);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchAlbumsList).toHaveBeenCalled();
         fireEvent.click(screen.getByText('album-1'));
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchAlbumsTracks).toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
         expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
@@ -702,10 +702,10 @@ describe('music views', () => {
         unmount();
 
         const artistsRender = renderWithRouter(<ArtistsView />);
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistsList).toHaveBeenCalled();
         fireEvent.click(screen.getByText('artist-1'));
-        fireEvent.click(screen.getByText('ACTION_LOAD_MORE'));
+        fireEvent.click(screen.getByText('LOAD_MORE'));
         expect(fetchArtistsTracks).toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'add track-1 to playlist' }));
         expect(screen.getByText('MenuAnchor-open')).toBeInTheDocument();
@@ -773,7 +773,7 @@ describe('music views', () => {
             expect(mockGetMusicQueueByGenre).toHaveBeenCalledWith('genre-1');
         });
         expect(mockReplaceQueue).not.toHaveBeenCalled();
-        expect(screen.getByText('ACTION_LOAD_MORE')).toBeInTheDocument();
+        expect(screen.getByText('LOAD_MORE')).toBeInTheDocument();
     });
 
     it('covers empty and loading genre detail branches', () => {

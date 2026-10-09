@@ -1723,5 +1723,12 @@
 	"FILES_SEARCH_CONTENT_RESULTS_ONE": "1 document with \"{{query}}\"",
 	"FILES_SEARCH_CONTENT_RESULTS_TOTAL": "{{count}} documents with \"{{query}}\"",
 	"FILES_SEARCH_CONTENT_RESULTS_MORE": "{{count}}+ documents with \"{{query}}\"",
-	"FILES_SEARCH_CONTENT_EMPTY": "No document contains this text"
+	"FILES_SEARCH_CONTENT_EMPTY": "No document contains this text",
+	"MUSIC_LIST_ERROR_TITLE": "Could not load the list",
+	"MUSIC_TRACKS_ERROR_TITLE": "Could not load the tracks",
+	"MUSIC_ARTISTS_EMPTY": "No artists found",
+	"MUSIC_ALBUMS_EMPTY": "No albums found",
+	"MUSIC_GENRES_EMPTY": "No genres found",
+	"MUSIC_FOLDERS_EMPTY": "No folders found",
+	"MUSIC_COLLECTION_TRACKS_EMPTY": "No tracks found here"
 }
