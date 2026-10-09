@@ -20,7 +20,7 @@ func TestResolvePathInEntryPoint(t *testing.T) {
 	tempDir := t.TempDir()
 	config.AppConfig.EntryPoint = tempDir
 
-	path, err := resolvePathInRoots("")
+	path, err := resolveContainedPath("")
 	if err != nil {
 		t.Fatalf("expected entry point path, got error: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestResolvePathInEntryPoint(t *testing.T) {
 	}
 
 	relativePath := "docs/file.txt"
-	resolvedRelative, err := resolvePathInRoots(relativePath)
+	resolvedRelative, err := resolveContainedPath(relativePath)
 	if err != nil {
 		t.Fatalf("expected valid relative path, got error: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestResolvePathInEntryPoint(t *testing.T) {
 		t.Fatalf("expected %s, got %s", expectedRelative, resolvedRelative)
 	}
 
-	if _, err := resolvePathInRoots("../outside"); err == nil {
+	if _, err := resolveContainedPath("../outside"); err == nil {
 		t.Fatalf("expected error for path outside entry point")
 	}
 }
@@ -95,18 +95,18 @@ func TestResolvePathNormalizesBackslashes(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)
 
-	resolvedPath, err := resolvePathInRoots(`\nested\file.txt`)
+	resolvedPath, err := resolveContainedPath(`\nested\file.txt`)
 	if err != nil {
-		t.Fatalf("resolvePathInRoots with backslashes returned error: %v", err)
+		t.Fatalf("resolveContainedPath with backslashes returned error: %v", err)
 	}
 	expected := filepath.Join(entryPoint, "nested", "file.txt")
 	if resolvedPath != expected {
 		t.Fatalf("expected %q, got %q", expected, resolvedPath)
 	}
 
-	resolvedPath, err = resolvePathInRoots(`/\Documentos\Trabalho`)
+	resolvedPath, err = resolveContainedPath(`/\Documentos\Trabalho`)
 	if err != nil {
-		t.Fatalf("resolvePathInRoots with mixed separators returned error: %v", err)
+		t.Fatalf("resolveContainedPath with mixed separators returned error: %v", err)
 	}
 	expected = filepath.Join(entryPoint, "Documentos", "Trabalho")
 	if resolvedPath != expected {
@@ -118,16 +118,16 @@ func TestResolvePathInEntryPointFromOperationsTest(t *testing.T) {
 	entryPoint := t.TempDir()
 	setEntryPointForTest(t, entryPoint)
 
-	resolvedPath, err := resolvePathInRoots("nested/file.txt")
+	resolvedPath, err := resolveContainedPath("nested/file.txt")
 	if err != nil {
-		t.Fatalf("resolvePathInRoots returned error: %v", err)
+		t.Fatalf("resolveContainedPath returned error: %v", err)
 	}
 	if resolvedPath != filepath.Join(entryPoint, "nested", "file.txt") {
-		t.Fatalf("resolvePathInRoots returned %q", resolvedPath)
+		t.Fatalf("resolveContainedPath returned %q", resolvedPath)
 	}
 
-	if _, err := resolvePathInRoots("../outside"); err == nil {
-		t.Fatalf("expected resolvePathInRoots outside-entrypoint error")
+	if _, err := resolveContainedPath("../outside"); err == nil {
+		t.Fatalf("expected resolveContainedPath outside-entrypoint error")
 	}
 }
 
