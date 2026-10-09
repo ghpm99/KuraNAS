@@ -100,6 +100,7 @@ type ServiceInterface interface {
 	GetOrCreateNowPlaying() (PlaylistDto, error)
 	GetHomeCatalog(clientID string, limit int, sort CatalogSort) (MusicHomeCatalogDto, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
+	GetLibraryTrackByID(fileID int) (files.FileDto, error)
 	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryArtists(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error)
 	GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error)
