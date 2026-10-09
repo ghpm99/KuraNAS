@@ -29,7 +29,7 @@ type fakeAudioMetadataRepository struct {
 	catalogKeysByPage  [][]musicdom.AudioCatalogKeySource
 	catalogKeysCalls   int
 	catalogKeysUpdates []musicdom.CatalogGroupingKeys
-	upsertedPaths []string
+	upsertedPaths      []string
 }
 
 func newFakeAudioMetadataRepository(t *testing.T, transactionCount int) *fakeAudioMetadataRepository {
