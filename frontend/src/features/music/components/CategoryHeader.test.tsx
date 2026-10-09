@@ -66,4 +66,19 @@ describe('CategoryHeader', () => {
         expect(screen.getByText('Album C')).toBeInTheDocument();
         expect(screen.queryByText(/MUSIC_TRACKS_COUNT/)).not.toBeInTheDocument();
     });
+
+    it('renders extra actions next to the playback controls', () => {
+        render(
+            <CategoryHeader
+                title="Album D"
+                icon={<Disc size={48} />}
+                onBack={jest.fn()}
+                onPlayAll={jest.fn()}
+                onShuffleAll={jest.fn()}
+                actions={<button type="button">extra-action</button>}
+            />
+        );
+
+        expect(screen.getByRole('button', { name: 'extra-action' })).toBeInTheDocument();
+    });
 });

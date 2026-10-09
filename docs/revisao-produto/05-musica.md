@@ -26,7 +26,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 09. Scroll infinito acessível em todas as listas de música + estados de erro/vazio
 - [x] 10. Persistência da fila e do estado (posição, volume, shuffle, repeat) por dispositivo
 - [x] 11. Fila: tocar a seguir, adicionar ao fim, reordenar, salvar como playlist
-- [ ] 12. Playlists: renomear, reordenar, confirmar exclusão, aviso de faixa repetida, IA separada
+- [x] 12. Playlists: renomear, reordenar, confirmar exclusão, aviso de faixa repetida, IA separada
 - [ ] 13. Capa de álbum (embutida e `folder.jpg`) em listas, player, fila e Media Session
 - [ ] 14. Páginas de álbum e de artista
 - [ ] 15. Favoritos dentro da música, histórico e mais tocadas

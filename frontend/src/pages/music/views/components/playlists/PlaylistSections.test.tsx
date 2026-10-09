@@ -212,7 +212,10 @@ describe('playlist sections', () => {
 
         const deleteButtons = container.querySelectorAll('svg.lucide-trash2');
         fireEvent.click(deleteButtons[0]!.closest('button') as HTMLElement);
+        expect(onDelete).not.toHaveBeenCalled();
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'DELETE' }));
         expect(onDelete).toHaveBeenCalledWith(1);
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: 'MUSIC_NEW' }));
         expect(onCreateOpen).toHaveBeenCalled();
