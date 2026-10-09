@@ -446,4 +446,107 @@ describe('useAudioEngine', () => {
 
         expect(mountedAudio.src).toBe(originalSrc);
     });
+
+    describe('transcoded streams', () => {
+        const transcodedStream = {
+            buildUrl: (startSeconds: number) =>
+                `http://example.com/transcode?start=${startSeconds}`,
+            fallbackUrl: 'http://example.com/raw',
+            durationSeconds: 200,
+        };
+
+        it('reports metadata duration and offsets currentTime by the restart position', () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            act(() => {
+                result.current.loadAndPlayUrl('http://example.com/transcode', transcodedStream);
+            });
+            const audio = getMainAudio();
+            act(() => {
+                audio.duration = Infinity;
+                audio.trigger('loadedmetadata');
+            });
+            expect(result.current.duration).toBe(200);
+
+            act(() => {
+                result.current.seek(60);
+            });
+            expect(audio.src).toBe('http://example.com/transcode?start=60');
+            expect(result.current.currentTime).toBe(60);
+
+            act(() => {
+                audio.currentTime = 5;
+                audio.trigger('timeupdate');
+            });
+            expect(result.current.currentTime).toBe(65);
+            expect(result.current.getPositionSeconds()).toBe(65);
+        });
+
+        it('keeps a paused transcoded track paused when seeking', () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            act(() => {
+                result.current.loadAndPlayUrl('http://example.com/transcode', transcodedStream);
+                getMainAudio().pause();
+                result.current.seek(30);
+            });
+            expect(getMainAudio().paused).toBe(true);
+            expect(getMainAudio().src).toBe('http://example.com/transcode?start=30');
+        });
+
+        it('resumes playing after seeking a playing transcoded track', async () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            act(() => {
+                result.current.loadAndPlayUrl('http://example.com/transcode', transcodedStream);
+            });
+            expect(getMainAudio().paused).toBe(false);
+            act(() => {
+                result.current.seek(10);
+            });
+            expect(getMainAudio().paused).toBe(false);
+        });
+
+        it('restores a saved position by rebuilding the transcode URL without autoplay', () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            act(() => {
+                result.current.loadUrlPaused('http://example.com/transcode', 42, transcodedStream);
+            });
+            expect(getMainAudio().src).toBe('http://example.com/transcode?start=42');
+            expect(getMainAudio().paused).toBe(true);
+            expect(result.current.currentTime).toBe(42);
+            expect(result.current.duration).toBe(200);
+        });
+
+        it('falls back to the raw stream when the transcode fails', () => {
+            const onTrackEnded = jest.fn();
+            const { result } = renderHook(() => useAudioEngine(onTrackEnded));
+            act(() => {
+                result.current.loadAndPlayUrl('http://example.com/transcode', transcodedStream);
+                result.current.seek(20);
+            });
+            act(() => {
+                getMainAudio().trigger('error');
+            });
+            expect(getMainAudio().src).toBe('http://example.com/raw');
+            expect(onTrackEnded).not.toHaveBeenCalled();
+            expect(result.current.getPositionSeconds()).toBe(0);
+            act(() => {
+                getMainAudio().trigger('error');
+            });
+            expect(onTrackEnded).toHaveBeenCalledTimes(1);
+        });
+
+        it('seeks a direct stream by setting currentTime without offset', () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            act(() => {
+                result.current.loadAndPlayUrl('http://example.com/raw');
+                result.current.seek(33);
+            });
+            expect(getMainAudio().currentTime).toBe(33);
+            expect(getMainAudio().src).toBe('http://example.com/raw');
+        });
+
+        it('assumes playable when the element cannot answer canPlayType', () => {
+            const { result } = renderHook(() => useAudioEngine(() => {}));
+            expect(result.current.canPlayType('audio/mpeg')).toBe('maybe');
+        });
+    });
 });

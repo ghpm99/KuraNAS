@@ -20,6 +20,8 @@ const createEngineMock = () => ({
     loadAndPlayUrl: jest.fn(),
     loadUrlPaused: jest.fn(),
     preloadUrl: jest.fn(),
+    canPlayType: jest.fn().mockReturnValue('maybe'),
+    getPositionSeconds: jest.fn().mockReturnValue(0),
     togglePlayPause: jest.fn(),
     seek: jest.fn(),
     setVolume: jest.fn(),
@@ -30,7 +32,15 @@ const createEngineMock = () => ({
     volume: 1,
 });
 
-let engineMock = createEngineMock();
+const linkEnginePositionToAudio = (engine: ReturnType<typeof createEngineMock>) => {
+    engine.getPositionSeconds.mockImplementation(() => engine.audioRef.current?.currentTime ?? 0);
+    engine.seek.mockImplementation((seconds: number) => {
+        if (engine.audioRef.current) engine.audioRef.current.currentTime = seconds;
+    });
+    return engine;
+};
+
+let engineMock = linkEnginePositionToAudio(createEngineMock());
 const mockSyncState = jest.fn();
 const mockQueueHydration = jest.fn();
 const mockQueuePersistence = jest.fn();
@@ -108,7 +118,7 @@ const createTrack = (id: number): IMusicData => ({
 describe('GlobalMusicProvider', () => {
     beforeEach(() => {
         jest.useFakeTimers();
-        engineMock = createEngineMock();
+        engineMock = linkEnginePositionToAudio(createEngineMock());
         mockSyncState.mockReset();
         mockQueueHydration.mockReset();
         mockQueuePersistence.mockReset();
@@ -140,7 +150,8 @@ describe('GlobalMusicProvider', () => {
         expect(engineMock.setVolume).toHaveBeenCalledWith(0.3);
         expect(engineMock.loadUrlPaused).toHaveBeenCalledWith(
             expect.stringContaining('/files/stream/5'),
-            12
+            12,
+            undefined
         );
         expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
     });
@@ -199,7 +210,8 @@ describe('GlobalMusicProvider', () => {
         expect(result.current.queue[1]).toEqual(expect.objectContaining({ id: trackC.id }));
         expect(result.current.currentIndex).toBe(1);
         expect(engineMock.loadAndPlayUrl).toHaveBeenLastCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
         expect(mockSyncState).toHaveBeenCalledWith(
             expect.objectContaining({ fileId: 3, position: 0, playlistId: 22 })
@@ -274,6 +286,36 @@ describe('GlobalMusicProvider', () => {
         expect(engineMock.stop).toHaveBeenCalled();
     });
 
+    it('starts a track whose format the browser cannot play through the transcode URL', () => {
+        engineMock.canPlayType.mockReturnValue('');
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const wmaTrack = { ...createTrack(8), format: '.wma', metadata: { length: 180 } as never };
+
+        act(() => {
+            result.current.replaceQueue([wmaTrack], 0);
+        });
+
+        expect(engineMock.canPlayType).toHaveBeenCalledWith('audio/x-ms-wma');
+        expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
+            expect.stringContaining('/music/tracks/8/stream?format=mp3'),
+            expect.objectContaining({ durationSeconds: 180 })
+        );
+    });
+
+    it('does not preload the next track when it needs transcoding', () => {
+        engineMock.canPlayType.mockImplementation((mimeType: string) =>
+            mimeType === 'audio/x-ms-wma' ? '' : 'maybe'
+        );
+        const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+        const tracks = [createTrack(1), { ...createTrack(2), format: 'wma' }, createTrack(3)];
+
+        act(() => {
+            result.current.replaceQueue(tracks, 0);
+        });
+
+        expect(engineMock.preloadUrl).not.toHaveBeenCalled();
+    });
+
     it('removeFromQueue adjusts currentIndex when removing before current', () => {
         const { result } = renderHook(() => useGlobalMusic(), { wrapper });
         const tracks = [createTrack(1), createTrack(2), createTrack(3)];
@@ -306,7 +348,8 @@ describe('GlobalMusicProvider', () => {
         });
         // Should load the next track (track 3 is now at index 1)
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
         expect(result.current.queue).toHaveLength(2);
     });
@@ -327,7 +370,8 @@ describe('GlobalMusicProvider', () => {
         // currentIndex should clamp to newQueue.length - 1 = 0
         expect(result.current.currentIndex).toBe(0);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/1')
+            expect.stringContaining('/files/stream/1'),
+            undefined
         );
     });
 
@@ -376,7 +420,8 @@ describe('GlobalMusicProvider', () => {
         // (1 + 1) % 2 = 0
         expect(result.current.currentIndex).toBe(0);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/1')
+            expect.stringContaining('/files/stream/1'),
+            undefined
         );
     });
 
@@ -414,7 +459,8 @@ describe('GlobalMusicProvider', () => {
         // Should wrap to last track
         expect(result.current.currentIndex).toBe(2);
         expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-            expect.stringContaining('/files/stream/3')
+            expect.stringContaining('/files/stream/3'),
+            undefined
         );
     });
 
@@ -777,7 +823,8 @@ describe('GlobalMusicProvider', () => {
 
             expect(result.current.currentIndex).toBe(1);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/2')
+                expect.stringContaining('/files/stream/2'),
+                undefined
             );
             expect(mockSyncState).toHaveBeenCalledWith(
                 expect.objectContaining({ fileId: 2, position: 0 })
@@ -820,7 +867,8 @@ describe('GlobalMusicProvider', () => {
 
             expect(result.current.currentIndex).toBe(0);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/1')
+                expect.stringContaining('/files/stream/1'),
+                undefined
             );
             expect(mockSyncState).toHaveBeenCalledWith(
                 expect.objectContaining({ fileId: 1, position: 0 })
@@ -882,7 +930,8 @@ describe('GlobalMusicProvider', () => {
             // getShuffledIndex returns 0 for single-track queue
             expect(result.current.currentIndex).toBe(0);
             expect(engineMock.loadAndPlayUrl).toHaveBeenCalledWith(
-                expect.stringContaining('/files/stream/1')
+                expect.stringContaining('/files/stream/1'),
+                undefined
             );
         });
 
