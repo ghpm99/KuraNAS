@@ -36,7 +36,7 @@ Decisões tomadas na revisão: `.ogg/.oga/.opus` são áudio (`.ogv` vídeo); `.
 - [x] 18.2. Seek aplicado ao soltar o controle (sem dezenas de Range ao arrastar)
 - [x] 18.3. Embaralhar como permutação com histórico para "anterior"
 - [x] 18.4. Atalhos de teclado do player
-- [ ] 18.5. Media Session com avançar/voltar 10 s e parar
+- [x] 18.5. Media Session com avançar/voltar 10 s e parar
 - [ ] 18.6. Registro de acesso/log uma vez por reprodução, não a cada Range
 - [ ] 19. Letras no player expandido
 - [ ] 20. Aba "Faixas", busca dentro da Música, código morto e i18n (`Unknown Artist`)

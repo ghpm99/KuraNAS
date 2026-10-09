@@ -3,6 +3,8 @@ import type { IMusicData } from '../musicProvider/musicProvider';
 import { getTrackCoverArtwork } from '@/service/musicCover';
 import { getMusicTitle, getMusicArtist } from '@/utils/music';
 
+const DEFAULT_SEEK_OFFSET_SECONDS = 10;
+
 interface MediaSessionOptions {
     currentTrack: IMusicData | undefined;
     isPlaying: boolean;
@@ -26,39 +28,81 @@ export default function useMediaSession({
     currentTime,
     duration,
 }: MediaSessionOptions) {
-    // Use refs so action handlers are registered once and always call the latest callbacks
     const onPlayRef = useRef(onPlay);
     const onPauseRef = useRef(onPause);
     const onNextRef = useRef(onNext);
     const onPreviousRef = useRef(onPrevious);
     const onSeekToRef = useRef(onSeekTo);
+    const isPlayingRef = useRef(isPlaying);
+    const currentTimeRef = useRef(currentTime);
+    const durationRef = useRef(duration);
 
     useEffect(() => { onPlayRef.current = onPlay; }, [onPlay]);
     useEffect(() => { onPauseRef.current = onPause; }, [onPause]);
     useEffect(() => { onNextRef.current = onNext; }, [onNext]);
     useEffect(() => { onPreviousRef.current = onPrevious; }, [onPrevious]);
     useEffect(() => { onSeekToRef.current = onSeekTo; }, [onSeekTo]);
+    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+    useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
+    useEffect(() => { durationRef.current = duration; }, [duration]);
 
-    // Register action handlers once — stable refs prevent re-registration gaps
     useEffect(() => {
         if (!('mediaSession' in navigator)) return;
 
-        navigator.mediaSession.setActionHandler('play', () => onPlayRef.current());
-        navigator.mediaSession.setActionHandler('pause', () => onPauseRef.current());
-        navigator.mediaSession.setActionHandler('nexttrack', () => onNextRef.current());
-        navigator.mediaSession.setActionHandler('previoustrack', () => onPreviousRef.current());
-        navigator.mediaSession.setActionHandler('seekto', (details) => {
-            if (details.seekTime !== undefined) {
-                onSeekToRef.current(details.seekTime);
+        const seekRelative = (offsetSeconds: number) => {
+            const upperBound = durationRef.current > 0 ? durationRef.current : Infinity;
+            const targetTime = Math.min(
+                Math.max(currentTimeRef.current + offsetSeconds, 0),
+                upperBound
+            );
+            onSeekToRef.current(targetTime);
+        };
+
+        const actionHandlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+            ['play', () => onPlayRef.current()],
+            ['pause', () => onPauseRef.current()],
+            ['nexttrack', () => onNextRef.current()],
+            ['previoustrack', () => onPreviousRef.current()],
+            [
+                'seekto',
+                (details) => {
+                    if (details.seekTime !== undefined && details.seekTime !== null) {
+                        onSeekToRef.current(details.seekTime);
+                    }
+                },
+            ],
+            [
+                'seekbackward',
+                (details) => seekRelative(-(details.seekOffset ?? DEFAULT_SEEK_OFFSET_SECONDS)),
+            ],
+            [
+                'seekforward',
+                (details) => seekRelative(details.seekOffset ?? DEFAULT_SEEK_OFFSET_SECONDS),
+            ],
+            [
+                'stop',
+                () => {
+                    if (isPlayingRef.current) onPauseRef.current();
+                    onSeekToRef.current(0);
+                },
+            ],
+        ];
+
+        const trySetActionHandler = (
+            action: MediaSessionAction,
+            handler: MediaSessionActionHandler | null
+        ) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch {
+                return;
             }
-        });
+        };
+
+        actionHandlers.forEach(([action, handler]) => trySetActionHandler(action, handler));
 
         return () => {
-            navigator.mediaSession.setActionHandler('play', null);
-            navigator.mediaSession.setActionHandler('pause', null);
-            navigator.mediaSession.setActionHandler('nexttrack', null);
-            navigator.mediaSession.setActionHandler('previoustrack', null);
-            navigator.mediaSession.setActionHandler('seekto', null);
+            actionHandlers.forEach(([action]) => trySetActionHandler(action, null));
         };
     }, []);
 
