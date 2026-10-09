@@ -22,6 +22,7 @@ export type AudioSummary = {
     bitrate: number;
     sample_rate: number;
     channels: number;
+    lyrics?: string;
 };
 
 export type VideoSummary = {

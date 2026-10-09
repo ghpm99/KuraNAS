@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import GlobalPlayerControl from './GlobalPlayerControl';
 import * as musicUtils from '@/utils/music';
@@ -428,6 +429,21 @@ describe('GlobalPlayerControl', () => {
         render(<GlobalPlayerControl />);
         fireEvent.click(screen.getByLabelText('PLAYER_ARIA_QUEUE'));
         expect(api.toggleQueue).toHaveBeenCalled();
+    });
+
+    it('opens the expanded sheet on the lyrics view from the desktop lyrics button', () => {
+        mockUseGlobalMusic.mockReturnValue({
+            ...baseApi(),
+            currentTrack: { name: 'Test Song', metadata: { lyrics: 'sing along' } },
+        });
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <GlobalPlayerControl />
+            </QueryClientProvider>
+        );
+        expect(screen.queryByText('sing along')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('PLAYER_ARIA_LYRICS'));
+        expect(screen.getByText('sing along')).toBeInTheDocument();
     });
 
     // Slider interactions
