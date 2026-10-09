@@ -21,6 +21,12 @@ export type ViewerDetailSection = {
     items: ViewerDetailItem[];
 };
 
+export type ViewerContent = {
+    caption: string;
+    tags: string[];
+    ocrText: string;
+};
+
 type UseImageViewerModalParams = {
     activeImage: ImageLibraryItem;
     activeImageDate: Date | null;
@@ -225,8 +231,15 @@ export const useImageViewerModal = ({
             },
         ];
 
+        const content: ViewerContent = {
+            caption: metadataSummary?.caption?.trim() ?? '',
+            tags: metadataSummary?.tags ?? [],
+            ocrText: metadataSummary?.ocr_text?.trim() ?? '',
+        };
+
         return {
             details,
+            content,
             folderPath,
             positionLabel,
         };

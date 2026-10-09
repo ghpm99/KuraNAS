@@ -98,6 +98,7 @@ type InstallApiOptions = {
     timeline?: unknown[];
     folders?: Record<string, FolderRow[]>;
     folderPages?: FolderPage[];
+    metadataSummary?: Record<string, unknown>;
 };
 
 const folderResponse = (items: FolderRow[], page: number, hasNext: boolean) => ({
@@ -139,6 +140,9 @@ const installApi = (pages: (LibraryPageResponse | Error)[], options: InstallApiO
             }
             if (url === '/image/library/timeline') {
                 return Promise.resolve({ data: options.timeline ?? [] });
+            }
+            if (url.startsWith('/image/metadata/') && options.metadataSummary) {
+                return Promise.resolve({ data: options.metadataSummary });
             }
             return Promise.reject(new Error(`unexpected GET ${url}`));
         }
@@ -648,6 +652,31 @@ describe('ImageContent', () => {
         fireEvent.click(screen.getByRole('button', { name: 'IMAGES_CLOSE_VIEWER' }));
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(screen.getByTestId('location')).not.toHaveTextContent('image=');
+    });
+
+    it('searches the gallery for a tag clicked in the viewer details and closes the viewer', async () => {
+        installApi([{ items: marchImages }], {
+            metadataSummary: { caption: 'A red car', tags: ['car', 'red'], ocr_text: '' },
+        });
+
+        renderGallery();
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'IMAGES_OPEN_IMAGE_ARIA:March-2.jpg' })
+        );
+        const dialog = await screen.findByRole('dialog', { name: 'March-2.jpg' });
+        expect(await within(dialog).findByText('A red car')).toBeInTheDocument();
+
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'IMAGES_DETAIL_TAG_SEARCH:red' })
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('?q=red'));
+        await waitFor(() =>
+            expect(lastLibraryParams()).toEqual(
+                expect.objectContaining({ q: 'red', content: 'red', match: 'all' })
+            )
+        );
     });
 
     it('opens the viewer from the image deep link and toggles its favorite state', async () => {

@@ -438,3 +438,24 @@
 .detailsCopyButton:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+.tagList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tagChip {
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.tagChip:hover,
+.tagChip:focus-visible {
+    background: rgba(255, 255, 255, 0.14);
+}
