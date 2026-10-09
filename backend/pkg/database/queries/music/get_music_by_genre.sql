@@ -50,7 +50,8 @@ WHERE
 ORDER BY
     am.artist,
     am.album,
-    am.track_number,
+    COALESCE(am.disc_number, 1),
+    am.track_no NULLS LAST,
     hf.NAME
 LIMIT
     $3

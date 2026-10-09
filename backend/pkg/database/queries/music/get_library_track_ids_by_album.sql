@@ -8,7 +8,8 @@ WHERE
     AND hf.format = ANY ($1)
     AND hf.deleted_at IS NULL
 ORDER BY
-    COALESCE(am.track_no, 0) ASC,
+    COALESCE(am.disc_number, 1) ASC,
+    am.track_no ASC NULLS LAST,
     COALESCE(NULLIF(TRIM(am.title), ''), hf."name") COLLATE "C" ASC,
     hf.id ASC
 LIMIT

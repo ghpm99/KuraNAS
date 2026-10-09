@@ -170,7 +170,7 @@ func TestCatalogGroupsAndTracksKeepGroupingSemantics_Postgres(t *testing.T) {
 	environment.seedTracks(t, canonicalCatalogFixture(environment.catalogBaseMoment))
 	service := environment.service
 
-	artists, err := service.GetLibraryArtists(1, 10)
+	artists, err := service.GetLibraryArtists(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetLibraryArtists: %v", err)
 	}
@@ -183,7 +183,7 @@ func TestCatalogGroupsAndTracksKeepGroupingSemantics_Postgres(t *testing.T) {
 		t.Fatalf("GetLibraryArtists returned %+v", artists)
 	}
 
-	albums, err := service.GetLibraryAlbums(1, 10)
+	albums, err := service.GetLibraryAlbums(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetLibraryAlbums: %v", err)
 	}
@@ -196,7 +196,7 @@ func TestCatalogGroupsAndTracksKeepGroupingSemantics_Postgres(t *testing.T) {
 		t.Fatalf("GetLibraryAlbums returned %+v", albums.Items)
 	}
 
-	genres, err := service.GetLibraryGenres(1, 10)
+	genres, err := service.GetLibraryGenres(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetLibraryGenres: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestCatalogGroupsAndTracksKeepGroupingSemantics_Postgres(t *testing.T) {
 		t.Fatalf("GetLibraryGenres returned %+v", genres.Items)
 	}
 
-	folders, err := service.GetLibraryFolders(1, 10)
+	folders, err := service.GetLibraryFolders(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetLibraryFolders: %v", err)
 	}
@@ -280,7 +280,7 @@ func TestHomeCatalogComposesSummaryAndFirstPages_Postgres(t *testing.T) {
 	environment := newCatalogTestEnvironment(t)
 	environment.seedTracks(t, canonicalCatalogFixture(environment.catalogBaseMoment))
 
-	home, err := environment.service.GetHomeCatalog("client-1", 2)
+	home, err := environment.service.GetHomeCatalog("client-1", 2, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetHomeCatalog: %v", err)
 	}
@@ -381,7 +381,7 @@ func TestCatalogPaginationReportsHasNextAndPages_Postgres(t *testing.T) {
 	}
 	environment.seedTracks(t, fixtures)
 
-	firstPage, err := environment.service.GetLibraryArtists(1, 3)
+	firstPage, err := environment.service.GetLibraryArtists(1, 3, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
@@ -389,7 +389,7 @@ func TestCatalogPaginationReportsHasNextAndPages_Postgres(t *testing.T) {
 		t.Fatalf("unexpected first page: %+v", firstPage)
 	}
 
-	secondPage, err := environment.service.GetLibraryArtists(2, 3)
+	secondPage, err := environment.service.GetLibraryArtists(2, 3, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("second page: %v", err)
 	}
@@ -397,7 +397,7 @@ func TestCatalogPaginationReportsHasNextAndPages_Postgres(t *testing.T) {
 		t.Fatalf("unexpected second page: %+v", secondPage)
 	}
 
-	lastPage, err := environment.service.GetLibraryArtists(3, 3)
+	lastPage, err := environment.service.GetLibraryArtists(3, 3, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("last page: %v", err)
 	}
@@ -405,7 +405,7 @@ func TestCatalogPaginationReportsHasNextAndPages_Postgres(t *testing.T) {
 		t.Fatalf("unexpected last page: %+v", lastPage)
 	}
 
-	beyondPage, err := environment.service.GetLibraryArtists(9, 3)
+	beyondPage, err := environment.service.GetLibraryArtists(9, 3, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("beyond page: %v", err)
 	}
@@ -413,7 +413,7 @@ func TestCatalogPaginationReportsHasNextAndPages_Postgres(t *testing.T) {
 		t.Fatalf("unexpected page beyond the end: %+v", beyondPage)
 	}
 
-	albums, err := environment.service.GetLibraryAlbums(1, 2)
+	albums, err := environment.service.GetLibraryAlbums(1, 2, DefaultCatalogSort())
 	if err != nil || len(albums.Items) != 2 || !albums.Pagination.HasNext {
 		t.Fatalf("albums pagination: %+v err=%v", albums, err)
 	}
@@ -477,7 +477,7 @@ func TestFolderGroupsCountDirectParentAndTracksWithoutMetadata_Postgres(t *testi
 		{name: "child.mp3", parentPath: "/music/a/child", updatedAt: environment.catalogBaseMoment},
 	})
 
-	folders, err := environment.service.GetLibraryFolders(1, 10)
+	folders, err := environment.service.GetLibraryFolders(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("folders: %v", err)
 	}
@@ -507,7 +507,7 @@ func TestAlbumGroupsMergeAlbumArtistAndPickFirstNonEmptyYear_Postgres(t *testing
 			metadata: &AudioMetadataModel{Title: "Three", Artist: "Main Act", Album: "Record", Year: "1999"}},
 	})
 
-	albums, err := environment.service.GetLibraryAlbums(1, 10)
+	albums, err := environment.service.GetLibraryAlbums(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("albums: %v", err)
 	}
@@ -515,7 +515,7 @@ func TestAlbumGroupsMergeAlbumArtistAndPickFirstNonEmptyYear_Postgres(t *testing
 		t.Fatalf("unexpected merged album group: %+v", albums.Items)
 	}
 
-	artists, err := environment.service.GetLibraryArtists(1, 10)
+	artists, err := environment.service.GetLibraryArtists(1, 10, DefaultCatalogSort())
 	if err != nil || len(artists.Items) != 1 || artists.Items[0].TrackCount != 3 || artists.Items[0].AlbumCount != 1 {
 		t.Fatalf("album artist must group the guest track under the main act: %+v err=%v", artists, err)
 	}
@@ -566,11 +566,11 @@ func TestCatalogKeysBackfillMatchesKeysComputedOnUpsert_Postgres(t *testing.T) {
 	fixtures := canonicalCatalogFixture(base)
 	environment.seedTracks(t, fixtures)
 
-	expectedArtists, err := environment.service.GetLibraryArtists(1, 10)
+	expectedArtists, err := environment.service.GetLibraryArtists(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("artists before reset: %v", err)
 	}
-	expectedGenres, err := environment.service.GetLibraryGenres(1, 10)
+	expectedGenres, err := environment.service.GetLibraryGenres(1, 10, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("genres before reset: %v", err)
 	}
@@ -584,7 +584,7 @@ func TestCatalogKeysBackfillMatchesKeysComputedOnUpsert_Postgres(t *testing.T) {
 		t.Fatalf("reset keys: %v", resetErr)
 	}
 
-	emptyArtists, err := environment.service.GetLibraryArtists(1, 10)
+	emptyArtists, err := environment.service.GetLibraryArtists(1, 10, DefaultCatalogSort())
 	if err != nil || len(emptyArtists.Items) != 0 {
 		t.Fatalf("rows without keys must not be grouped yet: %+v err=%v", emptyArtists, err)
 	}
@@ -623,11 +623,11 @@ func TestCatalogKeysBackfillMatchesKeysComputedOnUpsert_Postgres(t *testing.T) {
 		t.Fatalf("backfill must leave nothing pending, got %v err=%v", remaining, err)
 	}
 
-	artistsAfter, err := environment.service.GetLibraryArtists(1, 10)
+	artistsAfter, err := environment.service.GetLibraryArtists(1, 10, DefaultCatalogSort())
 	if err != nil || !reflect.DeepEqual(artistsAfter.Items, expectedArtists.Items) {
 		t.Fatalf("artists after backfill = %+v, want %+v", artistsAfter.Items, expectedArtists.Items)
 	}
-	genresAfter, err := environment.service.GetLibraryGenres(1, 10)
+	genresAfter, err := environment.service.GetLibraryGenres(1, 10, DefaultCatalogSort())
 	if err != nil || !reflect.DeepEqual(genresAfter.Items, expectedGenres.Items) {
 		t.Fatalf("genres after backfill = %+v, want %+v", genresAfter.Items, expectedGenres.Items)
 	}

@@ -10,7 +10,8 @@ WHERE
 ORDER BY
     am.catalog_artist_label COLLATE "C" ASC,
     am.catalog_album_label COLLATE "C" ASC,
-    COALESCE(am.track_no, 0) ASC,
+    COALESCE(am.disc_number, 1) ASC,
+    am.track_no ASC NULLS LAST,
     COALESCE(NULLIF(TRIM(am.title), ''), hf."name") COLLATE "C" ASC,
     hf.id ASC
 LIMIT

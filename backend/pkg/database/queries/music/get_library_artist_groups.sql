@@ -3,7 +3,8 @@ WITH artist_album_groups AS (
         am.catalog_artist_key AS artist_key,
         am.catalog_album_key AS album_key,
         MIN(am.catalog_artist_label COLLATE "C") AS artist_label,
-        COUNT(*) AS track_count
+        COUNT(*) AS track_count,
+        MAX(hf.created_at) AS latest_added_at
     FROM
         audio_metadata am
         JOIN home_file hf ON hf.id = am.file_id
@@ -23,7 +24,8 @@ artist_groups AS (
         COUNT(*) FILTER (
             WHERE
                 album_key <> ''
-        ) AS album_count
+        ) AS album_count,
+        MAX(latest_added_at) AS latest_added_at
     FROM
         artist_album_groups
     GROUP BY
@@ -37,8 +39,16 @@ SELECT
 FROM
     artist_groups
 ORDER BY
+    (
+        CASE
+            WHEN $2::TEXT = 'tracks' THEN track_count
+            WHEN $2::TEXT = 'recent' THEN EXTRACT(EPOCH FROM latest_added_at)::BIGINT
+        END
+    ) * (CASE WHEN $3::BOOLEAN THEN -1 ELSE 1 END) ASC NULLS LAST,
+    (CASE WHEN $2::TEXT = 'name' AND NOT $3::BOOLEAN THEN artist_label END) COLLATE "C" ASC,
+    (CASE WHEN $2::TEXT = 'name' AND $3::BOOLEAN THEN artist_label END) COLLATE "C" DESC,
     track_count DESC,
     artist_label COLLATE "C" ASC,
     artist_key ASC
 LIMIT
-    $2 OFFSET $3;
+    $4 OFFSET $5;

@@ -43,7 +43,11 @@ func (handler *Handler) GetHomeCatalogHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
-	catalog, err := handler.service.GetHomeCatalog(c.ClientIP(), limit)
+	sort, isSortValid := parseCatalogSortQuery(c, false)
+	if !isSortValid {
+		return
+	}
+	catalog, err := handler.service.GetHomeCatalog(c.ClientIP(), limit, sort)
 	if err != nil {
 		handler.logService.CompleteWithErrorLog(loggerModel, err)
 		respondMusicError(c, err)
@@ -80,8 +84,12 @@ func (handler *Handler) GetLibraryArtistsHandler(c *gin.Context) {
 	if !isPaginationValid {
 		return
 	}
+	sort, isSortValid := parseCatalogSortQuery(c, false)
+	if !isSortValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryArtists", "Fetching music artists catalog", func() (any, error) {
-		return handler.service.GetLibraryArtists(page, pageSize)
+		return handler.service.GetLibraryArtists(page, pageSize, sort)
 	})
 }
 
@@ -101,8 +109,12 @@ func (handler *Handler) GetLibraryAlbumsHandler(c *gin.Context) {
 	if !isPaginationValid {
 		return
 	}
+	sort, isSortValid := parseCatalogSortQuery(c, true)
+	if !isSortValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryAlbums", "Fetching music albums catalog", func() (any, error) {
-		return handler.service.GetLibraryAlbums(page, pageSize)
+		return handler.service.GetLibraryAlbums(page, pageSize, sort)
 	})
 }
 
@@ -122,8 +134,12 @@ func (handler *Handler) GetLibraryGenresHandler(c *gin.Context) {
 	if !isPaginationValid {
 		return
 	}
+	sort, isSortValid := parseCatalogSortQuery(c, false)
+	if !isSortValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryGenres", "Fetching music genres catalog", func() (any, error) {
-		return handler.service.GetLibraryGenres(page, pageSize)
+		return handler.service.GetLibraryGenres(page, pageSize, sort)
 	})
 }
 
@@ -143,8 +159,12 @@ func (handler *Handler) GetLibraryFoldersHandler(c *gin.Context) {
 	if !isPaginationValid {
 		return
 	}
+	sort, isSortValid := parseCatalogSortQuery(c, false)
+	if !isSortValid {
+		return
+	}
 	handler.respondLibraryTracks(c, "GetMusicLibraryFolders", "Fetching music folders catalog", func() (any, error) {
-		return handler.service.GetLibraryFolders(page, pageSize)
+		return handler.service.GetLibraryFolders(page, pageSize, sort)
 	})
 }
 
@@ -157,6 +177,15 @@ func (handler *Handler) GetLibraryTracksByFolderHandler(c *gin.Context) {
 	handler.respondLibraryTracks(c, "GetMusicTracksByFolder", "Fetching music tracks by folder", func() (any, error) {
 		return handler.service.GetLibraryTracksByFolder(folderKey, page, pageSize)
 	})
+}
+
+func parseCatalogSortQuery(c *gin.Context, isYearAllowed bool) (CatalogSort, bool) {
+	sort, isValid := ParseCatalogSort(c.Query("sort"), c.Query("order"), isYearAllowed)
+	if !isValid {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_CATALOG_SORT")})
+		return CatalogSort{}, false
+	}
+	return sort, true
 }
 
 func (handler *Handler) respondLibraryTracks(c *gin.Context, name string, description string, run func() (any, error)) {

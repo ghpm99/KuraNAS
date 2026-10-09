@@ -1,7 +1,8 @@
 WITH folder_groups AS (
     SELECT
         COALESCE(NULLIF(TRIM(hf.parent_path), ''), '/') AS folder,
-        COUNT(*) AS track_count
+        COUNT(*) AS track_count,
+        MAX(hf.created_at) AS latest_added_at
     FROM
         home_file hf
     WHERE
@@ -16,7 +17,15 @@ SELECT
 FROM
     folder_groups
 ORDER BY
+    (
+        CASE
+            WHEN $2::TEXT = 'tracks' THEN track_count
+            WHEN $2::TEXT = 'recent' THEN EXTRACT(EPOCH FROM latest_added_at)::BIGINT
+        END
+    ) * (CASE WHEN $3::BOOLEAN THEN -1 ELSE 1 END) ASC NULLS LAST,
+    (CASE WHEN $2::TEXT = 'name' AND NOT $3::BOOLEAN THEN folder END) COLLATE "C" ASC,
+    (CASE WHEN $2::TEXT = 'name' AND $3::BOOLEAN THEN folder END) COLLATE "C" DESC,
     track_count DESC,
     folder COLLATE "C" ASC
 LIMIT
-    $2 OFFSET $3;
+    $4 OFFSET $5;

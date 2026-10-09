@@ -177,7 +177,7 @@ func TestCatalogServiceComposesPlaylistsHomeAndLibraryViews(t *testing.T) {
 		t.Fatalf("GetAutomaticPlaylists returned %+v", playlists)
 	}
 
-	home, err := service.GetHomeCatalog("client-1", 2)
+	home, err := service.GetHomeCatalog("client-1", 2, DefaultCatalogSort())
 	if err != nil {
 		t.Fatalf("GetHomeCatalog returned error: %v", err)
 	}
@@ -196,22 +196,22 @@ func TestCatalogServiceComposesPlaylistsHomeAndLibraryViews(t *testing.T) {
 		t.Fatalf("GetLibraryTracks returned %+v err=%v", tracks, err)
 	}
 
-	artists, err := service.GetLibraryArtists(0, 0)
+	artists, err := service.GetLibraryArtists(0, 0, DefaultCatalogSort())
 	if err != nil || len(artists.Items) != 1 || artists.Items[0].Artist != "Artist A" {
 		t.Fatalf("GetLibraryArtists returned %+v err=%v", artists, err)
 	}
 
-	albums, err := service.GetLibraryAlbums(1, 10)
+	albums, err := service.GetLibraryAlbums(1, 10, DefaultCatalogSort())
 	if err != nil || len(albums.Items) != 1 || albums.Items[0].Album != "Album One" {
 		t.Fatalf("GetLibraryAlbums returned %+v err=%v", albums, err)
 	}
 
-	genres, err := service.GetLibraryGenres(1, 10)
+	genres, err := service.GetLibraryGenres(1, 10, DefaultCatalogSort())
 	if err != nil || len(genres.Items) != 1 || genres.Items[0].Genre != "Hip-Hop" {
 		t.Fatalf("GetLibraryGenres returned %+v err=%v", genres, err)
 	}
 
-	folders, err := service.GetLibraryFolders(1, 10)
+	folders, err := service.GetLibraryFolders(1, 10, DefaultCatalogSort())
 	if err != nil || len(folders.Items) != 1 || folders.Items[0].Folder != "/music/a" {
 		t.Fatalf("GetLibraryFolders returned %+v err=%v", folders, err)
 	}
@@ -315,10 +315,10 @@ func TestCatalogServiceErrorBranchesAndFallbacks(t *testing.T) {
 	if _, err := service.GetAutomaticPlaylists("client-1"); !errors.Is(err, errBoom) {
 		t.Fatalf("GetAutomaticPlaylists error = %v", err)
 	}
-	if _, err := service.GetHomeCatalog("client-1", 0); !errors.Is(err, errBoom) {
+	if _, err := service.GetHomeCatalog("client-1", 0, DefaultCatalogSort()); !errors.Is(err, errBoom) {
 		t.Fatalf("GetHomeCatalog error = %v", err)
 	}
-	if _, err := service.GetLibraryArtists(1, 10); !errors.Is(err, errBoom) {
+	if _, err := service.GetLibraryArtists(1, 10, DefaultCatalogSort()); !errors.Is(err, errBoom) {
 		t.Fatalf("GetLibraryArtists error = %v", err)
 	}
 	if _, err := service.GetLibraryTracksByArtist("a", 1, 10); !errors.Is(err, errBoom) {
