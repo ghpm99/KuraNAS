@@ -20,6 +20,7 @@ import { getTrackCoverUrl } from '@/service/musicCover';
 import { getMusicArtist, getMusicTitle } from '@/utils/music';
 import { formatPlaybackTime } from './formatPlaybackTime';
 import { nextRepeatMode } from './nextRepeatMode';
+import { useSeekSlider } from './useSeekSlider';
 import { supportsProgrammaticVolume } from './supportsProgrammaticVolume';
 import styles from './ExpandedPlayerSheet.module.css';
 
@@ -58,6 +59,10 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
     const trackArtist = currentTrack ? getMusicArtist(currentTrack) : '';
     const safeCurrentTime = Number.isFinite(currentTime) ? currentTime : 0;
     const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const { sliderPosition, handleSliderChange, handleSliderCommit } = useSeekSlider({
+        playbackPosition: safeCurrentTime,
+        seek,
+    });
     const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
     const isRepeatActive = repeatMode !== 'none';
 
@@ -126,12 +131,13 @@ const ExpandedPlayerSheet = ({ isOpen, onOpen, onClose }: ExpandedPlayerSheetPro
                 )}
 
                 <Box className={styles.timeRow}>
-                    <Typography variant="caption">{formatPlaybackTime(safeCurrentTime)}</Typography>
+                    <Typography variant="caption">{formatPlaybackTime(sliderPosition)}</Typography>
                     <Slider
                         aria-label={t('PLAYER_ARIA_SEEK')}
-                        value={safeCurrentTime}
+                        value={sliderPosition}
                         max={safeDuration || 100}
-                        onChange={(_, seekPosition) => seek(seekPosition as number)}
+                        onChange={handleSliderChange}
+                        onChangeCommitted={handleSliderCommit}
                     />
                     <Typography variant="caption">{formatPlaybackTime(safeDuration)}</Typography>
                 </Box>
