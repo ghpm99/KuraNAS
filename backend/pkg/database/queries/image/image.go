@@ -147,3 +147,18 @@ var UpdateImageAIClassificationQuery string
 
 //go:embed select_images_without_metadata.sql
 var SelectImagesWithoutMetadataQuery string
+
+//go:embed library_cameras_facet_select.sql
+var LibraryCamerasFacetSelectQuery string
+
+//go:embed library_cameras_facet_group.sql
+var LibraryCamerasFacetGroupQuery string
+
+//go:embed library_filter_has_camera.sql
+var LibraryFilterHasCameraQuery string
+
+//go:embed library_formats_facet_select.sql
+var LibraryFormatsFacetSelectQuery string
+
+//go:embed library_formats_facet_group.sql
+var LibraryFormatsFacetGroupQuery string

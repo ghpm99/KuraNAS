@@ -12,6 +12,8 @@ type LibraryRepositoryInterface interface {
 	CountLibraryImages(filter LibraryFilter) (int, error)
 	ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketModel, error)
 	ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error)
+	ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetModel, error)
+	ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetModel, error)
 }
 
 // LibraryListRequest is a gallery page request as parsed from the HTTP layer.
@@ -46,4 +48,6 @@ type LibraryServiceInterface interface {
 	CountLibraryImages(filter LibraryFilter) (LibraryCountDto, error)
 	ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketDto, error)
 	ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error)
+	ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetDto, error)
+	ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetDto, error)
 }

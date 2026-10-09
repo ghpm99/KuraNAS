@@ -22,6 +22,8 @@ type fakeLibraryService struct {
 	page          LibraryPageDto
 	count         LibraryCountDto
 	buckets       []LibraryTimelineBucketDto
+	cameraFacets  []LibraryCameraFacetDto
+	formatFacets  []LibraryFormatFacetDto
 	listRequest   LibraryListRequest
 	filterGotten  LibraryFilter
 	callCount     int
@@ -55,6 +57,18 @@ func (f *fakeLibraryService) ListLibraryTimeline(filter LibraryFilter) ([]Librar
 	return f.buckets, f.err
 }
 
+func (f *fakeLibraryService) ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetDto, error) {
+	f.callCount++
+	f.filterGotten = filter
+	return f.cameraFacets, f.err
+}
+
+func (f *fakeLibraryService) ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetDto, error) {
+	f.callCount++
+	f.filterGotten = filter
+	return f.formatFacets, f.err
+}
+
 func (f *fakeLibraryService) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
 	f.callCount++
 	f.folderRequest = request
@@ -70,6 +84,8 @@ func serveLibraryRequest(service *fakeLibraryService, requestURL string) *httpte
 	router.GET("/image/library/count", handler.CountLibraryImagesHandler)
 	router.GET("/image/library/folders", handler.ListLibraryFoldersHandler)
 	router.GET("/image/library/timeline", handler.ListLibraryTimelineHandler)
+	router.GET("/image/library/facets/cameras", handler.ListLibraryCameraFacetsHandler)
+	router.GET("/image/library/facets/formats", handler.ListLibraryFormatFacetsHandler)
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, requestURL, nil))
@@ -181,7 +197,7 @@ func TestLibraryHandlersRejectInvalidParameters(t *testing.T) {
 	}
 
 	for name, rawQuery := range invalidQueries {
-		for _, route := range []string{"/image/library", "/image/library/count", "/image/library/timeline"} {
+		for _, route := range []string{"/image/library", "/image/library/count", "/image/library/timeline", "/image/library/facets/cameras", "/image/library/facets/formats"} {
 			if route != "/image/library" && !libraryFilterParameterNames[name] {
 				continue
 			}
@@ -242,6 +258,47 @@ func TestListLibraryTimelineHandler(t *testing.T) {
 	}
 	if service.filterGotten.Camera != "Canon" {
 		t.Fatalf("unexpected filter %+v", service.filterGotten)
+	}
+}
+
+func TestListLibraryCameraFacetsHandler(t *testing.T) {
+	service := &fakeLibraryService{cameraFacets: []LibraryCameraFacetDto{{Camera: "Canon EOS", Count: 7}}}
+	recorder := serveLibraryRequest(service, "/image/library/facets/cameras?format=jpg&starred=true")
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	var body []map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil || len(body) != 1 || body[0]["camera"] != "Canon EOS" || body[0]["count"] != float64(7) {
+		t.Fatalf("body = %s err %v", recorder.Body.String(), err)
+	}
+	if !service.filterGotten.OnlyStarred || len(service.filterGotten.Formats) != 1 {
+		t.Fatalf("unexpected filter %+v", service.filterGotten)
+	}
+}
+
+func TestListLibraryFormatFacetsHandler(t *testing.T) {
+	service := &fakeLibraryService{formatFacets: []LibraryFormatFacetDto{{Format: "jpg", Count: 4}}}
+	recorder := serveLibraryRequest(service, "/image/library/facets/formats?camera=Canon")
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	var body []map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil || len(body) != 1 || body[0]["format"] != "jpg" || body[0]["count"] != float64(4) {
+		t.Fatalf("body = %s err %v", recorder.Body.String(), err)
+	}
+	if service.filterGotten.Camera != "Canon" {
+		t.Fatalf("unexpected filter %+v", service.filterGotten)
+	}
+}
+
+func TestLibraryFacetHandlersRejectInvalidFilter(t *testing.T) {
+	for _, route := range []string{"/image/library/facets/cameras?format=exe", "/image/library/facets/formats?starred=maybe"} {
+		recorder := serveLibraryRequest(&fakeLibraryService{}, route)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status = %d", route, recorder.Code)
+		}
 	}
 }
 

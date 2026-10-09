@@ -13,6 +13,8 @@ type fakeLibraryRepository struct {
 	items       []LibraryItemModel
 	total       int
 	buckets     []LibraryTimelineBucketModel
+	cameras     []LibraryCameraFacetModel
+	formats     []LibraryFormatFacetModel
 	err         error
 	listQuery   LibraryListQuery
 	countFilter LibraryFilter
@@ -46,6 +48,16 @@ func (f *fakeLibraryRepository) CountLibraryImages(filter LibraryFilter) (int, e
 func (f *fakeLibraryRepository) ListLibraryTimeline(filter LibraryFilter) ([]LibraryTimelineBucketModel, error) {
 	f.countFilter = filter
 	return f.buckets, f.err
+}
+
+func (f *fakeLibraryRepository) ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetModel, error) {
+	f.countFilter = filter
+	return f.cameras, f.err
+}
+
+func (f *fakeLibraryRepository) ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetModel, error) {
+	f.countFilter = filter
+	return f.formats, f.err
 }
 
 func (f *fakeLibraryRepository) ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error) {
@@ -308,5 +320,39 @@ func TestListLibraryNeighborsPropagatesNewerSideError(t *testing.T) {
 	service := NewLibraryService(&olderFailingLibraryRepository{})
 	if _, err := service.ListLibraryNeighbors(LibraryNeighborsRequest{FileID: 1, Count: 5}); err == nil {
 		t.Fatal("expected the newer side error")
+	}
+}
+
+func TestLibraryServiceFacetsMapModelsToDtos(t *testing.T) {
+	useLibraryTestRoot(t)
+	repository := &fakeLibraryRepository{
+		cameras: []LibraryCameraFacetModel{{Camera: "Canon EOS", Count: 5}},
+		formats: []LibraryFormatFacetModel{{Format: ".jpg", Count: 9}},
+	}
+	service := NewLibraryService(repository)
+
+	cameras, err := service.ListLibraryCameraFacets(LibraryFilter{Folder: "data/trip"})
+	if err != nil || len(cameras) != 1 || cameras[0] != (LibraryCameraFacetDto{Camera: "Canon EOS", Count: 5}) {
+		t.Fatalf("cameras = %+v err %v", cameras, err)
+	}
+	if repository.countFilter.Folder == "data/trip" {
+		t.Fatalf("folder was not resolved on disk: %q", repository.countFilter.Folder)
+	}
+
+	formats, err := service.ListLibraryFormatFacets(LibraryFilter{})
+	if err != nil || len(formats) != 1 || formats[0] != (LibraryFormatFacetDto{Format: "jpg", Count: 9}) {
+		t.Fatalf("formats = %+v err %v", formats, err)
+	}
+}
+
+func TestLibraryServiceFacetsPropagateRepositoryError(t *testing.T) {
+	repositoryErr := errors.New("db down")
+	service := NewLibraryService(&fakeLibraryRepository{err: repositoryErr})
+
+	if _, err := service.ListLibraryCameraFacets(LibraryFilter{}); !errors.Is(err, repositoryErr) {
+		t.Fatalf("cameras err = %v", err)
+	}
+	if _, err := service.ListLibraryFormatFacets(LibraryFilter{}); !errors.Is(err, repositoryErr) {
+		t.Fatalf("formats err = %v", err)
 	}
 }

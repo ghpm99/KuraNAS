@@ -3,6 +3,7 @@ package image
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/roots"
@@ -112,6 +113,32 @@ func (s *LibraryService) ListLibraryTimeline(filter LibraryFilter) ([]LibraryTim
 		})
 	}
 	return buckets, nil
+}
+
+func (s *LibraryService) ListLibraryCameraFacets(filter LibraryFilter) ([]LibraryCameraFacetDto, error) {
+	facetModels, err := s.repository.ListLibraryCameraFacets(resolveFolderOnDisk(filter))
+	if err != nil {
+		return nil, fmt.Errorf("ListLibraryCameraFacets: %w", err)
+	}
+
+	facets := make([]LibraryCameraFacetDto, 0, len(facetModels))
+	for _, facetModel := range facetModels {
+		facets = append(facets, LibraryCameraFacetDto{Camera: facetModel.Camera, Count: facetModel.Count})
+	}
+	return facets, nil
+}
+
+func (s *LibraryService) ListLibraryFormatFacets(filter LibraryFilter) ([]LibraryFormatFacetDto, error) {
+	facetModels, err := s.repository.ListLibraryFormatFacets(resolveFolderOnDisk(filter))
+	if err != nil {
+		return nil, fmt.Errorf("ListLibraryFormatFacets: %w", err)
+	}
+
+	facets := make([]LibraryFormatFacetDto, 0, len(facetModels))
+	for _, facetModel := range facetModels {
+		facets = append(facets, LibraryFormatFacetDto{Format: strings.TrimPrefix(facetModel.Format, "."), Count: facetModel.Count})
+	}
+	return facets, nil
 }
 
 func resolveFolderOnDisk(filter LibraryFilter) LibraryFilter {

@@ -35,6 +35,16 @@ type LibraryCountDto struct {
 	Total int `json:"total"`
 }
 
+type LibraryCameraFacetDto struct {
+	Camera string `json:"camera"`
+	Count  int    `json:"count"`
+}
+
+type LibraryFormatFacetDto struct {
+	Format string `json:"format"`
+	Count  int    `json:"count"`
+}
+
 type LibraryTimelineBucketDto struct {
 	Year  int `json:"year"`
 	Month int `json:"month"`

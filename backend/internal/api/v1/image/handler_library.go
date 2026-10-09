@@ -149,3 +149,43 @@ func (h *LibraryHandler) ListLibraryTimelineHandler(c *gin.Context) {
 	h.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, buckets)
 }
+
+// ListLibraryCameraFacetsHandler serves GET /image/library/facets/cameras.
+func (h *LibraryHandler) ListLibraryCameraFacetsHandler(c *gin.Context) {
+	loggerModel := h.startLog(c, "ListLibraryCameraFacets", "Listing gallery camera facets")
+
+	filter, err := parseLibraryFilter(c)
+	if err != nil {
+		h.rejectInvalidRequest(c, loggerModel, err)
+		return
+	}
+
+	facets, err := h.service.ListLibraryCameraFacets(filter)
+	if err != nil {
+		h.failInternally(c, loggerModel, err)
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, facets)
+}
+
+// ListLibraryFormatFacetsHandler serves GET /image/library/facets/formats.
+func (h *LibraryHandler) ListLibraryFormatFacetsHandler(c *gin.Context) {
+	loggerModel := h.startLog(c, "ListLibraryFormatFacets", "Listing gallery format facets")
+
+	filter, err := parseLibraryFilter(c)
+	if err != nil {
+		h.rejectInvalidRequest(c, loggerModel, err)
+		return
+	}
+
+	facets, err := h.service.ListLibraryFormatFacets(filter)
+	if err != nil {
+		h.failInternally(c, loggerModel, err)
+		return
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, facets)
+}
