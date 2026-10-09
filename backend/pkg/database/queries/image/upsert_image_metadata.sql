@@ -161,9 +161,21 @@ SET
     user_comment = EXCLUDED.user_comment,
     copyright = EXCLUDED.copyright,
     artist = EXCLUDED.artist,
-    classification_category = EXCLUDED.classification_category,
-    classification_confidence = EXCLUDED.classification_confidence,
-    classification_suggested_name = EXCLUDED.classification_suggested_name,
+    classification_category = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_category
+        ELSE EXCLUDED.classification_category
+    END,
+    classification_confidence = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_confidence
+        ELSE EXCLUDED.classification_confidence
+    END,
+    classification_suggested_name = CASE
+        WHEN EXCLUDED.ai_classified_at IS NULL AND image_metadata.ai_classified_at IS NOT NULL
+            THEN image_metadata.classification_suggested_name
+        ELSE EXCLUDED.classification_suggested_name
+    END,
     ai_classified_at = COALESCE(EXCLUDED.ai_classified_at, image_metadata.ai_classified_at),
     taken_at = EXCLUDED.taken_at
 RETURNING

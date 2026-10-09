@@ -31,7 +31,7 @@ Decisões tomadas na revisão: marcação por conteúdo usa a cadeia de IA já c
 - [x] 12. Viewer: navegar além do carregado (vizinhos), pan/pinça/swipe, baixar original, girar, local no disco, GPS, atalhos ignoram campos de texto
 - [x] 13. Álbuns reais (criar, renomear, apagar, adicionar/remover, capa)
 - [ ] 14. Busca por conteúdo: tags, legenda e OCR pela IA em passo assíncrono, pesquisáveis
-- [ ] 15. Indexação: IA fora do caminho crítico do metadata
+- [x] 15. Indexação: IA fora do caminho crítico do metadata
 - [ ] 16. Facetas de câmera e formato como filtros
 - [x] 17. Desempenho do cliente: sem recomputar pastas/álbuns sobre tudo, refetch no foco limitado
 - [ ] 18. Duplicadas acessíveis a partir da galeria

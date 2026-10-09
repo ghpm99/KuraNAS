@@ -256,6 +256,10 @@ func startWorkersScheduler(context *WorkerContext) {
 		)
 	}
 
+	if err := enqueueImageMetadataReconcileJob(context); err != nil {
+		log.Printf("failed to enqueue image_metadata_reconcile job: %v\n", err)
+	}
+
 	if err := enqueueAIPlaylistClusterJob(context); err != nil {
 		log.Printf("failed to enqueue ai_playlist_cluster job: %v\n", err)
 	}

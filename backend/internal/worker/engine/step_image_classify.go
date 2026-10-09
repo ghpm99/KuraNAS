@@ -1,128 +1,172 @@
 package engine
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
-	"log"
+	"time"
 
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/worker/job"
+	"nas-go/api/pkg/ai"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 )
 
-// imageClassifyEnumerateBatchSize bounds how many pending images are pulled per
-// keyset page while enumerating, so a large backfill never loads the whole set
-// into memory at once.
-const imageClassifyEnumerateBatchSize = 500
+const (
+	imageClassifyPageSize                = 100
+	imageClassifyMaxConsecutiveFailures  = 5
+	imageClassifyBackfillNotificationKey = "image_classify_backfill"
+)
 
-// executeImageClassifyEnumerateStep walks the images still awaiting AI
-// classification and enqueues one metadata-only job per file. The metadata step
-// re-runs classification (calling the AI when the toggle is on) and stamps
-// ai_classified_at, which removes the file from the pending set.
-func executeImageClassifyEnumerateStep(context *WorkerContext, step jobs.StepModel) error {
-	if context == nil || context.ImageRepository == nil || context.JobOrchestrator == nil {
-		return fmt.Errorf("image repository and job orchestrator are required for image classify enumerate step")
+var imageClassifyCallTimeout = 60 * time.Second
+
+var errImageClassifyAborted = errors.New("image classify aborted after consecutive AI failures")
+
+type imageClassifyOutcome struct {
+	classified int
+	failed     int
+}
+
+func executeImageClassifyBatchStep(workerContext *WorkerContext, step jobs.StepModel) error {
+	if workerContext == nil || workerContext.ImageRepository == nil || workerContext.FilesService == nil {
+		return fmt.Errorf("image repository and files service are required for image classify step")
 	}
 
-	// Respect the toggle: with AI image classification disabled the per-file
-	// metadata steps would not call the AI, so the backfill would be a no-op.
-	if context.AISettings != nil {
-		enabled, err := context.AISettings.IsAIImageClassificationEnabled()
-		if err != nil {
-			return fmt.Errorf("image classify enumerate: read AI setting: %w", err)
-		}
-		if !enabled {
-			emitNotification(
-				context,
-				"info",
-				i18n.GetMessage("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DISABLED_TITLE"),
-				i18n.GetMessage("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DISABLED_MESSAGE"),
-				"image_classify_backfill",
-			)
-			return ErrStepSkipped
-		}
-	}
-
-	enqueued := 0
-	afterFileID := 0
-	for {
-		pending, err := context.ImageRepository.ListPendingAIClassification(
-			imagedom.AIClassificationConfidenceThreshold,
-			afterFileID,
-			imageClassifyEnumerateBatchSize,
+	aiService := aiServiceForImageClassification(workerContext)
+	if aiService == nil {
+		emitNotification(
+			workerContext,
+			"info",
+			i18n.GetMessage("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DISABLED_TITLE"),
+			i18n.GetMessage("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DISABLED_MESSAGE"),
+			imageClassifyBackfillNotificationKey,
 		)
-		if err != nil {
-			return fmt.Errorf("image classify enumerate: list pending: %w", err)
-		}
-		if len(pending) == 0 {
-			break
-		}
+		return ErrStepSkipped
+	}
 
-		for _, item := range pending {
-			afterFileID = item.FileID
+	outcome, err := classifyPendingImages(workerContext, aiService)
+	if err != nil {
+		return err
+	}
 
-			plan, planErr := buildImageClassifyMetadataPlan(item)
-			if planErr != nil {
-				log.Printf("[image-classify] skipping file %q: %v\n", item.Path, planErr)
-				continue
-			}
-
-			jobID, createErr := context.JobOrchestrator.CreateJob(plan)
-			if createErr != nil {
-				return fmt.Errorf("image classify enumerate: create job for %q: %w", item.Path, createErr)
-			}
-			if jobID > 0 {
-				enqueued++
-			}
-		}
-
-		if len(pending) < imageClassifyEnumerateBatchSize {
-			break
-		}
+	if outcome.classified == 0 && outcome.failed == 0 {
+		return ErrStepSkipped
 	}
 
 	emitNotification(
-		context,
+		workerContext,
 		"info",
 		i18n.GetMessage("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DONE_TITLE"),
-		i18n.Translate("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DONE_MESSAGE", enqueued),
-		"image_classify_backfill",
+		i18n.Translate("NOTIFICATION_IMAGE_CLASSIFY_BACKFILL_DONE_MESSAGE", outcome.classified),
+		imageClassifyBackfillNotificationKey,
 	)
+	return nil
+}
 
-	if enqueued == 0 {
+func classifyPendingImages(workerContext *WorkerContext, aiService ai.ServiceInterface) (imageClassifyOutcome, error) {
+	outcome := imageClassifyOutcome{}
+	consecutiveFailures := 0
+	afterFileID := 0
+
+	for {
+		pendingImages, err := workerContext.ImageRepository.ListPendingAIClassification(
+			imagedom.AIClassificationConfidenceThreshold,
+			afterFileID,
+			imageClassifyPageSize,
+		)
+		if err != nil {
+			return outcome, fmt.Errorf("image classify: list pending: %w", err)
+		}
+		if len(pendingImages) == 0 {
+			return outcome, nil
+		}
+
+		for _, pendingImage := range pendingImages {
+			afterFileID = pendingImage.FileID
+
+			classifyErr := classifyPendingImage(workerContext, aiService, pendingImage)
+			if errors.Is(classifyErr, ErrStepSkipped) {
+				continue
+			}
+			if classifyErr != nil {
+				outcome.failed++
+				consecutiveFailures++
+				applog.Warn("image AI classification failed",
+					"file_id", pendingImage.FileID, "path", pendingImage.Path, "error", classifyErr.Error())
+				if consecutiveFailures >= imageClassifyMaxConsecutiveFailures {
+					return outcome, fmt.Errorf("%w: last error: %v", errImageClassifyAborted, classifyErr)
+				}
+				continue
+			}
+
+			outcome.classified++
+			consecutiveFailures = 0
+		}
+
+		if len(pendingImages) < imageClassifyPageSize {
+			return outcome, nil
+		}
+	}
+}
+
+func classifyPendingImage(workerContext *WorkerContext, aiService ai.ServiceInterface, pendingImage imagedom.PendingImageClassification) error {
+	fileDto, err := workerContext.FilesService.GetFileById(pendingImage.FileID)
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrStepSkipped
+	}
+	if err != nil {
+		return fmt.Errorf("load file: %w", err)
+	}
+
+	metadata, err := workerContext.ImageRepository.GetImageMetadataByID(pendingImage.MetadataID)
+	if err != nil {
+		return fmt.Errorf("load image metadata: %w", err)
+	}
+
+	callContext, cancel := context.WithTimeout(context.Background(), imageClassifyCallTimeout)
+	defer cancel()
+
+	classification, err := imagedom.ClassifyImageByAI(callContext, fileDto, metadata, aiService)
+	if err != nil {
+		return err
+	}
+
+	if err := workerContext.ImageRepository.UpdateAIClassification(pendingImage.FileID, classification); err != nil {
+		return fmt.Errorf("store AI classification: %w", err)
 	}
 	return nil
 }
 
-// buildImageClassifyMetadataPlan builds a metadata-only job for a single
-// already-indexed image. The file is unchanged, so checksum/persist/thumbnail
-// are skipped; only the metadata step (which reclassifies) runs. The path scope
-// makes the orchestrator dedupe against any pending job for the same file.
-func buildImageClassifyMetadataPlan(item imagedom.PendingImageClassification) (PlannedJob, error) {
-	fileID := item.FileID
-	payload, err := marshalPayload(StepFilePayload{
-		FileID: fileID,
-		Path:   item.Path,
-	})
-	if err != nil {
-		return PlannedJob{}, fmt.Errorf("marshal image classify payload: %w", err)
-	}
-
+func buildImageAIClassifyPlan() PlannedJob {
 	return PlannedJob{
-		Type:     job.JobTypeFSEvent,
+		Type:     job.JobTypeImageClassifyBackfill,
 		Priority: job.JobPriorityLow,
-		Scope: job.JobScope{
-			Path:   item.Path,
-			FileID: &fileID,
-		},
+		Scope:    job.JobScope{Path: imagedom.AIClassificationJobScopePath},
 		Steps: []PlannedStep{
 			{
-				Key:         "metadata",
-				Type:        job.StepTypeMetadata,
-				MaxAttempts: 3,
-				Payload:     payload,
+				Key:         "classify",
+				Type:        job.StepTypeImageClassifyBatch,
+				MaxAttempts: 1,
 			},
 		},
-	}, nil
+	}
+}
+
+func enqueueImageAIClassifyIfNeeded(workerContext *WorkerContext, classification imagedom.ClassificationModel, filePath string) {
+	if workerContext == nil || workerContext.JobOrchestrator == nil {
+		return
+	}
+	if classification.Confidence >= imagedom.AIClassificationConfidenceThreshold {
+		return
+	}
+	if aiServiceForImageClassification(workerContext) == nil {
+		return
+	}
+
+	if _, err := workerContext.JobOrchestrator.CreateJob(buildImageAIClassifyPlan()); err != nil {
+		applog.Warn("failed to enqueue image AI classification job", "path", filePath, "error", err.Error())
+	}
 }

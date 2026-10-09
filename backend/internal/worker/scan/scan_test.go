@@ -91,22 +91,22 @@ func TestGetMetadataDispatchByFormat(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner, nil)
+	imgMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.jpg", Format: ".jpg"}, runner)
 	if err != nil || imgMeta == nil {
 		t.Fatalf("expected image metadata dispatch success, err=%v", err)
 	}
 
-	audioMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner, nil)
+	audioMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.mp3", Format: ".mp3"}, runner)
 	if err != nil || audioMeta == nil {
 		t.Fatalf("expected audio metadata dispatch success, err=%v", err)
 	}
 
-	videoMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner, nil)
+	videoMeta, err := GetMetadata(files.FileDto{ID: 1, Path: "/x.mp4", Format: ".mp4"}, runner)
 	if err != nil || videoMeta == nil {
 		t.Fatalf("expected video metadata dispatch success, err=%v", err)
 	}
 
-	nilMeta, err := GetMetadata(files.FileDto{Format: ".txt"}, runner, nil)
+	nilMeta, err := GetMetadata(files.FileDto{Format: ".txt"}, runner)
 	if err != nil || nilMeta != nil {
 		t.Fatalf("expected nil metadata for unsupported format, got meta=%v err=%v", nilMeta, err)
 	}
@@ -129,7 +129,7 @@ func TestMetadataHelpers(t *testing.T) {
 		}
 	}
 
-	imgMeta, err := getImageMetadata(files.FileDto{ID: 1, Path: "/img.png"}, runner, nil)
+	imgMeta, err := getImageMetadata(files.FileDto{ID: 1, Path: "/img.png"}, runner)
 	if err != nil || imgMeta.Format != "PNG" {
 		t.Fatalf("expected image metadata, err=%v", err)
 	}
@@ -148,7 +148,7 @@ func TestMetadataHelpers(t *testing.T) {
 	errRunner := func(scriptType utils.ScriptType, filePath string) (string, error) {
 		return "", errors.New("runner failed")
 	}
-	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner, nil); err != nil {
+	if _, err := getImageMetadata(files.FileDto{ID: 2, Path: "/err.png"}, errRunner); err != nil {
 		t.Fatalf("image metadata must degrade instead of failing, got %v", err)
 	}
 	if _, err := getAudioMetadata(files.FileDto{ID: 2, Path: "/err.mp3"}, errRunner); err == nil {

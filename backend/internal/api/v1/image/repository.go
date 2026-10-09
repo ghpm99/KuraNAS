@@ -231,7 +231,7 @@ func (r *Repository) ListPendingAIClassification(confidenceThreshold float64, af
 
 		for rows.Next() {
 			var item PendingImageClassification
-			if err := rows.Scan(&item.FileID, &item.Path); err != nil {
+			if err := rows.Scan(&item.FileID, &item.Path, &item.MetadataID); err != nil {
 				return err
 			}
 			pending = append(pending, item)
@@ -242,6 +242,51 @@ func (r *Repository) ListPendingAIClassification(confidenceThreshold float64, af
 		return nil, fmt.Errorf("falha ao listar imagens pendentes de classificação por IA: %w", err)
 	}
 	return pending, nil
+}
+
+// UpdateAIClassification stores the AI classification of an already indexed
+// image and stamps ai_classified_at.
+func (r *Repository) UpdateAIClassification(fileID int, classification ClassificationModel) error {
+	err := r.Db.ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec(
+			queries.UpdateImageAIClassificationQuery,
+			fileID,
+			classification.Category,
+			classification.Confidence,
+			classification.SuggestedName,
+		)
+		return execErr
+	})
+	if err != nil {
+		return fmt.Errorf("falha ao salvar classificação por IA da imagem: %w", err)
+	}
+	return nil
+}
+
+// ListImagesWithoutMetadata returns a keyset page (file_id > afterFileID) of
+// active image files lacking an image_metadata row, ordered by file_id.
+func (r *Repository) ListImagesWithoutMetadata(afterFileID int, limit int) ([]ImageWithoutMetadata, error) {
+	missing := []ImageWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectImagesWithoutMetadataQuery, pq.Array(utils.ImageFormats), afterFileID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item ImageWithoutMetadata
+			if err := rows.Scan(&item.FileID, &item.Path); err != nil {
+				return err
+			}
+			missing = append(missing, item)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar imagens sem metadados: %w", err)
+	}
+	return missing, nil
 }
 
 func imageOrderByClause(groupBy ImageGroupBy) string {

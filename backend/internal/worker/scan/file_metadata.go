@@ -8,7 +8,6 @@ import (
 	imagedom "nas-go/api/internal/api/v1/image"
 	musicdom "nas-go/api/internal/api/v1/music"
 	videodom "nas-go/api/internal/api/v1/video"
-	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/img"
 	"nas-go/api/pkg/utils"
@@ -32,12 +31,12 @@ func SetPythonScriptRunnerForTesting(runner func(scriptType utils.ScriptType, fi
 	PythonScriptRunner = runner
 }
 
-func GetMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (any, error) {
+func GetMetadata(fileDto files.FileDto, runner ScriptRunner) (any, error) {
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
 
 	switch formatType.Type {
 	case utils.FormatTypeImage:
-		return getImageMetadata(fileDto, runner, aiService)
+		return getImageMetadata(fileDto, runner)
 	case utils.FormatTypeAudio:
 		return getAudioMetadata(fileDto, runner)
 	case utils.FormatTypeVideo:
@@ -57,7 +56,7 @@ func SetImageStillConverterForTesting(converter img.StillImageConverter) {
 	imageStillConverter = converter
 }
 
-func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.ServiceInterface) (imagedom.MetadataModel, error) {
+func getImageMetadata(fileDto files.FileDto, runner ScriptRunner) (imagedom.MetadataModel, error) {
 	metadata := imagedom.MetadataModel{
 		FileId: fileDto.ID,
 		Path:   fileDto.Path,
@@ -73,7 +72,7 @@ func getImageMetadata(fileDto files.FileDto, runner ScriptRunner, aiService ai.S
 	}
 
 	fillMissingImageDimensions(&metadata, contentPath, fileDto.Format)
-	metadata.Classification = imagedom.ClassifyImageWithAI(fileDto, metadata, aiService)
+	metadata.Classification = imagedom.ClassifyImage(fileDto, metadata)
 
 	return metadata, nil
 }

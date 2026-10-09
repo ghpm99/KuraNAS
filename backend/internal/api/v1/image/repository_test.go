@@ -207,16 +207,16 @@ func TestListPendingAIClassification_Success(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SelectPendingAIClassificationQuery)).
 		WithArgs(AIClassificationConfidenceThreshold, 0, 500).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "path"}).
-			AddRow(1, "/a.jpg").
-			AddRow(2, "/b.jpg"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "path", "metadata_id"}).
+			AddRow(1, "/a.jpg", 11).
+			AddRow(2, "/b.jpg", 12))
 	mock.ExpectRollback()
 
 	items, err := repo.ListPendingAIClassification(AIClassificationConfidenceThreshold, 0, 500)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(items) != 2 || items[0].FileID != 1 || items[1].Path != "/b.jpg" {
+	if len(items) != 2 || items[0].FileID != 1 || items[0].MetadataID != 11 || items[1].Path != "/b.jpg" {
 		t.Fatalf("unexpected items: %+v", items)
 	}
 }
