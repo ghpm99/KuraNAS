@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrInvalidZipFile        = errors.New("invalid zip file")
+	ErrUnsafeArchiveEntry    = errors.New("unsafe archive entry path")
 	ErrUploadSessionNotFound = errors.New("upload session not found")
 	ErrUploadOffsetMismatch  = errors.New("upload offset mismatch")
 	ErrUploadIncomplete      = errors.New("upload incomplete")
