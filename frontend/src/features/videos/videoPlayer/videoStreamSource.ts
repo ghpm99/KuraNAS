@@ -21,6 +21,11 @@ export const buildRemuxVideoStreamUrl = (videoId: number, startSeconds: number):
     return startSeconds > 0 ? `${baseUrl}?start=${startSeconds.toFixed(3)}` : baseUrl;
 };
 
+export const buildTranscodeVideoStreamUrl = (videoId: number, startSeconds: number): string => {
+    const baseUrl = `${getApiV1BaseUrl()}/video/stream/${videoId}/transcode`;
+    return startSeconds > 0 ? `${baseUrl}?start=${startSeconds.toFixed(3)}` : baseUrl;
+};
+
 export const isContainerUnplayableByBrowser = (
     format: string | undefined,
     canPlayType: CanPlayType | undefined

@@ -8,6 +8,7 @@ import {
 import {
     buildDirectVideoStreamUrl,
     buildRemuxVideoStreamUrl,
+    buildTranscodeVideoStreamUrl,
     isContainerUnplayableByBrowser,
 } from '@/features/videos/videoPlayer/videoStreamSource';
 import {
@@ -18,7 +19,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
 
-type StreamMode = 'direct' | 'remux';
+type StreamMode = 'direct' | 'remux' | 'transcode';
+
+const TRANSCODE_FALLBACK_ERROR_KINDS: PlaybackErrorKind[] = ['unsupported', 'decode'];
+
+const findFallbackStreamMode = (
+    currentStreamMode: StreamMode,
+    errorKind: PlaybackErrorKind
+): StreamMode | null => {
+    if (currentStreamMode === 'direct' && errorKind === 'unsupported') return 'remux';
+    if (currentStreamMode === 'remux' && TRANSCODE_FALLBACK_ERROR_KINDS.includes(errorKind)) {
+        return 'transcode';
+    }
+    return null;
+};
 
 const findVideoFormat = (session: VideoPlaybackSessionDto | null, videoId: number) =>
     session?.playlist.items.find((item) => item.video.id === videoId)?.video.format;
@@ -43,9 +57,10 @@ const useVideoPlayer = ({
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const remuxOffsetSecondsRef = useRef<number | null>(null);
-    const fallBackToRemuxRef = useRef<(videoToPlayId: number, seekSeconds: number) => void>(
-        () => undefined
-    );
+    const streamModeRef = useRef<StreamMode>('direct');
+    const reloadWithStreamModeRef = useRef<
+        (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => void
+    >(() => undefined);
     const syncTimerRef = useRef<number | null>(null);
     const latestPlaybackRef = useRef({
         currentTime: 0,
@@ -79,9 +94,13 @@ const useVideoPlayer = ({
             const videoElement = videoRef.current;
             if (!videoElement) return;
             setPlaybackError(null);
-            if (streamMode === 'remux') {
+            streamModeRef.current = streamMode;
+            if (streamMode === 'remux' || streamMode === 'transcode') {
                 remuxOffsetSecondsRef.current = seekSeconds;
-                videoElement.src = buildRemuxVideoStreamUrl(videoToPlayId, seekSeconds);
+                videoElement.src =
+                    streamMode === 'remux'
+                        ? buildRemuxVideoStreamUrl(videoToPlayId, seekSeconds)
+                        : buildTranscodeVideoStreamUrl(videoToPlayId, seekSeconds);
                 setCurrentTime(seekSeconds);
             } else {
                 remuxOffsetSecondsRef.current = null;
@@ -95,8 +114,15 @@ const useVideoPlayer = ({
                 .then(() => setStatus('playing'))
                 .catch((rejection: unknown) => {
                     const errorKind = getPlaybackErrorKindFromPlayRejection(rejection);
-                    if (streamMode === 'direct' && errorKind === 'unsupported') {
-                        fallBackToRemuxRef.current(videoToPlayId, seekSeconds);
+                    const fallbackStreamMode = errorKind
+                        ? findFallbackStreamMode(streamMode, errorKind)
+                        : null;
+                    if (fallbackStreamMode) {
+                        reloadWithStreamModeRef.current(
+                            videoToPlayId,
+                            seekSeconds,
+                            fallbackStreamMode
+                        );
                         return;
                     }
                     setStatus('paused');
@@ -107,8 +133,7 @@ const useVideoPlayer = ({
     );
 
     useEffect(() => {
-        fallBackToRemuxRef.current = (videoToPlayId, seekSeconds) =>
-            loadStreamSource(videoToPlayId, seekSeconds, 'remux');
+        reloadWithStreamModeRef.current = loadStreamSource;
     }, [loadStreamSource]);
 
     const attachVideoSource = useCallback(
@@ -130,12 +155,14 @@ const useVideoPlayer = ({
         (errorKind: PlaybackErrorKind) => {
             const latest = latestPlaybackRef.current;
             const currentVideoId = latest.session?.playback_state.video_id;
-            const canFallBackToRemux =
-                errorKind === 'unsupported' &&
-                remuxOffsetSecondsRef.current === null &&
-                Boolean(currentVideoId);
-            if (canFallBackToRemux && currentVideoId) {
-                loadStreamSource(currentVideoId, latest.currentTime, 'remux');
+            if (!currentVideoId) {
+                setStatus('paused');
+                setPlaybackError(errorKind);
+                return;
+            }
+            const nextStreamMode = findFallbackStreamMode(streamModeRef.current, errorKind);
+            if (nextStreamMode) {
+                loadStreamSource(currentVideoId, latest.currentTime, nextStreamMode);
                 return;
             }
             setStatus('paused');
@@ -226,8 +253,8 @@ const useVideoPlayer = ({
         (time: number) => {
             if (!videoRef.current) return;
             const currentVideoId = latestPlaybackRef.current.session?.playback_state.video_id;
-            if (remuxOffsetSecondsRef.current !== null && currentVideoId) {
-                loadStreamSource(currentVideoId, time, 'remux');
+            if (streamModeRef.current !== 'direct' && currentVideoId) {
+                loadStreamSource(currentVideoId, time, streamModeRef.current);
                 return;
             }
             videoRef.current.currentTime = time;

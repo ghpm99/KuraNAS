@@ -334,11 +334,11 @@ describe('hooks/useVideoPlayer', () => {
         expect(result.current.playbackError).toBeNull();
     });
 
-    it('flags unsupported when remux play is also rejected', async () => {
+    it('flags unsupported when remux and transcode play are also rejected', async () => {
         const { result, fakeVideo } = await startWithRejectingNextPlay(
             new DOMException('nope', 'NotSupportedError')
         );
-        fakeVideo.play.mockImplementationOnce(() =>
+        fakeVideo.play.mockImplementation(() =>
             Promise.reject(new DOMException('nope', 'NotSupportedError'))
         );
         await act(async () => {
