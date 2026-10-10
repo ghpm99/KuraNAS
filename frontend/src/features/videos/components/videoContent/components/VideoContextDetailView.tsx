@@ -10,6 +10,7 @@ type VideoContextDetailViewProps = {
     playlist: VideoPlaylistDto;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -18,6 +19,7 @@ export default function VideoContextDetailView({
     playlist,
     onBack,
     onOpenVideo,
+    onSetWatched,
 }: VideoContextDetailViewProps) {
     const { t } = useI18n();
     const { orderedItems, completedCount, resumeItem } = useVideoPlaylistDetail(playlist);
@@ -94,7 +96,12 @@ export default function VideoContextDetailView({
                 </div>
                 <div className={styles.detailListStack}>
                     {orderedItems.map((item) => (
-                        <VideoDetailListItem key={item.id} item={item} onOpenVideo={onOpenVideo} />
+                        <VideoDetailListItem
+                            key={item.id}
+                            item={item}
+                            onOpenVideo={onOpenVideo}
+                            onSetWatched={onSetWatched}
+                        />
                     ))}
                 </div>
             </section>

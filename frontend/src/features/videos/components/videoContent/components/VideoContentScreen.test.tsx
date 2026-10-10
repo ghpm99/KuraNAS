@@ -134,6 +134,7 @@ const createContext = (
     renameSelectedPlaylist: jest.fn(),
     removeVideoFromSelectedPlaylist: jest.fn(),
     moveSelectedPlaylistItem: jest.fn(),
+    setVideoWatched: jest.fn(),
     ...overrides,
 });
 

@@ -4,12 +4,14 @@ import { type ReactNode } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoContinueItemDto } from '@/service/videoPlayback';
+import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
 type VideoContinueWatchingSectionProps = {
     items: VideoContinueItemDto[];
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     action?: ReactNode;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -25,6 +27,7 @@ export default function VideoContinueWatchingSection({
     items,
     onPlayVideo,
     action,
+    onSetWatched,
 }: VideoContinueWatchingSectionProps) {
     const { t } = useI18n();
 
@@ -79,6 +82,12 @@ export default function VideoContinueWatchingSection({
                                     >
                                         {t('VIDEO_PLAY')}
                                     </Button>
+                                    {onSetWatched && (
+                                        <VideoWatchedToggleButton
+                                            isWatched={false}
+                                            onToggle={() => onSetWatched(item.video.id, true)}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </article>

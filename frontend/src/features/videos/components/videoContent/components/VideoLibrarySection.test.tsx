@@ -164,4 +164,30 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
         expect(onLoadMore).toHaveBeenCalled();
     });
+
+    it('marks a library video as watched', () => {
+        const onSetWatched = jest.fn();
+        render(
+            <VideoLibrarySection
+                videos={videos}
+                playlists={playlists}
+                playlistMembershipMap={{}}
+                search=""
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+                onSetWatched={onSetWatched}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_WATCHED' }));
+
+        expect(onSetWatched).toHaveBeenCalledWith(5, true);
+    });
 });

@@ -22,6 +22,7 @@ import {
     removeVideoFromPlaylist,
     reorderVideoPlaylist,
     setVideoPlaylistHidden,
+    setVideoWatched,
     startVideoPlayback,
     updateVideoPlaybackState,
     updateVideoPlaylistName,
@@ -155,6 +156,20 @@ describe('service/videoPlayback', () => {
         });
         expect(mockedApi.put).toHaveBeenNthCalledWith(3, '/video/playlists/3', {
             name: 'Minha lista',
+        });
+    });
+
+    it('marks a video watched or unwatched through the progress endpoint', async () => {
+        mockedApi.put.mockResolvedValue({});
+
+        await setVideoWatched(7, true);
+        await setVideoWatched(7, false);
+
+        expect(mockedApi.put).toHaveBeenNthCalledWith(1, '/video/progress/7/watched', {
+            watched: true,
+        });
+        expect(mockedApi.put).toHaveBeenNthCalledWith(2, '/video/progress/7/watched', {
+            watched: false,
         });
     });
 

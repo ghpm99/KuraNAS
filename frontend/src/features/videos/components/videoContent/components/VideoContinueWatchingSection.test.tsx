@@ -67,4 +67,19 @@ describe('VideoContinueWatchingSection', () => {
         expect(onPlayVideo).toHaveBeenCalledTimes(1);
         expect(onPlayVideo).toHaveBeenCalledWith(2, null);
     });
+
+    it('marks a continue watching card as watched', () => {
+        const onSetWatched = jest.fn();
+        render(
+            <VideoContinueWatchingSection
+                items={[buildContinueItem(1, 25, 100), buildContinueItem(2, 90, 60)]}
+                onPlayVideo={jest.fn()}
+                onSetWatched={onSetWatched}
+            />
+        );
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'VIDEO_MARK_WATCHED' })[1]!);
+
+        expect(onSetWatched).toHaveBeenCalledWith(2, true);
+    });
 });

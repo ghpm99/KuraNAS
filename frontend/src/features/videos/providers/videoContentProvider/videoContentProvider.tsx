@@ -11,6 +11,7 @@ import {
     type VideoContinueItemDto,
     reorderVideoPlaylist,
     removeVideoFromPlaylist,
+    setVideoWatched,
     updateVideoPlaylistName,
     type VideoFileDto,
     type VideoPlaylistDto,
@@ -79,6 +80,7 @@ export interface VideoContentContextData {
     renameSelectedPlaylist: (name: string) => void;
     removeVideoFromSelectedPlaylist: (videoId: number) => void;
     moveSelectedPlaylistItem: (index: number, direction: -1 | 1) => void;
+    setVideoWatched: (videoId: number, watched: boolean) => void;
 }
 
 const VideoContentContext = createContext<VideoContentContextData | undefined>(undefined);
@@ -301,6 +303,64 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         onSuccess: () => invalidatePlaylistQueries(),
     });
 
+    const setWatchedMutation = useMutation({
+        mutationFn: ({ videoId, watched }: { videoId: number; watched: boolean }) =>
+            setVideoWatched(videoId, watched),
+        onMutate: async ({ videoId, watched }) => {
+            await Promise.all([
+                queryClient.cancelQueries({ queryKey: videoQueryKeys.continueWatching }),
+                queryClient.cancelQueries({ queryKey: ['video', 'playlist-detail'] }),
+            ]);
+            const previousContinueWatching = queryClient.getQueryData<VideoContinueItemDto[]>(
+                videoQueryKeys.continueWatching
+            );
+            const previousPlaylistDetails = queryClient.getQueriesData<VideoPlaylistDto>({
+                queryKey: ['video', 'playlist-detail'],
+            });
+
+            queryClient.setQueryData<VideoContinueItemDto[]>(
+                videoQueryKeys.continueWatching,
+                (continueItems) =>
+                    watched
+                        ? continueItems?.filter((item) => item.video.id !== videoId)
+                        : continueItems
+            );
+            queryClient.setQueriesData<VideoPlaylistDto>(
+                { queryKey: ['video', 'playlist-detail'] },
+                (playlistDetail) =>
+                    playlistDetail && {
+                        ...playlistDetail,
+                        items: playlistDetail.items.map((item) =>
+                            item.video.id === videoId
+                                ? {
+                                      ...item,
+                                      status: watched ? 'completed' : 'not_started',
+                                      progress_pct: watched ? 100 : 0,
+                                  }
+                                : item
+                        ),
+                    }
+            );
+
+            return { previousContinueWatching, previousPlaylistDetails };
+        },
+        onError: (_error, _variables, rollbackContext) => {
+            queryClient.setQueryData(
+                videoQueryKeys.continueWatching,
+                rollbackContext?.previousContinueWatching
+            );
+            rollbackContext?.previousPlaylistDetails.forEach(([queryKey, playlistDetail]) =>
+                queryClient.setQueryData(queryKey, playlistDetail)
+            );
+            setFeedback({
+                open: true,
+                message: t('VIDEO_WATCHED_ERROR'),
+                severity: 'error',
+            });
+        },
+        onSettled: () => invalidateAllVideoQueries(),
+    });
+
     const getCurrentRoute = () => `${location.pathname}${location.search}`;
 
     const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> =>
@@ -406,6 +466,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             renameMutation.mutate(name);
         },
         removeVideoFromSelectedPlaylist: (videoId) => removeFromPlaylistMutation.mutate(videoId),
+        setVideoWatched: (videoId, watched) => setWatchedMutation.mutate({ videoId, watched }),
         moveSelectedPlaylistItem: (index, direction) => {
             if (!selectedPlaylistDetail) return;
             const orderedItems = [...selectedPlaylistDetail.items].sort(
