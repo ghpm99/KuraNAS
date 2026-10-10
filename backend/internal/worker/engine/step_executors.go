@@ -240,6 +240,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 	// video metadata repository so files never imports video.
 	if videoMeta, ok := metadata.(videodom.VideoMetadataModel); ok {
 		videoMeta.FileId = fileDto.ID
+		videoMeta.ApplyClassification(fileDto.Name, fileDto.Path, fileDto.ParentPath)
 		if context.VideoMetadataRepository != nil {
 			dbCtx := context.VideoMetadataRepository.GetDbContext()
 			upsertErr := dbCtx.ExecTx(func(tx *sql.Tx) error {

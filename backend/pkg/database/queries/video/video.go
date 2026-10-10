@@ -144,3 +144,9 @@ var GetLibraryFoldersQuery string
 
 //go:embed get_library_folder_videos.sql
 var GetLibraryFolderVideosQuery string
+
+//go:embed update_video_metadata_classification.sql
+var UpdateVideoMetadataClassificationQuery string
+
+//go:embed select_videos_pending_classification.sql
+var SelectVideosPendingClassificationQuery string

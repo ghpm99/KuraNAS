@@ -38,6 +38,14 @@ func NewVideoClassifier() *VideoClassifier {
 
 // Classify retorna a classificacao do video e a confianca.
 func (c *VideoClassifier) Classify(video VideoEntry) ClassifiedVideo {
+	classified := c.classifyByRules(video)
+	if video.PersistedClassification != "" {
+		classified.Classification = video.PersistedClassification
+	}
+	return classified
+}
+
+func (c *VideoClassifier) classifyByRules(video VideoEntry) ClassifiedVideo {
 	var bestMatch *ClassificationRule
 	var bestConfidence float64
 

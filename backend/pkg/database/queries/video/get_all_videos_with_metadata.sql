@@ -16,6 +16,7 @@ SELECT
     vm.audio_channels,
     vm.audio_codec,
     vm.audio_sample_rate,
+    vm.classification,
     cap.title,
     cap.season,
     cap.episode

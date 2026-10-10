@@ -18,6 +18,7 @@ const (
 type videoMetadataReconcileOutcome struct {
 	reconciled int
 	failed     int
+	classified int
 }
 
 func executeVideoMetadataReconcileStep(workerContext *WorkerContext, step jobs.StepModel) error {
@@ -30,12 +31,18 @@ func executeVideoMetadataReconcileStep(workerContext *WorkerContext, step jobs.S
 		return err
 	}
 
-	applog.Info("video metadata reconcile finished", "reconciled", outcome.reconciled, "failed", outcome.failed)
-	if outcome.reconciled == 0 && outcome.failed == 0 {
+	outcome.classified, err = backfillVideoClassification(workerContext)
+	if err != nil {
+		return err
+	}
+
+	applog.Info("video metadata reconcile finished",
+		"reconciled", outcome.reconciled, "failed", outcome.failed, "classified", outcome.classified)
+	if outcome.reconciled == 0 && outcome.failed == 0 && outcome.classified == 0 {
 		return ErrStepSkipped
 	}
 
-	if outcome.reconciled == 0 {
+	if outcome.reconciled == 0 && outcome.classified == 0 {
 		return nil
 	}
 	return rebuildVideoPlaylistsAfterReconcile(workerContext)
@@ -79,6 +86,38 @@ func reconcileVideosWithoutMetadata(workerContext *WorkerContext) (videoMetadata
 
 		if len(missingVideos) < videoMetadataReconcilePageSize {
 			return outcome, nil
+		}
+	}
+}
+
+func backfillVideoClassification(workerContext *WorkerContext) (int, error) {
+	classified := 0
+	afterMetadataID := 0
+
+	for {
+		pendingVideos, err := workerContext.VideoMetadataRepository.ListVideosPendingClassification(afterMetadataID, videoMetadataReconcilePageSize)
+		if err != nil {
+			return classified, fmt.Errorf("video metadata reconcile: list videos pending classification: %w", err)
+		}
+		if len(pendingVideos) == 0 {
+			return classified, nil
+		}
+
+		for _, pendingVideo := range pendingVideos {
+			afterMetadataID = pendingVideo.MetadataID
+
+			classification := videodom.ClassifyVideoForPersistence(
+				pendingVideo.Name, pendingVideo.Path, pendingVideo.ParentPath, pendingVideo.Duration, pendingVideo.Height)
+			if err := workerContext.VideoMetadataRepository.UpdateVideoClassification(pendingVideo.MetadataID, classification); err != nil {
+				applog.Warn("video classification backfill failed",
+					"metadata_id", pendingVideo.MetadataID, "path", pendingVideo.Path, "error", err.Error())
+				continue
+			}
+			classified++
+		}
+
+		if len(pendingVideos) < videoMetadataReconcilePageSize {
+			return classified, nil
 		}
 	}
 }
