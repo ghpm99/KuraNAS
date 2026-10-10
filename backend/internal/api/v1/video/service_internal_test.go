@@ -453,7 +453,7 @@ func TestReorderPlaylistItems_SwapPassesCorrectArrays(t *testing.T) {
 	}
 }
 
-func TestGetPlaylistByIDUsesPlaybackAndBehaviorProgress(t *testing.T) {
+func TestGetPlaylistByIDUsesPlaybackAndStoredProgress(t *testing.T) {
 	repo := &videoRepoMock{
 		getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
 			return VideoPlaylistModel{ID: id, Name: "Show", Classification: "series"}, nil
@@ -486,9 +486,9 @@ func TestGetPlaylistByIDUsesPlaybackAndBehaviorProgress(t *testing.T) {
 				Duration:    120,
 			}, nil
 		},
-		getBehaviorEventsFn: func(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
-			return []VideoBehaviorEventModel{
-				{VideoID: 10, EventType: string(playlist.EventCompleted), WatchedPct: 100},
+		getVideoWatchProgressByVideosFn: func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error) {
+			return []VideoWatchProgressModel{
+				{VideoID: 10, PositionSeconds: 120, DurationSeconds: 120, Completed: true},
 			}, nil
 		},
 	}
@@ -1281,3 +1281,53 @@ func TestEnrichCatalogDescriptionsEmptySections(t *testing.T) {
 
 func ptrFloat(v float64) *float64 { return &v }
 func ptrBool(v bool) *bool        { return &v }
+
+func TestBuildPlaylistProgressUsesOnlyStoredProgressAndPlaybackState(t *testing.T) {
+	const episodeCount = 40
+	items := make([]VideoPlaylistItemModel, episodeCount)
+	for index := range items {
+		items[index] = VideoPlaylistItemModel{VideoID: index + 1, OrderIndex: index}
+	}
+
+	repo := &videoRepoMock{
+		getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+			return VideoPlaybackStateModel{
+				ClientID:    clientID,
+				VideoID:     sql.NullInt64{Int64: 3, Valid: true},
+				CurrentTime: 30,
+				Duration:    120,
+			}, nil
+		},
+		getBehaviorEventsFn: func(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
+			t.Fatalf("behavior events must not be read for playlist progress")
+			return nil, nil
+		},
+		getVideoWatchProgressByVideosFn: func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error) {
+			if len(videoIDs) != episodeCount {
+				t.Fatalf("expected %d video ids, got %d", episodeCount, len(videoIDs))
+			}
+			return []VideoWatchProgressModel{
+				{VideoID: 1, PositionSeconds: 100, DurationSeconds: 100, Completed: true},
+				{VideoID: 2, PositionSeconds: 25, DurationSeconds: 100},
+			}, nil
+		},
+	}
+
+	svc := newVideoServiceForTest(t, repo)
+	progressByVideo := svc.buildPlaylistProgress("client-1", items)
+
+	if got := progressByVideo[1]; got.Status != "completed" || got.ProgressPct != 100 {
+		t.Fatalf("expected video 1 completed, got %+v", got)
+	}
+	if got := progressByVideo[2]; got.Status != "in_progress" || got.ProgressPct != 25 {
+		t.Fatalf("expected video 2 in progress at 25, got %+v", got)
+	}
+	if got := progressByVideo[3]; got.Status != "in_progress" || got.ProgressPct != 25 {
+		t.Fatalf("expected current video 3 in progress at 25, got %+v", got)
+	}
+	for videoID := 4; videoID <= episodeCount; videoID++ {
+		if got := progressByVideo[videoID]; got.Status != "not_started" || got.ProgressPct != 0 {
+			t.Fatalf("expected video %d not started, got %+v", videoID, got)
+		}
+	}
+}

@@ -441,28 +441,6 @@ func playlistProgressFromState(state VideoPlaybackStateModel) videoItemProgress 
 	}
 }
 
-func playlistProgressFromEvent(event VideoBehaviorEventModel) videoItemProgress {
-	progress := event.WatchedPct
-	if progress <= 0 && event.Duration > 0 {
-		progress = (event.Position / event.Duration) * 100
-	}
-
-	switch event.EventType {
-	case string(playlist.EventCompleted):
-		return videoItemProgress{Status: "completed", ProgressPct: 100}
-	case string(playlist.EventStarted), string(playlist.EventPaused), string(playlist.EventResumed),
-		string(playlist.EventSkipped), string(playlist.EventAbandoned):
-		if progress > 0 {
-			return videoItemProgress{
-				Status:      "in_progress",
-				ProgressPct: clampProgressPct(progress),
-			}
-		}
-	}
-
-	return videoItemProgress{Status: "not_started", ProgressPct: 0}
-}
-
 func clampProgressPct(progress float64) float64 {
 	if progress < 0 {
 		return 0
