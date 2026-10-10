@@ -63,6 +63,12 @@ func (m *videoHandlerServiceMock) GetPlaylistByID(clientID string, id int) (Vide
 func (m *videoHandlerServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: "v"}}}, nil
 }
+func (m *videoHandlerServiceMock) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
+	return utils.PaginationResponse[LibraryFolderDto]{Items: []LibraryFolderDto{{Path: request.ParentPath, Name: "f", VideoCount: 2, CoverFileID: 9}}}, nil
+}
+func (m *videoHandlerServiceMock) ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: request.FolderPath}}}, nil
+}
 func (m *videoHandlerServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error  { return nil }
 func (m *videoHandlerServiceMock) AddVideoToPlaylist(playlistID int, videoID int) error { return nil }
 func (m *videoHandlerServiceMock) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
@@ -131,6 +137,12 @@ func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (V
 func (m *videoHandlerErrServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{}, errors.New("library failed")
 }
+func (m *videoHandlerErrServiceMock) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
+	return utils.PaginationResponse[LibraryFolderDto]{}, errors.New("folders failed")
+}
+func (m *videoHandlerErrServiceMock) ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{}, errors.New("folder videos failed")
+}
 func (m *videoHandlerErrServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error {
 	return errors.New("set hidden failed")
 }
@@ -194,6 +206,8 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 	router.PUT("/video/playlists/:id/reorder", handler.ReorderPlaylistHandler)
 	router.GET("/video/playlists/unassigned", handler.GetUnassignedVideosHandler)
 	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
+	router.GET("/video/library/folders", handler.ListLibraryFoldersHandler)
+	router.GET("/video/library/folders/videos", handler.ListLibraryFolderVideosHandler)
 
 	tests := []struct {
 		method string
@@ -218,6 +232,11 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodPut, "/video/playlists/1/reorder", `{"items":[{"video_id":1,"order_index":0}]}`, http.StatusOK},
 		{http.MethodGet, "/video/playlists/unassigned?limit=100", "", http.StatusOK},
 		{http.MethodGet, "/video/library/files?page=2&page_size=25&query=clip", "", http.StatusOK},
+		{http.MethodGet, "/video/library/folders", "", http.StatusOK},
+		{http.MethodGet, "/video/library/folders?parent=/Series&page=2&page_size=10", "", http.StatusOK},
+		{http.MethodGet, "/video/library/folders/videos?path=/Series", "", http.StatusOK},
+		{http.MethodGet, "/video/library/folders/videos", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/library/folders?page=abc", "", http.StatusBadRequest},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodGet, "/video/playlists/404", "", http.StatusNotFound},
 	}
@@ -259,6 +278,8 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 	router.PUT("/video/playlists/:id/reorder", handler.ReorderPlaylistHandler)
 	router.GET("/video/playlists/unassigned", handler.GetUnassignedVideosHandler)
 	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
+	router.GET("/video/library/folders", handler.ListLibraryFoldersHandler)
+	router.GET("/video/library/folders/videos", handler.ListLibraryFolderVideosHandler)
 
 	tests := []struct {
 		method string
@@ -283,6 +304,8 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 		{http.MethodPut, "/video/playlists/1/reorder", `{"items":[{"video_id":1,"order_index":0}]}`, http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists/unassigned?limit=100", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/library/files?query=test", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/library/folders", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/library/folders/videos?path=/Series", "", http.StatusInternalServerError},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playback/state", `{`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playlists/1/hidden", `{}`, http.StatusInternalServerError},

@@ -138,3 +138,9 @@ var GetContinueWatchingVideosQuery string
 
 //go:embed get_video_watch_progress_by_videos.sql
 var GetVideoWatchProgressByVideosQuery string
+
+//go:embed get_library_folders.sql
+var GetLibraryFoldersQuery string
+
+//go:embed get_library_folder_videos.sql
+var GetLibraryFolderVideosQuery string
