@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	completedProgressRatio   = 0.9
 	finishedProgressRatio    = 0.95
 	finishedRemainingSeconds = 15.0
 )
@@ -117,6 +118,9 @@ func (s *Service) UpdatePlaybackState(clientID string, req UpdatePlaybackStateRe
 	}
 	if req.Completed != nil {
 		state.Completed = *req.Completed
+	}
+	if hasReachedCompletionThreshold(state.CurrentTime, state.Duration) {
+		state.Completed = true
 	}
 
 	if err := s.withTransaction(func(tx *sql.Tx) error {
@@ -402,6 +406,10 @@ func stateRestartedWhenFinished(state VideoPlaybackStateModel) VideoPlaybackStat
 	state.CurrentTime = 0
 	state.Completed = false
 	return state
+}
+
+func hasReachedCompletionThreshold(positionSeconds float64, durationSeconds float64) bool {
+	return durationSeconds > 0 && positionSeconds >= durationSeconds*completedProgressRatio
 }
 
 func isPositionNearEnd(positionSeconds float64, durationSeconds float64) bool {
