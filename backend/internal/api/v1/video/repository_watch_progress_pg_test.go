@@ -133,3 +133,54 @@ func TestGetContinueWatchingVideos_Postgres(t *testing.T) {
 		t.Fatalf("expected limit to keep the most recently updated, got %+v err=%v", limited, err)
 	}
 }
+
+func TestGetVideoWatchProgressByVideos_Postgres(t *testing.T) {
+	dbContext := testutil.NewPostgresDB(t, "kuranas_video_it")
+	repository := NewRepository(dbContext)
+
+	seedErr := dbContext.ExecTx(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(`TRUNCATE video_watch_progress, home_file RESTART IDENTITY CASCADE`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(`INSERT INTO home_file (name, path, parent_path, format, size, updated_at, created_at, type, checksum, deleted_at)
+			VALUES ('a.mp4', '/v/a.mp4', '/v', '.mp4', 1, now(), now(), 2, '', NULL),
+			       ('b.mp4', '/v/b.mp4', '/v', '.mp4', 1, now(), now(), 2, '', NULL),
+			       ('c.mp4', '/v/c.mp4', '/v', '.mp4', 1, now(), now(), 2, '', NULL)`)
+		return err
+	})
+	if seedErr != nil {
+		t.Fatalf("seed: %v", seedErr)
+	}
+
+	service := NewService(repository, nil)
+	if err := service.SetVideoWatched("tv", 1, true); err != nil {
+		t.Fatalf("mark watched: %v", err)
+	}
+	if err := service.SetVideoWatched("tv", 2, true); err != nil {
+		t.Fatalf("mark watched: %v", err)
+	}
+	if err := service.SetVideoWatched("tv", 2, false); err != nil {
+		t.Fatalf("mark unwatched: %v", err)
+	}
+	if err := service.SetVideoWatched("phone", 3, true); err != nil {
+		t.Fatalf("mark watched other client: %v", err)
+	}
+	if err := service.SetVideoWatched("tv", 99, true); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows for unknown video, got %v", err)
+	}
+
+	progressList, err := repository.GetVideoWatchProgressByVideos("tv", []int{1, 2, 3})
+	if err != nil || len(progressList) != 2 {
+		t.Fatalf("expected two rows for tv, got %+v err=%v", progressList, err)
+	}
+	progressByVideo := map[int]VideoWatchProgressModel{}
+	for _, progress := range progressList {
+		progressByVideo[progress.VideoID] = progress
+	}
+	if !progressByVideo[1].Completed {
+		t.Fatalf("video 1 must be completed: %+v", progressByVideo[1])
+	}
+	if progressByVideo[2].Completed || progressByVideo[2].PositionSeconds != 0 {
+		t.Fatalf("video 2 must be unwatched: %+v", progressByVideo[2])
+	}
+}

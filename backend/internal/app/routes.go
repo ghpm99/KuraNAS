@@ -415,6 +415,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
 	library.GET("/files", context.Video.Handler.ListLibraryVideosHandler)
 	router.GET("/video/continue", context.Video.Handler.GetContinueWatchingHandler)
+	router.PUT("/video/progress/:file_id/watched", context.Video.Handler.SetVideoWatchedHandler)
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)

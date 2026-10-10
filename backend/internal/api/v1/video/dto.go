@@ -108,6 +108,10 @@ type UpdatePlaybackStateRequest struct {
 	Completed   *bool    `json:"completed"`
 }
 
+type SetVideoWatchedRequest struct {
+	Watched *bool `json:"watched" binding:"required"`
+}
+
 type SetPlaylistHiddenRequest struct {
 	Hidden bool `json:"hidden"`
 }

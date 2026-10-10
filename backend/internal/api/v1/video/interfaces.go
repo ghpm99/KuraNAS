@@ -18,6 +18,7 @@ type RepositoryInterface interface {
 	GetPlaybackState(clientID string) (VideoPlaybackStateModel, error)
 	UpsertPlaybackState(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
 	GetVideoWatchProgress(clientID string, videoID int) (VideoWatchProgressModel, error)
+	GetVideoWatchProgressByVideos(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error)
 	UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error)
 	GetContinueWatchingVideos(clientID string, limit int) ([]ContinueWatchingModel, error)
 	TouchPlaylist(tx *sql.Tx, playlistID int) error
@@ -67,6 +68,7 @@ type ServiceInterface interface {
 	PreviousVideo(clientID string) (PlaybackSessionDto, error)
 	GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error)
 	GetContinueWatching(clientID string, limit int) ([]ContinueWatchingItemDto, error)
+	SetVideoWatched(clientID string, videoID int, isWatched bool) error
 	RebuildSmartPlaylists() error
 	GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error)
 	GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error)
