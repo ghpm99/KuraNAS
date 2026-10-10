@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 )
 
@@ -78,5 +79,81 @@ func TestStartPlaybackResumesEachVideoFromItsOwnProgress(t *testing.T) {
 	}
 	if neverWatched.PlaybackState.CurrentTime != 0 {
 		t.Fatalf("expected unwatched video to start at 0, got %v", neverWatched.PlaybackState.CurrentTime)
+	}
+}
+
+func newShiftPlaybackRepoForTest(progressByVideoID map[int]VideoWatchProgressModel, progressErr error, currentVideoID int) *videoRepoMock {
+	playbackState := VideoPlaybackStateModel{
+		ID:          1,
+		ClientID:    "tv",
+		PlaylistID:  sql.NullInt64{Int64: 7, Valid: true},
+		VideoID:     sql.NullInt64{Int64: int64(currentVideoID), Valid: true},
+		CurrentTime: 99,
+		Duration:    100,
+	}
+	return &videoRepoMock{
+		getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) { return playbackState, nil },
+		getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+			return VideoPlaylistModel{ID: id}, nil
+		},
+		getVideoPlaylistItemsFn: func(playlistID int) ([]VideoPlaylistItemModel, error) {
+			return []VideoPlaylistItemModel{{VideoID: 1}, {VideoID: 2}, {VideoID: 3}}, nil
+		},
+		upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+			playbackState = state
+			return state, nil
+		},
+		touchPlaylistFn: func(tx *sql.Tx, playlistID int) error { return nil },
+		getVideoWatchProgressFn: func(clientID string, videoID int) (VideoWatchProgressModel, error) {
+			if progressErr != nil {
+				return VideoWatchProgressModel{}, progressErr
+			}
+			progress, isStored := progressByVideoID[videoID]
+			if !isStored {
+				return VideoWatchProgressModel{}, sql.ErrNoRows
+			}
+			return progress, nil
+		},
+	}
+}
+
+func TestShiftPlaybackResumesDestinationVideoFromStoredProgress(t *testing.T) {
+	storedProgress := map[int]VideoWatchProgressModel{
+		1: {ClientID: "tv", VideoID: 1, PositionSeconds: 30, DurationSeconds: 90},
+		3: {ClientID: "tv", VideoID: 3, PositionSeconds: 60, DurationSeconds: 120},
+	}
+
+	nextSession, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(storedProgress, nil, 2)).NextVideo("tv")
+	if err != nil {
+		t.Fatalf("next video: %v", err)
+	}
+	if nextSession.PlaybackState.CurrentTime != 60 || nextSession.PlaybackState.Duration != 120 {
+		t.Fatalf("expected next video to resume at 60/120, got %v/%v", nextSession.PlaybackState.CurrentTime, nextSession.PlaybackState.Duration)
+	}
+
+	previousSession, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(storedProgress, nil, 2)).PreviousVideo("tv")
+	if err != nil {
+		t.Fatalf("previous video: %v", err)
+	}
+	if previousSession.PlaybackState.CurrentTime != 30 || previousSession.PlaybackState.Duration != 90 {
+		t.Fatalf("expected previous video to resume at 30/90, got %v/%v", previousSession.PlaybackState.CurrentTime, previousSession.PlaybackState.Duration)
+	}
+}
+
+func TestShiftPlaybackStartsAtZeroWhenDestinationHasNoStoredProgress(t *testing.T) {
+	session, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(map[int]VideoWatchProgressModel{}, nil, 1)).NextVideo("tv")
+	if err != nil {
+		t.Fatalf("next video: %v", err)
+	}
+	if session.PlaybackState.CurrentTime != 0 || session.PlaybackState.Duration != 0 {
+		t.Fatalf("expected 0/0, got %v/%v", session.PlaybackState.CurrentTime, session.PlaybackState.Duration)
+	}
+}
+
+func TestShiftPlaybackPropagatesStoredProgressError(t *testing.T) {
+	progressErr := errors.New("progress lookup failed")
+	_, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(nil, progressErr, 1)).NextVideo("tv")
+	if !errors.Is(err, progressErr) {
+		t.Fatalf("expected progress error, got %v", err)
 	}
 }

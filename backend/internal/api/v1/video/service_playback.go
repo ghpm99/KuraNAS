@@ -36,21 +36,9 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
 	if !state.PlaylistID.Valid || int(state.PlaylistID.Int64) != pl.ID || !state.VideoID.Valid || int(state.VideoID.Int64) != videoID {
-		state = VideoPlaybackStateModel{
-			ClientID:    clientID,
-			CurrentTime: 0,
-			Duration:    0,
-			IsPaused:    false,
-			Completed:   false,
-		}
-		storedProgress, progressErr := s.Repository.GetVideoWatchProgress(clientID, videoID)
-		if progressErr != nil && !errors.Is(progressErr, sql.ErrNoRows) {
-			return PlaybackSessionDto{}, progressErr
-		}
-		if progressErr == nil {
-			state.CurrentTime = storedProgress.PositionSeconds
-			state.Duration = storedProgress.DurationSeconds
-			state.Completed = storedProgress.Completed
+		state, err = s.stateResumedFromStoredProgress(clientID, videoID)
+		if err != nil {
+			return PlaybackSessionDto{}, err
 		}
 	}
 	state.PlaylistID = sql.NullInt64{Int64: int64(pl.ID), Valid: true}
@@ -350,11 +338,15 @@ func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSession
 	// Emitir evento de skip se avancou
 	prevVideoID := int(state.VideoID.Int64)
 
-	state.VideoID = sql.NullInt64{Int64: int64(items[nextIndex].VideoID), Valid: true}
-	state.CurrentTime = 0
-	state.Duration = 0
-	state.IsPaused = false
-	state.Completed = false
+	destinationVideoID := items[nextIndex].VideoID
+	destinationState, err := s.stateResumedFromStoredProgress(clientID, destinationVideoID)
+	if err != nil {
+		return PlaybackSessionDto{}, err
+	}
+	destinationState.ID = state.ID
+	destinationState.PlaylistID = state.PlaylistID
+	destinationState.VideoID = sql.NullInt64{Int64: int64(destinationVideoID), Valid: true}
+	state = destinationState
 
 	if err := s.withTransaction(func(tx *sql.Tx) error {
 		updatedState, upsertErr := s.Repository.UpsertPlaybackState(tx, state)
@@ -379,6 +371,21 @@ func (s *Service) shiftPlayback(clientID string, direction int) (PlaybackSession
 	}
 
 	return s.buildSession(clientID, pl, state)
+}
+
+func (s *Service) stateResumedFromStoredProgress(clientID string, videoID int) (VideoPlaybackStateModel, error) {
+	state := VideoPlaybackStateModel{ClientID: clientID}
+	storedProgress, err := s.Repository.GetVideoWatchProgress(clientID, videoID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return state, nil
+	}
+	if err != nil {
+		return VideoPlaybackStateModel{}, err
+	}
+	state.CurrentTime = storedProgress.PositionSeconds
+	state.Duration = storedProgress.DurationSeconds
+	state.Completed = storedProgress.Completed
+	return state, nil
 }
 
 func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPlaylistModel, error) {
