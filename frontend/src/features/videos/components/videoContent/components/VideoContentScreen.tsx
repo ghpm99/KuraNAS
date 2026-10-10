@@ -1,4 +1,5 @@
 import { CircularProgress, Typography } from '@mui/material';
+import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
@@ -9,6 +10,7 @@ import VideoLibrarySection from './VideoLibrarySection';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
 import VideoSeriesDetailView from './VideoSeriesDetailView';
 import VideoSectionPlaylistGrid from './VideoSectionPlaylistGrid';
+import VideoSectionSkeleton from './VideoSectionSkeleton';
 import styles from '../videoContent.module.css';
 
 export default function VideoContentScreen() {
@@ -21,6 +23,7 @@ export default function VideoContentScreen() {
         isLoadingVideos,
         isLoadingSelectedPlaylist,
         isLoadingHomeCatalog,
+        isLoadingContinueWatching,
         isFetchingMoreVideos,
         hasMoreVideos,
         isAddingToPlaylist,
@@ -54,15 +57,6 @@ export default function VideoContentScreen() {
         moveSelectedPlaylistItem,
         setVideoWatched,
     } = useVideoContentProvider();
-
-    if (isLoadingPlaylists || isLoadingVideos || isLoadingHomeCatalog) {
-        return (
-            <div className={styles.loadingState}>
-                <CircularProgress size={44} />
-                <Typography variant="h6">{t('VIDEO_LOADING_VIDEOS')}</Typography>
-            </div>
-        );
-    }
 
     if (selectedPlaylistSummary) {
         if (isLoadingSelectedPlaylist || !selectedPlaylistDetail) {
@@ -115,9 +109,55 @@ export default function VideoContentScreen() {
         );
     }
 
+    const renderPlaylistGridSection = (
+        sectionName: string,
+        playlistsOfSection: VideoPlaylistDto[]
+    ) => {
+        if (isLoadingPlaylists) {
+            return <VideoSectionSkeleton />;
+        }
+        return (
+            <VideoSectionPlaylistGrid
+                titleKey={`VIDEO_SECTION_${sectionName}`}
+                descriptionKey={`VIDEO_SECTION_${sectionName}_DESCRIPTION`}
+                emptyKey={`VIDEO_SECTION_${sectionName}_EMPTY`}
+                playlists={playlistsOfSection}
+                onSelectPlaylist={selectPlaylist}
+                onPlayVideo={playVideo}
+            />
+        );
+    };
+
+    const renderVideoLibrarySection = () => {
+        if (isLoadingVideos) {
+            return <VideoSectionSkeleton cardCount={6} layout="catalogRail" />;
+        }
+        return (
+            <VideoLibrarySection
+                videos={filteredVideos}
+                playlists={playlists}
+                playlistMembershipMap={playlistMembershipMap}
+                search={videoSearch}
+                selectedPlaylistPerVideo={selectedPlaylistPerVideo}
+                isAddingToPlaylist={isAddingToPlaylist}
+                isFetchingMoreVideos={isFetchingMoreVideos}
+                hasMoreVideos={hasMoreVideos}
+                onSearchChange={setVideoSearch}
+                onSelectPlaylistForVideo={setSelectedPlaylistForVideo}
+                onPlayVideo={playVideo}
+                onAddVideo={addVideoFromLibrary}
+                onLoadMore={loadMoreVideos}
+                onSetWatched={setVideoWatched}
+            />
+        );
+    };
+
     const renderSectionContent = () => {
         switch (currentSection) {
             case 'continue':
+                if (isLoadingContinueWatching) {
+                    return <VideoSectionSkeleton layout="catalogRail" />;
+                }
                 return (
                     <VideoContinueWatchingSection
                         items={continueWatchingItems}
@@ -126,76 +166,18 @@ export default function VideoContentScreen() {
                     />
                 );
             case 'series':
-                return (
-                    <VideoSectionPlaylistGrid
-                        titleKey="VIDEO_SECTION_SERIES"
-                        descriptionKey="VIDEO_SECTION_SERIES_DESCRIPTION"
-                        emptyKey="VIDEO_SECTION_SERIES_EMPTY"
-                        playlists={seriesPlaylists}
-                        onSelectPlaylist={selectPlaylist}
-                        onPlayVideo={playVideo}
-                    />
-                );
+                return renderPlaylistGridSection('SERIES', seriesPlaylists);
             case 'movies':
-                return (
-                    <VideoSectionPlaylistGrid
-                        titleKey="VIDEO_SECTION_MOVIES"
-                        descriptionKey="VIDEO_SECTION_MOVIES_DESCRIPTION"
-                        emptyKey="VIDEO_SECTION_MOVIES_EMPTY"
-                        playlists={moviePlaylists}
-                        onSelectPlaylist={selectPlaylist}
-                        onPlayVideo={playVideo}
-                    />
-                );
+                return renderPlaylistGridSection('MOVIES', moviePlaylists);
             case 'personal':
-                return (
-                    <VideoSectionPlaylistGrid
-                        titleKey="VIDEO_SECTION_PERSONAL"
-                        descriptionKey="VIDEO_SECTION_PERSONAL_DESCRIPTION"
-                        emptyKey="VIDEO_SECTION_PERSONAL_EMPTY"
-                        playlists={personalPlaylists}
-                        onSelectPlaylist={selectPlaylist}
-                        onPlayVideo={playVideo}
-                    />
-                );
+                return renderPlaylistGridSection('PERSONAL', personalPlaylists);
             case 'clips':
-                return (
-                    <VideoSectionPlaylistGrid
-                        titleKey="VIDEO_SECTION_CLIPS"
-                        descriptionKey="VIDEO_SECTION_CLIPS_DESCRIPTION"
-                        emptyKey="VIDEO_SECTION_CLIPS_EMPTY"
-                        playlists={clipPlaylists}
-                        onSelectPlaylist={selectPlaylist}
-                        onPlayVideo={playVideo}
-                    />
-                );
+                return renderPlaylistGridSection('CLIPS', clipPlaylists);
             case 'folders':
                 return (
                     <>
-                        <VideoSectionPlaylistGrid
-                            titleKey="VIDEO_SECTION_FOLDERS"
-                            descriptionKey="VIDEO_SECTION_FOLDERS_DESCRIPTION"
-                            emptyKey="VIDEO_SECTION_FOLDERS_EMPTY"
-                            playlists={folderPlaylists}
-                            onSelectPlaylist={selectPlaylist}
-                            onPlayVideo={playVideo}
-                        />
-                        <VideoLibrarySection
-                            videos={filteredVideos}
-                            playlists={playlists}
-                            playlistMembershipMap={playlistMembershipMap}
-                            search={videoSearch}
-                            selectedPlaylistPerVideo={selectedPlaylistPerVideo}
-                            isAddingToPlaylist={isAddingToPlaylist}
-                            isFetchingMoreVideos={isFetchingMoreVideos}
-                            hasMoreVideos={hasMoreVideos}
-                            onSearchChange={setVideoSearch}
-                            onSelectPlaylistForVideo={setSelectedPlaylistForVideo}
-                            onPlayVideo={playVideo}
-                            onAddVideo={addVideoFromLibrary}
-                            onLoadMore={loadMoreVideos}
-                            onSetWatched={setVideoWatched}
-                        />
+                        {renderPlaylistGridSection('FOLDERS', folderPlaylists)}
+                        {renderVideoLibrarySection()}
                     </>
                 );
             case 'home':
@@ -209,6 +191,9 @@ export default function VideoContentScreen() {
                         clipPlaylists={clipPlaylists}
                         folderPlaylists={folderPlaylists}
                         recentCatalogItems={recentCatalogItems}
+                        isLoadingContinueWatching={isLoadingContinueWatching}
+                        isLoadingPlaylists={isLoadingPlaylists}
+                        isLoadingHomeCatalog={isLoadingHomeCatalog}
                         onSelectPlaylist={selectPlaylist}
                         onPlayVideo={playVideo}
                         onSetWatched={setVideoWatched}

@@ -399,7 +399,7 @@ beforeEach(() => {
 });
 
 describe('components/videos/videoContent', () => {
-    it('renders loading state', () => {
+    it('renders section skeletons while playlists load', () => {
         mockUseQuery.mockImplementation((options: any) => {
             const [, subKey] = options.queryKey;
             if (subKey === 'playlists') return { data: [], isLoading: true };
@@ -429,7 +429,8 @@ describe('components/videos/videoContent', () => {
         });
 
         render(<VideoContent />);
-        expect(screen.getByText('Carregando videos...')).toBeInTheDocument();
+        expect(screen.getAllByTestId('video-section-skeleton').length).toBeGreaterThan(0);
+        expect(screen.queryByText('Carregando videos...')).not.toBeInTheDocument();
     });
 
     it('renders video home with contextual sections and recent catalog', () => {
