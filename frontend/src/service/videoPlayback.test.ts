@@ -15,6 +15,7 @@ import {
     getVideoHomeCatalog,
     getVideoLibraryFolders,
     getVideoLibraryFolderVideos,
+    getVideoLibraryMovies,
     getVideoPlaybackState,
     getVideoPlaylistById,
     getVideoPlaylists,
@@ -225,5 +226,17 @@ describe('service/videoPlayback', () => {
             params: { path: '/Series/S1', page: 1, page_size: 24 },
         });
         expect(folderVideos).toEqual(payload);
+    });
+
+    it('requests the paginated movie library with the chosen sort', async () => {
+        const payload = { items: [{ id: 9 }], pagination: { page: 2, page_size: 24 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const movies = await getVideoLibraryMovies('recent', 2, 24);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/library/movies', {
+            params: { sort: 'recent', page: 2, page_size: 24 },
+        });
+        expect(movies).toEqual(payload);
     });
 });

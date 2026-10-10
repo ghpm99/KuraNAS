@@ -29,6 +29,11 @@ jest.mock('../folderBrowser/VideoFolderBrowser', () => ({
     default: () => <div data-testid="folder-browser">folder-browser</div>,
 }));
 
+jest.mock('../movieBrowser/VideoMovieBrowser', () => ({
+    __esModule: true,
+    default: () => <div data-testid="movie-browser">movie-browser</div>,
+}));
+
 jest.mock('./VideoContinueWatchingSection', () => ({
     __esModule: true,
     default: (props: { items: unknown[] }) => (
@@ -155,9 +160,8 @@ const createContext = (
     ...overrides,
 });
 
-const sectionTitleMap: Record<Exclude<VideoSection, 'home' | 'folders' | 'continue'>, string> = {
+const sectionTitleMap: Record<Exclude<VideoSection, 'home' | 'folders' | 'continue' | 'movies'>, string> = {
     series: 'VIDEO_SECTION_SERIES',
-    movies: 'VIDEO_SECTION_MOVIES',
     personal: 'VIDEO_SECTION_PERSONAL',
     clips: 'VIDEO_SECTION_CLIPS',
 };
@@ -185,7 +189,7 @@ describe('VideoContentScreen', () => {
         );
     });
 
-    it.each(['series', 'movies', 'personal', 'clips'] as const)(
+    it.each(['series', 'personal', 'clips'] as const)(
         'shows only a skeleton in the %s section while playlists load',
         (section) => {
             renderScreen({ currentSection: section, isLoadingPlaylists: true });
@@ -272,6 +276,12 @@ describe('VideoContentScreen', () => {
         expect(screen.getByTestId(`section-grid-${titleKey}`)).toBeInTheDocument();
     });
 
+    it('renders the movie browser for the movies section', () => {
+        renderScreen({ currentSection: 'movies' });
+        expect(screen.getByTestId('movie-browser')).toBeInTheDocument();
+        expect(screen.queryByTestId(/^section-grid-/)).not.toBeInTheDocument();
+    });
+
     it('renders the continue watching section with the in-progress videos', () => {
         renderScreen({
             currentSection: 'continue',
@@ -305,7 +315,7 @@ describe('VideoContentScreen', () => {
         expect(screen.getByTestId('home-screen')).toBeInTheDocument();
     });
 
-    it.each(['series', 'movies', 'personal', 'clips'] as const)(
+    it.each(['series', 'personal', 'clips'] as const)(
         'shows an error with retry in the %s section when playlists fail',
         (section) => {
             const retry = jest.fn();
