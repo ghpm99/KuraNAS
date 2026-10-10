@@ -45,7 +45,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 22. Rebuild de playlists coalescido (sem rebuild completo por arquivo)
 - [x] 23. Rebuild remove playlists órfãs/vazias
 - [x] 24. Rebuild resiliente à unicidade de `order_index` com itens manuais
-- [ ] 25. Reordenar playlist sem violar a unicidade
+- [x] 25. Reordenar playlist sem violar a unicidade
 - [ ] 26. Ordenação natural dos episódios
 - [ ] 27. Regex de episódio com fronteira de palavra (backend)
 - [ ] 28. Regex de episódio com fronteira de palavra (frontend)
