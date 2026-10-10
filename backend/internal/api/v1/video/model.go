@@ -64,6 +64,15 @@ type VideoPlaybackStateModel struct {
 	LastUpdate  time.Time
 }
 
+type VideoWatchProgressModel struct {
+	ClientID        string
+	VideoID         int
+	PositionSeconds float64
+	DurationSeconds float64
+	Completed       bool
+	UpdatedAt       time.Time
+}
+
 type VideoBehaviorEventModel struct {
 	ID         int
 	ClientID   string
