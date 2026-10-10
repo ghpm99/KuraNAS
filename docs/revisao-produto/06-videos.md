@@ -50,7 +50,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 27. Regex de episódio com fronteira de palavra (backend)
 - [x] 28. Regex de episódio com fronteira de palavra (frontend)
 - [x] 29. Palavras-chave de classificação por segmento de caminho
-- [ ] 29.1. `coursePatternSpec` e `clipSpec` ("curso", "reel", "clip") também por token
+- [x] 29.1. `coursePatternSpec` e `clipSpec` ("curso", "reel", "clip") também por token
 - [ ] 30. Detalhe da playlist paginado
 - [ ] 31. Lista de playlists paginada por seção
 - [ ] 32. Playlists de um vídeo (`by-video/:id`) no lugar de memberships completas

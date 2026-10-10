@@ -149,6 +149,13 @@ func (s *resolutionSpec) IsSatisfiedBy(v VideoEntry) bool {
 	return v.Meta.Height >= s.minHeight
 }
 
+var courseKeywords = []string{
+	"curso", "cursos", "course", "courses", "aula", "aulas", "lesson", "lessons",
+	"lecture", "lectures", "tutorial", "tutorials", "module", "modules", "modulo", "modulos",
+}
+
+var clipKeywords = []string{"clip", "clips", "meme", "memes", "short", "shorts", "tiktok", "reel", "reels"}
+
 // coursePatternSpec detecta padroes de curso/tutorial (numeracao sequencial + keywords).
 type coursePatternSpec struct {
 	pattern *regexp.Regexp
@@ -157,12 +164,8 @@ type coursePatternSpec struct {
 func (s *coursePatternSpec) Name() string        { return "course_pattern" }
 func (s *coursePatternSpec) Confidence() float64 { return 0.85 }
 func (s *coursePatternSpec) IsSatisfiedBy(v VideoEntry) bool {
-	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
-	keywords := []string{"curso", "course", "aula", "lesson", "lecture", "tutorial", "module", "modulo"}
-	for _, kw := range keywords {
-		if strings.Contains(lower, kw) {
-			return true
-		}
+	if newPathTokenIndex(v).containsAnyKeyword(courseKeywords) {
+		return true
 	}
 	return s.pattern.MatchString(strings.ToLower(v.Name))
 }
@@ -173,12 +176,9 @@ type clipSpec struct{}
 func (s *clipSpec) Name() string        { return "clip_short_video" }
 func (s *clipSpec) Confidence() float64 { return 0.7 }
 func (s *clipSpec) IsSatisfiedBy(v VideoEntry) bool {
-	lower := strings.ToLower(v.Name + " " + v.ParentPath)
-	keywords := []string{"clip", "meme", "shorts", "tiktok", "reel"}
-	for _, kw := range keywords {
-		if strings.Contains(lower, kw) {
-			return true
-		}
+	nameAndFolder := VideoEntry{Name: v.Name, ParentPath: v.ParentPath}
+	if newPathTokenIndex(nameAndFolder).containsAnyKeyword(clipKeywords) {
+		return true
 	}
 	// Se temos metadados e duracao < 60s, e provavelmente um clip
 	if v.Meta != nil && v.Meta.Duration > 0 && v.Meta.Duration < 60 {
