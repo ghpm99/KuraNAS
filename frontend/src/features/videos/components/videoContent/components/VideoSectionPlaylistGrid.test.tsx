@@ -62,6 +62,60 @@ const playlist: VideoPlaylistDto = {
 };
 
 describe('videos/videoContent/VideoSectionPlaylistGrid', () => {
+    it('renders without paging props and without a load more control', () => {
+        render(
+            <VideoSectionPlaylistGrid
+                titleKey="TITLE_KEY"
+                descriptionKey="DESCRIPTION_KEY"
+                emptyKey="EMPTY_KEY"
+                playlists={[playlist]}
+                onSelectPlaylist={jest.fn()}
+                onPlayVideo={jest.fn()}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
+
+    it('offers load more while another page exists and requests it on click', () => {
+        const fetchNextPage = jest.fn();
+
+        render(
+            <VideoSectionPlaylistGrid
+                titleKey="TITLE_KEY"
+                descriptionKey="DESCRIPTION_KEY"
+                emptyKey="EMPTY_KEY"
+                playlists={[playlist]}
+                onSelectPlaylist={jest.fn()}
+                onPlayVideo={jest.fn()}
+                hasNextPage
+                isFetchingNextPage={false}
+                fetchNextPage={fetchNextPage}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides load more once the last page is loaded', () => {
+        render(
+            <VideoSectionPlaylistGrid
+                titleKey="TITLE_KEY"
+                descriptionKey="DESCRIPTION_KEY"
+                emptyKey="EMPTY_KEY"
+                playlists={[playlist]}
+                onSelectPlaylist={jest.fn()}
+                onPlayVideo={jest.fn()}
+                hasNextPage={false}
+                fetchNextPage={jest.fn()}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+    });
+
     it('renders the empty state and custom action', () => {
         render(
             <MemoryRouter>

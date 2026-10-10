@@ -19,6 +19,7 @@ import {
     getVideoPlaybackState,
     getVideoPlaylistById,
     getVideoPlaylists,
+    getVideoPlaylistsBySection,
     getVideosWithoutPlaylist,
     nextVideoPlayback,
     previousVideoPlayback,
@@ -41,6 +42,20 @@ const mockedApi = apiBase as unknown as {
 describe('service/videoPlayback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('requests one page of the playlists of a section', async () => {
+        const sectionPage = {
+            items: [],
+            pagination: { page: 2, page_size: 24, has_next: false, has_prev: true },
+        };
+        mockedApi.get.mockResolvedValue({ data: sectionPage });
+
+        await expect(getVideoPlaylistsBySection('clips', 2, 24)).resolves.toEqual(sectionPage);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/playlists/section/clips', {
+            params: { page: 2, page_size: 24 },
+        });
     });
 
     it('starts playback with and without playlist id', async () => {

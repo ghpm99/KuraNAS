@@ -5,6 +5,8 @@ import { VideoContentProvider, useVideoContentProvider } from './videoContentPro
 import type { ReactNode } from 'react';
 
 const mockGetVideoPlaylists = jest.fn();
+const mockGetVideoPlaylistsBySection = jest.fn();
+const mockGetVideoPlaylistById = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
 const mockGetVideoContinueWatching = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
@@ -19,6 +21,8 @@ const mockNavigate = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
     getVideoPlaylists: (...args: unknown[]) => mockGetVideoPlaylists(...args),
+    getVideoPlaylistsBySection: (...args: unknown[]) => mockGetVideoPlaylistsBySection(...args),
+    getVideoPlaylistById: (...args: unknown[]) => mockGetVideoPlaylistById(...args),
     getVideoHomeCatalog: (...args: unknown[]) => mockGetVideoHomeCatalog(...args),
     getVideoContinueWatching: (...args: unknown[]) => mockGetVideoContinueWatching(...args),
     getVideoLibraryFiles: (...args: unknown[]) => mockGetVideoLibraryFiles(...args),
@@ -98,8 +102,44 @@ const asItemsPage = (items: unknown[]) => ({
     pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
 });
 
+type SectionFixture = { type: string; classification: string };
+
+const playlistBelongsToSection = (playlist: SectionFixture, section: string) => {
+    switch (section) {
+        case 'series':
+            return ['series', 'anime'].includes(playlist.classification);
+        case 'movies':
+            return playlist.classification === 'movie';
+        case 'personal':
+            return playlist.classification === 'personal';
+        case 'clips':
+            return ['clip', 'program'].includes(playlist.classification);
+        case 'folders':
+            return playlist.type === 'folder';
+        default:
+            return false;
+    }
+};
+
+const serveSectionsFromFullList = async (section: string, page: number, pageSize: number) => {
+    const fullList = ((await mockGetVideoPlaylists()) ?? []) as SectionFixture[];
+    const sectionList = fullList.filter((playlist) => playlistBelongsToSection(playlist, section));
+    const windowStart = (page - 1) * pageSize;
+    return {
+        items: sectionList.slice(windowStart, windowStart + pageSize),
+        pagination: {
+            page,
+            page_size: pageSize,
+            has_next: sectionList.length > windowStart + pageSize,
+            has_prev: page > 1,
+        },
+    };
+};
+
 const setupDefaultMocks = () => {
     mockGetVideoPlaylists.mockResolvedValue([]);
+    mockGetVideoPlaylistsBySection.mockImplementation(serveSectionsFromFullList);
+    mockGetVideoPlaylistById.mockRejectedValue(new Error('not found'));
     mockGetVideoHomeCatalog.mockResolvedValue({ sections: [] });
     mockGetVideoContinueWatching.mockResolvedValue([]);
     mockGetVideoLibraryFiles.mockResolvedValue({
@@ -175,13 +215,17 @@ describe('VideoContentProvider', () => {
             wrapper: createWrapper(),
         });
 
-        await waitFor(() => expect(result.current.playlists).toHaveLength(7));
+        await waitFor(() => expect(result.current.seriesPlaylists).toHaveLength(3));
 
+        expect(result.current.playlists).toEqual([]);
         expect(result.current.seriesPlaylists).toHaveLength(3);
         expect(result.current.moviePlaylists).toHaveLength(1);
         expect(result.current.personalPlaylists).toHaveLength(1);
         expect(result.current.clipPlaylists).toHaveLength(2);
         expect(result.current.folderPlaylists).toHaveLength(1);
+        expect(mockGetVideoPlaylists).toHaveBeenCalledTimes(
+            mockGetVideoPlaylistsBySection.mock.calls.length
+        );
     });
 
     it('exposes the in-progress videos from the continue endpoint', async () => {
@@ -223,7 +267,7 @@ describe('VideoContentProvider', () => {
         ]);
 
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/folders']),
         });
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(2));
@@ -334,7 +378,7 @@ describe('VideoContentProvider', () => {
         ]);
 
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/folders']),
         });
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(2));
@@ -351,7 +395,7 @@ describe('VideoContentProvider', () => {
         ]);
 
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/folders']),
         });
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(2));
@@ -448,9 +492,9 @@ describe('VideoContentProvider', () => {
             wrapper: createWrapper(['/videos/series']),
         });
 
-        await waitFor(() => expect(result.current.playlists).toHaveLength(1));
+        await waitFor(() => expect(result.current.seriesPlaylists).toHaveLength(1));
 
-        act(() => result.current.selectPlaylist(result.current.playlists[0]!));
+        act(() => result.current.selectPlaylist(result.current.seriesPlaylists[0]!));
 
         expect(mockNavigate).toHaveBeenCalledWith(
             expect.stringContaining('/videos/series/cool-series')
@@ -720,7 +764,7 @@ describe('VideoContentProvider', () => {
         mockAddVideoToPlaylist.mockRejectedValue(new Error('fail'));
 
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/folders']),
         });
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(1));
@@ -736,7 +780,7 @@ describe('VideoContentProvider', () => {
         mockAddVideoToPlaylist.mockResolvedValue(undefined);
 
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/folders']),
         });
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(1));
@@ -849,7 +893,7 @@ describe('VideoContentProvider', () => {
             wrapper: createWrapper(['/videos']),
         });
 
-        await waitFor(() => expect(result.current.playlists).toHaveLength(1));
+        await waitFor(() => expect(result.current.folderPlaylists).toHaveLength(1));
 
         act(() => result.current.selectPlaylist(folderPlaylist as any));
 
@@ -871,11 +915,11 @@ describe('VideoContentProvider', () => {
     });
 
     it('isolates a playlists failure and retries only that query', async () => {
-        mockGetVideoPlaylists.mockRejectedValueOnce({
+        mockGetVideoPlaylistsBySection.mockRejectedValueOnce({
             response: { data: { error: 'playlists down' } },
         });
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
+            wrapper: createWrapper(['/videos/series']),
         });
 
         await waitFor(() => expect(result.current.playlistsFailure).not.toBeNull());
@@ -888,7 +932,7 @@ describe('VideoContentProvider', () => {
         act(() => result.current.playlistsFailure?.retry());
 
         await waitFor(() => expect(result.current.playlistsFailure).toBeNull());
-        expect(mockGetVideoPlaylists).toHaveBeenCalledTimes(2);
+        expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledTimes(2);
         expect(mockGetVideoContinueWatching).toHaveBeenCalledTimes(1);
     });
 
@@ -921,5 +965,113 @@ describe('VideoContentProvider', () => {
 
         expect(result.current.selectedPlaylistFailure?.message).toBe('detail down');
         expect(result.current.playlistsFailure).toBeNull();
+    });
+    describe('section playlists', () => {
+        const seriesFixtures = (count: number) =>
+            Array.from({ length: count }, (_, position) =>
+                createPlaylist({ id: position + 1, name: `Show ${position + 1}` })
+            );
+
+        it('home loads small first pages of each section and never the full list', async () => {
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos']),
+            });
+
+            await waitFor(() => expect(result.current.isLoadingPlaylists).toBe(false));
+
+            for (const section of ['series', 'movies', 'personal', 'clips', 'folders']) {
+                expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledWith(section, 1, 4);
+            }
+            expect(mockGetVideoPlaylists).toHaveBeenCalledTimes(
+                mockGetVideoPlaylistsBySection.mock.calls.length
+            );
+        });
+
+        it('a grid section loads only its own section and pages with loadMoreSectionPlaylists', async () => {
+            mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(30));
+
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/series']),
+            });
+
+            await waitFor(() => expect(result.current.seriesPlaylists).toHaveLength(24));
+            expect(result.current.hasMoreSectionPlaylists).toBe(true);
+            expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledTimes(1);
+            expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledWith('series', 1, 24);
+
+            act(() => result.current.loadMoreSectionPlaylists());
+
+            await waitFor(() => expect(result.current.seriesPlaylists).toHaveLength(30));
+            expect(result.current.hasMoreSectionPlaylists).toBe(false);
+            expect(mockGetVideoPlaylistsBySection).toHaveBeenLastCalledWith('series', 2, 24);
+
+            act(() => result.current.loadMoreSectionPlaylists());
+            expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledTimes(2);
+        });
+
+        it('loadMoreSectionPlaylists does nothing outside a grid section', async () => {
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos']),
+            });
+
+            await waitFor(() => expect(result.current.isLoadingPlaylists).toBe(false));
+            const callsBefore = mockGetVideoPlaylistsBySection.mock.calls.length;
+
+            act(() => result.current.loadMoreSectionPlaylists());
+
+            expect(result.current.hasMoreSectionPlaylists).toBe(false);
+            expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledTimes(callsBefore);
+        });
+
+        it('takes the header from a loaded page without fetching the playlist by id', async () => {
+            mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(3));
+
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/series/show-2?playlist=2']),
+            });
+
+            await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(2));
+
+            expect(mockGetVideoPlaylistById).not.toHaveBeenCalled();
+        });
+
+        it('fetches the header by id when the playlist is in no loaded page', async () => {
+            mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(30));
+            mockGetVideoPlaylistById.mockResolvedValue(
+                createPlaylist({ id: 99, name: 'Deep Show' })
+            );
+
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/series/deep-show?playlist=99']),
+            });
+
+            await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(99));
+
+            expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(99);
+            expect(result.current.selectedPlaylistSummary?.name).toBe('Deep Show');
+            expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledWith(99, 1, 50);
+        });
+
+        it('keeps the header empty when the by-id fallback also fails', async () => {
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/series/ghost?playlist=404']),
+            });
+
+            await waitFor(() => expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(404));
+
+            expect(result.current.selectedPlaylistSummary).toBeNull();
+        });
+
+        it('falls back to the full list when the url has a slug and no playlist id', async () => {
+            mockGetVideoPlaylists.mockResolvedValue([createPlaylist({ id: 8, name: 'Slug Show' })]);
+
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/personal/slug-show']),
+            });
+
+            await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(8));
+
+            expect(mockGetVideoPlaylistById).not.toHaveBeenCalled();
+        });
     });
 });

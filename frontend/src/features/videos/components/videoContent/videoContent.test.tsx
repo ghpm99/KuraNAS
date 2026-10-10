@@ -10,6 +10,8 @@ const mockInvalidateQueries = jest.fn();
 const mockLocation = { pathname: '/videos', search: '' };
 
 const mockGetVideoPlaylists = jest.fn();
+const mockGetVideoPlaylistsBySection = jest.fn();
+const mockGetVideoPlaylistById = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
 const mockGetVideoContinueWatching = jest.fn();
@@ -23,6 +25,8 @@ const mockGetVideoPlaybackState = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
     getVideoPlaylists: (...args: any[]) => mockGetVideoPlaylists(...args),
+    getVideoPlaylistsBySection: (...args: any[]) => mockGetVideoPlaylistsBySection(...args),
+    getVideoPlaylistById: (...args: any[]) => mockGetVideoPlaylistById(...args),
     getVideoLibraryFiles: (...args: any[]) => mockGetVideoLibraryFiles(...args),
     getVideoHomeCatalog: (...args: any[]) => mockGetVideoHomeCatalog(...args),
     getVideoContinueWatching: (...args: any[]) => mockGetVideoContinueWatching(...args),
@@ -287,6 +291,29 @@ const clipDetailPlaylist = {
 };
 
 let playlistsData: any[] = [];
+
+const sectionMatchers: Record<string, (item: any) => boolean> = {
+    series: (item) => ['series', 'anime'].includes(item.classification),
+    movies: (item) => item.classification === 'movie',
+    personal: (item) => item.classification === 'personal',
+    clips: (item) => ['clip', 'program'].includes(item.classification),
+    folders: (item) => item.type === 'folder',
+};
+
+const sectionPlaylistsResult = (section: string, isLoading = false) => ({
+    data: {
+        pages: [
+            {
+                items: playlistsData.filter(sectionMatchers[section]!),
+                pagination: { page: 1, page_size: 24, has_next: false, has_prev: false },
+            },
+        ],
+    },
+    isLoading,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: jest.fn(),
+});
 let allVideosData: any[] = [];
 let homeCatalogData: any = undefined;
 let continueWatchingData: any[] = [];
@@ -372,6 +399,9 @@ beforeEach(() => {
         if (options.enabled !== false) {
             options.queryFn?.({ pageParam: 1 });
         }
+        if (options.queryKey[1] === 'playlists' && options.queryKey[2] === 'section') {
+            return sectionPlaylistsResult(options.queryKey[3]);
+        }
         if (options.queryKey[1] === 'playlist-items') {
             return {
                 data: selectedPlaylistData && {
@@ -437,25 +467,29 @@ describe('components/videos/videoContent', () => {
             if (subKey === 'playlist-membership') return { data: [] };
             return { data: undefined, isLoading: false };
         });
-        mockUseInfiniteQuery.mockReturnValue({
-            data: {
-                pages: [
-                    {
-                        items: [],
-                        pagination: {
-                            page: 1,
-                            page_size: 60,
-                            has_next: false,
-                            has_prev: false,
-                        },
-                    },
-                ],
-            },
-            isLoading: false,
-            isFetchingNextPage: false,
-            hasNextPage: false,
-            fetchNextPage: jest.fn(),
-        });
+        mockUseInfiniteQuery.mockImplementation((options: any) =>
+            options.queryKey[2] === 'section'
+                ? sectionPlaylistsResult(options.queryKey[3], true)
+                : {
+                      data: {
+                          pages: [
+                              {
+                                  items: [],
+                                  pagination: {
+                                      page: 1,
+                                      page_size: 60,
+                                      has_next: false,
+                                      has_prev: false,
+                                  },
+                              },
+                          ],
+                      },
+                      isLoading: false,
+                      isFetchingNextPage: false,
+                      hasNextPage: false,
+                      fetchNextPage: jest.fn(),
+                  }
+        );
 
         render(<VideoContent />);
         expect(screen.getAllByTestId('video-section-skeleton').length).toBeGreaterThan(0);
