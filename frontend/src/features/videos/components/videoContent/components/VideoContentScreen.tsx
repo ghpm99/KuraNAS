@@ -53,9 +53,11 @@ export default function VideoContentScreen() {
         filteredVideos,
         playlists,
         videoSearch,
+        librarySort,
         selectedPlaylistPerVideo,
         feedback,
         setVideoSearch,
+        setLibrarySort,
         setSelectedPlaylistForVideo,
         closeFeedback,
         loadMoreVideos,
@@ -187,11 +189,13 @@ export default function VideoContentScreen() {
                 videos={filteredVideos}
                 playlists={playlists}
                 search={videoSearch}
+                sort={librarySort}
                 selectedPlaylistPerVideo={selectedPlaylistPerVideo}
                 isAddingToPlaylist={isAddingToPlaylist}
                 isFetchingMoreVideos={isFetchingMoreVideos}
                 hasMoreVideos={hasMoreVideos}
                 onSearchChange={setVideoSearch}
+                onSortChange={setLibrarySort}
                 onSelectPlaylistForVideo={setSelectedPlaylistForVideo}
                 onPlayVideo={playVideo}
                 onAddVideo={addVideoFromLibrary}

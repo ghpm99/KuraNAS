@@ -14,10 +14,12 @@ import {
     setVideoWatched,
     updateVideoPlaylistName,
     type VideoFileDto,
+    type VideoLibrarySort,
     type VideoPlaylistDto,
     type VideoPlaylistItemDto,
 } from '@/service/videoPlayback';
 import { useVideoSectionPlaylists, videoQueryKeys } from './useVideoQueries';
+import { loadVideoLibrarySort, saveVideoLibrarySort } from './videoLibrarySortPreference';
 import { toVideoQueryFailure, type VideoQueryFailure } from './videoQueryFailure';
 import { type VideoSection } from '@/app/routes';
 import {
@@ -89,9 +91,11 @@ export interface VideoContentContextData {
     isRemovingFromPlaylist: boolean;
     isReorderingPlaylist: boolean;
     videoSearch: string;
+    librarySort: VideoLibrarySort;
     selectedPlaylistPerVideo: Record<number, number>;
     feedback: FeedbackState;
     setVideoSearch: (value: string) => void;
+    setLibrarySort: (sort: VideoLibrarySort) => void;
     setSelectedPlaylistForVideo: (videoId: number, playlistId: number) => void;
     closeFeedback: () => void;
     loadMoreVideos: () => void;
@@ -133,6 +137,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         setVideoSearch(searchTextFromUrl);
     }, [searchTextFromUrl]);
+    const [librarySort, setLibrarySortState] = useState(loadVideoLibrarySort);
+    const setLibrarySort = (nextSort: VideoLibrarySort) => {
+        setLibrarySortState(nextSort);
+        saveVideoLibrarySort(nextSort);
+    };
     const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<
         Record<number, number>
     >({});
@@ -178,9 +187,9 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
     const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = homeCatalogQuery;
     const videoLibraryQuery = useInfiniteQuery({
-        queryKey: videoQueryKeys.libraryFiles(videoSearch),
+        queryKey: videoQueryKeys.libraryFiles(videoSearch, librarySort),
         queryFn: ({ pageParam = 1 }) =>
-            getVideoLibraryFiles(pageParam, VIDEO_LIBRARY_PAGE_SIZE, videoSearch),
+            getVideoLibraryFiles(pageParam, VIDEO_LIBRARY_PAGE_SIZE, videoSearch, librarySort),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
@@ -580,9 +589,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         isRemovingFromPlaylist: removeFromPlaylistMutation.isPending,
         isReorderingPlaylist: reorderMutation.isPending,
         videoSearch,
+        librarySort,
         selectedPlaylistPerVideo,
         feedback,
         setVideoSearch,
+        setLibrarySort,
         setSelectedPlaylistForVideo: (videoId, playlistId) => {
             setSelectedPlaylistPerVideo((prev) => ({
                 ...prev,
