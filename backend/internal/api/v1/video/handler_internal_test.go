@@ -51,6 +51,9 @@ func (m *videoHandlerServiceMock) RebuildSmartPlaylists() error { return nil }
 func (m *videoHandlerServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return []VideoPlaylistDto{{ID: 1, Name: "p"}}, nil
 }
+func (m *videoHandlerServiceMock) GetPlaylistsBySection(request PlaylistSectionRequest) (utils.PaginationResponse[VideoPlaylistDto], error) {
+	return utils.PaginationResponse[VideoPlaylistDto]{Items: []VideoPlaylistDto{{ID: request.Page, Name: string(request.Section)}}}, nil
+}
 func (m *videoHandlerServiceMock) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
 	return []VideoPlaylistMembershipDto{{PlaylistID: 1, VideoID: 10}}, nil
 }
@@ -140,6 +143,9 @@ func (m *videoHandlerErrServiceMock) RebuildSmartPlaylists() error {
 func (m *videoHandlerErrServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return nil, errors.New("playlists failed")
 }
+func (m *videoHandlerErrServiceMock) GetPlaylistsBySection(request PlaylistSectionRequest) (utils.PaginationResponse[VideoPlaylistDto], error) {
+	return utils.PaginationResponse[VideoPlaylistDto]{}, errors.New("section playlists failed")
+}
 func (m *videoHandlerErrServiceMock) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
 	return nil, errors.New("memberships failed")
 }
@@ -215,6 +221,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 	router.GET("/video/catalog/home", handler.GetHomeCatalogHandler)
 	router.POST("/video/playlists/rebuild", handler.RebuildPlaylistsHandler)
 	router.GET("/video/playlists", handler.GetPlaylistsHandler)
+	router.GET("/video/playlists/section/:section", handler.GetPlaylistsBySectionHandler)
 	router.GET("/video/playlists/memberships", handler.GetPlaylistMembershipsHandler)
 	router.GET("/video/playlists/:id", handler.GetPlaylistByIDHandler)
 	router.GET("/video/playlists/:id/items", handler.GetPlaylistItemsPageHandler)
@@ -244,6 +251,9 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodPost, "/video/playlists/rebuild", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists?include_hidden=true", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists/memberships?include_hidden=true", "", http.StatusOK},
+		{http.MethodGet, "/video/playlists/section/series?page=2&page_size=4", "", http.StatusOK},
+		{http.MethodGet, "/video/playlists/section/bogus", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/playlists/section/series?page=abc", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/playlists/1", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists/1/items", "", http.StatusOK},
 		{http.MethodGet, "/video/playlists/1/items?page=2&page_size=10", "", http.StatusOK},
@@ -296,6 +306,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 	router.GET("/video/catalog/home", handler.GetHomeCatalogHandler)
 	router.POST("/video/playlists/rebuild", handler.RebuildPlaylistsHandler)
 	router.GET("/video/playlists", handler.GetPlaylistsHandler)
+	router.GET("/video/playlists/section/:section", handler.GetPlaylistsBySectionHandler)
 	router.GET("/video/playlists/memberships", handler.GetPlaylistMembershipsHandler)
 	router.GET("/video/playlists/:id", handler.GetPlaylistByIDHandler)
 	router.GET("/video/playlists/:id/items", handler.GetPlaylistItemsPageHandler)
@@ -325,6 +336,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 		{http.MethodPost, "/video/playlists/rebuild", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists?include_hidden=true", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists/memberships?include_hidden=true", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/playlists/section/series", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/playlists/1", "", http.StatusNotFound},
 		{http.MethodGet, "/video/playlists/1/items", "", http.StatusNotFound},
 		{http.MethodPut, "/video/playlists/1/hidden", `{"hidden":true}`, http.StatusInternalServerError},

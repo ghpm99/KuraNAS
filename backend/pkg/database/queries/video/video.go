@@ -61,6 +61,9 @@ var GetPlaylistExclusionsQuery string
 //go:embed get_video_playlists.sql
 var GetVideoPlaylistsQuery string
 
+//go:embed get_video_playlists_by_section.sql
+var GetVideoPlaylistsBySectionQuery string
+
 //go:embed get_video_playlist_memberships.sql
 var GetVideoPlaylistMembershipsQuery string
 

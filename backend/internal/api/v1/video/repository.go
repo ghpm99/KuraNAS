@@ -536,6 +536,32 @@ func (r *Repository) GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	return exclusions, nil
 }
 
+func scanPlaylistSummaryRows(rows *sql.Rows) ([]VideoPlaylistModel, error) {
+	playlists := []VideoPlaylistModel{}
+	for rows.Next() {
+		var item VideoPlaylistModel
+		if err := rows.Scan(
+			&item.ID,
+			&item.Type,
+			&item.SourcePath,
+			&item.Name,
+			&item.IsHidden,
+			&item.IsAuto,
+			&item.GroupMode,
+			&item.Classification,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+			&item.LastPlayedAt,
+			&item.ItemCount,
+			&item.CoverVideoID,
+		); err != nil {
+			return nil, err
+		}
+		playlists = append(playlists, item)
+	}
+	return playlists, rows.Err()
+}
+
 func (r *Repository) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error) {
 	playlists := []VideoPlaylistModel{}
 
@@ -546,31 +572,45 @@ func (r *Repository) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel
 		}
 		defer rows.Close()
 
-		for rows.Next() {
-			var item VideoPlaylistModel
-			if err := rows.Scan(
-				&item.ID,
-				&item.Type,
-				&item.SourcePath,
-				&item.Name,
-				&item.IsHidden,
-				&item.IsAuto,
-				&item.GroupMode,
-				&item.Classification,
-				&item.CreatedAt,
-				&item.UpdatedAt,
-				&item.LastPlayedAt,
-				&item.ItemCount,
-				&item.CoverVideoID,
-			); err != nil {
-				return err
-			}
-			playlists = append(playlists, item)
+		scannedPlaylists, err := scanPlaylistSummaryRows(rows)
+		if err != nil {
+			return err
 		}
+		playlists = scannedPlaylists
 		return nil
 	})
 	if err != nil {
 		return playlists, fmt.Errorf("falha ao listar playlists de video: %w", err)
+	}
+
+	return playlists, nil
+}
+
+func (r *Repository) GetVideoPlaylistsBySection(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error) {
+	playlists := []VideoPlaylistModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(
+			queries.GetVideoPlaylistsBySectionQuery,
+			pq.Array(filter.Classifications),
+			filter.PlaylistType,
+			limit,
+			offset,
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		scannedPlaylists, err := scanPlaylistSummaryRows(rows)
+		if err != nil {
+			return err
+		}
+		playlists = scannedPlaylists
+		return nil
+	})
+	if err != nil {
+		return playlists, fmt.Errorf("falha ao listar playlists de video por secao: %w", err)
 	}
 
 	return playlists, nil

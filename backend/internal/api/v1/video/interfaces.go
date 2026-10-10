@@ -33,6 +33,7 @@ type RepositoryInterface interface {
 	InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)
+	GetVideoPlaylistsBySection(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
 	GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	GetVideoPlaylistByID(id int) (VideoPlaylistModel, error)
 	GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error)
@@ -79,6 +80,7 @@ type ServiceInterface interface {
 	SetVideoWatched(clientID string, videoID int, isWatched bool) error
 	RebuildSmartPlaylists() error
 	GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error)
+	GetPlaylistsBySection(request PlaylistSectionRequest) (utils.PaginationResponse[VideoPlaylistDto], error)
 	GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error)
 	GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error)
 	GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error)
