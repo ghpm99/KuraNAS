@@ -33,7 +33,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 12. Marcar assistido/não assistido manualmente
 - [x] 13. Status por item da playlist lido do progresso por vídeo
 - [x] 14. Progresso salvo ao fechar a aba
-- [ ] 15. "Concluído" a partir de 90%
+- [x] 15. "Concluído" a partir de 90%
 
 ### Navegação e catálogo
 - [ ] 16. Remover chamada de IA do `/video/catalog/home`
