@@ -70,6 +70,9 @@ var GetVideoPlaylistByIDQuery string
 //go:embed get_video_playlist_items_detailed.sql
 var GetVideoPlaylistItemsDetailedQuery string
 
+//go:embed get_video_playlist_items_page.sql
+var GetVideoPlaylistItemsPageQuery string
+
 //go:embed set_playlist_hidden.sql
 var SetPlaylistHiddenQuery string
 

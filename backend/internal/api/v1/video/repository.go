@@ -629,10 +629,18 @@ func (r *Repository) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 }
 
 func (r *Repository) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error) {
+	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsDetailedQuery, playlistID)
+}
+
+func (r *Repository) GetVideoPlaylistItemsPage(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
+	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsPageQuery, playlistID, limit, offset)
+}
+
+func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]VideoPlaylistItemModel, error) {
 	items := []VideoPlaylistItemModel{}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetVideoPlaylistItemsDetailedQuery, playlistID)
+		rows, err := tx.Query(query, arguments...)
 		if err != nil {
 			return err
 		}

@@ -200,6 +200,31 @@ func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, er
 	return pl.ToDto(itemDtos), nil
 }
 
+func (s *Service) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
+	if _, err := s.Repository.GetVideoPlaylistByID(playlistID); err != nil {
+		return utils.PaginationResponse[VideoPlaylistItemDto]{}, err
+	}
+
+	items, err := s.Repository.GetVideoPlaylistItemsPage(playlistID, pageSize+1, utils.CalculateOffset(page, pageSize))
+	if err != nil {
+		return utils.PaginationResponse[VideoPlaylistItemDto]{}, err
+	}
+
+	progressByVideo := s.buildPlaylistProgress(clientID, items)
+	itemDtos := make([]VideoPlaylistItemDto, 0, len(items))
+	for _, item := range items {
+		progress := progressByVideo[item.VideoID]
+		itemDtos = append(itemDtos, item.ToDto(progress.Status, progress.ProgressPct))
+	}
+
+	response := utils.PaginationResponse[VideoPlaylistItemDto]{
+		Items:      itemDtos,
+		Pagination: utils.Pagination{Page: page, PageSize: pageSize},
+	}
+	response.UpdatePagination()
+	return response, nil
+}
+
 func (s *Service) SetPlaylistHidden(playlistID int, hidden bool) error {
 	return s.withTransaction(func(tx *sql.Tx) error {
 		return s.Repository.SetPlaylistHidden(tx, playlistID, hidden)
