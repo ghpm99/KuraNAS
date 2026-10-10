@@ -395,6 +395,9 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Video.RemuxHandler != nil {
 		router.GET("/video/stream/:file_id/remux", context.Video.RemuxHandler.StreamRemuxedVideoHandler)
 	}
+	if context.Video.TranscodeHandler != nil {
+		router.GET("/video/stream/:file_id/transcode", context.Video.TranscodeHandler.StreamTranscodedVideoHandler)
+	}
 	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
 	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)
 

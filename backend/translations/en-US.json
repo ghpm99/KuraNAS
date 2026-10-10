@@ -733,6 +733,8 @@
 	"ERROR_VIDEO_REMUX_UNAVAILABLE": "ffmpeg is not available on the server, video conversion is unavailable",
 	"ERROR_VIDEO_REMUX_BUSY": "Too many simultaneous video conversions, try again shortly",
 	"ERROR_VIDEO_REQUIRES_TRANSCODE": "This video needs full transcoding to play in the browser",
+	"ERROR_VIDEO_TRANSCODE_UNAVAILABLE": "ffmpeg is not available on the server, video transcoding is unavailable",
+	"ERROR_VIDEO_TRANSCODE_BUSY": "Too many simultaneous video transcodes, try again shortly",
 	"ERROR_MUSIC_OPERATION_FAILED": "Failed to process music request",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "This track is already in the playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Video resource not found",
