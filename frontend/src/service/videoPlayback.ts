@@ -280,3 +280,16 @@ export const getVideoLibraryFolderVideos = async (
     });
     return response.data;
 };
+
+export type VideoMovieSort = 'name' | 'recent';
+
+export const getVideoLibraryMovies = async (
+    sort: VideoMovieSort,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoFileDto>> => {
+    const response = await apiBase.get<Pagination<VideoFileDto>>('/video/library/movies', {
+        params: { sort, page, page_size: pageSize },
+    });
+    return response.data;
+};

@@ -4,6 +4,7 @@ import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
 import VideoFolderBrowser from '../folderBrowser/VideoFolderBrowser';
+import VideoMovieBrowser from '../movieBrowser/VideoMovieBrowser';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
@@ -208,7 +209,7 @@ export default function VideoContentScreen() {
             case 'series':
                 return renderPlaylistGridSection('SERIES', seriesPlaylists);
             case 'movies':
-                return renderPlaylistGridSection('MOVIES', moviePlaylists);
+                return <VideoMovieBrowser onPlayVideo={playVideo} />;
             case 'personal':
                 return renderPlaylistGridSection('PERSONAL', personalPlaylists);
             case 'clips':
