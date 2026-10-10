@@ -1,6 +1,7 @@
 import {
     buildDirectVideoStreamUrl,
     buildRemuxVideoStreamUrl,
+    buildTranscodeVideoStreamUrl,
     isContainerUnplayableByBrowser,
 } from './videoStreamSource';
 
@@ -13,6 +14,13 @@ describe('videoPlayer/videoStreamSource', () => {
     it('adds the start offset to the remux url', () => {
         expect(buildRemuxVideoStreamUrl(7, 12.5)).toMatch(
             /\/video\/stream\/7\/remux\?start=12\.500$/
+        );
+    });
+
+    it('builds the transcode url with and without the start offset', () => {
+        expect(buildTranscodeVideoStreamUrl(7, 0)).toMatch(/\/video\/stream\/7\/transcode$/);
+        expect(buildTranscodeVideoStreamUrl(7, 12.5)).toMatch(
+            /\/video\/stream\/7\/transcode\?start=12\.500$/
         );
     });
 

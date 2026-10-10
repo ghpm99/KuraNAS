@@ -126,17 +126,100 @@ describe('hooks/useVideoPlayer remux', () => {
         expect(result.current.playbackError).toBeNull();
     });
 
-    it('shows the error overlay state when remux fails too', async () => {
+    it('falls back from remux to transcode when the element cannot open the remuxed stream', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/remux$/);
+
+        await act(async () => {
+            result.current.reportPlaybackError('unsupported');
+        });
+
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/transcode$/);
+        expect(result.current.playbackError).toBeNull();
+    });
+
+    it('falls back from remux to transcode on a decode error', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+
+        await act(async () => {
+            result.current.reportPlaybackError('decode');
+        });
+
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/transcode$/);
+    });
+
+    it('walks the whole chain direct, remux, transcode and then shows the error overlay state', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mp4'));
+        const fakeVideo = createFakeVideo(() => 'probably');
+        const { result } = await startPlayback(fakeVideo);
+        expect(fakeVideo.src).toContain('/files/video-stream/7');
+
+        await act(async () => {
+            result.current.reportPlaybackError('unsupported');
+        });
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/remux$/);
+
+        await act(async () => {
+            result.current.reportPlaybackError('unsupported');
+        });
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/transcode$/);
+
+        act(() => {
+            result.current.reportPlaybackError('unsupported');
+        });
+        expect(result.current.playbackError).toBe('unsupported');
+        expect(result.current.status).toBe('paused');
+    });
+
+    it('does not leave remux for transcode on a network error', async () => {
         mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
         const fakeVideo = createFakeVideo(() => '');
         const { result } = await startPlayback(fakeVideo);
 
         act(() => {
-            result.current.reportPlaybackError('unsupported');
+            result.current.reportPlaybackError('network');
         });
 
-        expect(result.current.playbackError).toBe('unsupported');
-        expect(result.current.status).toBe('paused');
+        expect(fakeVideo.src).toMatch(/\/remux$/);
+        expect(result.current.playbackError).toBe('network');
+    });
+
+    it('falls back from remux to transcode when play() rejects as unsupported', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        fakeVideo.play = jest
+            .fn()
+            .mockRejectedValueOnce({ name: 'NotSupportedError' })
+            .mockResolvedValue(undefined);
+
+        await startPlayback(fakeVideo);
+
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/transcode$/);
+    });
+
+    it('seeks in transcode mode by rebuilding the transcode url and offsetting the time', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv', 600, 40));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        await act(async () => {
+            result.current.reportPlaybackError('unsupported');
+        });
+        expect(fakeVideo.src).toMatch(/\/transcode\?start=40\.000$/);
+
+        await act(async () => {
+            result.current.seekTo(120.5);
+        });
+
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/transcode\?start=120\.500$/);
+        expect(result.current.currentTime).toBe(120.5);
+        act(() => {
+            result.current.setCurrentTime(3);
+        });
+        expect(result.current.currentTime).toBe(123.5);
     });
 
     it('rebuilds the remux url with start on seek and offsets the displayed time', async () => {

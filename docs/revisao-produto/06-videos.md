@@ -22,7 +22,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 04. MIME explícito para formatos de vídeo
 - [x] 05. Erro de reprodução visível no player com ação "baixar original"
 - [x] 06. Remux sob demanda (mkv/avi com H.264 → MP4 fragmentado)
-- [ ] 07. Transcode sob demanda de codecs não suportados (HEVC etc.) → H.264/AAC
+- [x] 07. Transcode sob demanda de codecs não suportados (HEVC etc.) → H.264/AAC
 
 ### Retomada, continuar assistindo e assistido
 - [ ] 08. Estado do player por dispositivo (client id), não por IP
