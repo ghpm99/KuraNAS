@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import VideoLibraryPlaylistPicker from './VideoLibraryPlaylistPicker';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
@@ -102,18 +103,11 @@ export default function VideoLibrarySection({
                     );
                 })}
             </div>
-            {hasMoreVideos ? (
-                <div className={styles.libraryFooter}>
-                    <button
-                        type="button"
-                        className={styles.actionBtn}
-                        onClick={onLoadMore}
-                        disabled={isFetchingMoreVideos}
-                    >
-                        {isFetchingMoreVideos ? t('LOADING') : t('ACTION_LOAD_MORE')}
-                    </button>
-                </div>
-            ) : null}
+            <LoadMoreSentinel
+                hasNextPage={hasMoreVideos}
+                isFetchingNextPage={isFetchingMoreVideos}
+                fetchNextPage={onLoadMore}
+            />
         </section>
     );
 }
