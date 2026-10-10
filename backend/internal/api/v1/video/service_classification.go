@@ -4,7 +4,7 @@ import (
 	"nas-go/api/internal/api/v1/video/playlist"
 )
 
-const CurrentVideoClassificationVersion = 2
+const CurrentVideoClassificationVersion = 3
 
 var persistedVideoClassifier = playlist.NewVideoClassifier()
 
