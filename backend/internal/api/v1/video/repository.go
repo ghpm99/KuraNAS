@@ -243,6 +243,39 @@ func (r *Repository) GetVideoWatchProgress(clientID string, videoID int) (VideoW
 	return progress, nil
 }
 
+func (r *Repository) GetVideoWatchProgressByVideos(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error) {
+	progressList := []VideoWatchProgressModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetVideoWatchProgressByVideosQuery, clientID, pq.Array(videoIDs))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var progress VideoWatchProgressModel
+			if err := rows.Scan(
+				&progress.ClientID,
+				&progress.VideoID,
+				&progress.PositionSeconds,
+				&progress.DurationSeconds,
+				&progress.Completed,
+				&progress.UpdatedAt,
+			); err != nil {
+				return err
+			}
+			progressList = append(progressList, progress)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar progresso dos videos: %w", err)
+	}
+
+	return progressList, nil
+}
+
 func (r *Repository) UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error) {
 	err := tx.QueryRow(
 		queries.UpsertVideoWatchProgressQuery,

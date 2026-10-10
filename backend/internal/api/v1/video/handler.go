@@ -186,6 +186,32 @@ func (h *Handler) GetContinueWatchingHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
+func (h *Handler) SetVideoWatchedHandler(c *gin.Context) {
+	videoID := utils.ParseInt(c.Param("file_id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	var req SetVideoWatchedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	if err := h.service.SetVideoWatched(clientID, videoID, *req.Watched); err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 func (h *Handler) RebuildPlaylistsHandler(c *gin.Context) {
 	if err := h.service.RebuildSmartPlaylists(); err != nil {
 		respondVideoError(c, err)

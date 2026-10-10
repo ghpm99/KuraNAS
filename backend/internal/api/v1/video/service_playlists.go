@@ -321,6 +321,7 @@ func (s *Service) buildPlaylistProgress(clientID string, items []VideoPlaylistIt
 
 	events, err := s.Repository.GetBehaviorEvents(clientID, len(items)*4+8)
 	if err != nil {
+		s.overrideWithStoredWatchProgress(clientID, items, progressByVideo)
 		return progressByVideo
 	}
 
@@ -333,6 +334,7 @@ func (s *Service) buildPlaylistProgress(clientID string, items []VideoPlaylistIt
 		progressByVideo[event.VideoID] = playlistProgressFromEvent(event)
 	}
 
+	s.overrideWithStoredWatchProgress(clientID, items, progressByVideo)
 	return progressByVideo
 }
 func videoModelToEntry(v VideoFileModel) playlist.VideoEntry {

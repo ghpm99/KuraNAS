@@ -135,3 +135,6 @@ var UpsertVideoWatchProgressQuery string
 
 //go:embed get_continue_watching_videos.sql
 var GetContinueWatchingVideosQuery string
+
+//go:embed get_video_watch_progress_by_videos.sql
+var GetVideoWatchProgressByVideosQuery string
