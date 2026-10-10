@@ -16,7 +16,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_ADD: 'Add',
                 VIDEO_ALREADY_ADDED: 'Already Added',
                 LOADING: 'Loading',
-                ACTION_LOAD_MORE: 'Load More',
+                LOAD_MORE: 'Load More',
             };
             return map[key] ?? key;
         },
@@ -82,6 +82,28 @@ const withQueryClient = (ui: ReactElement) => (
 const render = (ui: ReactElement) => renderUnwrapped(withQueryClient(ui));
 
 describe('videos/videoContent/VideoLibrarySection', () => {
+    it('renders without services or optional data', () => {
+        render(
+            <VideoLibrarySection
+                videos={[]}
+                playlists={[]}
+                search=""
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('All Videos')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Load More' })).not.toBeInTheDocument();
+    });
+
     it('uses the first playlist as fallback selection and forwards user actions', () => {
         const onSearchChange = jest.fn();
         const onSelectPlaylistForVideo = jest.fn();
@@ -148,7 +170,7 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             />
         );
 
-        expect(screen.getByRole('button', { name: 'Loading' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Load More' })).toBeDisabled();
 
         rerender(
             withQueryClient(
