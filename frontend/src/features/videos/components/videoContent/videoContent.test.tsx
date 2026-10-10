@@ -14,7 +14,7 @@ const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
 const mockGetVideoContinueWatching = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
-const mockGetVideoPlaylistById = jest.fn();
+const mockGetVideoPlaylistItemsPage = jest.fn();
 const mockGetVideoPlaylistMemberships = jest.fn();
 const mockRemoveVideoFromPlaylist = jest.fn();
 const mockReorderVideoPlaylist = jest.fn();
@@ -27,7 +27,7 @@ jest.mock('@/service/videoPlayback', () => ({
     getVideoHomeCatalog: (...args: any[]) => mockGetVideoHomeCatalog(...args),
     getVideoContinueWatching: (...args: any[]) => mockGetVideoContinueWatching(...args),
     addVideoToPlaylist: (...args: any[]) => mockAddVideoToPlaylist(...args),
-    getVideoPlaylistById: (...args: any[]) => mockGetVideoPlaylistById(...args),
+    getVideoPlaylistItemsPage: (...args: any[]) => mockGetVideoPlaylistItemsPage(...args),
     getVideoPlaylistMemberships: (...args: any[]) => mockGetVideoPlaylistMemberships(...args),
     removeVideoFromPlaylist: (...args: any[]) => mockRemoveVideoFromPlaylist(...args),
     reorderVideoPlaylist: (...args: any[]) => mockReorderVideoPlaylist(...args),
@@ -345,7 +345,10 @@ beforeEach(() => {
     });
     mockGetVideoHomeCatalog.mockResolvedValue(homeCatalogData);
     mockGetVideoContinueWatching.mockResolvedValue(continueWatchingData);
-    mockGetVideoPlaylistById.mockResolvedValue(detailPlaylist);
+    mockGetVideoPlaylistItemsPage.mockResolvedValue({
+        items: detailPlaylist.items,
+        pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
+    });
     mockGetVideoPlaylistMemberships.mockResolvedValue(membershipData);
     mockGetVideoPlaybackState.mockResolvedValue(playbackData);
     mockAddVideoToPlaylist.mockResolvedValue({});
@@ -363,12 +366,33 @@ beforeEach(() => {
         if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
         if (subKey === 'playback-state') return { data: playbackData };
         if (subKey === 'playlist-membership') return { data: membershipData };
-        if (subKey === 'playlist-detail')
-            return { data: selectedPlaylistData, isLoading: selectedPlaylistLoading };
         return { data: undefined, isLoading: false };
     });
     mockUseInfiniteQuery.mockImplementation((options: any) => {
-        options.queryFn?.({ pageParam: 1 });
+        if (options.enabled !== false) {
+            options.queryFn?.({ pageParam: 1 });
+        }
+        if (options.queryKey[1] === 'playlist-items') {
+            return {
+                data: selectedPlaylistData && {
+                    pages: [
+                        {
+                            items: selectedPlaylistData.items,
+                            pagination: {
+                                page: 1,
+                                page_size: 50,
+                                has_next: false,
+                                has_prev: false,
+                            },
+                        },
+                    ],
+                },
+                isLoading: selectedPlaylistLoading,
+                isFetchingNextPage: false,
+                hasNextPage: false,
+                fetchNextPage: jest.fn(),
+            };
+        }
         return {
             data: {
                 pages: [
@@ -539,8 +563,8 @@ describe('components/videos/videoContent', () => {
 
         render(<VideoContent />);
 
-        expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(99);
-        expect(mockGetVideoPlaylistById).not.toHaveBeenCalledWith(1);
+        expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledWith(99, 1, 50);
+        expect(mockGetVideoPlaylistItemsPage).not.toHaveBeenCalledWith(1, 1, 50);
     });
 
     it('falls back to the name slug when the playlist id is not in the url', () => {
@@ -550,7 +574,7 @@ describe('components/videos/videoContent', () => {
 
         render(<VideoContent />);
 
-        expect(mockGetVideoPlaylistById).toHaveBeenCalledWith(99);
+        expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledWith(99, 1, 50);
     });
 
     it('renders folder detail branch and actions', () => {

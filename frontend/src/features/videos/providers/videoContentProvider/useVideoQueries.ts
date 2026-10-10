@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 export const videoQueryKeys = {
     playlists: ['video', 'playlists'] as const,
     playlistDetail: (playlistId?: number) => ['video', 'playlist-detail', playlistId] as const,
+    playlistItems: (playlistId?: number) => ['video', 'playlist-items', playlistId] as const,
     unassigned: ['video', 'unassigned'] as const,
     allFiles: ['video', 'all-files'] as const,
     homeCatalog: ['video', 'home-catalog'] as const,

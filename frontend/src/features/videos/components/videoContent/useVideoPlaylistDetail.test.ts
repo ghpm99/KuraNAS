@@ -98,3 +98,54 @@ describe('useVideoPlaylistDetail', () => {
         expect(result.current.orderedItems[0]?.displayTitle).toBe('clip one');
     });
 });
+
+describe('useVideoPlaylistDetail across pages', () => {
+    const buildEpisode = (order: number, name: string) => ({
+        id: order + 1,
+        order_index: order,
+        source_kind: 'auto' as const,
+        status: 'not_started' as const,
+        progress_pct: 0,
+        video: {
+            id: 700 + order,
+            name,
+            path: `/series/${name}`,
+            parent_path: '/series',
+            format: 'mkv',
+            size: 1,
+        },
+    });
+    const buildSeries = (items: ReturnType<typeof buildEpisode>[]) => ({
+        id: 3,
+        name: 'Show',
+        type: 'series' as const,
+        source_path: '/series',
+        is_hidden: false,
+        is_auto: true,
+        group_mode: 'prefix' as const,
+        classification: 'series' as const,
+        item_count: 4,
+        cover_video_id: null,
+        created_at: '2026-03-14T00:00:00Z',
+        updated_at: '2026-03-14T00:00:00Z',
+        last_played_at: null,
+        items,
+    });
+
+    it('extends and creates season groups as later pages append items', () => {
+        const firstPage = [buildEpisode(0, 'Show S01E01.mkv'), buildEpisode(1, 'Show S01E02.mkv')];
+        const secondPage = [buildEpisode(2, 'Show S01E03.mkv'), buildEpisode(3, 'Show S02E01.mkv')];
+
+        const { result, rerender } = renderHook(
+            ({ items }) => useVideoPlaylistDetail(buildSeries(items)),
+            { initialProps: { items: firstPage } }
+        );
+
+        expect(result.current.groupedSeasons.map((group) => group.items.length)).toEqual([2]);
+
+        rerender({ items: [...firstPage, ...secondPage] });
+
+        expect(result.current.groupedSeasons.map((group) => group.label)).toEqual(['1', '2']);
+        expect(result.current.groupedSeasons.map((group) => group.items.length)).toEqual([3, 1]);
+    });
+});

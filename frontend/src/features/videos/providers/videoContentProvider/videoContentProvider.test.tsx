@@ -10,7 +10,7 @@ const mockGetVideoContinueWatching = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoPlaylistMemberships = jest.fn();
 const mockGetVideoPlaybackState = jest.fn();
-const mockGetVideoPlaylistById = jest.fn();
+const mockGetVideoPlaylistItemsPage = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
 const mockReorderVideoPlaylist = jest.fn();
 const mockRemoveVideoFromPlaylist = jest.fn();
@@ -24,7 +24,7 @@ jest.mock('@/service/videoPlayback', () => ({
     getVideoLibraryFiles: (...args: unknown[]) => mockGetVideoLibraryFiles(...args),
     getVideoPlaylistMemberships: (...args: unknown[]) => mockGetVideoPlaylistMemberships(...args),
     getVideoPlaybackState: (...args: unknown[]) => mockGetVideoPlaybackState(...args),
-    getVideoPlaylistById: (...args: unknown[]) => mockGetVideoPlaylistById(...args),
+    getVideoPlaylistItemsPage: (...args: unknown[]) => mockGetVideoPlaylistItemsPage(...args),
     addVideoToPlaylist: (...args: unknown[]) => mockAddVideoToPlaylist(...args),
     reorderVideoPlaylist: (...args: unknown[]) => mockReorderVideoPlaylist(...args),
     removeVideoFromPlaylist: (...args: unknown[]) => mockRemoveVideoFromPlaylist(...args),
@@ -93,6 +93,11 @@ const createWrapper = (initialEntries: string[] = ['/videos']) => {
     );
 };
 
+const asItemsPage = (items: unknown[]) => ({
+    items,
+    pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
+});
+
 const setupDefaultMocks = () => {
     mockGetVideoPlaylists.mockResolvedValue([]);
     mockGetVideoHomeCatalog.mockResolvedValue({ sections: [] });
@@ -103,7 +108,7 @@ const setupDefaultMocks = () => {
     });
     mockGetVideoPlaylistMemberships.mockResolvedValue([]);
     mockGetVideoPlaybackState.mockResolvedValue(null);
-    mockGetVideoPlaylistById.mockResolvedValue(null);
+    mockGetVideoPlaylistItemsPage.mockResolvedValue(asItemsPage([]));
     mockAddVideoToPlaylist.mockResolvedValue(undefined);
     mockReorderVideoPlaylist.mockResolvedValue(undefined);
     mockRemoveVideoFromPlaylist.mockResolvedValue(undefined);
@@ -456,29 +461,31 @@ describe('VideoContentProvider', () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 5, name: 'Action Movies', classification: 'movie' }),
         ]);
-        mockGetVideoPlaylistById.mockResolvedValue(
-            createPlaylist({
-                id: 5,
-                name: 'Action Movies',
-                items: [
-                    {
-                        id: 1,
-                        order_index: 0,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 50 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                    {
-                        id: 2,
-                        order_index: 1,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 51 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                ],
-            })
+        mockGetVideoPlaylistItemsPage.mockResolvedValue(
+            asItemsPage(
+                createPlaylist({
+                    id: 5,
+                    name: 'Action Movies',
+                    items: [
+                        {
+                            id: 1,
+                            order_index: 0,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 50 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                        {
+                            id: 2,
+                            order_index: 1,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 51 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                    ],
+                }).items
+            )
         );
 
         const { result } = renderHook(() => useVideoContentProvider(), {
@@ -492,12 +499,51 @@ describe('VideoContentProvider', () => {
         await waitFor(() => expect(result.current.selectedPlaylistDetail).not.toBeNull());
     });
 
+    it('loads further playlist item pages on loadMoreSelectedPlaylistItems and appends them in order', async () => {
+        mockGetVideoPlaylists.mockResolvedValue([
+            createPlaylist({ id: 5, name: 'Action Movies', classification: 'movie' }),
+        ]);
+        const pageItem = (id: number) => ({
+            id,
+            order_index: id,
+            source_kind: 'auto',
+            video: createVideoFile({ id: id + 100 }),
+            status: 'not_started',
+            progress_pct: 0,
+        });
+        mockGetVideoPlaylistItemsPage.mockImplementation((_id: number, page: number) =>
+            Promise.resolve({
+                items: [pageItem(page * 2 - 1), pageItem(page * 2)],
+                pagination: { page, page_size: 2, has_next: page < 2, has_prev: page > 1 },
+            })
+        );
+
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(['/videos/movies/action-movies']),
+        });
+
+        await waitFor(() => expect(result.current.selectedPlaylistDetail?.items).toHaveLength(2));
+        expect(result.current.hasMoreSelectedPlaylistItems).toBe(true);
+
+        act(() => result.current.loadMoreSelectedPlaylistItems());
+
+        await waitFor(() => expect(result.current.selectedPlaylistDetail?.items).toHaveLength(4));
+        expect(result.current.selectedPlaylistDetail?.items.map((item) => item.id)).toEqual([
+            1, 2, 3, 4,
+        ]);
+        expect(result.current.hasMoreSelectedPlaylistItems).toBe(false);
+        expect(mockGetVideoPlaylistItemsPage).toHaveBeenLastCalledWith(5, 2, 50);
+
+        act(() => result.current.loadMoreSelectedPlaylistItems());
+        expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledTimes(2);
+    });
+
     it('removeVideoFromSelectedPlaylist triggers mutation when playlist is selected', async () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 5, name: 'Action Movies', classification: 'movie' }),
         ]);
-        mockGetVideoPlaylistById.mockResolvedValue(
-            createPlaylist({ id: 5, name: 'Action Movies', items: [] })
+        mockGetVideoPlaylistItemsPage.mockResolvedValue(
+            asItemsPage(createPlaylist({ id: 5, name: 'Action Movies', items: [] }).items)
         );
 
         const { result } = renderHook(() => useVideoContentProvider(), {
@@ -515,37 +561,39 @@ describe('VideoContentProvider', () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 5, name: 'Action Movies', classification: 'movie' }),
         ]);
-        mockGetVideoPlaylistById.mockResolvedValue(
-            createPlaylist({
-                id: 5,
-                name: 'Action Movies',
-                items: [
-                    {
-                        id: 1,
-                        order_index: 0,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 50 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                    {
-                        id: 2,
-                        order_index: 1,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 51 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                    {
-                        id: 3,
-                        order_index: 2,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 52 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                ],
-            })
+        mockGetVideoPlaylistItemsPage.mockResolvedValue(
+            asItemsPage(
+                createPlaylist({
+                    id: 5,
+                    name: 'Action Movies',
+                    items: [
+                        {
+                            id: 1,
+                            order_index: 0,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 50 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                        {
+                            id: 2,
+                            order_index: 1,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 51 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                        {
+                            id: 3,
+                            order_index: 2,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 52 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                    ],
+                }).items
+            )
         );
 
         const { result } = renderHook(() => useVideoContentProvider(), {
@@ -558,9 +606,8 @@ describe('VideoContentProvider', () => {
 
         await waitFor(() =>
             expect(mockReorderVideoPlaylist).toHaveBeenCalledWith(5, [
-                { video_id: 51, order_index: 0 },
                 { video_id: 50, order_index: 1 },
-                { video_id: 52, order_index: 2 },
+                { video_id: 51, order_index: 0 },
             ])
         );
     });
@@ -581,21 +628,23 @@ describe('VideoContentProvider', () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 5, name: 'Action Movies', classification: 'movie' }),
         ]);
-        mockGetVideoPlaylistById.mockResolvedValue(
-            createPlaylist({
-                id: 5,
-                name: 'Action Movies',
-                items: [
-                    {
-                        id: 1,
-                        order_index: 0,
-                        source_kind: 'auto',
-                        video: createVideoFile({ id: 50 }),
-                        status: 'not_started',
-                        progress_pct: 0,
-                    },
-                ],
-            })
+        mockGetVideoPlaylistItemsPage.mockResolvedValue(
+            asItemsPage(
+                createPlaylist({
+                    id: 5,
+                    name: 'Action Movies',
+                    items: [
+                        {
+                            id: 1,
+                            order_index: 0,
+                            source_kind: 'auto',
+                            video: createVideoFile({ id: 50 }),
+                            status: 'not_started',
+                            progress_pct: 0,
+                        },
+                    ],
+                }).items
+            )
         );
 
         const { result } = renderHook(() => useVideoContentProvider(), {
@@ -861,7 +910,7 @@ describe('VideoContentProvider', () => {
 
     it('exposes selectedPlaylistFailure when the playlist detail fails', async () => {
         mockGetVideoPlaylists.mockResolvedValue([createPlaylist({ id: 7, name: 'Show' })]);
-        mockGetVideoPlaylistById.mockRejectedValueOnce({
+        mockGetVideoPlaylistItemsPage.mockRejectedValueOnce({
             response: { data: { error: 'detail down' } },
         });
         const { result } = renderHook(() => useVideoContentProvider(), {

@@ -5,6 +5,7 @@ import { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
 
 type VideoPlaylistDetailViewProps = {
@@ -18,6 +19,9 @@ type VideoPlaylistDetailViewProps = {
     onRemoveVideo: (videoId: number) => void;
     onMoveItem: (index: number, direction: -1 | 1) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
+    hasMoreItems?: boolean;
+    isFetchingMoreItems?: boolean;
+    onLoadMoreItems?: () => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -33,6 +37,9 @@ export default function VideoPlaylistDetailView({
     onRemoveVideo,
     onMoveItem,
     onSetWatched,
+    hasMoreItems,
+    isFetchingMoreItems,
+    onLoadMoreItems,
 }: VideoPlaylistDetailViewProps) {
     const { t } = useI18n();
     const [nameDraft, setNameDraft] = useState(playlist.name);
@@ -165,6 +172,11 @@ export default function VideoPlaylistDetailView({
                     </div>
                 ))}
             </section>
+            <LoadMoreSentinel
+                hasNextPage={hasMoreItems}
+                isFetchingNextPage={isFetchingMoreItems}
+                fetchNextPage={onLoadMoreItems}
+            />
         </div>
     );
 }

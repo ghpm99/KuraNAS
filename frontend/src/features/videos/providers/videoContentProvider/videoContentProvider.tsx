@@ -5,7 +5,7 @@ import {
     getVideoHomeCatalog,
     getVideoLibraryFiles,
     getVideoPlaylistMemberships,
-    getVideoPlaylistById,
+    getVideoPlaylistItemsPage,
     getVideoPlaylists,
     type VideoCatalogItemDto,
     type VideoContinueItemDto,
@@ -15,6 +15,7 @@ import {
     updateVideoPlaylistName,
     type VideoFileDto,
     type VideoPlaylistDto,
+    type VideoPlaylistItemDto,
 } from '@/service/videoPlayback';
 import { videoQueryKeys } from './useVideoQueries';
 import { toVideoQueryFailure, type VideoQueryFailure } from './videoQueryFailure';
@@ -26,14 +27,24 @@ import {
     getVideoSectionForPlaylist,
     getVideoSectionFromPath,
 } from '@/features/videos/components/navigation';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useQueryClient,
+    type InfiniteData,
+} from '@tanstack/react-query';
+import type { Pagination } from '@/types/pagination';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
+const VIDEO_PLAYLIST_ITEMS_PAGE_SIZE = 50;
 const VIDEO_HOME_CATALOG_LIMIT = 12;
 const VIDEO_CONTINUE_WATCHING_LIMIT = 24;
+
+type PlaylistItemsPages = InfiniteData<Pagination<VideoPlaylistItemDto>>;
 
 type FeedbackState = {
     open: boolean;
@@ -59,6 +70,8 @@ export interface VideoContentContextData {
     isLoadingPlaylists: boolean;
     isLoadingVideos: boolean;
     isLoadingSelectedPlaylist: boolean;
+    isFetchingMoreSelectedPlaylistItems: boolean;
+    hasMoreSelectedPlaylistItems: boolean;
     isLoadingHomeCatalog: boolean;
     isLoadingContinueWatching: boolean;
     playlistsFailure: VideoQueryFailure | null;
@@ -79,6 +92,7 @@ export interface VideoContentContextData {
     setSelectedPlaylistForVideo: (videoId: number, playlistId: number) => void;
     closeFeedback: () => void;
     loadMoreVideos: () => void;
+    loadMoreSelectedPlaylistItems: () => void;
     selectPlaylist: (playlist: VideoPlaylistDto) => void;
     clearSelectedPlaylist: () => void;
     playVideo: (videoId: number, playlistId?: number | null) => void;
@@ -169,15 +183,34 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         );
     }, [playlistIdFromSearch, playlistSlug, playlists]);
 
-    const selectedPlaylistQuery = useQuery({
-        queryKey: videoQueryKeys.playlistDetail(selectedPlaylistSummary?.id),
+    const selectedPlaylistQuery = useInfiniteQuery({
+        queryKey: videoQueryKeys.playlistItems(selectedPlaylistSummary?.id),
         enabled: Boolean(selectedPlaylistSummary?.id),
-        queryFn: () => getVideoPlaylistById(selectedPlaylistSummary?.id ?? 0),
+        queryFn: ({ pageParam = 1 }) =>
+            getVideoPlaylistItemsPage(
+                selectedPlaylistSummary?.id ?? 0,
+                pageParam,
+                VIDEO_PLAYLIST_ITEMS_PAGE_SIZE
+            ),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
     });
-    const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } =
-        selectedPlaylistQuery;
+    const {
+        data: selectedPlaylistItemsData,
+        isLoading: isLoadingSelectedPlaylist,
+        isFetchingNextPage: isFetchingMoreSelectedPlaylistItems,
+        hasNextPage: hasMoreSelectedPlaylistItems = false,
+        fetchNextPage: fetchNextSelectedPlaylistItems,
+    } = selectedPlaylistQuery;
 
-    const selectedPlaylistDetail = selectedPlaylistDetailData ?? null;
+    const selectedPlaylistDetail = useMemo<VideoPlaylistDto | null>(() => {
+        if (!selectedPlaylistSummary || !selectedPlaylistItemsData) return null;
+        return {
+            ...selectedPlaylistSummary,
+            items: selectedPlaylistItemsData.pages.flatMap((page) => page.items),
+        };
+    }, [selectedPlaylistSummary, selectedPlaylistItemsData]);
 
     const seriesPlaylists = useMemo(
         () =>
@@ -258,7 +291,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const invalidatePlaylistQueries = async () => {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: videoQueryKeys.playlists }),
-            queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
+            queryClient.invalidateQueries({ queryKey: ['video', 'playlist-items'] }),
             queryClient.invalidateQueries({
                 queryKey: ['video', 'playlist-membership'],
             }),
@@ -323,13 +356,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         onMutate: async ({ videoId, watched }) => {
             await Promise.all([
                 queryClient.cancelQueries({ queryKey: videoQueryKeys.continueWatching }),
-                queryClient.cancelQueries({ queryKey: ['video', 'playlist-detail'] }),
+                queryClient.cancelQueries({ queryKey: ['video', 'playlist-items'] }),
             ]);
             const previousContinueWatching = queryClient.getQueryData<VideoContinueItemDto[]>(
                 videoQueryKeys.continueWatching
             );
-            const previousPlaylistDetails = queryClient.getQueriesData<VideoPlaylistDto>({
-                queryKey: ['video', 'playlist-detail'],
+            const previousPlaylistItems = queryClient.getQueriesData<PlaylistItemsPages>({
+                queryKey: ['video', 'playlist-items'],
             });
 
             queryClient.setQueryData<VideoContinueItemDto[]>(
@@ -339,32 +372,35 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
                         ? continueItems?.filter((item) => item.video.id !== videoId)
                         : continueItems
             );
-            queryClient.setQueriesData<VideoPlaylistDto>(
-                { queryKey: ['video', 'playlist-detail'] },
-                (playlistDetail) =>
-                    playlistDetail && {
-                        ...playlistDetail,
-                        items: playlistDetail.items.map((item) =>
-                            item.video.id === videoId
-                                ? {
-                                      ...item,
-                                      status: watched ? 'completed' : 'not_started',
-                                      progress_pct: watched ? 100 : 0,
-                                  }
-                                : item
-                        ),
+            queryClient.setQueriesData<PlaylistItemsPages>(
+                { queryKey: ['video', 'playlist-items'] },
+                (playlistItems) =>
+                    playlistItems && {
+                        ...playlistItems,
+                        pages: playlistItems.pages.map((page) => ({
+                            ...page,
+                            items: page.items.map((item) =>
+                                item.video.id === videoId
+                                    ? {
+                                          ...item,
+                                          status: watched ? 'completed' : 'not_started',
+                                          progress_pct: watched ? 100 : 0,
+                                      }
+                                    : item
+                            ),
+                        })),
                     }
             );
 
-            return { previousContinueWatching, previousPlaylistDetails };
+            return { previousContinueWatching, previousPlaylistItems };
         },
         onError: (_error, _variables, rollbackContext) => {
             queryClient.setQueryData(
                 videoQueryKeys.continueWatching,
                 rollbackContext?.previousContinueWatching
             );
-            rollbackContext?.previousPlaylistDetails.forEach(([queryKey, playlistDetail]) =>
-                queryClient.setQueryData(queryKey, playlistDetail)
+            rollbackContext?.previousPlaylistItems.forEach(([queryKey, playlistItems]) =>
+                queryClient.setQueryData(queryKey, playlistItems)
             );
             setFeedback({
                 open: true,
@@ -461,6 +497,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         isLoadingPlaylists,
         isLoadingVideos,
         isLoadingSelectedPlaylist,
+        isFetchingMoreSelectedPlaylistItems,
+        hasMoreSelectedPlaylistItems,
         isLoadingHomeCatalog,
         isLoadingContinueWatching,
         playlistsFailure,
@@ -488,6 +526,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         loadMoreVideos: () => {
             if (hasMoreVideos && !isFetchingMoreVideos) {
                 void fetchNextPage();
+            }
+        },
+        loadMoreSelectedPlaylistItems: () => {
+            if (hasMoreSelectedPlaylistItems && !isFetchingMoreSelectedPlaylistItems) {
+                void fetchNextSelectedPlaylistItems();
             }
         },
         selectPlaylist: (playlist) =>
@@ -523,20 +566,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             const orderedItems = [...selectedPlaylistDetail.items].sort(
                 (a, b) => a.order_index - b.order_index || a.id - b.id
             );
-            const target = index + direction;
-            if (target < 0 || target >= orderedItems.length) return;
-            const swapped = [...orderedItems];
-            const current = swapped[index];
-            const next = swapped[target];
-            if (!current || !next) return;
-            swapped[index] = next;
-            swapped[target] = current;
-            reorderMutation.mutate(
-                swapped.map((item, idx) => ({
-                    video_id: item.video.id,
-                    order_index: idx,
-                }))
-            );
+            const current = orderedItems[index];
+            const neighbor = orderedItems[index + direction];
+            if (!current || !neighbor) return;
+            reorderMutation.mutate([
+                { video_id: current.video.id, order_index: neighbor.order_index },
+                { video_id: neighbor.video.id, order_index: current.order_index },
+            ]);
         },
     };
 

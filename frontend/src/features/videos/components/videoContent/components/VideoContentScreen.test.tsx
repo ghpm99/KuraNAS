@@ -124,6 +124,8 @@ const createContext = (
     isLoadingPlaylists: false,
     isLoadingVideos: false,
     isLoadingSelectedPlaylist: false,
+    isFetchingMoreSelectedPlaylistItems: false,
+    hasMoreSelectedPlaylistItems: false,
     isLoadingHomeCatalog: false,
     isLoadingContinueWatching: false,
     playlistsFailure: null,
@@ -148,6 +150,7 @@ const createContext = (
     setSelectedPlaylistForVideo: jest.fn(),
     closeFeedback: jest.fn(),
     loadMoreVideos: jest.fn(),
+    loadMoreSelectedPlaylistItems: jest.fn(),
     selectPlaylist: jest.fn(),
     clearSelectedPlaylist: jest.fn(),
     playVideo: jest.fn(),
@@ -160,7 +163,10 @@ const createContext = (
     ...overrides,
 });
 
-const sectionTitleMap: Record<Exclude<VideoSection, 'home' | 'folders' | 'continue' | 'movies'>, string> = {
+const sectionTitleMap: Record<
+    Exclude<VideoSection, 'home' | 'folders' | 'continue' | 'movies'>,
+    string
+> = {
     series: 'VIDEO_SECTION_SERIES',
     personal: 'VIDEO_SECTION_PERSONAL',
     clips: 'VIDEO_SECTION_CLIPS',

@@ -5,6 +5,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
 import VideoDetailListItem from './VideoDetailListItem';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
 
 type VideoSeriesDetailViewProps = {
@@ -12,6 +13,9 @@ type VideoSeriesDetailViewProps = {
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
+    hasMoreItems?: boolean;
+    isFetchingMoreItems?: boolean;
+    onLoadMoreItems?: () => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -21,6 +25,9 @@ export default function VideoSeriesDetailView({
     onBack,
     onOpenVideo,
     onSetWatched,
+    hasMoreItems,
+    isFetchingMoreItems,
+    onLoadMoreItems,
 }: VideoSeriesDetailViewProps) {
     const { t } = useI18n();
     const { groupedSeasons, completedCount, orderedItems, resumeItem } =
@@ -64,7 +71,7 @@ export default function VideoSeriesDetailView({
                     <p className={styles.heroMeta}>
                         {t('VIDEO_DETAIL_SERIES_PROGRESS', {
                             completed: String(completedCount),
-                            count: String(orderedItems.length),
+                            count: String(playlist.item_count),
                         })}
                     </p>
                     <div className={styles.detailHeroActions}>
@@ -128,6 +135,11 @@ export default function VideoSeriesDetailView({
                     </div>
                 </section>
             ))}
+            <LoadMoreSentinel
+                hasNextPage={hasMoreItems}
+                isFetchingNextPage={isFetchingMoreItems}
+                fetchNextPage={onLoadMoreItems}
+            />
         </div>
     );
 }
