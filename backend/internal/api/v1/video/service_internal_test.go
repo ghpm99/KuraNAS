@@ -35,6 +35,7 @@ type videoRepoMock struct {
 	getVideoPlaylistMembersFn       func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	getVideoPlaylistByIDFn          func(id int) (VideoPlaylistModel, error)
 	getVideoPlaylistItemsFn         func(playlistID int) ([]VideoPlaylistItemModel, error)
+	getVideoPlaylistItemsPageFn     func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
 	listLibraryFoldersFn            func(query LibraryFolderQuery) ([]LibraryFolderModel, error)
 	listLibraryFolderVideosFn       func(folderPath string, limit int, offset int) ([]VideoFileModel, error)
 	listLibraryMoviesFn             func(sort LibraryMovieSort, limit int, offset int) ([]VideoFileModel, error)
@@ -211,6 +212,12 @@ func (m *videoRepoMock) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error)
 func (m *videoRepoMock) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error) {
 	if m.getVideoPlaylistItemsFn != nil {
 		return m.getVideoPlaylistItemsFn(playlistID)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) GetVideoPlaylistItemsPage(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
+	if m.getVideoPlaylistItemsPageFn != nil {
+		return m.getVideoPlaylistItemsPageFn(playlistID, limit, offset)
 	}
 	return nil, nil
 }
@@ -1269,5 +1276,51 @@ func TestBuildPlaylistProgressUsesOnlyStoredProgressAndPlaybackState(t *testing.
 		if got := progressByVideo[videoID]; got.Status != "not_started" || got.ProgressPct != 0 {
 			t.Fatalf("expected video %d not started, got %+v", videoID, got)
 		}
+	}
+}
+
+func TestGetPlaylistItemsPageReportsNextPageAndProgress(t *testing.T) {
+	var requestedLimit, requestedOffset int
+	repo := &videoRepoMock{
+		getVideoPlaylistItemsPageFn: func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
+			requestedLimit, requestedOffset = limit, offset
+			return []VideoPlaylistItemModel{
+				{ID: 1, PlaylistID: playlistID, VideoID: 10, Video: VideoFileModel{ID: 10}},
+				{ID: 2, PlaylistID: playlistID, VideoID: 11, Video: VideoFileModel{ID: 11}},
+			}, nil
+		},
+		getVideoWatchProgressByVideosFn: func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error) {
+			return []VideoWatchProgressModel{{VideoID: 10, PositionSeconds: 120, DurationSeconds: 120, Completed: true}}, nil
+		},
+	}
+
+	itemsPage, err := newVideoServiceForTest(t, repo).GetPlaylistItemsPage("client-1", 7, 3, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if requestedLimit != 2 || requestedOffset != 2 {
+		t.Fatalf("expected limit 2 offset 2, got limit %d offset %d", requestedLimit, requestedOffset)
+	}
+	if len(itemsPage.Items) != 1 || !itemsPage.Pagination.HasNext || !itemsPage.Pagination.HasPrev {
+		t.Fatalf("unexpected page: %+v", itemsPage)
+	}
+	if itemsPage.Items[0].Status != "completed" {
+		t.Fatalf("expected completed status, got %s", itemsPage.Items[0].Status)
+	}
+}
+
+func TestGetPlaylistItemsPagePropagatesErrors(t *testing.T) {
+	missingPlaylist := &videoRepoMock{getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
+		return VideoPlaylistModel{}, sql.ErrNoRows
+	}}
+	if _, err := newVideoServiceForTest(t, missingPlaylist).GetPlaylistItemsPage("c", 1, 1, 10); err == nil {
+		t.Fatalf("expected error for missing playlist")
+	}
+
+	failingItems := &videoRepoMock{getVideoPlaylistItemsPageFn: func(int, int, int) ([]VideoPlaylistItemModel, error) {
+		return nil, errors.New("boom")
+	}}
+	if _, err := newVideoServiceForTest(t, failingItems).GetPlaylistItemsPage("c", 1, 1, 10); err == nil {
+		t.Fatalf("expected error for failing items query")
 	}
 }

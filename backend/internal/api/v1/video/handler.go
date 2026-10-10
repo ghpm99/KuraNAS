@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const defaultPlaylistItemsPageSize = 50
+
 type Handler struct {
 	service           ServiceInterface
 	filesService      files.ServiceInterface
@@ -258,6 +260,30 @@ func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, playlist)
+}
+
+func (h *Handler) GetPlaylistItemsPageHandler(c *gin.Context) {
+	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultPlaylistItemsPageSize)
+	if !isPaginationValid {
+		return
+	}
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	itemsPage, err := h.service.GetPlaylistItemsPage(clientID, id, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
+		return
+	}
+	c.JSON(http.StatusOK, itemsPage)
 }
 
 func (h *Handler) SetPlaylistHiddenHandler(c *gin.Context) {

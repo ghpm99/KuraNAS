@@ -428,6 +428,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.GET("/unassigned", context.Video.Handler.GetUnassignedVideosHandler)
 	playlists.PUT("/:id/reorder", context.Video.Handler.ReorderPlaylistHandler)
 	playlists.GET("/:id", context.Video.Handler.GetPlaylistByIDHandler)
+	playlists.GET("/:id/items", context.Video.Handler.GetPlaylistItemsPageHandler)
 	playlists.PUT("/:id", context.Video.Handler.UpdatePlaylistHandler)
 	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
 	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
