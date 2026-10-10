@@ -491,26 +491,6 @@ func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 					return createStepErr
 				}
 			}
-
-			if formatType.Type == utils.FormatTypeVideo {
-				playlistPayload, playlistPayloadErr := json.Marshal(uploadJobPayload{Path: path})
-				if playlistPayloadErr != nil {
-					return playlistPayloadErr
-				}
-				if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
-					JobID:       createdJob.ID,
-					Type:        "playlist_index",
-					Status:      "queued",
-					DependsOn:   dependsOnPersist,
-					Attempts:    0,
-					MaxAttempts: 3,
-					Progress:    0,
-					Payload:     playlistPayload,
-				}); createStepErr != nil {
-					return createStepErr
-				}
-			}
-
 		}
 
 		return nil

@@ -65,8 +65,8 @@ func (f *fakeEngineImageRepository) UpsertImageMetadata(tx *sql.Tx, m imagedom.M
 
 func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
-	if len(executors) != 24 {
-		t.Fatalf("expected 24 step executors, got %d", len(executors))
+	if len(executors) != 25 {
+		t.Fatalf("expected 25 step executors, got %d", len(executors))
 	}
 
 	imagePlan, err := buildFileProcessingPlan(
@@ -89,7 +89,7 @@ func TestBuildStepExecutorsAndPlans(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildFileProcessingPlan video error: %v", err)
 	}
-	if len(videoPlan.Steps) != 5 || videoPlan.Steps[4].Type != jobdomain.StepTypePlaylistIndex {
+	if len(videoPlan.Steps) != 4 || videoPlan.Steps[3].Type != jobdomain.StepTypeThumbnail {
 		t.Fatalf("unexpected video plan: %+v", videoPlan)
 	}
 

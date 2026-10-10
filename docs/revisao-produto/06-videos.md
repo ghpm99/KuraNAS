@@ -42,7 +42,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 19. Navegação por hierarquia de pastas
 - [x] 20. Classificação de vídeo persistida
 - [x] 21. Seção "Filmes" paginada e completa
-- [ ] 22. Rebuild de playlists coalescido (sem rebuild completo por arquivo)
+- [x] 22. Rebuild de playlists coalescido (sem rebuild completo por arquivo)
 - [ ] 23. Rebuild remove playlists órfãs/vazias
 - [ ] 24. Rebuild resiliente à unicidade de `order_index` com itens manuais
 - [ ] 25. Reordenar playlist sem violar a unicidade

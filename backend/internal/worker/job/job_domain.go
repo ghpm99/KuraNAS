@@ -22,11 +22,12 @@ const (
 	JobTypeAudioMetadataReconcile JobType = "audio_metadata_reconcile"
 	JobTypeDocumentTextIndex      JobType = "document_text_index"
 	JobTypeVideoMetadataReconcile JobType = "video_metadata_reconcile"
+	JobTypeVideoPlaylistRebuild   JobType = "video_playlist_rebuild"
 )
 
 func (t JobType) IsValid() bool {
 	switch t {
-	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill, JobTypeImageMetadataReconcile, JobTypeAudioMetadataReconcile, JobTypeDocumentTextIndex, JobTypeVideoMetadataReconcile:
+	case JobTypeStartupScan, JobTypeUploadProcess, JobTypeFSEvent, JobTypeReindexFolder, JobTypeTakeoutImport, JobTypeOllamaPull, JobTypeAIPlaylistCluster, JobTypeBackupRun, JobTypeTierMigration, JobTypeEmailSync, JobTypeRemoteFetch, JobTypeCaptureProcess, JobTypeImageClassifyBackfill, JobTypeImageMetadataReconcile, JobTypeAudioMetadataReconcile, JobTypeDocumentTextIndex, JobTypeVideoMetadataReconcile, JobTypeVideoPlaylistRebuild:
 		return true
 	default:
 		return false
@@ -60,11 +61,12 @@ const (
 	StepTypeAudioMetadataReconcile StepType = "audio_metadata_reconcile"
 	StepTypeDocumentTextIndex      StepType = "document_text_index"
 	StepTypeVideoMetadataReconcile StepType = "video_metadata_reconcile"
+	StepTypeVideoPlaylistRebuild   StepType = "video_playlist_rebuild"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile, StepTypeAudioMetadataReconcile, StepTypeDocumentTextIndex, StepTypeVideoMetadataReconcile:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile, StepTypeAudioMetadataReconcile, StepTypeDocumentTextIndex, StepTypeVideoMetadataReconcile, StepTypeVideoPlaylistRebuild:
 		return true
 	default:
 		return false
