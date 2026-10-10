@@ -181,6 +181,9 @@ func (m *videoRepoMock) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int
 	}
 	return nil
 }
+func (m *videoRepoMock) RenumberPlaylistItems(tx *sql.Tx, playlistID int) error {
+	return nil
+}
 func (m *videoRepoMock) GetPlaylistExclusions(playlistID int) (map[int]bool, error) {
 	if m.getPlaylistExclusionsFn != nil {
 		return m.getPlaylistExclusionsFn(playlistID)

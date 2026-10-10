@@ -141,6 +141,9 @@ func (s *Service) RebuildSmartPlaylists() error {
 			if err := s.Repository.InsertPlaylistItemsWithSource(tx, pl.ID, filtered, "auto"); err != nil {
 				return err
 			}
+			if err := s.Repository.RenumberPlaylistItems(tx, pl.ID); err != nil {
+				return err
+			}
 		}
 		return s.Repository.DeleteStaleAutoPlaylists(tx, producedPlaylistIDs)
 	})

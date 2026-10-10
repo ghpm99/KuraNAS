@@ -29,6 +29,7 @@ type RepositoryInterface interface {
 	UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
 	DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) error
 	DeleteStaleAutoPlaylists(tx *sql.Tx, keptPlaylistIDs []int) error
+	RenumberPlaylistItems(tx *sql.Tx, playlistID int) error
 	InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)

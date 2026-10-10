@@ -159,3 +159,6 @@ var GetLibraryMoviesByNameQuery string
 
 //go:embed get_library_movies_by_recent.sql
 var GetLibraryMoviesByRecentQuery string
+
+//go:embed renumber_playlist_items.sql
+var RenumberPlaylistItemsQuery string
