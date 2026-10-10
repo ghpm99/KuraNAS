@@ -375,7 +375,7 @@ func TestFileService_CreateUploadProcessJob(t *testing.T) {
 	hasMetadata := false
 	hasChecksum := false
 	hasThumbnail := false
-	hasPlaylist := false
+	hasPlaylistIndex := false
 	for _, step := range jobsRepo.createdSteps {
 		switch step.Type {
 		case "persist":
@@ -387,12 +387,15 @@ func TestFileService_CreateUploadProcessJob(t *testing.T) {
 		case "thumbnail":
 			hasThumbnail = true
 		case "playlist_index":
-			hasPlaylist = true
+			hasPlaylistIndex = true
 		}
 	}
 
-	if !hasPersist || !hasMetadata || !hasChecksum || !hasThumbnail || !hasPlaylist {
-		t.Fatalf("expected upload steps persist/metadata/checksum/thumbnail/playlist_index, got %+v", jobsRepo.createdSteps)
+	if !hasPersist || !hasMetadata || !hasChecksum || !hasThumbnail {
+		t.Fatalf("expected upload steps persist/metadata/checksum/thumbnail, got %+v", jobsRepo.createdSteps)
+	}
+	if hasPlaylistIndex {
+		t.Fatalf("upload must not plan a per-file playlist_index step, got %+v", jobsRepo.createdSteps)
 	}
 }
 

@@ -53,6 +53,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypePlaylistIndex] = func(step jobs.StepModel) error {
 		return executePlaylistIndexStep(context, step)
 	}
+	executors[job.StepTypeVideoPlaylistRebuild] = func(step jobs.StepModel) error {
+		return executeVideoPlaylistRebuildStep(context, step)
+	}
 	executors[job.StepTypeMarkDeleted] = func(step jobs.StepModel) error {
 		return executeMarkDeletedStep(context, step)
 	}
@@ -329,6 +332,7 @@ func executePersistStep(context *WorkerContext, step jobs.StepModel) error {
 				return createErr
 			}
 			enqueueDocumentTextIndexIfDocument(context, fileDto)
+			enqueueVideoPlaylistRebuildIfVideo(context, fileDto)
 			return nil
 		}
 		return err
@@ -339,6 +343,7 @@ func executePersistStep(context *WorkerContext, step jobs.StepModel) error {
 		return err
 	}
 	enqueueDocumentTextIndexIfDocument(context, fileDto)
+	enqueueVideoPlaylistRebuildIfVideo(context, fileDto)
 	return nil
 }
 
@@ -652,16 +657,6 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType job.JobType, priorit
 			Payload:     commonPayload,
 		})
 	}
-	if formatType.Type == utils.FormatTypeVideo {
-		steps = append(steps, PlannedStep{
-			Key:         "playlist_index",
-			Type:        job.StepTypePlaylistIndex,
-			DependsOn:   []string{"persist"},
-			MaxAttempts: 3,
-			Payload:     commonPayload,
-		})
-	}
-
 	return PlannedJob{
 		Type:     jobType,
 		Priority: priority,

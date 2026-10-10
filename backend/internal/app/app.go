@@ -123,13 +123,14 @@ func InitializeApp() (*Application, error) {
 
 	var librariesService = appContext.Libraries
 	workerFileContext := &engine.WorkerContext{
-		FilesService:        appContext.Files.Service,
-		VideoService:        appContext.Video.Service,
-		Tasks:               *appContext.Tasks,
-		Logger:              appContext.Logger,
-		NotificationService: appContext.Notifications.Service,
-		AIService:           appContext.AI,
-		SystemEvents:        systemEvents,
+		FilesService:         appContext.Files.Service,
+		VideoService:         appContext.Video.Service,
+		Tasks:                *appContext.Tasks,
+		Logger:               appContext.Logger,
+		NotificationService:  appContext.Notifications.Service,
+		AIService:            appContext.AI,
+		SystemEvents:         systemEvents,
+		VideoPlaylistRebuild: engine.NewVideoPlaylistRebuildCoordinator(),
 	}
 	if appContext.Image != nil {
 		workerFileContext.ImageRepository = appContext.Image.Repository

@@ -63,6 +63,7 @@ type WorkerContext struct {
 	CapturesService         CapturePromoter
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
+	VideoPlaylistRebuild    *VideoPlaylistRebuildCoordinator
 }
 
 // aiServiceForImageClassification returns the AI service only when image
