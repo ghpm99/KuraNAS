@@ -409,6 +409,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback.POST("/start", context.Video.Handler.StartPlaybackHandler)
 	playback.GET("/state", context.Video.Handler.GetPlaybackStateHandler)
 	playback.PUT("/state", context.Video.Handler.UpdatePlaybackStateHandler)
+	playback.POST("/state", context.Video.Handler.UpdatePlaybackStateHandler)
 	playback.POST("/next", context.Video.Handler.NextVideoHandler)
 	playback.POST("/previous", context.Video.Handler.PreviousVideoHandler)
 	playback.POST("/behavior", context.Video.Handler.TrackBehaviorEventHandler)
