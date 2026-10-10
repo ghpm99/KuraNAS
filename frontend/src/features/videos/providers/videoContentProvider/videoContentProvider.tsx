@@ -5,6 +5,7 @@ import {
     getVideoHomeCatalog,
     getVideoLibraryFiles,
     getVideoPlaylistMemberships,
+    getVideoPlaylistById,
     getVideoPlaylistItemsPage,
     getVideoPlaylists,
     type VideoCatalogItemDto,
@@ -17,7 +18,7 @@ import {
     type VideoPlaylistDto,
     type VideoPlaylistItemDto,
 } from '@/service/videoPlayback';
-import { videoQueryKeys } from './useVideoQueries';
+import { useVideoSectionPlaylists, videoQueryKeys } from './useVideoQueries';
 import { toVideoQueryFailure, type VideoQueryFailure } from './videoQueryFailure';
 import { type VideoSection } from '@/app/routes';
 import {
@@ -41,6 +42,8 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
 const VIDEO_PLAYLIST_ITEMS_PAGE_SIZE = 50;
+const VIDEO_SECTION_GRID_PAGE_SIZE = 24;
+const VIDEO_HOME_RAIL_PAGE_SIZE = 4;
 const VIDEO_HOME_CATALOG_LIMIT = 12;
 const VIDEO_CONTINUE_WATCHING_LIMIT = 24;
 
@@ -81,6 +84,8 @@ export interface VideoContentContextData {
     continueWatchingFailure: VideoQueryFailure | null;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
+    isFetchingMoreSectionPlaylists: boolean;
+    hasMoreSectionPlaylists: boolean;
     isAddingToPlaylist: boolean;
     isRenamingPlaylist: boolean;
     isRemovingFromPlaylist: boolean;
@@ -92,6 +97,7 @@ export interface VideoContentContextData {
     setSelectedPlaylistForVideo: (videoId: number, playlistId: number) => void;
     closeFeedback: () => void;
     loadMoreVideos: () => void;
+    loadMoreSectionPlaylists: () => void;
     loadMoreSelectedPlaylistItems: () => void;
     selectPlaylist: (playlist: VideoPlaylistDto) => void;
     clearSelectedPlaylist: () => void;
@@ -105,6 +111,11 @@ export interface VideoContentContextData {
 }
 
 const VideoContentContext = createContext<VideoContentContextData | undefined>(undefined);
+
+const gridSections: VideoSection[] = ['series', 'personal', 'clips'];
+
+const flattenSectionPages = (pages?: Pagination<VideoPlaylistDto>[]) =>
+    pages?.flatMap((page) => page.items ?? []) ?? [];
 
 const slugify = (value: string) =>
     value
@@ -134,11 +145,35 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
     const currentSection = getVideoSectionFromPath(location.pathname);
 
+    const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
+    const playlistIdFromSearch = getVideoPlaylistIdFromSearch(location.search);
+    const isHome = currentSection === 'home';
+    const sectionPageSize = isHome ? VIDEO_HOME_RAIL_PAGE_SIZE : VIDEO_SECTION_GRID_PAGE_SIZE;
+    const isSectionListed = (section: VideoSection) =>
+        isHome ? true : gridSections.includes(section) && currentSection === section;
+
+    const seriesQuery = useVideoSectionPlaylists(
+        'series',
+        sectionPageSize,
+        isSectionListed('series')
+    );
+    const moviesQuery = useVideoSectionPlaylists('movies', sectionPageSize, isHome);
+    const personalQuery = useVideoSectionPlaylists(
+        'personal',
+        sectionPageSize,
+        isSectionListed('personal')
+    );
+    const clipsQuery = useVideoSectionPlaylists('clips', sectionPageSize, isSectionListed('clips'));
+    const foldersQuery = useVideoSectionPlaylists('folders', sectionPageSize, isHome);
+
+    const isFullPlaylistListNeeded =
+        currentSection === 'folders' || Boolean(playlistSlug && !playlistIdFromSearch);
     const playlistsQuery = useQuery({
         queryKey: videoQueryKeys.playlists,
         queryFn: () => getVideoPlaylists(false),
+        enabled: isFullPlaylistListNeeded,
     });
-    const { data: playlists = [], isLoading: isLoadingPlaylists } = playlistsQuery;
+    const { data: playlists = [] } = playlistsQuery;
     const homeCatalogQuery = useQuery({
         queryKey: videoQueryKeys.homeCatalog,
         queryFn: () => getVideoHomeCatalog(VIDEO_HOME_CATALOG_LIMIT),
@@ -167,21 +202,101 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const { data: continueWatchingItems = [], isLoading: isLoadingContinueWatching } =
         continueWatchingQuery;
 
-    const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
-    const playlistIdFromSearch = getVideoPlaylistIdFromSearch(location.search);
-    const selectedPlaylistSummary = useMemo(() => {
+    const seriesPlaylists = useMemo(
+        () => flattenSectionPages(seriesQuery.data?.pages),
+        [seriesQuery.data]
+    );
+    const moviePlaylists = useMemo(
+        () => flattenSectionPages(moviesQuery.data?.pages),
+        [moviesQuery.data]
+    );
+    const personalPlaylists = useMemo(
+        () => flattenSectionPages(personalQuery.data?.pages),
+        [personalQuery.data]
+    );
+    const clipPlaylists = useMemo(
+        () => flattenSectionPages(clipsQuery.data?.pages),
+        [clipsQuery.data]
+    );
+    const folderPlaylists = useMemo(
+        () => flattenSectionPages(foldersQuery.data?.pages),
+        [foldersQuery.data]
+    );
+
+    const activeListQueries = useMemo(() => {
+        if (isHome) return [seriesQuery, moviesQuery, personalQuery, clipsQuery, foldersQuery];
+        if (currentSection === 'series') return [seriesQuery];
+        if (currentSection === 'personal') return [personalQuery];
+        if (currentSection === 'clips') return [clipsQuery];
+        if (isFullPlaylistListNeeded) return [playlistsQuery];
+        return [];
+    }, [
+        isHome,
+        currentSection,
+        isFullPlaylistListNeeded,
+        seriesQuery,
+        moviesQuery,
+        personalQuery,
+        clipsQuery,
+        foldersQuery,
+        playlistsQuery,
+    ]);
+    const isLoadingPlaylists = activeListQueries.some((listQuery) => listQuery.isLoading);
+
+    const gridSectionQuery =
+        currentSection === 'series'
+            ? seriesQuery
+            : currentSection === 'personal'
+              ? personalQuery
+              : currentSection === 'clips'
+                ? clipsQuery
+                : null;
+    const hasMoreSectionPlaylists = gridSectionQuery?.hasNextPage ?? false;
+    const isFetchingMoreSectionPlaylists = gridSectionQuery?.isFetchingNextPage ?? false;
+
+    const loadedPlaylists = useMemo(
+        () => [
+            ...seriesPlaylists,
+            ...moviePlaylists,
+            ...personalPlaylists,
+            ...clipPlaylists,
+            ...folderPlaylists,
+            ...playlists,
+        ],
+        [
+            seriesPlaylists,
+            moviePlaylists,
+            personalPlaylists,
+            clipPlaylists,
+            folderPlaylists,
+            playlists,
+        ]
+    );
+    const loadedPlaylistForSelection = useMemo(() => {
         if (!playlistSlug) return null;
         const playlistById = playlistIdFromSearch
-            ? playlists.find((playlist) => playlist.id === playlistIdFromSearch)
+            ? loadedPlaylists.find((playlist) => playlist.id === playlistIdFromSearch)
             : undefined;
         return (
             playlistById ??
-            playlists.find(
+            loadedPlaylists.find(
                 (playlist) => (slugify(playlist.name) || String(playlist.id)) === playlistSlug
             ) ??
             null
         );
-    }, [playlistIdFromSearch, playlistSlug, playlists]);
+    }, [loadedPlaylists, playlistIdFromSearch, playlistSlug]);
+
+    const shouldFetchPlaylistHeaderById =
+        Boolean(playlistSlug) &&
+        playlistIdFromSearch !== null &&
+        loadedPlaylistForSelection === null &&
+        !isLoadingPlaylists;
+    const playlistHeaderQuery = useQuery({
+        queryKey: videoQueryKeys.playlistDetail(playlistIdFromSearch ?? undefined),
+        enabled: shouldFetchPlaylistHeaderById,
+        queryFn: () => getVideoPlaylistById(playlistIdFromSearch ?? 0),
+    });
+    const selectedPlaylistSummary = loadedPlaylistForSelection ?? playlistHeaderQuery.data ?? null;
 
     const selectedPlaylistQuery = useInfiniteQuery({
         queryKey: videoQueryKeys.playlistItems(selectedPlaylistSummary?.id),
@@ -211,39 +326,6 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             items: selectedPlaylistItemsData.pages.flatMap((page) => page.items),
         };
     }, [selectedPlaylistSummary, selectedPlaylistItemsData]);
-
-    const seriesPlaylists = useMemo(
-        () =>
-            playlists.filter(
-                (playlist) =>
-                    playlist.classification === 'series' || playlist.classification === 'anime'
-            ),
-        [playlists]
-    );
-
-    const moviePlaylists = useMemo(
-        () => playlists.filter((playlist) => playlist.classification === 'movie'),
-        [playlists]
-    );
-
-    const personalPlaylists = useMemo(
-        () => playlists.filter((playlist) => playlist.classification === 'personal'),
-        [playlists]
-    );
-
-    const clipPlaylists = useMemo(
-        () =>
-            playlists.filter(
-                (playlist) =>
-                    playlist.classification === 'clip' || playlist.classification === 'program'
-            ),
-        [playlists]
-    );
-
-    const folderPlaylists = useMemo(
-        () => playlists.filter((playlist) => playlist.type === 'folder'),
-        [playlists]
-    );
 
     const recentCatalogItems = useMemo(
         () => homeCatalog?.sections.find((section) => section.key === 'recent')?.items ?? [],
@@ -291,6 +373,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const invalidatePlaylistQueries = async () => {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: videoQueryKeys.playlists }),
+            queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
             queryClient.invalidateQueries({ queryKey: ['video', 'playlist-items'] }),
             queryClient.invalidateQueries({
                 queryKey: ['video', 'playlist-membership'],
@@ -411,12 +494,17 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         onSettled: () => invalidateAllVideoQueries(),
     });
 
-    const playlistsFailure = toVideoQueryFailure({
-        isError: playlistsQuery.isError,
-        error: playlistsQuery.error,
-        hasData: playlistsQuery.data !== undefined,
-        refetch: playlistsQuery.refetch,
-    });
+    const playlistsFailure =
+        activeListQueries
+            .map((listQuery) =>
+                toVideoQueryFailure({
+                    isError: listQuery.isError,
+                    error: listQuery.error,
+                    hasData: listQuery.data !== undefined,
+                    refetch: listQuery.refetch,
+                })
+            )
+            .find((failure) => failure !== null) ?? null;
     const homeCatalogFailure = toVideoQueryFailure({
         isError: homeCatalogQuery.isError,
         error: homeCatalogQuery.error,
@@ -508,6 +596,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         continueWatchingFailure,
         isFetchingMoreVideos,
         hasMoreVideos,
+        isFetchingMoreSectionPlaylists,
+        hasMoreSectionPlaylists,
         isAddingToPlaylist: addToPlaylistMutation.isPending,
         isRenamingPlaylist: renameMutation.isPending,
         isRemovingFromPlaylist: removeFromPlaylistMutation.isPending,
@@ -526,6 +616,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         loadMoreVideos: () => {
             if (hasMoreVideos && !isFetchingMoreVideos) {
                 void fetchNextPage();
+            }
+        },
+        loadMoreSectionPlaylists: () => {
+            if (gridSectionQuery?.hasNextPage && !gridSectionQuery.isFetchingNextPage) {
+                void gridSectionQuery.fetchNextPage();
             }
         },
         loadMoreSelectedPlaylistItems: () => {

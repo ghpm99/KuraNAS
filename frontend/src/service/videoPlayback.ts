@@ -175,6 +175,20 @@ export const getVideoPlaylists = async (includeHidden = false): Promise<VideoPla
     return response.data;
 };
 
+export type VideoPlaylistSection = 'series' | 'movies' | 'personal' | 'clips' | 'folders';
+
+export const getVideoPlaylistsBySection = async (
+    section: VideoPlaylistSection,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoPlaylistDto>> => {
+    const response = await apiBase.get<Pagination<VideoPlaylistDto>>(
+        `/video/playlists/section/${section}`,
+        { params: { page, page_size: pageSize } }
+    );
+    return response.data;
+};
+
 export const getVideoPlaylistMemberships = async (
     includeHidden = false
 ): Promise<VideoPlaylistMembershipDto[]> => {

@@ -37,6 +37,8 @@ export default function VideoContentScreen() {
         continueWatchingFailure,
         isFetchingMoreVideos,
         hasMoreVideos,
+        isFetchingMoreSectionPlaylists,
+        hasMoreSectionPlaylists,
         isAddingToPlaylist,
         isRenamingPlaylist,
         isRemovingFromPlaylist,
@@ -58,6 +60,7 @@ export default function VideoContentScreen() {
         setSelectedPlaylistForVideo,
         closeFeedback,
         loadMoreVideos,
+        loadMoreSectionPlaylists,
         loadMoreSelectedPlaylistItems,
         selectPlaylist,
         clearSelectedPlaylist,
@@ -164,6 +167,9 @@ export default function VideoContentScreen() {
                 descriptionKey={`VIDEO_SECTION_${sectionName}_DESCRIPTION`}
                 emptyKey={`VIDEO_SECTION_${sectionName}_EMPTY`}
                 playlists={playlistsOfSection}
+                hasNextPage={hasMoreSectionPlaylists}
+                isFetchingNextPage={isFetchingMoreSectionPlaylists}
+                fetchNextPage={loadMoreSectionPlaylists}
                 onSelectPlaylist={selectPlaylist}
                 onPlayVideo={playVideo}
             />

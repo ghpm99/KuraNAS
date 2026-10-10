@@ -19,8 +19,20 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 
 jest.mock('./VideoSectionPlaylistGrid', () => ({
     __esModule: true,
-    default: (props: { titleKey: string }) => (
-        <div data-testid={`section-grid-${props.titleKey}`}>{props.titleKey}</div>
+    default: (props: {
+        titleKey: string;
+        hasNextPage?: boolean;
+        isFetchingNextPage?: boolean;
+        fetchNextPage?: () => void;
+    }) => (
+        <div data-testid={`section-grid-${props.titleKey}`}>
+            {props.titleKey}
+            <span>{props.hasNextPage ? 'has-next' : 'no-next'}</span>
+            <span>{props.isFetchingNextPage ? 'fetching-next' : 'idle'}</span>
+            <button type="button" onClick={props.fetchNextPage}>
+                grid-fetch-next
+            </button>
+        </div>
     ),
 }));
 
@@ -135,6 +147,8 @@ const createContext = (
     continueWatchingFailure: null,
     isFetchingMoreVideos: false,
     hasMoreVideos: false,
+    isFetchingMoreSectionPlaylists: false,
+    hasMoreSectionPlaylists: false,
     isAddingToPlaylist: false,
     isRenamingPlaylist: false,
     isRemovingFromPlaylist: false,
@@ -150,6 +164,7 @@ const createContext = (
     setSelectedPlaylistForVideo: jest.fn(),
     closeFeedback: jest.fn(),
     loadMoreVideos: jest.fn(),
+    loadMoreSectionPlaylists: jest.fn(),
     loadMoreSelectedPlaylistItems: jest.fn(),
     selectPlaylist: jest.fn(),
     clearSelectedPlaylist: jest.fn(),
@@ -181,6 +196,26 @@ describe('VideoContentScreen', () => {
         mockUseVideoContentProvider.mockReturnValue(createContext(overrides));
         render(<VideoContentScreen />);
     };
+
+    it.each(['series', 'personal', 'clips'] as const)(
+        'wires the %s grid to the section paging of the provider',
+        (section) => {
+            const loadMoreSectionPlaylists = jest.fn();
+            renderScreen({
+                currentSection: section,
+                hasMoreSectionPlaylists: true,
+                isFetchingMoreSectionPlaylists: true,
+                loadMoreSectionPlaylists,
+            });
+
+            const grid = screen.getByTestId(`section-grid-${sectionTitleMap[section]}`);
+            expect(grid).toHaveTextContent('has-next');
+            expect(grid).toHaveTextContent('fetching-next');
+
+            fireEvent.click(screen.getByRole('button', { name: 'grid-fetch-next' }));
+            expect(loadMoreSectionPlaylists).toHaveBeenCalledTimes(1);
+        }
+    );
 
     it('renders the page shell immediately while every query is pending', () => {
         renderScreen({

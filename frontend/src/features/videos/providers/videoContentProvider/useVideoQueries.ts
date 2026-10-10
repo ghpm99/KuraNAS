@@ -3,12 +3,16 @@ import {
     getVideoHomeCatalog,
     getVideoPlaylistById,
     getVideoPlaylists,
+    getVideoPlaylistsBySection,
     getVideosWithoutPlaylist,
+    type VideoPlaylistSection,
 } from '@/service/videoPlayback';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 export const videoQueryKeys = {
     playlists: ['video', 'playlists'] as const,
+    sectionPlaylists: (section: VideoPlaylistSection, pageSize: number) =>
+        ['video', 'playlists', 'section', section, pageSize] as const,
     playlistDetail: (playlistId?: number) => ['video', 'playlist-detail', playlistId] as const,
     playlistItems: (playlistId?: number) => ['video', 'playlist-items', playlistId] as const,
     unassigned: ['video', 'unassigned'] as const,
@@ -53,5 +57,20 @@ export const useVideoHomeCatalog = () => {
     return useQuery({
         queryKey: videoQueryKeys.homeCatalog,
         queryFn: () => getVideoHomeCatalog(24),
+    });
+};
+
+export const useVideoSectionPlaylists = (
+    section: VideoPlaylistSection,
+    pageSize: number,
+    isEnabled: boolean
+) => {
+    return useInfiniteQuery({
+        queryKey: videoQueryKeys.sectionPlaylists(section, pageSize),
+        enabled: isEnabled,
+        queryFn: ({ pageParam }) => getVideoPlaylistsBySection(section, pageParam, pageSize),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
     });
 };

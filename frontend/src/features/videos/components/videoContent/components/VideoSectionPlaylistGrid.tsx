@@ -1,6 +1,7 @@
 import { Button } from '@mui/material';
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import VideoPlaylistCard from './VideoPlaylistCard';
@@ -15,6 +16,9 @@ type VideoSectionPlaylistGridProps = {
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     badge?: string;
     action?: ReactNode;
+    hasNextPage?: boolean;
+    isFetchingNextPage?: boolean;
+    fetchNextPage?: () => void;
 };
 
 export default function VideoSectionPlaylistGrid({
@@ -26,6 +30,9 @@ export default function VideoSectionPlaylistGrid({
     onPlayVideo,
     badge,
     action,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
 }: VideoSectionPlaylistGridProps) {
     const { t } = useI18n();
 
@@ -53,6 +60,11 @@ export default function VideoSectionPlaylistGrid({
                     ))}
                 </div>
             )}
+            <LoadMoreSentinel
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={fetchNextPage}
+            />
         </section>
     );
 }
