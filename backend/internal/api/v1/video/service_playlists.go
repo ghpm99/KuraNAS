@@ -309,8 +309,8 @@ func (s *Service) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
 	return result, nil
 }
 
-func (s *Service) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
-	models, err := s.Repository.ListLibraryVideos(page, pageSize, searchQuery)
+func (s *Service) ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
+	models, err := s.Repository.ListLibraryVideos(request)
 	if err != nil {
 		return utils.PaginationResponse[VideoFileDto]{}, err
 	}
