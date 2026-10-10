@@ -3,6 +3,7 @@ import ErrorState from '@/components/errorState/errorState';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
+import VideoFolderBrowser from '../folderBrowser/VideoFolderBrowser';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
@@ -215,7 +216,7 @@ export default function VideoContentScreen() {
             case 'folders':
                 return (
                     <>
-                        {renderPlaylistGridSection('FOLDERS', folderPlaylists)}
+                        <VideoFolderBrowser onPlayVideo={playVideo} />
                         {renderVideoLibrarySection()}
                     </>
                 );

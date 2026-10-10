@@ -24,6 +24,11 @@ jest.mock('./VideoSectionPlaylistGrid', () => ({
     ),
 }));
 
+jest.mock('../folderBrowser/VideoFolderBrowser', () => ({
+    __esModule: true,
+    default: () => <div data-testid="folder-browser">folder-browser</div>,
+}));
+
 jest.mock('./VideoContinueWatchingSection', () => ({
     __esModule: true,
     default: (props: { items: unknown[] }) => (
@@ -197,14 +202,15 @@ describe('VideoContentScreen', () => {
 
     it('lets the folders sections resolve independently', () => {
         renderScreen({ currentSection: 'folders', isLoadingVideos: true });
-        expect(screen.getByTestId('section-grid-VIDEO_SECTION_FOLDERS')).toBeInTheDocument();
+        expect(screen.getByTestId('folder-browser')).toBeInTheDocument();
         expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
         expect(screen.queryByTestId('library-section')).not.toBeInTheDocument();
     });
 
-    it('shows the library while folder playlists are still loading', () => {
+    it('does not wait for the playlists query to show the folder browser', () => {
         renderScreen({ currentSection: 'folders', isLoadingPlaylists: true });
-        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        expect(screen.queryByTestId('video-section-skeleton')).not.toBeInTheDocument();
+        expect(screen.getByTestId('folder-browser')).toBeInTheDocument();
         expect(screen.getByTestId('library-section')).toBeInTheDocument();
     });
 
@@ -288,9 +294,9 @@ describe('VideoContentScreen', () => {
         expect(screen.getByTestId('continue-section')).toHaveTextContent('1');
     });
 
-    it('renders the folders section with the library section', () => {
+    it('renders the folders section with the folder browser and the library section', () => {
         renderScreen({ currentSection: 'folders' });
-        expect(screen.getByTestId('section-grid-VIDEO_SECTION_FOLDERS')).toBeInTheDocument();
+        expect(screen.getByTestId('folder-browser')).toBeInTheDocument();
         expect(screen.getByTestId('library-section')).toBeInTheDocument();
     });
 
@@ -326,25 +332,26 @@ describe('VideoContentScreen', () => {
         expect(retry).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the folder playlists when only the library query fails', () => {
+    it('keeps the folder browser when only the library query fails', () => {
         const retry = jest.fn();
         renderScreen({
             currentSection: 'folders',
             videosFailure: { message: 'library down', retry },
         });
-        expect(screen.getByTestId('section-grid-VIDEO_SECTION_FOLDERS')).toBeInTheDocument();
+        expect(screen.getByTestId('folder-browser')).toBeInTheDocument();
         expect(screen.getByText('library down')).toBeInTheDocument();
         expect(screen.queryByTestId('library-section')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button'));
         expect(retry).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the library when only the folder playlists query fails', () => {
+    it('ignores a playlists query failure on the folders section', () => {
         renderScreen({
             currentSection: 'folders',
             playlistsFailure: { message: 'playlists down', retry: jest.fn() },
         });
-        expect(screen.getByText('playlists down')).toBeInTheDocument();
+        expect(screen.queryByText('playlists down')).not.toBeInTheDocument();
+        expect(screen.getByTestId('folder-browser')).toBeInTheDocument();
         expect(screen.getByTestId('library-section')).toBeInTheDocument();
     });
 

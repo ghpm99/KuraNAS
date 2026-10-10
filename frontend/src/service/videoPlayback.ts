@@ -21,6 +21,13 @@ export interface VideoFileDto {
     metadata?: VideoMetadataDto;
 }
 
+export interface VideoLibraryFolderDto {
+    path: string;
+    name: string;
+    video_count: number;
+    cover_file_id: number;
+}
+
 export interface VideoPlaylistItemDto {
     id: number;
     order_index: number;
@@ -241,6 +248,35 @@ export const getVideoLibraryFiles = async (
             page_size: pageSize,
             query: searchQuery,
         },
+    });
+    return response.data;
+};
+
+export const getVideoLibraryFolders = async (
+    parentPath: string,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoLibraryFolderDto>> => {
+    const response = await apiBase.get<Pagination<VideoLibraryFolderDto>>(
+        '/video/library/folders',
+        {
+            params: {
+                parent: parentPath === '' ? undefined : parentPath,
+                page,
+                page_size: pageSize,
+            },
+        }
+    );
+    return response.data;
+};
+
+export const getVideoLibraryFolderVideos = async (
+    folderPath: string,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoFileDto>> => {
+    const response = await apiBase.get<Pagination<VideoFileDto>>('/video/library/folders/videos', {
+        params: { path: folderPath, page, page_size: pageSize },
     });
     return response.data;
 };
