@@ -17,6 +17,7 @@ import {
     type PlaybackErrorKind,
 } from '@/features/videos/videoPlayer/playbackError';
 import { flushVideoPlaybackState } from '@/service/playerStateFlush';
+import { hasReachedCompletionThreshold } from './playbackCompletion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
@@ -197,13 +198,17 @@ const useVideoPlayer = ({
             const playlistIdInSession = latest.session?.playback_state.playlist_id;
             const videoIdInSession = latest.session?.playback_state.video_id;
             if (!playlistIdInSession || !videoIdInSession) return null;
+            const positionSeconds = payload?.currentTime ?? latest.currentTime;
+            const durationSeconds = payload?.duration ?? latest.duration;
+            const isCompleted =
+                payload?.completed ?? hasReachedCompletionThreshold(positionSeconds, durationSeconds);
             return {
                 playlist_id: playlistIdInSession,
                 video_id: videoIdInSession,
-                current_time: persistProgress ? (payload?.currentTime ?? latest.currentTime) : 0,
-                duration: payload?.duration ?? latest.duration,
+                current_time: persistProgress ? positionSeconds : 0,
+                duration: durationSeconds,
                 is_paused: payload?.isPaused ?? latest.status !== 'playing',
-                completed: persistProgress ? (payload?.completed ?? false) : false,
+                completed: persistProgress ? isCompleted : false,
             };
         },
         [persistProgress]
