@@ -991,6 +991,7 @@
 	"VIDEO_ADD_SUCCESS": "Video adicionado a playlist com sucesso.",
 	"VIDEO_ADD_ERROR": "Nao foi possivel adicionar o video a playlist.",
 	"VIDEO_LOADING_VIDEOS": "Carregando videos...",
+	"VIDEO_SECTION_LOAD_ERROR": "Não foi possível carregar {{section}}.",
 	"VIDEO_LOADING_PLAYLIST": "Carregando playlist...",
 	"VIDEO_CONTINUE_WATCHING": "Continuar assistindo",
 	"VIDEO_RECENT_PLAYLISTS_DESC": "Playlists com reproducao recente.",

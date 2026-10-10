@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { VideoSection } from '@/app/routes';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import type { VideoContentContextData } from '@/features/videos/providers/videoContentProvider/videoContentProvider';
@@ -116,6 +116,11 @@ const createContext = (
     isLoadingSelectedPlaylist: false,
     isLoadingHomeCatalog: false,
     isLoadingContinueWatching: false,
+    playlistsFailure: null,
+    videosFailure: null,
+    selectedPlaylistFailure: null,
+    homeCatalogFailure: null,
+    continueWatchingFailure: null,
     isFetchingMoreVideos: false,
     hasMoreVideos: false,
     isAddingToPlaylist: false,
@@ -290,6 +295,73 @@ describe('VideoContentScreen', () => {
     });
 
     it('renders the home screen for the home section', () => {
+        renderScreen({ currentSection: 'home' });
+        expect(screen.getByTestId('home-screen')).toBeInTheDocument();
+    });
+
+    it.each(['series', 'movies', 'personal', 'clips'] as const)(
+        'shows an error with retry in the %s section when playlists fail',
+        (section) => {
+            const retry = jest.fn();
+            renderScreen({
+                currentSection: section,
+                playlistsFailure: { message: 'backend down', retry },
+            });
+            expect(screen.getByText('backend down')).toBeInTheDocument();
+            expect(screen.queryByTestId(/^section-grid-/)).not.toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button'));
+            expect(retry).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('shows an error with retry in the continue section when its query fails', () => {
+        const retry = jest.fn();
+        renderScreen({
+            currentSection: 'continue',
+            continueWatchingFailure: { message: 'continue down', retry },
+        });
+        expect(screen.getByText('continue down')).toBeInTheDocument();
+        expect(screen.queryByTestId('continue-section')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the folder playlists when only the library query fails', () => {
+        const retry = jest.fn();
+        renderScreen({
+            currentSection: 'folders',
+            videosFailure: { message: 'library down', retry },
+        });
+        expect(screen.getByTestId('section-grid-VIDEO_SECTION_FOLDERS')).toBeInTheDocument();
+        expect(screen.getByText('library down')).toBeInTheDocument();
+        expect(screen.queryByTestId('library-section')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the library when only the folder playlists query fails', () => {
+        renderScreen({
+            currentSection: 'folders',
+            playlistsFailure: { message: 'playlists down', retry: jest.fn() },
+        });
+        expect(screen.getByText('playlists down')).toBeInTheDocument();
+        expect(screen.getByTestId('library-section')).toBeInTheDocument();
+    });
+
+    it('shows an error with retry when the selected playlist detail fails', () => {
+        const retry = jest.fn();
+        renderScreen({
+            selectedPlaylistSummary: createPlaylist({ id: 2 }),
+            selectedPlaylistFailure: { message: 'detail down', retry },
+            currentSection: 'series',
+        });
+        expect(screen.getByText('detail down')).toBeInTheDocument();
+        expect(screen.queryByText('VIDEO_LOADING_PLAYLIST')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes the per-query failures to the home screen', () => {
         renderScreen({ currentSection: 'home' });
         expect(screen.getByTestId('home-screen')).toBeInTheDocument();
     });

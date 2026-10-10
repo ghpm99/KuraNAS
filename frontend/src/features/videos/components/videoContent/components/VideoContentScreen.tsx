@@ -1,4 +1,5 @@
 import { CircularProgress, Typography } from '@mui/material';
+import ErrorState from '@/components/errorState/errorState';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
@@ -10,6 +11,7 @@ import VideoLibrarySection from './VideoLibrarySection';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
 import VideoSeriesDetailView from './VideoSeriesDetailView';
 import VideoSectionPlaylistGrid from './VideoSectionPlaylistGrid';
+import VideoSectionError from './VideoSectionError';
 import VideoSectionSkeleton from './VideoSectionSkeleton';
 import styles from '../videoContent.module.css';
 
@@ -24,6 +26,11 @@ export default function VideoContentScreen() {
         isLoadingSelectedPlaylist,
         isLoadingHomeCatalog,
         isLoadingContinueWatching,
+        playlistsFailure,
+        videosFailure,
+        selectedPlaylistFailure,
+        homeCatalogFailure,
+        continueWatchingFailure,
         isFetchingMoreVideos,
         hasMoreVideos,
         isAddingToPlaylist,
@@ -59,6 +66,19 @@ export default function VideoContentScreen() {
     } = useVideoContentProvider();
 
     if (selectedPlaylistSummary) {
+        if (selectedPlaylistFailure) {
+            return (
+                <div className={styles.page}>
+                    <ErrorState
+                        title={t('VIDEO_SECTION_LOAD_ERROR', {
+                            section: selectedPlaylistSummary.name,
+                        })}
+                        backendMessage={selectedPlaylistFailure.message}
+                        onRetry={selectedPlaylistFailure.retry}
+                    />
+                </div>
+            );
+        }
         if (isLoadingSelectedPlaylist || !selectedPlaylistDetail) {
             return (
                 <div className={styles.loadingState}>
@@ -116,6 +136,14 @@ export default function VideoContentScreen() {
         if (isLoadingPlaylists) {
             return <VideoSectionSkeleton />;
         }
+        if (playlistsFailure) {
+            return (
+                <VideoSectionError
+                    sectionTitleKey={`VIDEO_SECTION_${sectionName}`}
+                    failure={playlistsFailure}
+                />
+            );
+        }
         return (
             <VideoSectionPlaylistGrid
                 titleKey={`VIDEO_SECTION_${sectionName}`}
@@ -131,6 +159,9 @@ export default function VideoContentScreen() {
     const renderVideoLibrarySection = () => {
         if (isLoadingVideos) {
             return <VideoSectionSkeleton cardCount={6} layout="catalogRail" />;
+        }
+        if (videosFailure) {
+            return <VideoSectionError sectionTitleKey="VIDEO_ALL" failure={videosFailure} />;
         }
         return (
             <VideoLibrarySection
@@ -157,6 +188,14 @@ export default function VideoContentScreen() {
             case 'continue':
                 if (isLoadingContinueWatching) {
                     return <VideoSectionSkeleton layout="catalogRail" />;
+                }
+                if (continueWatchingFailure) {
+                    return (
+                        <VideoSectionError
+                            sectionTitleKey="VIDEO_SECTION_CONTINUE"
+                            failure={continueWatchingFailure}
+                        />
+                    );
                 }
                 return (
                     <VideoContinueWatchingSection
@@ -194,6 +233,9 @@ export default function VideoContentScreen() {
                         isLoadingContinueWatching={isLoadingContinueWatching}
                         isLoadingPlaylists={isLoadingPlaylists}
                         isLoadingHomeCatalog={isLoadingHomeCatalog}
+                        playlistsFailure={playlistsFailure}
+                        continueWatchingFailure={continueWatchingFailure}
+                        homeCatalogFailure={homeCatalogFailure}
                         onSelectPlaylist={selectPlaylist}
                         onPlayVideo={playVideo}
                         onSetWatched={setVideoWatched}
