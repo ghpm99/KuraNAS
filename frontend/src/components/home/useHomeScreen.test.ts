@@ -30,7 +30,7 @@ jest.mock('@/service/playerState', () => ({
 }));
 
 jest.mock('@/service/videoPlayback', () => ({
-    getVideoHomeCatalog: jest.fn(() => Promise.resolve({ sections: [] })),
+    getVideoContinueWatching: jest.fn(() => Promise.resolve([])),
     getVideoPlaybackState: jest.fn(() => Promise.resolve(null)),
 }));
 
@@ -85,7 +85,7 @@ const setupDefaultQueries = (
             | 'analytics'
             | 'favorites'
             | 'images'
-            | 'videoCatalog'
+            | 'videoContinue'
             | 'videoPlayback'
             | 'playerState'
             | 'playerQueue',
@@ -97,7 +97,7 @@ const setupDefaultQueries = (
         .mockReturnValueOnce(overrides?.analytics ?? buildQueryState({ recent_files: [] }))
         .mockReturnValueOnce(overrides?.favorites ?? buildQueryState({ items: [] }))
         .mockReturnValueOnce(overrides?.images ?? buildQueryState({ items: [] }))
-        .mockReturnValueOnce(overrides?.videoCatalog ?? buildQueryState({ sections: [] }))
+        .mockReturnValueOnce(overrides?.videoContinue ?? buildQueryState([]))
         .mockReturnValueOnce(overrides?.videoPlayback ?? buildQueryState(null))
         .mockReturnValueOnce(overrides?.playerState ?? buildQueryState(null))
         .mockReturnValueOnce(overrides?.playerQueue ?? buildQueryState(null));
@@ -161,7 +161,7 @@ describe('useHomeScreen', () => {
                 analytics: buildQueryState(null),
                 favorites: buildQueryState(null),
                 images: buildQueryState(null),
-                videoCatalog: buildQueryState(null),
+                videoContinue: buildQueryState(null),
             });
 
             const { result } = renderHook(() => useHomeScreen());
@@ -232,54 +232,48 @@ describe('useHomeScreen', () => {
     // --- videoContinueItems ---
 
     describe('videoContinueItems', () => {
-        it('returns items from the "continue" section', () => {
-            const items = [
-                {
-                    video: { id: 1, name: 'v1' },
-                    progress_pct: 10,
-                    status: 'in_progress',
-                },
-                {
-                    video: { id: 2, name: 'v2' },
-                    progress_pct: 30,
-                    status: 'in_progress',
-                },
-            ];
+        const continueEntry = (id: number, positionSeconds: number, durationSeconds: number) => ({
+            video: { id, name: `v${id}` },
+            position_seconds: positionSeconds,
+            duration_seconds: durationSeconds,
+            updated_at: '2026-01-01T00:00:00Z',
+        });
+
+        it('maps in-progress videos with their progress percentage', () => {
             setupDefaultQueries({
-                videoCatalog: buildQueryState({
-                    sections: [
-                        { key: 'recent', title: 'Recent', items: [{ video: { id: 99 } }] },
-                        { key: 'continue', title: 'Continue', items },
-                    ],
-                }),
+                videoContinue: buildQueryState([
+                    continueEntry(1, 10, 100),
+                    continueEntry(2, 30, 60),
+                ]),
             });
 
             const { result } = renderHook(() => useHomeScreen());
             expect(result.current.videoContinueItems).toHaveLength(2);
             expect(result.current.videoContinueItems[0]?.video.id).toBe(1);
+            expect(result.current.videoContinueItems[0]?.progress_pct).toBe(10);
+            expect(result.current.videoContinueItems[1]?.progress_pct).toBe(50);
+            expect(result.current.videoContinueItems[1]?.status).toBe('in_progress');
         });
 
-        it('returns empty when no continue section exists', () => {
-            setupDefaultQueries({
-                videoCatalog: buildQueryState({
-                    sections: [{ key: 'recent', title: 'Recent', items: [{ video: { id: 1 } }] }],
-                }),
-            });
+        it('returns empty when there is nothing in progress', () => {
+            setupDefaultQueries({ videoContinue: buildQueryState([]) });
+
+            const { result } = renderHook(() => useHomeScreen());
+            expect(result.current.videoContinueItems).toEqual([]);
+        });
+
+        it('returns empty while the data is not loaded', () => {
+            setupDefaultQueries({ videoContinue: buildQueryState(undefined) });
 
             const { result } = renderHook(() => useHomeScreen());
             expect(result.current.videoContinueItems).toEqual([]);
         });
 
         it('slices continue items to max 4', () => {
-            const items = Array.from({ length: 8 }, (_, i) => ({
-                video: { id: i, name: `v${i}` },
-                progress_pct: 10,
-                status: 'in_progress',
-            }));
             setupDefaultQueries({
-                videoCatalog: buildQueryState({
-                    sections: [{ key: 'continue', title: 'Continue', items }],
-                }),
+                videoContinue: buildQueryState(
+                    Array.from({ length: 8 }, (_, i) => continueEntry(i, 10, 100))
+                ),
             });
 
             const { result } = renderHook(() => useHomeScreen());
@@ -539,7 +533,7 @@ describe('useHomeScreen', () => {
             ['analytics', 'isAnalyticsLoading'],
             ['favorites', 'isFavoritesLoading'],
             ['images', 'isImagesLoading'],
-            ['videoCatalog', 'isVideoLoading'],
+            ['videoContinue', 'isVideoLoading'],
             ['videoPlayback', 'isVideoLoading'],
             ['playerState', 'isMusicLoading'],
             ['playerQueue', 'isMusicLoading'],
@@ -583,15 +577,14 @@ describe('useHomeScreen', () => {
                 }),
                 favorites: buildQueryState({ items: [{ id: 55 }] }),
                 images: buildQueryState({ items: [{ id: 77 }] }),
-                videoCatalog: buildQueryState({
-                    sections: [
-                        {
-                            key: 'continue',
-                            title: 'C',
-                            items: [{ video: { id: 3 }, progress_pct: 45 }],
-                        },
-                    ],
-                }),
+                videoContinue: buildQueryState([
+                    {
+                        video: { id: 3 },
+                        position_seconds: 45,
+                        duration_seconds: 100,
+                        updated_at: '2026-01-01T00:00:00Z',
+                    },
+                ]),
                 videoPlayback: buildQueryState({
                     playlist: {
                         id: 10,
@@ -646,9 +639,7 @@ describe('useHomeScreen', () => {
             });
             await expect(mockedUseQuery.mock.calls[1][0].queryFn()).resolves.toEqual({ items: [] });
             await expect(mockedUseQuery.mock.calls[2][0].queryFn()).resolves.toEqual({ items: [] });
-            await expect(mockedUseQuery.mock.calls[3][0].queryFn()).resolves.toEqual({
-                sections: [],
-            });
+            await expect(mockedUseQuery.mock.calls[3][0].queryFn()).resolves.toEqual([]);
             await expect(mockedUseQuery.mock.calls[4][0].queryFn()).resolves.toBeNull();
             await expect(mockedUseQuery.mock.calls[5][0].queryFn()).resolves.toEqual({});
             await expect(mockedUseQuery.mock.calls[6][0].queryFn()).resolves.toEqual({

@@ -24,6 +24,13 @@ jest.mock('./VideoSectionPlaylistGrid', () => ({
     ),
 }));
 
+jest.mock('./VideoContinueWatchingSection', () => ({
+    __esModule: true,
+    default: (props: { items: unknown[] }) => (
+        <div data-testid="continue-section">{props.items.length}</div>
+    ),
+}));
+
 jest.mock('./VideoLibrarySection', () => ({
     __esModule: true,
     default: (props: any) => (
@@ -88,7 +95,7 @@ const createContext = (
     playlists: [],
     allVideos: [],
     filteredVideos: [],
-    continuePlaylists: [],
+    continueWatchingItems: [],
     seriesPlaylists: [],
     moviePlaylists: [],
     personalPlaylists: [],
@@ -130,8 +137,7 @@ const createContext = (
     ...overrides,
 });
 
-const sectionTitleMap: Record<Exclude<VideoSection, 'home' | 'folders'>, string> = {
-    continue: 'VIDEO_SECTION_CONTINUE',
+const sectionTitleMap: Record<Exclude<VideoSection, 'home' | 'folders' | 'continue'>, string> = {
     series: 'VIDEO_SECTION_SERIES',
     movies: 'VIDEO_SECTION_MOVIES',
     personal: 'VIDEO_SECTION_PERSONAL',
@@ -197,6 +203,28 @@ describe('VideoContentScreen', () => {
     it.each(Object.entries(sectionTitleMap))('renders the %s section grid', (section, titleKey) => {
         renderScreen({ currentSection: section as VideoSection });
         expect(screen.getByTestId(`section-grid-${titleKey}`)).toBeInTheDocument();
+    });
+
+    it('renders the continue watching section with the in-progress videos', () => {
+        renderScreen({
+            currentSection: 'continue',
+            continueWatchingItems: [
+                {
+                    video: {
+                        id: 1,
+                        name: 'a',
+                        path: '/a',
+                        parent_path: '/',
+                        format: '.mp4',
+                        size: 1,
+                    },
+                    position_seconds: 5,
+                    duration_seconds: 10,
+                    updated_at: '2026-01-01T00:00:00Z',
+                },
+            ],
+        });
+        expect(screen.getByTestId('continue-section')).toHaveTextContent('1');
     });
 
     it('renders the folders section with the library section', () => {

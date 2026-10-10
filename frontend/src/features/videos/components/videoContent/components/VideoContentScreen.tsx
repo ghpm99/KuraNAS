@@ -3,6 +3,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { useVideoContentProvider } from '@/features/videos/providers/videoContentProvider';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
+import VideoContinueWatchingSection from './VideoContinueWatchingSection';
 import VideoHomeScreen from './VideoHomeScreen';
 import VideoLibrarySection from './VideoLibrarySection';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
@@ -26,7 +27,7 @@ export default function VideoContentScreen() {
         isRenamingPlaylist,
         isRemovingFromPlaylist,
         isReorderingPlaylist,
-        continuePlaylists,
+        continueWatchingItems,
         seriesPlaylists,
         moviePlaylists,
         personalPlaylists,
@@ -114,14 +115,9 @@ export default function VideoContentScreen() {
         switch (currentSection) {
             case 'continue':
                 return (
-                    <VideoSectionPlaylistGrid
-                        titleKey="VIDEO_SECTION_CONTINUE"
-                        descriptionKey="VIDEO_SECTION_CONTINUE_DESCRIPTION"
-                        emptyKey="VIDEO_NO_RECENT_PLAYLISTS"
-                        playlists={continuePlaylists}
-                        onSelectPlaylist={selectPlaylist}
+                    <VideoContinueWatchingSection
+                        items={continueWatchingItems}
                         onPlayVideo={playVideo}
-                        badge={t('VIDEO_CONTINUE_BADGE_RESUME')}
                     />
                 );
             case 'series':
@@ -200,7 +196,7 @@ export default function VideoContentScreen() {
             default:
                 return (
                     <VideoHomeScreen
-                        continuePlaylists={continuePlaylists}
+                        continueWatchingItems={continueWatchingItems}
                         seriesPlaylists={seriesPlaylists}
                         moviePlaylists={moviePlaylists}
                         personalPlaylists={personalPlaylists}

@@ -22,7 +22,7 @@ jest.mock('@/service/playerState', () => ({
 }));
 
 jest.mock('@/service/videoPlayback', () => ({
-    getVideoHomeCatalog: jest.fn(() => Promise.resolve({ sections: [] })),
+    getVideoContinueWatching: jest.fn(() => Promise.resolve([])),
     getVideoPlaybackState: jest.fn(() => Promise.resolve(null)),
 }));
 
@@ -60,7 +60,7 @@ describe('components/home/useHomeScreen', () => {
             )
             .mockReturnValueOnce(buildQueryState({ items: [] }))
             .mockReturnValueOnce(buildQueryState({ items: [] }))
-            .mockReturnValueOnce(buildQueryState({ sections: [] }))
+            .mockReturnValueOnce(buildQueryState([]))
             .mockReturnValueOnce(buildQueryState(null))
             .mockReturnValueOnce(buildQueryState({ current_file_id: null }))
             .mockReturnValueOnce(buildQueryState({ items: [], current_index: 0 }));
@@ -86,10 +86,8 @@ describe('components/home/useHomeScreen', () => {
         expect(favoritesOptions.queryKey).toEqual(['home', 'favorites']);
         expect(imagesOptions.queryKey).toEqual(['home', 'images']);
 
-        expect(videoCatalogOptions.queryKey).toEqual(['home', 'video-home-catalog']);
-        await expect(videoCatalogOptions.queryFn()).resolves.toEqual({
-            sections: [],
-        });
+        expect(videoCatalogOptions.queryKey).toEqual(['home', 'video-continue-watching']);
+        await expect(videoCatalogOptions.queryFn()).resolves.toEqual([]);
 
         expect(videoPlaybackOptions.queryKey).toEqual(['home', 'video-playback-state']);
         expect(videoPlaybackOptions.retry).toBe(false);
@@ -123,21 +121,14 @@ describe('components/home/useHomeScreen', () => {
             .mockReturnValueOnce(buildQueryState({ items: [{ id: 55, name: 'favorite.mp4' }] }))
             .mockReturnValueOnce(buildQueryState({ items: [{ id: 77, name: 'cover.jpg' }] }))
             .mockReturnValueOnce(
-                buildQueryState({
-                    sections: [
-                        {
-                            key: 'continue',
-                            title: 'continue',
-                            items: [
-                                {
-                                    video: { id: 3, name: 'Episode 3', parent_path: '/shows' },
-                                    progress_pct: 45,
-                                    status: 'in_progress',
-                                },
-                            ],
-                        },
-                    ],
-                })
+                buildQueryState([
+                    {
+                        video: { id: 3, name: 'Episode 3', parent_path: '/shows' },
+                        position_seconds: 45,
+                        duration_seconds: 100,
+                        updated_at: '2026-01-01T00:00:00Z',
+                    },
+                ])
             )
             .mockReturnValueOnce(
                 buildQueryState({

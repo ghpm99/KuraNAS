@@ -1,11 +1,15 @@
 import { getVideoRoute } from '@/app/routes';
-import useI18n from '@/components/i18n/provider/i18nContext';
-import { type VideoCatalogItemDto, type VideoPlaylistDto } from '@/service/videoPlayback';
+import {
+    type VideoCatalogItemDto,
+    type VideoContinueItemDto,
+    type VideoPlaylistDto,
+} from '@/service/videoPlayback';
 import VideoCatalogRail from './VideoCatalogRail';
+import VideoContinueWatchingSection from './VideoContinueWatchingSection';
 import VideoSectionPlaylistGrid, { VideoSectionActionLink } from './VideoSectionPlaylistGrid';
 
 type VideoHomeScreenProps = {
-    continuePlaylists: VideoPlaylistDto[];
+    continueWatchingItems: VideoContinueItemDto[];
     seriesPlaylists: VideoPlaylistDto[];
     moviePlaylists: VideoPlaylistDto[];
     personalPlaylists: VideoPlaylistDto[];
@@ -17,7 +21,7 @@ type VideoHomeScreenProps = {
 };
 
 export default function VideoHomeScreen({
-    continuePlaylists,
+    continueWatchingItems,
     seriesPlaylists,
     moviePlaylists,
     personalPlaylists,
@@ -27,18 +31,11 @@ export default function VideoHomeScreen({
     onSelectPlaylist,
     onPlayVideo,
 }: VideoHomeScreenProps) {
-    const { t } = useI18n();
-
     return (
         <>
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_CONTINUE"
-                descriptionKey="VIDEO_SECTION_CONTINUE_DESCRIPTION"
-                emptyKey="VIDEO_NO_RECENT_PLAYLISTS"
-                playlists={continuePlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
+            <VideoContinueWatchingSection
+                items={continueWatchingItems.slice(0, 4)}
                 onPlayVideo={onPlayVideo}
-                badge={t('VIDEO_CONTINUE_BADGE_RESUME')}
                 action={<VideoSectionActionLink to={getVideoRoute('continue')} />}
             />
             <VideoSectionPlaylistGrid

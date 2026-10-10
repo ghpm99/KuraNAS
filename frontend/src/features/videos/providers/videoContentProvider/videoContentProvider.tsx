@@ -1,13 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
     addVideoToPlaylist,
+    getVideoContinueWatching,
     getVideoHomeCatalog,
     getVideoLibraryFiles,
     getVideoPlaylistMemberships,
-    getVideoPlaybackState,
     getVideoPlaylistById,
     getVideoPlaylists,
     type VideoCatalogItemDto,
+    type VideoContinueItemDto,
     reorderVideoPlaylist,
     removeVideoFromPlaylist,
     updateVideoPlaylistName,
@@ -24,19 +25,13 @@ import {
     getVideoSectionFromPath,
 } from '@/features/videos/components/navigation';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-    type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
 const VIDEO_HOME_CATALOG_LIMIT = 12;
+const VIDEO_CONTINUE_WATCHING_LIMIT = 24;
 
 type FeedbackState = {
     open: boolean;
@@ -49,7 +44,7 @@ export interface VideoContentContextData {
     playlists: VideoPlaylistDto[];
     allVideos: VideoFileDto[];
     filteredVideos: VideoFileDto[];
-    continuePlaylists: VideoPlaylistDto[];
+    continueWatchingItems: VideoContinueItemDto[];
     seriesPlaylists: VideoPlaylistDto[];
     moviePlaylists: VideoPlaylistDto[];
     personalPlaylists: VideoPlaylistDto[];
@@ -139,16 +134,9 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
     });
 
-    const hasContinuePlaylists = useMemo(
-        () => playlists.some((playlist) => Boolean(playlist.last_played_at)),
-        [playlists]
-    );
-
-    const { data: playbackState } = useQuery({
-        queryKey: videoQueryKeys.playbackState,
-        queryFn: getVideoPlaybackState,
-        retry: false,
-        enabled: hasContinuePlaylists,
+    const { data: continueWatchingItems = [] } = useQuery({
+        queryKey: videoQueryKeys.continueWatching,
+        queryFn: () => getVideoContinueWatching(VIDEO_CONTINUE_WATCHING_LIMIT),
     });
 
     const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
@@ -174,28 +162,6 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
 
     const selectedPlaylistDetail = selectedPlaylistDetailData ?? null;
-
-    const continuePlaylists = useMemo(() => {
-        const sorted = [...playlists]
-            .filter((playlist) => Boolean(playlist.last_played_at))
-            .sort((a, b) => {
-                const aTime = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
-                const bTime = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
-                return bTime - aTime;
-            });
-
-        const playbackPlaylistId = playbackState?.playback_state.playlist_id;
-        const playbackVideoId = playbackState?.playback_state.video_id;
-        if (!playbackPlaylistId) return sorted;
-
-        return sorted.map((playlist) => {
-            if (playlist.id !== playbackPlaylistId) return playlist;
-            return {
-                ...playlist,
-                cover_video_id: playbackVideoId ?? playlist.cover_video_id,
-            };
-        });
-    }, [playlists, playbackState]);
 
     const seriesPlaylists = useMemo(
         () =>
@@ -287,6 +253,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         await Promise.all([
             invalidatePlaylistQueries(),
             queryClient.invalidateQueries({ queryKey: videoQueryKeys.homeCatalog }),
+            queryClient.invalidateQueries({ queryKey: videoQueryKeys.continueWatching }),
         ]);
     };
 
@@ -376,7 +343,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         playlists,
         allVideos,
         filteredVideos,
-        continuePlaylists,
+        continueWatchingItems,
         seriesPlaylists,
         moviePlaylists,
         personalPlaylists,

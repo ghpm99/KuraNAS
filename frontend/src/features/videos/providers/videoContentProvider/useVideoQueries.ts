@@ -15,6 +15,7 @@ export const videoQueryKeys = {
     homeCatalog: ['video', 'home-catalog'] as const,
     libraryFiles: (search: string) => ['video', 'library-files', search] as const,
     playbackState: ['video', 'playback-state'] as const,
+    continueWatching: ['video', 'continue-watching'] as const,
     playlistMembership: (key: string) => ['video', 'playlist-membership', key] as const,
 };
 

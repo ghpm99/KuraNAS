@@ -13,7 +13,7 @@ import { getImageFiles } from '@/service/image';
 import { getPlayerQueue, getPlayerState } from '@/service/playerState';
 import { queueEntryToTrack } from '@/features/music/components/musicQueueTracks';
 import {
-    getVideoHomeCatalog,
+    getVideoContinueWatching,
     getVideoPlaybackState,
     type VideoCatalogItemDto,
     type VideoFileDto,
@@ -24,6 +24,7 @@ import { analyticsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const homeAnalyticsPeriod = '30d' as const;
 const videoHomeLimit = 12;
+const homeContinueVideosLimit = 4;
 const homeFavoritesLimit = 6;
 const homeImagesLimit = 6;
 const homeRecentFilesLimit = 6;
@@ -95,9 +96,9 @@ const useHomeScreen = () => {
         queryFn: () => getImageFiles(1, homeImagesLimit, 'date'),
     });
 
-    const videoCatalogQuery = useQuery({
-        queryKey: ['home', 'video-home-catalog'],
-        queryFn: () => getVideoHomeCatalog(videoHomeLimit),
+    const videoContinueQuery = useQuery({
+        queryKey: ['home', 'video-continue-watching'],
+        queryFn: () => getVideoContinueWatching(videoHomeLimit),
     });
 
     const videoPlaybackQuery = useQuery({
@@ -122,12 +123,15 @@ const useHomeScreen = () => {
     const favoriteItems = favoritesQuery.data?.items?.slice(0, homeFavoritesLimit) ?? [];
     const recentImages = imagesQuery.data?.items?.slice(0, homeImagesLimit) ?? [];
 
-    const videoContinueItems = useMemo(() => {
-        const continueSection = videoCatalogQuery.data?.sections.find(
-            (section) => section.key === 'continue'
-        );
-        return continueSection?.items.slice(0, 4) ?? [];
-    }, [videoCatalogQuery.data]);
+    const videoContinueItems = useMemo<HomeVideoItem[]>(
+        () =>
+            (videoContinueQuery.data ?? []).slice(0, homeContinueVideosLimit).map((item) => ({
+                video: item.video,
+                status: 'in_progress',
+                progress_pct: getProgressPercent(item.position_seconds, item.duration_seconds),
+            })),
+        [videoContinueQuery.data]
+    );
 
     const videoResume = useMemo<HomeVideoResume | null>(() => {
         const session = videoPlaybackQuery.data;
@@ -213,7 +217,7 @@ const useHomeScreen = () => {
         isAnalyticsLoading: analyticsQuery.isLoading,
         isFavoritesLoading: favoritesQuery.isLoading,
         isImagesLoading: imagesQuery.isLoading,
-        isVideoLoading: videoCatalogQuery.isLoading || videoPlaybackQuery.isLoading,
+        isVideoLoading: videoContinueQuery.isLoading || videoPlaybackQuery.isLoading,
         isMusicLoading: playerStateQuery.isLoading || playerQueueQuery.isLoading,
     };
 };

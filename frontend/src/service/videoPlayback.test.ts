@@ -11,6 +11,7 @@ import { apiBase } from './index';
 import {
     addVideoToPlaylist,
     getAllVideoFiles,
+    getVideoContinueWatching,
     getVideoHomeCatalog,
     getVideoPlaybackState,
     getVideoPlaylistById,
@@ -83,6 +84,28 @@ describe('service/videoPlayback', () => {
 
         expect(mockedApi.post).toHaveBeenNthCalledWith(1, '/video/playback/next');
         expect(mockedApi.post).toHaveBeenNthCalledWith(2, '/video/playback/previous');
+    });
+
+    it('gets the in-progress videos with default and explicit limit', async () => {
+        const continueItems = [
+            {
+                video: { id: 5 },
+                position_seconds: 12,
+                duration_seconds: 60,
+                updated_at: '2026-03-01T00:00:00Z',
+            },
+        ];
+        mockedApi.get.mockResolvedValue({ data: continueItems });
+
+        await expect(getVideoContinueWatching()).resolves.toEqual(continueItems);
+        await getVideoContinueWatching(8);
+
+        expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/video/continue', {
+            params: { limit: 24 },
+        });
+        expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/video/continue', {
+            params: { limit: 8 },
+        });
     });
 
     it('gets catalog and playlists with default and explicit params', async () => {
