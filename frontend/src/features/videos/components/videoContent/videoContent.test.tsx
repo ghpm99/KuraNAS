@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import VideoContent from './videoContent';
 
 const mockUseQuery = jest.fn();
@@ -12,6 +12,7 @@ const mockLocation = { pathname: '/videos', search: '' };
 const mockGetVideoPlaylists = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
+const mockGetVideoContinueWatching = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
 const mockGetVideoPlaylistById = jest.fn();
 const mockGetVideoPlaylistMemberships = jest.fn();
@@ -24,6 +25,7 @@ jest.mock('@/service/videoPlayback', () => ({
     getVideoPlaylists: (...args: any[]) => mockGetVideoPlaylists(...args),
     getVideoLibraryFiles: (...args: any[]) => mockGetVideoLibraryFiles(...args),
     getVideoHomeCatalog: (...args: any[]) => mockGetVideoHomeCatalog(...args),
+    getVideoContinueWatching: (...args: any[]) => mockGetVideoContinueWatching(...args),
     addVideoToPlaylist: (...args: any[]) => mockAddVideoToPlaylist(...args),
     getVideoPlaylistById: (...args: any[]) => mockGetVideoPlaylistById(...args),
     getVideoPlaylistMemberships: (...args: any[]) => mockGetVideoPlaylistMemberships(...args),
@@ -116,6 +118,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_DETAIL_SEASON_LABEL: 'Temporada {{season}}',
                 VIDEO_DETAIL_SEASON_DESCRIPTION: '{{count}} episodios organizados em sequencia.',
             };
+            if (key === 'VIDEO_CONTINUE_PROGRESS_LABEL')
+                return `Progresso de ${params?.name ?? ''}`;
             if (key === 'VIDEO_PREVIEW_ALT') return `${params?.name ?? ''} preview`.trim();
             if (key === 'VIDEO_PLAYLIST_ITEM_COUNT') return `${params?.count ?? 0} videos`;
             if (key === 'VIDEO_PLAYLIST_META') return `${params?.count ?? 0} videos nesta playlist`;
@@ -280,6 +284,7 @@ const clipDetailPlaylist = {
 let playlistsData: any[] = [];
 let allVideosData: any[] = [];
 let homeCatalogData: any = undefined;
+let continueWatchingData: any[] = [];
 let playbackData: any = undefined;
 let membershipData: any[] = [];
 let selectedPlaylistData: any = undefined;
@@ -311,6 +316,14 @@ beforeEach(() => {
             },
         ],
     };
+    continueWatchingData = [
+        {
+            video: { id: 50, name: 'half-watched.mp4', parent_path: '/half', format: '.mp4' },
+            position_seconds: 25,
+            duration_seconds: 100,
+            updated_at: '2026-03-01T00:00:00Z',
+        },
+    ];
     playbackData = { playback_state: { playlist_id: 1, video_id: 30 } };
     membershipData = [];
     selectedPlaylistData = detailPlaylist;
@@ -326,6 +339,7 @@ beforeEach(() => {
         pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
     });
     mockGetVideoHomeCatalog.mockResolvedValue(homeCatalogData);
+    mockGetVideoContinueWatching.mockResolvedValue(continueWatchingData);
     mockGetVideoPlaylistById.mockResolvedValue(detailPlaylist);
     mockGetVideoPlaylistMemberships.mockResolvedValue(membershipData);
     mockGetVideoPlaybackState.mockResolvedValue(playbackData);
@@ -340,6 +354,7 @@ beforeEach(() => {
             options.queryFn?.();
         }
         if (subKey === 'playlists') return { data: playlistsData, isLoading: false };
+        if (subKey === 'continue-watching') return { data: continueWatchingData };
         if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
         if (subKey === 'playback-state') return { data: playbackData };
         if (subKey === 'playlist-membership') return { data: membershipData };
@@ -426,6 +441,23 @@ describe('components/videos/videoContent', () => {
         expect(screen.getByText('Adicionados recentemente')).toBeInTheDocument();
         expect(screen.getByText('recent.mp4')).toBeInTheDocument();
         expect(screen.getAllByText('Abrir secao').length).toBeGreaterThan(0);
+    });
+
+    it('shows the progress of an in-progress video and plays exactly that video', () => {
+        render(<VideoContent />);
+
+        const progressBar = screen.getByRole('progressbar', {
+            name: /Progresso de half-watched.mp4/,
+        });
+        expect(progressBar).toHaveAttribute('aria-valuenow', '25');
+
+        const card = screen.getByText('half-watched.mp4').closest('article') as HTMLElement;
+        fireEvent.click(within(card).getByRole('button', { name: /Reproduzir/i }));
+
+        expect(mockNavigate).toHaveBeenCalledWith(
+            expect.stringContaining('/video/50'),
+            expect.anything()
+        );
     });
 
     it('routes home card selection to contextual detail urls', () => {

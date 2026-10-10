@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 
 const mockGetVideoPlaylists = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
+const mockGetVideoContinueWatching = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
 const mockGetVideoPlaylistMemberships = jest.fn();
 const mockGetVideoPlaybackState = jest.fn();
@@ -19,6 +20,7 @@ const mockNavigate = jest.fn();
 jest.mock('@/service/videoPlayback', () => ({
     getVideoPlaylists: (...args: unknown[]) => mockGetVideoPlaylists(...args),
     getVideoHomeCatalog: (...args: unknown[]) => mockGetVideoHomeCatalog(...args),
+    getVideoContinueWatching: (...args: unknown[]) => mockGetVideoContinueWatching(...args),
     getVideoLibraryFiles: (...args: unknown[]) => mockGetVideoLibraryFiles(...args),
     getVideoPlaylistMemberships: (...args: unknown[]) => mockGetVideoPlaylistMemberships(...args),
     getVideoPlaybackState: (...args: unknown[]) => mockGetVideoPlaybackState(...args),
@@ -94,6 +96,7 @@ const createWrapper = (initialEntries: string[] = ['/videos']) => {
 const setupDefaultMocks = () => {
     mockGetVideoPlaylists.mockResolvedValue([]);
     mockGetVideoHomeCatalog.mockResolvedValue({ sections: [] });
+    mockGetVideoContinueWatching.mockResolvedValue([]);
     mockGetVideoLibraryFiles.mockResolvedValue({
         items: [],
         pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
@@ -176,34 +179,31 @@ describe('VideoContentProvider', () => {
         expect(result.current.folderPlaylists).toHaveLength(1);
     });
 
-    it('sorts continuePlaylists by last_played_at and applies playback state cover', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([
-            createPlaylist({
-                id: 1,
-                name: 'Old Show',
-                last_played_at: '2026-01-01T00:00:00Z',
-            }),
-            createPlaylist({
-                id: 2,
-                name: 'New Show',
-                last_played_at: '2026-03-01T00:00:00Z',
-            }),
-            createPlaylist({ id: 3, name: 'No Play', last_played_at: null }),
-        ]);
-        mockGetVideoPlaybackState.mockResolvedValue({
-            playlist: createPlaylist({ id: 2 }),
-            playback_state: { playlist_id: 2, video_id: 99 },
-        });
+    it('exposes the in-progress videos from the continue endpoint', async () => {
+        const continueItem = {
+            video: createVideoFile({ id: 7 }),
+            position_seconds: 30,
+            duration_seconds: 120,
+            updated_at: '2026-03-01T00:00:00Z',
+        };
+        mockGetVideoContinueWatching.mockResolvedValue([continueItem]);
 
         const { result } = renderHook(() => useVideoContentProvider(), {
             wrapper: createWrapper(),
         });
 
-        await waitFor(() => expect(result.current.continuePlaylists).toHaveLength(2));
+        await waitFor(() => expect(result.current.continueWatchingItems).toEqual([continueItem]));
+    });
 
-        expect(result.current.continuePlaylists[0]?.name).toBe('New Show');
-        expect(result.current.continuePlaylists[1]?.name).toBe('Old Show');
-        expect(result.current.continuePlaylists[0]?.cover_video_id).toBe(99);
+    it('starts empty when the continue endpoint fails', async () => {
+        mockGetVideoContinueWatching.mockRejectedValue(new Error('down'));
+
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => expect(mockGetVideoContinueWatching).toHaveBeenCalled());
+        expect(result.current.continueWatchingItems).toEqual([]);
     });
 
     it('builds playlistMembershipMap from memberships', async () => {
@@ -720,31 +720,6 @@ describe('VideoContentProvider', () => {
         await waitFor(() => expect(result.current.hasMoreVideos).toBe(false));
     });
 
-    it('continuePlaylists handles playlists where one has null last_played_at time gracefully', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([
-            createPlaylist({
-                id: 1,
-                name: 'Show A',
-                last_played_at: '2026-01-15T00:00:00Z',
-            }),
-            createPlaylist({
-                id: 2,
-                name: 'Show B',
-                last_played_at: '2026-02-15T00:00:00Z',
-            }),
-        ]);
-        mockGetVideoPlaybackState.mockResolvedValue(null);
-
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
-        });
-
-        await waitFor(() => expect(result.current.continuePlaylists).toHaveLength(2));
-
-        expect(result.current.continuePlaylists[0]?.name).toBe('Show B');
-        expect(result.current.continuePlaylists[1]?.name).toBe('Show A');
-    });
-
     it('renameSelectedPlaylist calls mutation with valid name', async () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({
@@ -810,24 +785,6 @@ describe('VideoContentProvider', () => {
                 state: expect.objectContaining({ playlistId: null }),
             })
         );
-    });
-
-    it('continuePlaylists returns sorted playlists when no playback state', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([
-            createPlaylist({
-                id: 1,
-                name: 'Show A',
-                last_played_at: '2026-01-15T00:00:00Z',
-            }),
-        ]);
-        mockGetVideoPlaybackState.mockRejectedValue(new Error('no state'));
-
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
-        });
-
-        await waitFor(() => expect(result.current.continuePlaylists).toHaveLength(1));
-        expect(result.current.continuePlaylists[0]?.name).toBe('Show A');
     });
 
     it('selectPlaylist resolves section from home when on home route', async () => {

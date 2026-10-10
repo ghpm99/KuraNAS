@@ -70,6 +70,13 @@ export interface VideoCatalogItemDto {
     progress_pct: number;
 }
 
+export interface VideoContinueItemDto {
+    video: VideoFileDto;
+    position_seconds: number;
+    duration_seconds: number;
+    updated_at: string;
+}
+
 export interface VideoCatalogSectionDto {
     key: 'continue' | 'series' | 'movies' | 'personal' | 'recent';
     title: string;
@@ -138,6 +145,13 @@ export const previousVideoPlayback = async (): Promise<VideoPlaybackSessionDto> 
 
 export const getVideoHomeCatalog = async (limit = 24): Promise<VideoHomeCatalogDto> => {
     const response = await apiBase.get<VideoHomeCatalogDto>('/video/catalog/home', {
+        params: { limit },
+    });
+    return response.data;
+};
+
+export const getVideoContinueWatching = async (limit = 24): Promise<VideoContinueItemDto[]> => {
+    const response = await apiBase.get<VideoContinueItemDto[]>('/video/continue', {
         params: { limit },
     });
     return response.data;
