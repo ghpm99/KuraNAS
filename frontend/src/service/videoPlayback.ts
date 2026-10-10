@@ -192,6 +192,18 @@ export const getVideoPlaylistById = async (playlistId: number): Promise<VideoPla
     return response.data;
 };
 
+export const getVideoPlaylistItemsPage = async (
+    playlistId: number,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoPlaylistItemDto>> => {
+    const response = await apiBase.get<Pagination<VideoPlaylistItemDto>>(
+        `/video/playlists/${playlistId}/items`,
+        { params: { page, page_size: pageSize } }
+    );
+    return response.data;
+};
+
 export const setVideoPlaylistHidden = async (
     playlistId: number,
     hidden: boolean

@@ -4,6 +4,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
 import VideoDetailListItem from './VideoDetailListItem';
+import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
 
 type VideoContextDetailViewProps = {
@@ -11,6 +12,9 @@ type VideoContextDetailViewProps = {
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
+    hasMoreItems?: boolean;
+    isFetchingMoreItems?: boolean;
+    onLoadMoreItems?: () => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -20,6 +24,9 @@ export default function VideoContextDetailView({
     onBack,
     onOpenVideo,
     onSetWatched,
+    hasMoreItems,
+    isFetchingMoreItems,
+    onLoadMoreItems,
 }: VideoContextDetailViewProps) {
     const { t } = useI18n();
     const { orderedItems, completedCount, resumeItem } = useVideoPlaylistDetail(playlist);
@@ -73,7 +80,7 @@ export default function VideoContextDetailView({
                     <span className={styles.detailStatLabel}>
                         {t('VIDEO_DETAIL_COLLECTION_TOTAL')}
                     </span>
-                    <strong>{orderedItems.length}</strong>
+                    <strong>{playlist.item_count}</strong>
                 </div>
                 <div className={styles.detailStatCard}>
                     <span className={styles.detailStatLabel}>
@@ -85,7 +92,7 @@ export default function VideoContextDetailView({
                     <span className={styles.detailStatLabel}>
                         {t('VIDEO_DETAIL_COLLECTION_PENDING')}
                     </span>
-                    <strong>{Math.max(orderedItems.length - completedCount, 0)}</strong>
+                    <strong>{Math.max(playlist.item_count - completedCount, 0)}</strong>
                 </div>
             </section>
 
@@ -105,6 +112,11 @@ export default function VideoContextDetailView({
                     ))}
                 </div>
             </section>
+            <LoadMoreSentinel
+                hasNextPage={hasMoreItems}
+                isFetchingNextPage={isFetchingMoreItems}
+                fetchNextPage={onLoadMoreItems}
+            />
         </div>
     );
 }

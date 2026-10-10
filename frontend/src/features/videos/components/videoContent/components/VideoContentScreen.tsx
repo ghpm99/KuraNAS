@@ -26,6 +26,8 @@ export default function VideoContentScreen() {
         isLoadingPlaylists,
         isLoadingVideos,
         isLoadingSelectedPlaylist,
+        isFetchingMoreSelectedPlaylistItems,
+        hasMoreSelectedPlaylistItems,
         isLoadingHomeCatalog,
         isLoadingContinueWatching,
         playlistsFailure,
@@ -56,6 +58,7 @@ export default function VideoContentScreen() {
         setSelectedPlaylistForVideo,
         closeFeedback,
         loadMoreVideos,
+        loadMoreSelectedPlaylistItems,
         selectPlaylist,
         clearSelectedPlaylist,
         playVideo,
@@ -100,6 +103,9 @@ export default function VideoContentScreen() {
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
                     onSetWatched={setVideoWatched}
+                    hasMoreItems={hasMoreSelectedPlaylistItems}
+                    isFetchingMoreItems={isFetchingMoreSelectedPlaylistItems}
+                    onLoadMoreItems={loadMoreSelectedPlaylistItems}
                 />
             );
         }
@@ -111,6 +117,9 @@ export default function VideoContentScreen() {
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
                     onSetWatched={setVideoWatched}
+                    hasMoreItems={hasMoreSelectedPlaylistItems}
+                    isFetchingMoreItems={isFetchingMoreSelectedPlaylistItems}
+                    onLoadMoreItems={loadMoreSelectedPlaylistItems}
                 />
             );
         }
@@ -127,6 +136,9 @@ export default function VideoContentScreen() {
                 onRemoveVideo={removeVideoFromSelectedPlaylist}
                 onMoveItem={moveSelectedPlaylistItem}
                 onSetWatched={setVideoWatched}
+                hasMoreItems={hasMoreSelectedPlaylistItems}
+                isFetchingMoreItems={isFetchingMoreSelectedPlaylistItems}
+                onLoadMoreItems={loadMoreSelectedPlaylistItems}
             />
         );
     }
