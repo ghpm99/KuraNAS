@@ -121,6 +121,33 @@ var GetAllVideosWithMetadataQuery string
 //go:embed get_library_videos.sql
 var GetLibraryVideosQuery string
 
+//go:embed get_library_videos_page.sql
+var GetLibraryVideosPageQuery string
+
+//go:embed get_library_videos_order_recent_asc.sql
+var GetLibraryVideosOrderRecentAscQuery string
+
+//go:embed get_library_videos_order_recent_desc.sql
+var GetLibraryVideosOrderRecentDescQuery string
+
+//go:embed get_library_videos_order_name_asc.sql
+var GetLibraryVideosOrderNameAscQuery string
+
+//go:embed get_library_videos_order_name_desc.sql
+var GetLibraryVideosOrderNameDescQuery string
+
+//go:embed get_library_videos_order_size_asc.sql
+var GetLibraryVideosOrderSizeAscQuery string
+
+//go:embed get_library_videos_order_size_desc.sql
+var GetLibraryVideosOrderSizeDescQuery string
+
+//go:embed get_library_videos_order_duration_asc.sql
+var GetLibraryVideosOrderDurationAscQuery string
+
+//go:embed get_library_videos_order_duration_desc.sql
+var GetLibraryVideosOrderDurationDescQuery string
+
 //go:embed get_videos.sql
 var GetVideosQuery string
 

@@ -19,3 +19,10 @@ WHERE
         OR LOWER(hf.parent_path) LIKE LOWER($2)
         OR LOWER(hf.format) LIKE LOWER($2)
     )
+ORDER BY
+    hf.updated_at DESC,
+    hf.id DESC
+LIMIT
+    $3
+OFFSET
+    $4;

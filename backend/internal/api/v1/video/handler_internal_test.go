@@ -75,7 +75,7 @@ func (m *videoHandlerServiceMock) GetPlaylistItemsPage(clientID string, playlist
 		Pagination: utils.Pagination{Page: page, PageSize: pageSize},
 	}, nil
 }
-func (m *videoHandlerServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
+func (m *videoHandlerServiceMock) ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: "v"}}}, nil
 }
 func (m *videoHandlerServiceMock) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
@@ -161,7 +161,7 @@ func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (V
 func (m *videoHandlerErrServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	return utils.PaginationResponse[VideoPlaylistItemDto]{}, errors.New("items failed")
 }
-func (m *videoHandlerErrServiceMock) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error) {
+func (m *videoHandlerErrServiceMock) ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{}, errors.New("library failed")
 }
 func (m *videoHandlerErrServiceMock) ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error) {
@@ -280,6 +280,9 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/video/library/folders/videos?path=/Series", "", http.StatusOK},
 		{http.MethodGet, "/video/library/folders/videos", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/library/movies?sort=recent&page=2&page_size=10", "", http.StatusOK},
+		{http.MethodGet, "/video/library/files?sort=duration&order=asc", "", http.StatusOK},
+		{http.MethodGet, "/video/library/files?sort=bogus", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/library/files?order=sideways", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/library/movies?sort=bogus", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/library/movies?page=abc", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/library/folders?page=abc", "", http.StatusBadRequest},

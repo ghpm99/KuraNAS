@@ -178,7 +178,7 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 			AddRow(4, "clip-1", "/videos/clip-1.mp4", "/videos", ".mp4", 55, now, now).
 			AddRow(5, "clip-2", "/videos/clip-2.mp4", "/videos", ".mp4", 66, now, now))
 	mock.ExpectRollback()
-	if out, err := repo.ListLibraryVideos(1, 1, "clip"); err != nil || len(out.Items) != 1 || !out.Pagination.HasNext {
+	if out, err := repo.ListLibraryVideos(LibraryVideosRequest{Ordering: LibraryVideoOrdering{Sort: LibraryVideoSortRecent, Direction: SortDirectionDescending}, Page: 1, PageSize: 1, SearchQuery: "clip"}); err != nil || len(out.Items) != 1 || !out.Pagination.HasNext {
 		t.Fatalf("ListLibraryVideos failed out=%+v err=%v", out, err)
 	}
 

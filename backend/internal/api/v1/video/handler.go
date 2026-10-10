@@ -447,8 +447,18 @@ func (h *Handler) ListLibraryVideosHandler(c *gin.Context) {
 		return
 	}
 	query := c.DefaultQuery("query", "")
+	ordering, isOrderingValid := ParseLibraryVideoOrdering(c.Query("sort"), c.Query("order"))
+	if !isOrderingValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
+		return
+	}
 
-	videos, err := h.service.ListLibraryVideos(page, pageSize, query)
+	videos, err := h.service.ListLibraryVideos(LibraryVideosRequest{
+		Ordering:    ordering,
+		Page:        page,
+		PageSize:    pageSize,
+		SearchQuery: query,
+	})
 	if err != nil {
 		respondVideoError(c, err)
 		return

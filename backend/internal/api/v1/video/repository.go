@@ -818,31 +818,36 @@ func (r *Repository) GetUnassignedVideos(limit int) ([]VideoFileModel, error) {
 	return results, nil
 }
 
-func (r *Repository) ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error) {
+func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileModel], error) {
 	paginationResponse := utils.PaginationResponse[VideoFileModel]{
 		Items: []VideoFileModel{},
 		Pagination: utils.Pagination{
-			Page:     page,
-			PageSize: pageSize,
+			Page:     request.Page,
+			PageSize: request.PageSize,
 			HasNext:  false,
 			HasPrev:  false,
 		},
 	}
 
 	searchPattern := ""
-	if trimmedSearch := strings.TrimSpace(searchQuery); trimmedSearch != "" {
+	if trimmedSearch := strings.TrimSpace(request.SearchQuery); trimmedSearch != "" {
 		searchPattern = "%" + trimmedSearch + "%"
 	}
 
 	args := []any{
 		pq.Array(utils.VideoFormats),
 		searchPattern,
-		pageSize + 1,
-		utils.CalculateOffset(page, pageSize),
+		request.PageSize + 1,
+		utils.CalculateOffset(request.Page, request.PageSize),
 	}
 
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetLibraryVideosQuery, args...)
+	libraryVideosQuery, err := libraryVideosQueryFor(request.Ordering)
+	if err != nil {
+		return paginationResponse, err
+	}
+
+	err = r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(libraryVideosQuery, args...)
 		if err != nil {
 			return err
 		}
