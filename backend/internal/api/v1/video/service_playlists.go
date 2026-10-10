@@ -108,6 +108,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 	groups := result.ToSmartGroups()
 
 	return s.withTransaction(func(tx *sql.Tx) error {
+		producedPlaylistIDs := make([]int, 0, len(groups))
 		for _, group := range groups {
 			pl, upsertErr := s.Repository.UpsertAutoPlaylist(
 				tx,
@@ -120,6 +121,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 			if upsertErr != nil {
 				return upsertErr
 			}
+			producedPlaylistIDs = append(producedPlaylistIDs, pl.ID)
 
 			exclusions, exclusionsErr := s.Repository.GetPlaylistExclusions(pl.ID)
 			if exclusionsErr != nil {
@@ -140,7 +142,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 				return err
 			}
 		}
-		return nil
+		return s.Repository.DeleteStaleAutoPlaylists(tx, producedPlaylistIDs)
 	})
 }
 func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {

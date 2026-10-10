@@ -43,7 +43,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 20. Classificação de vídeo persistida
 - [x] 21. Seção "Filmes" paginada e completa
 - [x] 22. Rebuild de playlists coalescido (sem rebuild completo por arquivo)
-- [ ] 23. Rebuild remove playlists órfãs/vazias
+- [x] 23. Rebuild remove playlists órfãs/vazias
 - [ ] 24. Rebuild resiliente à unicidade de `order_index` com itens manuais
 - [ ] 25. Reordenar playlist sem violar a unicidade
 - [ ] 26. Ordenação natural dos episódios
@@ -61,7 +61,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [ ] 38. Duração/resolução nos cards
 - [ ] 39. `?q=` sincronizado na URL
 - [ ] 40. "Adicionar à playlist" com menu e busca, sem padrão implícito
-- [ ] 41. Criar e excluir playlist personalizada
+- [ ] 41. Criar e excluir playlist personalizada (`create_playlist.sql` grava `is_auto = TRUE` mesmo para custom — corrigir junto)
 - [ ] 42. Ocultar/mostrar playlist na UI
 - [ ] 43. Painel de detalhes do vídeo com baixar original
 - [ ] 44. Pôster local de série/filme

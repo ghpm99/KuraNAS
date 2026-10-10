@@ -22,5 +22,15 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) cover ON TRUE
 WHERE ($1 = TRUE OR vp.is_hidden = FALSE)
+  AND (
+      vp.is_auto = FALSE
+      OR EXISTS (
+          SELECT 1
+          FROM video_playlist_item active_item
+          JOIN home_file active_file ON active_file.id = active_item.video_id
+          WHERE active_item.playlist_id = vp.id
+            AND active_file.deleted_at IS NULL
+      )
+  )
 GROUP BY vp.id, cover.video_id
 ORDER BY vp.last_played_at DESC NULLS LAST, vp.updated_at DESC;

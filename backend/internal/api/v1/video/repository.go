@@ -483,6 +483,14 @@ func (r *Repository) DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) error {
 	return nil
 }
 
+func (r *Repository) DeleteStaleAutoPlaylists(tx *sql.Tx, keptPlaylistIDs []int) error {
+	_, err := tx.Exec(queries.DeleteStaleAutoPlaylistsQuery, pq.Array(keptPlaylistIDs))
+	if err != nil {
+		return fmt.Errorf("falha ao remover playlists automaticas obsoletas: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error {
 	if len(videoIDs) == 0 {
 		return nil
