@@ -1,9 +1,11 @@
 import { getApiV1BaseUrl } from './apiUrl';
 import { getPlayerClientId, PLAYER_CLIENT_ID_HEADER } from './playerClientId';
+import type { UpdateVideoPlaybackStateRequest } from './videoPlayback';
 import type { ReplacePlayerQueueRequest, UpdatePlayerStateRequest } from './playerState';
 
 const PLAYER_STATE_PATH = '/music/player-state/';
 const PLAYER_QUEUE_PATH = '/music/player-state/queue';
+const VIDEO_PLAYBACK_STATE_PATH = '/video/playback/state';
 const JSON_CONTENT_TYPE = 'application/json';
 
 const flushJson = (path: string, body: object) => {
@@ -31,3 +33,6 @@ export const flushPlayerState = (state: UpdatePlayerStateRequest) =>
 
 export const flushPlayerQueue = (queue: ReplacePlayerQueueRequest) =>
     flushJson(PLAYER_QUEUE_PATH, queue);
+
+export const flushVideoPlaybackState = (state: UpdateVideoPlaybackStateRequest) =>
+    flushJson(VIDEO_PLAYBACK_STATE_PATH, state);

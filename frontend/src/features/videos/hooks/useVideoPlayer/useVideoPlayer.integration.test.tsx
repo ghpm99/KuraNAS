@@ -11,6 +11,13 @@ jest.mock('@/service', () => ({
 
 const mockedApi = apiBase as unknown as { get: jest.Mock; post: jest.Mock; put: jest.Mock };
 
+beforeAll(() => {
+	Object.defineProperty(navigator, 'sendBeacon', {
+		value: jest.fn().mockReturnValue(true),
+		configurable: true,
+	});
+});
+
 const session = {
 	playlist: {
 		id: 2,

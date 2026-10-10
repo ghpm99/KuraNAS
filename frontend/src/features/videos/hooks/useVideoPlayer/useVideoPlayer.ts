@@ -3,6 +3,7 @@ import {
     previousVideoPlayback,
     startVideoPlayback,
     updateVideoPlaybackState,
+    type UpdateVideoPlaybackStateRequest,
     VideoPlaybackSessionDto,
 } from '@/service/videoPlayback';
 import {
@@ -15,6 +16,7 @@ import {
     getPlaybackErrorKindFromPlayRejection,
     type PlaybackErrorKind,
 } from '@/features/videos/videoPlayer/playbackError';
+import { flushVideoPlaybackState } from '@/service/playerStateFlush';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
@@ -182,6 +184,31 @@ const useVideoPlayer = ({
         );
     }, [attachVideoSource]);
 
+    const buildPlaybackStateRequest = useCallback(
+        (
+            payload?: Partial<{
+                currentTime: number;
+                duration: number;
+                isPaused: boolean;
+                completed: boolean;
+            }>
+        ): UpdateVideoPlaybackStateRequest | null => {
+            const latest = latestPlaybackRef.current;
+            const playlistIdInSession = latest.session?.playback_state.playlist_id;
+            const videoIdInSession = latest.session?.playback_state.video_id;
+            if (!playlistIdInSession || !videoIdInSession) return null;
+            return {
+                playlist_id: playlistIdInSession,
+                video_id: videoIdInSession,
+                current_time: persistProgress ? (payload?.currentTime ?? latest.currentTime) : 0,
+                duration: payload?.duration ?? latest.duration,
+                is_paused: payload?.isPaused ?? latest.status !== 'playing',
+                completed: persistProgress ? (payload?.completed ?? false) : false,
+            };
+        },
+        [persistProgress]
+    );
+
     const syncState = useCallback(
         async (
             payload?: Partial<{
@@ -191,29 +218,34 @@ const useVideoPlayer = ({
                 completed: boolean;
             }>
         ) => {
-            const latest = latestPlaybackRef.current;
-            if (
-                !latest.session?.playback_state.playlist_id ||
-                !latest.session.playback_state.video_id
-            )
-                return;
+            const request = buildPlaybackStateRequest(payload);
+            if (!request) return;
             try {
-                await updateVideoPlaybackState({
-                    playlist_id: latest.session.playback_state.playlist_id,
-                    video_id: latest.session.playback_state.video_id,
-                    current_time: persistProgress
-                        ? (payload?.currentTime ?? latest.currentTime)
-                        : 0,
-                    duration: payload?.duration ?? latest.duration,
-                    is_paused: payload?.isPaused ?? latest.status !== 'playing',
-                    completed: persistProgress ? (payload?.completed ?? false) : false,
-                });
+                await updateVideoPlaybackState(request);
             } catch {
                 // best effort sync
             }
         },
-        [persistProgress]
+        [buildPlaybackStateRequest]
     );
+
+    useEffect(() => {
+        const flushCurrentState = () => {
+            const request = buildPlaybackStateRequest();
+            if (request) flushVideoPlaybackState(request);
+        };
+        const flushWhenPageBecomesHidden = () => {
+            if (document.visibilityState === 'hidden') flushCurrentState();
+        };
+
+        window.addEventListener('pagehide', flushCurrentState);
+        document.addEventListener('visibilitychange', flushWhenPageBecomesHidden);
+        return () => {
+            window.removeEventListener('pagehide', flushCurrentState);
+            document.removeEventListener('visibilitychange', flushWhenPageBecomesHidden);
+            flushCurrentState();
+        };
+    }, [buildPlaybackStateRequest]);
 
     const playVideo = useCallback(async () => {
         const response = await startVideoPlayback(Number(videoId), playlistId ?? null);
