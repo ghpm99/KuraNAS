@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"nas-go/api/pkg/utils"
 )
 
 // ---------------------------------------------------------------------------
@@ -57,8 +59,8 @@ func (s *ByFolderStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 		}
 
 		// Ordenar por nome para manter ordem natural de episodios
-		sort.Slice(scored, func(i, j int) bool {
-			return scored[i].Video.Video.Name < scored[j].Video.Video.Name
+		sort.SliceStable(scored, func(i, j int) bool {
+			return lessByNaturalNameThenID(scored[i].Video.Video, scored[j].Video.Video)
 		})
 
 		candidates = append(candidates, PlaylistCandidate{
@@ -125,8 +127,8 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 		}
 
 		// Ordenar por nome para ordem natural de episodios
-		sort.Slice(scored, func(i, j int) bool {
-			return scored[i].Video.Video.Name < scored[j].Video.Video.Name
+		sort.SliceStable(scored, func(i, j int) bool {
+			return lessByNaturalNameThenID(scored[i].Video.Video, scored[j].Video.Video)
 		})
 
 		// Classificacao dominante do grupo
@@ -281,7 +283,7 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 			continue
 		}
 		// So adicionar se vem depois (ordem alfabetica)
-		if v.Video.Name > current.Video.Name {
+		if utils.CompareNaturalOrder(v.Video.Name, current.Video.Name) > 0 {
 			scored = append(scored, ScoredVideo{
 				Video:   *v,
 				Score:   50.0,
@@ -676,4 +678,11 @@ func toSet(ids []int) map[int]bool {
 		s[id] = true
 	}
 	return s
+}
+
+func lessByNaturalNameThenID(left, right VideoEntry) bool {
+	if comparison := utils.CompareNaturalOrder(left.Name, right.Name); comparison != 0 {
+		return comparison < 0
+	}
+	return left.ID < right.ID
 }
