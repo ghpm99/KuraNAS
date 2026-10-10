@@ -13,6 +13,7 @@ import {
     getAllVideoFiles,
     getVideoContinueWatching,
     getVideoHomeCatalog,
+    getVideoLibraryFiles,
     getVideoLibraryFolders,
     getVideoLibraryFolderVideos,
     getVideoLibraryMovies,
@@ -263,5 +264,17 @@ describe('service/videoPlayback', () => {
             params: { sort: 'recent', page: 2, page_size: 24 },
         });
         expect(movies).toEqual(payload);
+    });
+
+    it('requests the library files with the chosen sort key and order', async () => {
+        const payload = { items: [{ id: 3 }], pagination: { page: 1, page_size: 60 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const files = await getVideoLibraryFiles(1, 60, 'praia', { key: 'duration', order: 'asc' });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/library/files', {
+            params: { page: 1, page_size: 60, query: 'praia', sort: 'duration', order: 'asc' },
+        });
+        expect(files).toEqual(payload);
     });
 });

@@ -261,16 +261,23 @@ export const getAllVideoFiles = async (limit = 2000): Promise<VideoFileDto[]> =>
     return response.data.items ?? [];
 };
 
+export type VideoLibrarySortKey = 'recent' | 'name' | 'size' | 'duration';
+export type VideoLibrarySortOrder = 'asc' | 'desc';
+export type VideoLibrarySort = { key: VideoLibrarySortKey; order: VideoLibrarySortOrder };
+
 export const getVideoLibraryFiles = async (
     page: number,
     pageSize: number,
-    searchQuery = ''
+    searchQuery = '',
+    sort?: VideoLibrarySort
 ): Promise<Pagination<VideoFileDto>> => {
     const response = await apiBase.get<Pagination<VideoFileDto>>('/video/library/files', {
         params: {
             page,
             page_size: pageSize,
             query: searchQuery,
+            sort: sort?.key,
+            order: sort?.order,
         },
     });
     return response.data;

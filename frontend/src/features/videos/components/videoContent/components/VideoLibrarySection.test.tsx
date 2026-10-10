@@ -104,6 +104,63 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         expect(screen.queryByRole('button', { name: 'Load More' })).not.toBeInTheDocument();
     });
 
+    it('reports the chosen sort key and toggles the direction', () => {
+        const onSortChange = jest.fn();
+        render(
+            <VideoLibrarySection
+                videos={videos}
+                playlists={playlists}
+                search=""
+                sort={{ key: 'name', order: 'asc' }}
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onSortChange={onSortChange}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.getByRole('combobox', { name: 'VIDEO_SORT_LABEL' })).toHaveValue('name');
+        fireEvent.change(screen.getByRole('combobox', { name: 'VIDEO_SORT_LABEL' }), {
+            target: { value: 'size' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_SORT_ORDER_ASCENDING' }));
+
+        expect(onSortChange).toHaveBeenNthCalledWith(1, { key: 'size', order: 'asc' });
+        expect(onSortChange).toHaveBeenNthCalledWith(2, { key: 'name', order: 'desc' });
+    });
+
+    it('shows the descending toggle by default and tolerates a missing sort handler', () => {
+        render(
+            <VideoLibrarySection
+                videos={[]}
+                playlists={[]}
+                search=""
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_SORT_ORDER_DESCENDING' }));
+        fireEvent.change(screen.getByRole('combobox', { name: 'VIDEO_SORT_LABEL' }), {
+            target: { value: 'name' },
+        });
+
+        expect(screen.getByRole('combobox', { name: 'VIDEO_SORT_LABEL' })).toHaveValue('recent');
+    });
+
     it('uses the first playlist as fallback selection and forwards user actions', () => {
         const onSearchChange = jest.fn();
         const onSelectPlaylistForVideo = jest.fn();
@@ -134,12 +191,12 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             'src',
             'http://localhost:8000/api/v1/files/video-thumbnail/5?width=240&height=135'
         );
-        expect(screen.getByRole('combobox')).toHaveValue('1');
+        expect(screen.getAllByRole('combobox')[1]!).toHaveValue('1');
 
         fireEvent.change(screen.getByPlaceholderText('Search videos'), {
             target: { value: 'epi' },
         });
-        fireEvent.change(screen.getByRole('combobox'), { target: { value: '2' } });
+        fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: '2' } });
         fireEvent.click(screen.getByRole('button', { name: 'Play' }));
         fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 

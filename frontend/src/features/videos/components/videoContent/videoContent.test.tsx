@@ -558,7 +558,7 @@ describe('components/videos/videoContent', () => {
         fireEvent.click(screen.getAllByRole('button', { name: /Reproduzir/i })[0]!);
         expect(mockNavigate).toHaveBeenCalled();
 
-        fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+        fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: '1' } });
         fireEvent.click(screen.getByRole('button', { name: /Adicionar/i }));
         expect(mockAddVideoToPlaylist).toHaveBeenCalledWith(1, 30);
         expect(

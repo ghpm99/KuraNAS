@@ -153,6 +153,7 @@ const createContext = (
     isRemovingFromPlaylist: false,
     isReorderingPlaylist: false,
     videoSearch: '',
+    librarySort: { key: 'recent', order: 'desc' },
     selectedPlaylistPerVideo: {},
     feedback: {
         open: false,
@@ -160,6 +161,7 @@ const createContext = (
         severity: 'success',
     },
     setVideoSearch: jest.fn(),
+    setLibrarySort: jest.fn(),
     setSelectedPlaylistForVideo: jest.fn(),
     closeFeedback: jest.fn(),
     loadMoreVideos: jest.fn(),
