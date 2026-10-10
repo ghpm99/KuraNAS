@@ -12,6 +12,10 @@ type seededPlaylist struct {
 	isAuto     bool
 	itemKind   string
 	videoID    int
+
+	classification string
+	playlistType   string
+	isHidden       bool
 }
 
 func seedPlaylists(t *testing.T, repository *Repository, seeds []seededPlaylist) map[string]int {
@@ -27,9 +31,13 @@ func seedPlaylists(t *testing.T, repository *Repository, seeds []seededPlaylist)
 			if !seed.isAuto {
 				playlistType = "custom"
 			}
+			if seed.playlistType != "" {
+				playlistType = seed.playlistType
+			}
 			err := tx.QueryRow(
-				`INSERT INTO video_playlist (type, source_path, name, is_auto) VALUES ($1, $2, $2, $3) RETURNING id`,
-				playlistType, seed.sourcePath, seed.isAuto,
+				`INSERT INTO video_playlist (type, source_path, name, is_auto, classification, is_hidden)
+				 VALUES ($1, $2, $2, $3, COALESCE(NULLIF($4, ''), 'personal'), $5) RETURNING id`,
+				playlistType, seed.sourcePath, seed.isAuto, seed.classification, seed.isHidden,
 			).Scan(&playlistID)
 			if err != nil {
 				return err

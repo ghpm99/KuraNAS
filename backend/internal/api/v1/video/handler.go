@@ -15,6 +15,7 @@ import (
 )
 
 const defaultPlaylistItemsPageSize = 50
+const defaultPlaylistSectionPageSize = 24
 
 type Handler struct {
 	service           ServiceInterface
@@ -230,6 +231,25 @@ func (h *Handler) GetPlaylistsHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, playlists)
+}
+
+func (h *Handler) GetPlaylistsBySectionHandler(c *gin.Context) {
+	section, isSectionValid := ParsePlaylistSection(c.Param("section"))
+	if !isSectionValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
+		return
+	}
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultPlaylistSectionPageSize)
+	if !isPaginationValid {
+		return
+	}
+
+	playlistsPage, err := h.service.GetPlaylistsBySection(PlaylistSectionRequest{Section: section, Page: page, PageSize: pageSize})
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, playlistsPage)
 }
 
 func (h *Handler) GetPlaylistMembershipsHandler(c *gin.Context) {

@@ -161,6 +161,29 @@ func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return result, nil
 }
 
+func (s *Service) GetPlaylistsBySection(request PlaylistSectionRequest) (utils.PaginationResponse[VideoPlaylistDto], error) {
+	models, err := s.Repository.GetVideoPlaylistsBySection(
+		request.Section.Filter(),
+		request.PageSize+1,
+		utils.CalculateOffset(request.Page, request.PageSize),
+	)
+	if err != nil {
+		return utils.PaginationResponse[VideoPlaylistDto]{}, err
+	}
+
+	playlistDtos := make([]VideoPlaylistDto, 0, len(models))
+	for _, model := range models {
+		playlistDtos = append(playlistDtos, model.ToDto(nil))
+	}
+
+	response := utils.PaginationResponse[VideoPlaylistDto]{
+		Items:      playlistDtos,
+		Pagination: utils.Pagination{Page: request.Page, PageSize: request.PageSize},
+	}
+	response.UpdatePagination()
+	return response, nil
+}
+
 func (s *Service) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
 	models, err := s.Repository.GetVideoPlaylistMemberships(includeHidden)
 	if err != nil {

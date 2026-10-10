@@ -423,6 +423,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)
+	playlists.GET("/section/:section", context.Video.Handler.GetPlaylistsBySectionHandler)
 	playlists.GET("/memberships", context.Video.Handler.GetPlaylistMembershipsHandler)
 	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)
 	playlists.GET("/unassigned", context.Video.Handler.GetUnassignedVideosHandler)
