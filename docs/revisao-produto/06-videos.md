@@ -32,7 +32,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 11. "Continuar assistindo" com vários itens
 - [x] 12. Marcar assistido/não assistido manualmente
 - [x] 13. Status por item da playlist lido do progresso por vídeo
-- [ ] 14. Progresso salvo ao fechar a aba
+- [x] 14. Progresso salvo ao fechar a aba
 - [ ] 15. "Concluído" a partir de 90%
 
 ### Navegação e catálogo

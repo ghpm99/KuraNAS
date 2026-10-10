@@ -4,6 +4,10 @@ import useVideoPlayer from './useVideoPlayer';
 const mockStartVideoPlayback = jest.fn();
 const mockUpdateVideoPlaybackState = jest.fn();
 
+jest.mock('@/service/playerStateFlush', () => ({
+    flushVideoPlaybackState: jest.fn(),
+}));
+
 jest.mock('@/service/videoPlayback', () => ({
     ...jest.requireActual('@/service/videoPlayback'),
     startVideoPlayback: (...args: any[]) => mockStartVideoPlayback(...args),
