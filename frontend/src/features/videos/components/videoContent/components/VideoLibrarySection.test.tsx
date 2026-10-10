@@ -1,4 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render as renderUnwrapped, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import VideoLibrarySection from './VideoLibrarySection';
 import type { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
 
@@ -71,6 +73,14 @@ const playlists: VideoPlaylistDto[] = [
     },
 ];
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+const withQueryClient = (ui: ReactElement) => (
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+);
+
+const render = (ui: ReactElement) => renderUnwrapped(withQueryClient(ui));
+
 describe('videos/videoContent/VideoLibrarySection', () => {
     it('uses the first playlist as fallback selection and forwards user actions', () => {
         const onSearchChange = jest.fn();
@@ -83,7 +93,6 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             <VideoLibrarySection
                 videos={videos}
                 playlists={playlists}
-                playlistMembershipMap={{}}
                 search=""
                 selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
@@ -120,13 +129,12 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         expect(screen.queryByRole('button', { name: 'Load More' })).not.toBeInTheDocument();
     });
 
-    it('disables adding when the video is already assigned and handles the footer loading states', () => {
+    it('handles the footer loading states', () => {
         const onLoadMore = jest.fn();
         const { rerender } = render(
             <VideoLibrarySection
                 videos={videos}
                 playlists={playlists}
-                playlistMembershipMap={{ 2: new Set([5]) }}
                 search=""
                 selectedPlaylistPerVideo={{ 5: 2 }}
                 isAddingToPlaylist={false}
@@ -140,25 +148,25 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             />
         );
 
-        expect(screen.getByRole('button', { name: 'Already Added' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Loading' })).toBeDisabled();
 
         rerender(
-            <VideoLibrarySection
-                videos={videos}
-                playlists={playlists}
-                playlistMembershipMap={{}}
-                search=""
-                selectedPlaylistPerVideo={{ 5: 2 }}
-                isAddingToPlaylist={false}
-                isFetchingMoreVideos={false}
-                hasMoreVideos
-                onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
-                onPlayVideo={jest.fn()}
-                onAddVideo={jest.fn()}
-                onLoadMore={onLoadMore}
-            />
+            withQueryClient(
+                <VideoLibrarySection
+                    videos={videos}
+                    playlists={playlists}
+                    search=""
+                    selectedPlaylistPerVideo={{ 5: 2 }}
+                    isAddingToPlaylist={false}
+                    isFetchingMoreVideos={false}
+                    hasMoreVideos
+                    onSearchChange={jest.fn()}
+                    onSelectPlaylistForVideo={jest.fn()}
+                    onPlayVideo={jest.fn()}
+                    onAddVideo={jest.fn()}
+                    onLoadMore={onLoadMore}
+                />
+            )
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Load More' }));
@@ -171,7 +179,6 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             <VideoLibrarySection
                 videos={videos}
                 playlists={playlists}
-                playlistMembershipMap={{}}
                 search=""
                 selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}

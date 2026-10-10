@@ -130,7 +130,6 @@ const createContext = (
     clipPlaylists: [],
     folderPlaylists: [],
     recentCatalogItems: [],
-    playlistMembershipMap: {},
     selectedPlaylistSummary: null,
     selectedPlaylistDetail: null,
     isLoadingPlaylists: false,

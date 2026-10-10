@@ -68,8 +68,6 @@ describe('features/videos/videoContentProvider (seam)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedApi.get.mockImplementation((url: string) => {
-            if (url.startsWith('/video/playlists/memberships'))
-                return Promise.resolve({ data: [] });
             if (url === '/video/playlists/') return Promise.resolve({ data: [playlist] });
             if (/^\/video\/playlists\/\d+\/items$/.test(url)) {
                 return Promise.resolve({

@@ -53,7 +53,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 29.1. `coursePatternSpec` e `clipSpec` ("curso", "reel", "clip") também por token
 - [x] 30. Detalhe da playlist paginado
 - [x] 31. Lista de playlists paginada por seção
-- [ ] 32. Playlists de um vídeo (`by-video/:id`) no lugar de memberships completas
+- [x] 32. Playlists de um vídeo (`by-video/:id`) no lugar de memberships completas
 - [ ] 33. Scroll infinito em "Todos os vídeos"
 - [ ] 34. Ordenação da biblioteca
 - [ ] 35. Filtros da biblioteca (formato, resolução, duração)

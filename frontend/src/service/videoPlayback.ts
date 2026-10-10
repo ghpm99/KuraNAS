@@ -98,9 +98,10 @@ interface PaginationResponse<T> {
     items: T[];
 }
 
-export interface VideoPlaylistMembershipDto {
-    playlist_id: number;
-    video_id: number;
+export interface VideoPlaylistOfVideoDto {
+    id: number;
+    name: string;
+    type: string;
 }
 
 export interface UpdateVideoPlaybackStateRequest {
@@ -189,14 +190,11 @@ export const getVideoPlaylistsBySection = async (
     return response.data;
 };
 
-export const getVideoPlaylistMemberships = async (
-    includeHidden = false
-): Promise<VideoPlaylistMembershipDto[]> => {
-    const response = await apiBase.get<VideoPlaylistMembershipDto[]>(
-        '/video/playlists/memberships',
-        {
-            params: { include_hidden: includeHidden },
-        }
+export const getVideoPlaylistsByVideo = async (
+    videoId: number
+): Promise<VideoPlaylistOfVideoDto[]> => {
+    const response = await apiBase.get<VideoPlaylistOfVideoDto[]>(
+        `/video/playlists/by-video/${videoId}`
     );
     return response.data;
 };

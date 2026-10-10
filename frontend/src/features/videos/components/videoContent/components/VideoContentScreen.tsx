@@ -52,7 +52,6 @@ export default function VideoContentScreen() {
         recentCatalogItems,
         filteredVideos,
         playlists,
-        playlistMembershipMap,
         videoSearch,
         selectedPlaylistPerVideo,
         feedback,
@@ -187,7 +186,6 @@ export default function VideoContentScreen() {
             <VideoLibrarySection
                 videos={filteredVideos}
                 playlists={playlists}
-                playlistMembershipMap={playlistMembershipMap}
                 search={videoSearch}
                 selectedPlaylistPerVideo={selectedPlaylistPerVideo}
                 isAddingToPlaylist={isAddingToPlaylist}
