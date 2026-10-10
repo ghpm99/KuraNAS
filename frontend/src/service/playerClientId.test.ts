@@ -73,17 +73,19 @@ describe('service/playerClientId', () => {
         }
     });
 
-    it('attaches the header only to music requests', () => {
+    it('attaches the header only to music and video requests', () => {
         const { attachPlayerClientId, PLAYER_CLIENT_ID_HEADER, getPlayerClientId } =
             loadFreshModule();
 
         const musicConfig = attachPlayerClientId(buildRequestConfig('/music/player-state/'));
+        const videoConfig = attachPlayerClientId(buildRequestConfig('/video/playback/state'));
         const filesConfig = attachPlayerClientId(buildRequestConfig('/files/'));
         const urllessConfig = attachPlayerClientId({
             headers: new AxiosHeaders(),
         } as InternalAxiosRequestConfig);
 
         expect(musicConfig.headers.get(PLAYER_CLIENT_ID_HEADER)).toBe(getPlayerClientId());
+        expect(videoConfig.headers.get(PLAYER_CLIENT_ID_HEADER)).toBe(getPlayerClientId());
         expect(filesConfig.headers.has(PLAYER_CLIENT_ID_HEADER)).toBe(false);
         expect(urllessConfig.headers.has(PLAYER_CLIENT_ID_HEADER)).toBe(false);
     });

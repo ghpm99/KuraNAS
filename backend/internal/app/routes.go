@@ -2,9 +2,9 @@ package app
 
 import (
 	"nas-go/api/internal/api/v1/accesscontrol"
+	"nas-go/api/internal/api/v1/clientidentity"
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/health"
-	"nas-go/api/internal/api/v1/music"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/dav"
 	"nas-go/api/pkg/i18n"
@@ -642,7 +642,7 @@ func registerCorsRoutes(router *gin.Engine, context *AppContext) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
 		AllowMethods:  []string{"GET", "PUT", "POST", "DELETE"},
-		AllowHeaders:  []string{"Origin", "Content-Type", music.PlayerClientIDHeader},
+		AllowHeaders:  []string{"Origin", "Content-Type", clientidentity.Header},
 		ExposeHeaders: []string{"Content-Length"},
 		MaxAge:        12 * time.Hour,
 	}))

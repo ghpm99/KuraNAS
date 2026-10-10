@@ -2,6 +2,7 @@ package music
 
 import (
 	"encoding/json"
+	"nas-go/api/internal/api/v1/clientidentity"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -58,7 +59,7 @@ func performPlayerRequest(router *gin.Engine, method string, path string, body s
 func TestPlayerEndpointsPreferDeclaredClientIDOverIP(t *testing.T) {
 	service := &playerClientRecordingServiceMock{}
 	router := newPlayerStateRouter(service)
-	deviceHeaders := map[string]string{PlayerClientIDHeader: "3f2c1a9e-7b44-4c1d-9a55-0123456789ab"}
+	deviceHeaders := map[string]string{clientidentity.Header: "3f2c1a9e-7b44-4c1d-9a55-0123456789ab"}
 
 	performPlayerRequest(router, http.MethodGet, "/music/player-state/", "", deviceHeaders)
 	performPlayerRequest(router, http.MethodGet, "/music/player-state/", "", nil)
@@ -77,7 +78,7 @@ func TestPlayerEndpointsRejectMalformedClientID(t *testing.T) {
 	malformedIDs := []string{"short", "has spaces in it", strings.Repeat("a", 65), "semi;colon-12345"}
 
 	for _, malformedID := range malformedIDs {
-		recorder := performPlayerRequest(router, http.MethodGet, "/music/player-state/", "", map[string]string{PlayerClientIDHeader: malformedID})
+		recorder := performPlayerRequest(router, http.MethodGet, "/music/player-state/", "", map[string]string{clientidentity.Header: malformedID})
 		if recorder.Code != http.StatusBadRequest {
 			t.Fatalf("client id %q answered %d", malformedID, recorder.Code)
 		}

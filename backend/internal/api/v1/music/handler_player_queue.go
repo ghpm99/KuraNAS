@@ -1,6 +1,7 @@
 package music
 
 import (
+	"nas-go/api/internal/api/v1/clientidentity"
 	"nas-go/api/pkg/i18n"
 	"net/http"
 
@@ -14,7 +15,7 @@ func respondInvalidRequest(c *gin.Context) {
 func (handler *Handler) GetPlayerQueueHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("GetPlayerQueue", "Fetching player queue", c), nil)
 
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return
@@ -34,7 +35,7 @@ func (handler *Handler) GetPlayerQueueHandler(c *gin.Context) {
 func (handler *Handler) ReplacePlayerQueueHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("ReplacePlayerQueue", "Saving player queue", c), nil)
 
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return

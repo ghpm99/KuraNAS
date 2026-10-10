@@ -1,6 +1,7 @@
 package music
 
 import (
+	"nas-go/api/internal/api/v1/clientidentity"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
@@ -18,7 +19,7 @@ func (handler *Handler) GetAutomaticPlaylistsHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	}, nil)
 
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return
@@ -52,7 +53,7 @@ func (handler *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	if !isSortValid {
 		return
 	}
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return

@@ -4,7 +4,7 @@ export const PLAYER_CLIENT_ID_HEADER = 'X-KuraNAS-Client-Id';
 
 const PLAYER_CLIENT_ID_STORAGE_KEY = 'kuranas.playerClientId';
 const PLAYER_CLIENT_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/;
-const MUSIC_API_PATH_PREFIX = '/music/';
+const PLAYER_API_PATH_PREFIXES = ['/music/', '/video/'];
 
 let sessionClientId: string | undefined;
 
@@ -52,7 +52,7 @@ export const getPlayerClientId = (): string => {
 export const attachPlayerClientId = (
     requestConfig: InternalAxiosRequestConfig
 ): InternalAxiosRequestConfig => {
-    if (requestConfig.url?.startsWith(MUSIC_API_PATH_PREFIX)) {
+    if (PLAYER_API_PATH_PREFIXES.some((pathPrefix) => requestConfig.url?.startsWith(pathPrefix))) {
         requestConfig.headers.set(PLAYER_CLIENT_ID_HEADER, getPlayerClientId());
     }
     return requestConfig;

@@ -25,7 +25,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 07. Transcode sob demanda de codecs não suportados (HEVC etc.) → H.264/AAC
 
 ### Retomada, continuar assistindo e assistido
-- [ ] 08. Estado do player por dispositivo (client id), não por IP
+- [x] 08. Estado do player por dispositivo (client id), não por IP
 - [ ] 09. Posição por vídeo (`video_watch_progress`)
 - [ ] 10. Rever vídeo concluído recomeça do início
 - [ ] 11. "Continuar assistindo" com vários itens
