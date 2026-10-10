@@ -157,6 +157,10 @@ export const getVideoContinueWatching = async (limit = 24): Promise<VideoContinu
     return response.data;
 };
 
+export const setVideoWatched = async (videoId: number, watched: boolean): Promise<void> => {
+    await apiBase.put(`/video/progress/${videoId}/watched`, { watched });
+};
+
 export const getVideoPlaylists = async (includeHidden = false): Promise<VideoPlaylistDto[]> => {
     const response = await apiBase.get<VideoPlaylistDto[]>('/video/playlists/', {
         params: { include_hidden: includeHidden },

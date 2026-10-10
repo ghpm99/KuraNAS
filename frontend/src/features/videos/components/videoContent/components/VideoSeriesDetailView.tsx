@@ -11,6 +11,7 @@ type VideoSeriesDetailViewProps = {
     playlist: VideoPlaylistDto;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -19,6 +20,7 @@ export default function VideoSeriesDetailView({
     playlist,
     onBack,
     onOpenVideo,
+    onSetWatched,
 }: VideoSeriesDetailViewProps) {
     const { t } = useI18n();
     const { groupedSeasons, completedCount, orderedItems, resumeItem } =
@@ -120,6 +122,7 @@ export default function VideoSeriesDetailView({
                                 key={item.id}
                                 item={item}
                                 onOpenVideo={onOpenVideo}
+                                onSetWatched={onSetWatched}
                             />
                         ))}
                     </div>

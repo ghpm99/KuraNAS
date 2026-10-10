@@ -71,6 +71,14 @@ describe('features/videos/videoContentProvider (seam)', () => {
 			if (url.startsWith('/video/playlists/memberships')) return Promise.resolve({ data: [] });
 			if (url === '/video/playlists/') return Promise.resolve({ data: [playlist] });
 			if (/^\/video\/playlists\/\d+$/.test(url)) return Promise.resolve({ data: playlist });
+			if (url === '/video/continue') {
+				return Promise.resolve({
+					data: [
+						{ video: { id: 10 }, position_seconds: 5, duration_seconds: 50, updated_at: '' },
+						{ video: { id: 20 }, position_seconds: 6, duration_seconds: 60, updated_at: '' },
+					],
+				});
+			}
 			if (url === '/video/catalog/home') return Promise.resolve({ data: { sections: [] } });
 			if (url.startsWith('/video/library/files')) {
 				return Promise.resolve({ data: { items: [], pagination: { has_next: false } } });
@@ -129,5 +137,48 @@ describe('features/videos/videoContentProvider (seam)', () => {
 				],
 			})
 		);
+	});
+
+	it('setVideoWatched PUTs the watched flag to the progress endpoint', async () => {
+		const { result } = renderProvider();
+		await waitFor(() => expect(result.current.playlists.length).toBeGreaterThan(0));
+
+		act(() => result.current.setVideoWatched(10, true));
+		await waitFor(() =>
+			expect(mockedApi.put).toHaveBeenCalledWith('/video/progress/10/watched', { watched: true })
+		);
+
+		act(() => result.current.setVideoWatched(10, false));
+		await waitFor(() =>
+			expect(mockedApi.put).toHaveBeenCalledWith('/video/progress/10/watched', { watched: false })
+		);
+	});
+
+	it('setVideoWatched optimistically completes the playlist item and drops it from continue watching', async () => {
+		const { result } = renderProvider();
+		await waitFor(() => expect(result.current.selectedPlaylistDetail?.items?.length).toBe(2));
+		await waitFor(() => expect(result.current.continueWatchingItems).toHaveLength(2));
+		mockedApi.put.mockReturnValue(new Promise(() => undefined));
+
+		act(() => result.current.setVideoWatched(10, true));
+
+		await waitFor(() => {
+			expect(result.current.continueWatchingItems.map((item) => item.video.id)).toEqual([20]);
+			expect(result.current.selectedPlaylistDetail?.items[0]).toMatchObject({
+				status: 'completed',
+				progress_pct: 100,
+			});
+		});
+	});
+
+	it('setVideoWatched rolls back the optimistic update and reports the failure', async () => {
+		const { result } = renderProvider();
+		await waitFor(() => expect(result.current.continueWatchingItems).toHaveLength(2));
+		mockedApi.put.mockRejectedValue(new Error('boom'));
+
+		act(() => result.current.setVideoWatched(10, true));
+
+		await waitFor(() => expect(result.current.feedback.message).toBe('VIDEO_WATCHED_ERROR'));
+		await waitFor(() => expect(result.current.continueWatchingItems).toHaveLength(2));
 	});
 });

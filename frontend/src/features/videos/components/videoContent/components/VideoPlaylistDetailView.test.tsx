@@ -388,4 +388,37 @@ describe('VideoPlaylistDetailView', () => {
         expect(titles[1]).toHaveTextContent('Video 20');
         expect(titles[2]).toHaveTextContent('Video 30');
     });
+
+    it('shows a watched indicator only on completed items and toggles the watched state', () => {
+        const onSetWatched = jest.fn();
+        const playlist = createPlaylist({
+            items: [
+                createPlaylistItem(1, 10, 0, { status: 'completed', progress_pct: 100 }),
+                createPlaylistItem(2, 20, 1),
+            ],
+        });
+        render(
+            <VideoPlaylistDetailView
+                {...defaultProps()}
+                playlist={playlist}
+                onSetWatched={onSetWatched}
+            />
+        );
+
+        expect(screen.getAllByRole('img', { name: 'VIDEO_STATUS_COMPLETED' })).toHaveLength(1);
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_UNWATCHED' }));
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_WATCHED' }));
+
+        expect(onSetWatched).toHaveBeenNthCalledWith(1, 10, false);
+        expect(onSetWatched).toHaveBeenNthCalledWith(2, 20, true);
+    });
+
+    it('does not render watched toggles without the handler', () => {
+        render(<VideoPlaylistDetailView {...defaultProps()} />);
+
+        expect(
+            screen.queryByRole('button', { name: 'VIDEO_MARK_WATCHED' })
+        ).not.toBeInTheDocument();
+    });
 });

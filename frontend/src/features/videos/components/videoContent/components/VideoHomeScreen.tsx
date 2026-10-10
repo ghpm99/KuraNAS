@@ -18,6 +18,7 @@ type VideoHomeScreenProps = {
     recentCatalogItems: VideoCatalogItemDto[];
     onSelectPlaylist: (playlist: VideoPlaylistDto) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 export default function VideoHomeScreen({
@@ -30,12 +31,14 @@ export default function VideoHomeScreen({
     recentCatalogItems,
     onSelectPlaylist,
     onPlayVideo,
+    onSetWatched,
 }: VideoHomeScreenProps) {
     return (
         <>
             <VideoContinueWatchingSection
                 items={continueWatchingItems.slice(0, 4)}
                 onPlayVideo={onPlayVideo}
+                onSetWatched={onSetWatched}
                 action={<VideoSectionActionLink to={getVideoRoute('continue')} />}
             />
             <VideoSectionPlaylistGrid

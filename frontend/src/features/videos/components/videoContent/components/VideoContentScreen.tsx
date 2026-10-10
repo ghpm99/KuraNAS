@@ -52,6 +52,7 @@ export default function VideoContentScreen() {
         renameSelectedPlaylist,
         removeVideoFromSelectedPlaylist,
         moveSelectedPlaylistItem,
+        setVideoWatched,
     } = useVideoContentProvider();
 
     if (isLoadingPlaylists || isLoadingVideos || isLoadingHomeCatalog) {
@@ -82,6 +83,7 @@ export default function VideoContentScreen() {
                     playlist={selectedPlaylistDetail}
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
+                    onSetWatched={setVideoWatched}
                 />
             );
         }
@@ -92,6 +94,7 @@ export default function VideoContentScreen() {
                     playlist={selectedPlaylistDetail}
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
+                    onSetWatched={setVideoWatched}
                 />
             );
         }
@@ -107,6 +110,7 @@ export default function VideoContentScreen() {
                 onRename={renameSelectedPlaylist}
                 onRemoveVideo={removeVideoFromSelectedPlaylist}
                 onMoveItem={moveSelectedPlaylistItem}
+                onSetWatched={setVideoWatched}
             />
         );
     }
@@ -118,6 +122,7 @@ export default function VideoContentScreen() {
                     <VideoContinueWatchingSection
                         items={continueWatchingItems}
                         onPlayVideo={playVideo}
+                        onSetWatched={setVideoWatched}
                     />
                 );
             case 'series':
@@ -189,6 +194,7 @@ export default function VideoContentScreen() {
                             onPlayVideo={playVideo}
                             onAddVideo={addVideoFromLibrary}
                             onLoadMore={loadMoreVideos}
+                            onSetWatched={setVideoWatched}
                         />
                     </>
                 );
@@ -205,6 +211,7 @@ export default function VideoContentScreen() {
                         recentCatalogItems={recentCatalogItems}
                         onSelectPlaylist={selectPlaylist}
                         onPlayVideo={playVideo}
+                        onSetWatched={setVideoWatched}
                     />
                 );
         }

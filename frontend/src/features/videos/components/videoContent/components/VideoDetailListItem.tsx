@@ -1,13 +1,15 @@
-import { Play } from 'lucide-react';
+import { Check, Play } from 'lucide-react';
 import { Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoDetailItem } from '../useVideoPlaylistDetail';
+import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
 type VideoDetailListItemProps = {
     item: VideoDetailItem;
     onOpenVideo: (videoId: number) => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -18,10 +20,16 @@ const statusKeyMap = {
     completed: 'VIDEO_STATUS_COMPLETED',
 } as const;
 
-export default function VideoDetailListItem({ item, onOpenVideo }: VideoDetailListItemProps) {
+export default function VideoDetailListItem({
+    item,
+    onOpenVideo,
+    onSetWatched,
+}: VideoDetailListItemProps) {
     const { t } = useI18n();
 
-    return (
+    const isWatched = item.status === 'completed';
+
+    const openVideoButton = (
         <button
             type="button"
             className={styles.detailListItem}
@@ -39,7 +47,10 @@ export default function VideoDetailListItem({ item, onOpenVideo }: VideoDetailLi
                     {item.sequenceLabel && (
                         <span className={styles.sequenceTag}>{item.sequenceLabel}</span>
                     )}
-                    <span className={styles.statusBadge}>{t(statusKeyMap[item.status])}</span>
+                    <span className={styles.statusBadge}>
+                        {isWatched && <Check size={12} aria-hidden="true" />}{' '}
+                        {t(statusKeyMap[item.status])}
+                    </span>
                 </div>
                 <Typography className={styles.detailListTitle}>
                     {item.displayTitle || item.video.name}
@@ -63,5 +74,19 @@ export default function VideoDetailListItem({ item, onOpenVideo }: VideoDetailLi
                 <Play size={16} />
             </div>
         </button>
+    );
+
+    if (!onSetWatched) {
+        return openVideoButton;
+    }
+
+    return (
+        <div className={styles.watchedRow}>
+            {openVideoButton}
+            <VideoWatchedToggleButton
+                isWatched={isWatched}
+                onToggle={() => onSetWatched(item.video.id, !isWatched)}
+            />
+        </div>
     );
 }

@@ -1,9 +1,10 @@
 import { TextField, Typography } from '@mui/material';
-import { ArrowDown, ArrowLeft, ArrowUp, Play, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Check, Play, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
 type VideoPlaylistDetailViewProps = {
@@ -16,6 +17,7 @@ type VideoPlaylistDetailViewProps = {
     onRename: (name: string) => void;
     onRemoveVideo: (videoId: number) => void;
     onMoveItem: (index: number, direction: -1 | 1) => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -30,6 +32,7 @@ export default function VideoPlaylistDetailView({
     onRename,
     onRemoveVideo,
     onMoveItem,
+    onSetWatched,
 }: VideoPlaylistDetailViewProps) {
     const { t } = useI18n();
     const [nameDraft, setNameDraft] = useState(playlist.name);
@@ -105,6 +108,13 @@ export default function VideoPlaylistDetailView({
                             </div>
                             <div className={styles.detailMeta}>
                                 <Typography className={styles.detailTitle}>
+                                    {item.status === 'completed' && (
+                                        <Check
+                                            size={14}
+                                            aria-label={t('VIDEO_STATUS_COMPLETED')}
+                                            role="img"
+                                        />
+                                    )}{' '}
                                     {item.video.name}
                                 </Typography>
                                 <Typography className={styles.detailSub}>
@@ -119,6 +129,14 @@ export default function VideoPlaylistDetailView({
                             </div>
                         </button>
                         <div className={styles.itemActions}>
+                            {onSetWatched && (
+                                <VideoWatchedToggleButton
+                                    isWatched={item.status === 'completed'}
+                                    onToggle={() =>
+                                        onSetWatched(item.video.id, item.status !== 'completed')
+                                    }
+                                />
+                            )}
                             <button
                                 type="button"
                                 className={styles.iconBtn}

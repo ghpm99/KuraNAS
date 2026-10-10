@@ -166,4 +166,29 @@ describe('VideoDetailListItem', () => {
         const progressFill = container.querySelector('[class*="progressFill"]');
         expect(progressFill).not.toBeNull();
     });
+
+    it('offers marking a not completed item as watched and a completed one as unwatched', () => {
+        const onSetWatched = jest.fn();
+        const { rerender } = render(
+            <VideoDetailListItem
+                item={createItem({ status: 'in_progress' })}
+                onOpenVideo={jest.fn()}
+                onSetWatched={onSetWatched}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_WATCHED' }));
+        expect(onSetWatched).toHaveBeenLastCalledWith(10, true);
+
+        rerender(
+            <VideoDetailListItem
+                item={createItem({ status: 'completed' })}
+                onOpenVideo={jest.fn()}
+                onSetWatched={onSetWatched}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_UNWATCHED' }));
+        expect(onSetWatched).toHaveBeenLastCalledWith(10, false);
+    });
 });

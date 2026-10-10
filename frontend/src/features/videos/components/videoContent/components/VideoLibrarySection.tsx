@@ -3,6 +3,7 @@ import { Play, Plus } from 'lucide-react';
 import { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
 type VideoLibrarySectionProps = {
@@ -19,6 +20,7 @@ type VideoLibrarySectionProps = {
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     onAddVideo: (videoId: number) => void;
     onLoadMore: () => void;
+    onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -37,6 +39,7 @@ export default function VideoLibrarySection({
     onPlayVideo,
     onAddVideo,
     onLoadMore,
+    onSetWatched,
 }: VideoLibrarySectionProps) {
     const { t } = useI18n();
 
@@ -121,6 +124,12 @@ export default function VideoLibrarySection({
                                         ? t('VIDEO_ALREADY_ADDED')
                                         : t('VIDEO_ADD')}
                                 </button>
+                                {onSetWatched && (
+                                    <VideoWatchedToggleButton
+                                        isWatched={false}
+                                        onToggle={() => onSetWatched(video.id, true)}
+                                    />
+                                )}
                             </div>
                         </div>
                     );
