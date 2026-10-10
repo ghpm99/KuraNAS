@@ -232,7 +232,7 @@ func (s *compositeSpec) IsSatisfiedBy(v VideoEntry) bool {
 // ---------------------------------------------------------------------------
 
 func defaultClassificationRules() []ClassificationRule {
-	episodeRe := regexp.MustCompile(`(?i)s\d{1,2}e\d{1,2}|\d{1,2}x\d{1,2}|ep\.?\s?\d+|epis[oó]dio\s?\d+|season\s?\d+\s*episode\s?\d+|cap[ií]tulo\s?\d+`)
+	episodeRe := regexp.MustCompile(`(?i)` + tokenStart + `(?:` + seasonEpisodeBody + `|` + crossEpisodeBody + `|` + keywordEpisodeBody + `|season\s?\d+\s*episode\s?\d+)` + tokenEnd)
 	courseRe := regexp.MustCompile(`(?i)(?:aula|lesson|lecture|module|modulo)\s*\d+`)
 
 	return []ClassificationRule{
@@ -321,9 +321,17 @@ func defaultClassificationRules() []ClassificationRule {
 // Helpers exportados para uso no scoring
 // ---------------------------------------------------------------------------
 
+const (
+	tokenStart         = `(?:^|[^\p{L}\p{N}])`
+	tokenEnd           = `(?:$|[^\p{L}\p{N}])`
+	seasonEpisodeBody  = `s\d{1,2}\s?e\d{1,3}`
+	crossEpisodeBody   = `\d{1,2}x\d{1,3}`
+	keywordEpisodeBody = `(?:ep|episode|epis[oó]dio|cap|cap[ií]tulo)\.?\s?\d+`
+)
+
 var (
-	EpisodePattern   = regexp.MustCompile(`(?i)s(\d{1,2})e(\d{1,2})|(\d{1,2})x(\d{1,2})`)
-	EpisodeNumeric   = regexp.MustCompile(`(?i)(?:ep\.?\s?|epis[oó]dio\s?|cap[ií]tulo\s?)(\d+)`)
+	EpisodePattern   = regexp.MustCompile(`(?i)` + tokenStart + `(?:` + seasonEpisodeBody + `|` + crossEpisodeBody + `)` + tokenEnd)
+	EpisodeNumeric   = regexp.MustCompile(`(?i)` + tokenStart + keywordEpisodeBody + tokenEnd)
 	SequentialNumber = regexp.MustCompile(`(?:^|\D)(\d{1,3})(?:\D|$)`)
 )
 
@@ -335,7 +343,7 @@ func InferTitlePrefix(name string) string {
 	}
 
 	bracketCleanup := regexp.MustCompile(`\[[^\]]+\]|\([^\)]+\)`)
-	episodeInline := regexp.MustCompile(`(?i)[\s._-]*(s\d{1,2}e\d{1,2}|\d{1,2}x\d{1,2})[\s._-]*`)
+	episodeInline := regexp.MustCompile(`(?i)(?:^|[\s._-]+)(` + seasonEpisodeBody + `|` + crossEpisodeBody + `)` + tokenEnd + `[\s._-]*`)
 	episodeSuffix := regexp.MustCompile(`(?i)[\s._-]*(ep\.?\s?\d+|epis[oó]dio\s?\d+|cap[ií]tulo\s?\d+|part\s?\d+|parte\s?\d+|\d{1,3})$`)
 	spaceCollapse := regexp.MustCompile(`[\s._-]+`)
 
