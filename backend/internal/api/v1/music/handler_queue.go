@@ -1,6 +1,7 @@
 package music
 
 import (
+	"nas-go/api/internal/api/v1/clientidentity"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -42,7 +43,7 @@ func (handler *Handler) GetPlaylistQueueHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return

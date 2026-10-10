@@ -2,6 +2,7 @@ package music
 
 import (
 	"encoding/json"
+	"nas-go/api/internal/api/v1/clientidentity"
 	"net/http"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestRecordPlayDecodesFileIDAndPlayedSecondsWithDeclaredClient(t *testing.T)
 	router := newPlayHistoryRouter(service)
 
 	recorder := performPlayerRequest(router, http.MethodPost, "/music/plays", `{"file_id":12,"played_seconds":31}`,
-		map[string]string{PlayerClientIDHeader: "3f2c1a9e-7b44-4c1d-9a55-0123456789ab"})
+		map[string]string{clientidentity.Header: "3f2c1a9e-7b44-4c1d-9a55-0123456789ab"})
 
 	if recorder.Code != http.StatusNoContent {
 		t.Fatalf("status = %d body=%s", recorder.Code, recorder.Body.String())
@@ -68,7 +69,7 @@ func TestRecordPlayFallsBackToClientIPAndRejectsBadInput(t *testing.T) {
 	if recorder := performPlayerRequest(router, http.MethodPost, "/music/plays", `{"file_id":"x"}`, nil); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("malformed body answered %d", recorder.Code)
 	}
-	if recorder := performPlayerRequest(router, http.MethodPost, "/music/plays", `{}`, map[string]string{PlayerClientIDHeader: "short"}); recorder.Code != http.StatusBadRequest {
+	if recorder := performPlayerRequest(router, http.MethodPost, "/music/plays", `{}`, map[string]string{clientidentity.Header: "short"}); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("malformed client id answered %d", recorder.Code)
 	}
 }

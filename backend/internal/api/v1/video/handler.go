@@ -3,6 +3,7 @@ package video
 import (
 	"database/sql"
 	"errors"
+	"nas-go/api/internal/api/v1/clientidentity"
 	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
@@ -52,7 +53,13 @@ func (h *Handler) StartPlaybackHandler(c *gin.Context) {
 		return
 	}
 
-	session, err := h.service.StartPlayback(c.ClientIP(), req.VideoID, req.PlaylistID)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	session, err := h.service.StartPlayback(clientID, req.VideoID, req.PlaylistID)
 	if err != nil {
 		respondVideoError(c, err)
 		return
@@ -62,7 +69,13 @@ func (h *Handler) StartPlaybackHandler(c *gin.Context) {
 }
 
 func (h *Handler) GetPlaybackStateHandler(c *gin.Context) {
-	session, err := h.service.GetPlaybackState(c.ClientIP())
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	session, err := h.service.GetPlaybackState(clientID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYBACK_NOT_FOUND")})
 		return
@@ -77,7 +90,13 @@ func (h *Handler) UpdatePlaybackStateHandler(c *gin.Context) {
 		return
 	}
 
-	state, err := h.service.UpdatePlaybackState(c.ClientIP(), req)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	state, err := h.service.UpdatePlaybackState(clientID, req)
 	if err != nil {
 		respondVideoError(c, err)
 		return
@@ -86,7 +105,13 @@ func (h *Handler) UpdatePlaybackStateHandler(c *gin.Context) {
 }
 
 func (h *Handler) NextVideoHandler(c *gin.Context) {
-	session, err := h.service.NextVideo(c.ClientIP())
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	session, err := h.service.NextVideo(clientID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
 		return
@@ -95,7 +120,13 @@ func (h *Handler) NextVideoHandler(c *gin.Context) {
 }
 
 func (h *Handler) PreviousVideoHandler(c *gin.Context) {
-	session, err := h.service.PreviousVideo(c.ClientIP())
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	session, err := h.service.PreviousVideo(clientID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
 		return
@@ -115,7 +146,13 @@ func (h *Handler) GetHomeCatalogHandler(c *gin.Context) {
 		return
 	}
 
-	catalog, err := h.service.GetHomeCatalog(c.ClientIP(), limit)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	catalog, err := h.service.GetHomeCatalog(clientID, limit)
 	if err != nil {
 		respondVideoError(c, err)
 		return
@@ -157,7 +194,13 @@ func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
-	playlist, err := h.service.GetPlaylistByID(c.ClientIP(), id)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	playlist, err := h.service.GetPlaylistByID(clientID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 		return
@@ -258,7 +301,13 @@ func (h *Handler) TrackBehaviorEventHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.TrackBehaviorEvent(c.ClientIP(), req); err != nil {
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	if err := h.service.TrackBehaviorEvent(clientID, req); err != nil {
 		respondVideoError(c, err)
 		return
 	}

@@ -1,6 +1,7 @@
 package music
 
 import (
+	"nas-go/api/internal/api/v1/clientidentity"
 	"net/http"
 
 	"nas-go/api/pkg/utils"
@@ -11,7 +12,7 @@ import (
 func (handler *Handler) RecordPlayHandler(c *gin.Context) {
 	loggerModel, _ := handler.logService.CreateLog(logEntry("RecordMusicPlay", "Recording music play", c), nil)
 
-	clientID, isClientIDValid := resolvePlayerClientID(c)
+	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		respondInvalidRequest(c)
 		return
