@@ -733,6 +733,8 @@
 	"ERROR_VIDEO_REMUX_UNAVAILABLE": "O ffmpeg nao esta disponivel no servidor, a conversao de video esta indisponivel",
 	"ERROR_VIDEO_REMUX_BUSY": "Muitas conversoes de video simultaneas, tente novamente em instantes",
 	"ERROR_VIDEO_REQUIRES_TRANSCODE": "Este video precisa de transcodificacao completa para ser reproduzido no navegador",
+	"ERROR_VIDEO_TRANSCODE_UNAVAILABLE": "O ffmpeg nao esta disponivel no servidor, a transcodificacao de video esta indisponivel",
+	"ERROR_VIDEO_TRANSCODE_BUSY": "Muitas transcodificacoes de video simultaneas, tente novamente em instantes",
 	"ERROR_MUSIC_OPERATION_FAILED": "Falha ao processar a requisicao de musica",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "Esta faixa já está na playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Recurso de video nao encontrado",

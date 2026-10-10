@@ -29,7 +29,7 @@ type RemuxHandler struct {
 	codecSource      RemuxCodecSource
 	runRemux         RemuxRunner
 	isRemuxerPresent func() bool
-	remuxSlots       chan struct{}
+	remuxSlots       conversionSlots
 	logService       logger.LoggerServiceInterface
 }
 
@@ -42,7 +42,7 @@ func NewRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, r
 		codecSource:      codecSource,
 		runRemux:         runRemux,
 		isRemuxerPresent: isRemuxerPresent,
-		remuxSlots:       make(chan struct{}, maxConcurrentRemuxes),
+		remuxSlots:       newConversionSlots(maxConcurrentRemuxes),
 		logService:       logService,
 	}
 }
@@ -119,16 +119,11 @@ func (handler *RemuxHandler) hasRemuxableVideoCodec(fileID int) bool {
 }
 
 func (handler *RemuxHandler) tryAcquireSlot() bool {
-	select {
-	case handler.remuxSlots <- struct{}{}:
-		return true
-	default:
-		return false
-	}
+	return handler.remuxSlots.tryAcquire()
 }
 
 func (handler *RemuxHandler) releaseSlot() {
-	<-handler.remuxSlots
+	handler.remuxSlots.release()
 }
 
 type remuxResponseWriter struct {
