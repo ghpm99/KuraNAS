@@ -4,8 +4,10 @@ import {
     type VideoContinueItemDto,
     type VideoPlaylistDto,
 } from '@/service/videoPlayback';
+import type { VideoQueryFailure } from '@/features/videos/providers/videoContentProvider/videoQueryFailure';
 import VideoCatalogRail from './VideoCatalogRail';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
+import VideoSectionError from './VideoSectionError';
 import VideoSectionSkeleton from './VideoSectionSkeleton';
 import VideoSectionPlaylistGrid, { VideoSectionActionLink } from './VideoSectionPlaylistGrid';
 
@@ -20,6 +22,9 @@ type VideoHomeScreenProps = {
     isLoadingContinueWatching?: boolean;
     isLoadingPlaylists?: boolean;
     isLoadingHomeCatalog?: boolean;
+    playlistsFailure?: VideoQueryFailure | null;
+    continueWatchingFailure?: VideoQueryFailure | null;
+    homeCatalogFailure?: VideoQueryFailure | null;
     onSelectPlaylist: (playlist: VideoPlaylistDto) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
@@ -36,6 +41,9 @@ export default function VideoHomeScreen({
     isLoadingContinueWatching = false,
     isLoadingPlaylists = false,
     isLoadingHomeCatalog = false,
+    playlistsFailure = null,
+    continueWatchingFailure = null,
+    homeCatalogFailure = null,
     onSelectPlaylist,
     onPlayVideo,
     onSetWatched,
@@ -48,6 +56,15 @@ export default function VideoHomeScreen({
     ) => {
         if (isLoadingPlaylists) {
             return <VideoSectionSkeleton key={sectionName} />;
+        }
+        if (playlistsFailure) {
+            return (
+                <VideoSectionError
+                    key={sectionName}
+                    sectionTitleKey={`VIDEO_SECTION_${titleKey}`}
+                    failure={playlistsFailure}
+                />
+            );
         }
         return (
             <VideoSectionPlaylistGrid
@@ -67,6 +84,11 @@ export default function VideoHomeScreen({
         <>
             {isLoadingContinueWatching ? (
                 <VideoSectionSkeleton layout="catalogRail" />
+            ) : continueWatchingFailure ? (
+                <VideoSectionError
+                    sectionTitleKey="VIDEO_SECTION_CONTINUE"
+                    failure={continueWatchingFailure}
+                />
             ) : (
                 <VideoContinueWatchingSection
                     items={continueWatchingItems.slice(0, 4)}
@@ -82,6 +104,11 @@ export default function VideoHomeScreen({
             {renderPlaylistSection('folders', 'FOLDERS', folderPlaylists, 'folders')}
             {isLoadingHomeCatalog ? (
                 <VideoSectionSkeleton layout="catalogRail" />
+            ) : homeCatalogFailure ? (
+                <VideoSectionError
+                    sectionTitleKey="VIDEO_HOME_RECENT"
+                    failure={homeCatalogFailure}
+                />
             ) : (
                 <VideoCatalogRail
                     titleKey="VIDEO_HOME_RECENT"

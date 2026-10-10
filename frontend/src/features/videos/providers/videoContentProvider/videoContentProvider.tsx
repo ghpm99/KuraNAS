@@ -17,6 +17,7 @@ import {
     type VideoPlaylistDto,
 } from '@/service/videoPlayback';
 import { videoQueryKeys } from './useVideoQueries';
+import { toVideoQueryFailure, type VideoQueryFailure } from './videoQueryFailure';
 import { type VideoSection } from '@/app/routes';
 import {
     getVideoDetailRoute,
@@ -60,6 +61,11 @@ export interface VideoContentContextData {
     isLoadingSelectedPlaylist: boolean;
     isLoadingHomeCatalog: boolean;
     isLoadingContinueWatching: boolean;
+    playlistsFailure: VideoQueryFailure | null;
+    videosFailure: VideoQueryFailure | null;
+    selectedPlaylistFailure: VideoQueryFailure | null;
+    homeCatalogFailure: VideoQueryFailure | null;
+    continueWatchingFailure: VideoQueryFailure | null;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
     isAddingToPlaylist: boolean;
@@ -114,21 +120,17 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
     const currentSection = getVideoSectionFromPath(location.pathname);
 
-    const { data: playlists = [], isLoading: isLoadingPlaylists } = useQuery({
+    const playlistsQuery = useQuery({
         queryKey: videoQueryKeys.playlists,
         queryFn: () => getVideoPlaylists(false),
     });
-    const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = useQuery({
+    const { data: playlists = [], isLoading: isLoadingPlaylists } = playlistsQuery;
+    const homeCatalogQuery = useQuery({
         queryKey: videoQueryKeys.homeCatalog,
         queryFn: () => getVideoHomeCatalog(VIDEO_HOME_CATALOG_LIMIT),
     });
-    const {
-        data: videoLibraryData,
-        isLoading: isLoadingVideos,
-        isFetchingNextPage: isFetchingMoreVideos,
-        hasNextPage: hasMoreVideos = false,
-        fetchNextPage,
-    } = useInfiniteQuery({
+    const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = homeCatalogQuery;
+    const videoLibraryQuery = useInfiniteQuery({
         queryKey: videoQueryKeys.libraryFiles(videoSearch),
         queryFn: ({ pageParam = 1 }) =>
             getVideoLibraryFiles(pageParam, VIDEO_LIBRARY_PAGE_SIZE, videoSearch),
@@ -136,11 +138,20 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         getNextPageParam: (lastPage) =>
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
     });
+    const {
+        data: videoLibraryData,
+        isLoading: isLoadingVideos,
+        isFetchingNextPage: isFetchingMoreVideos,
+        hasNextPage: hasMoreVideos = false,
+        fetchNextPage,
+    } = videoLibraryQuery;
 
-    const { data: continueWatchingItems = [], isLoading: isLoadingContinueWatching } = useQuery({
+    const continueWatchingQuery = useQuery({
         queryKey: videoQueryKeys.continueWatching,
         queryFn: () => getVideoContinueWatching(VIDEO_CONTINUE_WATCHING_LIMIT),
     });
+    const { data: continueWatchingItems = [], isLoading: isLoadingContinueWatching } =
+        continueWatchingQuery;
 
     const playlistSlug = getVideoDetailSlugFromPath(location.pathname);
     const playlistIdFromSearch = getVideoPlaylistIdFromSearch(location.search);
@@ -158,11 +169,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         );
     }, [playlistIdFromSearch, playlistSlug, playlists]);
 
-    const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } = useQuery({
+    const selectedPlaylistQuery = useQuery({
         queryKey: videoQueryKeys.playlistDetail(selectedPlaylistSummary?.id),
         enabled: Boolean(selectedPlaylistSummary?.id),
         queryFn: () => getVideoPlaylistById(selectedPlaylistSummary?.id ?? 0),
     });
+    const { data: selectedPlaylistDetailData, isLoading: isLoadingSelectedPlaylist } =
+        selectedPlaylistQuery;
 
     const selectedPlaylistDetail = selectedPlaylistDetailData ?? null;
 
@@ -362,6 +375,37 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         onSettled: () => invalidateAllVideoQueries(),
     });
 
+    const playlistsFailure = toVideoQueryFailure({
+        isError: playlistsQuery.isError,
+        error: playlistsQuery.error,
+        hasData: playlistsQuery.data !== undefined,
+        refetch: playlistsQuery.refetch,
+    });
+    const homeCatalogFailure = toVideoQueryFailure({
+        isError: homeCatalogQuery.isError,
+        error: homeCatalogQuery.error,
+        hasData: homeCatalogQuery.data !== undefined,
+        refetch: homeCatalogQuery.refetch,
+    });
+    const videosFailure = toVideoQueryFailure({
+        isError: videoLibraryQuery.isError,
+        error: videoLibraryQuery.error,
+        hasData: videoLibraryQuery.data !== undefined,
+        refetch: videoLibraryQuery.refetch,
+    });
+    const continueWatchingFailure = toVideoQueryFailure({
+        isError: continueWatchingQuery.isError,
+        error: continueWatchingQuery.error,
+        hasData: continueWatchingQuery.data !== undefined,
+        refetch: continueWatchingQuery.refetch,
+    });
+    const selectedPlaylistFailure = toVideoQueryFailure({
+        isError: selectedPlaylistQuery.isError,
+        error: selectedPlaylistQuery.error,
+        hasData: selectedPlaylistQuery.data !== undefined,
+        refetch: selectedPlaylistQuery.refetch,
+    });
+
     const getCurrentRoute = () => `${location.pathname}${location.search}`;
 
     const resolvePlaylistSection = (playlist: VideoPlaylistDto): Exclude<VideoSection, 'home'> =>
@@ -419,6 +463,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         isLoadingSelectedPlaylist,
         isLoadingHomeCatalog,
         isLoadingContinueWatching,
+        playlistsFailure,
+        videosFailure,
+        selectedPlaylistFailure,
+        homeCatalogFailure,
+        continueWatchingFailure,
         isFetchingMoreVideos,
         hasMoreVideos,
         isAddingToPlaylist: addToPlaylistMutation.isPending,

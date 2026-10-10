@@ -806,4 +806,71 @@ describe('VideoContentProvider', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/videos/folders/'));
     });
+
+    it('exposes no failure while every query succeeds', async () => {
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isLoadingPlaylists).toBe(false));
+
+        expect(result.current.playlistsFailure).toBeNull();
+        expect(result.current.videosFailure).toBeNull();
+        expect(result.current.homeCatalogFailure).toBeNull();
+        expect(result.current.continueWatchingFailure).toBeNull();
+        expect(result.current.selectedPlaylistFailure).toBeNull();
+    });
+
+    it('isolates a playlists failure and retries only that query', async () => {
+        mockGetVideoPlaylists.mockRejectedValueOnce({
+            response: { data: { error: 'playlists down' } },
+        });
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.playlistsFailure).not.toBeNull());
+
+        expect(result.current.playlistsFailure?.message).toBe('playlists down');
+        expect(result.current.videosFailure).toBeNull();
+        expect(result.current.homeCatalogFailure).toBeNull();
+        expect(result.current.continueWatchingFailure).toBeNull();
+
+        act(() => result.current.playlistsFailure?.retry());
+
+        await waitFor(() => expect(result.current.playlistsFailure).toBeNull());
+        expect(mockGetVideoPlaylists).toHaveBeenCalledTimes(2);
+        expect(mockGetVideoContinueWatching).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        ['videosFailure', mockGetVideoLibraryFiles],
+        ['homeCatalogFailure', mockGetVideoHomeCatalog],
+        ['continueWatchingFailure', mockGetVideoContinueWatching],
+    ] as const)('exposes %s when only its query fails', async (failureKey, failingService) => {
+        failingService.mockRejectedValueOnce({ response: { data: { error: 'boom' } } });
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => expect(result.current[failureKey]).not.toBeNull());
+
+        expect(result.current[failureKey]?.message).toBe('boom');
+        expect(result.current.playlistsFailure).toBeNull();
+    });
+
+    it('exposes selectedPlaylistFailure when the playlist detail fails', async () => {
+        mockGetVideoPlaylists.mockResolvedValue([createPlaylist({ id: 7, name: 'Show' })]);
+        mockGetVideoPlaylistById.mockRejectedValueOnce({
+            response: { data: { error: 'detail down' } },
+        });
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(['/videos/series/show?playlist=7']),
+        });
+
+        await waitFor(() => expect(result.current.selectedPlaylistFailure).not.toBeNull());
+
+        expect(result.current.selectedPlaylistFailure?.message).toBe('detail down');
+        expect(result.current.playlistsFailure).toBeNull();
+    });
 });
