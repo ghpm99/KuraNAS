@@ -59,6 +59,7 @@ export interface VideoContentContextData {
     isLoadingVideos: boolean;
     isLoadingSelectedPlaylist: boolean;
     isLoadingHomeCatalog: boolean;
+    isLoadingContinueWatching: boolean;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
     isAddingToPlaylist: boolean;
@@ -136,7 +137,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             lastPage.pagination.has_next ? lastPage.pagination.page + 1 : undefined,
     });
 
-    const { data: continueWatchingItems = [] } = useQuery({
+    const { data: continueWatchingItems = [], isLoading: isLoadingContinueWatching } = useQuery({
         queryKey: videoQueryKeys.continueWatching,
         queryFn: () => getVideoContinueWatching(VIDEO_CONTINUE_WATCHING_LIMIT),
     });
@@ -417,6 +418,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         isLoadingVideos,
         isLoadingSelectedPlaylist,
         isLoadingHomeCatalog,
+        isLoadingContinueWatching,
         isFetchingMoreVideos,
         hasMoreVideos,
         isAddingToPlaylist: addToPlaylistMutation.isPending,

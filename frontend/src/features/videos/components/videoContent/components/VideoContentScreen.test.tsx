@@ -42,7 +42,13 @@ jest.mock('./VideoLibrarySection', () => ({
 
 jest.mock('./VideoHomeScreen', () => ({
     __esModule: true,
-    default: () => <div data-testid="home-screen">home</div>,
+    default: (props: any) => (
+        <div data-testid="home-screen">
+            {props.isLoadingPlaylists ? 'playlists-loading' : 'playlists-ready'}
+            {props.isLoadingContinueWatching ? 'continue-loading' : 'continue-ready'}
+            {props.isLoadingHomeCatalog ? 'catalog-loading' : 'catalog-ready'}
+        </div>
+    ),
 }));
 
 jest.mock('./VideoContextDetailView', () => ({
@@ -109,6 +115,7 @@ const createContext = (
     isLoadingVideos: false,
     isLoadingSelectedPlaylist: false,
     isLoadingHomeCatalog: false,
+    isLoadingContinueWatching: false,
     isFetchingMoreVideos: false,
     hasMoreVideos: false,
     isAddingToPlaylist: false,
@@ -155,9 +162,57 @@ describe('VideoContentScreen', () => {
         render(<VideoContentScreen />);
     };
 
-    it('shows the video loader when queries are running', () => {
-        renderScreen({ isLoadingPlaylists: true });
-        expect(screen.getByText('VIDEO_LOADING_VIDEOS')).toBeInTheDocument();
+    it('renders the page shell immediately while every query is pending', () => {
+        renderScreen({
+            isLoadingPlaylists: true,
+            isLoadingVideos: true,
+            isLoadingHomeCatalog: true,
+            isLoadingContinueWatching: true,
+        });
+        expect(screen.getByTestId('feedback-snackbar')).toBeInTheDocument();
+        expect(screen.getByTestId('home-screen')).toHaveTextContent(
+            'playlists-loadingcontinue-loadingcatalog-loading'
+        );
+    });
+
+    it.each(['series', 'movies', 'personal', 'clips'] as const)(
+        'shows only a skeleton in the %s section while playlists load',
+        (section) => {
+            renderScreen({ currentSection: section, isLoadingPlaylists: true });
+            expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+            expect(screen.queryByTestId(/^section-grid-/)).not.toBeInTheDocument();
+        }
+    );
+
+    it('shows a skeleton in the continue section while its query loads', () => {
+        renderScreen({ currentSection: 'continue', isLoadingContinueWatching: true });
+        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        expect(screen.queryByTestId('continue-section')).not.toBeInTheDocument();
+    });
+
+    it('lets the folders sections resolve independently', () => {
+        renderScreen({ currentSection: 'folders', isLoadingVideos: true });
+        expect(screen.getByTestId('section-grid-VIDEO_SECTION_FOLDERS')).toBeInTheDocument();
+        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        expect(screen.queryByTestId('library-section')).not.toBeInTheDocument();
+    });
+
+    it('shows the library while folder playlists are still loading', () => {
+        renderScreen({ currentSection: 'folders', isLoadingPlaylists: true });
+        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        expect(screen.getByTestId('library-section')).toBeInTheDocument();
+    });
+
+    it('replaces skeletons with content once the query resolves', () => {
+        mockUseVideoContentProvider.mockReturnValue(
+            createContext({ currentSection: 'series', isLoadingPlaylists: true })
+        );
+        const { rerender } = render(<VideoContentScreen />);
+        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        mockUseVideoContentProvider.mockReturnValue(createContext({ currentSection: 'series' }));
+        rerender(<VideoContentScreen />);
+        expect(screen.queryByTestId('video-section-skeleton')).not.toBeInTheDocument();
+        expect(screen.getByTestId('section-grid-VIDEO_SECTION_SERIES')).toBeInTheDocument();
     });
 
     it('shows the playlist loader while a playlist detail is loading', () => {

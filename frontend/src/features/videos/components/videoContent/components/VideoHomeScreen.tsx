@@ -6,6 +6,7 @@ import {
 } from '@/service/videoPlayback';
 import VideoCatalogRail from './VideoCatalogRail';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
+import VideoSectionSkeleton from './VideoSectionSkeleton';
 import VideoSectionPlaylistGrid, { VideoSectionActionLink } from './VideoSectionPlaylistGrid';
 
 type VideoHomeScreenProps = {
@@ -16,6 +17,9 @@ type VideoHomeScreenProps = {
     clipPlaylists: VideoPlaylistDto[];
     folderPlaylists: VideoPlaylistDto[];
     recentCatalogItems: VideoCatalogItemDto[];
+    isLoadingContinueWatching?: boolean;
+    isLoadingPlaylists?: boolean;
+    isLoadingHomeCatalog?: boolean;
     onSelectPlaylist: (playlist: VideoPlaylistDto) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
@@ -29,69 +33,63 @@ export default function VideoHomeScreen({
     clipPlaylists,
     folderPlaylists,
     recentCatalogItems,
+    isLoadingContinueWatching = false,
+    isLoadingPlaylists = false,
+    isLoadingHomeCatalog = false,
     onSelectPlaylist,
     onPlayVideo,
     onSetWatched,
 }: VideoHomeScreenProps) {
+    const renderPlaylistSection = (
+        sectionName: string,
+        titleKey: string,
+        playlists: VideoPlaylistDto[],
+        route: Parameters<typeof getVideoRoute>[0]
+    ) => {
+        if (isLoadingPlaylists) {
+            return <VideoSectionSkeleton key={sectionName} />;
+        }
+        return (
+            <VideoSectionPlaylistGrid
+                key={sectionName}
+                titleKey={`VIDEO_SECTION_${titleKey}`}
+                descriptionKey={`VIDEO_SECTION_${titleKey}_DESCRIPTION`}
+                emptyKey={`VIDEO_SECTION_${titleKey}_EMPTY`}
+                playlists={playlists.slice(0, 4)}
+                onSelectPlaylist={onSelectPlaylist}
+                onPlayVideo={onPlayVideo}
+                action={<VideoSectionActionLink to={getVideoRoute(route)} />}
+            />
+        );
+    };
+
     return (
         <>
-            <VideoContinueWatchingSection
-                items={continueWatchingItems.slice(0, 4)}
-                onPlayVideo={onPlayVideo}
-                onSetWatched={onSetWatched}
-                action={<VideoSectionActionLink to={getVideoRoute('continue')} />}
-            />
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_SERIES"
-                descriptionKey="VIDEO_SECTION_SERIES_DESCRIPTION"
-                emptyKey="VIDEO_SECTION_SERIES_EMPTY"
-                playlists={seriesPlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
-                onPlayVideo={onPlayVideo}
-                action={<VideoSectionActionLink to={getVideoRoute('series')} />}
-            />
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_MOVIES"
-                descriptionKey="VIDEO_SECTION_MOVIES_DESCRIPTION"
-                emptyKey="VIDEO_SECTION_MOVIES_EMPTY"
-                playlists={moviePlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
-                onPlayVideo={onPlayVideo}
-                action={<VideoSectionActionLink to={getVideoRoute('movies')} />}
-            />
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_PERSONAL"
-                descriptionKey="VIDEO_SECTION_PERSONAL_DESCRIPTION"
-                emptyKey="VIDEO_SECTION_PERSONAL_EMPTY"
-                playlists={personalPlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
-                onPlayVideo={onPlayVideo}
-                action={<VideoSectionActionLink to={getVideoRoute('personal')} />}
-            />
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_CLIPS"
-                descriptionKey="VIDEO_SECTION_CLIPS_DESCRIPTION"
-                emptyKey="VIDEO_SECTION_CLIPS_EMPTY"
-                playlists={clipPlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
-                onPlayVideo={onPlayVideo}
-                action={<VideoSectionActionLink to={getVideoRoute('clips')} />}
-            />
-            <VideoSectionPlaylistGrid
-                titleKey="VIDEO_SECTION_FOLDERS"
-                descriptionKey="VIDEO_SECTION_FOLDERS_DESCRIPTION"
-                emptyKey="VIDEO_SECTION_FOLDERS_EMPTY"
-                playlists={folderPlaylists.slice(0, 4)}
-                onSelectPlaylist={onSelectPlaylist}
-                onPlayVideo={onPlayVideo}
-                action={<VideoSectionActionLink to={getVideoRoute('folders')} />}
-            />
-            <VideoCatalogRail
-                titleKey="VIDEO_HOME_RECENT"
-                descriptionKey="VIDEO_HOME_RECENT_DESCRIPTION"
-                items={recentCatalogItems}
-                onPlayVideo={onPlayVideo}
-            />
+            {isLoadingContinueWatching ? (
+                <VideoSectionSkeleton layout="catalogRail" />
+            ) : (
+                <VideoContinueWatchingSection
+                    items={continueWatchingItems.slice(0, 4)}
+                    onPlayVideo={onPlayVideo}
+                    onSetWatched={onSetWatched}
+                    action={<VideoSectionActionLink to={getVideoRoute('continue')} />}
+                />
+            )}
+            {renderPlaylistSection('series', 'SERIES', seriesPlaylists, 'series')}
+            {renderPlaylistSection('movies', 'MOVIES', moviePlaylists, 'movies')}
+            {renderPlaylistSection('personal', 'PERSONAL', personalPlaylists, 'personal')}
+            {renderPlaylistSection('clips', 'CLIPS', clipPlaylists, 'clips')}
+            {renderPlaylistSection('folders', 'FOLDERS', folderPlaylists, 'folders')}
+            {isLoadingHomeCatalog ? (
+                <VideoSectionSkeleton layout="catalogRail" />
+            ) : (
+                <VideoCatalogRail
+                    titleKey="VIDEO_HOME_RECENT"
+                    descriptionKey="VIDEO_HOME_RECENT_DESCRIPTION"
+                    items={recentCatalogItems}
+                    onPlayVideo={onPlayVideo}
+                />
+            )}
         </>
     );
 }
