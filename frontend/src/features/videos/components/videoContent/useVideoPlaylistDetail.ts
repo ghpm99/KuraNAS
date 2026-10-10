@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { parseSeasonEpisode } from './parseSeasonEpisode';
 import { type VideoPlaylistDto, type VideoPlaylistItemDto } from '@/service/videoPlayback';
 
 export type VideoDetailItem = VideoPlaylistItemDto & {
@@ -28,49 +29,23 @@ const spaceCollapsePattern = /\s+/g;
 const parseEpisode = (name: string): ParsedEpisode => {
     const cleanName = name.replace(extensionPattern, '');
 
-    const seasonEpisodeMatch =
-        cleanName.match(/(\d{1,2})x(\d{1,2})/i) ?? cleanName.match(/s(\d{1,2})e(\d{1,2})/i);
-    if (seasonEpisodeMatch) {
-        const seasonNumber = Number(seasonEpisodeMatch[1] ?? '1');
-        const episodeNumber = Number(seasonEpisodeMatch[2] ?? '0');
+    const seasonEpisode = parseSeasonEpisode(cleanName);
+    if (seasonEpisode) {
+        const { seasonNumber, episodeNumber, matchedText } = seasonEpisode;
         const displayTitle = cleanName
-            .replace(seasonEpisodeMatch[0], ' ')
+            .replace(matchedText, ' ')
             .replace(whitespacePattern, ' ')
             .replace(spaceCollapsePattern, ' ')
             .trim();
+        const isValidEpisode = episodeNumber > 0;
 
         return {
             displayTitle: displayTitle || cleanName,
-            seasonNumber: Number.isFinite(seasonNumber) ? seasonNumber : null,
-            episodeNumber:
-                Number.isFinite(episodeNumber) && episodeNumber > 0 ? episodeNumber : null,
-            sequenceLabel:
-                Number.isFinite(episodeNumber) && episodeNumber > 0
-                    ? `S${String(seasonNumber).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`
-                    : '',
-        };
-    }
-
-    const episodeOnlyMatch = cleanName.match(
-        /(?:(?:ep\.?\s*)|(?:episode\s*)|(?:epis[oó]dio\s*)|(?:cap[ií]tulo\s*))(\d{1,3})/i
-    );
-    if (episodeOnlyMatch) {
-        const episodeNumber = Number(episodeOnlyMatch[1] ?? '0');
-        const displayTitle = cleanName
-            .replace(episodeOnlyMatch[0], ' ')
-            .replace(whitespacePattern, ' ')
-            .replace(spaceCollapsePattern, ' ')
-            .trim();
-
-        return {
-            displayTitle: displayTitle || cleanName,
-            seasonNumber: 1,
-            episodeNumber:
-                Number.isFinite(episodeNumber) && episodeNumber > 0 ? episodeNumber : null,
-            sequenceLabel:
-                Number.isFinite(episodeNumber) && episodeNumber > 0
-                    ? `S01E${String(episodeNumber).padStart(2, '0')}`
-                    : '',
+            seasonNumber,
+            episodeNumber: isValidEpisode ? episodeNumber : null,
+            sequenceLabel: isValidEpisode
+                ? `S${String(seasonNumber).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`
+                : '',
         };
     }
 
