@@ -198,6 +198,9 @@ func (m *videoRepoMock) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistMo
 	}
 	return nil, nil
 }
+func (m *videoRepoMock) GetVideoPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoModel, error) {
+	return nil, nil
+}
 func (m *videoRepoMock) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
 	if m.getVideoPlaylistMembersFn != nil {
 		return m.getVideoPlaylistMembersFn(includeHidden)

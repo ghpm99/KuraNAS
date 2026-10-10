@@ -643,6 +643,33 @@ func (r *Repository) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPla
 	return memberships, nil
 }
 
+func (r *Repository) GetVideoPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoModel, error) {
+	playlists := []VideoPlaylistOfVideoModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetVideoPlaylistsByVideoQuery, videoID)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var playlist VideoPlaylistOfVideoModel
+			if err := rows.Scan(&playlist.ID, &playlist.Name, &playlist.Type); err != nil {
+				return err
+			}
+			playlists = append(playlists, playlist)
+		}
+
+		return rows.Err()
+	})
+	if err != nil {
+		return playlists, fmt.Errorf("falha ao buscar playlists do video: %w", err)
+	}
+
+	return playlists, nil
+}
+
 func (r *Repository) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 	var playlist VideoPlaylistModel
 
