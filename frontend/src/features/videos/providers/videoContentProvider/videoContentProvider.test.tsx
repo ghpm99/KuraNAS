@@ -10,7 +10,6 @@ const mockGetVideoPlaylistById = jest.fn();
 const mockGetVideoHomeCatalog = jest.fn();
 const mockGetVideoContinueWatching = jest.fn();
 const mockGetVideoLibraryFiles = jest.fn();
-const mockGetVideoPlaylistMemberships = jest.fn();
 const mockGetVideoPlaybackState = jest.fn();
 const mockGetVideoPlaylistItemsPage = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
@@ -26,7 +25,6 @@ jest.mock('@/service/videoPlayback', () => ({
     getVideoHomeCatalog: (...args: unknown[]) => mockGetVideoHomeCatalog(...args),
     getVideoContinueWatching: (...args: unknown[]) => mockGetVideoContinueWatching(...args),
     getVideoLibraryFiles: (...args: unknown[]) => mockGetVideoLibraryFiles(...args),
-    getVideoPlaylistMemberships: (...args: unknown[]) => mockGetVideoPlaylistMemberships(...args),
     getVideoPlaybackState: (...args: unknown[]) => mockGetVideoPlaybackState(...args),
     getVideoPlaylistItemsPage: (...args: unknown[]) => mockGetVideoPlaylistItemsPage(...args),
     addVideoToPlaylist: (...args: unknown[]) => mockAddVideoToPlaylist(...args),
@@ -146,7 +144,6 @@ const setupDefaultMocks = () => {
         items: [],
         pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
     });
-    mockGetVideoPlaylistMemberships.mockResolvedValue([]);
     mockGetVideoPlaybackState.mockResolvedValue(null);
     mockGetVideoPlaylistItemsPage.mockResolvedValue(asItemsPage([]));
     mockAddVideoToPlaylist.mockResolvedValue(undefined);
@@ -253,33 +250,6 @@ describe('VideoContentProvider', () => {
 
         await waitFor(() => expect(mockGetVideoContinueWatching).toHaveBeenCalled());
         expect(result.current.continueWatchingItems).toEqual([]);
-    });
-
-    it('builds playlistMembershipMap from memberships', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([
-            createPlaylist({ id: 1 }),
-            createPlaylist({ id: 2 }),
-        ]);
-        mockGetVideoPlaylistMemberships.mockResolvedValue([
-            { playlist_id: 1, video_id: 10 },
-            { playlist_id: 1, video_id: 20 },
-            { playlist_id: 2, video_id: 30 },
-        ]);
-
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(['/videos/folders']),
-        });
-
-        await waitFor(() => expect(result.current.playlists).toHaveLength(2));
-
-        await waitFor(() => {
-            expect(Object.keys(result.current.playlistMembershipMap).length).toBeGreaterThan(0);
-        });
-
-        const map = result.current.playlistMembershipMap;
-        expect(map[1]!.has(10)).toBe(true);
-        expect(map[1]!.has(20)).toBe(true);
-        expect(map[2]!.has(30)).toBe(true);
     });
 
     it('filters videos by search via query refetch', async () => {

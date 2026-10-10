@@ -1,15 +1,15 @@
 import { TextField } from '@mui/material';
-import { Play, Plus } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import VideoLibraryPlaylistPicker from './VideoLibraryPlaylistPicker';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
 type VideoLibrarySectionProps = {
     videos: VideoFileDto[];
     playlists: VideoPlaylistDto[];
-    playlistMembershipMap: Record<number, Set<number>>;
     search: string;
     selectedPlaylistPerVideo: Record<number, number>;
     isAddingToPlaylist: boolean;
@@ -28,7 +28,6 @@ const apiBase = `${getApiV1BaseUrl()}/files`;
 export default function VideoLibrarySection({
     videos,
     playlists,
-    playlistMembershipMap,
     search,
     selectedPlaylistPerVideo,
     isAddingToPlaylist,
@@ -60,12 +59,6 @@ export default function VideoLibrarySection({
             </div>
             <div className={styles.allVideosList}>
                 {videos.map((video) => {
-                    const selectedPlaylist = selectedPlaylistPerVideo[video.id] ?? playlists[0]?.id;
-                    const isAlreadyInPlaylist = Boolean(
-                        selectedPlaylist &&
-                        playlistMembershipMap[selectedPlaylist] &&
-                        playlistMembershipMap[selectedPlaylist]?.has(video.id)
-                    );
                     return (
                         <div className={styles.allVideoItem} key={video.id}>
                             <div className={styles.allVideoThumb}>
@@ -90,40 +83,14 @@ export default function VideoLibrarySection({
                                     <Play size={14} />
                                     {t('VIDEO_PLAY')}
                                 </button>
-                                <select
-                                    className={styles.playlistSelect}
-                                    value={selectedPlaylist ?? ''}
-                                    onChange={(event) =>
-                                        onSelectPlaylistForVideo(
-                                            video.id,
-                                            Number(event.target.value)
-                                        )
-                                    }
-                                >
-                                    {playlists.map((playlist) => (
-                                        <option
-                                            key={`add-${video.id}-${playlist.id}`}
-                                            value={playlist.id}
-                                        >
-                                            {playlist.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <button
-                                    type="button"
-                                    className={styles.actionBtn}
-                                    disabled={
-                                        !selectedPlaylist ||
-                                        isAddingToPlaylist ||
-                                        isAlreadyInPlaylist
-                                    }
-                                    onClick={() => onAddVideo(video.id)}
-                                >
-                                    <Plus size={14} />
-                                    {isAlreadyInPlaylist
-                                        ? t('VIDEO_ALREADY_ADDED')
-                                        : t('VIDEO_ADD')}
-                                </button>
+                                <VideoLibraryPlaylistPicker
+                                    videoId={video.id}
+                                    playlists={playlists}
+                                    selectedPlaylistId={selectedPlaylistPerVideo[video.id]}
+                                    isAddingToPlaylist={isAddingToPlaylist}
+                                    onSelectPlaylist={onSelectPlaylistForVideo}
+                                    onAddVideo={onAddVideo}
+                                />
                                 {onSetWatched && (
                                     <VideoWatchedToggleButton
                                         isWatched={false}

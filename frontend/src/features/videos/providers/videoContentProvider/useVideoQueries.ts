@@ -2,6 +2,7 @@ import {
     getAllVideoFiles,
     getVideoHomeCatalog,
     getVideoPlaylistById,
+    getVideoPlaylistsByVideo,
     getVideoPlaylists,
     getVideoPlaylistsBySection,
     getVideosWithoutPlaylist,
@@ -21,13 +22,21 @@ export const videoQueryKeys = {
     libraryFiles: (search: string) => ['video', 'library-files', search] as const,
     playbackState: ['video', 'playback-state'] as const,
     continueWatching: ['video', 'continue-watching'] as const,
-    playlistMembership: (key: string) => ['video', 'playlist-membership', key] as const,
+    playlistsOfVideo: (videoId: number) => ['video', 'playlists-of-video', videoId] as const,
 };
 
 export const useVideoPlaylists = () => {
     return useQuery({
         queryKey: videoQueryKeys.playlists,
         queryFn: () => getVideoPlaylists(false),
+    });
+};
+
+export const useVideoPlaylistsOfVideo = (videoId: number, isEnabled: boolean) => {
+    return useQuery({
+        queryKey: videoQueryKeys.playlistsOfVideo(videoId),
+        queryFn: () => getVideoPlaylistsByVideo(videoId),
+        enabled: isEnabled,
     });
 };
 

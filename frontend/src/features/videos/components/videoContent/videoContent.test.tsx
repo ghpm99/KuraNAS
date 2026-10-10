@@ -17,7 +17,6 @@ const mockGetVideoHomeCatalog = jest.fn();
 const mockGetVideoContinueWatching = jest.fn();
 const mockAddVideoToPlaylist = jest.fn();
 const mockGetVideoPlaylistItemsPage = jest.fn();
-const mockGetVideoPlaylistMemberships = jest.fn();
 const mockRemoveVideoFromPlaylist = jest.fn();
 const mockReorderVideoPlaylist = jest.fn();
 const mockUpdateVideoPlaylistName = jest.fn();
@@ -32,7 +31,6 @@ jest.mock('@/service/videoPlayback', () => ({
     getVideoContinueWatching: (...args: any[]) => mockGetVideoContinueWatching(...args),
     addVideoToPlaylist: (...args: any[]) => mockAddVideoToPlaylist(...args),
     getVideoPlaylistItemsPage: (...args: any[]) => mockGetVideoPlaylistItemsPage(...args),
-    getVideoPlaylistMemberships: (...args: any[]) => mockGetVideoPlaylistMemberships(...args),
     removeVideoFromPlaylist: (...args: any[]) => mockRemoveVideoFromPlaylist(...args),
     reorderVideoPlaylist: (...args: any[]) => mockReorderVideoPlaylist(...args),
     updateVideoPlaylistName: (...args: any[]) => mockUpdateVideoPlaylistName(...args),
@@ -318,7 +316,6 @@ let allVideosData: any[] = [];
 let homeCatalogData: any = undefined;
 let continueWatchingData: any[] = [];
 let playbackData: any = undefined;
-let membershipData: any[] = [];
 let selectedPlaylistData: any = undefined;
 let selectedPlaylistLoading = false;
 let mutationShouldError = false;
@@ -357,7 +354,6 @@ beforeEach(() => {
         },
     ];
     playbackData = { playback_state: { playlist_id: 1, video_id: 30 } };
-    membershipData = [];
     selectedPlaylistData = detailPlaylist;
     selectedPlaylistLoading = false;
     mutationShouldError = false;
@@ -376,7 +372,6 @@ beforeEach(() => {
         items: detailPlaylist.items,
         pagination: { page: 1, page_size: 50, has_next: false, has_prev: false },
     });
-    mockGetVideoPlaylistMemberships.mockResolvedValue(membershipData);
     mockGetVideoPlaybackState.mockResolvedValue(playbackData);
     mockAddVideoToPlaylist.mockResolvedValue({});
     mockRemoveVideoFromPlaylist.mockResolvedValue({});
@@ -392,7 +387,6 @@ beforeEach(() => {
         if (subKey === 'continue-watching') return { data: continueWatchingData };
         if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
         if (subKey === 'playback-state') return { data: playbackData };
-        if (subKey === 'playlist-membership') return { data: membershipData };
         return { data: undefined, isLoading: false };
     });
     mockUseInfiniteQuery.mockImplementation((options: any) => {
@@ -464,7 +458,6 @@ describe('components/videos/videoContent', () => {
             if (subKey === 'playlists') return { data: [], isLoading: true };
             if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
             if (subKey === 'playback-state') return { data: playbackData };
-            if (subKey === 'playlist-membership') return { data: [] };
             return { data: undefined, isLoading: false };
         });
         mockUseInfiniteQuery.mockImplementation((options: any) =>

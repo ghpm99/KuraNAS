@@ -20,6 +20,7 @@ import {
     getVideoPlaylistById,
     getVideoPlaylists,
     getVideoPlaylistsBySection,
+    getVideoPlaylistsByVideo,
     getVideosWithoutPlaylist,
     nextVideoPlayback,
     previousVideoPlayback,
@@ -42,6 +43,15 @@ const mockedApi = apiBase as unknown as {
 describe('service/videoPlayback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('requests the playlists that contain one video', async () => {
+        const playlistsOfVideo = [{ id: 3, name: 'Favorites', type: 'custom' }];
+        mockedApi.get.mockResolvedValue({ data: playlistsOfVideo });
+
+        await expect(getVideoPlaylistsByVideo(7)).resolves.toEqual(playlistsOfVideo);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/playlists/by-video/7');
     });
 
     it('requests one page of the playlists of a section', async () => {

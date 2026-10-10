@@ -4,7 +4,6 @@ import {
     getVideoContinueWatching,
     getVideoHomeCatalog,
     getVideoLibraryFiles,
-    getVideoPlaylistMemberships,
     getVideoPlaylistById,
     getVideoPlaylistItemsPage,
     getVideoPlaylists,
@@ -67,7 +66,6 @@ export interface VideoContentContextData {
     clipPlaylists: VideoPlaylistDto[];
     folderPlaylists: VideoPlaylistDto[];
     recentCatalogItems: VideoCatalogItemDto[];
-    playlistMembershipMap: Record<number, Set<number>>;
     selectedPlaylistSummary: VideoPlaylistDto | null;
     selectedPlaylistDetail: VideoPlaylistDto | null;
     isLoadingPlaylists: boolean;
@@ -350,33 +348,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         );
     }, [allVideos, videoSearch]);
 
-    const { data: playlistMemberships = [] } = useQuery({
-        queryKey: videoQueryKeys.playlistMembership(
-            playlists.map((playlist) => playlist.id).join(',')
-        ),
-        enabled: playlists.length > 0,
-        queryFn: () => getVideoPlaylistMemberships(false),
-    });
-
-    const playlistMembershipMap = useMemo<Record<number, Set<number>>>(() => {
-        const membershipsByPlaylist: Record<number, Set<number>> = {};
-        for (const membership of playlistMemberships) {
-            if (!membershipsByPlaylist[membership.playlist_id]) {
-                membershipsByPlaylist[membership.playlist_id] = new Set<number>();
-            }
-            membershipsByPlaylist[membership.playlist_id]?.add(membership.video_id);
-        }
-
-        return membershipsByPlaylist;
-    }, [playlistMemberships]);
-
     const invalidatePlaylistQueries = async () => {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: videoQueryKeys.playlists }),
             queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
             queryClient.invalidateQueries({ queryKey: ['video', 'playlist-items'] }),
             queryClient.invalidateQueries({
-                queryKey: ['video', 'playlist-membership'],
+                queryKey: ['video', 'playlists-of-video'],
             }),
         ]);
     };
@@ -579,7 +557,6 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         clipPlaylists,
         folderPlaylists,
         recentCatalogItems,
-        playlistMembershipMap,
         selectedPlaylistSummary,
         selectedPlaylistDetail,
         isLoadingPlaylists,
