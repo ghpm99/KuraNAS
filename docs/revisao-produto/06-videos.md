@@ -48,7 +48,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 25. Reordenar playlist sem violar a unicidade
 - [x] 26. Ordenação natural dos episódios
 - [x] 27. Regex de episódio com fronteira de palavra (backend)
-- [ ] 28. Regex de episódio com fronteira de palavra (frontend)
+- [x] 28. Regex de episódio com fronteira de palavra (frontend)
 - [ ] 29. Palavras-chave de classificação por segmento de caminho
 - [ ] 30. Detalhe da playlist paginado
 - [ ] 31. Lista de playlists paginada por seção
