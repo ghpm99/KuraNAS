@@ -291,7 +291,7 @@ func NewContext(db *sql.DB) *AppContext {
 	imageContext := newImageContext(dbContext, loggerService, jobsContext.Repository)
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
-	videoContext := newVideoContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
+	videoContext := newVideoContext(dbContext, loggerService, fileContext.Service, fileContext.RecentFileService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	documentTextContext := newDocumentTextContext(dbContext)
@@ -512,10 +512,10 @@ func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServi
 	}
 }
 
-func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface) *VideoContext {
+func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface) *VideoContext {
 	repository := video.NewRepository(dbContext)
 	metadataRepository := video.NewVideoMetadataRepository(dbContext)
-	service := video.NewService(repository, aiService)
+	service := video.NewService(repository)
 	handler := video.NewHandler(service, filesService, recentFileService, logger)
 	summaryService := video.NewVideoSummaryService(video.NewVideoSummaryRepository(dbContext))
 	summaryHandler := video.NewVideoSummaryHandler(summaryService, logger)

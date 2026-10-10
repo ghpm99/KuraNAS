@@ -22,11 +22,6 @@ func TestSystemPromptsAreEmbedded(t *testing.T) {
 			mustMatch: "storage analytics assistant",
 		},
 		{
-			name:      "video descriptions",
-			prompt:    VideoCatalogDescriptionsSystemPrompt(),
-			mustMatch: "short contextual descriptions",
-		},
-		{
 			name:      "image classification",
 			prompt:    ImageClassificationSystemPrompt(),
 			mustMatch: "image analyst",
@@ -57,12 +52,6 @@ func TestUserPromptFormatting(t *testing.T) {
 		t.Fatalf("analytics prompt missing summary payload")
 	}
 
-	sections := "Section 'Series' (2 items): S01E01, S01E02"
-	videoPrompt := VideoCatalogDescriptionsUserPrompt(sections)
-	if !strings.Contains(videoPrompt, sections) {
-		t.Fatalf("video prompt missing sections payload")
-	}
-
 	metadata := "Filename: photo.jpg\nDimensions: 4000x3000"
 	imagePrompt := ImageClassificationUserPrompt(metadata, "pt-BR")
 	if !strings.Contains(imagePrompt, metadata) {
@@ -77,7 +66,7 @@ func TestUserPromptFormatting(t *testing.T) {
 		}
 	}
 
-	formattedPrompts := []string{searchPrompt, analyticsPrompt, videoPrompt, imagePrompt}
+	formattedPrompts := []string{searchPrompt, analyticsPrompt, imagePrompt}
 	for _, prompt := range formattedPrompts {
 		if strings.Contains(prompt, "%!") {
 			t.Fatalf("prompt formatting error: %s", prompt)

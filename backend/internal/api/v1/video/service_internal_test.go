@@ -1,25 +1,15 @@
 package video
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/video/playlist"
-	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
 )
-
-type videoAIMock struct {
-	executeFn func(ctx context.Context, req ai.Request) (ai.Response, error)
-}
-
-func (m *videoAIMock) Execute(ctx context.Context, req ai.Request) (ai.Response, error) {
-	return m.executeFn(ctx, req)
-}
 
 type videoRepoMock struct {
 	getVideosFn func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
@@ -1174,108 +1164,31 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 	})
 }
 
-func TestEnrichCatalogDescriptionsWithAI(t *testing.T) {
-	aiMock := &videoAIMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: `{"continue": "Retome de onde parou", "series": "Suas series favoritas"}`}, nil
+func TestVideoServiceHomeCatalogReturnsAllSectionsWithoutDescriptions(t *testing.T) {
+	repo := &videoRepoMock{
+		getCatalogVideosFn: func(limit int) ([]VideoFileModel, error) {
+			return []VideoFileModel{{ID: 1, Name: "Show S01E01", ParentPath: "/series", Path: "/series/Show S01E01.mkv"}}, nil
 		},
+		getRecentVideosFn: func(limit int) ([]VideoFileModel, error) { return nil, nil },
+	}
+	svc := newVideoServiceForTest(t, repo)
+
+	catalog, err := svc.GetHomeCatalog("c", 5)
+	if err != nil {
+		t.Fatalf("GetHomeCatalog failed: %v", err)
 	}
 
-	svc := &Service{AIService: aiMock}
-	catalog := &VideoHomeCatalogDto{
-		Sections: []VideoCatalogSectionDto{
-			{Key: "continue", Title: "Continue assistindo", Items: []VideoCatalogItemDto{{Video: VideoFileDto{ID: 1, Name: "ep01"}}}},
-			{Key: "series", Title: "Series", Items: []VideoCatalogItemDto{{Video: VideoFileDto{ID: 2, Name: "Show S01E01"}}}},
-			{Key: "movies", Title: "Filmes", Items: []VideoCatalogItemDto{}},
-		},
+	expectedKeys := []string{"continue", "series", "movies", "personal", "recent"}
+	if len(catalog.Sections) != len(expectedKeys) {
+		t.Fatalf("expected %d sections, got %d", len(expectedKeys), len(catalog.Sections))
 	}
-
-	svc.enrichCatalogDescriptions(catalog)
-
-	if catalog.Sections[0].Description != "Retome de onde parou" {
-		t.Fatalf("expected continue description, got %q", catalog.Sections[0].Description)
-	}
-	if catalog.Sections[1].Description != "Suas series favoritas" {
-		t.Fatalf("expected series description, got %q", catalog.Sections[1].Description)
-	}
-	if catalog.Sections[2].Description != "" {
-		t.Fatalf("expected empty description for movies (no key in response), got %q", catalog.Sections[2].Description)
-	}
-}
-
-func TestEnrichCatalogDescriptionsNilAI(t *testing.T) {
-	svc := &Service{AIService: nil}
-	catalog := &VideoHomeCatalogDto{
-		Sections: []VideoCatalogSectionDto{
-			{Key: "series", Title: "Series", Items: []VideoCatalogItemDto{{Video: VideoFileDto{ID: 1, Name: "ep01"}}}},
-		},
-	}
-
-	svc.enrichCatalogDescriptions(catalog)
-	if catalog.Sections[0].Description != "" {
-		t.Fatalf("expected no description when AI is nil")
-	}
-}
-
-func TestEnrichCatalogDescriptionsAIError(t *testing.T) {
-	aiMock := &videoAIMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{}, errors.New("provider timeout")
-		},
-	}
-
-	svc := &Service{AIService: aiMock}
-	catalog := &VideoHomeCatalogDto{
-		Sections: []VideoCatalogSectionDto{
-			{Key: "series", Title: "Series", Items: []VideoCatalogItemDto{{Video: VideoFileDto{ID: 1, Name: "ep01"}}}},
-		},
-	}
-
-	svc.enrichCatalogDescriptions(catalog)
-	if catalog.Sections[0].Description != "" {
-		t.Fatalf("expected no description on AI error")
-	}
-}
-
-func TestEnrichCatalogDescriptionsInvalidJSON(t *testing.T) {
-	aiMock := &videoAIMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			return ai.Response{Content: "not json"}, nil
-		},
-	}
-
-	svc := &Service{AIService: aiMock}
-	catalog := &VideoHomeCatalogDto{
-		Sections: []VideoCatalogSectionDto{
-			{Key: "series", Title: "Series", Items: []VideoCatalogItemDto{{Video: VideoFileDto{ID: 1, Name: "ep01"}}}},
-		},
-	}
-
-	svc.enrichCatalogDescriptions(catalog)
-	if catalog.Sections[0].Description != "" {
-		t.Fatalf("expected no description on invalid JSON")
-	}
-}
-
-func TestEnrichCatalogDescriptionsEmptySections(t *testing.T) {
-	aiCalled := false
-	aiMock := &videoAIMock{
-		executeFn: func(ctx context.Context, req ai.Request) (ai.Response, error) {
-			aiCalled = true
-			return ai.Response{}, nil
-		},
-	}
-
-	svc := &Service{AIService: aiMock}
-	catalog := &VideoHomeCatalogDto{
-		Sections: []VideoCatalogSectionDto{
-			{Key: "series", Title: "Series", Items: []VideoCatalogItemDto{}},
-		},
-	}
-
-	svc.enrichCatalogDescriptions(catalog)
-	if aiCalled {
-		t.Fatalf("AI should not be called when all sections are empty")
+	for index, section := range catalog.Sections {
+		if section.Key != expectedKeys[index] {
+			t.Fatalf("expected section %q at %d, got %q", expectedKeys[index], index, section.Key)
+		}
+		if section.Description != "" {
+			t.Fatalf("expected empty description for %q, got %q", section.Key, section.Description)
+		}
 	}
 }
 

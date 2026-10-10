@@ -152,7 +152,7 @@ func TestGetVideoWatchProgressByVideos_Postgres(t *testing.T) {
 		t.Fatalf("seed: %v", seedErr)
 	}
 
-	service := NewService(repository, nil)
+	service := NewService(repository)
 	if err := service.SetVideoWatched("tv", 1, true); err != nil {
 		t.Fatalf("mark watched: %v", err)
 	}
