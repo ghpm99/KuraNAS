@@ -359,6 +359,7 @@ func (r *Repository) GetCatalogVideos(limit int) ([]VideoFileModel, error) {
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.PersistedClassification,
 			); err != nil {
 				return err
 			}
@@ -840,6 +841,7 @@ func (r *Repository) GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error
 				&item.MetaAudioChannels,
 				&item.MetaAudioCodec,
 				&item.MetaAudioSampleRate,
+				&item.MetaClassification,
 				&item.CaptureTitle,
 				&item.CaptureSeason,
 				&item.CaptureEpisode,

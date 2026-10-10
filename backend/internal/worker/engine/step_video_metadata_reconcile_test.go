@@ -19,11 +19,18 @@ import (
 
 type fakeVideoMetadataRepository struct {
 	videodom.VideoMetadataRepositoryInterface
-	dbContext     *database.DbContext
-	missingByPage [][]videodom.VideoWithoutMetadata
-	missingCalls  int
-	listErr       error
-	upsertedPaths []string
+	dbContext        *database.DbContext
+	missingByPage    [][]videodom.VideoWithoutMetadata
+	missingCalls     int
+	listErr          error
+	upsertedPaths    []string
+	upsertedMetadata []videodom.VideoMetadataModel
+
+	pendingByPage       [][]videodom.VideoPendingClassification
+	pendingCalls        int
+	pendingErr          error
+	classificationByID  map[int]string
+	updateClassifyError error
 }
 
 func newFakeVideoMetadataRepository(t *testing.T, transactionCount int) *fakeVideoMetadataRepository {
@@ -43,6 +50,7 @@ func (f *fakeVideoMetadataRepository) GetDbContext() *database.DbContext { retur
 
 func (f *fakeVideoMetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata videodom.VideoMetadataModel) (videodom.VideoMetadataModel, error) {
 	f.upsertedPaths = append(f.upsertedPaths, metadata.Path)
+	f.upsertedMetadata = append(f.upsertedMetadata, metadata)
 	return metadata, nil
 }
 
@@ -56,6 +64,29 @@ func (f *fakeVideoMetadataRepository) ListVideosWithoutMetadata(afterFileID int,
 	page := f.missingByPage[f.missingCalls]
 	f.missingCalls++
 	return page, nil
+}
+
+func (f *fakeVideoMetadataRepository) ListVideosPendingClassification(afterMetadataID int, limit int) ([]videodom.VideoPendingClassification, error) {
+	if f.pendingErr != nil {
+		return nil, f.pendingErr
+	}
+	if f.pendingCalls >= len(f.pendingByPage) {
+		return nil, nil
+	}
+	page := f.pendingByPage[f.pendingCalls]
+	f.pendingCalls++
+	return page, nil
+}
+
+func (f *fakeVideoMetadataRepository) UpdateVideoClassification(metadataID int, classification string) error {
+	if f.updateClassifyError != nil {
+		return f.updateClassifyError
+	}
+	if f.classificationByID == nil {
+		f.classificationByID = map[int]string{}
+	}
+	f.classificationByID[metadataID] = classification
+	return nil
 }
 
 type videoReconcileObservations struct {
@@ -143,6 +174,11 @@ func TestExecuteVideoMetadataReconcileStep_ProcessesAcrossPagesAndRebuildsPlayli
 	if len(repository.upsertedPaths) != videoMetadataReconcilePageSize+1 {
 		t.Fatalf("expected %d metadata upserts, got %d", videoMetadataReconcilePageSize+1, len(repository.upsertedPaths))
 	}
+	for _, upserted := range repository.upsertedMetadata {
+		if upserted.Classification == "" || upserted.ClassificationVersion != videodom.CurrentVideoClassificationVersion {
+			t.Fatalf("metadata must be persisted already classified, got %+v", upserted)
+		}
+	}
 	if len(observations.thumbnailFileIDs) != videoMetadataReconcilePageSize+1 {
 		t.Fatalf("expected %d thumbnails, got %d", videoMetadataReconcilePageSize+1, len(observations.thumbnailFileIDs))
 	}
@@ -186,6 +222,53 @@ func TestExecuteVideoMetadataReconcileStep_AllFailuresCompletesWithoutRebuild(t 
 	}
 	if observations.playlistRebuilds != 0 {
 		t.Fatalf("expected no playlist rebuild when nothing was reconciled, got %d", observations.playlistRebuilds)
+	}
+}
+
+func TestExecuteVideoMetadataReconcileStep_BackfillsClassificationFromStoredMetadataAndRebuilds(t *testing.T) {
+	repository := newFakeVideoMetadataRepository(t, 0)
+	repository.pendingByPage = [][]videodom.VideoPendingClassification{{
+		{MetadataID: 7, Name: "Show S01E01.mkv", Path: "/series/show/Show S01E01.mkv", ParentPath: "/series/show", Duration: "1500.0", Height: 480},
+		{MetadataID: 8, Name: "film.mkv", Path: "/x/film.mkv", ParentPath: "/x", Duration: "7200.0", Height: 1080},
+	}}
+	observations := &videoReconcileObservations{}
+	ctx := newVideoReconcileContext(repository, &workerFilesServiceMock{}, observations)
+
+	if err := executeVideoMetadataReconcileStep(ctx, jobs.StepModel{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if repository.classificationByID[7] != "series" || repository.classificationByID[8] != "movie" {
+		t.Fatalf("unexpected backfilled classifications: %+v", repository.classificationByID)
+	}
+	if len(observations.thumbnailFileIDs) != 0 {
+		t.Fatalf("backfill must not reprobe or regenerate thumbnails, got %d", len(observations.thumbnailFileIDs))
+	}
+	if observations.playlistRebuilds != 1 {
+		t.Fatalf("expected one playlist rebuild after backfill, got %d", observations.playlistRebuilds)
+	}
+}
+
+func TestExecuteVideoMetadataReconcileStep_BackfillListErrorFails(t *testing.T) {
+	repository := newFakeVideoMetadataRepository(t, 0)
+	repository.pendingErr = errors.New("boom")
+	ctx := newVideoReconcileContext(repository, &workerFilesServiceMock{}, &videoReconcileObservations{})
+	if err := executeVideoMetadataReconcileStep(ctx, jobs.StepModel{}); err == nil {
+		t.Fatal("expected error when listing pending classification fails")
+	}
+}
+
+func TestExecuteVideoMetadataReconcileStep_BackfillUpdateFailureDoesNotAbortOrRebuild(t *testing.T) {
+	repository := newFakeVideoMetadataRepository(t, 0)
+	repository.pendingByPage = [][]videodom.VideoPendingClassification{{{MetadataID: 1, Name: "a.mkv", Path: "/a.mkv", ParentPath: "/"}}}
+	repository.updateClassifyError = errors.New("db down")
+	observations := &videoReconcileObservations{}
+	ctx := newVideoReconcileContext(repository, &workerFilesServiceMock{}, observations)
+
+	if err := executeVideoMetadataReconcileStep(ctx, jobs.StepModel{}); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected ErrStepSkipped when nothing was classified, got %v", err)
+	}
+	if observations.playlistRebuilds != 0 {
+		t.Fatalf("expected no rebuild, got %d", observations.playlistRebuilds)
 	}
 }
 

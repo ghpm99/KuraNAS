@@ -31,7 +31,10 @@ func (s *Service) RebuildSmartPlaylists() error {
 			UpdatedAt:  v.UpdatedAt,
 		}
 
-		// Enricher com metadados se disponiveis
+		if v.MetaClassification.Valid {
+			entry.PersistedClassification = playlist.VideoClassification(v.MetaClassification.String)
+		}
+
 		if v.MetaWidth.Valid || v.MetaDuration.Valid {
 			meta := &playlist.VideoMeta{}
 			if v.MetaDuration.Valid {
@@ -332,6 +335,8 @@ func videoModelToEntry(v VideoFileModel) playlist.VideoEntry {
 		Size:       v.Size,
 		CreatedAt:  v.CreatedAt,
 		UpdatedAt:  v.UpdatedAt,
+
+		PersistedClassification: playlist.VideoClassification(v.PersistedClassification),
 	}
 }
 

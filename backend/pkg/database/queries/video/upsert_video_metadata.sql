@@ -20,10 +20,12 @@ INSERT INTO
         audio_channels,
         audio_sample_rate,
         audio_bit_rate,
-        created_at
+        created_at,
+        classification,
+        classification_version
     )
 VALUES
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) ON CONFLICT (file_id, PATH)
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) ON CONFLICT (file_id, PATH)
 DO
 UPDATE
 SET
@@ -44,7 +46,9 @@ SET
     audio_codec = EXCLUDED.audio_codec,
     audio_channels = EXCLUDED.audio_channels,
     audio_sample_rate = EXCLUDED.audio_sample_rate,
-    audio_bit_rate = EXCLUDED.audio_bit_rate
+    audio_bit_rate = EXCLUDED.audio_bit_rate,
+    classification = EXCLUDED.classification,
+    classification_version = EXCLUDED.classification_version
 RETURNING
     id,
     created_at;

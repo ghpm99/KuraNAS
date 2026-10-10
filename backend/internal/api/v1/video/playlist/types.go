@@ -22,6 +22,8 @@ type VideoEntry struct {
 	// Proveniencia de serie capturada pelo plugin (nil quando o video nao veio
 	// de uma captura de episodio). Sinal forte: titulo + episodio explicitos.
 	Series *SeriesProvenance
+
+	PersistedClassification VideoClassification
 }
 
 // SeriesProvenance carrega o que a captura do plugin sabe sobre o episodio:

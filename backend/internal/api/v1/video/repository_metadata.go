@@ -93,6 +93,8 @@ func (r *VideoMetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata Video
 		metadata.AudioSampleRate,
 		metadata.AudioBitRate,
 		time.Now(),
+		nullableClassification(metadata.Classification),
+		metadata.ClassificationVersion,
 	}
 
 	row := tx.QueryRow(queries.UpsertVideoMetadataQuery, args...)
@@ -148,4 +150,53 @@ func (r *VideoMetadataRepository) ListVideosWithoutMetadata(afterFileID int, lim
 		return nil, fmt.Errorf("falha ao listar videos sem metadados: %w", err)
 	}
 	return missingVideos, nil
+}
+
+func nullableClassification(classification string) any {
+	if classification == "" {
+		return nil
+	}
+	return classification
+}
+
+func (r *VideoMetadataRepository) ListVideosPendingClassification(afterMetadataID int, limit int) ([]VideoPendingClassification, error) {
+	pendingVideos := []VideoPendingClassification{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectVideosPendingClassificationQuery, afterMetadataID, CurrentVideoClassificationVersion, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var pendingVideo VideoPendingClassification
+			if err := rows.Scan(
+				&pendingVideo.MetadataID,
+				&pendingVideo.Name,
+				&pendingVideo.Path,
+				&pendingVideo.ParentPath,
+				&pendingVideo.Duration,
+				&pendingVideo.Height,
+			); err != nil {
+				return err
+			}
+			pendingVideos = append(pendingVideos, pendingVideo)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar videos pendentes de classificacao: %w", err)
+	}
+	return pendingVideos, nil
+}
+
+func (r *VideoMetadataRepository) UpdateVideoClassification(metadataID int, classification string) error {
+	err := r.Db.ExecTx(func(tx *sql.Tx) error {
+		_, err := tx.Exec(queries.UpdateVideoMetadataClassificationQuery, metadataID, classification, CurrentVideoClassificationVersion)
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("falha ao atualizar classificacao do video: %w", err)
+	}
+	return nil
 }

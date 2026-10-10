@@ -20,6 +20,8 @@ type VideoFileModel struct {
 	Size       int64
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+
+	PersistedClassification string
 }
 
 type VideoPlaylistModel struct {
@@ -105,6 +107,7 @@ type VideoWithMetadataModel struct {
 	MetaAudioChannels   sql.NullInt64
 	MetaAudioCodec      sql.NullString
 	MetaAudioSampleRate sql.NullString
+	MetaClassification  sql.NullString
 	// Capture provenance (LEFT JOIN captures), present only for plugin-captured
 	// series episodes (title set + episode not null).
 	CaptureTitle   sql.NullString
@@ -137,6 +140,9 @@ type VideoMetadataModel struct {
 	AudioSampleRate string  `json:"audio_sample_rate"`
 	AudioBitRate    string  `json:"audio_bit_rate"`
 	CreatedAt       time.Time
+
+	Classification        string
+	ClassificationVersion int
 }
 
 // VideoWithoutMetadata identifies an active video file that has no
@@ -144,4 +150,13 @@ type VideoMetadataModel struct {
 type VideoWithoutMetadata struct {
 	FileID int
 	Path   string
+}
+
+type VideoPendingClassification struct {
+	MetadataID int
+	Name       string
+	Path       string
+	ParentPath string
+	Duration   string
+	Height     int
 }
