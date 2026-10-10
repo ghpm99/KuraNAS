@@ -8,6 +8,11 @@ import (
 	"nas-go/api/internal/api/v1/video/playlist"
 )
 
+const (
+	finishedProgressRatio    = 0.95
+	finishedRemainingSeconds = 15.0
+)
+
 func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (PlaybackSessionDto, error) {
 	videoFile, err := s.Repository.GetVideoFileByID(videoID)
 	if err != nil {
@@ -40,6 +45,8 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 		if err != nil {
 			return PlaybackSessionDto{}, err
 		}
+	} else {
+		state = stateRestartedWhenFinished(state)
 	}
 	state.PlaylistID = sql.NullInt64{Int64: int64(pl.ID), Valid: true}
 	state.VideoID = sql.NullInt64{Int64: int64(videoID), Valid: true}
@@ -385,7 +392,24 @@ func (s *Service) stateResumedFromStoredProgress(clientID string, videoID int) (
 	state.CurrentTime = storedProgress.PositionSeconds
 	state.Duration = storedProgress.DurationSeconds
 	state.Completed = storedProgress.Completed
-	return state, nil
+	return stateRestartedWhenFinished(state), nil
+}
+
+func stateRestartedWhenFinished(state VideoPlaybackStateModel) VideoPlaybackStateModel {
+	if !state.Completed && !isPositionNearEnd(state.CurrentTime, state.Duration) {
+		return state
+	}
+	state.CurrentTime = 0
+	state.Completed = false
+	return state
+}
+
+func isPositionNearEnd(positionSeconds float64, durationSeconds float64) bool {
+	if durationSeconds <= 0 {
+		return false
+	}
+	remainingSeconds := durationSeconds - positionSeconds
+	return remainingSeconds < finishedRemainingSeconds || positionSeconds >= durationSeconds*finishedProgressRatio
 }
 
 func (s *Service) playlistByIDAndClient(state VideoPlaybackStateModel) (VideoPlaylistModel, error) {

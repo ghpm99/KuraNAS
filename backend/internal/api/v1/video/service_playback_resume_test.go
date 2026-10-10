@@ -157,3 +157,113 @@ func TestShiftPlaybackPropagatesStoredProgressError(t *testing.T) {
 		t.Fatalf("expected progress error, got %v", err)
 	}
 }
+
+func TestStateRestartedWhenFinished(t *testing.T) {
+	cases := []struct {
+		name         string
+		state        VideoPlaybackStateModel
+		expectedTime float64
+	}{
+		{"completed flag", VideoPlaybackStateModel{CurrentTime: 100, Duration: 6000, Completed: true}, 0},
+		{"last 5 percent", VideoPlaybackStateModel{CurrentTime: 5800, Duration: 6000}, 0},
+		{"under 15 seconds from end", VideoPlaybackStateModel{CurrentTime: 590, Duration: 600}, 0},
+		{"mid video", VideoPlaybackStateModel{CurrentTime: 3000, Duration: 6000}, 3000},
+		{"unknown duration", VideoPlaybackStateModel{CurrentTime: 50}, 50},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			restarted := stateRestartedWhenFinished(testCase.state)
+			if restarted.CurrentTime != testCase.expectedTime {
+				t.Fatalf("expected position %v, got %v", testCase.expectedTime, restarted.CurrentTime)
+			}
+			if testCase.expectedTime == 0 && restarted.Completed {
+				t.Fatalf("expected completed=false after restart")
+			}
+			if restarted.Duration != testCase.state.Duration {
+				t.Fatalf("duration must be preserved")
+			}
+		})
+	}
+}
+
+func TestShiftPlaybackRestartsFinishedDestinationAtZero(t *testing.T) {
+	storedProgress := map[int]VideoWatchProgressModel{
+		3: {ClientID: "tv", VideoID: 3, PositionSeconds: 120, DurationSeconds: 120, Completed: true},
+		1: {ClientID: "tv", VideoID: 1, PositionSeconds: 118, DurationSeconds: 120},
+	}
+
+	nextSession, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(storedProgress, nil, 2)).NextVideo("tv")
+	if err != nil {
+		t.Fatalf("next video: %v", err)
+	}
+	if nextSession.PlaybackState.CurrentTime != 0 || nextSession.PlaybackState.Completed {
+		t.Fatalf("expected next to restart at 0 uncompleted, got %v/%v", nextSession.PlaybackState.CurrentTime, nextSession.PlaybackState.Completed)
+	}
+
+	previousSession, err := newVideoServiceForTest(t, newShiftPlaybackRepoForTest(storedProgress, nil, 2)).PreviousVideo("tv")
+	if err != nil {
+		t.Fatalf("previous video: %v", err)
+	}
+	if previousSession.PlaybackState.CurrentTime != 0 {
+		t.Fatalf("expected previous near end to restart at 0, got %v", previousSession.PlaybackState.CurrentTime)
+	}
+}
+
+func TestStartPlaybackSameVideoRestartsWhenCurrentStateIsFinished(t *testing.T) {
+	playbackState := VideoPlaybackStateModel{
+		ID:          1,
+		ClientID:    "tv",
+		PlaylistID:  sql.NullInt64{Int64: 7, Valid: true},
+		VideoID:     sql.NullInt64{Int64: 1, Valid: true},
+		CurrentTime: 600,
+		Duration:    600,
+		Completed:   true,
+	}
+	repo := &videoRepoMock{
+		getVideoFileByIDFn:     func(id int) (VideoFileModel, error) { return VideoFileModel{ID: id}, nil },
+		getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) { return VideoPlaylistModel{ID: id}, nil },
+		checkVideoInPlaylistFn: func(playlistID int, videoID int) (bool, error) { return true, nil },
+		getPlaybackStateFn:     func(clientID string) (VideoPlaybackStateModel, error) { return playbackState, nil },
+		upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+			return state, nil
+		},
+	}
+	playlistID := 7
+
+	session, err := newVideoServiceForTest(t, repo).StartPlayback("tv", 1, &playlistID)
+	if err != nil {
+		t.Fatalf("start playback: %v", err)
+	}
+	if session.PlaybackState.CurrentTime != 0 || session.PlaybackState.Completed {
+		t.Fatalf("expected restart at 0 uncompleted, got %v/%v", session.PlaybackState.CurrentTime, session.PlaybackState.Completed)
+	}
+}
+
+func TestStartPlaybackRestartsCompletedStoredProgressAtZero(t *testing.T) {
+	progressByVideoID := map[int]VideoWatchProgressModel{
+		1: {ClientID: "tv", VideoID: 1, PositionSeconds: 600, DurationSeconds: 600, Completed: true},
+	}
+	repo := &videoRepoMock{
+		getVideoFileByIDFn:     func(id int) (VideoFileModel, error) { return VideoFileModel{ID: id}, nil },
+		getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) { return VideoPlaylistModel{ID: id}, nil },
+		checkVideoInPlaylistFn: func(playlistID int, videoID int) (bool, error) { return true, nil },
+		getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+			return VideoPlaybackStateModel{}, sql.ErrNoRows
+		},
+		upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+			return state, nil
+		},
+		getVideoWatchProgressFn: func(clientID string, videoID int) (VideoWatchProgressModel, error) {
+			return progressByVideoID[videoID], nil
+		},
+	}
+	playlistID := 7
+
+	session, err := newVideoServiceForTest(t, repo).StartPlayback("tv", 1, &playlistID)
+	if err != nil {
+		t.Fatalf("start playback: %v", err)
+	}
+	if session.PlaybackState.CurrentTime != 0 || session.PlaybackState.Completed || session.PlaybackState.Duration != 600 {
+		t.Fatalf("unexpected state %+v", session.PlaybackState)
+	}
+}

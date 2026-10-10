@@ -28,7 +28,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 08. Estado do player por dispositivo (client id), não por IP
 - [x] 09. Posição por vídeo (`video_watch_progress`)
 - [x] 09.1. Próximo/anterior retomam a posição salva do vídeo de destino
-- [ ] 10. Rever vídeo concluído recomeça do início
+- [x] 10. Rever vídeo concluído recomeça do início
 - [ ] 11. "Continuar assistindo" com vários itens
 - [ ] 12. Marcar assistido/não assistido manualmente
 - [ ] 13. Status por item da playlist lido do progresso por vídeo
