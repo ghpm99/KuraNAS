@@ -201,6 +201,20 @@ func (s *Service) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMem
 	return result, nil
 }
 
+func (s *Service) GetPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoDto, error) {
+	models, err := s.Repository.GetVideoPlaylistsByVideo(videoID)
+	if err != nil {
+		return nil, err
+	}
+
+	playlistDtos := make([]VideoPlaylistOfVideoDto, 0, len(models))
+	for _, model := range models {
+		playlistDtos = append(playlistDtos, VideoPlaylistOfVideoDto{ID: model.ID, Name: model.Name, Type: model.Type})
+	}
+
+	return playlistDtos, nil
+}
+
 func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	pl, err := s.Repository.GetVideoPlaylistByID(id)
 	if err != nil {

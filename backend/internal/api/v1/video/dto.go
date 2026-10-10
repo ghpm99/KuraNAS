@@ -39,6 +39,12 @@ type VideoPlaylistItemDto struct {
 	ProgressPct float64      `json:"progress_pct"`
 }
 
+type VideoPlaylistOfVideoDto struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type VideoPlaylistMembershipDto struct {
 	PlaylistID int `json:"playlist_id"`
 	VideoID    int `json:"video_id"`

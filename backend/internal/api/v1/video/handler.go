@@ -262,6 +262,21 @@ func (h *Handler) GetPlaylistMembershipsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, memberships)
 }
 
+func (h *Handler) GetPlaylistsByVideoHandler(c *gin.Context) {
+	videoID := utils.ParseInt(c.Param("file_id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	playlists, err := h.service.GetPlaylistsByVideo(videoID)
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, playlists)
+}
+
 func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	if c.IsAborted() {

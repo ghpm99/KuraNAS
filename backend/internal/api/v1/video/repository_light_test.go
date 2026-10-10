@@ -138,6 +138,15 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistsByVideoQuery)).
+		WithArgs(2).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type"}).AddRow(1, "name", "custom"))
+	mock.ExpectRollback()
+	if out, err := repo.GetVideoPlaylistsByVideo(2); err != nil || len(out) != 1 || out[0].Type != "custom" {
+		t.Fatalf("GetVideoPlaylistsByVideo failed out=%v err=%v", out, err)
+	}
+
+	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistByIDQuery)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", false, false, "", "", now, now, nil))
