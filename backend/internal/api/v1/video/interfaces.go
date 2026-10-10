@@ -35,6 +35,8 @@ type RepositoryInterface interface {
 	GetVideoPlaylistByID(id int) (VideoPlaylistModel, error)
 	GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error)
 	ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error)
+	ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error)
+	ListLibraryFolderVideos(folderPath string, limit int, offset int) ([]VideoFileModel, error)
 	SetPlaylistHidden(tx *sql.Tx, playlistID int, hidden bool) error
 	AddPlaylistVideoManual(tx *sql.Tx, playlistID int, videoID int) error
 	RemovePlaylistVideo(tx *sql.Tx, playlistID int, videoID int) error
@@ -74,6 +76,8 @@ type ServiceInterface interface {
 	GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error)
 	GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error)
 	ListLibraryVideos(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileDto], error)
+	ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error)
+	ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error)
 	SetPlaylistHidden(playlistID int, hidden bool) error
 	AddVideoToPlaylist(playlistID int, videoID int) error
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error

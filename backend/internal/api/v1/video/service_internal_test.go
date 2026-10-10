@@ -35,6 +35,8 @@ type videoRepoMock struct {
 	getVideoPlaylistMembersFn       func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	getVideoPlaylistByIDFn          func(id int) (VideoPlaylistModel, error)
 	getVideoPlaylistItemsFn         func(playlistID int) ([]VideoPlaylistItemModel, error)
+	listLibraryFoldersFn            func(query LibraryFolderQuery) ([]LibraryFolderModel, error)
+	listLibraryFolderVideosFn       func(folderPath string, limit int, offset int) ([]VideoFileModel, error)
 	listLibraryVideosFn             func(page int, pageSize int, searchQuery string) (utils.PaginationResponse[VideoFileModel], error)
 	setPlaylistHiddenFn             func(tx *sql.Tx, playlistID int, hidden bool) error
 	addPlaylistVideoManualFn        func(tx *sql.Tx, playlistID int, videoID int) error
@@ -210,6 +212,18 @@ func (m *videoRepoMock) ListLibraryVideos(page int, pageSize int, searchQuery st
 		return m.listLibraryVideosFn(page, pageSize, searchQuery)
 	}
 	return utils.PaginationResponse[VideoFileModel]{}, nil
+}
+func (m *videoRepoMock) ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error) {
+	if m.listLibraryFoldersFn != nil {
+		return m.listLibraryFoldersFn(query)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) ListLibraryFolderVideos(folderPath string, limit int, offset int) ([]VideoFileModel, error) {
+	if m.listLibraryFolderVideosFn != nil {
+		return m.listLibraryFolderVideosFn(folderPath, limit, offset)
+	}
+	return nil, nil
 }
 func (m *videoRepoMock) SetPlaylistHidden(tx *sql.Tx, playlistID int, hidden bool) error {
 	if m.setPlaylistHiddenFn != nil {
