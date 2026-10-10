@@ -21,7 +21,11 @@ func TestApplyClassificationStampsClassificationAndCurrentVersion(t *testing.T) 
 
 func TestCatalogAndRebuildAgreeOnPersistedClassification(t *testing.T) {
 	persistedMovie := VideoFileModel{
-		ID: 1, Name: "Show S01E01.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E01.mkv",
+		ID: 1, Name: "Show S01E01.mkv", ParentPath: "/films/feature", Path: "/films/feature/Show S01E01.mkv",
+		PersistedClassification: string(playlist.ClassMovie),
+	}
+	secondPersistedMovie := VideoFileModel{
+		ID: 3, Name: "Show S01E03.mkv", ParentPath: "/films/feature", Path: "/films/feature/Show S01E03.mkv",
 		PersistedClassification: string(playlist.ClassMovie),
 	}
 	unclassifiedSeries := VideoFileModel{
@@ -42,6 +46,10 @@ func TestCatalogAndRebuildAgreeOnPersistedClassification(t *testing.T) {
 				{
 					VideoFileModel:     persistedMovie,
 					MetaClassification: sql.NullString{String: persistedMovie.PersistedClassification, Valid: true},
+				},
+				{
+					VideoFileModel:     secondPersistedMovie,
+					MetaClassification: sql.NullString{String: secondPersistedMovie.PersistedClassification, Valid: true},
 				},
 				{VideoFileModel: unclassifiedSeries},
 			}, nil

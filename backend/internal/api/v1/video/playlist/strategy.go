@@ -616,13 +616,24 @@ func seriesProvenanceLess(a *SeriesProvenance, nameA string, b *SeriesProvenance
 	return nameA < nameB
 }
 
+var classificationTieBreakOrder = []VideoClassification{
+	ClassSeries,
+	ClassAnime,
+	ClassCourse,
+	ClassMovie,
+	ClassMusic,
+	ClassProgram,
+	ClassClip,
+	ClassPersonal,
+}
+
 func dominantClassification(counts map[VideoClassification]int) VideoClassification {
 	best := ClassPersonal
 	bestCount := 0
-	for class, count := range counts {
-		if count > bestCount {
+	for _, class := range classificationTieBreakOrder {
+		if counts[class] > bestCount {
 			best = class
-			bestCount = count
+			bestCount = counts[class]
 		}
 	}
 	return best
