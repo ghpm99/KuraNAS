@@ -102,13 +102,7 @@ type pathContainsSpec struct {
 func (s *pathContainsSpec) Name() string        { return s.name }
 func (s *pathContainsSpec) Confidence() float64 { return s.confidence }
 func (s *pathContainsSpec) IsSatisfiedBy(v VideoEntry) bool {
-	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
-	for _, kw := range s.keywords {
-		if strings.Contains(lower, kw) {
-			return true
-		}
-	}
-	return false
+	return newPathTokenIndex(v).containsAnyKeyword(s.keywords)
 }
 
 // episodePatternSpec detecta padroes de episodio no nome do arquivo.
@@ -194,19 +188,14 @@ func (s *clipSpec) IsSatisfiedBy(v VideoEntry) bool {
 }
 
 // musicVideoSpec detecta videos musicais.
+var musicVideoKeywords = []string{"music", "musica", "mv", "videoclip", "videoclipe", "karaoke"}
+
 type musicVideoSpec struct{}
 
 func (s *musicVideoSpec) Name() string        { return "music_video" }
 func (s *musicVideoSpec) Confidence() float64 { return 0.75 }
 func (s *musicVideoSpec) IsSatisfiedBy(v VideoEntry) bool {
-	lower := strings.ToLower(v.Path + " " + v.ParentPath + " " + v.Name)
-	keywords := []string{"music", "musica", "mv", "videoclip", "videoclipe", "karaoke"}
-	for _, kw := range keywords {
-		if strings.Contains(lower, kw) {
-			return true
-		}
-	}
-	return false
+	return newPathTokenIndex(v).containsAnyKeyword(musicVideoKeywords)
 }
 
 // compositeSpec combina multiplas specs com AND.
@@ -263,17 +252,17 @@ func defaultClassificationRules() []ClassificationRule {
 
 		// Prioridade 2: Keywords no path
 		{
-			Spec:           &pathContainsSpec{name: "anime_path", keywords: []string{"/anime", "/animes"}, confidence: 0.85},
+			Spec:           &pathContainsSpec{name: "anime_path", keywords: []string{"anime", "animes"}, confidence: 0.85},
 			Classification: ClassAnime,
 			Priority:       2,
 		},
 		{
-			Spec:           &pathContainsSpec{name: "series_path", keywords: []string{"/series", "/season", "/temporada"}, confidence: 0.8},
+			Spec:           &pathContainsSpec{name: "series_path", keywords: []string{"series", "season", "temporada"}, confidence: 0.8},
 			Classification: ClassSeries,
 			Priority:       2,
 		},
 		{
-			Spec:           &pathContainsSpec{name: "movie_path", keywords: []string{"/movies", "/filmes", "/movie", "/filme"}, confidence: 0.8},
+			Spec:           &pathContainsSpec{name: "movie_path", keywords: []string{"movies", "filmes", "movie", "filme"}, confidence: 0.8},
 			Classification: ClassMovie,
 			Priority:       2,
 		},
@@ -283,7 +272,7 @@ func defaultClassificationRules() []ClassificationRule {
 			Priority:       2,
 		},
 		{
-			Spec:           &pathContainsSpec{name: "program_path", keywords: []string{"steam", "program", "sample", "benchmark"}, confidence: 0.7},
+			Spec:           &pathContainsSpec{name: "program_path", keywords: []string{"steam", "program", "programa", "programas", "sample", "samples", "benchmark"}, confidence: 0.7},
 			Classification: ClassProgram,
 			Priority:       2,
 		},
