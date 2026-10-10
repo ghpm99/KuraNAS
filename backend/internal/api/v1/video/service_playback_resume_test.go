@@ -267,3 +267,51 @@ func TestStartPlaybackRestartsCompletedStoredProgressAtZero(t *testing.T) {
 		t.Fatalf("unexpected state %+v", session.PlaybackState)
 	}
 }
+
+func TestUpdatePlaybackStateMarksCompletedFromNinetyPercent(t *testing.T) {
+	testCases := []struct {
+		name              string
+		positionSeconds   float64
+		durationSeconds   float64
+		clientCompleted   *bool
+		isCompletedExpect bool
+	}{
+		{"89 percent is not completed", 89, 100, nil, false},
+		{"90 percent is completed", 90, 100, nil, true},
+		{"without duration is not completed", 500, 0, nil, false},
+		{"client completed is kept", 10, 100, ptrBool(true), true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var storedProgress VideoWatchProgressModel
+			repo := &videoRepoMock{
+				getPlaybackStateFn: func(clientID string) (VideoPlaybackStateModel, error) {
+					return VideoPlaybackStateModel{}, sql.ErrNoRows
+				},
+				upsertPlaybackStateFn: func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error) {
+					return state, nil
+				},
+				upsertVideoWatchProgressFn: func(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error) {
+					storedProgress = progress
+					return progress, nil
+				},
+			}
+			service := newVideoServiceForTest(t, repo)
+			videoID := 1
+
+			stateDto, err := service.UpdatePlaybackState("tv", UpdatePlaybackStateRequest{
+				VideoID:     &videoID,
+				CurrentTime: ptrFloat(testCase.positionSeconds),
+				Duration:    ptrFloat(testCase.durationSeconds),
+				Completed:   testCase.clientCompleted,
+			})
+			if err != nil {
+				t.Fatalf("update: %v", err)
+			}
+			if storedProgress.Completed != testCase.isCompletedExpect || stateDto.Completed != testCase.isCompletedExpect {
+				t.Fatalf("expected completed=%v, got progress=%v state=%v", testCase.isCompletedExpect, storedProgress.Completed, stateDto.Completed)
+			}
+		})
+	}
+}
