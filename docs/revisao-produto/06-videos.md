@@ -31,7 +31,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 10. Rever vídeo concluído recomeça do início
 - [x] 11. "Continuar assistindo" com vários itens
 - [x] 12. Marcar assistido/não assistido manualmente
-- [ ] 13. Status por item da playlist lido do progresso por vídeo
+- [x] 13. Status por item da playlist lido do progresso por vídeo
 - [ ] 14. Progresso salvo ao fechar a aba
 - [ ] 15. "Concluído" a partir de 90%
 
