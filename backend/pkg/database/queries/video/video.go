@@ -126,3 +126,9 @@ var GetVideoSummaryByFileIDQuery string
 
 //go:embed select_videos_without_metadata.sql
 var SelectVideosWithoutMetadataQuery string
+
+//go:embed get_video_watch_progress.sql
+var GetVideoWatchProgressQuery string
+
+//go:embed upsert_video_watch_progress.sql
+var UpsertVideoWatchProgressQuery string

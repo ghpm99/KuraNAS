@@ -197,6 +197,9 @@ var CreateMusicPlayEventTableQuery string
 //go:embed queries/0062_add_audio_metadata_album_grouping.sql
 var AddAudioMetadataAlbumGroupingQuery string
 
+//go:embed queries/0063_create_video_watch_progress_table.sql
+var CreateVideoWatchProgressTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -309,6 +312,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0062_add_audio_metadata_album_grouping",
 		[]string{"0059_add_audio_metadata_catalog_keys"},
 		defaultMigrationFunc(AddAudioMetadataAlbumGroupingQuery))
+
+	addMigrationRequiring("0063_create_video_watch_progress_table",
+		[]string{"0001_create_home_file_table"},
+		defaultMigrationFunc(CreateVideoWatchProgressTableQuery))
 }
 
 func diaryMigrationList() {

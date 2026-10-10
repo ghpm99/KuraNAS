@@ -223,6 +223,41 @@ func (r *Repository) UpsertPlaybackState(tx *sql.Tx, state VideoPlaybackStateMod
 	return state, nil
 }
 
+func (r *Repository) GetVideoWatchProgress(clientID string, videoID int) (VideoWatchProgressModel, error) {
+	var progress VideoWatchProgressModel
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.GetVideoWatchProgressQuery, clientID, videoID).Scan(
+			&progress.ClientID,
+			&progress.VideoID,
+			&progress.PositionSeconds,
+			&progress.DurationSeconds,
+			&progress.Completed,
+			&progress.UpdatedAt,
+		)
+	})
+	if err != nil {
+		return progress, fmt.Errorf("falha ao buscar progresso do video: %w", err)
+	}
+
+	return progress, nil
+}
+
+func (r *Repository) UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error) {
+	err := tx.QueryRow(
+		queries.UpsertVideoWatchProgressQuery,
+		progress.ClientID,
+		progress.VideoID,
+		progress.PositionSeconds,
+		progress.DurationSeconds,
+		progress.Completed,
+	).Scan(&progress.UpdatedAt)
+	if err != nil {
+		return progress, fmt.Errorf("falha ao salvar progresso do video: %w", err)
+	}
+	return progress, nil
+}
+
 func (r *Repository) TouchPlaylist(tx *sql.Tx, playlistID int) error {
 	_, err := tx.Exec(queries.TouchPlaylistQuery, playlistID)
 	if err != nil {

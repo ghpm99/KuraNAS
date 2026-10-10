@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"nas-go/api/internal/api/v1/video/playlist"
@@ -41,6 +42,15 @@ func (s *Service) StartPlayback(clientID string, videoID int, playlistID *int) (
 			Duration:    0,
 			IsPaused:    false,
 			Completed:   false,
+		}
+		storedProgress, progressErr := s.Repository.GetVideoWatchProgress(clientID, videoID)
+		if progressErr != nil && !errors.Is(progressErr, sql.ErrNoRows) {
+			return PlaybackSessionDto{}, progressErr
+		}
+		if progressErr == nil {
+			state.CurrentTime = storedProgress.PositionSeconds
+			state.Duration = storedProgress.DurationSeconds
+			state.Completed = storedProgress.Completed
 		}
 	}
 	state.PlaylistID = sql.NullInt64{Int64: int64(pl.ID), Valid: true}
@@ -120,6 +130,19 @@ func (s *Service) UpdatePlaybackState(clientID string, req UpdatePlaybackStateRe
 			return upsertErr
 		}
 		state = updatedState
+
+		if state.VideoID.Valid {
+			_, progressErr := s.Repository.UpsertVideoWatchProgress(tx, VideoWatchProgressModel{
+				ClientID:        clientID,
+				VideoID:         int(state.VideoID.Int64),
+				PositionSeconds: state.CurrentTime,
+				DurationSeconds: state.Duration,
+				Completed:       state.Completed,
+			})
+			if progressErr != nil {
+				return progressErr
+			}
+		}
 
 		// Emitir evento de comportamento baseado no estado
 		if req.Completed != nil && *req.Completed {

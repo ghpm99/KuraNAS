@@ -32,6 +32,8 @@ type videoRepoMock struct {
 	replacePlaylistItemsFn     func(tx *sql.Tx, playlistID int, videoIDs []int) error
 	getPlaybackStateFn         func(clientID string) (VideoPlaybackStateModel, error)
 	upsertPlaybackStateFn      func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
+	getVideoWatchProgressFn    func(clientID string, videoID int) (VideoWatchProgressModel, error)
+	upsertVideoWatchProgressFn func(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error)
 	touchPlaylistFn            func(tx *sql.Tx, playlistID int) error
 	getCatalogVideosFn         func(limit int) ([]VideoFileModel, error)
 	getRecentVideosFn          func(limit int) ([]VideoFileModel, error)
@@ -114,6 +116,18 @@ func (m *videoRepoMock) UpsertPlaybackState(tx *sql.Tx, state VideoPlaybackState
 		return m.upsertPlaybackStateFn(tx, state)
 	}
 	return VideoPlaybackStateModel{}, errors.New("not used")
+}
+func (m *videoRepoMock) GetVideoWatchProgress(clientID string, videoID int) (VideoWatchProgressModel, error) {
+	if m.getVideoWatchProgressFn != nil {
+		return m.getVideoWatchProgressFn(clientID, videoID)
+	}
+	return VideoWatchProgressModel{}, sql.ErrNoRows
+}
+func (m *videoRepoMock) UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error) {
+	if m.upsertVideoWatchProgressFn != nil {
+		return m.upsertVideoWatchProgressFn(tx, progress)
+	}
+	return progress, nil
 }
 func (m *videoRepoMock) TouchPlaylist(tx *sql.Tx, playlistID int) error {
 	if m.touchPlaylistFn != nil {

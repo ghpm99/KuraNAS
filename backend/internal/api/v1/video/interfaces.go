@@ -17,6 +17,8 @@ type RepositoryInterface interface {
 	GetPlaylistItems(playlistID int) ([]VideoPlaylistItemModel, error)
 	GetPlaybackState(clientID string) (VideoPlaybackStateModel, error)
 	UpsertPlaybackState(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
+	GetVideoWatchProgress(clientID string, videoID int) (VideoWatchProgressModel, error)
+	UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error)
 	TouchPlaylist(tx *sql.Tx, playlistID int) error
 	GetCatalogVideos(limit int) ([]VideoFileModel, error)
 	GetRecentVideos(limit int) ([]VideoFileModel, error)
