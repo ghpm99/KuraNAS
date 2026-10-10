@@ -18,12 +18,6 @@ var analyticsInsightsSystemPrompt string
 //go:embed analytics_insights_user.txt
 var analyticsInsightsUserPromptTemplate string
 
-//go:embed video_catalog_descriptions_system.txt
-var videoCatalogDescriptionsSystemPrompt string
-
-//go:embed video_catalog_descriptions_user.txt
-var videoCatalogDescriptionsUserPromptTemplate string
-
 //go:embed image_classification_system.txt
 var imageClassificationSystemPrompt string
 
@@ -65,14 +59,6 @@ func AnalyticsInsightsSystemPrompt() string {
 
 func AnalyticsInsightsUserPrompt(summary string) string {
 	return fmt.Sprintf(strings.TrimSpace(analyticsInsightsUserPromptTemplate), summary)
-}
-
-func VideoCatalogDescriptionsSystemPrompt() string {
-	return strings.TrimSpace(videoCatalogDescriptionsSystemPrompt)
-}
-
-func VideoCatalogDescriptionsUserPrompt(sections string) string {
-	return fmt.Sprintf(strings.TrimSpace(videoCatalogDescriptionsUserPromptTemplate), sections)
 }
 
 func ImageClassificationSystemPrompt() string {

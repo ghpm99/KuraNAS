@@ -5,14 +5,12 @@ import (
 	"errors"
 
 	"nas-go/api/internal/api/v1/video/playlist"
-	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
 )
 
 type Service struct {
 	Repository     RepositoryInterface
 	PlaylistEngine *playlist.PlaylistEngine
-	AIService      ai.ServiceInterface
 }
 
 type videoItemProgress struct {
@@ -31,11 +29,10 @@ var (
 	ErrPlaylistWithoutItems    = errors.New("playlist has no items")
 )
 
-func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
+func NewService(repository RepositoryInterface) ServiceInterface {
 	return &Service{
 		Repository:     repository,
 		PlaylistEngine: playlist.NewPlaylistEngine(),
-		AIService:      aiService,
 	}
 }
 
