@@ -172,6 +172,9 @@ func (m *videoRepoMock) DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) erro
 	}
 	return nil
 }
+func (m *videoRepoMock) DeleteStaleAutoPlaylists(tx *sql.Tx, keptPlaylistIDs []int) error {
+	return nil
+}
 func (m *videoRepoMock) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error {
 	if m.insertPlaylistItemsSrcFn != nil {
 		return m.insertPlaylistItemsSrcFn(tx, playlistID, videoIDs, sourceKind)

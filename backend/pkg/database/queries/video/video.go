@@ -49,6 +49,9 @@ var UpsertAutoPlaylistQuery string
 //go:embed delete_auto_playlist_items.sql
 var DeleteAutoPlaylistItemsQuery string
 
+//go:embed delete_stale_auto_playlists.sql
+var DeleteStaleAutoPlaylistsQuery string
+
 //go:embed insert_playlist_items_with_source.sql
 var InsertPlaylistItemsWithSourceQuery string
 
