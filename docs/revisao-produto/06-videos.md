@@ -39,7 +39,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 16. Remover chamada de IA do `/video/catalog/home`
 - [x] 17. Tela de vídeos não bloqueia esperando 3 queries
 - [x] 18. Estados de erro com tentar de novo nas listas
-- [ ] 19. Navegação por hierarquia de pastas
+- [x] 19. Navegação por hierarquia de pastas
 - [ ] 20. Classificação de vídeo persistida
 - [ ] 21. Seção "Filmes" paginada e completa
 - [ ] 22. Rebuild de playlists coalescido (sem rebuild completo por arquivo)

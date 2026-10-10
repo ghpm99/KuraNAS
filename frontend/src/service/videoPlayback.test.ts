@@ -13,6 +13,8 @@ import {
     getAllVideoFiles,
     getVideoContinueWatching,
     getVideoHomeCatalog,
+    getVideoLibraryFolders,
+    getVideoLibraryFolderVideos,
     getVideoPlaybackState,
     getVideoPlaylistById,
     getVideoPlaylists,
@@ -195,5 +197,33 @@ describe('service/videoPlayback', () => {
         expect(unassigned).toEqual([{ id: 1 }]);
         expect(allVideos).toEqual([{ id: 2 }]);
         expect(emptyFallback).toEqual([]);
+    });
+
+    it('requests the folders under a parent and omits an empty parent', async () => {
+        const payload = { items: [], pagination: { page: 2, page_size: 48, has_next: false } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const nested = await getVideoLibraryFolders('/Series', 2, 48);
+        await getVideoLibraryFolders('', 1, 48);
+
+        expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/video/library/folders', {
+            params: { parent: '/Series', page: 2, page_size: 48 },
+        });
+        expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/video/library/folders', {
+            params: { parent: undefined, page: 1, page_size: 48 },
+        });
+        expect(nested).toEqual(payload);
+    });
+
+    it('requests the direct videos of a folder with pagination', async () => {
+        const payload = { items: [{ id: 3 }], pagination: { page: 1, page_size: 24 } };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const folderVideos = await getVideoLibraryFolderVideos('/Series/S1', 1, 24);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/library/folders/videos', {
+            params: { path: '/Series/S1', page: 1, page_size: 24 },
+        });
+        expect(folderVideos).toEqual(payload);
     });
 });

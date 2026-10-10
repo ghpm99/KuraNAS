@@ -48,6 +48,11 @@ jest.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
 }));
 
+jest.mock('./folderBrowser/VideoFolderBrowser', () => ({
+    __esModule: true,
+    default: () => <div>folder-browser</div>,
+}));
+
 jest.mock('@/service/apiUrl', () => ({
     getApiV1BaseUrl: () => 'http://localhost:8000/v1',
 }));
@@ -487,8 +492,7 @@ describe('components/videos/videoContent', () => {
         mockLocation.pathname = '/videos/folders';
         render(<VideoContent />);
 
-        expect(screen.getByText('Pastas')).toBeInTheDocument();
-        expect(screen.getAllByText('Folder Playlist').length).toBeGreaterThan(0);
+        expect(screen.getByText('folder-browser')).toBeInTheDocument();
         expect(screen.getByText('Todos')).toBeInTheDocument();
 
         fireEvent.change(screen.getByPlaceholderText('Buscar video por nome, pasta ou formato'), {
