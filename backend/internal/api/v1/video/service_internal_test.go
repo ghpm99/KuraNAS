@@ -37,6 +37,7 @@ type videoRepoMock struct {
 	touchPlaylistFn            func(tx *sql.Tx, playlistID int) error
 	getCatalogVideosFn         func(limit int) ([]VideoFileModel, error)
 	getRecentVideosFn          func(limit int) ([]VideoFileModel, error)
+	getContinueWatchingFn      func(clientID string, limit int) ([]ContinueWatchingModel, error)
 	checkVideoInPlaylistFn     func(playlistID int, videoID int) (bool, error)
 	getUnassignedVideosFn      func(limit int) ([]VideoFileModel, error)
 	getVideoPlaylistsFn        func(includeHidden bool) ([]VideoPlaylistModel, error)
@@ -140,6 +141,12 @@ func (m *videoRepoMock) GetCatalogVideos(limit int) ([]VideoFileModel, error) {
 		return m.getCatalogVideosFn(limit)
 	}
 	return nil, errors.New("not used")
+}
+func (m *videoRepoMock) GetContinueWatchingVideos(clientID string, limit int) ([]ContinueWatchingModel, error) {
+	if m.getContinueWatchingFn != nil {
+		return m.getContinueWatchingFn(clientID, limit)
+	}
+	return nil, nil
 }
 func (m *videoRepoMock) GetRecentVideos(limit int) ([]VideoFileModel, error) {
 	if m.getRecentVideosFn != nil {
@@ -688,6 +695,63 @@ func TestVideoServiceHomeCatalog(t *testing.T) {
 	}
 	if len(catalog.Sections) == 0 {
 		t.Fatalf("expected non-empty catalog sections")
+	}
+}
+
+func TestVideoServiceHomeCatalogContinueSectionComesFromWatchProgress(t *testing.T) {
+	repo := &videoRepoMock{
+		getCatalogVideosFn: func(limit int) ([]VideoFileModel, error) { return nil, nil },
+		getRecentVideosFn:  func(limit int) ([]VideoFileModel, error) { return nil, nil },
+		getContinueWatchingFn: func(clientID string, limit int) ([]ContinueWatchingModel, error) {
+			return []ContinueWatchingModel{
+				{VideoFileModel: VideoFileModel{ID: 7}, PositionSeconds: 25, DurationSeconds: 100},
+				{VideoFileModel: VideoFileModel{ID: 9}, PositionSeconds: 5, DurationSeconds: 0},
+			}, nil
+		},
+	}
+	svc := newVideoServiceForTest(t, repo)
+	catalog, err := svc.GetHomeCatalog("c", 5)
+	if err != nil {
+		t.Fatalf("GetHomeCatalog failed: %v", err)
+	}
+	continueSection := catalog.Sections[0]
+	if continueSection.Key != "continue" || len(continueSection.Items) != 2 {
+		t.Fatalf("unexpected continue section: %+v", continueSection)
+	}
+	if continueSection.Items[0].Video.ID != 7 || continueSection.Items[0].Status != "in_progress" || continueSection.Items[0].ProgressPct != 25 {
+		t.Fatalf("unexpected first continue item: %+v", continueSection.Items[0])
+	}
+	if continueSection.Items[1].ProgressPct != 0 {
+		t.Fatalf("unknown duration must yield zero progress, got %v", continueSection.Items[1].ProgressPct)
+	}
+}
+
+func TestVideoServiceGetContinueWatching(t *testing.T) {
+	updatedAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	repo := &videoRepoMock{
+		getContinueWatchingFn: func(clientID string, limit int) ([]ContinueWatchingModel, error) {
+			if clientID != "tv" || limit != 3 {
+				t.Fatalf("unexpected args %q %d", clientID, limit)
+			}
+			return []ContinueWatchingModel{
+				{VideoFileModel: VideoFileModel{ID: 4, Name: "ep"}, PositionSeconds: 12, DurationSeconds: 60, ProgressUpdatedAt: updatedAt},
+			}, nil
+		},
+	}
+	svc := newVideoServiceForTest(t, repo)
+	items, err := svc.GetContinueWatching("tv", 3)
+	if err != nil || len(items) != 1 {
+		t.Fatalf("unexpected result %+v err=%v", items, err)
+	}
+	if items[0].Video.ID != 4 || items[0].PositionSeconds != 12 || items[0].DurationSeconds != 60 || items[0].UpdatedAt != updatedAt.Format(time.RFC3339) {
+		t.Fatalf("unexpected item %+v", items[0])
+	}
+
+	failing := newVideoServiceForTest(t, &videoRepoMock{getContinueWatchingFn: func(string, int) ([]ContinueWatchingModel, error) {
+		return nil, errors.New("boom")
+	}})
+	if _, err := failing.GetContinueWatching("tv", 3); err == nil {
+		t.Fatalf("expected repository error")
 	}
 }
 

@@ -414,6 +414,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playback.POST("/behavior", context.Video.Handler.TrackBehaviorEventHandler)
 	catalog.GET("/home", context.Video.Handler.GetHomeCatalogHandler)
 	library.GET("/files", context.Video.Handler.ListLibraryVideosHandler)
+	router.GET("/video/continue", context.Video.Handler.GetContinueWatchingHandler)
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)

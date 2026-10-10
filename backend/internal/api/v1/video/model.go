@@ -73,6 +73,13 @@ type VideoWatchProgressModel struct {
 	UpdatedAt       time.Time
 }
 
+type ContinueWatchingModel struct {
+	VideoFileModel
+	PositionSeconds   float64
+	DurationSeconds   float64
+	ProgressUpdatedAt time.Time
+}
+
 type VideoBehaviorEventModel struct {
 	ID         int
 	ClientID   string

@@ -95,6 +95,15 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetContinueWatchingVideosQuery)).
+		WillReturnRows(sqlmock.NewRows(append(append([]string{}, videoCols...), "position_seconds", "duration_seconds", "progress_updated_at")).
+			AddRow(1, "v", "/v", "/", ".mp4", 100, now, now, 10.5, 60.0, now))
+	mock.ExpectRollback()
+	if out, err := repo.GetContinueWatchingVideos("c1", 10); err != nil || len(out) != 1 || out[0].PositionSeconds != 10.5 {
+		t.Fatalf("GetContinueWatchingVideos failed out=%+v err=%v", out, err)
+	}
+
+	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAllVideosForGroupingQuery)).
 		WillReturnRows(sqlmock.NewRows(videoCols).AddRow(1, "v", "/v", "/", ".mp4", 100, now, now))
 	mock.ExpectRollback()

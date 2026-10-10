@@ -67,6 +67,22 @@ type VideoCatalogItemDto struct {
 	ProgressPct float64      `json:"progress_pct"`
 }
 
+type ContinueWatchingItemDto struct {
+	Video           VideoFileDto `json:"video"`
+	PositionSeconds float64      `json:"position_seconds"`
+	DurationSeconds float64      `json:"duration_seconds"`
+	UpdatedAt       string       `json:"updated_at"`
+}
+
+func (m *ContinueWatchingModel) ToDto() ContinueWatchingItemDto {
+	return ContinueWatchingItemDto{
+		Video:           m.VideoFileModel.ToDto(),
+		PositionSeconds: m.PositionSeconds,
+		DurationSeconds: m.DurationSeconds,
+		UpdatedAt:       m.ProgressUpdatedAt.Format(time.RFC3339),
+	}
+}
+
 type VideoCatalogSectionDto struct {
 	Key         string                `json:"key"`
 	Title       string                `json:"title"`

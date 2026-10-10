@@ -258,6 +258,45 @@ func (r *Repository) UpsertVideoWatchProgress(tx *sql.Tx, progress VideoWatchPro
 	return progress, nil
 }
 
+func (r *Repository) GetContinueWatchingVideos(clientID string, limit int) ([]ContinueWatchingModel, error) {
+	results := []ContinueWatchingModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetContinueWatchingVideosQuery, clientID, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item ContinueWatchingModel
+			if err := rows.Scan(
+				&item.ID,
+				&item.Name,
+				&item.Path,
+				&item.ParentPath,
+				&item.Format,
+				&item.Size,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+				&item.PositionSeconds,
+				&item.DurationSeconds,
+				&item.ProgressUpdatedAt,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+
+		return rows.Err()
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao buscar videos em andamento: %w", err)
+	}
+
+	return results, nil
+}
+
 func (r *Repository) TouchPlaylist(tx *sql.Tx, playlistID int) error {
 	_, err := tx.Exec(queries.TouchPlaylistQuery, playlistID)
 	if err != nil {
