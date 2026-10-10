@@ -69,6 +69,9 @@ func (m *videoHandlerServiceMock) ListLibraryFolders(request LibraryFolderReques
 func (m *videoHandlerServiceMock) ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: request.FolderPath}}}, nil
 }
+func (m *videoHandlerServiceMock) ListLibraryMovies(request LibraryMoviesRequest) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{Items: []VideoFileDto{{ID: 1, Name: string(request.Sort)}}}, nil
+}
 func (m *videoHandlerServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error  { return nil }
 func (m *videoHandlerServiceMock) AddVideoToPlaylist(playlistID int, videoID int) error { return nil }
 func (m *videoHandlerServiceMock) RemoveVideoFromPlaylist(playlistID int, videoID int) error {
@@ -143,6 +146,9 @@ func (m *videoHandlerErrServiceMock) ListLibraryFolders(request LibraryFolderReq
 func (m *videoHandlerErrServiceMock) ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {
 	return utils.PaginationResponse[VideoFileDto]{}, errors.New("folder videos failed")
 }
+func (m *videoHandlerErrServiceMock) ListLibraryMovies(request LibraryMoviesRequest) (utils.PaginationResponse[VideoFileDto], error) {
+	return utils.PaginationResponse[VideoFileDto]{}, errors.New("movies failed")
+}
 func (m *videoHandlerErrServiceMock) SetPlaylistHidden(playlistID int, hidden bool) error {
 	return errors.New("set hidden failed")
 }
@@ -208,6 +214,7 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
 	router.GET("/video/library/folders", handler.ListLibraryFoldersHandler)
 	router.GET("/video/library/folders/videos", handler.ListLibraryFolderVideosHandler)
+	router.GET("/video/library/movies", handler.ListLibraryMoviesHandler)
 
 	tests := []struct {
 		method string
@@ -236,6 +243,9 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/video/library/folders?parent=/Series&page=2&page_size=10", "", http.StatusOK},
 		{http.MethodGet, "/video/library/folders/videos?path=/Series", "", http.StatusOK},
 		{http.MethodGet, "/video/library/folders/videos", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/library/movies?sort=recent&page=2&page_size=10", "", http.StatusOK},
+		{http.MethodGet, "/video/library/movies?sort=bogus", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/library/movies?page=abc", "", http.StatusBadRequest},
 		{http.MethodGet, "/video/library/folders?page=abc", "", http.StatusBadRequest},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodGet, "/video/playlists/404", "", http.StatusNotFound},
@@ -280,6 +290,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 	router.GET("/video/library/files", handler.ListLibraryVideosHandler)
 	router.GET("/video/library/folders", handler.ListLibraryFoldersHandler)
 	router.GET("/video/library/folders/videos", handler.ListLibraryFolderVideosHandler)
+	router.GET("/video/library/movies", handler.ListLibraryMoviesHandler)
 
 	tests := []struct {
 		method string
@@ -306,6 +317,7 @@ func TestVideoHandlerErrorResponses(t *testing.T) {
 		{http.MethodGet, "/video/library/files?query=test", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/library/folders", "", http.StatusInternalServerError},
 		{http.MethodGet, "/video/library/folders/videos?path=/Series", "", http.StatusInternalServerError},
+		{http.MethodGet, "/video/library/movies", "", http.StatusInternalServerError},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playback/state", `{`, http.StatusBadRequest},
 		{http.MethodPut, "/video/playlists/1/hidden", `{}`, http.StatusInternalServerError},
