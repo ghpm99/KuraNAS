@@ -41,6 +41,9 @@ func (m *videoHandlerServiceMock) PreviousVideo(clientID string) (PlaybackSessio
 func (m *videoHandlerServiceMock) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error) {
 	return VideoHomeCatalogDto{}, nil
 }
+func (m *videoHandlerServiceMock) GetContinueWatching(clientID string, limit int) ([]ContinueWatchingItemDto, error) {
+	return []ContinueWatchingItemDto{}, nil
+}
 func (m *videoHandlerServiceMock) RebuildSmartPlaylists() error { return nil }
 func (m *videoHandlerServiceMock) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	return []VideoPlaylistDto{{ID: 1, Name: "p"}}, nil
@@ -103,6 +106,9 @@ func (m *videoHandlerErrServiceMock) PreviousVideo(clientID string) (PlaybackSes
 }
 func (m *videoHandlerErrServiceMock) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error) {
 	return VideoHomeCatalogDto{}, errors.New("catalog failed")
+}
+func (m *videoHandlerErrServiceMock) GetContinueWatching(clientID string, limit int) ([]ContinueWatchingItemDto, error) {
+	return nil, errors.New("continue failed")
 }
 func (m *videoHandlerErrServiceMock) RebuildSmartPlaylists() error {
 	return errors.New("rebuild failed")

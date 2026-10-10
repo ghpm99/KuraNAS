@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 	"time"
 
@@ -69,17 +70,9 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 		recent = append(recent, s.toCatalogItem(video, state))
 	}
 
-	continueWatching := []VideoCatalogItemDto{}
-	if state.VideoID.Valid {
-		for _, video := range allVideos {
-			if video.ID == int(state.VideoID.Int64) {
-				item := s.toCatalogItem(video, state)
-				if item.Status == "in_progress" {
-					continueWatching = append(continueWatching, item)
-				}
-				break
-			}
-		}
+	continueWatching, err := s.continueWatchingCatalogItems(clientID, normalizedLimit)
+	if err != nil {
+		return VideoHomeCatalogDto{}, err
 	}
 
 	catalog := VideoHomeCatalogDto{
@@ -189,4 +182,41 @@ func (s *Service) toCatalogItem(video VideoFileModel, state VideoPlaybackStateMo
 		Status:      status,
 		ProgressPct: progressPct,
 	}
+}
+
+func (s *Service) GetContinueWatching(clientID string, limit int) ([]ContinueWatchingItemDto, error) {
+	models, err := s.Repository.GetContinueWatchingVideos(clientID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ContinueWatchingItemDto, 0, len(models))
+	for _, model := range models {
+		items = append(items, model.ToDto())
+	}
+	return items, nil
+}
+
+func (s *Service) continueWatchingCatalogItems(clientID string, limit int) ([]VideoCatalogItemDto, error) {
+	models, err := s.Repository.GetContinueWatchingVideos(clientID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]VideoCatalogItemDto, 0, len(models))
+	for _, model := range models {
+		items = append(items, VideoCatalogItemDto{
+			Video:       model.VideoFileModel.ToDto(),
+			Status:      "in_progress",
+			ProgressPct: progressPercentage(model.PositionSeconds, model.DurationSeconds),
+		})
+	}
+	return items, nil
+}
+
+func progressPercentage(positionSeconds float64, durationSeconds float64) float64 {
+	if durationSeconds <= 0 {
+		return 0
+	}
+	return math.Min(100, math.Max(0, positionSeconds/durationSeconds*100))
 }

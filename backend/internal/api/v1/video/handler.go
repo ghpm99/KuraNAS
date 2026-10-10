@@ -160,6 +160,32 @@ func (h *Handler) GetHomeCatalogHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, catalog)
 }
 
+func (h *Handler) GetContinueWatchingHandler(c *gin.Context) {
+	const maxLimit = 100
+	limit := utils.ParseInt(c.DefaultQuery("limit", "24"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+	if limit <= 0 || limit > maxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_LIMIT")})
+		return
+	}
+
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	items, err := h.service.GetContinueWatching(clientID, limit)
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
+
 func (h *Handler) RebuildPlaylistsHandler(c *gin.Context) {
 	if err := h.service.RebuildSmartPlaylists(); err != nil {
 		respondVideoError(c, err)
