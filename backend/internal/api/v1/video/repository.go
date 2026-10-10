@@ -502,6 +502,14 @@ func (r *Repository) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, v
 	return nil
 }
 
+func (r *Repository) RenumberPlaylistItems(tx *sql.Tx, playlistID int) error {
+	_, err := tx.Exec(queries.RenumberPlaylistItemsQuery, playlistID)
+	if err != nil {
+		return fmt.Errorf("falha ao renumerar itens da playlist: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) GetPlaylistExclusions(playlistID int) (map[int]bool, error) {
 	exclusions := map[int]bool{}
 

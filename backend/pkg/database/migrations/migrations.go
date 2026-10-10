@@ -203,6 +203,9 @@ var CreateVideoWatchProgressTableQuery string
 //go:embed queries/0064_add_video_metadata_classification.sql
 var AddVideoMetadataClassificationQuery string
 
+//go:embed queries/0065_defer_video_playlist_item_order_unique.sql
+var DeferVideoPlaylistItemOrderUniqueQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -323,6 +326,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0064_add_video_metadata_classification",
 		[]string{"0010_create_video_metadata_table"},
 		defaultMigrationFunc(AddVideoMetadataClassificationQuery))
+
+	addMigrationRequiring("0065_defer_video_playlist_item_order_unique",
+		[]string{"0014_create_video_playback_tables"},
+		defaultMigrationFunc(DeferVideoPlaylistItemOrderUniqueQuery))
 }
 
 func diaryMigrationList() {
