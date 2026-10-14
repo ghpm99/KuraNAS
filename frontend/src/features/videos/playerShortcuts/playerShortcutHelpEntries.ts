@@ -10,6 +10,7 @@ export const playerShortcutHelpEntries: PlayerShortcutHelpEntry[] = [
     { keys: ['↑', '↓'], descriptionKey: 'VIDEO_SHORTCUT_HELP_VOLUME' },
     { keys: ['M'], descriptionKey: 'VIDEO_SHORTCUT_HELP_MUTE' },
     { keys: ['F'], descriptionKey: 'VIDEO_SHORTCUT_HELP_FULLSCREEN' },
+    { keys: ['I'], descriptionKey: 'VIDEO_SHORTCUT_HELP_PICTURE_IN_PICTURE' },
     { keys: ['Shift+N'], descriptionKey: 'VIDEO_SHORTCUT_HELP_NEXT' },
     { keys: ['Shift+P'], descriptionKey: 'VIDEO_SHORTCUT_HELP_PREVIOUS' },
     { keys: ['0 – 9'], descriptionKey: 'VIDEO_SHORTCUT_HELP_SEEK_PERCENT' },

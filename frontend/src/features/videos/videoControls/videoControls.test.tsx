@@ -32,4 +32,36 @@ describe('features/videos/videoControls/videoControls', () => {
 
         expect(onOpenShortcutsHelp).toHaveBeenCalledTimes(1);
     });
+
+    it('hides the picture in picture button when unsupported', () => {
+        render(<VideoControls {...buildProps()} />);
+
+        expect(screen.queryByRole('button', { name: 'VIDEO_PICTURE_IN_PICTURE' })).toBeNull();
+    });
+
+    it('toggles picture in picture from the button with the matching label', () => {
+        const togglePictureInPicture = jest.fn();
+        const { rerender } = render(
+            <VideoControls
+                {...buildProps()}
+                isPictureInPictureSupported
+                togglePictureInPicture={togglePictureInPicture}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_PICTURE_IN_PICTURE' }));
+        expect(togglePictureInPicture).toHaveBeenCalledTimes(1);
+
+        rerender(
+            <VideoControls
+                {...buildProps()}
+                isPictureInPictureSupported
+                isPictureInPicture
+                togglePictureInPicture={togglePictureInPicture}
+            />
+        );
+        expect(
+            screen.getByRole('button', { name: 'VIDEO_EXIT_PICTURE_IN_PICTURE' })
+        ).toHaveAttribute('aria-pressed', 'true');
+    });
 });
