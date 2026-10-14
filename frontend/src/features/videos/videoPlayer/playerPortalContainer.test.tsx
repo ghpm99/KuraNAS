@@ -72,10 +72,12 @@ describe('videoPlayer/playerPortalContainer', () => {
                         currentTime={0}
                         duration={10}
                         volume={1}
+                        isMuted={false}
                         playbackRate={1}
                         isFullscreen
                         seekTo={jest.fn()}
                         setVolume={jest.fn()}
+                        toggleMute={jest.fn()}
                         setPlaybackRate={jest.fn()}
                         toggleFullscreen={jest.fn()}
                         togglePlayPause={jest.fn()}

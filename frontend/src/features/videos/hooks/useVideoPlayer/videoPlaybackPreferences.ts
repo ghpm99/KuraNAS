@@ -15,6 +15,8 @@ export const defaultVideoPlaybackPreferences: VideoPlaybackPreferences = {
     playbackRate: 1,
 };
 
+export const DEFAULT_UNMUTE_VOLUME = 0.5;
+
 export const videoPlaybackPreferencesStorageKey = 'kuranas.videos.playbackPreferences.v1';
 
 const isNumberWithin = (candidate: unknown, minimum: number, maximum: number): boolean =>

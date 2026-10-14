@@ -8,6 +8,7 @@ import {
 const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     seekTo: jest.fn(),
     setVolume: jest.fn(),
+    toggleMute: jest.fn(),
     setPlaybackRate: jest.fn(),
     toggleFullscreen: jest.fn(),
     togglePictureInPicture: jest.fn(),
@@ -24,6 +25,7 @@ const buildSnapshot = (
     currentTime: 50,
     duration: 100,
     volume: 0.5,
+    isMuted: false,
     playbackRate: 1,
     canGoNext: true,
     canGoPrevious: true,
@@ -32,17 +34,15 @@ const buildSnapshot = (
 
 describe('features/videos/playerShortcuts/playerShortcutExecution', () => {
     let controls: jest.Mocked<PlayerShortcutControls>;
-    let muteMemory: { volumeBeforeMute: number };
 
     beforeEach(() => {
         controls = buildControls();
-        muteMemory = { volumeBeforeMute: 0.5 };
     });
 
     const run = (
         action: Parameters<typeof runPlayerShortcut>[0],
         overrides: Partial<PlayerShortcutSnapshot> = {}
-    ) => runPlayerShortcut(action, buildSnapshot(overrides), controls, muteMemory);
+    ) => runPlayerShortcut(action, buildSnapshot(overrides), controls);
 
     it('clamps seek time between zero and the duration', () => {
         expect(clampSeekTime(-3, 100)).toBe(0);
@@ -118,23 +118,28 @@ describe('features/videos/playerShortcuts/playerShortcutExecution', () => {
         expect(controls.setVolume).toHaveBeenLastCalledWith(0);
     });
 
-    it('mutes and restores the previous volume', () => {
+    it('toggles mute without touching the volume and reports the muted state', () => {
         expect(run({ type: 'toggleMute' }, { volume: 0.8 })?.messageKey).toBe(
             'VIDEO_SHORTCUT_FEEDBACK_MUTED'
         );
-        expect(controls.setVolume).toHaveBeenLastCalledWith(0);
 
-        expect(run({ type: 'toggleMute' }, { volume: 0 })).toEqual({
+        expect(controls.toggleMute).toHaveBeenCalledTimes(1);
+        expect(controls.setVolume).not.toHaveBeenCalled();
+    });
+
+    it('reports the preserved volume when unmuting', () => {
+        expect(run({ type: 'toggleMute' }, { volume: 0.8, isMuted: true })).toEqual({
             messageKey: 'VIDEO_SHORTCUT_FEEDBACK_VOLUME',
             params: { percent: '80' },
         });
-        expect(controls.setVolume).toHaveBeenLastCalledWith(0.8);
+        expect(controls.toggleMute).toHaveBeenCalledTimes(1);
     });
 
-    it('restores the default volume when nothing was remembered', () => {
-        muteMemory.volumeBeforeMute = 0;
-        run({ type: 'toggleMute' }, { volume: 0 });
-        expect(controls.setVolume).toHaveBeenLastCalledWith(0.5);
+    it('reports the default volume when unmuting from a zero volume', () => {
+        expect(run({ type: 'toggleMute' }, { volume: 0, isMuted: true })).toEqual({
+            messageKey: 'VIDEO_SHORTCUT_FEEDBACK_VOLUME',
+            params: { percent: '50' },
+        });
     });
 
     it('steps playback rate and clamps it to the supported range', () => {

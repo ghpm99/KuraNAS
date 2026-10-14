@@ -47,10 +47,12 @@ describe('video components', () => {
             currentTime: 20,
             duration: 100,
             volume: 0.5,
+            isMuted: false,
             playbackRate: 1,
             isFullscreen: false,
             seekTo: jest.fn(),
             setVolume: jest.fn(),
+            toggleMute: jest.fn(),
             setPlaybackRate: jest.fn(),
             toggleFullscreen: jest.fn(),
             togglePlayPause: jest.fn(),
@@ -97,11 +99,13 @@ describe('video components', () => {
             currentTime: 3661,
             duration: 7200,
             volume: 0,
+            isMuted: false,
             playbackRate: 1,
             isFullscreen: false,
             areControlsVisible: false,
             seekTo: jest.fn(),
             setVolume: jest.fn(),
+            toggleMute: jest.fn(),
             setPlaybackRate: jest.fn(),
             toggleFullscreen: jest.fn(),
             togglePlayPause: jest.fn(),
@@ -118,10 +122,12 @@ describe('video components', () => {
             currentTime: 3661,
             duration: 7200,
             volume: 0,
+            isMuted: false,
             playbackRate: 1,
             isFullscreen: false,
             seekTo: jest.fn(),
             setVolume: jest.fn(),
+            toggleMute: jest.fn(),
             setPlaybackRate: jest.fn(),
             toggleFullscreen: jest.fn(),
             togglePlayPause: jest.fn(),
@@ -132,7 +138,7 @@ describe('video components', () => {
         expect(screen.getByText('1:01:01')).toBeInTheDocument();
 
         fireEvent.click(container.querySelectorAll('.right-controls button')[0]!);
-        expect(props.setVolume).toHaveBeenCalledWith(0.5);
+        expect(props.toggleMute).toHaveBeenCalledTimes(1);
     });
 
     it('keeps controls visible when not playing', () => {
@@ -142,10 +148,12 @@ describe('video components', () => {
             currentTime: 0,
             duration: 100,
             volume: 1,
+            isMuted: false,
             playbackRate: 1,
             isFullscreen: true,
             seekTo: jest.fn(),
             setVolume: jest.fn(),
+            toggleMute: jest.fn(),
             setPlaybackRate: jest.fn(),
             toggleFullscreen: jest.fn(),
             togglePlayPause: jest.fn(),

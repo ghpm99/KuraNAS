@@ -19,6 +19,7 @@ import {
 import { flushVideoPlaybackState } from '@/service/playerStateFlush';
 import { hasReachedCompletionThreshold } from './playbackCompletion';
 import {
+    DEFAULT_UNMUTE_VOLUME,
     loadVideoPlaybackPreferences,
     saveVideoPlaybackPreferences,
     type VideoPlaybackPreferences,
@@ -61,6 +62,7 @@ const useVideoPlayer = ({
     const [duration, setDuration] = useState(0);
     const [initialPreferences] = useState(loadVideoPlaybackPreferences);
     const [volume, setVolume] = useState(initialPreferences.volume);
+    const [isMuted, setIsMuted] = useState(initialPreferences.isMuted);
     const [playbackRate, setPlaybackRate] = useState(initialPreferences.playbackRate);
     const [quality, setQuality] = useState('auto');
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
@@ -347,15 +349,37 @@ const useVideoPlayer = ({
         (newVolume: number) => {
             if (!videoRef.current) return;
             const clampedVolume = Math.max(0, Math.min(1, newVolume));
-            const isMuted = clampedVolume === 0;
             videoRef.current.volume = clampedVolume;
-            videoRef.current.muted = isMuted;
+            videoRef.current.muted = false;
             setVolume(clampedVolume);
-            preferencesRef.current = { ...preferencesRef.current, volume: clampedVolume, isMuted };
+            setIsMuted(false);
+            preferencesRef.current = {
+                ...preferencesRef.current,
+                volume: clampedVolume,
+                isMuted: false,
+            };
             persistPreferencesDebounced();
         },
         [persistPreferencesDebounced]
     );
+
+    const toggleMute = useCallback(() => {
+        if (!videoRef.current) return;
+        const { volume: currentVolume, isMuted: wasMuted } = preferencesRef.current;
+        const wasSilent = wasMuted || currentVolume === 0;
+        const nextIsMuted = !wasSilent;
+        const nextVolume = wasSilent && currentVolume === 0 ? DEFAULT_UNMUTE_VOLUME : currentVolume;
+        videoRef.current.volume = nextVolume;
+        videoRef.current.muted = nextIsMuted;
+        setVolume(nextVolume);
+        setIsMuted(nextIsMuted);
+        preferencesRef.current = {
+            ...preferencesRef.current,
+            volume: nextVolume,
+            isMuted: nextIsMuted,
+        };
+        persistPreferencesNow();
+    }, [persistPreferencesNow]);
 
     const setPlaybackRateHandler = useCallback(
         (rate: number) => {
@@ -446,6 +470,7 @@ const useVideoPlayer = ({
         resume,
         seekTo,
         setVolume: setVolumeHandler,
+        toggleMute,
         setPlaybackRate: setPlaybackRateHandler,
         togglePlayPause,
         nextVideo,
@@ -454,6 +479,7 @@ const useVideoPlayer = ({
         currentTime,
         duration,
         volume,
+        isMuted,
         playbackRate,
         setCurrentTime: setCurrentTimeHandler,
         setDuration: setDurationHandler,
