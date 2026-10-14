@@ -90,12 +90,13 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 58. Autoplay do próximo com contagem regressiva e cancelar
 - 🚫 58.1. Unificar autoplay: setting do servidor (players.autoplay_next_video) vs. toggle local do cartão — hoje o servidor só dá o valor inicial (decisão do dono: autoplay global no servidor ou por dispositivo no navegador)
 - [x] 59. Stream com 416, ETag e If-Range
-- [ ] 59.1. `GetVideoMetadataByID` com SELECT de 22 colunas e Scan de 21 (consulta por id de metadata quebrada)
+- [x] 59.1. `GetVideoMetadataByID` com SELECT de 22 colunas e Scan de 21 (consulta por id de metadata quebrada)
 
 ### i18n e limpeza
 - [ ] 60. Nomes de playlists e seções do backend traduzidos (slug + i18n)
 - [ ] 61. Badge de classificação via i18n
 - [ ] 62. Código órfão do frontend de vídeos
+- [ ] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)
 - [ ] 63. Motor de comportamento alimentado pelo progresso por vídeo
 
 ### Android

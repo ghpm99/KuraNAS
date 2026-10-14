@@ -32,7 +32,9 @@ func (r *VideoMetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataMod
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
 		row := tx.QueryRow(queries.GetVideoMetadataByIDQuery, id)
 
+		var createdAt sql.NullTime
 		if err := row.Scan(
+			&metadata.ID,
 			&metadata.FileId,
 			&metadata.Path,
 			&metadata.FormatName,
@@ -53,10 +55,13 @@ func (r *VideoMetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataMod
 			&metadata.AudioChannels,
 			&metadata.AudioSampleRate,
 			&metadata.AudioBitRate,
-			&metadata.CreatedAt,
+			&createdAt,
+			&metadata.Classification,
+			&metadata.ClassificationVersion,
 		); err != nil {
 			return err
 		}
+		metadata.CreatedAt = createdAt.Time
 		return nil
 	})
 
