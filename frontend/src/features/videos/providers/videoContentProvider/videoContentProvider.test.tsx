@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { VideoContentProvider, useVideoContentProvider } from './videoContentProvider';
 import type { ReactNode } from 'react';
 
@@ -195,6 +195,64 @@ describe('VideoContentProvider', () => {
             },
             { formats: [] }
         );
+    });
+
+    it('writes the typed search to the url with replace, keeping other params', async () => {
+        jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
+        try {
+            const { result } = renderHook(
+                () => ({ provider: useVideoContentProvider(), location: useLocation() }),
+                { wrapper: createWrapper(['/videos/folders?view=grid']) }
+            );
+
+            act(() => result.current.provider.setVideoSearch('ferias'));
+            expect(result.current.location.search).toBe('?view=grid');
+
+            await act(async () => {
+                jest.advanceTimersByTime(300);
+            });
+
+            expect(new URLSearchParams(result.current.location.search).get('q')).toBe('ferias');
+            expect(new URLSearchParams(result.current.location.search).get('view')).toBe('grid');
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('removes q from the url when the search is cleared, keeping other params', async () => {
+        jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
+        try {
+            const { result } = renderHook(
+                () => ({ provider: useVideoContentProvider(), location: useLocation() }),
+                { wrapper: createWrapper(['/videos/folders?q=ferias&view=grid']) }
+            );
+
+            act(() => result.current.provider.setVideoSearch(''));
+            await act(async () => {
+                jest.advanceTimersByTime(300);
+            });
+
+            expect(result.current.location.search).toBe('?view=grid');
+            expect(result.current.provider.videoSearch).toBe('');
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('follows back and forward navigation to another q', async () => {
+        const { result } = renderHook(
+            () => ({
+                provider: useVideoContentProvider(),
+                navigate: jest.requireActual('react-router-dom').useNavigate(),
+            }),
+            { wrapper: createWrapper(['/videos/folders?q=praia']) }
+        );
+
+        act(() => result.current.navigate('/videos/folders?q=serra'));
+
+        await waitFor(() => expect(result.current.provider.videoSearch).toBe('serra'));
+        act(() => result.current.navigate(-1));
+        await waitFor(() => expect(result.current.provider.videoSearch).toBe('praia'));
     });
 
     it('refetches the library with the new sort and persists it for the next visit', async () => {
