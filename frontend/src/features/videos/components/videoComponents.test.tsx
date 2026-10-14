@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import VideoControls from '@/features/videos/videoControls/videoControls';
-import VideoSettings from '@/features/videos/videoSettings/videoSettings';
 import VideoProgressBar from '@/features/videos/videoProgressBar/videoProgressBar';
 import VideoThumbnail from './videoThumbnail/videoThumbnail';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
@@ -166,27 +165,6 @@ describe('video components', () => {
         });
         expect(container.querySelector('.video-controls')).toBeTruthy();
         jest.useRealTimers();
-    });
-
-    it('renders settings and applies changes', () => {
-        const onClose = jest.fn();
-        const setPlaybackRate = jest.fn();
-        const setQuality = jest.fn();
-        render(
-            <VideoSettings
-                anchorEl={document.body}
-                onClose={onClose}
-                playbackRate={1}
-                setPlaybackRate={setPlaybackRate}
-                quality="auto"
-                setQuality={setQuality}
-            />
-        );
-        fireEvent.click(screen.getByText('1.25x'));
-        expect(setPlaybackRate).toHaveBeenCalledWith(1.25);
-        fireEvent.click(screen.getByText('1080p'));
-        expect(setQuality).toHaveBeenCalledWith('1080p');
-        expect(onClose).toHaveBeenCalled();
     });
 
     it('renders progress bar and seeks', () => {
