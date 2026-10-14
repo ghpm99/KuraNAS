@@ -1,12 +1,15 @@
 import { Typography } from '@mui/material';
 import { EyeOff, Play, Videotape } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { VideoPlaylistDto, getVideoPlaylistPosterUrl } from '@/service/videoPlayback';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
+import {
+    VideoPlaylistDto,
+    getVideoPlaylistPosterUrl,
+    getVideoPreviewUrl,
+    getVideoThumbnailUrl,
+} from '@/service/videoPlayback';
+import { useHoverPreview } from '@/features/videos/hooks/useHoverPreview';
 import { useLocalPoster } from '../useLocalPoster';
 import styles from '../videoContent.module.css';
-
-const apiBase = `${getApiV1BaseUrl()}/files`;
 
 type VideoPlaylistCardProps = {
     playlist: VideoPlaylistDto;
@@ -27,17 +30,30 @@ export default function VideoPlaylistCard({
 }: VideoPlaylistCardProps) {
     const { t } = useI18n();
     const coverId = focusVideoId ?? playlist.cover_video_id;
-    const coverThumb = coverId ? `${apiBase}/video-thumbnail/${coverId}?width=640&height=360` : '';
+    const coverThumb = coverId ? getVideoThumbnailUrl(coverId) : '';
     const { imageUrl, isPosterShown, handlePosterError } = useLocalPoster(
         getVideoPlaylistPosterUrl(playlist.id),
         coverThumb
     );
-    const coverPreview = coverId ? `${apiBase}/video-preview/${coverId}?width=640&height=360` : '';
+    const {
+        isPreviewMounted,
+        isPreviewLoaded,
+        previewHandlers,
+        handlePreviewLoad,
+        handlePreviewError,
+    } = useHoverPreview();
 
     return (
         <div className={styles.videoCardWrap}>
-            <button type="button" className={styles.videoCard} onClick={() => onSelect(playlist)}>
-                <div className={styles.thumbnail}>
+            <button
+                type="button"
+                className={styles.videoCard}
+                onClick={() => onSelect(playlist)}
+                {...previewHandlers}
+            >
+                <div
+                    className={`${styles.thumbnail} ${isPreviewLoaded ? styles.thumbnailPreviewReady : ''}`}
+                >
                     <div className={styles.thumbFallback}>
                         <Videotape size={38} color="white" />
                     </div>
@@ -50,15 +66,14 @@ export default function VideoPlaylistCard({
                             onError={isPosterShown ? handlePosterError : undefined}
                         />
                     )}
-                    {coverId && (
-                        <>
-                            <img
-                                className={styles.thumbPreview}
-                                loading="lazy"
-                                src={coverPreview}
-                                alt={t('VIDEO_PREVIEW_ALT', { name: playlist.name })}
-                            />
-                        </>
+                    {coverId && isPreviewMounted && (
+                        <img
+                            className={styles.thumbPreview}
+                            src={getVideoPreviewUrl(coverId)}
+                            alt={t('VIDEO_PREVIEW_ALT', { name: playlist.name })}
+                            onLoad={handlePreviewLoad}
+                            onError={handlePreviewError}
+                        />
                     )}
                 </div>
                 <div className={styles.cardOverlay}>

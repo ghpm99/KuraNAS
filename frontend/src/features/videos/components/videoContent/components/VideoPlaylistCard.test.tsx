@@ -62,10 +62,7 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
             'src',
             'http://localhost:8000/api/v1/video/playlists/7/poster?width=400&height=600'
         );
-        expect(screen.getByRole('img', { name: 'Preview Showcase' })).toHaveAttribute(
-            'src',
-            'http://localhost:8000/api/v1/files/video-preview/99?width=640&height=360'
-        );
+        expect(screen.queryByRole('img', { name: 'Preview Showcase' })).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: /Showcase/i }));
         fireEvent.click(screen.getByRole('button', { name: 'Play' }));
