@@ -31,11 +31,19 @@ func CreateThumbnailWorker(service files.ServiceInterface, videoService videodom
 			log.Printf("CreateThumbnailWorker: video service indisponível, pulando thumbnail de video fileID=%d\n", fileID)
 			return
 		}
-		if _, err := videoService.GetVideoThumbnail(fileDto, 320, 180); err != nil {
+		thumbnail, err := videoService.GetVideoThumbnail(fileDto, 320, 180)
+		if err != nil {
 			log.Printf("CreateThumbnailWorker: erro ao gerar thumbnail de video fileID=%d: %v\n", fileID, err)
 		}
-		if _, err := videoService.GetVideoPreviewGif(fileDto, 320, 180); err != nil {
+		if err == nil && thumbnail.IsFallback {
+			log.Printf("CreateThumbnailWorker: thumbnail de video nao gerado, usando icone temporario fileID=%d\n", fileID)
+		}
+		preview, err := videoService.GetVideoPreviewGif(fileDto, 320, 180)
+		if err != nil {
 			log.Printf("CreateThumbnailWorker: erro ao gerar preview gif fileID=%d: %v\n", fileID, err)
+		}
+		if err == nil && preview.IsFallback {
+			log.Printf("CreateThumbnailWorker: preview gif nao gerado, usando icone temporario fileID=%d\n", fileID)
 		}
 		return
 	}

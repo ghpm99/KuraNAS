@@ -13,6 +13,7 @@ type Service struct {
 	PlaylistEngine *playlist.PlaylistEngine
 
 	FrameCommandRunner FrameCommandRunner
+	FallbackRegistry   thumbnailFallbackRegistry
 }
 
 type videoItemProgress struct {

@@ -69,7 +69,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 
 ### Thumbnails
 - [x] 45. Frame do thumbnail em % da duração
-- [ ] 46. Fallback de thumbnail não fica em cache permanente
+- [x] 46. Fallback de thumbnail não fica em cache permanente
 - [ ] 47. Prévia GIF carregada só no hover
 - [ ] 48. Worker não gera GIF de prévia para todo vídeo
 - [ ] 49. Log/registro de acesso uma vez por reprodução, não por Range

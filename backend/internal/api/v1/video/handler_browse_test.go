@@ -191,3 +191,33 @@ func TestVideoHandlerStreamRanges(t *testing.T) {
 		t.Fatalf("expected full stream 200 without range, got %d", w.Code)
 	}
 }
+
+func TestVideoHandlerImageCacheControl(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	tests := []struct {
+		name         string
+		service      ServiceInterface
+		path         string
+		expectedCtrl string
+	}{
+		{"real thumbnail", &videoHandlerServiceMock{}, "/files/video-thumbnail/1", "public, max-age=86400"},
+		{"real preview", &videoHandlerServiceMock{}, "/files/video-preview/1", "public, max-age=86400"},
+		{"fallback thumbnail", &videoHandlerFallbackServiceMock{}, "/files/video-thumbnail/1", "no-store"},
+		{"fallback preview", &videoHandlerFallbackServiceMock{}, "/files/video-preview/1", "no-store"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := NewHandler(tc.service, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
+			router := gin.New()
+			router.GET("/files/video-thumbnail/:id", handler.GetVideoThumbnailHandler)
+			router.GET("/files/video-preview/:id", handler.GetVideoPreviewHandler)
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, tc.path, nil))
+
+			if w.Code != http.StatusOK || w.Header().Get("Cache-Control") != tc.expectedCtrl {
+				t.Fatalf("code=%d Cache-Control=%q want %q", w.Code, w.Header().Get("Cache-Control"), tc.expectedCtrl)
+			}
+		})
+	}
+}

@@ -102,7 +102,7 @@ func TestVideoService_ThumbnailAndPreviewFallbacks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected video thumbnail fallback success, got %v", err)
 	}
-	if len(videoThumb) == 0 {
+	if len(videoThumb.Data) == 0 {
 		t.Fatalf("expected non-empty video thumbnail fallback")
 	}
 
@@ -114,7 +114,7 @@ func TestVideoService_ThumbnailAndPreviewFallbacks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected video preview fallback success, got %v", err)
 	}
-	if len(previewGif) == 0 {
+	if len(previewGif.Data) == 0 {
 		t.Fatalf("expected non-empty video preview fallback")
 	}
 
@@ -154,7 +154,7 @@ func TestVideoService_ThumbAndPreviewCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected video thumbnail cache hit, got %v", err)
 	}
-	if string(thumb) != string(thumbBytes) {
+	if string(thumb.Data) != string(thumbBytes) {
 		t.Fatalf("expected cached thumbnail bytes")
 	}
 
@@ -169,7 +169,7 @@ func TestVideoService_ThumbAndPreviewCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected video preview cache hit, got %v", err)
 	}
-	if string(preview) != string(previewBytes) {
+	if string(preview.Data) != string(previewBytes) {
 		t.Fatalf("expected cached preview bytes")
 	}
 }
@@ -204,7 +204,7 @@ func TestVideoService_ThumbnailUsesSourcePoster(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected source poster thumbnail, got %v", err)
 	}
-	if len(thumb) == 0 {
+	if len(thumb.Data) == 0 {
 		t.Fatal("expected non-empty thumbnail from source poster")
 	}
 	if _, statErr := os.Stat(cachePath); statErr != nil {
