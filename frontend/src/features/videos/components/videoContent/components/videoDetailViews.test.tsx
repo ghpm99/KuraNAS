@@ -67,7 +67,7 @@ describe('video detail views', () => {
             />
         );
 
-        expect(screen.getByText('PERSONAL')).toBeInTheDocument();
+        expect(screen.getByText('NAV_VIDEOS')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Reproduzir/i })).toBeDisabled();
 
         fireEvent.click(screen.getByRole('button', { name: /Voltar para videos/i }));

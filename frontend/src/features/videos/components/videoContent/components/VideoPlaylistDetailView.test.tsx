@@ -91,7 +91,7 @@ describe('VideoPlaylistDetailView', () => {
 
         expect(screen.getByText('Test Playlist')).toBeInTheDocument();
         expect(screen.getByText('3 items')).toBeInTheDocument();
-        expect(screen.getByText('SERIES')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_CLASS_SERIES')).toBeInTheDocument();
     });
 
     it('hides the playlist from the management panel', () => {
@@ -353,18 +353,18 @@ describe('VideoPlaylistDetailView', () => {
         expect(screen.queryByRole('img')).toBeNull();
     });
 
-    it('uppercases the classification in the eyebrow', () => {
+    it('shows the translated classification in the eyebrow', () => {
         const playlist = createPlaylist({ classification: 'movie' });
         render(<VideoPlaylistDetailView {...defaultProps()} playlist={playlist} />);
 
-        expect(screen.getByText('MOVIE')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_CLASS_MOVIE')).toBeInTheDocument();
     });
 
-    it('defaults classification to "personal" when empty', () => {
+    it('falls back to the generic videos label when classification is empty', () => {
         const playlist = createPlaylist({ classification: '' as any });
         render(<VideoPlaylistDetailView {...defaultProps()} playlist={playlist} />);
 
-        expect(screen.getByText('PERSONAL')).toBeInTheDocument();
+        expect(screen.getByText('NAV_VIDEOS')).toBeInTheDocument();
     });
 
     it('renders edit playlist section heading', () => {

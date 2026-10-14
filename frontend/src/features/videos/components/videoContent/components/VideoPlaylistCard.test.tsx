@@ -56,7 +56,7 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
         );
 
         expect(screen.getByText('4 items')).toBeInTheDocument();
-        expect(screen.getByText('SERIES')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_CLASS_SERIES')).toBeInTheDocument();
         expect(screen.getByText('Resume')).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'Showcase' })).toHaveAttribute(
             'src',
@@ -116,7 +116,7 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
         ).not.toBeInTheDocument();
     });
 
-    it('falls back to personal classification and disables play when there is no cover', () => {
+    it('falls back to the generic videos label and disables play when there is no cover', () => {
         const onPlay = jest.fn();
 
         render(
@@ -132,7 +132,7 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
 
         fireEvent.error(screen.getByRole('img', { name: 'Showcase' }));
 
-        expect(screen.getByText('PERSONAL')).toBeInTheDocument();
+        expect(screen.getByText('NAV_VIDEOS')).toBeInTheDocument();
         expect(screen.queryByRole('img', { name: 'Showcase' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
         expect(onPlay).not.toHaveBeenCalled();
