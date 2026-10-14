@@ -1,4 +1,10 @@
-import type { VideoFileDto } from '@/service/videoPlayback';
+import {
+    getVideoSubtitleVttUrl,
+    type VideoFileDto,
+    type VideoSubtitleDto,
+} from '@/service/videoPlayback';
+import { getApiBaseUrl } from '@/service/apiUrl';
+import { buildSubtitleLabel } from '@/features/videos/hooks/useVideoSubtitles/subtitleLabel';
 import { getFileDownloadUrl } from '@/service/files';
 import { ArrowLeft, Info } from 'lucide-react';
 import { useEffect, type MouseEvent, type ReactNode, type RefObject } from 'react';
@@ -25,8 +31,11 @@ interface VideoPlayerProps {
     onPlaybackError?: (errorKind: PlaybackErrorKind) => void;
     onRetryPlayback?: () => void;
     onToggleFullscreen?: () => void;
+    subtitles?: VideoSubtitleDto[];
     children?: ReactNode;
 }
+
+const isApiOnAnotherOrigin = (): boolean => getApiBaseUrl() !== '';
 
 const VideoPlayer = ({
     currentVideo,
@@ -43,6 +52,7 @@ const VideoPlayer = ({
     onPlaybackError,
     onRetryPlayback,
     onToggleFullscreen,
+    subtitles = [],
     children,
 }: VideoPlayerProps) => {
     const { t } = useI18n();
@@ -89,8 +99,20 @@ const VideoPlayer = ({
                     className={styles.video}
                     preload="metadata"
                     playsInline
+                    crossOrigin={isApiOnAnotherOrigin() ? 'anonymous' : undefined}
                     onDoubleClick={toggleFullscreenOnSurfaceDoubleClick}
-                />
+                >
+                    {subtitles.map((subtitle) => (
+                        <track
+                            key={subtitle.id}
+                            kind="subtitles"
+                            src={getVideoSubtitleVttUrl(subtitle.id)}
+                            srcLang={subtitle.language || undefined}
+                            label={buildSubtitleLabel(subtitle, t)}
+                            data-subtitle-id={subtitle.id}
+                        />
+                    ))}
+                </video>
                 <div className={styles.overlay}>
                     <div className={styles.header}>
                         <button type="button" className={styles.backButton} onClick={onBack}>

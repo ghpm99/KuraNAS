@@ -16,6 +16,7 @@ const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     nextVideo: jest.fn(),
     previousVideo: jest.fn(),
     openHelp: jest.fn(),
+    toggleSubtitles: jest.fn(),
 });
 
 const buildSnapshot = (
@@ -56,6 +57,22 @@ describe('features/videos/playerShortcuts/playerShortcutExecution', () => {
         expect(run({ type: 'togglePictureInPicture' })).toBeNull();
 
         expect(controls.togglePictureInPicture).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        ['enabled', 'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON'],
+        ['disabled', 'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF'],
+    ] as const)('toggles subtitles and reports %s', (outcome, expectedMessageKey) => {
+        controls.toggleSubtitles.mockReturnValue(outcome);
+
+        expect(run({ type: 'toggleSubtitles' })?.messageKey).toBe(expectedMessageKey);
+        expect(controls.toggleSubtitles).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays silent when the video has no subtitles', () => {
+        controls.toggleSubtitles.mockReturnValue('unavailable');
+
+        expect(run({ type: 'toggleSubtitles' })).toBeNull();
     });
 
     it('toggles play and pause with matching feedback', () => {

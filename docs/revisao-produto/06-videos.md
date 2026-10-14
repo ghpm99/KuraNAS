@@ -83,7 +83,8 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 53. Volume, mudo e velocidade persistidos
 - [x] 53.1. Mudo independente do volume (hoje mudo = volume 0; ao recarregar mudo, o volume anterior se perde)
 - [x] 54. Seek aplicado ao soltar o controle
-- [ ] 55. Legendas externas `.srt/.vtt`
+- [x] 55. Legendas externas `.srt/.vtt`
+- [ ] 55.1. Desativar legenda também é lembrado (hoje o idioma lembrado religa a legenda no vídeo seguinte)
 - [ ] 56. Legendas embutidas
 - [ ] 57. Menu de configurações morto removido ou ligado ao player real
 - [ ] 58. Autoplay do próximo com contagem regressiva e cancelar

@@ -55,6 +55,10 @@ const buildScreenState = () => ({
     isFullscreen: false,
     setCurrentTime: jest.fn(),
     setDuration: jest.fn(),
+    subtitles: [],
+    selectedSubtitleId: null,
+    selectSubtitle: jest.fn(),
+    toggleSubtitles: jest.fn<'enabled' | 'disabled' | 'unavailable', []>(() => 'unavailable'),
 });
 
 jest.mock('./useVideoPlayerScreen', () => ({
@@ -235,6 +239,20 @@ describe('features/videos/videoPlayer/VideoPlayerScreen', () => {
             expect(state.setPlaybackRate).toHaveBeenLastCalledWith(1.25);
             pressKey({ key: 'f' });
             expect(state.toggleFullscreen).toHaveBeenCalledTimes(1);
+        });
+
+        it('toggles subtitles with C and shows the feedback', () => {
+            const state = buildScreenState();
+            state.toggleSubtitles.mockReturnValue('enabled');
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            pressKey({ key: 'c' });
+
+            expect(state.toggleSubtitles).toHaveBeenCalledTimes(1);
+            expect(screen.getByRole('status')).toHaveTextContent(
+                'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON'
+            );
         });
 
         it('navigates the playlist only where available', () => {

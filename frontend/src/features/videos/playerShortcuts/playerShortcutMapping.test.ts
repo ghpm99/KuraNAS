@@ -31,6 +31,8 @@ describe('features/videos/playerShortcuts/playerShortcutMapping', () => {
         ['f', { type: 'toggleFullscreen' }],
         ['i', { type: 'togglePictureInPicture' }],
         ['I', { type: 'togglePictureInPicture' }],
+        ['c', { type: 'toggleSubtitles' }],
+        ['C', { type: 'toggleSubtitles' }],
         ['0', { type: 'seekToFraction', fraction: 0 }],
         ['5', { type: 'seekToFraction', fraction: 0.5 }],
         ['9', { type: 'seekToFraction', fraction: 0.9 }],

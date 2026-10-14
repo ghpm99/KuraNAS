@@ -118,6 +118,14 @@ export interface UpdateVideoPlaybackStateRequest {
     completed?: boolean;
 }
 
+export interface VideoSubtitleDto {
+    id: number;
+    label: string;
+    language: string;
+    format: 'srt' | 'vtt';
+    is_forced: boolean;
+}
+
 export interface ReorderVideoPlaylistItemRequest {
     video_id: number;
     order_index: number;
@@ -409,3 +417,11 @@ export const getVideoPreviewUrl = (
     width = defaultCoverWidth,
     height = defaultCoverHeight
 ): string => `${getApiV1BaseUrl()}/files/video-preview/${videoId}?width=${width}&height=${height}`;
+
+export const getVideoSubtitles = async (videoFileId: number): Promise<VideoSubtitleDto[]> => {
+    const response = await apiBase.get<VideoSubtitleDto[]>(`/video/subtitles/${videoFileId}`);
+    return response.data;
+};
+
+export const getVideoSubtitleVttUrl = (subtitleFileId: number): string =>
+    `${getApiV1BaseUrl()}/video/subtitles/${subtitleFileId}/vtt`;

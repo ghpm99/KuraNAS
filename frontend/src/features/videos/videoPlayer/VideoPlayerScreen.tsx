@@ -63,6 +63,10 @@ export default function VideoPlayerScreen() {
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        subtitles,
+        selectedSubtitleId,
+        selectSubtitle,
+        toggleSubtitles,
     } = useVideoPlayerScreen();
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
@@ -103,6 +107,7 @@ export default function VideoPlayerScreen() {
             nextVideo,
             previousVideo,
             openHelp: () => setIsShortcutsHelpOpen(true),
+            toggleSubtitles,
         },
         isSuspended: isInvalidVideoId || isDetailsOpen || isShortcutsHelpOpen,
     });
@@ -133,6 +138,7 @@ export default function VideoPlayerScreen() {
                         onPlaybackError={reportPlaybackError}
                         onRetryPlayback={retryPlayback}
                         onToggleFullscreen={toggleFullscreen}
+                        subtitles={subtitles}
                     >
                         <VideoControls
                             currentTime={currentTime}
@@ -157,6 +163,9 @@ export default function VideoPlayerScreen() {
                             canGoNext={hasNextVideo}
                             canGoPrevious={hasPreviousVideo}
                             onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
+                            subtitles={subtitles}
+                            selectedSubtitleId={selectedSubtitleId}
+                            onSelectSubtitle={selectSubtitle}
                         />
                         <PlayerShortcutFeedback
                             feedback={pictureInPictureError ?? shortcutFeedback}

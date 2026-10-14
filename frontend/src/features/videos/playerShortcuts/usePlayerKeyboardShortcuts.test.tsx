@@ -26,6 +26,7 @@ const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     nextVideo: jest.fn(),
     previousVideo: jest.fn(),
     openHelp: jest.fn(),
+    toggleSubtitles: jest.fn(),
 });
 
 const dispatchKey = (init: KeyboardEventInit, target: EventTarget = document.body) => {
@@ -66,6 +67,20 @@ describe('features/videos/playerShortcuts/usePlayerKeyboardShortcuts', () => {
         expect(event.defaultPrevented).toBe(true);
         expect(controls.togglePlayPause).toHaveBeenCalledTimes(1);
         expect(result.current.feedback?.messageKey).toBe('VIDEO_SHORTCUT_FEEDBACK_PAUSE');
+    });
+
+    it('toggles subtitles with the C key and shows the feedback', () => {
+        const controls = buildControls();
+        controls.toggleSubtitles.mockReturnValue('enabled');
+        const { result } = renderHook(() =>
+            usePlayerKeyboardShortcuts({ snapshot, controls, isSuspended: false })
+        );
+
+        const event = dispatchKey({ key: 'c' });
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(controls.toggleSubtitles).toHaveBeenCalledTimes(1);
+        expect(result.current.feedback?.messageKey).toBe('VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON');
     });
 
     it('clears the feedback after the display duration', () => {
