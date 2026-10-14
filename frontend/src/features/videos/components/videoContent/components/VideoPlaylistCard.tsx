@@ -9,6 +9,7 @@ import {
 } from '@/service/videoPlayback';
 import { useHoverPreview } from '@/features/videos/hooks/useHoverPreview';
 import { useLocalPoster } from '../useLocalPoster';
+import { getVideoClassificationLabelKey } from '../videoClassificationLabel';
 import styles from '../videoContent.module.css';
 
 type VideoPlaylistCardProps = {
@@ -84,7 +85,7 @@ export default function VideoPlaylistCard({
                             })}
                         </span>
                         <span className={styles.formatTag}>
-                            {(playlist.classification || 'personal').toUpperCase()}
+                            {t(getVideoClassificationLabelKey(playlist.classification))}
                         </span>
                     </div>
                     <Typography className={styles.cardTitle}>{playlist.name}</Typography>

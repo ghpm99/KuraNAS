@@ -7,6 +7,7 @@ import VideoDeletePlaylistButton from './VideoDeletePlaylistButton';
 import VideoHidePlaylistButton from './VideoHidePlaylistButton';
 import VideoDetailListItem from './VideoDetailListItem';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import { getVideoClassificationLabelKey } from '../videoClassificationLabel';
 import styles from '../videoContent.module.css';
 
 type VideoContextDetailViewProps = {
@@ -59,7 +60,7 @@ export default function VideoContextDetailView({
                         <span>{t('VIDEO_BACK_TO_VIDEOS')}</span>
                     </button>
                     <p className={styles.heroEyebrow}>
-                        {(playlist.classification || 'personal').toUpperCase()}
+                        {t(getVideoClassificationLabelKey(playlist.classification))}
                     </p>
                     <h2 className={styles.heroTitle}>{playlist.name}</h2>
                     <p className={styles.heroMeta}>

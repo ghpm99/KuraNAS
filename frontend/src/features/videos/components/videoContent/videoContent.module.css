@@ -187,6 +187,7 @@
 }
 
 .formatTag {
+    text-transform: uppercase;
     padding: 2px 8px;
     border-radius: 999px;
     font-size: 0.66rem;
