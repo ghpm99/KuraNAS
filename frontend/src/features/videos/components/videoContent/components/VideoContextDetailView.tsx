@@ -3,6 +3,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
+import VideoDeletePlaylistButton from './VideoDeletePlaylistButton';
 import VideoDetailListItem from './VideoDetailListItem';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
@@ -11,6 +12,8 @@ type VideoContextDetailViewProps = {
     playlist: VideoPlaylistDto;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
+    isDeleting?: boolean;
+    onDelete?: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
     hasMoreItems?: boolean;
     isFetchingMoreItems?: boolean;
@@ -23,6 +26,8 @@ export default function VideoContextDetailView({
     playlist,
     onBack,
     onOpenVideo,
+    isDeleting = false,
+    onDelete,
     onSetWatched,
     hasMoreItems,
     isFetchingMoreItems,
@@ -71,6 +76,11 @@ export default function VideoContextDetailView({
                                     : t('VIDEO_PLAY')}
                             </span>
                         </button>
+                        <VideoDeletePlaylistButton
+                            playlist={playlist}
+                            isDeleting={isDeleting}
+                            onDelete={onDelete}
+                        />
                     </div>
                 </div>
             </section>

@@ -421,4 +421,26 @@ describe('VideoPlaylistDetailView', () => {
             screen.queryByRole('button', { name: 'VIDEO_MARK_WATCHED' })
         ).not.toBeInTheDocument();
     });
+
+    it('offers deletion with confirmation for a custom playlist', () => {
+        const onDelete = jest.fn();
+        render(<VideoPlaylistDetailView {...defaultProps()} onDelete={onDelete} />);
+
+        fireEvent.click(screen.getByRole('button', { name: /VIDEO_DELETE_PLAYLIST/ }));
+        expect(onDelete).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_DELETE_PLAYLIST' }));
+
+        expect(onDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the deletion action for an automatic playlist', () => {
+        const playlist = createPlaylist({ is_auto: true });
+        render(
+            <VideoPlaylistDetailView {...defaultProps()} playlist={playlist} onDelete={jest.fn()} />
+        );
+
+        expect(
+            screen.queryByRole('button', { name: /VIDEO_DELETE_PLAYLIST/ })
+        ).not.toBeInTheDocument();
+    });
 });

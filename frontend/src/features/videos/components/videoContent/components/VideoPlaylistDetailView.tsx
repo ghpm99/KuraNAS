@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import VideoDeletePlaylistButton from './VideoDeletePlaylistButton';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
@@ -13,6 +14,8 @@ type VideoPlaylistDetailViewProps = {
     isRenaming: boolean;
     isRemoving: boolean;
     isReordering: boolean;
+    isDeleting?: boolean;
+    onDelete?: () => void;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
     onRename: (name: string) => void;
@@ -31,6 +34,8 @@ export default function VideoPlaylistDetailView({
     isRenaming,
     isRemoving,
     isReordering,
+    isDeleting = false,
+    onDelete,
     onBack,
     onOpenVideo,
     onRename,
@@ -95,6 +100,11 @@ export default function VideoPlaylistDetailView({
                     >
                         {t('VIDEO_SAVE_NAME')}
                     </button>
+                    <VideoDeletePlaylistButton
+                        playlist={playlist}
+                        isDeleting={isDeleting}
+                        onDelete={onDelete}
+                    />
                 </div>
             </section>
 

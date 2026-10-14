@@ -13,9 +13,11 @@ jest.mock('@/service', () => ({
     apiBase: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() },
 }));
 
+const mockNavigate = jest.fn();
+
 jest.mock('react-router-dom', () => {
     const actual = jest.requireActual('react-router-dom');
-    return { ...actual, useNavigate: () => jest.fn() };
+    return { ...actual, useNavigate: () => mockNavigate };
 });
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -216,5 +218,72 @@ describe('features/videos/videoContentProvider (seam)', () => {
 
         await waitFor(() => expect(result.current.feedback.message).toBe('VIDEO_WATCHED_ERROR'));
         await waitFor(() => expect(result.current.continueWatchingItems).toHaveLength(2));
+    });
+
+    it('createPlaylist POSTs only the name to the playlists endpoint', async () => {
+        const { result } = renderProvider();
+        await waitFor(() => expect(result.current.playlists.length).toBeGreaterThan(0));
+
+        act(() => result.current.createPlaylist('Favoritos'));
+
+        await waitFor(() =>
+            expect(mockedApi.post).toHaveBeenCalledWith('/video/playlists', { name: 'Favoritos' })
+        );
+        await waitFor(() => expect(result.current.feedback.message).toBe('VIDEO_PLAYLIST_CREATED'));
+    });
+
+    it('createPlaylistWithVideo POSTs the name and the video id together', async () => {
+        const { result } = renderProvider();
+        await waitFor(() => expect(result.current.playlists.length).toBeGreaterThan(0));
+
+        act(() => result.current.createPlaylistWithVideo('Favoritos', 77));
+
+        await waitFor(() =>
+            expect(mockedApi.post).toHaveBeenCalledWith('/video/playlists', {
+                name: 'Favoritos',
+                video_id: 77,
+            })
+        );
+        await waitFor(() =>
+            expect(result.current.feedback.message).toBe('VIDEO_PLAYLIST_CREATED_ADDED')
+        );
+    });
+
+    it('createPlaylist shows the backend message verbatim when creation fails', async () => {
+        const { result } = renderProvider();
+        await waitFor(() => expect(result.current.playlists.length).toBeGreaterThan(0));
+        mockedApi.post.mockRejectedValue({ response: { data: { error: 'Nome muito longo' } } });
+
+        act(() => result.current.createPlaylist('x'));
+
+        await waitFor(() => expect(result.current.feedback.message).toBe('Nome muito longo'));
+    });
+
+    it('deleteSelectedPlaylist DELETEs the playlist and returns to the section list', async () => {
+        const { result } = renderProvider();
+        await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(2));
+
+        act(() => result.current.deleteSelectedPlaylist());
+
+        await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith('/video/playlists/2'));
+        await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
+        await waitFor(() => expect(result.current.feedback.message).toBe('VIDEO_PLAYLIST_DELETED'));
+    });
+
+    it('deleteSelectedPlaylist reports the backend refusal for automatic playlists', async () => {
+        const { result } = renderProvider();
+        await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(2));
+        mockedApi.delete.mockRejectedValue({
+            response: { data: { error: 'Playlists automáticas não podem ser excluídas' } },
+        });
+
+        act(() => result.current.deleteSelectedPlaylist());
+
+        await waitFor(() =>
+            expect(result.current.feedback.message).toBe(
+                'Playlists automáticas não podem ser excluídas'
+            )
+        );
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 });

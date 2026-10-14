@@ -262,6 +262,21 @@ export const updateVideoPlaylistName = async (playlistId: number, name: string):
     await apiBase.put(`/video/playlists/${playlistId}`, { name });
 };
 
+export const createVideoPlaylist = async (
+    name: string,
+    videoId?: number
+): Promise<VideoPlaylistDto> => {
+    const response = await apiBase.post<VideoPlaylistDto>('/video/playlists', {
+        name,
+        ...(videoId === undefined ? {} : { video_id: videoId }),
+    });
+    return response.data;
+};
+
+export const deleteVideoPlaylist = async (playlistId: number): Promise<void> => {
+    await apiBase.delete(`/video/playlists/${playlistId}`);
+};
+
 export const getVideosWithoutPlaylist = async (limit = 2000): Promise<VideoFileDto[]> => {
     const response = await apiBase.get<VideoFileDto[]>('/video/playlists/unassigned', {
         params: { limit },

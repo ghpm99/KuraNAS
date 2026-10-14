@@ -62,7 +62,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 38. Duração/resolução nos cards
 - [x] 39. `?q=` sincronizado na URL
 - [x] 40. "Adicionar à playlist" com menu e busca, sem padrão implícito
-- [ ] 41. Criar e excluir playlist personalizada (`create_playlist.sql` grava `is_auto = TRUE` mesmo para custom — corrigir junto)
+- [x] 41. Criar e excluir playlist personalizada (`create_playlist.sql` grava `is_auto = TRUE` mesmo para custom — corrigir junto)
 - [ ] 42. Ocultar/mostrar playlist na UI
 - [ ] 43. Painel de detalhes do vídeo com baixar original
 - [ ] 44. Pôster local de série/filme

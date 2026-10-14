@@ -24,9 +24,11 @@ jest.mock('./VideoSectionPlaylistGrid', () => ({
         hasNextPage?: boolean;
         isFetchingNextPage?: boolean;
         fetchNextPage?: () => void;
+        action?: React.ReactNode;
     }) => (
         <div data-testid={`section-grid-${props.titleKey}`}>
             {props.titleKey}
+            {props.action}
             <span>{props.hasNextPage ? 'has-next' : 'no-next'}</span>
             <span>{props.isFetchingNextPage ? 'fetching-next' : 'idle'}</span>
             <button type="button" onClick={props.fetchNextPage}>
@@ -75,7 +77,14 @@ jest.mock('./VideoHomeScreen', () => ({
 
 jest.mock('./VideoContextDetailView', () => ({
     __esModule: true,
-    default: () => <div data-testid="context-detail">context</div>,
+    default: (props: { onDelete?: () => void }) => (
+        <div data-testid="context-detail">
+            context
+            <button type="button" onClick={props.onDelete}>
+                context-delete
+            </button>
+        </div>
+    ),
 }));
 
 jest.mock('./VideoSeriesDetailView', () => ({
@@ -149,6 +158,8 @@ const createContext = (
     isFetchingMoreSectionPlaylists: false,
     hasMoreSectionPlaylists: false,
     isAddingToPlaylist: false,
+    isCreatingPlaylist: false,
+    isDeletingPlaylist: false,
     isRenamingPlaylist: false,
     isRemovingFromPlaylist: false,
     isReorderingPlaylist: false,
@@ -172,6 +183,9 @@ const createContext = (
     playVideo: jest.fn(),
     openPlaylistVideo: jest.fn(),
     addVideoFromLibrary: jest.fn(),
+    createPlaylist: jest.fn(),
+    createPlaylistWithVideo: jest.fn(),
+    deleteSelectedPlaylist: jest.fn(),
     renameSelectedPlaylist: jest.fn(),
     removeVideoFromSelectedPlaylist: jest.fn(),
     moveSelectedPlaylistItem: jest.fn(),
@@ -301,6 +315,42 @@ describe('VideoContentScreen', () => {
             currentSection: 'movies',
         });
         expect(screen.getByTestId('context-detail')).toBeInTheDocument();
+    });
+
+    it('wires the playlist deletion of the context detail view to the provider', () => {
+        const deleteSelectedPlaylist = jest.fn();
+        const playlist = createPlaylist({ classification: 'personal' });
+        renderScreen({
+            selectedPlaylistSummary: playlist,
+            selectedPlaylistDetail: playlist,
+            currentSection: 'personal',
+            deleteSelectedPlaylist,
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'context-delete' }));
+
+        expect(deleteSelectedPlaylist).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers the new playlist action only in the personal section and wires it to the provider', () => {
+        const createPlaylistMock = jest.fn();
+        renderScreen({ currentSection: 'personal', createPlaylist: createPlaylistMock });
+
+        fireEvent.click(screen.getByRole('button', { name: /VIDEO_NEW_PLAYLIST/ }));
+        fireEvent.change(screen.getByLabelText('VIDEO_NEW_PLAYLIST_NAME'), {
+            target: { value: 'Favoritos' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'ACTION_CREATE' }));
+
+        expect(createPlaylistMock).toHaveBeenCalledWith('Favoritos');
+    });
+
+    it('does not offer the new playlist action in the series section', () => {
+        renderScreen({ currentSection: 'series' });
+
+        expect(
+            screen.queryByRole('button', { name: /VIDEO_NEW_PLAYLIST/ })
+        ).not.toBeInTheDocument();
     });
 
     it('renders the playlist detail view when the section is folders', () => {
