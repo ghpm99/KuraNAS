@@ -94,4 +94,77 @@ describe('features/videos/videoControls/videoControls', () => {
             screen.getByRole('button', { name: 'VIDEO_EXIT_PICTURE_IN_PICTURE' })
         ).toHaveAttribute('aria-pressed', 'true');
     });
+
+    describe('time slider scrubbing', () => {
+        const getTimeSlider = (container: HTMLElement) =>
+            container.querySelector('.progress-bar input') as HTMLInputElement;
+
+        const mockSliderGeometry = (container: HTMLElement) => {
+            const sliderRoot = container.querySelector('.progress-bar') as HTMLElement;
+            jest.spyOn(sliderRoot, 'getBoundingClientRect').mockReturnValue({
+                left: 0,
+                right: 200,
+                width: 200,
+                top: 0,
+                bottom: 10,
+                height: 10,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            });
+            return sliderRoot;
+        };
+
+        it('does not seek while dragging and seeks once with the final value on release', () => {
+            const props = buildProps();
+            const { container } = render(<VideoControls {...props} />);
+            const sliderRoot = mockSliderGeometry(container);
+
+            fireEvent.mouseDown(sliderRoot, { clientX: 40, clientY: 5 });
+            fireEvent.mouseMove(document, { clientX: 70, clientY: 5, buttons: 1 });
+            fireEvent.mouseMove(document, { clientX: 120, clientY: 5, buttons: 1 });
+
+            expect(props.seekTo).not.toHaveBeenCalled();
+            expect(getTimeSlider(container)).toHaveValue('60');
+            expect(screen.getAllByText('1:00').length).toBeGreaterThan(0);
+
+            fireEvent.mouseUp(document, { clientX: 120, clientY: 5 });
+
+            expect(props.seekTo).toHaveBeenCalledTimes(1);
+            expect(props.seekTo).toHaveBeenCalledWith(60);
+        });
+
+        it('keeps the dragged position when currentTime updates during the drag', () => {
+            const props = buildProps();
+            const { container, rerender } = render(<VideoControls {...props} />);
+            const sliderRoot = mockSliderGeometry(container);
+
+            fireEvent.mouseDown(sliderRoot, { clientX: 120, clientY: 5 });
+            rerender(<VideoControls {...props} currentTime={5} />);
+
+            expect(getTimeSlider(container)).toHaveValue('60');
+
+            fireEvent.mouseUp(document, { clientX: 120, clientY: 5 });
+        });
+
+        it('applies the seek once when a keyboard step is confirmed', () => {
+            const props = buildProps();
+            const { container } = render(<VideoControls {...props} currentTime={10} />);
+
+            fireEvent.keyDown(getTimeSlider(container), { key: 'ArrowRight' });
+
+            expect(props.seekTo).toHaveBeenCalledTimes(1);
+            expect(props.seekTo).toHaveBeenCalledWith(11);
+        });
+
+        it('follows playback again after the seek is applied', () => {
+            const props = buildProps();
+            const { container, rerender } = render(<VideoControls {...props} currentTime={10} />);
+
+            fireEvent.keyDown(getTimeSlider(container), { key: 'End' });
+            rerender(<VideoControls {...props} currentTime={40} />);
+
+            expect(getTimeSlider(container)).toHaveValue('40');
+        });
+    });
 });

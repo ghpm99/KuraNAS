@@ -69,7 +69,9 @@ const VideoControls = ({
 }: VideoControlsProps) => {
     const { t } = useI18n();
     const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
+    const [scrubbingTime, setScrubbingTime] = useState<number | null>(null);
     const portalContainer = usePlayerPortalContainer();
+    const displayedTime = scrubbingTime ?? currentTime;
 
     const formatTime = (time: number): string => {
         if (isNaN(time)) return '0:00';
@@ -83,8 +85,16 @@ const VideoControls = ({
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const handleSeek = (_event: Event, newValue: number | number[]) => {
-        seekTo(newValue as number);
+    const handleScrub = (_event: Event, newValue: number | number[]) => {
+        setScrubbingTime(newValue as number);
+    };
+
+    const handleSeekCommitted = (
+        _event: Event | React.SyntheticEvent,
+        committedValue: number | number[]
+    ) => {
+        setScrubbingTime(null);
+        seekTo(committedValue as number);
     };
 
     const handleVolumeChange = (_event: Event, newValue: number | number[]) => {
@@ -147,7 +157,7 @@ const VideoControls = ({
                 {/* Left: Time and Skip */}
                 <Box className="left-controls">
                     <Typography variant="caption" className="time-display">
-                        {formatTime(currentTime)}
+                        {formatTime(displayedTime)}
                     </Typography>
                     <IconButton onClick={previousVideo} size="small" disabled={!canGoPrevious}>
                         <SkipBack size={20} />
@@ -161,9 +171,10 @@ const VideoControls = ({
                 <Box className="progress-container">
                     <Slider
                         size="small"
-                        value={currentTime}
+                        value={displayedTime}
                         max={duration || 100}
-                        onChange={handleSeek}
+                        onChange={handleScrub}
+                        onChangeCommitted={handleSeekCommitted}
                         className="progress-bar"
                         sx={{ flexGrow: 1 }}
                     />
