@@ -23,8 +23,8 @@ type workerFilesServiceMock struct {
 	getFileByIDFn       func(id int) (files.FileDto, error)
 	getFileByNamePathFn func(name, path string) (files.FileDto, error)
 	getFileThumbFn      func(fileDto files.FileDto, width, height int) ([]byte, error)
-	getVideoThumbFn     func(fileDto files.FileDto, width, height int) ([]byte, error)
-	getVideoGifFn       func(fileDto files.FileDto, width, height int) ([]byte, error)
+	getVideoThumbFn     func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
+	getVideoGifFn       func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
 }
 
 func (m *workerFilesServiceMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
@@ -79,21 +79,21 @@ func (m *workerFilesServiceMock) GetFileThumbnail(fileDto files.FileDto, width, 
 type workerVideoServiceMock struct {
 	video.ServiceInterface
 	rebuildFn       func() error
-	getVideoThumbFn func(fileDto files.FileDto, width, height int) ([]byte, error)
-	getVideoGifFn   func(fileDto files.FileDto, width, height int) ([]byte, error)
+	getVideoThumbFn func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
+	getVideoGifFn   func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
 }
 
-func (m *workerVideoServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
+func (m *workerVideoServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
 	if m.getVideoThumbFn != nil {
 		return m.getVideoThumbFn(fileDto, width, height)
 	}
-	return []byte("thumb"), nil
+	return video.GeneratedImage{Data: []byte("thumb")}, nil
 }
-func (m *workerVideoServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
+func (m *workerVideoServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
 	if m.getVideoGifFn != nil {
 		return m.getVideoGifFn(fileDto, width, height)
 	}
-	return []byte("gif"), nil
+	return video.GeneratedImage{Data: []byte("gif")}, nil
 }
 
 func (m *workerVideoServiceMock) RebuildSmartPlaylists() error {
@@ -235,13 +235,13 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 		},
 	}
 	thumbVideoSvc := &workerVideoServiceMock{
-		getVideoThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
+		getVideoThumbFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
 			videoCalls++
-			return []byte("v"), nil
+			return video.GeneratedImage{Data: []byte("v")}, nil
 		},
-		getVideoGifFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
+		getVideoGifFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
 			videoCalls++
-			return []byte("g"), nil
+			return video.GeneratedImage{Data: []byte("g")}, nil
 		},
 	}
 

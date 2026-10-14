@@ -121,11 +121,20 @@ func (m *videoHandlerServiceMock) TrackBehaviorEvent(clientID string, req TrackB
 func (m *videoHandlerServiceMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
 }
-func (m *videoHandlerServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
-	return []byte("png"), nil
+func (m *videoHandlerServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{Data: []byte("png")}, nil
 }
-func (m *videoHandlerServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
-	return []byte("gif"), nil
+func (m *videoHandlerServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{Data: []byte("gif")}, nil
+}
+
+type videoHandlerFallbackServiceMock struct{ videoHandlerServiceMock }
+
+func (m *videoHandlerFallbackServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{Data: []byte("png"), IsFallback: true}, nil
+}
+func (m *videoHandlerFallbackServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{Data: []byte("gif"), IsFallback: true}, nil
 }
 
 type videoHandlerErrServiceMock struct {
@@ -225,11 +234,11 @@ func (m *videoHandlerErrServiceMock) TrackBehaviorEvent(clientID string, req Tra
 func (m *videoHandlerErrServiceMock) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{}, errors.New("videos failed")
 }
-func (m *videoHandlerErrServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error) {
-	return nil, files.ErrFileMissingDisk
+func (m *videoHandlerErrServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{}, files.ErrFileMissingDisk
 }
-func (m *videoHandlerErrServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error) {
-	return nil, errors.New("preview failed")
+func (m *videoHandlerErrServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
+	return GeneratedImage{}, errors.New("preview failed")
 }
 
 type videoLoggerMock struct{ logger.LoggerServiceInterface }

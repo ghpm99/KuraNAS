@@ -79,8 +79,8 @@ func (h *Handler) GetVideoThumbnailHandler(c *gin.Context) {
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
 	c.Header("Content-Type", "image/png")
-	c.Header("Cache-Control", "public, max-age=86400")
-	c.Data(http.StatusOK, "image/png", thumbnailData)
+	c.Header("Cache-Control", imageCacheControl(thumbnailData))
+	c.Data(http.StatusOK, "image/png", thumbnailData.Data)
 }
 
 func (h *Handler) GetVideoPreviewHandler(c *gin.Context) {
@@ -114,8 +114,8 @@ func (h *Handler) GetVideoPreviewHandler(c *gin.Context) {
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
 	c.Header("Content-Type", "image/gif")
-	c.Header("Cache-Control", "public, max-age=86400")
-	c.Data(http.StatusOK, "image/gif", previewData)
+	c.Header("Cache-Control", imageCacheControl(previewData))
+	c.Data(http.StatusOK, "image/gif", previewData.Data)
 }
 
 func (h *Handler) StreamVideoHandler(c *gin.Context) {
@@ -194,4 +194,11 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 	}
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
+}
+
+func imageCacheControl(image GeneratedImage) string {
+	if image.IsFallback {
+		return "no-store"
+	}
+	return "public, max-age=86400"
 }

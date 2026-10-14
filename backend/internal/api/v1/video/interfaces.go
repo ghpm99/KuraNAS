@@ -113,6 +113,6 @@ type ServiceInterface interface {
 	TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error
 	// Browse/streaming support (moved from files)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
-	GetVideoThumbnail(fileDto files.FileDto, width, height int) ([]byte, error)
-	GetVideoPreviewGif(fileDto files.FileDto, width, height int) ([]byte, error)
+	GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error)
+	GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error)
 }

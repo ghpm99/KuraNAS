@@ -103,9 +103,9 @@ func newVideoReconcileContext(repository *fakeVideoMetadataRepository, filesServ
 				observations.playlistRebuilds++
 				return nil
 			},
-			getVideoThumbFn: func(fileDto files.FileDto, width, height int) ([]byte, error) {
+			getVideoThumbFn: func(fileDto files.FileDto, width, height int) (videodom.GeneratedImage, error) {
 				observations.thumbnailFileIDs = append(observations.thumbnailFileIDs, fileDto.ID)
-				return []byte("thumb"), nil
+				return videodom.GeneratedImage{Data: []byte("thumb")}, nil
 			},
 		},
 		JobOrchestrator: NewJobOrchestrator(newFakeJobsRepository(), nil),
