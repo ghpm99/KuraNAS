@@ -64,7 +64,6 @@ const useVideoPlayer = ({
     const [volume, setVolume] = useState(initialPreferences.volume);
     const [isMuted, setIsMuted] = useState(initialPreferences.isMuted);
     const [playbackRate, setPlaybackRate] = useState(initialPreferences.playbackRate);
-    const [quality, setQuality] = useState('auto');
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -483,8 +482,6 @@ const useVideoPlayer = ({
         playbackRate,
         setCurrentTime: setCurrentTimeHandler,
         setDuration: setDurationHandler,
-        quality,
-        setQuality,
         playlistItems: session?.playlist.items ?? [],
         playlist,
         playbackState,
