@@ -24,6 +24,7 @@ interface VideoControlsProps {
     currentTime: number;
     duration: number;
     volume: number;
+    isMuted: boolean;
     playbackRate: number;
     isFullscreen: boolean;
     isPictureInPictureSupported?: boolean;
@@ -31,6 +32,7 @@ interface VideoControlsProps {
     areControlsVisible?: boolean;
     seekTo: (time: number) => void;
     setVolume: (volume: number) => void;
+    toggleMute: () => void;
     setPlaybackRate: (rate: number) => void;
     toggleFullscreen: () => void;
     togglePictureInPicture?: () => void;
@@ -46,6 +48,7 @@ const VideoControls = ({
     currentTime,
     duration,
     volume,
+    isMuted,
     playbackRate,
     isFullscreen,
     isPictureInPictureSupported = false,
@@ -53,6 +56,7 @@ const VideoControls = ({
     areControlsVisible = true,
     seekTo,
     setVolume,
+    toggleMute,
     setPlaybackRate,
     toggleFullscreen,
     togglePictureInPicture,
@@ -112,6 +116,8 @@ const VideoControls = ({
     const pictureInPictureLabel = isPictureInPicture
         ? t('VIDEO_EXIT_PICTURE_IN_PICTURE')
         : t('VIDEO_PICTURE_IN_PICTURE');
+    const isSilent = isMuted || volume === 0;
+    const muteLabel = isSilent ? t('VIDEO_UNMUTE') : t('VIDEO_MUTE');
     const tooltipSlotProps = { popper: { container: portalContainer } };
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -168,8 +174,13 @@ const VideoControls = ({
 
                 {/* Right: Volume and Settings */}
                 <Box className="right-controls">
-                    <IconButton onClick={() => setVolume(volume === 0 ? 0.5 : 0)} size="small">
-                        {volume === 0 ? <VolumeOff size={20} /> : <Volume2 size={20} />}
+                    <IconButton
+                        onClick={toggleMute}
+                        size="small"
+                        aria-label={muteLabel}
+                        aria-pressed={isSilent}
+                    >
+                        {isSilent ? <VolumeOff size={20} /> : <Volume2 size={20} />}
                     </IconButton>
 
                     <Slider

@@ -1121,6 +1121,8 @@
 	"VIDEO_PICTURE_IN_PICTURE": "Picture-in-Picture",
 	"VIDEO_EXIT_PICTURE_IN_PICTURE": "Sair do Picture-in-Picture",
 	"VIDEO_FULLSCREEN": "Tela cheia",
+	"VIDEO_MUTE": "Silenciar",
+	"VIDEO_UNMUTE": "Reativar o som",
 	"VIDEO_PLAYBACK_SPEED": "Velocidade de reprodução",
 	"VIDEO_NORMAL": "Normal",
 	"VIDEO_AUTO": "Auto",

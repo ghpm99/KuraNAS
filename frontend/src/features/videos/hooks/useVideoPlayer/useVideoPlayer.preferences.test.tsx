@@ -148,20 +148,119 @@ describe('hooks/useVideoPlayer playback preferences', () => {
         expect(readStoredPreferences()).toEqual({ volume: 1, isMuted: false, playbackRate: 1.25 });
     });
 
-    it('saves muted state when volume reaches zero and clears it when restored', () => {
+    it('saves volume zero as a plain volume and clears the mute flag', () => {
         const { result } = mountPlayer();
 
         act(() => {
             result.current.setVolume(0);
             jest.advanceTimersByTime(300);
         });
-        expect(readStoredPreferences()).toEqual({ volume: 0, isMuted: true, playbackRate: 1 });
+
+        expect(readStoredPreferences()).toEqual({ volume: 0, isMuted: false, playbackRate: 1 });
+    });
+
+    it('mutes without changing the volume and restores the same volume', () => {
+        const { result, fakeVideo } = mountPlayer();
+        act(() => {
+            result.current.setVolume(0.4);
+        });
 
         act(() => {
-            result.current.setVolume(0.5);
+            result.current.toggleMute();
+        });
+        expect(result.current.isMuted).toBe(true);
+        expect(result.current.volume).toBe(0.4);
+        expect(fakeVideo).toMatchObject({ volume: 0.4, muted: true });
+
+        act(() => {
+            result.current.toggleMute();
+        });
+        expect(result.current.isMuted).toBe(false);
+        expect(result.current.volume).toBe(0.4);
+        expect(fakeVideo).toMatchObject({ volume: 0.4, muted: false });
+    });
+
+    it('unmutes when the volume slider moves while muted', () => {
+        const { result, fakeVideo } = mountPlayer();
+        act(() => {
+            result.current.toggleMute();
+        });
+
+        act(() => {
+            result.current.setVolume(0.7);
+        });
+
+        expect(result.current.isMuted).toBe(false);
+        expect(fakeVideo).toMatchObject({ volume: 0.7, muted: false });
+    });
+
+    it('persists volume and mute independently', () => {
+        const { result } = mountPlayer();
+        act(() => {
+            result.current.setVolume(0.4);
             jest.advanceTimersByTime(300);
         });
-        expect(readStoredPreferences()).toEqual({ volume: 0.5, isMuted: false, playbackRate: 1 });
+
+        act(() => {
+            result.current.toggleMute();
+        });
+        expect(readStoredPreferences()).toEqual({ volume: 0.4, isMuted: true, playbackRate: 1 });
+
+        act(() => {
+            result.current.toggleMute();
+        });
+        expect(readStoredPreferences()).toEqual({ volume: 0.4, isMuted: false, playbackRate: 1 });
+    });
+
+    it('keeps the saved volume and applies mute to every loaded video', async () => {
+        window.localStorage.setItem(
+            videoPlaybackPreferencesStorageKey,
+            JSON.stringify({ volume: 0.3, isMuted: true, playbackRate: 1 })
+        );
+        const { result, fakeVideo } = mountPlayer();
+        expect(result.current.isMuted).toBe(true);
+        expect(result.current.volume).toBe(0.3);
+
+        await act(async () => {
+            await result.current.playVideo();
+        });
+        expect(fakeVideo).toMatchObject({ volume: 0.3, muted: true });
+
+        fakeVideo.muted = false;
+        await act(async () => {
+            await result.current.nextVideo();
+        });
+        expect(fakeVideo).toMatchObject({ volume: 0.3, muted: true });
+    });
+
+    it('falls back to a default volume when unmuting a legacy muted zero volume', () => {
+        window.localStorage.setItem(
+            videoPlaybackPreferencesStorageKey,
+            JSON.stringify({ volume: 0, isMuted: true, playbackRate: 1 })
+        );
+        const { result, fakeVideo } = mountPlayer();
+
+        act(() => {
+            result.current.toggleMute();
+        });
+
+        expect(result.current.isMuted).toBe(false);
+        expect(result.current.volume).toBe(0.5);
+        expect(fakeVideo).toMatchObject({ volume: 0.5, muted: false });
+    });
+
+    it('unmutes a zero slider volume to the default volume', () => {
+        const { result } = mountPlayer();
+        act(() => {
+            result.current.setVolume(0);
+        });
+
+        act(() => {
+            result.current.toggleMute();
+        });
+
+        expect(result.current.volume).toBe(0.5);
+        expect(result.current.isMuted).toBe(false);
     });
 
     it('debounces volume writes while the slider is dragged', () => {

@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     runPlayerShortcut,
-    DEFAULT_UNMUTE_VOLUME,
-    type MuteMemory,
     type PlayerShortcutControls,
     type PlayerShortcutFeedback,
     type PlayerShortcutSnapshot,
@@ -32,7 +30,6 @@ export default function usePlayerKeyboardShortcuts({
 }: UsePlayerKeyboardShortcutsOptions) {
     const [feedback, setFeedback] = useState<ShownShortcutFeedback | null>(null);
     const latestRef = useRef({ snapshot, controls, isSuspended });
-    const muteMemoryRef = useRef<MuteMemory>({ volumeBeforeMute: DEFAULT_UNMUTE_VOLUME });
     const feedbackCounterRef = useRef(0);
 
     useEffect(() => {
@@ -55,12 +52,7 @@ export default function usePlayerKeyboardShortcuts({
             if (!action) return;
 
             event.preventDefault();
-            const shownFeedback = runPlayerShortcut(
-                action,
-                latest.snapshot,
-                latest.controls,
-                muteMemoryRef.current
-            );
+            const shownFeedback = runPlayerShortcut(action, latest.snapshot, latest.controls);
             if (!shownFeedback) return;
             feedbackCounterRef.current += 1;
             setFeedback({ ...shownFeedback, id: feedbackCounterRef.current });

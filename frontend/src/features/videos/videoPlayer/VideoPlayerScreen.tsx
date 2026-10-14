@@ -41,6 +41,7 @@ export default function VideoPlayerScreen() {
         fullscreenPortalContainer,
         seekTo,
         setVolume,
+        toggleMute,
         setPlaybackRate,
         toggleFullscreen,
         togglePlayPause,
@@ -50,6 +51,7 @@ export default function VideoPlayerScreen() {
         currentTime,
         duration,
         volume,
+        isMuted,
         playbackRate,
         isFullscreen,
         isPictureInPictureSupported,
@@ -85,6 +87,7 @@ export default function VideoPlayerScreen() {
             currentTime,
             duration,
             volume,
+            isMuted,
             playbackRate,
             canGoNext: hasNextVideo,
             canGoPrevious: hasPreviousVideo,
@@ -92,6 +95,7 @@ export default function VideoPlayerScreen() {
         controls: {
             seekTo,
             setVolume,
+            toggleMute,
             setPlaybackRate,
             toggleFullscreen,
             togglePictureInPicture,
@@ -137,9 +141,11 @@ export default function VideoPlayerScreen() {
                             areControlsVisible={areControlsVisible}
                             isPlaying={status === 'playing'}
                             volume={volume}
+                            isMuted={isMuted}
                             playbackRate={playbackRate}
                             seekTo={seekTo}
                             setVolume={setVolume}
+                            toggleMute={toggleMute}
                             setPlaybackRate={setPlaybackRate}
                             isPictureInPictureSupported={isPictureInPictureSupported}
                             isPictureInPicture={isPictureInPicture}

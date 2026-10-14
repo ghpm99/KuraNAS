@@ -1121,6 +1121,8 @@
 	"VIDEO_PICTURE_IN_PICTURE": "Picture-in-Picture",
 	"VIDEO_EXIT_PICTURE_IN_PICTURE": "Exit Picture-in-Picture",
 	"VIDEO_FULLSCREEN": "Fullscreen",
+	"VIDEO_MUTE": "Mute",
+	"VIDEO_UNMUTE": "Unmute",
 	"VIDEO_PLAYBACK_SPEED": "Playback speed",
 	"VIDEO_NORMAL": "Normal",
 	"VIDEO_AUTO": "Auto",

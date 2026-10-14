@@ -1,3 +1,4 @@
+import { DEFAULT_UNMUTE_VOLUME } from '@/features/videos/hooks/useVideoPlayer/videoPlaybackPreferences';
 import {
     MAX_PLAYBACK_RATE,
     MIN_PLAYBACK_RATE,
@@ -14,6 +15,7 @@ export interface PlayerShortcutSnapshot {
     currentTime: number;
     duration: number;
     volume: number;
+    isMuted: boolean;
     playbackRate: number;
     canGoNext: boolean;
     canGoPrevious: boolean;
@@ -22,6 +24,7 @@ export interface PlayerShortcutSnapshot {
 export interface PlayerShortcutControls {
     seekTo: (time: number) => void;
     setVolume: (volume: number) => void;
+    toggleMute: () => void;
     setPlaybackRate: (rate: number) => void;
     toggleFullscreen: () => void;
     togglePictureInPicture: () => void | Promise<void>;
@@ -30,12 +33,6 @@ export interface PlayerShortcutControls {
     previousVideo: () => void | Promise<void>;
     openHelp: () => void;
 }
-
-export interface MuteMemory {
-    volumeBeforeMute: number;
-}
-
-export const DEFAULT_UNMUTE_VOLUME = 0.5;
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
@@ -89,16 +86,12 @@ const adjustVolume = (
 
 const toggleMute = (
     snapshot: PlayerShortcutSnapshot,
-    controls: PlayerShortcutControls,
-    muteMemory: MuteMemory
+    controls: PlayerShortcutControls
 ): PlayerShortcutFeedback => {
-    if (snapshot.volume > 0) {
-        muteMemory.volumeBeforeMute = snapshot.volume;
-        controls.setVolume(0);
-        return { messageKey: 'VIDEO_SHORTCUT_FEEDBACK_MUTED' };
-    }
-    const restoredVolume = muteMemory.volumeBeforeMute || DEFAULT_UNMUTE_VOLUME;
-    controls.setVolume(restoredVolume);
+    controls.toggleMute();
+    const isSilent = snapshot.isMuted || snapshot.volume === 0;
+    if (!isSilent) return { messageKey: 'VIDEO_SHORTCUT_FEEDBACK_MUTED' };
+    const restoredVolume = snapshot.volume || DEFAULT_UNMUTE_VOLUME;
     return {
         messageKey: 'VIDEO_SHORTCUT_FEEDBACK_VOLUME',
         params: { percent: String(Math.round(restoredVolume * 100)) },
@@ -121,8 +114,7 @@ const adjustPlaybackRate = (
 export function runPlayerShortcut(
     action: PlayerShortcutAction,
     snapshot: PlayerShortcutSnapshot,
-    controls: PlayerShortcutControls,
-    muteMemory: MuteMemory
+    controls: PlayerShortcutControls
 ): PlayerShortcutFeedback | null {
     switch (action.type) {
         case 'togglePlayPause':
@@ -139,7 +131,7 @@ export function runPlayerShortcut(
         case 'adjustVolume':
             return adjustVolume(action.delta, snapshot, controls);
         case 'toggleMute':
-            return toggleMute(snapshot, controls, muteMemory);
+            return toggleMute(snapshot, controls);
         case 'adjustPlaybackRate':
             return adjustPlaybackRate(action.delta, snapshot, controls);
         case 'toggleFullscreen':

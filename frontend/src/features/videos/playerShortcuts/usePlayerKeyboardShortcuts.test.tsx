@@ -9,6 +9,7 @@ const snapshot: PlayerShortcutSnapshot = {
     currentTime: 50,
     duration: 100,
     volume: 0.5,
+    isMuted: false,
     playbackRate: 1,
     canGoNext: true,
     canGoPrevious: true,
@@ -17,6 +18,7 @@ const snapshot: PlayerShortcutSnapshot = {
 const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     seekTo: jest.fn(),
     setVolume: jest.fn(),
+    toggleMute: jest.fn(),
     setPlaybackRate: jest.fn(),
     toggleFullscreen: jest.fn(),
     togglePictureInPicture: jest.fn(),
