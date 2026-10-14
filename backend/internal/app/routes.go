@@ -424,6 +424,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("/section/:section", context.Video.Handler.GetPlaylistsBySectionHandler)
+	playlists.GET("/search", context.Video.Handler.SearchPlaylistsHandler)
 	playlists.GET("/memberships", context.Video.Handler.GetPlaylistMembershipsHandler)
 	playlists.GET("/by-video/:file_id", context.Video.Handler.GetPlaylistsByVideoHandler)
 	playlists.POST("/rebuild", context.Video.Handler.RebuildPlaylistsHandler)

@@ -620,6 +620,30 @@ func (r *Repository) GetVideoPlaylistsBySection(filter PlaylistSectionFilter, li
 	return playlists, nil
 }
 
+func (r *Repository) SearchVideoPlaylists(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
+	playlists := []VideoPlaylistModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SearchVideoPlaylistsQuery, searchPattern, limit, offset)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		scannedPlaylists, err := scanPlaylistSummaryRows(rows)
+		if err != nil {
+			return err
+		}
+		playlists = scannedPlaylists
+		return nil
+	})
+	if err != nil {
+		return playlists, fmt.Errorf("falha ao buscar playlists de video: %w", err)
+	}
+
+	return playlists, nil
+}
+
 func (r *Repository) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
 	memberships := []VideoPlaylistMembershipModel{}
 

@@ -184,6 +184,34 @@ func (s *Service) GetPlaylistsBySection(request PlaylistSectionRequest) (utils.P
 	return response, nil
 }
 
+func (s *Service) SearchPlaylists(request PlaylistSearchRequest) (utils.PaginationResponse[VideoPlaylistDto], error) {
+	searchPattern := ""
+	if trimmedQuery := strings.TrimSpace(request.Query); trimmedQuery != "" {
+		searchPattern = utils.BuildContainsLikePattern(trimmedQuery)
+	}
+
+	models, err := s.Repository.SearchVideoPlaylists(
+		searchPattern,
+		request.PageSize+1,
+		utils.CalculateOffset(request.Page, request.PageSize),
+	)
+	if err != nil {
+		return utils.PaginationResponse[VideoPlaylistDto]{}, err
+	}
+
+	playlistDtos := make([]VideoPlaylistDto, 0, len(models))
+	for _, model := range models {
+		playlistDtos = append(playlistDtos, model.ToDto(nil))
+	}
+
+	response := utils.PaginationResponse[VideoPlaylistDto]{
+		Items:      playlistDtos,
+		Pagination: utils.Pagination{Page: request.Page, PageSize: request.PageSize},
+	}
+	response.UpdatePagination()
+	return response, nil
+}
+
 func (s *Service) GetPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipDto, error) {
 	models, err := s.Repository.GetVideoPlaylistMemberships(includeHidden)
 	if err != nil {
