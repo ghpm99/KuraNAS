@@ -10,6 +10,7 @@ import (
 type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
 	GetVideoFileByID(id int) (VideoFileModel, error)
+	GetVideoDurationSecondsByFileID(fileID int) (sql.NullFloat64, error)
 	GetVideosByParentPath(parentPath string) ([]VideoFileModel, error)
 	GetPlaylistByContext(contextType string, sourcePath string) (VideoPlaylistModel, error)
 	CreatePlaylist(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)

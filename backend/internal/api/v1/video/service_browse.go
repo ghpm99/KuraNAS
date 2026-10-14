@@ -2,14 +2,12 @@ package video
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"image"
 	"image/color/palette"
 	"image/draw"
 	"image/gif"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -20,9 +18,6 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
-// Browse/streaming support moved from the files core: listing videos and
-// generating video thumbnails/previews are video-specific behavior.
-
 func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	filesModel, err := s.Repository.GetVideos(page, pageSize)
 	if err != nil {
@@ -31,9 +26,6 @@ func (s *Service) GetVideos(page int, pageSize int) (utils.PaginationResponse[fi
 	return files.ParsePaginationToDto(&filesModel)
 }
 
-// ffmpegTimeout bounds ffmpeg invocations so a corrupt or stalled media file
-// cannot hang the request/worker indefinitely; on timeout the caller falls back
-// to a placeholder icon.
 func ffmpegTimeout() time.Duration {
 	return config.StepTimeout()
 }
@@ -59,17 +51,12 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([
 
 	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
 	_ = os.MkdirAll(cacheDir, 0755)
-	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d.png", fileDto.ID, width, height))
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_%s.png", fileDto.ID, width, height, thumbnailFrameStrategyVersion))
 
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
 	}
 
-	// Source poster branch: when a real poster was dropped at
-	// <ThumbnailPath>/video/source/<file_id> (e.g. by a capture promotion), it is
-	// the authoritative artwork — resize it to the requested size and cache the
-	// result. The source file is never consumed/deleted, so it can be re-resized
-	// to any size later. Falls through to the ffmpeg frame when absent/undecodable.
 	sourcePoster := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", "source", fmt.Sprintf("%d", fileDto.ID))
 	if posterImg, _, posterErr := img.OpenImageFromFile(sourcePoster); posterErr == nil {
 		thumb := img.Thumbnail(posterImg, uint(width), uint(height))
@@ -84,25 +71,11 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) ([
 		return nil, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
 	}
 
-	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
-	defer ffmpegCancel()
-	ffmpegErr := exec.CommandContext(
-		ffmpegCtx,
-		"ffmpeg",
-		"-hide_banner",
-		"-loglevel", "error",
-		"-y",
-		"-ss", "00:00:03",
-		"-i", contentPath,
-		"-frames:v", "1",
-		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
-		cachePath,
-	).Run()
-
-	if ffmpegErr == nil {
-		if data, err := os.ReadFile(cachePath); err == nil {
-			return data, nil
-		}
+	frameOffset := thumbnailFrameOffsetSeconds(s.loadVideoDuration(fileDto.ID))
+	if renderedFrame, isRendered := s.renderFrameWithRetryAtStart(func(offsetSeconds float64) []string {
+		return buildThumbnailFrameArguments(contentPath, offsetSeconds, width, height, cachePath)
+	}, frameOffset, cachePath); isRendered {
+		return renderedFrame, nil
 	}
 
 	iconImg, _ := icons.Mp4Icon()
@@ -131,7 +104,7 @@ func (s *Service) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (
 
 	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
 	_ = os.MkdirAll(cacheDir, 0755)
-	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_preview.gif", fileDto.ID, width, height))
+	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_preview_%s.gif", fileDto.ID, width, height, thumbnailFrameStrategyVersion))
 
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
@@ -142,27 +115,11 @@ func (s *Service) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (
 		return nil, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
 	}
 
-	// Curta prévia animada: ~2.5s, baixa taxa de frames para performance de cache e rede local.
-	ffmpegCtx, ffmpegCancel := context.WithTimeout(context.Background(), ffmpegTimeout())
-	defer ffmpegCancel()
-	ffmpegErr := exec.CommandContext(
-		ffmpegCtx,
-		"ffmpeg",
-		"-hide_banner",
-		"-loglevel", "error",
-		"-y",
-		"-ss", "00:00:03",
-		"-t", "2.5",
-		"-i", contentPath,
-		"-vf", fmt.Sprintf("fps=4,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black", width, height, width, height),
-		"-loop", "0",
-		cachePath,
-	).Run()
-
-	if ffmpegErr == nil {
-		if data, err := os.ReadFile(cachePath); err == nil {
-			return data, nil
-		}
+	frameOffset := previewFrameOffsetSeconds(s.loadVideoDuration(fileDto.ID))
+	if renderedPreview, isRendered := s.renderFrameWithRetryAtStart(func(offsetSeconds float64) []string {
+		return buildPreviewGifArguments(contentPath, offsetSeconds, width, height, cachePath)
+	}, frameOffset, cachePath); isRendered {
+		return renderedPreview, nil
 	}
 
 	iconImg, _ := icons.Mp4Icon()

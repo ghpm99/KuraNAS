@@ -11,6 +11,8 @@ import (
 type Service struct {
 	Repository     RepositoryInterface
 	PlaylistEngine *playlist.PlaylistEngine
+
+	FrameCommandRunner FrameCommandRunner
 }
 
 type videoItemProgress struct {

@@ -16,6 +16,7 @@ type videoRepoMock struct {
 	db          *database.DbContext
 
 	getVideoFileByIDFn              func(id int) (VideoFileModel, error)
+	getVideoDurationSecondsFn       func(fileID int) (sql.NullFloat64, error)
 	getVideosByParentPathFn         func(parentPath string) ([]VideoFileModel, error)
 	getPlaylistByContextFn          func(contextType string, sourcePath string) (VideoPlaylistModel, error)
 	createPlaylistFn                func(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)
@@ -279,6 +280,12 @@ func (m *videoRepoMock) CountVideosInFolder(folderPath string) (int, error) {
 		return m.countVideosInFolderFn(folderPath)
 	}
 	return 0, nil
+}
+func (m *videoRepoMock) GetVideoDurationSecondsByFileID(fileID int) (sql.NullFloat64, error) {
+	if m.getVideoDurationSecondsFn != nil {
+		return m.getVideoDurationSecondsFn(fileID)
+	}
+	return sql.NullFloat64{}, nil
 }
 func (m *videoRepoMock) GetPlaylistDominantFolder(playlistID int) (string, error) {
 	if m.getPlaylistDominantFolderFn != nil {

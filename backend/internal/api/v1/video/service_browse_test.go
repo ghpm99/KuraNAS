@@ -143,7 +143,7 @@ func TestVideoService_ThumbAndPreviewCacheHit(t *testing.T) {
 		t.Fatalf("failed to create video cache dir: %v", err)
 	}
 
-	thumbPath := filepath.Join(cacheDir, "501_320x180.png")
+	thumbPath := filepath.Join(cacheDir, "501_320x180_f2.png")
 	thumbBytes := []byte("cached-video-thumb")
 	if err := os.WriteFile(thumbPath, thumbBytes, 0644); err != nil {
 		t.Fatalf("failed to write thumb cache: %v", err)
@@ -158,7 +158,7 @@ func TestVideoService_ThumbAndPreviewCacheHit(t *testing.T) {
 		t.Fatalf("expected cached thumbnail bytes")
 	}
 
-	previewPath := filepath.Join(cacheDir, "502_320x180_preview.gif")
+	previewPath := filepath.Join(cacheDir, "502_320x180_preview_f2.gif")
 	previewBytes := []byte("cached-video-preview")
 	if err := os.WriteFile(previewPath, previewBytes, 0644); err != nil {
 		t.Fatalf("failed to write preview cache: %v", err)
@@ -197,11 +197,9 @@ func TestVideoService_ThumbnailUsesSourcePoster(t *testing.T) {
 	f.Close()
 	t.Cleanup(func() { _ = os.Remove(sourcePath) })
 
-	cachePath := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", fmt.Sprintf("%d_320x180.png", fileID))
+	cachePath := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", fmt.Sprintf("%d_320x180_f2.png", fileID))
 	t.Cleanup(func() { _ = os.Remove(cachePath) })
 
-	// The video file itself is missing on disk; the source poster must still
-	// yield a thumbnail (never reaching the missing-file error path).
 	thumb, err := s.GetVideoThumbnail(files.FileDto{ID: fileID, Path: "/missing.mp4", Type: files.File}, 320, 180)
 	if err != nil {
 		t.Fatalf("expected source poster thumbnail, got %v", err)
