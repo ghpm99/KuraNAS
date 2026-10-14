@@ -1,4 +1,5 @@
 import { appRoutes } from '@/app/routes';
+import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscreen/useContainerFullscreen';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -13,7 +14,7 @@ import {
     type VideoDetailItem,
 } from '@/features/videos/components/videoContent/useVideoPlaylistDetail';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type VideoPlayerLocationState = {
@@ -74,7 +75,6 @@ export default function useVideoPlayerScreen() {
         seekTo,
         setVolume,
         setPlaybackRate,
-        toggleFullscreen,
         togglePlayPause,
         nextVideo,
         previousVideo,
@@ -83,7 +83,6 @@ export default function useVideoPlayerScreen() {
         duration,
         volume,
         playbackRate,
-        isFullscreen,
         setCurrentTime,
         setDuration,
         currentVideo,
@@ -97,6 +96,11 @@ export default function useVideoPlayerScreen() {
         videoId,
         playlistId: resolvedPlaylistId,
         persistProgress: settings.players.remember_video_progress,
+    });
+    const [playerContainer, setPlayerContainer] = useState<HTMLElement | null>(null);
+    const { isFullscreen, toggleFullscreen } = useContainerFullscreen({
+        container: playerContainer,
+        videoRef,
     });
     const syncedRouteVideoIdRef = useRef<string | null>(null);
 
@@ -305,6 +309,8 @@ export default function useVideoPlayerScreen() {
         hasNextVideo,
         hasPreviousVideo,
         videoRef,
+        registerPlayerContainer: setPlayerContainer,
+        fullscreenPortalContainer: isFullscreen ? playerContainer : null,
         seekTo,
         setVolume,
         setPlaybackRate,

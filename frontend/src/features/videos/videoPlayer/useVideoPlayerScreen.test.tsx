@@ -136,7 +136,6 @@ const buildPlayerState = (overrides?: Partial<any>) => ({
     seekTo: jest.fn(),
     setVolume: jest.fn(),
     setPlaybackRate: jest.fn(),
-    toggleFullscreen: jest.fn(),
     togglePlayPause: jest.fn(),
     nextVideo: mockNextVideo,
     previousVideo: mockPreviousVideo,
@@ -145,7 +144,6 @@ const buildPlayerState = (overrides?: Partial<any>) => ({
     duration: 1800,
     volume: 0.8,
     playbackRate: 1,
-    isFullscreen: false,
     setCurrentTime: jest.fn(),
     setDuration: jest.fn(),
     currentVideo: {

@@ -55,7 +55,6 @@ const useVideoPlayer = ({
     const [volume, setVolume] = useState(1);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [quality, setQuality] = useState('auto');
-    const [isFullscreen, setIsFullscreen] = useState(false);
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -201,7 +200,8 @@ const useVideoPlayer = ({
             const positionSeconds = payload?.currentTime ?? latest.currentTime;
             const durationSeconds = payload?.duration ?? latest.duration;
             const isCompleted =
-                payload?.completed ?? hasReachedCompletionThreshold(positionSeconds, durationSeconds);
+                payload?.completed ??
+                hasReachedCompletionThreshold(positionSeconds, durationSeconds);
             return {
                 playlist_id: playlistIdInSession,
                 video_id: videoIdInSession,
@@ -314,16 +314,6 @@ const useVideoPlayer = ({
         }
     }, []);
 
-    const toggleFullscreen = useCallback(() => {
-        if (!document.fullscreenElement) {
-            videoRef.current?.requestFullscreen();
-            setIsFullscreen(true);
-        } else {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-        }
-    }, []);
-
     const nextVideo = useCallback(async () => {
         const response = await nextVideoPlayback();
         setSession(response);
@@ -403,7 +393,6 @@ const useVideoPlayer = ({
         seekTo,
         setVolume: setVolumeHandler,
         setPlaybackRate: setPlaybackRateHandler,
-        toggleFullscreen,
         togglePlayPause,
         nextVideo,
         previousVideo,
@@ -412,7 +401,6 @@ const useVideoPlayer = ({
         duration,
         volume,
         playbackRate,
-        isFullscreen,
         setCurrentTime: setCurrentTimeHandler,
         setDuration: setDurationHandler,
         quality,

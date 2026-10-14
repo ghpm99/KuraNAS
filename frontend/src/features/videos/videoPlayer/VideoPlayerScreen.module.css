@@ -14,6 +14,11 @@
     min-width: 0;
 }
 
+.cursorHidden,
+.cursorHidden * {
+    cursor: none !important;
+}
+
 .contextPanel {
     display: flex;
     flex-direction: column;
