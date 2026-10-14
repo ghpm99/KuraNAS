@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoSeriesDetailView from './VideoSeriesDetailView';
 
@@ -221,5 +222,49 @@ describe('video detail views', () => {
 
         expect(screen.getByText('Temporada 1')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Reproduzir/i })).toBeInTheDocument();
+    });
+
+    it('hides the playlist from the context and series detail views', () => {
+        const playlist: VideoPlaylistDto = {
+            id: 9,
+            name: 'Loose Clips',
+            type: 'custom',
+            source_path: '/clips',
+            is_hidden: false,
+            is_auto: true,
+            group_mode: 'single',
+            classification: 'personal',
+            item_count: 0,
+            cover_video_id: null,
+            created_at: '2026-03-14T00:00:00Z',
+            updated_at: '2026-03-14T00:00:00Z',
+            last_played_at: null,
+            items: [],
+        };
+        const onHideContext = jest.fn();
+        const onHideSeries = jest.fn();
+
+        const { unmount } = render(
+            <VideoContextDetailView
+                playlist={playlist}
+                onBack={jest.fn()}
+                onOpenVideo={jest.fn()}
+                onHide={onHideContext}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: /VIDEO_HIDE_PLAYLIST/ }));
+        expect(onHideContext).toHaveBeenCalledTimes(1);
+        unmount();
+
+        render(
+            <VideoSeriesDetailView
+                playlist={playlist}
+                onBack={jest.fn()}
+                onOpenVideo={jest.fn()}
+                onHide={onHideSeries}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: /VIDEO_HIDE_PLAYLIST/ }));
+        expect(onHideSeries).toHaveBeenCalledTimes(1);
     });
 });

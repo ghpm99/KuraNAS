@@ -14,6 +14,7 @@ type VideoSectionPlaylistGridProps = {
     playlists: VideoPlaylistDto[];
     onSelectPlaylist: (playlist: VideoPlaylistDto) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
+    onHidePlaylist?: (playlist: VideoPlaylistDto) => void;
     badge?: string;
     action?: ReactNode;
     hasNextPage?: boolean;
@@ -28,6 +29,7 @@ export default function VideoSectionPlaylistGrid({
     playlists,
     onSelectPlaylist,
     onPlayVideo,
+    onHidePlaylist,
     badge,
     action,
     hasNextPage,
@@ -55,6 +57,7 @@ export default function VideoSectionPlaylistGrid({
                             playlist={playlist}
                             onSelect={onSelectPlaylist}
                             onPlay={onPlayVideo}
+                            onHide={onHidePlaylist}
                             badge={badge}
                         />
                     ))}

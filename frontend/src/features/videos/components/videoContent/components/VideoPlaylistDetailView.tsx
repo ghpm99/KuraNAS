@@ -5,6 +5,7 @@ import { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import VideoDeletePlaylistButton from './VideoDeletePlaylistButton';
+import VideoHidePlaylistButton from './VideoHidePlaylistButton';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
@@ -16,6 +17,8 @@ type VideoPlaylistDetailViewProps = {
     isReordering: boolean;
     isDeleting?: boolean;
     onDelete?: () => void;
+    isChangingVisibility?: boolean;
+    onHide?: () => void;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
     onRename: (name: string) => void;
@@ -36,6 +39,8 @@ export default function VideoPlaylistDetailView({
     isReordering,
     isDeleting = false,
     onDelete,
+    isChangingVisibility = false,
+    onHide,
     onBack,
     onOpenVideo,
     onRename,
@@ -105,6 +110,7 @@ export default function VideoPlaylistDetailView({
                         isDeleting={isDeleting}
                         onDelete={onDelete}
                     />
+                    <VideoHidePlaylistButton isChanging={isChangingVisibility} onHide={onHide} />
                 </div>
             </section>
 

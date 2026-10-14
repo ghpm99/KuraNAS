@@ -16,6 +16,17 @@ describe('video navigation helpers', () => {
         expect(getVideoDetailRoute('movies', 'the-matrix')).toBe('/videos/movies/the-matrix');
     });
 
+    it('resolves the hidden playlists section with its own header metadata', () => {
+        expect(getVideoSectionFromPath('/videos/hidden')).toBe('hidden');
+        expect(getVideoDetailSlugFromPath('/videos/hidden')).toBe('');
+        expect(getVideoSectionMeta('hidden')).toEqual({
+            key: 'hidden',
+            labelKey: 'VIDEO_SECTION_HIDDEN',
+            descriptionKey: 'VIDEO_SECTION_HIDDEN_DESCRIPTION',
+        });
+        expect(videoNavigationItems.some((item) => item.key === 'hidden')).toBe(false);
+    });
+
     it('falls back to home metadata for unknown paths', () => {
         expect(getVideoSectionFromPath('/videos/unknown')).toBe('home');
         expect(getVideoSectionMeta('home')).toEqual(videoNavigationItems[0]);

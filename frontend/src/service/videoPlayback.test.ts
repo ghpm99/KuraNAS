@@ -19,6 +19,7 @@ import {
     getVideoLibraryMovies,
     getVideoPlaybackState,
     getVideoPlaylistById,
+    getHiddenVideoPlaylists,
     getVideoPlaylists,
     getVideoPlaylistsBySection,
     searchVideoPlaylists,
@@ -47,6 +48,20 @@ const mockedApi = apiBase as unknown as {
 describe('service/videoPlayback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('requests the hidden playlists page', async () => {
+        const hiddenPage = {
+            items: [{ id: 4, name: 'Oculta', is_hidden: true }],
+            pagination: { page: 2, page_size: 24, has_next: false, has_prev: true },
+        };
+        mockedApi.get.mockResolvedValue({ data: hiddenPage });
+
+        await expect(getHiddenVideoPlaylists(2, 24)).resolves.toEqual(hiddenPage);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/playlists/hidden', {
+            params: { page: 2, page_size: 24 },
+        });
     });
 
     it('requests the playlists that contain one video', async () => {

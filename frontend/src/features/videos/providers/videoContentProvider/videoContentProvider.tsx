@@ -9,6 +9,7 @@ import {
     getVideoPlaylistById,
     getVideoPlaylistItemsPage,
     getVideoPlaylists,
+    setVideoPlaylistHidden,
     type VideoCatalogItemDto,
     type VideoContinueItemDto,
     reorderVideoPlaylist,
@@ -21,7 +22,11 @@ import {
     type VideoPlaylistDto,
     type VideoPlaylistItemDto,
 } from '@/service/videoPlayback';
-import { useVideoSectionPlaylists, videoQueryKeys } from './useVideoQueries';
+import {
+    useHiddenVideoPlaylists,
+    useVideoSectionPlaylists,
+    videoQueryKeys,
+} from './useVideoQueries';
 import { noVideoLibraryFilters } from './videoLibraryFilters';
 import { loadVideoLibrarySort, saveVideoLibrarySort } from './videoLibrarySortPreference';
 import { toVideoQueryFailure, type VideoQueryFailure } from './videoQueryFailure';
@@ -43,6 +48,7 @@ import {
 import type { Pagination } from '@/types/pagination';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import type { VideoFeedbackAction } from '@/features/videos/components/videoContent/components/VideoFeedbackSnackbar';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -50,6 +56,7 @@ import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMe
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
 const VIDEO_PLAYLIST_ITEMS_PAGE_SIZE = 50;
 const VIDEO_SECTION_GRID_PAGE_SIZE = 24;
+const VIDEO_HIDDEN_PLAYLISTS_PAGE_SIZE = 24;
 const VIDEO_HOME_RAIL_PAGE_SIZE = 4;
 const VIDEO_HOME_CATALOG_LIMIT = 12;
 const VIDEO_CONTINUE_WATCHING_LIMIT = 24;
@@ -60,6 +67,7 @@ type FeedbackState = {
     open: boolean;
     message: string;
     severity: 'success' | 'error';
+    action?: VideoFeedbackAction;
 };
 
 export interface VideoContentContextData {
@@ -73,6 +81,7 @@ export interface VideoContentContextData {
     personalPlaylists: VideoPlaylistDto[];
     clipPlaylists: VideoPlaylistDto[];
     folderPlaylists: VideoPlaylistDto[];
+    hiddenPlaylists: VideoPlaylistDto[];
     recentCatalogItems: VideoCatalogItemDto[];
     selectedPlaylistSummary: VideoPlaylistDto | null;
     selectedPlaylistDetail: VideoPlaylistDto | null;
@@ -92,6 +101,9 @@ export interface VideoContentContextData {
     hasMoreVideos: boolean;
     isFetchingMoreSectionPlaylists: boolean;
     hasMoreSectionPlaylists: boolean;
+    isFetchingMoreHiddenPlaylists: boolean;
+    hasMoreHiddenPlaylists: boolean;
+    isChangingPlaylistVisibility: boolean;
     isAddingToPlaylist: boolean;
     isCreatingPlaylist: boolean;
     isDeletingPlaylist: boolean;
@@ -108,6 +120,7 @@ export interface VideoContentContextData {
     closeFeedback: () => void;
     loadMoreVideos: () => void;
     loadMoreSectionPlaylists: () => void;
+    loadMoreHiddenPlaylists: () => void;
     loadMoreSelectedPlaylistItems: () => void;
     selectPlaylist: (playlist: VideoPlaylistDto) => void;
     clearSelectedPlaylist: () => void;
@@ -117,6 +130,9 @@ export interface VideoContentContextData {
     createPlaylist: (name: string) => void;
     createPlaylistWithVideo: (name: string, videoId: number) => void;
     deleteSelectedPlaylist: () => void;
+    hidePlaylist: (playlist: VideoPlaylistDto) => void;
+    hideSelectedPlaylist: () => void;
+    showPlaylist: (playlist: VideoPlaylistDto) => void;
     renameSelectedPlaylist: (name: string) => void;
     removeVideoFromSelectedPlaylist: (videoId: number) => void;
     moveSelectedPlaylistItem: (index: number, direction: -1 | 1) => void;
@@ -182,6 +198,10 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     );
     const clipsQuery = useVideoSectionPlaylists('clips', sectionPageSize, isSectionListed('clips'));
     const foldersQuery = useVideoSectionPlaylists('folders', sectionPageSize, isHome);
+    const hiddenQuery = useHiddenVideoPlaylists(
+        VIDEO_HIDDEN_PLAYLISTS_PAGE_SIZE,
+        currentSection === 'hidden'
+    );
 
     const isFullPlaylistListNeeded =
         currentSection === 'folders' || Boolean(playlistSlug && !playlistIdFromSearch);
@@ -246,7 +266,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         [foldersQuery.data]
     );
 
+    const hiddenPlaylists = useMemo(
+        () => flattenSectionPages(hiddenQuery.data?.pages),
+        [hiddenQuery.data]
+    );
+
     const activeListQueries = useMemo(() => {
+        if (currentSection === 'hidden') return [hiddenQuery];
         if (isHome) return [seriesQuery, moviesQuery, personalQuery, clipsQuery, foldersQuery];
         if (currentSection === 'series') return [seriesQuery];
         if (currentSection === 'personal') return [personalQuery];
@@ -262,6 +288,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         personalQuery,
         clipsQuery,
         foldersQuery,
+        hiddenQuery,
         playlistsQuery,
     ]);
     const isLoadingPlaylists = activeListQueries.some((listQuery) => listQuery.isLoading);
@@ -460,6 +487,41 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         },
     });
 
+    const hidePlaylistFeedbackAction = (playlist: VideoPlaylistDto): VideoFeedbackAction => ({
+        label: t('VIDEO_UNDO'),
+        onClick: () => changeVisibilityMutation.mutate({ playlist, hidden: false }),
+    });
+
+    const changeVisibilityMutation = useMutation({
+        mutationFn: ({ playlist, hidden }: { playlist: VideoPlaylistDto; hidden: boolean }) =>
+            setVideoPlaylistHidden(playlist.id, hidden),
+        onSuccess: async (_unused, { playlist, hidden }) => {
+            if (hidden && selectedPlaylistSummary?.id === playlist.id) {
+                clearSelectedPlaylist();
+            }
+            await invalidateAllVideoQueries();
+            setFeedback(
+                hidden
+                    ? {
+                          open: true,
+                          message: t('VIDEO_PLAYLIST_HIDDEN'),
+                          severity: 'success',
+                          action: hidePlaylistFeedbackAction(playlist),
+                      }
+                    : { open: true, message: t('VIDEO_PLAYLIST_SHOWN'), severity: 'success' }
+            );
+        },
+        onError: (error, { hidden }) => {
+            setFeedback({
+                open: true,
+                message:
+                    extractBackendErrorMessage(error) ??
+                    t(hidden ? 'VIDEO_PLAYLIST_HIDE_ERROR' : 'VIDEO_PLAYLIST_SHOW_ERROR'),
+                severity: 'error',
+            });
+        },
+    });
+
     const renameMutation = useMutation({
         mutationFn: async (name: string) => {
             if (!selectedPlaylistSummary) return;
@@ -629,6 +691,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         personalPlaylists,
         clipPlaylists,
         folderPlaylists,
+        hiddenPlaylists,
         recentCatalogItems,
         selectedPlaylistSummary,
         selectedPlaylistDetail,
@@ -648,6 +711,9 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         hasMoreVideos,
         isFetchingMoreSectionPlaylists,
         hasMoreSectionPlaylists,
+        isFetchingMoreHiddenPlaylists: hiddenQuery.isFetchingNextPage,
+        hasMoreHiddenPlaylists: hiddenQuery.hasNextPage ?? false,
+        isChangingPlaylistVisibility: changeVisibilityMutation.isPending,
         isAddingToPlaylist: addToPlaylistMutation.isPending,
         isCreatingPlaylist: createPlaylistMutation.isPending,
         isDeletingPlaylist: deletePlaylistMutation.isPending,
@@ -670,6 +736,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         loadMoreSectionPlaylists: () => {
             if (gridSectionQuery?.hasNextPage && !gridSectionQuery.isFetchingNextPage) {
                 void gridSectionQuery.fetchNextPage();
+            }
+        },
+        loadMoreHiddenPlaylists: () => {
+            if (hiddenQuery.hasNextPage && !hiddenQuery.isFetchingNextPage) {
+                void hiddenQuery.fetchNextPage();
             }
         },
         loadMoreSelectedPlaylistItems: () => {
@@ -697,6 +768,12 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
             if (!selectedPlaylistSummary) return;
             deletePlaylistMutation.mutate(selectedPlaylistSummary.id);
         },
+        hidePlaylist: (playlist) => changeVisibilityMutation.mutate({ playlist, hidden: true }),
+        hideSelectedPlaylist: () => {
+            if (!selectedPlaylistSummary) return;
+            changeVisibilityMutation.mutate({ playlist: selectedPlaylistSummary, hidden: true });
+        },
+        showPlaylist: (playlist) => changeVisibilityMutation.mutate({ playlist, hidden: false }),
         renameSelectedPlaylist: (name) => {
             if (!name.trim()) return;
             renameMutation.mutate(name);

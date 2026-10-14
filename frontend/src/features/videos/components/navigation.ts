@@ -1,10 +1,12 @@
 import { getVideoRoute, type VideoSection } from '@/app/routes';
 
-export type VideoNavigationItem = {
+type VideoSectionMeta = {
     key: VideoSection;
     labelKey: string;
     descriptionKey: string;
 };
+
+export type VideoNavigationItem = VideoSectionMeta;
 
 export const videoNavigationItems: VideoNavigationItem[] = [
     {
@@ -51,6 +53,10 @@ const videoRouteEntries = videoNavigationItems.map(
 export const getVideoSectionFromPath = (pathname: string): VideoSection => {
     if (pathname === getVideoRoute('home')) {
         return 'home';
+    }
+
+    if (pathname === getVideoRoute('hidden')) {
+        return 'hidden';
     }
 
     const matchedEntry = videoRouteEntries.find(([route, section]) => {
@@ -113,7 +119,17 @@ export const getVideoSectionForPlaylist = (
     return 'personal';
 };
 
-export const getVideoSectionMeta = (section: VideoSection) => {
+const hiddenPlaylistsSectionMeta: VideoSectionMeta = {
+    key: 'hidden',
+    labelKey: 'VIDEO_SECTION_HIDDEN',
+    descriptionKey: 'VIDEO_SECTION_HIDDEN_DESCRIPTION',
+};
+
+export const getVideoSectionMeta = (section: VideoSection): VideoSectionMeta => {
+    if (section === 'hidden') {
+        return hiddenPlaylistsSectionMeta;
+    }
+
     const matchedItem = videoNavigationItems.find((item) => item.key === section);
 
     if (matchedItem) {
