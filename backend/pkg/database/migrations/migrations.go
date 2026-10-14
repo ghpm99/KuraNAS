@@ -206,6 +206,9 @@ var AddVideoMetadataClassificationQuery string
 //go:embed queries/0065_defer_video_playlist_item_order_unique.sql
 var DeferVideoPlaylistItemOrderUniqueQuery string
 
+//go:embed queries/0066_create_home_file_parent_path_fold_trigram_index.sql
+var CreateHomeFileParentPathFoldTrigramIndexQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -330,6 +333,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0065_defer_video_playlist_item_order_unique",
 		[]string{"0014_create_video_playback_tables"},
 		defaultMigrationFunc(DeferVideoPlaylistItemOrderUniqueQuery))
+
+	addMigrationRequiring("0066_create_home_file_parent_path_fold_trigram_index",
+		[]string{"0001_create_home_file_table", "0056_create_search_fold_function_and_indexes"},
+		defaultMigrationFunc(CreateHomeFileParentPathFoldTrigramIndexQuery))
 }
 
 func diaryMigrationList() {
