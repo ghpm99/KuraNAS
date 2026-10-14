@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import VideoMovieBrowser from './VideoMovieBrowser';
 import { getVideoLibraryMovies } from '@/service/videoPlayback';
+import { resetFailedPosterUrls } from '../useLocalPoster';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -13,6 +14,7 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 
 jest.mock('@/service/videoPlayback', () => ({
     getVideoLibraryMovies: jest.fn(),
+    getVideoMoviePosterUrl: (videoId: number) => `/poster/movies/${videoId}`,
 }));
 
 const mockedMovies = getVideoLibraryMovies as jest.Mock;
@@ -41,7 +43,10 @@ const pageOf = (items: unknown[], hasNext = false) => ({
 });
 
 describe('VideoMovieBrowser', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        resetFailedPosterUrls();
+    });
 
     it('lists the movies with a thumbnail and plays one on click', async () => {
         const onPlayVideo = jest.fn();
@@ -50,9 +55,10 @@ describe('VideoMovieBrowser', () => {
         renderBrowser(onPlayVideo);
 
         const card = await screen.findByRole('button', { name: /Alien.mkv/ });
-        expect(card.querySelector('img')?.getAttribute('src')).toContain(
-            '/files/video-thumbnail/5'
-        );
+        const image = card.querySelector('img') as HTMLImageElement;
+        expect(image.getAttribute('src')).toBe('/poster/movies/5');
+        fireEvent.error(image);
+        expect(image.getAttribute('src')).toContain('/files/video-thumbnail/5');
         expect(mockedMovies).toHaveBeenCalledWith('name', 1, 24);
 
         fireEvent.click(card);

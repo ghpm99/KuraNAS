@@ -1,4 +1,5 @@
 import { apiBase } from '.';
+import { getApiV1BaseUrl } from './apiUrl';
 import type { Pagination } from '@/types/pagination';
 
 export interface VideoMetadataDto {
@@ -376,3 +377,19 @@ export const getVideoLibraryMovies = async (
     });
     return response.data;
 };
+
+const defaultPosterWidth = 400;
+const defaultPosterHeight = 600;
+
+export const getVideoPlaylistPosterUrl = (
+    playlistId: number,
+    width = defaultPosterWidth,
+    height = defaultPosterHeight
+): string =>
+    `${getApiV1BaseUrl()}/video/playlists/${playlistId}/poster?width=${width}&height=${height}`;
+
+export const getVideoMoviePosterUrl = (
+    videoId: number,
+    width = defaultPosterWidth,
+    height = defaultPosterHeight
+): string => `${getApiV1BaseUrl()}/video/movies/${videoId}/poster?width=${width}&height=${height}`;
