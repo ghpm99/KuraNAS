@@ -9,6 +9,8 @@ import VideoMovieBrowser from '../movieBrowser/VideoMovieBrowser';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
+import VideoHiddenPlaylistsLink from './VideoHiddenPlaylistsLink';
+import VideoHiddenPlaylistsSection from './VideoHiddenPlaylistsSection';
 import VideoNewPlaylistButton from './VideoNewPlaylistButton';
 import VideoHomeScreen from './VideoHomeScreen';
 import VideoLibrarySection from './VideoLibrarySection';
@@ -41,6 +43,9 @@ export default function VideoContentScreen() {
         hasMoreVideos,
         isFetchingMoreSectionPlaylists,
         hasMoreSectionPlaylists,
+        isFetchingMoreHiddenPlaylists,
+        hasMoreHiddenPlaylists,
+        isChangingPlaylistVisibility,
         isAddingToPlaylist,
         isRenamingPlaylist,
         isRemovingFromPlaylist,
@@ -53,6 +58,7 @@ export default function VideoContentScreen() {
         personalPlaylists,
         clipPlaylists,
         folderPlaylists,
+        hiddenPlaylists,
         recentCatalogItems,
         filteredVideos,
         videoSearch,
@@ -65,6 +71,7 @@ export default function VideoContentScreen() {
         closeFeedback,
         loadMoreVideos,
         loadMoreSectionPlaylists,
+        loadMoreHiddenPlaylists,
         loadMoreSelectedPlaylistItems,
         selectPlaylist,
         clearSelectedPlaylist,
@@ -74,6 +81,9 @@ export default function VideoContentScreen() {
         createPlaylist,
         createPlaylistWithVideo,
         deleteSelectedPlaylist,
+        hidePlaylist,
+        hideSelectedPlaylist,
+        showPlaylist,
         renameSelectedPlaylist,
         removeVideoFromSelectedPlaylist,
         moveSelectedPlaylistItem,
@@ -110,6 +120,8 @@ export default function VideoContentScreen() {
             return (
                 <VideoSeriesDetailView
                     playlist={selectedPlaylistDetail}
+                    isChangingVisibility={isChangingPlaylistVisibility}
+                    onHide={hideSelectedPlaylist}
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
                     onSetWatched={setVideoWatched}
@@ -126,6 +138,8 @@ export default function VideoContentScreen() {
                     playlist={selectedPlaylistDetail}
                     isDeleting={isDeletingPlaylist}
                     onDelete={deleteSelectedPlaylist}
+                    isChangingVisibility={isChangingPlaylistVisibility}
+                    onHide={hideSelectedPlaylist}
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
                     onSetWatched={setVideoWatched}
@@ -144,6 +158,8 @@ export default function VideoContentScreen() {
                 isReordering={isReorderingPlaylist}
                 isDeleting={isDeletingPlaylist}
                 onDelete={deleteSelectedPlaylist}
+                isChangingVisibility={isChangingPlaylistVisibility}
+                onHide={hideSelectedPlaylist}
                 onBack={clearSelectedPlaylist}
                 onOpenVideo={openPlaylistVideo}
                 onRename={renameSelectedPlaylist}
@@ -185,6 +201,7 @@ export default function VideoContentScreen() {
                 fetchNextPage={loadMoreSectionPlaylists}
                 onSelectPlaylist={selectPlaylist}
                 onPlayVideo={playVideo}
+                onHidePlaylist={hidePlaylist}
             />
         );
     };
@@ -261,6 +278,28 @@ export default function VideoContentScreen() {
                         {renderVideoLibrarySection()}
                     </>
                 );
+            case 'hidden':
+                if (isLoadingPlaylists) {
+                    return <VideoSectionSkeleton />;
+                }
+                if (playlistsFailure) {
+                    return (
+                        <VideoSectionError
+                            sectionTitleKey="VIDEO_SECTION_HIDDEN"
+                            failure={playlistsFailure}
+                        />
+                    );
+                }
+                return (
+                    <VideoHiddenPlaylistsSection
+                        playlists={hiddenPlaylists}
+                        isChangingVisibility={isChangingPlaylistVisibility}
+                        hasNextPage={hasMoreHiddenPlaylists}
+                        isFetchingNextPage={isFetchingMoreHiddenPlaylists}
+                        fetchNextPage={loadMoreHiddenPlaylists}
+                        onShowPlaylist={showPlaylist}
+                    />
+                );
             case 'home':
             default:
                 return (
@@ -280,19 +319,24 @@ export default function VideoContentScreen() {
                         homeCatalogFailure={homeCatalogFailure}
                         onSelectPlaylist={selectPlaylist}
                         onPlayVideo={playVideo}
+                        onHidePlaylist={hidePlaylist}
                         onSetWatched={setVideoWatched}
                     />
                 );
         }
     };
 
+    const canLinkToHiddenPlaylists = currentSection !== 'hidden' && currentSection !== 'continue';
+
     return (
         <div className={styles.page}>
             {renderSectionContent()}
+            {canLinkToHiddenPlaylists && <VideoHiddenPlaylistsLink />}
             <VideoFeedbackSnackbar
                 open={feedback.open}
                 message={feedback.message}
                 severity={feedback.severity}
+                action={feedback.action}
                 onClose={closeFeedback}
             />
         </div>

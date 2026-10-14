@@ -1,5 +1,6 @@
 import {
     getAllVideoFiles,
+    getHiddenVideoPlaylists,
     getVideoHomeCatalog,
     getVideoPlaylistById,
     getVideoPlaylistsByVideo,
@@ -19,6 +20,7 @@ export const videoQueryKeys = {
         ['video', 'playlists', 'section', section, pageSize] as const,
     playlistDetail: (playlistId?: number) => ['video', 'playlist-detail', playlistId] as const,
     playlistItems: (playlistId?: number) => ['video', 'playlist-items', playlistId] as const,
+    hiddenPlaylists: (pageSize: number) => ['video', 'playlists', 'hidden', pageSize] as const,
     playlistSearch: (query: string) => ['video', 'playlists', 'search', query] as const,
     unassigned: ['video', 'unassigned'] as const,
     allFiles: ['video', 'all-files'] as const,
@@ -54,6 +56,17 @@ export const useVideoPlaylistSearch = (query: string, pageSize: number, isEnable
         getNextPageParam: (lastPage) =>
             lastPage.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
         enabled: isEnabled,
+    });
+};
+
+export const useHiddenVideoPlaylists = (pageSize: number, isEnabled: boolean) => {
+    return useInfiniteQuery({
+        queryKey: videoQueryKeys.hiddenPlaylists(pageSize),
+        enabled: isEnabled,
+        queryFn: ({ pageParam }) => getHiddenVideoPlaylists(pageParam, pageSize),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
     });
 };
 

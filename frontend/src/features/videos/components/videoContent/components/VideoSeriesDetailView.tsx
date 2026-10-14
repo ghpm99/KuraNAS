@@ -5,6 +5,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
 import VideoDetailListItem from './VideoDetailListItem';
+import VideoHidePlaylistButton from './VideoHidePlaylistButton';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
 
@@ -12,6 +13,8 @@ type VideoSeriesDetailViewProps = {
     playlist: VideoPlaylistDto;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
+    isChangingVisibility?: boolean;
+    onHide?: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
     hasMoreItems?: boolean;
     isFetchingMoreItems?: boolean;
@@ -24,6 +27,8 @@ export default function VideoSeriesDetailView({
     playlist,
     onBack,
     onOpenVideo,
+    isChangingVisibility = false,
+    onHide,
     onSetWatched,
     hasMoreItems,
     isFetchingMoreItems,
@@ -88,6 +93,10 @@ export default function VideoSeriesDetailView({
                                     : t('VIDEO_PLAY')}
                             </span>
                         </button>
+                        <VideoHidePlaylistButton
+                            isChanging={isChangingVisibility}
+                            onHide={onHide}
+                        />
                     </div>
                 </div>
             </section>

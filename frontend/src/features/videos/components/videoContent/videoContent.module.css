@@ -228,6 +228,55 @@
     gap: 8px;
 }
 
+.cardActionRow {
+    display: flex;
+    gap: 6px;
+}
+
+.cardActionRow .playFromCardBtn {
+    flex: 1;
+}
+
+.hideFromCardBtn {
+    border: 1px solid rgba(226, 232, 240, 0.28);
+    background: rgba(15, 23, 42, 0.7);
+    color: #f8fafc;
+    padding: 7px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hideFromCardBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.hiddenPlaylistRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 12px;
+}
+
+.hiddenPlaylistList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hiddenPlaylistsLinkRow {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 16px;
+}
+
 .catalogRail {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

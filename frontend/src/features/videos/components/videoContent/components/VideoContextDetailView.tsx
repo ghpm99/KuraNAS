@@ -4,6 +4,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
 import VideoDeletePlaylistButton from './VideoDeletePlaylistButton';
+import VideoHidePlaylistButton from './VideoHidePlaylistButton';
 import VideoDetailListItem from './VideoDetailListItem';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import styles from '../videoContent.module.css';
@@ -14,6 +15,8 @@ type VideoContextDetailViewProps = {
     onOpenVideo: (videoId: number) => void;
     isDeleting?: boolean;
     onDelete?: () => void;
+    isChangingVisibility?: boolean;
+    onHide?: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
     hasMoreItems?: boolean;
     isFetchingMoreItems?: boolean;
@@ -28,6 +31,8 @@ export default function VideoContextDetailView({
     onOpenVideo,
     isDeleting = false,
     onDelete,
+    isChangingVisibility = false,
+    onHide,
     onSetWatched,
     hasMoreItems,
     isFetchingMoreItems,
@@ -80,6 +85,10 @@ export default function VideoContextDetailView({
                             playlist={playlist}
                             isDeleting={isDeleting}
                             onDelete={onDelete}
+                        />
+                        <VideoHidePlaylistButton
+                            isChanging={isChangingVisibility}
+                            onHide={onHide}
                         />
                     </div>
                 </div>

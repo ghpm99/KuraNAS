@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material';
-import { Play, Videotape } from 'lucide-react';
+import { EyeOff, Play, Videotape } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { VideoPlaylistDto } from '@/service/videoPlayback';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
@@ -11,6 +11,7 @@ type VideoPlaylistCardProps = {
     playlist: VideoPlaylistDto;
     onSelect: (playlist: VideoPlaylistDto) => void;
     onPlay: (videoId: number, playlistId?: number | null) => void;
+    onHide?: (playlist: VideoPlaylistDto) => void;
     focusVideoId?: number | null;
     badge?: string;
 };
@@ -19,6 +20,7 @@ export default function VideoPlaylistCard({
     playlist,
     onSelect,
     onPlay,
+    onHide,
     focusVideoId,
     badge,
 }: VideoPlaylistCardProps) {
@@ -66,15 +68,28 @@ export default function VideoPlaylistCard({
                     {badge && <span className={styles.continueBadge}>{badge}</span>}
                 </div>
             </button>
-            <button
-                type="button"
-                className={styles.playFromCardBtn}
-                onClick={() => onPlay(coverId ?? playlist.cover_video_id ?? 0, playlist.id)}
-                disabled={!coverId && !playlist.cover_video_id}
-            >
-                <Play size={16} />
-                {t('VIDEO_PLAY')}
-            </button>
+            <div className={styles.cardActionRow}>
+                <button
+                    type="button"
+                    className={styles.playFromCardBtn}
+                    onClick={() => onPlay(coverId ?? playlist.cover_video_id ?? 0, playlist.id)}
+                    disabled={!coverId && !playlist.cover_video_id}
+                >
+                    <Play size={16} />
+                    {t('VIDEO_PLAY')}
+                </button>
+                {onHide && (
+                    <button
+                        type="button"
+                        className={styles.hideFromCardBtn}
+                        aria-label={t('VIDEO_HIDE_PLAYLIST')}
+                        title={t('VIDEO_HIDE_PLAYLIST')}
+                        onClick={() => onHide(playlist)}
+                    >
+                        <EyeOff size={16} />
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

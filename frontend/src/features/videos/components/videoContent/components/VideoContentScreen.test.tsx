@@ -25,14 +25,49 @@ jest.mock('./VideoSectionPlaylistGrid', () => ({
         isFetchingNextPage?: boolean;
         fetchNextPage?: () => void;
         action?: React.ReactNode;
+        onHidePlaylist?: (playlist: unknown) => void;
     }) => (
         <div data-testid={`section-grid-${props.titleKey}`}>
             {props.titleKey}
             {props.action}
+            <button type="button" onClick={() => props.onHidePlaylist?.({ id: 99 })}>
+                grid-hide
+            </button>
             <span>{props.hasNextPage ? 'has-next' : 'no-next'}</span>
             <span>{props.isFetchingNextPage ? 'fetching-next' : 'idle'}</span>
             <button type="button" onClick={props.fetchNextPage}>
                 grid-fetch-next
+            </button>
+        </div>
+    ),
+}));
+
+jest.mock('./VideoHiddenPlaylistsLink', () => ({
+    __esModule: true,
+    default: () => <div data-testid="hidden-playlists-link">hidden-link</div>,
+}));
+
+jest.mock('./VideoHiddenPlaylistsSection', () => ({
+    __esModule: true,
+    default: (props: {
+        playlists: { id: number; name: string }[];
+        hasNextPage?: boolean;
+        fetchNextPage?: () => void;
+        onShowPlaylist?: (playlist: { id: number; name: string }) => void;
+    }) => (
+        <div data-testid="hidden-section">
+            {props.playlists.map((playlist) => (
+                <button
+                    key={playlist.id}
+                    type="button"
+                    onClick={() => props.onShowPlaylist?.(playlist)}
+                >
+                    show-{playlist.name}
+                </button>
+            ))}
+            <span>{props.hasNextPage ? 'hidden-has-next' : 'hidden-no-next'}</span>
+            <button type="button" onClick={props.fetchNextPage}>
+                hidden-fetch-next
             </button>
         </div>
     ),
@@ -77,11 +112,14 @@ jest.mock('./VideoHomeScreen', () => ({
 
 jest.mock('./VideoContextDetailView', () => ({
     __esModule: true,
-    default: (props: { onDelete?: () => void }) => (
+    default: (props: { onDelete?: () => void; onHide?: () => void }) => (
         <div data-testid="context-detail">
             context
             <button type="button" onClick={props.onDelete}>
                 context-delete
+            </button>
+            <button type="button" onClick={props.onHide}>
+                context-hide
             </button>
         </div>
     ),
@@ -138,6 +176,7 @@ const createContext = (
     personalPlaylists: [],
     clipPlaylists: [],
     folderPlaylists: [],
+    hiddenPlaylists: [],
     recentCatalogItems: [],
     selectedPlaylistSummary: null,
     selectedPlaylistDetail: null,
@@ -157,6 +196,9 @@ const createContext = (
     hasMoreVideos: false,
     isFetchingMoreSectionPlaylists: false,
     hasMoreSectionPlaylists: false,
+    isFetchingMoreHiddenPlaylists: false,
+    hasMoreHiddenPlaylists: false,
+    isChangingPlaylistVisibility: false,
     isAddingToPlaylist: false,
     isCreatingPlaylist: false,
     isDeletingPlaylist: false,
@@ -177,6 +219,7 @@ const createContext = (
     closeFeedback: jest.fn(),
     loadMoreVideos: jest.fn(),
     loadMoreSectionPlaylists: jest.fn(),
+    loadMoreHiddenPlaylists: jest.fn(),
     loadMoreSelectedPlaylistItems: jest.fn(),
     selectPlaylist: jest.fn(),
     clearSelectedPlaylist: jest.fn(),
@@ -186,6 +229,9 @@ const createContext = (
     createPlaylist: jest.fn(),
     createPlaylistWithVideo: jest.fn(),
     deleteSelectedPlaylist: jest.fn(),
+    hidePlaylist: jest.fn(),
+    hideSelectedPlaylist: jest.fn(),
+    showPlaylist: jest.fn(),
     renameSelectedPlaylist: jest.fn(),
     removeVideoFromSelectedPlaylist: jest.fn(),
     moveSelectedPlaylistItem: jest.fn(),
@@ -194,7 +240,7 @@ const createContext = (
 });
 
 const sectionTitleMap: Record<
-    Exclude<VideoSection, 'home' | 'folders' | 'continue' | 'movies'>,
+    Exclude<VideoSection, 'home' | 'folders' | 'continue' | 'movies' | 'hidden'>,
     string
 > = {
     series: 'VIDEO_SECTION_SERIES',
@@ -330,6 +376,77 @@ describe('VideoContentScreen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'context-delete' }));
 
         expect(deleteSelectedPlaylist).toHaveBeenCalledTimes(1);
+    });
+
+    it('wires hiding the open playlist from the context detail view to the provider', () => {
+        const hideSelectedPlaylist = jest.fn();
+        const playlist = createPlaylist({ classification: 'personal' });
+        renderScreen({
+            selectedPlaylistSummary: playlist,
+            selectedPlaylistDetail: playlist,
+            currentSection: 'personal',
+            hideSelectedPlaylist,
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'context-hide' }));
+
+        expect(hideSelectedPlaylist).toHaveBeenCalledTimes(1);
+    });
+
+    it('wires hiding a playlist card of the grid to the provider', () => {
+        const hidePlaylist = jest.fn();
+        renderScreen({ currentSection: 'series', hidePlaylist });
+
+        fireEvent.click(screen.getByRole('button', { name: 'grid-hide' }));
+
+        expect(hidePlaylist).toHaveBeenCalledWith({ id: 99 });
+    });
+
+    it('renders the hidden playlists section wired to showing and paging', () => {
+        const showPlaylist = jest.fn();
+        const loadMoreHiddenPlaylists = jest.fn();
+        const hiddenPlaylist = createPlaylist({ id: 5, name: 'Oculta', is_hidden: true });
+        renderScreen({
+            currentSection: 'hidden',
+            hiddenPlaylists: [hiddenPlaylist],
+            hasMoreHiddenPlaylists: true,
+            showPlaylist,
+            loadMoreHiddenPlaylists,
+        });
+
+        expect(screen.getByText('hidden-has-next')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'show-Oculta' }));
+        fireEvent.click(screen.getByRole('button', { name: 'hidden-fetch-next' }));
+
+        expect(showPlaylist).toHaveBeenCalledWith(hiddenPlaylist);
+        expect(loadMoreHiddenPlaylists).toHaveBeenCalledTimes(1);
+        expect(screen.queryByTestId('hidden-playlists-link')).not.toBeInTheDocument();
+    });
+
+    it('shows a skeleton and then an error with retry in the hidden section', () => {
+        renderScreen({ currentSection: 'hidden', isLoadingPlaylists: true });
+        expect(screen.getByTestId('video-section-skeleton')).toBeInTheDocument();
+        expect(screen.queryByTestId('hidden-section')).not.toBeInTheDocument();
+
+        const retry = jest.fn();
+        renderScreen({
+            currentSection: 'hidden',
+            playlistsFailure: { message: 'hidden failed', retry },
+        });
+        expect(screen.getByText('hidden failed')).toBeInTheDocument();
+    });
+
+    it.each(['home', 'series', 'personal', 'clips', 'movies', 'folders'] as const)(
+        'offers the hidden playlists link in the %s section',
+        (section) => {
+            renderScreen({ currentSection: section });
+            expect(screen.getByTestId('hidden-playlists-link')).toBeInTheDocument();
+        }
+    );
+
+    it('does not offer the hidden playlists link in the continue section', () => {
+        renderScreen({ currentSection: 'continue' });
+        expect(screen.queryByTestId('hidden-playlists-link')).not.toBeInTheDocument();
     });
 
     it('offers the new playlist action only in the personal section and wires it to the provider', () => {

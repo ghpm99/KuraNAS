@@ -49,7 +49,8 @@ export type VideoSection =
     | 'movies'
     | 'personal'
     | 'clips'
-    | 'folders';
+    | 'folders'
+    | 'hidden';
 export type AnalyticsSection = 'overview' | 'library';
 
 export const getImageRoute = (section: ImageSection) => {

@@ -27,6 +27,7 @@ type VideoHomeScreenProps = {
     homeCatalogFailure?: VideoQueryFailure | null;
     onSelectPlaylist: (playlist: VideoPlaylistDto) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
+    onHidePlaylist?: (playlist: VideoPlaylistDto) => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
 };
 
@@ -46,6 +47,7 @@ export default function VideoHomeScreen({
     homeCatalogFailure = null,
     onSelectPlaylist,
     onPlayVideo,
+    onHidePlaylist,
     onSetWatched,
 }: VideoHomeScreenProps) {
     const renderPlaylistSection = (
@@ -75,6 +77,7 @@ export default function VideoHomeScreen({
                 playlists={playlists.slice(0, 4)}
                 onSelectPlaylist={onSelectPlaylist}
                 onPlayVideo={onPlayVideo}
+                onHidePlaylist={onHidePlaylist}
                 action={<VideoSectionActionLink to={getVideoRoute(route)} />}
             />
         );

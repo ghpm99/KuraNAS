@@ -205,6 +205,16 @@ export const searchVideoPlaylists = async (
     return response.data;
 };
 
+export const getHiddenVideoPlaylists = async (
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoPlaylistDto>> => {
+    const response = await apiBase.get<Pagination<VideoPlaylistDto>>('/video/playlists/hidden', {
+        params: { page, page_size: pageSize },
+    });
+    return response.data;
+};
+
 export const getVideoPlaylistsByVideo = async (
     videoId: number
 ): Promise<VideoPlaylistOfVideoDto[]> => {

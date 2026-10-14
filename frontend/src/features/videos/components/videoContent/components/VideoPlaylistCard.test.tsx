@@ -71,6 +71,27 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
         expect(onPlay).toHaveBeenCalledWith(99, 7);
     });
 
+    it('hides the playlist from the card action and omits the action without a handler', () => {
+        const onHide = jest.fn();
+        const playlist = createPlaylist();
+        const { rerender } = render(
+            <VideoPlaylistCard
+                playlist={playlist}
+                onSelect={jest.fn()}
+                onPlay={jest.fn()}
+                onHide={onHide}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_HIDE_PLAYLIST' }));
+        expect(onHide).toHaveBeenCalledWith(playlist);
+
+        rerender(<VideoPlaylistCard playlist={playlist} onSelect={jest.fn()} onPlay={jest.fn()} />);
+        expect(
+            screen.queryByRole('button', { name: 'VIDEO_HIDE_PLAYLIST' })
+        ).not.toBeInTheDocument();
+    });
+
     it('falls back to personal classification and disables play when there is no cover', () => {
         const onPlay = jest.fn();
 

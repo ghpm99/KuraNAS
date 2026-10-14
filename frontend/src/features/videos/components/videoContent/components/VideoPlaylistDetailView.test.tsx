@@ -94,6 +94,15 @@ describe('VideoPlaylistDetailView', () => {
         expect(screen.getByText('SERIES')).toBeInTheDocument();
     });
 
+    it('hides the playlist from the management panel', () => {
+        const onHide = jest.fn();
+        render(<VideoPlaylistDetailView {...defaultProps()} onHide={onHide} />);
+
+        fireEvent.click(screen.getByRole('button', { name: /VIDEO_HIDE_PLAYLIST/ }));
+
+        expect(onHide).toHaveBeenCalledTimes(1);
+    });
+
     it('renders the hero cover image from cover_video_id', () => {
         render(<VideoPlaylistDetailView {...defaultProps()} />);
 
