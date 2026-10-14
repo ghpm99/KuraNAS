@@ -30,10 +30,15 @@ type SubtitleFileSource interface {
 type SubtitleHandler struct {
 	fileSource SubtitleFileSource
 	service    SubtitleServiceInterface
+	embedded   EmbeddedSubtitleServiceInterface
 }
 
 func NewSubtitleHandler(fileSource SubtitleFileSource, service SubtitleServiceInterface) *SubtitleHandler {
 	return &SubtitleHandler{fileSource: fileSource, service: service}
+}
+
+func (h *SubtitleHandler) UseEmbeddedSubtitles(embedded EmbeddedSubtitleServiceInterface) {
+	h.embedded = embedded
 }
 
 func (h *SubtitleHandler) ListVideoSubtitlesHandler(c *gin.Context) {
@@ -56,8 +61,58 @@ func (h *SubtitleHandler) ListVideoSubtitlesHandler(c *gin.Context) {
 		respondSubtitleFailure(c, err)
 		return
 	}
+	if h.embedded != nil {
+		subtitles = append(subtitles, h.embedded.ListEmbeddedSubtitles(videoFile)...)
+	}
 	c.Header("Cache-Control", subtitleListCacheControl)
 	c.JSON(http.StatusOK, subtitles)
+}
+
+func (h *SubtitleHandler) GetEmbeddedSubtitleWebVttHandler(c *gin.Context) {
+	videoID := utils.ParseInt(c.Param("id"), c)
+	streamIndex := utils.ParseInt(c.Param("stream_index"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+	if h.embedded == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_SUBTITLE_NOT_FOUND")})
+		return
+	}
+	videoFile, err := h.fileSource.GetFileById(videoID)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && videoFile.DeletedAt.HasValue) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
+		return
+	}
+	if err != nil {
+		respondSubtitleFailure(c, err)
+		return
+	}
+
+	subtitleETag := buildEmbeddedSubtitleETag(videoFile, streamIndex)
+	if c.GetHeader("If-None-Match") == subtitleETag {
+		c.Header("ETag", subtitleETag)
+		c.Header("Cache-Control", subtitleCacheControl)
+		c.Status(http.StatusNotModified)
+		return
+	}
+
+	webVtt, err := h.embedded.ReadEmbeddedSubtitleWebVtt(videoFile, streamIndex)
+	if errors.Is(err, ErrEmbeddedSubtitleNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_SUBTITLE_NOT_FOUND")})
+		return
+	}
+	if err != nil {
+		respondSubtitleFailure(c, err)
+		return
+	}
+	c.Header("ETag", subtitleETag)
+	c.Header("Cache-Control", subtitleCacheControl)
+	c.Data(http.StatusOK, webVttContentType, webVtt)
+}
+
+func buildEmbeddedSubtitleETag(videoFile files.FileDto, streamIndex int) string {
+	return fmt.Sprintf(`"subtitle-embedded-%d-%d-%d-%d"`, videoFile.ID, streamIndex, videoFile.UpdatedAt.UnixNano(), videoFile.Size)
 }
 
 func (h *SubtitleHandler) GetSubtitleWebVttHandler(c *gin.Context) {

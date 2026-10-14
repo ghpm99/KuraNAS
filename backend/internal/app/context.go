@@ -523,6 +523,7 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	remuxHandler := video.NewFFmpegRemuxHandler(filesService, summaryService, logger)
 	transcodeHandler := video.NewFFmpegTranscodeHandler(filesService, summaryService, logger)
 	subtitleHandler := video.NewSubtitleHandler(filesService, video.NewSubtitleService(video.NewSubtitleRepository(dbContext)))
+	subtitleHandler.UseEmbeddedSubtitles(video.NewEmbeddedSubtitleService())
 	sharedPlaybackAccess := video.NewSharedPlaybackAccess()
 	handler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	remuxHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
