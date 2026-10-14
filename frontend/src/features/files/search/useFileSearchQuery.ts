@@ -6,7 +6,15 @@ const searchQueryParam = 'q';
 const minSearchQueryLength = 2;
 const searchDebounceMs = 300;
 
-const useFileSearchQuery = () => {
+interface SearchQueryOptions {
+    minQueryLength?: number;
+    shouldAlwaysReplaceHistory?: boolean;
+}
+
+const useFileSearchQuery = ({
+    minQueryLength = minSearchQueryLength,
+    shouldAlwaysReplaceHistory = false,
+}: SearchQueryOptions = {}) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const urlQuery = searchParams.get(searchQueryParam) ?? '';
     const [inputValue, setInputValue] = useState(urlQuery);
@@ -35,10 +43,10 @@ const useFileSearchQuery = () => {
                     }
                     return nextParams;
                 },
-                { replace: urlQuery !== '' }
+                { replace: shouldAlwaysReplaceHistory || urlQuery !== '' }
             );
         },
-        [setSearchParams, urlQuery]
+        [setSearchParams, shouldAlwaysReplaceHistory, urlQuery]
     );
 
     useEffect(() => {
@@ -66,7 +74,7 @@ const useFileSearchQuery = () => {
     }, [writeQueryToUrl]);
 
     const trimmedUrlQuery = urlQuery.trim();
-    const activeQuery = trimmedUrlQuery.length >= minSearchQueryLength ? trimmedUrlQuery : '';
+    const activeQuery = trimmedUrlQuery.length >= minQueryLength ? trimmedUrlQuery : '';
 
     return { inputValue, setInputValue, activeQuery, clearQuery };
 };
