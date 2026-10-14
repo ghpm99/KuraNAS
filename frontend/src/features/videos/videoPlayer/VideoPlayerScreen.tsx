@@ -2,6 +2,8 @@ import { useDocumentTitle } from '@/components/layout/documentMetadata/useDocume
 import useI18n from '@/components/i18n/provider/i18nContext';
 import VideoControls from '@/features/videos/videoControls/videoControls';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
+import { useState } from 'react';
+import VideoDetailsPanel from '@/features/videos/videoDetails/VideoDetailsPanel';
 import styles from './VideoPlayerScreen.module.css';
 import useVideoPlayerScreen from './useVideoPlayerScreen';
 
@@ -48,6 +50,7 @@ export default function VideoPlayerScreen() {
         reportPlaybackError,
         retryPlayback,
     } = useVideoPlayerScreen();
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     useDocumentTitle(contextTitle);
 
     if (isInvalidVideoId) {
@@ -63,6 +66,7 @@ export default function VideoPlayerScreen() {
                     setCurrentTime={setCurrentTime}
                     setDuration={setDuration}
                     onBack={handleBack}
+                    onOpenDetails={() => setIsDetailsOpen(true)}
                     onVideoEnded={handlePlaybackEnded}
                     originBadgeLabel={originBadgeLabel}
                     contextDescription={contextDescription}
@@ -178,6 +182,11 @@ export default function VideoPlayerScreen() {
                     </section>
                 ) : null}
             </aside>
+
+            <VideoDetailsPanel
+                video={isDetailsOpen ? currentVideo : null}
+                onClose={() => setIsDetailsOpen(false)}
+            />
         </div>
     );
 }

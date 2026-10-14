@@ -1,5 +1,6 @@
 import { TextField } from '@mui/material';
-import { ArrowDown, ArrowUp, Play } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDown, ArrowUp, Info, Play } from 'lucide-react';
 import {
     VideoFileDto,
     VideoLibraryFilters,
@@ -9,6 +10,7 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import VideoDetailsPanel from '../../../videoDetails/VideoDetailsPanel';
 import VideoMediaBadges from './VideoMediaBadges';
 import VideoLibraryFilterBar from './VideoLibraryFilterBar';
 import VideoAddToPlaylistButton from './VideoAddToPlaylistButton';
@@ -70,6 +72,7 @@ export default function VideoLibrarySection({
     onSetWatched,
 }: VideoLibrarySectionProps) {
     const { t } = useI18n();
+    const [detailsVideo, setDetailsVideo] = useState<VideoFileDto | null>(null);
     const isFilteredEmpty = videos.length === 0 && hasActiveVideoLibraryFilters(filters);
     const isAscending = sort.order === 'asc';
     const orderToggleLabel = t(
@@ -149,6 +152,14 @@ export default function VideoLibrarySection({
                                     <Play size={14} />
                                     {t('VIDEO_PLAY')}
                                 </button>
+                                <button
+                                    type="button"
+                                    className={styles.actionBtn}
+                                    onClick={() => setDetailsVideo(video)}
+                                >
+                                    <Info size={14} />
+                                    {t('FILES_DETAILS')}
+                                </button>
                                 <VideoAddToPlaylistButton
                                     videoId={video.id}
                                     isAddingToPlaylist={isAddingToPlaylist}
@@ -184,6 +195,7 @@ export default function VideoLibrarySection({
                 isFetchingNextPage={isFetchingMoreVideos}
                 fetchNextPage={onLoadMore}
             />
+            <VideoDetailsPanel video={detailsVideo} onClose={() => setDetailsVideo(null)} />
         </section>
     );
 }

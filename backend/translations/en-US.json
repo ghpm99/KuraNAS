@@ -1880,5 +1880,8 @@
 	"VIDEO_ERROR_UNSUPPORTED": "Format or codec not supported by this browser.",
 	"VIDEO_ERROR_UNKNOWN": "This video could not be played.",
 	"VIDEO_ERROR_DOWNLOAD_ORIGINAL": "Download original",
-	"VIDEO_ERROR_RETRY": "Try again"
+	"VIDEO_ERROR_RETRY": "Try again",
+	"VIDEO_DETAILS_TITLE": "Video details",
+	"VIDEO_DETAILS_OPEN_FOLDER": "Open folder in the files screen",
+	"VIDEO_DETAILS_METADATA_UNAVAILABLE": "Could not load the technical metadata for this video."
 }
