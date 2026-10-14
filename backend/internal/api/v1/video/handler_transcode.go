@@ -22,6 +22,7 @@ type TranscodeHandler struct {
 	isTranscoderPresent func() bool
 	transcodeSlots      conversionSlots
 	logService          logger.LoggerServiceInterface
+	playbackAccess      *playbackAccessTracker
 }
 
 func NewTranscodeHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, runTranscode RemuxRunner, isTranscoderPresent func() bool, maxConcurrentTranscodes int, logService logger.LoggerServiceInterface) *TranscodeHandler {
@@ -35,7 +36,12 @@ func NewTranscodeHandler(fileSource RemuxFileSource, codecSource RemuxCodecSourc
 		isTranscoderPresent: isTranscoderPresent,
 		transcodeSlots:      newConversionSlots(maxConcurrentTranscodes),
 		logService:          logService,
+		playbackAccess:      newDefaultPlaybackAccessTracker(),
 	}
+}
+
+func (handler *TranscodeHandler) UseSharedPlaybackAccess(shared *SharedPlaybackAccess) {
+	handler.playbackAccess = shared.tracker
 }
 
 func NewFFmpegTranscodeHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, logService logger.LoggerServiceInterface) *TranscodeHandler {
@@ -55,22 +61,25 @@ func (handler *TranscodeHandler) StreamTranscodedVideoHandler(c *gin.Context) {
 		return
 	}
 
-	loggerModel, _ := handler.logService.CreateLog(browseLogEntry("StreamTranscodedVideo", "Streaming transcoded video", c), nil)
+	accessLog := newStreamAccessLog(handler.logService, c, "StreamTranscodedVideo", "Streaming transcoded video")
+	if startSeconds == 0 && handler.playbackAccess.claim(c.ClientIP(), fileID) {
+		accessLog.open()
+	}
 
 	videoFile, err := handler.fileSource.GetFileById(fileID)
 	if err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	sourcePath := videoFile.ResolveContentPath()
 	if _, err := os.Stat(sourcePath); err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	if !handler.isTranscoderPresent() {
-		handler.logService.CompleteWithErrorLog(loggerModel, errors.New("ffmpeg not available"))
+		accessLog.fail(errors.New("ffmpeg not available"))
 		c.JSON(http.StatusNotImplemented, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_TRANSCODE_UNAVAILABLE")})
 		return
 	}
@@ -85,17 +94,17 @@ func (handler *TranscodeHandler) StreamTranscodedVideoHandler(c *gin.Context) {
 	responseStream := &remuxResponseWriter{context: c}
 	runErr := handler.runTranscode(c.Request.Context(), arguments, responseStream)
 	if c.Request.Context().Err() != nil {
-		handler.logService.CompleteWithSuccessLog(loggerModel)
+		accessLog.succeed()
 		return
 	}
 	if runErr != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, runErr)
+		accessLog.fail(runErr)
 		if !responseStream.hasStarted {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_OPERATION_FAILED")})
 		}
 		return
 	}
-	handler.logService.CompleteWithSuccessLog(loggerModel)
+	accessLog.succeed()
 }
 
 func (handler *TranscodeHandler) findSourceHeight(fileID int) int {

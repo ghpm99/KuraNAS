@@ -521,6 +521,10 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	summaryHandler := video.NewVideoSummaryHandler(summaryService, logger)
 	remuxHandler := video.NewFFmpegRemuxHandler(filesService, summaryService, logger)
 	transcodeHandler := video.NewFFmpegTranscodeHandler(filesService, summaryService, logger)
+	sharedPlaybackAccess := video.NewSharedPlaybackAccess()
+	handler.UseSharedPlaybackAccess(sharedPlaybackAccess)
+	remuxHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
+	transcodeHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	return &VideoContext{
 		RemuxHandler:       remuxHandler,
 		TranscodeHandler:   transcodeHandler,
