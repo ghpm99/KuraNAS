@@ -21,6 +21,11 @@ type VideoFileModel struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 
+	DurationSeconds sql.NullFloat64
+	Width           sql.NullInt64
+	Height          sql.NullInt64
+	VideoCodec      sql.NullString
+
 	PersistedClassification string
 }
 

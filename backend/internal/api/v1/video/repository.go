@@ -312,6 +312,10 @@ func (r *Repository) GetContinueWatchingVideos(clientID string, limit int) ([]Co
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.VideoFileModel.DurationSeconds,
+				&item.Width,
+				&item.Height,
+				&item.VideoCodec,
 				&item.PositionSeconds,
 				&item.DurationSeconds,
 				&item.ProgressUpdatedAt,
@@ -728,6 +732,10 @@ func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]Video
 				&item.Video.Size,
 				&item.Video.CreatedAt,
 				&item.Video.UpdatedAt,
+				&item.Video.DurationSeconds,
+				&item.Video.Width,
+				&item.Video.Height,
+				&item.Video.VideoCodec,
 			); err != nil {
 				return err
 			}
@@ -855,7 +863,7 @@ func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.Pagi
 
 		for rows.Next() {
 			var item VideoFileModel
-			if err := rows.Scan(
+			scanTargets := append([]any{
 				&item.ID,
 				&item.Name,
 				&item.Path,
@@ -864,7 +872,8 @@ func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.Pagi
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
-			); err != nil {
+			}, technicalMetadataScanTargets(&item)...)
+			if err := rows.Scan(scanTargets...); err != nil {
 				return err
 			}
 			paginationResponse.Items = append(paginationResponse.Items, item)

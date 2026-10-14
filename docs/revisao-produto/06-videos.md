@@ -58,7 +58,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 34. Ordenação da biblioteca
 - [ ] 35. Filtros da biblioteca (formato, resolução, duração)
 - [ ] 36. Busca com fold de acento e índice trigram
-- [ ] 37. Duração/resolução/codec na listagem (contrato)
+- [x] 37. Duração/resolução/codec na listagem (contrato)
 - [ ] 38. Duração/resolução nos cards
 - [ ] 39. `?q=` sincronizado na URL
 - [ ] 40. "Adicionar à playlist" com menu e busca, sem padrão implícito
