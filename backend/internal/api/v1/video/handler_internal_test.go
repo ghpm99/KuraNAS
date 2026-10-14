@@ -99,6 +99,10 @@ func (m *videoHandlerServiceMock) GetUnassignedVideos(limit int) ([]VideoFileDto
 	return []VideoFileDto{{ID: 1, Name: "v"}}, nil
 }
 func (m *videoHandlerServiceMock) UpdatePlaylistName(playlistID int, name string) error { return nil }
+func (m *videoHandlerServiceMock) CreateCustomPlaylist(request CreateCustomPlaylistRequest) (VideoPlaylistDto, error) {
+	return VideoPlaylistDto{}, nil
+}
+func (m *videoHandlerServiceMock) DeleteCustomPlaylist(playlistID int) error { return nil }
 func (m *videoHandlerServiceMock) ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error {
 	return nil
 }
@@ -190,6 +194,12 @@ func (m *videoHandlerErrServiceMock) RemoveVideoFromPlaylist(playlistID int, vid
 }
 func (m *videoHandlerErrServiceMock) GetUnassignedVideos(limit int) ([]VideoFileDto, error) {
 	return nil, errors.New("unassigned failed")
+}
+func (m *videoHandlerErrServiceMock) CreateCustomPlaylist(request CreateCustomPlaylistRequest) (VideoPlaylistDto, error) {
+	return VideoPlaylistDto{}, errors.New("create custom failed")
+}
+func (m *videoHandlerErrServiceMock) DeleteCustomPlaylist(playlistID int) error {
+	return errors.New("delete custom failed")
 }
 func (m *videoHandlerErrServiceMock) UpdatePlaylistName(playlistID int, name string) error {
 	return errors.New("update playlist failed")

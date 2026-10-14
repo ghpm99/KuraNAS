@@ -48,6 +48,8 @@ type videoRepoMock struct {
 	removePlaylistVideoFn           func(tx *sql.Tx, playlistID int, videoID int) error
 	upsertPlaylistExclusionFn       func(tx *sql.Tx, playlistID int, videoID int) error
 	updatePlaylistNameFn            func(tx *sql.Tx, playlistID int, name string) error
+	createCustomPlaylistFn          func(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error)
+	deleteCustomPlaylistFn          func(tx *sql.Tx, playlistID int) error
 	reorderPlaylistItemsFn          func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	getAllVideosForGroupingFn       func() ([]VideoFileModel, error)
 	getAllVideosWithMetadataFn      func() ([]VideoWithMetadataModel, error)
@@ -303,6 +305,18 @@ func (m *videoRepoMock) CheckVideoInPlaylist(playlistID int, videoID int) (bool,
 		return m.checkVideoInPlaylistFn(playlistID, videoID)
 	}
 	return false, errors.New("not used")
+}
+func (m *videoRepoMock) CreateCustomPlaylist(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error) {
+	if m.createCustomPlaylistFn != nil {
+		return m.createCustomPlaylistFn(tx, sourcePath, name)
+	}
+	return VideoPlaylistModel{}, errors.New("not used")
+}
+func (m *videoRepoMock) DeleteCustomPlaylist(tx *sql.Tx, playlistID int) error {
+	if m.deleteCustomPlaylistFn != nil {
+		return m.deleteCustomPlaylistFn(tx, playlistID)
+	}
+	return nil
 }
 func (m *videoRepoMock) UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error {
 	if m.updatePlaylistNameFn != nil {

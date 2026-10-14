@@ -52,6 +52,8 @@ type RepositoryInterface interface {
 	GetUnassignedVideos(limit int) ([]VideoFileModel, error)
 	CheckVideoInPlaylist(playlistID int, videoID int) (bool, error)
 	UpdatePlaylistName(tx *sql.Tx, playlistID int, name string) error
+	CreateCustomPlaylist(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error)
+	DeleteCustomPlaylist(tx *sql.Tx, playlistID int) error
 	ReorderPlaylistItems(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
 	GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error)
@@ -97,6 +99,8 @@ type ServiceInterface interface {
 	RemoveVideoFromPlaylist(playlistID int, videoID int) error
 	GetUnassignedVideos(limit int) ([]VideoFileDto, error)
 	UpdatePlaylistName(playlistID int, name string) error
+	CreateCustomPlaylist(request CreateCustomPlaylistRequest) (VideoPlaylistDto, error)
+	DeleteCustomPlaylist(playlistID int) error
 	ReorderPlaylistItems(playlistID int, items []ReorderPlaylistItemRequest) error
 	TrackBehaviorEvent(clientID string, req TrackBehaviorEventRequest) error
 	// Browse/streaming support (moved from files)
