@@ -254,49 +254,81 @@ describe('features/videos/videoPlayer/useVideoPlayerScreen', () => {
         expect(mockPlayVideo).toHaveBeenCalledTimes(1);
     });
 
-    it('marks the current video as completed and only advances automatically when another item exists', async () => {
-        const { result, rerender } = renderHook(() => useVideoPlayerScreen());
-
-        await act(async () => {
-            await result.current.handlePlaybackEnded();
+    describe('up next autoplay', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            window.localStorage.clear();
+            mockUseVideoPlayer.mockReturnValue(buildPlayerState({ status: 'paused' }));
         });
 
-        expect(mockOnVideoEnded).toHaveBeenCalledTimes(1);
-        expect(mockNextVideo).toHaveBeenCalledTimes(1);
-
-        mockUseVideoPlayer.mockReturnValue(
-            buildPlayerState({
-                playlist: buildPlaylist({
-                    item_count: 1,
-                    items: [
-                        {
-                            id: 130,
-                            order_index: 0,
-                            source_kind: 'auto',
-                            status: 'in_progress',
-                            progress_pct: 50,
-                            video: {
-                                id: 30,
-                                name: 'Movie.mkv',
-                                format: 'mkv',
-                                path: '',
-                                parent_path: '/library/movies',
-                                size: 1,
-                            },
-                        },
-                    ],
-                }),
-            })
-        );
-
-        rerender();
-
-        await act(async () => {
-            await result.current.handlePlaybackEnded();
+        afterEach(() => {
+            jest.useRealTimers();
         });
 
-        expect(mockOnVideoEnded).toHaveBeenCalledTimes(2);
-        expect(mockNextVideo).toHaveBeenCalledTimes(1);
+        it('marks the video completed, opens the up next card and plays the next video after the countdown', async () => {
+            const { result } = renderHook(() => useVideoPlayerScreen());
+
+            await act(async () => {
+                await result.current.handlePlaybackEnded();
+            });
+
+            expect(mockOnVideoEnded).toHaveBeenCalledTimes(1);
+            expect(result.current.upNext.isOpen).toBe(true);
+            expect(mockNextVideo).not.toHaveBeenCalled();
+
+            for (let elapsed = 0; elapsed < 8; elapsed += 1) {
+                act(() => {
+                    jest.advanceTimersByTime(1000);
+                });
+            }
+
+            expect(mockNextVideo).toHaveBeenCalledTimes(1);
+            expect(result.current.upNext.isOpen).toBe(false);
+        });
+
+        it('does not open the card when there is no next item', async () => {
+            mockUseVideoPlayer.mockReturnValue(
+                buildPlayerState({
+                    status: 'paused',
+                    playlist: buildPlaylist({
+                        item_count: 1,
+                        items: [buildPlaylist().items[0]],
+                    }),
+                })
+            );
+            const { result } = renderHook(() => useVideoPlayerScreen());
+
+            await act(async () => {
+                await result.current.handlePlaybackEnded();
+            });
+
+            expect(mockOnVideoEnded).toHaveBeenCalledTimes(1);
+            expect(result.current.upNext.isOpen).toBe(false);
+            act(() => {
+                jest.advanceTimersByTime(20000);
+            });
+            expect(mockNextVideo).not.toHaveBeenCalled();
+        });
+
+        it('cancels the countdown when the user seeks', async () => {
+            const seekPlayerTo = jest.fn();
+            mockUseVideoPlayer.mockReturnValue(
+                buildPlayerState({ status: 'paused', seekTo: seekPlayerTo })
+            );
+            const { result } = renderHook(() => useVideoPlayerScreen());
+            await act(async () => {
+                await result.current.handlePlaybackEnded();
+            });
+
+            act(() => result.current.seekTo(10));
+
+            expect(seekPlayerTo).toHaveBeenCalledWith(10);
+            expect(result.current.upNext.isOpen).toBe(false);
+            act(() => {
+                jest.advanceTimersByTime(20000);
+            });
+            expect(mockNextVideo).not.toHaveBeenCalled();
+        });
     });
 
     it('covers route origin variants and generic fallbacks without a loaded playlist', () => {

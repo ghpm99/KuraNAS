@@ -1918,5 +1918,9 @@
 	"VIDEO_SUBTITLES_EMBEDDED": "Embedded",
 	"VIDEO_SHORTCUT_HELP_SUBTITLES": "Turn subtitles on or off",
 	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON": "Subtitles on",
-	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF": "Subtitles off"
+	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF": "Subtitles off",
+	"VIDEO_UP_NEXT_COUNTDOWN": "Playing in {{seconds}}s",
+	"VIDEO_UP_NEXT_PLAY_NOW": "Watch now",
+	"VIDEO_UP_NEXT_CANCEL": "Cancel",
+	"VIDEO_UP_NEXT_AUTOPLAY_TOGGLE": "Play next automatically"
 }

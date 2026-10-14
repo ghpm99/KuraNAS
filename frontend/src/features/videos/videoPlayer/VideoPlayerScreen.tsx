@@ -1,6 +1,7 @@
 import { useDocumentTitle } from '@/components/layout/documentMetadata/useDocumentTitle';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import VideoControls from '@/features/videos/videoControls/videoControls';
+import UpNextAutoplayCard from '@/features/videos/upNext/UpNextAutoplayCard';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
 import { useState } from 'react';
 import VideoDetailsPanel from '@/features/videos/videoDetails/VideoDetailsPanel';
@@ -67,6 +68,7 @@ export default function VideoPlayerScreen() {
         selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
+        upNext,
     } = useVideoPlayerScreen();
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
@@ -167,6 +169,18 @@ export default function VideoPlayerScreen() {
                             selectedSubtitleKey={selectedSubtitleKey}
                             onSelectSubtitle={selectSubtitle}
                         />
+                        {upNext.isOpen && nextItem ? (
+                            <UpNextAutoplayCard
+                                nextVideoId={nextItem.video.id}
+                                nextVideoTitle={nextItem.displayTitle || nextItem.video.name}
+                                isCounting={upNext.isCounting}
+                                secondsRemaining={upNext.secondsRemaining}
+                                isAutoplayEnabled={upNext.isAutoplayEnabled}
+                                onPlayNow={upNext.playNow}
+                                onCancel={upNext.cancel}
+                                onAutoplayEnabledChange={upNext.setAutoplayEnabled}
+                            />
+                        ) : null}
                         <PlayerShortcutFeedback
                             feedback={pictureInPictureError ?? shortcutFeedback}
                         />
