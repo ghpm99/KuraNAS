@@ -18,7 +18,7 @@ import {
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlayerPortalContainer } from '@/features/videos/videoPlayer/playerPortalContainer';
-import type { VideoSubtitleDto } from '@/service/videoPlayback';
+import { getVideoSubtitleKey, type VideoSubtitleDto } from '@/service/videoPlayback';
 import { buildSubtitleLabel } from '@/features/videos/hooks/useVideoSubtitles/subtitleLabel';
 import './videoControls.css';
 
@@ -46,8 +46,8 @@ interface VideoControlsProps {
     canGoPrevious?: boolean;
     onOpenShortcutsHelp?: () => void;
     subtitles?: VideoSubtitleDto[];
-    selectedSubtitleId?: number | null;
-    onSelectSubtitle?: (subtitleId: number | null) => void;
+    selectedSubtitleKey?: string | null;
+    onSelectSubtitle?: (subtitleKey: string | null) => void;
 }
 const VideoControls = ({
     isPlaying,
@@ -73,7 +73,7 @@ const VideoControls = ({
     canGoPrevious = true,
     onOpenShortcutsHelp,
     subtitles = [],
-    selectedSubtitleId = null,
+    selectedSubtitleKey = null,
     onSelectSubtitle,
 }: VideoControlsProps) => {
     const { t } = useI18n();
@@ -123,8 +123,8 @@ const VideoControls = ({
         setSubtitlesAnchor(null);
     };
 
-    const handleSubtitleSelected = (subtitleId: number | null) => {
-        onSelectSubtitle?.(subtitleId);
+    const handleSubtitleSelected = (subtitleKey: string | null) => {
+        onSelectSubtitle?.(subtitleKey);
         handleSubtitlesClose();
     };
 
@@ -234,7 +234,7 @@ const VideoControls = ({
                                 onClick={(event) => setSubtitlesAnchor(event.currentTarget)}
                                 size="small"
                                 aria-label={t('VIDEO_SUBTITLES')}
-                                aria-pressed={selectedSubtitleId !== null}
+                                aria-pressed={selectedSubtitleKey !== null}
                             >
                                 <Captions size={20} />
                             </IconButton>
@@ -290,15 +290,15 @@ const VideoControls = ({
             >
                 <MenuItem
                     onClick={() => handleSubtitleSelected(null)}
-                    selected={selectedSubtitleId === null}
+                    selected={selectedSubtitleKey === null}
                 >
                     {t('VIDEO_SUBTITLES_OFF')}
                 </MenuItem>
                 {subtitles.map((subtitle) => (
                     <MenuItem
-                        key={subtitle.id}
-                        onClick={() => handleSubtitleSelected(subtitle.id)}
-                        selected={selectedSubtitleId === subtitle.id}
+                        key={getVideoSubtitleKey(subtitle)}
+                        onClick={() => handleSubtitleSelected(getVideoSubtitleKey(subtitle))}
+                        selected={selectedSubtitleKey === getVideoSubtitleKey(subtitle)}
                     >
                         {buildSubtitleLabel(subtitle, t)}
                     </MenuItem>

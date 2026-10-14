@@ -118,8 +118,13 @@ export interface UpdateVideoPlaybackStateRequest {
     completed?: boolean;
 }
 
+export type VideoSubtitleSource = 'external' | 'embedded';
+
 export interface VideoSubtitleDto {
     id: number;
+    source?: VideoSubtitleSource;
+    key?: string;
+    stream_index?: number;
     label: string;
     language: string;
     format: 'srt' | 'vtt';
@@ -423,5 +428,15 @@ export const getVideoSubtitles = async (videoFileId: number): Promise<VideoSubti
     return response.data;
 };
 
-export const getVideoSubtitleVttUrl = (subtitleFileId: number): string =>
-    `${getApiV1BaseUrl()}/video/subtitles/${subtitleFileId}/vtt`;
+export const isEmbeddedSubtitle = (subtitle: VideoSubtitleDto): boolean =>
+    subtitle.source === 'embedded';
+
+export const getVideoSubtitleKey = (subtitle: VideoSubtitleDto): string =>
+    isEmbeddedSubtitle(subtitle) && subtitle.key ? subtitle.key : `external:${subtitle.id}`;
+
+export const getVideoSubtitleVttUrl = (subtitle: VideoSubtitleDto, videoId: number): string => {
+    if (isEmbeddedSubtitle(subtitle)) {
+        return `${getApiV1BaseUrl()}/video/subtitles/${videoId}/embedded/${subtitle.stream_index}/vtt`;
+    }
+    return `${getApiV1BaseUrl()}/video/subtitles/${subtitle.id}/vtt`;
+};

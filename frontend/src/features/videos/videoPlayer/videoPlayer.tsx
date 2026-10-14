@@ -1,4 +1,5 @@
 import {
+    getVideoSubtitleKey,
     getVideoSubtitleVttUrl,
     type VideoFileDto,
     type VideoSubtitleDto,
@@ -104,12 +105,12 @@ const VideoPlayer = ({
                 >
                     {subtitles.map((subtitle) => (
                         <track
-                            key={subtitle.id}
+                            key={getVideoSubtitleKey(subtitle)}
                             kind="subtitles"
-                            src={getVideoSubtitleVttUrl(subtitle.id)}
+                            src={getVideoSubtitleVttUrl(subtitle, currentVideo?.id ?? 0)}
                             srcLang={subtitle.language || undefined}
                             label={buildSubtitleLabel(subtitle, t)}
-                            data-subtitle-id={subtitle.id}
+                            data-subtitle-key={getVideoSubtitleKey(subtitle)}
                         />
                     ))}
                 </video>

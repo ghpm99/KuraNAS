@@ -186,7 +186,7 @@ describe('features/videos/videoControls/videoControls', () => {
                 <VideoControls
                     {...buildProps()}
                     subtitles={subtitles}
-                    selectedSubtitleId={null}
+                    selectedSubtitleKey={null}
                     onSelectSubtitle={onSelectSubtitle}
                 />
             );
@@ -202,7 +202,7 @@ describe('features/videos/videoControls/videoControls', () => {
 
             fireEvent.click(screen.getByRole('menuitem', { name: 'pt-BR (VTT)' }));
 
-            expect(onSelectSubtitle).toHaveBeenCalledWith(2);
+            expect(onSelectSubtitle).toHaveBeenCalledWith('external:2');
             expect(screen.queryByRole('menuitem', { name: 'pt-BR (VTT)' })).toBeNull();
         });
 
@@ -212,7 +212,7 @@ describe('features/videos/videoControls/videoControls', () => {
                 <VideoControls
                     {...buildProps()}
                     subtitles={subtitles}
-                    selectedSubtitleId={1}
+                    selectedSubtitleKey="external:1"
                     onSelectSubtitle={onSelectSubtitle}
                 />
             );
@@ -225,6 +225,55 @@ describe('features/videos/videoControls/videoControls', () => {
             fireEvent.click(screen.getByRole('menuitem', { name: 'VIDEO_SUBTITLES_OFF' }));
 
             expect(onSelectSubtitle).toHaveBeenCalledWith(null);
+        });
+
+        it('lists embedded subtitles with the same id as separate selectable options', () => {
+            const onSelectSubtitle = jest.fn();
+            const embeddedSubtitles = [
+                {
+                    id: 0,
+                    source: 'embedded' as const,
+                    key: '7:1',
+                    stream_index: 1,
+                    label: 'en',
+                    language: 'en',
+                    format: 'vtt' as const,
+                    is_forced: false,
+                },
+                {
+                    id: 0,
+                    source: 'embedded' as const,
+                    key: '7:4',
+                    stream_index: 4,
+                    label: 'pt',
+                    language: 'pt',
+                    format: 'vtt' as const,
+                    is_forced: false,
+                },
+            ];
+            render(
+                <VideoControls
+                    {...buildProps()}
+                    subtitles={embeddedSubtitles}
+                    selectedSubtitleKey="7:4"
+                    onSelectSubtitle={onSelectSubtitle}
+                />
+            );
+
+            fireEvent.click(screen.getByRole('button', { name: 'VIDEO_SUBTITLES' }));
+
+            expect(
+                screen.getByRole('menuitem', { name: 'pt · VIDEO_SUBTITLES_EMBEDDED' })
+            ).toHaveClass('Mui-selected');
+            expect(
+                screen.getByRole('menuitem', { name: 'en · VIDEO_SUBTITLES_EMBEDDED' })
+            ).not.toHaveClass('Mui-selected');
+
+            fireEvent.click(
+                screen.getByRole('menuitem', { name: 'en · VIDEO_SUBTITLES_EMBEDDED' })
+            );
+
+            expect(onSelectSubtitle).toHaveBeenCalledWith('7:1');
         });
 
         it('tolerates selecting without a handler', () => {

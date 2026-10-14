@@ -112,7 +112,7 @@ export default function useVideoPlayerScreen() {
         togglePictureInPicture,
         requestError: pictureInPictureError,
     } = usePictureInPicture({ videoRef, isFullscreen, exitFullscreen: toggleFullscreen });
-    const { subtitles, selectedSubtitleId, selectSubtitle, toggleSubtitles } = useVideoSubtitles({
+    const { subtitles, selectedSubtitleKey, selectSubtitle, toggleSubtitles } = useVideoSubtitles({
         videoId: currentVideo?.id ?? null,
         videoRef,
         interfaceLanguage: settings.language?.current ?? '',
@@ -351,7 +351,7 @@ export default function useVideoPlayerScreen() {
         reportPlaybackError,
         retryPlayback,
         subtitles,
-        selectedSubtitleId,
+        selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
     };

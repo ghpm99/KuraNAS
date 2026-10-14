@@ -1,4 +1,4 @@
-import type { VideoSubtitleDto } from '@/service/videoPlayback';
+import { getVideoSubtitleKey, type VideoSubtitleDto } from '@/service/videoPlayback';
 import type { VideoSubtitlePreferences } from './videoSubtitlePreferences';
 
 export const getPrimaryLanguage = (languageTag: string): string =>
@@ -19,29 +19,30 @@ const findPreferredInLanguage = (
     return subtitlesInLanguage.find((subtitle) => !subtitle.is_forced) ?? subtitlesInLanguage[0];
 };
 
-export const findRememberedLanguageSubtitleId = (
+export const findRememberedLanguageSubtitleKey = (
     subtitles: VideoSubtitleDto[],
     preferences: VideoSubtitlePreferences | null
-): number | null => {
+): string | null => {
     if (!preferences?.language) {
         return null;
     }
-    return findPreferredInLanguage(subtitles, preferences.language)?.id ?? null;
+    const preferredSubtitle = findPreferredInLanguage(subtitles, preferences.language);
+    return preferredSubtitle ? getVideoSubtitleKey(preferredSubtitle) : null;
 };
 
-export const chooseInitialSubtitleId = (
+export const chooseInitialSubtitleKey = (
     subtitles: VideoSubtitleDto[],
     preferences: VideoSubtitlePreferences | null,
     interfaceLanguage: string
-): number | null => {
+): string | null => {
     if (preferences?.isEnabled) {
-        const rememberedSubtitleId = findRememberedLanguageSubtitleId(subtitles, preferences);
-        if (rememberedSubtitleId !== null) {
-            return rememberedSubtitleId;
+        const rememberedSubtitleKey = findRememberedLanguageSubtitleKey(subtitles, preferences);
+        if (rememberedSubtitleKey !== null) {
+            return rememberedSubtitleKey;
         }
     }
     const forcedInterfaceSubtitle = subtitles.find(
         (subtitle) => subtitle.is_forced && isSameLanguage(subtitle, interfaceLanguage)
     );
-    return forcedInterfaceSubtitle?.id ?? null;
+    return forcedInterfaceSubtitle ? getVideoSubtitleKey(forcedInterfaceSubtitle) : null;
 };

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import type { VideoSubtitleDto } from '@/service/videoPlayback';
+import { getVideoSubtitleKey, type VideoSubtitleDto } from '@/service/videoPlayback';
 import useVideoSubtitles from './useVideoSubtitles';
 import {
     loadVideoSubtitlePreferences,
@@ -11,6 +11,7 @@ import {
 const mockGetVideoSubtitles = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
+    ...jest.requireActual('@/service/videoPlayback'),
     getVideoSubtitles: (...args: unknown[]) => mockGetVideoSubtitles(...args),
 }));
 
@@ -45,16 +46,17 @@ const createWrapper = () => {
 
 const buildVideoElementWithTracks = (subtitles: VideoSubtitleDto[]) => {
     const video = document.createElement('video');
-    const tracksBySubtitleId = new Map<number, { mode: string }>();
+    const tracksBySubtitleKey = new Map<string, { mode: string }>();
     subtitles.forEach((subtitle) => {
         const trackElement = document.createElement('track');
-        trackElement.dataset.subtitleId = String(subtitle.id);
+        const subtitleKey = getVideoSubtitleKey(subtitle);
+        trackElement.dataset.subtitleKey = subtitleKey;
         const textTrack = { mode: 'hidden' };
         Object.defineProperty(trackElement, 'track', { value: textTrack });
-        tracksBySubtitleId.set(subtitle.id, textTrack);
+        tracksBySubtitleKey.set(subtitleKey, textTrack);
         video.appendChild(trackElement);
     });
-    return { video, tracksBySubtitleId };
+    return { video, tracksBySubtitleKey };
 };
 
 const renderSubtitles = (
@@ -88,7 +90,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
 
         await waitFor(() => expect(mockGetVideoSubtitles).toHaveBeenCalledWith(30));
         expect(result.current.subtitles).toEqual([]);
-        expect(result.current.selectedSubtitleId).toBeNull();
+        expect(result.current.selectedSubtitleKey).toBeNull();
         expect(result.current.toggleSubtitles()).toBe('unavailable');
     });
 
@@ -114,7 +116,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         const { result } = renderSubtitles();
 
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
-        expect(result.current.selectedSubtitleId).toBeNull();
+        expect(result.current.selectedSubtitleKey).toBeNull();
     });
 
     it('turns on the forced subtitle in the interface language by itself', async () => {
@@ -122,25 +124,25 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
 
         const { result } = renderSubtitles();
 
-        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(3));
+        await waitFor(() => expect(result.current.selectedSubtitleKey).toBe('external:3'));
     });
 
     it('marks only the selected track as showing', async () => {
         const subtitles = [englishSubtitle, portugueseSubtitle];
         mockGetVideoSubtitles.mockResolvedValue(subtitles);
-        const { video, tracksBySubtitleId } = buildVideoElementWithTracks(subtitles);
+        const { video, tracksBySubtitleKey } = buildVideoElementWithTracks(subtitles);
         const { result } = renderSubtitles({ video });
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
 
-        act(() => result.current.selectSubtitle(2));
+        act(() => result.current.selectSubtitle('external:2'));
 
-        expect(result.current.selectedSubtitleId).toBe(2);
-        expect(tracksBySubtitleId.get(2)?.mode).toBe('showing');
-        expect(tracksBySubtitleId.get(1)?.mode).toBe('disabled');
+        expect(result.current.selectedSubtitleKey).toBe('external:2');
+        expect(tracksBySubtitleKey.get('external:2')?.mode).toBe('showing');
+        expect(tracksBySubtitleKey.get('external:1')?.mode).toBe('disabled');
 
         act(() => result.current.selectSubtitle(null));
 
-        expect(tracksBySubtitleId.get(2)?.mode).toBe('disabled');
+        expect(tracksBySubtitleKey.get('external:2')?.mode).toBe('disabled');
     });
 
     it('skips track elements that expose no text track', async () => {
@@ -150,7 +152,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         const { result } = renderSubtitles({ video });
         await waitFor(() => expect(result.current.subtitles).toHaveLength(1));
 
-        expect(() => act(() => result.current.selectSubtitle(1))).not.toThrow();
+        expect(() => act(() => result.current.selectSubtitle('external:1'))).not.toThrow();
     });
 
     it('remembers the chosen language in the browser', async () => {
@@ -158,7 +160,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         const { result } = renderSubtitles();
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
 
-        act(() => result.current.selectSubtitle(1));
+        act(() => result.current.selectSubtitle('external:1'));
 
         expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: true, language: 'en' });
     });
@@ -169,7 +171,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         const { result } = renderSubtitles();
         await waitFor(() => expect(result.current.subtitles).toHaveLength(1));
 
-        act(() => result.current.selectSubtitle(1));
+        act(() => result.current.selectSubtitle('external:1'));
 
         expect(loadVideoSubtitlePreferences()).toBeNull();
     });
@@ -178,7 +180,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
         const { result } = renderSubtitles();
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
-        act(() => result.current.selectSubtitle(2));
+        act(() => result.current.selectSubtitle('external:2'));
 
         act(() => result.current.selectSubtitle(null));
 
@@ -189,7 +191,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         saveVideoSubtitlePreferences({ isEnabled: true, language: 'en' });
         mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
         const { result } = renderSubtitles();
-        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(1));
+        await waitFor(() => expect(result.current.selectedSubtitleKey).toBe('external:1'));
 
         act(() => {
             result.current.toggleSubtitles();
@@ -205,7 +207,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         const { result } = renderSubtitles({ videoId: 31 });
 
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
-        expect(result.current.selectedSubtitleId).toBeNull();
+        expect(result.current.selectedSubtitleKey).toBeNull();
     });
 
     it('still turns on the forced interface subtitle when disabled', async () => {
@@ -214,7 +216,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
 
         const { result } = renderSubtitles();
 
-        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(3));
+        await waitFor(() => expect(result.current.selectedSubtitleKey).toBe('external:3'));
     });
 
     it('restores the remembered language when toggling on after a disabled start', async () => {
@@ -229,7 +231,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         });
 
         expect(outcome).toBe('enabled');
-        expect(result.current.selectedSubtitleId).toBe(2);
+        expect(result.current.selectedSubtitleKey).toBe('external:2');
         expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: true, language: 'pt-BR' });
     });
 
@@ -243,7 +245,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
             result.current.toggleSubtitles();
         });
 
-        expect(result.current.selectedSubtitleId).toBe(1);
+        expect(result.current.selectedSubtitleKey).toBe('external:1');
     });
 
     it('applies the remembered language to the next video', async () => {
@@ -252,21 +254,21 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
 
         const { result } = renderSubtitles({ videoId: 31 });
 
-        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(1));
+        await waitFor(() => expect(result.current.selectedSubtitleKey).toBe('external:1'));
     });
 
     it('resets the selection when the video changes', async () => {
         mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
         const { result, rerender } = renderSubtitles();
         await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
-        act(() => result.current.selectSubtitle(2));
+        act(() => result.current.selectSubtitle('external:2'));
 
         mockGetVideoSubtitles.mockResolvedValue([{ ...englishSubtitle, id: 7 }]);
         rerender({ videoId: 31 });
 
         await waitFor(() => expect(mockGetVideoSubtitles).toHaveBeenCalledWith(31));
         await waitFor(() => expect(result.current.subtitles[0]?.id).toBe(7));
-        expect(result.current.selectedSubtitleId).toBeNull();
+        expect(result.current.selectedSubtitleKey).toBeNull();
     });
 
     it('toggles between off and the last used subtitle', async () => {
@@ -279,19 +281,100 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
             outcome = result.current.toggleSubtitles();
         });
         expect(outcome).toBe('enabled');
-        expect(result.current.selectedSubtitleId).toBe(1);
+        expect(result.current.selectedSubtitleKey).toBe('external:1');
 
-        act(() => result.current.selectSubtitle(2));
+        act(() => result.current.selectSubtitle('external:2'));
         act(() => {
             outcome = result.current.toggleSubtitles();
         });
         expect(outcome).toBe('disabled');
-        expect(result.current.selectedSubtitleId).toBeNull();
+        expect(result.current.selectedSubtitleKey).toBeNull();
 
         act(() => {
             outcome = result.current.toggleSubtitles();
         });
         expect(outcome).toBe('enabled');
-        expect(result.current.selectedSubtitleId).toBe(2);
+        expect(result.current.selectedSubtitleKey).toBe('external:2');
+    });
+
+    describe('with embedded subtitles', () => {
+        const firstEmbeddedSubtitle: VideoSubtitleDto = {
+            id: 0,
+            source: 'embedded',
+            key: '30:2',
+            stream_index: 2,
+            label: 'en',
+            language: 'en',
+            format: 'vtt',
+            is_forced: false,
+        };
+        const secondEmbeddedSubtitle: VideoSubtitleDto = {
+            ...firstEmbeddedSubtitle,
+            key: '30:5',
+            stream_index: 5,
+            label: 'pt-BR',
+            language: 'pt-BR',
+        };
+
+        it('tells apart embedded subtitles that share id 0', async () => {
+            const subtitles = [firstEmbeddedSubtitle, secondEmbeddedSubtitle, portugueseSubtitle];
+            mockGetVideoSubtitles.mockResolvedValue(subtitles);
+            const { video, tracksBySubtitleKey } = buildVideoElementWithTracks(subtitles);
+            const { result } = renderSubtitles({ video });
+            await waitFor(() => expect(result.current.subtitles).toHaveLength(3));
+
+            act(() => result.current.selectSubtitle('30:5'));
+
+            expect(result.current.selectedSubtitleKey).toBe('30:5');
+            expect(tracksBySubtitleKey.get('30:5')?.mode).toBe('showing');
+            expect(tracksBySubtitleKey.get('30:2')?.mode).toBe('disabled');
+            expect(tracksBySubtitleKey.get('external:2')?.mode).toBe('disabled');
+        });
+
+        it('applies the remembered language to an embedded subtitle', async () => {
+            saveVideoSubtitlePreferences({ isEnabled: true, language: 'pt-BR' });
+            mockGetVideoSubtitles.mockResolvedValue([
+                firstEmbeddedSubtitle,
+                secondEmbeddedSubtitle,
+            ]);
+
+            const { result } = renderSubtitles();
+
+            await waitFor(() => expect(result.current.selectedSubtitleKey).toBe('30:5'));
+        });
+
+        it('keeps embedded subtitles off when the preference is disabled', async () => {
+            saveVideoSubtitlePreferences({ isEnabled: false, language: 'pt-BR' });
+            mockGetVideoSubtitles.mockResolvedValue([
+                firstEmbeddedSubtitle,
+                secondEmbeddedSubtitle,
+            ]);
+
+            const { result } = renderSubtitles();
+
+            await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+            expect(result.current.selectedSubtitleKey).toBeNull();
+        });
+
+        it('toggles an embedded subtitle with the shortcut and remembers its language', async () => {
+            mockGetVideoSubtitles.mockResolvedValue([
+                firstEmbeddedSubtitle,
+                secondEmbeddedSubtitle,
+            ]);
+            const { result } = renderSubtitles();
+            await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+            act(() => result.current.selectSubtitle('30:5'));
+
+            act(() => {
+                result.current.toggleSubtitles();
+            });
+            expect(result.current.selectedSubtitleKey).toBeNull();
+            expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: false, language: 'pt-BR' });
+
+            act(() => {
+                result.current.toggleSubtitles();
+            });
+            expect(result.current.selectedSubtitleKey).toBe('30:5');
+        });
     });
 });

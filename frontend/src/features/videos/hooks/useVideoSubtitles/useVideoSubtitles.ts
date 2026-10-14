@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { getVideoSubtitles, type VideoSubtitleDto } from '@/service/videoPlayback';
-import { chooseInitialSubtitleId, findRememberedLanguageSubtitleId } from './subtitleSelection';
+import {
+    getVideoSubtitleKey,
+    getVideoSubtitles,
+    type VideoSubtitleDto,
+} from '@/service/videoPlayback';
+import { chooseInitialSubtitleKey, findRememberedLanguageSubtitleKey } from './subtitleSelection';
 import {
     loadVideoSubtitlePreferences,
     saveVideoSubtitlePreferences,
@@ -17,17 +21,17 @@ interface UseVideoSubtitlesOptions {
 
 interface UserSubtitleChoice {
     videoId: number | null;
-    subtitleId: number | null;
+    subtitleKey: string | null;
 }
 
 const noSubtitles: VideoSubtitleDto[] = [];
 
-const applySubtitleModes = (video: HTMLVideoElement, selectedSubtitleId: number | null) => {
+const applySubtitleModes = (video: HTMLVideoElement, selectedSubtitleKey: string | null) => {
     video.querySelectorAll('track').forEach((trackElement) => {
         if (!trackElement.track) {
             return;
         }
-        const isSelected = Number(trackElement.dataset.subtitleId) === selectedSubtitleId;
+        const isSelected = trackElement.dataset.subtitleKey === selectedSubtitleKey;
         trackElement.track.mode = isSelected ? 'showing' : 'disabled';
     });
 };
@@ -46,36 +50,39 @@ export default function useVideoSubtitles({
     });
     const subtitles = Array.isArray(fetchedSubtitles) ? fetchedSubtitles : noSubtitles;
     const [userChoice, setUserChoice] = useState<UserSubtitleChoice | null>(null);
-    const lastEnabledSubtitleIdRef = useRef<number | null>(null);
+    const lastEnabledSubtitleKeyRef = useRef<string | null>(null);
 
-    const initialSubtitleId = useMemo(
-        () => chooseInitialSubtitleId(subtitles, loadVideoSubtitlePreferences(), interfaceLanguage),
+    const initialSubtitleKey = useMemo(
+        () =>
+            chooseInitialSubtitleKey(subtitles, loadVideoSubtitlePreferences(), interfaceLanguage),
         [subtitles, interfaceLanguage]
     );
-    const selectedSubtitleId =
-        userChoice?.videoId === videoId ? userChoice.subtitleId : initialSubtitleId;
+    const selectedSubtitleKey =
+        userChoice?.videoId === videoId ? userChoice.subtitleKey : initialSubtitleKey;
 
     useEffect(() => {
         const video = videoRef.current;
         if (video) {
-            applySubtitleModes(video, selectedSubtitleId);
+            applySubtitleModes(video, selectedSubtitleKey);
         }
-    }, [subtitles, selectedSubtitleId, videoRef]);
+    }, [subtitles, selectedSubtitleKey, videoRef]);
 
     const selectSubtitle = useCallback(
-        (subtitleId: number | null) => {
-            lastEnabledSubtitleIdRef.current = subtitleId ?? selectedSubtitleId;
-            setUserChoice({ videoId, subtitleId });
-            if (subtitleId === null) {
+        (subtitleKey: string | null) => {
+            lastEnabledSubtitleKeyRef.current = subtitleKey ?? selectedSubtitleKey;
+            setUserChoice({ videoId, subtitleKey });
+            if (subtitleKey === null) {
                 const selectedSubtitle = subtitles.find(
-                    (subtitle) => subtitle.id === selectedSubtitleId
+                    (subtitle) => getVideoSubtitleKey(subtitle) === selectedSubtitleKey
                 );
                 const lastLanguage =
                     selectedSubtitle?.language || loadVideoSubtitlePreferences()?.language || '';
                 saveVideoSubtitlePreferences({ isEnabled: false, language: lastLanguage });
                 return;
             }
-            const chosenSubtitle = subtitles.find((subtitle) => subtitle.id === subtitleId);
+            const chosenSubtitle = subtitles.find(
+                (subtitle) => getVideoSubtitleKey(subtitle) === subtitleKey
+            );
             if (chosenSubtitle?.language) {
                 saveVideoSubtitlePreferences({
                     isEnabled: true,
@@ -83,27 +90,33 @@ export default function useVideoSubtitles({
                 });
             }
         },
-        [selectedSubtitleId, subtitles, videoId]
+        [selectedSubtitleKey, subtitles, videoId]
     );
 
     const toggleSubtitles = useCallback((): SubtitleToggleOutcome => {
         if (subtitles.length === 0) {
             return 'unavailable';
         }
-        if (selectedSubtitleId !== null) {
+        if (selectedSubtitleKey !== null) {
             selectSubtitle(null);
             return 'disabled';
         }
         const lastEnabledSubtitle = subtitles.find(
-            (subtitle) => subtitle.id === lastEnabledSubtitleIdRef.current
+            (subtitle) => getVideoSubtitleKey(subtitle) === lastEnabledSubtitleKeyRef.current
         );
-        const rememberedSubtitleId = findRememberedLanguageSubtitleId(
+        const rememberedSubtitleKey = findRememberedLanguageSubtitleKey(
             subtitles,
             loadVideoSubtitlePreferences()
         );
-        selectSubtitle(lastEnabledSubtitle?.id ?? rememberedSubtitleId ?? subtitles[0]?.id ?? null);
+        const firstSubtitle = subtitles[0];
+        selectSubtitle(
+            (lastEnabledSubtitle && getVideoSubtitleKey(lastEnabledSubtitle)) ??
+                rememberedSubtitleKey ??
+                (firstSubtitle && getVideoSubtitleKey(firstSubtitle)) ??
+                null
+        );
         return 'enabled';
-    }, [selectSubtitle, selectedSubtitleId, subtitles]);
+    }, [selectSubtitle, selectedSubtitleKey, subtitles]);
 
-    return { subtitles, selectedSubtitleId, selectSubtitle, toggleSubtitles };
+    return { subtitles, selectedSubtitleKey, selectSubtitle, toggleSubtitles };
 }

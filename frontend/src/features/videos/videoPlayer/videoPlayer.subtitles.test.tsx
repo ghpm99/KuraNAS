@@ -15,6 +15,29 @@ const subtitles: VideoSubtitleDto[] = [
     { id: 10, label: 'Commentary', language: '', format: 'vtt', is_forced: true },
 ];
 
+const embeddedSubtitles: VideoSubtitleDto[] = [
+    {
+        id: 0,
+        source: 'embedded',
+        key: '42:1',
+        stream_index: 1,
+        label: 'en',
+        language: 'en',
+        format: 'vtt',
+        is_forced: false,
+    },
+    {
+        id: 0,
+        source: 'embedded',
+        key: '42:3',
+        stream_index: 3,
+        label: 'pt',
+        language: 'pt',
+        format: 'vtt',
+        is_forced: false,
+    },
+];
+
 const renderPlayer = (overrides: Record<string, unknown> = {}) =>
     render(
         <VideoPlayer
@@ -52,9 +75,28 @@ describe('features/videos/videoPlayer/videoPlayer subtitles', () => {
         expect(tracks[0]).toHaveAttribute('src', 'http://nas:8000/api/v1/video/subtitles/9/vtt');
         expect(tracks[0]).toHaveAttribute('srclang', 'en');
         expect(tracks[0]).toHaveAttribute('label', 'en (SRT)');
-        expect(tracks[0]).toHaveAttribute('data-subtitle-id', '9');
+        expect(tracks[0]).toHaveAttribute('data-subtitle-key', 'external:9');
         expect(tracks[1]).not.toHaveAttribute('srclang');
         expect(tracks[1]).toHaveAttribute('label', 'Commentary (VTT) · VIDEO_SUBTITLES_FORCED');
+    });
+
+    it('renders embedded and external tracks without key collisions', () => {
+        const { container } = renderPlayer({ subtitles: [...embeddedSubtitles, subtitles[0]] });
+
+        const tracks = container.querySelectorAll('track');
+        expect(tracks).toHaveLength(3);
+        expect(tracks[0]).toHaveAttribute(
+            'src',
+            'http://nas:8000/api/v1/video/subtitles/42/embedded/1/vtt'
+        );
+        expect(tracks[0]).toHaveAttribute('data-subtitle-key', '42:1');
+        expect(tracks[0]).toHaveAttribute('label', 'en · VIDEO_SUBTITLES_EMBEDDED');
+        expect(tracks[1]).toHaveAttribute(
+            'src',
+            'http://nas:8000/api/v1/video/subtitles/42/embedded/3/vtt'
+        );
+        expect(tracks[1]).toHaveAttribute('data-subtitle-key', '42:3');
+        expect(tracks[2]).toHaveAttribute('data-subtitle-key', 'external:9');
     });
 
     it('leaves crossorigin unset when the api shares the page origin', () => {

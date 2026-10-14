@@ -39,6 +39,8 @@ import {
     getVideoMoviePosterUrl,
     getVideoPlaylistPosterUrl,
     getVideoSubtitles,
+    getVideoSubtitleKey,
+    type VideoSubtitleDto,
     getVideoSubtitleVttUrl,
 } from './videoPlayback';
 
@@ -403,7 +405,62 @@ describe('video poster urls', () => {
         expect(mockedApi.get).toHaveBeenCalledWith('/video/subtitles/30');
     });
 
-    it('builds the subtitle vtt url', () => {
-        expect(getVideoSubtitleVttUrl(9)).toMatch(/\/video\/subtitles\/9\/vtt$/);
+    describe('subtitle identity and vtt url', () => {
+        const externalSubtitle: VideoSubtitleDto = {
+            id: 9,
+            source: 'external',
+            label: 'en',
+            language: 'en',
+            format: 'srt',
+            is_forced: false,
+        };
+        const embeddedSubtitle: VideoSubtitleDto = {
+            id: 0,
+            source: 'embedded',
+            key: '30:4',
+            stream_index: 4,
+            label: 'en',
+            language: 'en',
+            format: 'vtt',
+            is_forced: false,
+        };
+        const legacySubtitle: VideoSubtitleDto = {
+            id: 7,
+            label: 'pt',
+            language: 'pt',
+            format: 'vtt',
+            is_forced: false,
+        };
+
+        it('builds the external subtitle vtt url from the file id', () => {
+            expect(getVideoSubtitleVttUrl(externalSubtitle, 30)).toMatch(
+                /\/video\/subtitles\/9\/vtt$/
+            );
+        });
+
+        it('builds the embedded subtitle vtt url from the video and stream index', () => {
+            expect(getVideoSubtitleVttUrl(embeddedSubtitle, 30)).toMatch(
+                /\/video\/subtitles\/30\/embedded\/4\/vtt$/
+            );
+        });
+
+        it('treats a payload without source as external', () => {
+            expect(getVideoSubtitleVttUrl(legacySubtitle, 30)).toMatch(
+                /\/video\/subtitles\/7\/vtt$/
+            );
+            expect(getVideoSubtitleKey(legacySubtitle)).toBe('external:7');
+        });
+
+        it('gives embedded subtitles with id 0 distinct keys', () => {
+            const otherEmbeddedSubtitle = { ...embeddedSubtitle, key: '30:5', stream_index: 5 };
+
+            expect(getVideoSubtitleKey(embeddedSubtitle)).toBe('30:4');
+            expect(getVideoSubtitleKey(otherEmbeddedSubtitle)).toBe('30:5');
+            expect(getVideoSubtitleKey(externalSubtitle)).toBe('external:9');
+        });
+
+        it('falls back to the external key when an embedded subtitle has no key', () => {
+            expect(getVideoSubtitleKey({ ...embeddedSubtitle, key: undefined })).toBe('external:0');
+        });
     });
 });

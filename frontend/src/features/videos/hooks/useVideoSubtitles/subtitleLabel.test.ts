@@ -20,4 +20,22 @@ describe('subtitleLabel', () => {
             )
         ).toBe('Commentary (VTT) · [VIDEO_SUBTITLES_FORCED]');
     });
+
+    it('marks embedded subtitles instead of showing the format', () => {
+        expect(
+            buildSubtitleLabel(
+                {
+                    id: 0,
+                    source: 'embedded',
+                    key: '1:2',
+                    stream_index: 2,
+                    label: 'x',
+                    language: 'en',
+                    format: 'vtt',
+                    is_forced: true,
+                },
+                translate
+            )
+        ).toBe('en · [VIDEO_SUBTITLES_EMBEDDED] · [VIDEO_SUBTITLES_FORCED]');
+    });
 });
