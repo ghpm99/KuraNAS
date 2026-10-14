@@ -75,9 +75,25 @@ jest.mock('@/features/videos/videoPlayer/videoPlayer', () => ({
             <div>{props.originBadgeLabel}</div>
             <div>{props.contextDescription}</div>
             <div>{props.metadataLine}</div>
+            <button type="button" onClick={props.onOpenDetails}>
+                open-details
+            </button>
             {props.children}
         </div>
     ),
+}));
+
+jest.mock('@/features/videos/videoDetails/VideoDetailsPanel', () => ({
+    __esModule: true,
+    default: (props: any) =>
+        props.video ? (
+            <div data-testid="details-panel">
+                {props.video.name}
+                <button type="button" onClick={props.onClose}>
+                    close-details
+                </button>
+            </div>
+        ) : null,
 }));
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -115,6 +131,18 @@ describe('features/videos/videoPlayer/VideoPlayerScreen', () => {
         render(<VideoPlayerScreen />);
 
         expect(screen.getByText('Invalid video ID')).toBeInTheDocument();
+    });
+
+    it('opens and closes the details panel for the current video', () => {
+        render(<VideoPlayerScreen />);
+
+        expect(screen.queryByTestId('details-panel')).toBeNull();
+
+        fireEvent.click(screen.getByText('open-details'));
+        expect(screen.getByTestId('details-panel')).toHaveTextContent('Episode 1');
+
+        fireEvent.click(screen.getByText('close-details'));
+        expect(screen.queryByTestId('details-panel')).toBeNull();
     });
 
     it('renders context actions and opens suggested videos from the panel', () => {

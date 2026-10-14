@@ -1880,5 +1880,8 @@
 	"VIDEO_ERROR_UNSUPPORTED": "Formato ou codec não suportado por este navegador.",
 	"VIDEO_ERROR_UNKNOWN": "Não foi possível reproduzir este vídeo.",
 	"VIDEO_ERROR_DOWNLOAD_ORIGINAL": "Baixar original",
-	"VIDEO_ERROR_RETRY": "Tentar novamente"
+	"VIDEO_ERROR_RETRY": "Tentar novamente",
+	"VIDEO_DETAILS_TITLE": "Detalhes do vídeo",
+	"VIDEO_DETAILS_OPEN_FOLDER": "Abrir pasta na tela de arquivos",
+	"VIDEO_DETAILS_METADATA_UNAVAILABLE": "Não foi possível carregar os metadados técnicos deste vídeo."
 }

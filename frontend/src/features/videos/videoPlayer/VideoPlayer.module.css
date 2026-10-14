@@ -46,6 +46,12 @@
     gap: 1rem;
 }
 
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
 .backButton,
 .contextBadge {
     display: inline-flex;

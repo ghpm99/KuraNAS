@@ -1,6 +1,6 @@
 import type { VideoFileDto } from '@/service/videoPlayback';
 import { getFileDownloadUrl } from '@/service/files';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { useEffect, type ReactNode, type RefObject } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -16,6 +16,7 @@ interface VideoPlayerProps {
     setCurrentTime: (time: number) => void;
     setDuration: (duration: number) => void;
     onBack: () => void;
+    onOpenDetails?: () => void;
     onVideoEnded: () => void | Promise<void>;
     originBadgeLabel: string;
     contextDescription: string;
@@ -32,6 +33,7 @@ const VideoPlayer = ({
     setCurrentTime,
     setDuration,
     onBack,
+    onOpenDetails,
     onVideoEnded,
     originBadgeLabel,
     contextDescription,
@@ -82,7 +84,19 @@ const VideoPlayer = ({
                             <ArrowLeft size={16} />
                             <span>{t('VIDEO_BACK')}</span>
                         </button>
-                        <span className={styles.contextBadge}>{originBadgeLabel}</span>
+                        <div className={styles.headerActions}>
+                            {onOpenDetails && currentVideo ? (
+                                <button
+                                    type="button"
+                                    className={styles.backButton}
+                                    onClick={onOpenDetails}
+                                >
+                                    <Info size={16} />
+                                    <span>{t('FILES_DETAILS')}</span>
+                                </button>
+                            ) : null}
+                            <span className={styles.contextBadge}>{originBadgeLabel}</span>
+                        </div>
                     </div>
 
                     <div className={styles.info}>
