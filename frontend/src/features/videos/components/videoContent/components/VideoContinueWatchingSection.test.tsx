@@ -82,4 +82,29 @@ describe('VideoContinueWatchingSection', () => {
 
         expect(onSetWatched).toHaveBeenCalledWith(2, true);
     });
+
+    it('shows the technical badges and omits them when absent', () => {
+        const itemWithTechnicalFields = buildContinueItem(1, 25, 100);
+        itemWithTechnicalFields.video.duration_seconds = 59;
+        itemWithTechnicalFields.video.height = 2160;
+        const { rerender } = render(
+            <VideoContinueWatchingSection
+                items={[itemWithTechnicalFields]}
+                onPlayVideo={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('0:59')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_BADGE_RESOLUTION_UHD')).toBeInTheDocument();
+
+        rerender(
+            <VideoContinueWatchingSection
+                items={[buildContinueItem(2, 25, 100)]}
+                onPlayVideo={jest.fn()}
+            />
+        );
+
+        expect(screen.queryByText('0:59')).not.toBeInTheDocument();
+        expect(screen.queryByText(/VIDEO_BADGE_RESOLUTION/)).not.toBeInTheDocument();
+    });
 });

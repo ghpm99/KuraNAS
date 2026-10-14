@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoContinueItemDto } from '@/service/videoPlayback';
+import VideoMediaBadges from './VideoMediaBadges';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
@@ -52,6 +53,7 @@ export default function VideoContinueWatchingSection({
                                     src={`${apiBase}/video-thumbnail/${item.video.id}?width=480&height=270`}
                                     alt={item.video.name}
                                 />
+                                <VideoMediaBadges video={item.video} />
                             </div>
                             <div className={styles.catalogBody}>
                                 <div className={styles.catalogMeta}>

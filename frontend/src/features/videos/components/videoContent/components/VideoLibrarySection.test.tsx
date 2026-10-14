@@ -329,4 +329,36 @@ describe('videos/videoContent/VideoLibrarySection', () => {
 
         expect(onSetWatched).toHaveBeenCalledWith(5, true);
     });
+
+    it('shows badges for videos with technical fields and omits them otherwise', () => {
+        const props = {
+            playlists: [],
+            search: '',
+            selectedPlaylistPerVideo: {},
+            isAddingToPlaylist: false,
+            isFetchingMoreVideos: false,
+            hasMoreVideos: false,
+            onSearchChange: jest.fn(),
+            onSelectPlaylistForVideo: jest.fn(),
+            onPlayVideo: jest.fn(),
+            onAddVideo: jest.fn(),
+            onLoadMore: jest.fn(),
+        };
+        const videosWithTechnicalFields = videos.map((video) => ({
+            ...video,
+            duration_seconds: 3599,
+            height: 1080,
+        }));
+        const { rerender } = render(
+            <VideoLibrarySection {...props} videos={videosWithTechnicalFields} />
+        );
+
+        expect(screen.getByText('59:59')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_BADGE_RESOLUTION_FHD')).toBeInTheDocument();
+
+        rerender(withQueryClient(<VideoLibrarySection {...props} videos={videos} />));
+
+        expect(screen.queryByText('59:59')).not.toBeInTheDocument();
+        expect(screen.queryByText(/VIDEO_BADGE_RESOLUTION/)).not.toBeInTheDocument();
+    });
 });

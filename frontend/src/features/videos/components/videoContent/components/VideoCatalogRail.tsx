@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoCatalogItemDto } from '@/service/videoPlayback';
+import VideoMediaBadges from './VideoMediaBadges';
 import styles from '../videoContent.module.css';
 
 type VideoCatalogRailProps = {
@@ -52,6 +53,7 @@ export default function VideoCatalogRail({
                                 src={`${apiBase}/video-thumbnail/${item.video.id}?width=480&height=270`}
                                 alt={item.video.name}
                             />
+                            <VideoMediaBadges video={item.video} />
                         </div>
                         <div className={styles.catalogBody}>
                             <div className={styles.catalogMeta}>

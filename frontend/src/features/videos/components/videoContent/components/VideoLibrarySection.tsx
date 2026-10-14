@@ -10,6 +10,7 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import VideoMediaBadges from './VideoMediaBadges';
 import VideoLibraryFilterBar from './VideoLibraryFilterBar';
 import VideoLibraryPlaylistPicker from './VideoLibraryPlaylistPicker';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
@@ -134,6 +135,7 @@ export default function VideoLibrarySection({
                                     src={`${apiBase}/video-thumbnail/${video.id}?width=240&height=135`}
                                     alt={video.name}
                                 />
+                                <VideoMediaBadges video={video} />
                             </div>
                             <div className={styles.allVideoMeta}>
                                 <h4>{video.name}</h4>

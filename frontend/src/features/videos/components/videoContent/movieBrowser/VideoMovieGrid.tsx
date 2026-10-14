@@ -2,6 +2,7 @@ import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { VideoFileDto } from '@/service/videoPlayback';
+import VideoMediaBadges from '../components/VideoMediaBadges';
 import styles from './VideoMovieBrowser.module.css';
 
 type VideoMovieGridProps = {
@@ -40,6 +41,7 @@ export default function VideoMovieGrid({
                                 src={`${thumbnailBaseUrl()}/${movie.id}?width=320&height=180`}
                                 alt={movie.name}
                             />
+                            <VideoMediaBadges video={movie} />
                         </div>
                         <h3 className={styles.movieName}>{movie.name}</h3>
                     </button>

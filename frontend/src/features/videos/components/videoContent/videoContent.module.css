@@ -246,6 +246,7 @@
 }
 
 .catalogThumb {
+    position: relative;
     aspect-ratio: 16 / 9;
     background: #0f172a;
 }
@@ -494,6 +495,7 @@
 }
 
 .detailListThumb {
+    position: relative;
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 10px;
@@ -747,6 +749,7 @@
 }
 
 .allVideoThumb {
+    position: relative;
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 8px;
