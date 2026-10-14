@@ -3,7 +3,6 @@ package video
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 
@@ -157,43 +156,44 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 		return
 	}
 
-	rangeHeader := c.GetHeader("Range")
-	rangeStart, rangeEnd, isRangeValid := utils.ParseHTTPRange(rangeHeader, fileInfo.Size())
-	if h.shouldRegisterPlayback(c, file.ID, rangeHeader, rangeStart) {
+	modifiedAt := fileInfo.ModTime()
+	eTag := strongVideoETag(file.ID, fileInfo.Size(), modifiedAt)
+	requested := parseRequestedRange(c.GetHeader("Range"), fileInfo.Size())
+
+	if requested.isUnsatisfiable && ifRangeAllowsPartialContent(c.GetHeader("If-Range"), eTag, modifiedAt) {
+		respondRangeNotSatisfiable(c, fileInfo.Size())
+		return
+	}
+
+	rangeStart, _, _ := utils.ParseHTTPRange(requested.header, fileInfo.Size())
+	if h.shouldRegisterPlayback(c, file.ID, requested.header, rangeStart) {
 		h.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
 		accessLog.open()
 	}
 
-	contentType := utils.ContentTypeByFormat(file.Format, "video/mp4")
-	c.Header("Content-Type", contentType)
-	c.Header("Accept-Ranges", "bytes")
+	if requested.header == "" {
+		c.Request.Header.Del("Range")
+	} else {
+		c.Request.Header.Set("Range", requested.header)
+	}
+
+	c.Header("Content-Type", utils.ContentTypeByFormat(file.Format, "video/mp4"))
 	c.Header("Cache-Control", "public, max-age=3600")
+	c.Header("ETag", eTag)
 
-	if rangeHeader != "" && isRangeValid {
-		c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rangeStart, rangeEnd, fileInfo.Size()))
-		c.Header("Content-Length", fmt.Sprintf("%d", rangeEnd-rangeStart+1))
-		c.Status(http.StatusPartialContent)
+	transferErrors := &transferErrorRecorder{}
+	http.ServeContent(
+		recordingResponseWriter{ResponseWriter: c.Writer, recorder: transferErrors},
+		c.Request,
+		file.Name,
+		modifiedAt,
+		recordingReadSeeker{ReadSeeker: videoFile, recorder: transferErrors},
+	)
 
-		videoFile.Seek(rangeStart, 0)
-		_, err := io.CopyN(c.Writer, videoFile, rangeEnd-rangeStart+1)
-		if err != nil {
-			accessLog.fail(err)
-			return
-		}
-
-		accessLog.succeed()
+	if transferErrors.firstError != nil {
+		accessLog.fail(transferErrors.firstError)
 		return
 	}
-
-	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
-	c.Status(http.StatusOK)
-
-	_, err = io.Copy(c.Writer, videoFile)
-	if err != nil {
-		accessLog.fail(err)
-		return
-	}
-
 	accessLog.succeed()
 }
 
