@@ -507,7 +507,7 @@ describe('useGlobalSearchProvider', () => {
             const playlistsSection = result.current.sections.find((s) => s.id === 'playlists');
             const videoPlaylist = playlistsSection!.items.find((i) => i.id === 'playlist-video-4');
             expect(videoPlaylist).toBeDefined();
-            expect(videoPlaylist!.meta).toBe('series');
+            expect(videoPlaylist!.meta).toBe('VIDEO_CLASS_SERIES');
 
             mockNavigate.mockClear();
             act(() => {
@@ -533,7 +533,7 @@ describe('useGlobalSearchProvider', () => {
             const playlistsSection = result.current.sections.find((s) => s.id === 'playlists');
             const customPlaylist = playlistsSection!.items.find((i) => i.id === 'playlist-video-5');
             expect(customPlaylist).toBeDefined();
-            expect(customPlaylist!.meta).toBe('movie');
+            expect(customPlaylist!.meta).toBe('VIDEO_CLASS_MOVIE');
 
             mockNavigate.mockClear();
             mockGetVideoSectionForPlaylist.mockClear();
@@ -646,6 +646,38 @@ describe('useGlobalSearchProvider', () => {
             const playlistsSection = result.current.sections.find((s) => s.id === 'playlists');
             const videoPlaylist = playlistsSection!.items.find((i) => i.id === 'playlist-video-4');
             expect(videoPlaylist!.description).toContain('NAV_VIDEOS');
+        });
+
+        it('video playlist meta falls back to the videos label for an unknown classification', () => {
+            mockUseQueryReturn = {
+                data: {
+                    ...mockSearchData,
+                    playlists: [
+                        {
+                            id: 9,
+                            name: 'Unknown Class Playlist',
+                            scope: 'video',
+                            count: 1,
+                            source_path: '',
+                            classification: 'unmapped_classification',
+                            description: '',
+                        },
+                    ],
+                },
+                isFetching: false,
+            };
+            const { result } = renderHook(() => useGlobalSearchProvider());
+
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+
+            const playlistsSection = result.current.sections.find((s) => s.id === 'playlists');
+            const unknownPlaylist = playlistsSection!.items.find(
+                (i) => i.id === 'playlist-video-9'
+            );
+            expect(unknownPlaylist!.meta).toBe('NAV_VIDEOS');
         });
 
         it('music playlist meta uses description field', () => {
