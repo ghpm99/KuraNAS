@@ -1,3 +1,4 @@
+import type { SubtitleToggleOutcome } from '@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles';
 import { DEFAULT_UNMUTE_VOLUME } from '@/features/videos/hooks/useVideoPlayer/videoPlaybackPreferences';
 import {
     MAX_PLAYBACK_RATE,
@@ -32,6 +33,7 @@ export interface PlayerShortcutControls {
     nextVideo: () => void | Promise<void>;
     previousVideo: () => void | Promise<void>;
     openHelp: () => void;
+    toggleSubtitles: () => SubtitleToggleOutcome;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
@@ -111,6 +113,17 @@ const adjustPlaybackRate = (
     };
 };
 
+const subtitleFeedbackKeys: Record<SubtitleToggleOutcome, string | null> = {
+    enabled: 'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON',
+    disabled: 'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF',
+    unavailable: null,
+};
+
+const toggleSubtitles = (controls: PlayerShortcutControls): PlayerShortcutFeedback | null => {
+    const messageKey = subtitleFeedbackKeys[controls.toggleSubtitles()];
+    return messageKey ? { messageKey } : null;
+};
+
 export function runPlayerShortcut(
     action: PlayerShortcutAction,
     snapshot: PlayerShortcutSnapshot,
@@ -140,6 +153,8 @@ export function runPlayerShortcut(
         case 'togglePictureInPicture':
             void controls.togglePictureInPicture();
             return null;
+        case 'toggleSubtitles':
+            return toggleSubtitles(controls);
         case 'nextVideo':
             if (!snapshot.canGoNext) return null;
             void controls.nextVideo();

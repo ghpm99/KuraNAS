@@ -13,10 +13,13 @@ import {
     Volume2,
     Keyboard,
     PictureInPicture2,
+    Captions,
 } from 'lucide-react';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlayerPortalContainer } from '@/features/videos/videoPlayer/playerPortalContainer';
+import type { VideoSubtitleDto } from '@/service/videoPlayback';
+import { buildSubtitleLabel } from '@/features/videos/hooks/useVideoSubtitles/subtitleLabel';
 import './videoControls.css';
 
 interface VideoControlsProps {
@@ -42,6 +45,9 @@ interface VideoControlsProps {
     canGoNext?: boolean;
     canGoPrevious?: boolean;
     onOpenShortcutsHelp?: () => void;
+    subtitles?: VideoSubtitleDto[];
+    selectedSubtitleId?: number | null;
+    onSelectSubtitle?: (subtitleId: number | null) => void;
 }
 const VideoControls = ({
     isPlaying,
@@ -66,9 +72,13 @@ const VideoControls = ({
     canGoNext = true,
     canGoPrevious = true,
     onOpenShortcutsHelp,
+    subtitles = [],
+    selectedSubtitleId = null,
+    onSelectSubtitle,
 }: VideoControlsProps) => {
     const { t } = useI18n();
     const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
+    const [subtitlesAnchor, setSubtitlesAnchor] = useState<null | HTMLElement>(null);
     const [scrubbingTime, setScrubbingTime] = useState<number | null>(null);
     const portalContainer = usePlayerPortalContainer();
     const displayedTime = scrubbingTime ?? currentTime;
@@ -109,6 +119,15 @@ const VideoControls = ({
         setSettingsAnchor(null);
     };
 
+    const handleSubtitlesClose = () => {
+        setSubtitlesAnchor(null);
+    };
+
+    const handleSubtitleSelected = (subtitleId: number | null) => {
+        onSelectSubtitle?.(subtitleId);
+        handleSubtitlesClose();
+    };
+
     const handlePlaybackRateChange = (rate: number) => {
         setPlaybackRate(rate);
         handleSettingsClose();
@@ -129,6 +148,7 @@ const VideoControls = ({
     const isSilent = isMuted || volume === 0;
     const muteLabel = isSilent ? t('VIDEO_UNMUTE') : t('VIDEO_MUTE');
     const tooltipSlotProps = { popper: { container: portalContainer } };
+    const hasSubtitles = subtitles.length > 0;
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
     if (!areControlsVisible) {
@@ -208,6 +228,19 @@ const VideoControls = ({
                         <Settings size={20} />
                     </IconButton>
 
+                    {hasSubtitles ? (
+                        <Tooltip title={t('VIDEO_SUBTITLES')} slotProps={tooltipSlotProps}>
+                            <IconButton
+                                onClick={(event) => setSubtitlesAnchor(event.currentTarget)}
+                                size="small"
+                                aria-label={t('VIDEO_SUBTITLES')}
+                                aria-pressed={selectedSubtitleId !== null}
+                            >
+                                <Captions size={20} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : null}
+
                     {onOpenShortcutsHelp ? (
                         <Tooltip
                             title={t('VIDEO_SHORTCUTS_HELP_BUTTON')}
@@ -247,6 +280,30 @@ const VideoControls = ({
                     </Tooltip>
                 </Box>
             </Box>
+
+            <Menu
+                anchorEl={subtitlesAnchor}
+                open={Boolean(subtitlesAnchor)}
+                container={portalContainer}
+                onClose={handleSubtitlesClose}
+                className="settings-menu"
+            >
+                <MenuItem
+                    onClick={() => handleSubtitleSelected(null)}
+                    selected={selectedSubtitleId === null}
+                >
+                    {t('VIDEO_SUBTITLES_OFF')}
+                </MenuItem>
+                {subtitles.map((subtitle) => (
+                    <MenuItem
+                        key={subtitle.id}
+                        onClick={() => handleSubtitleSelected(subtitle.id)}
+                        selected={selectedSubtitleId === subtitle.id}
+                    >
+                        {buildSubtitleLabel(subtitle, t)}
+                    </MenuItem>
+                ))}
+            </Menu>
 
             {/* Settings Menu */}
             <Menu

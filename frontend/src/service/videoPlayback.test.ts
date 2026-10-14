@@ -38,6 +38,8 @@ import {
     deleteVideoPlaylist,
     getVideoMoviePosterUrl,
     getVideoPlaylistPosterUrl,
+    getVideoSubtitles,
+    getVideoSubtitleVttUrl,
 } from './videoPlayback';
 
 const mockedApi = apiBase as unknown as {
@@ -391,5 +393,17 @@ describe('video poster urls', () => {
         expect(getVideoMoviePosterUrl(9)).toMatch(
             /\/video\/movies\/9\/poster\?width=400&height=600$/
         );
+    });
+
+    it('lists the subtitles of a video through the api base', async () => {
+        const subtitles = [{ id: 9, label: 'en', language: 'en', format: 'srt', is_forced: false }];
+        mockedApi.get.mockResolvedValueOnce({ data: subtitles });
+
+        await expect(getVideoSubtitles(30)).resolves.toEqual(subtitles);
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/subtitles/30');
+    });
+
+    it('builds the subtitle vtt url', () => {
+        expect(getVideoSubtitleVttUrl(9)).toMatch(/\/video\/subtitles\/9\/vtt$/);
     });
 });

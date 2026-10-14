@@ -8,6 +8,7 @@ export type PlayerShortcutAction =
     | { type: 'toggleMute' }
     | { type: 'toggleFullscreen' }
     | { type: 'togglePictureInPicture' }
+    | { type: 'toggleSubtitles' }
     | { type: 'nextVideo' }
     | { type: 'previousVideo' }
     | { type: 'adjustPlaybackRate'; delta: number }
@@ -54,6 +55,7 @@ const letterActions: Record<string, PlayerShortcutAction> = {
     m: { type: 'toggleMute' },
     f: { type: 'toggleFullscreen' },
     i: { type: 'togglePictureInPicture' },
+    c: { type: 'toggleSubtitles' },
 };
 
 const shiftedLetterActions: Record<string, PlayerShortcutAction> = {

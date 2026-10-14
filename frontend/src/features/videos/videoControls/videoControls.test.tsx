@@ -167,4 +167,74 @@ describe('features/videos/videoControls/videoControls', () => {
             expect(getTimeSlider(container)).toHaveValue('40');
         });
     });
+
+    describe('subtitles', () => {
+        const subtitles = [
+            { id: 1, label: 'en', language: 'en', format: 'srt' as const, is_forced: false },
+            { id: 2, label: 'pt', language: 'pt-BR', format: 'vtt' as const, is_forced: false },
+        ];
+
+        it('hides the subtitles button when the video has none', () => {
+            render(<VideoControls {...buildProps()} />);
+
+            expect(screen.queryByRole('button', { name: 'VIDEO_SUBTITLES' })).toBeNull();
+        });
+
+        it('lists off plus one option per subtitle and selects through the handler', () => {
+            const onSelectSubtitle = jest.fn();
+            render(
+                <VideoControls
+                    {...buildProps()}
+                    subtitles={subtitles}
+                    selectedSubtitleId={null}
+                    onSelectSubtitle={onSelectSubtitle}
+                />
+            );
+
+            const subtitlesButton = screen.getByRole('button', { name: 'VIDEO_SUBTITLES' });
+            expect(subtitlesButton).toHaveAttribute('aria-pressed', 'false');
+            fireEvent.click(subtitlesButton);
+
+            expect(screen.getByRole('menuitem', { name: 'VIDEO_SUBTITLES_OFF' })).toHaveClass(
+                'Mui-selected'
+            );
+            expect(screen.getAllByRole('menuitem')).toHaveLength(3);
+
+            fireEvent.click(screen.getByRole('menuitem', { name: 'pt-BR (VTT)' }));
+
+            expect(onSelectSubtitle).toHaveBeenCalledWith(2);
+            expect(screen.queryByRole('menuitem', { name: 'pt-BR (VTT)' })).toBeNull();
+        });
+
+        it('marks the active subtitle and turns them off from the menu', () => {
+            const onSelectSubtitle = jest.fn();
+            render(
+                <VideoControls
+                    {...buildProps()}
+                    subtitles={subtitles}
+                    selectedSubtitleId={1}
+                    onSelectSubtitle={onSelectSubtitle}
+                />
+            );
+
+            const subtitlesButton = screen.getByRole('button', { name: 'VIDEO_SUBTITLES' });
+            expect(subtitlesButton).toHaveAttribute('aria-pressed', 'true');
+            fireEvent.click(subtitlesButton);
+
+            expect(screen.getByRole('menuitem', { name: 'en (SRT)' })).toHaveClass('Mui-selected');
+            fireEvent.click(screen.getByRole('menuitem', { name: 'VIDEO_SUBTITLES_OFF' }));
+
+            expect(onSelectSubtitle).toHaveBeenCalledWith(null);
+        });
+
+        it('tolerates selecting without a handler', () => {
+            render(<VideoControls {...buildProps()} subtitles={subtitles} />);
+
+            fireEvent.click(screen.getByRole('button', { name: 'VIDEO_SUBTITLES' }));
+
+            expect(() =>
+                fireEvent.click(screen.getByRole('menuitem', { name: 'en (SRT)' }))
+            ).not.toThrow();
+        });
+    });
 });

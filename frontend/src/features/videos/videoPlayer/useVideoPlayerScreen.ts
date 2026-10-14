@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscreen/useContainerFullscreen';
 import usePictureInPicture from '@/features/videos/hooks/usePictureInPicture/usePictureInPicture';
+import useVideoSubtitles from '@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -111,6 +112,11 @@ export default function useVideoPlayerScreen() {
         togglePictureInPicture,
         requestError: pictureInPictureError,
     } = usePictureInPicture({ videoRef, isFullscreen, exitFullscreen: toggleFullscreen });
+    const { subtitles, selectedSubtitleId, selectSubtitle, toggleSubtitles } = useVideoSubtitles({
+        videoId: currentVideo?.id ?? null,
+        videoRef,
+        interfaceLanguage: settings.language?.current ?? '',
+    });
     const syncedRouteVideoIdRef = useRef<string | null>(null);
 
     const fallbackContextRoute = useMemo(() => {
@@ -344,5 +350,9 @@ export default function useVideoPlayerScreen() {
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        subtitles,
+        selectedSubtitleId,
+        selectSubtitle,
+        toggleSubtitles,
     };
 }

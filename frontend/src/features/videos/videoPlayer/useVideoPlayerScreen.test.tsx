@@ -16,6 +16,16 @@ jest.mock('@/features/videos/hooks/useVideoPlayer/useVideoPlayer', () => ({
 }));
 
 const mockSearchParams = new URLSearchParams();
+jest.mock('@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles', () => ({
+    __esModule: true,
+    default: () => ({
+        subtitles: [],
+        selectedSubtitleId: null,
+        selectSubtitle: jest.fn(),
+        toggleSubtitles: jest.fn(),
+    }),
+}));
+
 jest.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
     useParams: () => mockUseParams(),

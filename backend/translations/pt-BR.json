@@ -1920,5 +1920,11 @@
 	"VIDEO_SHORTCUT_FEEDBACK_MUTED": "Mudo",
 	"VIDEO_SHORTCUT_FEEDBACK_SPEED": "Velocidade {{rate}}x",
 	"VIDEO_SHORTCUT_FEEDBACK_NEXT": "Próximo vídeo",
-	"VIDEO_SHORTCUT_FEEDBACK_PREVIOUS": "Vídeo anterior"
+	"VIDEO_SHORTCUT_FEEDBACK_PREVIOUS": "Vídeo anterior",
+	"VIDEO_SUBTITLES": "Legendas",
+	"VIDEO_SUBTITLES_OFF": "Desativadas",
+	"VIDEO_SUBTITLES_FORCED": "Forçada",
+	"VIDEO_SHORTCUT_HELP_SUBTITLES": "Ativar ou desativar as legendas",
+	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON": "Legendas ativadas",
+	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF": "Legendas desativadas"
 }
