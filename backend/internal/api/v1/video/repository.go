@@ -847,6 +847,11 @@ func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.Pagi
 		searchPattern,
 		request.PageSize + 1,
 		utils.CalculateOffset(request.Page, request.PageSize),
+		pq.Array(request.Filters.Formats),
+		request.Filters.MinHeight,
+		request.Filters.MaxHeightExclusive,
+		request.Filters.MinDurationSeconds,
+		request.Filters.MaxDurationSeconds,
 	}
 
 	libraryVideosQuery, err := libraryVideosQueryFor(request.Ordering)

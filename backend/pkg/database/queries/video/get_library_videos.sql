@@ -43,3 +43,8 @@ WHERE
         OR LOWER(hf.parent_path) LIKE LOWER($2)
         OR LOWER(hf.format) LIKE LOWER($2)
     )
+    AND ($5::text[] IS NULL OR hf.format = ANY($5))
+    AND ($6::int IS NULL OR tech.height >= $6)
+    AND ($7::int IS NULL OR tech.height < $7)
+    AND ($8::double precision IS NULL OR tech.duration_seconds >= $8)
+    AND ($9::double precision IS NULL OR tech.duration_seconds < $9)

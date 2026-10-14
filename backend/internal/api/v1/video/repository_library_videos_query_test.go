@@ -27,7 +27,7 @@ func TestLibraryVideosQueryForComposesEveryWhitelistedOrderingWithoutPlaceholder
 		if err != nil {
 			t.Fatalf("%+v: %v", ordering, err)
 		}
-		if strings.Contains(composedQuery, "$5") {
+		if strings.Contains(composedQuery, "$10") {
 			t.Fatalf("%+v: unexpected extra placeholder", ordering)
 		}
 		if strings.Count(composedQuery, "ORDER BY") != 1 {
