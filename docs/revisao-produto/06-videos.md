@@ -80,7 +80,8 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 51. Tela cheia no contêiner (controles visíveis)
 - [x] 52. Picture-in-Picture
 - [x] 52.1. Media Session API (título e controles do SO no PiP/notificação)
-- [ ] 53. Volume, mudo e velocidade persistidos
+- [x] 53. Volume, mudo e velocidade persistidos
+- [ ] 53.1. Mudo independente do volume (hoje mudo = volume 0; ao recarregar mudo, o volume anterior se perde)
 - [ ] 54. Seek aplicado ao soltar o controle
 - [ ] 55. Legendas externas `.srt/.vtt`
 - [ ] 56. Legendas embutidas

@@ -18,11 +18,18 @@ import {
 } from '@/features/videos/videoPlayer/playbackError';
 import { flushVideoPlaybackState } from '@/service/playerStateFlush';
 import { hasReachedCompletionThreshold } from './playbackCompletion';
+import {
+    loadVideoPlaybackPreferences,
+    saveVideoPlaybackPreferences,
+    type VideoPlaybackPreferences,
+} from './videoPlaybackPreferences';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
 
 type StreamMode = 'direct' | 'remux' | 'transcode';
+
+const VOLUME_PERSIST_DEBOUNCE_MS = 300;
 
 const TRANSCODE_FALLBACK_ERROR_KINDS: PlaybackErrorKind[] = ['unsupported', 'decode'];
 
@@ -52,8 +59,9 @@ const useVideoPlayer = ({
     const [status, setStatus] = useState<Status>('waiting');
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [volume, setVolume] = useState(1);
-    const [playbackRate, setPlaybackRate] = useState(1);
+    const [initialPreferences] = useState(loadVideoPlaybackPreferences);
+    const [volume, setVolume] = useState(initialPreferences.volume);
+    const [playbackRate, setPlaybackRate] = useState(initialPreferences.playbackRate);
     const [quality, setQuality] = useState('auto');
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
@@ -64,6 +72,8 @@ const useVideoPlayer = ({
         (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => void
     >(() => undefined);
     const syncTimerRef = useRef<number | null>(null);
+    const preferencesRef = useRef<VideoPlaybackPreferences>(initialPreferences);
+    const volumePersistTimerRef = useRef<number | null>(null);
     const latestPlaybackRef = useRef({
         currentTime: 0,
         duration: 0,
@@ -91,11 +101,19 @@ const useVideoPlayer = ({
     const playlist = session?.playlist ?? null;
     const playbackState = session?.playback_state ?? null;
 
+    const applyPreferencesToVideo = useCallback((videoElement: HTMLVideoElement) => {
+        const { volume: savedVolume, isMuted, playbackRate: savedRate } = preferencesRef.current;
+        videoElement.volume = savedVolume;
+        videoElement.muted = isMuted;
+        videoElement.playbackRate = savedRate;
+    }, []);
+
     const loadStreamSource = useCallback(
         (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => {
             const videoElement = videoRef.current;
             if (!videoElement) return;
             setPlaybackError(null);
+            applyPreferencesToVideo(videoElement);
             streamModeRef.current = streamMode;
             if (streamMode === 'remux' || streamMode === 'transcode') {
                 remuxOffsetSecondsRef.current = seekSeconds;
@@ -131,7 +149,7 @@ const useVideoPlayer = ({
                     setPlaybackError(errorKind);
                 });
         },
-        []
+        [applyPreferencesToVideo]
     );
 
     useEffect(() => {
@@ -300,19 +318,55 @@ const useVideoPlayer = ({
         [loadStreamSource]
     );
 
-    const setVolumeHandler = useCallback((newVolume: number) => {
-        if (videoRef.current) {
-            videoRef.current.volume = Math.max(0, Math.min(1, newVolume));
-            setVolume(Math.max(0, Math.min(1, newVolume)));
+    const persistPreferencesNow = useCallback(() => {
+        if (volumePersistTimerRef.current != null) {
+            window.clearTimeout(volumePersistTimerRef.current);
+            volumePersistTimerRef.current = null;
         }
+        saveVideoPlaybackPreferences(preferencesRef.current);
     }, []);
 
-    const setPlaybackRateHandler = useCallback((rate: number) => {
-        if (videoRef.current) {
+    const persistPreferencesDebounced = useCallback(() => {
+        if (volumePersistTimerRef.current != null) {
+            window.clearTimeout(volumePersistTimerRef.current);
+        }
+        volumePersistTimerRef.current = window.setTimeout(
+            persistPreferencesNow,
+            VOLUME_PERSIST_DEBOUNCE_MS
+        );
+    }, [persistPreferencesNow]);
+
+    useEffect(
+        () => () => {
+            if (volumePersistTimerRef.current != null) persistPreferencesNow();
+        },
+        [persistPreferencesNow]
+    );
+
+    const setVolumeHandler = useCallback(
+        (newVolume: number) => {
+            if (!videoRef.current) return;
+            const clampedVolume = Math.max(0, Math.min(1, newVolume));
+            const isMuted = clampedVolume === 0;
+            videoRef.current.volume = clampedVolume;
+            videoRef.current.muted = isMuted;
+            setVolume(clampedVolume);
+            preferencesRef.current = { ...preferencesRef.current, volume: clampedVolume, isMuted };
+            persistPreferencesDebounced();
+        },
+        [persistPreferencesDebounced]
+    );
+
+    const setPlaybackRateHandler = useCallback(
+        (rate: number) => {
+            if (!videoRef.current) return;
             videoRef.current.playbackRate = rate;
             setPlaybackRate(rate);
-        }
-    }, []);
+            preferencesRef.current = { ...preferencesRef.current, playbackRate: rate };
+            persistPreferencesNow();
+        },
+        [persistPreferencesNow]
+    );
 
     const nextVideo = useCallback(async () => {
         const response = await nextVideoPlayback();
