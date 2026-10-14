@@ -3,6 +3,7 @@ SELECT
     vp.type,
     vp.source_path,
     vp.name,
+    vp.name_key,
     vp.is_hidden,
     vp.is_auto,
     vp.group_mode,

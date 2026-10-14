@@ -1,25 +1,15 @@
 package playlist
 
-// ---------------------------------------------------------------------------
-// Chain of Responsibility — decide quais estrategias usar baseado no contexto.
-// Cada handler avalia o contexto e pode adicionar/remover estrategias.
-// A chain permite extensao sem modificar o codigo existente.
-// ---------------------------------------------------------------------------
-
-// StrategyDecision e o resultado acumulado da chain.
 type StrategyDecision struct {
 	Strategies []PlaylistStrategy
 	Reasons    []string
 }
 
-// ChainHandler avalia o contexto e pode modificar a decisao.
-// Retorna true se processou (proximo handler ainda roda, mas a decisao ja contem algo).
 type ChainHandler interface {
 	Handle(ctx *PlaylistContext, decision *StrategyDecision) bool
 	Name() string
 }
 
-// StrategyChain e a chain completa de decisao.
 type StrategyChain struct {
 	handlers []ChainHandler
 }
@@ -28,7 +18,6 @@ func NewStrategyChain(handlers ...ChainHandler) *StrategyChain {
 	return &StrategyChain{handlers: handlers}
 }
 
-// Resolve executa todos os handlers da chain e retorna a decisao final.
 func (c *StrategyChain) Resolve(ctx *PlaylistContext) StrategyDecision {
 	decision := StrategyDecision{}
 
@@ -36,7 +25,6 @@ func (c *StrategyChain) Resolve(ctx *PlaylistContext) StrategyDecision {
 		handler.Handle(ctx, &decision)
 	}
 
-	// Se nenhum handler adicionou estrategia, usar fallback
 	if len(decision.Strategies) == 0 {
 		decision.Strategies = []PlaylistStrategy{NewByFolderStrategy()}
 		decision.Reasons = append(decision.Reasons, "fallback:by_folder")
@@ -45,12 +33,6 @@ func (c *StrategyChain) Resolve(ctx *PlaylistContext) StrategyDecision {
 	return decision
 }
 
-// ---------------------------------------------------------------------------
-// Handlers concretos
-// ---------------------------------------------------------------------------
-
-// ContinueWatchingHandler: se o usuario tem um video em progresso, adiciona
-// a estrategia de "continuar assistindo" como prioridade.
 type ContinueWatchingHandler struct{}
 
 func (h *ContinueWatchingHandler) Name() string { return "continue_watching_check" }
@@ -63,9 +45,6 @@ func (h *ContinueWatchingHandler) Handle(ctx *PlaylistContext, d *StrategyDecisi
 	return false
 }
 
-// CapturedSeriesHandler: se existe ao menos um video com proveniencia de
-// captura do plugin (title+episode), adiciona a estrategia que monta uma
-// playlist por serie capturada.
 type CapturedSeriesHandler struct{}
 
 func (h *CapturedSeriesHandler) Name() string { return "captured_series_check" }
@@ -80,8 +59,6 @@ func (h *CapturedSeriesHandler) Handle(ctx *PlaylistContext, d *StrategyDecision
 	return false
 }
 
-// SeriesDetectionHandler: se existem videos com padrao de episodio,
-// adiciona a estrategia de series sequenciais.
 type SeriesDetectionHandler struct{}
 
 func (h *SeriesDetectionHandler) Name() string { return "series_detection" }
@@ -101,12 +78,10 @@ func (h *SeriesDetectionHandler) Handle(ctx *PlaylistContext, d *StrategyDecisio
 	return false
 }
 
-// FolderGroupingHandler: sempre adiciona agrupamento por pasta como base.
 type FolderGroupingHandler struct{}
 
 func (h *FolderGroupingHandler) Name() string { return "folder_grouping" }
 func (h *FolderGroupingHandler) Handle(ctx *PlaylistContext, d *StrategyDecision) bool {
-	// Contar pastas com multiplos videos
 	strongFolders := 0
 	for _, videos := range ctx.VideosByFolder {
 		if len(videos) >= 2 {
@@ -122,8 +97,6 @@ func (h *FolderGroupingHandler) Handle(ctx *PlaylistContext, d *StrategyDecision
 	return false
 }
 
-// RelatedContentHandler: se existem videos classificados, adiciona
-// agrupamento por conteudo relacionado.
 type RelatedContentHandler struct{}
 
 func (h *RelatedContentHandler) Name() string { return "related_content" }
@@ -133,7 +106,6 @@ func (h *RelatedContentHandler) Handle(ctx *PlaylistContext, d *StrategyDecision
 		classCount[v.Classification]++
 	}
 
-	// So adicionar se temos pelo menos 2 classificacoes diferentes com 2+ videos
 	diverseClasses := 0
 	for _, count := range classCount {
 		if count >= 2 {
@@ -149,8 +121,6 @@ func (h *RelatedContentHandler) Handle(ctx *PlaylistContext, d *StrategyDecision
 	return false
 }
 
-// BehaviorBasedHandler: se temos dados de comportamento do usuario,
-// adiciona estrategia de favoritos e mix inteligente.
 type BehaviorBasedHandler struct{}
 
 func (h *BehaviorBasedHandler) Name() string { return "behavior_based" }
@@ -159,7 +129,6 @@ func (h *BehaviorBasedHandler) Handle(ctx *PlaylistContext, d *StrategyDecision)
 		return false
 	}
 
-	// So ativar se temos dados suficientes (pelo menos 5 videos assistidos)
 	totalWatched := len(ctx.Behavior.RecentlyWatched) + len(ctx.Behavior.RecentlyCompleted)
 	if totalWatched < 5 {
 		return false
@@ -170,7 +139,6 @@ func (h *BehaviorBasedHandler) Handle(ctx *PlaylistContext, d *StrategyDecision)
 	return true
 }
 
-// SmartMixHandler: sempre adiciona o mix variado como ultima opcao.
 type SmartMixHandler struct{}
 
 func (h *SmartMixHandler) Name() string { return "smart_mix" }
@@ -182,10 +150,6 @@ func (h *SmartMixHandler) Handle(ctx *PlaylistContext, d *StrategyDecision) bool
 	}
 	return false
 }
-
-// ---------------------------------------------------------------------------
-// Chain default: pipeline padrao de decisao
-// ---------------------------------------------------------------------------
 
 func DefaultStrategyChain() *StrategyChain {
 	return NewStrategyChain(

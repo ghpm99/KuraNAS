@@ -1,6 +1,7 @@
 SELECT
     vp.id,
     vp.name,
+    vp.name_key,
     vp.type
 FROM
     video_playlist vp

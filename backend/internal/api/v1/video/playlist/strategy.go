@@ -9,19 +9,10 @@ import (
 	"nas-go/api/pkg/utils"
 )
 
-// ---------------------------------------------------------------------------
-// Strategy Pattern — cada estrategia sabe montar playlists de um jeito
-// ---------------------------------------------------------------------------
-
 type PlaylistStrategy interface {
 	Name() string
 	Build(ctx *PlaylistContext) []PlaylistCandidate
 }
-
-// ---------------------------------------------------------------------------
-// ByFolderStrategy: agrupa videos que compartilham a mesma pasta,
-// mas so se a pasta for "forte" (>= minItems e nome nao generico).
-// ---------------------------------------------------------------------------
 
 type ByFolderStrategy struct {
 	MinItemsPerFolder int
@@ -42,7 +33,6 @@ func (s *ByFolderStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 			continue
 		}
 
-		// Determinar classificacao dominante da pasta
 		classCount := map[VideoClassification]int{}
 		for _, v := range videos {
 			classCount[v.Classification]++
@@ -53,12 +43,11 @@ func (s *ByFolderStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 		for _, v := range videos {
 			scored = append(scored, ScoredVideo{
 				Video:   *v,
-				Score:   1.0, // score base, sera ajustado pelo scorer
+				Score:   1.0,
 				Reasons: []string{"same_folder"},
 			})
 		}
 
-		// Ordenar por nome para manter ordem natural de episodios
 		sort.SliceStable(scored, func(i, j int) bool {
 			return lessByNaturalNameThenID(scored[i].Video.Video, scored[j].Video.Video)
 		})
@@ -77,12 +66,6 @@ func (s *ByFolderStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 	return candidates
 }
 
-// ---------------------------------------------------------------------------
-// SequentialSeriesStrategy: detecta series por prefixo compartilhado
-// e padrao de episodio, mesmo que os arquivos estejam em pastas diferentes.
-// Isso resolve o problema de agrupamento cross-folder.
-// ---------------------------------------------------------------------------
-
 type SequentialSeriesStrategy struct {
 	MinItemsPerGroup int
 }
@@ -94,7 +77,6 @@ func NewSequentialSeriesStrategy() *SequentialSeriesStrategy {
 func (s *SequentialSeriesStrategy) Name() string { return "sequential_series" }
 
 func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
-	// Agrupar por prefixo de titulo (cross-folder)
 	prefixGroups := map[string][]*ClassifiedVideo{}
 	for i := range ctx.Videos {
 		v := &ctx.Videos[i]
@@ -114,7 +96,6 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 		for _, v := range videos {
 			reasons := []string{"shared_prefix:" + prefix}
 
-			// Bonus se tem padrao de episodio explicito
 			if EpisodePattern.MatchString(strings.ToLower(v.Video.Name)) {
 				reasons = append(reasons, "episode_pattern")
 			}
@@ -126,12 +107,10 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 			})
 		}
 
-		// Ordenar por nome para ordem natural de episodios
 		sort.SliceStable(scored, func(i, j int) bool {
 			return lessByNaturalNameThenID(scored[i].Video.Video, scored[j].Video.Video)
 		})
 
-		// Classificacao dominante do grupo
 		classCount := map[VideoClassification]int{}
 		for _, v := range videos {
 			classCount[v.Classification]++
@@ -140,6 +119,7 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 		candidates = append(candidates, PlaylistCandidate{
 			SourceKey:      "series:" + prefix,
 			Name:           formatSeriesName(prefix),
+			NameKey:        seriesNameKey(prefix),
 			PlaylistType:   "series",
 			GroupMode:      "prefix",
 			Classification: dominantClassification(classCount),
@@ -150,14 +130,6 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 
 	return candidates
 }
-
-// ---------------------------------------------------------------------------
-// CapturedSeriesStrategy: agrupa episodios capturados pelo plugin por titulo
-// da serie (proveniencia explicita em VideoEntry.Series), gerando uma playlist
-// por serie ordenada por (season, episode). Diferente das outras estrategias,
-// nao depende de nome de pasta nem de regex no nome do arquivo — usa o que o
-// plugin ja sabia (title/season/episode), o sinal mais forte disponivel.
-// ---------------------------------------------------------------------------
 
 type CapturedSeriesStrategy struct{}
 
@@ -174,7 +146,7 @@ func (s *CapturedSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 	}
 
 	groups := map[string]*seriesGroup{}
-	order := make([]string, 0) // preserva ordem de descoberta dos titulos (saida deterministica)
+	order := make([]string, 0)
 
 	for i := range ctx.Videos {
 		v := &ctx.Videos[i]
@@ -199,7 +171,6 @@ func (s *CapturedSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 	for _, key := range order {
 		g := groups[key]
 
-		// Ordem natural de episodios: (season, episode), desempate por nome.
 		sort.SliceStable(g.videos, func(i, j int) bool {
 			return seriesProvenanceLess(
 				g.videos[i].Video.Series, g.videos[i].Video.Name,
@@ -239,11 +210,6 @@ func (s *CapturedSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 	return candidates
 }
 
-// ---------------------------------------------------------------------------
-// ContinueWatchingStrategy: prioriza videos em progresso e sugere proximos.
-// Funciona por cliente — precisa de PlaybackState no contexto.
-// ---------------------------------------------------------------------------
-
 type ContinueWatchingStrategy struct{}
 
 func NewContinueWatchingStrategy() *ContinueWatchingStrategy {
@@ -263,7 +229,6 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 		return nil
 	}
 
-	// So gera playlist "continue watching" se o video esta em progresso
 	if state.Completed || state.CurrentTime <= 0 {
 		return nil
 	}
@@ -271,18 +236,16 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 	scored := []ScoredVideo{
 		{
 			Video:   *current,
-			Score:   100.0, // score maximo para o video em andamento
+			Score:   100.0,
 			Reasons: []string{"in_progress", fmt.Sprintf("position:%.0fs", state.CurrentTime)},
 		},
 	}
 
-	// Adicionar videos da mesma pasta ou serie como proximos
 	sameFolder := ctx.VideosByFolder[current.Video.ParentPath]
 	for _, v := range sameFolder {
 		if v.Video.ID == current.Video.ID {
 			continue
 		}
-		// So adicionar se vem depois (ordem alfabetica)
 		if utils.CompareNaturalOrder(v.Video.Name, current.Video.Name) > 0 {
 			scored = append(scored, ScoredVideo{
 				Video:   *v,
@@ -299,7 +262,7 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 	return []PlaylistCandidate{
 		{
 			SourceKey:      fmt.Sprintf("continue:%s:%d", ctx.ClientID, state.VideoID),
-			Name:           "Continue assistindo",
+			NameKey:        NameKeyContinueWatching,
 			PlaylistType:   "continue",
 			GroupMode:      "behavior",
 			Classification: current.Classification,
@@ -309,14 +272,9 @@ func (s *ContinueWatchingStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 	}
 }
 
-// ---------------------------------------------------------------------------
-// RelatedContentStrategy: busca videos similares por metadados.
-// Combina duracao parecida + mesma classificacao + resolucao similar.
-// ---------------------------------------------------------------------------
-
 type RelatedContentStrategy struct {
 	MaxResults        int
-	DurationTolerance float64 // percentual de tolerancia (0.3 = 30%)
+	DurationTolerance float64
 }
 
 func NewRelatedContentStrategy() *RelatedContentStrategy {
@@ -329,9 +287,6 @@ func NewRelatedContentStrategy() *RelatedContentStrategy {
 func (s *RelatedContentStrategy) Name() string { return "related_content" }
 
 func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
-	// Agrupar por classificacao. Videos com proveniencia de captura ja viram uma
-	// playlist concreta por serie (CapturedSeriesStrategy), entao ficam de fora
-	// do balde generico — este passa a conter apenas series/anime avulsos.
 	byClass := map[VideoClassification][]*ClassifiedVideo{}
 	for i := range ctx.Videos {
 		v := &ctx.Videos[i]
@@ -345,7 +300,7 @@ func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 
 	for class, videos := range byClass {
 		if class == ClassProgram || class == ClassClip {
-			continue // nao criar playlists para programas/samples ou clips avulsos
+			continue
 		}
 		if len(videos) < 2 {
 			continue
@@ -356,7 +311,6 @@ func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 			score := 1.0
 			reasons := []string{fmt.Sprintf("classification:%s", class)}
 
-			// Bonus por ter metadados ricos
 			if v.Video.Meta != nil {
 				reasons = append(reasons, "has_metadata")
 				score += 0.5
@@ -369,7 +323,6 @@ func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 			})
 		}
 
-		// Limitar resultados
 		if len(scored) > s.MaxResults {
 			sort.Slice(scored, func(i, j int) bool {
 				return scored[i].Score > scored[j].Score
@@ -379,7 +332,7 @@ func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 
 		candidates = append(candidates, PlaylistCandidate{
 			SourceKey:      "related:" + string(class),
-			Name:           classificationDisplayName(class),
+			NameKey:        classificationNameKey(class),
 			PlaylistType:   playlistTypeFor(class),
 			GroupMode:      "classification",
 			Classification: class,
@@ -390,11 +343,6 @@ func (s *RelatedContentStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate
 
 	return candidates
 }
-
-// ---------------------------------------------------------------------------
-// PriorityFavoritesStrategy: mistura favoritos, recentes e nao assistidos.
-// Usa comportamento do usuario para priorizar.
-// ---------------------------------------------------------------------------
 
 type PriorityFavoritesStrategy struct {
 	MaxResults int
@@ -413,7 +361,6 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 
 	behavior := ctx.Behavior
 
-	// Criar set dos recentemente assistidos e completados
 	recentlyWatched := toSet(behavior.RecentlyWatched)
 	recentlyCompleted := toSet(behavior.RecentlyCompleted)
 	recentlySkipped := toSet(behavior.RecentlySkipped)
@@ -424,20 +371,17 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 		score := 0.0
 		var reasons []string
 
-		// Nunca assistido = oportunidade de descoberta
 		if !recentlyWatched[v.Video.ID] && !recentlyCompleted[v.Video.ID] {
 			score += 30
 			reasons = append(reasons, "unwatched:+30")
 		}
 
-		// Tipo preferido do usuario
 		if affinity, ok := behavior.PreferredTypes[v.Classification]; ok && affinity > 0.5 {
 			bonus := affinity * 25
 			score += bonus
 			reasons = append(reasons, fmt.Sprintf("preferred_type:+%.0f", bonus))
 		}
 
-		// Duracao na faixa preferida
 		if v.Video.Meta != nil && behavior.PreferredDurations.MaxSeconds > 0 {
 			if v.Video.Meta.Duration >= behavior.PreferredDurations.MinSeconds &&
 				v.Video.Meta.Duration <= behavior.PreferredDurations.MaxSeconds {
@@ -446,19 +390,16 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 			}
 		}
 
-		// Penalizar videos pulados recentemente
 		if recentlySkipped[v.Video.ID] {
 			score -= 40
 			reasons = append(reasons, "recently_skipped:-40")
 		}
 
-		// Penalizar videos ja completados (menos incentivo a re-assistir)
 		if recentlyCompleted[v.Video.ID] {
 			score -= 20
 			reasons = append(reasons, "already_completed:-20")
 		}
 
-		// Recencia do arquivo (videos mais novos ganham leve bonus)
 		if !v.Video.CreatedAt.IsZero() {
 			daysSinceCreation := daysSince(v.Video.CreatedAt)
 			if daysSinceCreation < 7 {
@@ -480,7 +421,6 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 		return nil
 	}
 
-	// Ordenar por score decrescente
 	sort.Slice(scored, func(i, j int) bool {
 		return scored[i].Score > scored[j].Score
 	})
@@ -492,7 +432,7 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 	return []PlaylistCandidate{
 		{
 			SourceKey:      fmt.Sprintf("favorites:%s", ctx.ClientID),
-			Name:           "Recomendados para voce",
+			NameKey:        NameKeyRecommended,
 			PlaylistType:   "mixed",
 			GroupMode:      "behavior",
 			Classification: ClassPersonal,
@@ -501,11 +441,6 @@ func (s *PriorityFavoritesStrategy) Build(ctx *PlaylistContext) []PlaylistCandid
 		},
 	}
 }
-
-// ---------------------------------------------------------------------------
-// RandomSmartStrategy: embaralha, mas com inteligencia — evita repeticao,
-// mantem coerencia de tipo e balanceia duracao.
-// ---------------------------------------------------------------------------
 
 type RandomSmartStrategy struct {
 	MaxResults int
@@ -522,7 +457,6 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 		return nil
 	}
 
-	// Estrategia: distribuir tipos uniformemente para variedade
 	byClass := map[VideoClassification][]ClassifiedVideo{}
 	for _, v := range ctx.Videos {
 		if v.Classification != ClassProgram {
@@ -530,13 +464,11 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 		}
 	}
 
-	// Round-robin por classificacao
 	var scored []ScoredVideo
 	classKeys := make([]VideoClassification, 0, len(byClass))
 	for k := range byClass {
 		classKeys = append(classKeys, k)
 	}
-	// Sort for deterministic output
 	sort.Slice(classKeys, func(i, j int) bool {
 		return string(classKeys[i]) < string(classKeys[j])
 	})
@@ -556,7 +488,7 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 
 			scored = append(scored, ScoredVideo{
 				Video:   v,
-				Score:   float64(s.MaxResults - len(scored)), // score decrescente = ordem de inclusao
+				Score:   float64(s.MaxResults - len(scored)),
 				Reasons: []string{"variety_mix", fmt.Sprintf("type:%s", class)},
 			})
 
@@ -576,7 +508,7 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 	return []PlaylistCandidate{
 		{
 			SourceKey:      "random:smart_mix",
-			Name:           "Mix variado",
+			NameKey:        NameKeyMixed,
 			PlaylistType:   "mixed",
 			GroupMode:      "random",
 			Classification: ClassPersonal,
@@ -586,19 +518,10 @@ func (s *RandomSmartStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-// normalizeSeriesKey gera uma chave estavel a partir do titulo da serie para
-// upsert idempotente: minuscula, espacos colapsados. "Frieren  e a Jornada" e
-// "frieren e a jornada" caem na mesma playlist entre rebuilds.
 func normalizeSeriesKey(title string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(title))), " ")
 }
 
-// seriesProvenanceLess ordena episodios por (season, episode); season ausente
-// conta como 0. Desempate final pelo nome do arquivo para ser deterministico.
 func seriesProvenanceLess(a *SeriesProvenance, nameA string, b *SeriesProvenance, nameB string) bool {
 	seasonA, seasonB := 0, 0
 	if a.Season != nil {
@@ -652,28 +575,14 @@ func playlistTypeFor(class VideoClassification) string {
 	}
 }
 
-func classificationDisplayName(class VideoClassification) string {
-	names := map[VideoClassification]string{
-		ClassSeries:   "Series",
-		ClassMovie:    "Filmes",
-		ClassAnime:    "Animes",
-		ClassCourse:   "Cursos",
-		ClassPersonal: "Videos pessoais",
-		ClassClip:     "Clips",
-		ClassMusic:    "Videos musicais",
-		ClassProgram:  "Programas",
+func seriesNameKey(prefix string) string {
+	if prefix == "" {
+		return NameKeyUnknownSeries
 	}
-	if name, ok := names[class]; ok {
-		return name
-	}
-	return "Videos"
+	return ""
 }
 
 func formatSeriesName(prefix string) string {
-	if prefix == "" {
-		return "Serie desconhecida"
-	}
-	// Capitalizar primeira letra de cada palavra
 	words := strings.Fields(prefix)
 	for i, w := range words {
 		if len(w) > 0 {

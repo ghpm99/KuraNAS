@@ -13,4 +13,4 @@ INSERT INTO video_playlist (
     'folder',
     'personal'
 )
-RETURNING id, type, source_path, name, is_hidden, is_auto, group_mode, classification, created_at, updated_at, last_played_at;
+RETURNING id, type, source_path, name, name_key, is_hidden, is_auto, group_mode, classification, created_at, updated_at, last_played_at;

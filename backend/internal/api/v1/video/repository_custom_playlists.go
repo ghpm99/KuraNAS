@@ -14,6 +14,7 @@ func (r *Repository) CreateCustomPlaylist(tx *sql.Tx, sourcePath string, name st
 		&playlist.Type,
 		&playlist.SourcePath,
 		&playlist.Name,
+		&playlist.NameKey,
 		&playlist.IsHidden,
 		&playlist.IsAuto,
 		&playlist.GroupMode,

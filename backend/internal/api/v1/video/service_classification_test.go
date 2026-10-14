@@ -54,7 +54,7 @@ func TestCatalogAndRebuildAgreeOnPersistedClassification(t *testing.T) {
 				{VideoFileModel: unclassifiedSeries},
 			}, nil
 		},
-		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 			rebuiltClassifications = append(rebuiltClassifications, classification)
 			return VideoPlaylistModel{ID: 100, Name: name}, nil
 		},

@@ -242,6 +242,7 @@ func overlapPercent(a, b map[int]bool) float64 {
 type SmartGroup struct {
 	SourceKey      string
 	Name           string
+	NameKey        string
 	PlaylistType   string
 	GroupMode      string
 	Classification string
@@ -265,6 +266,7 @@ func (r BuildResult) ToSmartGroups() []SmartGroup {
 		groups = append(groups, SmartGroup{
 			SourceKey:      c.SourceKey,
 			Name:           c.Name,
+			NameKey:        c.NameKey,
 			PlaylistType:   c.PlaylistType,
 			GroupMode:      c.GroupMode,
 			Classification: string(c.Classification),

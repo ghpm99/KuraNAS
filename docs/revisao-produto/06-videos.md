@@ -93,7 +93,8 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 59.1. `GetVideoMetadataByID` com SELECT de 22 colunas e Scan de 21 (consulta por id de metadata quebrada)
 
 ### i18n e limpeza
-- [ ] 60. Nomes de playlists e seções do backend traduzidos (slug + i18n)
+- [x] 60. Nomes de playlists e seções do backend traduzidos (slug + i18n)
+- [ ] 60.1. Busca global e busca de playlists usam o nome resolvido por name_key (hoje filtram/devolvem vp.name gravado no idioma da escrita)
 - [ ] 61. Badge de classificação via i18n
 - [ ] 62. Código órfão do frontend de vídeos
 - [ ] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)

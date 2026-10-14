@@ -114,7 +114,8 @@ func (s *Service) RebuildSmartPlaylists() error {
 				tx,
 				group.PlaylistType,
 				group.SourceKey,
-				group.Name,
+				persistedAutoPlaylistName(group),
+				toNullableNameKey(group.NameKey),
 				group.GroupMode,
 				group.Classification,
 			)
@@ -259,7 +260,12 @@ func (s *Service) GetPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoDto, e
 
 	playlistDtos := make([]VideoPlaylistOfVideoDto, 0, len(models))
 	for _, model := range models {
-		playlistDtos = append(playlistDtos, VideoPlaylistOfVideoDto{ID: model.ID, Name: model.Name, Type: model.Type})
+		playlistDtos = append(playlistDtos, VideoPlaylistOfVideoDto{
+			ID:      model.ID,
+			Name:    resolvePlaylistName(model.Name, model.NameKey),
+			NameKey: nullableString(model.NameKey),
+			Type:    model.Type,
+		})
 	}
 
 	return playlistDtos, nil

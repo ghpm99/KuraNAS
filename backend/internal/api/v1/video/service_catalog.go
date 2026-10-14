@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"nas-go/api/internal/api/v1/video/playlist"
+	"nas-go/api/pkg/i18n"
 )
 
 func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDto, error) {
@@ -30,7 +31,6 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 
 	state, _ := s.Repository.GetPlaybackState(clientID)
 
-	// Usar o classifier do engine para categorizar
 	classifier := s.PlaylistEngine.Classifier
 	series := make([]VideoCatalogItemDto, 0, normalizedLimit)
 	movies := make([]VideoCatalogItemDto, 0, normalizedLimit)
@@ -69,11 +69,11 @@ func (s *Service) GetHomeCatalog(clientID string, limit int) (VideoHomeCatalogDt
 
 	catalog := VideoHomeCatalogDto{
 		Sections: []VideoCatalogSectionDto{
-			{Key: "continue", Title: "Continue assistindo", Items: continueWatching},
-			{Key: "series", Title: "Series", Items: series},
-			{Key: "movies", Title: "Filmes", Items: movies},
-			{Key: "personal", Title: "Videos pessoais", Items: personal},
-			{Key: "recent", Title: "Adicionados recentemente", Items: recent},
+			{Key: "continue", Title: i18n.GetMessage("VIDEO_CATALOG_SECTION_CONTINUE"), Items: continueWatching},
+			{Key: "series", Title: i18n.GetMessage("VIDEO_CATALOG_SECTION_SERIES"), Items: series},
+			{Key: "movies", Title: i18n.GetMessage("VIDEO_CATALOG_SECTION_MOVIES"), Items: movies},
+			{Key: "personal", Title: i18n.GetMessage("VIDEO_CATALOG_SECTION_PERSONAL"), Items: personal},
+			{Key: "recent", Title: i18n.GetMessage("VIDEO_CATALOG_SECTION_RECENT"), Items: recent},
 		},
 	}
 

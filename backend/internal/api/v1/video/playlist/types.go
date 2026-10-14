@@ -118,6 +118,7 @@ type ScoredVideo struct {
 type PlaylistCandidate struct {
 	SourceKey      string // chave unica: "folder:/path", "series:breaking_bad"
 	Name           string
+	NameKey        string
 	PlaylistType   string // "folder", "series", "movie", "course", "mixed"
 	GroupMode      string // "folder", "prefix", "classification", "behavior"
 	Classification VideoClassification
