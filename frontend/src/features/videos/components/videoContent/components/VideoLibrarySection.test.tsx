@@ -161,6 +161,59 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         expect(screen.getByRole('combobox', { name: 'VIDEO_SORT_LABEL' })).toHaveValue('recent');
     });
 
+    it('shows the filtered empty state with a clear action when filters hide everything', () => {
+        const onFiltersChange = jest.fn();
+        render(
+            <VideoLibrarySection
+                videos={[]}
+                playlists={[]}
+                search=""
+                filters={{ formats: ['.mkv'] }}
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onFiltersChange={onFiltersChange}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText('VIDEO_FILTER_EMPTY')).toBeInTheDocument();
+        const [clearFromBar, clearFromEmptyState] = screen.getAllByRole('button', {
+            name: 'VIDEO_FILTER_CLEAR',
+        });
+        fireEvent.click(clearFromEmptyState!);
+        fireEvent.click(clearFromBar!);
+
+        expect(onFiltersChange).toHaveBeenCalledTimes(2);
+        expect(onFiltersChange).toHaveBeenCalledWith({ formats: [] });
+    });
+
+    it('does not show the filtered empty state without active filters', () => {
+        render(
+            <VideoLibrarySection
+                videos={[]}
+                playlists={[]}
+                search=""
+                selectedPlaylistPerVideo={{}}
+                isAddingToPlaylist={false}
+                isFetchingMoreVideos={false}
+                hasMoreVideos={false}
+                onSearchChange={jest.fn()}
+                onSelectPlaylistForVideo={jest.fn()}
+                onPlayVideo={jest.fn()}
+                onAddVideo={jest.fn()}
+                onLoadMore={jest.fn()}
+            />
+        );
+
+        expect(screen.queryByText('VIDEO_FILTER_EMPTY')).not.toBeInTheDocument();
+    });
+
     it('uses the first playlist as fallback selection and forwards user actions', () => {
         const onSearchChange = jest.fn();
         const onSelectPlaylistForVideo = jest.fn();
@@ -191,12 +244,12 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             'src',
             'http://localhost:8000/api/v1/files/video-thumbnail/5?width=240&height=135'
         );
-        expect(screen.getAllByRole('combobox')[1]!).toHaveValue('1');
+        expect(screen.getAllByRole('combobox')[3]!).toHaveValue('1');
 
         fireEvent.change(screen.getByPlaceholderText('Search videos'), {
             target: { value: 'epi' },
         });
-        fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: '2' } });
+        fireEvent.change(screen.getAllByRole('combobox')[3]!, { target: { value: '2' } });
         fireEvent.click(screen.getByRole('button', { name: 'Play' }));
         fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 

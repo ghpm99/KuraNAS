@@ -2,6 +2,7 @@ import { TextField } from '@mui/material';
 import { ArrowDown, ArrowUp, Play } from 'lucide-react';
 import {
     VideoFileDto,
+    VideoLibraryFilters,
     VideoLibrarySort,
     VideoLibrarySortKey,
     VideoPlaylistDto,
@@ -9,12 +10,17 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import VideoLibraryFilterBar from './VideoLibraryFilterBar';
 import VideoLibraryPlaylistPicker from './VideoLibraryPlaylistPicker';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import {
     defaultVideoLibrarySort,
     videoLibrarySortKeys,
 } from '../../../providers/videoContentProvider/videoLibrarySortPreference';
+import {
+    hasActiveVideoLibraryFilters,
+    noVideoLibraryFilters,
+} from '../../../providers/videoContentProvider/videoLibraryFilters';
 import styles from '../videoContent.module.css';
 
 type VideoLibrarySectionProps = {
@@ -22,12 +28,14 @@ type VideoLibrarySectionProps = {
     playlists: VideoPlaylistDto[];
     search: string;
     sort?: VideoLibrarySort;
+    filters?: VideoLibraryFilters;
     selectedPlaylistPerVideo: Record<number, number>;
     isAddingToPlaylist: boolean;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
     onSearchChange: (value: string) => void;
     onSortChange?: (sort: VideoLibrarySort) => void;
+    onFiltersChange?: (filters: VideoLibraryFilters) => void;
     onSelectPlaylistForVideo: (videoId: number, playlistId: number) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     onAddVideo: (videoId: number) => void;
@@ -49,12 +57,14 @@ export default function VideoLibrarySection({
     playlists,
     search,
     sort = defaultVideoLibrarySort,
+    filters = noVideoLibraryFilters,
     selectedPlaylistPerVideo,
     isAddingToPlaylist,
     isFetchingMoreVideos,
     hasMoreVideos,
     onSearchChange,
     onSortChange,
+    onFiltersChange,
     onSelectPlaylistForVideo,
     onPlayVideo,
     onAddVideo,
@@ -62,6 +72,7 @@ export default function VideoLibrarySection({
     onSetWatched,
 }: VideoLibrarySectionProps) {
     const { t } = useI18n();
+    const isFilteredEmpty = videos.length === 0 && hasActiveVideoLibraryFilters(filters);
     const isAscending = sort.order === 'asc';
     const orderToggleLabel = t(
         isAscending ? 'VIDEO_SORT_ORDER_ASCENDING' : 'VIDEO_SORT_ORDER_DESCENDING'
@@ -103,6 +114,7 @@ export default function VideoLibrarySection({
                     {isAscending ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                 </button>
             </div>
+            <VideoLibraryFilterBar filters={filters} onFiltersChange={onFiltersChange} />
             <div className={styles.searchRow}>
                 <TextField
                     size="small"
@@ -157,6 +169,18 @@ export default function VideoLibrarySection({
                     );
                 })}
             </div>
+            {isFilteredEmpty && (
+                <div className={styles.filteredEmptyState}>
+                    <p>{t('VIDEO_FILTER_EMPTY')}</p>
+                    <button
+                        type="button"
+                        className={styles.actionBtn}
+                        onClick={() => onFiltersChange?.(noVideoLibraryFilters)}
+                    >
+                        {t('VIDEO_FILTER_CLEAR')}
+                    </button>
+                </div>
+            )}
             <LoadMoreSentinel
                 hasNextPage={hasMoreVideos}
                 isFetchingNextPage={isFetchingMoreVideos}

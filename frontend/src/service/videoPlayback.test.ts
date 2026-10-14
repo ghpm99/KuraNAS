@@ -277,4 +277,46 @@ describe('service/videoPlayback', () => {
         });
         expect(files).toEqual(payload);
     });
+
+    it('sends the format, resolution and duration filters only when defined', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], pagination: {} } });
+
+        await getVideoLibraryFiles(2, 60, '', undefined, {
+            formats: ['.mp4', '.mkv'],
+            resolution: 'fhd',
+            duration: 'long',
+        });
+
+        expect(mockedApi.get).toHaveBeenLastCalledWith('/video/library/files', {
+            params: {
+                page: 2,
+                page_size: 60,
+                query: '',
+                sort: undefined,
+                order: undefined,
+                format: '.mp4,.mkv',
+                resolution: 'fhd',
+                duration: 'long',
+            },
+        });
+    });
+
+    it('omits every filter param when no filter is active', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [], pagination: {} } });
+
+        await getVideoLibraryFiles(1, 60, '', undefined, { formats: [] });
+
+        expect(mockedApi.get).toHaveBeenLastCalledWith('/video/library/files', {
+            params: {
+                page: 1,
+                page_size: 60,
+                query: '',
+                sort: undefined,
+                order: undefined,
+                format: undefined,
+                resolution: undefined,
+                duration: undefined,
+            },
+        });
+    });
 });
