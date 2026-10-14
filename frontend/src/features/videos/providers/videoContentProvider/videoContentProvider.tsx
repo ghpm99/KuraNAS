@@ -39,8 +39,9 @@ import {
     type InfiniteData,
 } from '@tanstack/react-query';
 import type { Pagination } from '@/types/pagination';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useI18n from '@/components/i18n/provider/i18nContext';
 
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
@@ -136,11 +137,11 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
-    const searchTextFromUrl = new URLSearchParams(location.search).get('q') ?? '';
-    const [videoSearch, setVideoSearch] = useState(searchTextFromUrl);
-    useEffect(() => {
-        setVideoSearch(searchTextFromUrl);
-    }, [searchTextFromUrl]);
+    const {
+        inputValue: videoSearch,
+        setInputValue: setVideoSearch,
+        activeQuery: settledVideoSearch,
+    } = useFileSearchQuery({ minQueryLength: 1, shouldAlwaysReplaceHistory: true });
     const [librarySort, setLibrarySortState] = useState(loadVideoLibrarySort);
     const setLibrarySort = (nextSort: VideoLibrarySort) => {
         setLibrarySortState(nextSort);
@@ -193,12 +194,12 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
     const { data: homeCatalog, isLoading: isLoadingHomeCatalog } = homeCatalogQuery;
     const videoLibraryQuery = useInfiniteQuery({
-        queryKey: videoQueryKeys.libraryFiles(videoSearch, librarySort, libraryFilters),
+        queryKey: videoQueryKeys.libraryFiles(settledVideoSearch, librarySort, libraryFilters),
         queryFn: ({ pageParam = 1 }) =>
             getVideoLibraryFiles(
                 pageParam,
                 VIDEO_LIBRARY_PAGE_SIZE,
-                videoSearch,
+                settledVideoSearch,
                 librarySort,
                 libraryFilters
             ),

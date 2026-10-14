@@ -48,6 +48,7 @@ jest.mock('react-router-dom', () => ({
     Link: ({ children, to }: any) => <a href={to}>{children}</a>,
     useLocation: () => mockLocation,
     useNavigate: () => mockNavigate,
+    useSearchParams: () => [new URLSearchParams(mockLocation.search), jest.fn()],
 }));
 
 jest.mock('./folderBrowser/VideoFolderBrowser', () => ({

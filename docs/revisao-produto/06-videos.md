@@ -60,7 +60,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 36. Busca com fold de acento e índice trigram
 - [x] 37. Duração/resolução/codec na listagem (contrato)
 - [x] 38. Duração/resolução nos cards
-- [ ] 39. `?q=` sincronizado na URL
+- [x] 39. `?q=` sincronizado na URL
 - [ ] 40. "Adicionar à playlist" com menu e busca, sem padrão implícito
 - [ ] 41. Criar e excluir playlist personalizada (`create_playlist.sql` grava `is_auto = TRUE` mesmo para custom — corrigir junto)
 - [ ] 42. Ocultar/mostrar playlist na UI
