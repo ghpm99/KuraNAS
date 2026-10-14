@@ -738,6 +738,7 @@
 	"ERROR_MUSIC_OPERATION_FAILED": "Failed to process music request",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "This track is already in the playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Video resource not found",
+	"ERROR_VIDEO_POSTER_NOT_FOUND": "Local video poster not found",
 	"ERROR_VIDEO_PLAYBACK_NOT_FOUND": "No active playback session found",
 	"ERROR_VIDEO_INVALID_REQUEST": "Invalid video request",
 	"ERROR_VIDEO_INVALID_LIBRARY_FILTER": "Invalid video library filter",

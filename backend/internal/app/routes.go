@@ -418,6 +418,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("/folders", context.Video.Handler.ListLibraryFoldersHandler)
 	library.GET("/folders/videos", context.Video.Handler.ListLibraryFolderVideosHandler)
 	library.GET("/movies", context.Video.Handler.ListLibraryMoviesHandler)
+	router.GET("/video/movies/:file_id/poster", context.Video.Handler.GetMoviePosterHandler)
 	router.GET("/video/continue", context.Video.Handler.GetContinueWatchingHandler)
 	router.PUT("/video/progress/:file_id/watched", context.Video.Handler.SetVideoWatchedHandler)
 
@@ -436,6 +437,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.PUT("/:id/reorder", context.Video.Handler.ReorderPlaylistHandler)
 	playlists.GET("/:id", context.Video.Handler.GetPlaylistByIDHandler)
 	playlists.GET("/:id/items", context.Video.Handler.GetPlaylistItemsPageHandler)
+	playlists.GET("/:id/poster", context.Video.Handler.GetPlaylistPosterHandler)
 	playlists.PUT("/:id", context.Video.Handler.UpdatePlaylistHandler)
 	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
 	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
