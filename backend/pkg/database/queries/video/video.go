@@ -222,3 +222,6 @@ var CountVideosInFolderQuery string
 
 //go:embed get_playlist_dominant_folder.sql
 var GetPlaylistDominantFolderQuery string
+
+//go:embed list_subtitle_files_by_name_prefix.sql
+var ListSubtitleFilesByNamePrefixQuery string
