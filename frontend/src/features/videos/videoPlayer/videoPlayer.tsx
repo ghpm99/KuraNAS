@@ -150,14 +150,7 @@ const VideoPlayer = ({
                     </div>
                 ) : null}
 
-                {children ? (
-                    <div
-                        className={styles.controlsLayer}
-                        onDoubleClick={toggleFullscreenOnSurfaceDoubleClick}
-                    >
-                        {children}
-                    </div>
-                ) : null}
+                {children ? <div className={styles.controlsLayer}>{children}</div> : null}
             </div>
         </div>
     );

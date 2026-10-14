@@ -34,19 +34,6 @@ describe('videoPlayer fullscreen double click', () => {
         expect(onToggleFullscreen).toHaveBeenCalledTimes(1);
     });
 
-    it('toggles fullscreen when the empty controls layer is double clicked', () => {
-        const onToggleFullscreen = jest.fn();
-        renderPlayer({
-            onToggleFullscreen,
-            children: <button type="button">inner-control</button>,
-        });
-
-        const controlsLayer = screen.getByRole('button', { name: 'inner-control' }).parentElement!;
-        fireEvent.doubleClick(controlsLayer);
-
-        expect(onToggleFullscreen).toHaveBeenCalledTimes(1);
-    });
-
     it('does not toggle fullscreen when a control inside the layer is double clicked', () => {
         const onToggleFullscreen = jest.fn();
         renderPlayer({
