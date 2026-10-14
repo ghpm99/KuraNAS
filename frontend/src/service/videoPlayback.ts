@@ -194,6 +194,17 @@ export const getVideoPlaylistsBySection = async (
     return response.data;
 };
 
+export const searchVideoPlaylists = async (
+    query: string,
+    page: number,
+    pageSize: number
+): Promise<Pagination<VideoPlaylistDto>> => {
+    const response = await apiBase.get<Pagination<VideoPlaylistDto>>('/video/playlists/search', {
+        params: { q: query, page, page_size: pageSize },
+    });
+    return response.data;
+};
+
 export const getVideoPlaylistsByVideo = async (
     videoId: number
 ): Promise<VideoPlaylistOfVideoDto[]> => {

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render as renderUnwrapped, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import VideoLibrarySection from './VideoLibrarySection';
-import type { VideoFileDto, VideoPlaylistDto } from '@/service/videoPlayback';
+import type { VideoFileDto } from '@/service/videoPlayback';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
@@ -38,41 +38,6 @@ const videos: VideoFileDto[] = [
     },
 ];
 
-const playlists: VideoPlaylistDto[] = [
-    {
-        id: 1,
-        type: 'series',
-        source_path: '/shows',
-        name: 'Season 1',
-        is_hidden: false,
-        is_auto: true,
-        group_mode: 'prefix',
-        classification: 'series',
-        item_count: 1,
-        cover_video_id: 5,
-        created_at: '2026-03-16T10:00:00Z',
-        updated_at: '2026-03-16T10:00:00Z',
-        last_played_at: null,
-        items: [],
-    },
-    {
-        id: 2,
-        type: 'custom',
-        source_path: '/custom',
-        name: 'Favorites',
-        is_hidden: false,
-        is_auto: false,
-        group_mode: 'single',
-        classification: 'personal',
-        item_count: 1,
-        cover_video_id: null,
-        created_at: '2026-03-16T10:00:00Z',
-        updated_at: '2026-03-16T10:00:00Z',
-        last_played_at: null,
-        items: [],
-    },
-];
-
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const withQueryClient = (ui: ReactElement) => (
@@ -86,14 +51,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={[]}
-                playlists={[]}
                 search=""
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -109,16 +71,13 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={videos}
-                playlists={playlists}
                 search=""
                 sort={{ key: 'name', order: 'asc' }}
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
                 onSortChange={onSortChange}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -139,14 +98,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={[]}
-                playlists={[]}
                 search=""
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -166,16 +122,13 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={[]}
-                playlists={[]}
                 search=""
                 filters={{ formats: ['.mkv'] }}
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
                 onFiltersChange={onFiltersChange}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -197,14 +150,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={[]}
-                playlists={[]}
                 search=""
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -214,9 +164,8 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         expect(screen.queryByText('VIDEO_FILTER_EMPTY')).not.toBeInTheDocument();
     });
 
-    it('uses the first playlist as fallback selection and forwards user actions', () => {
+    it('forwards user actions and adds only after an explicit playlist choice', () => {
         const onSearchChange = jest.fn();
-        const onSelectPlaylistForVideo = jest.fn();
         const onPlayVideo = jest.fn();
         const onAddVideo = jest.fn();
         const onLoadMore = jest.fn();
@@ -224,14 +173,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={videos}
-                playlists={playlists}
                 search=""
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={onSearchChange}
-                onSelectPlaylistForVideo={onSelectPlaylistForVideo}
                 onPlayVideo={onPlayVideo}
                 onAddVideo={onAddVideo}
                 onLoadMore={onLoadMore}
@@ -244,19 +190,16 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             'src',
             'http://localhost:8000/api/v1/files/video-thumbnail/5?width=240&height=135'
         );
-        expect(screen.getAllByRole('combobox')[3]!).toHaveValue('1');
 
         fireEvent.change(screen.getByPlaceholderText('Search videos'), {
             target: { value: 'epi' },
         });
-        fireEvent.change(screen.getAllByRole('combobox')[3]!, { target: { value: '2' } });
         fireEvent.click(screen.getByRole('button', { name: 'Play' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_ADD_TO_PLAYLIST' }));
 
         expect(onSearchChange).toHaveBeenCalledWith('epi');
-        expect(onSelectPlaylistForVideo).toHaveBeenCalledWith(5, 2);
         expect(onPlayVideo).toHaveBeenCalledWith(5, null);
-        expect(onAddVideo).toHaveBeenCalledWith(5);
+        expect(onAddVideo).not.toHaveBeenCalled();
         expect(onLoadMore).not.toHaveBeenCalled();
         expect(screen.queryByRole('button', { name: 'Load More' })).not.toBeInTheDocument();
     });
@@ -266,14 +209,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         const { rerender } = render(
             <VideoLibrarySection
                 videos={videos}
-                playlists={playlists}
                 search=""
-                selectedPlaylistPerVideo={{ 5: 2 }}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={true}
                 hasMoreVideos
                 onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={onLoadMore}
@@ -286,14 +226,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
             withQueryClient(
                 <VideoLibrarySection
                     videos={videos}
-                    playlists={playlists}
                     search=""
-                    selectedPlaylistPerVideo={{ 5: 2 }}
                     isAddingToPlaylist={false}
                     isFetchingMoreVideos={false}
                     hasMoreVideos
                     onSearchChange={jest.fn()}
-                    onSelectPlaylistForVideo={jest.fn()}
                     onPlayVideo={jest.fn()}
                     onAddVideo={jest.fn()}
                     onLoadMore={onLoadMore}
@@ -310,14 +247,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
         render(
             <VideoLibrarySection
                 videos={videos}
-                playlists={playlists}
                 search=""
-                selectedPlaylistPerVideo={{}}
                 isAddingToPlaylist={false}
                 isFetchingMoreVideos={false}
                 hasMoreVideos={false}
                 onSearchChange={jest.fn()}
-                onSelectPlaylistForVideo={jest.fn()}
                 onPlayVideo={jest.fn()}
                 onAddVideo={jest.fn()}
                 onLoadMore={jest.fn()}
@@ -332,14 +266,11 @@ describe('videos/videoContent/VideoLibrarySection', () => {
 
     it('shows badges for videos with technical fields and omits them otherwise', () => {
         const props = {
-            playlists: [],
             search: '',
-            selectedPlaylistPerVideo: {},
             isAddingToPlaylist: false,
             isFetchingMoreVideos: false,
             hasMoreVideos: false,
             onSearchChange: jest.fn(),
-            onSelectPlaylistForVideo: jest.fn(),
             onPlayVideo: jest.fn(),
             onAddVideo: jest.fn(),
             onLoadMore: jest.fn(),

@@ -35,6 +35,8 @@ jest.mock('@/service/videoPlayback', () => ({
     reorderVideoPlaylist: (...args: any[]) => mockReorderVideoPlaylist(...args),
     updateVideoPlaylistName: (...args: any[]) => mockUpdateVideoPlaylistName(...args),
     getVideoPlaybackState: (...args: any[]) => mockGetVideoPlaybackState(...args),
+    searchVideoPlaylists: jest.fn(),
+    getVideoPlaylistsByVideo: jest.fn(),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
@@ -100,6 +102,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_SEARCH_PLACEHOLDER: 'Buscar video por nome, pasta ou formato',
                 VIDEO_PLAY: 'Reproduzir',
                 VIDEO_ADD: 'Adicionar',
+                VIDEO_ADD_TO_PLAYLIST: 'Adicionar a playlist',
+                VIDEO_PLAYLIST_SEARCH: 'Buscar playlist',
                 VIDEO_ADD_SUCCESS: 'Video adicionado a playlist com sucesso.',
                 VIDEO_ADD_ERROR: 'Nao foi possivel adicionar o video a playlist.',
                 VIDEO_ALREADY_ADDED: 'Ja adicionado',
@@ -394,6 +398,27 @@ beforeEach(() => {
         if (options.enabled !== false) {
             options.queryFn?.({ pageParam: 1 });
         }
+        if (options.queryKey[1] === 'playlists' && options.queryKey[2] === 'search') {
+            return {
+                data: {
+                    pages: [
+                        {
+                            items: playlistsData,
+                            pagination: {
+                                page: 1,
+                                page_size: 30,
+                                has_next: false,
+                                has_prev: false,
+                            },
+                        },
+                    ],
+                },
+                isLoading: false,
+                isFetchingNextPage: false,
+                hasNextPage: false,
+                fetchNextPage: jest.fn(),
+            };
+        }
         if (options.queryKey[1] === 'playlists' && options.queryKey[2] === 'section') {
             return sectionPlaylistsResult(options.queryKey[3]);
         }
@@ -559,8 +584,10 @@ describe('components/videos/videoContent', () => {
         fireEvent.click(screen.getAllByRole('button', { name: /Reproduzir/i })[0]!);
         expect(mockNavigate).toHaveBeenCalled();
 
-        fireEvent.change(screen.getAllByRole('combobox')[3]!, { target: { value: '1' } });
-        fireEvent.click(screen.getByRole('button', { name: /Adicionar/i }));
+        expect(mockAddVideoToPlaylist).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: /Adicionar a playlist/i }));
+        expect(mockAddVideoToPlaylist).not.toHaveBeenCalled();
+        fireEvent.click(await screen.findByRole('menuitem', { name: /Playlist One/i }));
         expect(mockAddVideoToPlaylist).toHaveBeenCalledWith(1, 30);
         expect(
             await screen.findByText('Video adicionado a playlist com sucesso.')
@@ -644,7 +671,8 @@ describe('components/videos/videoContent', () => {
         mutationShouldError = true;
         render(<VideoContent />);
 
-        fireEvent.click(screen.getByRole('button', { name: /Adicionar/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Adicionar a playlist/i }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: /Playlist One/i }));
         expect(
             await screen.findByText('Nao foi possivel adicionar o video a playlist.')
         ).toBeInTheDocument();

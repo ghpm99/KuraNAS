@@ -459,35 +459,7 @@ describe('VideoContentProvider', () => {
         expect(result.current.feedback.open).toBe(false);
     });
 
-    it('setSelectedPlaylistForVideo updates the per-video playlist selection', async () => {
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
-        });
-
-        await waitFor(() => expect(result.current.isLoadingPlaylists).toBe(false));
-
-        act(() => result.current.setSelectedPlaylistForVideo(100, 5));
-        expect(result.current.selectedPlaylistPerVideo[100]).toBe(5);
-    });
-
-    it('addVideoFromLibrary calls mutation with selected playlist or first playlist', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([
-            createPlaylist({ id: 10, name: 'First Playlist' }),
-            createPlaylist({ id: 20, name: 'Second Playlist' }),
-        ]);
-
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(['/videos/folders']),
-        });
-
-        await waitFor(() => expect(result.current.playlists).toHaveLength(2));
-
-        act(() => result.current.addVideoFromLibrary(100));
-
-        await waitFor(() => expect(mockAddVideoToPlaylist).toHaveBeenCalledWith(10, 100));
-    });
-
-    it('addVideoFromLibrary uses per-video selected playlist when set', async () => {
+    it('addVideoFromLibrary adds to the explicitly chosen playlist', async () => {
         mockGetVideoPlaylists.mockResolvedValue([
             createPlaylist({ id: 10, name: 'First' }),
             createPlaylist({ id: 20, name: 'Second' }),
@@ -499,22 +471,10 @@ describe('VideoContentProvider', () => {
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(2));
 
-        act(() => result.current.setSelectedPlaylistForVideo(100, 20));
-        act(() => result.current.addVideoFromLibrary(100));
+        act(() => result.current.addVideoFromLibrary(100, 20));
 
         await waitFor(() => expect(mockAddVideoToPlaylist).toHaveBeenCalledWith(20, 100));
-    });
-
-    it('addVideoFromLibrary does nothing when no playlists exist', async () => {
-        const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(),
-        });
-
-        await waitFor(() => expect(result.current.isLoadingPlaylists).toBe(false));
-
-        act(() => result.current.addVideoFromLibrary(100));
-
-        expect(mockAddVideoToPlaylist).not.toHaveBeenCalled();
+        expect(mockAddVideoToPlaylist).toHaveBeenCalledTimes(1);
     });
 
     it('renameSelectedPlaylist does nothing for empty name', async () => {
@@ -868,10 +828,29 @@ describe('VideoContentProvider', () => {
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(1));
 
-        act(() => result.current.addVideoFromLibrary(100));
+        act(() => result.current.addVideoFromLibrary(100, 10));
 
         await waitFor(() => expect(result.current.feedback.severity).toBe('error'));
         expect(result.current.feedback.open).toBe(true);
+    });
+
+    it('addToPlaylist mutation shows the backend message verbatim on failure', async () => {
+        mockGetVideoPlaylists.mockResolvedValue([createPlaylist({ id: 10 })]);
+        mockAddVideoToPlaylist.mockRejectedValue({
+            response: { data: { error: 'Video ja esta na playlist' } },
+        });
+
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(['/videos/folders']),
+        });
+
+        await waitFor(() => expect(result.current.playlists).toHaveLength(1));
+
+        act(() => result.current.addVideoFromLibrary(100, 10));
+
+        await waitFor(() =>
+            expect(result.current.feedback.message).toBe('Video ja esta na playlist')
+        );
     });
 
     it('addToPlaylist mutation shows success feedback', async () => {
@@ -884,7 +863,7 @@ describe('VideoContentProvider', () => {
 
         await waitFor(() => expect(result.current.playlists).toHaveLength(1));
 
-        act(() => result.current.addVideoFromLibrary(100));
+        act(() => result.current.addVideoFromLibrary(100, 10));
 
         await waitFor(() => expect(result.current.feedback.severity).toBe('success'));
         expect(result.current.feedback.open).toBe(true);
