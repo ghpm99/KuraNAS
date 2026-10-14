@@ -77,7 +77,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 
 ### Player
 - [x] 50. Atalhos de teclado
-- [ ] 51. Tela cheia no contêiner (controles visíveis)
+- [x] 51. Tela cheia no contêiner (controles visíveis)
 - [ ] 52. Picture-in-Picture
 - [ ] 53. Volume, mudo e velocidade persistidos
 - [ ] 54. Seek aplicado ao soltar o controle

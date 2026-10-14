@@ -91,8 +91,28 @@ describe('video components', () => {
         clearTimers();
     });
 
-    it('auto-hides controls when playing and timer expires', () => {
-        jest.useFakeTimers();
+    it('renders nothing when the controls are hidden', () => {
+        const props = {
+            isPlaying: true,
+            currentTime: 3661,
+            duration: 7200,
+            volume: 0,
+            playbackRate: 1,
+            isFullscreen: false,
+            areControlsVisible: false,
+            seekTo: jest.fn(),
+            setVolume: jest.fn(),
+            setPlaybackRate: jest.fn(),
+            toggleFullscreen: jest.fn(),
+            togglePlayPause: jest.fn(),
+            nextVideo: jest.fn(),
+            previousVideo: jest.fn(),
+        };
+        const { container } = render(<VideoControls {...props} />);
+        expect(container.querySelector('.video-controls')).toBeNull();
+    });
+
+    it('formats hours and toggles mute from the volume button', () => {
         const props = {
             isPlaying: true,
             currentTime: 3661,
@@ -111,17 +131,8 @@ describe('video components', () => {
         const { container } = render(<VideoControls {...props} />);
         expect(screen.getByText('1:01:01')).toBeInTheDocument();
 
-        const volumeButton = container.querySelectorAll(
-            '.right-controls button'
-        )[0] as HTMLButtonElement;
-        fireEvent.click(volumeButton);
+        fireEvent.click(container.querySelectorAll('.right-controls button')[0]!);
         expect(props.setVolume).toHaveBeenCalledWith(0.5);
-
-        act(() => {
-            jest.advanceTimersByTime(3100);
-        });
-        expect(container.querySelector('.video-controls')).toBeNull();
-        jest.useRealTimers();
     });
 
     it('keeps controls visible when not playing', () => {

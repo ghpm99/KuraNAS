@@ -1,7 +1,7 @@
 import type { VideoFileDto } from '@/service/videoPlayback';
 import { getFileDownloadUrl } from '@/service/files';
 import { ArrowLeft, Info } from 'lucide-react';
-import { useEffect, type ReactNode, type RefObject } from 'react';
+import { useEffect, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     getPlaybackErrorKindFromMediaErrorCode,
@@ -24,6 +24,7 @@ interface VideoPlayerProps {
     playbackError?: PlaybackErrorKind | null;
     onPlaybackError?: (errorKind: PlaybackErrorKind) => void;
     onRetryPlayback?: () => void;
+    onToggleFullscreen?: () => void;
     children?: ReactNode;
 }
 
@@ -41,6 +42,7 @@ const VideoPlayer = ({
     playbackError = null,
     onPlaybackError,
     onRetryPlayback,
+    onToggleFullscreen,
     children,
 }: VideoPlayerProps) => {
     const { t } = useI18n();
@@ -74,10 +76,21 @@ const VideoPlayer = ({
         };
     }, [onPlaybackError, onVideoEnded, setCurrentTime, setDuration, videoRef]);
 
+    const toggleFullscreenOnSurfaceDoubleClick = (event: MouseEvent<HTMLElement>) => {
+        if (event.target !== event.currentTarget) return;
+        onToggleFullscreen?.();
+    };
+
     return (
         <div className={styles.player}>
             <div className={styles.container}>
-                <video ref={videoRef} className={styles.video} preload="metadata" playsInline />
+                <video
+                    ref={videoRef}
+                    className={styles.video}
+                    preload="metadata"
+                    playsInline
+                    onDoubleClick={toggleFullscreenOnSurfaceDoubleClick}
+                />
                 <div className={styles.overlay}>
                     <div className={styles.header}>
                         <button type="button" className={styles.backButton} onClick={onBack}>
@@ -137,7 +150,14 @@ const VideoPlayer = ({
                     </div>
                 ) : null}
 
-                {children ? <div className={styles.controlsLayer}>{children}</div> : null}
+                {children ? (
+                    <div
+                        className={styles.controlsLayer}
+                        onDoubleClick={toggleFullscreenOnSurfaceDoubleClick}
+                    >
+                        {children}
+                    </div>
+                ) : null}
             </div>
         </div>
     );

@@ -9,6 +9,7 @@ import { getFileDownloadUrl } from '@/service/files';
 import type { VideoFileDto, VideoLibraryResolution } from '@/service/videoPlayback';
 import { formatSize } from '@/shared/utils/formatSize';
 import { formatDate } from '@/utils';
+import { usePlayerPortalContainer } from '@/features/videos/videoPlayer/playerPortalContainer';
 import useVideoTechnicalRows from './useVideoTechnicalRows';
 
 type VideoDetailsPanelProps = {
@@ -37,13 +38,14 @@ type OpenVideoDetailsPanelProps = {
 
 function OpenVideoDetailsPanel({ video, onClose }: OpenVideoDetailsPanelProps) {
     const { t } = useI18n();
+    const portalContainer = usePlayerPortalContainer();
     const { rows, isLoading, hasFailed, backendMessage } = useVideoTechnicalRows(video);
     const createdAt = readOptionalDate(video.created_at);
     const updatedAt = readOptionalDate(video.updated_at);
     const formatLabel = (video.format ?? '').replace(/^\./, '').toUpperCase();
 
     return (
-        <Drawer anchor="right" open onClose={onClose}>
+        <Drawer anchor="right" open onClose={onClose} ModalProps={{ container: portalContainer }}>
             <Box
                 sx={{ p: 2, width: panelWidth }}
                 role="region"

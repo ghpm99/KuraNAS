@@ -7,6 +7,8 @@ import VideoDetailsPanel from '@/features/videos/videoDetails/VideoDetailsPanel'
 import PlayerShortcutFeedback from '@/features/videos/playerShortcuts/PlayerShortcutFeedback';
 import PlayerShortcutsHelpDialog from '@/features/videos/playerShortcuts/PlayerShortcutsHelpDialog';
 import usePlayerKeyboardShortcuts from '@/features/videos/playerShortcuts/usePlayerKeyboardShortcuts';
+import useControlsAutoHide from '@/features/videos/videoControls/useControlsAutoHide';
+import { PlayerPortalContainerContext } from './playerPortalContainer';
 import styles from './VideoPlayerScreen.module.css';
 import useVideoPlayerScreen from './useVideoPlayerScreen';
 
@@ -34,6 +36,8 @@ export default function VideoPlayerScreen() {
         hasNextVideo,
         hasPreviousVideo,
         videoRef,
+        registerPlayerContainer,
+        fullscreenPortalContainer,
         seekTo,
         setVolume,
         setPlaybackRate,
@@ -56,6 +60,8 @@ export default function VideoPlayerScreen() {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
     useDocumentTitle(contextTitle);
+    const { areControlsVisible } = useControlsAutoHide(status === 'playing');
+    const isCursorHidden = isFullscreen && !areControlsVisible;
     const { feedback: shortcutFeedback } = usePlayerKeyboardShortcuts({
         snapshot: {
             isPlaying: status === 'playing',
@@ -84,142 +90,151 @@ export default function VideoPlayerScreen() {
     }
 
     return (
-        <div className={styles.page}>
-            <section className={styles.playerColumn}>
-                <VideoPlayer
-                    currentVideo={currentVideo}
-                    videoRef={videoRef}
-                    setCurrentTime={setCurrentTime}
-                    setDuration={setDuration}
-                    onBack={handleBack}
-                    onOpenDetails={() => setIsDetailsOpen(true)}
-                    onVideoEnded={handlePlaybackEnded}
-                    originBadgeLabel={originBadgeLabel}
-                    contextDescription={contextDescription}
-                    metadataLine={metadataLine}
-                    playbackError={playbackError}
-                    onPlaybackError={reportPlaybackError}
-                    onRetryPlayback={retryPlayback}
+        <PlayerPortalContainerContext.Provider value={fullscreenPortalContainer}>
+            <div className={styles.page}>
+                <section
+                    ref={registerPlayerContainer}
+                    className={`${styles.playerColumn} ${isCursorHidden ? styles.cursorHidden : ''}`}
                 >
-                    <VideoControls
-                        currentTime={currentTime}
-                        duration={duration}
-                        isFullscreen={isFullscreen}
-                        isPlaying={status === 'playing'}
-                        volume={volume}
-                        playbackRate={playbackRate}
-                        seekTo={seekTo}
-                        setVolume={setVolume}
-                        setPlaybackRate={setPlaybackRate}
-                        toggleFullscreen={toggleFullscreen}
-                        togglePlayPause={togglePlayPause}
-                        nextVideo={nextVideo}
-                        previousVideo={previousVideo}
-                        canGoNext={hasNextVideo}
-                        canGoPrevious={hasPreviousVideo}
-                        onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
-                    />
-                    <PlayerShortcutFeedback feedback={shortcutFeedback} />
-                </VideoPlayer>
-            </section>
-
-            <aside className={styles.contextPanel}>
-                <header className={styles.contextHeader}>
-                    <p className={styles.contextEyebrow}>{originBadgeLabel}</p>
-                    <h2 className={styles.contextTitle}>{contextTitle}</h2>
-                    <p className={styles.contextDescription}>{contextDescription}</p>
-                </header>
-
-                {nextItem ? (
-                    <button
-                        type="button"
-                        className={styles.upNextCard}
-                        onClick={() => openVideo(nextItem.video.id)}
-                        aria-label={t('VIDEO_PLAYER_OPEN_VIDEO', {
-                            name: nextItem.displayTitle || nextItem.video.name,
-                        })}
+                    <VideoPlayer
+                        currentVideo={currentVideo}
+                        videoRef={videoRef}
+                        setCurrentTime={setCurrentTime}
+                        setDuration={setDuration}
+                        onBack={handleBack}
+                        onOpenDetails={() => setIsDetailsOpen(true)}
+                        onVideoEnded={handlePlaybackEnded}
+                        originBadgeLabel={originBadgeLabel}
+                        contextDescription={contextDescription}
+                        metadataLine={metadataLine}
+                        playbackError={playbackError}
+                        onPlaybackError={reportPlaybackError}
+                        onRetryPlayback={retryPlayback}
+                        onToggleFullscreen={toggleFullscreen}
                     >
-                        <span className={styles.cardEyebrow}>{t('VIDEO_PLAYER_UP_NEXT')}</span>
-                        <strong className={styles.cardTitle}>
-                            {nextItem.displayTitle || nextItem.video.name}
-                        </strong>
-                        <div className={styles.cardMeta}>
-                            {nextItem.sequenceLabel ? <span>{nextItem.sequenceLabel}</span> : null}
-                            <span>{t(statusKeyMap[nextItem.status])}</span>
-                        </div>
-                        {nextItem.progress_pct > 0 ? (
-                            <div className={styles.progressTrack} aria-hidden="true">
-                                <div
-                                    className={styles.progressFill}
-                                    style={{ width: `${nextItem.progress_pct}%` }}
-                                />
+                        <VideoControls
+                            currentTime={currentTime}
+                            duration={duration}
+                            isFullscreen={isFullscreen}
+                            areControlsVisible={areControlsVisible}
+                            isPlaying={status === 'playing'}
+                            volume={volume}
+                            playbackRate={playbackRate}
+                            seekTo={seekTo}
+                            setVolume={setVolume}
+                            setPlaybackRate={setPlaybackRate}
+                            toggleFullscreen={toggleFullscreen}
+                            togglePlayPause={togglePlayPause}
+                            nextVideo={nextVideo}
+                            previousVideo={previousVideo}
+                            canGoNext={hasNextVideo}
+                            canGoPrevious={hasPreviousVideo}
+                            onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
+                        />
+                        <PlayerShortcutFeedback feedback={shortcutFeedback} />
+                    </VideoPlayer>
+                </section>
+
+                <aside className={styles.contextPanel}>
+                    <header className={styles.contextHeader}>
+                        <p className={styles.contextEyebrow}>{originBadgeLabel}</p>
+                        <h2 className={styles.contextTitle}>{contextTitle}</h2>
+                        <p className={styles.contextDescription}>{contextDescription}</p>
+                    </header>
+
+                    {nextItem ? (
+                        <button
+                            type="button"
+                            className={styles.upNextCard}
+                            onClick={() => openVideo(nextItem.video.id)}
+                            aria-label={t('VIDEO_PLAYER_OPEN_VIDEO', {
+                                name: nextItem.displayTitle || nextItem.video.name,
+                            })}
+                        >
+                            <span className={styles.cardEyebrow}>{t('VIDEO_PLAYER_UP_NEXT')}</span>
+                            <strong className={styles.cardTitle}>
+                                {nextItem.displayTitle || nextItem.video.name}
+                            </strong>
+                            <div className={styles.cardMeta}>
+                                {nextItem.sequenceLabel ? (
+                                    <span>{nextItem.sequenceLabel}</span>
+                                ) : null}
+                                <span>{t(statusKeyMap[nextItem.status])}</span>
                             </div>
-                        ) : null}
-                    </button>
-                ) : null}
+                            {nextItem.progress_pct > 0 ? (
+                                <div className={styles.progressTrack} aria-hidden="true">
+                                    <div
+                                        className={styles.progressFill}
+                                        style={{ width: `${nextItem.progress_pct}%` }}
+                                    />
+                                </div>
+                            ) : null}
+                        </button>
+                    ) : null}
 
-                {relatedItems.length > 0 ? (
-                    <section className={styles.relatedSection}>
-                        <div className={styles.relatedHeader}>
-                            <h3>{relatedTitle}</h3>
-                        </div>
+                    {relatedItems.length > 0 ? (
+                        <section className={styles.relatedSection}>
+                            <div className={styles.relatedHeader}>
+                                <h3>{relatedTitle}</h3>
+                            </div>
 
-                        <div className={styles.relatedList}>
-                            {relatedItems.map((item) => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    className={styles.relatedItem}
-                                    onClick={() => openVideo(item.video.id)}
-                                    aria-label={t('VIDEO_PLAYER_OPEN_VIDEO', {
-                                        name: item.displayTitle || item.video.name,
-                                    })}
-                                >
-                                    <div className={styles.relatedBody}>
-                                        <div className={styles.relatedHeaderRow}>
-                                            {item.sequenceLabel ? (
-                                                <span className={styles.sequenceTag}>
-                                                    {item.sequenceLabel}
+                            <div className={styles.relatedList}>
+                                {relatedItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        className={styles.relatedItem}
+                                        onClick={() => openVideo(item.video.id)}
+                                        aria-label={t('VIDEO_PLAYER_OPEN_VIDEO', {
+                                            name: item.displayTitle || item.video.name,
+                                        })}
+                                    >
+                                        <div className={styles.relatedBody}>
+                                            <div className={styles.relatedHeaderRow}>
+                                                {item.sequenceLabel ? (
+                                                    <span className={styles.sequenceTag}>
+                                                        {item.sequenceLabel}
+                                                    </span>
+                                                ) : null}
+                                                <span className={styles.statusBadge}>
+                                                    {t(statusKeyMap[item.status])}
                                                 </span>
-                                            ) : null}
-                                            <span className={styles.statusBadge}>
-                                                {t(statusKeyMap[item.status])}
-                                            </span>
-                                        </div>
-                                        <strong className={styles.relatedTitle}>
-                                            {item.displayTitle || item.video.name}
-                                        </strong>
-                                        <span className={styles.relatedMeta}>
-                                            {item.video.name}
-                                        </span>
-                                        {item.progress_pct > 0 ? (
-                                            <div
-                                                className={styles.progressTrack}
-                                                aria-hidden="true"
-                                            >
-                                                <div
-                                                    className={styles.progressFill}
-                                                    style={{ width: `${item.progress_pct}%` }}
-                                                />
                                             </div>
-                                        ) : null}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </section>
-                ) : null}
-            </aside>
+                                            <strong className={styles.relatedTitle}>
+                                                {item.displayTitle || item.video.name}
+                                            </strong>
+                                            <span className={styles.relatedMeta}>
+                                                {item.video.name}
+                                            </span>
+                                            {item.progress_pct > 0 ? (
+                                                <div
+                                                    className={styles.progressTrack}
+                                                    aria-hidden="true"
+                                                >
+                                                    <div
+                                                        className={styles.progressFill}
+                                                        style={{ width: `${item.progress_pct}%` }}
+                                                    />
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+                    ) : null}
+                </aside>
 
-            <VideoDetailsPanel
-                video={isDetailsOpen ? currentVideo : null}
-                onClose={() => setIsDetailsOpen(false)}
-            />
+                <VideoDetailsPanel
+                    video={isDetailsOpen ? currentVideo : null}
+                    onClose={() => setIsDetailsOpen(false)}
+                />
 
-            <PlayerShortcutsHelpDialog
-                isOpen={isShortcutsHelpOpen}
-                onClose={() => setIsShortcutsHelpOpen(false)}
-            />
-        </div>
+                <PlayerShortcutsHelpDialog
+                    isOpen={isShortcutsHelpOpen}
+                    onClose={() => setIsShortcutsHelpOpen(false)}
+                />
+            </div>
+        </PlayerPortalContainerContext.Provider>
     );
 }

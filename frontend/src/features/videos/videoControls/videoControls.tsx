@@ -3,7 +3,8 @@ import {
     Play,
     Pause,
     VolumeOff,
-    Fullscreen,
+    Maximize,
+    Minimize,
     Settings,
     Rewind,
     FastForward,
@@ -12,8 +13,9 @@ import {
     Volume2,
     Keyboard,
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { usePlayerPortalContainer } from '@/features/videos/videoPlayer/playerPortalContainer';
 import './videoControls.css';
 
 interface VideoControlsProps {
@@ -23,6 +25,7 @@ interface VideoControlsProps {
     volume: number;
     playbackRate: number;
     isFullscreen: boolean;
+    areControlsVisible?: boolean;
     seekTo: (time: number) => void;
     setVolume: (volume: number) => void;
     setPlaybackRate: (rate: number) => void;
@@ -41,6 +44,7 @@ const VideoControls = ({
     volume,
     playbackRate,
     isFullscreen,
+    areControlsVisible = true,
     seekTo,
     setVolume,
     setPlaybackRate,
@@ -53,45 +57,8 @@ const VideoControls = ({
     onOpenShortcutsHelp,
 }: VideoControlsProps) => {
     const { t } = useI18n();
-    const [showControls, setShowControls] = useState(true);
     const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Auto-hide controls
-    useEffect(() => {
-        const resetTimer = () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-            timeoutRef.current = setTimeout(() => {
-                if (isPlaying) {
-                    setShowControls(false);
-                }
-            }, 3000);
-        };
-
-        const handleMouseMove = () => {
-            setShowControls(true);
-            resetTimer();
-        };
-
-        const handleKeyPress = () => {
-            setShowControls(true);
-            resetTimer();
-        };
-
-        resetTimer();
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('keypress', handleKeyPress);
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('keypress', handleKeyPress);
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, [isPlaying]);
+    const portalContainer = usePlayerPortalContainer();
 
     const formatTime = (time: number): string => {
         if (isNaN(time)) return '0:00';
@@ -134,9 +101,11 @@ const VideoControls = ({
         seekTo(Math.max(currentTime - 10, 0));
     };
 
+    const fullscreenLabel = isFullscreen ? t('VIDEO_EXIT_FULLSCREEN') : t('VIDEO_FULLSCREEN');
+    const tooltipSlotProps = { popper: { container: portalContainer } };
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-    if (!showControls) {
+    if (!areControlsVisible) {
         return null;
     }
 
@@ -208,7 +177,10 @@ const VideoControls = ({
                     </IconButton>
 
                     {onOpenShortcutsHelp ? (
-                        <Tooltip title={t('VIDEO_SHORTCUTS_HELP_BUTTON')}>
+                        <Tooltip
+                            title={t('VIDEO_SHORTCUTS_HELP_BUTTON')}
+                            slotProps={tooltipSlotProps}
+                        >
                             <IconButton
                                 onClick={onOpenShortcutsHelp}
                                 size="small"
@@ -219,11 +191,13 @@ const VideoControls = ({
                         </Tooltip>
                     ) : null}
 
-                    <Tooltip
-                        title={isFullscreen ? t('VIDEO_EXIT_FULLSCREEN') : t('VIDEO_FULLSCREEN')}
-                    >
-                        <IconButton onClick={toggleFullscreen} size="small">
-                            {isFullscreen ? <Fullscreen size={20} /> : <Fullscreen size={20} />}
+                    <Tooltip title={fullscreenLabel} slotProps={tooltipSlotProps}>
+                        <IconButton
+                            onClick={toggleFullscreen}
+                            size="small"
+                            aria-label={fullscreenLabel}
+                        >
+                            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -233,6 +207,7 @@ const VideoControls = ({
             <Menu
                 anchorEl={settingsAnchor}
                 open={Boolean(settingsAnchor)}
+                container={portalContainer}
                 onClose={handleSettingsClose}
                 className="settings-menu"
             >

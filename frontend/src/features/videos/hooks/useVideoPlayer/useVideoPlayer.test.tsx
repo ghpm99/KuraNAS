@@ -75,7 +75,6 @@ const createFakeVideo = () =>
         playbackRate: 1,
         play: jest.fn(() => Promise.resolve()),
         pause: jest.fn(),
-        requestFullscreen: jest.fn(),
     }) as any;
 
 describe('hooks/useVideoPlayer', () => {
@@ -173,40 +172,6 @@ describe('hooks/useVideoPlayer', () => {
 
         expect(fakeVideo.pause).toHaveBeenCalled();
         expect(fakeVideo.play).toHaveBeenCalled();
-    });
-
-    it('toggles fullscreen on and off', async () => {
-        const { result } = renderHook(() => useVideoPlayer({ videoId: '7', playlistId: 11 }));
-        const fakeVideo = createFakeVideo();
-
-        act(() => {
-            result.current.videoRef.current = fakeVideo;
-        });
-
-        await act(async () => {
-            await result.current.playVideo();
-        });
-
-        Object.defineProperty(document, 'fullscreenElement', {
-            value: null,
-            configurable: true,
-        });
-        act(() => {
-            result.current.toggleFullscreen();
-        });
-        expect(fakeVideo.requestFullscreen).toHaveBeenCalled();
-        expect(result.current.isFullscreen).toBe(true);
-
-        (document as any).exitFullscreen = jest.fn();
-        Object.defineProperty(document, 'fullscreenElement', {
-            value: {},
-            configurable: true,
-        });
-        act(() => {
-            result.current.toggleFullscreen();
-        });
-        expect((document as any).exitFullscreen).toHaveBeenCalled();
-        expect(result.current.isFullscreen).toBe(false);
     });
 
     it('navigates to next and previous video', async () => {

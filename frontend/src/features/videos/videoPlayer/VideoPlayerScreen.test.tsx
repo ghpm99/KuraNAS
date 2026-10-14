@@ -36,6 +36,8 @@ const buildScreenState = () => ({
     hasNextVideo: true,
     hasPreviousVideo: false,
     videoRef: { current: null },
+    registerPlayerContainer: jest.fn(),
+    fullscreenPortalContainer: null,
     seekTo: jest.fn(),
     setVolume: jest.fn(),
     setPlaybackRate: jest.fn(),
