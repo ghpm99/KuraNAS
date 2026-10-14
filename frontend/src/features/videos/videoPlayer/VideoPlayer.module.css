@@ -162,6 +162,7 @@
 .controlsLayer {
     position: absolute;
     inset: 0;
+    pointer-events: none;
 }
 
 @media (max-width: 899.95px) {
