@@ -14,6 +14,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	golang.org/x/image v0.42.0
+	golang.org/x/sync v0.21.0
 )
 
 require (
@@ -33,7 +34,6 @@ require (
 	github.com/quic-go/quic-go v0.59.1 // indirect
 	github.com/swaggo/swag v1.8.12 // indirect
 	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

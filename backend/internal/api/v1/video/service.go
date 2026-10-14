@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 
+	"golang.org/x/sync/singleflight"
+
 	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/database"
 )
@@ -14,6 +16,8 @@ type Service struct {
 
 	FrameCommandRunner FrameCommandRunner
 	FallbackRegistry   thumbnailFallbackRegistry
+
+	masterFrameFlights singleflight.Group
 }
 
 type videoItemProgress struct {

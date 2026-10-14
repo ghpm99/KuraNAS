@@ -5,15 +5,17 @@ import (
 	"testing"
 )
 
-func TestBuildThumbnailFrameArguments(t *testing.T) {
-	actual := buildThumbnailFrameArguments("/media/a.mkv", 12.5, 320, 180, "/cache/1_320x180_f2.png")
+func TestBuildMasterFrameArguments(t *testing.T) {
+	actual := buildMasterFrameArguments("/media/a.mkv", 12.5, "/cache/1_master_f2.jpg")
 	expected := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
 		"-ss", "12.500",
 		"-i", "/media/a.mkv",
 		"-frames:v", "1",
-		"-vf", "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2:black",
-		"/cache/1_320x180_f2.png",
+		"-vf", `scale=min(1280\,iw):min(720\,ih):force_original_aspect_ratio=decrease`,
+		"-q:v", "2",
+		"-update", "1",
+		"/cache/1_master_f2.jpg",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("unexpected arguments:\n%v\nwant:\n%v", actual, expected)

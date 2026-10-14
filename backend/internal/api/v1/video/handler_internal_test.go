@@ -124,6 +124,7 @@ func (m *videoHandlerServiceMock) GetVideos(page int, pageSize int) (utils.Pagin
 func (m *videoHandlerServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
 	return GeneratedImage{Data: []byte("png")}, nil
 }
+func (m *videoHandlerServiceMock) EnsureVideoMasterFrame(fileDto files.FileDto) error { return nil }
 func (m *videoHandlerServiceMock) GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error) {
 	return GeneratedImage{Data: []byte("gif")}, nil
 }

@@ -1,6 +1,7 @@
 package video
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -28,7 +29,7 @@ func (runner *togglingFrameRunner) run(_ context.Context, arguments []string) er
 	if runner.shouldFail {
 		return errors.New("ffmpeg failed")
 	}
-	return os.WriteFile(arguments[len(arguments)-1], []byte("frame"), 0644)
+	return writeFrameFixture(arguments[len(arguments)-1])
 }
 
 func newFallbackTestService(t *testing.T) (files.FileDto, *Service, *togglingFrameRunner, *fakeClock) {
@@ -186,11 +187,11 @@ func TestRecoveredFFmpegProducesCachedRealThumbnail(t *testing.T) {
 	clock.advance(thumbnailFallbackTTL)
 	thumbnail, err := service.GetVideoThumbnail(fileDto, 320, 180)
 
-	if err != nil || thumbnail.IsFallback || string(thumbnail.Data) != "frame" {
-		t.Fatalf("expected real thumbnail, fallback=%v data=%q err=%v", thumbnail.IsFallback, thumbnail.Data, err)
+	if err != nil || thumbnail.IsFallback || len(thumbnail.Data) == 0 {
+		t.Fatalf("expected real thumbnail, fallback=%v err=%v", thumbnail.IsFallback, err)
 	}
 	cached, readErr := os.ReadFile(thumbnailCachePathFor(fileDto))
-	if readErr != nil || string(cached) != "frame" {
+	if readErr != nil || !bytes.Equal(cached, thumbnail.Data) {
 		t.Fatalf("expected real thumbnail cached, err=%v", readErr)
 	}
 	callsAfterRecovery := runner.callCount

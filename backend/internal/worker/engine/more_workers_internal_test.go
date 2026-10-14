@@ -81,6 +81,14 @@ type workerVideoServiceMock struct {
 	rebuildFn       func() error
 	getVideoThumbFn func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
 	getVideoGifFn   func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error)
+	ensureMasterFn  func(fileDto files.FileDto) error
+}
+
+func (m *workerVideoServiceMock) EnsureVideoMasterFrame(fileDto files.FileDto) error {
+	if m.ensureMasterFn != nil {
+		return m.ensureMasterFn(fileDto)
+	}
+	return nil
 }
 
 func (m *workerVideoServiceMock) GetVideoThumbnail(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
@@ -236,9 +244,13 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 		},
 	}
 	thumbVideoSvc := &workerVideoServiceMock{
-		getVideoThumbFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
+		ensureMasterFn: func(fileDto files.FileDto) error {
 			videoCalls++
-			return video.GeneratedImage{Data: []byte("v")}, nil
+			return nil
+		},
+		getVideoThumbFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
+			t.Error("worker must not request a sized video thumbnail")
+			return video.GeneratedImage{}, nil
 		},
 		getVideoGifFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
 			previewCalls++
