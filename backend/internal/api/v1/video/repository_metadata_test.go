@@ -36,12 +36,12 @@ func TestVideoMetadataRepositorySuccessPaths(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoMetadataByIDQuery)).
 		WithArgs(3).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"file_id", "path", "format_name", "size", "duration", "width", "height", "frame_rate", "nb_frames", "bit_rate",
+			"id", "file_id", "path", "format_name", "size", "duration", "width", "height", "frame_rate", "nb_frames", "bit_rate",
 			"codec_name", "codec_long_name", "pix_fmt", "level", "profile", "aspect_ratio", "audio_codec", "audio_channels",
-			"audio_sample_rate", "audio_bit_rate", "created_at",
+			"audio_sample_rate", "audio_bit_rate", "created_at", "classification", "classification_version",
 		}).AddRow(
-			30, "/v.mp4", "mov,mp4", "1000", "60", 1920, 1080, 30.0, 1800, "2500", "h264",
-			"H.264 / AVC", "yuv420p", 4, "main", "16:9", "aac", 2, "44100", "128000", now,
+			3, 30, "/v.mp4", "mov,mp4", "1000", "60", 1920, 1080, 30.0, 1800, "2500", "h264",
+			"H.264 / AVC", "yuv420p", 4, "main", "16:9", "aac", 2, "44100", "128000", now, "movie", 2,
 		))
 	mock.ExpectRollback()
 	videoMeta, err := repo.GetVideoMetadataByID(3)
