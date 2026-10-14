@@ -56,7 +56,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 32. Playlists de um vídeo (`by-video/:id`) no lugar de memberships completas
 - [x] 33. Scroll infinito em "Todos os vídeos"
 - [x] 34. Ordenação da biblioteca
-- [ ] 35. Filtros da biblioteca (formato, resolução, duração)
+- [x] 35. Filtros da biblioteca (formato, resolução, duração)
 - [ ] 36. Busca com fold de acento e índice trigram
 - [x] 37. Duração/resolução/codec na listagem (contrato)
 - [ ] 38. Duração/resolução nos cards

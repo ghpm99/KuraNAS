@@ -6,6 +6,7 @@ import {
     getVideoPlaylists,
     getVideoPlaylistsBySection,
     getVideosWithoutPlaylist,
+    type VideoLibraryFilters,
     type VideoLibrarySort,
     type VideoPlaylistSection,
 } from '@/service/videoPlayback';
@@ -20,8 +21,17 @@ export const videoQueryKeys = {
     unassigned: ['video', 'unassigned'] as const,
     allFiles: ['video', 'all-files'] as const,
     homeCatalog: ['video', 'home-catalog'] as const,
-    libraryFiles: (search: string, sort: VideoLibrarySort) =>
-        ['video', 'library-files', search, sort.key, sort.order] as const,
+    libraryFiles: (search: string, sort: VideoLibrarySort, filters: VideoLibraryFilters) =>
+        [
+            'video',
+            'library-files',
+            search,
+            sort.key,
+            sort.order,
+            filters.formats.join(','),
+            filters.resolution ?? '',
+            filters.duration ?? '',
+        ] as const,
     playbackState: ['video', 'playback-state'] as const,
     continueWatching: ['video', 'continue-watching'] as const,
     playlistsOfVideo: (videoId: number) => ['video', 'playlists-of-video', videoId] as const,

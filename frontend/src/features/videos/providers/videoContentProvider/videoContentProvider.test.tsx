@@ -185,10 +185,16 @@ describe('VideoContentProvider', () => {
         await waitFor(() => expect(result.current.isLoadingVideos).toBe(false));
 
         expect(result.current.videoSearch).toBe('praia');
-        expect(mockGetVideoLibraryFiles).toHaveBeenCalledWith(1, 60, 'praia', {
-            key: 'recent',
-            order: 'desc',
-        });
+        expect(mockGetVideoLibraryFiles).toHaveBeenCalledWith(
+            1,
+            60,
+            'praia',
+            {
+                key: 'recent',
+                order: 'desc',
+            },
+            { formats: [] }
+        );
     });
 
     it('refetches the library with the new sort and persists it for the next visit', async () => {
@@ -201,10 +207,16 @@ describe('VideoContentProvider', () => {
         act(() => result.current.setLibrarySort({ key: 'size', order: 'asc' }));
 
         await waitFor(() =>
-            expect(mockGetVideoLibraryFiles).toHaveBeenLastCalledWith(1, 60, '', {
-                key: 'size',
-                order: 'asc',
-            })
+            expect(mockGetVideoLibraryFiles).toHaveBeenLastCalledWith(
+                1,
+                60,
+                '',
+                {
+                    key: 'size',
+                    order: 'asc',
+                },
+                { formats: [] }
+            )
         );
         expect(result.current.librarySort).toEqual({ key: 'size', order: 'asc' });
 
@@ -213,6 +225,38 @@ describe('VideoContentProvider', () => {
         });
         expect(nextVisit.current.librarySort).toEqual({ key: 'size', order: 'asc' });
         window.localStorage.clear();
+    });
+
+    it('refetches from page 1 with the chosen filters and does not persist them', async () => {
+        window.localStorage.clear();
+        const { result } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+        await waitFor(() => expect(result.current.isLoadingVideos).toBe(false));
+
+        act(() =>
+            result.current.setLibraryFilters({
+                formats: ['.mkv'],
+                resolution: 'uhd',
+                duration: 'short',
+            })
+        );
+
+        await waitFor(() =>
+            expect(mockGetVideoLibraryFiles).toHaveBeenLastCalledWith(
+                1,
+                60,
+                '',
+                { key: 'recent', order: 'desc' },
+                { formats: ['.mkv'], resolution: 'uhd', duration: 'short' }
+            )
+        );
+        expect(window.localStorage.length).toBe(0);
+
+        const { result: nextVisit } = renderHook(() => useVideoContentProvider(), {
+            wrapper: createWrapper(),
+        });
+        expect(nextVisit.current.libraryFilters).toEqual({ formats: [] });
     });
 
     it('categorizes playlists by classification and type', async () => {

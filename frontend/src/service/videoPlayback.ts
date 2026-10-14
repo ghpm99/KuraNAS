@@ -265,11 +265,20 @@ export type VideoLibrarySortKey = 'recent' | 'name' | 'size' | 'duration';
 export type VideoLibrarySortOrder = 'asc' | 'desc';
 export type VideoLibrarySort = { key: VideoLibrarySortKey; order: VideoLibrarySortOrder };
 
+export type VideoLibraryResolution = 'sd' | 'hd' | 'fhd' | 'uhd';
+export type VideoLibraryDuration = 'short' | 'medium' | 'long';
+export type VideoLibraryFilters = {
+    formats: string[];
+    resolution?: VideoLibraryResolution;
+    duration?: VideoLibraryDuration;
+};
+
 export const getVideoLibraryFiles = async (
     page: number,
     pageSize: number,
     searchQuery = '',
-    sort?: VideoLibrarySort
+    sort?: VideoLibrarySort,
+    filters?: VideoLibraryFilters
 ): Promise<Pagination<VideoFileDto>> => {
     const response = await apiBase.get<Pagination<VideoFileDto>>('/video/library/files', {
         params: {
@@ -278,6 +287,9 @@ export const getVideoLibraryFiles = async (
             query: searchQuery,
             sort: sort?.key,
             order: sort?.order,
+            format: filters?.formats.length ? filters.formats.join(',') : undefined,
+            resolution: filters?.resolution,
+            duration: filters?.duration,
         },
     });
     return response.data;
