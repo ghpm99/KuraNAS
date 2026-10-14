@@ -3,6 +3,7 @@ import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { VideoFileDto } from '@/service/videoPlayback';
+import VideoMediaBadges from '../components/VideoMediaBadges';
 import styles from './VideoFolderBrowser.module.css';
 
 type VideoFolderVideoListProps = {
@@ -41,6 +42,7 @@ export default function VideoFolderVideoList({
                                 src={`${thumbnailBaseUrl()}/${video.id}?width=240&height=135`}
                                 alt={video.name}
                             />
+                            <VideoMediaBadges video={video} />
                         </div>
                         <div className={styles.videoMeta}>
                             <h4>{video.name}</h4>

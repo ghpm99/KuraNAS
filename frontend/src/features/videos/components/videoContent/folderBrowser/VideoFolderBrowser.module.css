@@ -136,6 +136,7 @@
 }
 
 .videoThumb {
+    position: relative;
     flex: 0 0 120px;
     aspect-ratio: 16 / 9;
     border-radius: 8px;

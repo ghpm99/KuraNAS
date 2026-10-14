@@ -3,6 +3,7 @@ import { Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoDetailItem } from '../useVideoPlaylistDetail';
+import VideoMediaBadges from './VideoMediaBadges';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
 
@@ -41,6 +42,7 @@ export default function VideoDetailListItem({
                     src={`${apiBase}/video-thumbnail/${item.video.id}?width=320&height=180`}
                     alt={item.video.name}
                 />
+                <VideoMediaBadges video={item.video} />
             </div>
             <div className={styles.detailListBody}>
                 <div className={styles.detailListHeader}>

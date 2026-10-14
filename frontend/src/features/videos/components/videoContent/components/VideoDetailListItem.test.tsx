@@ -191,4 +191,21 @@ describe('VideoDetailListItem', () => {
         fireEvent.click(screen.getByRole('button', { name: 'VIDEO_MARK_UNWATCHED' }));
         expect(onSetWatched).toHaveBeenLastCalledWith(10, false);
     });
+
+    it('shows duration and resolution badges over the thumbnail', () => {
+        const item = createItem();
+        item.video.duration_seconds = 3600;
+        item.video.height = 720;
+        render(<VideoDetailListItem item={item} onOpenVideo={jest.fn()} />);
+
+        expect(screen.getByText('1:00:00')).toBeInTheDocument();
+        expect(screen.getByText('VIDEO_BADGE_RESOLUTION_HD')).toBeInTheDocument();
+    });
+
+    it('omits the badges when the technical fields are absent', () => {
+        render(<VideoDetailListItem item={createItem()} onOpenVideo={jest.fn()} />);
+
+        expect(screen.queryByText(/VIDEO_BADGE_RESOLUTION/)).not.toBeInTheDocument();
+        expect(screen.queryByText('0:00')).not.toBeInTheDocument();
+    });
 });

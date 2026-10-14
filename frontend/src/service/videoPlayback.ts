@@ -19,6 +19,10 @@ export interface VideoFileDto {
     created_at?: string;
     updated_at?: string;
     metadata?: VideoMetadataDto;
+    duration_seconds?: number | null;
+    width?: number | null;
+    height?: number | null;
+    video_codec?: string | null;
 }
 
 export interface VideoLibraryFolderDto {
