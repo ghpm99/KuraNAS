@@ -185,6 +185,7 @@ type VideoContext struct {
 	SummaryHandler     *video.VideoSummaryHandler
 	RemuxHandler       *video.RemuxHandler
 	TranscodeHandler   *video.TranscodeHandler
+	SubtitleHandler    *video.SubtitleHandler
 	Service            video.ServiceInterface
 	Repository         video.RepositoryInterface
 	MetadataRepository video.VideoMetadataRepositoryInterface
@@ -521,6 +522,7 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	summaryHandler := video.NewVideoSummaryHandler(summaryService, logger)
 	remuxHandler := video.NewFFmpegRemuxHandler(filesService, summaryService, logger)
 	transcodeHandler := video.NewFFmpegTranscodeHandler(filesService, summaryService, logger)
+	subtitleHandler := video.NewSubtitleHandler(filesService, video.NewSubtitleService(video.NewSubtitleRepository(dbContext)))
 	sharedPlaybackAccess := video.NewSharedPlaybackAccess()
 	handler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	remuxHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
@@ -528,6 +530,7 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	return &VideoContext{
 		RemuxHandler:       remuxHandler,
 		TranscodeHandler:   transcodeHandler,
+		SubtitleHandler:    subtitleHandler,
 		Handler:            handler,
 		SummaryHandler:     summaryHandler,
 		Service:            service,

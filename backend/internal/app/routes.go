@@ -398,6 +398,10 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Video.TranscodeHandler != nil {
 		router.GET("/video/stream/:file_id/transcode", context.Video.TranscodeHandler.StreamTranscodedVideoHandler)
 	}
+	if context.Video.SubtitleHandler != nil {
+		router.GET("/video/subtitles/:id", context.Video.SubtitleHandler.ListVideoSubtitlesHandler)
+		router.GET("/video/subtitles/:id/vtt", context.Video.SubtitleHandler.GetSubtitleWebVttHandler)
+	}
 	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
 	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)
 
