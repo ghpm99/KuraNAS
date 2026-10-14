@@ -23,6 +23,7 @@ type VideoPlaylistDto struct {
 	Type           string                 `json:"type"`
 	SourcePath     string                 `json:"source_path"`
 	Name           string                 `json:"name"`
+	NameKey        *string                `json:"name_key"`
 	IsHidden       bool                   `json:"is_hidden"`
 	IsAuto         bool                   `json:"is_auto"`
 	GroupMode      string                 `json:"group_mode"`
@@ -45,9 +46,10 @@ type VideoPlaylistItemDto struct {
 }
 
 type VideoPlaylistOfVideoDto struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	ID      int     `json:"id"`
+	Name    string  `json:"name"`
+	NameKey *string `json:"name_key"`
+	Type    string  `json:"type"`
 }
 
 type VideoPlaylistMembershipDto struct {
@@ -180,7 +182,8 @@ func (m *VideoPlaylistModel) ToDto(items []VideoPlaylistItemDto) VideoPlaylistDt
 		ID:             m.ID,
 		Type:           m.Type,
 		SourcePath:     m.SourcePath,
-		Name:           m.Name,
+		Name:           resolvePlaylistName(m.Name, m.NameKey),
+		NameKey:        nullableString(m.NameKey),
 		IsHidden:       m.IsHidden,
 		IsAuto:         m.IsAuto,
 		GroupMode:      m.GroupMode,

@@ -89,6 +89,7 @@ func (r *Repository) GetPlaylistByContext(contextType string, sourcePath string)
 			&playlist.Type,
 			&playlist.SourcePath,
 			&playlist.Name,
+			&playlist.NameKey,
 			&playlist.IsHidden,
 			&playlist.IsAuto,
 			&playlist.GroupMode,
@@ -112,6 +113,7 @@ func (r *Repository) CreatePlaylist(tx *sql.Tx, contextType string, sourcePath s
 		&playlist.Type,
 		&playlist.SourcePath,
 		&playlist.Name,
+		&playlist.NameKey,
 		&playlist.IsHidden,
 		&playlist.IsAuto,
 		&playlist.GroupMode,
@@ -450,13 +452,14 @@ func (r *Repository) GetAllVideosForGrouping() ([]VideoFileModel, error) {
 	return results, nil
 }
 
-func (r *Repository) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+func (r *Repository) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 	playlist := VideoPlaylistModel{}
 	err := tx.QueryRow(
 		queries.UpsertAutoPlaylistQuery,
 		contextType,
 		sourcePath,
 		name,
+		nameKey,
 		groupMode,
 		classification,
 	).Scan(
@@ -464,6 +467,7 @@ func (r *Repository) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, nam
 		&playlist.Type,
 		&playlist.SourcePath,
 		&playlist.Name,
+		&playlist.NameKey,
 		&playlist.IsHidden,
 		&playlist.IsAuto,
 		&playlist.GroupMode,
@@ -549,6 +553,7 @@ func scanPlaylistSummaryRows(rows *sql.Rows) ([]VideoPlaylistModel, error) {
 			&item.Type,
 			&item.SourcePath,
 			&item.Name,
+			&item.NameKey,
 			&item.IsHidden,
 			&item.IsAuto,
 			&item.GroupMode,
@@ -707,7 +712,7 @@ func (r *Repository) GetVideoPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVid
 
 		for rows.Next() {
 			var playlist VideoPlaylistOfVideoModel
-			if err := rows.Scan(&playlist.ID, &playlist.Name, &playlist.Type); err != nil {
+			if err := rows.Scan(&playlist.ID, &playlist.Name, &playlist.NameKey, &playlist.Type); err != nil {
 				return err
 			}
 			playlists = append(playlists, playlist)
@@ -731,6 +736,7 @@ func (r *Repository) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 			&playlist.Type,
 			&playlist.SourcePath,
 			&playlist.Name,
+			&playlist.NameKey,
 			&playlist.IsHidden,
 			&playlist.IsAuto,
 			&playlist.GroupMode,

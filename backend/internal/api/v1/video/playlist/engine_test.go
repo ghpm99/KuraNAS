@@ -423,7 +423,7 @@ func TestFullEngine_Integration(t *testing.T) {
 		t.Error("expected smart groups from conversion")
 	}
 	for _, g := range groups {
-		if g.SourceKey == "" || g.Name == "" {
+		if g.SourceKey == "" || (g.Name == "" && g.NameKey == "") {
 			t.Errorf("smart group missing key/name: %+v", g)
 		}
 	}

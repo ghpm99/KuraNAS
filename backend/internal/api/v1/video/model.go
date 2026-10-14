@@ -34,6 +34,7 @@ type VideoPlaylistModel struct {
 	Type           string
 	SourcePath     string
 	Name           string
+	NameKey        sql.NullString
 	IsHidden       bool
 	IsAuto         bool
 	GroupMode      string
@@ -55,9 +56,10 @@ type VideoPlaylistItemModel struct {
 }
 
 type VideoPlaylistOfVideoModel struct {
-	ID   int
-	Name string
-	Type string
+	ID      int
+	Name    string
+	NameKey sql.NullString
+	Type    string
 }
 
 type VideoPlaylistMembershipModel struct {

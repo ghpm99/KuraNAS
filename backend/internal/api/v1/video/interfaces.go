@@ -27,7 +27,7 @@ type RepositoryInterface interface {
 	GetRecentVideos(limit int) ([]VideoFileModel, error)
 	GetAllVideosForGrouping() ([]VideoFileModel, error)
 	GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error)
-	UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
+	UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
 	DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) error
 	DeleteStaleAutoPlaylists(tx *sql.Tx, keptPlaylistIDs []int) error
 	RenumberPlaylistItems(tx *sql.Tx, playlistID int) error

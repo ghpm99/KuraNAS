@@ -58,7 +58,8 @@ type videoRepoMock struct {
 	reorderPlaylistItemsFn          func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	getAllVideosForGroupingFn       func() ([]VideoFileModel, error)
 	getAllVideosWithMetadataFn      func() ([]VideoWithMetadataModel, error)
-	upsertAutoPlaylistFn            func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error)
+	getVideoPlaylistsByVideoFn      func(videoID int) ([]VideoPlaylistOfVideoModel, error)
+	upsertAutoPlaylistFn            func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
 	getPlaylistExclusionsFn         func(playlistID int) (map[int]bool, error)
 	deleteAutoPlaylistItemsFn       func(tx *sql.Tx, playlistID int) error
 	insertPlaylistItemsSrcFn        func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
@@ -170,9 +171,9 @@ func (m *videoRepoMock) GetAllVideosForGrouping() ([]VideoFileModel, error) {
 	}
 	return nil, nil
 }
-func (m *videoRepoMock) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+func (m *videoRepoMock) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 	if m.upsertAutoPlaylistFn != nil {
-		return m.upsertAutoPlaylistFn(tx, contextType, sourcePath, name, groupMode, classification)
+		return m.upsertAutoPlaylistFn(tx, contextType, sourcePath, name, nameKey, groupMode, classification)
 	}
 	return VideoPlaylistModel{}, nil
 }
@@ -207,6 +208,9 @@ func (m *videoRepoMock) GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistMo
 	return nil, nil
 }
 func (m *videoRepoMock) GetVideoPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoModel, error) {
+	if m.getVideoPlaylistsByVideoFn != nil {
+		return m.getVideoPlaylistsByVideoFn(videoID)
+	}
 	return nil, nil
 }
 func (m *videoRepoMock) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
@@ -622,7 +626,7 @@ func TestVideoServiceRebuildSmartPlaylists(t *testing.T) {
 				},
 			}, nil
 		},
-		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+		upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 			upsertedSources[sourcePath] = true
 			return VideoPlaylistModel{ID: 100, Name: name}, nil
 		},
@@ -1145,7 +1149,7 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
 						}, nil
 					},
-					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{}, errors.New("upsert failed")
 					},
 				},
@@ -1159,7 +1163,7 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
 						}, nil
 					},
-					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil
 					},
 					getPlaylistExclusionsFn: func(playlistID int) (map[int]bool, error) {
@@ -1176,7 +1180,7 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
 						}, nil
 					},
-					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil
 					},
 					getPlaylistExclusionsFn:   func(playlistID int) (map[int]bool, error) { return map[int]bool{}, nil },
@@ -1192,7 +1196,7 @@ func TestVideoService_MoreErrorBranches(t *testing.T) {
 							{VideoFileModel: VideoFileModel{ID: 2, Name: "Show S01E02.mkv", ParentPath: "/series/show", Path: "/series/show/Show S01E02.mkv"}},
 						}, nil
 					},
-					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name, groupMode, classification string) (VideoPlaylistModel, error) {
+					upsertAutoPlaylistFn: func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 						return VideoPlaylistModel{ID: 1}, nil
 					},
 					getPlaylistExclusionsFn:   func(playlistID int) (map[int]bool, error) { return map[int]bool{}, nil },

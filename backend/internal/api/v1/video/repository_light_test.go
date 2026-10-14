@@ -33,7 +33,7 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	videoCols := []string{"id", "name", "path", "parent_path", "format", "size", "created_at", "updated_at"}
-	playlistCols := []string{"id", "type", "source_path", "name", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}
+	playlistCols := []string{"id", "type", "source_path", "name", "name_key", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoFileByIDQuery)).
@@ -53,7 +53,7 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistByContextQuery)).
-		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", false, false, "", "", now, now, nil))
+		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", nil, false, false, "", "", now, now, nil))
 	mock.ExpectRollback()
 	if p, err := repo.GetPlaylistByContext("folder", "/p"); err != nil || p.ID != 1 {
 		t.Fatalf("GetPlaylistByContext failed p=%+v err=%v", p, err)
@@ -122,8 +122,8 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at", "item_count", "cover_video_id"}).
-			AddRow(1, "folder", "/p", "name", false, false, "", "", now, now, nil, 2, nil))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "name_key", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at", "item_count", "cover_video_id"}).
+			AddRow(1, "folder", "/p", "name", nil, false, false, "", "", now, now, nil, 2, nil))
 	mock.ExpectRollback()
 	if out, err := repo.GetVideoPlaylists(true); err != nil || len(out) != 1 {
 		t.Fatalf("GetVideoPlaylists failed len=%d err=%v", len(out), err)
@@ -140,7 +140,7 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistsByVideoQuery)).
 		WithArgs(2).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type"}).AddRow(1, "name", "custom"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "name_key", "type"}).AddRow(1, "name", nil, "custom"))
 	mock.ExpectRollback()
 	if out, err := repo.GetVideoPlaylistsByVideo(2); err != nil || len(out) != 1 || out[0].Type != "custom" {
 		t.Fatalf("GetVideoPlaylistsByVideo failed out=%v err=%v", out, err)
@@ -149,7 +149,7 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistByIDQuery)).
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", false, false, "", "", now, now, nil))
+		WillReturnRows(sqlmock.NewRows(playlistCols).AddRow(1, "folder", "/p", "name", nil, false, false, "", "", now, now, nil))
 	mock.ExpectRollback()
 	if p, err := repo.GetVideoPlaylistByID(1); err != nil || p.ID != 1 {
 		t.Fatalf("GetVideoPlaylistByID failed p=%+v err=%v", p, err)
@@ -203,8 +203,8 @@ func TestVideoRepositoryWritePaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.CreatePlaylistQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}).
-			AddRow(10, "folder", "/p", "p", false, false, "", "", now, now, nil))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "name_key", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}).
+			AddRow(10, "folder", "/p", "p", nil, false, false, "", "", now, now, nil))
 	mock.ExpectCommit()
 	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
 		_, err := repo.CreatePlaylist(tx, "folder", "/p")
@@ -255,11 +255,11 @@ func TestVideoRepositoryWritePaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertAutoPlaylistQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}).
-			AddRow(11, "smart", "/s", "n", false, true, "gm", "c", now, now, nil))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "type", "source_path", "name", "name_key", "is_hidden", "is_auto", "group_mode", "classification", "created_at", "updated_at", "last_played_at"}).
+			AddRow(11, "smart", "/s", "n", nil, false, true, "gm", "c", now, now, nil))
 	mock.ExpectCommit()
 	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
-		_, err := repo.UpsertAutoPlaylist(tx, "smart", "/s", "n", "gm", "c")
+		_, err := repo.UpsertAutoPlaylist(tx, "smart", "/s", "n", sql.NullString{}, "gm", "c")
 		return err
 	})
 	if err != nil {
@@ -453,7 +453,7 @@ func TestVideoRepositoryWriteErrorBranches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("begin tx: %v", err)
 	}
-	if _, err := repo.UpsertAutoPlaylist(tx, "smart", "/s", "n", "gm", "c"); err == nil {
+	if _, err := repo.UpsertAutoPlaylist(tx, "smart", "/s", "n", sql.NullString{}, "gm", "c"); err == nil {
 		t.Fatalf("expected UpsertAutoPlaylist error")
 	}
 	_ = tx.Rollback()

@@ -3,6 +3,7 @@ SELECT
     type,
     source_path,
     name,
+    name_key,
     is_hidden,
     is_auto,
     group_mode,
