@@ -1,15 +1,26 @@
 export const videoSubtitlePreferencesStorageKey = 'kuranas.videos.subtitlePreferences.v1';
 
 export type VideoSubtitlePreferences = {
+    isEnabled: boolean;
     language: string;
 };
 
-const isVideoSubtitlePreferences = (candidate: unknown): candidate is VideoSubtitlePreferences => {
+const parseVideoSubtitlePreferences = (candidate: unknown): VideoSubtitlePreferences | null => {
     if (typeof candidate !== 'object' || candidate === null) {
-        return false;
+        return null;
     }
-    const { language } = candidate as Partial<VideoSubtitlePreferences>;
-    return typeof language === 'string' && language.trim().length > 0;
+    const { isEnabled, language } = candidate as Record<string, unknown>;
+    if (typeof language !== 'string') {
+        return null;
+    }
+    const hasLanguage = language.trim().length > 0;
+    if (isEnabled === undefined) {
+        return hasLanguage ? { isEnabled: true, language } : null;
+    }
+    if (typeof isEnabled !== 'boolean' || (isEnabled && !hasLanguage)) {
+        return null;
+    }
+    return { isEnabled, language };
 };
 
 export const loadVideoSubtitlePreferences = (): VideoSubtitlePreferences | null => {
@@ -19,7 +30,7 @@ export const loadVideoSubtitlePreferences = (): VideoSubtitlePreferences | null 
             return null;
         }
         const parsedPreferences: unknown = JSON.parse(storedPreferences);
-        return isVideoSubtitlePreferences(parsedPreferences) ? parsedPreferences : null;
+        return parseVideoSubtitlePreferences(parsedPreferences);
     } catch {
         return null;
     }

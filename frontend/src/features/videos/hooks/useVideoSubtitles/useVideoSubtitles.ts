@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { getVideoSubtitles, type VideoSubtitleDto } from '@/service/videoPlayback';
-import { chooseInitialSubtitleId } from './subtitleSelection';
+import { chooseInitialSubtitleId, findRememberedLanguageSubtitleId } from './subtitleSelection';
 import {
     loadVideoSubtitlePreferences,
     saveVideoSubtitlePreferences,
@@ -49,12 +49,7 @@ export default function useVideoSubtitles({
     const lastEnabledSubtitleIdRef = useRef<number | null>(null);
 
     const initialSubtitleId = useMemo(
-        () =>
-            chooseInitialSubtitleId(
-                subtitles,
-                loadVideoSubtitlePreferences()?.language ?? null,
-                interfaceLanguage
-            ),
+        () => chooseInitialSubtitleId(subtitles, loadVideoSubtitlePreferences(), interfaceLanguage),
         [subtitles, interfaceLanguage]
     );
     const selectedSubtitleId =
@@ -71,9 +66,21 @@ export default function useVideoSubtitles({
         (subtitleId: number | null) => {
             lastEnabledSubtitleIdRef.current = subtitleId ?? selectedSubtitleId;
             setUserChoice({ videoId, subtitleId });
+            if (subtitleId === null) {
+                const selectedSubtitle = subtitles.find(
+                    (subtitle) => subtitle.id === selectedSubtitleId
+                );
+                const lastLanguage =
+                    selectedSubtitle?.language || loadVideoSubtitlePreferences()?.language || '';
+                saveVideoSubtitlePreferences({ isEnabled: false, language: lastLanguage });
+                return;
+            }
             const chosenSubtitle = subtitles.find((subtitle) => subtitle.id === subtitleId);
             if (chosenSubtitle?.language) {
-                saveVideoSubtitlePreferences({ language: chosenSubtitle.language });
+                saveVideoSubtitlePreferences({
+                    isEnabled: true,
+                    language: chosenSubtitle.language,
+                });
             }
         },
         [selectedSubtitleId, subtitles, videoId]
@@ -87,10 +94,14 @@ export default function useVideoSubtitles({
             selectSubtitle(null);
             return 'disabled';
         }
-        const subtitleToRestore =
-            subtitles.find((subtitle) => subtitle.id === lastEnabledSubtitleIdRef.current) ??
-            subtitles[0];
-        selectSubtitle(subtitleToRestore?.id ?? null);
+        const lastEnabledSubtitle = subtitles.find(
+            (subtitle) => subtitle.id === lastEnabledSubtitleIdRef.current
+        );
+        const rememberedSubtitleId = findRememberedLanguageSubtitleId(
+            subtitles,
+            loadVideoSubtitlePreferences()
+        );
+        selectSubtitle(lastEnabledSubtitle?.id ?? rememberedSubtitleId ?? subtitles[0]?.id ?? null);
         return 'enabled';
     }, [selectSubtitle, selectedSubtitleId, subtitles]);
 
