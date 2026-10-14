@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import VideoPlayerScreen from './VideoPlayerScreen';
 
 const mockUseVideoPlayerScreen = jest.fn();
@@ -63,6 +63,9 @@ jest.mock('@/features/videos/videoControls/videoControls', () => ({
     default: (props: any) => (
         <div data-testid="video-controls">
             {String(props.canGoPrevious)}-{String(props.canGoNext)}
+            <button type="button" onClick={props.onOpenShortcutsHelp}>
+                open-shortcuts-help
+            </button>
         </div>
     ),
 }));
@@ -176,5 +179,128 @@ describe('features/videos/videoPlayer/VideoPlayerScreen', () => {
         expect(screen.queryByText('Up next')).not.toBeInTheDocument();
         expect(screen.queryByText('Next episodes')).not.toBeInTheDocument();
         expect(screen.getByTestId('video-controls')).toHaveTextContent('false-false');
+    });
+    describe('keyboard shortcuts', () => {
+        const pressKey = (init: KeyboardEventInit, target: EventTarget = document.body) => {
+            const event = new KeyboardEvent('keydown', {
+                bubbles: true,
+                cancelable: true,
+                ...init,
+            });
+            act(() => {
+                target.dispatchEvent(event);
+            });
+            return event;
+        };
+
+        it('toggles playback with Space and prevents page scrolling', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            const event = pressKey({ key: ' ' });
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(state.togglePlayPause).toHaveBeenCalledTimes(1);
+            expect(screen.getByRole('status')).toHaveTextContent('VIDEO_SHORTCUT_FEEDBACK_PAUSE');
+        });
+
+        it('seeks with the arrow keys within the duration', () => {
+            const state = { ...buildScreenState(), currentTime: 118 };
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            pressKey({ key: 'ArrowRight' });
+            expect(state.seekTo).toHaveBeenLastCalledWith(120);
+
+            pressKey({ key: 'Home' });
+            expect(state.seekTo).toHaveBeenLastCalledWith(0);
+
+            pressKey({ key: '5' });
+            expect(state.seekTo).toHaveBeenLastCalledWith(60);
+        });
+
+        it('adjusts volume, speed and fullscreen', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            pressKey({ key: 'ArrowUp' });
+            expect(state.setVolume).toHaveBeenLastCalledWith(0.55);
+            pressKey({ key: '>', shiftKey: true });
+            expect(state.setPlaybackRate).toHaveBeenLastCalledWith(1.25);
+            pressKey({ key: 'f' });
+            expect(state.toggleFullscreen).toHaveBeenCalledTimes(1);
+        });
+
+        it('navigates the playlist only where available', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            pressKey({ key: 'N', shiftKey: true });
+            pressKey({ key: 'P', shiftKey: true });
+
+            expect(state.nextVideo).toHaveBeenCalledTimes(1);
+            expect(state.previousVideo).not.toHaveBeenCalled();
+        });
+
+        it('opens the help dialog with the question mark and from the controls button', () => {
+            mockUseVideoPlayerScreen.mockReturnValue(buildScreenState());
+            render(<VideoPlayerScreen />);
+
+            pressKey({ key: '?', shiftKey: true });
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+            fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+        });
+
+        it('opens the help dialog from the controls button', () => {
+            mockUseVideoPlayerScreen.mockReturnValue(buildScreenState());
+            render(<VideoPlayerScreen />);
+
+            fireEvent.click(screen.getByText('open-shortcuts-help'));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+
+        it('ignores shortcuts while the help dialog is open', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+            fireEvent.click(screen.getByText('open-shortcuts-help'));
+
+            pressKey({ key: ' ' });
+
+            expect(state.togglePlayPause).not.toHaveBeenCalled();
+        });
+
+        it('ignores shortcuts while the details panel is open', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+            fireEvent.click(screen.getByText('open-details'));
+
+            const event = pressKey({ key: ' ' });
+
+            expect(event.defaultPrevented).toBe(false);
+            expect(state.togglePlayPause).not.toHaveBeenCalled();
+        });
+
+        it('ignores shortcuts typed in inputs and stops listening after unmount', () => {
+            const state = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            const { unmount } = render(<VideoPlayerScreen />);
+            const input = document.createElement('input');
+            document.body.appendChild(input);
+
+            pressKey({ key: 'k' }, input);
+            expect(state.togglePlayPause).not.toHaveBeenCalled();
+            input.remove();
+
+            unmount();
+            pressKey({ key: 'k' });
+            expect(state.togglePlayPause).not.toHaveBeenCalled();
+        });
     });
 });

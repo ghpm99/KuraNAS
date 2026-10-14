@@ -10,6 +10,7 @@ import {
     SkipBack,
     SkipForward,
     Volume2,
+    Keyboard,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -31,6 +32,7 @@ interface VideoControlsProps {
     previousVideo: () => void;
     canGoNext?: boolean;
     canGoPrevious?: boolean;
+    onOpenShortcutsHelp?: () => void;
 }
 const VideoControls = ({
     isPlaying,
@@ -48,6 +50,7 @@ const VideoControls = ({
     previousVideo,
     canGoNext = true,
     canGoPrevious = true,
+    onOpenShortcutsHelp,
 }: VideoControlsProps) => {
     const { t } = useI18n();
     const [showControls, setShowControls] = useState(true);
@@ -203,6 +206,18 @@ const VideoControls = ({
                     <IconButton onClick={handleSettingsClick} size="small">
                         <Settings size={20} />
                     </IconButton>
+
+                    {onOpenShortcutsHelp ? (
+                        <Tooltip title={t('VIDEO_SHORTCUTS_HELP_BUTTON')}>
+                            <IconButton
+                                onClick={onOpenShortcutsHelp}
+                                size="small"
+                                aria-label={t('VIDEO_SHORTCUTS_HELP_BUTTON')}
+                            >
+                                <Keyboard size={20} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : null}
 
                     <Tooltip
                         title={isFullscreen ? t('VIDEO_EXIT_FULLSCREEN') : t('VIDEO_FULLSCREEN')}

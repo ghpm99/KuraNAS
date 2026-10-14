@@ -76,7 +76,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 49. Log/registro de acesso uma vez por reprodução, não por Range
 
 ### Player
-- [ ] 50. Atalhos de teclado
+- [x] 50. Atalhos de teclado
 - [ ] 51. Tela cheia no contêiner (controles visíveis)
 - [ ] 52. Picture-in-Picture
 - [ ] 53. Volume, mudo e velocidade persistidos

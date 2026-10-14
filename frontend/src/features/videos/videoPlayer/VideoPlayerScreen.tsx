@@ -4,6 +4,9 @@ import VideoControls from '@/features/videos/videoControls/videoControls';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
 import { useState } from 'react';
 import VideoDetailsPanel from '@/features/videos/videoDetails/VideoDetailsPanel';
+import PlayerShortcutFeedback from '@/features/videos/playerShortcuts/PlayerShortcutFeedback';
+import PlayerShortcutsHelpDialog from '@/features/videos/playerShortcuts/PlayerShortcutsHelpDialog';
+import usePlayerKeyboardShortcuts from '@/features/videos/playerShortcuts/usePlayerKeyboardShortcuts';
 import styles from './VideoPlayerScreen.module.css';
 import useVideoPlayerScreen from './useVideoPlayerScreen';
 
@@ -51,7 +54,30 @@ export default function VideoPlayerScreen() {
         retryPlayback,
     } = useVideoPlayerScreen();
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
     useDocumentTitle(contextTitle);
+    const { feedback: shortcutFeedback } = usePlayerKeyboardShortcuts({
+        snapshot: {
+            isPlaying: status === 'playing',
+            currentTime,
+            duration,
+            volume,
+            playbackRate,
+            canGoNext: hasNextVideo,
+            canGoPrevious: hasPreviousVideo,
+        },
+        controls: {
+            seekTo,
+            setVolume,
+            setPlaybackRate,
+            toggleFullscreen,
+            togglePlayPause,
+            nextVideo,
+            previousVideo,
+            openHelp: () => setIsShortcutsHelpOpen(true),
+        },
+        isSuspended: isInvalidVideoId || isDetailsOpen || isShortcutsHelpOpen,
+    });
 
     if (isInvalidVideoId) {
         return <div>{t('VIDEO_INVALID_ID')}</div>;
@@ -91,7 +117,9 @@ export default function VideoPlayerScreen() {
                         previousVideo={previousVideo}
                         canGoNext={hasNextVideo}
                         canGoPrevious={hasPreviousVideo}
+                        onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
                     />
+                    <PlayerShortcutFeedback feedback={shortcutFeedback} />
                 </VideoPlayer>
             </section>
 
@@ -186,6 +214,11 @@ export default function VideoPlayerScreen() {
             <VideoDetailsPanel
                 video={isDetailsOpen ? currentVideo : null}
                 onClose={() => setIsDetailsOpen(false)}
+            />
+
+            <PlayerShortcutsHelpDialog
+                isOpen={isShortcutsHelpOpen}
+                onClose={() => setIsShortcutsHelpOpen(false)}
             />
         </div>
     );
