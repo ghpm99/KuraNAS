@@ -393,3 +393,19 @@ export const getVideoMoviePosterUrl = (
     width = defaultPosterWidth,
     height = defaultPosterHeight
 ): string => `${getApiV1BaseUrl()}/video/movies/${videoId}/poster?width=${width}&height=${height}`;
+
+const defaultCoverWidth = 640;
+const defaultCoverHeight = 360;
+
+export const getVideoThumbnailUrl = (
+    videoId: number,
+    width = defaultCoverWidth,
+    height = defaultCoverHeight
+): string =>
+    `${getApiV1BaseUrl()}/files/video-thumbnail/${videoId}?width=${width}&height=${height}`;
+
+export const getVideoPreviewUrl = (
+    videoId: number,
+    width = defaultCoverWidth,
+    height = defaultCoverHeight
+): string => `${getApiV1BaseUrl()}/files/video-preview/${videoId}?width=${width}&height=${height}`;

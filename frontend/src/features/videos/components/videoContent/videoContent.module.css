@@ -141,11 +141,13 @@
     transition: opacity 0.2s ease;
 }
 
-.videoCard:hover .thumbStatic {
+.videoCard:hover .thumbnailPreviewReady .thumbStatic,
+.videoCard:focus-visible .thumbnailPreviewReady .thumbStatic {
     opacity: 0;
 }
 
-.videoCard:hover .thumbPreview {
+.videoCard:hover .thumbnailPreviewReady .thumbPreview,
+.videoCard:focus-visible .thumbnailPreviewReady .thumbPreview {
     opacity: 1;
 }
 
