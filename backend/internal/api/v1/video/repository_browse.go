@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	files "nas-go/api/internal/api/v1/files"
@@ -97,4 +98,18 @@ func (r *Repository) GetVideos(page int, pageSize int) (utils.PaginationResponse
 	paginationResponse.UpdatePagination()
 
 	return paginationResponse, nil
+}
+
+func (r *Repository) GetVideoDurationSecondsByFileID(fileID int) (sql.NullFloat64, error) {
+	var durationSeconds sql.NullFloat64
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.GetVideoDurationSecondsByFileIDQuery, fileID).Scan(&durationSeconds)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return sql.NullFloat64{}, nil
+	}
+	if err != nil {
+		return sql.NullFloat64{}, fmt.Errorf("GetVideoDurationSecondsByFileID: %w", err)
+	}
+	return durationSeconds, nil
 }

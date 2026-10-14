@@ -68,7 +68,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 44. Pôster local de série/filme
 
 ### Thumbnails
-- [ ] 45. Frame do thumbnail em % da duração
+- [x] 45. Frame do thumbnail em % da duração
 - [ ] 46. Fallback de thumbnail não fica em cache permanente
 - [ ] 47. Prévia GIF carregada só no hover
 - [ ] 48. Worker não gera GIF de prévia para todo vídeo
