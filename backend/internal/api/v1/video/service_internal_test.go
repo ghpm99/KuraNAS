@@ -31,6 +31,7 @@ type videoRepoMock struct {
 	getContinueWatchingFn           func(clientID string, limit int) ([]ContinueWatchingModel, error)
 	checkVideoInPlaylistFn          func(playlistID int, videoID int) (bool, error)
 	getUnassignedVideosFn           func(limit int) ([]VideoFileModel, error)
+	getHiddenVideoPlaylistsFn       func(limit int, offset int) ([]VideoPlaylistModel, error)
 	getVideoPlaylistsFn             func(includeHidden bool) ([]VideoPlaylistModel, error)
 	getVideoPlaylistMembersFn       func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	getVideoPlaylistByIDFn          func(id int) (VideoPlaylistModel, error)
@@ -255,6 +256,12 @@ func (m *videoRepoMock) GetVideoPlaylistsBySection(filter PlaylistSectionFilter,
 func (m *videoRepoMock) SearchVideoPlaylists(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
 	if m.searchVideoPlaylistsFn != nil {
 		return m.searchVideoPlaylistsFn(searchPattern, limit, offset)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) GetHiddenVideoPlaylists(limit int, offset int) ([]VideoPlaylistModel, error) {
+	if m.getHiddenVideoPlaylistsFn != nil {
+		return m.getHiddenVideoPlaylistsFn(limit, offset)
 	}
 	return nil, nil
 }
