@@ -65,4 +65,38 @@ describe('features/videos/VideoAddToPlaylistButton', () => {
 
         expect(screen.getByRole('button', { name: 'VIDEO_ADD_TO_PLAYLIST' })).toBeDisabled();
     });
+
+    it('creates a playlist already containing the video from the menu', async () => {
+        const onCreatePlaylistWithVideo = jest.fn();
+        render(
+            <QueryClientProvider
+                client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+            >
+                <VideoAddToPlaylistButton
+                    videoId={5}
+                    isAddingToPlaylist={false}
+                    onAddVideo={jest.fn()}
+                    onCreatePlaylistWithVideo={onCreatePlaylistWithVideo}
+                />
+            </QueryClientProvider>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_ADD_TO_PLAYLIST' }));
+        fireEvent.click(await screen.findByText('VIDEO_NEW_PLAYLIST'));
+        fireEvent.change(await screen.findByLabelText('VIDEO_NEW_PLAYLIST_NAME'), {
+            target: { value: 'Favoritos' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'ACTION_CREATE_ADD' }));
+
+        expect(onCreatePlaylistWithVideo).toHaveBeenCalledWith('Favoritos', 5);
+    });
+
+    it('does not offer playlist creation when no creation handler is wired', async () => {
+        renderButton();
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_ADD_TO_PLAYLIST' }));
+        await screen.findByText('Season 1');
+
+        expect(screen.queryByText('VIDEO_NEW_PLAYLIST')).not.toBeInTheDocument();
+    });
 });

@@ -8,12 +8,16 @@ type VideoAddToPlaylistButtonProps = {
     videoId: number;
     isAddingToPlaylist: boolean;
     onAddVideo: (videoId: number, playlistId: number) => void;
+    onCreatePlaylistWithVideo?: (name: string, videoId: number) => void;
+    isCreatingPlaylist?: boolean;
 };
 
 export default function VideoAddToPlaylistButton({
     videoId,
     isAddingToPlaylist,
     onAddVideo,
+    onCreatePlaylistWithVideo,
+    isCreatingPlaylist,
 }: VideoAddToPlaylistButtonProps) {
     const { t } = useI18n();
     const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -37,6 +41,11 @@ export default function VideoAddToPlaylistButton({
                     setMenuAnchor(null);
                     onAddVideo(videoId, playlistId);
                 }}
+                onCreatePlaylist={
+                    onCreatePlaylistWithVideo &&
+                    ((name) => onCreatePlaylistWithVideo(name, videoId))
+                }
+                isCreatingPlaylist={isCreatingPlaylist}
             />
         </>
     );

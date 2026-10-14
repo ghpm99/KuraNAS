@@ -29,6 +29,7 @@ type VideoLibrarySectionProps = {
     sort?: VideoLibrarySort;
     filters?: VideoLibraryFilters;
     isAddingToPlaylist: boolean;
+    isCreatingPlaylist?: boolean;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
     onSearchChange: (value: string) => void;
@@ -36,6 +37,7 @@ type VideoLibrarySectionProps = {
     onFiltersChange?: (filters: VideoLibraryFilters) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
     onAddVideo: (videoId: number, playlistId: number) => void;
+    onCreatePlaylistWithVideo?: (name: string, videoId: number) => void;
     onLoadMore: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
 };
@@ -55,6 +57,7 @@ export default function VideoLibrarySection({
     sort = defaultVideoLibrarySort,
     filters = noVideoLibraryFilters,
     isAddingToPlaylist,
+    isCreatingPlaylist,
     isFetchingMoreVideos,
     hasMoreVideos,
     onSearchChange,
@@ -62,6 +65,7 @@ export default function VideoLibrarySection({
     onFiltersChange,
     onPlayVideo,
     onAddVideo,
+    onCreatePlaylistWithVideo,
     onLoadMore,
     onSetWatched,
 }: VideoLibrarySectionProps) {
@@ -149,6 +153,8 @@ export default function VideoLibrarySection({
                                     videoId={video.id}
                                     isAddingToPlaylist={isAddingToPlaylist}
                                     onAddVideo={onAddVideo}
+                                    onCreatePlaylistWithVideo={onCreatePlaylistWithVideo}
+                                    isCreatingPlaylist={isCreatingPlaylist}
                                 />
                                 {onSetWatched && (
                                     <VideoWatchedToggleButton

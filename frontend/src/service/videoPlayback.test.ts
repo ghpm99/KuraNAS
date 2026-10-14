@@ -33,6 +33,8 @@ import {
     startVideoPlayback,
     updateVideoPlaybackState,
     updateVideoPlaylistName,
+    createVideoPlaylist,
+    deleteVideoPlaylist,
 } from './videoPlayback';
 
 const mockedApi = apiBase as unknown as {
@@ -333,5 +335,27 @@ describe('service/videoPlayback', () => {
                 duration: undefined,
             },
         });
+    });
+
+    it('creates a custom playlist posting only the name, or the name and the video id', async () => {
+        mockedApi.post.mockResolvedValue({ data: { id: 8, name: 'Favoritos' } });
+
+        const emptyPlaylist = await createVideoPlaylist('Favoritos');
+        await createVideoPlaylist('Favoritos', 5);
+
+        expect(emptyPlaylist).toEqual({ id: 8, name: 'Favoritos' });
+        expect(mockedApi.post).toHaveBeenNthCalledWith(1, '/video/playlists', {
+            name: 'Favoritos',
+        });
+        expect(mockedApi.post).toHaveBeenNthCalledWith(2, '/video/playlists', {
+            name: 'Favoritos',
+            video_id: 5,
+        });
+    });
+
+    it('deletes a playlist by id', async () => {
+        await deleteVideoPlaylist(8);
+
+        expect(mockedApi.delete).toHaveBeenCalledWith('/video/playlists/8');
     });
 });

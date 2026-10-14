@@ -1,4 +1,5 @@
 import { CircularProgress, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 import ErrorState from '@/components/errorState/errorState';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -8,6 +9,7 @@ import VideoMovieBrowser from '../movieBrowser/VideoMovieBrowser';
 import VideoFeedbackSnackbar from './VideoFeedbackSnackbar';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
+import VideoNewPlaylistButton from './VideoNewPlaylistButton';
 import VideoHomeScreen from './VideoHomeScreen';
 import VideoLibrarySection from './VideoLibrarySection';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
@@ -43,6 +45,8 @@ export default function VideoContentScreen() {
         isRenamingPlaylist,
         isRemovingFromPlaylist,
         isReorderingPlaylist,
+        isCreatingPlaylist,
+        isDeletingPlaylist,
         continueWatchingItems,
         seriesPlaylists,
         moviePlaylists,
@@ -67,6 +71,9 @@ export default function VideoContentScreen() {
         playVideo,
         openPlaylistVideo,
         addVideoFromLibrary,
+        createPlaylist,
+        createPlaylistWithVideo,
+        deleteSelectedPlaylist,
         renameSelectedPlaylist,
         removeVideoFromSelectedPlaylist,
         moveSelectedPlaylistItem,
@@ -117,6 +124,8 @@ export default function VideoContentScreen() {
             return (
                 <VideoContextDetailView
                     playlist={selectedPlaylistDetail}
+                    isDeleting={isDeletingPlaylist}
+                    onDelete={deleteSelectedPlaylist}
                     onBack={clearSelectedPlaylist}
                     onOpenVideo={openPlaylistVideo}
                     onSetWatched={setVideoWatched}
@@ -133,6 +142,8 @@ export default function VideoContentScreen() {
                 isRenaming={isRenamingPlaylist}
                 isRemoving={isRemovingFromPlaylist}
                 isReordering={isReorderingPlaylist}
+                isDeleting={isDeletingPlaylist}
+                onDelete={deleteSelectedPlaylist}
                 onBack={clearSelectedPlaylist}
                 onOpenVideo={openPlaylistVideo}
                 onRename={renameSelectedPlaylist}
@@ -148,7 +159,8 @@ export default function VideoContentScreen() {
 
     const renderPlaylistGridSection = (
         sectionName: string,
-        playlistsOfSection: VideoPlaylistDto[]
+        playlistsOfSection: VideoPlaylistDto[],
+        sectionAction?: ReactNode
     ) => {
         if (isLoadingPlaylists) {
             return <VideoSectionSkeleton />;
@@ -167,6 +179,7 @@ export default function VideoContentScreen() {
                 descriptionKey={`VIDEO_SECTION_${sectionName}_DESCRIPTION`}
                 emptyKey={`VIDEO_SECTION_${sectionName}_EMPTY`}
                 playlists={playlistsOfSection}
+                action={sectionAction}
                 hasNextPage={hasMoreSectionPlaylists}
                 isFetchingNextPage={isFetchingMoreSectionPlaylists}
                 fetchNextPage={loadMoreSectionPlaylists}
@@ -190,6 +203,7 @@ export default function VideoContentScreen() {
                 sort={librarySort}
                 filters={libraryFilters}
                 isAddingToPlaylist={isAddingToPlaylist}
+                isCreatingPlaylist={isCreatingPlaylist}
                 isFetchingMoreVideos={isFetchingMoreVideos}
                 hasMoreVideos={hasMoreVideos}
                 onSearchChange={setVideoSearch}
@@ -197,6 +211,7 @@ export default function VideoContentScreen() {
                 onFiltersChange={setLibraryFilters}
                 onPlayVideo={playVideo}
                 onAddVideo={addVideoFromLibrary}
+                onCreatePlaylistWithVideo={createPlaylistWithVideo}
                 onLoadMore={loadMoreVideos}
                 onSetWatched={setVideoWatched}
             />
@@ -229,7 +244,14 @@ export default function VideoContentScreen() {
             case 'movies':
                 return <VideoMovieBrowser onPlayVideo={playVideo} />;
             case 'personal':
-                return renderPlaylistGridSection('PERSONAL', personalPlaylists);
+                return renderPlaylistGridSection(
+                    'PERSONAL',
+                    personalPlaylists,
+                    <VideoNewPlaylistButton
+                        isCreating={isCreatingPlaylist}
+                        onCreate={createPlaylist}
+                    />
+                );
             case 'clips':
                 return renderPlaylistGridSection('CLIPS', clipPlaylists);
             case 'folders':

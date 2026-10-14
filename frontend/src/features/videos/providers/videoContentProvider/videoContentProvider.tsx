@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
     addVideoToPlaylist,
+    createVideoPlaylist,
+    deleteVideoPlaylist,
     getVideoContinueWatching,
     getVideoHomeCatalog,
     getVideoLibraryFiles,
@@ -91,6 +93,8 @@ export interface VideoContentContextData {
     isFetchingMoreSectionPlaylists: boolean;
     hasMoreSectionPlaylists: boolean;
     isAddingToPlaylist: boolean;
+    isCreatingPlaylist: boolean;
+    isDeletingPlaylist: boolean;
     isRenamingPlaylist: boolean;
     isRemovingFromPlaylist: boolean;
     isReorderingPlaylist: boolean;
@@ -110,6 +114,9 @@ export interface VideoContentContextData {
     playVideo: (videoId: number, playlistId?: number | null) => void;
     openPlaylistVideo: (videoId: number) => void;
     addVideoFromLibrary: (videoId: number, playlistId: number) => void;
+    createPlaylist: (name: string) => void;
+    createPlaylistWithVideo: (name: string, videoId: number) => void;
+    deleteSelectedPlaylist: () => void;
     renameSelectedPlaylist: (name: string) => void;
     removeVideoFromSelectedPlaylist: (videoId: number) => void;
     moveSelectedPlaylistItem: (index: number, direction: -1 | 1) => void;
@@ -405,6 +412,54 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         },
     });
 
+    const createPlaylistMutation = useMutation({
+        mutationFn: ({ name, videoId }: { name: string; videoId?: number }) =>
+            createVideoPlaylist(name, videoId),
+        onSuccess: async (_createdPlaylist, { videoId }) => {
+            await invalidateAllVideoQueries();
+            setFeedback({
+                open: true,
+                message: t(
+                    videoId === undefined
+                        ? 'VIDEO_PLAYLIST_CREATED'
+                        : 'VIDEO_PLAYLIST_CREATED_ADDED'
+                ),
+                severity: 'success',
+            });
+        },
+        onError: (error) => {
+            setFeedback({
+                open: true,
+                message: extractBackendErrorMessage(error) ?? t('VIDEO_PLAYLIST_CREATE_ERROR'),
+                severity: 'error',
+            });
+        },
+    });
+
+    const clearSelectedPlaylist = () => {
+        if (currentSection === 'home') {
+            navigate('/videos');
+            return;
+        }
+        navigate(`/videos/${currentSection}`);
+    };
+
+    const deletePlaylistMutation = useMutation({
+        mutationFn: (playlistId: number) => deleteVideoPlaylist(playlistId),
+        onSuccess: async () => {
+            clearSelectedPlaylist();
+            await invalidateAllVideoQueries();
+            setFeedback({ open: true, message: t('VIDEO_PLAYLIST_DELETED'), severity: 'success' });
+        },
+        onError: (error) => {
+            setFeedback({
+                open: true,
+                message: extractBackendErrorMessage(error) ?? t('VIDEO_PLAYLIST_DELETE_ERROR'),
+                severity: 'error',
+            });
+        },
+    });
+
     const renameMutation = useMutation({
         mutationFn: async (name: string) => {
             if (!selectedPlaylistSummary) return;
@@ -594,6 +649,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         isFetchingMoreSectionPlaylists,
         hasMoreSectionPlaylists,
         isAddingToPlaylist: addToPlaylistMutation.isPending,
+        isCreatingPlaylist: createPlaylistMutation.isPending,
+        isDeletingPlaylist: deletePlaylistMutation.isPending,
         isRenamingPlaylist: renameMutation.isPending,
         isRemovingFromPlaylist: removeFromPlaylistMutation.isPending,
         isReorderingPlaylist: reorderMutation.isPending,
@@ -628,17 +685,18 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
                     playlist.id
                 )
             ),
-        clearSelectedPlaylist: () => {
-            if (currentSection === 'home') {
-                navigate('/videos');
-                return;
-            }
-            navigate(`/videos/${currentSection}`);
-        },
+        clearSelectedPlaylist,
         playVideo,
         openPlaylistVideo,
         addVideoFromLibrary: (videoId, playlistId) =>
             addToPlaylistMutation.mutate({ playlistId, videoId }),
+        createPlaylist: (name) => createPlaylistMutation.mutate({ name }),
+        createPlaylistWithVideo: (name, videoId) =>
+            createPlaylistMutation.mutate({ name, videoId }),
+        deleteSelectedPlaylist: () => {
+            if (!selectedPlaylistSummary) return;
+            deletePlaylistMutation.mutate(selectedPlaylistSummary.id);
+        },
         renameSelectedPlaylist: (name) => {
             if (!name.trim()) return;
             renameMutation.mutate(name);
