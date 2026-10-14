@@ -30,7 +30,7 @@ func (r *Repository) ListLibraryMovies(sort LibraryMovieSort, limit int, offset 
 
 		for rows.Next() {
 			var movie VideoFileModel
-			if err := rows.Scan(
+			scanTargets := append([]any{
 				&movie.ID,
 				&movie.Name,
 				&movie.Path,
@@ -39,7 +39,8 @@ func (r *Repository) ListLibraryMovies(sort LibraryMovieSort, limit int, offset 
 				&movie.Size,
 				&movie.CreatedAt,
 				&movie.UpdatedAt,
-			); err != nil {
+			}, technicalMetadataScanTargets(&movie)...)
+			if err := rows.Scan(scanTargets...); err != nil {
 				return err
 			}
 			movies = append(movies, movie)

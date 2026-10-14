@@ -6,9 +6,33 @@ SELECT
     hf.format,
     hf.size,
     hf.created_at,
-    hf.updated_at
+    hf.updated_at,
+    tech.duration_seconds,
+    tech.width,
+    tech.height,
+    tech.codec_name
 FROM
     home_file hf
+LEFT JOIN LATERAL (
+    SELECT
+        CASE
+            WHEN vm.duration ~ '^[0-9]+(\.[0-9]+)?$' THEN vm.duration::double precision
+        END AS duration_seconds,
+        vm.width,
+        vm.height,
+        vm.codec_name
+    FROM
+        video_metadata vm
+    WHERE
+        vm.id = (
+            SELECT
+                MAX(latest.id)
+            FROM
+                video_metadata latest
+            WHERE
+                latest.file_id = hf.id
+        )
+) tech ON TRUE
 WHERE
     hf.format = ANY($1)
     AND hf.deleted_at IS NULL

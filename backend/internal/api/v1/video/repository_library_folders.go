@@ -63,7 +63,7 @@ func (r *Repository) ListLibraryFolderVideos(folderPath string, limit int, offse
 
 		for rows.Next() {
 			var video VideoFileModel
-			if err := rows.Scan(
+			scanTargets := append([]any{
 				&video.ID,
 				&video.Name,
 				&video.Path,
@@ -72,7 +72,8 @@ func (r *Repository) ListLibraryFolderVideos(folderPath string, limit int, offse
 				&video.Size,
 				&video.CreatedAt,
 				&video.UpdatedAt,
-			); err != nil {
+			}, technicalMetadataScanTargets(&video)...)
+			if err := rows.Scan(scanTargets...); err != nil {
 				return err
 			}
 			videos = append(videos, video)
