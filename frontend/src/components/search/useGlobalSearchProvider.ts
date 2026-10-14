@@ -15,6 +15,7 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import { getVideoClassificationLabelKey } from '@/features/videos/components/videoContent/videoClassificationLabel';
 import { useOptionalGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import {
     buildPlayableTrack,
@@ -375,7 +376,10 @@ export const useGlobalSearchProvider = () => {
                           scope: t('NAV_VIDEOS'),
                           count: String(item.count),
                       }),
-            meta: item.scope === 'video' ? item.classification : item.description,
+            meta:
+                item.scope === 'video'
+                    ? t(getVideoClassificationLabelKey(item.classification))
+                    : item.description,
             onSelect: () => navigate(getPlaylistSearchRoute(item)),
         }));
         if (playlists.length > 0) {
