@@ -36,6 +36,8 @@ import {
     updateVideoPlaylistName,
     createVideoPlaylist,
     deleteVideoPlaylist,
+    getVideoMoviePosterUrl,
+    getVideoPlaylistPosterUrl,
 } from './videoPlayback';
 
 const mockedApi = apiBase as unknown as {
@@ -372,5 +374,22 @@ describe('service/videoPlayback', () => {
         await deleteVideoPlaylist(8);
 
         expect(mockedApi.delete).toHaveBeenCalledWith('/video/playlists/8');
+    });
+});
+
+describe('video poster urls', () => {
+    it('builds the playlist poster url with the default and a custom size', () => {
+        expect(getVideoPlaylistPosterUrl(7)).toMatch(
+            /\/video\/playlists\/7\/poster\?width=400&height=600$/
+        );
+        expect(getVideoPlaylistPosterUrl(7, 200, 300)).toMatch(
+            /\/video\/playlists\/7\/poster\?width=200&height=300$/
+        );
+    });
+
+    it('builds the movie poster url', () => {
+        expect(getVideoMoviePosterUrl(9)).toMatch(
+            /\/video\/movies\/9\/poster\?width=400&height=600$/
+        );
     });
 });

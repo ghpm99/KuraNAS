@@ -1,8 +1,9 @@
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
-import type { VideoFileDto } from '@/service/videoPlayback';
+import { getVideoMoviePosterUrl, type VideoFileDto } from '@/service/videoPlayback';
 import VideoMediaBadges from '../components/VideoMediaBadges';
+import { useLocalPoster } from '../useLocalPoster';
 import styles from './VideoMovieBrowser.module.css';
 
 type VideoMovieGridProps = {
@@ -15,6 +16,39 @@ type VideoMovieGridProps = {
 
 const thumbnailBaseUrl = () => `${getApiV1BaseUrl()}/files/video-thumbnail`;
 
+type VideoMovieCardProps = {
+    movie: VideoFileDto;
+    onPlayVideo: (videoId: number, playlistId?: number | null) => void;
+};
+
+function VideoMovieCard({ movie, onPlayVideo }: VideoMovieCardProps) {
+    const { t } = useI18n();
+    const { imageUrl, isPosterShown, handlePosterError } = useLocalPoster(
+        getVideoMoviePosterUrl(movie.id),
+        `${thumbnailBaseUrl()}/${movie.id}?width=320&height=180`
+    );
+
+    return (
+        <button
+            type="button"
+            className={styles.movieCard}
+            aria-label={t('VIDEO_PLAY_ARIA', { title: movie.name })}
+            onClick={() => onPlayVideo(movie.id, null)}
+        >
+            <div className={styles.movieThumb}>
+                <img
+                    loading="lazy"
+                    src={imageUrl}
+                    alt={movie.name}
+                    onError={isPosterShown ? handlePosterError : undefined}
+                />
+                <VideoMediaBadges video={movie} />
+            </div>
+            <h3 className={styles.movieName}>{movie.name}</h3>
+        </button>
+    );
+}
+
 export default function VideoMovieGrid({
     movies,
     hasNextPage,
@@ -22,29 +56,11 @@ export default function VideoMovieGrid({
     fetchNextPage,
     onPlayVideo,
 }: VideoMovieGridProps) {
-    const { t } = useI18n();
-
     return (
         <>
             <div className={styles.movieGrid}>
                 {movies.map((movie) => (
-                    <button
-                        type="button"
-                        key={movie.id}
-                        className={styles.movieCard}
-                        aria-label={t('VIDEO_PLAY_ARIA', { title: movie.name })}
-                        onClick={() => onPlayVideo(movie.id, null)}
-                    >
-                        <div className={styles.movieThumb}>
-                            <img
-                                loading="lazy"
-                                src={`${thumbnailBaseUrl()}/${movie.id}?width=320&height=180`}
-                                alt={movie.name}
-                            />
-                            <VideoMediaBadges video={movie} />
-                        </div>
-                        <h3 className={styles.movieName}>{movie.name}</h3>
-                    </button>
+                    <VideoMovieCard key={movie.id} movie={movie} onPlayVideo={onPlayVideo} />
                 ))}
             </div>
             <LoadMoreSentinel

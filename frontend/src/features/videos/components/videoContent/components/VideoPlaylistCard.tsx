@@ -1,8 +1,9 @@
 import { Typography } from '@mui/material';
 import { EyeOff, Play, Videotape } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { VideoPlaylistDto } from '@/service/videoPlayback';
+import { VideoPlaylistDto, getVideoPlaylistPosterUrl } from '@/service/videoPlayback';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
+import { useLocalPoster } from '../useLocalPoster';
 import styles from '../videoContent.module.css';
 
 const apiBase = `${getApiV1BaseUrl()}/files`;
@@ -27,6 +28,10 @@ export default function VideoPlaylistCard({
     const { t } = useI18n();
     const coverId = focusVideoId ?? playlist.cover_video_id;
     const coverThumb = coverId ? `${apiBase}/video-thumbnail/${coverId}?width=640&height=360` : '';
+    const { imageUrl, isPosterShown, handlePosterError } = useLocalPoster(
+        getVideoPlaylistPosterUrl(playlist.id),
+        coverThumb
+    );
     const coverPreview = coverId ? `${apiBase}/video-preview/${coverId}?width=640&height=360` : '';
 
     return (
@@ -36,14 +41,17 @@ export default function VideoPlaylistCard({
                     <div className={styles.thumbFallback}>
                         <Videotape size={38} color="white" />
                     </div>
+                    {(coverId || isPosterShown) && (
+                        <img
+                            className={styles.thumbStatic}
+                            loading="lazy"
+                            src={imageUrl}
+                            alt={playlist.name}
+                            onError={isPosterShown ? handlePosterError : undefined}
+                        />
+                    )}
                     {coverId && (
                         <>
-                            <img
-                                className={styles.thumbStatic}
-                                loading="lazy"
-                                src={coverThumb}
-                                alt={playlist.name}
-                            />
                             <img
                                 className={styles.thumbPreview}
                                 loading="lazy"

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import VideoPlaylistCard from './VideoPlaylistCard';
+import { resetFailedPosterUrls } from '../useLocalPoster';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
@@ -37,6 +38,8 @@ const createPlaylist = (overrides?: Partial<VideoPlaylistDto>): VideoPlaylistDto
 });
 
 describe('videos/videoContent/VideoPlaylistCard', () => {
+    beforeEach(() => resetFailedPosterUrls());
+
     it('renders artwork, badge and forwards selection/play callbacks', () => {
         const onSelect = jest.fn();
         const onPlay = jest.fn();
@@ -57,7 +60,7 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
         expect(screen.getByText('Resume')).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'Showcase' })).toHaveAttribute(
             'src',
-            'http://localhost:8000/api/v1/files/video-thumbnail/99?width=640&height=360'
+            'http://localhost:8000/api/v1/video/playlists/7/poster?width=400&height=600'
         );
         expect(screen.getByRole('img', { name: 'Preview Showcase' })).toHaveAttribute(
             'src',
@@ -69,6 +72,30 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
 
         expect(onSelect).toHaveBeenCalledWith(playlist);
         expect(onPlay).toHaveBeenCalledWith(99, 7);
+    });
+
+    it('falls back to the cover thumbnail when the poster fails and does not retry the poster', () => {
+        render(
+            <VideoPlaylistCard
+                playlist={createPlaylist()}
+                onSelect={jest.fn()}
+                onPlay={jest.fn()}
+                focusVideoId={99}
+            />
+        );
+
+        fireEvent.error(screen.getByRole('img', { name: 'Showcase' }));
+
+        const coverImage = screen.getByRole('img', { name: 'Showcase' });
+        expect(coverImage).toHaveAttribute(
+            'src',
+            'http://localhost:8000/api/v1/files/video-thumbnail/99?width=640&height=360'
+        );
+        fireEvent.error(coverImage);
+        expect(coverImage).toHaveAttribute(
+            'src',
+            'http://localhost:8000/api/v1/files/video-thumbnail/99?width=640&height=360'
+        );
     });
 
     it('hides the playlist from the card action and omits the action without a handler', () => {
@@ -105,6 +132,8 @@ describe('videos/videoContent/VideoPlaylistCard', () => {
                 onPlay={onPlay}
             />
         );
+
+        fireEvent.error(screen.getByRole('img', { name: 'Showcase' }));
 
         expect(screen.getByText('PERSONAL')).toBeInTheDocument();
         expect(screen.queryByRole('img', { name: 'Showcase' })).not.toBeInTheDocument();

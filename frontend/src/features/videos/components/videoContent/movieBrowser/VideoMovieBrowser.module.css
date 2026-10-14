@@ -47,7 +47,7 @@
 
 .movieThumb {
     position: relative;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 2 / 3;
     background: rgba(var(--app-color-surface-3-rgb), 0.94);
 }
 

@@ -23,6 +23,8 @@ const mockUpdateVideoPlaylistName = jest.fn();
 const mockGetVideoPlaybackState = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
+    getVideoPlaylistPosterUrl: (playlistId: number) => `/poster/playlists/${playlistId}`,
+    getVideoMoviePosterUrl: (videoId: number) => `/poster/movies/${videoId}`,
     getVideoPlaylists: (...args: any[]) => mockGetVideoPlaylists(...args),
     getVideoPlaylistsBySection: (...args: any[]) => mockGetVideoPlaylistsBySection(...args),
     getVideoPlaylistById: (...args: any[]) => mockGetVideoPlaylistById(...args),

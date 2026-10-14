@@ -65,7 +65,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 41. Criar e excluir playlist personalizada (`create_playlist.sql` grava `is_auto = TRUE` mesmo para custom — corrigir junto)
 - [x] 42. Ocultar/mostrar playlist na UI
 - [x] 43. Painel de detalhes do vídeo com baixar original
-- [ ] 44. Pôster local de série/filme
+- [x] 44. Pôster local de série/filme
 
 ### Thumbnails
 - [ ] 45. Frame do thumbnail em % da duração

@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { VideoFileDto } from '@/service/videoPlayback';
 import VideoMovieGrid from './VideoMovieGrid';
+import { resetFailedPosterUrls } from '../useLocalPoster';
 
 const buildMovie = (overrides: Partial<VideoFileDto> = {}): VideoFileDto => ({
     id: 1,
@@ -24,6 +25,8 @@ const renderGrid = (movies: VideoFileDto[]) =>
     );
 
 describe('VideoMovieGrid', () => {
+    beforeEach(() => resetFailedPosterUrls());
+
     it('renders a movie without technical fields and shows no badges', () => {
         renderGrid([buildMovie()]);
 
@@ -36,5 +39,22 @@ describe('VideoMovieGrid', () => {
 
         expect(screen.getByText('2:00:00')).toBeInTheDocument();
         expect(screen.getByText('VIDEO_BADGE_RESOLUTION_UHD')).toBeInTheDocument();
+    });
+
+    it('requests the local poster first and falls back to the thumbnail once on error', () => {
+        renderGrid([buildMovie({ id: 5 })]);
+
+        const image = screen.getByRole('img', { name: 'Movie' });
+        expect(image.getAttribute('src')).toMatch(
+            /\/video\/movies\/5\/poster\?width=400&height=600$/
+        );
+
+        fireEvent.error(image);
+        expect(image.getAttribute('src')).toMatch(
+            /\/files\/video-thumbnail\/5\?width=320&height=180$/
+        );
+
+        fireEvent.error(image);
+        expect(image.getAttribute('src')).toMatch(/\/files\/video-thumbnail\/5/);
     });
 });
