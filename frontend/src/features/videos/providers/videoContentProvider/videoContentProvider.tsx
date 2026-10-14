@@ -43,6 +43,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { useLocation, useNavigate } from 'react-router-dom';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 
 const VIDEO_LIBRARY_PAGE_SIZE = 60;
 const VIDEO_PLAYLIST_ITEMS_PAGE_SIZE = 50;
@@ -96,12 +97,10 @@ export interface VideoContentContextData {
     videoSearch: string;
     librarySort: VideoLibrarySort;
     libraryFilters: VideoLibraryFilters;
-    selectedPlaylistPerVideo: Record<number, number>;
     feedback: FeedbackState;
     setVideoSearch: (value: string) => void;
     setLibrarySort: (sort: VideoLibrarySort) => void;
     setLibraryFilters: (filters: VideoLibraryFilters) => void;
-    setSelectedPlaylistForVideo: (videoId: number, playlistId: number) => void;
     closeFeedback: () => void;
     loadMoreVideos: () => void;
     loadMoreSectionPlaylists: () => void;
@@ -110,7 +109,7 @@ export interface VideoContentContextData {
     clearSelectedPlaylist: () => void;
     playVideo: (videoId: number, playlistId?: number | null) => void;
     openPlaylistVideo: (videoId: number) => void;
-    addVideoFromLibrary: (videoId: number) => void;
+    addVideoFromLibrary: (videoId: number, playlistId: number) => void;
     renameSelectedPlaylist: (name: string) => void;
     removeVideoFromSelectedPlaylist: (videoId: number) => void;
     moveSelectedPlaylistItem: (index: number, direction: -1 | 1) => void;
@@ -149,9 +148,6 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     };
     const [libraryFilters, setLibraryFilters] =
         useState<VideoLibraryFilters>(noVideoLibraryFilters);
-    const [selectedPlaylistPerVideo, setSelectedPlaylistPerVideo] = useState<
-        Record<number, number>
-    >({});
     const [feedback, setFeedback] = useState<FeedbackState>({
         open: false,
         message: '',
@@ -400,10 +396,10 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
                 severity: 'success',
             });
         },
-        onError: () => {
+        onError: (error) => {
             setFeedback({
                 open: true,
-                message: t('VIDEO_ADD_ERROR'),
+                message: extractBackendErrorMessage(error) ?? t('VIDEO_ADD_ERROR'),
                 severity: 'error',
             });
         },
@@ -604,17 +600,10 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         videoSearch,
         librarySort,
         libraryFilters,
-        selectedPlaylistPerVideo,
         feedback,
         setVideoSearch,
         setLibrarySort,
         setLibraryFilters,
-        setSelectedPlaylistForVideo: (videoId, playlistId) => {
-            setSelectedPlaylistPerVideo((prev) => ({
-                ...prev,
-                [videoId]: playlistId,
-            }));
-        },
         closeFeedback: () => setFeedback((prev) => ({ ...prev, open: false })),
         loadMoreVideos: () => {
             if (hasMoreVideos && !isFetchingMoreVideos) {
@@ -648,11 +637,8 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         },
         playVideo,
         openPlaylistVideo,
-        addVideoFromLibrary: (videoId) => {
-            const playlistId = selectedPlaylistPerVideo[videoId] ?? playlists[0]?.id;
-            if (!playlistId) return;
-            addToPlaylistMutation.mutate({ playlistId, videoId });
-        },
+        addVideoFromLibrary: (videoId, playlistId) =>
+            addToPlaylistMutation.mutate({ playlistId, videoId }),
         renameSelectedPlaylist: (name) => {
             if (!name.trim()) return;
             renameMutation.mutate(name);

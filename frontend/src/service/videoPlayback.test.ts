@@ -21,6 +21,7 @@ import {
     getVideoPlaylistById,
     getVideoPlaylists,
     getVideoPlaylistsBySection,
+    searchVideoPlaylists,
     getVideoPlaylistsByVideo,
     getVideosWithoutPlaylist,
     nextVideoPlayback,
@@ -66,6 +67,20 @@ describe('service/videoPlayback', () => {
 
         expect(mockedApi.get).toHaveBeenCalledWith('/video/playlists/section/clips', {
             params: { page: 2, page_size: 24 },
+        });
+    });
+
+    it('searches playlists by name with page and query', async () => {
+        const searchPage = {
+            items: [],
+            pagination: { page: 1, page_size: 30, has_next: false, has_prev: false },
+        };
+        mockedApi.get.mockResolvedValue({ data: searchPage });
+
+        await expect(searchVideoPlaylists('ação', 1, 30)).resolves.toEqual(searchPage);
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/video/playlists/search', {
+            params: { q: 'ação', page: 1, page_size: 30 },
         });
     });
 

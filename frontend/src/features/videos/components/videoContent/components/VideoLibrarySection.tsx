@@ -5,14 +5,13 @@ import {
     VideoLibraryFilters,
     VideoLibrarySort,
     VideoLibrarySortKey,
-    VideoPlaylistDto,
 } from '@/service/videoPlayback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import VideoMediaBadges from './VideoMediaBadges';
 import VideoLibraryFilterBar from './VideoLibraryFilterBar';
-import VideoLibraryPlaylistPicker from './VideoLibraryPlaylistPicker';
+import VideoAddToPlaylistButton from './VideoAddToPlaylistButton';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import {
     defaultVideoLibrarySort,
@@ -26,20 +25,17 @@ import styles from '../videoContent.module.css';
 
 type VideoLibrarySectionProps = {
     videos: VideoFileDto[];
-    playlists: VideoPlaylistDto[];
     search: string;
     sort?: VideoLibrarySort;
     filters?: VideoLibraryFilters;
-    selectedPlaylistPerVideo: Record<number, number>;
     isAddingToPlaylist: boolean;
     isFetchingMoreVideos: boolean;
     hasMoreVideos: boolean;
     onSearchChange: (value: string) => void;
     onSortChange?: (sort: VideoLibrarySort) => void;
     onFiltersChange?: (filters: VideoLibraryFilters) => void;
-    onSelectPlaylistForVideo: (videoId: number, playlistId: number) => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
-    onAddVideo: (videoId: number) => void;
+    onAddVideo: (videoId: number, playlistId: number) => void;
     onLoadMore: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
 };
@@ -55,18 +51,15 @@ const sortLabelKeys: Record<VideoLibrarySortKey, string> = {
 
 export default function VideoLibrarySection({
     videos,
-    playlists,
     search,
     sort = defaultVideoLibrarySort,
     filters = noVideoLibraryFilters,
-    selectedPlaylistPerVideo,
     isAddingToPlaylist,
     isFetchingMoreVideos,
     hasMoreVideos,
     onSearchChange,
     onSortChange,
     onFiltersChange,
-    onSelectPlaylistForVideo,
     onPlayVideo,
     onAddVideo,
     onLoadMore,
@@ -152,12 +145,9 @@ export default function VideoLibrarySection({
                                     <Play size={14} />
                                     {t('VIDEO_PLAY')}
                                 </button>
-                                <VideoLibraryPlaylistPicker
+                                <VideoAddToPlaylistButton
                                     videoId={video.id}
-                                    playlists={playlists}
-                                    selectedPlaylistId={selectedPlaylistPerVideo[video.id]}
                                     isAddingToPlaylist={isAddingToPlaylist}
-                                    onSelectPlaylist={onSelectPlaylistForVideo}
                                     onAddVideo={onAddVideo}
                                 />
                                 {onSetWatched && (

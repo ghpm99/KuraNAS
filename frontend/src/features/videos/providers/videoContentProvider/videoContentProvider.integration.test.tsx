@@ -122,7 +122,7 @@ describe('features/videos/videoContentProvider (seam)', () => {
         const { result } = renderProvider();
         await waitFor(() => expect(result.current.playlists.length).toBeGreaterThan(0));
 
-        act(() => result.current.addVideoFromLibrary(100));
+        act(() => result.current.addVideoFromLibrary(100, 2));
 
         await waitFor(() =>
             expect(mockedApi.post).toHaveBeenCalledWith('/video/playlists/2/videos', {
