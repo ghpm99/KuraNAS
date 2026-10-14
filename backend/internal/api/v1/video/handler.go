@@ -453,8 +453,15 @@ func (h *Handler) ListLibraryVideosHandler(c *gin.Context) {
 		return
 	}
 
+	filters, areFiltersValid := ParseLibraryVideoFilters(c.Query("format"), c.Query("resolution"), c.Query("duration"))
+	if !areFiltersValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_LIBRARY_FILTER")})
+		return
+	}
+
 	videos, err := h.service.ListLibraryVideos(LibraryVideosRequest{
 		Ordering:    ordering,
+		Filters:     filters,
 		Page:        page,
 		PageSize:    pageSize,
 		SearchQuery: query,

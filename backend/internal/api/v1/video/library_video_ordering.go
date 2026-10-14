@@ -26,6 +26,7 @@ type LibraryVideosRequest struct {
 	Page        int
 	PageSize    int
 	SearchQuery string
+	Filters     LibraryVideoFilters
 }
 
 func defaultDirectionFor(sort LibraryVideoSort) SortDirection {
