@@ -1,11 +1,18 @@
 import type { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigationType } from 'react-router-dom';
 import useFileSearchQuery from './useFileSearchQuery';
 
-const renderQueryHook = (initialUrl: string) =>
+const renderQueryHook = (
+    initialUrl: string,
+    searchQueryOptions?: Parameters<typeof useFileSearchQuery>[0]
+) =>
     renderHook(
-        () => ({ search: useFileSearchQuery(), location: useLocation() }),
+        () => ({
+            search: useFileSearchQuery(searchQueryOptions),
+            location: useLocation(),
+            navigationType: useNavigationType(),
+        }),
         {
             wrapper: ({ children }: { children: ReactNode }) => (
                 <MemoryRouter initialEntries={[initialUrl]}>{children}</MemoryRouter>
@@ -94,5 +101,39 @@ describe('useFileSearchQuery', () => {
         expect(result.current.search.inputValue).toBe('');
         expect(result.current.location.search).toBe('');
         expect(result.current.search.activeQuery).toBe('');
+    });
+
+    it('activates a single character search when the minimum length is lowered', async () => {
+        const { result } = renderQueryHook('/videos', { minQueryLength: 1 });
+
+        act(() => result.current.search.setInputValue('a'));
+        await act(async () => {
+            jest.advanceTimersByTime(300);
+        });
+
+        expect(result.current.search.activeQuery).toBe('a');
+    });
+
+    it('pushes a history entry on the first write by default', async () => {
+        const { result } = renderQueryHook('/files');
+
+        act(() => result.current.search.setInputValue('foto'));
+        await act(async () => {
+            jest.advanceTimersByTime(300);
+        });
+
+        expect(result.current.navigationType).toBe('PUSH');
+    });
+
+    it('replaces the history entry on the first write when always replacing', async () => {
+        const { result } = renderQueryHook('/videos', { shouldAlwaysReplaceHistory: true });
+
+        act(() => result.current.search.setInputValue('foto'));
+        await act(async () => {
+            jest.advanceTimersByTime(300);
+        });
+
+        expect(result.current.location.search).toBe('?q=foto');
+        expect(result.current.navigationType).toBe('REPLACE');
     });
 });
