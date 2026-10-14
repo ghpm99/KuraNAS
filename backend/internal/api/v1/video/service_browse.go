@@ -2,6 +2,7 @@ package video
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/color/palette"
@@ -49,7 +50,7 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) (G
 		height = 2048
 	}
 
-	cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
+	cacheDir := videoThumbnailCacheDir()
 	_ = os.MkdirAll(cacheDir, 0755)
 	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%d_%dx%d_%s.png", fileDto.ID, width, height, thumbnailFrameStrategyVersion))
 
@@ -57,36 +58,20 @@ func (s *Service) GetVideoThumbnail(fileDto files.FileDto, width, height int) (G
 		return GeneratedImage{Data: data}, nil
 	}
 
-	sourcePoster := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", "source", fmt.Sprintf("%d", fileDto.ID))
-	if posterImg, _, posterErr := img.OpenImageFromFile(sourcePoster); posterErr == nil {
-		thumb := img.Thumbnail(posterImg, uint(width), uint(height))
-		if encoded, encErr := img.EncodePNG(thumb); encErr == nil {
-			_ = os.WriteFile(cachePath, encoded, 0644)
-			return GeneratedImage{Data: encoded}, nil
-		}
+	masterImage, err := s.loadMasterFrameImage(fileDto)
+	if errors.Is(err, files.ErrFileMissingDisk) {
+		return GeneratedImage{}, err
 	}
-
-	contentPath := fileDto.ResolveContentPath()
-	if !fileExistsOnDisk(contentPath) {
-		return GeneratedImage{}, fmt.Errorf("%w: %s", files.ErrFileMissingDisk, fileDto.Path)
-	}
-
-	failureKey := newThumbnailFallbackKey(fileDto, width, height, generatedImageKindThumbnail)
-	if s.FallbackRegistry.isRecentlyFailed(failureKey, fileDto) {
+	if err != nil {
 		return buildThumbnailFallback(width, height)
 	}
 
-	frameOffset := thumbnailFrameOffsetSeconds(s.loadVideoDuration(fileDto.ID))
-	if renderedFrame, isRendered := s.renderFrameWithRetryAtStart(func(offsetSeconds float64) []string {
-		return buildThumbnailFrameArguments(contentPath, offsetSeconds, width, height, cachePath)
-	}, frameOffset, cachePath); isRendered {
-		s.FallbackRegistry.clear(failureKey)
-		return GeneratedImage{Data: renderedFrame}, nil
+	encoded, err := img.EncodePNG(img.ThumbnailOnBlack(masterImage, uint(width), uint(height)))
+	if err != nil {
+		return buildThumbnailFallback(width, height)
 	}
-
-	s.FallbackRegistry.recordFailure(failureKey, fileDto)
-	_ = os.Remove(cachePath)
-	return buildThumbnailFallback(width, height)
+	_ = writeFileAtomically(cachePath, encoded, fmt.Sprintf("%d_%dx%d_tmp_*.png", fileDto.ID, width, height))
+	return GeneratedImage{Data: encoded}, nil
 }
 
 func buildThumbnailFallback(width, height int) (GeneratedImage, error) {

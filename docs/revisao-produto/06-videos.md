@@ -72,7 +72,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 46. Fallback de thumbnail não fica em cache permanente
 - [x] 47. Prévia GIF carregada só no hover
 - [x] 48. Worker não gera GIF de prévia para todo vídeo
-- [ ] 48.1. Thumbnails derivados de um frame mestre por vídeo (hoje cada tamanho pedido — 240…1280 — roda um ffmpeg; o worker pré-gera só 320×180)
+- [x] 48.1. Thumbnails derivados de um frame mestre por vídeo (hoje cada tamanho pedido — 240…1280 — roda um ffmpeg; o worker pré-gera só 320×180)
 - [ ] 49. Log/registro de acesso uma vez por reprodução, não por Range
 
 ### Player

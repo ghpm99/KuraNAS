@@ -114,5 +114,6 @@ type ServiceInterface interface {
 	// Browse/streaming support (moved from files)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetVideoThumbnail(fileDto files.FileDto, width, height int) (GeneratedImage, error)
+	EnsureVideoMasterFrame(fileDto files.FileDto) error
 	GetVideoPreviewGif(fileDto files.FileDto, width, height int) (GeneratedImage, error)
 }

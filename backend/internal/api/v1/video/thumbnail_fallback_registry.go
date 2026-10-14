@@ -15,8 +15,9 @@ const (
 type generatedImageKind string
 
 const (
-	generatedImageKindThumbnail generatedImageKind = "thumbnail"
-	generatedImageKindPreview   generatedImageKind = "preview"
+	generatedImageKindThumbnail   generatedImageKind = "thumbnail"
+	generatedImageKindPreview     generatedImageKind = "preview"
+	generatedImageKindMasterFrame generatedImageKind = "master"
 )
 
 type GeneratedImage struct {

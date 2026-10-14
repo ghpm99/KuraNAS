@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	files "nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/config"
 )
 
 type recordedFrameCommands struct {
@@ -26,7 +25,7 @@ func (recorded *recordedFrameCommands) run(_ context.Context, arguments []string
 	if len(recorded.startOffsets) <= recorded.failFirst {
 		return errors.New("ffmpeg failed")
 	}
-	return os.WriteFile(arguments[len(arguments)-1], []byte("frame"), 0644)
+	return writeFrameFixture(arguments[len(arguments)-1])
 }
 
 func newFrameTestVideo(t *testing.T) (files.FileDto, *Service, *recordedFrameCommands) {
@@ -37,9 +36,7 @@ func newFrameTestVideo(t *testing.T) (files.FileDto, *Service, *recordedFrameCom
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		cacheDir := filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video")
-		_ = os.Remove(filepath.Join(cacheDir, "901_320x180_f2.png"))
-		_ = os.Remove(filepath.Join(cacheDir, "901_320x180_preview_f2.gif"))
+		removeCachedFilesOfVideo(901)
 	})
 	recorded := &recordedFrameCommands{}
 	repository := &videoRepoMock{getVideoDurationSecondsFn: func(int) (sql.NullFloat64, error) {
@@ -54,8 +51,8 @@ func TestGetVideoThumbnailUsesProportionalOffset(t *testing.T) {
 	fileDto, service, recorded := newFrameTestVideo(t)
 
 	thumbnail, err := service.GetVideoThumbnail(fileDto, 320, 180)
-	if err != nil || string(thumbnail.Data) != "frame" {
-		t.Fatalf("unexpected thumbnail %q err %v", thumbnail.Data, err)
+	if err != nil || thumbnail.IsFallback || len(thumbnail.Data) == 0 {
+		t.Fatalf("unexpected thumbnail fallback=%v err %v", thumbnail.IsFallback, err)
 	}
 	if len(recorded.startOffsets) != 1 || recorded.startOffsets[0] != "60.000" {
 		t.Fatalf("expected a single ffmpeg call at 60.000, got %v", recorded.startOffsets)
@@ -67,8 +64,8 @@ func TestGetVideoThumbnailRetriesAtZeroWhenFirstAttemptFails(t *testing.T) {
 	recorded.failFirst = 1
 
 	thumbnail, err := service.GetVideoThumbnail(fileDto, 320, 180)
-	if err != nil || string(thumbnail.Data) != "frame" {
-		t.Fatalf("unexpected thumbnail %q err %v", thumbnail.Data, err)
+	if err != nil || thumbnail.IsFallback || len(thumbnail.Data) == 0 {
+		t.Fatalf("unexpected thumbnail fallback=%v err %v", thumbnail.IsFallback, err)
 	}
 	if len(recorded.startOffsets) != 2 || recorded.startOffsets[1] != "0.000" {
 		t.Fatalf("expected retry at 0.000, got %v", recorded.startOffsets)
@@ -80,7 +77,7 @@ func TestGetVideoThumbnailFallsBackToIconAfterTwoFailures(t *testing.T) {
 	recorded.failFirst = 10
 
 	thumbnail, err := service.GetVideoThumbnail(fileDto, 320, 180)
-	if err != nil || len(thumbnail.Data) == 0 || string(thumbnail.Data) == "frame" {
+	if err != nil || len(thumbnail.Data) == 0 || !thumbnail.IsFallback {
 		t.Fatalf("expected icon fallback, got %d bytes err %v", len(thumbnail.Data), err)
 	}
 	if len(recorded.startOffsets) != 2 {
