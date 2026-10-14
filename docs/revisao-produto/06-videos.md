@@ -94,7 +94,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 
 ### i18n e limpeza
 - [x] 60. Nomes de playlists e seções do backend traduzidos (slug + i18n)
-- [ ] 60.1. Busca global e busca de playlists usam o nome resolvido por name_key (hoje filtram/devolvem vp.name gravado no idioma da escrita)
+- [x] 60.1. Busca global e busca de playlists usam o nome resolvido por name_key (hoje filtram/devolvem vp.name gravado no idioma da escrita)
 - [ ] 61. Badge de classificação via i18n
 - [ ] 62. Código órfão do frontend de vídeos
 - [ ] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)

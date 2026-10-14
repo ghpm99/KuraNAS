@@ -43,7 +43,7 @@ type videoRepoMock struct {
 	getVideoPlaylistItemsPageFn     func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
 	listLibraryFoldersFn            func(query LibraryFolderQuery) ([]LibraryFolderModel, error)
 	listLibraryFolderVideosFn       func(folderPath string, limit int, offset int) ([]VideoFileModel, error)
-	searchVideoPlaylistsFn          func(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error)
+	searchVideoPlaylistsFn          func(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error)
 	getVideoPlaylistsBySectionFn    func(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
 	listLibraryMoviesFn             func(sort LibraryMovieSort, limit int, offset int) ([]VideoFileModel, error)
 	listLibraryVideosFn             func(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileModel], error)
@@ -261,9 +261,9 @@ func (m *videoRepoMock) GetVideoPlaylistsBySection(filter PlaylistSectionFilter,
 	}
 	return nil, nil
 }
-func (m *videoRepoMock) SearchVideoPlaylists(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
+func (m *videoRepoMock) SearchVideoPlaylists(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error) {
 	if m.searchVideoPlaylistsFn != nil {
-		return m.searchVideoPlaylistsFn(searchPattern, limit, offset)
+		return m.searchVideoPlaylistsFn(searchPattern, matchingNameKeys, limit, offset)
 	}
 	return nil, nil
 }

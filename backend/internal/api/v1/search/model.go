@@ -1,6 +1,9 @@
 package search
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type FileResultModel struct {
 	ID         int
@@ -50,6 +53,7 @@ type MusicPlaylistResultModel struct {
 type VideoPlaylistResultModel struct {
 	ID             int
 	Name           string
+	NameKey        sql.NullString
 	Type           string
 	Classification string
 	SourcePath     string

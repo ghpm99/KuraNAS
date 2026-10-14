@@ -3,6 +3,7 @@ package search
 import (
 	"database/sql"
 	"fmt"
+	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/search"
 	"nas-go/api/pkg/utils"
@@ -141,11 +142,13 @@ func (r *Repository) SearchMusicPlaylists(query string, limit int) ([]MusicPlayl
 
 func (r *Repository) SearchVideoPlaylists(query string, limit int) ([]VideoPlaylistResultModel, error) {
 	results := []VideoPlaylistResultModel{}
+	nameKeyMatches := playlist.MatchNameKeys(query)
 	err := r.scanRows(queries.SearchVideoPlaylistsQuery, func(rows *sql.Rows) error {
 		var item VideoPlaylistResultModel
 		if err := rows.Scan(
 			&item.ID,
 			&item.Name,
+			&item.NameKey,
 			&item.Type,
 			&item.Classification,
 			&item.SourcePath,
@@ -157,7 +160,7 @@ func (r *Repository) SearchVideoPlaylists(query string, limit int) ([]VideoPlayl
 		}
 		results = append(results, item)
 		return nil
-	}, query, limit)
+	}, query, limit, pq.Array(nameKeyMatches.Contains), pq.Array(nameKeyMatches.Exact), pq.Array(nameKeyMatches.Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("falha ao buscar playlists de video: %w", err)
 	}

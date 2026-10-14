@@ -23,7 +23,11 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) cover ON TRUE
 WHERE vp.is_hidden = FALSE
-  AND ($1::text = '' OR kuranas_fold(vp.name) LIKE kuranas_fold($1::text))
+  AND (
+      $1::text = ''
+      OR (kuranas_fold(vp.name) LIKE kuranas_fold($1::text) AND vp.name_key IS NULL)
+      OR vp.name_key = ANY($4::text[])
+  )
   AND (
       vp.is_auto = FALSE
       OR EXISTS (

@@ -84,9 +84,9 @@ func TestSearchRepositorySuccessPaths(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.SearchVideoPlaylistsQuery)).
-		WithArgs("mix", 5).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "classification", "source_path", "is_auto", "updated_at", "item_count"}).
-			AddRow(4, "Series", "series", "series", "/videos/series", true, now, 10))
+		WithArgs("mix", 5, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "name_key", "type", "classification", "source_path", "is_auto", "updated_at", "item_count"}).
+			AddRow(4, "Series", nil, "series", "series", "/videos/series", true, now, 10))
 	mock.ExpectRollback()
 
 	mock.ExpectBegin()

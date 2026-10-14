@@ -187,12 +187,14 @@ func (s *Service) GetPlaylistsBySection(request PlaylistSectionRequest) (utils.P
 
 func (s *Service) SearchPlaylists(request PlaylistSearchRequest) (utils.PaginationResponse[VideoPlaylistDto], error) {
 	searchPattern := ""
-	if trimmedQuery := strings.TrimSpace(request.Query); trimmedQuery != "" {
+	trimmedQuery := strings.TrimSpace(request.Query)
+	if trimmedQuery != "" {
 		searchPattern = utils.BuildContainsLikePattern(trimmedQuery)
 	}
 
 	models, err := s.Repository.SearchVideoPlaylists(
 		searchPattern,
+		playlist.MatchNameKeys(trimmedQuery).Contains,
 		request.PageSize+1,
 		utils.CalculateOffset(request.Page, request.PageSize),
 	)
@@ -262,7 +264,7 @@ func (s *Service) GetPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoDto, e
 	for _, model := range models {
 		playlistDtos = append(playlistDtos, VideoPlaylistOfVideoDto{
 			ID:      model.ID,
-			Name:    resolvePlaylistName(model.Name, model.NameKey),
+			Name:    playlist.ResolveDisplayName(model.Name, model.NameKey),
 			NameKey: nullableString(model.NameKey),
 			Type:    model.Type,
 		})

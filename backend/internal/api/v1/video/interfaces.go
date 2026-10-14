@@ -35,7 +35,7 @@ type RepositoryInterface interface {
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)
 	GetVideoPlaylistsBySection(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
-	SearchVideoPlaylists(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error)
+	SearchVideoPlaylists(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error)
 	GetHiddenVideoPlaylists(limit int, offset int) ([]VideoPlaylistModel, error)
 	GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	GetVideoPlaylistsByVideo(videoID int) ([]VideoPlaylistOfVideoModel, error)

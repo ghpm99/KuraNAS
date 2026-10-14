@@ -2,6 +2,7 @@ package search
 
 import (
 	"nas-go/api/internal/api/v1/documenttext"
+	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/applog"
@@ -259,7 +260,7 @@ func mapVideoPlaylists(items []VideoPlaylistResultModel) []PlaylistResultDto {
 		results = append(results, PlaylistResultDto{
 			Scope:          "video",
 			ID:             item.ID,
-			Name:           item.Name,
+			Name:           playlist.ResolveDisplayName(item.Name, item.NameKey),
 			Description:    item.Type,
 			Count:          item.ItemCount,
 			Classification: item.Classification,

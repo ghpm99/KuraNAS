@@ -625,11 +625,11 @@ func (r *Repository) GetVideoPlaylistsBySection(filter PlaylistSectionFilter, li
 	return playlists, nil
 }
 
-func (r *Repository) SearchVideoPlaylists(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
+func (r *Repository) SearchVideoPlaylists(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error) {
 	playlists := []VideoPlaylistModel{}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.SearchVideoPlaylistsQuery, searchPattern, limit, offset)
+		rows, err := tx.Query(queries.SearchVideoPlaylistsQuery, searchPattern, limit, offset, pq.Array(matchingNameKeys))
 		if err != nil {
 			return err
 		}
