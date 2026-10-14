@@ -8,6 +8,16 @@ const buildScreenState = () => ({
     isInvalidVideoId: false,
     handleBack: jest.fn(),
     handlePlaybackEnded: jest.fn(),
+    upNext: {
+        isOpen: false,
+        isCounting: false,
+        secondsRemaining: 8,
+        isAutoplayEnabled: true,
+        open: jest.fn(),
+        cancel: jest.fn(),
+        playNow: jest.fn(),
+        setAutoplayEnabled: jest.fn(),
+    },
     openVideo: mockOpenVideo,
     currentVideo: { id: 30, name: 'Episode 1' },
     contextTitle: 'My Show',
@@ -253,6 +263,35 @@ describe('features/videos/videoPlayer/VideoPlayerScreen', () => {
             expect(screen.getByRole('status')).toHaveTextContent(
                 'VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON'
             );
+        });
+
+        it('renders the up next card inside the player when it is open', () => {
+            const state = buildScreenState();
+            state.upNext = { ...state.upNext, isOpen: true, isCounting: true };
+            mockUseVideoPlayerScreen.mockReturnValue(state);
+            render(<VideoPlayerScreen />);
+
+            const player = screen.getByTestId('video-player');
+            expect(player).toContainElement(screen.getByText('VIDEO_UP_NEXT_PLAY_NOW'));
+
+            fireEvent.click(screen.getByText('VIDEO_UP_NEXT_PLAY_NOW'));
+            fireEvent.click(screen.getByText('VIDEO_UP_NEXT_CANCEL'));
+            expect(state.upNext.playNow).toHaveBeenCalledTimes(1);
+            expect(state.upNext.cancel).toHaveBeenCalledTimes(1);
+        });
+
+        it('hides the up next card when closed or when there is no next item', () => {
+            const closedState = buildScreenState();
+            mockUseVideoPlayerScreen.mockReturnValue(closedState);
+            const { unmount } = render(<VideoPlayerScreen />);
+            expect(screen.queryByText('VIDEO_UP_NEXT_PLAY_NOW')).not.toBeInTheDocument();
+            unmount();
+
+            const withoutNext = buildScreenState();
+            withoutNext.upNext = { ...withoutNext.upNext, isOpen: true };
+            mockUseVideoPlayerScreen.mockReturnValue({ ...withoutNext, nextItem: null });
+            render(<VideoPlayerScreen />);
+            expect(screen.queryByText('VIDEO_UP_NEXT_PLAY_NOW')).not.toBeInTheDocument();
         });
 
         it('navigates the playlist only where available', () => {

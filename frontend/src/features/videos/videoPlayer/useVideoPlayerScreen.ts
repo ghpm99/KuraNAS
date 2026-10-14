@@ -2,6 +2,7 @@ import { appRoutes } from '@/app/routes';
 import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscreen/useContainerFullscreen';
 import usePictureInPicture from '@/features/videos/hooks/usePictureInPicture/usePictureInPicture';
 import useVideoSubtitles from '@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles';
+import useUpNextAutoplay from '@/features/videos/upNext/useUpNextAutoplay';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -74,7 +75,7 @@ export default function useVideoPlayerScreen() {
     const {
         videoRef,
         playVideo,
-        seekTo,
+        seekTo: seekPlayerTo,
         setVolume,
         toggleMute,
         setPlaybackRate,
@@ -189,6 +190,23 @@ export default function useVideoPlayerScreen() {
     const nextItem = hasNextVideo ? (orderedItems[currentIndex + 1] ?? null) : null;
     const nextItemId = nextItem?.video.id ?? null;
 
+    const upNext = useUpNextAutoplay({
+        currentVideoId,
+        hasNextVideo,
+        isPlaying: status === 'playing',
+        defaultAutoplayEnabled: settings.players.autoplay_next_video,
+        onPlayNext: nextVideo,
+    });
+    const { cancel: cancelUpNext, open: openUpNext } = upNext;
+
+    const seekTo = useCallback(
+        (time: number) => {
+            cancelUpNext();
+            seekPlayerTo(time);
+        },
+        [cancelUpNext, seekPlayerTo]
+    );
+
     const relatedItems = useMemo(() => {
         if (!orderedItems.length || !currentVideoId) {
             return [] as VideoDetailItem[];
@@ -275,10 +293,8 @@ export default function useVideoPlayerScreen() {
 
     const handlePlaybackEnded = useCallback(async () => {
         await onVideoEnded();
-        if (settings.players.autoplay_next_video && hasNextVideo) {
-            await nextVideo();
-        }
-    }, [hasNextVideo, nextVideo, onVideoEnded, settings.players.autoplay_next_video]);
+        if (hasNextVideo) openUpNext();
+    }, [hasNextVideo, onVideoEnded, openUpNext]);
 
     useEffect(() => {
         if (!videoId) {
@@ -354,5 +370,6 @@ export default function useVideoPlayerScreen() {
         selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
+        upNext,
     };
 }

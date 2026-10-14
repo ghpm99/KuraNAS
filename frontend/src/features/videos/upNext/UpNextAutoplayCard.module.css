@@ -1,0 +1,105 @@
+.card {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 6rem;
+    z-index: 3;
+    display: flex;
+    gap: 0.9rem;
+    width: min(26rem, calc(100% - 3rem));
+    padding: 0.75rem;
+    border: 1px solid var(--app-color-border-strong);
+    border-radius: var(--app-radius-md, 0.75rem);
+    background: var(--app-color-overlay-strong);
+    color: var(--app-color-text-on-media);
+    pointer-events: auto;
+}
+
+.thumbnail {
+    flex: 0 0 8rem;
+    width: 8rem;
+    height: 4.5rem;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    background: #000;
+}
+
+.body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.eyebrow {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
+.title {
+    overflow: hidden;
+    font-size: 0.95rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.countdown {
+    min-height: 1.1em;
+    margin: 0;
+    font-size: 0.82rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.primaryAction,
+.secondaryAction {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--app-color-border-strong);
+    border-radius: var(--app-radius-pill);
+    color: var(--app-color-text-on-media);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primaryAction {
+    background: var(--app-color-primary);
+}
+
+.primaryAction:hover {
+    background: var(--app-color-primary-hover);
+}
+
+.secondaryAction {
+    background: transparent;
+}
+
+.secondaryAction:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.autoplayToggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    opacity: 0.85;
+    cursor: pointer;
+}
+
+@media (max-width: 599.95px) {
+    .card {
+        right: 0.75rem;
+        bottom: 5rem;
+        width: calc(100% - 1.5rem);
+    }
+
+    .thumbnail {
+        display: none;
+    }
+}
