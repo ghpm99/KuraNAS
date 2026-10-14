@@ -839,7 +839,7 @@ func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.Pagi
 
 	searchPattern := ""
 	if trimmedSearch := strings.TrimSpace(request.SearchQuery); trimmedSearch != "" {
-		searchPattern = "%" + trimmedSearch + "%"
+		searchPattern = utils.BuildContainsLikePattern(trimmedSearch)
 	}
 
 	args := []any{

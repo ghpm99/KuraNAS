@@ -38,10 +38,8 @@ WHERE
     AND hf.deleted_at IS NULL
     AND (
         $2 = ''
-        OR LOWER(hf.name) LIKE LOWER($2)
-        OR LOWER(hf.path) LIKE LOWER($2)
-        OR LOWER(hf.parent_path) LIKE LOWER($2)
-        OR LOWER(hf.format) LIKE LOWER($2)
+        OR kuranas_fold(hf.name) LIKE kuranas_fold($2)
+        OR kuranas_fold(hf.parent_path) LIKE kuranas_fold($2)
     )
     AND ($5::text[] IS NULL OR hf.format = ANY($5))
     AND ($6::int IS NULL OR tech.height >= $6)
