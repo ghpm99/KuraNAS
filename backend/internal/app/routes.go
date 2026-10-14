@@ -401,6 +401,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Video.SubtitleHandler != nil {
 		router.GET("/video/subtitles/:id", context.Video.SubtitleHandler.ListVideoSubtitlesHandler)
 		router.GET("/video/subtitles/:id/vtt", context.Video.SubtitleHandler.GetSubtitleWebVttHandler)
+		router.GET("/video/subtitles/:id/embedded/:stream_index/vtt", context.Video.SubtitleHandler.GetEmbeddedSubtitleWebVttHandler)
 	}
 	filesGroup.GET("/video-thumbnail/:id", context.Video.Handler.GetVideoThumbnailHandler)
 	filesGroup.GET("/video-preview/:id", context.Video.Handler.GetVideoPreviewHandler)

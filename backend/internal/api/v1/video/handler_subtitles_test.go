@@ -70,12 +70,12 @@ func writeSubtitleOnDisk(t *testing.T, fileName string, content []byte) files.Fi
 }
 
 func TestListVideoSubtitlesHandlerReturnsSubtitles(t *testing.T) {
-	service := &subtitleServiceFake{subtitles: []SubtitleDto{{ID: 9, Label: "en.forced", Language: "en", Format: "srt", IsForced: true}}}
+	service := &subtitleServiceFake{subtitles: []SubtitleDto{{ID: 9, Source: "external", Label: "en.forced", Language: "en", Format: "srt", IsForced: true}}}
 	source := &subtitleFileSourceFake{filesByID: map[int]files.FileDto{1: {ID: 1, Name: "Filme.mkv", ParentPath: "/data"}}}
 
 	recorder := performSubtitleRequest(NewSubtitleHandler(source, service), "/video/subtitles/1", nil)
 
-	expectedBody := `[{"id":9,"label":"en.forced","language":"en","format":"srt","is_forced":true}]`
+	expectedBody := `[{"id":9,"source":"external","label":"en.forced","language":"en","format":"srt","is_forced":true}]`
 	if recorder.Code != http.StatusOK || recorder.Body.String() != expectedBody {
 		t.Fatalf("unexpected response %d %q", recorder.Code, recorder.Body.String())
 	}

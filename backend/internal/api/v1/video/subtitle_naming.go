@@ -80,6 +80,7 @@ func ParseSubtitleName(videoName string, subtitleName string) (SubtitleNameParts
 func BuildSubtitleDto(subtitleID int, nameParts SubtitleNameParts) SubtitleDto {
 	return SubtitleDto{
 		ID:       subtitleID,
+		Source:   SubtitleSourceExternal,
 		Label:    nameParts.Label,
 		Language: extractSubtitleLanguage(nameParts.Label),
 		Format:   nameParts.Format,

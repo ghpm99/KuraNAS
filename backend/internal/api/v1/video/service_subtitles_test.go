@@ -25,8 +25,8 @@ func TestListVideoSubtitlesBuildsDtosAndDropsNonMatchingNames(t *testing.T) {
 	subtitles, err := service.ListVideoSubtitles("/data", "Filme.mkv")
 
 	expected := []SubtitleDto{
-		{ID: 1, Format: "srt"},
-		{ID: 2, Label: "en.forced", Language: "en", Format: "vtt", IsForced: true},
+		{ID: 1, Source: "external", Format: "srt"},
+		{ID: 2, Source: "external", Label: "en.forced", Language: "en", Format: "vtt", IsForced: true},
 	}
 	if err != nil || !reflect.DeepEqual(subtitles, expected) {
 		t.Fatalf("unexpected %+v %v", subtitles, err)
