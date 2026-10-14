@@ -119,7 +119,7 @@ func (h *Handler) GetVideoPreviewHandler(c *gin.Context) {
 }
 
 func (h *Handler) StreamVideoHandler(c *gin.Context) {
-	loggerModel, _ := h.logService.CreateLog(browseLogEntry("StreamVideo", "Streaming video file", c), nil)
+	accessLog := newStreamAccessLog(h.logService, c, "StreamVideo", "Streaming video file")
 
 	id := utils.ParseInt(c.Param("id"), c)
 	if c.IsAborted() {
@@ -129,7 +129,7 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 
 	file, err := h.filesService.GetFileById(id)
 	if err != nil {
-		h.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
@@ -137,16 +137,14 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 	contentPath := file.ResolveContentPath()
 	exists := h.filesService.CheckFileExistsByPath(contentPath)
 	if !exists {
-		h.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("file not found on disk"))
+		accessLog.fail(fmt.Errorf("file not found on disk"))
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 
-	h.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
-
 	videoFile, err := os.Open(contentPath)
 	if err != nil {
-		h.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
 	}
@@ -154,9 +152,16 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 
 	fileInfo, err := videoFile.Stat()
 	if err != nil {
-		h.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
 		return
+	}
+
+	rangeHeader := c.GetHeader("Range")
+	rangeStart, rangeEnd, isRangeValid := utils.ParseHTTPRange(rangeHeader, fileInfo.Size())
+	if h.shouldRegisterPlayback(c, file.ID, rangeHeader, rangeStart) {
+		h.recentFileService.RegisterAccess(c.ClientIP(), file.ID)
+		accessLog.open()
 	}
 
 	contentType := utils.ContentTypeByFormat(file.Format, "video/mp4")
@@ -164,24 +169,20 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600")
 
-	rangeHeader := c.GetHeader("Range")
-	if rangeHeader != "" {
-		start, end, ok := utils.ParseHTTPRange(rangeHeader, fileInfo.Size())
-		if ok {
-			c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileInfo.Size()))
-			c.Header("Content-Length", fmt.Sprintf("%d", end-start+1))
-			c.Status(http.StatusPartialContent)
+	if rangeHeader != "" && isRangeValid {
+		c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rangeStart, rangeEnd, fileInfo.Size()))
+		c.Header("Content-Length", fmt.Sprintf("%d", rangeEnd-rangeStart+1))
+		c.Status(http.StatusPartialContent)
 
-			videoFile.Seek(start, 0)
-			_, err := io.CopyN(c.Writer, videoFile, end-start+1)
-			if err != nil {
-				h.logService.CompleteWithErrorLog(loggerModel, err)
-				return
-			}
-
-			h.logService.CompleteWithSuccessLog(loggerModel)
+		videoFile.Seek(rangeStart, 0)
+		_, err := io.CopyN(c.Writer, videoFile, rangeEnd-rangeStart+1)
+		if err != nil {
+			accessLog.fail(err)
 			return
 		}
+
+		accessLog.succeed()
+		return
 	}
 
 	c.Header("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
@@ -189,11 +190,11 @@ func (h *Handler) StreamVideoHandler(c *gin.Context) {
 
 	_, err = io.Copy(c.Writer, videoFile)
 	if err != nil {
-		h.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		return
 	}
 
-	h.logService.CompleteWithSuccessLog(loggerModel)
+	accessLog.succeed()
 }
 
 func imageCacheControl(image GeneratedImage) string {

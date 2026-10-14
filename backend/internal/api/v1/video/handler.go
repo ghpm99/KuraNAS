@@ -22,10 +22,22 @@ type Handler struct {
 	filesService      files.ServiceInterface
 	recentFileService files.RecentFileServiceInterface
 	logService        logger.LoggerServiceInterface
+	playbackAccess    *playbackAccessTracker
 }
 
 func NewHandler(service ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface, logService logger.LoggerServiceInterface) *Handler {
-	return &Handler{service: service, filesService: filesService, recentFileService: recentFileService, logService: logService}
+	return &Handler{service: service, filesService: filesService, recentFileService: recentFileService, logService: logService, playbackAccess: newDefaultPlaybackAccessTracker()}
+}
+
+func (h *Handler) UseSharedPlaybackAccess(shared *SharedPlaybackAccess) {
+	h.playbackAccess = shared.tracker
+}
+
+func (h *Handler) shouldRegisterPlayback(c *gin.Context, fileID int, rangeHeader string, parsedRangeStart int64) bool {
+	if !isPlaybackStartRange(rangeHeader, parsedRangeStart) {
+		return false
+	}
+	return h.playbackAccess.claim(c.ClientIP(), fileID)
 }
 
 func respondVideoError(c *gin.Context, err error) {

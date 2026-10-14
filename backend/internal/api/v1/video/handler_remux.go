@@ -31,6 +31,7 @@ type RemuxHandler struct {
 	isRemuxerPresent func() bool
 	remuxSlots       conversionSlots
 	logService       logger.LoggerServiceInterface
+	playbackAccess   *playbackAccessTracker
 }
 
 func NewRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, runRemux RemuxRunner, isRemuxerPresent func() bool, maxConcurrentRemuxes int, logService logger.LoggerServiceInterface) *RemuxHandler {
@@ -44,7 +45,12 @@ func NewRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, r
 		isRemuxerPresent: isRemuxerPresent,
 		remuxSlots:       newConversionSlots(maxConcurrentRemuxes),
 		logService:       logService,
+		playbackAccess:   newDefaultPlaybackAccessTracker(),
 	}
+}
+
+func (handler *RemuxHandler) UseSharedPlaybackAccess(shared *SharedPlaybackAccess) {
+	handler.playbackAccess = shared.tracker
 }
 
 func NewFFmpegRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, logService logger.LoggerServiceInterface) *RemuxHandler {
@@ -63,27 +69,30 @@ func (handler *RemuxHandler) StreamRemuxedVideoHandler(c *gin.Context) {
 		return
 	}
 
-	loggerModel, _ := handler.logService.CreateLog(browseLogEntry("StreamRemuxedVideo", "Streaming remuxed video", c), nil)
+	accessLog := newStreamAccessLog(handler.logService, c, "StreamRemuxedVideo", "Streaming remuxed video")
+	if startSeconds == 0 && handler.playbackAccess.claim(c.ClientIP(), fileID) {
+		accessLog.open()
+	}
 
 	videoFile, err := handler.fileSource.GetFileById(fileID)
 	if err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	sourcePath := videoFile.ResolveContentPath()
 	if _, err := os.Stat(sourcePath); err != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		accessLog.fail(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
 		return
 	}
 	if !handler.hasRemuxableVideoCodec(fileID) {
-		handler.logService.CompleteWithErrorLog(loggerModel, errors.New("video codec requires transcode"))
+		accessLog.fail(errors.New("video codec requires transcode"))
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_REQUIRES_TRANSCODE")})
 		return
 	}
 	if !handler.isRemuxerPresent() {
-		handler.logService.CompleteWithErrorLog(loggerModel, errors.New("ffmpeg not available"))
+		accessLog.fail(errors.New("ffmpeg not available"))
 		c.JSON(http.StatusNotImplemented, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_REMUX_UNAVAILABLE")})
 		return
 	}
@@ -97,17 +106,17 @@ func (handler *RemuxHandler) StreamRemuxedVideoHandler(c *gin.Context) {
 	responseStream := &remuxResponseWriter{context: c}
 	runErr := handler.runRemux(c.Request.Context(), BuildRemuxArguments(sourcePath, startSeconds), responseStream)
 	if c.Request.Context().Err() != nil {
-		handler.logService.CompleteWithSuccessLog(loggerModel)
+		accessLog.succeed()
 		return
 	}
 	if runErr != nil {
-		handler.logService.CompleteWithErrorLog(loggerModel, runErr)
+		accessLog.fail(runErr)
 		if !responseStream.hasStarted {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_OPERATION_FAILED")})
 		}
 		return
 	}
-	handler.logService.CompleteWithSuccessLog(loggerModel)
+	accessLog.succeed()
 }
 
 func (handler *RemuxHandler) hasRemuxableVideoCodec(fileID int) bool {
