@@ -1,5 +1,10 @@
 import type { VideoSubtitleDto } from '@/service/videoPlayback';
-import { chooseInitialSubtitleId, getPrimaryLanguage } from './subtitleSelection';
+import {
+    chooseInitialSubtitleId,
+    findRememberedLanguageSubtitleId,
+    getPrimaryLanguage,
+} from './subtitleSelection';
+import type { VideoSubtitlePreferences } from './videoSubtitlePreferences';
 
 const buildSubtitle = (overrides: Partial<VideoSubtitleDto>): VideoSubtitleDto => ({
     id: 1,
@@ -8,6 +13,12 @@ const buildSubtitle = (overrides: Partial<VideoSubtitleDto>): VideoSubtitleDto =
     format: 'srt',
     is_forced: false,
     ...overrides,
+});
+
+const enabledIn = (language: string): VideoSubtitlePreferences => ({ isEnabled: true, language });
+const disabledWith = (language: string): VideoSubtitlePreferences => ({
+    isEnabled: false,
+    language,
 });
 
 describe('subtitleSelection', () => {
@@ -46,18 +57,42 @@ describe('subtitleSelection', () => {
             buildSubtitle({ id: 3, language: 'en' }),
         ];
 
-        expect(chooseInitialSubtitleId(subtitles, 'en', 'pt-BR')).toBe(3);
+        expect(chooseInitialSubtitleId(subtitles, enabledIn('en'), 'pt-BR')).toBe(3);
     });
 
     it('falls back to a forced-only remembered language track', () => {
         const subtitles = [buildSubtitle({ id: 2, language: 'en', is_forced: true })];
 
-        expect(chooseInitialSubtitleId(subtitles, 'en-US', 'fr')).toBe(2);
+        expect(chooseInitialSubtitleId(subtitles, enabledIn('en-US'), 'fr')).toBe(2);
     });
 
     it('falls back to the forced interface subtitle when the remembered language is missing', () => {
         const subtitles = [buildSubtitle({ id: 1, language: 'pt', is_forced: true })];
 
-        expect(chooseInitialSubtitleId(subtitles, 'es', 'pt-BR')).toBe(1);
+        expect(chooseInitialSubtitleId(subtitles, enabledIn('es'), 'pt-BR')).toBe(1);
+    });
+
+    it('does not turn on a regular subtitle when disabled', () => {
+        const subtitles = [buildSubtitle({ id: 1, language: 'en' })];
+
+        expect(chooseInitialSubtitleId(subtitles, disabledWith('en'), 'pt-BR')).toBeNull();
+    });
+
+    it('still turns on the forced interface subtitle when disabled', () => {
+        const subtitles = [
+            buildSubtitle({ id: 1, language: 'en' }),
+            buildSubtitle({ id: 2, language: 'pt', is_forced: true }),
+        ];
+
+        expect(chooseInitialSubtitleId(subtitles, disabledWith('en'), 'pt-BR')).toBe(2);
+    });
+
+    it('finds the remembered language subtitle regardless of enabled state', () => {
+        const subtitles = [buildSubtitle({ id: 1, language: 'pt' }), buildSubtitle({ id: 2 })];
+
+        expect(findRememberedLanguageSubtitleId(subtitles, disabledWith('en'))).toBe(2);
+        expect(findRememberedLanguageSubtitleId(subtitles, disabledWith(''))).toBeNull();
+        expect(findRememberedLanguageSubtitleId(subtitles, disabledWith('es'))).toBeNull();
+        expect(findRememberedLanguageSubtitleId(subtitles, null)).toBeNull();
     });
 });

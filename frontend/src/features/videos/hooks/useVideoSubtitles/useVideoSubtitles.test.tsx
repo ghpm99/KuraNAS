@@ -160,7 +160,7 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
 
         act(() => result.current.selectSubtitle(1));
 
-        expect(loadVideoSubtitlePreferences()).toEqual({ language: 'en' });
+        expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: true, language: 'en' });
     });
 
     it('does not remember a choice for a subtitle without language', async () => {
@@ -170,13 +170,84 @@ describe('features/videos/hooks/useVideoSubtitles', () => {
         await waitFor(() => expect(result.current.subtitles).toHaveLength(1));
 
         act(() => result.current.selectSubtitle(1));
-        act(() => result.current.selectSubtitle(null));
 
         expect(loadVideoSubtitlePreferences()).toBeNull();
     });
 
+    it('remembers disabling as disabled keeping the last language', async () => {
+        mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
+        const { result } = renderSubtitles();
+        await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+        act(() => result.current.selectSubtitle(2));
+
+        act(() => result.current.selectSubtitle(null));
+
+        expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: false, language: 'pt-BR' });
+    });
+
+    it('remembers disabling through the toggle shortcut', async () => {
+        saveVideoSubtitlePreferences({ isEnabled: true, language: 'en' });
+        mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
+        const { result } = renderSubtitles();
+        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(1));
+
+        act(() => {
+            result.current.toggleSubtitles();
+        });
+
+        expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: false, language: 'en' });
+    });
+
+    it('keeps subtitles off on the next video after disabling', async () => {
+        saveVideoSubtitlePreferences({ isEnabled: false, language: 'en' });
+        mockGetVideoSubtitles.mockResolvedValue([portugueseSubtitle, englishSubtitle]);
+
+        const { result } = renderSubtitles({ videoId: 31 });
+
+        await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+        expect(result.current.selectedSubtitleId).toBeNull();
+    });
+
+    it('still turns on the forced interface subtitle when disabled', async () => {
+        saveVideoSubtitlePreferences({ isEnabled: false, language: 'en' });
+        mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, forcedPortugueseSubtitle]);
+
+        const { result } = renderSubtitles();
+
+        await waitFor(() => expect(result.current.selectedSubtitleId).toBe(3));
+    });
+
+    it('restores the remembered language when toggling on after a disabled start', async () => {
+        saveVideoSubtitlePreferences({ isEnabled: false, language: 'pt-BR' });
+        mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
+        const { result } = renderSubtitles();
+        await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+
+        let outcome = '';
+        act(() => {
+            outcome = result.current.toggleSubtitles();
+        });
+
+        expect(outcome).toBe('enabled');
+        expect(result.current.selectedSubtitleId).toBe(2);
+        expect(loadVideoSubtitlePreferences()).toEqual({ isEnabled: true, language: 'pt-BR' });
+    });
+
+    it('falls back to the first subtitle when toggling on without a remembered language track', async () => {
+        saveVideoSubtitlePreferences({ isEnabled: false, language: 'fr' });
+        mockGetVideoSubtitles.mockResolvedValue([englishSubtitle, portugueseSubtitle]);
+        const { result } = renderSubtitles();
+        await waitFor(() => expect(result.current.subtitles).toHaveLength(2));
+
+        act(() => {
+            result.current.toggleSubtitles();
+        });
+
+        expect(result.current.selectedSubtitleId).toBe(1);
+    });
+
     it('applies the remembered language to the next video', async () => {
-        saveVideoSubtitlePreferences({ language: 'en' });
+        saveVideoSubtitlePreferences({ isEnabled: true, language: 'en' });
         mockGetVideoSubtitles.mockResolvedValue([portugueseSubtitle, englishSubtitle]);
 
         const { result } = renderSubtitles({ videoId: 31 });
