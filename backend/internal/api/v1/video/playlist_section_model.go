@@ -21,6 +21,12 @@ type PlaylistSectionRequest struct {
 	PageSize int
 }
 
+type PlaylistSearchRequest struct {
+	Query    string
+	Page     int
+	PageSize int
+}
+
 func ParsePlaylistSection(rawSection string) (PlaylistSection, bool) {
 	switch PlaylistSection(rawSection) {
 	case PlaylistSectionSeries, PlaylistSectionMovies, PlaylistSectionPersonal, PlaylistSectionClips, PlaylistSectionFolders:
