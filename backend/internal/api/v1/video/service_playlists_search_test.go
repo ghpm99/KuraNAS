@@ -8,7 +8,7 @@ import (
 func TestSearchPlaylistsEscapesWildcardsAndPagesWithOneExtraRow(t *testing.T) {
 	var receivedPattern string
 	var receivedLimit, receivedOffset int
-	repository := &videoRepoMock{searchVideoPlaylistsFn: func(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
+	repository := &videoRepoMock{searchVideoPlaylistsFn: func(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error) {
 		receivedPattern, receivedLimit, receivedOffset = searchPattern, limit, offset
 		return []VideoPlaylistModel{{ID: 1}, {ID: 2}, {ID: 3}}, nil
 	}}
@@ -27,7 +27,7 @@ func TestSearchPlaylistsEscapesWildcardsAndPagesWithOneExtraRow(t *testing.T) {
 
 func TestSearchPlaylistsWithBlankQueryUsesEmptyPattern(t *testing.T) {
 	var receivedPattern = "unset"
-	repository := &videoRepoMock{searchVideoPlaylistsFn: func(searchPattern string, limit int, offset int) ([]VideoPlaylistModel, error) {
+	repository := &videoRepoMock{searchVideoPlaylistsFn: func(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error) {
 		receivedPattern = searchPattern
 		return nil, nil
 	}}
@@ -41,10 +41,26 @@ func TestSearchPlaylistsWithBlankQueryUsesEmptyPattern(t *testing.T) {
 }
 
 func TestSearchPlaylistsPropagatesRepositoryError(t *testing.T) {
-	repository := &videoRepoMock{searchVideoPlaylistsFn: func(string, int, int) ([]VideoPlaylistModel, error) {
+	repository := &videoRepoMock{searchVideoPlaylistsFn: func(string, []string, int, int) ([]VideoPlaylistModel, error) {
 		return nil, errors.New("boom")
 	}}
 	if _, err := newVideoServiceForTest(t, repository).SearchPlaylists(PlaylistSearchRequest{Page: 1, PageSize: 5}); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestSearchPlaylistsPassesNameKeysWhoseTranslatedNameContainsTheTerm(t *testing.T) {
+	useTranslationLocale(t, "en-US")
+	var receivedNameKeys []string
+	repository := &videoRepoMock{searchVideoPlaylistsFn: func(_ string, matchingNameKeys []string, _ int, _ int) ([]VideoPlaylistModel, error) {
+		receivedNameKeys = matchingNameKeys
+		return nil, nil
+	}}
+
+	if _, err := newVideoServiceForTest(t, repository).SearchPlaylists(PlaylistSearchRequest{Query: "MOVIES", Page: 1, PageSize: 5}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(receivedNameKeys) != 1 || receivedNameKeys[0] != "VIDEO_PLAYLIST_NAME_MOVIES" {
+		t.Fatalf("name keys = %v", receivedNameKeys)
 	}
 }

@@ -1,6 +1,10 @@
 package video
 
-import "time"
+import (
+	"time"
+
+	"nas-go/api/internal/api/v1/video/playlist"
+)
 
 type VideoFileDto struct {
 	ID         int    `json:"id"`
@@ -182,7 +186,7 @@ func (m *VideoPlaylistModel) ToDto(items []VideoPlaylistItemDto) VideoPlaylistDt
 		ID:             m.ID,
 		Type:           m.Type,
 		SourcePath:     m.SourcePath,
-		Name:           resolvePlaylistName(m.Name, m.NameKey),
+		Name:           playlist.ResolveDisplayName(m.Name, m.NameKey),
 		NameKey:        nullableString(m.NameKey),
 		IsHidden:       m.IsHidden,
 		IsAuto:         m.IsAuto,

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"nas-go/api/internal/api/v1/video/playlist"
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 )
@@ -25,13 +26,13 @@ func TestResolvePlaylistNameTranslatesKeyAndPassesDataNameThrough(t *testing.T) 
 	useTranslationLocale(t, "pt-BR")
 	keyed := sql.NullString{String: "VIDEO_PLAYLIST_NAME_SERIES", Valid: true}
 
-	if got := resolvePlaylistName("Series", keyed); got != "Séries" {
+	if got := playlist.ResolveDisplayName("Series", keyed); got != "Séries" {
 		t.Fatalf("keyed name = %q, want Séries", got)
 	}
-	if got := resolvePlaylistName("Naruto", sql.NullString{}); got != "Naruto" {
+	if got := playlist.ResolveDisplayName("Naruto", sql.NullString{}); got != "Naruto" {
 		t.Fatalf("data name = %q, want Naruto", got)
 	}
-	if got := resolvePlaylistName("Naruto", sql.NullString{String: "", Valid: true}); got != "Naruto" {
+	if got := playlist.ResolveDisplayName("Naruto", sql.NullString{String: "", Valid: true}); got != "Naruto" {
 		t.Fatalf("empty key must fall back to stored name, got %q", got)
 	}
 }
@@ -40,11 +41,11 @@ func TestResolvePlaylistNameFollowsLanguageWithoutRebuild(t *testing.T) {
 	keyed := sql.NullString{String: "VIDEO_PLAYLIST_NAME_MOVIES", Valid: true}
 
 	useTranslationLocale(t, "pt-BR")
-	if got := resolvePlaylistName("Filmes", keyed); got != "Filmes" {
+	if got := playlist.ResolveDisplayName("Filmes", keyed); got != "Filmes" {
 		t.Fatalf("pt-BR = %q", got)
 	}
 	useTranslationLocale(t, "en-US")
-	if got := resolvePlaylistName("Filmes", keyed); got != "Movies" {
+	if got := playlist.ResolveDisplayName("Filmes", keyed); got != "Movies" {
 		t.Fatalf("en-US = %q", got)
 	}
 }
