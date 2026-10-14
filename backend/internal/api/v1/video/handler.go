@@ -46,6 +46,8 @@ func respondVideoError(c *gin.Context, err error) {
 		errors.Is(err, ErrPlaybackNavigation),
 		errors.Is(err, ErrPlaylistWithoutItems):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
+	case errors.Is(err, ErrPosterNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_POSTER_NOT_FOUND")})
 	case errors.Is(err, ErrNoVideosForContext):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 	default:

@@ -210,3 +210,12 @@ var CreateCustomPlaylistQuery string
 
 //go:embed delete_custom_playlist.sql
 var DeleteCustomPlaylistQuery string
+
+//go:embed list_poster_candidate_images_in_folder.sql
+var ListPosterCandidateImagesInFolderQuery string
+
+//go:embed count_videos_in_folder.sql
+var CountVideosInFolderQuery string
+
+//go:embed get_playlist_dominant_folder.sql
+var GetPlaylistDominantFolderQuery string

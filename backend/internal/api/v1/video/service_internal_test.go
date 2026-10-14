@@ -32,6 +32,9 @@ type videoRepoMock struct {
 	checkVideoInPlaylistFn          func(playlistID int, videoID int) (bool, error)
 	getUnassignedVideosFn           func(limit int) ([]VideoFileModel, error)
 	getHiddenVideoPlaylistsFn       func(limit int, offset int) ([]VideoPlaylistModel, error)
+	listPosterCandidatesInFolderFn  func(folderPath string) ([]PosterCandidateModel, error)
+	countVideosInFolderFn           func(folderPath string) (int, error)
+	getPlaylistDominantFolderFn     func(playlistID int) (string, error)
 	getVideoPlaylistsFn             func(includeHidden bool) ([]VideoPlaylistModel, error)
 	getVideoPlaylistMembersFn       func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
 	getVideoPlaylistByIDFn          func(id int) (VideoPlaylistModel, error)
@@ -264,6 +267,24 @@ func (m *videoRepoMock) GetHiddenVideoPlaylists(limit int, offset int) ([]VideoP
 		return m.getHiddenVideoPlaylistsFn(limit, offset)
 	}
 	return nil, nil
+}
+func (m *videoRepoMock) ListPosterCandidatesInFolder(folderPath string) ([]PosterCandidateModel, error) {
+	if m.listPosterCandidatesInFolderFn != nil {
+		return m.listPosterCandidatesInFolderFn(folderPath)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) CountVideosInFolder(folderPath string) (int, error) {
+	if m.countVideosInFolderFn != nil {
+		return m.countVideosInFolderFn(folderPath)
+	}
+	return 0, nil
+}
+func (m *videoRepoMock) GetPlaylistDominantFolder(playlistID int) (string, error) {
+	if m.getPlaylistDominantFolderFn != nil {
+		return m.getPlaylistDominantFolderFn(playlistID)
+	}
+	return "", sql.ErrNoRows
 }
 func (m *videoRepoMock) ListLibraryMovies(sort LibraryMovieSort, limit int, offset int) ([]VideoFileModel, error) {
 	if m.listLibraryMoviesFn != nil {
