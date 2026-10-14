@@ -7,6 +7,7 @@ import VideoDetailsPanel from '@/features/videos/videoDetails/VideoDetailsPanel'
 import PlayerShortcutFeedback from '@/features/videos/playerShortcuts/PlayerShortcutFeedback';
 import PlayerShortcutsHelpDialog from '@/features/videos/playerShortcuts/PlayerShortcutsHelpDialog';
 import usePlayerKeyboardShortcuts from '@/features/videos/playerShortcuts/usePlayerKeyboardShortcuts';
+import useVideoMediaSession from '@/features/videos/hooks/useVideoMediaSession/useVideoMediaSession';
 import useControlsAutoHide from '@/features/videos/videoControls/useControlsAutoHide';
 import { PlayerPortalContainerContext } from './playerPortalContainer';
 import styles from './VideoPlayerScreen.module.css';
@@ -64,6 +65,18 @@ export default function VideoPlayerScreen() {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
     useDocumentTitle(contextTitle);
+    useVideoMediaSession({
+        currentVideo,
+        isPlaying: status === 'playing',
+        currentTime,
+        duration,
+        hasPreviousVideo,
+        hasNextVideo,
+        togglePlayPause,
+        seekTo,
+        nextVideo,
+        previousVideo,
+    });
     const { areControlsVisible } = useControlsAutoHide(status === 'playing');
     const isCursorHidden = isFullscreen && !areControlsVisible;
     const { feedback: shortcutFeedback } = usePlayerKeyboardShortcuts({

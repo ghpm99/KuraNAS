@@ -79,7 +79,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 50. Atalhos de teclado
 - [x] 51. Tela cheia no contêiner (controles visíveis)
 - [x] 52. Picture-in-Picture
-- [ ] 52.1. Media Session API (título e controles do SO no PiP/notificação)
+- [x] 52.1. Media Session API (título e controles do SO no PiP/notificação)
 - [ ] 53. Volume, mudo e velocidade persistidos
 - [ ] 54. Seek aplicado ao soltar o controle
 - [ ] 55. Legendas externas `.srt/.vtt`
