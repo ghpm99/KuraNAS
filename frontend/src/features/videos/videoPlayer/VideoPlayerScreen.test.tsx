@@ -56,7 +56,7 @@ const buildScreenState = () => ({
     setCurrentTime: jest.fn(),
     setDuration: jest.fn(),
     subtitles: [],
-    selectedSubtitleId: null,
+    selectedSubtitleKey: null,
     selectSubtitle: jest.fn(),
     toggleSubtitles: jest.fn<'enabled' | 'disabled' | 'unavailable', []>(() => 'unavailable'),
 });

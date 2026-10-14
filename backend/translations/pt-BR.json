@@ -1924,6 +1924,7 @@
 	"VIDEO_SUBTITLES": "Legendas",
 	"VIDEO_SUBTITLES_OFF": "Desativadas",
 	"VIDEO_SUBTITLES_FORCED": "Forçada",
+	"VIDEO_SUBTITLES_EMBEDDED": "Embutida",
 	"VIDEO_SHORTCUT_HELP_SUBTITLES": "Ativar ou desativar as legendas",
 	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_ON": "Legendas ativadas",
 	"VIDEO_SHORTCUT_FEEDBACK_SUBTITLES_OFF": "Legendas desativadas"

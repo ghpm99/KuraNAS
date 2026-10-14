@@ -64,7 +64,7 @@ export default function VideoPlayerScreen() {
         reportPlaybackError,
         retryPlayback,
         subtitles,
-        selectedSubtitleId,
+        selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
     } = useVideoPlayerScreen();
@@ -164,7 +164,7 @@ export default function VideoPlayerScreen() {
                             canGoPrevious={hasPreviousVideo}
                             onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
                             subtitles={subtitles}
-                            selectedSubtitleId={selectedSubtitleId}
+                            selectedSubtitleKey={selectedSubtitleKey}
                             onSelectSubtitle={selectSubtitle}
                         />
                         <PlayerShortcutFeedback

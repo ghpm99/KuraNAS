@@ -20,7 +20,7 @@ jest.mock('@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles', () => (
     __esModule: true,
     default: () => ({
         subtitles: [],
-        selectedSubtitleId: null,
+        selectedSubtitleKey: null,
         selectSubtitle: jest.fn(),
         toggleSubtitles: jest.fn(),
     }),

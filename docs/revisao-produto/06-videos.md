@@ -85,7 +85,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 54. Seek aplicado ao soltar o controle
 - [x] 55. Legendas externas `.srt/.vtt`
 - [x] 55.1. Desativar legenda também é lembrado (hoje o idioma lembrado religa a legenda no vídeo seguinte)
-- [ ] 56. Legendas embutidas
+- [x] 56. Legendas embutidas
 - [ ] 57. Menu de configurações morto removido ou ligado ao player real
 - [ ] 58. Autoplay do próximo com contagem regressiva e cancelar
 - [ ] 59. Stream com 416, ETag e If-Range
