@@ -19,14 +19,16 @@ type videoItemProgress struct {
 }
 
 var (
-	ErrVideoNotInPlaylist      = errors.New("video not in selected playlist")
-	ErrPlaybackStateNotFound   = errors.New("playback state not found")
-	ErrInvalidBehaviorEvent    = errors.New("invalid behavior event")
-	ErrPlaylistNameRequired    = errors.New("playlist name is required")
-	ErrPlaylistReorderRequired = errors.New("playlist reorder items are required")
-	ErrNoVideosForContext      = errors.New("no videos found for context")
-	ErrPlaybackNavigation      = errors.New("playback navigation unavailable")
-	ErrPlaylistWithoutItems    = errors.New("playlist has no items")
+	ErrVideoNotInPlaylist            = errors.New("video not in selected playlist")
+	ErrPlaybackStateNotFound         = errors.New("playback state not found")
+	ErrInvalidBehaviorEvent          = errors.New("invalid behavior event")
+	ErrPlaylistNameRequired          = errors.New("playlist name is required")
+	ErrPlaylistReorderRequired       = errors.New("playlist reorder items are required")
+	ErrPlaylistNameTooLong           = errors.New("playlist name is too long")
+	ErrPlaylistAutomaticNotDeletable = errors.New("automatic playlist cannot be deleted")
+	ErrNoVideosForContext            = errors.New("no videos found for context")
+	ErrPlaybackNavigation            = errors.New("playback navigation unavailable")
+	ErrPlaylistWithoutItems          = errors.New("playlist has no items")
 )
 
 func NewService(repository RepositoryInterface) ServiceInterface {

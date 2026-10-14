@@ -201,3 +201,9 @@ var GetLibraryMoviesByRecentQuery string
 
 //go:embed renumber_playlist_items.sql
 var RenumberPlaylistItemsQuery string
+
+//go:embed create_custom_playlist.sql
+var CreateCustomPlaylistQuery string
+
+//go:embed delete_custom_playlist.sql
+var DeleteCustomPlaylistQuery string

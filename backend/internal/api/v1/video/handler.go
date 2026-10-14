@@ -34,9 +34,14 @@ func respondVideoError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 	case errors.Is(err, ErrPlaybackStateNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYBACK_NOT_FOUND")})
+	case errors.Is(err, ErrPlaylistNameRequired):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYLIST_NAME_REQUIRED")})
+	case errors.Is(err, ErrPlaylistNameTooLong):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYLIST_NAME_TOO_LONG")})
+	case errors.Is(err, ErrPlaylistAutomaticNotDeletable):
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYLIST_AUTOMATIC_NOT_DELETABLE")})
 	case errors.Is(err, ErrVideoNotInPlaylist),
 		errors.Is(err, ErrInvalidBehaviorEvent),
-		errors.Is(err, ErrPlaylistNameRequired),
 		errors.Is(err, ErrPlaylistReorderRequired),
 		errors.Is(err, ErrPlaybackNavigation),
 		errors.Is(err, ErrPlaylistWithoutItems):

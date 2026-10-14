@@ -131,6 +131,11 @@ type AddPlaylistVideoRequest struct {
 	VideoID int `json:"video_id" binding:"required"`
 }
 
+type CreateCustomPlaylistRequest struct {
+	Name    string `json:"name"`
+	VideoID *int   `json:"video_id,omitempty"`
+}
+
 type UpdatePlaylistRequest struct {
 	Name string `json:"name" binding:"required"`
 }
