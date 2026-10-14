@@ -271,6 +271,20 @@ func (h *Handler) SearchPlaylistsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, playlistsPage)
 }
 
+func (h *Handler) GetHiddenPlaylistsHandler(c *gin.Context) {
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultPlaylistSectionPageSize)
+	if !isPaginationValid {
+		return
+	}
+
+	playlistsPage, err := h.service.GetHiddenPlaylists(HiddenPlaylistsRequest{Page: page, PageSize: pageSize})
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, playlistsPage)
+}
+
 func (h *Handler) GetPlaylistMembershipsHandler(c *gin.Context) {
 	includeHidden := c.DefaultQuery("include_hidden", "false") == "true"
 	memberships, err := h.service.GetPlaylistMemberships(includeHidden)

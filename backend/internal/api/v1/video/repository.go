@@ -644,6 +644,30 @@ func (r *Repository) SearchVideoPlaylists(searchPattern string, limit int, offse
 	return playlists, nil
 }
 
+func (r *Repository) GetHiddenVideoPlaylists(limit int, offset int) ([]VideoPlaylistModel, error) {
+	playlists := []VideoPlaylistModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetVideoPlaylistsHiddenQuery, limit, offset)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		scannedPlaylists, err := scanPlaylistSummaryRows(rows)
+		if err != nil {
+			return err
+		}
+		playlists = scannedPlaylists
+		return nil
+	})
+	if err != nil {
+		return playlists, fmt.Errorf("falha ao listar playlists de video ocultas: %w", err)
+	}
+
+	return playlists, nil
+}
+
 func (r *Repository) GetVideoPlaylistMemberships(includeHidden bool) ([]VideoPlaylistMembershipModel, error) {
 	memberships := []VideoPlaylistMembershipModel{}
 
@@ -776,9 +800,16 @@ func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]Video
 }
 
 func (r *Repository) SetPlaylistHidden(tx *sql.Tx, playlistID int, hidden bool) error {
-	_, err := tx.Exec(queries.SetPlaylistHiddenQuery, playlistID, hidden)
+	result, err := tx.Exec(queries.SetPlaylistHiddenQuery, playlistID, hidden)
 	if err != nil {
 		return fmt.Errorf("falha ao atualizar ocultacao da playlist: %w", err)
+	}
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("falha ao confirmar ocultacao da playlist: %w", err)
+	}
+	if affectedRows == 0 {
+		return fmt.Errorf("playlist %d: %w", playlistID, sql.ErrNoRows)
 	}
 	return nil
 }

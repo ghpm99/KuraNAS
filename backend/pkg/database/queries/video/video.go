@@ -67,6 +67,9 @@ var GetVideoPlaylistsBySectionQuery string
 //go:embed get_video_playlists_search.sql
 var SearchVideoPlaylistsQuery string
 
+//go:embed get_video_playlists_hidden.sql
+var GetVideoPlaylistsHiddenQuery string
+
 //go:embed get_video_playlists_by_video.sql
 var GetVideoPlaylistsByVideoQuery string
 
