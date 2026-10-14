@@ -222,6 +222,7 @@ func TestWorkerKnownTaskBranches(t *testing.T) {
 func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 	videoCalls := 0
 	imageCalls := 0
+	previewCalls := 0
 	svc := &workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			if id == 1 {
@@ -240,7 +241,7 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			return video.GeneratedImage{Data: []byte("v")}, nil
 		},
 		getVideoGifFn: func(fileDto files.FileDto, width, height int) (video.GeneratedImage, error) {
-			videoCalls++
+			previewCalls++
 			return video.GeneratedImage{Data: []byte("g")}, nil
 		},
 	}
@@ -248,8 +249,8 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 	scan.CreateThumbnailWorker(svc, thumbVideoSvc, "bad", &workerLoggerMock{})
 	scan.CreateThumbnailWorker(svc, thumbVideoSvc, 1, &workerLoggerMock{})
 	scan.CreateThumbnailWorker(svc, thumbVideoSvc, 2, &workerLoggerMock{})
-	if videoCalls != 2 || imageCalls != 1 {
-		t.Fatalf("unexpected thumbnail calls, video=%d image=%d", videoCalls, imageCalls)
+	if videoCalls != 1 || imageCalls != 1 || previewCalls != 0 {
+		t.Fatalf("unexpected thumbnail calls, video=%d image=%d preview=%d", videoCalls, imageCalls, previewCalls)
 	}
 
 	scan.GenerateVideoPlaylistsWorker(nil, &workerLoggerMock{})
@@ -281,7 +282,6 @@ func TestCreateThumbnailWorkerAndVideoPlaylistWorker(t *testing.T) {
 			return files.FileDto{ID: 10, Type: files.Directory, Format: ".mp4"}, nil
 		},
 	}, nil, 10, &workerLoggerMock{})
-	// Video file without a video service: skips gracefully.
 	scan.CreateThumbnailWorker(&workerFilesServiceMock{
 		getFileByIDFn: func(id int) (files.FileDto, error) {
 			return files.FileDto{ID: 11, Type: files.File, Format: ".mp4"}, nil
