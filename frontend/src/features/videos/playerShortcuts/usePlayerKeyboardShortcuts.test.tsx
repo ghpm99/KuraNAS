@@ -19,6 +19,7 @@ const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     setVolume: jest.fn(),
     setPlaybackRate: jest.fn(),
     toggleFullscreen: jest.fn(),
+    togglePictureInPicture: jest.fn(),
     togglePlayPause: jest.fn(),
     nextVideo: jest.fn(),
     previousVideo: jest.fn(),
@@ -150,6 +151,16 @@ describe('features/videos/playerShortcuts/usePlayerKeyboardShortcuts', () => {
         expect(controls.seekTo).toHaveBeenCalledWith(45);
         expect(keydownRegistrations()).toBe(registrationsAfterMount);
         addSpy.mockRestore();
+    });
+
+    it('toggles picture in picture with the I key', () => {
+        const controls = buildControls();
+        render(<HookHost controls={controls} />);
+
+        const event = dispatchKey({ key: 'i' });
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(controls.togglePictureInPicture).toHaveBeenCalledTimes(1);
     });
 
     it('removes the listener on unmount', () => {

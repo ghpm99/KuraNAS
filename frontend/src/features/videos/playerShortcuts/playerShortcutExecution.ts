@@ -24,6 +24,7 @@ export interface PlayerShortcutControls {
     setVolume: (volume: number) => void;
     setPlaybackRate: (rate: number) => void;
     toggleFullscreen: () => void;
+    togglePictureInPicture: () => void | Promise<void>;
     togglePlayPause: () => void;
     nextVideo: () => void | Promise<void>;
     previousVideo: () => void | Promise<void>;
@@ -143,6 +144,9 @@ export function runPlayerShortcut(
             return adjustPlaybackRate(action.delta, snapshot, controls);
         case 'toggleFullscreen':
             controls.toggleFullscreen();
+            return null;
+        case 'togglePictureInPicture':
+            void controls.togglePictureInPicture();
             return null;
         case 'nextVideo':
             if (!snapshot.canGoNext) return null;

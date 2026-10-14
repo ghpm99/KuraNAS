@@ -29,6 +29,8 @@ describe('features/videos/playerShortcuts/playerShortcutMapping', () => {
         ['ArrowDown', { type: 'adjustVolume', delta: -0.05 }],
         ['m', { type: 'toggleMute' }],
         ['f', { type: 'toggleFullscreen' }],
+        ['i', { type: 'togglePictureInPicture' }],
+        ['I', { type: 'togglePictureInPicture' }],
         ['0', { type: 'seekToFraction', fraction: 0 }],
         ['5', { type: 'seekToFraction', fraction: 0.5 }],
         ['9', { type: 'seekToFraction', fraction: 0.9 }],

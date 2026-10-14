@@ -10,6 +10,7 @@ const buildControls = (): jest.Mocked<PlayerShortcutControls> => ({
     setVolume: jest.fn(),
     setPlaybackRate: jest.fn(),
     toggleFullscreen: jest.fn(),
+    togglePictureInPicture: jest.fn(),
     togglePlayPause: jest.fn(),
     nextVideo: jest.fn(),
     previousVideo: jest.fn(),
@@ -49,6 +50,12 @@ describe('features/videos/playerShortcuts/playerShortcutExecution', () => {
         expect(clampSeekTime(40, 100)).toBe(40);
         expect(clampSeekTime(40, 0)).toBe(40);
         expect(clampSeekTime(-1, Number.NaN)).toBe(0);
+    });
+
+    it('toggles picture in picture without feedback', () => {
+        expect(run({ type: 'togglePictureInPicture' })).toBeNull();
+
+        expect(controls.togglePictureInPicture).toHaveBeenCalledTimes(1);
     });
 
     it('toggles play and pause with matching feedback', () => {

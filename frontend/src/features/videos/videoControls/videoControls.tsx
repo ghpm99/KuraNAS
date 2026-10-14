@@ -12,6 +12,7 @@ import {
     SkipForward,
     Volume2,
     Keyboard,
+    PictureInPicture2,
 } from 'lucide-react';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -25,11 +26,14 @@ interface VideoControlsProps {
     volume: number;
     playbackRate: number;
     isFullscreen: boolean;
+    isPictureInPictureSupported?: boolean;
+    isPictureInPicture?: boolean;
     areControlsVisible?: boolean;
     seekTo: (time: number) => void;
     setVolume: (volume: number) => void;
     setPlaybackRate: (rate: number) => void;
     toggleFullscreen: () => void;
+    togglePictureInPicture?: () => void;
     togglePlayPause: () => void;
     nextVideo: () => void;
     previousVideo: () => void;
@@ -44,11 +48,14 @@ const VideoControls = ({
     volume,
     playbackRate,
     isFullscreen,
+    isPictureInPictureSupported = false,
+    isPictureInPicture = false,
     areControlsVisible = true,
     seekTo,
     setVolume,
     setPlaybackRate,
     toggleFullscreen,
+    togglePictureInPicture,
     togglePlayPause,
     nextVideo,
     previousVideo,
@@ -102,6 +109,9 @@ const VideoControls = ({
     };
 
     const fullscreenLabel = isFullscreen ? t('VIDEO_EXIT_FULLSCREEN') : t('VIDEO_FULLSCREEN');
+    const pictureInPictureLabel = isPictureInPicture
+        ? t('VIDEO_EXIT_PICTURE_IN_PICTURE')
+        : t('VIDEO_PICTURE_IN_PICTURE');
     const tooltipSlotProps = { popper: { container: portalContainer } };
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -187,6 +197,19 @@ const VideoControls = ({
                                 aria-label={t('VIDEO_SHORTCUTS_HELP_BUTTON')}
                             >
                                 <Keyboard size={20} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : null}
+
+                    {isPictureInPictureSupported ? (
+                        <Tooltip title={pictureInPictureLabel} slotProps={tooltipSlotProps}>
+                            <IconButton
+                                onClick={togglePictureInPicture}
+                                size="small"
+                                aria-label={pictureInPictureLabel}
+                                aria-pressed={isPictureInPicture}
+                            >
+                                <PictureInPicture2 size={20} />
                             </IconButton>
                         </Tooltip>
                     ) : null}

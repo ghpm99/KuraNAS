@@ -1,5 +1,6 @@
 import { appRoutes } from '@/app/routes';
 import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscreen/useContainerFullscreen';
+import usePictureInPicture from '@/features/videos/hooks/usePictureInPicture/usePictureInPicture';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -102,6 +103,12 @@ export default function useVideoPlayerScreen() {
         container: playerContainer,
         videoRef,
     });
+    const {
+        isSupported: isPictureInPictureSupported,
+        isPictureInPicture,
+        togglePictureInPicture,
+        requestError: pictureInPictureError,
+    } = usePictureInPicture({ videoRef, isFullscreen, exitFullscreen: toggleFullscreen });
     const syncedRouteVideoIdRef = useRef<string | null>(null);
 
     const fallbackContextRoute = useMemo(() => {
@@ -324,6 +331,10 @@ export default function useVideoPlayerScreen() {
         volume,
         playbackRate,
         isFullscreen,
+        isPictureInPictureSupported,
+        isPictureInPicture,
+        togglePictureInPicture,
+        pictureInPictureError,
         setCurrentTime,
         setDuration,
         playbackError,

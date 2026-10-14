@@ -51,6 +51,10 @@ export default function VideoPlayerScreen() {
         volume,
         playbackRate,
         isFullscreen,
+        isPictureInPictureSupported,
+        isPictureInPicture,
+        togglePictureInPicture,
+        pictureInPictureError,
         setCurrentTime,
         setDuration,
         playbackError,
@@ -77,6 +81,7 @@ export default function VideoPlayerScreen() {
             setVolume,
             setPlaybackRate,
             toggleFullscreen,
+            togglePictureInPicture,
             togglePlayPause,
             nextVideo,
             previousVideo,
@@ -123,7 +128,10 @@ export default function VideoPlayerScreen() {
                             seekTo={seekTo}
                             setVolume={setVolume}
                             setPlaybackRate={setPlaybackRate}
+                            isPictureInPictureSupported={isPictureInPictureSupported}
+                            isPictureInPicture={isPictureInPicture}
                             toggleFullscreen={toggleFullscreen}
+                            togglePictureInPicture={togglePictureInPicture}
                             togglePlayPause={togglePlayPause}
                             nextVideo={nextVideo}
                             previousVideo={previousVideo}
@@ -131,7 +139,9 @@ export default function VideoPlayerScreen() {
                             canGoPrevious={hasPreviousVideo}
                             onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
                         />
-                        <PlayerShortcutFeedback feedback={shortcutFeedback} />
+                        <PlayerShortcutFeedback
+                            feedback={pictureInPictureError ?? shortcutFeedback}
+                        />
                     </VideoPlayer>
                 </section>
 
