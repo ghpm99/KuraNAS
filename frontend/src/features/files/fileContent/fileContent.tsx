@@ -44,6 +44,7 @@ interface FileContentProps {
     showHeading?: boolean;
     viewMode?: 'grid' | 'list';
     items?: FileData[];
+    isSelectionEnabled?: boolean;
     title?: string;
     emptyStateMessage?: string;
     onGoToParent?: () => void;
@@ -54,6 +55,7 @@ const FileContent = ({
     showHeading = true,
     viewMode = 'grid',
     items,
+    isSelectionEnabled: isSelectionEnabledOverride,
     title,
     emptyStateMessage,
     searchListing,
@@ -76,11 +78,11 @@ const FileContent = ({
         filesSort,
         setFilesSort,
     } = useFile();
+    const isSelectionEnabled = isSelectionEnabledOverride ?? items === undefined;
     const { t } = useI18n();
     const { openMediaItem } = useMediaOpener();
     const fileSelection = useFileSelectionContext();
     const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
-    const isSelectionEnabled = items === undefined;
     const listingStatus = searchListing?.status ?? status;
     const pagination = searchListing ?? { hasNextPage, isFetchingNextPage, fetchNextPage };
     const currentListTitle =
@@ -255,7 +257,7 @@ const FileContent = ({
                 {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
                 {viewMode === 'list' ? (
                     <div className={styles.fileList} role="table" aria-label={collectionTitle}>
-                        {isSelectionEnabled && !searchListing ? (
+                        {items === undefined && isSelectionEnabled && !searchListing ? (
                             <FileListHeader sort={filesSort} onSortChange={setFilesSort} />
                         ) : null}
                         {collectionItems.map((file) => (

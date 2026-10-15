@@ -12,6 +12,7 @@ const mockGetStarredFiles = jest.fn();
 const mockGetFilesTree = jest.fn();
 const mockGetFileByPath = jest.fn();
 const mockGetFileAncestors = jest.fn();
+const mockSetFilesStarred = jest.fn();
 
 jest.mock('@/service/files', () => ({
     ...jest.requireActual('@/service/files'),
@@ -19,6 +20,7 @@ jest.mock('@/service/files', () => ({
     getFilesTree: (...args: unknown[]) => mockGetFilesTree(...args),
     getFileByPath: (...args: unknown[]) => mockGetFileByPath(...args),
     getFileAncestors: (...args: unknown[]) => mockGetFileAncestors(...args),
+    setFilesStarred: (...args: unknown[]) => mockSetFilesStarred(...args),
     getRecentAccessByFileId: jest.fn().mockResolvedValue([]),
 }));
 
@@ -85,6 +87,13 @@ const renderFavorites = (initialPath: string) =>
         </QueryClientProvider>
     );
 
+const selectItemAt = async (position: number) => {
+    const selectCheckboxes = await screen.findAllByLabelText('FILES_SELECT_ITEM');
+    const checkbox: HTMLElement | undefined = selectCheckboxes[position];
+    if (!checkbox) throw new Error(`no selectable item at ${position}`);
+    fireEvent.click(checkbox);
+};
+
 describe('Favorites folder navigation', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -96,6 +105,11 @@ describe('Favorites folder navigation', () => {
             path === '/Projects' ? starredFolder : path === plainFile.path ? plainFile : null
         );
         mockGetFileAncestors.mockResolvedValue([]);
+        mockSetFilesStarred.mockImplementation(async (ids: number[], isStarred: boolean) => ({
+            starred: isStarred,
+            updated_ids: ids,
+            not_found_ids: [],
+        }));
     });
 
     it('opens a starred folder inside favorites and lists all its children', async () => {
@@ -165,5 +179,64 @@ describe('Favorites folder navigation', () => {
             'href',
             '/favorites/Projects'
         );
+    });
+
+    describe('selection', () => {
+        const secondStarredFolder = buildEntry(13, 'Archive', '/Archive', {
+            type: 1,
+            starred: true,
+        });
+
+        it('shows the selection toolbar after selecting two starred items', async () => {
+            mockGetStarredFiles.mockResolvedValue(toPage([starredFolder, secondStarredFolder]));
+            renderFavorites('/favorites');
+
+            await selectItemAt(0);
+            await selectItemAt(1);
+            expect(screen.getByRole('toolbar', { name: 'FILES_SELECTION_TOOLBAR' })).toBeInTheDocument();
+            expect(screen.getByText('FILES_SELECTION_COUNT')).toBeInTheDocument();
+        });
+
+        it('unfavorites the selection in one call and removes the items from the list', async () => {
+            mockGetStarredFiles.mockResolvedValue(toPage([starredFolder, secondStarredFolder]));
+            mockSetFilesStarred.mockImplementationOnce(async (ids: number[]) => {
+                mockGetStarredFiles.mockResolvedValue(toPage([]));
+                return { starred: false, updated_ids: ids, not_found_ids: [] };
+            });
+            renderFavorites('/favorites');
+
+            await selectItemAt(0);
+            await selectItemAt(1);
+            fireEvent.click(screen.getByRole('button', { name: 'FILES_UNFAVORITE' }));
+
+            await waitFor(() =>
+                expect(mockSetFilesStarred).toHaveBeenCalledWith(
+                    expect.arrayContaining([10, 13]),
+                    false
+                )
+            );
+            await waitFor(() => expect(screen.queryByText('Projects')).not.toBeInTheDocument());
+            expect(screen.queryByText('Archive')).not.toBeInTheDocument();
+            expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+        });
+
+        it('selects every listed item with the select-all shortcut', async () => {
+            mockGetStarredFiles.mockResolvedValue(toPage([starredFolder, secondStarredFolder]));
+            renderFavorites('/favorites');
+            await screen.findByText('Archive');
+
+            fireEvent.keyDown(document, { key: 'a', ctrlKey: true });
+
+            expect(await screen.findByText('FILES_SELECTION_COUNT')).toBeInTheDocument();
+            expect(screen.getAllByRole('checkbox', { checked: true })).toHaveLength(2);
+        });
+
+        it('selects items inside a starred folder', async () => {
+            renderFavorites('/favorites/Projects');
+
+            await selectItemAt(0);
+
+            expect(screen.getByRole('toolbar', { name: 'FILES_SELECTION_TOOLBAR' })).toBeInTheDocument();
+        });
     });
 });

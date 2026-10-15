@@ -1,13 +1,17 @@
 import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material';
 import { CheckCheck, Copy, Download, MoveRight, Pencil, Star, Trash2, X } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import useFile from '@/features/files/providers/fileProvider/fileContext';
+import useFile, { type FileData } from '@/features/files/providers/fileProvider/fileContext';
 import useFileActionFlow from '@/features/files/fileActions/useFileActionFlow';
 import useFileOperations from '@/features/files/fileActions/useFileOperations';
 import { useFileSelectionContext } from './fileSelectionContext';
 import { resolveListedFiles } from './listedFiles';
 
-const FileSelectionToolbar = () => {
+type FileSelectionToolbarProps = {
+    selectableFiles?: FileData[];
+};
+
+const FileSelectionToolbar = ({ selectableFiles }: FileSelectionToolbarProps) => {
     const { t } = useI18n();
     const { selectedItem, files } = useFile();
     const { selectedFiles, selectedCount, selectAll, clear, deselect } = useFileSelectionContext();
@@ -44,7 +48,7 @@ const FileSelectionToolbar = () => {
                 size="small"
                 variant="outlined"
                 startIcon={<CheckCheck size={16} />}
-                onClick={() => selectAll(resolveListedFiles(selectedItem, files))}
+                onClick={() => selectAll(selectableFiles ?? resolveListedFiles(selectedItem, files))}
             >
                 {t('FILES_SELECT_ALL')}
             </Button>

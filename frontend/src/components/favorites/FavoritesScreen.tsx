@@ -1,4 +1,6 @@
 import FileContent from '@/features/files/fileContent';
+import FileSelectionToolbar from '@/features/files/selection/fileSelectionToolbar';
+import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import FileDetails from '@/features/files/fileDetails';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import PageContainer from '@/components/layout/PageContainer';
@@ -32,6 +34,7 @@ const FavoritesScreen = () => {
         setViewMode,
         viewMode,
     } = useFavoritesScreen();
+    const { hasSelection } = useFileSelectionContext();
     const navigate = useNavigate();
     const isFileSelected = selectedItem?.type === FileType.File;
     const workspaceClassName = isFileSelected
@@ -148,11 +151,18 @@ const FavoritesScreen = () => {
                         </div>
                     </section>
 
+                    {hasSelection ? (
+                        <section className={styles.panel}>
+                            <FileSelectionToolbar selectableFiles={filteredItems} />
+                        </section>
+                    ) : null}
+
                     <section className={`${styles.panel} ${styles.contentCard}`}>
                         <FileContent
                             showHeading={false}
                             viewMode={viewMode}
                             items={filteredItems}
+                            isSelectionEnabled
                             title={currentTitle}
                             emptyStateMessage={t('FAVORITES_EMPTY_STATE')}
                         />
