@@ -38,6 +38,7 @@ type videoRepoMock struct {
 	getPlaylistDominantFolderFn      func(playlistID int) (string, error)
 	getVideoPlaylistsFn              func(includeHidden bool) ([]VideoPlaylistModel, error)
 	getVideoPlaylistMembersFn        func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
+	countVideoPlaylistItemsFn        func(playlistID int) (int, error)
 	getVideoPlaylistByIDFn           func(id int) (VideoPlaylistModel, error)
 	getVideoPlaylistItemsFn          func(playlistID int) ([]VideoPlaylistItemModel, error)
 	getVideoPlaylistItemsPageFn      func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
@@ -217,6 +218,12 @@ func (m *videoRepoMock) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error)
 		return m.getVideoPlaylistByIDFn(id)
 	}
 	return VideoPlaylistModel{}, nil
+}
+func (m *videoRepoMock) CountVideoPlaylistItems(playlistID int) (int, error) {
+	if m.countVideoPlaylistItemsFn != nil {
+		return m.countVideoPlaylistItemsFn(playlistID)
+	}
+	return 0, nil
 }
 func (m *videoRepoMock) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error) {
 	if m.getVideoPlaylistItemsFn != nil {

@@ -148,6 +148,15 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CountVideoPlaylistItemsQuery)).
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(4))
+	mock.ExpectRollback()
+	if itemCount, err := repo.CountVideoPlaylistItems(1); err != nil || itemCount != 4 {
+		t.Fatalf("CountVideoPlaylistItems failed count=%d err=%v", itemCount, err)
+	}
+
+	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetVideoPlaylistItemsDetailedQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "playlist_id", "video_id", "order_index", "source_kind", "name", "path", "parent_path", "format", "size", "created_at", "updated_at", "duration_seconds", "width", "height", "codec_name"}).
 			AddRow(1, 1, 2, 0, "manual", "v2", "/p/v2", "/p", ".mp4", 120, now, now, nil, nil, nil, nil))

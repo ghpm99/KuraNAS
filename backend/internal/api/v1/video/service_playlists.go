@@ -280,6 +280,21 @@ func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, er
 	return pl.ToDto(itemDtos), nil
 }
 
+func (s *Service) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
+	pl, err := s.Repository.GetVideoPlaylistByID(id)
+	if err != nil {
+		return VideoPlaylistDto{}, err
+	}
+
+	itemCount, err := s.Repository.CountVideoPlaylistItems(id)
+	if err != nil {
+		return VideoPlaylistDto{}, err
+	}
+
+	pl.ItemCount = itemCount
+	return pl.ToDto([]VideoPlaylistItemDto{}), nil
+}
+
 func (s *Service) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	if _, err := s.Repository.GetVideoPlaylistByID(playlistID); err != nil {
 		return utils.PaginationResponse[VideoPlaylistItemDto]{}, err

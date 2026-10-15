@@ -718,6 +718,18 @@ func (r *Repository) GetVideoPlaylistByID(id int) (VideoPlaylistModel, error) {
 	return playlist, nil
 }
 
+func (r *Repository) CountVideoPlaylistItems(playlistID int) (int, error) {
+	var itemCount int
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.CountVideoPlaylistItemsQuery, playlistID).Scan(&itemCount)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("falha ao contar itens da playlist de video: %w", err)
+	}
+
+	return itemCount, nil
+}
+
 func (r *Repository) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error) {
 	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsDetailedQuery, playlistID)
 }

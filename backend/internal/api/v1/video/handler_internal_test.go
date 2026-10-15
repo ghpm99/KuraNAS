@@ -78,6 +78,12 @@ func (m *videoHandlerServiceMock) GetPlaylistByID(clientID string, id int) (Vide
 	}
 	return VideoPlaylistDto{ID: id, Name: "p"}, nil
 }
+func (m *videoHandlerServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
+	if id == 404 {
+		return VideoPlaylistDto{}, errors.New("missing")
+	}
+	return VideoPlaylistDto{ID: id, Name: "header", ItemCount: 5, Items: []VideoPlaylistItemDto{}}, nil
+}
 func (m *videoHandlerServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	if playlistID == 404 {
 		return utils.PaginationResponse[VideoPlaylistItemDto]{}, errors.New("missing")
@@ -188,6 +194,9 @@ func (m *videoHandlerErrServiceMock) GetPlaylistsByVideo(videoID int) ([]VideoPl
 	return nil, errors.New("playlists by video failed")
 }
 func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
+	return VideoPlaylistDto{}, errors.New("playlist missing")
+}
+func (m *videoHandlerErrServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
 	return VideoPlaylistDto{}, errors.New("playlist missing")
 }
 func (m *videoHandlerErrServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
@@ -332,6 +341,10 @@ func TestVideoHandlerEndpoints(t *testing.T) {
 		{http.MethodGet, "/video/library/folders?page=abc", "", http.StatusBadRequest},
 		{http.MethodPost, "/video/playback/start", `{}`, http.StatusBadRequest},
 		{http.MethodGet, "/video/playlists/404", "", http.StatusNotFound},
+		{http.MethodGet, "/video/playlists/1?include_items=true", "", http.StatusOK},
+		{http.MethodGet, "/video/playlists/1?include_items=false", "", http.StatusOK},
+		{http.MethodGet, "/video/playlists/1?include_items=maybe", "", http.StatusBadRequest},
+		{http.MethodGet, "/video/playlists/404?include_items=false", "", http.StatusNotFound},
 	}
 
 	for _, tc := range tests {
@@ -467,5 +480,37 @@ func TestRespondVideoErrorBranches(t *testing.T) {
 				t.Fatalf("expected %d, got %d", tc.code, w.Code)
 			}
 		})
+	}
+}
+
+func TestGetPlaylistByIDHandlerIncludeItemsSelectsServicePath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&videoHandlerServiceMock{}, &videoFilesServiceMock{}, &videoRecentServiceMock{}, &videoLoggerMock{})
+	router := gin.New()
+	router.GET("/video/playlists/:id", handler.GetPlaylistByIDHandler)
+
+	cases := []struct {
+		path         string
+		expectedName string
+	}{
+		{"/video/playlists/1", "p"},
+		{"/video/playlists/1?include_items=true", "p"},
+		{"/video/playlists/1?include_items=false", "header"},
+	}
+	for _, tc := range cases {
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, tc.path, nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s: status = %d", tc.path, recorder.Code)
+		}
+		if !strings.Contains(recorder.Body.String(), `"name":"`+tc.expectedName+`"`) {
+			t.Fatalf("%s: body = %s, want name %s", tc.path, recorder.Body.String(), tc.expectedName)
+		}
+	}
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/video/playlists/1?include_items=false", nil))
+	if !strings.Contains(recorder.Body.String(), `"items":[]`) || !strings.Contains(recorder.Body.String(), `"item_count":5`) {
+		t.Fatalf("header body = %s, want empty items and item_count 5", recorder.Body.String())
 	}
 }
