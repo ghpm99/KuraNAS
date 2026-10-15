@@ -115,6 +115,9 @@ var GetChildrenSortedByCreatedAtDescQuery string
 //go:embed get_starred_files.sql
 var GetStarredFilesQuery string
 
+//go:embed get_starred_files_sorted_by_starred_at.sql
+var GetStarredFilesSortedByStarredAtQuery string
+
 //go:embed get_recently_accessed_files.sql
 var GetRecentlyAccessedFilesQuery string
 

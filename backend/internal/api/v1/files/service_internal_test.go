@@ -77,7 +77,7 @@ type filesRepoMock struct {
 	getActiveFilesFn            func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFilesByPathPrefixFn      func(prefix string, page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	searchActiveFilesFn         func(query FileSearchQuery) (utils.PaginationResponse[FileModel], error)
-	getStarredFilesFn           func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
+	getStarredFilesFn           func(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileModel], error)
 	getRecentlyAccessedFilesFn  func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFileStatByPathFn         func(path string) (FileStat, bool, error)
 	updateFileFn                func(transaction *sql.Tx, file FileModel) (bool, error)
@@ -149,9 +149,9 @@ func (m *filesRepoMock) GetActiveFiles(page int, pageSize int) (utils.Pagination
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }
-func (m *filesRepoMock) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+func (m *filesRepoMock) GetStarredFiles(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileModel], error) {
 	if m.getStarredFilesFn != nil {
-		return m.getStarredFilesFn(page, pageSize)
+		return m.getStarredFilesFn(page, pageSize, listing)
 	}
 	return utils.PaginationResponse[FileModel]{Items: []FileModel{}}, nil
 }

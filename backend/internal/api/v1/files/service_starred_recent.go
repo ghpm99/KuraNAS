@@ -14,8 +14,8 @@ func (s *Service) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
 	return s.Repository.SetFilesStarred(ids, isStarred)
 }
 
-func (s *Service) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
-	models, err := s.Repository.GetStarredFiles(page, pageSize)
+func (s *Service) GetStarredFiles(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileDto], error) {
+	models, err := s.Repository.GetStarredFiles(page, pageSize, listing)
 	if err != nil {
 		return utils.PaginationResponse[FileDto]{}, err
 	}
