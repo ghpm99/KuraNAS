@@ -90,9 +90,12 @@ func (m *filesHandlerServiceMock) GetActiveFileByDiskPath(diskPath string) (File
 }
 func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error)  { return true, nil }
 func (m *filesHandlerServiceMock) ToggleFileStarred(id int) (bool, error) { return true, nil }
-func (m *filesHandlerServiceMock) ScanFilesTask(data string)              {}
-func (m *filesHandlerServiceMock) ScanDirTask(data string)                {}
-func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error        { return nil }
+func (m *filesHandlerServiceMock) SetFileStarred(id int, isStarred bool) (bool, error) {
+	return isStarred, nil
+}
+func (m *filesHandlerServiceMock) ScanFilesTask(data string)       {}
+func (m *filesHandlerServiceMock) ScanDirTask(data string)         {}
+func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error { return nil }
 func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, error) {
 	return 1, nil
 }
@@ -167,6 +170,7 @@ type filesHandlerServiceFuncMock struct {
 	getFileByIdFn         func(id int) (FileDto, error)
 	updateFileFn          func(file FileDto) (bool, error)
 	toggleFileStarredFn   func(id int) (bool, error)
+	setFileStarredFn      func(id int, isStarred bool) (bool, error)
 	getTotalSpaceUsedFn   func() (int, error)
 	getTotalFilesFn       func() (int, error)
 	getTotalDirectoryFn   func() (int, error)
@@ -219,6 +223,12 @@ func (m *filesHandlerServiceFuncMock) ToggleFileStarred(id int) (bool, error) {
 		return m.toggleFileStarredFn(id)
 	}
 	return m.filesHandlerServiceMock.ToggleFileStarred(id)
+}
+func (m *filesHandlerServiceFuncMock) SetFileStarred(id int, isStarred bool) (bool, error) {
+	if m.setFileStarredFn != nil {
+		return m.setFileStarredFn(id, isStarred)
+	}
+	return m.filesHandlerServiceMock.SetFileStarred(id, isStarred)
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -308,6 +318,7 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/recent", handler.GetRecentFilesHandler)
 	router.GET("/files/recent/:id", handler.GetRecentAccessByFileHandler)
 	router.POST("/files/starred/:id", handler.StarreFileHandler)
+	router.PUT("/files/starred/:id", handler.SetFileStarredHandler)
 	router.GET("/files/total-space-used", handler.GetTotalSpaceUsedHandler)
 	router.GET("/files/total-files", handler.GetTotalFilesHandler)
 	router.GET("/files/total-directory", handler.GetTotalDirectoryHandler)
