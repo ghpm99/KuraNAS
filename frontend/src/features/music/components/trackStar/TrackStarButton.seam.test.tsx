@@ -97,7 +97,7 @@ describe('TrackStarButton (seam)', () => {
             fireEvent.click(screen.getByRole('button', { name: 'MUSIC_TRACK_STAR:nine.mp3' }));
         });
 
-        await waitFor(() => expect(invalidateQueries).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(invalidateQueries).toHaveBeenCalled());
         const { predicate } = invalidateQueries.mock.calls[0]![0]!;
         const matches = (rootKey: string) => predicate!({ queryKey: [rootKey] } as never);
         expect(matches('music-home')).toBe(true);
@@ -105,5 +105,23 @@ describe('TrackStarButton (seam)', () => {
         expect(matches('automatic-playlists')).toBe(true);
         expect(matches('playlist-tracks')).toBe(true);
         expect(matches('files')).toBe(false);
+    });
+
+    it('invalidates the home favorites view after the toggle', async () => {
+        const queryClient = new QueryClient();
+        const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+        render(
+            <QueryClientProvider client={queryClient}>
+                <TrackStarButton track={track} />
+            </QueryClientProvider>
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'MUSIC_TRACK_STAR:nine.mp3' }));
+        });
+
+        await waitFor(() =>
+            expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] })
+        );
     });
 });

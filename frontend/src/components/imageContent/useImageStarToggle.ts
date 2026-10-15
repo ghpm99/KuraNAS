@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { toggleStarredFile } from '@/service/files';
+import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import type { ImageLibraryFilters, ImageLibraryPage } from '@/types/imageLibrary';
 
 type ImageLibraryCache = InfiniteData<ImageLibraryPage, unknown>;
@@ -68,6 +69,7 @@ export const useImageStarToggle = () => {
             queryClient.invalidateQueries({ queryKey: libraryQueryKey, refetchType: 'none' });
             queryClient.invalidateQueries({ queryKey: ['images', 'count'] });
             queryClient.invalidateQueries({ queryKey: ['images', 'timeline'] });
+            invalidateStarredViews(queryClient);
         },
     });
 

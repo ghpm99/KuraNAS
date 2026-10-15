@@ -3,3 +3,5 @@ export const ancestorsQueryKey = 'files-ancestors';
 export const searchQueryKey = 'files-search';
 
 export const allFileQueryKeys = [...fileQueryKeys, ancestorsQueryKey, searchQueryKey];
+
+export const homeFavoritesQueryKey = ['home', 'favorites'] as const;

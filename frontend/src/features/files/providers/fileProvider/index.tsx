@@ -39,6 +39,7 @@ import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
+import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSnackbar } from 'notistack';
 import {
@@ -60,7 +61,10 @@ const joinPath = (parentPath: string | undefined, name: string | undefined) =>
 const isGlobalListing = (filter: FileListCategoryType, parentId: number | null) =>
     parentId === null && filter !== 'all';
 
-const fetchGlobalListing = (filter: FileListCategoryType, page: number): Promise<PaginationResponse> => {
+const fetchGlobalListing = (
+    filter: FileListCategoryType,
+    page: number
+): Promise<PaginationResponse> => {
     const params = { page, pageSize };
     return filter === 'starred' ? getStarredFiles(params) : getRecentlyAccessedFiles(params);
 };
@@ -108,27 +112,28 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [selectedItemId]
     );
 
-    const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-        queryKey: ['files', queryParams, fileListFilter, filesSort],
-        queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
-            isGlobalListing(fileListFilter, selectedItemId)
-                ? fetchGlobalListing(fileListFilter, pageParam)
-                : getFilesTree({
-                      page: pageParam,
-                      pageSize,
-                      fileParent: selectedItemId ?? undefined,
-                      category: selectedItemId ? 'all' : fileListFilter,
-                      sort: filesSort,
-                  }),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) => {
-            if (lastPage.pagination.hasNext) {
-                return lastPage.pagination.page + 1;
-            }
-            return undefined;
-        },
-        staleTime: listingStaleTimeMs,
-    });
+    const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+        useInfiniteQuery({
+            queryKey: ['files', queryParams, fileListFilter, filesSort],
+            queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
+                isGlobalListing(fileListFilter, selectedItemId)
+                    ? fetchGlobalListing(fileListFilter, pageParam)
+                    : getFilesTree({
+                          page: pageParam,
+                          pageSize,
+                          fileParent: selectedItemId ?? undefined,
+                          category: selectedItemId ? 'all' : fileListFilter,
+                          sort: filesSort,
+                      }),
+            initialPageParam: 1,
+            getNextPageParam: (lastPage) => {
+                if (lastPage.pagination.hasNext) {
+                    return lastPage.pagination.page + 1;
+                }
+                return undefined;
+            },
+            staleTime: listingStaleTimeMs,
+        });
 
     const loadedItems = useMemo(
         () => data?.pages.flatMap((page) => page?.items ?? []) ?? [],
@@ -196,6 +201,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: listingQueryKey });
             queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
+            invalidateStarredViews(queryClient);
         },
     });
 
@@ -211,8 +217,9 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         async (itemId: number) => {
             await toggleStarredFile(itemId);
             await invalidateFileQueries();
+            await invalidateStarredViews(queryClient);
         },
-        [invalidateFileQueries]
+        [invalidateFileQueries, queryClient]
     );
 
     const promoteFileToHot = useCallback(
@@ -257,7 +264,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const copyFile = useCallback(
-        async (sourceId: number, destinationFolderId?: number, destinationPath?: string, newName?: string) => {
+        async (
+            sourceId: number,
+            destinationFolderId?: number,
+            destinationPath?: string,
+            newName?: string
+        ) => {
             await copyFileService(sourceId, destinationFolderId, destinationPath, newName);
             await refetch();
         },
