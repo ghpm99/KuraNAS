@@ -127,13 +127,21 @@ data class VideoPlaylistItemDto(
 
 /**
  * Espelha video.VideoCatalogHomeDto (`{ sections: [{ key, title, items: [{ video }] }] }`).
- * `recentVideos` achata os vídeos de todas as seções para a UI.
+ * `recentVideos` expõe apenas os vídeos da seção "recent", sem repetição.
  */
 @Serializable
 data class VideoHomeCatalogDto(
     val sections: List<VideoSectionDto> = emptyList(),
 ) {
-    val recentVideos: List<VideoItemDto> get() = sections.flatMap { section -> section.items.map { it.video } }
+    val recentVideos: List<VideoItemDto>
+        get() = sections
+            .filter { section -> section.key == RECENT_SECTION_KEY }
+            .flatMap { section -> section.items.map { it.video } }
+            .distinctBy { video -> video.id }
+
+    private companion object {
+        const val RECENT_SECTION_KEY = "recent"
+    }
 }
 
 @Serializable
