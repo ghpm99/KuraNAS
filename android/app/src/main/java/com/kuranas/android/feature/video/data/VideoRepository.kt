@@ -31,8 +31,8 @@ class VideoRepository @Inject constructor(
     suspend fun getPlaylistItems(id: Int, page: Int): AppResult<ListPage<VideoPlaylistItemDto>> = safeApiCall {
         api.getPlaylistItems(id, page, PLAYLIST_ITEMS_PAGE_SIZE).toListPage()
     }
-    suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
-        api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId)).playbackState
+    suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackSessionDto> = safeApiCall {
+        api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId))
     }
     suspend fun updatePlaybackState(
         videoId: String,
@@ -52,8 +52,8 @@ class VideoRepository @Inject constructor(
         )
     }
     suspend fun getPlaybackState(): AppResult<PlaybackStateDto> = safeApiCall { api.getPlaybackState().playbackState }
-    suspend fun nextVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.nextVideo().playbackState }
-    suspend fun previousVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.previousVideo().playbackState }
+    suspend fun nextVideo(): AppResult<PlaybackSessionDto> = safeApiCall { api.nextVideo() }
+    suspend fun previousVideo(): AppResult<PlaybackSessionDto> = safeApiCall { api.previousVideo() }
 
     suspend fun streamUrl(videoId: String): String {
         val base = serverStore.serverUrl.first() ?: ""

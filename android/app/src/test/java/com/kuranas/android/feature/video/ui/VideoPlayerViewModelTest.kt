@@ -1,7 +1,11 @@
 package com.kuranas.android.feature.video.ui
 
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.video.data.PlaybackSessionDto
 import com.kuranas.android.feature.video.data.PlaybackStateDto
+import com.kuranas.android.feature.video.data.VideoItemDto
+import com.kuranas.android.feature.video.data.VideoPlaylistDto
+import com.kuranas.android.feature.video.data.VideoPlaylistItemDto
 import com.kuranas.android.feature.video.data.VideoRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,7 +20,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -42,9 +49,30 @@ class VideoPlayerViewModelTest {
 
     private fun givenStartSucceeds(currentTimeSeconds: Double) {
         coEvery { repository.startPlayback(videoId) } returns AppResult.Success(
-            PlaybackStateDto(playlistId = playlistId, videoId = 42, currentTime = currentTimeSeconds),
+            PlaybackSessionDto(
+                playbackState = PlaybackStateDto(playlistId = playlistId, videoId = 42, currentTime = currentTimeSeconds),
+            ),
         )
     }
+
+    private fun sessionAt(currentVideoId: Int, currentTimeSeconds: Double = 0.0, playlistVideoIds: List<Int> = listOf(41, 42, 43)) =
+        PlaybackSessionDto(
+            playlist = VideoPlaylistDto(
+                id = playlistId,
+                items = playlistVideoIds.map { VideoPlaylistItemDto(video = VideoItemDto(rawId = it)) },
+            ),
+            playbackState = PlaybackStateDto(
+                playlistId = playlistId,
+                videoId = currentVideoId,
+                currentTime = currentTimeSeconds,
+            ),
+        )
+
+    private fun givenStartReturns(session: PlaybackSessionDto) {
+        coEvery { repository.startPlayback(videoId) } returns AppResult.Success(session)
+    }
+
+    private val playing = PlayerProgress(positionMs = 20_000, durationMs = 100_000, isPlaying = true)
 
     private fun givenStartFails() {
         coEvery { repository.startPlayback(videoId) } returns AppResult.Error("falhou")
@@ -138,5 +166,100 @@ class VideoPlayerViewModelTest {
         settle()
 
         coVerify(exactly = 1) { repository.updatePlaybackState(videoId, null, 5.0, 10.0, true) }
+    }
+
+    @Test
+    fun `middle of a three item playlist allows previous and next`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42))
+
+        val viewModel = openedViewModel()
+
+        assertTrue(viewModel.navigationAvailability.value.canGoPrevious)
+        assertTrue(viewModel.navigationAvailability.value.canGoNext)
+    }
+
+    @Test
+    fun `first item allows only next`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(42, 43, 44)))
+
+        val viewModel = openedViewModel()
+
+        assertFalse(viewModel.navigationAvailability.value.canGoPrevious)
+        assertTrue(viewModel.navigationAvailability.value.canGoNext)
+    }
+
+    @Test
+    fun `last item allows only previous`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(40, 41, 42)))
+
+        val viewModel = openedViewModel()
+
+        assertTrue(viewModel.navigationAvailability.value.canGoPrevious)
+        assertFalse(viewModel.navigationAvailability.value.canGoNext)
+    }
+
+    @Test
+    fun `go to next reports progress then exposes destination media and reports with the new video id`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42))
+        coEvery { repository.nextVideo() } returns AppResult.Success(sessionAt(currentVideoId = 43, currentTimeSeconds = 7.5))
+        coEvery { repository.streamUrl("43") } returns "http://nas/stream/43"
+        val viewModel = openedViewModel()
+        viewModel.startProgressReporting { playing }
+
+        viewModel.goToNext()
+        settle()
+        val change = viewModel.mediaChanges.first()
+
+        coVerify(exactly = 1) { repository.updatePlaybackState(videoId, playlistId, 20.0, 100.0, true) }
+        coVerify(exactly = 1) { repository.nextVideo() }
+        assertEquals("http://nas/stream/43", change.streamUrl)
+        assertEquals(7_500L, change.startPositionMs)
+
+        viewModel.reportProgressNow(PlayerProgress(positionMs = 8_000, durationMs = 50_000, isPlaying = false))
+        settle()
+        coVerify(exactly = 1) { repository.updatePlaybackState("43", playlistId, 8.0, 50.0, true) }
+        viewModel.stopProgressReporting()
+    }
+
+    @Test
+    fun `go to previous requests the previous video`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42))
+        coEvery { repository.previousVideo() } returns AppResult.Success(sessionAt(currentVideoId = 41))
+        coEvery { repository.streamUrl("41") } returns "http://nas/stream/41"
+        val viewModel = openedViewModel()
+
+        viewModel.goToPrevious()
+        settle()
+
+        assertEquals("http://nas/stream/41", viewModel.mediaChanges.first().streamUrl)
+        assertFalse(viewModel.navigationAvailability.value.canGoPrevious)
+    }
+
+    @Test
+    fun `backend returning the same video does not request a media change`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(41, 42)))
+        coEvery { repository.nextVideo() } returns AppResult.Success(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(41, 42)))
+        val viewModel = openedViewModel()
+
+        viewModel.goToNext()
+        settle()
+
+        coVerify(exactly = 1) { repository.streamUrl(videoId) }
+    }
+
+    @Test
+    fun `next failure exposes the server message and keeps the current video`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42))
+        coEvery { repository.nextVideo() } returns AppResult.Error("sem proximo")
+        val viewModel = openedViewModel()
+
+        viewModel.goToNext()
+        settle()
+        viewModel.reportProgressNow(PlayerProgress(positionMs = 5_000, durationMs = 10_000, isPlaying = false))
+        settle()
+
+        assertEquals("sem proximo", viewModel.navigationError.value)
+        assertTrue(viewModel.navigationAvailability.value.canGoNext)
+        coVerify(exactly = 1) { repository.updatePlaybackState(videoId, playlistId, 5.0, 10.0, true) }
     }
 }

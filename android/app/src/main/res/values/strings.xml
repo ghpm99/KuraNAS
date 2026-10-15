@@ -145,6 +145,8 @@
     <string name="video_library_entry">All videos</string>
     <string name="video_empty">No videos found</string>
     <string name="video_playback_error">Unable to play this video: %1$s</string>
+    <string name="video_previous">Previous video</string>
+    <string name="video_next">Next video</string>
     <plurals name="video_count">
         <item quantity="one">%1$d video</item>
         <item quantity="other">%1$d videos</item>

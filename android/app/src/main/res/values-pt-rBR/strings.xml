@@ -143,6 +143,8 @@
     <string name="video_library_entry">Todos os vídeos</string>
     <string name="video_empty">Nenhum vídeo encontrado</string>
     <string name="video_playback_error">Não foi possível reproduzir este vídeo: %1$s</string>
+    <string name="video_previous">Vídeo anterior</string>
+    <string name="video_next">Próximo vídeo</string>
     <plurals name="video_count">
         <item quantity="one">%1$d vídeo</item>
         <item quantity="other">%1$d vídeos</item>
