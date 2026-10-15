@@ -46,7 +46,7 @@ const fileTypeGroups: FileTypeGroup[] = [
         'image',
         'IMAGE_RAW',
         'image/x-raw',
-        ['.raw', '.cr2', '.cr3', '.nef', '.arw', '.dng', '.raf', '.orf', '.rw2', '.srw', '.pef'],
+        ['.cr2', '.cr3', '.nef', '.arw', '.dng', '.raf', '.orf', '.rw2', '.srw', '.pef'],
         true
     ),
 
