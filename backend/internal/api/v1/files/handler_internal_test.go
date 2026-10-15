@@ -96,6 +96,9 @@ func (m *filesHandlerServiceMock) SetFileStarred(id int, isStarred bool) (bool, 
 func (m *filesHandlerServiceMock) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
 	return ids, nil
 }
+func (m *filesHandlerServiceMock) CountStarredFilesByKind() (StarredCountsDto, error) {
+	return StarredCountsDto{}, nil
+}
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)       {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)         {}
 func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error { return nil }
@@ -175,6 +178,7 @@ type filesHandlerServiceFuncMock struct {
 	toggleFileStarredFn   func(id int) (bool, error)
 	setFileStarredFn      func(id int, isStarred bool) (bool, error)
 	setFilesStarredFn     func(ids []int, isStarred bool) ([]int, error)
+	countStarredFn        func() (StarredCountsDto, error)
 	getTotalSpaceUsedFn   func() (int, error)
 	getTotalFilesFn       func() (int, error)
 	getTotalDirectoryFn   func() (int, error)
@@ -239,6 +243,12 @@ func (m *filesHandlerServiceFuncMock) SetFilesStarred(ids []int, isStarred bool)
 		return m.setFilesStarredFn(ids, isStarred)
 	}
 	return m.filesHandlerServiceMock.SetFilesStarred(ids, isStarred)
+}
+func (m *filesHandlerServiceFuncMock) CountStarredFilesByKind() (StarredCountsDto, error) {
+	if m.countStarredFn != nil {
+		return m.countStarredFn()
+	}
+	return m.filesHandlerServiceMock.CountStarredFilesByKind()
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -328,6 +338,7 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/recent", handler.GetRecentFilesHandler)
 	router.GET("/files/recent/:id", handler.GetRecentAccessByFileHandler)
 	router.POST("/files/starred", handler.SetFilesStarredHandler)
+	router.GET("/files/starred/counts", handler.GetStarredCountsHandler)
 	router.POST("/files/starred/:id", handler.StarreFileHandler)
 	router.PUT("/files/starred/:id", handler.SetFileStarredHandler)
 	router.GET("/files/total-space-used", handler.GetTotalSpaceUsedHandler)

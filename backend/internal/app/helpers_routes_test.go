@@ -65,6 +65,7 @@ func TestSetUpRouterAndRegisterRoutes(t *testing.T) {
 		path   string
 	}{
 		{method: http.MethodGet, path: "/api/v1/files/"},
+		{method: http.MethodGet, path: "/api/v1/files/starred/counts"},
 		{method: http.MethodGet, path: "/api/v1/jobs/:id"},
 		{method: http.MethodGet, path: "/api/v1/jobs"},
 		{method: http.MethodGet, path: "/api/v1/jobs/:id/steps"},
