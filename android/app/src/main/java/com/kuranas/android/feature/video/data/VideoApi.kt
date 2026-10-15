@@ -10,6 +10,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface VideoApi {
     @GET("api/v1/video/catalog/home")
@@ -20,6 +21,13 @@ interface VideoApi {
 
     @GET("api/v1/video/playlists/")
     suspend fun getPlaylists(): List<VideoPlaylistDto>
+
+    @GET("api/v1/video/playlists/section/{section}")
+    suspend fun getPlaylistsBySection(
+        @Path("section") section: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+    ): PageDto<VideoPlaylistDto>
 
     @GET("api/v1/video/playlists/{id}")
     suspend fun getPlaylistById(@Path("id") id: Int): VideoPlaylistDto
@@ -78,6 +86,14 @@ data class VideoItemDto(
     val mimeType: String get() = mimeTypeForFormat(format)
 }
 
+enum class VideoPlaylistSection(val path: String) {
+    Series("series"),
+    Movies("movies"),
+    Personal("personal"),
+    Clips("clips"),
+    Folders("folders"),
+}
+
 /** Espelha video.VideoPlaylistDto (com items[].video). */
 @Serializable
 data class VideoPlaylistDto(
@@ -85,6 +101,7 @@ data class VideoPlaylistDto(
     val name: String = "",
     @SerialName("is_hidden") val isHidden: Boolean = false,
     @SerialName("item_count") val itemCount: Int = 0,
+    @SerialName("cover_video_id") val coverVideoId: Int? = null,
     val items: List<VideoPlaylistItemDto> = emptyList(),
 ) {
     val hidden: Boolean get() = isHidden
@@ -108,7 +125,6 @@ data class VideoHomeCatalogDto(
     val sections: List<VideoSectionDto> = emptyList(),
 ) {
     val recentVideos: List<VideoItemDto> get() = sections.flatMap { section -> section.items.map { it.video } }
-    val playlists: List<VideoPlaylistDto> get() = emptyList()
 }
 
 @Serializable
