@@ -43,6 +43,7 @@ export type FileContextType = {
     status: string;
     listingErrorMessage?: string;
     retryListing: () => void;
+    browserRootPath: string;
     selectedItem: FileData | null;
     handleSelectItem: (item: FileData | null) => void;
     handleStarredItem: (itemId: number) => void;

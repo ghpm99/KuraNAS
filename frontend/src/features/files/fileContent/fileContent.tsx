@@ -4,7 +4,7 @@ import { formatSize } from '@/shared/utils/formatSize';
 import FileCard from '../fileCard';
 import FileListRow from '../fileListRow';
 import FileListHeader from '../fileListHeader/fileListHeader';
-import { buildFilesUrl } from '@/app/routes';
+import { buildBrowserUrl } from '@/app/routes';
 import { formatModifiedDate, formatSizeColumn, formatTypeColumn } from './fileListFormatting';
 import { isNewTabClick } from './fileLinkNavigation';
 import FileContextMenu, { type FileContextMenuAnchor } from '../fileContextMenu/fileContextMenu';
@@ -61,6 +61,7 @@ const FileContent = ({
     onFocusSearch,
 }: FileContentProps) => {
     const {
+        browserRootPath,
         status,
         listingErrorMessage,
         retryListing,
@@ -261,7 +262,7 @@ const FileContent = ({
                             <FileListRow
                                 key={file.id}
                                 title={file.name}
-                                href={buildFilesUrl(file.path)}
+                                href={buildBrowserUrl(browserRootPath, file.path)}
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
                                 sizeText={formatSizeColumn(file, t)}
@@ -281,7 +282,7 @@ const FileContent = ({
                             <FileCard
                                 key={file.id}
                                 title={file.name}
-                                href={buildFilesUrl(file.path)}
+                                href={buildBrowserUrl(browserRootPath, file.path)}
                                 starred={file.starred}
                                 isCold={file.tier === 'cold'}
                                 metadata={fileMetadata(file)}

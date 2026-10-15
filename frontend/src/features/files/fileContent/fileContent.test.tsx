@@ -209,6 +209,7 @@ describe('fileContent', () => {
 
     it('supports list view without duplicated heading', () => {
         mockUseFile.mockReturnValue({
+            browserRootPath: '/files',
             status: 'success',
             handleSelectItem: jest.fn(),
             handleStarredItem: jest.fn(),
@@ -231,6 +232,24 @@ describe('fileContent', () => {
             '/files/library/song.mp3'
         );
         expect(screen.getByRole('columnheader', { name: 'NAME' })).toBeInTheDocument();
+    });
+
+    it('builds item links from the current browser root', () => {
+        mockUseFile.mockReturnValue({
+            browserRootPath: '/favorites',
+            status: 'success',
+            handleSelectItem: jest.fn(),
+            handleStarredItem: jest.fn(),
+            selectedItem: null,
+            fileListFilter: 'starred',
+            files: [createFile({ id: 1, name: 'song', path: '/library/song.mp3' })],
+        });
+
+        render(<FileContent viewMode="list" showHeading={false} />);
+        expect(screen.getByRole('link', { name: 'song' })).toHaveAttribute(
+            'href',
+            '/favorites/library/song.mp3'
+        );
     });
 
     it('sorts through the header columns of the list view', () => {
