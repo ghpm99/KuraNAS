@@ -655,6 +655,37 @@ func TestGetFilesTreeHandlerInvalidPageRespondsOnceWithBadRequest(t *testing.T) 
 	}
 }
 
+func TestGetFilesTreeHandlerRejectsUnknownCategory(t *testing.T) {
+	handler := NewHandler(&filesHandlerServiceMock{}, &filesRecentServiceMock{}, &filesLoggerMock{})
+	router := newFilesHandlerRouter(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/files/tree?category=favorites", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("expected a single JSON document, got %q: %v", recorder.Body.String(), err)
+	}
+	if body["error"] == "" {
+		t.Fatalf("expected translated error message, got %q", recorder.Body.String())
+	}
+}
+
+func TestFileCategoryIsKnown(t *testing.T) {
+	for _, category := range []FileCategory{AllCategory, RecentCategory, StarredCategory} {
+		if !category.IsKnown() {
+			t.Fatalf("expected %q to be known", category)
+		}
+	}
+	if FileCategory("favorites").IsKnown() {
+		t.Fatalf("expected unknown category to be rejected")
+	}
+}
+
 func TestGetFilesHandlerClampsOversizedPageSize(t *testing.T) {
 	receivedPageSizes := []int{}
 	service := &filesHandlerServiceFuncMock{
