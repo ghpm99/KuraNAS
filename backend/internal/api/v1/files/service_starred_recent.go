@@ -6,6 +6,10 @@ func (s *Service) ToggleFileStarred(id int) (bool, error) {
 	return s.Repository.ToggleFileStarred(id)
 }
 
+func (s *Service) SetFileStarred(id int, isStarred bool) (bool, error) {
+	return s.Repository.SetFileStarred(id, isStarred)
+}
+
 func (s *Service) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	models, err := s.Repository.GetStarredFiles(page, pageSize)
 	if err != nil {

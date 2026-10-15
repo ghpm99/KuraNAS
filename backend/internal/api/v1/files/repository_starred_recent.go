@@ -28,3 +28,17 @@ func (r *Repository) ToggleFileStarred(id int) (bool, error) {
 	}
 	return isStarred, nil
 }
+
+// SetFileStarred sets the starred flag of an active file to isStarred and
+// returns the stored value. Repeating the call yields the same state. It
+// returns sql.ErrNoRows when no active file has the given id.
+func (r *Repository) SetFileStarred(id int, isStarred bool) (bool, error) {
+	var storedValue bool
+	err := r.DbContext.ExecTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.SetFileStarredQuery, id, isStarred).Scan(&storedValue)
+	})
+	if err != nil {
+		return false, fmt.Errorf("SetFileStarred: %w", err)
+	}
+	return storedValue, nil
+}

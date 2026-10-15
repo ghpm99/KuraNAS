@@ -109,6 +109,55 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+type SetFileStarredRequest struct {
+	Starred *bool `json:"starred" binding:"required"`
+}
+
+func (handler *Handler) SetFileStarredHandler(c *gin.Context) {
+
+	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
+		Name:        "SetFileStarred",
+		Description: "Setting the starred state of a file by ID",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	id := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	var request SetFileStarredRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	loggerModel.SetExtraData(logger.LogExtraData{
+		Data: id,
+	})
+
+	storedValue, err := handler.service.SetFileStarred(id, *request.Starred)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
+
+	if err != nil {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
+		return
+	}
+
+	handler.Logger.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"id": id, "starred": storedValue})
+}
+
 type RecentFileService struct {
 	Repo RecentFileRepositoryInterface
 }
