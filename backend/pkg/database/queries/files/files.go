@@ -34,6 +34,9 @@ var GetFilesByPathPrefixQuery string
 //go:embed get_file_stat_by_path.sql
 var GetFileStatByPathQuery string
 
+//go:embed toggle_file_starred.sql
+var ToggleFileStarredQuery string
+
 //go:embed update_file.sql
 var UpdateFileQuery string
 
