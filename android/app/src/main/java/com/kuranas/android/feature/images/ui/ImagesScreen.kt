@@ -2,6 +2,12 @@ package com.kuranas.android.feature.images.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -52,6 +58,7 @@ fun ImagesScreen(
     viewModel: ImagesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val starredById by viewModel.starredById.collectAsStateWithLifecycle()
 
     val gridState = rememberLazyGridState()
     val isNearEnd by remember {
@@ -88,15 +95,27 @@ fun ImagesScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(state.images, key = { it.id }) { image ->
-                        AsyncImage(
-                            model = viewModel.thumbnailUrl(image.id),
-                            contentDescription = image.name,
-                            contentScale = ContentScale.Crop,
+                        Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onOpenImage(image.id) },
-                        )
+                        ) {
+                            AsyncImage(
+                                model = viewModel.thumbnailUrl(image.id),
+                                contentDescription = image.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            if (starredById[image.id] ?: image.starred) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = stringResource(R.string.images_starred_indicator),
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(16.dp),
+                                )
+                            }
+                        }
                     }
                     if (state.isLoadingMore) {
                         item(span = { GridItemSpan(maxLineSpan) }) {

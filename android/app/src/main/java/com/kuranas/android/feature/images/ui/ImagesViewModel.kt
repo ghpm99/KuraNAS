@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.images.data.ImageLibraryItemDto
 import com.kuranas.android.feature.images.data.ImageLibraryPageDto
+import com.kuranas.android.feature.images.data.ImageStarStore
 import com.kuranas.android.feature.images.data.ImagesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -27,7 +28,13 @@ data class ImagesUiState(
 )
 
 @HiltViewModel
-class ImagesViewModel @Inject constructor(private val repository: ImagesRepository) : ViewModel() {
+class ImagesViewModel @Inject constructor(
+    private val repository: ImagesRepository,
+    private val starStore: ImageStarStore,
+) : ViewModel() {
+
+    val starredById: StateFlow<Map<String, Boolean>> = starStore.starredById
+
 
     private val _state = MutableStateFlow(ImagesUiState())
     val state: StateFlow<ImagesUiState> = _state.asStateFlow()
@@ -58,7 +65,10 @@ class ImagesViewModel @Inject constructor(private val repository: ImagesReposito
         _state.update { it.copy(isLoadingMore = true) }
         pageLoadJob = viewModelScope.launch {
             when (val result = repository.getImagesPage(current.nextCursor)) {
-                is AppResult.Success -> _state.update { it.withAppendedPage(result.data) }
+                is AppResult.Success -> {
+                    starStore.record(result.data.items)
+                    _state.update { it.withAppendedPage(result.data) }
+                }
                 is AppResult.Error -> _state.update { it.copy(isLoadingMore = false) }
             }
         }
@@ -76,7 +86,10 @@ class ImagesViewModel @Inject constructor(private val repository: ImagesReposito
         _state.update(onStart)
         pageLoadJob = viewModelScope.launch {
             when (val result = repository.getImagesPage(cursor = null)) {
-                is AppResult.Success -> _state.update { it.withFirstPage(result.data) }
+                is AppResult.Success -> {
+                    starStore.record(result.data.items)
+                    _state.update { it.withFirstPage(result.data) }
+                }
                 is AppResult.Error -> _state.update { onError(it, result.message) }
             }
         }
