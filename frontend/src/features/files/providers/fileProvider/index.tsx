@@ -14,6 +14,7 @@ import {
     moveFile as moveFileService,
     renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
+    setFileStarred,
     toggleStarredFile,
 } from '@/service/files';
 import { promoteFileToHot as promoteFileToHotService } from '@/service/tiering';
@@ -38,8 +39,20 @@ import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
+import useI18n from '@/components/i18n/provider/i18nContext';
+import { useSnackbar } from 'notistack';
+import {
+    applyStarredToFile,
+    applyStarredToListing,
+    type FileListingCache,
+} from './fileStarredCache';
 
 const pageSize = 200;
+
+const listingQueryKey = ['files'] as const;
+const openedItemQueryKey = ['files-path'] as const;
+
+type StarredVariables = { fileId: number; isStarred: boolean };
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -56,6 +69,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { t } = useI18n();
+    const { enqueueSnackbar } = useSnackbar();
 
     const browserRootPath = getFileBrowserRootPath(location.pathname);
     const currentFilePath = extractFilePath(location.pathname);
@@ -133,10 +148,53 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         staleTime: 0,
     });
 
+    const applyStarredToCaches = useCallback(
+        (fileId: number, isStarred: boolean) => {
+            queryClient
+                .getQueriesData<FileListingCache>({ queryKey: listingQueryKey })
+                .forEach(([queryKey, cache]) => {
+                    queryClient.setQueryData(
+                        queryKey,
+                        applyStarredToListing(cache, queryKey, fileId, isStarred)
+                    );
+                });
+            queryClient
+                .getQueriesData<FileData | null>({ queryKey: openedItemQueryKey })
+                .forEach(([queryKey, cachedFile]) => {
+                    queryClient.setQueryData(
+                        queryKey,
+                        applyStarredToFile(cachedFile, fileId, isStarred)
+                    );
+                });
+        },
+        [queryClient]
+    );
+
     const { mutate: updateStarredFile } = useMutation({
-        mutationFn: (itemId: number) => toggleStarredFile(itemId),
-        onSuccess: () => {
-            refetch();
+        mutationFn: ({ fileId, isStarred }: StarredVariables) => setFileStarred(fileId, isStarred),
+        onMutate: async ({ fileId, isStarred }) => {
+            await queryClient.cancelQueries({ queryKey: listingQueryKey });
+            await queryClient.cancelQueries({ queryKey: openedItemQueryKey });
+            const listingSnapshots = queryClient.getQueriesData({ queryKey: listingQueryKey });
+            const openedItemSnapshots = queryClient.getQueriesData({
+                queryKey: openedItemQueryKey,
+            });
+            applyStarredToCaches(fileId, isStarred);
+            return { snapshots: [...listingSnapshots, ...openedItemSnapshots] };
+        },
+        onSuccess: (starredState) => {
+            applyStarredToCaches(starredState.id, starredState.starred);
+        },
+        onError: (error, _variables, context) => {
+            context?.snapshots.forEach(([queryKey, cache]) => {
+                queryClient.setQueryData(queryKey, cache);
+            });
+            enqueueSnackbar(extractBackendErrorMessage(error) ?? t('ERROR_FAVORITE_FAILED'), {
+                variant: 'error',
+            });
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: listingQueryKey });
             queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
         },
     });
@@ -319,9 +377,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
 
     const handleStarredItem = useCallback(
         (itemId: number) => {
-            updateStarredFile(itemId);
+            const currentFile =
+                findItemInTree(fileTree, itemId) ??
+                (selectedItemSnapshot?.id === itemId ? selectedItemSnapshot : null);
+            updateStarredFile({ fileId: itemId, isStarred: !currentFile?.starred });
         },
-        [updateStarredFile]
+        [updateStarredFile, fileTree, selectedItemSnapshot]
     );
 
     const contextValue: FileContextType = useMemo(

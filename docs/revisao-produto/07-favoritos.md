@@ -34,7 +34,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 ### Frontend
 - [x] 11. Navegação por pasta, breadcrumb e preview em `/favorites/<path>`
 - [x] 11.1. Links dos cards/linhas dentro de Favoritos apontam para `/favorites/...` (abrir em nova aba hoje leva a `/files/...`)
-- [ ] 12. Toggle de arquivos otimista com rollback e erro visível
+- [x] 12. Toggle de arquivos otimista com rollback e erro visível
 - [ ] 13. Invalidação das queries de favoritos (Home inclusive) após marcar
 - [ ] 14. Seleção, ações em lote e atalhos na tela de Favoritos (usando o lote do servidor)
 - [ ] 15. Ordenação e filtro de tipo pelo servidor na tela de Favoritos, contagens reais

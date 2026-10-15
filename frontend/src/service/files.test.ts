@@ -2,6 +2,7 @@ jest.mock('./index', () => ({
     apiBase: {
         get: jest.fn(),
         post: jest.fn(),
+        put: jest.fn(),
         delete: jest.fn(),
     },
 }));
@@ -23,6 +24,7 @@ import {
     getFileAncestors,
     getFileByDiskPath,
     toggleStarredFile,
+    setFileStarred,
     rescanFiles,
     uploadSingleFile,
     createFolder,
@@ -37,6 +39,7 @@ import {
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
     post: jest.Mock;
+    put: jest.Mock;
     delete: jest.Mock;
 };
 
@@ -243,6 +246,15 @@ describe('service/files', () => {
         await toggleStarredFile(10);
 
         expect(mockedApi.post).toHaveBeenCalledWith('/files/starred/10');
+    });
+
+    it('sets the starred state with an idempotent PUT and returns the server state', async () => {
+        mockedApi.put.mockResolvedValue({ data: { id: 10, starred: true } });
+
+        const starredState = await setFileStarred(10, true);
+
+        expect(mockedApi.put).toHaveBeenCalledWith('/files/starred/10', { starred: true });
+        expect(starredState).toEqual({ id: 10, starred: true });
     });
 
     it('rescans files', async () => {
