@@ -43,7 +43,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 17. `VideoFileDto` expõe `starred` em todas as consultas de vídeo
 - [x] 17.1. Estrela no player e nos cards de vídeo do frontend
 - [x] 18. Marcar/desmarcar pelos resultados da busca global
-- [ ] 19. Overrides de estrela da música reconciliados com o servidor
+- [x] 19. Overrides de estrela da música reconciliados com o servidor
 - [ ] 20. Contagem "N+ itens" via chave i18n; comentários removidos de `HomeScreen.tsx`
 
 ### Android

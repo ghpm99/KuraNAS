@@ -11,6 +11,11 @@ export const setStarredOverride = (trackId: number, isStarred: boolean) => {
     notifyChangeListeners();
 };
 
+export const clearStarredOverride = (trackId: number) => {
+    starredOverridesByTrackId.delete(trackId);
+    notifyChangeListeners();
+};
+
 export const subscribeToStarredOverrides = (listener: () => void) => {
     changeListeners.add(listener);
     return () => {
