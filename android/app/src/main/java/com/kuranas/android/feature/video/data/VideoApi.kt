@@ -30,7 +30,17 @@ interface VideoApi {
     ): PageDto<VideoPlaylistDto>
 
     @GET("api/v1/video/playlists/{id}")
-    suspend fun getPlaylistById(@Path("id") id: Int): VideoPlaylistDto
+    suspend fun getPlaylistHeader(
+        @Path("id") id: Int,
+        @Query("include_items") includeItems: Boolean = false,
+    ): VideoPlaylistDto
+
+    @GET("api/v1/video/playlists/{id}/items")
+    suspend fun getPlaylistItems(
+        @Path("id") id: Int,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+    ): PageDto<VideoPlaylistItemDto>
 
     @PUT("api/v1/video/playlists/{id}")
     suspend fun updatePlaylist(@Path("id") id: Int, @Body body: UpdatePlaylistRequest): VideoPlaylistDto
@@ -106,7 +116,6 @@ data class VideoPlaylistDto(
 ) {
     val hidden: Boolean get() = isHidden
     val count: Int get() = itemCount
-    val videos: List<VideoItemDto> get() = items.map { it.video }
 }
 
 @Serializable
