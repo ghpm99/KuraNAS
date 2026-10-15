@@ -121,4 +121,35 @@ class VideoRepositoryTest {
         assertEquals(1, page.items.size)
         assertTrue(page.hasNext)
     }
+
+    @Test
+    fun `updatePlaybackState puts only the reported fields and omits nulls`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"id":1}"""))
+
+        val result = repository.updatePlaybackState(
+            videoId = "42",
+            playlistId = null,
+            currentTimeSeconds = 30.5,
+            durationSeconds = null,
+            isPaused = true,
+        )
+
+        val request = server.takeRequest()
+        assertTrue(result is AppResult.Success)
+        assertEquals("PUT", request.method)
+        assertEquals("/api/v1/video/playback/state", request.path)
+        assertEquals("""{"video_id":42,"current_time":30.5,"is_paused":true}""", request.body.readUtf8())
+    }
+
+    @Test
+    fun `updatePlaybackState sends playlist and duration when known`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"id":1}"""))
+
+        repository.updatePlaybackState("42", 9, 10.0, 600.0, false)
+
+        assertEquals(
+            """{"playlist_id":9,"video_id":42,"current_time":10.0,"duration":600.0,"is_paused":false}""",
+            server.takeRequest().body.readUtf8(),
+        )
+    }
 }

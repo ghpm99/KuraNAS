@@ -109,6 +109,6 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 64.3. Detalhe da playlist no Android paginado (cabeçalho sem itens + `/video/playlists/:id/items`)
 - [x] 65. "Recentes" sem duplicar itens
 - [x] 65.1. Android envia `X-KuraNAS-Client-Id` próprio nas rotas `/video/` e `/music/` (hoje o servidor o identifica pelo IP)
-- [ ] 66. Reportar e retomar progresso
+- [x] 66. Reportar e retomar progresso
 - [ ] 67. Biblioteca paginada com busca
 - [ ] 68. Próximo/anterior e continuar assistindo
