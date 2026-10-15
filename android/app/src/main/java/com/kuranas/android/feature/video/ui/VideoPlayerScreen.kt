@@ -2,16 +2,20 @@ package com.kuranas.android.feature.video.ui
 
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +80,18 @@ fun VideoPlayerScreen(
         player.play()
     }
 
+    val navigationAvailability by viewModel.navigationAvailability.collectAsState()
+    val navigationError by viewModel.navigationError.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.mediaChanges.collect { start ->
+            playbackError = null
+            player.setMediaItem(MediaItem.fromUri(start.streamUrl), start.startPositionMs)
+            player.prepare()
+            player.play()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
@@ -95,11 +111,25 @@ fun VideoPlayerScreen(
                 modifier = Modifier.align(Alignment.Center).padding(24.dp),
             )
         }
-        IconButton(
-            onClick = onNavigateBack,
+        navigationError?.let { message ->
+            Text(
+                text = message,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
+            )
+        }
+        Row(
             modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+            }
+            IconButton(onClick = viewModel::goToPrevious, enabled = navigationAvailability.canGoPrevious) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.video_previous))
+            }
+            IconButton(onClick = viewModel::goToNext, enabled = navigationAvailability.canGoNext) {
+                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.video_next))
+            }
         }
     }
 }

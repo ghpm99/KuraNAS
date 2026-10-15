@@ -123,6 +123,26 @@ class VideoRepositoryTest {
     }
 
     @Test
+    fun `nextVideo posts without body and decodes playlist items and playback state`() = runTest {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"playlist":{"id":9,"items":[{"video":{"id":41},"order_index":0},{"video":{"id":42},"order_index":1}]},""" +
+                    """"playback_state":{"video_id":42,"playlist_id":9,"current_time":12.5}}""",
+            ),
+        )
+
+        val result = repository.nextVideo()
+
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/api/v1/video/playback/next", request.path)
+        val session = (result as AppResult.Success).data
+        assertEquals(listOf("41", "42"), session.playlist.items.map { it.video.id })
+        assertEquals(42, session.playbackState.videoId)
+        assertEquals(12.5, session.playbackState.currentTime, 0.0)
+    }
+
+    @Test
     fun `updatePlaybackState puts only the reported fields and omits nulls`() = runTest {
         server.enqueue(MockResponse().setBody("""{"id":1}"""))
 

@@ -111,6 +111,6 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 65.1. Android envia `X-KuraNAS-Client-Id` próprio nas rotas `/video/` e `/music/` (hoje o servidor o identifica pelo IP)
 - [x] 66. Reportar e retomar progresso
 - [x] 67. Biblioteca paginada com busca
-- [ ] 68. Próximo/anterior no player Android (`/video/playback/next|previous`)
+- [x] 68. Próximo/anterior no player Android (`/video/playback/next|previous`)
 - [ ] 68.1. "Continuar assistindo" na tela de vídeos do Android (seção `continue` do catálogo, com progresso)
 - [ ] 68.2. Player Android aberto a partir de uma playlist usa essa playlist como contexto (hoje a rota só leva o `videoId` e o backend cai na playlist da pasta)
