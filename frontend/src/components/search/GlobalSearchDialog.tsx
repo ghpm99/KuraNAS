@@ -54,6 +54,7 @@ interface GlobalSearchDialogProps {
     onItemHover: (itemId: string) => void;
     onItemSelect: (item: SearchDialogItem) => void;
     onItemSecondaryAction?: (item: SearchDialogItem) => void;
+    onItemStarToggle?: (item: SearchDialogItem) => void;
 }
 
 const listboxId = 'global-search-listbox';
@@ -107,6 +108,7 @@ const GlobalSearchDialog = ({
     onItemHover,
     onItemSelect,
     onItemSecondaryAction,
+    onItemStarToggle,
 }: GlobalSearchDialogProps) => {
     const { t } = useI18n();
     const theme = useTheme();
@@ -260,7 +262,33 @@ const GlobalSearchDialog = ({
                                                     <span className={styles.itemDescription}>
                                                         {renderHighlighted(item, item.description)}
                                                     </span>
-                                                    {item.isStarred ? (
+                                                    {item.fileId !== undefined &&
+                                                    onItemStarToggle ? (
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={Boolean(item.isStarred)}
+                                                            aria-label={t(
+                                                                item.isStarred
+                                                                    ? 'FILES_UNFAVORITE_ITEM'
+                                                                    : 'FILES_FAVORITE_ITEM',
+                                                                { name: item.label }
+                                                            )}
+                                                            className={`${styles.itemStar} ${styles.itemStarButton}`}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                onItemStarToggle(item);
+                                                            }}
+                                                        >
+                                                            <Star
+                                                                size={14}
+                                                                fill={
+                                                                    item.isStarred
+                                                                        ? 'currentColor'
+                                                                        : 'none'
+                                                                }
+                                                            />
+                                                        </button>
+                                                    ) : item.isStarred ? (
                                                         <span
                                                             role="img"
                                                             aria-label={t('STARRED_FILES')}

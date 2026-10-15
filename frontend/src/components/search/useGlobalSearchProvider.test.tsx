@@ -103,6 +103,12 @@ jest.mock('@/features/videos/components/navigation', () => ({
     getVideoSectionForPlaylist: (...args: unknown[]) => mockGetVideoSectionForPlaylist(...args),
 }));
 
+const mockToggleStar = jest.fn();
+
+jest.mock('./useSearchStarToggle', () => ({
+    useSearchStarToggle: () => ({ toggleStar: mockToggleStar }),
+}));
+
 const getRequired = <T,>(value: T | undefined): T => {
     expect(value).toBeDefined();
     return value as T;
@@ -249,6 +255,28 @@ describe('useGlobalSearchProvider', () => {
                 fileItem.onSelect();
             });
             expect(mockNavigate).toHaveBeenCalledWith('/files/path/file');
+        });
+
+        it('exposes the file id on files and folders and toggles their star', () => {
+            const { result } = renderHook(() => useGlobalSearchProvider());
+            act(() => {
+                result.current.openSearch();
+                result.current.setQuery('search');
+            });
+            const items = result.current.sections.flatMap((section) => section.items);
+            const fileItem = getRequired(items.find((item) => item.id === 'file-1'));
+            const folderItem = getRequired(items.find((item) => item.id === 'folder-2'));
+            const albumItem = getRequired(items.find((item) => item.kind === 'album'));
+            expect(fileItem.fileId).toBe(1);
+            expect(folderItem.fileId).toBe(2);
+            expect(albumItem.fileId).toBeUndefined();
+
+            act(() => {
+                result.current.toggleItemStar({ ...fileItem, isStarred: true });
+                result.current.toggleItemStar(albumItem);
+            });
+            expect(mockToggleStar).toHaveBeenCalledTimes(1);
+            expect(mockToggleStar).toHaveBeenCalledWith(1, true);
         });
 
         it('describes files with parent path, size and date and flags starred cold files', () => {
