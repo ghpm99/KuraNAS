@@ -17,7 +17,6 @@ func UpdateFileRecord(service files.ServiceInterface, finalizedFile files.FileDt
 	existingRecord.LastBackup = finalizedFile.LastBackup
 	existingRecord.CheckSum = finalizedFile.CheckSum
 	existingRecord.DirectoryContentCount = finalizedFile.DirectoryContentCount
-	existingRecord.Starred = finalizedFile.Starred
 	existingRecord.Metadata = finalizedFile.Metadata
 
 	return service.UpdateFile(existingRecord)
