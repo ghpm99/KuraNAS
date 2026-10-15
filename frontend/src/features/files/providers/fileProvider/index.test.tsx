@@ -9,6 +9,7 @@ jest.mock('@/service', () => ({
     apiBase: {
         get: jest.fn(),
         post: jest.fn(),
+        put: jest.fn(),
     },
 }));
 
@@ -17,7 +18,12 @@ jest.mock('@tanstack/react-query', () => ({
     useQuery: jest.fn(),
     useQueries: jest.fn(() => []),
     useMutation: jest.fn(),
-    useQueryClient: () => ({ invalidateQueries: jest.fn(), removeQueries: jest.fn() }),
+    useQueryClient: () => ({
+        invalidateQueries: jest.fn(),
+        removeQueries: jest.fn(),
+        getQueriesData: () => [],
+        setQueryData: jest.fn(),
+    }),
 }));
 
 const mockedUseInfiniteQuery = useInfiniteQuery as jest.Mock;
@@ -25,6 +31,7 @@ const mockedUseQuery = useQuery as jest.Mock;
 const mockedUseMutation = useMutation as jest.Mock;
 const mockedApiGet = apiBase.get as jest.Mock;
 const mockedApiPost = apiBase.post as jest.Mock;
+const mockedApiPut = apiBase.put as jest.Mock;
 const mockRefetch = jest.fn();
 
 function Consumer() {
@@ -71,6 +78,7 @@ describe('providers/fileProvider/index', () => {
         jest.clearAllMocks();
         mockedApiGet.mockResolvedValue({ data: [] });
         mockedApiPost.mockResolvedValue({});
+        mockedApiPut.mockResolvedValue({ data: { id: 2, starred: true } });
 
         mockedUseInfiniteQuery.mockReturnValue({
             status: 'success',
@@ -95,8 +103,8 @@ describe('providers/fileProvider/index', () => {
         mockedUseQuery.mockReturnValue({ data: [], isLoading: false });
         mockedUseMutation.mockImplementation(({ mutationFn, onSuccess }: any) => ({
             mutate: async (value: unknown) => {
-                await mutationFn(value);
-                onSuccess?.();
+                const mutationResult = await mutationFn(value);
+                onSuccess?.(mutationResult);
             },
         }));
     });
@@ -138,8 +146,7 @@ describe('providers/fileProvider/index', () => {
             screen.getByText('star').click();
         });
 
-        expect(mockedApiPost).toHaveBeenCalledWith('/files/starred/2');
-        expect(mockRefetch).toHaveBeenCalled();
+        expect(mockedApiPut).toHaveBeenCalledWith('/files/starred/2', { starred: true });
     });
 
     it('executes query functions for tree and recent access branches', async () => {

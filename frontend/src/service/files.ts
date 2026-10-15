@@ -145,6 +145,18 @@ export const toggleStarredFile = async (itemId: number): Promise<void> => {
     await apiBase.post(`/files/starred/${itemId}`);
 };
 
+export type FileStarredState = { id: number; starred: boolean };
+
+export const setFileStarred = async (
+    fileId: number,
+    isStarred: boolean
+): Promise<FileStarredState> => {
+    const response = await apiBase.put<FileStarredState>(`/files/starred/${fileId}`, {
+        starred: isStarred,
+    });
+    return response.data;
+};
+
 export const rescanFiles = async (): Promise<void> => {
     const formData = new FormData();
     formData.append('data', 'manual-rescan');

@@ -32,6 +32,11 @@ const mockGetStarredFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentlyAccessedFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
 const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
+const mockSetFileStarred = jest.fn<
+    Promise<{ id: number; starred: boolean }>,
+    [number, boolean]
+>();
+const mockEnqueueSnackbar = jest.fn();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
 const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
 const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
@@ -46,12 +51,17 @@ jest.mock('@/service/files', () => ({
     getRecentlyAccessedFiles: mockGetRecentlyAccessedFiles,
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     toggleStarredFile: mockToggleStarredFile,
+    setFileStarred: mockSetFileStarred,
     rescanFiles: mockRescanFiles,
     createFolder: mockCreateFolder,
     moveFile: mockMoveFile,
     copyFile: mockCopyFile,
     renameFile: mockRenameFile,
     deleteFile: mockDeleteFile,
+}));
+
+jest.mock('notistack', () => ({
+    useSnackbar: () => ({ enqueueSnackbar: mockEnqueueSnackbar }),
 }));
 
 // Capture context from the provider
@@ -310,15 +320,87 @@ describe('FileProvider', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/files');
     });
 
-    it('handleStarredItem calls toggleStarredFile and refetches', async () => {
-        mockGetFilesTree.mockResolvedValue(makePaginationResponse([createNode(1)]));
-        renderProvider();
-        await waitFor(() => expect(capturedContext!.files.length).toBe(1));
+    describe('handleStarredItem', () => {
+        const renderWithStarredListing = async (isStarred: boolean) => {
+            mockGetFilesTree.mockResolvedValue(
+                makePaginationResponse([createNode(1, { starred: isStarred })])
+            );
+            renderProvider();
+            await waitFor(() => expect(capturedContext!.files.length).toBe(1));
+        };
 
-        await act(async () => {
-            capturedContext!.handleStarredItem(1);
+        it('flips the star immediately, before the server answers', async () => {
+            await renderWithStarredListing(false);
+            mockSetFileStarred.mockReturnValue(new Promise(() => undefined));
+
+            await act(async () => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            expect(mockSetFileStarred).toHaveBeenCalledWith(1, true);
+            await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(true));
         });
-        await waitFor(() => expect(mockToggleStarredFile).toHaveBeenCalledWith(1));
+
+        it('unstars when the item is already starred', async () => {
+            await renderWithStarredListing(true);
+            mockSetFileStarred.mockReturnValue(new Promise(() => undefined));
+
+            await act(async () => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            expect(mockSetFileStarred).toHaveBeenCalledWith(1, false);
+            await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(false));
+        });
+
+        it('keeps the server state after success', async () => {
+            await renderWithStarredListing(false);
+            mockSetFileStarred.mockResolvedValue({ id: 1, starred: true });
+            mockGetFilesTree.mockResolvedValue(
+                makePaginationResponse([createNode(1, { starred: true })])
+            );
+
+            await act(async () => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(true));
+            expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
+        });
+
+        it('rolls back and shows the server message on failure', async () => {
+            await renderWithStarredListing(false);
+            mockSetFileStarred.mockRejectedValue({
+                response: { data: { error: 'Arquivo nao encontrado' } },
+            });
+
+            await act(async () => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            await waitFor(() =>
+                expect(mockEnqueueSnackbar).toHaveBeenCalledWith('Arquivo nao encontrado', {
+                    variant: 'error',
+                })
+            );
+            await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(false));
+        });
+
+        it('shows the i18n fallback when the failure has no body', async () => {
+            await renderWithStarredListing(false);
+            mockSetFileStarred.mockRejectedValue(new Error('network'));
+
+            await act(async () => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            await waitFor(() =>
+                expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_FAVORITE_FAILED', {
+                    variant: 'error',
+                })
+            );
+            await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(false));
+        });
     });
 
     it('createFolder calls service and refetches', async () => {

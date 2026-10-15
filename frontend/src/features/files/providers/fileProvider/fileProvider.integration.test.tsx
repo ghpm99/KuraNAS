@@ -9,7 +9,7 @@ import { apiBase } from '@/service';
 // run, so each file-manager command asserts the exact endpoint/payload the
 // backend files operation handlers decode.
 jest.mock('@/service', () => ({
-	apiBase: { get: jest.fn(), post: jest.fn(), delete: jest.fn() },
+	apiBase: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() },
 }));
 
 jest.mock('react-router-dom', () => ({
@@ -23,7 +23,12 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	default: () => ({ t: (key: string) => key }),
 }));
 
-const mockedApi = apiBase as unknown as { get: jest.Mock; post: jest.Mock; delete: jest.Mock };
+const mockedApi = apiBase as unknown as {
+	get: jest.Mock;
+	post: jest.Mock;
+	put: jest.Mock;
+	delete: jest.Mock;
+};
 
 const wrapper = ({ children }: { children: ReactNode }) => {
 	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -43,6 +48,7 @@ describe('features/files/fileProvider (seam)', () => {
 		});
 		mockedApi.post.mockResolvedValue({ data: undefined });
 		mockedApi.delete.mockResolvedValue({ data: undefined });
+		mockedApi.put.mockResolvedValue({ data: { id: 5, starred: true } });
 	});
 
 	it('createFolder POSTs to /files/folder with name and parent_id', async () => {
@@ -124,12 +130,14 @@ describe('features/files/fileProvider (seam)', () => {
 		);
 	});
 
-	it('handleStarredItem POSTs to /files/starred/:id', async () => {
+	it('handleStarredItem PUTs the desired state to /files/starred/:id', async () => {
 		const { result } = renderHook(() => useFile(), { wrapper });
 
 		act(() => result.current.handleStarredItem(5));
 
-		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/files/starred/5'));
+		await waitFor(() =>
+			expect(mockedApi.put).toHaveBeenCalledWith('/files/starred/5', { starred: true })
+		);
 	});
 
 	it('rescanFiles POSTs the manual rescan to /files/update', async () => {
