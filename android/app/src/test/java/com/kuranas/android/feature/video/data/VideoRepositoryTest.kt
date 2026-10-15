@@ -94,4 +94,31 @@ class VideoRepositoryTest {
         assertTrue(result is AppResult.Error)
         assertEquals("falha do servidor", (result as AppResult.Error).message)
     }
+
+    @Test
+    fun `getPlaylistHeader asks for the playlist without items`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"id":7,"name":"Matrix","item_count":3,"items":[]}"""))
+
+        val result = repository.getPlaylistHeader(7)
+
+        assertEquals("/api/v1/video/playlists/7?include_items=false", server.takeRequest().path)
+        assertEquals(3, (result as AppResult.Success).data.itemCount)
+    }
+
+    @Test
+    fun `getPlaylistItems requests the page and deserializes has_next`() = runTest {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"items":[{"video":{"id":5,"name":"a.mp4"},"status":"in_progress","progress_pct":10.5}],""" +
+                    """"pagination":{"page":2,"page_size":50,"has_next":true,"has_prev":true}}""",
+            ),
+        )
+
+        val result = repository.getPlaylistItems(7, 2)
+
+        assertEquals("/api/v1/video/playlists/7/items?page=2&page_size=50", server.takeRequest().path)
+        val page = (result as AppResult.Success).data
+        assertEquals(1, page.items.size)
+        assertTrue(page.hasNext)
+    }
 }

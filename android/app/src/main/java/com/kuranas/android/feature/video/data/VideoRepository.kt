@@ -2,6 +2,8 @@ package com.kuranas.android.feature.video.data
 
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
+import com.kuranas.android.core.paging.ListPage
+import com.kuranas.android.core.paging.toListPage
 import com.kuranas.android.core.server.ServerStore
 import dagger.Module
 import dagger.Provides
@@ -23,7 +25,10 @@ class VideoRepository @Inject constructor(
         page: Int = 1,
         pageSize: Int = PLAYLIST_SECTION_PAGE_SIZE,
     ): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylistsBySection(section.path, page, pageSize).items }
-    suspend fun getPlaylistById(id: Int): AppResult<VideoPlaylistDto> = safeApiCall { api.getPlaylistById(id) }
+    suspend fun getPlaylistHeader(id: Int): AppResult<VideoPlaylistDto> = safeApiCall { api.getPlaylistHeader(id) }
+    suspend fun getPlaylistItems(id: Int, page: Int): AppResult<ListPage<VideoPlaylistItemDto>> = safeApiCall {
+        api.getPlaylistItems(id, page, PLAYLIST_ITEMS_PAGE_SIZE).toListPage()
+    }
     suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
         api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId)).playbackState
     }
@@ -43,6 +48,7 @@ class VideoRepository @Inject constructor(
 }
 
 private const val PLAYLIST_SECTION_PAGE_SIZE = 24
+private const val PLAYLIST_ITEMS_PAGE_SIZE = 50
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)

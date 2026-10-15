@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kuranas.android.R
+import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -50,6 +52,8 @@ fun VideoPlaylistScreen(
     LaunchedEffect(playlistId) { viewModel.load(playlistId) }
     val state by viewModel.state.collectAsState()
     val playlist = state.playlist
+    val listState = rememberLazyListState()
+    LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
@@ -61,16 +65,17 @@ fun VideoPlaylistScreen(
         when {
             state.isLoading -> LoadingView()
             errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
-            playlist == null || playlist.videos.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
+            state.items.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
             else -> LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(playlist.videos, key = { it.id }) { video ->
+                items(state.items, key = { it.video.id }) { item ->
                     VideoListItem(
-                        video = video,
-                        thumbnailUrl = playerViewModel.getThumbnailUrl(video.id),
-                        onClick = { onPlayVideo(video.id) },
+                        video = item.video,
+                        thumbnailUrl = playerViewModel.getThumbnailUrl(item.video.id),
+                        onClick = { onPlayVideo(item.video.id) },
                     )
                 }
             }
