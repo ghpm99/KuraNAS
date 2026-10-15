@@ -25,7 +25,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 05. `POST /files/starred` em lote
 - [x] 06. Coluna `starred_at` preenchida ao favoritar
 - [x] 07. `GET /files/starred` com filtro de tipo e ordenação (nome, data de favoritado)
-- [ ] 07.1. Classificação de mídia alinhada entre frontend e backend (`.raw` é imagem no frontend e não está em `utils.ImageFormats`)
+- [x] 07.1. Classificação de mídia alinhada entre frontend e backend (`.raw` é imagem no frontend e não está em `utils.ImageFormats`)
 - [ ] 08. `GET /files/starred/counts` (pastas, arquivos, mídias)
 - [ ] 09. `category` inválida em `/files/tree` responde 400 em vez de cair em "all"
 - [ ] 10. Teste de integração do ciclo estrela → mover → lixeira → restaurar → reindexar
