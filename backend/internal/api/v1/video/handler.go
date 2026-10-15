@@ -336,12 +336,39 @@ func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 		return
 	}
 
+	shouldIncludeItems, isIncludeItemsValid := parseIncludeItems(c.Query("include_items"))
+	if !isIncludeItemsValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	if !shouldIncludeItems {
+		playlistHeader, err := h.service.GetPlaylistHeaderByID(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
+			return
+		}
+		c.JSON(http.StatusOK, playlistHeader)
+		return
+	}
+
 	playlist, err := h.service.GetPlaylistByID(clientID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 		return
 	}
 	c.JSON(http.StatusOK, playlist)
+}
+
+func parseIncludeItems(rawValue string) (bool, bool) {
+	switch rawValue {
+	case "", "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, false
+	}
 }
 
 func (h *Handler) GetPlaylistItemsPageHandler(c *gin.Context) {

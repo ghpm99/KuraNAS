@@ -76,6 +76,9 @@ var GetVideoPlaylistMembershipsQuery string
 //go:embed get_video_playlist_by_id.sql
 var GetVideoPlaylistByIDQuery string
 
+//go:embed count_video_playlist_items.sql
+var CountVideoPlaylistItemsQuery string
+
 //go:embed get_video_playlist_items_detailed.sql
 var GetVideoPlaylistItemsDetailedQuery string
 
