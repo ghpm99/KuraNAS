@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	queries "nas-go/api/pkg/database/queries/files"
@@ -84,6 +85,15 @@ func (s *Service) logSyncFailure(operation string, path string, err error) {
 // syncMovedRows updates the moved/renamed row and, when it is a directory,
 // rewrites the path prefix of every descendant — all in one transaction.
 func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
+	return s.syncMovedRowsRehomingCold(file, destinationPath, nil)
+}
+
+func (s *Service) syncMovedRowsAcrossRoots(file FileDto, destinationPath string, coldDescendants []FileModel) error {
+	file.PhysicalPath = ""
+	return s.syncMovedRowsRehomingCold(file, destinationPath, coldDescendants)
+}
+
+func (s *Service) syncMovedRowsRehomingCold(file FileDto, destinationPath string, coldDescendants []FileModel) error {
 	oldPath := file.Path
 
 	file.Name = filepath.Base(destinationPath)
@@ -102,13 +112,26 @@ func (s *Service) syncMovedRows(file FileDto, destinationPath string) error {
 		if _, err := s.Repository.UpdateFile(tx, fileModel); err != nil {
 			return err
 		}
-		if file.Type == Directory {
-			if _, err := s.Repository.UpdateDescendantPaths(tx, oldPath, destinationPath); err != nil {
-				return err
-			}
+		if file.Type != Directory {
+			return nil
 		}
-		return nil
+		if _, err := s.Repository.UpdateDescendantPaths(tx, oldPath, destinationPath); err != nil {
+			return err
+		}
+		return s.clearColdDescendantPhysicalPaths(tx, oldPath, destinationPath, coldDescendants)
 	})
+}
+
+func (s *Service) clearColdDescendantPhysicalPaths(tx *sql.Tx, oldDirectoryPath string, newDirectoryPath string, coldDescendants []FileModel) error {
+	for _, coldDescendant := range coldDescendants {
+		coldDescendant.Path = newDirectoryPath + strings.TrimPrefix(coldDescendant.Path, oldDirectoryPath)
+		coldDescendant.ParentPath = filepath.Dir(coldDescendant.Path)
+		coldDescendant.PhysicalPath = sql.NullString{}
+		if _, err := s.Repository.UpdateFile(tx, coldDescendant); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // syncDeletedRows soft-deletes the row at the removed path and its whole

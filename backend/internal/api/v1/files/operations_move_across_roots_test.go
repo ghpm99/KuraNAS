@@ -16,6 +16,9 @@ type crossRootFixture struct {
 	secondRoot     string
 	destinationDir string
 	deletedPaths   []string
+	updatedRows    []FileModel
+	updatedPaths   []string
+	createdCount   int
 	service        *Service
 	destinationID  int
 }
@@ -53,6 +56,15 @@ func (fixture *crossRootFixture) buildService(t *testing.T, sourceRecords []File
 			}
 			return FileModel{}, false, nil
 		},
+		updateFileFn: func(transaction *sql.Tx, file FileModel) (bool, error) {
+			fixture.updatedRows = append(fixture.updatedRows, file)
+			fixture.updatedPaths = append(fixture.updatedPaths, file.Path)
+			return true, nil
+		},
+		createFileFn: func(transaction *sql.Tx, file FileModel) (FileModel, error) {
+			fixture.createdCount++
+			return file, nil
+		},
 		markDeletedSubtreeFn: func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error) {
 			fixture.deletedPaths = append(fixture.deletedPaths, path)
 			return 1, nil
@@ -88,8 +100,14 @@ func TestMoveFileAcrossRootsMovesFileContent(t *testing.T) {
 	if _, statErr := os.Stat(sourcePath); !os.IsNotExist(statErr) {
 		t.Fatalf("expected source removed, stat err: %v", statErr)
 	}
-	if len(fixture.deletedPaths) != 1 || fixture.deletedPaths[0] != sourcePath {
-		t.Fatalf("expected source rows soft-deleted, got %v", fixture.deletedPaths)
+	if len(fixture.deletedPaths) != 0 {
+		t.Fatalf("moved row must not be soft-deleted, got %v", fixture.deletedPaths)
+	}
+	if len(fixture.updatedPaths) != 1 || fixture.updatedPaths[0] != expectedPath {
+		t.Fatalf("expected existing row rewritten to destination, got %v", fixture.updatedPaths)
+	}
+	if fixture.createdCount != 0 {
+		t.Fatalf("no new row may be created, got %d", fixture.createdCount)
 	}
 }
 
@@ -151,6 +169,13 @@ func TestMoveFileAcrossRootsMovesColdDescendantsAndRemovesColdBytes(t *testing.T
 	if _, statErr := os.Stat(coldPath); !os.IsNotExist(statErr) {
 		t.Fatalf("expected cold bytes removed, stat err: %v", statErr)
 	}
+	movedColdRow := fixture.updatedRows[len(fixture.updatedRows)-1]
+	if movedColdRow.ID != 5 || movedColdRow.PhysicalPath.Valid {
+		t.Fatalf("cold descendant must keep id and lose physical_path, got %+v", movedColdRow)
+	}
+	if expectedColdPath := filepath.Join(fixture.destinationDir, "arquivo", "old.bin"); movedColdRow.Path != expectedColdPath {
+		t.Fatalf("cold descendant path = %q, want %q", movedColdRow.Path, expectedColdPath)
+	}
 }
 
 func TestMoveFileAcrossRootsFailureLeavesSourceIntactAndRemovesPartialDestination(t *testing.T) {
@@ -181,6 +206,9 @@ func TestMoveFileAcrossRootsFailureLeavesSourceIntactAndRemovesPartialDestinatio
 		if deletedPath == sourceDir {
 			t.Fatalf("source rows must not be soft-deleted on failure")
 		}
+	}
+	if len(fixture.updatedRows) != 0 || fixture.createdCount != 0 {
+		t.Fatalf("database must be untouched on failure, updated=%d created=%d", len(fixture.updatedRows), fixture.createdCount)
 	}
 }
 

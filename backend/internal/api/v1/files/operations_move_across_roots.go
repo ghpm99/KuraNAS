@@ -41,7 +41,7 @@ func (s *Service) moveAcrossRoots(sourceFile FileDto, resolvedSourcePath string,
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_FAILED", err)
 	}
 
-	copiedPath, err := s.CopyFile(sourceFile.ID, destinationFolderID, destinationPath, "")
+	copiedPath, err := s.copyContentToDisk(sourceFile.ID, destinationFolderID, destinationPath, "")
 	if err != nil {
 		if isCopyFailureAfterWriting(err) {
 			s.discardCopiedDestination(resolvedDestinationPath)
@@ -54,13 +54,26 @@ func (s *Service) moveAcrossRoots(sourceFile FileDto, resolvedSourcePath string,
 		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_MOVE_VERIFY_FAILED", err)
 	}
 
-	if err := s.DeleteFileFromDisk(sourceFile.ID, true); err != nil {
+	if err := os.RemoveAll(sourceContentPath(sourceFile, resolvedSourcePath)); err != nil {
 		s.discardCopiedDestinationWhenSourceIsIntact(sourceFile, resolvedSourcePath, copiedPath, coldDescendants)
-		return "", err
+		return "", newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
+	}
+
+	if err := s.syncMovedRowsAcrossRoots(sourceFile, copiedPath, coldDescendants); err != nil {
+		s.logSyncFailure("MoveAcrossRoots", copiedPath, err)
 	}
 
 	s.removeColdDescendantBytes(coldDescendants)
+	s.ScanDirTask(filepath.Dir(resolvedSourcePath))
+	s.ScanDirTask(filepath.Dir(copiedPath))
 	return copiedPath, nil
+}
+
+func sourceContentPath(sourceFile FileDto, resolvedSourcePath string) string {
+	if sourceFile.PhysicalPath != "" {
+		return sourceFile.ResolveContentPath()
+	}
+	return resolvedSourcePath
 }
 
 func isCopyFailureAfterWriting(err error) bool {
@@ -105,12 +118,9 @@ func (s *Service) removeColdDescendantBytes(coldDescendants []FileModel) {
 }
 
 func (s *Service) verifyCopiedContent(sourceFile FileDto, resolvedSourcePath string, destinationPath string, coldDescendants []FileModel) error {
-	sourceContentPath := resolvedSourcePath
-	if sourceFile.PhysicalPath != "" {
-		sourceContentPath = sourceFile.ResolveContentPath()
-	}
+	sourceBytesPath := sourceContentPath(sourceFile, resolvedSourcePath)
 
-	sourceManifest, err := buildContentManifest(sourceContentPath)
+	sourceManifest, err := buildContentManifest(sourceBytesPath)
 	if err != nil {
 		return err
 	}
@@ -132,7 +142,7 @@ func (s *Service) verifyCopiedContent(sourceFile FileDto, resolvedSourcePath str
 	if sourceFile.Type != File || sourceFile.CheckSum == "" {
 		return nil
 	}
-	return verifyChecksumsMatch(sourceContentPath, destinationPath)
+	return verifyChecksumsMatch(sourceBytesPath, destinationPath)
 }
 
 func coldDescendantManifest(sourceDirectoryPath string, coldDescendants []FileModel) (map[string]int64, error) {
