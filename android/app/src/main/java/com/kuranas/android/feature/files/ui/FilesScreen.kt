@@ -36,10 +36,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,7 +87,15 @@ fun FilesScreen(
         if (firstResume) firstResume = false else viewModel.refresh()
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.actionErrorMessage) {
+        val message = state.actionErrorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.dismissActionError()
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         floatingActionButton = {
@@ -137,7 +148,7 @@ fun FilesScreen(
                                     else -> onOpenFile(file.id, file.name)
                                 }
                             },
-                            onStar = { viewModel.starFile(file) },
+                            onStar = { viewModel.toggleFileStarred(file) },
                         )
                     }
                 }
@@ -195,7 +206,7 @@ private fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> U
         IconButton(onClick = onStar, modifier = Modifier.size(32.dp)) {
             Icon(
                 imageVector = if (file.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
-                contentDescription = null,
+                contentDescription = stringResource(if (file.isStarred) R.string.files_unstar_action else R.string.files_star_action),
                 tint = if (file.isStarred) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )

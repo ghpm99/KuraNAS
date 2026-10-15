@@ -14,6 +14,7 @@ import retrofit2.http.HTTP
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -61,8 +62,8 @@ interface FilesApi {
     @HTTP(method = "DELETE", path = "api/v1/files/path", hasBody = true)
     suspend fun deleteFile(@Body body: DeleteFileRequest)
 
-    @POST("api/v1/files/starred/{id}")
-    suspend fun starFile(@Path("id") id: String)
+    @PUT("api/v1/files/starred/{id}")
+    suspend fun setFileStarred(@Path("id") id: String, @Body body: SetStarredRequest): StarredResponse
 
     @GET("api/v1/files/blob/{id}")
     suspend fun getBlob(@Path("id") id: String): ResponseBody
@@ -137,3 +138,9 @@ data class CopyRequest(
 
 @Serializable
 data class DeleteFileRequest(val id: Int)
+
+@Serializable
+data class SetStarredRequest(val starred: Boolean)
+
+@Serializable
+data class StarredResponse(val id: Int = 0, val starred: Boolean = false)

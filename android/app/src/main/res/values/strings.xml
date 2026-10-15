@@ -47,6 +47,8 @@
     <string name="files_new_folder">New folder</string>
     <string name="files_folder_name_label">Folder name</string>
     <string name="files_empty_folder">Empty folder</string>
+    <string name="files_star_action">Add to favorites</string>
+    <string name="files_unstar_action">Remove from favorites</string>
     <string name="file_not_found">File not found</string>
 
     <!-- File viewer -->
