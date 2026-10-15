@@ -10,7 +10,6 @@ jest.mock('./index', () => ({
 import { apiBase } from './index';
 import {
     addVideoToPlaylist,
-    getAllVideoFiles,
     getVideoContinueWatching,
     getVideoHomeCatalog,
     getVideoLibraryFiles,
@@ -24,7 +23,6 @@ import {
     getVideoPlaylistsBySection,
     searchVideoPlaylists,
     getVideoPlaylistsByVideo,
-    getVideosWithoutPlaylist,
     nextVideoPlayback,
     previousVideoPlayback,
     removeVideoFromPlaylist,
@@ -238,30 +236,6 @@ describe('service/videoPlayback', () => {
         expect(mockedApi.put).toHaveBeenNthCalledWith(2, '/video/progress/7/watched', {
             watched: false,
         });
-    });
-
-    it('gets unassigned videos and all videos list with items fallback', async () => {
-        mockedApi.get
-            .mockResolvedValueOnce({ data: [{ id: 1 }] })
-            .mockResolvedValueOnce({ data: { items: [{ id: 2 }] } })
-            .mockResolvedValueOnce({ data: {} });
-
-        const unassigned = await getVideosWithoutPlaylist();
-        const allVideos = await getAllVideoFiles();
-        const emptyFallback = await getAllVideoFiles(10);
-
-        expect(mockedApi.get).toHaveBeenNthCalledWith(1, '/video/playlists/unassigned', {
-            params: { limit: 2000 },
-        });
-        expect(mockedApi.get).toHaveBeenNthCalledWith(2, '/files/videos', {
-            params: { page: 1, page_size: 2000 },
-        });
-        expect(mockedApi.get).toHaveBeenNthCalledWith(3, '/files/videos', {
-            params: { page: 1, page_size: 10 },
-        });
-        expect(unassigned).toEqual([{ id: 1 }]);
-        expect(allVideos).toEqual([{ id: 2 }]);
-        expect(emptyFallback).toEqual([]);
     });
 
     it('requests the folders under a parent and omits an empty parent', async () => {

@@ -99,10 +99,6 @@ export interface VideoHomeCatalogDto {
     sections: VideoCatalogSectionDto[];
 }
 
-interface PaginationResponse<T> {
-    items: T[];
-}
-
 export interface VideoPlaylistOfVideoDto {
     id: number;
     name: string;
@@ -299,20 +295,6 @@ export const createVideoPlaylist = async (
 
 export const deleteVideoPlaylist = async (playlistId: number): Promise<void> => {
     await apiBase.delete(`/video/playlists/${playlistId}`);
-};
-
-export const getVideosWithoutPlaylist = async (limit = 2000): Promise<VideoFileDto[]> => {
-    const response = await apiBase.get<VideoFileDto[]>('/video/playlists/unassigned', {
-        params: { limit },
-    });
-    return response.data;
-};
-
-export const getAllVideoFiles = async (limit = 2000): Promise<VideoFileDto[]> => {
-    const response = await apiBase.get<PaginationResponse<VideoFileDto>>('/files/videos', {
-        params: { page: 1, page_size: limit },
-    });
-    return response.data.items ?? [];
 };
 
 export type VideoLibrarySortKey = 'recent' | 'name' | 'size' | 'duration';

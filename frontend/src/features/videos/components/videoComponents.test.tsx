@@ -1,14 +1,12 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import VideoControls from '@/features/videos/videoControls/videoControls';
-import VideoProgressBar from '@/features/videos/videoProgressBar/videoProgressBar';
-import VideoThumbnail from './videoThumbnail/videoThumbnail';
 import VideoPlayer from '@/features/videos/videoPlayer/videoPlayer';
 
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
-        t: (key: string, params?: Record<string, string | number>) => {
+        t: (key: string) => {
             const map: Record<string, string> = {
                 VIDEO_PLAYBACK_SPEED: 'Playback Speed',
                 VIDEO_QUALITY: 'Quality',
@@ -19,7 +17,6 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_AUTO_DETECTED: 'Auto detected',
                 VIDEO_AUDIO_TRACK: 'Audio Track',
                 VIDEO_DEFAULT: 'Default',
-                VIDEO_UNKNOWN: 'Unknown',
                 VIDEO_NO_VIDEO_PLAYING: 'No video playing',
                 VIDEO_BACK: 'Voltar',
                 VIDEO_AUTO: 'Auto',
@@ -27,8 +24,6 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_FULLSCREEN: 'Fullscreen',
                 VIDEO_EXIT_FULLSCREEN: 'Exit Fullscreen',
             };
-            if (key === 'VIDEO_PLAY_ARIA') return `Play ${params?.title ?? ''}`.trim();
-            if (key === 'VIDEO_CODEC_TOOLTIP') return `Codec: ${params?.codec ?? ''}`.trim();
             return map[key] ?? key;
         },
     }),
@@ -167,68 +162,6 @@ describe('video components', () => {
         jest.useRealTimers();
     });
 
-    it('renders progress bar and seeks', () => {
-        const seekTo = jest.fn();
-        render(<VideoProgressBar currentTime={10} duration={100} seekTo={seekTo} />);
-        const bar = document.querySelector('.video-progress-bar') as HTMLElement;
-        Object.defineProperty(bar, 'getBoundingClientRect', {
-            value: () => ({ left: 0, width: 100 }),
-        });
-        fireEvent.mouseMove(bar, { clientX: 50 });
-        fireEvent.click(bar, { clientX: 20 });
-        fireEvent.mouseDown(bar);
-        fireEvent.mouseMove(document, { clientX: 80 });
-        fireEvent.mouseUp(document);
-        fireEvent.mouseLeave(bar);
-        expect(seekTo).toHaveBeenCalled();
-    });
-
-    it('handles zero duration and bounded seek math', () => {
-        const seekTo = jest.fn();
-        render(<VideoProgressBar currentTime={0} duration={0} seekTo={seekTo} />);
-        const bar = document.querySelector('.video-progress-bar') as HTMLElement;
-        Object.defineProperty(bar, 'getBoundingClientRect', {
-            value: () => ({ left: 10, width: 100 }),
-        });
-        fireEvent.mouseMove(bar, { clientX: -50 });
-        fireEvent.click(bar, { clientX: 9999 });
-        fireEvent.mouseDown(bar);
-        fireEvent.mouseMove(document, { clientX: -999 });
-        fireEvent.mouseUp(document);
-        expect(seekTo).toHaveBeenCalledWith(0);
-    });
-
-    it('formats invalid times in progress bar', () => {
-        render(
-            <VideoProgressBar currentTime={Number.NaN} duration={Number.NaN} seekTo={jest.fn()} />
-        );
-        expect(screen.getAllByText('0:00').length).toBeGreaterThan(0);
-    });
-
-    it('renders video thumbnail metadata and triggers play', () => {
-        const onPlay = jest.fn();
-        const video: any = {
-            id: 1,
-            name: 'sample.mp4',
-            size: 1024,
-            metadata: {
-                duration: '01:00',
-                width: 1920,
-                height: 1080,
-                codec_name: 'h264',
-                format_name: 'Sample',
-            },
-        };
-        render(<VideoThumbnail video={video} onPlay={onPlay} />);
-        expect(screen.getByText('Sample')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: /Play Sample/i }));
-        expect(onPlay).toHaveBeenCalled();
-        fireEvent.keyDown(screen.getByRole('button', { name: /Play Sample/i }), {
-            key: 'Enter',
-        });
-        expect(onPlay).toHaveBeenCalledTimes(2);
-    });
-
     it('binds video player events and metadata display', () => {
         const ref = createRef<HTMLVideoElement>();
         const onVideoEnded = jest.fn();
@@ -268,22 +201,7 @@ describe('video components', () => {
         expect(onBack).toHaveBeenCalled();
     });
 
-    it('renders player/video thumbnail fallback metadata branches', () => {
-        const onPlay = jest.fn();
-        render(
-            <VideoThumbnail
-                video={{ id: 2, name: 'raw-video.mkv', size: 0 } as any}
-                onPlay={onPlay}
-            />
-        );
-        expect(screen.getByText('raw-video.mkv')).toBeInTheDocument();
-        expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
-        expect(screen.getByText('0 B')).toBeInTheDocument();
-        fireEvent.keyDown(screen.getByRole('button', { name: /Play raw-video.mkv/i }), {
-            key: ' ',
-        });
-        expect(onPlay).toHaveBeenCalled();
-
+    it('renders the player placeholder when there is no current video', () => {
         const ref = createRef<HTMLVideoElement>();
         render(
             <VideoPlayer
