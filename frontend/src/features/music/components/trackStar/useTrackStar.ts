@@ -3,6 +3,7 @@ import { QueryClientContext, type Query } from '@tanstack/react-query';
 import { toggleStarredFile } from '@/service/files';
 import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import {
+    clearStarredOverride,
     getStarredOverride,
     setStarredOverride,
     subscribeToStarredOverrides,
@@ -28,6 +29,14 @@ const isStarredDependentQuery = (query: Query): boolean => {
     );
 };
 
+const restoreStarredOverride = (trackId: number, previousOverride: boolean | undefined) => {
+    if (previousOverride === undefined) {
+        clearStarredOverride(trackId);
+        return;
+    }
+    setStarredOverride(trackId, previousOverride);
+};
+
 export default function useTrackStar(track: StarrableTrack) {
     const starredOverride = useSyncExternalStore(subscribeToStarredOverrides, () =>
         getStarredOverride(track.id)
@@ -36,12 +45,19 @@ export default function useTrackStar(track: StarrableTrack) {
     const isStarred = starredOverride ?? Boolean(track.starred);
 
     const toggleStar = useCallback(async () => {
-        const wasStarred = getStarredOverride(track.id) ?? Boolean(track.starred);
-        setStarredOverride(track.id, !wasStarred);
+        const previousOverride = getStarredOverride(track.id);
+        const wasStarred = previousOverride ?? Boolean(track.starred);
+        const optimisticStarred = !wasStarred;
+        const isOverrideOwnedByThisToggle = () =>
+            getStarredOverride(track.id) === optimisticStarred;
+
+        setStarredOverride(track.id, optimisticStarred);
         try {
             await toggleStarredFile(track.id);
         } catch {
-            setStarredOverride(track.id, wasStarred);
+            if (isOverrideOwnedByThisToggle()) {
+                restoreStarredOverride(track.id, previousOverride);
+            }
             return;
         }
         if (!queryClient) {
@@ -51,6 +67,9 @@ export default function useTrackStar(track: StarrableTrack) {
             queryClient.invalidateQueries({ predicate: isStarredDependentQuery }),
             invalidateStarredViews(queryClient),
         ]);
+        if (isOverrideOwnedByThisToggle()) {
+            clearStarredOverride(track.id);
+        }
     }, [track.id, track.starred, queryClient]);
 
     return { isStarred, toggleStar };
