@@ -546,6 +546,22 @@ func (s *Service) RenameFile(id int, newName string) (string, error) {
 }
 
 func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error) {
+	resolvedDestPath, err := s.copyContentToDisk(sourceID, destinationFolderID, destinationPath, newName)
+	if err != nil {
+		return "", err
+	}
+
+	// Only the copied root row is inserted synchronously; the contents of a
+	// copied directory (and metadata/checksum/thumbnail) come via the pipeline.
+	if err := s.syncPathRow(resolvedDestPath); err != nil {
+		s.logSyncFailure("CopyFile", resolvedDestPath, err)
+	}
+
+	s.ScanDirTask(filepath.Dir(resolvedDestPath))
+	return resolvedDestPath, nil
+}
+
+func (s *Service) copyContentToDisk(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error) {
 	if sourceID <= 0 {
 		return "", newFileOperationError(http.StatusBadRequest, "ERROR_INVALID_ID", fmt.Errorf("invalid source id"))
 	}
@@ -615,13 +631,6 @@ func (s *Service) CopyFile(sourceID int, destinationFolderID *int, destinationPa
 		}
 	}
 
-	// Only the copied root row is inserted synchronously; the contents of a
-	// copied directory (and metadata/checksum/thumbnail) come via the pipeline.
-	if err := s.syncPathRow(resolvedDestPath); err != nil {
-		s.logSyncFailure("CopyFile", resolvedDestPath, err)
-	}
-
-	s.ScanDirTask(filepath.Dir(resolvedDestPath))
 	return resolvedDestPath, nil
 }
 

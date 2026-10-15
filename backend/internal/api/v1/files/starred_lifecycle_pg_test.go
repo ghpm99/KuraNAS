@@ -1,6 +1,7 @@
 package files
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -232,7 +233,6 @@ func TestPostgres_StarSurvivesGenericUpdateWithStaleSnapshot(t *testing.T) {
 }
 
 func TestPostgres_StarSurvivesMoveAcrossRoots(t *testing.T) {
-	t.Skip("known bug: moveAcrossRoots copies then deletes (operations_move_across_roots.go:43,57; syncPathRow in operations_sync.go:134 inserts a new row), so id and star are lost")
 	fixture := newStarredLifecycleFixture(t)
 	secondRoot := t.TempDir()
 	t.Cleanup(roots.Reset)
@@ -253,4 +253,60 @@ func TestPostgres_StarSurvivesMoveAcrossRoots(t *testing.T) {
 		t.Fatalf("id not preserved across roots: found=%v row=%+v originalID=%d", found, movedRow, fixture.fileID)
 	}
 	assertStillStarred(t, fixture.repo, fixture.fileID, pinned)
+}
+
+func TestPostgres_FolderMovedAcrossRootsKeepsIdsAndCreatesNoRows(t *testing.T) {
+	fixture := newStarredLifecycleFixture(t)
+	secondRoot := t.TempDir()
+	t.Cleanup(roots.Reset)
+	roots.Set([]roots.Root{
+		{ID: 1, Path: fixture.entryPoint, Label: "Principal", Enabled: true},
+		{ID: 2, Path: secondRoot, Label: "Midia", Enabled: true},
+	})
+	secondRootID := insertRowForOps(t, fixture.repo, "midia", secondRoot, filepath.Dir(secondRoot), Directory)
+	pinned := fixture.pinStarredAt(t)
+	rowCountBefore := countAllRows(t, fixture.repo)
+
+	movedPath, err := fixture.service.MoveFile(fixture.folderID, &secondRootID, "")
+	if err != nil {
+		t.Fatalf("MoveFile folder across roots: %v", err)
+	}
+
+	assertRowAtPath(t, fixture.repo, movedPath, fixture.folderID)
+	assertRowAtPath(t, fixture.repo, filepath.Join(movedPath, "song.txt"), fixture.childID)
+	assertStillStarred(t, fixture.repo, fixture.folderID, pinned)
+	if _, found := activeRowByPath(t, fixture.repo, fixture.folderPath); found {
+		t.Fatalf("old folder path must have no active row")
+	}
+	if _, found := activeRowByPath(t, fixture.repo, fixture.childPath); found {
+		t.Fatalf("old child path must have no active row")
+	}
+	if rowCountAfter := countAllRows(t, fixture.repo); rowCountAfter != rowCountBefore {
+		t.Fatalf("row count changed: before=%d after=%d", rowCountBefore, rowCountAfter)
+	}
+	if softDeletedRows := countSoftDeletedRows(t, fixture.repo); softDeletedRows != 0 {
+		t.Fatalf("expected no soft-deleted rows, got %d", softDeletedRows)
+	}
+}
+
+func countAllRows(t *testing.T, repo *Repository) int {
+	t.Helper()
+	return countRowsWhere(t, repo, "TRUE")
+}
+
+func countSoftDeletedRows(t *testing.T, repo *Repository) int {
+	t.Helper()
+	return countRowsWhere(t, repo, "deleted_at IS NOT NULL")
+}
+
+func countRowsWhere(t *testing.T, repo *Repository, condition string) int {
+	t.Helper()
+	var rowCount int
+	err := repo.GetDbContext().QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow("SELECT COUNT(*) FROM home_file WHERE " + condition).Scan(&rowCount)
+	})
+	if err != nil {
+		t.Fatalf("count rows where %s: %v", condition, err)
+	}
+	return rowCount
 }
