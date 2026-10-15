@@ -333,3 +333,15 @@
     padding: var(--app-spacing-2);
     border-radius: var(--app-radius-pill);
 }
+
+.itemStarButton {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.itemStarButton:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}

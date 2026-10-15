@@ -28,6 +28,7 @@ import { formatShortDate } from '@/shared/utils/formatShortDate';
 import { searchGlobal, searchGlobalWithAI } from '@/service/search';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuickActions } from './useQuickActions';
+import { useSearchStarToggle } from './useSearchStarToggle';
 import {
     addSearchHistoryEntry,
     clearSearchHistory,
@@ -54,6 +55,7 @@ export type SearchDialogItem = {
     description: string;
     meta?: string;
     snippet?: string;
+    fileId?: number;
     isStarred?: boolean;
     isCold?: boolean;
     keepsDialogOpen?: boolean;
@@ -134,6 +136,7 @@ export const useGlobalSearchProvider = () => {
     const currentRoute = `${location.pathname}${location.search}`;
 
     const quickActions = useQuickActions();
+    const { toggleStar } = useSearchStarToggle();
 
     const {
         data: baseQueryData,
@@ -213,6 +216,7 @@ export const useGlobalSearchProvider = () => {
             label: item.name,
             description: buildFileSystemDescription(item, true),
             meta: item.format,
+            fileId: item.id,
             isStarred: item.starred,
             isCold: item.tier === 'cold',
             onSelect: () => navigate(getFileSearchRoute(item.path)),
@@ -278,6 +282,7 @@ export const useGlobalSearchProvider = () => {
             kind: 'folder',
             label: item.name,
             description: buildFileSystemDescription(item, false),
+            fileId: item.id,
             isStarred: item.starred,
             isCold: item.tier === 'cold',
             onSelect: () => navigate(getFileSearchRoute(item.path)),
@@ -542,6 +547,13 @@ export const useGlobalSearchProvider = () => {
         }
     };
 
+    const toggleItemStar = (item: SearchDialogItem) => {
+        if (item.fileId === undefined) {
+            return;
+        }
+        toggleStar(item.fileId, Boolean(item.isStarred));
+    };
+
     const activateSecondaryAction = (item: SearchDialogItem) => {
         if (!item.secondaryAction) {
             return;
@@ -619,6 +631,7 @@ export const useGlobalSearchProvider = () => {
         handleInputKeyDown,
         activateItem,
         activateSecondaryAction,
+        toggleItemStar,
     };
 };
 

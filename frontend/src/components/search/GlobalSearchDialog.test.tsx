@@ -316,4 +316,54 @@ describe('GlobalSearchDialog suggestion', () => {
             screen.queryByRole('img', { name: 'FILE_TIER_COLD_INDICATOR' })
         ).not.toBeInTheDocument();
     });
+
+    describe('star toggle button', () => {
+        it('renders a pressed button for starred items with a file id and toggles without selecting', () => {
+            const onItemStarToggle = jest.fn();
+            const onItemSelect = jest.fn();
+            const item = createItem({ fileId: 5, isStarred: true });
+
+            render(
+                <GlobalSearchDialog
+                    {...defaultProps()}
+                    onItemSelect={onItemSelect}
+                    onItemStarToggle={onItemStarToggle}
+                    sections={[createSection({ items: [item] })]}
+                />
+            );
+
+            const starButton = screen.getByRole('button', { name: /FILES_UNFAVORITE_ITEM/ });
+            expect(starButton).toHaveAttribute('aria-pressed', 'true');
+            fireEvent.click(starButton);
+            expect(onItemStarToggle).toHaveBeenCalledWith(item);
+            expect(onItemSelect).not.toHaveBeenCalled();
+        });
+
+        it('renders an unpressed favorite button for unstarred items', () => {
+            render(
+                <GlobalSearchDialog
+                    {...defaultProps()}
+                    onItemStarToggle={jest.fn()}
+                    sections={[createSection({ items: [createItem({ fileId: 5 })] })]}
+                />
+            );
+
+            expect(screen.getByRole('button', { name: /FILES_FAVORITE_ITEM/ })).toHaveAttribute(
+                'aria-pressed',
+                'false'
+            );
+        });
+
+        it('omits the button for items without a file id', () => {
+            render(
+                <GlobalSearchDialog
+                    {...defaultProps()}
+                    onItemStarToggle={jest.fn()}
+                    sections={[createSection({ items: [createItem()] })]}
+                />
+            );
+
+            expect(screen.queryByRole('button', { name: /FAVORITE_ITEM/ })).not.toBeInTheDocument();
+        });
+    });
 });
