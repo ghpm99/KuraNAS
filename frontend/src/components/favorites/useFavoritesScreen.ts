@@ -44,6 +44,22 @@ const useFavoritesScreen = () => {
     const [activeFilter, setActiveFilter] = useState<FavoritesFilter>('all');
     const [viewMode, setViewMode] = useState<FavoritesViewMode>('grid');
 
+    const favoritesTrail = useMemo(() => {
+        if (!selectedItem) {
+            return [];
+        }
+
+        const fullTrail = findTrailById(files, selectedItem.id) ?? [];
+        const firstStarredIndex = fullTrail.findIndex((trailItem) => trailItem.starred);
+        if (firstStarredIndex < 0) {
+            return [selectedItem];
+        }
+
+        return fullTrail.slice(firstStarredIndex);
+    }, [files, selectedItem]);
+
+    const parentFolder = favoritesTrail[favoritesTrail.length - 2] ?? null;
+
     const scopedItems = useMemo(() => {
         if (!selectedItem) {
             return files;
@@ -53,8 +69,8 @@ const useFavoritesScreen = () => {
             return selectedItem.file_children ?? [];
         }
 
-        return [];
-    }, [files, selectedItem]);
+        return parentFolder ? (parentFolder.file_children ?? []) : files;
+    }, [files, selectedItem, parentFolder]);
 
     const filterCounts = useMemo(
         () => ({
@@ -109,29 +125,16 @@ const useFavoritesScreen = () => {
             return [rootSegment];
         }
 
-        const trail = findTrailById(files, selectedItem.id) ?? [];
-        if (trail.length === 0) {
-            return [
-                rootSegment,
-                {
-                    id: selectedItem.id,
-                    label: selectedItem.name,
-                    path: selectedItem.path,
-                    isCurrent: true,
-                },
-            ];
-        }
-
         return [
             rootSegment,
-            ...trail.map((item, index) => ({
-                id: item.id,
-                label: item.name,
-                path: item.path,
-                isCurrent: index === trail.length - 1,
+            ...favoritesTrail.map((trailItem, index) => ({
+                id: trailItem.id,
+                label: trailItem.name,
+                path: trailItem.path,
+                isCurrent: index === favoritesTrail.length - 1,
             })),
         ];
-    }, [files, selectedItem, t]);
+    }, [favoritesTrail, selectedItem, t]);
 
     const itemCountLabel = useMemo(() => {
         const count = filteredItems.length;
@@ -151,7 +154,7 @@ const useFavoritesScreen = () => {
         filterOptions.find((option) => option.value === activeFilter)?.label ??
         t('FAVORITES_FILTER_ALL');
 
-    const closeSelectedItem = () => handleSelectItem(null);
+    const closeSelectedItem = () => handleSelectItem(parentFolder);
 
     return {
         activeFilter,
