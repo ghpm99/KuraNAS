@@ -1,2 +1,2 @@
 mutagen==1.47.0
-pillow==12.2.0
+pillow==12.3.0
