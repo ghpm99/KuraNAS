@@ -25,7 +25,6 @@ type RepositoryInterface interface {
 	TouchPlaylist(tx *sql.Tx, playlistID int) error
 	GetCatalogVideos(limit int) ([]VideoFileModel, error)
 	GetRecentVideos(limit int) ([]VideoFileModel, error)
-	GetAllVideosForGrouping() ([]VideoFileModel, error)
 	GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error)
 	UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
 	DeleteAutoPlaylistItems(tx *sql.Tx, playlistID int) error
@@ -70,9 +69,7 @@ type RepositoryInterface interface {
 // VideoMetadataRepositoryInterface is the write-side for the video_metadata complement table.
 type VideoMetadataRepositoryInterface interface {
 	GetDbContext() *database.DbContext
-	GetVideoMetadataByID(id int) (VideoMetadataModel, error)
 	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
-	DeleteVideoMetadata(id int) error
 	ListVideosWithoutMetadata(afterFileID int, limit int) ([]VideoWithoutMetadata, error)
 	ListVideosPendingClassification(afterMetadataID int, limit int) ([]VideoPendingClassification, error)
 	UpdateVideoClassification(metadataID int, classification string) error

@@ -98,7 +98,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 61. Badge de classificação via i18n
 - [x] 61.1. Busca global exibe classification crua no meta do resultado de vídeo (useGlobalSearchProvider)
 - [x] 62. Código órfão do frontend de vídeos
-- [ ] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)
+- [x] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)
 - [ ] 63. Motor de comportamento alimentado pelo progresso por vídeo
 
 ### Android
