@@ -185,6 +185,9 @@ func (m *filesRepoMock) SetFileStarred(id int, isStarred bool) (bool, error) {
 func (m *filesRepoMock) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
 	return ids, nil
 }
+func (m *filesRepoMock) CountStarredFilesByKind() (StarredCountsDto, error) {
+	return StarredCountsDto{}, nil
+}
 func (m *filesRepoMock) UpdateFile(transaction *sql.Tx, file FileModel) (bool, error) {
 	if m.updateFileFn != nil {
 		return m.updateFileFn(transaction, file)

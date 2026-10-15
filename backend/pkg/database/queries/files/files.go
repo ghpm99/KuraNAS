@@ -112,6 +112,9 @@ var GetChildrenSortedByCreatedAtAscQuery string
 //go:embed get_children_by_parent_path_sorted_by_created_at_desc.sql
 var GetChildrenSortedByCreatedAtDescQuery string
 
+//go:embed count_starred_files_by_kind.sql
+var CountStarredFilesByKindQuery string
+
 //go:embed get_starred_files.sql
 var GetStarredFilesQuery string
 

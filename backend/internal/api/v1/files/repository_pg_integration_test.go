@@ -497,3 +497,57 @@ func TestPostgres_StarredListingFiltersByKindAndSortsByStarredAt(t *testing.T) {
 		t.Fatalf("last page unexpected: %+v err=%v", lastPage, err)
 	}
 }
+
+func TestPostgres_CountStarredFilesByKindMatchesKindListings(t *testing.T) {
+	repo := NewRepository(testutil.NewPostgresDB(t, "kuranas_files_it"))
+	truncateHomeFile(t, repo)
+
+	modifiedAt := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, createErr := repo.CreateFile(tx, FileModel{
+			Name: "pasta", Path: "/srv/pasta", ParentPath: "/srv", UpdatedAt: modifiedAt, CreatedAt: modifiedAt, Type: Directory,
+		})
+		return createErr
+	})
+	if err != nil {
+		t.Fatalf("insert directory: %v", err)
+	}
+	for _, name := range []string{"nota.txt", "foto.JPG", "clipe.mp4", "faixa.mp3", "relatorio.pdf", "apagada.png", "solta.png"} {
+		insertFileRow(t, repo, name, "/srv/"+name, "/srv", 1, modifiedAt)
+	}
+	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec("UPDATE home_file SET starred = TRUE WHERE name IN ('pasta', 'nota.txt', 'foto.JPG', 'clipe.mp4', 'faixa.mp3', 'relatorio.pdf')")
+		if execErr != nil {
+			return execErr
+		}
+		_, execErr = tx.Exec("UPDATE home_file SET starred = TRUE, deleted_at = now() WHERE name = 'apagada.png'")
+		return execErr
+	})
+	if err != nil {
+		t.Fatalf("seed starred files: %v", err)
+	}
+
+	counts, err := repo.CountStarredFilesByKind()
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+
+	expectedCountsByKind := map[StarredKind]int{
+		StarredKindAll:     counts.Total,
+		StarredKindFolders: counts.Folders,
+		StarredKindFiles:   counts.Files,
+		StarredKindMedia:   counts.Media,
+	}
+	for kind, count := range expectedCountsByKind {
+		page, listErr := repo.GetStarredFiles(1, 50, StarredListing{Kind: kind, Sort: StarredSortByName})
+		if listErr != nil {
+			t.Fatalf("listing %s: %v", kind, listErr)
+		}
+		if len(page.Items) != count {
+			t.Fatalf("kind %s: count %d differs from listing size %d", kind, count, len(page.Items))
+		}
+	}
+	if counts != (StarredCountsDto{Total: 6, Folders: 1, Files: 2, Media: 3}) {
+		t.Fatalf("unexpected counts %+v", counts)
+	}
+}
