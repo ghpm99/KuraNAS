@@ -104,7 +104,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 
 ### Android
 - [x] 64. Playlists visíveis no Android
-- [ ] 64.1. Detalhe da playlist no Android mostra o erro do servidor (hoje troca a falha por playlist vazia)
+- [x] 64.1. Detalhe da playlist no Android mostra o erro do servidor (hoje troca a falha por playlist vazia)
 - [ ] 64.2. Detalhe da playlist no Android paginado (`/video/playlists/:id/items`)
 - [ ] 65. "Recentes" sem duplicar itens
 - [ ] 65.1. Android envia `X-KuraNAS-Client-Id` próprio nas rotas `/video/` e `/music/` (hoje o servidor o identifica pelo IP)

@@ -20,6 +20,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kuranas.android.R
+import com.kuranas.android.core.ui.components.EmptyView
+import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -44,7 +48,8 @@ fun VideoPlaylistScreen(
     playerViewModel: VideoPlayerViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(playlistId) { viewModel.load(playlistId) }
-    val playlist = viewModel.playlist
+    val state by viewModel.state.collectAsState()
+    val playlist = state.playlist
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
@@ -52,10 +57,12 @@ fun VideoPlaylistScreen(
             leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
             onLeadingClick = onNavigateBack,
         )
-        if (playlist == null) {
-            LoadingView()
-        } else {
-            LazyColumn(
+        val errorMessage = state.error
+        when {
+            state.isLoading -> LoadingView()
+            errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
+            playlist == null || playlist.videos.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
+            else -> LazyColumn(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
