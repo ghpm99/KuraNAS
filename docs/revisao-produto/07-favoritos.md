@@ -22,7 +22,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 02. Jobs do worker (scan, checksum, mark-deleted) não regravam `starred`
 - [x] 03. 404 para id inexistente ou na lixeira no toggle
 - [x] 04. `PUT /files/starred/:id` idempotente devolvendo o estado final
-- [ ] 05. `POST /files/starred` em lote
+- [x] 05. `POST /files/starred` em lote
 - [ ] 06. Coluna `starred_at` preenchida ao favoritar
 - [ ] 07. `GET /files/starred` com filtro de tipo e ordenação (nome, data de favoritado)
 - [ ] 08. `GET /files/starred/counts` (pastas, arquivos, mídias)

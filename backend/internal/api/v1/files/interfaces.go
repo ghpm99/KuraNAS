@@ -26,6 +26,7 @@ type RepositoryInterface interface {
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
 	ToggleFileStarred(id int) (bool, error)
 	SetFileStarred(id int, isStarred bool) (bool, error)
+	SetFilesStarred(ids []int, isStarred bool) ([]int, error)
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	RestoreSubtree(transaction *sql.Tx, path string) (int64, error)
@@ -60,6 +61,7 @@ type ServiceInterface interface {
 	UpdateFile(file FileDto) (result bool, err error)
 	ToggleFileStarred(id int) (bool, error)
 	SetFileStarred(id int, isStarred bool) (bool, error)
+	SetFilesStarred(ids []int, isStarred bool) ([]int, error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error

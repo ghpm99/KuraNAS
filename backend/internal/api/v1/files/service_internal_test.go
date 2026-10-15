@@ -182,6 +182,9 @@ func (m *filesRepoMock) ToggleFileStarred(id int) (bool, error) {
 func (m *filesRepoMock) SetFileStarred(id int, isStarred bool) (bool, error) {
 	return isStarred, nil
 }
+func (m *filesRepoMock) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
+	return ids, nil
+}
 func (m *filesRepoMock) UpdateFile(transaction *sql.Tx, file FileModel) (bool, error) {
 	if m.updateFileFn != nil {
 		return m.updateFileFn(transaction, file)
