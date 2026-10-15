@@ -64,7 +64,7 @@ func (m *filesHandlerServiceMock) GetActiveFilesPage(page int, pageSize int) (ut
 func (m *filesHandlerServiceMock) GetFilesByPathPrefix(prefix string, page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
 }
-func (m *filesHandlerServiceMock) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+func (m *filesHandlerServiceMock) GetStarredFiles(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileDto], error) {
 	return m.listingPage(page, pageSize)
 }
 func (m *filesHandlerServiceMock) GetRecentlyAccessedFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {

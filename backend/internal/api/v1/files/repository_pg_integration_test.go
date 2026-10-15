@@ -314,7 +314,7 @@ func TestPostgres_StarredAndRecentListAcrossFoldersAndSkipDeleted(t *testing.T) 
 		t.Fatalf("seed starred and recent: %v", err)
 	}
 
-	starred, err := repo.GetStarredFiles(1, 50)
+	starred, err := repo.GetStarredFiles(1, 50, DefaultStarredListing)
 	if err != nil {
 		t.Fatalf("GetStarredFiles: %v", err)
 	}
@@ -419,5 +419,81 @@ func TestPostgres_GetActiveFilesByPathsReturnsOnlyActiveMatches(t *testing.T) {
 	slices.Sort(matchedPaths)
 	if !slices.Equal(matchedPaths, []string{"/srv", "/srv/docs"}) {
 		t.Fatalf("expected only active requested paths, got %v", matchedPaths)
+	}
+}
+
+func TestPostgres_StarredListingFiltersByKindAndSortsByStarredAt(t *testing.T) {
+	ctx := testutil.NewPostgresDB(t, "kuranas_files_it")
+	repo := NewRepository(ctx)
+	truncateHomeFile(t, repo)
+
+	mod := time.Date(2026, 6, 11, 10, 0, 0, 0, time.UTC)
+	err := repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		_, createErr := repo.CreateFile(tx, FileModel{
+			Name: "pasta", Path: "/srv/pasta", ParentPath: "/srv", UpdatedAt: mod, CreatedAt: mod, Type: Directory,
+		})
+		return createErr
+	})
+	if err != nil {
+		t.Fatalf("insert directory: %v", err)
+	}
+	for _, name := range []string{"nota.txt", "foto.JPG", "clipe.mp4", "faixa.mp3", "relatorio.pdf", "apagada.png", "solta.png"} {
+		insertFileRow(t, repo, name, "/srv/"+name, "/srv", 1, mod)
+	}
+
+	err = repo.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		statements := []string{
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-01 10:00:00+00' WHERE name = 'pasta'",
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-02 10:00:00+00' WHERE name = 'nota.txt'",
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-03 10:00:00+00' WHERE name = 'foto.JPG'",
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-04 10:00:00+00' WHERE name = 'clipe.mp4'",
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-05 10:00:00+00' WHERE name = 'faixa.mp3'",
+			"UPDATE home_file SET starred = TRUE, starred_at = NULL WHERE name = 'relatorio.pdf'",
+			"UPDATE home_file SET starred = TRUE, starred_at = '2026-01-06 10:00:00+00', deleted_at = now() WHERE name = 'apagada.png'",
+		}
+		for _, statement := range statements {
+			if _, execErr := tx.Exec(statement); execErr != nil {
+				return execErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("seed starred files: %v", err)
+	}
+
+	testCases := []struct {
+		listing       StarredListing
+		expectedNames []string
+	}{
+		{DefaultStarredListing, []string{"pasta", "clipe.mp4", "faixa.mp3", "foto.JPG", "nota.txt", "relatorio.pdf"}},
+		{StarredListing{StarredKindFolders, StarredSortByName}, []string{"pasta"}},
+		{StarredListing{StarredKindFiles, StarredSortByName}, []string{"nota.txt", "relatorio.pdf"}},
+		{StarredListing{StarredKindMedia, StarredSortByName}, []string{"clipe.mp4", "faixa.mp3", "foto.JPG"}},
+		{StarredListing{StarredKindAll, StarredSortByStarredAt}, []string{"faixa.mp3", "clipe.mp4", "foto.JPG", "nota.txt", "pasta", "relatorio.pdf"}},
+		{StarredListing{StarredKindMedia, StarredSortByStarredAt}, []string{"faixa.mp3", "clipe.mp4", "foto.JPG"}},
+		{StarredListing{StarredKindFiles, StarredSortByStarredAt}, []string{"nota.txt", "relatorio.pdf"}},
+	}
+	for _, testCase := range testCases {
+		page, listErr := repo.GetStarredFiles(1, 50, testCase.listing)
+		if listErr != nil {
+			t.Fatalf("listing %+v: %v", testCase.listing, listErr)
+		}
+		names := make([]string, 0, len(page.Items))
+		for _, file := range page.Items {
+			names = append(names, file.Name)
+		}
+		if !slices.Equal(names, testCase.expectedNames) {
+			t.Fatalf("listing %+v: expected %v, got %v", testCase.listing, testCase.expectedNames, names)
+		}
+	}
+
+	firstPage, err := repo.GetStarredFiles(1, 2, StarredListing{StarredKindAll, StarredSortByStarredAt})
+	if err != nil || len(firstPage.Items) != 2 || !firstPage.Pagination.HasNext || firstPage.Items[0].Name != "faixa.mp3" {
+		t.Fatalf("first page unexpected: %+v err=%v", firstPage, err)
+	}
+	lastPage, err := repo.GetStarredFiles(3, 2, StarredListing{StarredKindAll, StarredSortByStarredAt})
+	if err != nil || len(lastPage.Items) != 2 || lastPage.Pagination.HasNext || lastPage.Items[1].Name != "relatorio.pdf" {
+		t.Fatalf("last page unexpected: %+v err=%v", lastPage, err)
 	}
 }

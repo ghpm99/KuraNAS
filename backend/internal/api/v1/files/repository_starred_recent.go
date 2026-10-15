@@ -9,8 +9,8 @@ import (
 	"github.com/lib/pq"
 )
 
-func (r *Repository) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
-	return r.queryFilesPage(queries.GetStarredFilesQuery, page, pageSize)
+func (r *Repository) GetStarredFiles(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileModel], error) {
+	return r.queryFilesPage(listing.query(), page, pageSize, string(listing.Kind), pq.Array(mediaFormats()))
 }
 
 func (r *Repository) GetRecentlyAccessedFiles(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {

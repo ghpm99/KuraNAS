@@ -13,19 +13,22 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type starredRecentServiceMock struct {
 	filesHandlerServiceMock
-	requestedStarred [][2]int
-	requestedRecent  [][2]int
-	starredPage      utils.PaginationResponse[FileDto]
-	recentPage       utils.PaginationResponse[FileDto]
-	listingError     error
+	requestedStarred  [][2]int
+	requestedListings []StarredListing
+	requestedRecent   [][2]int
+	starredPage       utils.PaginationResponse[FileDto]
+	recentPage        utils.PaginationResponse[FileDto]
+	listingError      error
 }
 
-func (m *starredRecentServiceMock) GetStarredFiles(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+func (m *starredRecentServiceMock) GetStarredFiles(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileDto], error) {
 	m.requestedStarred = append(m.requestedStarred, [2]int{page, pageSize})
+	m.requestedListings = append(m.requestedListings, listing)
 	return m.starredPage, m.listingError
 }
 
@@ -103,7 +106,7 @@ func TestStarredAndRecentHandlersMapServiceErrorToInternal(t *testing.T) {
 
 func TestServiceStarredAndRecentConvertPagesAndPropagateErrors(t *testing.T) {
 	service := newFilesServiceForTest(t, &filesRepoMock{
-		getStarredFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		getStarredFilesFn: func(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{Items: []FileModel{sampleModel(8, "fav", File)}}, nil
 		},
 		getRecentlyAccessedFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
@@ -111,7 +114,7 @@ func TestServiceStarredAndRecentConvertPagesAndPropagateErrors(t *testing.T) {
 		},
 	})
 
-	starred, err := service.GetStarredFiles(1, 10)
+	starred, err := service.GetStarredFiles(1, 10, DefaultStarredListing)
 	if err != nil || len(starred.Items) != 1 || starred.Items[0].ID != 8 {
 		t.Fatalf("unexpected starred page %+v err=%v", starred, err)
 	}
@@ -120,11 +123,11 @@ func TestServiceStarredAndRecentConvertPagesAndPropagateErrors(t *testing.T) {
 	}
 
 	failing := newFilesServiceForTest(t, &filesRepoMock{
-		getStarredFilesFn: func(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+		getStarredFilesFn: func(page int, pageSize int, listing StarredListing) (utils.PaginationResponse[FileModel], error) {
 			return utils.PaginationResponse[FileModel]{}, errors.New("starred failed")
 		},
 	})
-	if _, err := failing.GetStarredFiles(1, 10); err == nil {
+	if _, err := failing.GetStarredFiles(1, 10, DefaultStarredListing); err == nil {
 		t.Fatalf("expected starred error")
 	}
 	if recent, err := failing.GetRecentlyAccessedFiles(1, 10); err != nil || len(recent.Items) != 0 {
@@ -138,10 +141,10 @@ func TestRepositoryStarredAndRecentQueries(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetStarredFilesQuery)).
-		WithArgs(11, 10).
+		WithArgs("all", pq.Array(mediaFormats()), 11, 10).
 		WillReturnRows(addFileRow(sqlmock.NewRows(fileRowColumns()), 1, "a", "/tmp/a"))
 	mock.ExpectRollback()
-	starred, err := repo.GetStarredFiles(2, 10)
+	starred, err := repo.GetStarredFiles(2, 10, DefaultStarredListing)
 	if err != nil || len(starred.Items) != 1 {
 		t.Fatalf("GetStarredFiles failed len=%d err=%v", len(starred.Items), err)
 	}
@@ -158,5 +161,37 @@ func TestRepositoryStarredAndRecentQueries(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sqlmock expectations: %v", err)
+	}
+}
+
+func TestGetStarredFilesHandlerForwardsKindAndSort(t *testing.T) {
+	testCases := []struct {
+		query    string
+		expected StarredListing
+	}{
+		{"", StarredListing{Kind: StarredKindAll, Sort: StarredSortByName}},
+		{"?kind=folders", StarredListing{Kind: StarredKindFolders, Sort: StarredSortByName}},
+		{"?kind=files&sort=name", StarredListing{Kind: StarredKindFiles, Sort: StarredSortByName}},
+		{"?kind=media&sort=starred_at", StarredListing{Kind: StarredKindMedia, Sort: StarredSortByStarredAt}},
+		{"?sort=starred_at", StarredListing{Kind: StarredKindAll, Sort: StarredSortByStarredAt}},
+	}
+	for _, testCase := range testCases {
+		service := &starredRecentServiceMock{}
+		recorder := httptest.NewRecorder()
+		newStarredRecentRouter(service).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/files/starred"+testCase.query, nil))
+		if recorder.Code != http.StatusOK || len(service.requestedListings) != 1 || service.requestedListings[0] != testCase.expected {
+			t.Fatalf("%q: code=%d listings=%v expected %v", testCase.query, recorder.Code, service.requestedListings, testCase.expected)
+		}
+	}
+}
+
+func TestGetStarredFilesHandlerRejectsInvalidKindAndSort(t *testing.T) {
+	for _, query := range []string{"?kind=documents", "?sort=size", "?kind=ALL"} {
+		service := &starredRecentServiceMock{}
+		recorder := httptest.NewRecorder()
+		newStarredRecentRouter(service).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/files/starred"+query, nil))
+		if recorder.Code != http.StatusBadRequest || len(service.requestedListings) != 0 {
+			t.Fatalf("%q: expected 400 without service call, got %d", query, recorder.Code)
+		}
 	}
 }

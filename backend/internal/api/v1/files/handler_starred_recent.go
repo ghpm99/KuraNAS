@@ -11,7 +11,15 @@ import (
 )
 
 func (handler *Handler) GetStarredFilesHandler(c *gin.Context) {
-	handler.serveFilesPage(c, "GetStarredFiles", "Fetching starred files", handler.service.GetStarredFiles)
+	listing, isListingValid := ParseStarredListing(c.Query("kind"), c.Query("sort"))
+	if !isListingValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	handler.serveFilesPage(c, "GetStarredFiles", "Fetching starred files", func(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+		return handler.service.GetStarredFiles(page, pageSize, listing)
+	})
 }
 
 func (handler *Handler) GetRecentlyAccessedFilesHandler(c *gin.Context) {
