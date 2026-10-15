@@ -1,13 +1,16 @@
 import { appRoutes } from '@/app/routes';
 import { FileData } from './fileContext';
 
-const FILES_PREFIX = appRoutes.files;
+const browserRoots: string[] = [appRoutes.files, appRoutes.favorites];
 
 export { fileQueryKeys } from '@/shared/queryKeys/fileQueryKeys';
 
 export const extractFilePath = (pathname: string): string => {
-    if (!pathname.startsWith(FILES_PREFIX)) return '';
-    const rest = pathname.slice(FILES_PREFIX.length);
+    const browserRoot = browserRoots.find(
+        (root) => pathname === root || pathname.startsWith(`${root}/`)
+    );
+    if (!browserRoot) return '';
+    const rest = pathname.slice(browserRoot.length);
     if (!rest || rest === '/') return '';
     return decodeURIComponent(rest);
 };

@@ -69,7 +69,7 @@ function AppContent() {
                 <Route element={<ShellLayout />}>
                     <Route path={appRoutes.home} element={<HomePage />} />
                     <Route path={`${appRoutes.files}/*`} element={<FilePage />} />
-                    <Route path={appRoutes.favorites} element={<FavoritesPage />} />
+                    <Route path={`${appRoutes.favorites}/*`} element={<FavoritesPage />} />
                     <Route path={appRoutes.settings} element={<SettingsPage />} />
                     <Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
                     <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />

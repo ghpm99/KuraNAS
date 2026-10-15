@@ -8,7 +8,7 @@ import { FileType } from '@/utils';
 import { LayoutGrid, List, Sparkles } from 'lucide-react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
+import { buildFavoritesUrl } from '@/app/routes';
 import useFavoritesScreen from './useFavoritesScreen';
 import styles from './FavoritesScreen.module.css';
 
@@ -71,10 +71,9 @@ const FavoritesScreen = () => {
                                                     type="button"
                                                     className={styles.breadcrumbButton}
                                                     onClick={() => {
-                                                        const url = segment.path
-                                                            ? `${appRoutes.files}${segment.path}`
-                                                            : appRoutes.favorites;
-                                                        navigate(url);
+                                                        navigate(
+                                                            buildFavoritesUrl(segment.path ?? '')
+                                                        );
                                                     }}
                                                 >
                                                     {segment.label}
@@ -157,13 +156,11 @@ const FavoritesScreen = () => {
                             title={currentTitle}
                             emptyStateMessage={t('FAVORITES_EMPTY_STATE')}
                         />
-                        {selectedItem ? null : (
-                            <LoadMoreSentinel
-                                hasNextPage={hasNextPage}
-                                isFetchingNextPage={isFetchingNextPage}
-                                fetchNextPage={fetchNextPage}
-                            />
-                        )}
+                        <LoadMoreSentinel
+                            hasNextPage={hasNextPage}
+                            isFetchingNextPage={isFetchingNextPage}
+                            fetchNextPage={fetchNextPage}
+                        />
                     </section>
                 </div>
 

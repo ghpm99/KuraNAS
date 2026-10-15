@@ -1,5 +1,7 @@
 import {
     appRoutes,
+    buildFavoritesUrl,
+    buildFilesUrl,
     getFileBrowserRootPath,
     getImageRoute,
     getMusicRoute,
@@ -45,5 +47,13 @@ describe('app routes helpers', () => {
         expect(getFileBrowserRootPath('/files')).toBe('/files');
         expect(getFileBrowserRootPath('/favorites')).toBe('/favorites');
         expect(getFileBrowserRootPath('/starred')).toBe('/favorites');
+        expect(getFileBrowserRootPath('/favorites/docs/a')).toBe('/favorites');
+        expect(getFileBrowserRootPath('/files/docs')).toBe('/files');
+    });
+
+    it('builds browser urls under the given root with encoded segments', () => {
+        expect(buildFavoritesUrl('')).toBe('/favorites');
+        expect(buildFavoritesUrl('/docs/my folder')).toBe('/favorites/docs/my%20folder');
+        expect(buildFilesUrl('/docs')).toBe('/files/docs');
     });
 });

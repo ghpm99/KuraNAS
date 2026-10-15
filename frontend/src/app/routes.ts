@@ -100,18 +100,28 @@ export const isAnalyticsRoute = (pathname: string) =>
     pathname === appRoutes.analytics || pathname.startsWith(`${appRoutes.analytics}/`);
 
 export const getFileBrowserRootPath = (pathname: string) => {
-    if (pathname === appRoutes.favorites || pathname === appRoutes.legacyFavorites) {
+    if (
+        pathname === appRoutes.favorites ||
+        pathname.startsWith(`${appRoutes.favorites}/`) ||
+        pathname === appRoutes.legacyFavorites
+    ) {
         return appRoutes.favorites;
     }
 
     return appRoutes.files;
 };
 
-export const buildFilesUrl = (filePath: string): string => {
-    if (!filePath) return appRoutes.files;
+export const buildBrowserUrl = (browserRootPath: string, filePath: string): string => {
+    if (!filePath) return browserRootPath;
     const encodedPath = filePath
         .split('/')
         .map((segment) => encodeURIComponent(segment))
         .join('/');
-    return `${appRoutes.files}${encodedPath.startsWith('/') ? '' : '/'}${encodedPath}`;
+    return `${browserRootPath}${encodedPath.startsWith('/') ? '' : '/'}${encodedPath}`;
 };
+
+export const buildFilesUrl = (filePath: string): string =>
+    buildBrowserUrl(appRoutes.files, filePath);
+
+export const buildFavoritesUrl = (filePath: string): string =>
+    buildBrowserUrl(appRoutes.favorites, filePath);

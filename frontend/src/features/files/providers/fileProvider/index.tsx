@@ -33,7 +33,7 @@ import {
     findItemInTree,
     findTrailByIdInTree,
 } from './fileProviderUtils';
-import { buildFilesUrl } from '@/app/routes';
+import { buildBrowserUrl, getFileBrowserRootPath } from '@/app/routes';
 import useExpandTreeAlongAncestors from './useExpandTreeAlongAncestors';
 import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
@@ -57,7 +57,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    // URL → path extraction
+    const browserRootPath = getFileBrowserRootPath(location.pathname);
     const currentFilePath = extractFilePath(location.pathname);
 
     // Resolve URL path → FileData via API
@@ -102,7 +102,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
                       page: pageParam,
                       pageSize,
                       fileParent: selectedItemId ?? undefined,
-                      category: fileListFilter,
+                      category: selectedItemId ? 'all' : fileListFilter,
                       sort: filesSort,
                   }),
         initialPageParam: 1,
@@ -191,11 +191,11 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             const movedPath = await moveFileService(sourceId, destinationFolderId, destinationPath);
             if (sourceId === openedItemId) {
                 discardOpenedItemPathQuery();
-                navigate(buildFilesUrl(movedPath));
+                navigate(buildBrowserUrl(browserRootPath, movedPath));
             }
             await invalidateFileQueries();
         },
-        [openedItemId, discardOpenedItemPathQuery, navigate, invalidateFileQueries]
+        [openedItemId, browserRootPath, discardOpenedItemPathQuery, navigate, invalidateFileQueries]
     );
 
     const copyFile = useCallback(
@@ -212,7 +212,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             if (id === openedItemId) {
                 discardOpenedItemPathQuery();
                 navigate(
-                    buildFilesUrl(
+                    buildBrowserUrl(
+                        browserRootPath,
                         renamedPath || joinPath(openedItemParentPath, newName || openedItemName)
                     )
                 );
@@ -223,6 +224,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             openedItemId,
             openedItemParentPath,
             openedItemName,
+            browserRootPath,
             discardOpenedItemPathQuery,
             navigate,
             invalidateFileQueries,
@@ -234,13 +236,19 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             await deleteFileService(id, permanent);
             if (id === openedItemId) {
                 discardOpenedItemPathQuery();
-                navigate(buildFilesUrl(openedItemParentPath === '/' ? '' : (openedItemParentPath ?? '')));
+                navigate(
+                    buildBrowserUrl(
+                        browserRootPath,
+                        openedItemParentPath === '/' ? '' : (openedItemParentPath ?? '')
+                    )
+                );
             }
             await invalidateFileQueries();
         },
         [
             openedItemId,
             openedItemParentPath,
+            browserRootPath,
             discardOpenedItemPathQuery,
             navigate,
             invalidateFileQueries,
@@ -301,12 +309,12 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const handleSelectItem = useCallback(
         (item: FileData | null) => {
             if (!item) {
-                navigate(buildFilesUrl(''));
+                navigate(buildBrowserUrl(browserRootPath, ''));
                 return;
             }
-            navigate(buildFilesUrl(item.path));
+            navigate(buildBrowserUrl(browserRootPath, item.path));
         },
-        [navigate]
+        [navigate, browserRootPath]
     );
 
     const handleStarredItem = useCallback(

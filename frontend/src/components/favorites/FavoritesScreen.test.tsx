@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import FavoritesScreen from './FavoritesScreen';
 
 const mockUseFavoritesScreen = jest.fn();
@@ -81,7 +81,7 @@ describe('FavoritesScreen', () => {
         expect(fetchNextPage).toHaveBeenCalledTimes(1);
     });
 
-    it('hides the sentinel while a folder is open', () => {
+    it('keeps the sentinel while a folder is open so large folders paginate', () => {
         mockUseFavoritesScreen.mockReturnValue({
             ...mockUseFavoritesScreen(),
             selectedItem: { id: 10, type: 1, name: 'Projects' },
@@ -95,7 +95,7 @@ describe('FavoritesScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'LOAD_MORE' })).toBeInTheDocument();
     });
 
     it('renders the dedicated favorites layout and delegates filter changes', () => {
@@ -183,5 +183,32 @@ describe('FavoritesScreen', () => {
         fireEvent.click(screen.getByText('CloseDetailsMock'));
 
         expect(closeSelectedItem).toHaveBeenCalledTimes(1);
+    });
+
+    it('navigates breadcrumb segments inside favorites', () => {
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            breadcrumbSegments: [
+                { id: null, label: 'STARRED_FILES', path: null, isCurrent: false },
+                { id: 10, label: 'My Projects', path: '/my projects', isCurrent: false },
+                { id: 11, label: 'src', path: '/my projects/src', isCurrent: true },
+            ],
+        });
+
+        const LocationProbe = () => <div data-testid="location">{useLocation().pathname}</div>;
+        render(
+            <MemoryRouter initialEntries={['/favorites/my%20projects/src']}>
+                <FavoritesScreen />
+                <Routes>
+                    <Route path="*" element={<LocationProbe />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'My Projects' }));
+        expect(screen.getByTestId('location')).toHaveTextContent('/favorites/my%20projects');
+
+        fireEvent.click(screen.getByRole('button', { name: 'STARRED_FILES' }));
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/favorites$/);
     });
 });

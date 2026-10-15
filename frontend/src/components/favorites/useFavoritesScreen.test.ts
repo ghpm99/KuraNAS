@@ -200,4 +200,106 @@ describe('useFavoritesScreen', () => {
         expect(result.current.hasNextPage).toBe(true);
         expect(result.current.fetchNextPage).toBe(fetchNextPage);
     });
+
+    const buildEntry = (id: number, name: string, path: string, overrides = {}) => ({
+        id,
+        name,
+        path,
+        parent_path: path.slice(0, path.lastIndexOf('/')) || '/',
+        type: 2,
+        format: '.txt',
+        size: 1,
+        updated_at: '',
+        created_at: '',
+        deleted_at: '',
+        last_interaction: '',
+        last_backup: '',
+        check_sum: '',
+        directory_content_count: 0,
+        starred: false,
+        ...overrides,
+    });
+
+    it('starts the breadcrumb at the starred ancestor and lists sibling files when a file is selected', () => {
+        const handleSelectItem = jest.fn();
+        const report = buildEntry(30, 'report.txt', '/home/docs/sub/report.txt');
+        const notes = buildEntry(31, 'notes.txt', '/home/docs/sub/notes.txt');
+        const subFolder = buildEntry(20, 'sub', '/home/docs/sub', {
+            type: 1,
+            file_children: [report, notes],
+        });
+        const starredFolder = buildEntry(10, 'docs', '/home/docs', {
+            type: 1,
+            starred: true,
+            file_children: [subFolder],
+        });
+        const homeFolder = buildEntry(1, 'home', '/home', {
+            type: 1,
+            file_children: [starredFolder],
+        });
+        mockUseFile.mockReturnValue({
+            files: [homeFolder],
+            selectedItem: report,
+            handleSelectItem,
+        });
+
+        const { result } = renderHook(() => useFavoritesScreen());
+
+        expect(result.current.breadcrumbSegments.map((segment) => segment.label)).toEqual([
+            'STARRED_FILES',
+            'docs',
+            'sub',
+            'report.txt',
+        ]);
+        expect(result.current.filteredItems.map((entry) => entry.name)).toEqual([
+            'report.txt',
+            'notes.txt',
+        ]);
+
+        act(() => {
+            result.current.closeSelectedItem();
+        });
+        expect(handleSelectItem).toHaveBeenCalledWith(subFolder);
+    });
+
+    it('lists the starred roots and closes back to the root when a starred root file is selected', () => {
+        const handleSelectItem = jest.fn();
+        const starredFile = buildEntry(5, 'a.txt', '/a.txt', { starred: true });
+        const otherStarredFile = buildEntry(6, 'b.txt', '/b.txt', { starred: true });
+        mockUseFile.mockReturnValue({
+            files: [starredFile, otherStarredFile],
+            selectedItem: starredFile,
+            handleSelectItem,
+        });
+
+        const { result } = renderHook(() => useFavoritesScreen());
+
+        expect(result.current.breadcrumbSegments.map((segment) => segment.label)).toEqual([
+            'STARRED_FILES',
+            'a.txt',
+        ]);
+        expect(result.current.filteredItems).toHaveLength(2);
+
+        act(() => {
+            result.current.closeSelectedItem();
+        });
+        expect(handleSelectItem).toHaveBeenCalledWith(null);
+    });
+
+    it('falls back to the selected item alone when it is missing from the loaded tree', () => {
+        const orphan = buildEntry(77, 'orphan', '/orphan', { type: 1, file_children: [] });
+        mockUseFile.mockReturnValue({
+            files: [],
+            selectedItem: orphan,
+            handleSelectItem: jest.fn(),
+        });
+
+        const { result } = renderHook(() => useFavoritesScreen());
+
+        expect(result.current.breadcrumbSegments.map((segment) => segment.label)).toEqual([
+            'STARRED_FILES',
+            'orphan',
+        ]);
+        expect(result.current.filteredItems).toEqual([]);
+    });
 });

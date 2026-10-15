@@ -127,6 +127,11 @@ describe('fileProvider utilities', () => {
         expect(extractFilePath('/files/')).toBe('');
         expect(extractFilePath('/files/docs/new')).toBe('/docs/new');
         expect(extractFilePath('/other')).toBe('');
+        expect(extractFilePath('/favorites')).toBe('');
+        expect(extractFilePath('/favorites/')).toBe('');
+        expect(extractFilePath('/favorites/a/b')).toBe('/a/b');
+        expect(extractFilePath('/favorites/my%20folder')).toBe('/my folder');
+        expect(extractFilePath('/filesystem')).toBe('');
     });
 
     it('builds encoded file URLs', () => {
@@ -558,7 +563,25 @@ describe('FileProvider', () => {
         expect(mockGetRecentlyAccessedFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
     });
 
-    it('falls back to the folder tree with category when a folder is open in the starred view', async () => {
+    it('resolves the opened folder from a favorites deep link and keeps navigation inside favorites', async () => {
+        mockPathname = '/favorites/docs';
+        mockGetFileByPath.mockResolvedValue(createNode(5, { path: '/docs' }));
+        renderProvider();
+        await waitFor(() => expect(capturedContext!.selectedItem).not.toBeNull());
+        expect(mockGetFileByPath).toHaveBeenCalledWith('/docs');
+
+        act(() => {
+            capturedContext!.handleSelectItem(createNode(6, { path: '/docs/sub folder' }));
+        });
+        expect(mockNavigate).toHaveBeenCalledWith('/favorites/docs/sub%20folder');
+
+        act(() => {
+            capturedContext!.handleSelectItem(null);
+        });
+        expect(mockNavigate).toHaveBeenLastCalledWith('/favorites');
+    });
+
+    it('lists every child of a folder opened in the starred view instead of only starred ones', async () => {
         mockPathname = '/files/docs';
         mockGetFileByPath.mockResolvedValue(createNode(5, { path: '/docs' }));
         renderProvider();
@@ -570,7 +593,7 @@ describe('FileProvider', () => {
 
         await waitFor(() =>
             expect(mockGetFilesTree).toHaveBeenCalledWith(
-                expect.objectContaining({ category: 'starred', fileParent: 5 })
+                expect.objectContaining({ category: 'all', fileParent: 5 })
             )
         );
         expect(mockGetStarredFiles).not.toHaveBeenCalled();
