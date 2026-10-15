@@ -53,9 +53,16 @@ fun VideoPlayerScreen(
             override fun onPlayerError(error: PlaybackException) {
                 playbackError = "${error.errorCodeName}: ${error.message ?: ""}"
             }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (!playWhenReady) viewModel.reportProgressNow(player.toPlayerProgress().copy(isPlaying = false))
+            }
         }
         player.addListener(listener)
+        viewModel.startProgressReporting { player.toPlayerProgress() }
         onDispose {
+            viewModel.stopProgressReporting()
+            viewModel.reportProgressNow(player.toPlayerProgress().copy(isPlaying = false))
             player.removeListener(listener)
             player.release()
         }
@@ -63,8 +70,8 @@ fun VideoPlayerScreen(
 
     LaunchedEffect(videoId) {
         playbackError = null
-        val url = viewModel.getStreamUrl(videoId)
-        player.setMediaItem(MediaItem.fromUri(url))
+        val start = viewModel.openVideo(videoId)
+        player.setMediaItem(MediaItem.fromUri(start.streamUrl), start.startPositionMs)
         player.prepare()
         player.play()
     }
@@ -96,3 +103,9 @@ fun VideoPlayerScreen(
         }
     }
 }
+
+private fun Player.toPlayerProgress() = PlayerProgress(
+    positionMs = currentPosition,
+    durationMs = duration,
+    isPlaying = isPlaying,
+)

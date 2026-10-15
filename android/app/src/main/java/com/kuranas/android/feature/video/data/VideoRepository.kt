@@ -32,6 +32,23 @@ class VideoRepository @Inject constructor(
     suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
         api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId)).playbackState
     }
+    suspend fun updatePlaybackState(
+        videoId: String,
+        playlistId: Int?,
+        currentTimeSeconds: Double,
+        durationSeconds: Double?,
+        isPaused: Boolean,
+    ): AppResult<Unit> = safeApiCall {
+        api.updatePlaybackState(
+            UpdatePlaybackRequest(
+                playlistId = playlistId,
+                videoId = videoId.toIntOrNull(),
+                currentTime = currentTimeSeconds,
+                duration = durationSeconds,
+                isPaused = isPaused,
+            ),
+        )
+    }
     suspend fun getPlaybackState(): AppResult<PlaybackStateDto> = safeApiCall { api.getPlaybackState().playbackState }
     suspend fun nextVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.nextVideo().playbackState }
     suspend fun previousVideo(): AppResult<PlaybackStateDto> = safeApiCall { api.previousVideo().playbackState }
