@@ -45,6 +45,8 @@
     <string name="files_new_folder">Nova pasta</string>
     <string name="files_folder_name_label">Nome da pasta</string>
     <string name="files_empty_folder">Pasta vazia</string>
+    <string name="files_star_action">Adicionar aos favoritos</string>
+    <string name="files_unstar_action">Remover dos favoritos</string>
     <string name="file_not_found">Arquivo não encontrado</string>
 
     <!-- File viewer -->

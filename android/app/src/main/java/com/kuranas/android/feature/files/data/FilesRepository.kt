@@ -37,8 +37,8 @@ class FilesRepository @Inject constructor(
         api.deleteFile(DeleteFileRequest(id.toIntOrNull() ?: 0))
     }
 
-    suspend fun starFile(id: String): AppResult<Unit> = safeApiCall {
-        api.starFile(id)
+    suspend fun setFileStarred(id: String, isStarred: Boolean): AppResult<StarredResponse> = safeApiCall {
+        api.setFileStarred(id, SetStarredRequest(isStarred))
     }
 
     /**

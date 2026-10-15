@@ -20,6 +20,7 @@ data class FilesUiState(
     val breadcrumb: List<Pair<String, String>> = emptyList(),
     val error: String? = null,
     val showCreateFolderDialog: Boolean = false,
+    val actionErrorMessage: String? = null,
 )
 
 @HiltViewModel
@@ -81,8 +82,28 @@ class FilesViewModel @Inject constructor(private val repository: FilesRepository
         }
     }
 
-    fun starFile(file: FileItemDto) {
-        viewModelScope.launch { repository.starFile(file.id) }
+    fun toggleFileStarred(file: FileItemDto) {
+        val currentIsStarred = _state.value.files.firstOrNull { it.id == file.id }?.starred ?: return
+        applyStarred(file.id, !currentIsStarred)
+        viewModelScope.launch {
+            when (val result = repository.setFileStarred(file.id, !currentIsStarred)) {
+                is AppResult.Success -> applyStarred(file.id, result.data.starred)
+                is AppResult.Error -> {
+                    applyStarred(file.id, currentIsStarred)
+                    _state.update { it.copy(actionErrorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun dismissActionError() {
+        _state.update { it.copy(actionErrorMessage = null) }
+    }
+
+    private fun applyStarred(fileId: String, isStarred: Boolean) {
+        _state.update { state ->
+            state.copy(files = state.files.map { if (it.id == fileId) it.copy(starred = isStarred) else it })
+        }
     }
 
     fun createFolder(name: String) {

@@ -47,7 +47,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 20. Contagem "N+ itens" via chave i18n; comentários removidos de `HomeScreen.tsx`
 
 ### Android
-- [ ] 21. Estrela no explorer atualiza a tela (otimista com rollback, erro do servidor)
+- [x] 21. Estrela no explorer atualiza a tela (otimista com rollback, erro do servidor)
 - [ ] 22. Tela de Favoritos paginada com navegação
 - [ ] 23. Estrela em imagens, música e vídeo
 
