@@ -38,6 +38,7 @@ object AppRoute {
     const val MUSIC_FOLDER = "music/folder/{key}"
     const val MUSIC_PLAYLIST = "music/playlist/{id}"
     const val VIDEO_PLAYLIST = "video/playlist/{id}"
+    const val VIDEO_LIBRARY = "video/library"
     const val JOBS = "jobs"
     const val JOB_DETAIL = "jobs/{id}"
     const val ANALYTICS = "analytics"

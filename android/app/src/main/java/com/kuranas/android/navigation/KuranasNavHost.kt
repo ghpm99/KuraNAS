@@ -41,6 +41,7 @@ import com.kuranas.android.feature.music.ui.MusicScreen
 import com.kuranas.android.feature.notifications.ui.NotificationsScreen
 import com.kuranas.android.feature.search.ui.SearchScreen
 import com.kuranas.android.feature.settings.ui.SettingsScreen
+import com.kuranas.android.feature.video.ui.VideoLibraryScreen
 import com.kuranas.android.feature.video.ui.VideoPlayerScreen
 import com.kuranas.android.feature.video.ui.VideoPlaylistScreen
 import com.kuranas.android.feature.video.ui.VideoScreen
@@ -157,6 +158,12 @@ private fun AuthenticatedApp() {
                 onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
             )
         }
+        composable(AppRoute.VIDEO_LIBRARY) {
+            VideoLibraryScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+            )
+        }
     }
 }
 
@@ -222,6 +229,7 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                 SwipePage.VIDEO -> VideoScreen(
                     onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
                     onOpenPlaylist = { id -> navController.navigate(AppRoute.videoPlaylist(id)) },
+                    onOpenLibrary = { navController.navigate(AppRoute.VIDEO_LIBRARY) },
                 )
                 SwipePage.IMAGES -> ImagesScreen(
                     onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },

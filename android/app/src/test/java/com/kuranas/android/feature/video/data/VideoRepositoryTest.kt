@@ -152,4 +152,37 @@ class VideoRepositoryTest {
             server.takeRequest().body.readUtf8(),
         )
     }
+
+    @Test
+    fun `getLibraryVideos without search omits the query parameter`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"items":[],"pagination":{"page":1,"page_size":50}}"""))
+
+        repository.getLibraryVideos("", 1)
+
+        assertEquals("/api/v1/video/library/files?page=1&page_size=50", server.takeRequest().path)
+    }
+
+    @Test
+    fun `getLibraryVideos with search sends the encoded query`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"items":[],"pagination":{"page":2,"page_size":50}}"""))
+
+        repository.getLibraryVideos("my movie", 2)
+
+        assertEquals("/api/v1/video/library/files?page=2&page_size=50&query=my%20movie", server.takeRequest().path)
+    }
+
+    @Test
+    fun `getLibraryVideos deserializes items and has_next`() = runTest {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"items":[{"id":4,"name":"a.mp4"}],"pagination":{"page":1,"page_size":50,"has_next":true}}""",
+            ),
+        )
+
+        val result = repository.getLibraryVideos("", 1)
+
+        val page = (result as AppResult.Success).data
+        assertEquals(listOf("4"), page.items.map { it.id })
+        assertTrue(page.hasNext)
+    }
 }

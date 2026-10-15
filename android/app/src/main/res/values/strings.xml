@@ -140,6 +140,9 @@
     <string name="video_section_personal">Personal</string>
     <string name="video_section_clips">Clips</string>
     <string name="video_section_folders">Folders</string>
+    <string name="video_library_title">All videos</string>
+    <string name="video_library_search_placeholder">Search videos…</string>
+    <string name="video_library_entry">All videos</string>
     <string name="video_empty">No videos found</string>
     <string name="video_playback_error">Unable to play this video: %1$s</string>
     <plurals name="video_count">
