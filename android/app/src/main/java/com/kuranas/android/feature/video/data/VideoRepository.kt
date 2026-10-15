@@ -18,6 +18,11 @@ class VideoRepository @Inject constructor(
     suspend fun getHomeCatalog(): AppResult<VideoHomeCatalogDto> = safeApiCall { api.getHomeCatalog() }
     suspend fun getLibraryVideos(): AppResult<List<VideoItemDto>> = safeApiCall { api.getLibraryVideos().items }
     suspend fun getPlaylists(): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylists() }
+    suspend fun getPlaylistsBySection(
+        section: VideoPlaylistSection,
+        page: Int = 1,
+        pageSize: Int = PLAYLIST_SECTION_PAGE_SIZE,
+    ): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylistsBySection(section.path, page, pageSize).items }
     suspend fun getPlaylistById(id: Int): AppResult<VideoPlaylistDto> = safeApiCall { api.getPlaylistById(id) }
     suspend fun startPlayback(videoId: String, playlistId: Int? = null): AppResult<PlaybackStateDto> = safeApiCall {
         api.startPlayback(StartPlaybackRequest(videoId.toIntOrNull() ?: 0, playlistId)).playbackState
@@ -36,6 +41,8 @@ class VideoRepository @Inject constructor(
         return "$base/api/v1/files/video-thumbnail/$videoId"
     }
 }
+
+private const val PLAYLIST_SECTION_PAGE_SIZE = 24
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)

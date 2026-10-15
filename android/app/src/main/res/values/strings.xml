@@ -135,7 +135,11 @@
 
     <!-- Video -->
     <string name="video_recent">Recent</string>
-    <string name="video_playlists">Playlists</string>
+    <string name="video_section_series">Series</string>
+    <string name="video_section_movies">Movies</string>
+    <string name="video_section_personal">Personal</string>
+    <string name="video_section_clips">Clips</string>
+    <string name="video_section_folders">Folders</string>
     <string name="video_empty">No videos found</string>
     <string name="video_playback_error">Unable to play this video: %1$s</string>
     <plurals name="video_count">
