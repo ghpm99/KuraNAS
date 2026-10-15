@@ -5,20 +5,6 @@ import (
 	"sort"
 )
 
-// ---------------------------------------------------------------------------
-// Event-Driven Behavior Learning
-//
-// Este modulo analisa eventos de comportamento do usuario para construir
-// um perfil de preferencias. O perfil e usado pelo ScoringEngine e pelas
-// Strategies para tomar decisoes mais inteligentes.
-//
-// Fluxo:
-//   1. Cada acao do player gera um BehaviorEvent (via State Machine)
-//   2. Eventos sao persistidos no banco
-//   3. BehaviorAnalyzer processa os eventos e gera um BehaviorProfile
-//   4. O profile alimenta o Scoring Engine e as estrategias
-// ---------------------------------------------------------------------------
-
 // BehaviorAnalyzer processa eventos historicos e gera perfis.
 type BehaviorAnalyzer struct {
 	// Quantos eventos recentes considerar para o perfil
@@ -169,45 +155,6 @@ func (a *BehaviorAnalyzer) BuildProfile(
 	profile.RecentlySkipped = recentUniqueIDs(skippedSet, 50)
 
 	return profile
-}
-
-// ---------------------------------------------------------------------------
-// StateChangeListener que emite BehaviorEvents
-// ---------------------------------------------------------------------------
-
-// BehaviorEventEmitter implementa StateChangeListener e coleta eventos
-// para posterior persistencia.
-type BehaviorEventEmitter struct {
-	Events []BehaviorEvent
-}
-
-func NewBehaviorEventEmitter() *BehaviorEventEmitter {
-	return &BehaviorEventEmitter{}
-}
-
-func (e *BehaviorEventEmitter) OnStateChange(
-	machine *PlaybackStateMachine,
-	from PlaybackState,
-	event PlaybackEvent,
-	to PlaybackState,
-) {
-	// Emitir evento para estados significativos
-	switch event {
-	case EventStart, EventComplete, EventSkip, EventAbandon:
-		e.Events = append(e.Events, machine.ToBehaviorEvent(event))
-	case EventPause:
-		// So emitir pause se assistiu pelo menos 10%
-		if machine.WatchedPercent() >= 10 {
-			e.Events = append(e.Events, machine.ToBehaviorEvent(event))
-		}
-	}
-}
-
-// Flush retorna todos os eventos acumulados e limpa o buffer.
-func (e *BehaviorEventEmitter) Flush() []BehaviorEvent {
-	events := e.Events
-	e.Events = nil
-	return events
 }
 
 // ---------------------------------------------------------------------------

@@ -1012,42 +1012,6 @@ func (r *Repository) InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventMod
 	return event, nil
 }
 
-func (r *Repository) GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
-	results := []VideoBehaviorEventModel{}
-
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetBehaviorEventsQuery, clientID, limit)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var item VideoBehaviorEventModel
-			if err := rows.Scan(
-				&item.ID,
-				&item.ClientID,
-				&item.VideoID,
-				&item.PlaylistID,
-				&item.EventType,
-				&item.Position,
-				&item.Duration,
-				&item.WatchedPct,
-				&item.CreatedAt,
-			); err != nil {
-				return err
-			}
-			results = append(results, item)
-		}
-		return nil
-	})
-	if err != nil {
-		return results, fmt.Errorf("falha ao buscar eventos de comportamento: %w", err)
-	}
-
-	return results, nil
-}
-
 func (r *Repository) ListRecentBehaviorEventsByType(eventType string, limit int) ([]VideoBehaviorEventModel, error) {
 	results := []VideoBehaviorEventModel{}
 

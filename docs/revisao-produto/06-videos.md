@@ -100,7 +100,7 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 62. Código órfão do frontend de vídeos
 - [x] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)
 - [x] 63. Motor de comportamento alimentado pelo progresso por vídeo
-- [ ] 63.1. Remover `PlaybackStateMachine`, `BehaviorEventEmitter` e `GetBehaviorEvents` (sem chamador; o motor lê o progresso por vídeo)
+- [x] 63.1. Remover `PlaybackStateMachine`, `BehaviorEventEmitter` e `GetBehaviorEvents` (sem chamador; o motor lê o progresso por vídeo)
 
 ### Android
 - [ ] 64. Playlists visíveis no Android

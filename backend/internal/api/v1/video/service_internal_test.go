@@ -63,7 +63,6 @@ type videoRepoMock struct {
 	deleteAutoPlaylistItemsFn        func(tx *sql.Tx, playlistID int) error
 	insertPlaylistItemsSrcFn         func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
 	insertBehaviorEventFn            func(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
-	getBehaviorEventsFn              func(clientID string, limit int) ([]VideoBehaviorEventModel, error)
 	listRecentBehaviorEventsByTypeFn func(eventType string, limit int) ([]VideoBehaviorEventModel, error)
 	listRecentVideoWatchProgressFn   func(limit int) ([]VideoWatchProgressModel, error)
 }
@@ -374,12 +373,6 @@ func (m *videoRepoMock) InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEvent
 		return m.insertBehaviorEventFn(tx, event)
 	}
 	return event, nil
-}
-func (m *videoRepoMock) GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
-	if m.getBehaviorEventsFn != nil {
-		return m.getBehaviorEventsFn(clientID, limit)
-	}
-	return nil, nil
 }
 func (m *videoRepoMock) ListRecentBehaviorEventsByType(eventType string, limit int) ([]VideoBehaviorEventModel, error) {
 	if m.listRecentBehaviorEventsByTypeFn != nil {
@@ -1314,10 +1307,6 @@ func TestBuildPlaylistProgressUsesOnlyStoredProgressAndPlaybackState(t *testing.
 				CurrentTime: 30,
 				Duration:    120,
 			}, nil
-		},
-		getBehaviorEventsFn: func(clientID string, limit int) ([]VideoBehaviorEventModel, error) {
-			t.Fatalf("behavior events must not be read for playlist progress")
-			return nil, nil
 		},
 		getVideoWatchProgressByVideosFn: func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error) {
 			if len(videoIDs) != episodeCount {
