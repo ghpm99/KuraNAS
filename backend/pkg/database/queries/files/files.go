@@ -40,6 +40,9 @@ var ToggleFileStarredQuery string
 //go:embed set_file_starred.sql
 var SetFileStarredQuery string
 
+//go:embed set_files_starred.sql
+var SetFilesStarredQuery string
+
 //go:embed update_file.sql
 var UpdateFileQuery string
 

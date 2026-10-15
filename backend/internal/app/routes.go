@@ -224,6 +224,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.POST("/rename", context.Files.Handler.RenameFileHandler)
 	files.DELETE("/path", context.Files.Handler.DeleteFileHandler)
 	files.POST("/starred/:id", context.Files.Handler.StarreFileHandler)
+	files.POST("/starred", context.Files.Handler.SetFilesStarredHandler)
 	files.PUT("/starred/:id", context.Files.Handler.SetFileStarredHandler)
 	files.GET("/total-space-used", context.Files.Handler.GetTotalSpaceUsedHandler)
 	files.GET("/total-files", context.Files.Handler.GetTotalFilesHandler)

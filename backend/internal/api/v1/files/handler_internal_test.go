@@ -93,6 +93,9 @@ func (m *filesHandlerServiceMock) ToggleFileStarred(id int) (bool, error) { retu
 func (m *filesHandlerServiceMock) SetFileStarred(id int, isStarred bool) (bool, error) {
 	return isStarred, nil
 }
+func (m *filesHandlerServiceMock) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
+	return ids, nil
+}
 func (m *filesHandlerServiceMock) ScanFilesTask(data string)       {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)         {}
 func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error { return nil }
@@ -171,6 +174,7 @@ type filesHandlerServiceFuncMock struct {
 	updateFileFn          func(file FileDto) (bool, error)
 	toggleFileStarredFn   func(id int) (bool, error)
 	setFileStarredFn      func(id int, isStarred bool) (bool, error)
+	setFilesStarredFn     func(ids []int, isStarred bool) ([]int, error)
 	getTotalSpaceUsedFn   func() (int, error)
 	getTotalFilesFn       func() (int, error)
 	getTotalDirectoryFn   func() (int, error)
@@ -229,6 +233,12 @@ func (m *filesHandlerServiceFuncMock) SetFileStarred(id int, isStarred bool) (bo
 		return m.setFileStarredFn(id, isStarred)
 	}
 	return m.filesHandlerServiceMock.SetFileStarred(id, isStarred)
+}
+func (m *filesHandlerServiceFuncMock) SetFilesStarred(ids []int, isStarred bool) ([]int, error) {
+	if m.setFilesStarredFn != nil {
+		return m.setFilesStarredFn(ids, isStarred)
+	}
+	return m.filesHandlerServiceMock.SetFilesStarred(ids, isStarred)
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -317,6 +327,7 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/blob/:id", handler.GetBlobFileHandler)
 	router.GET("/files/recent", handler.GetRecentFilesHandler)
 	router.GET("/files/recent/:id", handler.GetRecentAccessByFileHandler)
+	router.POST("/files/starred", handler.SetFilesStarredHandler)
 	router.POST("/files/starred/:id", handler.StarreFileHandler)
 	router.PUT("/files/starred/:id", handler.SetFileStarredHandler)
 	router.GET("/files/total-space-used", handler.GetTotalSpaceUsedHandler)
