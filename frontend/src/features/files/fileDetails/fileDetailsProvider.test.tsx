@@ -59,7 +59,17 @@ describe('useFileDetails', () => {
         act(() => result.current.openDetails(folder));
         rerender();
 
-        expect(result.current.explicitTarget).toBe(folder);
+        expect(result.current.explicitTarget).toMatchObject({ id: 5 });
+    });
+
+    it('resolves the live item from the loaded files instead of the opened snapshot', () => {
+        const liveFolder = { ...folder, starred: true };
+        mockUseFile.mockReturnValue({ files: [liveFolder], selectedItem: null });
+        const { result } = renderHook(() => useFileDetails(), { wrapper });
+
+        act(() => result.current.openDetails(folder));
+
+        expect(result.current.explicitTarget).toBe(liveFolder);
     });
 
     it('renders children inside the provider', () => {

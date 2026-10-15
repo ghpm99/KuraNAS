@@ -1,6 +1,6 @@
 import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import FileDetails from './fileDetails';
 
 const mockUseFile = jest.fn();
@@ -59,6 +59,37 @@ describe('fileDetails', () => {
 
         expect(screen.getByText('FILE_DETAILS_TITLE')).toBeInTheDocument();
         expect(screen.getByText('FILE_DETAILS_CHECKSUM_CALCULATING')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'FILES_FAVORITE' })).toBeInTheDocument();
+    });
+
+    it('toggles the star immediately and calls the provider action with the file id', () => {
+        const handleStarredItem = jest.fn();
+        const StatefulDetails = () => {
+            const [isStarred, setIsStarred] = useState(false);
+            mockUseFile.mockReturnValue({
+                ...baseContext,
+                handleStarredItem: (fileId: number) => {
+                    handleStarredItem(fileId);
+                    setIsStarred((current) => !current);
+                },
+            });
+            return <FileDetails file={{ ...baseFile, starred: isStarred }} onClose={jest.fn()} />;
+        };
+
+        render(<StatefulDetails />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_FAVORITE' }));
+
+        expect(handleStarredItem).toHaveBeenCalledWith(2);
+        expect(screen.getByRole('button', { name: 'FILES_UNFAVORITE' })).toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_UNFAVORITE' }));
+
+        expect(handleStarredItem).toHaveBeenCalledTimes(2);
+        expect(screen.getByRole('button', { name: 'FILES_FAVORITE' })).toBeInTheDocument();
     });
 
     it('renders file details and recent access list', () => {
