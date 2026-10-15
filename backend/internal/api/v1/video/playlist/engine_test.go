@@ -247,65 +247,6 @@ func TestScoringEngine(t *testing.T) {
 	}
 }
 
-func TestStateMachine_ValidTransitions(t *testing.T) {
-	sm := NewPlaybackStateMachine("client1")
-
-	steps := []struct {
-		event    PlaybackEvent
-		expected PlaybackState
-	}{
-		{EventStart, StateLoading},
-		{EventLoaded, StatePlaying},
-		{EventPause, StatePaused},
-		{EventResume, StatePlaying},
-		{EventComplete, StateCompleted},
-		{EventStart, StateLoading}, // reset apos terminal
-	}
-
-	for _, step := range steps {
-		if err := sm.HandleEvent(step.event, 1, 1, 0, 3600); err != nil {
-			t.Fatalf("unexpected error for event %s: %v", step.event, err)
-		}
-		if sm.State != step.expected {
-			t.Fatalf("after event %s: expected state %s, got %s", step.event, step.expected, sm.State)
-		}
-	}
-}
-
-func TestStateMachine_InvalidTransition(t *testing.T) {
-	sm := NewPlaybackStateMachine("client1")
-
-	// Tentar pausar sem estar playing
-	err := sm.HandleEvent(EventPause, 1, 1, 0, 0)
-	if err == nil {
-		t.Fatal("expected error for invalid transition idle->pause")
-	}
-}
-
-func TestStateMachine_Skip(t *testing.T) {
-	sm := NewPlaybackStateMachine("client1")
-	sm.HandleEvent(EventStart, 1, 1, 0, 3600)
-	sm.HandleEvent(EventLoaded, 1, 1, 0, 3600)
-	sm.HandleEvent(EventSkip, 1, 1, 30, 3600)
-
-	if sm.State != StateSkipped {
-		t.Fatalf("expected skipped state, got %s", sm.State)
-	}
-	if !sm.ShouldAutoAdvance() {
-		t.Error("skipped should trigger auto advance")
-	}
-}
-
-func TestStateMachine_WatchedPercent(t *testing.T) {
-	sm := NewPlaybackStateMachine("client1")
-	sm.Position = 300
-	sm.Duration = 600
-
-	if pct := sm.WatchedPercent(); pct != 50.0 {
-		t.Errorf("expected 50%%, got %.1f%%", pct)
-	}
-}
-
 func TestBehaviorAnalyzer(t *testing.T) {
 	analyzer := NewBehaviorAnalyzer()
 

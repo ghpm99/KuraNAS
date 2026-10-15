@@ -112,9 +112,6 @@ var ReorderPlaylistItemQuery string
 //go:embed insert_behavior_event.sql
 var InsertBehaviorEventQuery string
 
-//go:embed get_behavior_events.sql
-var GetBehaviorEventsQuery string
-
 //go:embed list_recent_video_watch_progress.sql
 var ListRecentVideoWatchProgressQuery string
 
