@@ -91,6 +91,24 @@ const useVideoPlayer = ({
         };
     }, [currentTime, duration, status, session]);
 
+    const setVideoStarred = useCallback((videoId: number, isStarred: boolean) => {
+        setSession((currentSession) =>
+            currentSession
+                ? {
+                      ...currentSession,
+                      playlist: {
+                          ...currentSession.playlist,
+                          items: currentSession.playlist.items.map((item) =>
+                              item.video.id === videoId
+                                  ? { ...item, video: { ...item.video, starred: isStarred } }
+                                  : item
+                          ),
+                      },
+                  }
+                : currentSession
+        );
+    }, []);
+
     const currentVideo = useMemo(() => {
         if (!session?.playback_state.video_id) return null;
         return (
@@ -490,6 +508,7 @@ const useVideoPlayer = ({
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        setVideoStarred,
     };
 };
 

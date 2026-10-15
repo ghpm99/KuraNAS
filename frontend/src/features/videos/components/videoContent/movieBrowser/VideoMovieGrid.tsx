@@ -2,6 +2,7 @@ import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { getVideoMoviePosterUrl, type VideoFileDto } from '@/service/videoPlayback';
+import VideoStarButton from '../../VideoStarButton';
 import VideoMediaBadges from '../components/VideoMediaBadges';
 import { useLocalPoster } from '../useLocalPoster';
 import styles from './VideoMovieBrowser.module.css';
@@ -29,23 +30,31 @@ function VideoMovieCard({ movie, onPlayVideo }: VideoMovieCardProps) {
     );
 
     return (
-        <button
-            type="button"
-            className={styles.movieCard}
-            aria-label={t('VIDEO_PLAY_ARIA', { title: movie.name })}
-            onClick={() => onPlayVideo(movie.id, null)}
-        >
-            <div className={styles.movieThumb}>
-                <img
-                    loading="lazy"
-                    src={imageUrl}
-                    alt={movie.name}
-                    onError={isPosterShown ? handlePosterError : undefined}
-                />
-                <VideoMediaBadges video={movie} />
-            </div>
-            <h3 className={styles.movieName}>{movie.name}</h3>
-        </button>
+        <div className={styles.movieCardWrapper}>
+            <button
+                type="button"
+                className={styles.movieCard}
+                aria-label={t('VIDEO_PLAY_ARIA', { title: movie.name })}
+                onClick={() => onPlayVideo(movie.id, null)}
+            >
+                <div className={styles.movieThumb}>
+                    <img
+                        loading="lazy"
+                        src={imageUrl}
+                        alt={movie.name}
+                        onError={isPosterShown ? handlePosterError : undefined}
+                    />
+                    <VideoMediaBadges video={movie} />
+                </div>
+                <h3 className={styles.movieName}>{movie.name}</h3>
+            </button>
+            <VideoStarButton
+                videoId={movie.id}
+                videoName={movie.name}
+                isStarred={movie.starred}
+                placement="overlay"
+            />
+        </div>
     );
 }
 

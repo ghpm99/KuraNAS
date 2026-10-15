@@ -24,6 +24,7 @@ export interface VideoFileDto {
     width?: number | null;
     height?: number | null;
     video_codec?: string | null;
+    starred?: boolean;
 }
 
 export interface VideoLibraryFolderDto {

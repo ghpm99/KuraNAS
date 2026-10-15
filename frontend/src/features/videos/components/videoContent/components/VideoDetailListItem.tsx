@@ -3,6 +3,7 @@ import { Typography } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoDetailItem } from '../useVideoPlaylistDetail';
+import VideoStarButton from '../../VideoStarButton';
 import VideoMediaBadges from './VideoMediaBadges';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
@@ -78,17 +79,20 @@ export default function VideoDetailListItem({
         </button>
     );
 
-    if (!onSetWatched) {
-        return openVideoButton;
-    }
-
     return (
         <div className={styles.watchedRow}>
             {openVideoButton}
-            <VideoWatchedToggleButton
-                isWatched={isWatched}
-                onToggle={() => onSetWatched(item.video.id, !isWatched)}
+            <VideoStarButton
+                videoId={item.video.id}
+                videoName={item.video.name}
+                isStarred={item.video.starred}
             />
+            {onSetWatched && (
+                <VideoWatchedToggleButton
+                    isWatched={isWatched}
+                    onToggle={() => onSetWatched(item.video.id, !isWatched)}
+                />
+            )}
         </div>
     );
 }

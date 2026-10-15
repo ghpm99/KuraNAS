@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { type VideoContinueItemDto } from '@/service/videoPlayback';
+import VideoStarButton from '../../VideoStarButton';
 import VideoMediaBadges from './VideoMediaBadges';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import styles from '../videoContent.module.css';
@@ -84,6 +85,11 @@ export default function VideoContinueWatchingSection({
                                     >
                                         {t('VIDEO_PLAY')}
                                     </Button>
+                                    <VideoStarButton
+                                        videoId={item.video.id}
+                                        videoName={item.video.name}
+                                        isStarred={item.video.starred}
+                                    />
                                     {onSetWatched && (
                                         <VideoWatchedToggleButton
                                             isWatched={false}

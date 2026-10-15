@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/react';
 import type { VideoFileDto } from '@/service/videoPlayback';
 import VideoFolderVideoList from './VideoFolderVideoList';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 const buildVideo = (overrides: Partial<VideoFileDto> = {}): VideoFileDto => ({
     id: 1,
     name: 'Clip',

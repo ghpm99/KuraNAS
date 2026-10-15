@@ -4,6 +4,10 @@ import VideoMovieBrowser from './VideoMovieBrowser';
 import { getVideoLibraryMovies } from '@/service/videoPlayback';
 import { resetFailedPosterUrls } from '../useLocalPoster';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
@@ -54,7 +58,7 @@ describe('VideoMovieBrowser', () => {
 
         renderBrowser(onPlayVideo);
 
-        const card = await screen.findByRole('button', { name: /Alien.mkv/ });
+        const card = await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA Alien.mkv' });
         const image = card.querySelector('img') as HTMLImageElement;
         expect(image.getAttribute('src')).toBe('/poster/movies/5');
         fireEvent.error(image);
@@ -79,7 +83,7 @@ describe('VideoMovieBrowser', () => {
 
         renderBrowser();
 
-        await screen.findByRole('button', { name: /A.mkv/ });
+        await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA A.mkv' });
         fireEvent.mouseDown(screen.getByRole('combobox'));
         fireEvent.click(await screen.findByRole('option', { name: 'VIDEO_MOVIES_SORT_RECENT' }));
 
@@ -101,6 +105,6 @@ describe('VideoMovieBrowser', () => {
         renderBrowser();
 
         fireEvent.click(await screen.findByRole('button', { name: 'TRY_AGAIN' }));
-        expect(await screen.findByRole('button', { name: /B.mkv/ })).toBeInTheDocument();
+        expect(await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA B.mkv' })).toBeInTheDocument();
     });
 });

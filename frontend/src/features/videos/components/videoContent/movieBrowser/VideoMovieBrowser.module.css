@@ -28,6 +28,16 @@
     gap: 14px;
 }
 
+.movieCardWrapper {
+    position: relative;
+    display: flex;
+}
+
+.movieCardWrapper > .movieCard {
+    flex: 1;
+    min-width: 0;
+}
+
 .movieCard {
     display: flex;
     flex-direction: column;

@@ -1,6 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
 import useVideoPlayerScreen from './useVideoPlayerScreen';
 
+const mockToggleStar = jest.fn();
+const mockUseVideoStarToggle = jest.fn();
+
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: (...args: unknown[]) => mockUseVideoStarToggle(...args),
+}));
+
 const mockUseVideoPlayer = jest.fn();
 const mockNavigate = jest.fn();
 const mockUseParams = jest.fn();
@@ -192,6 +199,34 @@ describe('features/videos/videoPlayer/useVideoPlayerScreen', () => {
             state: { from: '/videos/series/my-show', playlistId: 7 },
         });
         mockUseVideoPlayer.mockReturnValue(buildPlayerState());
+        mockUseVideoStarToggle.mockReturnValue({
+            toggleStar: mockToggleStar,
+            isStarTogglePending: false,
+        });
+    });
+
+    it('toggles the star of the current video from its present state and wires the session patcher', () => {
+        const setVideoStarred = jest.fn();
+        const state = buildPlayerState({
+            setVideoStarred,
+            currentVideo: { ...buildPlayerState().currentVideo, starred: true },
+        });
+        mockUseVideoPlayer.mockReturnValue(state);
+        const { result } = renderHook(() => useVideoPlayerScreen());
+
+        act(() => result.current.toggleCurrentVideoStar());
+
+        expect(mockToggleStar).toHaveBeenCalledWith(30, true);
+        expect(mockUseVideoStarToggle).toHaveBeenCalledWith({ onStarredChange: setVideoStarred });
+    });
+
+    it('does not toggle any star without a current video', () => {
+        mockUseVideoPlayer.mockReturnValue(buildPlayerState({ currentVideo: null }));
+        const { result } = renderHook(() => useVideoPlayerScreen());
+
+        act(() => result.current.toggleCurrentVideoStar());
+
+        expect(mockToggleStar).not.toHaveBeenCalled();
     });
 
     it('loads playback, exposes context metadata and navigates back to the source route', () => {

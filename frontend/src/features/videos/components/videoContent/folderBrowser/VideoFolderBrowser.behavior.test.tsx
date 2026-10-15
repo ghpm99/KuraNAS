@@ -6,6 +6,10 @@ import { MemoryRouter } from 'react-router-dom';
 import VideoFolderBrowser from './VideoFolderBrowser';
 import { getVideoLibraryFolders, getVideoLibraryFolderVideos } from '@/service/videoPlayback';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
@@ -76,7 +80,7 @@ describe('VideoFolderBrowser', () => {
 
         fireEvent.click(folderCard);
 
-        const videoRow = await screen.findByRole('button', { name: /Ep 1.mkv/ });
+        const videoRow = await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA Ep 1.mkv' });
         expect(mockedFolders).toHaveBeenCalledWith('/Series', 1, 48);
         expect(mockedFolderVideos).toHaveBeenCalledWith('/Series', 1, 24);
 
