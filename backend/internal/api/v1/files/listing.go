@@ -175,6 +175,10 @@ func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 	}
 
 	fileCategory := FileCategory(c.DefaultQuery("category", string(AllCategory)))
+	if !fileCategory.IsKnown() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
 
 	// Level zero with multiple roots: the tree starts at the list of storage
 	// roots, each a navigable directory node. With a single root the legacy

@@ -180,6 +180,15 @@ const (
 	StarredCategory FileCategory = "starred"
 )
 
+func (category FileCategory) IsKnown() bool {
+	switch category {
+	case AllCategory, RecentCategory, StarredCategory:
+		return true
+	default:
+		return false
+	}
+}
+
 // FileStat is the smallest projection of a persisted file needed to decide
 // whether it changed on disk: size + last-known modification time. It exists so
 // the startup/diff scan can ask the DB about one file at a time (indexed lookup
