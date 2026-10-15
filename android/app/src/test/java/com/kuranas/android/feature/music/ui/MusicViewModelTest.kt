@@ -1,10 +1,10 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.music.data.AlbumDto
 import com.kuranas.android.feature.music.data.ArtistDto
 import com.kuranas.android.feature.music.data.FolderDto
-import com.kuranas.android.feature.music.data.MusicPage
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.PlaylistDto
 import com.kuranas.android.feature.music.data.TrackDto
@@ -35,10 +35,10 @@ class MusicViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        coEvery { repository.getArtists(any()) } returns AppResult.Success(MusicPage(listOf(ArtistDto(key = "a")), false))
-        coEvery { repository.getAlbums(any()) } returns AppResult.Success(MusicPage(listOf(AlbumDto(key = "b")), false))
-        coEvery { repository.getPlaylists(any()) } returns AppResult.Success(MusicPage(listOf(PlaylistDto(id = 1)), false))
-        coEvery { repository.getFolders(any()) } returns AppResult.Success(MusicPage(listOf(FolderDto(folder = "f")), false))
+        coEvery { repository.getArtists(any()) } returns AppResult.Success(ListPage(listOf(ArtistDto(key = "a")), false))
+        coEvery { repository.getAlbums(any()) } returns AppResult.Success(ListPage(listOf(AlbumDto(key = "b")), false))
+        coEvery { repository.getPlaylists(any()) } returns AppResult.Success(ListPage(listOf(PlaylistDto(id = 1)), false))
+        coEvery { repository.getFolders(any()) } returns AppResult.Success(ListPage(listOf(FolderDto(folder = "f")), false))
     }
 
     @After
@@ -47,7 +47,7 @@ class MusicViewModelTest {
     }
 
     private fun tracksPage(hasNext: Boolean, vararg ids: Int) =
-        AppResult.Success(MusicPage(ids.map { TrackDto(id = it, name = "t$it") }, hasNext))
+        AppResult.Success(ListPage(ids.map { TrackDto(id = it, name = "t$it") }, hasNext))
 
     @Test
     fun `loads the first page of every list on creation`() {

@@ -1,4 +1,4 @@
-package com.kuranas.android.feature.music.ui
+package com.kuranas.android.core.paging
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable

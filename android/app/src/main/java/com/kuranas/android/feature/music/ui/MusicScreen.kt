@@ -1,5 +1,7 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.core.paging.LoadMoreOnNearEnd
+import com.kuranas.android.core.paging.PagedListState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

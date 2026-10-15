@@ -1,7 +1,7 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.network.AppResult
-import com.kuranas.android.feature.music.data.MusicPage
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.TrackDto
 import com.kuranas.android.feature.music.playback.PlayerConnection
@@ -36,7 +36,7 @@ class MusicAlbumViewModelTest {
     }
 
     private fun tracksPage(hasNext: Boolean, vararg ids: Int) =
-        AppResult.Success(MusicPage(ids.map { TrackDto(id = it) }, hasNext))
+        AppResult.Success(ListPage(ids.map { TrackDto(id = it) }, hasNext))
 
     @Test
     fun `load fetches the first page of the album tracks`() {

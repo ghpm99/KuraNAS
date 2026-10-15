@@ -1,8 +1,6 @@
-package com.kuranas.android.feature.music.ui
+package com.kuranas.android.core.paging
 
 import com.kuranas.android.core.network.AppResult
-import com.kuranas.android.feature.music.data.FIRST_PAGE
-import com.kuranas.android.feature.music.data.MusicPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,10 +26,10 @@ class PagedListLoader<T>(
     private val _state = MutableStateFlow(PagedListState<T>())
     val state: StateFlow<PagedListState<T>> = _state.asStateFlow()
 
-    private var fetchPage: (suspend (Int) -> AppResult<MusicPage<T>>)? = null
+    private var fetchPage: (suspend (Int) -> AppResult<ListPage<T>>)? = null
     private var pageLoadJob: Job? = null
 
-    fun load(fetchPage: suspend (Int) -> AppResult<MusicPage<T>>) {
+    fun load(fetchPage: suspend (Int) -> AppResult<ListPage<T>>) {
         this.fetchPage = fetchPage
         restartFromFirstPage(
             onStart = { it.copy(isLoading = true, isRefreshing = false, isLoadingMore = false, error = null) },
@@ -77,7 +75,7 @@ class PagedListLoader<T>(
         }
     }
 
-    private fun PagedListState<T>.withFirstPage(page: MusicPage<T>) = copy(
+    private fun PagedListState<T>.withFirstPage(page: ListPage<T>) = copy(
         isLoading = false,
         isRefreshing = false,
         items = page.items.distinctBy(identityOf),
@@ -85,7 +83,7 @@ class PagedListLoader<T>(
         hasMore = page.hasNext,
     )
 
-    private fun PagedListState<T>.withAppendedPage(page: MusicPage<T>) = copy(
+    private fun PagedListState<T>.withAppendedPage(page: ListPage<T>) = copy(
         isLoadingMore = false,
         items = (items + page.items).distinctBy(identityOf),
         nextPage = nextPage + 1,
