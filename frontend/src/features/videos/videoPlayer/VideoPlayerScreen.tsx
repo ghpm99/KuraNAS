@@ -64,6 +64,7 @@ export default function VideoPlayerScreen() {
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        toggleCurrentVideoStar,
         subtitles,
         selectedSubtitleKey,
         selectSubtitle,
@@ -132,6 +133,7 @@ export default function VideoPlayerScreen() {
                         setDuration={setDuration}
                         onBack={handleBack}
                         onOpenDetails={() => setIsDetailsOpen(true)}
+                        onToggleStar={toggleCurrentVideoStar}
                         onVideoEnded={handlePlaybackEnded}
                         originBadgeLabel={originBadgeLabel}
                         contextDescription={contextDescription}

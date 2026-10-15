@@ -118,6 +118,14 @@
     gap: 10px;
 }
 
+.videoRowWrapper {
+    position: relative;
+}
+
+.videoRowWrapper > .videoRow {
+    width: 100%;
+}
+
 .videoRow {
     display: flex;
     align-items: center;

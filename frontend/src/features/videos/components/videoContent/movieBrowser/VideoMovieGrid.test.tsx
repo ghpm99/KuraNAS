@@ -3,6 +3,10 @@ import type { VideoFileDto } from '@/service/videoPlayback';
 import VideoMovieGrid from './VideoMovieGrid';
 import { resetFailedPosterUrls } from '../useLocalPoster';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 const buildMovie = (overrides: Partial<VideoFileDto> = {}): VideoFileDto => ({
     id: 1,
     name: 'Movie',

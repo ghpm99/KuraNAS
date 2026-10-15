@@ -3,6 +3,7 @@ import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscre
 import usePictureInPicture from '@/features/videos/hooks/usePictureInPicture/usePictureInPicture';
 import useVideoSubtitles from '@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles';
 import useUpNextAutoplay from '@/features/videos/upNext/useUpNextAutoplay';
+import { useVideoStarToggle } from '@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -97,11 +98,19 @@ export default function useVideoPlayerScreen() {
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        setVideoStarred,
     } = useVideoPlayer({
         videoId,
         playlistId: resolvedPlaylistId,
         persistProgress: settings.players.remember_video_progress,
     });
+    const { toggleStar } = useVideoStarToggle({ onStarredChange: setVideoStarred });
+    const toggleCurrentVideoStar = useCallback(() => {
+        if (!currentVideo) {
+            return;
+        }
+        toggleStar(currentVideo.id, Boolean(currentVideo.starred));
+    }, [currentVideo, toggleStar]);
     const [playerContainer, setPlayerContainer] = useState<HTMLElement | null>(null);
     const { isFullscreen, toggleFullscreen } = useContainerFullscreen({
         container: playerContainer,
@@ -366,6 +375,7 @@ export default function useVideoPlayerScreen() {
         playbackError,
         reportPlaybackError,
         retryPlayback,
+        toggleCurrentVideoStar,
         subtitles,
         selectedSubtitleKey,
         selectSubtitle,

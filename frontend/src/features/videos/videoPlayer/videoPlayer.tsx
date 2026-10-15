@@ -7,7 +7,7 @@ import {
 import { getApiBaseUrl } from '@/service/apiUrl';
 import { buildSubtitleLabel } from '@/features/videos/hooks/useVideoSubtitles/subtitleLabel';
 import { getFileDownloadUrl } from '@/service/files';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, Star } from 'lucide-react';
 import { useEffect, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
@@ -24,6 +24,7 @@ interface VideoPlayerProps {
     setDuration: (duration: number) => void;
     onBack: () => void;
     onOpenDetails?: () => void;
+    onToggleStar?: () => void;
     onVideoEnded: () => void | Promise<void>;
     originBadgeLabel: string;
     contextDescription: string;
@@ -45,6 +46,7 @@ const VideoPlayer = ({
     setDuration,
     onBack,
     onOpenDetails,
+    onToggleStar,
     onVideoEnded,
     originBadgeLabel,
     contextDescription,
@@ -121,6 +123,32 @@ const VideoPlayer = ({
                             <span>{t('VIDEO_BACK')}</span>
                         </button>
                         <div className={styles.headerActions}>
+                            {onToggleStar && currentVideo ? (
+                                <button
+                                    type="button"
+                                    className={styles.backButton}
+                                    aria-label={t(
+                                        currentVideo.starred
+                                            ? 'FILES_UNFAVORITE_ITEM'
+                                            : 'FILES_FAVORITE_ITEM',
+                                        { name: currentVideo.name }
+                                    )}
+                                    aria-pressed={Boolean(currentVideo.starred)}
+                                    onClick={onToggleStar}
+                                >
+                                    <Star
+                                        size={16}
+                                        fill={currentVideo.starred ? 'currentColor' : 'none'}
+                                    />
+                                    <span>
+                                        {t(
+                                            currentVideo.starred
+                                                ? 'FILES_UNFAVORITE'
+                                                : 'FILES_FAVORITE'
+                                        )}
+                                    </span>
+                                </button>
+                            ) : null}
                             {onOpenDetails && currentVideo ? (
                                 <button
                                     type="button"

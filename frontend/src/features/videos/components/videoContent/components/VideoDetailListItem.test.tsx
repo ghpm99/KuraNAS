@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import VideoDetailListItem from './VideoDetailListItem';
 import type { VideoDetailItem } from '../useVideoPlaylistDetail';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({
@@ -94,7 +98,7 @@ describe('VideoDetailListItem', () => {
         const onOpenVideo = jest.fn();
         render(<VideoDetailListItem item={createItem()} onOpenVideo={onOpenVideo} />);
 
-        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(screen.getByRole('button', { name: /Episode 1.mp4/ }));
         expect(onOpenVideo).toHaveBeenCalledWith(10);
     });
 

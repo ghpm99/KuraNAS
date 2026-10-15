@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import VideoContinueWatchingSection from './VideoContinueWatchingSection';
 import type { VideoContinueItemDto } from '@/service/videoPlayback';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 const buildContinueItem = (
     videoId: number,
     positionSeconds: number,

@@ -3,6 +3,10 @@ import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoSeriesDetailView from './VideoSeriesDetailView';
 
+jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
+    useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
+}));
+
 jest.mock('@/service/apiUrl', () => ({
     getApiV1BaseUrl: () => 'http://localhost:8000/v1',
 }));

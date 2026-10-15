@@ -11,6 +11,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import VideoDetailsPanel from '../../../videoDetails/VideoDetailsPanel';
+import VideoStarButton from '../../VideoStarButton';
 import VideoMediaBadges from './VideoMediaBadges';
 import VideoLibraryFilterBar from './VideoLibraryFilterBar';
 import VideoAddToPlaylistButton from './VideoAddToPlaylistButton';
@@ -166,6 +167,11 @@ export default function VideoLibrarySection({
                                     onAddVideo={onAddVideo}
                                     onCreatePlaylistWithVideo={onCreatePlaylistWithVideo}
                                     isCreatingPlaylist={isCreatingPlaylist}
+                                />
+                                <VideoStarButton
+                                    videoId={video.id}
+                                    videoName={video.name}
+                                    isStarred={video.starred}
                                 />
                                 {onSetWatched && (
                                     <VideoWatchedToggleButton
