@@ -322,6 +322,109 @@ describe('FileProvider', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/files');
     });
 
+    describe('starred root listing', () => {
+        const renderStarredRoot = async (items: FileData[]) => {
+            mockGetStarredFiles.mockResolvedValue(makePaginationResponse(items));
+            renderProvider();
+            await waitFor(() => expect(capturedContext).not.toBeNull());
+            act(() => {
+                capturedContext!.setFileListFilter('starred');
+            });
+            await waitFor(() => expect(mockGetStarredFiles).toHaveBeenCalled());
+        };
+
+        beforeEach(() => {
+            window.localStorage.clear();
+        });
+
+        it('asks the server for the default kind and sort', async () => {
+            await renderStarredRoot([createNode(1, { starred: true })]);
+
+            expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
+                page: 1,
+                pageSize: 200,
+                kind: 'all',
+                sort: 'name',
+            });
+        });
+
+        it('refetches from the server with the new kind instead of filtering locally', async () => {
+            await renderStarredRoot([createNode(1, { starred: true })]);
+            mockGetStarredFiles.mockResolvedValue(
+                makePaginationResponse([createNode(2, { starred: true })])
+            );
+
+            act(() => {
+                capturedContext!.setStarredKind('media');
+            });
+
+            await waitFor(() =>
+                expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
+                    page: 1,
+                    pageSize: 200,
+                    kind: 'media',
+                    sort: 'name',
+                })
+            );
+            await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([2]));
+        });
+
+        it('refetches with the new sort and persists it', async () => {
+            await renderStarredRoot([createNode(1, { starred: true })]);
+
+            act(() => {
+                capturedContext!.setStarredSort('starred_at');
+            });
+
+            await waitFor(() =>
+                expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
+                    page: 1,
+                    pageSize: 200,
+                    kind: 'all',
+                    sort: 'starred_at',
+                })
+            );
+            expect(window.localStorage.getItem('kuranas.favorites.sort')).toBe('starred_at');
+        });
+
+        it('starts from the persisted sort', async () => {
+            window.localStorage.setItem('kuranas.favorites.sort', 'starred_at');
+
+            await renderStarredRoot([createNode(1, { starred: true })]);
+
+            expect(capturedContext!.starredSort).toBe('starred_at');
+            expect(mockGetStarredFiles).toHaveBeenLastCalledWith(
+                expect.objectContaining({ sort: 'starred_at' })
+            );
+        });
+
+        it('removes an unstarred item from the filtered root listing', async () => {
+            await renderStarredRoot([
+                createNode(1, { starred: true }),
+                createNode(2, { starred: true }),
+            ]);
+            await waitFor(() => expect(capturedContext!.files).toHaveLength(2));
+            mockSetFileStarred.mockReturnValue(new Promise(() => undefined));
+
+            act(() => {
+                capturedContext!.setStarredKind('folders');
+            });
+            await waitFor(() =>
+                expect(mockGetStarredFiles).toHaveBeenLastCalledWith(
+                    expect.objectContaining({ kind: 'folders' })
+                )
+            );
+            await waitFor(() => expect(capturedContext!.files).toHaveLength(2));
+            act(() => {
+                capturedContext!.handleStarredItem(1);
+            });
+
+            await waitFor(() =>
+                expect(capturedContext!.files.map((file) => file.id)).toEqual([2])
+            );
+        });
+    });
+
     describe('handleStarredItem', () => {
         const renderWithStarredListing = async (isStarred: boolean) => {
             mockGetFilesTree.mockResolvedValue(
@@ -714,7 +817,12 @@ describe('FileProvider', () => {
         });
 
         await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7]));
-        expect(mockGetStarredFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(mockGetStarredFiles).toHaveBeenCalledWith({
+            page: 1,
+            pageSize: 200,
+            kind: 'all',
+            sort: 'name',
+        });
         expect(capturedContext!.hasNextPage).toBe(true);
 
         act(() => {
@@ -722,7 +830,12 @@ describe('FileProvider', () => {
         });
 
         await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7, 8]));
-        expect(mockGetStarredFiles).toHaveBeenLastCalledWith({ page: 2, pageSize: 200 });
+        expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
+            page: 2,
+            pageSize: 200,
+            kind: 'all',
+            sort: 'name',
+        });
         expect(mockGetFilesTree).not.toHaveBeenCalledWith(
             expect.objectContaining({ category: 'starred' })
         );

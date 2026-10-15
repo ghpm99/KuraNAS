@@ -16,6 +16,8 @@ import {
     rescanFiles as requestFilesRescan,
     setFileStarred,
     setFilesStarred as setFilesStarredService,
+    type StarredKind,
+    type StarredSort,
 } from '@/service/files';
 import { promoteFileToHot as promoteFileToHotService } from '@/service/tiering';
 import {
@@ -28,6 +30,7 @@ import {
 } from './fileContext';
 import FileSelectionProvider from '../../selection/fileSelectionProvider';
 import { loadFilesSort, saveFilesSort } from './filesSortPreference';
+import { loadStarredSort, saveStarredSort } from './starredSortPreference';
 import {
     addChildrenToTree,
     extractFilePath,
@@ -63,12 +66,17 @@ const joinPath = (parentPath: string | undefined, name: string | undefined) =>
 const isGlobalListing = (filter: FileListCategoryType, parentId: number | null) =>
     parentId === null && filter !== 'all';
 
+type StarredListingParams = { kind: StarredKind; sort: StarredSort };
+
 const fetchGlobalListing = (
     filter: FileListCategoryType,
-    page: number
+    page: number,
+    starredListing: StarredListingParams | null
 ): Promise<PaginationResponse> => {
     const params = { page, pageSize };
-    return filter === 'starred' ? getStarredFiles(params) : getRecentlyAccessedFiles(params);
+    return filter === 'starred'
+        ? getStarredFiles({ ...params, ...starredListing })
+        : getRecentlyAccessedFiles(params);
 };
 
 const FileProvider = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +109,14 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         setFilesSortState(nextSort);
     }, []);
 
+    const [starredKind, setStarredKind] = useState<StarredKind>('all');
+    const [starredSort, setStarredSortState] = useState<StarredSort>(loadStarredSort);
+
+    const setStarredSort = useCallback((nextSort: StarredSort) => {
+        saveStarredSort(nextSort);
+        setStarredSortState(nextSort);
+    }, []);
+
     useExpandTreeAlongAncestors({ selectedItemId, filesSort, setFileTree });
 
     // Snapshot derived from resolvedItem — no state/effect needed
@@ -114,12 +130,20 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [selectedItemId]
     );
 
+    const starredListing = useMemo<StarredListingParams | null>(
+        () =>
+            fileListFilter === 'starred' && selectedItemId === null
+                ? { kind: starredKind, sort: starredSort }
+                : null,
+        [fileListFilter, selectedItemId, starredKind, starredSort]
+    );
+
     const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery({
-            queryKey: ['files', queryParams, fileListFilter, filesSort],
+            queryKey: ['files', queryParams, fileListFilter, filesSort, starredListing],
             queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
                 isGlobalListing(fileListFilter, selectedItemId)
-                    ? fetchGlobalListing(fileListFilter, pageParam)
+                    ? fetchGlobalListing(fileListFilter, pageParam, starredListing)
                     : getFilesTree({
                           page: pageParam,
                           pageSize,
@@ -455,6 +479,10 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             setFileListFilter,
             filesSort,
             setFilesSort,
+            starredKind,
+            setStarredKind,
+            starredSort,
+            setStarredSort,
             handleStarredItem,
             setFilesStarred,
             createFolder,
@@ -484,6 +512,9 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             fileListFilter,
             filesSort,
             setFilesSort,
+            starredKind,
+            starredSort,
+            setStarredSort,
             handleStarredItem,
             setFilesStarred,
             createFolder,

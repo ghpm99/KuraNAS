@@ -38,7 +38,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 13. Invalidação das queries de favoritos (Home inclusive) após marcar
 - [x] 14. Favoritar em lote no frontend via `POST /files/starred` (todos marcados → desmarca todos; senão marca todos)
 - [x] 14.1. Seleção, ações em lote e atalhos na tela de Favoritos
-- [ ] 15. Ordenação e filtro de tipo pelo servidor na tela de Favoritos, contagens reais
+- [x] 15. Ordenação e filtro de tipo pelo servidor na tela de Favoritos, contagens reais
 - [ ] 16. Estrela nos detalhes/preview do arquivo
 - [ ] 17. Estrela no player e no catálogo de vídeos
 - [ ] 18. Marcar/desmarcar pelos resultados da busca global

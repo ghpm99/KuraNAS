@@ -12,6 +12,7 @@ import {
     getFilesTree,
     searchFiles,
     getStarredFiles,
+    getStarredCounts,
     getRecentlyAccessedFiles,
     getRecentAccessByFileId,
     getFileByPath,
@@ -152,6 +153,26 @@ describe('service/files', () => {
             params: { page: 2, page_size: 50 },
         });
         expect(result).toEqual(payload);
+    });
+
+    it('sends kind and sort to the starred endpoint only when provided', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: [] } });
+
+        await getStarredFiles({ page: 1, pageSize: 200, kind: 'media', sort: 'starred_at' });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/starred', {
+            params: { page: 1, page_size: 200, kind: 'media', sort: 'starred_at' },
+        });
+    });
+
+    it('gets the starred counts from the counts endpoint', async () => {
+        const payload = { total: 4, folders: 1, files: 1, media: 2 };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const counts = await getStarredCounts();
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/starred/counts');
+        expect(counts).toEqual(payload);
     });
 
     it('gets recently accessed files from the global endpoint with pagination params', async () => {
