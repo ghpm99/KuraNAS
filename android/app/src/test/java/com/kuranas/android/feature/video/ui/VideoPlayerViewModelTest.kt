@@ -262,4 +262,37 @@ class VideoPlayerViewModelTest {
         assertTrue(viewModel.navigationAvailability.value.canGoNext)
         coVerify(exactly = 1) { repository.updatePlaybackState(videoId, playlistId, 5.0, 10.0, true) }
     }
+
+    @Test
+    fun `opening with a playlist starts playback inside that playlist and uses its session for navigation`() = runTest {
+        coEvery { repository.startPlayback(videoId, playlistId) } returns AppResult.Success(sessionAt(currentVideoId = 42))
+        val viewModel = VideoPlayerViewModel(repository)
+
+        viewModel.openVideo(videoId, playlistId)
+
+        coVerify(exactly = 1) { repository.startPlayback(videoId, playlistId) }
+        coVerify(exactly = 0) { repository.startPlayback(videoId, null) }
+        assertEquals(VideoNavigationAvailability(canGoPrevious = true, canGoNext = true), viewModel.navigationAvailability.value)
+    }
+
+    @Test
+    fun `opening without a playlist starts playback without playlist id`() = runTest {
+        givenStartSucceeds(currentTimeSeconds = 0.0)
+
+        VideoPlayerViewModel(repository).openVideo(videoId)
+
+        coVerify(exactly = 1) { repository.startPlayback(videoId, null) }
+    }
+
+    @Test
+    fun `failed start with playlist falls back to start without playlist`() = runTest {
+        coEvery { repository.startPlayback(videoId, playlistId) } returns AppResult.Error("fora da playlist")
+        givenStartSucceeds(currentTimeSeconds = 30.0)
+
+        val start = VideoPlayerViewModel(repository).openVideo(videoId, playlistId)
+
+        coVerify(exactly = 1) { repository.startPlayback(videoId, playlistId) }
+        coVerify(exactly = 1) { repository.startPlayback(videoId, null) }
+        assertEquals(30_000L, start.startPositionMs)
+    }
 }

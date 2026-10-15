@@ -31,7 +31,8 @@ object AppRoute {
     // Navegação sem argumento (mini-player, telas de música) cai no default trackId=-1.
     const val MUSIC_PLAYER = "music-player"
     const val MUSIC_PLAYER_ROUTE = "music-player?trackId={trackId}"
-    const val VIDEO_PLAYER = "video-player/{id}"
+    const val VIDEO_PLAYER = "video-player/{id}?playlistId={playlistId}"
+    const val NO_PLAYLIST_ARGUMENT = -1
     const val IMAGE_VIEWER = "image-viewer/{id}"
     const val MUSIC_ARTIST = "music/artist/{key}"
     const val MUSIC_ALBUM = "music/album/{key}"
@@ -46,7 +47,8 @@ object AppRoute {
     fun fileDetail(id: String, name: String = "") =
         "file/$id?name=${android.net.Uri.encode(name)}"
     fun musicPlayer(trackId: Int) = "music-player?trackId=$trackId"
-    fun videoPlayer(id: String) = "video-player/$id"
+    fun videoPlayer(id: String, playlistId: Int? = null) =
+        if (playlistId == null) "video-player/$id" else "video-player/$id?playlistId=$playlistId"
     fun imageViewer(id: String) = "image-viewer/$id"
     fun musicArtist(key: String) = "music/artist/$key"
     fun musicAlbum(key: String) = "music/album/$key"

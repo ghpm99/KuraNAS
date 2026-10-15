@@ -92,10 +92,14 @@ private fun AuthenticatedApp() {
         }
         composable(
             route = AppRoute.VIDEO_PLAYER,
-            arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("playlistId") { type = NavType.IntType; defaultValue = AppRoute.NO_PLAYLIST_ARGUMENT },
+            ),
         ) {
             VideoPlayerScreen(
                 videoId = it.arguments?.getString("id") ?: "",
+                playlistId = it.arguments?.getInt("playlistId")?.takeIf { id -> id != AppRoute.NO_PLAYLIST_ARGUMENT },
                 onNavigateBack = { navController.popBackStack() },
             )
         }
@@ -155,7 +159,7 @@ private fun AuthenticatedApp() {
             VideoPlaylistScreen(
                 playlistId = it.arguments?.getInt("id") ?: 0,
                 onNavigateBack = { navController.popBackStack() },
-                onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+                onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id, it.arguments?.getInt("id"))) },
             )
         }
         composable(AppRoute.VIDEO_LIBRARY) {
