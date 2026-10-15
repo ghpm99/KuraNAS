@@ -1,5 +1,7 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.core.paging.PagedListState
+import com.kuranas.android.core.paging.PagedListLoader
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.feature.music.data.MusicRepository

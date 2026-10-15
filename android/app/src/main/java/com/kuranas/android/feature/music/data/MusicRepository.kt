@@ -1,7 +1,9 @@
 package com.kuranas.android.feature.music.data
 
+import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.PageDto
+import com.kuranas.android.core.paging.toListPage
 import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.server.ServerStore
 import dagger.Module
@@ -12,15 +14,11 @@ import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class MusicPage<T>(val items: List<T>, val hasNext: Boolean)
-
-private fun <T> PageDto<T>.toMusicPage() = MusicPage(items, pagination.hasNext)
-
 class MusicRepository @Inject constructor(
     private val api: MusicApi,
     private val serverStore: ServerStore,
 ) {
-    suspend fun getAllTracks(page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toMusicPage() }
+    suspend fun getAllTracks(page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toListPage() }
 
     /**
      * Resolve uma faixa pelo id do arquivo consultando o servidor diretamente, para trazer
@@ -31,18 +29,18 @@ class MusicRepository @Inject constructor(
         is AppResult.Success -> lookup.data
         is AppResult.Error -> TrackDto(id = id)
     }
-    suspend fun getArtists(page: Int): AppResult<MusicPage<ArtistDto>> = safeApiCall { api.getArtists(page).toMusicPage() }
-    suspend fun getAlbums(page: Int): AppResult<MusicPage<AlbumDto>> = safeApiCall { api.getAlbums(page).toMusicPage() }
-    suspend fun getGenres(page: Int): AppResult<MusicPage<GenreDto>> = safeApiCall { api.getGenres(page).toMusicPage() }
-    suspend fun getTracksByArtist(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByArtist(key, page).toMusicPage() }
-    suspend fun getTracksByAlbum(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByAlbum(key, page).toMusicPage() }
-    suspend fun getTracksByGenre(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByGenre(key, page).toMusicPage() }
-    suspend fun getFolders(page: Int): AppResult<MusicPage<FolderDto>> = safeApiCall { api.getFolders(page).toMusicPage() }
-    suspend fun getTracksByFolder(key: String, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall { api.getTracksByFolder(key, page).toMusicPage() }
-    suspend fun getPlaylists(page: Int): AppResult<MusicPage<PlaylistDto>> = safeApiCall { api.getPlaylists(page).toMusicPage() }
-    suspend fun getPlaylistTracks(id: Int, page: Int): AppResult<MusicPage<TrackDto>> = safeApiCall {
+    suspend fun getArtists(page: Int): AppResult<ListPage<ArtistDto>> = safeApiCall { api.getArtists(page).toListPage() }
+    suspend fun getAlbums(page: Int): AppResult<ListPage<AlbumDto>> = safeApiCall { api.getAlbums(page).toListPage() }
+    suspend fun getGenres(page: Int): AppResult<ListPage<GenreDto>> = safeApiCall { api.getGenres(page).toListPage() }
+    suspend fun getTracksByArtist(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByArtist(key, page).toListPage() }
+    suspend fun getTracksByAlbum(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByAlbum(key, page).toListPage() }
+    suspend fun getTracksByGenre(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByGenre(key, page).toListPage() }
+    suspend fun getFolders(page: Int): AppResult<ListPage<FolderDto>> = safeApiCall { api.getFolders(page).toListPage() }
+    suspend fun getTracksByFolder(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByFolder(key, page).toListPage() }
+    suspend fun getPlaylists(page: Int): AppResult<ListPage<PlaylistDto>> = safeApiCall { api.getPlaylists(page).toListPage() }
+    suspend fun getPlaylistTracks(id: Int, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall {
         val playlistPage = api.getPlaylistTracks(id, page)
-        MusicPage(playlistPage.items.map { it.file }, playlistPage.pagination.hasNext)
+        ListPage(playlistPage.items.map { it.file }, playlistPage.pagination.hasNext)
     }
     suspend fun createPlaylist(name: String): AppResult<PlaylistDto> = safeApiCall { api.createPlaylist(CreatePlaylistRequest(name)) }
     suspend fun deletePlaylist(id: Int): AppResult<Unit> = safeApiCall { api.deletePlaylist(id) }
@@ -69,8 +67,6 @@ class MusicRepository @Inject constructor(
         return if (hasPort) withScheme else "$withScheme:8000"
     }
 }
-
-const val FIRST_PAGE = 1
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)
