@@ -24,7 +24,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 04 | [Busca global](04-busca-global.md) | ✅ concluída (2026-10-09) | 13 lacunas; índices trigram/fold, conteúdo de documentos; `make ci` verde |
 | 05 | [Música](05-musica.md) | ✅ concluída (2026-10-09) | 21 lacunas (sub-itens em commits próprios); transcodificação depende de ffmpeg; `make ci` verde |
 | 06 | [Vídeos](06-videos.md) | em execução | |
-| 07 | Favoritos | pendente | |
+| 07 | [Favoritos](07-favoritos.md) | em execução | |
 | 08 | Lixeira | pendente | |
 | 09 | Downloads / ingestão por URL | pendente | |
 | 10 | Capturas (plugin) | pendente | |
