@@ -417,41 +417,6 @@ func (r *Repository) GetRecentVideos(limit int) ([]VideoFileModel, error) {
 	return results, nil
 }
 
-func (r *Repository) GetAllVideosForGrouping() ([]VideoFileModel, error) {
-	results := []VideoFileModel{}
-
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetAllVideosForGroupingQuery, pq.Array(utils.VideoFormats))
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var item VideoFileModel
-			if err := rows.Scan(
-				&item.ID,
-				&item.Name,
-				&item.Path,
-				&item.ParentPath,
-				&item.Format,
-				&item.Size,
-				&item.CreatedAt,
-				&item.UpdatedAt,
-			); err != nil {
-				return err
-			}
-			results = append(results, item)
-		}
-		return nil
-	})
-	if err != nil {
-		return results, fmt.Errorf("falha ao buscar videos para agrupamento inteligente: %w", err)
-	}
-
-	return results, nil
-}
-
 func (r *Repository) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 	playlist := VideoPlaylistModel{}
 	err := tx.QueryRow(

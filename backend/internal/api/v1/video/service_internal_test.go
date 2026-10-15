@@ -56,7 +56,6 @@ type videoRepoMock struct {
 	createCustomPlaylistFn          func(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error)
 	deleteCustomPlaylistFn          func(tx *sql.Tx, playlistID int) error
 	reorderPlaylistItemsFn          func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
-	getAllVideosForGroupingFn       func() ([]VideoFileModel, error)
 	getAllVideosWithMetadataFn      func() ([]VideoWithMetadataModel, error)
 	getVideoPlaylistsByVideoFn      func(videoID int) ([]VideoPlaylistOfVideoModel, error)
 	upsertAutoPlaylistFn            func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
@@ -164,12 +163,6 @@ func (m *videoRepoMock) GetRecentVideos(limit int) ([]VideoFileModel, error) {
 		return m.getRecentVideosFn(limit)
 	}
 	return nil, errors.New("not used")
-}
-func (m *videoRepoMock) GetAllVideosForGrouping() ([]VideoFileModel, error) {
-	if m.getAllVideosForGroupingFn != nil {
-		return m.getAllVideosForGroupingFn()
-	}
-	return nil, nil
 }
 func (m *videoRepoMock) UpsertAutoPlaylist(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error) {
 	if m.upsertAutoPlaylistFn != nil {

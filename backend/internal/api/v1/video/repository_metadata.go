@@ -26,52 +26,6 @@ func (r *VideoMetadataRepository) GetDbContext() *database.DbContext {
 	return r.Db
 }
 
-func (r *VideoMetadataRepository) GetVideoMetadataByID(id int) (VideoMetadataModel, error) {
-	var metadata VideoMetadataModel
-
-	err := r.Db.QueryTx(func(tx *sql.Tx) error {
-		row := tx.QueryRow(queries.GetVideoMetadataByIDQuery, id)
-
-		var createdAt sql.NullTime
-		if err := row.Scan(
-			&metadata.ID,
-			&metadata.FileId,
-			&metadata.Path,
-			&metadata.FormatName,
-			&metadata.Size,
-			&metadata.Duration,
-			&metadata.Width,
-			&metadata.Height,
-			&metadata.FrameRate,
-			&metadata.NbFrames,
-			&metadata.BitRate,
-			&metadata.CodecName,
-			&metadata.CodecLongName,
-			&metadata.PixFmt,
-			&metadata.Level,
-			&metadata.Profile,
-			&metadata.AspectRatio,
-			&metadata.AudioCodec,
-			&metadata.AudioChannels,
-			&metadata.AudioSampleRate,
-			&metadata.AudioBitRate,
-			&createdAt,
-			&metadata.Classification,
-			&metadata.ClassificationVersion,
-		); err != nil {
-			return err
-		}
-		metadata.CreatedAt = createdAt.Time
-		return nil
-	})
-
-	if err != nil {
-		return metadata, fmt.Errorf("falha ao obter metadados do vídeo: %w", err)
-	}
-
-	return metadata, nil
-}
-
 func (r *VideoMetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error) {
 	var id int
 	var createdAt time.Time
@@ -113,22 +67,6 @@ func (r *VideoMetadataRepository) UpsertVideoMetadata(tx *sql.Tx, metadata Video
 	metadata.ID = id
 	metadata.CreatedAt = createdAt
 	return metadata, nil
-}
-
-func (r *VideoMetadataRepository) DeleteVideoMetadata(id int) error {
-	err := r.Db.ExecTx(func(tx *sql.Tx) error {
-		_, err := tx.Exec(queries.DeleteVideoMetadataQuery, id)
-		if err != nil {
-			return fmt.Errorf("falha ao executar query de exclusão: %w", err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("falha ao deletar metadados do vídeo: %w", err)
-	}
-
-	return nil
 }
 
 // ListVideosWithoutMetadata returns a keyset page (file_id > afterFileID) of

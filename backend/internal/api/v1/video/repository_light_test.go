@@ -104,14 +104,6 @@ func TestVideoRepositoryReadPaths(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAllVideosForGroupingQuery)).
-		WillReturnRows(sqlmock.NewRows(videoCols).AddRow(1, "v", "/v", "/", ".mp4", 100, now, now))
-	mock.ExpectRollback()
-	if out, err := repo.GetAllVideosForGrouping(); err != nil || len(out) != 1 {
-		t.Fatalf("GetAllVideosForGrouping failed len=%d err=%v", len(out), err)
-	}
-
-	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistExclusionsQuery)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"video_id"}).AddRow(2))

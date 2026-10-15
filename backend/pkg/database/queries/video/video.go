@@ -40,9 +40,6 @@ var GetCatalogVideosQuery string
 //go:embed get_recent_videos.sql
 var GetRecentVideosQuery string
 
-//go:embed get_all_videos_for_grouping.sql
-var GetAllVideosForGroupingQuery string
-
 //go:embed upsert_auto_playlist.sql
 var UpsertAutoPlaylistQuery string
 
@@ -157,14 +154,8 @@ var GetLibraryVideosOrderDurationDescQuery string
 //go:embed get_videos.sql
 var GetVideosQuery string
 
-//go:embed get_video_metadata_by_id.sql
-var GetVideoMetadataByIDQuery string
-
 //go:embed upsert_video_metadata.sql
 var UpsertVideoMetadataQuery string
-
-//go:embed delete_video_metadata.sql
-var DeleteVideoMetadataQuery string
 
 //go:embed get_video_summary_by_file_id.sql
 var GetVideoSummaryByFileIDQuery string
