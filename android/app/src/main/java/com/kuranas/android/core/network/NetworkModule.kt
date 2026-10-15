@@ -2,6 +2,8 @@ package com.kuranas.android.core.network
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.kuranas.android.BuildConfig
+import com.kuranas.android.core.client.ClientIdInterceptor
+import com.kuranas.android.core.client.ClientIdProvider
 import com.kuranas.android.core.server.ServerStore
 import dagger.Module
 import dagger.Provides
@@ -84,9 +86,11 @@ object NetworkModule {
     fun provideOkHttpClient(
         logging: HttpLoggingInterceptor,
         serverInterceptor: Interceptor,
+        clientIdProvider: ClientIdProvider,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(serverInterceptor)
+            .addInterceptor(ClientIdInterceptor(clientIdProvider))
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
