@@ -69,7 +69,7 @@ fun VideoScreen(
                             Text(stringResource(R.string.video_recent), style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(8.dp))
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(catalog.recentVideos) { video ->
+                                items(catalog.recentVideos, key = { it.id }) { video ->
                                     VideoCard(
                                         video = video,
                                         thumbnailUrl = viewModel.thumbnailUrl(video.id),
