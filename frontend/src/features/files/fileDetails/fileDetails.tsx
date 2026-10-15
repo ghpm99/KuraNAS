@@ -12,7 +12,7 @@ import {
     ListItem,
     Typography,
 } from '@mui/material';
-import { Flame, Snowflake, X } from 'lucide-react';
+import { Flame, Snowflake, Star, X } from 'lucide-react';
 import ChecksumRow from './checksumRow';
 import DetailRow from './detailRow';
 import DiskLocationRow from './diskLocationRow';
@@ -26,7 +26,7 @@ type FileDetailsProps = {
 };
 
 const FileDetails = ({ file, onClose }: FileDetailsProps) => {
-    const { isLoadingAccessData, recentAccessFiles } = useFile();
+    const { isLoadingAccessData, recentAccessFiles, handleStarredItem } = useFile();
     const { t } = useI18n();
     const isFolder = file.type === FileType.Directory;
     const fileTypeDescription = isFolder
@@ -50,9 +50,19 @@ const FileDetails = ({ file, onClose }: FileDetailsProps) => {
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                     {t('FILE_DETAILS_TITLE')}
                 </Typography>
-                <IconButton size="small" onClick={onClose} aria-label={t('CLOSE')}>
-                    <X size={18} />
-                </IconButton>
+                <Box sx={{ display: 'flex' }}>
+                    <IconButton
+                        size="small"
+                        onClick={() => handleStarredItem?.(file.id)}
+                        aria-label={t(file.starred ? 'FILES_UNFAVORITE' : 'FILES_FAVORITE')}
+                        aria-pressed={Boolean(file.starred)}
+                    >
+                        <Star size={18} fill={file.starred ? 'currentColor' : 'none'} />
+                    </IconButton>
+                    <IconButton size="small" onClick={onClose} aria-label={t('CLOSE')}>
+                        <X size={18} />
+                    </IconButton>
+                </Box>
             </Box>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
                 {t('FILE_DETAILS_SUBTITLE')}

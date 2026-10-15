@@ -1,4 +1,5 @@
 import useFile, { type FileData } from '@/features/files/providers/fileProvider/fileContext';
+import { findItemInTree } from '@/features/files/providers/fileProvider/fileProviderUtils';
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { FileDetailsContext } from './fileDetailsContext';
 
@@ -8,7 +9,7 @@ type OpenedDetails = {
 };
 
 export const FileDetailsProvider = ({ children }: { children: ReactNode }) => {
-    const { selectedItem } = useFile();
+    const { files, selectedItem } = useFile();
     const viewedItemId = selectedItem?.id ?? null;
     const [openedDetails, setOpenedDetails] = useState<OpenedDetails | null>(null);
 
@@ -18,8 +19,14 @@ export const FileDetailsProvider = ({ children }: { children: ReactNode }) => {
     );
     const closeDetails = useCallback(() => setOpenedDetails(null), []);
 
-    const explicitTarget =
+    const snapshotTarget =
         openedDetails?.openedWhileViewingItemId === viewedItemId ? openedDetails.file : null;
+    const explicitTarget = snapshotTarget
+        ? (findItemInTree(
+              [...(files ?? []), ...(selectedItem ? [selectedItem] : [])],
+              snapshotTarget.id
+          ) ?? snapshotTarget)
+        : null;
 
     const contextValue = useMemo(
         () => ({ isAvailable: true, explicitTarget, openDetails, closeDetails }),
