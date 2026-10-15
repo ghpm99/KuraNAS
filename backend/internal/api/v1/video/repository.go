@@ -1048,11 +1048,11 @@ func (r *Repository) GetBehaviorEvents(clientID string, limit int) ([]VideoBehav
 	return results, nil
 }
 
-func (r *Repository) GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error) {
+func (r *Repository) ListRecentBehaviorEventsByType(eventType string, limit int) ([]VideoBehaviorEventModel, error) {
 	results := []VideoBehaviorEventModel{}
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetAllBehaviorEventsQuery, limit)
+		rows, err := tx.Query(queries.ListRecentBehaviorEventsByTypeQuery, eventType, limit)
 		if err != nil {
 			return err
 		}
@@ -1075,10 +1075,43 @@ func (r *Repository) GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel,
 			}
 			results = append(results, item)
 		}
-		return nil
+		return rows.Err()
 	})
 	if err != nil {
-		return results, fmt.Errorf("falha ao buscar todos os eventos de comportamento: %w", err)
+		return results, fmt.Errorf("falha ao buscar eventos de comportamento por tipo: %w", err)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) ListRecentVideoWatchProgress(limit int) ([]VideoWatchProgressModel, error) {
+	results := []VideoWatchProgressModel{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.ListRecentVideoWatchProgressQuery, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var item VideoWatchProgressModel
+			if err := rows.Scan(
+				&item.ClientID,
+				&item.VideoID,
+				&item.PositionSeconds,
+				&item.DurationSeconds,
+				&item.Completed,
+				&item.UpdatedAt,
+			); err != nil {
+				return err
+			}
+			results = append(results, item)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return results, fmt.Errorf("falha ao buscar progresso recente de videos: %w", err)
 	}
 
 	return results, nil

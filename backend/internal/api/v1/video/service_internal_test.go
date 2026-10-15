@@ -15,56 +15,57 @@ type videoRepoMock struct {
 	getVideosFn func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 	db          *database.DbContext
 
-	getVideoFileByIDFn              func(id int) (VideoFileModel, error)
-	getVideoDurationSecondsFn       func(fileID int) (sql.NullFloat64, error)
-	getVideosByParentPathFn         func(parentPath string) ([]VideoFileModel, error)
-	getPlaylistByContextFn          func(contextType string, sourcePath string) (VideoPlaylistModel, error)
-	createPlaylistFn                func(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)
-	replacePlaylistItemsFn          func(tx *sql.Tx, playlistID int, videoIDs []int) error
-	getPlaybackStateFn              func(clientID string) (VideoPlaybackStateModel, error)
-	upsertPlaybackStateFn           func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
-	getVideoWatchProgressFn         func(clientID string, videoID int) (VideoWatchProgressModel, error)
-	getVideoWatchProgressByVideosFn func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error)
-	upsertVideoWatchProgressFn      func(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error)
-	touchPlaylistFn                 func(tx *sql.Tx, playlistID int) error
-	getCatalogVideosFn              func(limit int) ([]VideoFileModel, error)
-	getRecentVideosFn               func(limit int) ([]VideoFileModel, error)
-	getContinueWatchingFn           func(clientID string, limit int) ([]ContinueWatchingModel, error)
-	checkVideoInPlaylistFn          func(playlistID int, videoID int) (bool, error)
-	getUnassignedVideosFn           func(limit int) ([]VideoFileModel, error)
-	getHiddenVideoPlaylistsFn       func(limit int, offset int) ([]VideoPlaylistModel, error)
-	listPosterCandidatesInFolderFn  func(folderPath string) ([]PosterCandidateModel, error)
-	countVideosInFolderFn           func(folderPath string) (int, error)
-	getPlaylistDominantFolderFn     func(playlistID int) (string, error)
-	getVideoPlaylistsFn             func(includeHidden bool) ([]VideoPlaylistModel, error)
-	getVideoPlaylistMembersFn       func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
-	getVideoPlaylistByIDFn          func(id int) (VideoPlaylistModel, error)
-	getVideoPlaylistItemsFn         func(playlistID int) ([]VideoPlaylistItemModel, error)
-	getVideoPlaylistItemsPageFn     func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
-	listLibraryFoldersFn            func(query LibraryFolderQuery) ([]LibraryFolderModel, error)
-	listLibraryFolderVideosFn       func(folderPath string, limit int, offset int) ([]VideoFileModel, error)
-	searchVideoPlaylistsFn          func(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error)
-	getVideoPlaylistsBySectionFn    func(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
-	listLibraryMoviesFn             func(sort LibraryMovieSort, limit int, offset int) ([]VideoFileModel, error)
-	listLibraryVideosFn             func(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileModel], error)
-	setPlaylistHiddenFn             func(tx *sql.Tx, playlistID int, hidden bool) error
-	addPlaylistVideoManualFn        func(tx *sql.Tx, playlistID int, videoID int) error
-	deletePlaylistExclusionFn       func(tx *sql.Tx, playlistID int, videoID int) error
-	removePlaylistVideoFn           func(tx *sql.Tx, playlistID int, videoID int) error
-	upsertPlaylistExclusionFn       func(tx *sql.Tx, playlistID int, videoID int) error
-	updatePlaylistNameFn            func(tx *sql.Tx, playlistID int, name string) error
-	createCustomPlaylistFn          func(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error)
-	deleteCustomPlaylistFn          func(tx *sql.Tx, playlistID int) error
-	reorderPlaylistItemsFn          func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
-	getAllVideosWithMetadataFn      func() ([]VideoWithMetadataModel, error)
-	getVideoPlaylistsByVideoFn      func(videoID int) ([]VideoPlaylistOfVideoModel, error)
-	upsertAutoPlaylistFn            func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
-	getPlaylistExclusionsFn         func(playlistID int) (map[int]bool, error)
-	deleteAutoPlaylistItemsFn       func(tx *sql.Tx, playlistID int) error
-	insertPlaylistItemsSrcFn        func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
-	insertBehaviorEventFn           func(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
-	getBehaviorEventsFn             func(clientID string, limit int) ([]VideoBehaviorEventModel, error)
-	getAllBehaviorEventsFn          func(limit int) ([]VideoBehaviorEventModel, error)
+	getVideoFileByIDFn               func(id int) (VideoFileModel, error)
+	getVideoDurationSecondsFn        func(fileID int) (sql.NullFloat64, error)
+	getVideosByParentPathFn          func(parentPath string) ([]VideoFileModel, error)
+	getPlaylistByContextFn           func(contextType string, sourcePath string) (VideoPlaylistModel, error)
+	createPlaylistFn                 func(tx *sql.Tx, contextType string, sourcePath string) (VideoPlaylistModel, error)
+	replacePlaylistItemsFn           func(tx *sql.Tx, playlistID int, videoIDs []int) error
+	getPlaybackStateFn               func(clientID string) (VideoPlaybackStateModel, error)
+	upsertPlaybackStateFn            func(tx *sql.Tx, state VideoPlaybackStateModel) (VideoPlaybackStateModel, error)
+	getVideoWatchProgressFn          func(clientID string, videoID int) (VideoWatchProgressModel, error)
+	getVideoWatchProgressByVideosFn  func(clientID string, videoIDs []int) ([]VideoWatchProgressModel, error)
+	upsertVideoWatchProgressFn       func(tx *sql.Tx, progress VideoWatchProgressModel) (VideoWatchProgressModel, error)
+	touchPlaylistFn                  func(tx *sql.Tx, playlistID int) error
+	getCatalogVideosFn               func(limit int) ([]VideoFileModel, error)
+	getRecentVideosFn                func(limit int) ([]VideoFileModel, error)
+	getContinueWatchingFn            func(clientID string, limit int) ([]ContinueWatchingModel, error)
+	checkVideoInPlaylistFn           func(playlistID int, videoID int) (bool, error)
+	getUnassignedVideosFn            func(limit int) ([]VideoFileModel, error)
+	getHiddenVideoPlaylistsFn        func(limit int, offset int) ([]VideoPlaylistModel, error)
+	listPosterCandidatesInFolderFn   func(folderPath string) ([]PosterCandidateModel, error)
+	countVideosInFolderFn            func(folderPath string) (int, error)
+	getPlaylistDominantFolderFn      func(playlistID int) (string, error)
+	getVideoPlaylistsFn              func(includeHidden bool) ([]VideoPlaylistModel, error)
+	getVideoPlaylistMembersFn        func(includeHidden bool) ([]VideoPlaylistMembershipModel, error)
+	getVideoPlaylistByIDFn           func(id int) (VideoPlaylistModel, error)
+	getVideoPlaylistItemsFn          func(playlistID int) ([]VideoPlaylistItemModel, error)
+	getVideoPlaylistItemsPageFn      func(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
+	listLibraryFoldersFn             func(query LibraryFolderQuery) ([]LibraryFolderModel, error)
+	listLibraryFolderVideosFn        func(folderPath string, limit int, offset int) ([]VideoFileModel, error)
+	searchVideoPlaylistsFn           func(searchPattern string, matchingNameKeys []string, limit int, offset int) ([]VideoPlaylistModel, error)
+	getVideoPlaylistsBySectionFn     func(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
+	listLibraryMoviesFn              func(sort LibraryMovieSort, limit int, offset int) ([]VideoFileModel, error)
+	listLibraryVideosFn              func(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileModel], error)
+	setPlaylistHiddenFn              func(tx *sql.Tx, playlistID int, hidden bool) error
+	addPlaylistVideoManualFn         func(tx *sql.Tx, playlistID int, videoID int) error
+	deletePlaylistExclusionFn        func(tx *sql.Tx, playlistID int, videoID int) error
+	removePlaylistVideoFn            func(tx *sql.Tx, playlistID int, videoID int) error
+	upsertPlaylistExclusionFn        func(tx *sql.Tx, playlistID int, videoID int) error
+	updatePlaylistNameFn             func(tx *sql.Tx, playlistID int, name string) error
+	createCustomPlaylistFn           func(tx *sql.Tx, sourcePath string, name string) (VideoPlaylistModel, error)
+	deleteCustomPlaylistFn           func(tx *sql.Tx, playlistID int) error
+	reorderPlaylistItemsFn           func(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
+	getAllVideosWithMetadataFn       func() ([]VideoWithMetadataModel, error)
+	getVideoPlaylistsByVideoFn       func(videoID int) ([]VideoPlaylistOfVideoModel, error)
+	upsertAutoPlaylistFn             func(tx *sql.Tx, contextType, sourcePath, name string, nameKey sql.NullString, groupMode, classification string) (VideoPlaylistModel, error)
+	getPlaylistExclusionsFn          func(playlistID int) (map[int]bool, error)
+	deleteAutoPlaylistItemsFn        func(tx *sql.Tx, playlistID int) error
+	insertPlaylistItemsSrcFn         func(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
+	insertBehaviorEventFn            func(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
+	getBehaviorEventsFn              func(clientID string, limit int) ([]VideoBehaviorEventModel, error)
+	listRecentBehaviorEventsByTypeFn func(eventType string, limit int) ([]VideoBehaviorEventModel, error)
+	listRecentVideoWatchProgressFn   func(limit int) ([]VideoWatchProgressModel, error)
 }
 
 func (m *videoRepoMock) GetDbContext() *database.DbContext { return m.db }
@@ -380,9 +381,15 @@ func (m *videoRepoMock) GetBehaviorEvents(clientID string, limit int) ([]VideoBe
 	}
 	return nil, nil
 }
-func (m *videoRepoMock) GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error) {
-	if m.getAllBehaviorEventsFn != nil {
-		return m.getAllBehaviorEventsFn(limit)
+func (m *videoRepoMock) ListRecentBehaviorEventsByType(eventType string, limit int) ([]VideoBehaviorEventModel, error) {
+	if m.listRecentBehaviorEventsByTypeFn != nil {
+		return m.listRecentBehaviorEventsByTypeFn(eventType, limit)
+	}
+	return nil, nil
+}
+func (m *videoRepoMock) ListRecentVideoWatchProgress(limit int) ([]VideoWatchProgressModel, error) {
+	if m.listRecentVideoWatchProgressFn != nil {
+		return m.listRecentVideoWatchProgressFn(limit)
 	}
 	return nil, nil
 }

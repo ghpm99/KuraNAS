@@ -82,23 +82,8 @@ func (s *Service) RebuildSmartPlaylists() error {
 		entries = append(entries, entry)
 	}
 
-	// Buscar eventos de comportamento para alimentar o engine
-	behaviorEvents, _ := s.Repository.GetAllBehaviorEvents(500)
-	engineBehavior := make([]playlist.BehaviorEvent, 0, len(behaviorEvents))
-	for _, e := range behaviorEvents {
-		engineBehavior = append(engineBehavior, playlist.BehaviorEvent{
-			ClientID:       e.ClientID,
-			VideoID:        e.VideoID,
-			PlaylistID:     e.PlaylistID,
-			EventType:      playlist.BehaviorEventType(e.EventType),
-			Position:       e.Position,
-			Duration:       e.Duration,
-			WatchedPercent: e.WatchedPct,
-			Timestamp:      e.CreatedAt,
-		})
-	}
+	engineBehavior := s.loadBehaviorEvents()
 
-	// Executar o engine
 	result := s.PlaylistEngine.Build(playlist.BuildInput{
 		Videos:         entries,
 		BehaviorEvents: engineBehavior,
@@ -476,4 +461,16 @@ func parseDurationSeconds(s string) float64 {
 		return 0
 	}
 	return val
+}
+
+func (s *Service) loadBehaviorEvents() []playlist.BehaviorEvent {
+	recentProgress, progressErr := s.Repository.ListRecentVideoWatchProgress(behaviorEventsReadLimit)
+	if progressErr != nil {
+		return nil
+	}
+	skipEvents, skipErr := s.Repository.ListRecentBehaviorEventsByType(string(playlist.EventSkipped), behaviorEventsReadLimit)
+	if skipErr != nil {
+		return nil
+	}
+	return buildBehaviorEventsFromProgress(recentProgress, skipEvents)
 }
