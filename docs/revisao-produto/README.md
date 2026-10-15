@@ -23,7 +23,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 03 | [Imagens](03-imagens.md) — galeria, paginação, busca por conteúdo, álbuns, timeline | ✅ concluída (2026-10-09) | 19 lacunas; HEIC/AVIF dependem de ffmpeg ≥ 7.1 no servidor; `make ci` verde |
 | 04 | [Busca global](04-busca-global.md) | ✅ concluída (2026-10-09) | 13 lacunas; índices trigram/fold, conteúdo de documentos; `make ci` verde |
 | 05 | [Música](05-musica.md) | ✅ concluída (2026-10-09) | 21 lacunas (sub-itens em commits próprios); transcodificação depende de ffmpeg; `make ci` verde |
-| 06 | [Vídeos](06-videos.md) | em execução | |
+| 06 | [Vídeos](06-videos.md) | ✅ concluída (2026-10-15) | 85 lacunas (sub-itens em commits próprios); 58.1 🚫 aguarda decisão de autoplay; `make ci` verde |
 | 07 | [Favoritos](07-favoritos.md) | em execução | |
 | 08 | Lixeira | pendente | |
 | 09 | Downloads / ingestão por URL | pendente | |
