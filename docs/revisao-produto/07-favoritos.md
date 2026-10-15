@@ -28,7 +28,8 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 07.1. Classificação de mídia alinhada entre frontend e backend (`.raw` é imagem no frontend e não está em `utils.ImageFormats`)
 - [x] 08. `GET /files/starred/counts` (pastas, arquivos, mídias)
 - [x] 09. `category` inválida em `/files/tree` responde 400 em vez de cair em "all"
-- [ ] 10. Teste de integração do ciclo estrela → mover → lixeira → restaurar → reindexar
+- [x] 10. Teste de integração do ciclo estrela → mover → lixeira → restaurar → reindexar
+- [ ] 10.1. Mover entre raízes preserva id e estrela (hoje `moveAcrossRoots` copia, cria linha nova e apaga a origem)
 
 ### Frontend
 - [ ] 11. Navegação por pasta, breadcrumb e preview em `/favorites/<path>`
