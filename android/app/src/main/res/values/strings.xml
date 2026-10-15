@@ -134,6 +134,7 @@
     <string name="settings_forget_dialog_text">The server address will be removed and you will need to reconnect.</string>
 
     <!-- Video -->
+    <string name="video_continue_watching">Continue watching</string>
     <string name="video_recent">Recent</string>
     <string name="video_section_series">Series</string>
     <string name="video_section_movies">Movies</string>

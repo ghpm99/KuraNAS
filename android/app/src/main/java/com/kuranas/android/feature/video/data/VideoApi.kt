@@ -132,6 +132,7 @@ data class VideoPlaylistItemDto(
 /**
  * Espelha video.VideoCatalogHomeDto (`{ sections: [{ key, title, items: [{ video }] }] }`).
  * `recentVideos` expõe apenas os vídeos da seção "recent", sem repetição.
+ * `continueWatchingItems` expõe os itens da seção "continue" (progress_pct de 0 a 100).
  */
 @Serializable
 data class VideoHomeCatalogDto(
@@ -143,8 +144,15 @@ data class VideoHomeCatalogDto(
             .flatMap { section -> section.items.map { it.video } }
             .distinctBy { video -> video.id }
 
+    val continueWatchingItems: List<VideoCatalogItemDto>
+        get() = sections
+            .filter { section -> section.key == CONTINUE_SECTION_KEY }
+            .flatMap { section -> section.items }
+            .distinctBy { item -> item.video.id }
+
     private companion object {
         const val RECENT_SECTION_KEY = "recent"
+        const val CONTINUE_SECTION_KEY = "continue"
     }
 }
 

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -75,6 +76,23 @@ fun VideoScreen(
                         AllVideosEntry(onClick = onOpenLibrary)
                         Spacer(Modifier.height(16.dp))
                     }
+                    if (catalog.continueWatchingItems.isNotEmpty()) {
+                        item {
+                            Text(stringResource(R.string.video_continue_watching), style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(8.dp))
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(catalog.continueWatchingItems, key = { it.video.id }) { catalogItem ->
+                                    VideoCard(
+                                        video = catalogItem.video,
+                                        thumbnailUrl = viewModel.thumbnailUrl(catalogItem.video.id),
+                                        progressPercent = catalogItem.progressPct,
+                                        onClick = { onPlayVideo(catalogItem.video.id) },
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    }
                     if (catalog.recentVideos.isNotEmpty()) {
                         item {
                             Text(stringResource(R.string.video_recent), style = MaterialTheme.typography.titleMedium)
@@ -124,14 +142,19 @@ private fun AllVideosEntry(onClick: () -> Unit) {
 }
 
 @Composable
-private fun VideoCard(video: VideoItemDto, thumbnailUrl: String, onClick: () -> Unit) {
+private fun VideoCard(
+    video: VideoItemDto,
+    thumbnailUrl: String,
+    onClick: () -> Unit,
+    progressPercent: Double? = null,
+) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .glass(GlassLevel.Light, radius = 12.dp)
             .padding(8.dp)
-            .size(width = 160.dp, height = 120.dp),
+            .size(width = 160.dp, height = if (progressPercent == null) 120.dp else 132.dp),
     ) {
         AsyncImage(
             model = thumbnailUrl,
@@ -143,6 +166,12 @@ private fun VideoCard(video: VideoItemDto, thumbnailUrl: String, onClick: () -> 
                 .clip(RoundedCornerShape(8.dp)),
         )
         Text(video.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+        if (progressPercent != null) {
+            LinearProgressIndicator(
+                progress = { (progressPercent / 100.0).coerceIn(0.0, 1.0).toFloat() },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            )
+        }
     }
 }
 

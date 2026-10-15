@@ -132,6 +132,7 @@
     <string name="settings_forget_dialog_text">O endereço do servidor será removido e você precisará reconectar.</string>
 
     <!-- Video -->
+    <string name="video_continue_watching">Continuar assistindo</string>
     <string name="video_recent">Recentes</string>
     <string name="video_section_series">Séries</string>
     <string name="video_section_movies">Filmes</string>
