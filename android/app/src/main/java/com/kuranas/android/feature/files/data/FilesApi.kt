@@ -28,6 +28,14 @@ interface FilesApi {
     @GET("api/v1/files/path")
     suspend fun getFilesByPath(@Query("path") path: String): PageDto<FileItemDto>
 
+    @GET("api/v1/files/starred")
+    suspend fun getStarredFiles(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+        @Query("kind") kind: String? = null,
+        @Query("sort") sort: String? = null,
+    ): PageDto<FileItemDto>
+
     @GET("api/v1/files/music")
     suspend fun getMusicFiles(): PageDto<FileItemDto>
 

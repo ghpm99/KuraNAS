@@ -13,6 +13,7 @@
     <!-- Navigation -->
     <string name="nav_home">Início</string>
     <string name="nav_files">Arquivos</string>
+    <string name="nav_favorites">Favoritos</string>
     <string name="nav_music">Música</string>
     <string name="nav_videos">Vídeos</string>
     <string name="nav_images">Imagens</string>
@@ -47,6 +48,13 @@
     <string name="files_empty_folder">Pasta vazia</string>
     <string name="files_star_action">Adicionar aos favoritos</string>
     <string name="files_unstar_action">Remover dos favoritos</string>
+    <string name="favorites_empty">Nenhum favorito ainda</string>
+    <string name="favorites_kind_all">Todos</string>
+    <string name="favorites_kind_folders">Pastas</string>
+    <string name="favorites_kind_files">Arquivos</string>
+    <string name="favorites_kind_media">Mídia</string>
+    <string name="favorites_sort_name">Nome</string>
+    <string name="favorites_sort_starred_at">Favoritado recentemente</string>
     <string name="file_not_found">Arquivo não encontrado</string>
 
     <!-- File viewer -->

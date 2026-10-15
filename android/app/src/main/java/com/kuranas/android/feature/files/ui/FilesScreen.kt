@@ -140,13 +140,8 @@ fun FilesScreen(
                         FileListItem(
                             file = file,
                             onClick = {
-                                when {
-                                    file.isDir -> viewModel.openFolder(file)
-                                    file.mimeType.startsWith("image/") -> onOpenImage(file.id)
-                                    file.mimeType.startsWith("video/") -> onOpenVideo(file.id)
-                                    file.mimeType.startsWith("audio/") -> onPlayAudio(file.id)
-                                    else -> onOpenFile(file.id, file.name)
-                                }
+                                if (file.isDir) viewModel.openFolder(file)
+                                else openFileByType(file, onOpenImage, onOpenVideo, onPlayAudio, onOpenFile)
                             },
                             onStar = { viewModel.toggleFileStarred(file) },
                         )
@@ -183,7 +178,7 @@ fun FilesScreen(
 }
 
 @Composable
-private fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> Unit) {
+internal fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -220,4 +215,19 @@ private fun fileIcon(file: FileItemDto): ImageVector = when {
     file.mimeType.startsWith("video/") -> Icons.Default.VideoFile
     file.mimeType.startsWith("audio/") -> Icons.Default.AudioFile
     else -> Icons.Default.InsertDriveFile
+}
+
+internal fun openFileByType(
+    file: FileItemDto,
+    onOpenImage: (String) -> Unit,
+    onOpenVideo: (String) -> Unit,
+    onPlayAudio: (String) -> Unit,
+    onOpenFile: (String, String) -> Unit,
+) {
+    when {
+        file.mimeType.startsWith("image/") -> onOpenImage(file.id)
+        file.mimeType.startsWith("video/") -> onOpenVideo(file.id)
+        file.mimeType.startsWith("audio/") -> onPlayAudio(file.id)
+        else -> onOpenFile(file.id, file.name)
+    }
 }

@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.lifecycle.SavedStateHandle
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
@@ -40,7 +41,7 @@ class FilesViewModelTest {
     private fun viewModelWithFile(isStarred: Boolean): FilesViewModel {
         coEvery { repository.getRootFiles() } returns
             AppResult.Success(listOf(FileItemDto(rawId = 7, name = "a.txt", starred = isStarred)))
-        return FilesViewModel(repository)
+        return FilesViewModel(repository, SavedStateHandle())
     }
 
     private fun FilesViewModel.isFileStarred() = state.value.files.single().starred
