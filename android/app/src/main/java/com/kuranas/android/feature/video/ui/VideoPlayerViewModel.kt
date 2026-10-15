@@ -44,19 +44,27 @@ class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepo
 
     fun getThumbnailUrl(videoId: String): String = runBlocking { repository.thumbnailUrl(videoId) }
 
-    suspend fun openVideo(videoId: String): VideoPlayerStart {
+    suspend fun openVideo(videoId: String, playlistId: Int? = null): VideoPlayerStart {
         currentVideoId = videoId
         currentPlaylistId = null
         playlistVideoIds = emptyList()
         navigationErrorState.value = null
         val streamUrl = repository.streamUrl(videoId)
-        val session = (repository.startPlayback(videoId) as? AppResult.Success)?.data
+        val session = startPlaybackSession(videoId, playlistId)
         if (session == null) {
             refreshNavigationAvailability()
             return VideoPlayerStart(streamUrl, startPositionMs = 0L)
         }
         applySession(session)
         return VideoPlayerStart(streamUrl, secondsToMillis(session.playbackState.currentTime))
+    }
+
+    private suspend fun startPlaybackSession(videoId: String, playlistId: Int?): PlaybackSessionDto? {
+        if (playlistId != null) {
+            val playlistSession = (repository.startPlayback(videoId, playlistId) as? AppResult.Success)?.data
+            if (playlistSession != null) return playlistSession
+        }
+        return (repository.startPlayback(videoId) as? AppResult.Success)?.data
     }
 
     fun goToNext() = navigate { repository.nextVideo() }

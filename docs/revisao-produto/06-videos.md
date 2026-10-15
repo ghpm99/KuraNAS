@@ -113,4 +113,4 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 67. Biblioteca paginada com busca
 - [x] 68. Próximo/anterior no player Android (`/video/playback/next|previous`)
 - [x] 68.1. "Continuar assistindo" na tela de vídeos do Android (seção `continue` do catálogo, com progresso)
-- [ ] 68.2. Player Android aberto a partir de uma playlist usa essa playlist como contexto (hoje a rota só leva o `videoId` e o backend cai na playlist da pasta)
+- [x] 68.2. Player Android aberto a partir de uma playlist usa essa playlist como contexto (hoje a rota só leva o `videoId` e o backend cai na playlist da pasta)

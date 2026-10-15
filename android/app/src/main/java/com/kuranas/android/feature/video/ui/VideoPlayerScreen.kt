@@ -38,6 +38,7 @@ import com.kuranas.android.R
 @Composable
 fun VideoPlayerScreen(
     videoId: String,
+    playlistId: Int? = null,
     onNavigateBack: () -> Unit,
     viewModel: VideoPlayerViewModel = hiltViewModel(),
 ) {
@@ -72,9 +73,9 @@ fun VideoPlayerScreen(
         }
     }
 
-    LaunchedEffect(videoId) {
+    LaunchedEffect(videoId, playlistId) {
         playbackError = null
-        val start = viewModel.openVideo(videoId)
+        val start = viewModel.openVideo(videoId, playlistId)
         player.setMediaItem(MediaItem.fromUri(start.streamUrl), start.startPositionMs)
         player.prepare()
         player.play()
