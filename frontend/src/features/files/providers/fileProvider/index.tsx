@@ -15,7 +15,7 @@ import {
     renameFile as renameFileService,
     rescanFiles as requestFilesRescan,
     setFileStarred,
-    toggleStarredFile,
+    setFilesStarred as setFilesStarredService,
 } from '@/service/files';
 import { promoteFileToHot as promoteFileToHotService } from '@/service/tiering';
 import {
@@ -54,6 +54,8 @@ const listingQueryKey = ['files'] as const;
 const openedItemQueryKey = ['files-path'] as const;
 
 type StarredVariables = { fileId: number; isStarred: boolean };
+type StarredBatchVariables = { fileIds: number[]; isStarred: boolean };
+type StarredCacheSnapshot = [readonly unknown[], unknown];
 
 const joinPath = (parentPath: string | undefined, name: string | undefined) =>
     `${parentPath === '/' ? '' : (parentPath ?? '')}/${name ?? ''}`;
@@ -154,13 +156,13 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     const applyStarredToCaches = useCallback(
-        (fileId: number, isStarred: boolean) => {
+        (fileIds: readonly number[], isStarred: boolean) => {
             queryClient
                 .getQueriesData<FileListingCache>({ queryKey: listingQueryKey })
                 .forEach(([queryKey, cache]) => {
                     queryClient.setQueryData(
                         queryKey,
-                        applyStarredToListing(cache, queryKey, fileId, isStarred)
+                        applyStarredToListing(cache, queryKey, fileIds, isStarred)
                     );
                 });
             queryClient
@@ -168,42 +170,89 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
                 .forEach(([queryKey, cachedFile]) => {
                     queryClient.setQueryData(
                         queryKey,
-                        applyStarredToFile(cachedFile, fileId, isStarred)
+                        applyStarredToFile(cachedFile, fileIds, isStarred)
                     );
                 });
         },
         [queryClient]
     );
 
-    const { mutate: updateStarredFile } = useMutation({
-        mutationFn: ({ fileId, isStarred }: StarredVariables) => setFileStarred(fileId, isStarred),
-        onMutate: async ({ fileId, isStarred }) => {
-            await queryClient.cancelQueries({ queryKey: listingQueryKey });
-            await queryClient.cancelQueries({ queryKey: openedItemQueryKey });
-            const listingSnapshots = queryClient.getQueriesData({ queryKey: listingQueryKey });
-            const openedItemSnapshots = queryClient.getQueriesData({
-                queryKey: openedItemQueryKey,
-            });
-            applyStarredToCaches(fileId, isStarred);
-            return { snapshots: [...listingSnapshots, ...openedItemSnapshots] };
-        },
-        onSuccess: (starredState) => {
-            applyStarredToCaches(starredState.id, starredState.starred);
-        },
-        onError: (error, _variables, context) => {
-            context?.snapshots.forEach(([queryKey, cache]) => {
+    const snapshotStarredCaches = useCallback(async () => {
+        await queryClient.cancelQueries({ queryKey: listingQueryKey });
+        await queryClient.cancelQueries({ queryKey: openedItemQueryKey });
+        return [
+            ...queryClient.getQueriesData({ queryKey: listingQueryKey }),
+            ...queryClient.getQueriesData({ queryKey: openedItemQueryKey }),
+        ];
+    }, [queryClient]);
+
+    const restoreStarredCaches = useCallback(
+        (snapshots: StarredCacheSnapshot[] | undefined) => {
+            snapshots?.forEach(([queryKey, cache]) => {
                 queryClient.setQueryData(queryKey, cache);
             });
+        },
+        [queryClient]
+    );
+
+    const notifyStarredFailure = useCallback(
+        (error: unknown) => {
             enqueueSnackbar(extractBackendErrorMessage(error) ?? t('ERROR_FAVORITE_FAILED'), {
                 variant: 'error',
             });
         },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: listingQueryKey });
-            queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
-            invalidateStarredViews(queryClient);
+        [enqueueSnackbar, t]
+    );
+
+    const refreshStarredViews = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: listingQueryKey });
+        queryClient.invalidateQueries({ queryKey: [searchQueryKey] });
+        invalidateStarredViews(queryClient);
+    }, [queryClient]);
+
+    const { mutate: updateStarredFile } = useMutation({
+        mutationFn: ({ fileId, isStarred }: StarredVariables) => setFileStarred(fileId, isStarred),
+        onMutate: async ({ fileId, isStarred }) => {
+            const snapshots = await snapshotStarredCaches();
+            applyStarredToCaches([fileId], isStarred);
+            return { snapshots };
         },
+        onSuccess: (starredState) => {
+            applyStarredToCaches([starredState.id], starredState.starred);
+        },
+        onError: (error, _variables, context) => {
+            restoreStarredCaches(context?.snapshots);
+            notifyStarredFailure(error);
+        },
+        onSettled: refreshStarredViews,
     });
+
+    const { mutateAsync: updateFilesStarred } = useMutation({
+        mutationFn: ({ fileIds, isStarred }: StarredBatchVariables) =>
+            setFilesStarredService(fileIds, isStarred),
+        onMutate: async ({ fileIds, isStarred }) => {
+            const snapshots = await snapshotStarredCaches();
+            applyStarredToCaches(fileIds, isStarred);
+            return { snapshots };
+        },
+        onSuccess: (batchResult, _variables, context) => {
+            if (batchResult.not_found_ids.length === 0) return;
+            restoreStarredCaches(context?.snapshots);
+            applyStarredToCaches(batchResult.updated_ids, batchResult.starred);
+        },
+        onError: (_error, _variables, context) => {
+            restoreStarredCaches(context?.snapshots);
+        },
+        onSettled: refreshStarredViews,
+    });
+
+    const setFilesStarred = useCallback(
+        async (fileIds: number[], isStarred: boolean) => {
+            const batchResult = await updateFilesStarred({ fileIds, isStarred });
+            return batchResult.updated_ids;
+        },
+        [updateFilesStarred]
+    );
 
     const invalidateFileQueries = useCallback(async () => {
         await Promise.all(
@@ -212,15 +261,6 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             )
         );
     }, [queryClient]);
-
-    const toggleStarred = useCallback(
-        async (itemId: number) => {
-            await toggleStarredFile(itemId);
-            await invalidateFileQueries();
-            await invalidateStarredViews(queryClient);
-        },
-        [invalidateFileQueries, queryClient]
-    );
 
     const promoteFileToHot = useCallback(
         async (id: number) => {
@@ -416,7 +456,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             filesSort,
             setFilesSort,
             handleStarredItem,
-            toggleStarred,
+            setFilesStarred,
             createFolder,
             moveFile,
             copyFile,
@@ -445,7 +485,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             filesSort,
             setFilesSort,
             handleStarredItem,
-            toggleStarred,
+            setFilesStarred,
             createFolder,
             moveFile,
             copyFile,

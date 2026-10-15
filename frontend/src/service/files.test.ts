@@ -25,6 +25,8 @@ import {
     getFileByDiskPath,
     toggleStarredFile,
     setFileStarred,
+    setFilesStarred,
+    maxStarredBatchSize,
     rescanFiles,
     uploadSingleFile,
     createFolder,
@@ -255,6 +257,45 @@ describe('service/files', () => {
 
         expect(mockedApi.put).toHaveBeenCalledWith('/files/starred/10', { starred: true });
         expect(starredState).toEqual({ id: 10, starred: true });
+    });
+
+    it('sets the starred state of many files with one POST carrying ids and the flag', async () => {
+        const serverResult = { starred: true, updated_ids: [1, 2], not_found_ids: [3] };
+        mockedApi.post.mockResolvedValue({ data: serverResult });
+
+        const batchResult = await setFilesStarred([1, 2, 3], true);
+
+        expect(mockedApi.post).toHaveBeenCalledTimes(1);
+        expect(mockedApi.post).toHaveBeenCalledWith('/files/starred', {
+            ids: [1, 2, 3],
+            starred: true,
+        });
+        expect(batchResult).toEqual(serverResult);
+    });
+
+    it('slices more than the maximum batch size into several POSTs and merges the results', async () => {
+        const fileIds = Array.from({ length: maxStarredBatchSize + 1 }, (_, index) => index + 1);
+        mockedApi.post.mockImplementation(async (_url: string, body: { ids: number[] }) => ({
+            data: { starred: false, updated_ids: body.ids, not_found_ids: [] },
+        }));
+
+        const batchResult = await setFilesStarred(fileIds, false);
+
+        expect(mockedApi.post).toHaveBeenCalledTimes(2);
+        expect(mockedApi.post.mock.calls[0]![1].ids).toHaveLength(maxStarredBatchSize);
+        expect(mockedApi.post.mock.calls[1]![1]).toEqual({
+            ids: [maxStarredBatchSize + 1],
+            starred: false,
+        });
+        expect(batchResult.updated_ids).toEqual(fileIds);
+    });
+
+    it('tolerates a response without id lists', async () => {
+        mockedApi.post.mockResolvedValue({ data: { starred: true } });
+
+        const batchResult = await setFilesStarred([1], true);
+
+        expect(batchResult).toEqual({ starred: true, updated_ids: [], not_found_ids: [] });
     });
 
     it('rescans files', async () => {

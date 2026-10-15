@@ -6,7 +6,7 @@ import { getFileDownloadUrl, getFilesZipDownloadUrl } from '@/service/files';
 import { triggerBrowserDownload } from '@/service/browserDownload';
 import type { FolderPickerResult } from '@/components/folderPicker/folderPicker';
 import { useBulkOutcomeNotifier, type OutcomeMessages } from '@/shared/bulk/useBulkOutcomeNotifier';
-import { runBulkOperation, type BulkOutcome } from './bulkOutcome';
+import { extractBackendErrorMessage, runBulkOperation, type BulkOutcome } from './bulkOutcome';
 
 const moveMessages: OutcomeMessages = {
     singleSuccessKey: 'ACTION_MOVE_SUCCESS',
@@ -45,7 +45,7 @@ const promoteToHotMessages: OutcomeMessages = {
 };
 
 export const useFileOperations = () => {
-    const { moveFile, copyFile, deleteFile, renameFile, toggleStarred, promoteFileToHot } =
+    const { moveFile, copyFile, deleteFile, renameFile, setFilesStarred, promoteFileToHot } =
         useFile();
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
@@ -117,12 +117,31 @@ export const useFileOperations = () => {
     );
 
     const toggleFavorites = useCallback(
-        (files: FileData[]) => {
+        async (files: FileData[]): Promise<BulkOutcome> => {
+            if (files.length === 0) return { succeededFiles: [], failedFiles: [] };
             const shouldUnfavorite = files.every((file) => file.starred);
-            const filesToToggle = shouldUnfavorite ? files : files.filter((file) => !file.starred);
-            return runAndNotify(filesToToggle, (file) => toggleStarred(file.id), favoriteMessages);
+            try {
+                const updatedIds = await setFilesStarred(
+                    files.map((file) => file.id),
+                    !shouldUnfavorite
+                );
+                const outcome: BulkOutcome = {
+                    succeededFiles: files.filter((file) => updatedIds.includes(file.id)),
+                    failedFiles: [],
+                };
+                notifyOutcome(outcome, favoriteMessages);
+                return outcome;
+            } catch (error) {
+                const outcome: BulkOutcome = {
+                    succeededFiles: [],
+                    failedFiles: files,
+                    firstFailureMessage: extractBackendErrorMessage(error),
+                };
+                notifyOutcome(outcome, favoriteMessages);
+                return outcome;
+            }
         },
-        [toggleStarred, runAndNotify]
+        [setFilesStarred, notifyOutcome]
     );
 
     const downloadFiles = useCallback((files: FileData[]) => {

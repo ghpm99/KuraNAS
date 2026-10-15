@@ -36,7 +36,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 11.1. Links dos cards/linhas dentro de Favoritos apontam para `/favorites/...` (abrir em nova aba hoje leva a `/files/...`)
 - [x] 12. Toggle de arquivos otimista com rollback e erro visível
 - [x] 13. Invalidação das queries de favoritos (Home inclusive) após marcar
-- [ ] 14. Favoritar em lote no frontend via `POST /files/starred` (todos marcados → desmarca todos; senão marca todos)
+- [x] 14. Favoritar em lote no frontend via `POST /files/starred` (todos marcados → desmarca todos; senão marca todos)
 - [ ] 14.1. Seleção, ações em lote e atalhos na tela de Favoritos
 - [ ] 15. Ordenação e filtro de tipo pelo servidor na tela de Favoritos, contagens reais
 - [ ] 16. Estrela nos detalhes/preview do arquivo

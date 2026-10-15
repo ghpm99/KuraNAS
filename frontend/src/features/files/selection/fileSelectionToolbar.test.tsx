@@ -103,12 +103,12 @@ describe('FileSelectionToolbar', () => {
         await waitFor(() => expect(fileContext.copyFile).toHaveBeenCalledTimes(3));
     });
 
-    it('toggles favorites for the selection', async () => {
+    it('favorites the whole selection with a single batch call', async () => {
         const fileContext = renderToolbar();
 
         fireEvent.click(screen.getByText('FILES_FAVORITE'));
 
-        await waitFor(() => expect(fileContext.toggleStarred).toHaveBeenCalledTimes(3));
+        await waitFor(() => expect(fileContext.setFilesStarred).toHaveBeenCalledTimes(1));
     });
 
     it('shows the unfavorite label when every selected file is a favorite', () => {

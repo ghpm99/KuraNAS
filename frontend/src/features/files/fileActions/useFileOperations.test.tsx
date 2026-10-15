@@ -9,7 +9,7 @@ const mockFileContext = {
     copyFile: jest.fn(),
     deleteFile: jest.fn(),
     renameFile: jest.fn(),
-    toggleStarred: jest.fn(),
+    setFilesStarred: jest.fn(),
 };
 
 jest.mock('notistack', () => ({
@@ -138,20 +138,77 @@ describe('useFileOperations', () => {
         expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ACTION_RENAME_SUCCESS', { variant: 'success' });
     });
 
-    it('favorites only unstarred files, and unfavorites when all are starred', async () => {
+    it('favorites every selected file with one call when the selection is mixed', async () => {
+        mockFileContext.setFilesStarred.mockResolvedValue([1, 2, 3]);
         const { result } = renderHook(() => useFileOperations());
         const mixedFiles = [createTestFile(1, { starred: true }), createTestFile(2), createTestFile(3)];
 
+        let outcome: Awaited<ReturnType<typeof result.current.toggleFavorites>> | undefined;
         await act(async () => {
-            await result.current.toggleFavorites(mixedFiles);
+            outcome = await result.current.toggleFavorites(mixedFiles);
         });
-        expect(mockFileContext.toggleStarred.mock.calls.map(([fileId]) => fileId)).toEqual([2, 3]);
 
-        mockFileContext.toggleStarred.mockClear();
+        expect(mockFileContext.setFilesStarred).toHaveBeenCalledTimes(1);
+        expect(mockFileContext.setFilesStarred).toHaveBeenCalledWith([1, 2, 3], true);
+        expect(outcome?.succeededFiles).toHaveLength(3);
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith(
+            'FILES_BULK_FAVORITE_SUCCESS:{"count":"3"}',
+            { variant: 'success' }
+        );
+    });
+
+    it('unfavorites every selected file when all are already starred', async () => {
+        mockFileContext.setFilesStarred.mockResolvedValue([1, 2]);
+        const { result } = renderHook(() => useFileOperations());
+        const starredFiles = [createTestFile(1, { starred: true }), createTestFile(2, { starred: true })];
+
         await act(async () => {
-            await result.current.toggleFavorites([mixedFiles[0]!]);
+            await result.current.toggleFavorites(starredFiles);
         });
-        expect(mockFileContext.toggleStarred).toHaveBeenCalledWith(1);
+
+        expect(mockFileContext.setFilesStarred).toHaveBeenCalledWith([1, 2], false);
+    });
+
+    it('keeps files the server did not find out of the succeeded list without a failure message', async () => {
+        mockFileContext.setFilesStarred.mockResolvedValue([1]);
+        const { result } = renderHook(() => useFileOperations());
+
+        let outcome: Awaited<ReturnType<typeof result.current.toggleFavorites>> | undefined;
+        await act(async () => {
+            outcome = await result.current.toggleFavorites([createTestFile(1), createTestFile(2)]);
+        });
+
+        expect(outcome?.succeededFiles.map((file) => file.id)).toEqual([1]);
+        expect(outcome?.failedFiles).toEqual([]);
+    });
+
+    it('reports the server error message and fails every file when the batch call rejects', async () => {
+        mockFileContext.setFilesStarred.mockRejectedValue({
+            response: { data: { error: 'Limite excedido' } },
+        });
+        const { result } = renderHook(() => useFileOperations());
+
+        let outcome: Awaited<ReturnType<typeof result.current.toggleFavorites>> | undefined;
+        await act(async () => {
+            outcome = await result.current.toggleFavorites([createTestFile(1), createTestFile(2)]);
+        });
+
+        expect(outcome?.succeededFiles).toEqual([]);
+        expect(mockEnqueueSnackbar).toHaveBeenCalledWith(
+            'FILES_BULK_FAILED_SUMMARY:{"failed":"2","message":"Limite excedido"}',
+            { variant: 'error' }
+        );
+    });
+
+    it('does nothing when there are no files to favorite', async () => {
+        const { result } = renderHook(() => useFileOperations());
+
+        await act(async () => {
+            await result.current.toggleFavorites([]);
+        });
+
+        expect(mockFileContext.setFilesStarred).not.toHaveBeenCalled();
+        expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
     });
 
     it('downloads one file by its url and several as a zip', () => {

@@ -155,16 +155,19 @@ describe('features/files/fileProvider (seam)', () => {
 		invalidateQueries.mockRestore();
 	});
 
-	it('toggleStarred invalidates the home favorites view', async () => {
-		const invalidateQueries = jest.spyOn(sharedClient, 'invalidateQueries');
+	it('setFilesStarred POSTs ids and the starred flag to /files/starred', async () => {
+		mockedApi.post.mockResolvedValue({
+			data: { starred: true, updated_ids: [4, 5], not_found_ids: [] },
+		});
 		const { result } = renderHook(() => useFile(), { wrapper });
 
+		let updatedIds: number[] = [];
 		await act(async () => {
-			await result.current.toggleStarred(5);
+			updatedIds = await result.current.setFilesStarred([4, 5], true);
 		});
 
-		expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] });
-		invalidateQueries.mockRestore();
+		expect(mockedApi.post).toHaveBeenCalledWith('/files/starred', { ids: [4, 5], starred: true });
+		expect(updatedIds).toEqual([4, 5]);
 	});
 
 	it('rescanFiles POSTs the manual rescan to /files/update', async () => {
