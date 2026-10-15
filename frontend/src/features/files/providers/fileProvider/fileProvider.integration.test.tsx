@@ -30,8 +30,10 @@ const mockedApi = apiBase as unknown as {
 	delete: jest.Mock;
 };
 
+const sharedClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
 const wrapper = ({ children }: { children: ReactNode }) => {
-	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+	const client = sharedClient;
 	return (
 		<QueryClientProvider client={client}>
 			<FileProvider>{children}</FileProvider>
@@ -42,6 +44,7 @@ const wrapper = ({ children }: { children: ReactNode }) => {
 describe('features/files/fileProvider (seam)', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		sharedClient.clear();
 		mockedApi.get.mockImplementation((url: string) => {
 			if (url.startsWith('/files/recent/')) return Promise.resolve({ data: [] });
 			return Promise.resolve({ data: { items: [], pagination: { has_next: false, page: 1 } } });
@@ -138,6 +141,30 @@ describe('features/files/fileProvider (seam)', () => {
 		await waitFor(() =>
 			expect(mockedApi.put).toHaveBeenCalledWith('/files/starred/5', { starred: true })
 		);
+	});
+
+	it('handleStarredItem invalidates the home favorites view once settled', async () => {
+		const invalidateQueries = jest.spyOn(sharedClient, 'invalidateQueries');
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		act(() => result.current.handleStarredItem(5));
+
+		await waitFor(() =>
+			expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] })
+		);
+		invalidateQueries.mockRestore();
+	});
+
+	it('toggleStarred invalidates the home favorites view', async () => {
+		const invalidateQueries = jest.spyOn(sharedClient, 'invalidateQueries');
+		const { result } = renderHook(() => useFile(), { wrapper });
+
+		await act(async () => {
+			await result.current.toggleStarred(5);
+		});
+
+		expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] });
+		invalidateQueries.mockRestore();
 	});
 
 	it('rescanFiles POSTs the manual rescan to /files/update', async () => {

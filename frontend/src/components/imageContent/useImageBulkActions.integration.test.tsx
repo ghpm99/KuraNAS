@@ -103,6 +103,18 @@ describe('useImageBulkActions (seam)', () => {
         expect(mockedApi.post).toHaveBeenCalledWith('/files/starred/12');
     });
 
+    it('invalidates the home favorites view after toggling favorites', async () => {
+        const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+        const { result } = renderActions();
+
+        await act(async () => {
+            await result.current.toggleFavorites(images);
+        });
+
+        expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] });
+        invalidateQueries.mockRestore();
+    });
+
     it('POSTs /files/starred/:id for every image when all are starred', async () => {
         const { result } = renderActions();
         const starredImages = images.map((image) => ({ ...image, starred: true }));

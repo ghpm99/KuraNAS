@@ -1,6 +1,7 @@
 import { useCallback, useContext, useSyncExternalStore } from 'react';
 import { QueryClientContext, type Query } from '@tanstack/react-query';
 import { toggleStarredFile } from '@/service/files';
+import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import {
     getStarredOverride,
     setStarredOverride,
@@ -43,7 +44,13 @@ export default function useTrackStar(track: StarrableTrack) {
             setStarredOverride(track.id, wasStarred);
             return;
         }
-        await queryClient?.invalidateQueries({ predicate: isStarredDependentQuery });
+        if (!queryClient) {
+            return;
+        }
+        await Promise.all([
+            queryClient.invalidateQueries({ predicate: isStarredDependentQuery }),
+            invalidateStarredViews(queryClient),
+        ]);
     }, [track.id, track.starred, queryClient]);
 
     return { isStarred, toggleStar };

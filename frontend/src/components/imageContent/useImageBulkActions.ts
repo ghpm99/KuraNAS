@@ -10,11 +10,9 @@ import {
 } from '@/service/files';
 import { triggerBrowserDownload } from '@/service/browserDownload';
 import { runBulkOperation } from '@/shared/bulk/runBulkOperation';
-import {
-    useBulkOutcomeNotifier,
-    type OutcomeMessages,
-} from '@/shared/bulk/useBulkOutcomeNotifier';
+import { useBulkOutcomeNotifier, type OutcomeMessages } from '@/shared/bulk/useBulkOutcomeNotifier';
 import { allFileQueryKeys } from '@/shared/queryKeys/fileQueryKeys';
+import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 
 const imageLibraryQueryKeys = ['library', 'count', 'timeline', 'folders'];
@@ -96,17 +94,19 @@ export const useImageBulkActions = (onSucceeded: (images: ImageLibraryItem[]) =>
     );
 
     const toggleFavorites = useCallback(
-        (images: ImageLibraryItem[]) => {
+        async (images: ImageLibraryItem[]) => {
             const imagesToToggle = shouldUnfavorite(images)
                 ? images
                 : images.filter((image) => !image.starred);
-            return runAndNotify(
+            const outcome = await runAndNotify(
                 imagesToToggle,
                 (image) => toggleStarredFile(image.file_id),
                 favoriteMessages
             );
+            await invalidateStarredViews(queryClient);
+            return outcome;
         },
-        [runAndNotify]
+        [runAndNotify, queryClient]
     );
 
     const downloadImages = useCallback((images: ImageLibraryItem[]) => {

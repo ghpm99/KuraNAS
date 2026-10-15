@@ -9,6 +9,7 @@ import {
 } from '@/service/analytics';
 import { getTrackDurationSeconds } from '@/utils/music';
 import { getStarredFiles } from '@/service/files';
+import { homeFavoritesQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { getImageFiles } from '@/service/image';
 import { getPlayerQueue, getPlayerState } from '@/service/playerState';
 import { queueEntryToTrack } from '@/features/music/components/musicQueueTracks';
@@ -84,7 +85,7 @@ const useHomeScreen = () => {
         retry: false,
     });
     const favoritesQuery = useQuery({
-        queryKey: ['home', 'favorites'],
+        queryKey: homeFavoritesQueryKey,
         queryFn: () =>
             getStarredFiles({
                 page: 1,

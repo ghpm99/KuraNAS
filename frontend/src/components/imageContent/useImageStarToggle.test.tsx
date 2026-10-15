@@ -95,6 +95,18 @@ describe('useImageStarToggle', () => {
         );
     });
 
+    it('invalidates the home favorites view once the toggle settles', async () => {
+        mockedApiPost.mockResolvedValue({});
+        const { hook, queryClient } = setup();
+        const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+
+        act(() => hook.result.current.toggleStar(1, false));
+
+        await waitFor(() =>
+            expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] })
+        );
+    });
+
     it('drops the image from starred-only caches when it is unstarred', async () => {
         mockedApiPost.mockResolvedValue({});
         const { hook, readItems } = setup();
