@@ -27,8 +27,6 @@ const getAnalyticsStatusKey = (status: 'ok' | 'scanning' | 'error') => {
 const imageThumbnailUrl = (id: number) =>
     `${getApiV1BaseUrl()}/files/thumbnail/${id}?width=480&height=360`;
 
-// --- File list rendering (shared by recent files and favorites) ---
-
 type FileItem = {
     id: number;
     name: string;
@@ -130,7 +128,6 @@ const HomeScreen = () => {
             <PageHeader title={t('HOME_PAGE_TITLE')} subtitle={t('HOME_PAGE_DESCRIPTION')} />
 
             <div className={styles.contentGrid}>
-                {/* Recent files */}
                 <HomeSectionShell
                     title={t('RECENT_FILES')}
                     description={t('HOME_RECENT_DESCRIPTION')}
@@ -152,7 +149,6 @@ const HomeScreen = () => {
                     </div>
                 </HomeSectionShell>
 
-                {/* Recent images */}
                 <HomeSectionShell
                     title={t('NAV_IMAGES')}
                     description={t('HOME_IMAGES_DESCRIPTION')}
@@ -188,7 +184,6 @@ const HomeScreen = () => {
                     </div>
                 </HomeSectionShell>
 
-                {/* Favorites */}
                 <HomeSectionShell
                     title={t('STARRED_FILES')}
                     description={t('HOME_FAVORITES_DESCRIPTION')}
@@ -210,7 +205,6 @@ const HomeScreen = () => {
                     </div>
                 </HomeSectionShell>
 
-                {/* Music */}
                 <HomeSectionShell
                     title={t('MUSIC_NOW_PLAYING')}
                     description={t('HOME_MUSIC_DESCRIPTION')}
@@ -264,7 +258,6 @@ const HomeScreen = () => {
                     ) : null}
                 </HomeSectionShell>
 
-                {/* Videos */}
                 <HomeSectionShell
                     title={t('VIDEO_CONTINUE_WATCHING')}
                     description={t('HOME_VIDEO_DESCRIPTION')}
@@ -348,7 +341,6 @@ const HomeScreen = () => {
                     </div>
                 </HomeSectionShell>
 
-                {/* System status */}
                 <HomeSectionShell
                     title={t('STATUS_SYSTEM_TITLE')}
                     description={t('HOME_STATUS_DESCRIPTION')}
