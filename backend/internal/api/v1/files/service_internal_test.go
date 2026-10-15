@@ -81,6 +81,7 @@ type filesRepoMock struct {
 	getRecentlyAccessedFilesFn  func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getFileStatByPathFn         func(path string) (FileStat, bool, error)
 	updateFileFn                func(transaction *sql.Tx, file FileModel) (bool, error)
+	toggleFileStarredFn         func(id int) (bool, error)
 	updateDescendantPathsFn     func(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	markDeletedSubtreeFn        func(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	restoreSubtreeFn            func(transaction *sql.Tx, path string) (int64, error)
@@ -171,6 +172,12 @@ func (m *filesRepoMock) GetFileStatByPath(path string) (FileStat, bool, error) {
 		return m.getFileStatByPathFn(path)
 	}
 	return FileStat{}, false, nil
+}
+func (m *filesRepoMock) ToggleFileStarred(id int) (bool, error) {
+	if m.toggleFileStarredFn != nil {
+		return m.toggleFileStarredFn(id)
+	}
+	return true, nil
 }
 func (m *filesRepoMock) UpdateFile(transaction *sql.Tx, file FileModel) (bool, error) {
 	if m.updateFileFn != nil {

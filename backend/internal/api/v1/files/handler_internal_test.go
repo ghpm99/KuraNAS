@@ -87,10 +87,11 @@ func (m *filesHandlerServiceMock) GetFileAncestors(id int) ([]FileAncestorDto, e
 func (m *filesHandlerServiceMock) GetActiveFileByDiskPath(diskPath string) (FileDto, error) {
 	return FileDto{ID: 1, Name: "disk", Path: diskPath}, nil
 }
-func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error) { return true, nil }
-func (m *filesHandlerServiceMock) ScanFilesTask(data string)             {}
-func (m *filesHandlerServiceMock) ScanDirTask(data string)               {}
-func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error       { return nil }
+func (m *filesHandlerServiceMock) UpdateFile(file FileDto) (bool, error)  { return true, nil }
+func (m *filesHandlerServiceMock) ToggleFileStarred(id int) (bool, error) { return true, nil }
+func (m *filesHandlerServiceMock) ScanFilesTask(data string)              {}
+func (m *filesHandlerServiceMock) ScanDirTask(data string)                {}
+func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error        { return nil }
 func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, error) {
 	return 1, nil
 }
@@ -164,6 +165,7 @@ type filesHandlerServiceFuncMock struct {
 	getActiveFilesFn      func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	getFileByIdFn         func(id int) (FileDto, error)
 	updateFileFn          func(file FileDto) (bool, error)
+	toggleFileStarredFn   func(id int) (bool, error)
 	getTotalSpaceUsedFn   func() (int, error)
 	getTotalFilesFn       func() (int, error)
 	getTotalDirectoryFn   func() (int, error)
@@ -210,6 +212,12 @@ func (m *filesHandlerServiceFuncMock) UpdateFile(file FileDto) (bool, error) {
 		return m.updateFileFn(file)
 	}
 	return m.filesHandlerServiceMock.UpdateFile(file)
+}
+func (m *filesHandlerServiceFuncMock) ToggleFileStarred(id int) (bool, error) {
+	if m.toggleFileStarredFn != nil {
+		return m.toggleFileStarredFn(id)
+	}
+	return m.filesHandlerServiceMock.ToggleFileStarred(id)
 }
 func (m *filesHandlerServiceFuncMock) GetTotalSpaceUsed() (int, error) {
 	if m.getTotalSpaceUsedFn != nil {
@@ -493,6 +501,9 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		updateFileFn: func(file FileDto) (bool, error) {
 			return false, errBoom
 		},
+		toggleFileStarredFn: func(id int) (bool, error) {
+			return false, errBoom
+		},
 		getTotalSpaceUsedFn: func() (int, error) { return 0, errBoom },
 		getTotalFilesFn:     func() (int, error) { return 0, errBoom },
 		getTotalDirectoryFn: func() (int, error) { return 0, errBoom },
@@ -668,5 +679,20 @@ func TestGetFilesTreeHandlerParsesSortParams(t *testing.T) {
 				t.Fatalf("expected sort %+v, got %+v", testCase.expectedSort, service.requestedChildrenSort)
 			}
 		})
+	}
+}
+
+func TestStarreFileHandlerReturnsSuccessTrueWithoutReadingOrRewritingFile(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		getFileByIdFn: func(id int) (FileDto, error) { t.Fatalf("GetFileById must not be called"); return FileDto{}, nil },
+		updateFileFn:  func(file FileDto) (bool, error) { t.Fatalf("UpdateFile must not be called"); return false, nil },
+	}
+	router := newFilesHandlerRouter(NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{}))
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/files/starred/1", nil))
+
+	if response.Code != http.StatusOK || strings.TrimSpace(response.Body.String()) != `{"success":true}` {
+		t.Fatalf("unexpected response %d %s", response.Code, response.Body.String())
 	}
 }

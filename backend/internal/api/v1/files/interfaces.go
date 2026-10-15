@@ -24,6 +24,7 @@ type RepositoryInterface interface {
 	GetActiveFileByPathOrPhysicalPath(path string) (FileModel, bool, error)
 	GetActiveFilesByPaths(paths []string) ([]FileModel, error)
 	UpdateFile(transaction *sql.Tx, file FileModel) (bool, error)
+	ToggleFileStarred(id int) (bool, error)
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	RestoreSubtree(transaction *sql.Tx, path string) (int64, error)
@@ -56,6 +57,7 @@ type ServiceInterface interface {
 	GetFolderStats(id int) (FolderStatsDto, error)
 	GetActiveFileByDiskPath(diskPath string) (FileDto, error)
 	UpdateFile(file FileDto) (result bool, err error)
+	ToggleFileStarred(id int) (bool, error)
 	ScanFilesTask(data string)
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error

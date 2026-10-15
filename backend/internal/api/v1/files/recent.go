@@ -90,17 +90,7 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 		Data: id,
 	})
 
-	file, err := handler.service.GetFileById(id)
-
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
-		return
-	}
-
-	file.Starred = !file.Starred
-
-	result, err := handler.service.UpdateFile(file)
+	_, err := handler.service.ToggleFileStarred(id)
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
@@ -109,7 +99,7 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, gin.H{"success": result})
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 type RecentFileService struct {
