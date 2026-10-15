@@ -115,8 +115,11 @@ var InsertBehaviorEventQuery string
 //go:embed get_behavior_events.sql
 var GetBehaviorEventsQuery string
 
-//go:embed get_all_behavior_events.sql
-var GetAllBehaviorEventsQuery string
+//go:embed list_recent_video_watch_progress.sql
+var ListRecentVideoWatchProgressQuery string
+
+//go:embed list_recent_behavior_events_by_type.sql
+var ListRecentBehaviorEventsByTypeQuery string
 
 //go:embed get_all_videos_with_metadata.sql
 var GetAllVideosWithMetadataQuery string

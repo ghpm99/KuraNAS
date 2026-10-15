@@ -9,5 +9,6 @@ SELECT
     watched_pct,
     created_at
 FROM video_behavior_event
+WHERE event_type = $1
 ORDER BY created_at DESC
-LIMIT $1;
+LIMIT $2;

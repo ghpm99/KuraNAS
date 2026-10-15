@@ -61,7 +61,8 @@ type RepositoryInterface interface {
 	ReorderPlaylistItems(tx *sql.Tx, playlistID int, videoIDs []int, orderIndices []int) error
 	InsertBehaviorEvent(tx *sql.Tx, event VideoBehaviorEventModel) (VideoBehaviorEventModel, error)
 	GetBehaviorEvents(clientID string, limit int) ([]VideoBehaviorEventModel, error)
-	GetAllBehaviorEvents(limit int) ([]VideoBehaviorEventModel, error)
+	ListRecentBehaviorEventsByType(eventType string, limit int) ([]VideoBehaviorEventModel, error)
+	ListRecentVideoWatchProgress(limit int) ([]VideoWatchProgressModel, error)
 	// Browse query (moved from files)
 	GetVideos(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
 }

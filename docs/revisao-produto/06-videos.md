@@ -99,7 +99,8 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 61.1. Busca global exibe classification crua no meta do resultado de vídeo (useGlobalSearchProvider)
 - [x] 62. Código órfão do frontend de vídeos
 - [x] 62.1. Código órfão do backend de vídeos (ex.: GetVideoMetadataByID sem chamador)
-- [ ] 63. Motor de comportamento alimentado pelo progresso por vídeo
+- [x] 63. Motor de comportamento alimentado pelo progresso por vídeo
+- [ ] 63.1. Remover `PlaybackStateMachine`, `BehaviorEventEmitter` e `GetBehaviorEvents` (sem chamador; o motor lê o progresso por vídeo)
 
 ### Android
 - [ ] 64. Playlists visíveis no Android
