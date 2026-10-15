@@ -215,6 +215,9 @@ var AddVideoPlaylistNameKeyQuery string
 //go:embed queries/0068_backfill_video_playlist_name_key.sql
 var BackfillVideoPlaylistNameKeyQuery string
 
+//go:embed queries/0069_add_home_file_starred_at.sql
+var AddHomeFileStarredAtQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -351,6 +354,10 @@ func fileMigrationList() {
 	addMigrationRequiring("0068_backfill_video_playlist_name_key",
 		[]string{"0067_add_video_playlist_name_key"},
 		defaultMigrationFunc(BackfillVideoPlaylistNameKeyQuery))
+
+	addMigrationRequiring("0069_add_home_file_starred_at",
+		[]string{"0002_add_file_starred_column"},
+		defaultMigrationFunc(AddHomeFileStarredAtQuery))
 }
 
 func diaryMigrationList() {
