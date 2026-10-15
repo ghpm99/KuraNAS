@@ -23,7 +23,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 - [x] 03. 404 para id inexistente ou na lixeira no toggle
 - [x] 04. `PUT /files/starred/:id` idempotente devolvendo o estado final
 - [x] 05. `POST /files/starred` em lote
-- [ ] 06. Coluna `starred_at` preenchida ao favoritar
+- [x] 06. Coluna `starred_at` preenchida ao favoritar
 - [ ] 07. `GET /files/starred` com filtro de tipo e ordenação (nome, data de favoritado)
 - [ ] 08. `GET /files/starred/counts` (pastas, arquivos, mídias)
 - [ ] 09. `category` inválida em `/files/tree` responde 400 em vez de cair em "all"
