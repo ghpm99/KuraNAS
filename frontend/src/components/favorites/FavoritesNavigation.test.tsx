@@ -144,4 +144,26 @@ describe('Favorites folder navigation', () => {
         expect(await screen.findByText('plain-folder')).toBeInTheDocument();
         expect(mockGetFileByPath).toHaveBeenCalledWith('/Projects');
     });
+
+    it('keeps item links inside favorites for new-tab opening', async () => {
+        renderFavorites('/favorites/Projects');
+
+        expect(await screen.findByRole('link', { name: /plain-notes\.txt/ })).toHaveAttribute(
+            'href',
+            '/favorites/Projects/plain-notes.txt'
+        );
+        expect(screen.getByRole('link', { name: /plain-folder/ })).toHaveAttribute(
+            'href',
+            '/favorites/Projects/plain-folder'
+        );
+    });
+
+    it('keeps starred folder links inside favorites at the root listing', async () => {
+        renderFavorites('/favorites');
+
+        expect(await screen.findByRole('link', { name: /Projects/ })).toHaveAttribute(
+            'href',
+            '/favorites/Projects'
+        );
+    });
 });

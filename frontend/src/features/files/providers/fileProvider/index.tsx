@@ -332,6 +332,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             retryListing: () => {
                 refetch();
             },
+            browserRootPath,
             selectedItem: effectiveSelectedItem,
             handleSelectItem,
             expandedItems,
@@ -361,6 +362,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             status,
             error,
             refetch,
+            browserRootPath,
             effectiveSelectedItem,
             handleSelectItem,
             expandedItems,
