@@ -20,6 +20,7 @@ type VideoFileModel struct {
 	Size       int64
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	Starred    bool
 
 	DurationSeconds sql.NullFloat64
 	Width           sql.NullInt64

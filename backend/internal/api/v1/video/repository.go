@@ -36,6 +36,7 @@ func (r *Repository) GetVideoFileByID(id int) (VideoFileModel, error) {
 			&result.Size,
 			&result.CreatedAt,
 			&result.UpdatedAt,
+			&result.Starred,
 		)
 	})
 	if err != nil {
@@ -66,6 +67,7 @@ func (r *Repository) GetVideosByParentPath(parentPath string) ([]VideoFileModel,
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 			); err != nil {
 				return err
 			}
@@ -170,6 +172,7 @@ func (r *Repository) GetPlaylistItems(playlistID int) ([]VideoPlaylistItemModel,
 				&item.Video.Size,
 				&item.Video.CreatedAt,
 				&item.Video.UpdatedAt,
+				&item.Video.Starred,
 			); err != nil {
 				return err
 			}
@@ -314,6 +317,7 @@ func (r *Repository) GetContinueWatchingVideos(clientID string, limit int) ([]Co
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 				&item.VideoFileModel.DurationSeconds,
 				&item.Width,
 				&item.Height,
@@ -365,6 +369,7 @@ func (r *Repository) GetCatalogVideos(limit int) ([]VideoFileModel, error) {
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 				&item.PersistedClassification,
 			); err != nil {
 				return err
@@ -402,6 +407,7 @@ func (r *Repository) GetRecentVideos(limit int) ([]VideoFileModel, error) {
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 			); err != nil {
 				return err
 			}
@@ -763,6 +769,7 @@ func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]Video
 				&item.Video.Size,
 				&item.Video.CreatedAt,
 				&item.Video.UpdatedAt,
+				&item.Video.Starred,
 				&item.Video.DurationSeconds,
 				&item.Video.Width,
 				&item.Video.Height,
@@ -850,6 +857,7 @@ func (r *Repository) GetUnassignedVideos(limit int) ([]VideoFileModel, error) {
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 			); err != nil {
 				return err
 			}
@@ -915,6 +923,7 @@ func (r *Repository) ListLibraryVideos(request LibraryVideosRequest) (utils.Pagi
 				&item.Size,
 				&item.CreatedAt,
 				&item.UpdatedAt,
+				&item.Starred,
 			}, technicalMetadataScanTargets(&item)...)
 			if err := rows.Scan(scanTargets...); err != nil {
 				return err

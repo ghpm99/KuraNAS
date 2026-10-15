@@ -10,7 +10,8 @@ SELECT
     hf.format,
     hf.size,
     hf.created_at,
-    hf.updated_at
+    hf.updated_at,
+    COALESCE(hf.starred, FALSE)
 FROM video_playlist_item vpi
 JOIN home_file hf ON hf.id = vpi.video_id
 WHERE vpi.playlist_id = $1
