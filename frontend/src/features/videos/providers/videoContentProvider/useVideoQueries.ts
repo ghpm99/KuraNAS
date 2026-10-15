@@ -1,12 +1,8 @@
 import {
-    getAllVideoFiles,
     getHiddenVideoPlaylists,
-    getVideoHomeCatalog,
     getVideoPlaylistById,
     getVideoPlaylistsByVideo,
-    getVideoPlaylists,
     getVideoPlaylistsBySection,
-    getVideosWithoutPlaylist,
     searchVideoPlaylists,
     type VideoLibraryFilters,
     type VideoLibrarySort,
@@ -22,8 +18,6 @@ export const videoQueryKeys = {
     playlistItems: (playlistId?: number) => ['video', 'playlist-items', playlistId] as const,
     hiddenPlaylists: (pageSize: number) => ['video', 'playlists', 'hidden', pageSize] as const,
     playlistSearch: (query: string) => ['video', 'playlists', 'search', query] as const,
-    unassigned: ['video', 'unassigned'] as const,
-    allFiles: ['video', 'all-files'] as const,
     homeCatalog: ['video', 'home-catalog'] as const,
     libraryFiles: (search: string, sort: VideoLibrarySort, filters: VideoLibraryFilters) =>
         [
@@ -39,13 +33,6 @@ export const videoQueryKeys = {
     playbackState: ['video', 'playback-state'] as const,
     continueWatching: ['video', 'continue-watching'] as const,
     playlistsOfVideo: (videoId: number) => ['video', 'playlists-of-video', videoId] as const,
-};
-
-export const useVideoPlaylists = () => {
-    return useQuery({
-        queryKey: videoQueryKeys.playlists,
-        queryFn: () => getVideoPlaylists(false),
-    });
 };
 
 export const useVideoPlaylistSearch = (query: string, pageSize: number, isEnabled: boolean) => {
@@ -83,27 +70,6 @@ export const useVideoPlaylistDetail = (playlistId?: number) => {
         queryKey: videoQueryKeys.playlistDetail(playlistId),
         queryFn: () => getVideoPlaylistById(playlistId as number),
         enabled: Boolean(playlistId),
-    });
-};
-
-export const useVideosWithoutPlaylist = () => {
-    return useQuery({
-        queryKey: videoQueryKeys.unassigned,
-        queryFn: () => getVideosWithoutPlaylist(2000),
-    });
-};
-
-export const useAllVideoFiles = () => {
-    return useQuery({
-        queryKey: videoQueryKeys.allFiles,
-        queryFn: () => getAllVideoFiles(3000),
-    });
-};
-
-export const useVideoHomeCatalog = () => {
-    return useQuery({
-        queryKey: videoQueryKeys.homeCatalog,
-        queryFn: () => getVideoHomeCatalog(24),
     });
 };
 

@@ -114,7 +114,6 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 VIDEO_ALL: 'Todos',
                 VIDEO_ALL_DESC:
                     'Todos os videos do sistema com acao rapida para adicionar a playlists.',
-                VIDEO_NO_RECENT_PLAYLISTS: 'Nenhuma playlist com reproducao recente.',
                 VIDEO_EDIT_PLAYLIST: 'Editar playlist',
                 VIDEO_SAVE_NAME: 'Salvar nome',
                 VIDEO_BACK_TO_VIDEOS: 'Voltar para videos',
