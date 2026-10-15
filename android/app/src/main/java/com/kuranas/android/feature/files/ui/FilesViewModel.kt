@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
@@ -13,6 +14,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+const val FOLDER_ID_ARGUMENT = "folderId"
+const val FOLDER_NAME_ARGUMENT = "name"
+
 data class FilesUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -24,12 +28,24 @@ data class FilesUiState(
 )
 
 @HiltViewModel
-class FilesViewModel @Inject constructor(private val repository: FilesRepository) : ViewModel() {
+class FilesViewModel @Inject constructor(
+    private val repository: FilesRepository,
+    savedStateHandle: SavedStateHandle,
+) : ViewModel() {
 
     private val _state = MutableStateFlow(FilesUiState(isLoading = true))
     val state: StateFlow<FilesUiState> = _state.asStateFlow()
 
-    init { loadRoot() }
+    init {
+        val initialFolderId = savedStateHandle.get<String>(FOLDER_ID_ARGUMENT)
+        if (initialFolderId == null) loadRoot() else openFolder(initialFolder(initialFolderId, savedStateHandle))
+    }
+
+    private fun initialFolder(folderId: String, savedStateHandle: SavedStateHandle) = FileItemDto(
+        rawId = folderId.toIntOrNull() ?: 0,
+        name = savedStateHandle.get<String>(FOLDER_NAME_ARGUMENT).orEmpty(),
+        type = FileItemDto.TYPE_DIRECTORY,
+    )
 
     fun loadRoot() {
         viewModelScope.launch {

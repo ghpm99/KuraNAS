@@ -15,6 +15,7 @@
     <!-- Navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_files">Files</string>
+    <string name="nav_favorites">Favorites</string>
     <string name="nav_music">Music</string>
     <string name="nav_videos">Videos</string>
     <string name="nav_images">Images</string>
@@ -49,6 +50,13 @@
     <string name="files_empty_folder">Empty folder</string>
     <string name="files_star_action">Add to favorites</string>
     <string name="files_unstar_action">Remove from favorites</string>
+    <string name="favorites_empty">No favorites yet</string>
+    <string name="favorites_kind_all">All</string>
+    <string name="favorites_kind_folders">Folders</string>
+    <string name="favorites_kind_files">Files</string>
+    <string name="favorites_kind_media">Media</string>
+    <string name="favorites_sort_name">Name</string>
+    <string name="favorites_sort_starred_at">Recently favorited</string>
     <string name="file_not_found">File not found</string>
 
     <!-- File viewer -->

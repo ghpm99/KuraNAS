@@ -75,4 +75,36 @@ class FilesRepositoryTest {
         assertEquals("Arquivo não encontrado", (result as AppResult.Error).message)
         assertEquals(404, result.code)
     }
+
+    @Test
+    fun `getStarredFiles sends exact page, page size, kind and sort`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"items":[],"pagination":{"has_next":false}}"""))
+
+        repository.getStarredFiles(3, StarredKind.MEDIA, StarredSort.STARRED_AT)
+
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/v1/files/starred?page=3&page_size=50&kind=media&sort=starred_at", request.path)
+    }
+
+    @Test
+    fun `getStarredFiles omits kind and sort when not provided`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"items":[],"pagination":{"has_next":false}}"""))
+
+        repository.getStarredFiles(1)
+
+        assertEquals("/api/v1/files/starred?page=1&page_size=50", server.takeRequest().path)
+    }
+
+    @Test
+    fun `getStarredFiles maps items and has_next`() = runTest {
+        server.enqueue(
+            MockResponse().setBody("""{"items":[{"id":4,"name":"a","starred":true}],"pagination":{"has_next":true}}"""),
+        )
+
+        val result = repository.getStarredFiles(1) as AppResult.Success
+
+        assertEquals(listOf("4"), result.data.items.map { it.id })
+        assertTrue(result.data.hasNext)
+    }
 }

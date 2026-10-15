@@ -60,6 +60,20 @@ class PagedListLoader<T>(
         }
     }
 
+    fun removeItem(identity: Any): Int {
+        val removedIndex = _state.value.items.indexOfFirst { identityOf(it) == identity }
+        if (removedIndex < 0) return removedIndex
+        _state.update { it.copy(items = it.items.filterIndexed { index, _ -> index != removedIndex }) }
+        return removedIndex
+    }
+
+    fun reinsertItem(index: Int, item: T) {
+        _state.update { current ->
+            val insertionIndex = index.coerceIn(0, current.items.size)
+            current.copy(items = (current.items.take(insertionIndex) + item + current.items.drop(insertionIndex)).distinctBy(identityOf))
+        }
+    }
+
     private fun restartFromFirstPage(
         onStart: (PagedListState<T>) -> PagedListState<T>,
         onError: (PagedListState<T>, String) -> PagedListState<T>,

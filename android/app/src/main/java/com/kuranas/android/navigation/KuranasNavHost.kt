@@ -26,7 +26,10 @@ import com.kuranas.android.core.server.ServerState
 import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
 import com.kuranas.android.feature.diary.ui.DiaryScreen
+import com.kuranas.android.feature.files.ui.FavoritesScreen
 import com.kuranas.android.feature.files.ui.FileViewerScreen
+import com.kuranas.android.feature.files.ui.FOLDER_ID_ARGUMENT
+import com.kuranas.android.feature.files.ui.FOLDER_NAME_ARGUMENT
 import com.kuranas.android.feature.files.ui.FilesScreen
 import com.kuranas.android.feature.home.ui.HomeScreen
 import com.kuranas.android.feature.images.ui.ImageViewerScreen
@@ -162,6 +165,20 @@ private fun AuthenticatedApp() {
                 onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id, it.arguments?.getInt("id"))) },
             )
         }
+        composable(
+            route = AppRoute.FILES_FOLDER,
+            arguments = listOf(
+                navArgument(FOLDER_ID_ARGUMENT) { type = NavType.StringType },
+                navArgument(FOLDER_NAME_ARGUMENT) { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            FilesScreen(
+                onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
+                onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+                onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
+                onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
+            )
+        }
         composable(AppRoute.VIDEO_LIBRARY) {
             VideoLibraryScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -218,6 +235,13 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                     onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
                 )
                 SwipePage.FILES -> FilesScreen(
+                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
+                    onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
+                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
+                )
+                SwipePage.FAVORITES -> FavoritesScreen(
+                    onOpenFolder = { id, name -> navController.navigate(AppRoute.filesFolder(id, name)) },
                     onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
                     onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
                     onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },

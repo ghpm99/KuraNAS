@@ -48,7 +48,7 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 
 ### Android
 - [x] 21. Estrela no explorer atualiza a tela (otimista com rollback, erro do servidor)
-- [ ] 22. Tela de Favoritos paginada com navegação
+- [x] 22. Tela de Favoritos paginada com navegação
 - [ ] 23. Estrela em imagens, música e vídeo
 
 ### Decisões do dono

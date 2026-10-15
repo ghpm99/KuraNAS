@@ -4,6 +4,8 @@ import android.content.Context
 import com.kuranas.android.R
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
+import com.kuranas.android.core.paging.ListPage
+import com.kuranas.android.core.paging.toListPage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,6 +25,14 @@ class FilesRepository @Inject constructor(
 
     suspend fun getChildrenById(id: String): AppResult<List<FileItemDto>> = safeApiCall {
         api.getChildrenById(id).items
+    }
+
+    suspend fun getStarredFiles(
+        page: Int,
+        kind: StarredKind? = null,
+        sort: StarredSort? = null,
+    ): AppResult<ListPage<FileItemDto>> = safeApiCall {
+        api.getStarredFiles(page, STARRED_PAGE_SIZE, kind?.queryValue, sort?.queryValue).toListPage()
     }
 
     suspend fun createFolder(name: String, parentId: String?): AppResult<Unit> = safeApiCall {
@@ -101,7 +111,20 @@ class FilesRepository @Inject constructor(
 
     private companion object {
         const val MAX_TEXT_BYTES = 256 * 1024
+        const val STARRED_PAGE_SIZE = 50
     }
+}
+
+enum class StarredKind(val queryValue: String) {
+    ALL("all"),
+    FOLDERS("folders"),
+    FILES("files"),
+    MEDIA("media"),
+}
+
+enum class StarredSort(val queryValue: String) {
+    NAME("name"),
+    STARRED_AT("starred_at"),
 }
 
 sealed interface FileContent {

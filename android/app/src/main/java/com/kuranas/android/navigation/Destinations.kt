@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.kuranas.android.R
@@ -17,6 +18,7 @@ import com.kuranas.android.R
 enum class SwipePage(@StringRes val labelRes: Int, val icon: ImageVector) {
     HOME(R.string.nav_home, Icons.Filled.Home),
     FILES(R.string.nav_files, Icons.Filled.Folder),
+    FAVORITES(R.string.nav_favorites, Icons.Filled.Star),
     MUSIC(R.string.nav_music, Icons.Filled.MusicNote),
     VIDEO(R.string.nav_videos, Icons.Filled.VideoLibrary),
     IMAGES(R.string.nav_images, Icons.Filled.PhotoLibrary),
@@ -40,12 +42,14 @@ object AppRoute {
     const val MUSIC_PLAYLIST = "music/playlist/{id}"
     const val VIDEO_PLAYLIST = "video/playlist/{id}"
     const val VIDEO_LIBRARY = "video/library"
+    const val FILES_FOLDER = "files/folder/{folderId}?name={name}"
     const val JOBS = "jobs"
     const val JOB_DETAIL = "jobs/{id}"
     const val ANALYTICS = "analytics"
 
     fun fileDetail(id: String, name: String = "") =
         "file/$id?name=${android.net.Uri.encode(name)}"
+    fun filesFolder(id: String, name: String) = "files/folder/$id?name=${android.net.Uri.encode(name)}"
     fun musicPlayer(trackId: Int) = "music-player?trackId=$trackId"
     fun videoPlayer(id: String, playlistId: Int? = null) =
         if (playlistId == null) "video-player/$id" else "video-player/$id?playlistId=$playlistId"
