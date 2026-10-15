@@ -5,3 +5,4 @@ export const searchQueryKey = 'files-search';
 export const allFileQueryKeys = [...fileQueryKeys, ancestorsQueryKey, searchQueryKey];
 
 export const homeFavoritesQueryKey = ['home', 'favorites'] as const;
+export const starredCountsQueryKey = ['files-starred-counts'] as const;

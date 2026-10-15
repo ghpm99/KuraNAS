@@ -25,13 +25,17 @@ const FavoritesScreen = () => {
         currentTitle,
         fetchNextPage,
         filterOptions,
-        filteredItems,
+        isRootListing,
+        listedItems,
         hasNextPage,
         isFetchingNextPage,
         itemCountLabel,
         selectedItem,
         setActiveFilter,
+        setStarredSort,
         setViewMode,
+        sortOptions,
+        starredSort,
         viewMode,
     } = useFavoritesScreen();
     const { hasSelection } = useFileSelectionContext();
@@ -93,32 +97,60 @@ const FavoritesScreen = () => {
                             </div>
 
                             <div className={styles.contextActions}>
-                                <ToggleButtonGroup
-                                    size="small"
-                                    value={activeFilter}
-                                    exclusive
-                                    onChange={(_, nextFilter) => {
-                                        if (nextFilter) {
-                                            setActiveFilter(nextFilter);
-                                        }
-                                    }}
-                                    aria-label={t('FAVORITES_FILTER_SWITCH')}
-                                >
-                                    {filterOptions.map((option) => (
-                                        <ToggleButton
-                                            key={option.value}
-                                            value={option.value}
-                                            aria-label={option.label}
+                                {isRootListing ? (
+                                    <>
+                                        <ToggleButtonGroup
+                                            size="small"
+                                            value={activeFilter}
+                                            exclusive
+                                            onChange={(_, nextFilter) => {
+                                                if (nextFilter) {
+                                                    setActiveFilter(nextFilter);
+                                                }
+                                            }}
+                                            aria-label={t('FAVORITES_FILTER_SWITCH')}
                                         >
-                                            <span className={styles.filterButton}>
-                                                <span>{option.label}</span>
-                                                <span className={styles.filterCount}>
-                                                    {option.count}
-                                                </span>
-                                            </span>
-                                        </ToggleButton>
-                                    ))}
-                                </ToggleButtonGroup>
+                                            {filterOptions.map((option) => (
+                                                <ToggleButton
+                                                    key={option.value}
+                                                    value={option.value}
+                                                    aria-label={option.label}
+                                                >
+                                                    <span className={styles.filterButton}>
+                                                        <span>{option.label}</span>
+                                                        {option.count === null ? null : (
+                                                            <span className={styles.filterCount}>
+                                                                {option.count}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </ToggleButton>
+                                            ))}
+                                        </ToggleButtonGroup>
+
+                                        <ToggleButtonGroup
+                                            size="small"
+                                            value={starredSort}
+                                            exclusive
+                                            onChange={(_, nextSort) => {
+                                                if (nextSort) {
+                                                    setStarredSort(nextSort);
+                                                }
+                                            }}
+                                            aria-label={t('FAVORITES_SORT_SWITCH')}
+                                        >
+                                            {sortOptions.map((option) => (
+                                                <ToggleButton
+                                                    key={option.value}
+                                                    value={option.value}
+                                                    aria-label={option.label}
+                                                >
+                                                    {option.label}
+                                                </ToggleButton>
+                                            ))}
+                                        </ToggleButtonGroup>
+                                    </>
+                                ) : null}
 
                                 <ToggleButtonGroup
                                     size="small"
@@ -153,7 +185,7 @@ const FavoritesScreen = () => {
 
                     {hasSelection ? (
                         <section className={styles.panel}>
-                            <FileSelectionToolbar selectableFiles={filteredItems} />
+                            <FileSelectionToolbar selectableFiles={listedItems} />
                         </section>
                     ) : null}
 
@@ -161,7 +193,7 @@ const FavoritesScreen = () => {
                         <FileContent
                             showHeading={false}
                             viewMode={viewMode}
-                            items={filteredItems}
+                            items={listedItems}
                             isSelectionEnabled
                             title={currentTitle}
                             emptyStateMessage={t('FAVORITES_EMPTY_STATE')}

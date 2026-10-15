@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { homeFavoritesQueryKey, searchQueryKey } from './fileQueryKeys';
+import { homeFavoritesQueryKey, searchQueryKey, starredCountsQueryKey } from './fileQueryKeys';
 import { invalidateStarredViews } from './invalidateStarredViews';
 
 describe('invalidateStarredViews', () => {
@@ -12,6 +12,7 @@ describe('invalidateStarredViews', () => {
         expect(invalidateQueries.mock.calls.map(([filters]) => filters)).toEqual([
             { queryKey: homeFavoritesQueryKey },
             { queryKey: ['files'] },
+            { queryKey: starredCountsQueryKey },
             { queryKey: [searchQueryKey] },
             { queryKey: ['images', 'library'], refetchType: 'none' },
             { queryKey: ['images', 'count'] },
@@ -28,5 +29,23 @@ describe('invalidateStarredViews', () => {
 
         expect(queryClient.getQueryState([...homeFavoritesQueryKey])?.isInvalidated).toBe(true);
         expect(queryClient.getQueryState(['unrelated'])?.isInvalidated).toBe(false);
+    });
+
+    it('invalidates starred listings keyed by kind and sort, and the starred counts', async () => {
+        const queryClient = new QueryClient();
+        const starredListingKey = [
+            'files',
+            { page_size: 200 },
+            'starred',
+            {},
+            { kind: 'media', sort: 'starred_at' },
+        ];
+        queryClient.setQueryData(starredListingKey, { pages: [] });
+        queryClient.setQueryData([...starredCountsQueryKey], { total: 1 });
+
+        await invalidateStarredViews(queryClient);
+
+        expect(queryClient.getQueryState(starredListingKey)?.isInvalidated).toBe(true);
+        expect(queryClient.getQueryState([...starredCountsQueryKey])?.isInvalidated).toBe(true);
     });
 });

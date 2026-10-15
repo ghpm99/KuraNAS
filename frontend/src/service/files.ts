@@ -86,13 +86,35 @@ type FilesPageParams = {
     pageSize: number;
 };
 
+export type StarredKind = 'all' | 'folders' | 'files' | 'media';
+export type StarredSort = 'name' | 'starred_at';
+
+export type StarredFilesParams = FilesPageParams & {
+    kind?: StarredKind;
+    sort?: StarredSort;
+};
+
+export type StarredCounts = {
+    total: number;
+    folders: number;
+    files: number;
+    media: number;
+};
+
 export const getStarredFiles = async ({
     page,
     pageSize,
-}: FilesPageParams): Promise<FilePaginationResponse> => {
+    kind,
+    sort,
+}: StarredFilesParams): Promise<FilePaginationResponse> => {
     const response = await apiBase.get<FilePaginationResponse>('/files/starred', {
-        params: { page, page_size: pageSize },
+        params: { page, page_size: pageSize, ...(kind && { kind }), ...(sort && { sort }) },
     });
+    return response.data;
+};
+
+export const getStarredCounts = async (): Promise<StarredCounts> => {
+    const response = await apiBase.get<StarredCounts>('/files/starred/counts');
     return response.data;
 };
 

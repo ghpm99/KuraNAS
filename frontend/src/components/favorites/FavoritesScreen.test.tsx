@@ -5,6 +5,7 @@ import FavoritesScreen from './FavoritesScreen';
 const mockUseFavoritesScreen = jest.fn();
 const mockSetActiveFilter = jest.fn();
 const mockSetViewMode = jest.fn();
+const mockSetStarredSort = jest.fn();
 
 jest.mock('./useFavoritesScreen', () => ({
     __esModule: true,
@@ -52,11 +53,18 @@ describe('FavoritesScreen', () => {
                 { value: 'files', label: 'FAVORITES_FILTER_FILES', count: 1 },
                 { value: 'media', label: 'FAVORITES_FILTER_MEDIA', count: 1 },
             ],
-            filteredItems: [{ id: 1, name: 'Invoice.pdf' }],
+            listedItems: [{ id: 1, name: 'Invoice.pdf' }],
             itemCountLabel: '3 ITENS',
             selectedItem: null,
+            isRootListing: true,
             setActiveFilter: mockSetActiveFilter,
+            setStarredSort: mockSetStarredSort,
             setViewMode: mockSetViewMode,
+            sortOptions: [
+                { value: 'name', label: 'FAVORITES_SORT_NAME' },
+                { value: 'starred_at', label: 'FAVORITES_SORT_STARRED_AT' },
+            ],
+            starredSort: 'name',
             viewMode: 'grid',
         });
     });
@@ -150,11 +158,18 @@ describe('FavoritesScreen', () => {
                 { value: 'files', label: 'FAVORITES_FILTER_FILES', count: 1 },
                 { value: 'media', label: 'FAVORITES_FILTER_MEDIA', count: 1 },
             ],
-            filteredItems: [],
+            listedItems: [],
             itemCountLabel: '1 ITEM',
             selectedItem: { id: 99, type: 2, name: 'Invoice.pdf' },
+            isRootListing: true,
             setActiveFilter: mockSetActiveFilter,
+            setStarredSort: mockSetStarredSort,
             setViewMode: mockSetViewMode,
+            sortOptions: [
+                { value: 'name', label: 'FAVORITES_SORT_NAME' },
+                { value: 'starred_at', label: 'FAVORITES_SORT_STARRED_AT' },
+            ],
+            starredSort: 'name',
             viewMode: 'grid',
         });
 
@@ -210,5 +225,51 @@ describe('FavoritesScreen', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'STARRED_FILES' }));
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/favorites$/);
+    });
+
+    it('delegates sort changes to the sort selector', () => {
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'FAVORITES_SORT_STARRED_AT' }));
+
+        expect(mockSetStarredSort).toHaveBeenCalledWith('starred_at');
+    });
+
+    it('hides filter chips and sort selector inside a starred folder', () => {
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            isRootListing: false,
+            selectedItem: { id: 10, type: 1, name: 'Projects' },
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByRole('button', { name: 'FAVORITES_FILTER_FILES' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'FAVORITES_SORT_NAME' })).toBeNull();
+    });
+
+    it('omits the chip count while the server counts are unavailable', () => {
+        mockUseFavoritesScreen.mockReturnValue({
+            ...mockUseFavoritesScreen(),
+            filterOptions: [{ value: 'all', label: 'FAVORITES_FILTER_ALL', count: null }],
+        });
+
+        render(
+            <MemoryRouter>
+                <FavoritesScreen />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByRole('button', { name: 'FAVORITES_FILTER_ALL' })).toHaveTextContent(
+            /^FAVORITES_FILTER_ALL$/
+        );
     });
 });

@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { StarredKind, StarredSort } from '@/service/files';
 
 export type FileData = {
     id: number;
@@ -63,6 +64,10 @@ export type FileContextType = {
     setFileListFilter: (filter: FileListCategoryType) => void;
     filesSort: FilesSort;
     setFilesSort: (sort: FilesSort) => void;
+    starredKind: StarredKind;
+    setStarredKind: (kind: StarredKind) => void;
+    starredSort: StarredSort;
+    setStarredSort: (sort: StarredSort) => void;
 };
 
 export type Pagination = {

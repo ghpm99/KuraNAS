@@ -1,6 +1,10 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import useFile, { type FileData } from '@/features/files/providers/fileProvider/fileContext';
-import { FileType, getFileTypeInfo } from '@/utils';
+import useFile from '@/features/files/providers/fileProvider/fileContext';
+import { FileType } from '@/utils';
+import { useQuery } from '@tanstack/react-query';
+import { getStarredCounts, type StarredCounts, type StarredSort } from '@/service/files';
+import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
+import { starredCountsQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { useMemo, useState } from 'react';
 import type { BreadcrumbSegment } from '@/features/files/files/useFilesExplorerScreen';
 import { findTrailById } from '@/features/files/files/fileNavigation';
@@ -8,40 +12,38 @@ import { findTrailById } from '@/features/files/files/fileNavigation';
 export type FavoritesFilter = 'all' | 'folders' | 'files' | 'media';
 export type FavoritesViewMode = 'grid' | 'list';
 
+export type FavoritesSortOption = {
+    value: StarredSort;
+    label: string;
+};
+
 type FavoritesFilterOption = {
     value: FavoritesFilter;
     label: string;
-    count: number;
+    count: number | null;
 };
 
-const mediaTypes = new Set(['audio', 'image', 'video']);
-
-const isMediaFile = (file: FileData) => {
-    if (file.type !== FileType.File) {
-        return false;
-    }
-
-    return mediaTypes.has(getFileTypeInfo(file.format).type);
-};
-
-const matchesFavoritesFilter = (filter: FavoritesFilter, file: FileData) => {
-    switch (filter) {
-        case 'folders':
-            return file.type === FileType.Directory;
-        case 'files':
-            return file.type === FileType.File && !isMediaFile(file);
-        case 'media':
-            return isMediaFile(file);
-        default:
-            return true;
-    }
+const favoritesCountKeyByFilter: Record<FavoritesFilter, keyof StarredCounts> = {
+    all: 'total',
+    folders: 'folders',
+    files: 'files',
+    media: 'media',
 };
 
 const useFavoritesScreen = () => {
     const { t } = useI18n();
-    const { files, selectedItem, fetchNextPage, hasNextPage, isFetchingNextPage, handleSelectItem } =
-        useFile();
-    const [activeFilter, setActiveFilter] = useState<FavoritesFilter>('all');
+    const {
+        files,
+        selectedItem,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        handleSelectItem,
+        starredKind,
+        setStarredKind,
+        starredSort,
+        setStarredSort,
+    } = useFile();
     const [viewMode, setViewMode] = useState<FavoritesViewMode>('grid');
 
     const favoritesTrail = useMemo(() => {
@@ -72,45 +74,41 @@ const useFavoritesScreen = () => {
         return parentFolder ? (parentFolder.file_children ?? []) : files;
     }, [files, selectedItem, parentFolder]);
 
-    const filterCounts = useMemo(
-        () => ({
-            all: scopedItems.length,
-            folders: scopedItems.filter((item) => item.type === FileType.Directory).length,
-            files: scopedItems.filter((item) => matchesFavoritesFilter('files', item)).length,
-            media: scopedItems.filter((item) => matchesFavoritesFilter('media', item)).length,
-        }),
-        [scopedItems]
-    );
+    const isRootListing =
+        !selectedItem || (selectedItem.type === FileType.File && parentFolder === null);
+
+    const { data: starredCounts } = useQuery({
+        queryKey: starredCountsQueryKey,
+        queryFn: getStarredCounts,
+        enabled: isRootListing,
+        staleTime: listingStaleTimeMs,
+    });
+
+    const activeFilter: FavoritesFilter = isRootListing ? starredKind : 'all';
 
     const filterOptions = useMemo<FavoritesFilterOption[]>(
-        () => [
-            {
-                value: 'all',
-                label: t('FAVORITES_FILTER_ALL'),
-                count: filterCounts.all,
-            },
-            {
-                value: 'folders',
-                label: t('FAVORITES_FILTER_FOLDERS'),
-                count: filterCounts.folders,
-            },
-            {
-                value: 'files',
-                label: t('FAVORITES_FILTER_FILES'),
-                count: filterCounts.files,
-            },
-            {
-                value: 'media',
-                label: t('FAVORITES_FILTER_MEDIA'),
-                count: filterCounts.media,
-            },
-        ],
-        [filterCounts.all, filterCounts.files, filterCounts.folders, filterCounts.media, t]
+        () =>
+            (
+                [
+                    ['all', 'FAVORITES_FILTER_ALL'],
+                    ['folders', 'FAVORITES_FILTER_FOLDERS'],
+                    ['files', 'FAVORITES_FILTER_FILES'],
+                    ['media', 'FAVORITES_FILTER_MEDIA'],
+                ] as const
+            ).map(([value, labelKey]) => ({
+                value,
+                label: t(labelKey),
+                count: starredCounts?.[favoritesCountKeyByFilter[value]] ?? null,
+            })),
+        [starredCounts, t]
     );
 
-    const filteredItems = useMemo(
-        () => scopedItems.filter((item) => matchesFavoritesFilter(activeFilter, item)),
-        [activeFilter, scopedItems]
+    const sortOptions = useMemo<FavoritesSortOption[]>(
+        () => [
+            { value: 'name', label: t('FAVORITES_SORT_NAME') },
+            { value: 'starred_at', label: t('FAVORITES_SORT_STARRED_AT') },
+        ],
+        [t]
     );
 
     const breadcrumbSegments = useMemo<BreadcrumbSegment[]>(() => {
@@ -136,13 +134,17 @@ const useFavoritesScreen = () => {
         ];
     }, [favoritesTrail, selectedItem, t]);
 
+    const totalItems = isRootListing
+        ? starredCounts?.[favoritesCountKeyByFilter[activeFilter]]
+        : undefined;
+
     const itemCountLabel = useMemo(() => {
-        const count = filteredItems.length;
-        if (hasNextPage) {
-            return `${count}+ ${t('ITENS')}`;
+        const count = totalItems ?? scopedItems.length;
+        if (totalItems === undefined && hasNextPage) {
+            return t('FAVORITES_ITEMS_OPEN_ENDED', { count: String(count) });
         }
         return `${count} ${count === 1 ? t('ITEM') : t('ITENS')}`;
-    }, [filteredItems.length, hasNextPage, t]);
+    }, [scopedItems.length, hasNextPage, t, totalItems]);
 
     const currentTitle = selectedItem ? selectedItem.name : t('STARRED_FILES');
     const contextPath = selectedItem
@@ -165,19 +167,19 @@ const useFavoritesScreen = () => {
         currentTitle,
         fetchNextPage,
         filterOptions,
-        filteredItems,
+        listedItems: scopedItems,
         hasNextPage,
+        isRootListing,
         isFetchingNextPage,
         itemCountLabel,
         selectedItem,
-        setActiveFilter,
+        setActiveFilter: setStarredKind,
+        setStarredSort,
         setViewMode,
+        sortOptions,
+        starredSort,
         viewMode,
     };
-};
-
-export const favoritesScreenUtils = {
-    matchesFavoritesFilter,
 };
 
 export default useFavoritesScreen;
