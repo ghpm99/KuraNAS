@@ -172,7 +172,7 @@ describe('FileContextMenu', () => {
     it('favorites and unfavorites', async () => {
         const { fileContext } = renderMenu();
         fireEvent.click(screen.getByText('FILES_FAVORITE'));
-        await waitFor(() => expect(fileContext.toggleStarred).toHaveBeenCalledWith(1));
+        await waitFor(() => expect(fileContext.setFilesStarred).toHaveBeenCalledWith([1], true));
     });
 
     it('labels the action as unfavorite for starred targets', () => {

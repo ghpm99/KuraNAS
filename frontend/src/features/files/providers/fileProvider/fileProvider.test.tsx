@@ -31,10 +31,13 @@ const mockGetFilesTree = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetStarredFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentlyAccessedFiles = jest.fn<Promise<PaginationResponse>, [any]>();
 const mockGetRecentAccessByFileId = jest.fn<Promise<any[]>, [number]>();
-const mockToggleStarredFile = jest.fn<Promise<void>, [number]>();
 const mockSetFileStarred = jest.fn<
     Promise<{ id: number; starred: boolean }>,
     [number, boolean]
+>();
+const mockSetFilesStarred = jest.fn<
+    Promise<{ starred: boolean; updated_ids: number[]; not_found_ids: number[] }>,
+    [number[], boolean]
 >();
 const mockEnqueueSnackbar = jest.fn();
 const mockRescanFiles = jest.fn<Promise<void>, []>();
@@ -50,8 +53,8 @@ jest.mock('@/service/files', () => ({
     getStarredFiles: mockGetStarredFiles,
     getRecentlyAccessedFiles: mockGetRecentlyAccessedFiles,
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
-    toggleStarredFile: mockToggleStarredFile,
     setFileStarred: mockSetFileStarred,
+    setFilesStarred: mockSetFilesStarred,
     rescanFiles: mockRescanFiles,
     createFolder: mockCreateFolder,
     moveFile: mockMoveFile,
@@ -252,7 +255,6 @@ describe('FileProvider', () => {
         mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([]));
         mockGetRecentAccessByFileId.mockResolvedValue([]);
         mockGetFileByPath.mockResolvedValue(null);
-        mockToggleStarredFile.mockResolvedValue(undefined);
         mockRescanFiles.mockResolvedValue(undefined);
         mockCreateFolder.mockResolvedValue(undefined);
         mockMoveFile.mockResolvedValue(undefined);
@@ -400,6 +402,100 @@ describe('FileProvider', () => {
                 })
             );
             await waitFor(() => expect(capturedContext!.files[0]?.starred).toBe(false));
+        });
+    });
+
+    describe('setFilesStarred', () => {
+        const renderWithStarredListings = async (starredFlags: boolean[]) => {
+            mockGetFilesTree.mockResolvedValue(
+                makePaginationResponse(
+                    starredFlags.map((isStarred, index) =>
+                        createNode(index + 1, { starred: isStarred })
+                    )
+                )
+            );
+            const queryClient = createQueryClient();
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            renderProvider(queryClient);
+            await waitFor(() => expect(capturedContext!.files.length).toBe(starredFlags.length));
+            return invalidateSpy;
+        };
+
+        it('stars every file at once, keeps the server state and refreshes the starred views', async () => {
+            const invalidateSpy = await renderWithStarredListings([false, true, false]);
+            mockSetFilesStarred.mockResolvedValue({
+                starred: true,
+                updated_ids: [1, 2, 3],
+                not_found_ids: [],
+            });
+            mockGetFilesTree.mockResolvedValue(
+                makePaginationResponse([1, 2, 3].map((id) => createNode(id, { starred: true })))
+            );
+
+            let updatedIds: number[] = [];
+            await act(async () => {
+                updatedIds = await capturedContext!.setFilesStarred([1, 2, 3], true);
+            });
+
+            expect(mockSetFilesStarred).toHaveBeenCalledWith([1, 2, 3], true);
+            expect(updatedIds).toEqual([1, 2, 3]);
+            await waitFor(() =>
+                expect(capturedContext!.files.map((file) => file.starred)).toEqual([true, true, true])
+            );
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] });
+        });
+
+        it('shows the new state immediately, before the server answers', async () => {
+            await renderWithStarredListings([false, false]);
+            mockSetFilesStarred.mockReturnValue(new Promise(() => undefined));
+
+            await act(async () => {
+                void capturedContext!.setFilesStarred([1, 2], true);
+            });
+
+            await waitFor(() =>
+                expect(capturedContext!.files.map((file) => file.starred)).toEqual([true, true])
+            );
+        });
+
+        it('restores the items the server did not find', async () => {
+            await renderWithStarredListings([false, false]);
+            mockGetFilesTree.mockResolvedValue(
+                makePaginationResponse([
+                    createNode(1, { starred: true }),
+                    createNode(2, { starred: false }),
+                ])
+            );
+            mockSetFilesStarred.mockResolvedValue({
+                starred: true,
+                updated_ids: [1],
+                not_found_ids: [2],
+            });
+
+            await act(async () => {
+                await capturedContext!.setFilesStarred([1, 2], true);
+            });
+
+            await waitFor(() =>
+                expect(capturedContext!.files.map((file) => file.starred)).toEqual([true, false])
+            );
+        });
+
+        it('rolls back, rejects and still refreshes the starred views when the call fails', async () => {
+            const invalidateSpy = await renderWithStarredListings([false, false]);
+            mockSetFilesStarred.mockRejectedValue(new Error('network'));
+
+            await act(async () => {
+                await expect(capturedContext!.setFilesStarred([1, 2], true)).rejects.toThrow(
+                    'network'
+                );
+            });
+
+            await waitFor(() =>
+                expect(capturedContext!.files.map((file) => file.starred)).toEqual([false, false])
+            );
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['home', 'favorites'] });
+            expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
         });
     });
 

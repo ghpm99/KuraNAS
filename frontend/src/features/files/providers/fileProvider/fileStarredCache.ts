@@ -11,15 +11,19 @@ const isStarredRootListing = (queryKey: FileListingQueryKey): boolean => {
     return listingFilter === 'starred' && queryParams?.file_parent === undefined;
 };
 
-const withStarredState = (file: FileData, fileId: number, isStarred: boolean): FileData => {
-    if (file.id !== fileId) return file;
+const withStarredState = (
+    file: FileData,
+    fileIds: readonly number[],
+    isStarred: boolean
+): FileData => {
+    if (!fileIds.includes(file.id)) return file;
     return { ...file, starred: isStarred };
 };
 
 export const applyStarredToListing = (
     cache: FileListingCache | undefined,
     queryKey: FileListingQueryKey,
-    fileId: number,
+    fileIds: readonly number[],
     isStarred: boolean
 ): FileListingCache | undefined => {
     if (!cache?.pages) return cache;
@@ -29,17 +33,17 @@ export const applyStarredToListing = (
         pages: cache.pages.map((page) => ({
             ...page,
             items: (page?.items ?? [])
-                .map((file) => withStarredState(file, fileId, isStarred))
-                .filter((file) => !(shouldDropUnstarred && file.id === fileId && !file.starred)),
+                .map((file) => withStarredState(file, fileIds, isStarred))
+                .filter((file) => !(shouldDropUnstarred && fileIds.includes(file.id) && !file.starred)),
         })),
     };
 };
 
 export const applyStarredToFile = (
     file: FileData | null | undefined,
-    fileId: number,
+    fileIds: readonly number[],
     isStarred: boolean
 ): FileData | null | undefined => {
     if (!file) return file;
-    return withStarredState(file, fileId, isStarred);
+    return withStarredState(file, fileIds, isStarred);
 };

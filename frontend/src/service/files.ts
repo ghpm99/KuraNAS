@@ -157,6 +157,42 @@ export const setFileStarred = async (
     return response.data;
 };
 
+export const maxStarredBatchSize = 500;
+
+export type FilesStarredBatchResult = {
+    starred: boolean;
+    updated_ids: number[];
+    not_found_ids: number[];
+};
+
+const sliceIntoBatches = (fileIds: number[], batchSize: number): number[][] => {
+    const batches: number[][] = [];
+    for (let start = 0; start < fileIds.length; start += batchSize) {
+        batches.push(fileIds.slice(start, start + batchSize));
+    }
+    return batches;
+};
+
+export const setFilesStarred = async (
+    fileIds: number[],
+    isStarred: boolean
+): Promise<FilesStarredBatchResult> => {
+    const mergedResult: FilesStarredBatchResult = {
+        starred: isStarred,
+        updated_ids: [],
+        not_found_ids: [],
+    };
+    for (const batchIds of sliceIntoBatches(fileIds, maxStarredBatchSize)) {
+        const response = await apiBase.post<FilesStarredBatchResult>('/files/starred', {
+            ids: batchIds,
+            starred: isStarred,
+        });
+        mergedResult.updated_ids.push(...(response.data.updated_ids ?? []));
+        mergedResult.not_found_ids.push(...(response.data.not_found_ids ?? []));
+    }
+    return mergedResult;
+};
+
 export const rescanFiles = async (): Promise<void> => {
     const formData = new FormData();
     formData.append('data', 'manual-rescan');
