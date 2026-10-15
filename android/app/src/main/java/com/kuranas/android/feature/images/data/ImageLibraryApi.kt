@@ -28,6 +28,7 @@ data class ImageLibraryPageDto(
 data class ImageLibraryItemDto(
     @SerialName("file_id") val fileId: Int = 0,
     val name: String = "",
+    val starred: Boolean = false,
 ) {
     val id: String get() = fileId.toString()
 }

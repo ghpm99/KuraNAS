@@ -3,6 +3,7 @@ package com.kuranas.android.feature.images.ui
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.images.data.ImageLibraryItemDto
 import com.kuranas.android.feature.images.data.ImageLibraryPageDto
+import com.kuranas.android.feature.images.data.ImageStarStore
 import com.kuranas.android.feature.images.data.ImagesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -52,7 +53,7 @@ class ImagesViewModelTest {
     fun `loads the first page on creation`() {
         givenFirstPage(page("cursor-1", 3, 2, 1))
 
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
@@ -65,7 +66,7 @@ class ImagesViewModelTest {
     fun `loadMore appends the next page using the cursor`() {
         givenFirstPage(page("cursor-1", 3, 2))
         coEvery { repository.getImagesPage("cursor-1") } returns AppResult.Success(page("", 1))
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
 
@@ -80,7 +81,7 @@ class ImagesViewModelTest {
         givenFirstPage(page("cursor-1", 6, 5))
         coEvery { repository.getImagesPage("cursor-1") } returns AppResult.Success(page("cursor-2", 4, 3))
         coEvery { repository.getImagesPage("cursor-2") } returns AppResult.Success(page("", 2, 1))
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
         viewModel.loadMore()
@@ -94,7 +95,7 @@ class ImagesViewModelTest {
     @Test
     fun `loadMore does nothing when there is no next page`() {
         givenFirstPage(page("", 1))
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
 
@@ -106,7 +107,7 @@ class ImagesViewModelTest {
         givenFirstPage(page("cursor-1", 2, 1))
         val pendingPage = CompletableDeferred<AppResult<ImageLibraryPageDto>>()
         coEvery { repository.getImagesPage("cursor-1") } coAnswers { pendingPage.await() }
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
         viewModel.loadMore()
@@ -120,7 +121,7 @@ class ImagesViewModelTest {
     fun `loadMore drops duplicated images across pages`() {
         givenFirstPage(page("cursor-1", 3, 2))
         coEvery { repository.getImagesPage("cursor-1") } returns AppResult.Success(page("", 2, 1))
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
 
@@ -131,7 +132,7 @@ class ImagesViewModelTest {
     fun `loadMore failure keeps loaded images and allows retrying`() {
         givenFirstPage(page("cursor-1", 2, 1))
         coEvery { repository.getImagesPage("cursor-1") } returns AppResult.Error("offline")
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         viewModel.loadMore()
 
@@ -150,7 +151,7 @@ class ImagesViewModelTest {
     fun `first page failure exposes the error`() {
         coEvery { repository.getImagesPage(null) } returns AppResult.Error("offline")
 
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
@@ -162,7 +163,7 @@ class ImagesViewModelTest {
     fun `refresh restarts from the first page and replaces loaded images`() {
         givenFirstPage(page("cursor-1", 3, 2))
         coEvery { repository.getImagesPage("cursor-1") } returns AppResult.Success(page("", 1))
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
         viewModel.loadMore()
 
         givenFirstPage(page("cursor-9", 9, 8))
@@ -180,7 +181,7 @@ class ImagesViewModelTest {
         givenFirstPage(page("cursor-1", 2, 1))
         val stalePage = CompletableDeferred<AppResult<ImageLibraryPageDto>>()
         coEvery { repository.getImagesPage("cursor-1") } coAnswers { stalePage.await() }
-        val viewModel = ImagesViewModel(repository)
+        val viewModel = ImagesViewModel(repository, ImageStarStore())
         viewModel.loadMore()
 
         givenFirstPage(page("cursor-9", 9))
