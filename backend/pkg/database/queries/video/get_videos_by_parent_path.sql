@@ -6,7 +6,8 @@ SELECT
     format,
     size,
     created_at,
-    updated_at
+    updated_at,
+    COALESCE(starred, FALSE)
 FROM home_file
 WHERE parent_path = $1
   AND deleted_at IS NULL

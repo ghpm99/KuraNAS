@@ -6,7 +6,8 @@ SELECT
     hf.format,
     hf.size,
     hf.created_at,
-    hf.updated_at
+    hf.updated_at,
+    COALESCE(hf.starred, FALSE)
 FROM home_file hf
 WHERE hf.deleted_at IS NULL
   AND hf.format = ANY($1)

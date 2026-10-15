@@ -15,6 +15,7 @@ type VideoFileDto struct {
 	Size       int64  `json:"size"`
 	CreatedAt  string `json:"created_at"`
 	UpdatedAt  string `json:"updated_at"`
+	Starred    bool   `json:"starred"`
 
 	DurationSeconds *float64 `json:"duration_seconds"`
 	Width           *int     `json:"width"`
@@ -173,6 +174,7 @@ func (m *VideoFileModel) ToDto() VideoFileDto {
 		Size:       m.Size,
 		CreatedAt:  m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:  m.UpdatedAt.Format(time.RFC3339),
+		Starred:    m.Starred,
 
 		DurationSeconds: nullableFloat(m.DurationSeconds),
 		Width:           nullableInt(m.Width),

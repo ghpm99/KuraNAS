@@ -39,6 +39,7 @@ func (r *Repository) ListLibraryMovies(sort LibraryMovieSort, limit int, offset 
 				&movie.Size,
 				&movie.CreatedAt,
 				&movie.UpdatedAt,
+				&movie.Starred,
 			}, technicalMetadataScanTargets(&movie)...)
 			if err := rows.Scan(scanTargets...); err != nil {
 				return err

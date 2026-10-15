@@ -72,6 +72,7 @@ func (r *Repository) ListLibraryFolderVideos(folderPath string, limit int, offse
 				&video.Size,
 				&video.CreatedAt,
 				&video.UpdatedAt,
+				&video.Starred,
 			}, technicalMetadataScanTargets(&video)...)
 			if err := rows.Scan(scanTargets...); err != nil {
 				return err

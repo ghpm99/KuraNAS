@@ -7,6 +7,7 @@ SELECT
     file.size,
     file.created_at,
     file.updated_at,
+    COALESCE(file.starred, FALSE),
     tech.duration_seconds,
     tech.width,
     tech.height,

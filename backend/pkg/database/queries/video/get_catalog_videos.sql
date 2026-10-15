@@ -7,6 +7,7 @@ SELECT
     size,
     created_at,
     updated_at,
+    COALESCE(starred, FALSE),
     COALESCE((
         SELECT vm.classification
         FROM video_metadata vm

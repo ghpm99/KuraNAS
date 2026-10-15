@@ -7,6 +7,7 @@ SELECT
     hf.size,
     hf.created_at,
     hf.updated_at,
+    COALESCE(hf.starred, FALSE),
     tech.duration_seconds,
     tech.width,
     tech.height,
