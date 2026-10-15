@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -693,6 +694,37 @@ func TestStarreFileHandlerReturnsSuccessTrueWithoutReadingOrRewritingFile(t *tes
 	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/files/starred/1", nil))
 
 	if response.Code != http.StatusOK || strings.TrimSpace(response.Body.String()) != `{"success":true}` {
+		t.Fatalf("unexpected response %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestStarreFileHandlerReturnsNotFoundWhenFileIsMissingOrTrashed(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		toggleFileStarredFn: func(id int) (bool, error) {
+			return false, fmt.Errorf("toggle starred: %w", sql.ErrNoRows)
+		},
+	}
+	router := newFilesHandlerRouter(NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{}))
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/files/starred/1", nil))
+
+	expectedBody := `{"error":"` + i18n.GetMessage("ERROR_FILE_NOT_FOUND") + `"}`
+	if response.Code != http.StatusNotFound || strings.TrimSpace(response.Body.String()) != expectedBody {
+		t.Fatalf("unexpected response %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestStarreFileHandlerReturnsInternalErrorForGenericFailure(t *testing.T) {
+	service := &filesHandlerServiceFuncMock{
+		toggleFileStarredFn: func(id int) (bool, error) { return false, errors.New("database unavailable") },
+	}
+	router := newFilesHandlerRouter(NewHandler(service, &filesRecentServiceMock{}, &filesLoggerMock{}))
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/files/starred/1", nil))
+
+	if response.Code != http.StatusInternalServerError {
 		t.Fatalf("unexpected response %d %s", response.Code, response.Body.String())
 	}
 }

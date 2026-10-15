@@ -2,6 +2,7 @@ package files
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"nas-go/api/pkg/database"
@@ -91,6 +92,12 @@ func (handler *Handler) StarreFileHandler(c *gin.Context) {
 	})
 
 	_, err := handler.service.ToggleFileStarred(id)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		handler.Logger.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
 
 	if err != nil {
 		handler.Logger.CompleteWithErrorLog(loggerModel, err)
