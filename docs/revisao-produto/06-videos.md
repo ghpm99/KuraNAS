@@ -110,5 +110,5 @@ Decisões tomadas na revisão: `.ts` fica fora (conflita com TypeScript). Remux 
 - [x] 65. "Recentes" sem duplicar itens
 - [x] 65.1. Android envia `X-KuraNAS-Client-Id` próprio nas rotas `/video/` e `/music/` (hoje o servidor o identifica pelo IP)
 - [x] 66. Reportar e retomar progresso
-- [ ] 67. Biblioteca paginada com busca
+- [x] 67. Biblioteca paginada com busca
 - [ ] 68. Próximo/anterior e continuar assistindo

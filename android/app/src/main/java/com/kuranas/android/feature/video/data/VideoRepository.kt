@@ -18,7 +18,9 @@ class VideoRepository @Inject constructor(
     private val serverStore: ServerStore,
 ) {
     suspend fun getHomeCatalog(): AppResult<VideoHomeCatalogDto> = safeApiCall { api.getHomeCatalog() }
-    suspend fun getLibraryVideos(): AppResult<List<VideoItemDto>> = safeApiCall { api.getLibraryVideos().items }
+    suspend fun getLibraryVideos(searchQuery: String, page: Int): AppResult<ListPage<VideoItemDto>> = safeApiCall {
+        api.getLibraryVideos(page, LIBRARY_PAGE_SIZE, searchQuery.ifBlank { null }).toListPage()
+    }
     suspend fun getPlaylists(): AppResult<List<VideoPlaylistDto>> = safeApiCall { api.getPlaylists() }
     suspend fun getPlaylistsBySection(
         section: VideoPlaylistSection,
@@ -66,6 +68,7 @@ class VideoRepository @Inject constructor(
 
 private const val PLAYLIST_SECTION_PAGE_SIZE = 24
 private const val PLAYLIST_ITEMS_PAGE_SIZE = 50
+private const val LIBRARY_PAGE_SIZE = 50
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)

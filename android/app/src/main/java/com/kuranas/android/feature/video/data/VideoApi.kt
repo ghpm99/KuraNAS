@@ -17,7 +17,11 @@ interface VideoApi {
     suspend fun getHomeCatalog(): VideoHomeCatalogDto
 
     @GET("api/v1/video/library/files")
-    suspend fun getLibraryVideos(): PageDto<VideoItemDto>
+    suspend fun getLibraryVideos(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+        @Query("query") query: String? = null,
+    ): PageDto<VideoItemDto>
 
     @GET("api/v1/video/playlists/")
     suspend fun getPlaylists(): List<VideoPlaylistDto>
