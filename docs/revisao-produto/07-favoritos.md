@@ -49,7 +49,9 @@ Decisões tomadas na revisão: contrato de escrita cresce com `PUT /files/starre
 ### Android
 - [x] 21. Estrela no explorer atualiza a tela (otimista com rollback, erro do servidor)
 - [x] 22. Tela de Favoritos paginada com navegação
-- [ ] 23. Estrela em imagens, música e vídeo
+- [ ] 23. Estrela nas imagens do Android (grade e visualizador)
+- [ ] 23.1. Estrela nas faixas de música do Android (listas e player)
+- [ ] 23.2. Estrela nos vídeos do Android (cards e player)
 
 ### Decisões do dono
 - 🚫 24. `prioritize_favorites` (campo só no Android, sem backend; `PriorityFavoritesStrategy` não lê estrela): remover a flag e renomear a estratégia, ou implementar peso de favoritos nas playlists de vídeo
