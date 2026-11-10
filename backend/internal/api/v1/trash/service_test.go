@@ -671,3 +671,27 @@ func TestTrashService_EmptyTrashDropsIndexRowsOfEveryItem(t *testing.T) {
 		t.Fatalf("expected one index purge after the last overlapping item, got %v", filesIndex.purgedPaths)
 	}
 }
+
+func TestTrashService_RestoreItemWhoseBytesVanishedReportsMissingContent(t *testing.T) {
+	s, repo, _, root := newTrashServiceForTest(t)
+	filePath := filepath.Join(root, "a.txt")
+	writeFile(t, filePath, "conteudo")
+	if err := s.MoveToTrash(filePath, 8); err != nil {
+		t.Fatalf("MoveToTrash: %v", err)
+	}
+	items, _ := repo.GetAllItems()
+	if err := os.Remove(items[0].TrashPath); err != nil {
+		t.Fatalf("remove trashed bytes: %v", err)
+	}
+
+	if _, err := s.RestoreItem(items[0].ID); err != ErrItemContentMissing {
+		t.Fatalf("expected ErrItemContentMissing, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(filePath)); err != nil {
+		t.Fatalf("restore must not touch the original location: %v", err)
+	}
+
+	if err := s.DeleteItemPermanently(items[0].ID); err != nil {
+		t.Fatalf("an item without bytes must stay removable: %v", err)
+	}
+}

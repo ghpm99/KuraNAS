@@ -23,7 +23,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 02. Purgar pasta remove as cópias frias dos descendentes
 - [x] 03. Purge (item, esvaziar, expirado) remove as linhas soft-deleted da subárvore em `home_file`
 - [x] 04. Tamanho de pasta na lixeira é a soma real do conteúdo (confirmar antes o que `home_file.size` guarda para diretórios)
-- [ ] 05. Restaurar com bytes ausentes responde erro específico em vez de 500 genérico; item continua removível
+- [x] 05. Restaurar com bytes ausentes responde erro específico em vez de 500 genérico; item continua removível
 - [ ] 06. 409 de restauração informa o caminho ocupado (campo `path`)
 - [ ] 07. `trash_item` guarda o tipo; `GET /trash` devolve `name`, `is_directory` e `expires_at`
 - [ ] 08. `GET /trash/summary` (itens, bytes)

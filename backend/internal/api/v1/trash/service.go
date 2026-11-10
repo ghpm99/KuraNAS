@@ -193,6 +193,9 @@ func (s *Service) RestoreItem(id int) (string, error) {
 		return "", ErrItemNotFound
 	}
 
+	if _, statErr := os.Stat(item.TrashPath); os.IsNotExist(statErr) {
+		return "", ErrItemContentMissing
+	}
 	if _, statErr := os.Stat(item.OriginalPath); statErr == nil {
 		return "", ErrRestoreConflict
 	}

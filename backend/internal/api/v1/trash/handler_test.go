@@ -189,3 +189,23 @@ func TestTrashHandlers_Retention(t *testing.T) {
 		t.Fatalf("invalid retention: expected 400, got %d", rec.Code)
 	}
 }
+
+func TestTrashHandlers_RestoreItemWithoutBytesAnswersGone(t *testing.T) {
+	router, repo, root := newTrashRouter(t)
+	service := NewService(repo, &filesIndexMock{})
+	filePath := filepath.Join(root, "a.txt")
+	writeFile(t, filePath, "conteudo")
+	if err := service.MoveToTrash(filePath, 8); err != nil {
+		t.Fatalf("seed MoveToTrash: %v", err)
+	}
+	items, _ := repo.GetAllItems()
+	if err := os.Remove(items[0].TrashPath); err != nil {
+		t.Fatalf("remove trashed bytes: %v", err)
+	}
+
+	rec := doTrashJSON(router, http.MethodPost, "/trash/1/restore", nil)
+
+	if rec.Code != http.StatusGone {
+		t.Fatalf("expected 410, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}

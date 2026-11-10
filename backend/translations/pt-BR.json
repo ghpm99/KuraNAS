@@ -1424,6 +1424,7 @@
 	"TRASH_ITEM_NOT_FOUND": "Item não encontrado na lixeira",
 	"TRASH_RESTORE_CONFLICT": "Não foi possível restaurar: o local original está ocupado",
 	"TRASH_OPERATION_FAILED": "Falha na operação da lixeira",
+	"TRASH_ITEM_CONTENT_MISSING": "Não há mais o que restaurar: o conteúdo deste item sumiu da lixeira",
 	"TRASH_RESTORE_SUCCESS": "Item restaurado ao local original",
 	"TRASH_DELETE_SUCCESS": "Item excluído definitivamente",
 	"TRASH_EMPTY_SUCCESS": "Lixeira esvaziada",

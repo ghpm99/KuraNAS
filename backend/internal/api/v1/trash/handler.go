@@ -52,6 +52,8 @@ func (handler *Handler) respondServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TRASH_ITEM_NOT_FOUND")})
 	case errors.Is(err, ErrRestoreConflict):
 		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("TRASH_RESTORE_CONFLICT")})
+	case errors.Is(err, ErrItemContentMissing):
+		c.JSON(http.StatusGone, gin.H{"error": i18n.GetMessage("TRASH_ITEM_CONTENT_MISSING")})
 	case errors.Is(err, ErrInvalidRetention):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:

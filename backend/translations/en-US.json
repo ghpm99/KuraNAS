@@ -1424,6 +1424,7 @@
 	"TRASH_ITEM_NOT_FOUND": "Trash item not found",
 	"TRASH_RESTORE_CONFLICT": "Cannot restore: the original location is occupied again",
 	"TRASH_OPERATION_FAILED": "Trash operation failed",
+	"TRASH_ITEM_CONTENT_MISSING": "Nothing left to restore: the content of this item is gone from the trash",
 	"TRASH_RESTORE_SUCCESS": "Item restored to its original location",
 	"TRASH_DELETE_SUCCESS": "Item permanently deleted",
 	"TRASH_EMPTY_SUCCESS": "Trash emptied",
