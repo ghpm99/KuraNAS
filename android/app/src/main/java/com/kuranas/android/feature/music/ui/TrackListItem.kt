@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -73,7 +74,7 @@ fun TrackListItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TrackStarButton(isStarred = isStarred, onToggleStar = onToggleStar)
+            FileStarButton(isStarred = isStarred, onToggleStar = onToggleStar)
         }
     }
 }

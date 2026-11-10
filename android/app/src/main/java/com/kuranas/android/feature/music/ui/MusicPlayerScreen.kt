@@ -1,5 +1,7 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarButton
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,7 +54,7 @@ fun MusicPlayerScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
 
-    TrackStarErrorHost(viewModel.stars) {
+    FileStarErrorHost(viewModel.stars) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,7 +101,7 @@ fun MusicPlayerScreen(
                 textAlign = TextAlign.Center,
             )
             state.currentTrack?.let { currentTrack ->
-                TrackStarButton(
+                FileStarButton(
                     isStarred = starredById[currentTrack.id.toString()] ?: currentTrack.starred,
                     onToggleStar = { viewModel.stars.toggle(currentTrack) },
                 )

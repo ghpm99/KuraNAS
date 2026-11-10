@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,7 @@ fun MusicPlaylistScreen(
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
 
-    TrackStarErrorHost(viewModel.stars) {
+    FileStarErrorHost(viewModel.stars) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             KNHeader(title = stringResource(R.string.playlist_title), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
             if (state.isLoading) {

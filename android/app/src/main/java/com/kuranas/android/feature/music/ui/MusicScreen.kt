@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import com.kuranas.android.core.paging.PagedListState
 import androidx.compose.foundation.clickable
@@ -74,7 +75,7 @@ fun MusicScreen(
     }
     val tabs = MusicTab.entries
 
-    TrackStarErrorHost(viewModel.stars) {
+    FileStarErrorHost(viewModel.stars) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             KNHeader(title = stringResource(R.string.nav_music))
             ScrollableTabRow(

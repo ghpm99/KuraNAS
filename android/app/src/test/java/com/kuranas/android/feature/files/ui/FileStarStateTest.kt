@@ -1,11 +1,10 @@
-package com.kuranas.android.feature.music.ui
+package com.kuranas.android.feature.files.ui
 
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.files.data.FilesRepository
 import com.kuranas.android.feature.files.data.StarredResponse
-import com.kuranas.android.feature.music.data.TrackDto
-import com.kuranas.android.feature.music.data.TrackStarToggler
+import com.kuranas.android.feature.files.data.FileStarToggler
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
@@ -22,12 +21,11 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TrackStarStateTest {
+class FileStarStateTest {
 
     private val filesRepository = mockk<FilesRepository>()
     private val starStore = FileStarStore()
-    private val toggler = TrackStarToggler(filesRepository, starStore)
-    private val track = TrackDto(id = 7, starred = false)
+    private val toggler = FileStarToggler(filesRepository, starStore)
 
     @Before
     fun setUp() {
@@ -39,7 +37,7 @@ class TrackStarStateTest {
         Dispatchers.resetMain()
     }
 
-    private fun starState() = TrackStarState(TestScope(UnconfinedTestDispatcher()), toggler)
+    private fun starState() = FileStarState(TestScope(UnconfinedTestDispatcher()), toggler)
 
     @Test
     fun `toggle changes the star immediately and reconciles with the server`() {
@@ -47,7 +45,7 @@ class TrackStarStateTest {
         coEvery { filesRepository.setFileStarred("7", true) } coAnswers { pendingResponse.await() }
         val stars = starState()
 
-        stars.toggle(track)
+        stars.toggle("7", false)
 
         assertEquals(true, stars.starredById.value["7"])
         pendingResponse.complete(AppResult.Success(StarredResponse(7, true)))
@@ -60,7 +58,7 @@ class TrackStarStateTest {
         coEvery { filesRepository.setFileStarred("7", true) } returns AppResult.Success(StarredResponse(7, false))
         val stars = starState()
 
-        stars.toggle(track)
+        stars.toggle("7", false)
 
         assertEquals(false, stars.starredById.value["7"])
     }
@@ -70,7 +68,7 @@ class TrackStarStateTest {
         coEvery { filesRepository.setFileStarred("7", true) } returns AppResult.Error("falha do servidor")
         val stars = starState()
 
-        stars.toggle(track)
+        stars.toggle("7", false)
 
         assertEquals(false, stars.starredById.value["7"])
         assertEquals("falha do servidor", stars.actionErrorMessage.value)
@@ -84,17 +82,17 @@ class TrackStarStateTest {
         val listStars = starState()
         val playerStars = starState()
 
-        listStars.toggle(track)
+        listStars.toggle("7", false)
 
         assertEquals(true, playerStars.starredById.value["7"])
     }
 
     @Test
-    fun `toggle starts from the track flag when the store has no entry`() {
+    fun `toggle starts from the fallback flag when the store has no entry`() {
         coEvery { filesRepository.setFileStarred("7", false) } returns AppResult.Success(StarredResponse(7, false))
         val stars = starState()
 
-        stars.toggle(TrackDto(id = 7, starred = true))
+        stars.toggle("7", true)
 
         assertEquals(false, stars.starredById.value["7"])
     }

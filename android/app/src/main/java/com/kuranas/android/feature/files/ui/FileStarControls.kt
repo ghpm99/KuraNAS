@@ -1,4 +1,4 @@
-package com.kuranas.android.feature.music.ui
+package com.kuranas.android.feature.files.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.R
 
 @Composable
-fun TrackStarErrorHost(stars: TrackStarState, content: @Composable () -> Unit) {
+fun FileStarErrorHost(stars: FileStarState, content: @Composable () -> Unit) {
     val actionErrorMessage by stars.actionErrorMessage.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(actionErrorMessage) {
@@ -35,7 +35,7 @@ fun TrackStarErrorHost(stars: TrackStarState, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun TrackStarButton(isStarred: Boolean, onToggleStar: () -> Unit, modifier: Modifier = Modifier) {
+fun FileStarButton(isStarred: Boolean, onToggleStar: () -> Unit, modifier: Modifier = Modifier) {
     IconButton(onClick = onToggleStar, modifier = modifier) {
         Icon(
             imageVector = if (isStarred) Icons.Default.Star else Icons.Default.StarBorder,

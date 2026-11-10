@@ -1,11 +1,12 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.TrackDto
-import com.kuranas.android.feature.music.data.TrackStarToggler
+import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.music.playback.NowPlayingState
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,12 +27,12 @@ import javax.inject.Inject
 class MusicPlayerViewModel @Inject constructor(
     private val player: PlayerConnection,
     private val repository: MusicRepository,
-    starToggler: TrackStarToggler,
+    starToggler: FileStarToggler,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val state: StateFlow<NowPlayingState> = player.state
-    val stars = TrackStarState(viewModelScope, starToggler)
+    val stars = FileStarState(viewModelScope, starToggler)
 
     init {
         val trackId = savedStateHandle.get<Int>("trackId") ?: -1

@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,7 +40,7 @@ fun MusicFolderScreen(
 
     val title = folderKey.trimEnd('/').substringAfterLast('/').ifBlank { folderKey }
 
-    TrackStarErrorHost(viewModel.stars) {
+    FileStarErrorHost(viewModel.stars) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             KNHeader(title = title, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
             when {
