@@ -161,7 +161,13 @@ describe('TrashScreen', () => {
         await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_NEXT_PAGE/ }));
-        await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
+        await waitFor(() =>
+            expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15, {
+                sortKey: 'deleted_at',
+                order: 'desc',
+                searchText: '',
+            })
+        );
     });
 
     it('goes back to the previous page after restoring the last item of the current one', async () => {
@@ -188,6 +194,58 @@ describe('TrashScreen', () => {
         fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
 
         await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
+        expect(screen.queryByText('TRASH_EMPTY_STATE')).not.toBeInTheDocument();
+    });
+
+    it('asks the server for the chosen order and goes back to the first page', async () => {
+        mockedGetTrashItems.mockResolvedValue(onePage(true));
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('TRASH_NEXT_PAGE')).toBeEnabled());
+        fireEvent.click(screen.getByText('TRASH_NEXT_PAGE'));
+
+        fireEvent.click(screen.getByRole('button', { name: 'TRASH_SORT_ORDER_DESCENDING' }));
+
+        await waitFor(() =>
+            expect(mockedGetTrashItems).toHaveBeenLastCalledWith(1, 15, {
+                sortKey: 'deleted_at',
+                order: 'asc',
+                searchText: '',
+            })
+        );
+    });
+
+    it('searches on the server and tells when nothing matches', async () => {
+        mockedGetTrashItems.mockImplementation(
+            (_page: number, _pageSize: number, listing: { searchText: string }) =>
+                Promise.resolve(
+                    listing.searchText === ''
+                        ? onePage()
+                        : {
+                              items: [],
+                              pagination: {
+                                  page: 1,
+                                  page_size: 15,
+                                  has_next: false,
+                                  has_prev: false,
+                              },
+                          }
+                )
+        );
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
+
+        fireEvent.change(screen.getByLabelText('TRASH_SEARCH_LABEL'), {
+            target: { value: ' inexistente ' },
+        });
+
+        await waitFor(() =>
+            expect(screen.getByText('TRASH_SEARCH_NO_RESULTS')).toBeInTheDocument()
+        );
+        expect(mockedGetTrashItems).toHaveBeenLastCalledWith(1, 15, {
+            sortKey: 'deleted_at',
+            order: 'desc',
+            searchText: 'inexistente',
+        });
         expect(screen.queryByText('TRASH_EMPTY_STATE')).not.toBeInTheDocument();
     });
 });

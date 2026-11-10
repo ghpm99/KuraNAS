@@ -43,13 +43,25 @@ describe('service/trash', () => {
         jest.clearAllMocks();
     });
 
-    it('lists trash items with pagination params', async () => {
+    it('lists trash items with pagination and sorting params', async () => {
         mockedApi.get.mockResolvedValue({ data: samplePage });
-        const result = await getTrashItems(2, 20);
+        const result = await getTrashItems(2, 20, {
+            sortKey: 'size',
+            order: 'asc',
+            searchText: '',
+        });
         expect(mockedApi.get).toHaveBeenCalledWith('/trash', {
-            params: { page: 2, page_size: 20 },
+            params: { page: 2, page_size: 20, sort: 'size', order: 'asc' },
         });
         expect(result).toEqual(samplePage);
+    });
+
+    it('sends the trimmed search text only when there is one', async () => {
+        mockedApi.get.mockResolvedValue({ data: samplePage });
+        await getTrashItems(1, 15, { sortKey: 'name', order: 'desc', searchText: '  fotos ' });
+        expect(mockedApi.get).toHaveBeenCalledWith('/trash', {
+            params: { page: 1, page_size: 15, sort: 'name', order: 'desc', q: 'fotos' },
+        });
     });
 
     it('restores an item by id', async () => {

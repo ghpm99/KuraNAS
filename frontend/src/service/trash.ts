@@ -1,9 +1,20 @@
 import { apiBase } from '@/service';
-import type { TrashPage, TrashRetention, TrashSummary } from '@/types/trash';
+import type { TrashListing, TrashPage, TrashRetention, TrashSummary } from '@/types/trash';
 
-export const getTrashItems = async (page: number, pageSize: number): Promise<TrashPage> => {
+export const getTrashItems = async (
+    page: number,
+    pageSize: number,
+    listing: TrashListing
+): Promise<TrashPage> => {
+    const searchText = listing.searchText.trim();
     const response = await apiBase.get<TrashPage>('/trash', {
-        params: { page, page_size: pageSize },
+        params: {
+            page,
+            page_size: pageSize,
+            sort: listing.sortKey,
+            order: listing.order,
+            ...(searchText === '' ? {} : { q: searchText }),
+        },
     });
     return response.data;
 };

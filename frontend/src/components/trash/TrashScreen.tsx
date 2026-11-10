@@ -4,6 +4,7 @@ import { Button, CircularProgress } from '@mui/material';
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import TrashConfirmDialog from './TrashConfirmDialog';
 import TrashItemCard from './TrashItemCard';
+import TrashListingControls from './TrashListingControls';
 import TrashRetentionField from './TrashRetentionField';
 import TrashSummaryLine from './TrashSummaryLine';
 import styles from './TrashScreen.module.css';
@@ -21,6 +22,11 @@ const TrashScreen = () => {
         isLoading,
         isError,
         isEmpty,
+        isSearching,
+        sort,
+        changeSort,
+        searchInput,
+        changeSearchInput,
         isMutating,
         handleRestore,
         pendingConfirmation,
@@ -53,6 +59,13 @@ const TrashScreen = () => {
 
             <TrashRetentionField />
 
+            <TrashListingControls
+                sort={sort}
+                onSortChange={changeSort}
+                searchInput={searchInput}
+                onSearchInputChange={changeSearchInput}
+            />
+
             {isLoading && (
                 <div className={styles.state}>
                     <CircularProgress size={20} />
@@ -62,7 +75,11 @@ const TrashScreen = () => {
 
             {isError && <div className={styles.state}>{t('TRASH_LOAD_ERROR')}</div>}
 
-            {isEmpty && <div className={styles.state}>{t('TRASH_EMPTY_STATE')}</div>}
+            {isEmpty && (
+                <div className={styles.state}>
+                    {t(isSearching ? 'TRASH_SEARCH_NO_RESULTS' : 'TRASH_EMPTY_STATE')}
+                </div>
+            )}
 
             {!isLoading && !isError && items.length > 0 && (
                 <div className={styles.list}>

@@ -20,3 +20,13 @@ export type TrashSummary = {
     items: number;
     size_bytes: number;
 };
+
+export type TrashSortKey = 'deleted_at' | 'name' | 'size';
+
+export type TrashSortOrder = 'asc' | 'desc';
+
+export type TrashListing = {
+    sortKey: TrashSortKey;
+    order: TrashSortOrder;
+    searchText: string;
+};

@@ -1,12 +1,18 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { deleteTrashItem, emptyTrash, getTrashItems, restoreTrashItem } from '@/service/trash';
 import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
-import type { TrashPage } from '@/types/trash';
+import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
+import type { TrashPage, TrashSortKey, TrashSortOrder } from '@/types/trash';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
 
 const PAGE_SIZE = 15;
+const SEARCH_DEBOUNCE_MS = 300;
+
+export type TrashSort = { sortKey: TrashSortKey; order: TrashSortOrder };
+
+const newestDeletionsFirst: TrashSort = { sortKey: 'deleted_at', order: 'desc' };
 
 const extractBackendError = (error: unknown): string | undefined => {
     if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -27,11 +33,25 @@ export const useTrashScreen = () => {
         null
     );
 
+    const [sort, setSort] = useState<TrashSort>(newestDeletionsFirst);
+    const [searchInput, setSearchInput] = useState('');
+    const searchText = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS).trim();
+
     const trashQuery = useQuery<TrashPage>({
-        queryKey: [trashQueryKey, page],
-        queryFn: () => getTrashItems(page, PAGE_SIZE),
+        queryKey: [trashQueryKey, page, sort.sortKey, sort.order, searchText],
+        queryFn: () => getTrashItems(page, PAGE_SIZE, { ...sort, searchText }),
         retry: false,
     });
+
+    const changeSort = useCallback((requestedSort: TrashSort) => {
+        setSort(requestedSort);
+        setPage(1);
+    }, []);
+
+    const changeSearchInput = useCallback((typedText: string) => {
+        setSearchInput(typedText);
+        setPage(1);
+    }, []);
 
     const items = trashQuery.data?.items ?? [];
     const pagination = trashQuery.data?.pagination;
@@ -131,6 +151,11 @@ export const useTrashScreen = () => {
         isLoading: trashQuery.isLoading,
         isError: trashQuery.isError,
         isEmpty: trashQuery.isSuccess && items.length === 0,
+        isSearching: searchText !== '',
+        sort,
+        changeSort,
+        searchInput,
+        changeSearchInput,
         isMutating:
             restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
         handleRestore,
