@@ -1433,6 +1433,7 @@
 	"TRASH_PAGE_DESCRIPTION": "Deleted items stay here and can be restored until the retention period expires.",
 	"TRASH_LOADING": "Loading trash...",
 	"TRASH_LOAD_ERROR": "Failed to load the trash",
+	"TRASH_ACTION_ERROR": "Could not complete the trash operation",
 	"TRASH_EMPTY_STATE": "The trash is empty.",
 	"TRASH_RESTORE_BUTTON": "Restore",
 	"TRASH_DELETE_FOREVER_BUTTON": "Delete forever",

@@ -109,6 +109,20 @@ describe('TrashScreen', () => {
         await waitFor(() => expect(screen.getByText('mensagem do servidor')).toBeInTheDocument());
     });
 
+    it('shows the action fallback, not the loading error, when a restore fails without a server message', async () => {
+        mockedGetTrashItems.mockResolvedValue(onePage());
+        mockedRestore.mockRejectedValue(new Error('network down'));
+        renderScreen();
+        await waitFor(() =>
+            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
+
+        await waitFor(() => expect(screen.getByText('TRASH_ACTION_ERROR')).toBeInTheDocument());
+        expect(screen.queryByText('TRASH_LOAD_ERROR')).not.toBeInTheDocument();
+    });
+
     it('asks for confirmation before deleting forever', async () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedDelete.mockResolvedValue(undefined);
@@ -180,20 +194,22 @@ describe('TrashScreen', () => {
         await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
     });
 
-    it('goes back to the previous page when the current one is emptied', async () => {
-        const secondPage: TrashPage = {
-            items: [],
+    it('goes back to the previous page after restoring the last item of the current one', async () => {
+        const lastPage: TrashPage = {
+            items: [{ ...onePage().items[0], id: 2, original_path: '/data/ultimo.txt' }],
             pagination: { page: 2, page_size: 15, has_next: false, has_prev: true },
         };
         mockedGetTrashItems.mockImplementation((page: number) =>
-            Promise.resolve(page === 1 ? onePage(true) : secondPage)
+            Promise.resolve(page === 1 ? onePage(true) : lastPage)
         );
+        mockedRestore.mockResolvedValue(undefined);
         renderScreen();
         await waitFor(() => expect(screen.getByText('TRASH_NEXT_PAGE')).toBeEnabled());
-
         fireEvent.click(screen.getByText('TRASH_NEXT_PAGE'));
+        await waitFor(() => expect(screen.getByText('/data/ultimo.txt')).toBeInTheDocument());
 
-        await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
+        fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
+
         await waitFor(() =>
             expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
         );

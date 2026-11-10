@@ -1433,6 +1433,7 @@
 	"TRASH_PAGE_DESCRIPTION": "Itens excluídos ficam aqui e podem ser restaurados até o fim do período de retenção.",
 	"TRASH_LOADING": "Carregando lixeira...",
 	"TRASH_LOAD_ERROR": "Falha ao carregar a lixeira",
+	"TRASH_ACTION_ERROR": "Não foi possível concluir a operação na lixeira",
 	"TRASH_EMPTY_STATE": "A lixeira está vazia.",
 	"TRASH_RESTORE_BUTTON": "Restaurar",
 	"TRASH_DELETE_FOREVER_BUTTON": "Excluir definitivamente",

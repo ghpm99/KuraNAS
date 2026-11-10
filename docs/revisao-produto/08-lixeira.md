@@ -37,7 +37,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 ### Frontend
 - [x] 15. `['trash']` invalidada após excluir arquivos (explorer e imagens)
 - [x] 16. Página atual vazia após restaurar/excluir volta para a anterior
-- [ ] 17. Erro de restaurar/excluir com mensagem própria (`TRASH_ACTION_ERROR`)
+- [x] 17. Erro de restaurar/excluir com mensagem própria (`TRASH_ACTION_ERROR`)
 - [ ] 18. Diálogo de confirmação do app no lugar de `window.confirm`
 - [ ] 19. Campo de retenção ressincroniza, acusa valor inválido e sobrevive a falha do `GET`
 - [ ] 20. Item com nome, ícone de pasta/arquivo, origem e "expira em N dias" (depende da 07)
@@ -48,7 +48,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [ ] 25. Data formatada no locale do app
 - [ ] 26. Após restaurar, ação "ver na pasta"
 - [ ] 27. Render sem mock e seam test para cada mutação da lixeira (conferir o que já existe)
-- [ ] 28. Comentários removidos de `useTrashScreen.ts`
+- [x] 28. Comentários removidos de `useTrashScreen.ts`
 
 ### Android
 - [ ] 29. Excluir pelo explorer com confirmação, aviso "vai para a Lixeira" e erro do servidor

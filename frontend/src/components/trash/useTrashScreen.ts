@@ -11,7 +11,7 @@ import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import type { TrashPage } from '@/types/trash';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const PAGE_SIZE = 15;
 
@@ -41,24 +41,46 @@ export const useTrashScreen = () => {
         retry: false,
     });
 
-    const invalidate = useCallback(() => {
+    const items = trashQuery.data?.items ?? [];
+    const pagination = trashQuery.data?.pagination;
+
+    const leavePageEmptiedBy = useCallback(
+        (removedItemCount: number) => {
+            const isPageEmptied = removedItemCount >= items.length;
+            if (isPageEmptied) {
+                setPage((current) => Math.max(1, current - 1));
+            }
+        },
+        [items.length]
+    );
+
+    const refreshTrashAndFilesTree = useCallback(() => {
         void queryClient.invalidateQueries({ queryKey: [trashQueryKey] });
-        // Restored entries reappear in the files tree right away.
         void queryClient.invalidateQueries({ queryKey: ['files'] });
     }, [queryClient]);
 
-    const notifyError = useCallback(
+    const notifyActionError = useCallback(
         (error: unknown) => {
-            // Backend errors arrive already translated — show them verbatim.
-            const backendMessage = extractBackendError(error);
-            enqueueSnackbar(backendMessage ?? t('TRASH_LOAD_ERROR'), { variant: 'error' });
+            const translatedBackendMessage = extractBackendError(error);
+            enqueueSnackbar(translatedBackendMessage ?? t('TRASH_ACTION_ERROR'), {
+                variant: 'error',
+            });
         },
         [enqueueSnackbar, t]
     );
 
-    const restoreMutation = useMutation({ mutationFn: restoreTrashItem, onSuccess: invalidate });
-    const deleteMutation = useMutation({ mutationFn: deleteTrashItem, onSuccess: invalidate });
-    const emptyMutation = useMutation({ mutationFn: emptyTrash, onSuccess: invalidate });
+    const restoreMutation = useMutation({
+        mutationFn: restoreTrashItem,
+        onSuccess: refreshTrashAndFilesTree,
+    });
+    const deleteMutation = useMutation({
+        mutationFn: deleteTrashItem,
+        onSuccess: refreshTrashAndFilesTree,
+    });
+    const emptyMutation = useMutation({
+        mutationFn: emptyTrash,
+        onSuccess: refreshTrashAndFilesTree,
+    });
     const retentionMutation = useMutation({
         mutationFn: updateTrashRetention,
         onSuccess: () => {
@@ -70,12 +92,13 @@ export const useTrashScreen = () => {
         async (id: number) => {
             try {
                 await restoreMutation.mutateAsync(id);
+                leavePageEmptiedBy(1);
                 enqueueSnackbar(t('TRASH_RESTORED_TOAST'), { variant: 'success' });
             } catch (error) {
-                notifyError(error);
+                notifyActionError(error);
             }
         },
-        [enqueueSnackbar, notifyError, restoreMutation, t]
+        [enqueueSnackbar, leavePageEmptiedBy, notifyActionError, restoreMutation, t]
     );
 
     const handleDeleteForever = useCallback(
@@ -85,12 +108,13 @@ export const useTrashScreen = () => {
             }
             try {
                 await deleteMutation.mutateAsync(id);
+                leavePageEmptiedBy(1);
                 enqueueSnackbar(t('TRASH_DELETED_TOAST'), { variant: 'success' });
             } catch (error) {
-                notifyError(error);
+                notifyActionError(error);
             }
         },
-        [deleteMutation, enqueueSnackbar, notifyError, t]
+        [deleteMutation, enqueueSnackbar, leavePageEmptiedBy, notifyActionError, t]
     );
 
     const handleEmptyTrash = useCallback(async () => {
@@ -99,11 +123,12 @@ export const useTrashScreen = () => {
         }
         try {
             await emptyMutation.mutateAsync();
+            setPage(1);
             enqueueSnackbar(t('TRASH_EMPTIED_TOAST'), { variant: 'success' });
         } catch (error) {
-            notifyError(error);
+            notifyActionError(error);
         }
-    }, [emptyMutation, enqueueSnackbar, notifyError, t]);
+    }, [emptyMutation, enqueueSnackbar, notifyActionError, t]);
 
     const handleRetentionChange = useCallback(
         async (days: number) => {
@@ -114,21 +139,11 @@ export const useTrashScreen = () => {
                 await retentionMutation.mutateAsync(days);
                 enqueueSnackbar(t('TRASH_RETENTION_SAVED'), { variant: 'success' });
             } catch (error) {
-                notifyError(error);
+                notifyActionError(error);
             }
         },
-        [enqueueSnackbar, notifyError, retentionMutation, t]
+        [enqueueSnackbar, notifyActionError, retentionMutation, t]
     );
-
-    const items = trashQuery.data?.items ?? [];
-    const pagination = trashQuery.data?.pagination;
-    const isCurrentPageEmptied = trashQuery.isSuccess && items.length === 0 && page > 1;
-
-    useEffect(() => {
-        if (isCurrentPageEmptied) {
-            setPage((current) => current - 1);
-        }
-    }, [isCurrentPageEmptied]);
 
     return {
         t,
@@ -140,7 +155,7 @@ export const useTrashScreen = () => {
         goToPrevPage: () => setPage((current) => Math.max(1, current - 1)),
         isLoading: trashQuery.isLoading,
         isError: trashQuery.isError,
-        isEmpty: trashQuery.isSuccess && items.length === 0 && !isCurrentPageEmptied,
+        isEmpty: trashQuery.isSuccess && items.length === 0,
         isMutating:
             restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
         retentionDays: retentionQuery.data?.days,
