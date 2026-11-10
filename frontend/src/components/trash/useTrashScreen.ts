@@ -23,11 +23,16 @@ const extractBackendError = (error: unknown): string | undefined => {
     return undefined;
 };
 
+type PendingConfirmation = { kind: 'deleteForever'; itemId: number } | { kind: 'emptyTrash' };
+
 export const useTrashScreen = () => {
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
+    const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(
+        null
+    );
 
     const trashQuery = useQuery<TrashPage>({
         queryKey: [trashQueryKey, page],
@@ -101,11 +106,8 @@ export const useTrashScreen = () => {
         [enqueueSnackbar, leavePageEmptiedBy, notifyActionError, restoreMutation, t]
     );
 
-    const handleDeleteForever = useCallback(
+    const deleteForever = useCallback(
         async (id: number) => {
-            if (!window.confirm(t('TRASH_DELETE_CONFIRM'))) {
-                return;
-            }
             try {
                 await deleteMutation.mutateAsync(id);
                 leavePageEmptiedBy(1);
@@ -117,10 +119,7 @@ export const useTrashScreen = () => {
         [deleteMutation, enqueueSnackbar, leavePageEmptiedBy, notifyActionError, t]
     );
 
-    const handleEmptyTrash = useCallback(async () => {
-        if (!window.confirm(t('TRASH_EMPTY_CONFIRM'))) {
-            return;
-        }
+    const emptyWholeTrash = useCallback(async () => {
         try {
             await emptyMutation.mutateAsync();
             setPage(1);
@@ -129,6 +128,17 @@ export const useTrashScreen = () => {
             notifyActionError(error);
         }
     }, [emptyMutation, enqueueSnackbar, notifyActionError, t]);
+
+    const confirmPendingAction = useCallback(async () => {
+        const confirmedAction = pendingConfirmation;
+        setPendingConfirmation(null);
+        if (confirmedAction?.kind === 'deleteForever') {
+            await deleteForever(confirmedAction.itemId);
+        }
+        if (confirmedAction?.kind === 'emptyTrash') {
+            await emptyWholeTrash();
+        }
+    }, [deleteForever, emptyWholeTrash, pendingConfirmation]);
 
     const handleRetentionChange = useCallback(
         async (days: number) => {
@@ -160,8 +170,12 @@ export const useTrashScreen = () => {
             restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
         retentionDays: retentionQuery.data?.days,
         handleRestore,
-        handleDeleteForever,
-        handleEmptyTrash,
+        pendingConfirmation,
+        requestDeleteForever: (itemId: number) =>
+            setPendingConfirmation({ kind: 'deleteForever', itemId }),
+        requestEmptyTrash: () => setPendingConfirmation({ kind: 'emptyTrash' }),
+        cancelPendingAction: () => setPendingConfirmation(null),
+        confirmPendingAction,
         handleRetentionChange,
     };
 };

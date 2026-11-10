@@ -3,6 +3,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { formatSize } from '@/shared/utils/formatSize';
 import { Button, Chip, CircularProgress, TextField } from '@mui/material';
 import { ArchiveRestore, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import TrashConfirmDialog from './TrashConfirmDialog';
 import styles from './TrashScreen.module.css';
 import { useTrashScreen } from './useTrashScreen';
 
@@ -21,10 +22,14 @@ const TrashScreen = () => {
         isMutating,
         retentionDays,
         handleRestore,
-        handleDeleteForever,
-        handleEmptyTrash,
+        pendingConfirmation,
+        requestDeleteForever,
+        requestEmptyTrash,
+        cancelPendingAction,
+        confirmPendingAction,
         handleRetentionChange,
     } = useTrashScreen();
+    const isEmptyingTrash = pendingConfirmation?.kind === 'emptyTrash';
 
     return (
         <PageContainer>
@@ -36,7 +41,7 @@ const TrashScreen = () => {
                         variant="outlined"
                         color="error"
                         disabled={isMutating || items.length === 0}
-                        onClick={() => void handleEmptyTrash()}
+                        onClick={requestEmptyTrash}
                         startIcon={<Trash2 size={16} />}
                     >
                         {t('TRASH_EMPTY_BUTTON')}
@@ -101,7 +106,7 @@ const TrashScreen = () => {
                                     variant="outlined"
                                     color="error"
                                     disabled={isMutating}
-                                    onClick={() => void handleDeleteForever(item.id)}
+                                    onClick={() => requestDeleteForever(item.id)}
                                     startIcon={<Trash2 size={16} />}
                                 >
                                     {t('TRASH_DELETE_FOREVER_BUTTON')}
@@ -135,6 +140,13 @@ const TrashScreen = () => {
                     </Button>
                 </div>
             )}
+            <TrashConfirmDialog
+                isOpen={pendingConfirmation !== null}
+                title={t(isEmptyingTrash ? 'TRASH_EMPTY_BUTTON' : 'TRASH_DELETE_FOREVER_BUTTON')}
+                message={t(isEmptyingTrash ? 'TRASH_EMPTY_CONFIRM' : 'TRASH_DELETE_CONFIRM')}
+                onCancel={cancelPendingAction}
+                onConfirm={() => void confirmPendingAction()}
+            />
         </PageContainer>
     );
 };

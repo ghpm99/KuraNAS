@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import { MemoryRouter } from 'react-router-dom';
@@ -58,6 +58,9 @@ describe('TrashScreen (seam)', () => {
 		mockedApi.put.mockResolvedValue({ data: { days: 7 } });
 	});
 
+	const confirmInDialog = (confirmLabel: RegExp) =>
+		fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: confirmLabel }));
+
 	it('restores an item via POST /trash/:id/restore', async () => {
 		renderScreen();
 		await screen.findByText('/data/docs/relatorio.pdf');
@@ -68,25 +71,23 @@ describe('TrashScreen (seam)', () => {
 	});
 
 	it('permanently deletes an item via DELETE /trash/:id', async () => {
-		const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
 		renderScreen();
 		await screen.findByText('/data/docs/relatorio.pdf');
 
 		fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ }));
+		confirmInDialog(/TRASH_DELETE_FOREVER_BUTTON/);
 
 		await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith('/trash/1'));
-		confirmSpy.mockRestore();
 	});
 
 	it('empties the trash via DELETE /trash', async () => {
-		const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
 		renderScreen();
 		await screen.findByText('/data/docs/relatorio.pdf');
 
 		fireEvent.click(screen.getByRole('button', { name: /TRASH_EMPTY_BUTTON/ }));
+		confirmInDialog(/TRASH_EMPTY_BUTTON/);
 
 		await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith('/trash'));
-		confirmSpy.mockRestore();
 	});
 
 	it('saves the retention policy on blur via PUT /trash/retention', async () => {

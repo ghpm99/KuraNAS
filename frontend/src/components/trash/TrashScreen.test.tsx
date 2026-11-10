@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import { MemoryRouter } from 'react-router-dom';
@@ -123,40 +123,43 @@ describe('TrashScreen', () => {
         expect(screen.queryByText('TRASH_LOAD_ERROR')).not.toBeInTheDocument();
     });
 
-    it('asks for confirmation before deleting forever', async () => {
+    const confirmInDialog = (confirmLabel: RegExp) =>
+        fireEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', { name: confirmLabel })
+        );
+
+    it('asks for confirmation in a dialog before deleting forever', async () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedDelete.mockResolvedValue(undefined);
-        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
         renderScreen();
-
         await waitFor(() =>
             expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
         );
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ }));
+        expect(screen.getByText('TRASH_DELETE_CONFIRM')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /ACTION_CANCEL/ }));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(mockedDelete).not.toHaveBeenCalled();
 
-        confirmSpy.mockReturnValue(true);
         fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ }));
+        confirmInDialog(/TRASH_DELETE_FOREVER_BUTTON/);
         await waitFor(() => expect(mockedDelete.mock.calls[0]?.[0]).toBe(1));
-
-        confirmSpy.mockRestore();
     });
 
-    it('empties the trash after confirmation', async () => {
+    it('empties the trash after confirming in the dialog', async () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedEmpty.mockResolvedValue(undefined);
-        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
         renderScreen();
-
         await waitFor(() =>
             expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
         );
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_EMPTY_BUTTON/ }));
-        await waitFor(() => expect(mockedEmpty).toHaveBeenCalled());
+        expect(screen.getByText('TRASH_EMPTY_CONFIRM')).toBeInTheDocument();
+        confirmInDialog(/TRASH_EMPTY_BUTTON/);
 
-        confirmSpy.mockRestore();
+        await waitFor(() => expect(mockedEmpty).toHaveBeenCalled());
     });
 
     it('updates the retention policy on blur', async () => {
@@ -196,7 +199,14 @@ describe('TrashScreen', () => {
 
     it('goes back to the previous page after restoring the last item of the current one', async () => {
         const lastPage: TrashPage = {
-            items: [{ ...onePage().items[0], id: 2, original_path: '/data/ultimo.txt' }],
+            items: [
+                {
+                    id: 2,
+                    original_path: '/data/ultimo.txt',
+                    size: 1,
+                    deleted_at: '2026-06-11T10:00:00Z',
+                },
+            ],
             pagination: { page: 2, page_size: 15, has_next: false, has_prev: true },
         };
         mockedGetTrashItems.mockImplementation((page: number) =>
