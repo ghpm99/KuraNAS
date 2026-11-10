@@ -84,9 +84,7 @@ describe('TrashScreen', () => {
         mockedRestore.mockResolvedValue(undefined);
         renderScreen();
 
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
         await waitFor(() => expect(mockedRestore.mock.calls[0]?.[0]).toBe(1));
@@ -99,9 +97,7 @@ describe('TrashScreen', () => {
         });
         renderScreen();
 
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
         await waitFor(() => expect(screen.getByText('mensagem do servidor')).toBeInTheDocument());
@@ -111,9 +107,7 @@ describe('TrashScreen', () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedRestore.mockRejectedValue(new Error('network down'));
         renderScreen();
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
 
@@ -130,9 +124,7 @@ describe('TrashScreen', () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedDelete.mockResolvedValue(undefined);
         renderScreen();
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ }));
         expect(screen.getByText('TRASH_DELETE_CONFIRM')).toBeInTheDocument();
@@ -149,9 +141,7 @@ describe('TrashScreen', () => {
         mockedGetTrashItems.mockResolvedValue(onePage());
         mockedEmpty.mockResolvedValue(undefined);
         renderScreen();
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_EMPTY_BUTTON/ }));
         expect(screen.getByText('TRASH_EMPTY_CONFIRM')).toBeInTheDocument();
@@ -164,9 +154,7 @@ describe('TrashScreen', () => {
         mockedGetTrashItems.mockResolvedValue(onePage(true));
         renderScreen();
 
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_NEXT_PAGE/ }));
         await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
@@ -191,13 +179,11 @@ describe('TrashScreen', () => {
         renderScreen();
         await waitFor(() => expect(screen.getByText('TRASH_NEXT_PAGE')).toBeEnabled());
         fireEvent.click(screen.getByText('TRASH_NEXT_PAGE'));
-        await waitFor(() => expect(screen.getByText('/data/ultimo.txt')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('ultimo.txt')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
 
-        await waitFor(() =>
-            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
         expect(screen.queryByText('TRASH_EMPTY_STATE')).not.toBeInTheDocument();
     });
 });

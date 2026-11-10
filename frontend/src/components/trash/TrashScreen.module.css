@@ -36,9 +36,30 @@
     min-width: 0;
 }
 
-.itemPath {
+.itemIdentity {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+
+.itemIdentity > svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+.itemName {
     margin: 0;
     font-size: 1rem;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.itemOrigin {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.75;
     word-break: break-all;
 }
 

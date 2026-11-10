@@ -63,7 +63,7 @@ describe('TrashScreen (seam)', () => {
 
 	it('restores an item via POST /trash/:id/restore', async () => {
 		renderScreen();
-		await screen.findByText('/data/docs/relatorio.pdf');
+		await screen.findByText('relatorio.pdf');
 
 		fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
 
@@ -72,7 +72,7 @@ describe('TrashScreen (seam)', () => {
 
 	it('permanently deletes an item via DELETE /trash/:id', async () => {
 		renderScreen();
-		await screen.findByText('/data/docs/relatorio.pdf');
+		await screen.findByText('relatorio.pdf');
 
 		fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ }));
 		confirmInDialog(/TRASH_DELETE_FOREVER_BUTTON/);
@@ -82,7 +82,7 @@ describe('TrashScreen (seam)', () => {
 
 	it('empties the trash via DELETE /trash', async () => {
 		renderScreen();
-		await screen.findByText('/data/docs/relatorio.pdf');
+		await screen.findByText('relatorio.pdf');
 
 		fireEvent.click(screen.getByRole('button', { name: /TRASH_EMPTY_BUTTON/ }));
 		confirmInDialog(/TRASH_EMPTY_BUTTON/);

@@ -1,9 +1,9 @@
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
-import { formatSize } from '@/shared/utils/formatSize';
-import { Button, Chip, CircularProgress } from '@mui/material';
-import { ArchiveRestore, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Button, CircularProgress } from '@mui/material';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import TrashConfirmDialog from './TrashConfirmDialog';
+import TrashItemCard from './TrashItemCard';
 import TrashRetentionField from './TrashRetentionField';
 import styles from './TrashScreen.module.css';
 import { useTrashScreen } from './useTrashScreen';
@@ -64,42 +64,13 @@ const TrashScreen = () => {
             {!isLoading && !isError && items.length > 0 && (
                 <div className={styles.list}>
                     {items.map((item) => (
-                        <article key={item.id} className={styles.item}>
-                            <div className={styles.itemInfo}>
-                                <p className={styles.itemPath}>{item.original_path}</p>
-                                <div className={styles.itemMeta}>
-                                    <Chip
-                                        size="small"
-                                        variant="outlined"
-                                        label={`${t('TRASH_DELETED_AT_LABEL')}: ${new Date(item.deleted_at).toLocaleString()}`}
-                                    />
-                                    <Chip
-                                        size="small"
-                                        variant="outlined"
-                                        label={`${t('TRASH_SIZE_LABEL')}: ${formatSize(item.size)}`}
-                                    />
-                                </div>
-                            </div>
-                            <div className={styles.itemActions}>
-                                <Button
-                                    variant="contained"
-                                    disabled={isMutating}
-                                    onClick={() => void handleRestore(item.id)}
-                                    startIcon={<ArchiveRestore size={16} />}
-                                >
-                                    {t('TRASH_RESTORE_BUTTON')}
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    color="error"
-                                    disabled={isMutating}
-                                    onClick={() => requestDeleteForever(item.id)}
-                                    startIcon={<Trash2 size={16} />}
-                                >
-                                    {t('TRASH_DELETE_FOREVER_BUTTON')}
-                                </Button>
-                            </div>
-                        </article>
+                        <TrashItemCard
+                            key={item.id}
+                            item={item}
+                            isBusy={isMutating}
+                            onRestore={(itemId) => void handleRestore(itemId)}
+                            onDeleteForever={requestDeleteForever}
+                        />
                     ))}
                 </div>
             )}

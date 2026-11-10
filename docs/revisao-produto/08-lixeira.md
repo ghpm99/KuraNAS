@@ -40,7 +40,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 17. Erro de restaurar/excluir com mensagem própria (`TRASH_ACTION_ERROR`)
 - [x] 18. Diálogo de confirmação do app no lugar de `window.confirm`
 - [x] 19. Campo de retenção ressincroniza, acusa valor inválido e sobrevive a falha do `GET`
-- [ ] 20. Item com nome, ícone de pasta/arquivo, origem e "expira em N dias" (depende da 07)
+- [x] 20. Item com nome, ícone de pasta/arquivo, origem e "expira em N dias" (depende da 07)
 - [ ] 21. Resumo no topo: total de itens e bytes (depende da 08)
 - [ ] 22. Ordenação e busca pelo servidor (depende da 09)
 - [ ] 23. Seleção e ações em lote (depende da 10)
