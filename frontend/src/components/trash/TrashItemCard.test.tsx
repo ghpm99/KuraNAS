@@ -1,5 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import TrashItemCard from './TrashItemCard';
+import {
+    SettingsContextProvider,
+    defaultSettingsConfiguration,
+} from '@/components/providers/settingsProvider/settingsContext';
 import { expectRendersWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import type { TrashItem } from '@/types/trash';
 
@@ -103,5 +107,39 @@ describe('TrashItemCard', () => {
         fireEvent.click(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' }));
 
         expect(onToggleSelection).toHaveBeenCalledWith(deletedReport);
+    });
+
+    it('writes the deletion date in the language chosen in the app settings', () => {
+        const settingsInPortuguese = {
+            settings: {
+                ...defaultSettingsConfiguration,
+                language: { current: 'pt-BR', available: ['pt-BR', 'en-US'] },
+            },
+            isLoading: false,
+            isSaving: false,
+            hasError: false,
+            refresh: jest.fn(),
+            saveSettings: jest.fn(),
+        };
+        render(
+            <SettingsContextProvider value={settingsInPortuguese}>
+                <TrashItemCard
+                    item={{ ...deletedReport, deleted_at: '2026-06-11T10:00:00' }}
+                    isBusy={false}
+                    isSelected={false}
+                    onToggleSelection={jest.fn()}
+                    onRestore={jest.fn()}
+                    onDeleteForever={jest.fn()}
+                />
+            </SettingsContextProvider>
+        );
+
+        expect(screen.getByText(/TRASH_DELETED_AT_LABEL: 11\/06\/2026/)).toBeInTheDocument();
+    });
+
+    it('omits the deletion date when the server does not send a readable one', () => {
+        renderCard({ ...deletedReport, deleted_at: 'not a date' });
+
+        expect(screen.queryByText(/TRASH_DELETED_AT_LABEL/)).not.toBeInTheDocument();
     });
 });

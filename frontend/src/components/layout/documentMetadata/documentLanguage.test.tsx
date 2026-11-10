@@ -6,7 +6,7 @@ import {
 } from '@/components/providers/settingsProvider/settingsContext';
 import type { SettingsConfiguration } from '@/service/configuration';
 import DocumentLanguageSync from './DocumentLanguageSync';
-import { toLanguageTag } from './documentLanguage';
+import { toLanguageTag, useAppLanguageTag } from './documentLanguage';
 
 const renderWithSettings = (settings: Partial<SettingsConfiguration>) => {
     const contextValue: SettingsContextType = {
@@ -41,5 +41,15 @@ describe('DocumentLanguageSync', () => {
         expect(toLanguageTag('pt_BR')).toBe('pt-BR');
         expect(toLanguageTag('  ')).toBe('en-US');
         expect(toLanguageTag(undefined)).toBe('en-US');
+    });
+});
+
+describe('useAppLanguageTag', () => {
+    const LanguageTagProbe = () => <span>{useAppLanguageTag()}</span>;
+
+    it('falls back to en-US outside a settings provider', () => {
+        const { container } = render(<LanguageTagProbe />);
+
+        expect(container.textContent).toBe('en-US');
     });
 });

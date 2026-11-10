@@ -1,4 +1,6 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useAppLanguageTag } from '@/components/layout/documentMetadata/documentLanguage';
+import { formatDateTime } from '@/shared/utils/formatDateTime';
 import { formatSize } from '@/shared/utils/formatSize';
 import type { TrashItem } from '@/types/trash';
 import { Button, Checkbox, Chip } from '@mui/material';
@@ -37,7 +39,9 @@ const TrashItemCard = ({
     onDeleteForever,
 }: TrashItemCardProps) => {
     const { t } = useI18n();
+    const appLanguageTag = useAppLanguageTag();
     const itemName = trashItemName(item);
+    const deletionMoment = formatDateTime(item.deleted_at, appLanguageTag);
     const remainingDays = daysUntilExpiry(item.expires_at, new Date());
     const ItemKindIcon = item.is_directory ? Folder : File;
     const itemKindLabel = t(item.is_directory ? 'TRASH_KIND_FOLDER' : 'TRASH_KIND_FILE');
@@ -60,11 +64,13 @@ const TrashItemCard = ({
                         {t('TRASH_ORIGIN_LABEL')}: {trashItemOriginFolder(item)}
                     </p>
                     <div className={styles.itemMeta}>
-                        <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`${t('TRASH_DELETED_AT_LABEL')}: ${new Date(item.deleted_at).toLocaleString()}`}
-                        />
+                        {deletionMoment !== '' && (
+                            <Chip
+                                size="small"
+                                variant="outlined"
+                                label={`${t('TRASH_DELETED_AT_LABEL')}: ${deletionMoment}`}
+                            />
+                        )}
                         <Chip
                             size="small"
                             variant="outlined"
