@@ -103,6 +103,15 @@ func (handler *Handler) GetTrashItemsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
+func (handler *Handler) GetTrashSummaryHandler(c *gin.Context) {
+	summary, err := handler.service.GetSummary()
+	if err != nil {
+		handler.respondServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, summary)
+}
+
 func (handler *Handler) RestoreTrashItemHandler(c *gin.Context) {
 	logModel := handler.createLog(logger.LoggerModel{
 		Name:        "RestoreTrashItem",

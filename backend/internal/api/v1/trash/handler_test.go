@@ -23,6 +23,7 @@ func newTrashRouter(t *testing.T) (*gin.Engine, *trashRepoMock, string) {
 	router := gin.New()
 	group := router.Group("/trash")
 	group.GET("", handler.GetTrashItemsHandler)
+	group.GET("/summary", handler.GetTrashSummaryHandler)
 	group.POST("/:id/restore", handler.RestoreTrashItemHandler)
 	group.DELETE("/:id", handler.DeleteTrashItemHandler)
 	group.DELETE("", handler.EmptyTrashHandler)
@@ -144,6 +145,7 @@ func TestTrashHandlers_ServiceErrorsBecome500(t *testing.T) {
 	router := gin.New()
 	group := router.Group("/trash")
 	group.GET("", handler.GetTrashItemsHandler)
+	group.GET("/summary", handler.GetTrashSummaryHandler)
 	group.DELETE("", handler.EmptyTrashHandler)
 	group.GET("/retention", handler.GetTrashRetentionHandler)
 
@@ -210,5 +212,38 @@ func TestTrashHandlers_RestoreItemWithoutBytesAnswersGone(t *testing.T) {
 
 	if rec.Code != http.StatusGone {
 		t.Fatalf("expected 410, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}
+
+func TestTrashHandlers_SummaryReportsItemCountAndBytes(t *testing.T) {
+	router, repo, root := newTrashRouter(t)
+	service := NewService(repo, &filesIndexMock{})
+	for _, name := range []string{"a.txt", "b.txt"} {
+		path := filepath.Join(root, name)
+		writeFile(t, path, name)
+		if err := service.MoveToTrash(path, 10); err != nil {
+			t.Fatalf("seed MoveToTrash %s: %v", name, err)
+		}
+	}
+
+	rec := doTrashJSON(router, http.MethodGet, "/trash/summary", nil)
+
+	var summary TrashSummaryDto
+	if err := json.Unmarshal(rec.Body.Bytes(), &summary); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("summary: status=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
+	}
+	if summary.Items != 2 || summary.SizeBytes != 20 {
+		t.Fatalf("expected 2 items and 20 bytes, got %+v", summary)
+	}
+}
+
+func TestTrashHandlers_SummaryFailureAnswersTranslatedError(t *testing.T) {
+	router, repo, _ := newTrashRouter(t)
+	repo.getErr = errors.New("db down")
+
+	rec := doTrashJSON(router, http.MethodGet, "/trash/summary", nil)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d (%s)", rec.Code, rec.Body.String())
 	}
 }

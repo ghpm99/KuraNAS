@@ -124,6 +124,18 @@ func (m *trashRepoMock) CountOverlappingItems(originalPath string) (int, error) 
 	return overlappingItems, nil
 }
 
+func (m *trashRepoMock) GetSummary() (TrashSummaryDto, error) {
+	if m.getErr != nil {
+		return TrashSummaryDto{}, m.getErr
+	}
+	summary := TrashSummaryDto{}
+	for _, item := range m.sortedItems() {
+		summary.Items++
+		summary.SizeBytes += item.Size
+	}
+	return summary, nil
+}
+
 func (m *trashRepoMock) GetRetentionDays() (int, bool, error) {
 	if m.retention <= 0 {
 		return 0, false, nil

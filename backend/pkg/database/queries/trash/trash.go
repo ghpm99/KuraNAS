@@ -23,6 +23,9 @@ var DeleteTrashItemQuery string
 //go:embed count_overlapping_trash_items.sql
 var CountOverlappingTrashItemsQuery string
 
+//go:embed get_trash_summary.sql
+var GetTrashSummaryQuery string
+
 //go:embed get_retention_days.sql
 var GetRetentionDaysQuery string
 

@@ -239,3 +239,21 @@ func TestTrashRepository_CountOverlappingItems(t *testing.T) {
 		t.Fatalf("unmet expectations: %v", err)
 	}
 }
+
+func TestTrashRepository_GetSummary(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTrashSummaryQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"count", "coalesce"}).AddRow(3, int64(4096)))
+	mock.ExpectRollback()
+
+	summary, err := repo.GetSummary()
+	if err != nil || summary.Items != 3 || summary.SizeBytes != 4096 {
+		t.Fatalf("GetSummary: summary=%+v err=%v", summary, err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}

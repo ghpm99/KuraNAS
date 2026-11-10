@@ -17,6 +17,7 @@ type RepositoryInterface interface {
 	GetAllItems() ([]TrashItemModel, error)
 	DeleteItem(tx *sql.Tx, id int) error
 	CountOverlappingItems(originalPath string) (int, error)
+	GetSummary() (TrashSummaryDto, error)
 	GetRetentionDays() (int, bool, error)
 	SetRetentionDays(days int) error
 }
@@ -25,6 +26,7 @@ type ServiceInterface interface {
 	MoveToTrash(originalPath string, size int64) error
 	MoveToTrashFrom(logicalPath string, contentPath string, size int64) error
 	GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemDto], error)
+	GetSummary() (TrashSummaryDto, error)
 	RestoreItem(id int) (string, error)
 	DeleteItemPermanently(id int) error
 	EmptyTrash() (int, error)

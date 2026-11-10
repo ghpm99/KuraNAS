@@ -166,6 +166,17 @@ func (r *Repository) CountOverlappingItems(originalPath string) (int, error) {
 	return overlappingItems, nil
 }
 
+func (r *Repository) GetSummary() (TrashSummaryDto, error) {
+	var summary TrashSummaryDto
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.GetTrashSummaryQuery).Scan(&summary.Items, &summary.SizeBytes)
+	})
+	if err != nil {
+		return TrashSummaryDto{}, fmt.Errorf("GetSummary: %w", err)
+	}
+	return summary, nil
+}
+
 func (r *Repository) GetRetentionDays() (int, bool, error) {
 	days := 0
 	found := false

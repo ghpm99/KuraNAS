@@ -193,6 +193,10 @@ func (s *Service) GetItems(page int, pageSize int) (utils.PaginationResponse[Tra
 	}, nil
 }
 
+func (s *Service) GetSummary() (TrashSummaryDto, error) {
+	return s.Repository.GetSummary()
+}
+
 // RestoreItem moves the item back to its original path and revives the
 // soft-deleted home_file rows of the subtree. Returns the restored path.
 func (s *Service) RestoreItem(id int) (string, error) {

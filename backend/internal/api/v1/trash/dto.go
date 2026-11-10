@@ -17,3 +17,9 @@ type TrashItemDto struct {
 type RetentionDto struct {
 	Days int `json:"days"`
 }
+
+// TrashSummaryDto tells how much the trash holds right now.
+type TrashSummaryDto struct {
+	Items     int   `json:"items"`
+	SizeBytes int64 `json:"size_bytes"`
+}
