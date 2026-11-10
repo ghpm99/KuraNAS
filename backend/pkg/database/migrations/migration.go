@@ -26,6 +26,9 @@ type migration struct {
 //go:embed queries/create_migrations_table.sql
 var createMigrationDatabaseQuery string
 
+//go:embed queries/lock_migration_run.sql
+var lockMigrationRunQuery string
+
 //go:embed queries/insert_migration.sql
 var insertMigrationQuery string
 
@@ -36,6 +39,7 @@ var migrationList = []migration{}
 
 var (
 	initMigrationListFn       = initMigrationList
+	lockMigrationRunFn        = lockMigrationRun
 	createMigrationDatabaseFn = createMigrationDatabase
 	runMigrationFn            = runMigration
 	orderMigrationsFn         = orderMigrations
@@ -52,6 +56,10 @@ func Init(db *sql.DB) {
 		panic("Failed to begin transaction: " + err.Error())
 	}
 	defer tx.Rollback()
+
+	if err := lockMigrationRunFn(tx); err != nil {
+		panic("Failed to lock the migration run: " + err.Error())
+	}
 
 	err = createMigrationDatabaseFn(tx)
 
@@ -96,6 +104,19 @@ func initMigrationList() {
 	trashMigrationList()
 	storageRootsMigrationList()
 	emailMigrationList()
+}
+
+// migrationRunLockKey identifies the advisory lock that serializes migration
+// runs against one database.
+const migrationRunLockKey = 7019640112
+
+// lockMigrationRun makes concurrent runners wait for each other: two processes
+// booting against the same database would otherwise both find a migration
+// missing and both try to apply and record it. The lock is released when the
+// transaction ends.
+func lockMigrationRun(tx *sql.Tx) error {
+	_, err := tx.Exec(lockMigrationRunQuery, migrationRunLockKey)
+	return err
 }
 
 func createMigrationDatabase(tx *sql.Tx) error {

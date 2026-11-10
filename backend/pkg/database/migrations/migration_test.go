@@ -17,7 +17,48 @@ func openMigrationDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
 		t.Fatalf("failed to open sqlmock db: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
+	skipMigrationRunLock(t)
 	return db, mock
+}
+
+func skipMigrationRunLock(t *testing.T) {
+	t.Helper()
+	originalLock := lockMigrationRunFn
+	lockMigrationRunFn = func(*sql.Tx) error { return nil }
+	t.Cleanup(func() { lockMigrationRunFn = originalLock })
+}
+
+func TestLockMigrationRunTakesTheAdvisoryLock(t *testing.T) {
+	db, mock := openMigrationDB(t)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(lockMigrationRunQuery)).
+		WithArgs(migrationRunLockKey).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+
+	if err := lockMigrationRun(tx); err != nil {
+		t.Fatalf("lockMigrationRun: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}
+
+func TestInitPanicsWhenTheMigrationRunCannotBeLocked(t *testing.T) {
+	db, mock := openMigrationDB(t)
+	lockMigrationRunFn = func(*sql.Tx) error { return errors.New("lock unavailable") }
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+
+	defer func() {
+		if recovered := recover(); recovered == nil {
+			t.Fatalf("expected Init to panic when the lock fails")
+		}
+	}()
+	Init(db)
 }
 
 func TestInitPanicsWhenDBIsNil(t *testing.T) {
@@ -284,6 +325,7 @@ func TestRealMigrationListOrdersEmailDependencies(t *testing.T) {
 }
 
 func TestInitPanicsWhenOrderingFails(t *testing.T) {
+	skipMigrationRunLock(t)
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create sqlmock db: %v", err)
@@ -368,6 +410,7 @@ func TestInitPanicsWhenBeginTxFails(t *testing.T) {
 }
 
 func TestInitPanicsWhenCreateMigrationsTableFails(t *testing.T) {
+	skipMigrationRunLock(t)
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create sqlmock db: %v", err)
@@ -447,6 +490,7 @@ func TestRunMigrationReturnsRecordError(t *testing.T) {
 }
 
 func TestInitPanicsWhenRunMigrationFails(t *testing.T) {
+	skipMigrationRunLock(t)
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create sqlmock db: %v", err)
@@ -486,6 +530,7 @@ func TestInitPanicsWhenRunMigrationFails(t *testing.T) {
 }
 
 func TestInitPanicsWhenCommitFails(t *testing.T) {
+	skipMigrationRunLock(t)
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create sqlmock db: %v", err)
