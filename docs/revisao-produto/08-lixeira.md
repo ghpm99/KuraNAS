@@ -11,7 +11,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - Filho e pai excluídos separadamente: restaurar o filho recria o pai vazio e o pai passa a dar 409 sem saída.
 - Conflito 409 não informa o caminho ocupado; bytes sumidos da lixeira viram 500 genérico; "esvaziar" não informa falhas.
 - `trash_item` não guarda tipo; DTO só tem `id, original_path, size, deleted_at`; tamanho de pasta é suspeito (entrada do FS, não o conteúdo); listagem sem total, ordenação ou busca; sem lote.
-- Operações da lixeira não entram no diário de atividades; chaves `ANALYTICS_TRASH_*` existem sem endpoint nem uso.
+- Operações da lixeira são registradas pelo `logger` nos handlers; o purgador automático só escreve no log de console. Chaves `ANALYTICS_TRASH_*` existem sem endpoint nem uso.
 - Frontend: tela mínima — sem nome/ícone, "expira em", seleção/lote, ordenação, busca, total; `window.confirm`; `['trash']` não é invalidada ao excluir arquivos; página vazia após remover o último item; fallback de erro de mutação usa a mensagem de carregamento; campo de retenção não ressincroniza nem acusa valor inválido; `isMutating` trava a lista inteira; data no locale do navegador.
 - Android: sem lixeira; `FilesViewModel.deleteFile` existe mas nenhuma tela chama — o app não exclui.
 - Comentários dentro de funções em `trash/` e `useTrashScreen.ts`.
@@ -30,7 +30,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 09. Ordenação e busca em `GET /trash` (parâmetro inválido → 400)
 - [x] 10. Restaurar e excluir em lote com resultado por id
 - [x] 11. "Esvaziar" devolve `{purged, failed}`
-- [ ] 12. Excluir, restaurar, purgar e esvaziar registrados no diário de atividades (purgador inclusive)
+- [x] 12. Descartada: o "diário" (`diary`) é o diário pessoal de atividades do usuário, não um registro de operações; excluir/restaurar/purgar/esvaziar já são registrados pelo `logger` nos handlers. Notificar o expurgo automático virou decisão do dono (36)
 - [ ] 13. Teste de integração Postgres do ciclo completo (arquivo, pasta, reindexação)
 - [ ] 14. Comentários removidos do pacote `trash/`
 
@@ -60,3 +60,4 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - 🚫 33. Pai ausente ou também na lixeira: recriar pastas faltantes (hoje), exigir o pai antes, ou mesclar pastas ao restaurar
 - 🚫 34. Espaço da lixeira no Analytics (chaves `ANALYTICS_TRASH_*` órfãs): criar `/analytics/trash` ou remover as chaves
 - 🚫 35. Toast "Desfazer" após excluir (exige a exclusão devolver o id do item da lixeira)
+- 🚫 36. Notificação in-app quando o expurgo automático remove itens (ou falha): criar ou não
