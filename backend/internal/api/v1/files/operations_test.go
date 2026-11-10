@@ -1358,3 +1358,32 @@ func TestRenameFileStoresLowercaseFormatForUppercaseExtension(t *testing.T) {
 		t.Fatalf("expected lowercase format .jpg, got %+v", updatedRows)
 	}
 }
+
+func TestDeleteFileFromDiskTrashesDirectoryWithItsContentSize(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPointForTest(t, entryPoint)
+	folderToDelete := filepath.Join(entryPoint, "album")
+	if err := os.Mkdir(folderToDelete, 0755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+	records := []FileModel{
+		{ID: 1, Name: "album", Path: folderToDelete, Type: Directory, Size: 4096},
+	}
+	service := newTestServiceWithFileRecords(t, entryPoint, records)
+	service.Repository.(*filesRepoMock).getFolderStatsFn = func(descendantPathPrefix string) (FolderStatsDto, error) {
+		if descendantPathPrefix != folderToDelete+string(filepath.Separator) {
+			t.Fatalf("unexpected folder stats prefix %q", descendantPathPrefix)
+		}
+		return FolderStatsDto{FileCount: 2, TotalSizeBytes: 123456}, nil
+	}
+	bin := &trashBinRecorder{dest: filepath.Join(t.TempDir(), "album.1")}
+	service.SetTrashBin(bin)
+
+	if err := service.DeleteFileFromDisk(1, false); err != nil {
+		t.Fatalf("DeleteFileFromDisk returned error: %v", err)
+	}
+
+	if len(bin.sizes) != 1 || bin.sizes[0] != 123456 {
+		t.Fatalf("expected the directory content size 123456, got %v", bin.sizes)
+	}
+}

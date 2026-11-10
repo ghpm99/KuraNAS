@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
@@ -408,6 +409,21 @@ func (s *Service) MoveFile(sourceID int, destinationFolderID *int, destinationPa
 	return resolvedDestPath, nil
 }
 
+// contentSizeOf is the number of bytes an entry really holds: a directory row
+// only stores the size of its filesystem entry, so its content is summed from
+// the indexed descendants. Falls back to the row size when the sum fails.
+func (s *Service) contentSizeOf(file FileDto) int64 {
+	if file.Type != Directory {
+		return file.Size
+	}
+	stats, err := s.Repository.GetFolderStats(file.Path + string(filepath.Separator))
+	if err != nil {
+		log.Printf("contentSizeOf: folder stats for %q failed: %v", file.Path, err)
+		return file.Size
+	}
+	return stats.TotalSizeBytes
+}
+
 // DeleteFileFromDisk removes the entry from the visible tree. By default the
 // bytes survive: the path is moved into the trash bin and stays restorable.
 // permanent=true keeps the old destructive behavior (os.RemoveAll).
@@ -468,7 +484,7 @@ func (s *Service) DeleteFileFromDisk(id int, permanent bool) error {
 				fmt.Errorf("trash bin not configured"),
 			)
 		}
-		if err := s.TrashBin.MoveToTrashFrom(resolvedPath, contentPath, file.Size); err != nil {
+		if err := s.TrashBin.MoveToTrashFrom(resolvedPath, contentPath, s.contentSizeOf(file)); err != nil {
 			return newFileOperationError(http.StatusInternalServerError, "ERROR_DELETE_FAILED", err)
 		}
 	}
