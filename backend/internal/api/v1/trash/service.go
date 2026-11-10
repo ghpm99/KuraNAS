@@ -111,15 +111,19 @@ func (s *Service) MoveToTrashFrom(logicalPath string, contentPath string, size i
 		return createErr
 	})
 	if err != nil {
-		// The bytes are safe but unregistered — put them back so the user
-		// never has data that exists nowhere in the UI.
-		if undoErr := moveFile(trashPath, contentPath); undoErr != nil {
-			log.Printf("trash: failed to undo move of %q after registry error: %v", trashPath, undoErr)
-		}
+		putUnregisteredBytesBack(trashPath, contentPath)
 		return fmt.Errorf("register trash item: %w", err)
 	}
 
 	return nil
+}
+
+// putUnregisteredBytesBack undoes a move whose registry row could not be
+// written, so the user never has data that exists nowhere in the UI.
+func putUnregisteredBytesBack(trashPath string, contentPath string) {
+	if undoErr := moveFile(trashPath, contentPath); undoErr != nil {
+		log.Printf("trash: failed to undo move of %q after registry error: %v", trashPath, undoErr)
+	}
 }
 
 // moveFile renames source → destination, falling back to copy+delete when the
@@ -222,11 +226,7 @@ func (s *Service) RestoreItem(id int) (string, error) {
 		return "", fmt.Errorf("restore from trash: %w", err)
 	}
 
-	if err := s.deleteRegistryRow(item.ID); err != nil {
-		// The restore itself succeeded; a stale registry row is repairable
-		// (its trash_path no longer exists), so don't fail the request.
-		log.Printf("trash: restored %q but failed to drop registry row %d: %v", item.OriginalPath, item.ID, err)
-	}
+	s.dropRegistryRowOfRestoredItem(item)
 
 	if s.FilesIndex != nil {
 		if err := s.FilesIndex.RestoreSubtree(item.OriginalPath); err != nil {
@@ -236,6 +236,14 @@ func (s *Service) RestoreItem(id int) (string, error) {
 	}
 
 	return item.OriginalPath, nil
+}
+
+// dropRegistryRowOfRestoredItem never fails the restore: the bytes are already
+// back, and a stale row is repairable because its trash_path no longer exists.
+func (s *Service) dropRegistryRowOfRestoredItem(item TrashItemModel) {
+	if err := s.deleteRegistryRow(item.ID); err != nil {
+		log.Printf("trash: restored %q but failed to drop registry row %d: %v", item.OriginalPath, item.ID, err)
+	}
 }
 
 func (s *Service) deleteRegistryRow(id int) error {

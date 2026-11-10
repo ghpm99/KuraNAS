@@ -190,12 +190,7 @@ func (r *Repository) GetRetentionDays() (int, bool, error) {
 		if scanErr != nil {
 			return scanErr
 		}
-		parsed, parseErr := strconv.Atoi(value)
-		if parseErr != nil {
-			return nil // an unreadable stored value behaves as unset
-		}
-		days = parsed
-		found = true
+		days, found = parseStoredRetentionDays(value)
 		return nil
 	})
 	if err != nil {
@@ -203,6 +198,16 @@ func (r *Repository) GetRetentionDays() (int, bool, error) {
 	}
 
 	return days, found, nil
+}
+
+// parseStoredRetentionDays reads the persisted setting; an unreadable stored
+// value behaves as unset.
+func parseStoredRetentionDays(storedValue string) (int, bool) {
+	days, err := strconv.Atoi(storedValue)
+	if err != nil {
+		return 0, false
+	}
+	return days, true
 }
 
 func (r *Repository) SetRetentionDays(days int) error {
