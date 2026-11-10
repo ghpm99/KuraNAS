@@ -31,7 +31,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 10. Restaurar e excluir em lote com resultado por id
 - [x] 11. "Esvaziar" devolve `{purged, failed}`
 - [x] 12. Descartada: o "diário" (`diary`) é o diário pessoal de atividades do usuário, não um registro de operações; excluir/restaurar/purgar/esvaziar já são registrados pelo `logger` nos handlers. Notificar o expurgo automático virou decisão do dono (36)
-- [ ] 13. Teste de integração Postgres do ciclo completo (arquivo, pasta, reindexação)
+- [x] 13. Teste de integração Postgres do ciclo completo (arquivo, pasta, reindexação)
 - [ ] 14. Comentários removidos do pacote `trash/`
 
 ### Frontend
