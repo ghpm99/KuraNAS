@@ -9,7 +9,15 @@ import (
 const coldDescendantsPageSize = 500
 
 func (s *Service) listActiveColdDescendants(sourceDirectoryPath string) ([]FileModel, error) {
-	directoryPrefix := sourceDirectoryPath + string(filepath.Separator)
+	return s.listColdDescendants(sourceDirectoryPath, isActiveColdFile)
+}
+
+func (s *Service) listDeletedColdDescendants(deletedDirectoryPath string) ([]FileModel, error) {
+	return s.listColdDescendants(deletedDirectoryPath, isDeletedColdFile)
+}
+
+func (s *Service) listColdDescendants(directoryPath string, isWanted func(FileModel) bool) ([]FileModel, error) {
+	directoryPrefix := directoryPath + string(filepath.Separator)
 	var coldDescendants []FileModel
 
 	for page := 1; ; page++ {
@@ -19,7 +27,7 @@ func (s *Service) listActiveColdDescendants(sourceDirectoryPath string) ([]FileM
 		}
 
 		for _, descendant := range descendants.Items {
-			if isActiveColdFile(descendant) && strings.HasPrefix(descendant.Path, directoryPrefix) {
+			if isWanted(descendant) && strings.HasPrefix(descendant.Path, directoryPrefix) {
 				coldDescendants = append(coldDescendants, descendant)
 			}
 		}
@@ -47,8 +55,27 @@ func (s *Service) copyColdDescendants(sourceDirectoryPath string, destinationDir
 	return nil
 }
 
+func isColdFile(file FileModel) bool {
+	return file.Type == File && file.PhysicalPath.Valid && file.PhysicalPath.String != ""
+}
+
 func isActiveColdFile(file FileModel) bool {
-	return file.Type == File && file.PhysicalPath.Valid && file.PhysicalPath.String != "" && !file.DeletedAt.Valid
+	return isColdFile(file) && !file.DeletedAt.Valid
+}
+
+func isDeletedColdFile(file FileModel) bool {
+	return isColdFile(file) && file.DeletedAt.Valid
+}
+
+func removeColdCopy(coldPath string) error {
+	containedColdPath, err := resolveColdContentPath(coldPath)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(containedColdPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func copyColdFile(coldPath string, destinationPath string) error {

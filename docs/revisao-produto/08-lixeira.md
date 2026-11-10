@@ -20,7 +20,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 
 ### Backend
 - [x] 01. Restaurar arquivo do tier frio deixa a linha consistente (`physical_path` limpo), com teste Postgres do ciclo excluir → restaurar
-- [ ] 02. Purgar pasta remove as cópias frias dos descendentes
+- [x] 02. Purgar pasta remove as cópias frias dos descendentes
 - [x] 03. Purge (item, esvaziar, expirado) remove as linhas soft-deleted da subárvore em `home_file`
 - [ ] 04. Tamanho de pasta na lixeira é a soma real do conteúdo (confirmar antes o que `home_file.size` guarda para diretórios)
 - [ ] 05. Restaurar com bytes ausentes responde erro específico em vez de 500 genérico; item continua removível

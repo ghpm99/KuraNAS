@@ -166,13 +166,31 @@ func (s *Service) RestoreSubtree(path string) error {
 	})
 }
 
-// PurgeDeletedSubtree drops the soft-deleted home_file rows of a subtree whose
-// bytes were purged from the trash and can no longer be restored.
+// PurgeDeletedSubtree finishes a trash purge: the cold copies of the deleted
+// descendants are removed from the cold volume (they never moved into the
+// trash) and the soft-deleted home_file rows of the subtree are dropped. A cold
+// copy that cannot be removed keeps its row, so the leftover stays traceable.
 func (s *Service) PurgeDeletedSubtree(path string) error {
+	if err := s.removeColdCopiesOfDeletedDescendants(path); err != nil {
+		return err
+	}
 	return s.withTransaction(func(tx *sql.Tx) error {
 		_, err := s.Repository.DeleteDeletedSubtree(tx, path)
 		return err
 	})
+}
+
+func (s *Service) removeColdCopiesOfDeletedDescendants(path string) error {
+	deletedColdDescendants, err := s.listDeletedColdDescendants(path)
+	if err != nil {
+		return err
+	}
+	for _, descendant := range deletedColdDescendants {
+		if err := removeColdCopy(descendant.PhysicalPath.String); err != nil {
+			return fmt.Errorf("remove cold copy of %q: %w", descendant.Path, err)
+		}
+	}
+	return nil
 }
 
 // syncPathRow inserts the row for a path just materialized on disk, reviving
