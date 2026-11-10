@@ -266,16 +266,7 @@ func (s *Service) DeleteItemPermanently(id int) error {
 	if !found {
 		return ErrItemNotFound
 	}
-
-	if err := s.removeItemFromDisk(item); err != nil {
-		return err
-	}
-
-	if err := s.deleteRegistryRow(item.ID); err != nil {
-		return err
-	}
-	s.purgeIndexRows(item)
-	return nil
+	return s.purgeItem(item)
 }
 
 // purgeIndexRows drops the soft-deleted home_file rows of a purged item. It
@@ -299,44 +290,58 @@ func (s *Service) purgeIndexRows(item TrashItemModel) {
 	}
 }
 
-// purgeItems removes a batch from disk and registry, returning how many items
-// were actually purged. One broken item does not stop the rest.
-func (s *Service) purgeItems(items []TrashItemModel) int {
-	purged := 0
-	for _, item := range items {
-		if err := s.removeItemFromDisk(item); err != nil {
-			log.Printf("trash: %v", err)
-			continue
-		}
-		if err := s.deleteRegistryRow(item.ID); err != nil {
-			log.Printf("trash: purged %q but failed to drop registry row %d: %v", item.TrashPath, item.ID, err)
-			continue
-		}
-		s.purgeIndexRows(item)
-		purged++
-	}
-	return purged
+// PurgeOutcome counts what a bulk purge did: items removed for good and items
+// that could not be removed and therefore stay listed in the trash.
+type PurgeOutcome struct {
+	Purged int
+	Failed int
 }
 
-func (s *Service) EmptyTrash() (int, error) {
+// purgeItems removes a batch from disk and registry. One broken item does not
+// stop the rest.
+func (s *Service) purgeItems(items []TrashItemModel) PurgeOutcome {
+	outcome := PurgeOutcome{}
+	for _, item := range items {
+		if err := s.purgeItem(item); err != nil {
+			log.Printf("trash: %v", err)
+			outcome.Failed++
+			continue
+		}
+		outcome.Purged++
+	}
+	return outcome
+}
+
+func (s *Service) purgeItem(item TrashItemModel) error {
+	if err := s.removeItemFromDisk(item); err != nil {
+		return err
+	}
+	if err := s.deleteRegistryRow(item.ID); err != nil {
+		return fmt.Errorf("purged %q but failed to drop registry row %d: %w", item.TrashPath, item.ID, err)
+	}
+	s.purgeIndexRows(item)
+	return nil
+}
+
+func (s *Service) EmptyTrash() (PurgeOutcome, error) {
 	items, err := s.Repository.GetAllItems()
 	if err != nil {
-		return 0, err
+		return PurgeOutcome{}, err
 	}
 	return s.purgeItems(items), nil
 }
 
 // PurgeExpired removes every item older than the configured retention.
-func (s *Service) PurgeExpired() (int, error) {
+func (s *Service) PurgeExpired() (PurgeOutcome, error) {
 	days, err := s.GetRetentionDays()
 	if err != nil {
-		return 0, err
+		return PurgeOutcome{}, err
 	}
 
 	cutoff := time.Now().AddDate(0, 0, -days)
 	items, err := s.Repository.GetExpiredItems(cutoff)
 	if err != nil {
-		return 0, err
+		return PurgeOutcome{}, err
 	}
 	return s.purgeItems(items), nil
 }

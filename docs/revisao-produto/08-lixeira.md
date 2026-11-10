@@ -29,7 +29,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 08. `GET /trash/summary` (itens, bytes)
 - [x] 09. Ordenação e busca em `GET /trash` (parâmetro inválido → 400)
 - [x] 10. Restaurar e excluir em lote com resultado por id
-- [ ] 11. "Esvaziar" devolve `{purged, failed}`
+- [x] 11. "Esvaziar" devolve `{purged, failed}`
 - [ ] 12. Excluir, restaurar, purgar e esvaziar registrados no diário de atividades (purgador inclusive)
 - [ ] 13. Teste de integração Postgres do ciclo completo (arquivo, pasta, reindexação)
 - [ ] 14. Comentários removidos do pacote `trash/`

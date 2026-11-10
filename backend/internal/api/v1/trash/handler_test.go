@@ -133,6 +133,13 @@ func TestTrashHandlers_ListRestoreDeleteEmpty(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("empty: expected 200, got %d (%s)", rec.Code, rec.Body.String())
 	}
+	var emptyBody struct {
+		Purged int `json:"purged"`
+		Failed int `json:"failed"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &emptyBody); err != nil || emptyBody.Purged == 0 || emptyBody.Failed != 0 {
+		t.Fatalf("empty must report purged and failed counts, got %s", rec.Body.String())
+	}
 	if items, _ := repo.GetAllItems(); len(items) != 0 {
 		t.Fatalf("trash must be empty, got %v", items)
 	}

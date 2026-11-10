@@ -186,7 +186,7 @@ func (handler *Handler) EmptyTrashHandler(c *gin.Context) {
 		IPAddress:   c.ClientIP(),
 	})
 
-	purged, err := handler.service.EmptyTrash()
+	outcome, err := handler.service.EmptyTrash()
 	if err != nil {
 		handler.completeError(logModel, err)
 		handler.respondServiceError(c, err)
@@ -194,7 +194,11 @@ func (handler *Handler) EmptyTrashHandler(c *gin.Context) {
 	}
 
 	handler.completeSuccess(logModel)
-	c.JSON(http.StatusOK, gin.H{"message": i18n.GetMessage("TRASH_EMPTY_SUCCESS"), "purged": purged})
+	c.JSON(http.StatusOK, gin.H{
+		"message": i18n.GetMessage("TRASH_EMPTY_SUCCESS"),
+		"purged":  outcome.Purged,
+		"failed":  outcome.Failed,
+	})
 }
 
 func (handler *Handler) GetTrashRetentionHandler(c *gin.Context) {

@@ -60,12 +60,12 @@ func (p *Purger) run() {
 }
 
 func (p *Purger) purge() {
-	purged, err := p.service.PurgeExpired()
+	outcome, err := p.service.PurgeExpired()
 	if err != nil {
 		log.Printf("trash: scheduled purge failed: %v", err)
 		return
 	}
-	if purged > 0 {
-		log.Printf("trash: scheduled purge removed %d expired item(s)", purged)
+	if outcome.Purged > 0 || outcome.Failed > 0 {
+		log.Printf("trash: scheduled purge removed %d expired item(s), %d failed", outcome.Purged, outcome.Failed)
 	}
 }

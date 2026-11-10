@@ -385,9 +385,9 @@ func TestTrashService_EmptyTrash(t *testing.T) {
 		}
 	}
 
-	purged, err := s.EmptyTrash()
-	if err != nil || purged != 3 {
-		t.Fatalf("expected 3 purged, got %d err=%v", purged, err)
+	outcome, err := s.EmptyTrash()
+	if err != nil || outcome != (PurgeOutcome{Purged: 3}) {
+		t.Fatalf("expected 3 purged and none failed, got %+v err=%v", outcome, err)
 	}
 	if items, _ := repo.GetAllItems(); len(items) != 0 {
 		t.Fatalf("registry must be empty, got %v", items)
@@ -413,9 +413,9 @@ func TestTrashService_PurgeExpiredHonorsRetention(t *testing.T) {
 	aged.DeletedAt = time.Now().AddDate(0, 0, -(DefaultRetentionDays + 1))
 	repo.items[1] = aged
 
-	purged, err := s.PurgeExpired()
-	if err != nil || purged != 1 {
-		t.Fatalf("expected 1 purged, got %d err=%v", purged, err)
+	outcome, err := s.PurgeExpired()
+	if err != nil || outcome != (PurgeOutcome{Purged: 1}) {
+		t.Fatalf("expected 1 purged and none failed, got %+v err=%v", outcome, err)
 	}
 
 	items, _ := repo.GetAllItems()
@@ -504,16 +504,18 @@ func TestTrashService_PurgeItemsSkipsBrokenRegistryRows(t *testing.T) {
 		t.Fatalf("MoveToTrash: %v", err)
 	}
 
-	// One healthy item + one whose trash_path points outside the trash dir:
-	// the broken one is skipped, the healthy one is purged.
 	outside := filepath.Join(root, "fora.txt")
 	writeFile(t, outside, "fora")
-	repo.items[99] = TrashItemModel{ID: 99, OriginalPath: outside, TrashPath: outside}
+	brokenItem := TrashItemModel{ID: repo.nextID, OriginalPath: outside, TrashPath: outside}
+	repo.items[brokenItem.ID] = brokenItem
+	repo.nextID++
 
-	items, _ := repo.GetAllItems()
-	purged := s.purgeItems(items)
-	if purged != 1 {
-		t.Fatalf("expected 1 purged (broken row skipped), got %d", purged)
+	outcome, err := s.EmptyTrash()
+	if err != nil || outcome != (PurgeOutcome{Purged: 1, Failed: 1}) {
+		t.Fatalf("expected 1 purged and 1 failed, got %+v err=%v", outcome, err)
+	}
+	if remaining, _ := repo.GetAllItems(); len(remaining) != 1 || remaining[0].ID != brokenItem.ID {
+		t.Fatalf("the item that failed must stay listed, got %v", remaining)
 	}
 	if _, err := os.Stat(outside); err != nil {
 		t.Fatalf("file outside the trash dir must survive: %v", err)
@@ -681,8 +683,8 @@ func TestTrashService_EmptyTrashDropsIndexRowsOfEveryItem(t *testing.T) {
 	s, repo, filesIndex, root := newTrashServiceForTest(t)
 	trashTwoGenerationsOfTheSameFile(t, s, repo, root)
 
-	if purged, err := s.EmptyTrash(); err != nil || purged != 2 {
-		t.Fatalf("EmptyTrash: purged=%d err=%v", purged, err)
+	if outcome, err := s.EmptyTrash(); err != nil || outcome.Purged != 2 {
+		t.Fatalf("EmptyTrash: outcome=%+v err=%v", outcome, err)
 	}
 
 	if len(filesIndex.purgedPaths) != 1 {

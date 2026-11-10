@@ -31,8 +31,8 @@ type ServiceInterface interface {
 	DeleteItemPermanently(id int) error
 	RestoreItems(ids []int) ([]int, []ItemFailure)
 	DeleteItemsPermanently(ids []int) ([]int, []ItemFailure)
-	EmptyTrash() (int, error)
-	PurgeExpired() (int, error)
+	EmptyTrash() (PurgeOutcome, error)
+	PurgeExpired() (PurgeOutcome, error)
 	GetRetentionDays() (int, error)
 	SetRetentionDays(days int) error
 }
