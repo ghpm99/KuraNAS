@@ -14,6 +14,7 @@
     <string name="nav_home">Início</string>
     <string name="nav_files">Arquivos</string>
     <string name="nav_favorites">Favoritos</string>
+    <string name="nav_trash">Lixeira</string>
     <string name="nav_music">Música</string>
     <string name="nav_videos">Vídeos</string>
     <string name="nav_images">Imagens</string>
@@ -52,6 +53,20 @@
     <string name="files_delete_title">Excluir \"%1$s\"?</string>
     <string name="files_delete_goes_to_trash">O item vai para a Lixeira e pode ser restaurado de lá até o fim do período de retenção.</string>
     <string name="files_delete_confirm">Mover para a Lixeira</string>
+    <string name="trash_empty_state">A lixeira está vazia</string>
+    <string name="trash_empty_action">Esvaziar lixeira</string>
+    <string name="trash_empty_warning">Todos os itens da lixeira serão excluídos definitivamente. Isso não pode ser desfeito.</string>
+    <string name="trash_restore_action">Restaurar</string>
+    <string name="trash_delete_forever_action">Excluir definitivamente</string>
+    <string name="trash_delete_forever_title">Excluir \"%1$s\" definitivamente?</string>
+    <string name="trash_delete_forever_warning">Isso não pode ser desfeito.</string>
+    <string name="trash_origin">De %1$s</string>
+    <string name="trash_size_and_expiry">%1$s · %2$s</string>
+    <string name="trash_expires_next_cleanup">expira na próxima limpeza</string>
+    <plurals name="trash_expires_in_days">
+        <item quantity="one">expira em %d dia</item>
+        <item quantity="other">expira em %d dias</item>
+    </plurals>
     <string name="images_starred_indicator">Favorita</string>
     <string name="favorites_empty">Nenhum favorito ainda</string>
     <string name="favorites_kind_all">Todos</string>

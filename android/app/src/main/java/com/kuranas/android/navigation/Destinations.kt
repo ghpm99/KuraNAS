@@ -3,6 +3,7 @@ package com.kuranas.android.navigation
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
@@ -19,6 +20,7 @@ enum class SwipePage(@StringRes val labelRes: Int, val icon: ImageVector) {
     HOME(R.string.nav_home, Icons.Filled.Home),
     FILES(R.string.nav_files, Icons.Filled.Folder),
     FAVORITES(R.string.nav_favorites, Icons.Filled.Star),
+    TRASH(R.string.nav_trash, Icons.Filled.Delete),
     MUSIC(R.string.nav_music, Icons.Filled.MusicNote),
     VIDEO(R.string.nav_videos, Icons.Filled.VideoLibrary),
     IMAGES(R.string.nav_images, Icons.Filled.PhotoLibrary),

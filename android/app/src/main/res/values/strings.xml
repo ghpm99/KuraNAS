@@ -16,6 +16,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_files">Files</string>
     <string name="nav_favorites">Favorites</string>
+    <string name="nav_trash">Trash</string>
     <string name="nav_music">Music</string>
     <string name="nav_videos">Videos</string>
     <string name="nav_images">Images</string>
@@ -54,6 +55,20 @@
     <string name="files_delete_title">Delete \"%1$s\"?</string>
     <string name="files_delete_goes_to_trash">The item goes to the Trash and can be restored from there until the retention period ends.</string>
     <string name="files_delete_confirm">Move to Trash</string>
+    <string name="trash_empty_state">The trash is empty</string>
+    <string name="trash_empty_action">Empty trash</string>
+    <string name="trash_empty_warning">Every item in the trash will be permanently deleted. This cannot be undone.</string>
+    <string name="trash_restore_action">Restore</string>
+    <string name="trash_delete_forever_action">Delete permanently</string>
+    <string name="trash_delete_forever_title">Permanently delete \"%1$s\"?</string>
+    <string name="trash_delete_forever_warning">This cannot be undone.</string>
+    <string name="trash_origin">From %1$s</string>
+    <string name="trash_size_and_expiry">%1$s · %2$s</string>
+    <string name="trash_expires_next_cleanup">expires on the next cleanup</string>
+    <plurals name="trash_expires_in_days">
+        <item quantity="one">expires in %d day</item>
+        <item quantity="other">expires in %d days</item>
+    </plurals>
     <string name="images_starred_indicator">Favorite</string>
     <string name="favorites_empty">No favorites yet</string>
     <string name="favorites_kind_all">All</string>

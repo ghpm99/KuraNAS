@@ -22,6 +22,7 @@ fun KNHeader(
     leadingIcon: ImageVector? = null,
     onLeadingClick: (() -> Unit)? = null,
     trailingIcon: ImageVector? = null,
+    trailingContentDescription: String? = null,
     onTrailingClick: (() -> Unit)? = null,
 ) {
     Row(
@@ -44,7 +45,7 @@ fun KNHeader(
         )
         if (trailingIcon != null && onTrailingClick != null) {
             IconButton(onClick = onTrailingClick) {
-                Icon(trailingIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(trailingIcon, contentDescription = trailingContentDescription, tint = MaterialTheme.colorScheme.primary)
             }
         }
     }

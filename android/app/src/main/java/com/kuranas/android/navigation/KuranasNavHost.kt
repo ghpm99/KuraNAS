@@ -27,6 +27,7 @@ import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
 import com.kuranas.android.feature.diary.ui.DiaryScreen
 import com.kuranas.android.feature.files.ui.FavoritesScreen
+import com.kuranas.android.feature.trash.ui.TrashScreen
 import com.kuranas.android.feature.files.ui.FileViewerScreen
 import com.kuranas.android.feature.files.ui.FOLDER_ID_ARGUMENT
 import com.kuranas.android.feature.files.ui.FOLDER_NAME_ARGUMENT
@@ -247,6 +248,7 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                     onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
                     onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
                 )
+                SwipePage.TRASH -> TrashScreen()
                 SwipePage.MUSIC -> MusicScreen(
                     onOpenPlayer = { navController.navigate(AppRoute.MUSIC_PLAYER) },
                     onOpenArtist = { key -> navController.navigate(AppRoute.musicArtist(key)) },
