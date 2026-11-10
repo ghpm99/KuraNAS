@@ -138,28 +138,42 @@ export const useTrashScreen = () => {
         mutationFn: emptyTrash,
         onSuccess: refreshTrashAndFilesTree,
     });
-    const handleRestore = useCallback(
-        async (id: number) => {
+    const [busyItemIds, setBusyItemIds] = useState<ReadonlySet<number>>(new Set());
+
+    const runItemAction = useCallback(
+        async (
+            itemId: number,
+            sendItemAction: (itemId: number) => Promise<unknown>,
+            successToastKey: string
+        ) => {
+            setBusyItemIds((currentBusyIds) => new Set(currentBusyIds).add(itemId));
             try {
-                await restoreMutation.mutateAsync(id);
-                enqueueSnackbar(t('TRASH_RESTORED_TOAST'), { variant: 'success' });
+                await sendItemAction(itemId);
+                enqueueSnackbar(t(successToastKey), { variant: 'success' });
             } catch (error) {
                 notifyActionError(error);
+            } finally {
+                setBusyItemIds((currentBusyIds) => {
+                    const remainingBusyIds = new Set(currentBusyIds);
+                    remainingBusyIds.delete(itemId);
+                    return remainingBusyIds;
+                });
             }
         },
-        [enqueueSnackbar, notifyActionError, restoreMutation, t]
+        [enqueueSnackbar, notifyActionError, t]
+    );
+
+    const { mutateAsync: sendRestore } = restoreMutation;
+    const { mutateAsync: sendDeleteForever } = deleteMutation;
+
+    const handleRestore = useCallback(
+        (itemId: number) => runItemAction(itemId, sendRestore, 'TRASH_RESTORED_TOAST'),
+        [runItemAction, sendRestore]
     );
 
     const deleteForever = useCallback(
-        async (id: number) => {
-            try {
-                await deleteMutation.mutateAsync(id);
-                enqueueSnackbar(t('TRASH_DELETED_TOAST'), { variant: 'success' });
-            } catch (error) {
-                notifyActionError(error);
-            }
-        },
-        [deleteMutation, enqueueSnackbar, notifyActionError, t]
+        (itemId: number) => runItemAction(itemId, sendDeleteForever, 'TRASH_DELETED_TOAST'),
+        [runItemAction, sendDeleteForever]
     );
 
     const emptyWholeTrash = useCallback(async () => {
@@ -186,6 +200,8 @@ export const useTrashScreen = () => {
         }
     }, [deleteForever, deleteSelectedForever, emptyWholeTrash, pendingConfirmation, selectedItems]);
 
+    const isWholeTrashBusy = emptyMutation.isPending;
+
     return {
         t,
         items,
@@ -202,11 +218,13 @@ export const useTrashScreen = () => {
         changeSort,
         searchInput,
         changeSearchInput,
-        isMutating:
-            restoreMutation.isPending ||
-            deleteMutation.isPending ||
-            emptyMutation.isPending ||
-            isBatchRunning,
+        isItemBusy: (itemId: number) =>
+            isWholeTrashBusy ||
+            busyItemIds.has(itemId) ||
+            (isBatchRunning && selection.isSelected(itemId)),
+        isWholeTrashBusy,
+        isAnyActionRunning: isWholeTrashBusy || isBatchRunning || busyItemIds.size > 0,
+        isBatchRunning,
         selectedCount: selection.selectedCount,
         isItemSelected: selection.isSelected,
         toggleItemSelection: selection.toggle,

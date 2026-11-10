@@ -256,4 +256,36 @@ describe('TrashScreen', () => {
         });
         expect(screen.queryByText('TRASH_EMPTY_STATE')).not.toBeInTheDocument();
     });
+
+    it('locks only the item being restored, leaving the others usable', async () => {
+        const twoItems: TrashPage = {
+            items: [
+                ...onePage().items,
+                {
+                    id: 2,
+                    original_path: '/data/fotos/praia.jpg',
+                    size: 10,
+                    deleted_at: '2026-06-11T10:00:00Z',
+                },
+            ],
+            pagination: { page: 1, page_size: 15, has_next: false, has_prev: false },
+        };
+        mockedGetTrashItems.mockResolvedValue(twoItems);
+        mockedRestore.mockReturnValue(new Promise(() => {}));
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('praia.jpg')).toBeInTheDocument());
+        const [reportRestoreButton, beachRestoreButton] = screen.getAllByRole('button', {
+            name: /TRASH_RESTORE_BUTTON/,
+        });
+
+        fireEvent.click(reportRestoreButton as HTMLElement);
+
+        await waitFor(() => expect(reportRestoreButton).toBeDisabled());
+        expect(beachRestoreButton).toBeEnabled();
+        expect(screen.getByRole('button', { name: /TRASH_EMPTY_BUTTON/ })).toBeDisabled();
+
+        fireEvent.click(beachRestoreButton as HTMLElement);
+        await waitFor(() => expect(beachRestoreButton).toBeDisabled());
+        expect(mockedRestore.mock.calls.map(([itemId]) => itemId)).toEqual([1, 2]);
+    });
 });

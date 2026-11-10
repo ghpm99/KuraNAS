@@ -28,7 +28,10 @@ const TrashScreen = () => {
         changeSort,
         searchInput,
         changeSearchInput,
-        isMutating,
+        isItemBusy,
+        isWholeTrashBusy,
+        isAnyActionRunning,
+        isBatchRunning,
         handleRestore,
         pendingConfirmation,
         requestDeleteForever,
@@ -54,7 +57,7 @@ const TrashScreen = () => {
                     <Button
                         variant="outlined"
                         color="error"
-                        disabled={isMutating || items.length === 0}
+                        disabled={isAnyActionRunning || items.length === 0}
                         onClick={requestEmptyTrash}
                         startIcon={<Trash2 size={16} />}
                     >
@@ -93,7 +96,7 @@ const TrashScreen = () => {
                 <div className={styles.list}>
                     <TrashSelectionToolbar
                         selectedCount={selectedCount}
-                        isBusy={isMutating}
+                        isBusy={isWholeTrashBusy || isBatchRunning}
                         onSelectAll={selectWholePage}
                         onClearSelection={clearSelection}
                         onRestoreSelected={restoreSelectedItems}
@@ -103,7 +106,7 @@ const TrashScreen = () => {
                         <TrashItemCard
                             key={item.id}
                             item={item}
-                            isBusy={isMutating}
+                            isBusy={isItemBusy(item.id)}
                             isSelected={isItemSelected(item.id)}
                             onToggleSelection={toggleItemSelection}
                             onRestore={(itemId) => void handleRestore(itemId)}

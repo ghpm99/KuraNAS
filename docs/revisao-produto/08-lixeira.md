@@ -44,7 +44,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 21. Resumo no topo: total de itens e bytes (depende da 08)
 - [x] 22. Ordenação e busca pelo servidor (depende da 09)
 - [x] 23. Seleção e ações em lote (depende da 10)
-- [ ] 24. Botões travam por item, não a lista inteira
+- [x] 24. Botões travam por item, não a lista inteira
 - [ ] 25. Data formatada no locale do app
 - [ ] 26. Após restaurar, ação "ver na pasta"
 - [ ] 27. Render sem mock e seam test para cada mutação da lixeira (conferir o que já existe)
