@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.TrackDto
+import com.kuranas.android.feature.music.data.TrackStarToggler
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,11 @@ import javax.inject.Inject
 class MusicAlbumViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val player: PlayerConnection,
+    starToggler: TrackStarToggler,
 ) : ViewModel() {
+
+    val stars = TrackStarState(viewModelScope, starToggler)
+
     private val tracksLoader = PagedListLoader<TrackDto>(viewModelScope) { it.id }
     val state: StateFlow<PagedListState<TrackDto>> = tracksLoader.state
 

@@ -130,6 +130,7 @@ data class TrackDto(
     val format: String = "",
     val size: Long = 0,
     val metadata: TrackMetadataDto? = null,
+    val starred: Boolean = false,
 ) {
     val title: String get() = metadata?.title?.takeIf { it.isNotBlank() } ?: name
     val artist: String? get() = metadata?.artist?.takeIf { it.isNotBlank() }

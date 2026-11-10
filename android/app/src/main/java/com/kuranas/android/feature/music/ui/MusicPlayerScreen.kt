@@ -50,132 +50,143 @@ fun MusicPlayerScreen(
     viewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-
-        if (state.artworkUrl != null) {
-            AsyncImage(
-                model = state.artworkUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(200.dp).clip(RoundedCornerShape(24.dp)),
-            )
-        } else {
-            Icon(
-                Icons.Default.MusicNote,
-                contentDescription = null,
-                modifier = Modifier.size(200.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = state.currentTrack?.title ?: stringResource(R.string.music_no_track),
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = state.currentTrack?.artist ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(16.dp))
-
-        val duration = state.durationMs.coerceAtLeast(1)
-        Slider(
-            value = (state.positionMs.toFloat() / duration).coerceIn(0f, 1f),
-            onValueChange = { viewModel.seekTo((it * duration).toLong()) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(formatDurationMs(state.positionMs), style = MaterialTheme.typography.bodySmall)
-            Text(formatDurationMs(state.durationMs), style = MaterialTheme.typography.bodySmall)
-        }
-
-        Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
+    TrackStarErrorHost(viewModel.stars) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            IconButton(onClick = viewModel::toggleShuffle) {
-                Icon(
-                    Icons.Default.Shuffle,
-                    contentDescription = stringResource(R.string.cd_shuffle),
-                    tint = if (state.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            IconButton(onClick = viewModel::previous, modifier = Modifier.size(48.dp)) {
-                Icon(
-                    Icons.Default.SkipPrevious,
-                    contentDescription = stringResource(R.string.cd_previous),
-                    modifier = Modifier.size(36.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(onClick = viewModel::togglePlayPause, modifier = Modifier.size(64.dp)) {
-                Icon(
-                    imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (state.isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            IconButton(onClick = viewModel::next, modifier = Modifier.size(48.dp)) {
-                Icon(
-                    Icons.Default.SkipNext,
-                    contentDescription = stringResource(R.string.cd_next),
-                    modifier = Modifier.size(36.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(onClick = viewModel::toggleRepeat) {
-                Icon(
-                    imageVector = if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    contentDescription = stringResource(R.string.cd_repeat),
-                    tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-        val upNext = state.upNext
-        if (upNext.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.music_up_next),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            )
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(upNext, key = { it.index }) { item ->
-                    TrackListItem(
-                        track = item.track,
-                        onClick = { viewModel.skipToQueueItem(item.index) },
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
-        } else {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(8.dp))
+
+            if (state.artworkUrl != null) {
+                AsyncImage(
+                    model = state.artworkUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(200.dp).clip(RoundedCornerShape(24.dp)),
+                )
+            } else {
+                Icon(
+                    Icons.Default.MusicNote,
+                    contentDescription = null,
+                    modifier = Modifier.size(200.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text = state.currentTrack?.title ?: stringResource(R.string.music_no_track),
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = state.currentTrack?.artist ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            state.currentTrack?.let { currentTrack ->
+                TrackStarButton(
+                    isStarred = starredById[currentTrack.id.toString()] ?: currentTrack.starred,
+                    onToggleStar = { viewModel.stars.toggle(currentTrack) },
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            val duration = state.durationMs.coerceAtLeast(1)
+            Slider(
+                value = (state.positionMs.toFloat() / duration).coerceIn(0f, 1f),
+                onValueChange = { viewModel.seekTo((it * duration).toLong()) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(formatDurationMs(state.positionMs), style = MaterialTheme.typography.bodySmall)
+                Text(formatDurationMs(state.durationMs), style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = viewModel::toggleShuffle) {
+                    Icon(
+                        Icons.Default.Shuffle,
+                        contentDescription = stringResource(R.string.cd_shuffle),
+                        tint = if (state.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = viewModel::previous, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        Icons.Default.SkipPrevious,
+                        contentDescription = stringResource(R.string.cd_previous),
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                IconButton(onClick = viewModel::togglePlayPause, modifier = Modifier.size(64.dp)) {
+                    Icon(
+                        imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (state.isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                IconButton(onClick = viewModel::next, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        Icons.Default.SkipNext,
+                        contentDescription = stringResource(R.string.cd_next),
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                IconButton(onClick = viewModel::toggleRepeat) {
+                    Icon(
+                        imageVector = if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                        contentDescription = stringResource(R.string.cd_repeat),
+                        tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            val upNext = state.upNext
+            if (upNext.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.music_up_next),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(upNext, key = { it.index }) { item ->
+                        TrackListItem(
+                            track = item.track,
+                            isStarred = starredById[item.track.id.toString()] ?: item.track.starred,
+                            onToggleStar = { viewModel.stars.toggle(item.track) },
+                            onClick = { viewModel.skipToQueueItem(item.index) },
+                        )
+                    }
+                }
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
         }
     }
 }

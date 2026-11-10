@@ -5,7 +5,9 @@ import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.music.data.AlbumDto
 import com.kuranas.android.feature.music.data.ArtistDto
 import com.kuranas.android.feature.music.data.FolderDto
+import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.music.data.MusicRepository
+import com.kuranas.android.feature.music.data.TrackStarToggler
 import com.kuranas.android.feature.music.data.PlaylistDto
 import com.kuranas.android.feature.music.data.TrackDto
 import com.kuranas.android.feature.music.playback.PlayerConnection
@@ -53,7 +55,7 @@ class MusicViewModelTest {
     fun `loads the first page of every list on creation`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1, 2)
 
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         val tracks = viewModel.tracks.value
         assertFalse(tracks.isLoading)
@@ -67,7 +69,7 @@ class MusicViewModelTest {
     fun `loadMoreTracks appends the next page`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1, 2)
         coEvery { repository.getAllTracks(2) } returns tracksPage(false, 3)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.loadMoreTracks()
 
@@ -81,7 +83,7 @@ class MusicViewModelTest {
     fun `loadMoreTracks stops requesting once the last page was reached`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1)
         coEvery { repository.getAllTracks(2) } returns tracksPage(false, 2)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.loadMoreTracks()
         viewModel.loadMoreTracks()
@@ -95,7 +97,7 @@ class MusicViewModelTest {
     fun `loadMoreTracks ignores duplicated tracks`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1, 2)
         coEvery { repository.getAllTracks(2) } returns tracksPage(false, 2, 3)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.loadMoreTracks()
 
@@ -106,7 +108,7 @@ class MusicViewModelTest {
     fun `first page failure exposes the error`() {
         coEvery { repository.getAllTracks(1) } returns AppResult.Error("boom")
 
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         val tracks = viewModel.tracks.value
         assertFalse(tracks.isLoading)
@@ -118,7 +120,7 @@ class MusicViewModelTest {
     fun `load more failure keeps loaded tracks and allows retry`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1)
         coEvery { repository.getAllTracks(2) } returns AppResult.Error("offline") andThen tracksPage(false, 2)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.loadMoreTracks()
 
@@ -136,7 +138,7 @@ class MusicViewModelTest {
     fun `refresh restarts from the first page`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1) andThen tracksPage(true, 9)
         coEvery { repository.getAllTracks(2) } returns tracksPage(false, 2)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
         viewModel.loadMoreTracks()
 
         viewModel.refresh()
@@ -150,7 +152,7 @@ class MusicViewModelTest {
     @Test
     fun `play queues the loaded tracks`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(false, 1, 2)
-        val viewModel = MusicViewModel(repository, player)
+        val viewModel = MusicViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
         val loadedTracks = viewModel.tracks.value.items
 
         viewModel.play(loadedTracks[1], loadedTracks)

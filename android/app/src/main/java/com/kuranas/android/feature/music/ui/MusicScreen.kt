@@ -64,6 +64,7 @@ fun MusicScreen(
     val albums by viewModel.albums.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
+    val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
     val currentList = when (tab) {
         MusicTab.TRACKS -> tracks.toListStatus()
         MusicTab.ARTISTS -> artists.toListStatus()
@@ -73,47 +74,55 @@ fun MusicScreen(
     }
     val tabs = MusicTab.entries
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.nav_music))
-        ScrollableTabRow(
-            selectedTabIndex = tab.ordinal,
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-        ) {
-            tabs.forEach { tabEntry ->
-                Tab(
-                    selected = tab == tabEntry,
-                    onClick = { viewModel.selectTab(tabEntry) },
-                    text = {
-                        Text(
-                            when (tabEntry) {
-                                MusicTab.TRACKS -> stringResource(R.string.music_tab_tracks)
-                                MusicTab.ARTISTS -> stringResource(R.string.music_tab_artists)
-                                MusicTab.ALBUMS -> stringResource(R.string.music_tab_albums)
-                                MusicTab.PLAYLISTS -> stringResource(R.string.music_tab_playlists)
-                                MusicTab.FOLDERS -> stringResource(R.string.music_tab_folders)
-                            }
-                        )
-                    },
-                )
+    TrackStarErrorHost(viewModel.stars) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            KNHeader(title = stringResource(R.string.nav_music))
+            ScrollableTabRow(
+                selectedTabIndex = tab.ordinal,
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            ) {
+                tabs.forEach { tabEntry ->
+                    Tab(
+                        selected = tab == tabEntry,
+                        onClick = { viewModel.selectTab(tabEntry) },
+                        text = {
+                            Text(
+                                when (tabEntry) {
+                                    MusicTab.TRACKS -> stringResource(R.string.music_tab_tracks)
+                                    MusicTab.ARTISTS -> stringResource(R.string.music_tab_artists)
+                                    MusicTab.ALBUMS -> stringResource(R.string.music_tab_albums)
+                                    MusicTab.PLAYLISTS -> stringResource(R.string.music_tab_playlists)
+                                    MusicTab.FOLDERS -> stringResource(R.string.music_tab_folders)
+                                }
+                            )
+                        },
+                    )
+                }
             }
-        }
 
-        PullToRefreshBox(
-            isRefreshing = currentList.isRefreshing,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            when {
-                currentList.isLoading -> LoadingView()
-                currentList.error != null -> ErrorView(currentList.error)
-                else -> when (tab) {
-                    MusicTab.ARTISTS -> ArtistsList(artists, onOpenArtist, viewModel::loadMoreArtists)
-                    MusicTab.ALBUMS -> AlbumsList(albums, onOpenAlbum, viewModel::loadMoreAlbums)
-                    MusicTab.PLAYLISTS -> PlaylistsList(playlists, onOpenPlaylist, viewModel::loadMorePlaylists)
-                    MusicTab.FOLDERS -> FoldersList(folders, onOpenFolder, viewModel::loadMoreFolders)
-                    MusicTab.TRACKS -> TracksList(tracks, viewModel::loadMoreTracks) { track ->
-                        viewModel.play(track, tracks.items)
-                        onOpenPlayer()
+            PullToRefreshBox(
+                isRefreshing = currentList.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    currentList.isLoading -> LoadingView()
+                    currentList.error != null -> ErrorView(currentList.error)
+                    else -> when (tab) {
+                        MusicTab.ARTISTS -> ArtistsList(artists, onOpenArtist, viewModel::loadMoreArtists)
+                        MusicTab.ALBUMS -> AlbumsList(albums, onOpenAlbum, viewModel::loadMoreAlbums)
+                        MusicTab.PLAYLISTS -> PlaylistsList(playlists, onOpenPlaylist, viewModel::loadMorePlaylists)
+                        MusicTab.FOLDERS -> FoldersList(folders, onOpenFolder, viewModel::loadMoreFolders)
+                        MusicTab.TRACKS -> TracksList(
+                            pagedState = tracks,
+                            starredById = starredById,
+                            onLoadMore = viewModel::loadMoreTracks,
+                            onToggleStar = viewModel.stars::toggle,
+                            onPlay = { track ->
+                                viewModel.play(track, tracks.items)
+                                onOpenPlayer()
+                            },
+                        )
                     }
                 }
             }
@@ -186,14 +195,25 @@ private fun AlbumsList(pagedState: PagedListState<AlbumDto>, onOpen: (String) ->
 }
 
 @Composable
-private fun TracksList(pagedState: PagedListState<TrackDto>, onLoadMore: () -> Unit, onPlay: (TrackDto) -> Unit) {
+private fun TracksList(
+    pagedState: PagedListState<TrackDto>,
+    starredById: Map<String, Boolean>,
+    onLoadMore: () -> Unit,
+    onToggleStar: (TrackDto) -> Unit,
+    onPlay: (TrackDto) -> Unit,
+) {
     val tracks = pagedState.items
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, tracks.size, pagedState.hasMore, onLoadMore)
     if (tracks.isEmpty()) { EmptyView(stringResource(R.string.music_no_tracks)); return }
     LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(tracks, key = { it.id }) { track ->
-            TrackListItem(track = track, onClick = { onPlay(track) })
+            TrackListItem(
+                track = track,
+                isStarred = starredById[track.id.toString()] ?: track.starred,
+                onToggleStar = { onToggleStar(track) },
+                onClick = { onPlay(track) },
+            )
         }
     }
 }

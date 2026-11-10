@@ -33,22 +33,30 @@ fun MusicFolderScreen(
     val viewModel: MusicFolderViewModel = hiltViewModel()
     LaunchedEffect(folderKey) { viewModel.load(folderKey) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
 
     val title = folderKey.trimEnd('/').substringAfterLast('/').ifBlank { folderKey }
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = title, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
-        when {
-            state.isLoading -> LoadingView()
-            state.items.isEmpty() -> EmptyView(stringResource(R.string.music_folder_empty))
-            else -> LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(state.items, key = { it.id }) { track ->
-                    TrackListItem(track = track, onClick = {
-                        viewModel.play(track)
-                        onPlayTrack()
-                    })
+    TrackStarErrorHost(viewModel.stars) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            KNHeader(title = title, leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
+            when {
+                state.isLoading -> LoadingView()
+                state.items.isEmpty() -> EmptyView(stringResource(R.string.music_folder_empty))
+                else -> LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(state.items, key = { it.id }) { track ->
+                        TrackListItem(
+                            track = track,
+                            isStarred = starredById[track.id.toString()] ?: track.starred,
+                            onToggleStar = { viewModel.stars.toggle(track) },
+                            onClick = {
+                                viewModel.play(track)
+                                onPlayTrack()
+                            },
+                        )
+                    }
                 }
             }
         }

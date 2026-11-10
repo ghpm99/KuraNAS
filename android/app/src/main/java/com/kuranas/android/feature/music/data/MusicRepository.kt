@@ -6,6 +6,7 @@ import com.kuranas.android.core.network.PageDto
 import com.kuranas.android.core.paging.toListPage
 import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.server.ServerStore
+import com.kuranas.android.feature.files.data.FileStarStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
@@ -17,8 +18,9 @@ import javax.inject.Singleton
 class MusicRepository @Inject constructor(
     private val api: MusicApi,
     private val serverStore: ServerStore,
+    private val starStore: FileStarStore,
 ) {
-    suspend fun getAllTracks(page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toListPage() }
+    suspend fun getAllTracks(page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getAllTracks(page).toListPage() }.recordingStars()
 
     /**
      * Resolve uma faixa pelo id do arquivo consultando o servidor diretamente, para trazer
@@ -32,16 +34,16 @@ class MusicRepository @Inject constructor(
     suspend fun getArtists(page: Int): AppResult<ListPage<ArtistDto>> = safeApiCall { api.getArtists(page).toListPage() }
     suspend fun getAlbums(page: Int): AppResult<ListPage<AlbumDto>> = safeApiCall { api.getAlbums(page).toListPage() }
     suspend fun getGenres(page: Int): AppResult<ListPage<GenreDto>> = safeApiCall { api.getGenres(page).toListPage() }
-    suspend fun getTracksByArtist(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByArtist(key, page).toListPage() }
-    suspend fun getTracksByAlbum(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByAlbum(key, page).toListPage() }
-    suspend fun getTracksByGenre(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByGenre(key, page).toListPage() }
+    suspend fun getTracksByArtist(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByArtist(key, page).toListPage() }.recordingStars()
+    suspend fun getTracksByAlbum(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByAlbum(key, page).toListPage() }.recordingStars()
+    suspend fun getTracksByGenre(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByGenre(key, page).toListPage() }.recordingStars()
     suspend fun getFolders(page: Int): AppResult<ListPage<FolderDto>> = safeApiCall { api.getFolders(page).toListPage() }
-    suspend fun getTracksByFolder(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByFolder(key, page).toListPage() }
+    suspend fun getTracksByFolder(key: String, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall { api.getTracksByFolder(key, page).toListPage() }.recordingStars()
     suspend fun getPlaylists(page: Int): AppResult<ListPage<PlaylistDto>> = safeApiCall { api.getPlaylists(page).toListPage() }
     suspend fun getPlaylistTracks(id: Int, page: Int): AppResult<ListPage<TrackDto>> = safeApiCall {
         val playlistPage = api.getPlaylistTracks(id, page)
         ListPage(playlistPage.items.map { it.file }, playlistPage.pagination.hasNext)
-    }
+    }.recordingStars()
     suspend fun createPlaylist(name: String): AppResult<PlaylistDto> = safeApiCall { api.createPlaylist(CreatePlaylistRequest(name)) }
     suspend fun deletePlaylist(id: Int): AppResult<Unit> = safeApiCall { api.deletePlaylist(id) }
     suspend fun addTrackToPlaylist(playlistId: Int, trackId: Int): AppResult<Unit> = safeApiCall { api.addTrackToPlaylist(playlistId, AddTrackRequest(trackId)) }
@@ -58,6 +60,11 @@ class MusicRepository @Inject constructor(
      * garantimos `http://` e a porta padrão 8000 quando ausentes — mesma lógica do
      * interceptor em NetworkModule.parseServerUrl.
      */
+    private fun AppResult<ListPage<TrackDto>>.recordingStars(): AppResult<ListPage<TrackDto>> {
+        if (this is AppResult.Success) starStore.record(data.items.associate { it.id.toString() to it.starred })
+        return this
+    }
+
     private suspend fun baseUrl(): String {
         val raw = (serverStore.serverUrl.first() ?: "").trim().trimEnd('/')
         if (raw.isEmpty()) return ""

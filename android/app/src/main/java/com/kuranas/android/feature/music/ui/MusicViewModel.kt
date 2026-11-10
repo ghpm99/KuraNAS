@@ -10,6 +10,7 @@ import com.kuranas.android.feature.music.data.FolderDto
 import com.kuranas.android.feature.music.data.MusicRepository
 import com.kuranas.android.feature.music.data.PlaylistDto
 import com.kuranas.android.feature.music.data.TrackDto
+import com.kuranas.android.feature.music.data.TrackStarToggler
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,10 @@ enum class MusicTab { TRACKS, ARTISTS, ALBUMS, PLAYLISTS, FOLDERS }
 class MusicViewModel @Inject constructor(
     private val repository: MusicRepository,
     private val player: PlayerConnection,
+    starToggler: TrackStarToggler,
 ) : ViewModel() {
+
+    val stars = TrackStarState(viewModelScope, starToggler)
 
     private val _tab = MutableStateFlow(MusicTab.TRACKS)
     val tab: StateFlow<MusicTab> = _tab.asStateFlow()

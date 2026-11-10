@@ -25,6 +25,8 @@ import com.kuranas.android.feature.music.data.TrackDto
 @Composable
 fun TrackListItem(
     track: TrackDto,
+    isStarred: Boolean,
+    onToggleStar: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -63,12 +65,15 @@ fun TrackListItem(
                 )
             }
         }
-        track.durationSeconds?.let { seconds ->
-            Text(
-                formatDuration(seconds),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            track.durationSeconds?.let { seconds ->
+                Text(
+                    formatDuration(seconds),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TrackStarButton(isStarred = isStarred, onToggleStar = onToggleStar)
         }
     }
 }

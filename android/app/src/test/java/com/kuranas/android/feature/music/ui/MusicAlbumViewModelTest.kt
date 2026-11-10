@@ -2,7 +2,9 @@ package com.kuranas.android.feature.music.ui
 
 import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.music.data.MusicRepository
+import com.kuranas.android.feature.music.data.TrackStarToggler
 import com.kuranas.android.feature.music.data.TrackDto
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import io.mockk.coEvery
@@ -41,7 +43,7 @@ class MusicAlbumViewModelTest {
     @Test
     fun `load fetches the first page of the album tracks`() {
         coEvery { repository.getTracksByAlbum("album-key", 1) } returns tracksPage(true, 1, 2)
-        val viewModel = MusicAlbumViewModel(repository, player)
+        val viewModel = MusicAlbumViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.load("album-key")
 
@@ -54,7 +56,7 @@ class MusicAlbumViewModelTest {
     fun `loadMore appends the next album page and play uses every loaded track`() {
         coEvery { repository.getTracksByAlbum("album-key", 1) } returns tracksPage(true, 1)
         coEvery { repository.getTracksByAlbum("album-key", 2) } returns tracksPage(false, 2)
-        val viewModel = MusicAlbumViewModel(repository, player)
+        val viewModel = MusicAlbumViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
         viewModel.load("album-key")
 
         viewModel.loadMore()
@@ -67,7 +69,7 @@ class MusicAlbumViewModelTest {
     @Test
     fun `failed first page ends loading with the error message`() {
         coEvery { repository.getTracksByAlbum("album-key", 1) } returns AppResult.Error("boom")
-        val viewModel = MusicAlbumViewModel(repository, player)
+        val viewModel = MusicAlbumViewModel(repository, player, TrackStarToggler(mockk(), FileStarStore()))
 
         viewModel.load("album-key")
 
