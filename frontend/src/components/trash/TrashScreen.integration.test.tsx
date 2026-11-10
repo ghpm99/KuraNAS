@@ -93,6 +93,7 @@ describe('TrashScreen (seam)', () => {
 	it('saves the retention policy on blur via PUT /trash/retention', async () => {
 		renderScreen();
 		const input = await screen.findByLabelText('TRASH_RETENTION_LABEL');
+		await waitFor(() => expect(input).toHaveValue(30));
 
 		fireEvent.change(input, { target: { value: '7' } });
 		fireEvent.blur(input);

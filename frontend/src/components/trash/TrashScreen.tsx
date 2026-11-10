@@ -1,9 +1,10 @@
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatSize } from '@/shared/utils/formatSize';
-import { Button, Chip, CircularProgress, TextField } from '@mui/material';
+import { Button, Chip, CircularProgress } from '@mui/material';
 import { ArchiveRestore, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import TrashConfirmDialog from './TrashConfirmDialog';
+import TrashRetentionField from './TrashRetentionField';
 import styles from './TrashScreen.module.css';
 import { useTrashScreen } from './useTrashScreen';
 
@@ -20,14 +21,12 @@ const TrashScreen = () => {
         isError,
         isEmpty,
         isMutating,
-        retentionDays,
         handleRestore,
         pendingConfirmation,
         requestDeleteForever,
         requestEmptyTrash,
         cancelPendingAction,
         confirmPendingAction,
-        handleRetentionChange,
     } = useTrashScreen();
     const isEmptyingTrash = pendingConfirmation?.kind === 'emptyTrash';
 
@@ -49,19 +48,7 @@ const TrashScreen = () => {
                 }
             />
 
-            {retentionDays !== undefined && (
-                <div className={styles.retention}>
-                    <TextField
-                        size="small"
-                        type="number"
-                        label={t('TRASH_RETENTION_LABEL')}
-                        defaultValue={retentionDays}
-                        slotProps={{ htmlInput: { min: 1 } }}
-                        onBlur={(event) => void handleRetentionChange(Number(event.target.value))}
-                    />
-                    <span className={styles.description}>{t('TRASH_RETENTION_HINT')}</span>
-                </div>
-            )}
+            <TrashRetentionField />
 
             {isLoading && (
                 <div className={styles.state}>

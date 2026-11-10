@@ -1,12 +1,5 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import {
-    deleteTrashItem,
-    emptyTrash,
-    getTrashItems,
-    getTrashRetention,
-    restoreTrashItem,
-    updateTrashRetention,
-} from '@/service/trash';
+import { deleteTrashItem, emptyTrash, getTrashItems, restoreTrashItem } from '@/service/trash';
 import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import type { TrashPage } from '@/types/trash';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,12 +30,6 @@ export const useTrashScreen = () => {
     const trashQuery = useQuery<TrashPage>({
         queryKey: [trashQueryKey, page],
         queryFn: () => getTrashItems(page, PAGE_SIZE),
-        retry: false,
-    });
-
-    const retentionQuery = useQuery({
-        queryKey: [trashQueryKey, 'retention'],
-        queryFn: getTrashRetention,
         retry: false,
     });
 
@@ -86,13 +73,6 @@ export const useTrashScreen = () => {
         mutationFn: emptyTrash,
         onSuccess: refreshTrashAndFilesTree,
     });
-    const retentionMutation = useMutation({
-        mutationFn: updateTrashRetention,
-        onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: [trashQueryKey, 'retention'] });
-        },
-    });
-
     const handleRestore = useCallback(
         async (id: number) => {
             try {
@@ -140,21 +120,6 @@ export const useTrashScreen = () => {
         }
     }, [deleteForever, emptyWholeTrash, pendingConfirmation]);
 
-    const handleRetentionChange = useCallback(
-        async (days: number) => {
-            if (!Number.isFinite(days) || days <= 0) {
-                return;
-            }
-            try {
-                await retentionMutation.mutateAsync(days);
-                enqueueSnackbar(t('TRASH_RETENTION_SAVED'), { variant: 'success' });
-            } catch (error) {
-                notifyActionError(error);
-            }
-        },
-        [enqueueSnackbar, notifyActionError, retentionMutation, t]
-    );
-
     return {
         t,
         items,
@@ -168,7 +133,6 @@ export const useTrashScreen = () => {
         isEmpty: trashQuery.isSuccess && items.length === 0,
         isMutating:
             restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
-        retentionDays: retentionQuery.data?.days,
         handleRestore,
         pendingConfirmation,
         requestDeleteForever: (itemId: number) =>
@@ -176,6 +140,5 @@ export const useTrashScreen = () => {
         requestEmptyTrash: () => setPendingConfirmation({ kind: 'emptyTrash' }),
         cancelPendingAction: () => setPendingConfirmation(null),
         confirmPendingAction,
-        handleRetentionChange,
     };
 };

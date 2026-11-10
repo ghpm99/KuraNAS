@@ -9,7 +9,6 @@ import {
     getTrashItems,
     getTrashRetention,
     restoreTrashItem,
-    updateTrashRetention,
 } from '@/service/trash';
 import type { TrashPage } from '@/types/trash';
 
@@ -27,7 +26,6 @@ const mockedGetRetention = getTrashRetention as jest.Mock;
 const mockedRestore = restoreTrashItem as jest.Mock;
 const mockedDelete = deleteTrashItem as jest.Mock;
 const mockedEmpty = emptyTrash as jest.Mock;
-const mockedUpdateRetention = updateTrashRetention as jest.Mock;
 
 const onePage = (hasNext = false): TrashPage => ({
     items: [
@@ -160,29 +158,6 @@ describe('TrashScreen', () => {
         confirmInDialog(/TRASH_EMPTY_BUTTON/);
 
         await waitFor(() => expect(mockedEmpty).toHaveBeenCalled());
-    });
-
-    it('updates the retention policy on blur', async () => {
-        mockedGetTrashItems.mockResolvedValue(onePage());
-        mockedUpdateRetention.mockResolvedValue({ days: 7 });
-        renderScreen();
-
-        const input = await screen.findByLabelText('TRASH_RETENTION_LABEL');
-        fireEvent.change(input, { target: { value: '7' } });
-        fireEvent.blur(input);
-
-        await waitFor(() => expect(mockedUpdateRetention.mock.calls[0]?.[0]).toBe(7));
-    });
-
-    it('does not save a non-positive retention', async () => {
-        mockedGetTrashItems.mockResolvedValue(onePage());
-        renderScreen();
-
-        const input = await screen.findByLabelText('TRASH_RETENTION_LABEL');
-        fireEvent.change(input, { target: { value: '0' } });
-        fireEvent.blur(input);
-
-        await waitFor(() => expect(mockedUpdateRetention).not.toHaveBeenCalled());
     });
 
     it('navigates between pages', async () => {

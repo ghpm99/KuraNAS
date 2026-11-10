@@ -1448,6 +1448,8 @@
 	"TRASH_RETENTION_LABEL": "Retention (days)",
 	"TRASH_RETENTION_HINT": "Items older than the retention period are deleted automatically.",
 	"TRASH_RETENTION_SAVED": "Retention updated",
+	"TRASH_RETENTION_INVALID": "Enter a whole number of days, starting at 1",
+	"TRASH_RETENTION_UNKNOWN": "Could not read the current retention; enter a value to set it",
 	"TRASH_PREV_PAGE": "Previous",
 	"TRASH_NEXT_PAGE": "Next",
 	"STORAGE_ROOT_NOT_FOUND": "Storage root not found",

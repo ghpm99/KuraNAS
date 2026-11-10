@@ -1448,6 +1448,8 @@
 	"TRASH_RETENTION_LABEL": "Retenção (dias)",
 	"TRASH_RETENTION_HINT": "Itens além do período de retenção são excluídos automaticamente.",
 	"TRASH_RETENTION_SAVED": "Retenção atualizada",
+	"TRASH_RETENTION_INVALID": "Informe um número inteiro de dias, a partir de 1",
+	"TRASH_RETENTION_UNKNOWN": "Não foi possível ler a retenção atual; informe um valor para defini-la",
 	"TRASH_PREV_PAGE": "Anterior",
 	"TRASH_NEXT_PAGE": "Próxima",
 	"STORAGE_ROOT_NOT_FOUND": "Raiz de armazenamento não encontrada",
