@@ -7,6 +7,7 @@ import {
     restoreTrashItem,
     updateTrashRetention,
 } from '@/service/trash';
+import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import type { TrashPage } from '@/types/trash';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -29,19 +30,19 @@ export const useTrashScreen = () => {
     const [page, setPage] = useState(1);
 
     const trashQuery = useQuery<TrashPage>({
-        queryKey: ['trash', page],
+        queryKey: [trashQueryKey, page],
         queryFn: () => getTrashItems(page, PAGE_SIZE),
         retry: false,
     });
 
     const retentionQuery = useQuery({
-        queryKey: ['trash', 'retention'],
+        queryKey: [trashQueryKey, 'retention'],
         queryFn: getTrashRetention,
         retry: false,
     });
 
     const invalidate = useCallback(() => {
-        void queryClient.invalidateQueries({ queryKey: ['trash'] });
+        void queryClient.invalidateQueries({ queryKey: [trashQueryKey] });
         // Restored entries reappear in the files tree right away.
         void queryClient.invalidateQueries({ queryKey: ['files'] });
     }, [queryClient]);
@@ -61,7 +62,7 @@ export const useTrashScreen = () => {
     const retentionMutation = useMutation({
         mutationFn: updateTrashRetention,
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ['trash', 'retention'] });
+            void queryClient.invalidateQueries({ queryKey: [trashQueryKey, 'retention'] });
         },
     });
 

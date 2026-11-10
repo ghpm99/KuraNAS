@@ -35,7 +35,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 14. Comentários removidos do pacote `trash/`
 
 ### Frontend
-- [ ] 15. `['trash']` invalidada após excluir arquivos (explorer e imagens)
+- [x] 15. `['trash']` invalidada após excluir arquivos (explorer e imagens)
 - [ ] 16. Página atual vazia após restaurar/excluir volta para a anterior
 - [ ] 17. Erro de restaurar/excluir com mensagem própria (`TRASH_ACTION_ERROR`)
 - [ ] 18. Diálogo de confirmação do app no lugar de `window.confirm`

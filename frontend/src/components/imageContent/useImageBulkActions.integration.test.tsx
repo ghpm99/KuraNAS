@@ -169,4 +169,16 @@ describe('useImageBulkActions (seam)', () => {
         );
         expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['files'] });
     });
+
+    it('refreshes the trash listing after sending images to the trash', async () => {
+        const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+        const { result } = renderActions();
+
+        await act(async () => {
+            await result.current.deleteImages(images.slice(0, 1), false);
+        });
+
+        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trash'] });
+        invalidateSpy.mockRestore();
+    });
 });
