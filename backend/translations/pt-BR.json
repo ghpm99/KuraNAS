@@ -1648,6 +1648,7 @@
 	"ERROR_DOWNLOAD_INVALID_URL": "Informe uma URL http(s) válida",
 	"ERROR_DOWNLOAD_INVALID_PRESET": "Formato de download desconhecido",
 	"ERROR_DOWNLOAD_INVALID_TARGET": "Destino inválido: selecione uma biblioteca habilitada",
+	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Subpasta inválida: ela precisa ficar dentro da biblioteca escolhida",
 	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "O subsistema de tarefas está indisponível",
 	"ERROR_DOWNLOAD_ENQUEUE": "Não foi possível enfileirar o download",
 	"DOWNLOAD_PRESET_AUDIO_MP3": "Áudio (MP3)",

@@ -133,3 +133,23 @@ func TestTargetsAndPresetsHandlers(t *testing.T) {
 type errString string
 
 func (e errString) Error() string { return string(e) }
+
+func fetchErrorMessage(t *testing.T, serviceErr error) string {
+	t.Helper()
+	router := newTestRouter(&fakeService{fetchErr: serviceErr})
+	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv"}`)
+	var body map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode error body: %v", err)
+	}
+	return body["error"]
+}
+
+func TestFetchHandlerTellsAnInvalidSubfolderApartFromAnInvalidTarget(t *testing.T) {
+	subfolderMessage := fetchErrorMessage(t, ErrInvalidSubfolder)
+	targetMessage := fetchErrorMessage(t, ErrInvalidTarget)
+
+	if subfolderMessage == "" || subfolderMessage == targetMessage {
+		t.Fatalf("subfolder and target need distinct messages, got %q and %q", subfolderMessage, targetMessage)
+	}
+}
