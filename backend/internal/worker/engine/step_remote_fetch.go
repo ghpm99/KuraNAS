@@ -233,32 +233,45 @@ func isTempArtifact(name string) bool {
 	return false
 }
 
-// moveFile renames src to dst, falling back to a copy+remove when the two live
-// on different filesystems (rename returns EXDEV).
-func moveFile(src, dst string) error {
-	if err := os.Rename(src, dst); err == nil {
+// stagedCopySuffix marks a file still being copied into the library; it is one
+// of tempArtifactExts, so a leftover is never taken for finished media.
+const stagedCopySuffix = ".part"
+
+// moveFile renames sourcePath to destinationPath. Across filesystems (rename
+// returns EXDEV) it copies under a staging name and renames at the end, so the
+// final name never holds a partial file.
+func moveFile(sourcePath, destinationPath string) error {
+	if err := os.Rename(sourcePath, destinationPath); err == nil {
 		return nil
 	}
-	in, err := os.Open(src)
-	if err != nil {
+	stagingPath := destinationPath + stagedCopySuffix
+	if err := copyFileContent(sourcePath, stagingPath); err != nil {
+		os.Remove(stagingPath)
 		return err
 	}
-	defer in.Close()
+	if err := os.Rename(stagingPath, destinationPath); err != nil {
+		os.Remove(stagingPath)
+		return err
+	}
+	return os.Remove(sourcePath)
+}
 
-	out, err := os.Create(dst)
+func copyFileContent(sourcePath, destinationPath string) error {
+	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(out, in); err != nil {
-		out.Close()
-		os.Remove(dst)
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(destinationPath)
+	if err != nil {
 		return err
 	}
-	if err := out.Close(); err != nil {
-		os.Remove(dst)
+	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
+		destinationFile.Close()
 		return err
 	}
-	return os.Remove(src)
+	return destinationFile.Close()
 }
 
 func lastLine(s string) string {

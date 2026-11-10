@@ -345,3 +345,36 @@ func TestExecuteRemoteFetchStepSurvivesAnOutputLineBeyondTheProgressBuffer(t *te
 		t.Fatalf("the downloaded file must reach the library: %v", err)
 	}
 }
+
+func TestCopyFileContentWritesTheWholeFile(t *testing.T) {
+	sourcePath := filepath.Join(t.TempDir(), "clip.mp4")
+	stagingPath := filepath.Join(t.TempDir(), "clip.mp4"+stagedCopySuffix)
+	if err := os.WriteFile(sourcePath, []byte("whole download"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := copyFileContent(sourcePath, stagingPath); err != nil {
+		t.Fatalf("copyFileContent: %v", err)
+	}
+
+	copied, err := os.ReadFile(stagingPath)
+	if err != nil || string(copied) != "whole download" {
+		t.Fatalf("staged copy content wrong: %q, %v", copied, err)
+	}
+	if !isTempArtifact(filepath.Base(stagingPath)) {
+		t.Fatal("a staged copy must be recognised as an unfinished artifact")
+	}
+}
+
+func TestMoveFileLeavesNoStagedCopyBehindWhenItFails(t *testing.T) {
+	libraryDir := t.TempDir()
+	destinationPath := filepath.Join(libraryDir, "clip.mp4")
+
+	if err := moveFile(filepath.Join(t.TempDir(), "never-downloaded.mp4"), destinationPath); err == nil {
+		t.Fatal("moving a missing file must fail")
+	}
+
+	if leftovers, _ := os.ReadDir(libraryDir); len(leftovers) != 0 {
+		t.Fatalf("a failed move must leave the library untouched, found %d entries", len(leftovers))
+	}
+}

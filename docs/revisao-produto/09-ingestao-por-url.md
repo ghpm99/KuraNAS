@@ -27,7 +27,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 02. Timeout do step `remote_fetch` (configurável, com padrão generoso)
 - [x] 03. Mover para o destino nunca sobrescreve: nome livre com sufixo ` (2)`, ` (3)`…
 - [x] 04. Saída do yt-dlp além do buffer de progresso não trava mais o download (pipe drenado); parcial removido quando o fechamento da cópia falha
-- [ ] 05. Temporário do download criado dentro da raiz de destino (pasta oculta ignorada por scan/watcher), para o mover ser atômico
+- [x] 05. Cópia entre filesystems grava em nome provisório (`.part`) e renomeia no fim: o nome final nunca aparece parcial (pasta temporária por raiz descartada — exigiria nova pasta ignorada em scan, watcher, backup e WebDAV)
 - [ ] 06. Falha e conclusão do download geram notificação in-app com texto i18n
 - [ ] 07. Erro do download guardado no job sem caminho do servidor
 - [ ] 08. Subpasta inválida com mensagem própria
