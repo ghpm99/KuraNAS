@@ -342,3 +342,34 @@ func TestTrashHandlers_BatchRejectsEmptyOrMalformedRequests(t *testing.T) {
 		}
 	}
 }
+
+func TestTrashHandlers_MutationsDecodeTheWireFieldNames(t *testing.T) {
+	router, repo, root := newTrashRouter(t)
+	seedTrashedFiles(t, repo, root, "a.txt", "b.txt")
+
+	rec := doTrashJSON(router, http.MethodPost, "/trash/restore", json.RawMessage(`{"ids":[1]}`))
+	var restoreResponse map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &restoreResponse); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("batch restore: status=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
+	}
+	if string(restoreResponse["restored_ids"]) != "[1]" || string(restoreResponse["failures"]) != "[]" {
+		t.Fatalf("batch restore must answer restored_ids and failures, got %s", rec.Body.String())
+	}
+
+	rec = doTrashJSON(router, http.MethodPost, "/trash/delete", json.RawMessage(`{"ids":[2]}`))
+	var deleteResponse map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &deleteResponse); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("batch delete: status=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
+	}
+	if string(deleteResponse["deleted_ids"]) != "[2]" || string(deleteResponse["failures"]) != "[]" {
+		t.Fatalf("batch delete must answer deleted_ids and failures, got %s", rec.Body.String())
+	}
+
+	rec = doTrashJSON(router, http.MethodPut, "/trash/retention", json.RawMessage(`{"days":9}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("put retention: expected 200, got %d (%s)", rec.Code, rec.Body.String())
+	}
+	if storedDays, isStored, err := repo.GetRetentionDays(); err != nil || !isStored || storedDays != 9 {
+		t.Fatalf("retention must be stored as 9 days, got days=%d stored=%v err=%v", storedDays, isStored, err)
+	}
+}
