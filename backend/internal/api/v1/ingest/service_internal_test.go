@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -184,5 +185,15 @@ func TestListTargetsAndPresets(t *testing.T) {
 func TestResolvePresetUnknown(t *testing.T) {
 	if _, ok := ResolvePreset("does_not_exist"); ok {
 		t.Fatal("expected unknown preset to not resolve")
+	}
+}
+
+func TestFetchRejectsAURLBeyondTheMaximumLength(t *testing.T) {
+	oversizedURL := "https://x.test/" + strings.Repeat("a", MaxURLLength)
+
+	_, err := NewService(nil).Fetch(FetchRequestDto{URL: oversizedURL, Preset: "audio_mp3"})
+
+	if !errors.Is(err, ErrURLTooLong) {
+		t.Fatalf("expected ErrURLTooLong, got %v", err)
 	}
 }

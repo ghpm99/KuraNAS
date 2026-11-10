@@ -1646,6 +1646,7 @@
 	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Atenção: este provedor é na nuvem. O conteúdo dos seus e-mails será enviado para um serviço externo para análise.",
 	"ERROR_DOWNLOAD_INVALID_REQUEST": "Requisição de download inválida",
 	"ERROR_DOWNLOAD_INVALID_URL": "Informe uma URL http(s) válida",
+	"ERROR_DOWNLOAD_URL_TOO_LONG": "A URL é longa demais (máximo de %d caracteres)",
 	"ERROR_DOWNLOAD_INVALID_PRESET": "Formato de download desconhecido",
 	"ERROR_DOWNLOAD_INVALID_TARGET": "Destino inválido: selecione uma biblioteca habilitada",
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Subpasta inválida: ela precisa ficar dentro da biblioteca escolhida",

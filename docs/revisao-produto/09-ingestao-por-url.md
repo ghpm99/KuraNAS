@@ -31,7 +31,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 06. Falha e conclusão do download geram notificação in-app com texto i18n
 - [x] 07. Erro do download guardado no job sem caminho do servidor
 - [x] 08. Subpasta inválida com mensagem própria
-- [ ] 09. URL com limite de tamanho (400 com mensagem própria)
+- [x] 09. URL com limite de tamanho (400 com mensagem própria)
 - [ ] 10. Atualização do yt-dlp: corpo limitado e uma atualização por vez
 - [ ] 11. Teste do step de ponta a ponta com binário falso (sucesso, falha, sem arquivo)
 - [ ] 12. Testes de `/ingest/ytdlp/*`, `/targets` e `/presets` fixam os nomes de campo da resposta

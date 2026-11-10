@@ -1646,6 +1646,7 @@
 	"SETTINGS_EMAIL_AI_PROVIDER_PRIVACY_WARNING": "Warning: this is a cloud provider. Your e-mail content will be sent to an external service for analysis.",
 	"ERROR_DOWNLOAD_INVALID_REQUEST": "Invalid download request",
 	"ERROR_DOWNLOAD_INVALID_URL": "A valid http(s) URL is required",
+	"ERROR_DOWNLOAD_URL_TOO_LONG": "The URL is too long (at most %d characters)",
 	"ERROR_DOWNLOAD_INVALID_PRESET": "Unknown download format",
 	"ERROR_DOWNLOAD_INVALID_TARGET": "Invalid destination: select an enabled library",
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Invalid subfolder: it must stay inside the chosen library",

@@ -31,6 +31,8 @@ func (h *Handler) FetchHandler(c *gin.Context) {
 		switch {
 		case errors.Is(err, ErrInvalidURL):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_INVALID_URL")})
+		case errors.Is(err, ErrURLTooLong):
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.Translate("ERROR_DOWNLOAD_URL_TOO_LONG", MaxURLLength)})
 		case errors.Is(err, ErrInvalidPreset):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_INVALID_PRESET")})
 		case errors.Is(err, ErrInvalidTarget):

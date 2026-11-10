@@ -96,6 +96,7 @@ func TestFetchHandlerErrorMapping(t *testing.T) {
 		want int
 	}{
 		{"invalid url", ErrInvalidURL, http.StatusBadRequest},
+		{"url too long", ErrURLTooLong, http.StatusBadRequest},
 		{"invalid preset", ErrInvalidPreset, http.StatusBadRequest},
 		{"invalid target", ErrInvalidTarget, http.StatusBadRequest},
 		{"invalid subfolder", ErrInvalidSubfolder, http.StatusBadRequest},

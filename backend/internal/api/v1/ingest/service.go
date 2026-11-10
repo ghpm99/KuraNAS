@@ -20,6 +20,9 @@ const (
 	remoteFetchStepType = "remote_fetch"
 )
 
+// MaxURLLength caps the URL accepted for download, in bytes.
+const MaxURLLength = 2048
+
 type Service struct {
 	jobsRepo jobEnqueuer
 }
@@ -32,6 +35,9 @@ func NewService(jobsRepo jobEnqueuer) *Service {
 // returns the job id so the caller can track progress through the jobs API.
 func (s *Service) Fetch(request FetchRequestDto) (int, error) {
 	rawURL := strings.TrimSpace(request.URL)
+	if len(rawURL) > MaxURLLength {
+		return 0, ErrURLTooLong
+	}
 	if !isFetchableURL(rawURL) {
 		return 0, ErrInvalidURL
 	}
