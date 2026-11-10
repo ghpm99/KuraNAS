@@ -698,3 +698,33 @@ func TestTrashService_RestoreItemWhoseBytesVanishedReportsMissingContent(t *test
 		t.Fatalf("an item without bytes must stay removable: %v", err)
 	}
 }
+
+func TestTrashService_ListingDescribesNameTypeAndExpiryOfEachItem(t *testing.T) {
+	s, repo, _, root := newTrashServiceForTest(t)
+	repo.retention = 7
+	folderPath := filepath.Join(root, "album")
+	filePath := filepath.Join(root, "note.txt")
+	writeFile(t, filepath.Join(folderPath, "song.mp3"), "audio")
+	writeFile(t, filePath, "texto")
+	for _, trashedPath := range []string{folderPath, filePath} {
+		if err := s.MoveToTrash(trashedPath, 5); err != nil {
+			t.Fatalf("MoveToTrash %q: %v", trashedPath, err)
+		}
+	}
+
+	listing, err := s.GetItems(1, 10)
+	if err != nil || len(listing.Items) != 2 {
+		t.Fatalf("GetItems: items=%v err=%v", listing.Items, err)
+	}
+
+	folderItem, fileItem := listing.Items[0], listing.Items[1]
+	if folderItem.Name != "album" || !folderItem.IsDirectory {
+		t.Fatalf("folder item described wrongly: %+v", folderItem)
+	}
+	if fileItem.Name != "note.txt" || fileItem.IsDirectory {
+		t.Fatalf("file item described wrongly: %+v", fileItem)
+	}
+	if !fileItem.ExpiresAt.Equal(fileItem.DeletedAt.AddDate(0, 0, 7)) {
+		t.Fatalf("expiry must be deletion + retention, got deleted=%v expires=%v", fileItem.DeletedAt, fileItem.ExpiresAt)
+	}
+}

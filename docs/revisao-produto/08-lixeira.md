@@ -25,7 +25,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 04. Tamanho de pasta na lixeira é a soma real do conteúdo (confirmar antes o que `home_file.size` guarda para diretórios)
 - [x] 05. Restaurar com bytes ausentes responde erro específico em vez de 500 genérico; item continua removível
 - [x] 06. 409 de restauração informa o caminho ocupado (campo `path`)
-- [ ] 07. `trash_item` guarda o tipo; `GET /trash` devolve `name`, `is_directory` e `expires_at`
+- [x] 07. `trash_item` guarda o tipo; `GET /trash` devolve `name`, `is_directory` e `expires_at`
 - [ ] 08. `GET /trash/summary` (itens, bytes)
 - [ ] 09. Ordenação e busca em `GET /trash` (parâmetro inválido → 400)
 - [ ] 10. Restaurar e excluir em lote com resultado por id

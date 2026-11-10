@@ -91,6 +91,11 @@ func (s *Service) MoveToTrashFrom(logicalPath string, contentPath string, size i
 		return err
 	}
 
+	contentInfo, err := os.Stat(contentPath)
+	if err != nil {
+		return fmt.Errorf("stat trashed content: %w", err)
+	}
+
 	if err := moveFile(contentPath, trashPath); err != nil {
 		return fmt.Errorf("move to trash: %w", err)
 	}
@@ -101,6 +106,7 @@ func (s *Service) MoveToTrashFrom(logicalPath string, contentPath string, size i
 			TrashPath:    trashPath,
 			Size:         size,
 			DeletedAt:    time.Now(),
+			IsDirectory:  contentInfo.IsDir(),
 		})
 		return createErr
 	})
@@ -171,9 +177,14 @@ func (s *Service) GetItems(page int, pageSize int) (utils.PaginationResponse[Tra
 		return utils.PaginationResponse[TrashItemDto]{}, err
 	}
 
+	retentionDays, err := s.GetRetentionDays()
+	if err != nil {
+		return utils.PaginationResponse[TrashItemDto]{}, err
+	}
+
 	items := make([]TrashItemDto, 0, len(models.Items))
 	for index := range models.Items {
-		items = append(items, models.Items[index].ToDto())
+		items = append(items, models.Items[index].ToDto(retentionDays))
 	}
 
 	return utils.PaginationResponse[TrashItemDto]{

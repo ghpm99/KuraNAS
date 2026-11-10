@@ -221,6 +221,9 @@ var AddHomeFileStarredAtQuery string
 //go:embed queries/0070_cascade_file_dependents_on_file_delete.sql
 var CascadeFileDependentsOnFileDeleteQuery string
 
+//go:embed queries/0071_add_trash_item_is_directory.sql
+var AddTrashItemIsDirectoryQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -484,6 +487,10 @@ func accessControlMigrationList() {
 func trashMigrationList() {
 	addMigration("0036_create_trash_item_table",
 		defaultMigrationFunc(CreateTrashItemTableQuery))
+
+	addMigrationRequiring("0071_add_trash_item_is_directory",
+		[]string{"0036_create_trash_item_table"},
+		defaultMigrationFunc(AddTrashItemIsDirectoryQuery))
 }
 
 func storageRootsMigrationList() {

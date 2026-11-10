@@ -32,6 +32,7 @@ func scanTrashItem(scanner interface{ Scan(...any) error }) (TrashItemModel, err
 		&model.TrashPath,
 		&model.Size,
 		&model.DeletedAt,
+		&model.IsDirectory,
 	)
 	return model, err
 }
@@ -43,6 +44,7 @@ func (r *Repository) CreateItem(tx *sql.Tx, item TrashItemModel) (TrashItemModel
 		item.TrashPath,
 		item.Size,
 		item.DeletedAt,
+		item.IsDirectory,
 	))
 	if err != nil {
 		return TrashItemModel{}, fmt.Errorf("CreateItem: %w", err)

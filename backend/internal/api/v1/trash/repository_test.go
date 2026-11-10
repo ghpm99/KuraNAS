@@ -24,9 +24,9 @@ func newRepoWithMock(t *testing.T) (*Repository, sqlmock.Sqlmock, *sql.DB) {
 }
 
 func trashItemRows(rows ...TrashItemModel) *sqlmock.Rows {
-	out := sqlmock.NewRows([]string{"id", "original_path", "trash_path", "size", "deleted_at"})
+	out := sqlmock.NewRows([]string{"id", "original_path", "trash_path", "size", "deleted_at", "is_directory"})
 	for _, row := range rows {
-		out.AddRow(row.ID, row.OriginalPath, row.TrashPath, row.Size, row.DeletedAt)
+		out.AddRow(row.ID, row.OriginalPath, row.TrashPath, row.Size, row.DeletedAt, row.IsDirectory)
 	}
 	return out
 }
@@ -42,7 +42,7 @@ func TestTrashRepository_CreateItem(t *testing.T) {
 	now := time.Now()
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.InsertTrashItemQuery)).
-		WithArgs("/data/a.txt", "/data/.kuranas-trash/a.txt.1", int64(8), now).
+		WithArgs("/data/a.txt", "/data/.kuranas-trash/a.txt.1", int64(8), now, false).
 		WillReturnRows(trashItemRows(TrashItemModel{
 			ID: 1, OriginalPath: "/data/a.txt", TrashPath: "/data/.kuranas-trash/a.txt.1", Size: 8, DeletedAt: now,
 		}))

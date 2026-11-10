@@ -4,7 +4,8 @@ SELECT
     original_path,
     trash_path,
     size,
-    deleted_at
+    deleted_at,
+    is_directory
 FROM
     trash_item
 ORDER BY
