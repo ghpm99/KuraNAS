@@ -182,10 +182,18 @@ describe('TrashScreen', () => {
             ],
             pagination: { page: 2, page_size: 15, has_next: false, has_prev: true },
         };
-        mockedGetTrashItems.mockImplementation((page: number) =>
-            Promise.resolve(page === 1 ? onePage(true) : lastPage)
-        );
-        mockedRestore.mockResolvedValue(undefined);
+        const emptiedLastPage: TrashPage = { ...lastPage, items: [] };
+        let isLastItemRestored = false;
+        mockedGetTrashItems.mockImplementation((page: number) => {
+            if (page === 1) {
+                return Promise.resolve(onePage(!isLastItemRestored));
+            }
+            return Promise.resolve(isLastItemRestored ? emptiedLastPage : lastPage);
+        });
+        mockedRestore.mockImplementation(() => {
+            isLastItemRestored = true;
+            return Promise.resolve();
+        });
         renderScreen();
         await waitFor(() => expect(screen.getByText('TRASH_NEXT_PAGE')).toBeEnabled());
         fireEvent.click(screen.getByText('TRASH_NEXT_PAGE'));

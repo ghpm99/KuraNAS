@@ -86,15 +86,11 @@ export const useTrashScreen = () => {
     const items = trashQuery.data?.items ?? [];
     const pagination = trashQuery.data?.pagination;
 
-    const leavePageEmptiedBy = useCallback(
-        (removedItemCount: number) => {
-            const isPageEmptied = removedItemCount >= items.length;
-            if (isPageEmptied) {
-                setPage((current) => Math.max(1, current - 1));
-            }
-        },
-        [items.length]
-    );
+    const isPastLastPage =
+        page > 1 && trashQuery.isSuccess && !trashQuery.isFetching && items.length === 0;
+    if (isPastLastPage) {
+        setPage(page - 1);
+    }
 
     const refreshTrashAndFilesTree = useCallback(() => {
         void queryClient.invalidateQueries({ queryKey: [trashQueryKey] });
@@ -111,10 +107,9 @@ export const useTrashScreen = () => {
         (departedItemIds: number[]) => {
             const departedIds = new Set(departedItemIds);
             deselectItems(selectedItems.filter((selectedItem) => departedIds.has(selectedItem.id)));
-            leavePageEmptiedBy(departedItemIds.length);
             refreshTrashAndFilesTree();
         },
-        [deselectItems, leavePageEmptiedBy, refreshTrashAndFilesTree, selectedItems]
+        [deselectItems, refreshTrashAndFilesTree, selectedItems]
     );
 
     const { restoreSelected, deleteSelectedForever, isBatchRunning } = useTrashBatchActions({
@@ -147,26 +142,24 @@ export const useTrashScreen = () => {
         async (id: number) => {
             try {
                 await restoreMutation.mutateAsync(id);
-                leavePageEmptiedBy(1);
                 enqueueSnackbar(t('TRASH_RESTORED_TOAST'), { variant: 'success' });
             } catch (error) {
                 notifyActionError(error);
             }
         },
-        [enqueueSnackbar, leavePageEmptiedBy, notifyActionError, restoreMutation, t]
+        [enqueueSnackbar, notifyActionError, restoreMutation, t]
     );
 
     const deleteForever = useCallback(
         async (id: number) => {
             try {
                 await deleteMutation.mutateAsync(id);
-                leavePageEmptiedBy(1);
                 enqueueSnackbar(t('TRASH_DELETED_TOAST'), { variant: 'success' });
             } catch (error) {
                 notifyActionError(error);
             }
         },
-        [deleteMutation, enqueueSnackbar, leavePageEmptiedBy, notifyActionError, t]
+        [deleteMutation, enqueueSnackbar, notifyActionError, t]
     );
 
     const emptyWholeTrash = useCallback(async () => {
