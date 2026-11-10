@@ -13,6 +13,7 @@ import {
     emptyTrash,
     getTrashItems,
     getTrashRetention,
+    getTrashSummary,
     restoreTrashItem,
     updateTrashRetention,
 } from './trash';
@@ -81,5 +82,14 @@ describe('service/trash', () => {
         const result = await updateTrashRetention(7);
         expect(mockedApi.put).toHaveBeenCalledWith('/trash/retention', { days: 7 });
         expect(result).toEqual({ days: 7 });
+    });
+
+    it('reads the trash totals', async () => {
+        mockedApi.get.mockResolvedValue({ data: { items: 3, size_bytes: 2048 } });
+
+        const summary = await getTrashSummary();
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/trash/summary');
+        expect(summary).toEqual({ items: 3, size_bytes: 2048 });
     });
 });

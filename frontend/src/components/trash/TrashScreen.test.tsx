@@ -8,6 +8,7 @@ import {
     emptyTrash,
     getTrashItems,
     getTrashRetention,
+    getTrashSummary,
     restoreTrashItem,
 } from '@/service/trash';
 import type { TrashPage } from '@/types/trash';
@@ -15,6 +16,7 @@ import type { TrashPage } from '@/types/trash';
 jest.mock('@/service/trash', () => ({
     getTrashItems: jest.fn(),
     getTrashRetention: jest.fn(),
+    getTrashSummary: jest.fn(),
     restoreTrashItem: jest.fn(),
     deleteTrashItem: jest.fn(),
     emptyTrash: jest.fn(),
@@ -23,6 +25,7 @@ jest.mock('@/service/trash', () => ({
 
 const mockedGetTrashItems = getTrashItems as jest.Mock;
 const mockedGetRetention = getTrashRetention as jest.Mock;
+const mockedGetSummary = getTrashSummary as jest.Mock;
 const mockedRestore = restoreTrashItem as jest.Mock;
 const mockedDelete = deleteTrashItem as jest.Mock;
 const mockedEmpty = emptyTrash as jest.Mock;
@@ -56,6 +59,7 @@ describe('TrashScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedGetRetention.mockResolvedValue({ days: 30 });
+        mockedGetSummary.mockResolvedValue({ items: 1, size_bytes: 2048 });
     });
 
     it('shows the loading state while fetching', () => {

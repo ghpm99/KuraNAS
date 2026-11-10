@@ -15,3 +15,8 @@ export type TrashPage = Pagination<TrashItem>;
 export type TrashRetention = {
     days: number;
 };
+
+export type TrashSummary = {
+    items: number;
+    size_bytes: number;
+};

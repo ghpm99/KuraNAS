@@ -1435,6 +1435,8 @@
 	"TRASH_LOAD_ERROR": "Failed to load the trash",
 	"TRASH_ACTION_ERROR": "Could not complete the trash operation",
 	"TRASH_EMPTY_STATE": "The trash is empty.",
+	"TRASH_SUMMARY": "{{count}} items taking {{size}}",
+	"TRASH_SUMMARY_ONE": "1 item taking {{size}}",
 	"TRASH_RESTORE_BUTTON": "Restore",
 	"TRASH_DELETE_FOREVER_BUTTON": "Delete forever",
 	"TRASH_EMPTY_BUTTON": "Empty trash",

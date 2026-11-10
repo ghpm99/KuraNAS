@@ -1,10 +1,15 @@
 import { apiBase } from '@/service';
-import type { TrashPage, TrashRetention } from '@/types/trash';
+import type { TrashPage, TrashRetention, TrashSummary } from '@/types/trash';
 
 export const getTrashItems = async (page: number, pageSize: number): Promise<TrashPage> => {
     const response = await apiBase.get<TrashPage>('/trash', {
         params: { page, page_size: pageSize },
     });
+    return response.data;
+};
+
+export const getTrashSummary = async (): Promise<TrashSummary> => {
+    const response = await apiBase.get<TrashSummary>('/trash/summary');
     return response.data;
 };
 

@@ -87,3 +87,8 @@
     gap: 12px;
     flex-wrap: wrap;
 }
+
+.summary {
+    margin: 0;
+    font-weight: 600;
+}

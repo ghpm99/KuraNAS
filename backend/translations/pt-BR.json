@@ -1435,6 +1435,8 @@
 	"TRASH_LOAD_ERROR": "Falha ao carregar a lixeira",
 	"TRASH_ACTION_ERROR": "Não foi possível concluir a operação na lixeira",
 	"TRASH_EMPTY_STATE": "A lixeira está vazia.",
+	"TRASH_SUMMARY": "{{count}} itens ocupando {{size}}",
+	"TRASH_SUMMARY_ONE": "1 item ocupando {{size}}",
 	"TRASH_RESTORE_BUTTON": "Restaurar",
 	"TRASH_DELETE_FOREVER_BUTTON": "Excluir definitivamente",
 	"TRASH_EMPTY_BUTTON": "Esvaziar lixeira",

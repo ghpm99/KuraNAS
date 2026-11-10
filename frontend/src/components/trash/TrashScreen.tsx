@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import TrashConfirmDialog from './TrashConfirmDialog';
 import TrashItemCard from './TrashItemCard';
 import TrashRetentionField from './TrashRetentionField';
+import TrashSummaryLine from './TrashSummaryLine';
 import styles from './TrashScreen.module.css';
 import { useTrashScreen } from './useTrashScreen';
 
@@ -47,6 +48,8 @@ const TrashScreen = () => {
                     </Button>
                 }
             />
+
+            <TrashSummaryLine />
 
             <TrashRetentionField />
 

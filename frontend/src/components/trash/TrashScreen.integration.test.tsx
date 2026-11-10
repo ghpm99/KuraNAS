@@ -51,6 +51,7 @@ describe('TrashScreen (seam)', () => {
 		mockedApi.get.mockImplementation((url: string) => {
 			if (url === '/trash') return Promise.resolve({ data: onePage });
 			if (url === '/trash/retention') return Promise.resolve({ data: { days: 30 } });
+			if (url === '/trash/summary') return Promise.resolve({ data: { items: 1, size_bytes: 2048 } });
 			return Promise.reject(new Error(`unexpected GET ${url}`));
 		});
 		mockedApi.post.mockResolvedValue({ data: undefined });
