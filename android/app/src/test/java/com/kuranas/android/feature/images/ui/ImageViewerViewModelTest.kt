@@ -3,8 +3,7 @@ package com.kuranas.android.feature.images.ui
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FilesRepository
 import com.kuranas.android.feature.files.data.StarredResponse
-import com.kuranas.android.feature.images.data.ImageLibraryItemDto
-import com.kuranas.android.feature.images.data.ImageStarStore
+import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.images.data.ImagesRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -27,12 +26,12 @@ class ImageViewerViewModelTest {
 
     private val imagesRepository = mockk<ImagesRepository>()
     private val filesRepository = mockk<FilesRepository>()
-    private val starStore = ImageStarStore()
+    private val starStore = FileStarStore()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        starStore.record(listOf(ImageLibraryItemDto(fileId = 7, name = "a.jpg", starred = false)))
+        starStore.record(mapOf("7" to false))
     }
 
     @After

@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.images.data.ImageLibraryItemDto
 import com.kuranas.android.feature.images.data.ImageLibraryPageDto
-import com.kuranas.android.feature.images.data.ImageStarStore
+import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.images.data.ImagesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -30,7 +30,7 @@ data class ImagesUiState(
 @HiltViewModel
 class ImagesViewModel @Inject constructor(
     private val repository: ImagesRepository,
-    private val starStore: ImageStarStore,
+    private val starStore: FileStarStore,
 ) : ViewModel() {
 
     val starredById: StateFlow<Map<String, Boolean>> = starStore.starredById
@@ -66,7 +66,7 @@ class ImagesViewModel @Inject constructor(
         pageLoadJob = viewModelScope.launch {
             when (val result = repository.getImagesPage(current.nextCursor)) {
                 is AppResult.Success -> {
-                    starStore.record(result.data.items)
+                    starStore.record(result.data.items.associate { it.id to it.starred })
                     _state.update { it.withAppendedPage(result.data) }
                 }
                 is AppResult.Error -> _state.update { it.copy(isLoadingMore = false) }
@@ -87,7 +87,7 @@ class ImagesViewModel @Inject constructor(
         pageLoadJob = viewModelScope.launch {
             when (val result = repository.getImagesPage(cursor = null)) {
                 is AppResult.Success -> {
-                    starStore.record(result.data.items)
+                    starStore.record(result.data.items.associate { it.id to it.starred })
                     _state.update { it.withFirstPage(result.data) }
                 }
                 is AppResult.Error -> _state.update { onError(it, result.message) }

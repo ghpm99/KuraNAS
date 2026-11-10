@@ -1,4 +1,4 @@
-package com.kuranas.android.feature.images.data
+package com.kuranas.android.feature.files.data
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,16 +8,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ImageStarStore @Inject constructor() {
+class FileStarStore @Inject constructor() {
 
     private val _starredById = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val starredById: StateFlow<Map<String, Boolean>> = _starredById.asStateFlow()
 
-    fun record(images: List<ImageLibraryItemDto>) {
-        _starredById.update { current -> current + images.associate { it.id to it.starred } }
+    fun record(starredByFileId: Map<String, Boolean>) {
+        _starredById.update { current -> current + starredByFileId }
     }
 
-    fun set(imageId: String, isStarred: Boolean) {
-        _starredById.update { current -> current + (imageId to isStarred) }
+    fun set(fileId: String, isStarred: Boolean) {
+        _starredById.update { current -> current + (fileId to isStarred) }
     }
 }

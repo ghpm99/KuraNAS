@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FilesRepository
-import com.kuranas.android.feature.images.data.ImageStarStore
+import com.kuranas.android.feature.files.data.FileStarStore
 import com.kuranas.android.feature.images.data.ImagesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class ImageViewerViewModel @Inject constructor(
     val repository: ImagesRepository,
     private val filesRepository: FilesRepository,
-    private val starStore: ImageStarStore,
+    private val starStore: FileStarStore,
 ) : ViewModel() {
 
     val starredById: StateFlow<Map<String, Boolean>> = starStore.starredById
