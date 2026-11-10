@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -40,6 +42,7 @@ fun FileStarButton(isStarred: Boolean, onToggleStar: () -> Unit, modifier: Modif
         Icon(
             imageVector = if (isStarred) Icons.Default.Star else Icons.Default.StarBorder,
             contentDescription = stringResource(if (isStarred) R.string.files_unstar_action else R.string.files_star_action),
+            tint = if (isStarred) MaterialTheme.colorScheme.secondary else LocalContentColor.current,
         )
     }
 }
