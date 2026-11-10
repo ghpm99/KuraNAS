@@ -25,7 +25,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 05 | [Música](05-musica.md) | ✅ concluída (2026-10-09) | 21 lacunas (sub-itens em commits próprios); transcodificação depende de ffmpeg; `make ci` verde |
 | 06 | [Vídeos](06-videos.md) | ✅ concluída (2026-10-15) | 85 lacunas (sub-itens em commits próprios); 58.1 🚫 aguarda decisão de autoplay; `make ci` verde |
 | 07 | [Favoritos](07-favoritos.md) | ✅ concluída (2026-11-10) | 31 lacunas (sub-itens em commits próprios); 24–26 🚫 aguardam decisão do dono; `make ci` verde |
-| 08 | Lixeira | pendente | |
+| 08 | [Lixeira](08-lixeira.md) | em execução | |
 | 09 | Downloads / ingestão por URL | pendente | |
 | 10 | Capturas (plugin) | pendente | |
 | 11 | Takeout | pendente | |
