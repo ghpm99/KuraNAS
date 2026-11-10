@@ -47,7 +47,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 24. Botões travam por item, não a lista inteira
 - [x] 25. Data formatada no locale do app
 - [x] 26. Após restaurar, ação "ver na pasta"
-- [ ] 27. Render sem mock e seam test para cada mutação da lixeira (conferir o que já existe)
+- [x] 27. Render sem mock e seam test para cada mutação da lixeira (conferir o que já existe)
 - [x] 28. Comentários removidos de `useTrashScreen.ts`
 
 ### Android
