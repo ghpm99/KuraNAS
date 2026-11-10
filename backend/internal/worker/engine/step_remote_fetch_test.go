@@ -317,3 +317,31 @@ func TestMoveFetchedFilesKeepsWhatIsAlreadyInTheLibrary(t *testing.T) {
 		t.Fatal("the new download must land under the next free name")
 	}
 }
+
+const fakeYtDlpReadsOutputDir = `while [ $# -gt 0 ]; do
+  if [ "$1" = "-o" ]; then output_dir=$(dirname "$2"); fi
+  shift
+done
+`
+
+func TestExecuteRemoteFetchStepSurvivesAnOutputLineBeyondTheProgressBuffer(t *testing.T) {
+	originalTimeout := remoteFetchTimeout
+	remoteFetchTimeout = func() time.Duration { return 10 * time.Second }
+	t.Cleanup(func() { remoteFetchTimeout = originalTimeout })
+
+	outputDir := t.TempDir()
+	rawPayload, _ := json.Marshal(ingestapi.RemoteFetchStepPayload{
+		URL:       "https://x.test/v",
+		Preset:    "audio_mp3",
+		OutputDir: outputDir,
+		Binary: writeFakeYtDlp(t, fakeYtDlpReadsOutputDir+
+			"head -c 3000000 /dev/zero | tr '\\0' 'a'\necho\necho audio > \"$output_dir/clip.mp3\"\n"),
+	})
+
+	if err := executeRemoteFetchStep(nil, jobs.StepModel{Payload: rawPayload}); err != nil {
+		t.Fatalf("a very long output line must not break the download, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "clip.mp3")); err != nil {
+		t.Fatalf("the downloaded file must reach the library: %v", err)
+	}
+}

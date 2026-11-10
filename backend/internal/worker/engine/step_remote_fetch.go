@@ -101,6 +101,8 @@ func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) e
 		}
 	}
 
+	discardOutputLeftUnread(stdout)
+
 	if err := cmd.Wait(); err != nil {
 		if jobContext.Err() != nil {
 			return ErrStepCanceled
@@ -122,6 +124,12 @@ func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) e
 		return fmt.Errorf("remote fetch: yt-dlp produced no output file")
 	}
 	return nil
+}
+
+// discardOutputLeftUnread keeps the download from stalling on a full pipe when
+// the progress reader gave up early, as it does on a line beyond its buffer.
+func discardOutputLeftUnread(downloadOutput io.Reader) {
+	_, _ = io.Copy(io.Discard, downloadOutput)
 }
 
 func decodeRemoteFetchPayload(raw []byte) (ingestapi.RemoteFetchStepPayload, error) {
@@ -247,6 +255,7 @@ func moveFile(src, dst string) error {
 		return err
 	}
 	if err := out.Close(); err != nil {
+		os.Remove(dst)
 		return err
 	}
 	return os.Remove(src)
