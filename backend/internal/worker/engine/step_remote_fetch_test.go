@@ -13,6 +13,7 @@ import (
 
 	ingestapi "nas-go/api/internal/api/v1/ingest"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/notifications"
 	jobdomain "nas-go/api/internal/worker/job"
 )
 
@@ -376,5 +377,63 @@ func TestMoveFileLeavesNoStagedCopyBehindWhenItFails(t *testing.T) {
 
 	if leftovers, _ := os.ReadDir(libraryDir); len(leftovers) != 0 {
 		t.Fatalf("a failed move must leave the library untouched, found %d entries", len(leftovers))
+	}
+}
+
+type recordingNotificationService struct {
+	notifications.ServiceInterface
+	raised []notifications.CreateNotificationDto
+}
+
+func (service *recordingNotificationService) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+	service.raised = append(service.raised, dto)
+	return notifications.NotificationDto{}, nil
+}
+
+func remoteFetchStepRunning(t *testing.T, fakeYtDlpScript string) (jobs.StepModel, *recordingNotificationService) {
+	t.Helper()
+	rawPayload, _ := json.Marshal(ingestapi.RemoteFetchStepPayload{
+		URL:       "https://x.test/clip",
+		Preset:    "audio_mp3",
+		OutputDir: t.TempDir(),
+		Binary:    writeFakeYtDlp(t, fakeYtDlpScript),
+	})
+	return jobs.StepModel{Payload: rawPayload}, &recordingNotificationService{}
+}
+
+func TestExecuteRemoteFetchStepNotifiesAFinishedDownload(t *testing.T) {
+	fetchStep, notifier := remoteFetchStepRunning(t, fakeYtDlpReadsOutputDir+"echo audio > \"$output_dir/clip.mp3\"\n")
+
+	if err := executeRemoteFetchStep(&WorkerContext{NotificationService: notifier}, fetchStep); err != nil {
+		t.Fatalf("download failed: %v", err)
+	}
+
+	if len(notifier.raised) != 1 || notifier.raised[0].Type != string(notifications.NotificationTypeSuccess) {
+		t.Fatalf("expected one success notification, got %+v", notifier.raised)
+	}
+}
+
+func TestExecuteRemoteFetchStepNotifiesAFailedDownloadWithoutTheRawError(t *testing.T) {
+	fetchStep, notifier := remoteFetchStepRunning(t, "echo 'ERROR: /srv/secret/path unavailable' >&2\nexit 1\n")
+
+	if err := executeRemoteFetchStep(&WorkerContext{NotificationService: notifier}, fetchStep); err == nil {
+		t.Fatal("expected the download to fail")
+	}
+
+	if len(notifier.raised) != 1 || notifier.raised[0].Type != string(notifications.NotificationTypeError) {
+		t.Fatalf("expected one error notification, got %+v", notifier.raised)
+	}
+	if strings.Contains(notifier.raised[0].Message, "/srv/secret/path") {
+		t.Fatalf("the notification must not carry the raw yt-dlp error: %q", notifier.raised[0].Message)
+	}
+}
+
+func TestNotifyRemoteFetchOutcomeStaysSilentForACanceledDownload(t *testing.T) {
+	fetchStep, notifier := remoteFetchStepRunning(t, "exit 0\n")
+
+	notifyRemoteFetchOutcome(&WorkerContext{NotificationService: notifier}, fetchStep, ErrStepCanceled)
+
+	if len(notifier.raised) != 0 {
+		t.Fatalf("a canceled download must not notify, got %+v", notifier.raised)
 	}
 }

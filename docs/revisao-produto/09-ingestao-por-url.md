@@ -28,7 +28,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 03. Mover para o destino nunca sobrescreve: nome livre com sufixo ` (2)`, ` (3)`…
 - [x] 04. Saída do yt-dlp além do buffer de progresso não trava mais o download (pipe drenado); parcial removido quando o fechamento da cópia falha
 - [x] 05. Cópia entre filesystems grava em nome provisório (`.part`) e renomeia no fim: o nome final nunca aparece parcial (pasta temporária por raiz descartada — exigiria nova pasta ignorada em scan, watcher, backup e WebDAV)
-- [ ] 06. Falha e conclusão do download geram notificação in-app com texto i18n
+- [x] 06. Falha e conclusão do download geram notificação in-app com texto i18n
 - [ ] 07. Erro do download guardado no job sem caminho do servidor
 - [ ] 08. Subpasta inválida com mensagem própria
 - [ ] 09. URL com limite de tamanho (400 com mensagem própria)

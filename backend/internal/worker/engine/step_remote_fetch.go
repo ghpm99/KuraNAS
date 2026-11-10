@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,7 +17,9 @@ import (
 
 	ingestapi "nas-go/api/internal/api/v1/ingest"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/i18n"
 )
 
 // downloadProgressRe extracts the percentage from a yt-dlp `[download]` line
@@ -40,6 +43,12 @@ var tempArtifactExts = []string{".part", ".ytdl", ".temp", ".tmp"}
 // normal metadata/checksum/thumbnail/persist pipeline indexes them — so this
 // step owns only the download + placement, nothing about indexing.
 func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) error {
+	fetchErr := runRemoteFetch(workerContext, step)
+	notifyRemoteFetchOutcome(workerContext, step, fetchErr)
+	return fetchErr
+}
+
+func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 	payload, err := decodeRemoteFetchPayload(step.Payload)
 	if err != nil {
 		return err
@@ -130,6 +139,31 @@ func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) e
 // the progress reader gave up early, as it does on a line beyond its buffer.
 func discardOutputLeftUnread(downloadOutput io.Reader) {
 	_, _ = io.Copy(io.Discard, downloadOutput)
+}
+
+// notifyRemoteFetchOutcome tells the user a download ended, well or badly. A
+// canceled download stays silent: whoever canceled it already knows.
+func notifyRemoteFetchOutcome(workerContext *WorkerContext, step jobs.StepModel, fetchErr error) {
+	if workerContext == nil || workerContext.NotificationService == nil || errors.Is(fetchErr, ErrStepCanceled) {
+		return
+	}
+	payload, err := decodeRemoteFetchPayload(step.Payload)
+	if err != nil {
+		return
+	}
+	outcomeNotification := notifications.CreateNotificationDto{
+		Type:    string(notifications.NotificationTypeSuccess),
+		Title:   i18n.GetMessage("NOTIFICATION_REMOTE_FETCH_COMPLETED_TITLE"),
+		Message: i18n.Translate("NOTIFICATION_REMOTE_FETCH_COMPLETED_MESSAGE", payload.URL),
+	}
+	if fetchErr != nil {
+		outcomeNotification = notifications.CreateNotificationDto{
+			Type:    string(notifications.NotificationTypeError),
+			Title:   i18n.GetMessage("NOTIFICATION_REMOTE_FETCH_FAILED_TITLE"),
+			Message: i18n.Translate("NOTIFICATION_REMOTE_FETCH_FAILED_MESSAGE", payload.URL),
+		}
+	}
+	_, _ = workerContext.NotificationService.GroupOrCreate(outcomeNotification)
 }
 
 func decodeRemoteFetchPayload(raw []byte) (ingestapi.RemoteFetchStepPayload, error) {
