@@ -129,6 +129,8 @@ func RegisterTrashRoutes(router *gin.RouterGroup, context *AppContext) {
 	group := router.Group("/trash")
 	group.GET("", context.Trash.Handler.GetTrashItemsHandler)
 	group.GET("/summary", context.Trash.Handler.GetTrashSummaryHandler)
+	group.POST("/restore", context.Trash.Handler.RestoreTrashItemsHandler)
+	group.POST("/delete", context.Trash.Handler.DeleteTrashItemsHandler)
 	group.POST("/:id/restore", context.Trash.Handler.RestoreTrashItemHandler)
 	group.DELETE("/:id", context.Trash.Handler.DeleteTrashItemHandler)
 	group.DELETE("", context.Trash.Handler.EmptyTrashHandler)

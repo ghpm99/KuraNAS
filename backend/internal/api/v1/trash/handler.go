@@ -47,17 +47,22 @@ func (handler *Handler) completeError(logModel logger.LoggerModel, err error) {
 }
 
 func (handler *Handler) respondServiceError(c *gin.Context, err error) {
+	statusCode, body := serviceErrorResponse(err)
+	c.JSON(statusCode, body)
+}
+
+func serviceErrorResponse(err error) (int, gin.H) {
 	switch {
 	case errors.Is(err, ErrItemNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TRASH_ITEM_NOT_FOUND")})
+		return http.StatusNotFound, gin.H{"error": i18n.GetMessage("TRASH_ITEM_NOT_FOUND")}
 	case errors.Is(err, ErrRestoreConflict):
-		c.JSON(http.StatusConflict, restoreConflictBody(err))
+		return http.StatusConflict, restoreConflictBody(err)
 	case errors.Is(err, ErrItemContentMissing):
-		c.JSON(http.StatusGone, gin.H{"error": i18n.GetMessage("TRASH_ITEM_CONTENT_MISSING")})
+		return http.StatusGone, gin.H{"error": i18n.GetMessage("TRASH_ITEM_CONTENT_MISSING")}
 	case errors.Is(err, ErrInvalidRetention), errors.Is(err, ErrInvalidListing):
-		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")}
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TRASH_OPERATION_FAILED")})
+		return http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TRASH_OPERATION_FAILED")}
 	}
 }
 

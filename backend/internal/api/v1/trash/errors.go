@@ -13,6 +13,8 @@ var (
 	ErrItemContentMissing = errors.New("trash item content is missing")
 	// ErrInvalidRetention — retention must be a positive number of days.
 	ErrInvalidRetention = errors.New("invalid retention days")
+	// ErrInvalidBatchSize — a batch must address between 1 and MaxBatchItems ids.
+	ErrInvalidBatchSize = errors.New("invalid trash batch size")
 	// ErrInvalidListing — unknown sort key or direction in the listing request.
 	ErrInvalidListing = errors.New("invalid trash listing")
 )

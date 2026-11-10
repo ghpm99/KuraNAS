@@ -24,6 +24,8 @@ func newTrashRouter(t *testing.T) (*gin.Engine, *trashRepoMock, string) {
 	group := router.Group("/trash")
 	group.GET("", handler.GetTrashItemsHandler)
 	group.GET("/summary", handler.GetTrashSummaryHandler)
+	group.POST("/restore", handler.RestoreTrashItemsHandler)
+	group.POST("/delete", handler.DeleteTrashItemsHandler)
 	group.POST("/:id/restore", handler.RestoreTrashItemHandler)
 	group.DELETE("/:id", handler.DeleteTrashItemHandler)
 	group.DELETE("", handler.EmptyTrashHandler)
@@ -266,5 +268,70 @@ func TestTrashHandlers_ListRejectsUnknownSort(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}
+
+func seedTrashedFiles(t *testing.T, repo *trashRepoMock, root string, names ...string) {
+	t.Helper()
+	service := NewService(repo, &filesIndexMock{})
+	for _, name := range names {
+		path := filepath.Join(root, name)
+		writeFile(t, path, name)
+		if err := service.MoveToTrash(path, 1); err != nil {
+			t.Fatalf("seed MoveToTrash %s: %v", name, err)
+		}
+	}
+}
+
+func TestTrashHandlers_BatchRestoreReportsEachOutcome(t *testing.T) {
+	router, repo, root := newTrashRouter(t)
+	seedTrashedFiles(t, repo, root, "a.txt", "b.txt")
+	writeFile(t, filepath.Join(root, "b.txt"), "ocupado")
+
+	rec := doTrashJSON(router, http.MethodPost, "/trash/restore", BatchRequest{IDs: []int{1, 2, 2, 99}})
+
+	var response BatchRestoreResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("batch restore: status=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
+	}
+	if len(response.RestoredIDs) != 1 || response.RestoredIDs[0] != 1 {
+		t.Fatalf("expected only item 1 restored, got %v", response.RestoredIDs)
+	}
+	if len(response.Failures) != 2 || response.Failures[0].ID != 2 || response.Failures[1].ID != 99 {
+		t.Fatalf("expected failures for 2 and 99, got %+v", response.Failures)
+	}
+	if response.Failures[0].Path != filepath.Join(root, "b.txt") || response.Failures[0].Error == "" {
+		t.Fatalf("conflict failure must carry message and occupied path, got %+v", response.Failures[0])
+	}
+}
+
+func TestTrashHandlers_BatchDeleteReportsEachOutcome(t *testing.T) {
+	router, repo, root := newTrashRouter(t)
+	seedTrashedFiles(t, repo, root, "a.txt", "b.txt")
+
+	rec := doTrashJSON(router, http.MethodPost, "/trash/delete", BatchRequest{IDs: []int{2, 99}})
+
+	var response BatchDeleteResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("batch delete: status=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
+	}
+	if len(response.DeletedIDs) != 1 || response.DeletedIDs[0] != 2 || len(response.Failures) != 1 || response.Failures[0].ID != 99 {
+		t.Fatalf("unexpected outcome: %+v", response)
+	}
+	if remaining, _ := repo.GetAllItems(); len(remaining) != 1 || remaining[0].ID != 1 {
+		t.Fatalf("only item 1 must remain, got %v", remaining)
+	}
+}
+
+func TestTrashHandlers_BatchRejectsEmptyOrMalformedRequests(t *testing.T) {
+	router, _, _ := newTrashRouter(t)
+
+	for _, url := range []string{"/trash/restore", "/trash/delete"} {
+		if rec := doTrashJSON(router, http.MethodPost, url, BatchRequest{IDs: []int{}}); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s with no ids: expected 400, got %d", url, rec.Code)
+		}
+		if rec := doTrashJSON(router, http.MethodPost, url, map[string]string{"ids": "tudo"}); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s with malformed ids: expected 400, got %d", url, rec.Code)
+		}
 	}
 }

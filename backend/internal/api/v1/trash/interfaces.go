@@ -29,6 +29,8 @@ type ServiceInterface interface {
 	GetSummary() (TrashSummaryDto, error)
 	RestoreItem(id int) (string, error)
 	DeleteItemPermanently(id int) error
+	RestoreItems(ids []int) ([]int, []ItemFailure)
+	DeleteItemsPermanently(ids []int) ([]int, []ItemFailure)
 	EmptyTrash() (int, error)
 	PurgeExpired() (int, error)
 	GetRetentionDays() (int, error)
