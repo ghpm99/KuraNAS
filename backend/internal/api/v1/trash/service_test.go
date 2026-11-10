@@ -26,6 +26,8 @@ type trashRepoMock struct {
 
 	createErr error
 	getErr    error
+
+	requestedListing Listing
 }
 
 func newTrashRepoMock() *trashRepoMock {
@@ -58,10 +60,11 @@ func (m *trashRepoMock) sortedItems() []TrashItemModel {
 	return items
 }
 
-func (m *trashRepoMock) GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error) {
+func (m *trashRepoMock) GetItems(listing Listing, page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error) {
 	if m.getErr != nil {
 		return utils.PaginationResponse[TrashItemModel]{}, m.getErr
 	}
+	m.requestedListing = listing
 	response := utils.PaginationResponse[TrashItemModel]{
 		Items:      m.sortedItems(),
 		Pagination: utils.Pagination{Page: page, PageSize: pageSize},
@@ -449,7 +452,7 @@ func TestTrashService_GetItemsConvertsToDto(t *testing.T) {
 		t.Fatalf("MoveToTrash: %v", err)
 	}
 
-	page, err := s.GetItems(1, 10)
+	page, err := s.GetItems(DefaultListing, 1, 10)
 	if err != nil {
 		t.Fatalf("GetItems: %v", err)
 	}
@@ -462,7 +465,7 @@ func TestTrashService_RepositoryErrorsPropagate(t *testing.T) {
 	s, repo, _, _ := newTrashServiceForTest(t)
 	repo.getErr = sql.ErrConnDone
 
-	if _, err := s.GetItems(1, 10); err == nil {
+	if _, err := s.GetItems(DefaultListing, 1, 10); err == nil {
 		t.Fatalf("expected GetItems to propagate repository error")
 	}
 	if _, err := s.RestoreItem(1); err == nil {
@@ -724,7 +727,7 @@ func TestTrashService_ListingDescribesNameTypeAndExpiryOfEachItem(t *testing.T) 
 		}
 	}
 
-	listing, err := s.GetItems(1, 10)
+	listing, err := s.GetItems(DefaultListing, 1, 10)
 	if err != nil || len(listing.Items) != 2 {
 		t.Fatalf("GetItems: items=%v err=%v", listing.Items, err)
 	}

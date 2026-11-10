@@ -247,3 +247,24 @@ func TestTrashHandlers_SummaryFailureAnswersTranslatedError(t *testing.T) {
 		t.Fatalf("expected 500, got %d (%s)", rec.Code, rec.Body.String())
 	}
 }
+
+func TestTrashHandlers_ListForwardsSortOrderAndSearch(t *testing.T) {
+	router, repo, _ := newTrashRouter(t)
+
+	rec := doTrashJSON(router, http.MethodGet, "/trash?sort=name&order=asc&q=Fotos", nil)
+
+	expectedListing := Listing{SortKey: SortByName, Direction: SortAscending, SearchText: "fotos"}
+	if rec.Code != http.StatusOK || repo.requestedListing != expectedListing {
+		t.Fatalf("status=%d listing=%+v, want 200 and %+v", rec.Code, repo.requestedListing, expectedListing)
+	}
+}
+
+func TestTrashHandlers_ListRejectsUnknownSort(t *testing.T) {
+	router, _, _ := newTrashRouter(t)
+
+	rec := doTrashJSON(router, http.MethodGet, "/trash?sort=color", nil)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}

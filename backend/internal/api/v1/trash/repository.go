@@ -78,7 +78,7 @@ func (r *Repository) queryItems(query string, args ...any) ([]TrashItemModel, er
 	return models, nil
 }
 
-func (r *Repository) GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error) {
+func (r *Repository) GetItems(listing Listing, page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error) {
 	paginationResponse := utils.PaginationResponse[TrashItemModel]{
 		Items: []TrashItemModel{},
 		Pagination: utils.Pagination{
@@ -87,7 +87,7 @@ func (r *Repository) GetItems(page int, pageSize int) (utils.PaginationResponse[
 		},
 	}
 
-	items, err := r.queryItems(queries.GetTrashItemsQuery, pageSize+1, utils.CalculateOffset(page, pageSize))
+	items, err := r.queryItems(listing.query(), pageSize+1, utils.CalculateOffset(page, pageSize), listing.SearchText)
 	if err != nil {
 		return paginationResponse, fmt.Errorf("GetItems: %w", err)
 	}

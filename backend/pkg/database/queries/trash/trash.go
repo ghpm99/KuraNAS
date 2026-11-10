@@ -5,8 +5,23 @@ import _ "embed"
 //go:embed insert_trash_item.sql
 var InsertTrashItemQuery string
 
-//go:embed get_trash_items.sql
-var GetTrashItemsQuery string
+//go:embed get_trash_items_sorted_by_deleted_at_asc.sql
+var GetTrashItemsSortedByDeletedAtAscQuery string
+
+//go:embed get_trash_items_sorted_by_deleted_at_desc.sql
+var GetTrashItemsSortedByDeletedAtDescQuery string
+
+//go:embed get_trash_items_sorted_by_name_asc.sql
+var GetTrashItemsSortedByNameAscQuery string
+
+//go:embed get_trash_items_sorted_by_name_desc.sql
+var GetTrashItemsSortedByNameDescQuery string
+
+//go:embed get_trash_items_sorted_by_size_asc.sql
+var GetTrashItemsSortedBySizeAscQuery string
+
+//go:embed get_trash_items_sorted_by_size_desc.sql
+var GetTrashItemsSortedBySizeDescQuery string
 
 //go:embed get_trash_item_by_id.sql
 var GetTrashItemByIDQuery string

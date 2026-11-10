@@ -54,7 +54,7 @@ func (handler *Handler) respondServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, restoreConflictBody(err))
 	case errors.Is(err, ErrItemContentMissing):
 		c.JSON(http.StatusGone, gin.H{"error": i18n.GetMessage("TRASH_ITEM_CONTENT_MISSING")})
-	case errors.Is(err, ErrInvalidRetention):
+	case errors.Is(err, ErrInvalidRetention), errors.Is(err, ErrInvalidListing):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TRASH_OPERATION_FAILED")})
@@ -92,7 +92,14 @@ func (handler *Handler) GetTrashItemsHandler(c *gin.Context) {
 		return
 	}
 
-	items, err := handler.service.GetItems(page, pageSize)
+	listing, isListingValid := ParseListing(c.Query("sort"), c.Query("order"), c.Query("q"))
+	if !isListingValid {
+		handler.completeError(logModel, ErrInvalidListing)
+		handler.respondServiceError(c, ErrInvalidListing)
+		return
+	}
+
+	items, err := handler.service.GetItems(listing, page, pageSize)
 	if err != nil {
 		handler.completeError(logModel, err)
 		handler.respondServiceError(c, err)

@@ -13,6 +13,8 @@ var (
 	ErrItemContentMissing = errors.New("trash item content is missing")
 	// ErrInvalidRetention — retention must be a positive number of days.
 	ErrInvalidRetention = errors.New("invalid retention days")
+	// ErrInvalidListing — unknown sort key or direction in the listing request.
+	ErrInvalidListing = errors.New("invalid trash listing")
 )
 
 // RestoreConflictError carries the path that blocks a restore, so the client

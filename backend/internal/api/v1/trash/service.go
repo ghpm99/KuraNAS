@@ -171,8 +171,8 @@ func uniqueTrashPath(trashDir string, baseName string) (string, error) {
 	return "", fmt.Errorf("could not allocate a unique trash name for %q", baseName)
 }
 
-func (s *Service) GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemDto], error) {
-	models, err := s.Repository.GetItems(page, pageSize)
+func (s *Service) GetItems(listing Listing, page int, pageSize int) (utils.PaginationResponse[TrashItemDto], error) {
+	models, err := s.Repository.GetItems(listing, page, pageSize)
 	if err != nil {
 		return utils.PaginationResponse[TrashItemDto]{}, err
 	}

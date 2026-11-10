@@ -78,8 +78,8 @@ func TestTrashRepository_GetItemsPagination(t *testing.T) {
 	now := time.Now()
 	// pageSize+1 rows returned → HasNext
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTrashItemsQuery)).
-		WithArgs(3, 0).
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetTrashItemsSortedByDeletedAtDescQuery)).
+		WithArgs(3, 0, "").
 		WillReturnRows(trashItemRows(
 			TrashItemModel{ID: 3, OriginalPath: "/c", TrashPath: "/t/c", DeletedAt: now},
 			TrashItemModel{ID: 2, OriginalPath: "/b", TrashPath: "/t/b", DeletedAt: now},
@@ -87,7 +87,7 @@ func TestTrashRepository_GetItemsPagination(t *testing.T) {
 		))
 	mock.ExpectRollback()
 
-	page, err := repo.GetItems(1, 2)
+	page, err := repo.GetItems(DefaultListing, 1, 2)
 	if err != nil {
 		t.Fatalf("GetItems: %v", err)
 	}

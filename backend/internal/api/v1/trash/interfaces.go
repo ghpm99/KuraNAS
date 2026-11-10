@@ -11,7 +11,7 @@ import (
 type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
 	CreateItem(tx *sql.Tx, item TrashItemModel) (TrashItemModel, error)
-	GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error)
+	GetItems(listing Listing, page int, pageSize int) (utils.PaginationResponse[TrashItemModel], error)
 	GetItemByID(id int) (TrashItemModel, bool, error)
 	GetExpiredItems(cutoff time.Time) ([]TrashItemModel, error)
 	GetAllItems() ([]TrashItemModel, error)
@@ -25,7 +25,7 @@ type RepositoryInterface interface {
 type ServiceInterface interface {
 	MoveToTrash(originalPath string, size int64) error
 	MoveToTrashFrom(logicalPath string, contentPath string, size int64) error
-	GetItems(page int, pageSize int) (utils.PaginationResponse[TrashItemDto], error)
+	GetItems(listing Listing, page int, pageSize int) (utils.PaginationResponse[TrashItemDto], error)
 	GetSummary() (TrashSummaryDto, error)
 	RestoreItem(id int) (string, error)
 	DeleteItemPermanently(id int) error
