@@ -179,4 +179,24 @@ describe('TrashScreen', () => {
         fireEvent.click(screen.getByRole('button', { name: /TRASH_NEXT_PAGE/ }));
         await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
     });
+
+    it('goes back to the previous page when the current one is emptied', async () => {
+        const secondPage: TrashPage = {
+            items: [],
+            pagination: { page: 2, page_size: 15, has_next: false, has_prev: true },
+        };
+        mockedGetTrashItems.mockImplementation((page: number) =>
+            Promise.resolve(page === 1 ? onePage(true) : secondPage)
+        );
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('TRASH_NEXT_PAGE')).toBeEnabled());
+
+        fireEvent.click(screen.getByText('TRASH_NEXT_PAGE'));
+
+        await waitFor(() => expect(mockedGetTrashItems).toHaveBeenCalledWith(2, 15));
+        await waitFor(() =>
+            expect(screen.getByText('/data/docs/relatorio.pdf')).toBeInTheDocument()
+        );
+        expect(screen.queryByText('TRASH_EMPTY_STATE')).not.toBeInTheDocument();
+    });
 });

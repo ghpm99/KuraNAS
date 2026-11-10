@@ -11,7 +11,7 @@ import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import type { TrashPage } from '@/types/trash';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const PAGE_SIZE = 15;
 
@@ -122,6 +122,13 @@ export const useTrashScreen = () => {
 
     const items = trashQuery.data?.items ?? [];
     const pagination = trashQuery.data?.pagination;
+    const isCurrentPageEmptied = trashQuery.isSuccess && items.length === 0 && page > 1;
+
+    useEffect(() => {
+        if (isCurrentPageEmptied) {
+            setPage((current) => current - 1);
+        }
+    }, [isCurrentPageEmptied]);
 
     return {
         t,
@@ -133,7 +140,7 @@ export const useTrashScreen = () => {
         goToPrevPage: () => setPage((current) => Math.max(1, current - 1)),
         isLoading: trashQuery.isLoading,
         isError: trashQuery.isError,
-        isEmpty: !trashQuery.isLoading && !trashQuery.isError && items.length === 0,
+        isEmpty: trashQuery.isSuccess && items.length === 0 && !isCurrentPageEmptied,
         isMutating:
             restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
         retentionDays: retentionQuery.data?.days,
