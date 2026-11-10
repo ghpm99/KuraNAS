@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -144,12 +145,21 @@ fun FilesScreen(
                                 else openFileByType(file, onOpenImage, onOpenVideo, onPlayAudio, onOpenFile)
                             },
                             onStar = { viewModel.toggleFileStarred(file) },
+                            onDelete = { viewModel.requestDelete(file) },
                         )
                     }
                 }
             }
             }
         }
+    }
+
+    state.fileAwaitingDeleteConfirmation?.let { fileToDelete ->
+        MoveToTrashDialog(
+            fileName = fileToDelete.name,
+            onConfirm = viewModel::confirmDelete,
+            onDismiss = viewModel::cancelDelete,
+        )
     }
 
     if (state.showCreateFolderDialog) {
@@ -178,7 +188,27 @@ fun FilesScreen(
 }
 
 @Composable
-internal fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> Unit) {
+private fun MoveToTrashDialog(fileName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.files_delete_title, fileName)) },
+        text = { Text(stringResource(R.string.files_delete_goes_to_trash)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.files_delete_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+@Composable
+internal fun FileListItem(
+    file: FileItemDto,
+    onClick: () -> Unit,
+    onStar: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -205,6 +235,16 @@ internal fun FileListItem(file: FileItemDto, onClick: () -> Unit, onStar: () -> 
                 tint = if (file.isStarred) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
+        }
+        if (onDelete != null) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.files_delete_action),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }

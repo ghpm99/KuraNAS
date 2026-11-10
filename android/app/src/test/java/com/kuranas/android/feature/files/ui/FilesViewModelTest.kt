@@ -111,4 +111,53 @@ class FilesViewModelTest {
 
         assertNull(viewModel.state.value.actionErrorMessage)
     }
+
+    @Test
+    fun `delete waits for confirmation before calling the server`() {
+        val viewModel = viewModelWithFile(isStarred = false)
+        val file = viewModel.state.value.files.single()
+
+        viewModel.requestDelete(file)
+
+        assertEquals(file, viewModel.state.value.fileAwaitingDeleteConfirmation)
+        coVerify(exactly = 0) { repository.deleteFile(any()) }
+    }
+
+    @Test
+    fun `cancelling the confirmation keeps the file and calls nothing`() {
+        val viewModel = viewModelWithFile(isStarred = false)
+
+        viewModel.requestDelete(viewModel.state.value.files.single())
+        viewModel.cancelDelete()
+
+        assertNull(viewModel.state.value.fileAwaitingDeleteConfirmation)
+        assertEquals(1, viewModel.state.value.files.size)
+        coVerify(exactly = 0) { repository.deleteFile(any()) }
+    }
+
+    @Test
+    fun `confirmed delete removes the file from the list`() {
+        val viewModel = viewModelWithFile(isStarred = false)
+        coEvery { repository.deleteFile("7") } returns AppResult.Success(Unit)
+        coEvery { repository.getRootFiles() } returns AppResult.Success(emptyList())
+
+        viewModel.requestDelete(viewModel.state.value.files.single())
+        viewModel.confirmDelete()
+
+        coVerify(exactly = 1) { repository.deleteFile("7") }
+        assertTrue(viewModel.state.value.files.isEmpty())
+        assertNull(viewModel.state.value.fileAwaitingDeleteConfirmation)
+    }
+
+    @Test
+    fun `failed delete keeps the file and shows the server message`() {
+        val viewModel = viewModelWithFile(isStarred = false)
+        coEvery { repository.deleteFile("7") } returns AppResult.Error("mensagem do servidor")
+
+        viewModel.requestDelete(viewModel.state.value.files.single())
+        viewModel.confirmDelete()
+
+        assertEquals(1, viewModel.state.value.files.size)
+        assertEquals("mensagem do servidor", viewModel.state.value.actionErrorMessage)
+    }
 }

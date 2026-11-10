@@ -25,6 +25,7 @@ data class FilesUiState(
     val error: String? = null,
     val showCreateFolderDialog: Boolean = false,
     val actionErrorMessage: String? = null,
+    val fileAwaitingDeleteConfirmation: FileItemDto? = null,
 )
 
 @HiltViewModel
@@ -91,10 +92,25 @@ class FilesViewModel @Inject constructor(
         }
     }
 
-    fun deleteFile(file: FileItemDto) {
+    fun requestDelete(file: FileItemDto) {
+        _state.update { it.copy(fileAwaitingDeleteConfirmation = file) }
+    }
+
+    fun cancelDelete() {
+        _state.update { it.copy(fileAwaitingDeleteConfirmation = null) }
+    }
+
+    fun confirmDelete() {
+        val confirmedFile = _state.value.fileAwaitingDeleteConfirmation ?: return
+        _state.update { it.copy(fileAwaitingDeleteConfirmation = null) }
         viewModelScope.launch {
-            repository.deleteFile(file.id)
-            refreshCurrent()
+            when (val deletion = repository.deleteFile(confirmedFile.id)) {
+                is AppResult.Success -> {
+                    _state.update { state -> state.copy(files = state.files.filterNot { it.id == confirmedFile.id }) }
+                    refreshCurrent()
+                }
+                is AppResult.Error -> _state.update { it.copy(actionErrorMessage = deletion.message) }
+            }
         }
     }
 

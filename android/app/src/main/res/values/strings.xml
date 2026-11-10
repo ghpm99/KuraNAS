@@ -50,6 +50,10 @@
     <string name="files_empty_folder">Empty folder</string>
     <string name="files_star_action">Add to favorites</string>
     <string name="files_unstar_action">Remove from favorites</string>
+    <string name="files_delete_action">Delete</string>
+    <string name="files_delete_title">Delete \"%1$s\"?</string>
+    <string name="files_delete_goes_to_trash">The item goes to the Trash and can be restored from there until the retention period ends.</string>
+    <string name="files_delete_confirm">Move to Trash</string>
     <string name="images_starred_indicator">Favorite</string>
     <string name="favorites_empty">No favorites yet</string>
     <string name="favorites_kind_all">All</string>

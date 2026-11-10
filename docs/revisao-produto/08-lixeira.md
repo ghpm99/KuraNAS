@@ -51,7 +51,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 28. Comentários removidos de `useTrashScreen.ts`
 
 ### Android
-- [ ] 29. Excluir pelo explorer com confirmação, aviso "vai para a Lixeira" e erro do servidor
+- [x] 29. Excluir pelo explorer com confirmação, aviso "vai para a Lixeira" e erro do servidor
 - [ ] 30. Tela de Lixeira: listar paginado, restaurar, excluir definitivo, esvaziar
 
 ### Decisões do dono

@@ -48,6 +48,10 @@
     <string name="files_empty_folder">Pasta vazia</string>
     <string name="files_star_action">Adicionar aos favoritos</string>
     <string name="files_unstar_action">Remover dos favoritos</string>
+    <string name="files_delete_action">Excluir</string>
+    <string name="files_delete_title">Excluir \"%1$s\"?</string>
+    <string name="files_delete_goes_to_trash">O item vai para a Lixeira e pode ser restaurado de lá até o fim do período de retenção.</string>
+    <string name="files_delete_confirm">Mover para a Lixeira</string>
     <string name="images_starred_indicator">Favorita</string>
     <string name="favorites_empty">Nenhum favorito ainda</string>
     <string name="favorites_kind_all">Todos</string>
