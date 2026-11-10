@@ -2,6 +2,8 @@ package com.kuranas.android.feature.video.ui
 
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.ListPage
+import com.kuranas.android.feature.files.data.FileStarStore
+import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.video.data.VideoItemDto
 import com.kuranas.android.feature.video.data.VideoRepository
 import io.mockk.coEvery
@@ -47,7 +49,7 @@ class VideoLibraryViewModelTest {
     fun `initial load fills the first page`() {
         givenPage("", 1, true, 1, 2)
 
-        val state = VideoLibraryViewModel(repository).state.value
+        val state = VideoLibraryViewModel(repository, FileStarToggler(mockk(), FileStarStore())).state.value
 
         assertFalse(state.isLoading)
         assertNull(state.error)
@@ -59,7 +61,7 @@ class VideoLibraryViewModelTest {
     fun `loadMore appends the next page without duplicates`() {
         givenPage("", 1, true, 1, 2)
         givenPage("", 2, false, 2, 3)
-        val viewModel = VideoLibraryViewModel(repository)
+        val viewModel = VideoLibraryViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         viewModel.loadMore()
 
@@ -72,7 +74,7 @@ class VideoLibraryViewModelTest {
     fun `fast typing triggers a single search after the debounce and restarts at page one`() {
         givenPage("", 1, false, 1)
         givenPage("matrix", 1, false, 9)
-        val viewModel = VideoLibraryViewModel(repository)
+        val viewModel = VideoLibraryViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         viewModel.onSearchQueryChange("m")
         dispatcher.scheduler.advanceTimeBy(200)
@@ -97,7 +99,7 @@ class VideoLibraryViewModelTest {
     fun `server error is shown as received`() {
         coEvery { repository.getLibraryVideos("", 1) } returns AppResult.Error("library unavailable")
 
-        val state = VideoLibraryViewModel(repository).state.value
+        val state = VideoLibraryViewModel(repository, FileStarToggler(mockk(), FileStarStore())).state.value
 
         assertFalse(state.isLoading)
         assertEquals("library unavailable", state.error)

@@ -95,6 +95,7 @@ data class VideoItemDto(
     val size: Long = 0,
     @SerialName("created_at") val createdAt: String = "",
     @SerialName("updated_at") val updatedAt: String = "",
+    val starred: Boolean = false,
 ) {
     val id: String get() = rawId.toString()
     val mimeType: String get() = mimeTypeForFormat(format)

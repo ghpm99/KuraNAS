@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.PagedListLoader
+import com.kuranas.android.feature.files.data.FileStarToggler
+import com.kuranas.android.feature.files.ui.FileStarState
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 import com.kuranas.android.feature.video.data.VideoPlaylistItemDto
 import com.kuranas.android.feature.video.data.VideoRepository
@@ -33,7 +35,11 @@ private data class PlaylistHeaderState(
 )
 
 @HiltViewModel
-class VideoPlaylistViewModel @Inject constructor(val repository: VideoRepository) : ViewModel() {
+class VideoPlaylistViewModel @Inject constructor(
+    val repository: VideoRepository,
+    starToggler: FileStarToggler,
+) : ViewModel() {
+    val stars = FileStarState(viewModelScope, starToggler)
 
     private val headerState = MutableStateFlow(PlaylistHeaderState())
     private val itemsLoader = PagedListLoader<VideoPlaylistItemDto>(viewModelScope) { it.video.id }

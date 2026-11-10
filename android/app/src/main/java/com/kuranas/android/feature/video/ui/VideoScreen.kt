@@ -2,6 +2,7 @@ package com.kuranas.android.feature.video.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -44,6 +45,8 @@ import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
+import com.kuranas.android.feature.files.ui.FileStarButton
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import com.kuranas.android.feature.video.data.VideoItemDto
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 import com.kuranas.android.feature.video.data.VideoPlaylistSection
@@ -57,68 +60,75 @@ fun VideoScreen(
     viewModel: VideoViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.nav_videos))
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-        when {
-            state.isLoading -> LoadingView()
-            state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
-            state.catalog == null -> EmptyView(stringResource(R.string.video_empty))
-            else -> {
-                val catalog = state.catalog!!
-                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-                    item {
-                        AllVideosEntry(onClick = onOpenLibrary)
-                        Spacer(Modifier.height(16.dp))
-                    }
-                    if (catalog.continueWatchingItems.isNotEmpty()) {
+    FileStarErrorHost(viewModel.stars) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            KNHeader(title = stringResource(R.string.nav_videos))
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+            when {
+                state.isLoading -> LoadingView()
+                state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)
+                state.catalog == null -> EmptyView(stringResource(R.string.video_empty))
+                else -> {
+                    val catalog = state.catalog!!
+                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                         item {
-                            Text(stringResource(R.string.video_continue_watching), style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(catalog.continueWatchingItems, key = { it.video.id }) { catalogItem ->
-                                    VideoCard(
-                                        video = catalogItem.video,
-                                        thumbnailUrl = viewModel.thumbnailUrl(catalogItem.video.id),
-                                        progressPercent = catalogItem.progressPct,
-                                        onClick = { onPlayVideo(catalogItem.video.id) },
-                                    )
-                                }
-                            }
+                            AllVideosEntry(onClick = onOpenLibrary)
                             Spacer(Modifier.height(16.dp))
                         }
-                    }
-                    if (catalog.recentVideos.isNotEmpty()) {
-                        item {
-                            Text(stringResource(R.string.video_recent), style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(catalog.recentVideos, key = { it.id }) { video ->
-                                    VideoCard(
-                                        video = video,
-                                        thumbnailUrl = viewModel.thumbnailUrl(video.id),
-                                        onClick = { onPlayVideo(video.id) },
-                                    )
+                        if (catalog.continueWatchingItems.isNotEmpty()) {
+                            item {
+                                Text(stringResource(R.string.video_continue_watching), style = MaterialTheme.typography.titleMedium)
+                                Spacer(Modifier.height(8.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(catalog.continueWatchingItems, key = { it.video.id }) { catalogItem ->
+                                        VideoCard(
+                                            video = catalogItem.video,
+                                            thumbnailUrl = viewModel.thumbnailUrl(catalogItem.video.id),
+                                            progressPercent = catalogItem.progressPct,
+                                            isStarred = starredById[catalogItem.video.id] ?: catalogItem.video.starred,
+                                            onToggleStar = { viewModel.stars.toggle(catalogItem.video) },
+                                            onClick = { onPlayVideo(catalogItem.video.id) },
+                                        )
+                                    }
                                 }
+                                Spacer(Modifier.height(16.dp))
                             }
-                            Spacer(Modifier.height(16.dp))
                         }
-                    }
-                    items(state.playlistSections, key = { it.section }) { sectionState ->
-                        PlaylistSection(
-                            sectionState = sectionState,
-                            thumbnailUrl = viewModel::thumbnailUrl,
-                            onOpenPlaylist = onOpenPlaylist,
-                        )
+                        if (catalog.recentVideos.isNotEmpty()) {
+                            item {
+                                Text(stringResource(R.string.video_recent), style = MaterialTheme.typography.titleMedium)
+                                Spacer(Modifier.height(8.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(catalog.recentVideos, key = { it.id }) { video ->
+                                        VideoCard(
+                                            video = video,
+                                            thumbnailUrl = viewModel.thumbnailUrl(video.id),
+                                            isStarred = starredById[video.id] ?: video.starred,
+                                            onToggleStar = { viewModel.stars.toggle(video) },
+                                            onClick = { onPlayVideo(video.id) },
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(16.dp))
+                            }
+                        }
+                        items(state.playlistSections, key = { it.section }) { sectionState ->
+                            PlaylistSection(
+                                sectionState = sectionState,
+                                thumbnailUrl = viewModel::thumbnailUrl,
+                                onOpenPlaylist = onOpenPlaylist,
+                            )
+                        }
                     }
                 }
             }
-        }
+            }
         }
     }
 }
@@ -145,6 +155,8 @@ private fun AllVideosEntry(onClick: () -> Unit) {
 private fun VideoCard(
     video: VideoItemDto,
     thumbnailUrl: String,
+    isStarred: Boolean,
+    onToggleStar: () -> Unit,
     onClick: () -> Unit,
     progressPercent: Double? = null,
 ) {
@@ -156,15 +168,21 @@ private fun VideoCard(
             .padding(8.dp)
             .size(width = 160.dp, height = if (progressPercent == null) 120.dp else 132.dp),
     ) {
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = video.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(8.dp)),
-        )
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            AsyncImage(
+                model = thumbnailUrl,
+                contentDescription = video.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+            )
+            FileStarButton(
+                isStarred = isStarred,
+                onToggleStar = onToggleStar,
+                modifier = Modifier.align(Alignment.TopEnd).size(36.dp),
+            )
+        }
         Text(video.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
         if (progressPercent != null) {
             LinearProgressIndicator(

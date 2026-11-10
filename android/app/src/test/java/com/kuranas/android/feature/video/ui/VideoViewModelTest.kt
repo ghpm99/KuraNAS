@@ -1,6 +1,8 @@
 package com.kuranas.android.feature.video.ui
 
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.files.data.FileStarStore
+import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.video.data.VideoHomeCatalogDto
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 import com.kuranas.android.feature.video.data.VideoPlaylistSection
@@ -48,7 +50,7 @@ class VideoViewModelTest {
         givenSection(VideoPlaylistSection.Folders, AppResult.Success(listOf(VideoPlaylistDto(id = 3))))
         givenSection(VideoPlaylistSection.Series, AppResult.Success(listOf(VideoPlaylistDto(id = 1), VideoPlaylistDto(id = 2))))
 
-        val viewModel = VideoViewModel(repository)
+        val viewModel = VideoViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         val sections = viewModel.state.value.playlistSections
         assertEquals(listOf(VideoPlaylistSection.Series, VideoPlaylistSection.Folders), sections.map { it.section })
@@ -59,7 +61,7 @@ class VideoViewModelTest {
     fun `empty section does not appear`() {
         givenSection(VideoPlaylistSection.Movies, AppResult.Success(emptyList()))
 
-        val viewModel = VideoViewModel(repository)
+        val viewModel = VideoViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         assertEquals(emptyList<VideoPlaylistSectionState>(), viewModel.state.value.playlistSections)
     }
@@ -69,7 +71,7 @@ class VideoViewModelTest {
         givenSection(VideoPlaylistSection.Series, AppResult.Error("boom"))
         givenSection(VideoPlaylistSection.Clips, AppResult.Success(listOf(VideoPlaylistDto(id = 5))))
 
-        val viewModel = VideoViewModel(repository)
+        val viewModel = VideoViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)

@@ -2,6 +2,8 @@ package com.kuranas.android.feature.video.ui
 
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.ListPage
+import com.kuranas.android.feature.files.data.FileStarStore
+import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.video.data.VideoItemDto
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 import com.kuranas.android.feature.video.data.VideoPlaylistItemDto
@@ -52,7 +54,7 @@ class VideoPlaylistViewModelTest {
     fun `first page and header fill the state`() {
         givenHeader()
         givenPage(1, true, 1, 2)
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         viewModel.load(playlistId)
 
@@ -69,7 +71,7 @@ class VideoPlaylistViewModelTest {
         givenHeader()
         givenPage(1, true, 1, 2)
         givenPage(2, false, 2, 3)
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
         viewModel.load(playlistId)
 
         viewModel.loadMore()
@@ -83,7 +85,7 @@ class VideoPlaylistViewModelTest {
     fun `loadMore stops requesting when there is no next page`() {
         givenHeader()
         givenPage(1, false, 1)
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
         viewModel.load(playlistId)
 
         viewModel.loadMore()
@@ -95,7 +97,7 @@ class VideoPlaylistViewModelTest {
     fun `failed header keeps the server message`() {
         coEvery { repository.getPlaylistHeader(playlistId) } returns AppResult.Error("playlist not found")
         givenPage(1, false, 1)
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         viewModel.load(playlistId)
 
@@ -110,7 +112,7 @@ class VideoPlaylistViewModelTest {
         givenHeader()
         givenPage(1, true, 1)
         coEvery { repository.getPlaylistItems(playlistId, 2) } returns AppResult.Error("boom")
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
         viewModel.load(playlistId)
 
         viewModel.loadMore()
@@ -124,7 +126,7 @@ class VideoPlaylistViewModelTest {
     fun `retry after a header error loads the playlist`() {
         coEvery { repository.getPlaylistHeader(playlistId) } returns AppResult.Error("boom")
         givenPage(1, false, 1)
-        val viewModel = VideoPlaylistViewModel(repository)
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
         viewModel.load(playlistId)
         givenHeader()
 

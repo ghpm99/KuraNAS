@@ -3,6 +3,8 @@ package com.kuranas.android.feature.video.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.files.data.FileStarToggler
+import com.kuranas.android.feature.files.ui.FileStarState
 import com.kuranas.android.feature.video.data.VideoHomeCatalogDto
 import com.kuranas.android.feature.video.data.VideoPlaylistDto
 import com.kuranas.android.feature.video.data.VideoPlaylistSection
@@ -33,7 +35,11 @@ data class VideoPlaylistSectionState(
 )
 
 @HiltViewModel
-class VideoViewModel @Inject constructor(private val repository: VideoRepository) : ViewModel() {
+class VideoViewModel @Inject constructor(
+    private val repository: VideoRepository,
+    starToggler: FileStarToggler,
+) : ViewModel() {
+    val stars = FileStarState(viewModelScope, starToggler)
 
     private val _state = MutableStateFlow(VideoUiState())
     val state: StateFlow<VideoUiState> = _state.asStateFlow()

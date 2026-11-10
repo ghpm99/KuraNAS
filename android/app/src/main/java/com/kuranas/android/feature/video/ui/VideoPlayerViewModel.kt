@@ -3,6 +3,8 @@ package com.kuranas.android.feature.video.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.files.data.FileStarToggler
+import com.kuranas.android.feature.files.ui.FileStarState
 import com.kuranas.android.feature.video.data.PlaybackSessionDto
 import com.kuranas.android.feature.video.data.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,8 +28,14 @@ data class PlayerProgress(val positionMs: Long, val durationMs: Long, val isPlay
 data class VideoNavigationAvailability(val canGoPrevious: Boolean = false, val canGoNext: Boolean = false)
 
 @HiltViewModel
-class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepository) : ViewModel() {
-    private var currentVideoId: String? = null
+class VideoPlayerViewModel @Inject constructor(
+    private val repository: VideoRepository,
+    starToggler: FileStarToggler,
+) : ViewModel() {
+    val stars = FileStarState(viewModelScope, starToggler)
+
+    private val currentVideoIdState = MutableStateFlow<String?>(null)
+    val currentVideoId: StateFlow<String?> = currentVideoIdState.asStateFlow()
     private var currentPlaylistId: Int? = null
     private var progressReportingJob: Job? = null
     private var progressReader: (() -> PlayerProgress)? = null
@@ -45,7 +53,7 @@ class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepo
     fun getThumbnailUrl(videoId: String): String = runBlocking { repository.thumbnailUrl(videoId) }
 
     suspend fun openVideo(videoId: String, playlistId: Int? = null): VideoPlayerStart {
-        currentVideoId = videoId
+        currentVideoIdState.value = videoId
         currentPlaylistId = null
         playlistVideoIds = emptyList()
         navigationErrorState.value = null
@@ -75,13 +83,13 @@ class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepo
         viewModelScope.launch {
             navigationErrorState.value = null
             progressReader?.let { readProgress -> sendProgress(readProgress().copy(isPlaying = false)) }
-            val previousVideoId = currentVideoId
+            val previousVideoId = currentVideoIdState.value
             when (val shift = requestShift()) {
                 is AppResult.Error -> navigationErrorState.value = shift.message
                 is AppResult.Success -> {
                     applySession(shift.data)
-                    if (currentVideoId == previousVideoId) return@launch
-                    val destinationId = currentVideoId ?: return@launch
+                    if (currentVideoIdState.value == previousVideoId) return@launch
+                    val destinationId = currentVideoIdState.value ?: return@launch
                     mediaChangeChannel.send(
                         VideoPlayerStart(
                             streamUrl = repository.streamUrl(destinationId),
@@ -95,13 +103,13 @@ class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepo
 
     private fun applySession(session: PlaybackSessionDto) {
         currentPlaylistId = session.playbackState.playlistId
-        session.playbackState.videoId?.let { currentVideoId = it.toString() }
+        session.playbackState.videoId?.let { currentVideoIdState.value = it.toString() }
         playlistVideoIds = session.playlist.items.map { it.video.id }
         refreshNavigationAvailability()
     }
 
     private fun refreshNavigationAvailability() {
-        val currentIndex = playlistVideoIds.indexOf(currentVideoId)
+        val currentIndex = playlistVideoIds.indexOf(currentVideoIdState.value)
         navigationAvailabilityState.value = VideoNavigationAvailability(
             canGoPrevious = currentIndex > 0,
             canGoNext = currentIndex >= 0 && currentIndex < playlistVideoIds.lastIndex,
@@ -131,7 +139,7 @@ class VideoPlayerViewModel @Inject constructor(private val repository: VideoRepo
     }
 
     private suspend fun sendProgress(progress: PlayerProgress) {
-        val videoId = currentVideoId ?: return
+        val videoId = currentVideoIdState.value ?: return
         withContext(NonCancellable) {
             repository.updatePlaybackState(
                 videoId = videoId,

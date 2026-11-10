@@ -3,6 +3,8 @@ package com.kuranas.android.feature.video.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.paging.PagedListLoader
+import com.kuranas.android.feature.files.data.FileStarToggler
+import com.kuranas.android.feature.files.ui.FileStarState
 import com.kuranas.android.feature.video.data.VideoItemDto
 import com.kuranas.android.feature.video.data.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +30,11 @@ data class VideoLibraryUiState(
 )
 
 @HiltViewModel
-class VideoLibraryViewModel @Inject constructor(private val repository: VideoRepository) : ViewModel() {
+class VideoLibraryViewModel @Inject constructor(
+    private val repository: VideoRepository,
+    starToggler: FileStarToggler,
+) : ViewModel() {
+    val stars = FileStarState(viewModelScope, starToggler)
 
     private val searchQuery = MutableStateFlow("")
     private val videosLoader = PagedListLoader<VideoItemDto>(viewModelScope) { it.id }

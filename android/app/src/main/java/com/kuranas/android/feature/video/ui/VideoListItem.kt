@@ -23,10 +23,17 @@ import coil.compose.AsyncImage
 import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.glass
+import com.kuranas.android.feature.files.ui.FileStarButton
 import com.kuranas.android.feature.video.data.VideoItemDto
 
 @Composable
-fun VideoListItem(video: VideoItemDto, thumbnailUrl: String, onClick: () -> Unit) {
+fun VideoListItem(
+    video: VideoItemDto,
+    thumbnailUrl: String,
+    isStarred: Boolean,
+    onToggleStar: () -> Unit,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -45,6 +52,7 @@ fun VideoListItem(video: VideoItemDto, thumbnailUrl: String, onClick: () -> Unit
                 .clip(RoundedCornerShape(8.dp)),
         )
         Text(video.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 2)
+        FileStarButton(isStarred = isStarred, onToggleStar = onToggleStar)
         Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.cd_play), tint = MaterialTheme.colorScheme.primary)
     }
 }

@@ -24,6 +24,7 @@ import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 
 @Composable
 fun VideoPlaylistScreen(
@@ -35,32 +36,37 @@ fun VideoPlaylistScreen(
 ) {
     LaunchedEffect(playlistId) { viewModel.load(playlistId) }
     val state by viewModel.state.collectAsState()
+    val starredById by viewModel.stars.starredById.collectAsState()
     val playlist = state.playlist
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(
-            title = playlist?.name ?: stringResource(R.string.playlist_title),
-            leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
-            onLeadingClick = onNavigateBack,
-        )
-        val errorMessage = state.error
-        when {
-            state.isLoading -> LoadingView()
-            errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
-            state.items.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
-            else -> LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.items, key = { it.video.id }) { item ->
-                    VideoListItem(
-                        video = item.video,
-                        thumbnailUrl = playerViewModel.getThumbnailUrl(item.video.id),
+    FileStarErrorHost(viewModel.stars) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            KNHeader(
+                title = playlist?.name ?: stringResource(R.string.playlist_title),
+                leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                onLeadingClick = onNavigateBack,
+            )
+            val errorMessage = state.error
+            when {
+                state.isLoading -> LoadingView()
+                errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
+                state.items.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
+                else -> LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(state.items, key = { it.video.id }) { item ->
+                        VideoListItem(
+                            video = item.video,
+                            thumbnailUrl = playerViewModel.getThumbnailUrl(item.video.id),
+                            isStarred = starredById[item.video.id] ?: item.video.starred,
+                        onToggleStar = { viewModel.stars.toggle(item.video) },
                         onClick = { onPlayVideo(item.video.id) },
-                    )
+                        )
+                    }
                 }
             }
         }

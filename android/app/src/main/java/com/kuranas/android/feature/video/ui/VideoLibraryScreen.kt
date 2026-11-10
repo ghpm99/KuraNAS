@@ -34,6 +34,7 @@ import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 
 @Composable
 fun VideoLibraryScreen(
@@ -43,44 +44,49 @@ fun VideoLibraryScreen(
     playerViewModel: VideoPlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.videos.size, state.hasMore, viewModel::loadMore)
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(
-            title = stringResource(R.string.video_library_title),
-            leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
-            onLeadingClick = onNavigateBack,
-        )
-        TextField(
-            value = state.searchQuery,
-            onValueChange = viewModel::onSearchQueryChange,
-            placeholder = { Text(stringResource(R.string.video_library_search_placeholder)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-            ),
-            modifier = Modifier.fillMaxWidth().glass(GlassLevel.Light, radius = 16.dp),
-        )
-        Spacer(Modifier.height(8.dp))
-        val errorMessage = state.error
-        when {
-            state.isLoading -> LoadingView()
-            errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
-            state.videos.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
-            else -> LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.videos, key = { it.id }) { video ->
-                    VideoListItem(
-                        video = video,
-                        thumbnailUrl = playerViewModel.getThumbnailUrl(video.id),
+    FileStarErrorHost(viewModel.stars) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            KNHeader(
+                title = stringResource(R.string.video_library_title),
+                leadingIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                onLeadingClick = onNavigateBack,
+            )
+            TextField(
+                value = state.searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
+                placeholder = { Text(stringResource(R.string.video_library_search_placeholder)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                ),
+                modifier = Modifier.fillMaxWidth().glass(GlassLevel.Light, radius = 16.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            val errorMessage = state.error
+            when {
+                state.isLoading -> LoadingView()
+                errorMessage != null -> ErrorView(message = errorMessage, onRetry = viewModel::retry)
+                state.videos.isEmpty() -> EmptyView(message = stringResource(R.string.video_empty))
+                else -> LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(state.videos, key = { it.id }) { video ->
+                        VideoListItem(
+                            video = video,
+                            thumbnailUrl = playerViewModel.getThumbnailUrl(video.id),
+                            isStarred = starredById[video.id] ?: video.starred,
+                        onToggleStar = { viewModel.stars.toggle(video) },
                         onClick = { onPlayVideo(video.id) },
-                    )
+                        )
+                    }
                 }
             }
         }

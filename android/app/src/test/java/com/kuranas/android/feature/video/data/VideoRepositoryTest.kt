@@ -3,6 +3,7 @@ package com.kuranas.android.feature.video.data
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.server.ServerStore
+import com.kuranas.android.feature.files.data.FileStarStore
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -20,6 +21,7 @@ import retrofit2.Retrofit
 class VideoRepositoryTest {
 
     private val server = MockWebServer()
+    private val starStore = FileStarStore()
     private lateinit var repository: VideoRepository
 
     @Before
@@ -35,7 +37,7 @@ class VideoRepositoryTest {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(VideoApi::class.java)
-        repository = VideoRepository(api, mockk<ServerStore>())
+        repository = VideoRepository(api, mockk<ServerStore>(), starStore)
     }
 
     @After
@@ -204,6 +206,54 @@ class VideoRepositoryTest {
         val page = (result as AppResult.Success).data
         assertEquals(listOf("4"), page.items.map { it.id })
         assertTrue(page.hasNext)
+    }
+
+    @Test
+    fun `loaded library page replaces a stale star override with the server value`() = runTest {
+        starStore.set("5", true)
+        server.enqueue(MockResponse().setBody("""{"items":[{"id":5,"starred":false}],"pagination":{"page":1,"page_size":50}}"""))
+
+        repository.getLibraryVideos("", 1)
+
+        assertEquals(false, starStore.starredById.value["5"])
+    }
+
+    @Test
+    fun `failed library page keeps the recorded stars`() = runTest {
+        starStore.set("5", true)
+        server.enqueue(MockResponse().setResponseCode(500).setBody("falha do servidor"))
+
+        repository.getLibraryVideos("", 1)
+
+        assertEquals(true, starStore.starredById.value["5"])
+    }
+
+    @Test
+    fun `getHomeCatalog records the stars of the videos in every section`() = runTest {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"sections":[{"key":"continue","items":[{"video":{"id":1,"starred":true}}]},""" +
+                    """{"key":"recent","items":[{"video":{"id":2,"starred":false}}]}]}""",
+            ),
+        )
+
+        repository.getHomeCatalog()
+
+        assertEquals(mapOf("1" to true, "2" to false), starStore.starredById.value)
+    }
+
+    @Test
+    fun `startPlayback records the stars of the session playlist items`() = runTest {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"playlist":{"id":9,"items":[{"video":{"id":41,"starred":true}},{"video":{"id":42}}]},""" +
+                    """"playback_state":{"video_id":41,"playlist_id":9}}""",
+            ),
+        )
+
+        repository.startPlayback("41", 9)
+
+        assertEquals(mapOf("41" to true, "42" to false), starStore.starredById.value)
     }
 
     @Test

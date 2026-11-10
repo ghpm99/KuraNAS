@@ -34,6 +34,8 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.kuranas.android.R
+import com.kuranas.android.feature.files.ui.FileStarButton
+import com.kuranas.android.feature.files.ui.FileStarErrorHost
 
 @Composable
 fun VideoPlayerScreen(
@@ -83,6 +85,8 @@ fun VideoPlayerScreen(
 
     val navigationAvailability by viewModel.navigationAvailability.collectAsState()
     val navigationError by viewModel.navigationError.collectAsState()
+    val currentVideoId by viewModel.currentVideoId.collectAsState()
+    val starredById by viewModel.stars.starredById.collectAsState()
 
     LaunchedEffect(viewModel) {
         viewModel.mediaChanges.collect { start ->
@@ -93,43 +97,51 @@ fun VideoPlayerScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    this.player = player
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT,
+    FileStarErrorHost(viewModel.stars) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        this.player = player
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+            playbackError?.let { message ->
+                Text(
+                    text = stringResource(R.string.video_playback_error, message),
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                )
+            }
+            navigationError?.let { message ->
+                Text(
+                    text = message,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
+                )
+            }
+            Row(
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                }
+                IconButton(onClick = viewModel::goToPrevious, enabled = navigationAvailability.canGoPrevious) {
+                    Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.video_previous))
+                }
+                IconButton(onClick = viewModel::goToNext, enabled = navigationAvailability.canGoNext) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.video_next))
+                }
+                currentVideoId?.let { playingVideoId ->
+                    FileStarButton(
+                        isStarred = starredById[playingVideoId] ?: false,
+                        onToggleStar = { viewModel.stars.toggle(playingVideoId, isStarredFallback = false) },
                     )
                 }
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
-        playbackError?.let { message ->
-            Text(
-                text = stringResource(R.string.video_playback_error, message),
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
-            )
-        }
-        navigationError?.let { message ->
-            Text(
-                text = message,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
-            )
-        }
-        Row(
-            modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
-            }
-            IconButton(onClick = viewModel::goToPrevious, enabled = navigationAvailability.canGoPrevious) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.video_previous))
-            }
-            IconButton(onClick = viewModel::goToNext, enabled = navigationAvailability.canGoNext) {
-                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.video_next))
             }
         }
     }

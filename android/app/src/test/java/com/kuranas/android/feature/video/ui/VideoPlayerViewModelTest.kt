@@ -1,6 +1,8 @@
 package com.kuranas.android.feature.video.ui
 
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.feature.files.data.FileStarStore
+import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.video.data.PlaybackSessionDto
 import com.kuranas.android.feature.video.data.PlaybackStateDto
 import com.kuranas.android.feature.video.data.VideoItemDto
@@ -79,7 +81,7 @@ class VideoPlayerViewModelTest {
     }
 
     private suspend fun openedViewModel(): VideoPlayerViewModel {
-        val viewModel = VideoPlayerViewModel(repository)
+        val viewModel = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
         viewModel.openVideo(videoId)
         return viewModel
     }
@@ -90,7 +92,7 @@ class VideoPlayerViewModelTest {
     fun `successful start exposes the saved position in milliseconds`() = runTest {
         givenStartSucceeds(currentTimeSeconds = 125.5)
 
-        val start = VideoPlayerViewModel(repository).openVideo(videoId)
+        val start = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore())).openVideo(videoId)
 
         assertEquals(125_500L, start.startPositionMs)
         assertEquals("http://nas/stream/42", start.streamUrl)
@@ -100,7 +102,7 @@ class VideoPlayerViewModelTest {
     fun `failed start begins at zero and still returns the stream url`() = runTest {
         givenStartFails()
 
-        val start = VideoPlayerViewModel(repository).openVideo(videoId)
+        val start = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore())).openVideo(videoId)
 
         assertEquals(0L, start.startPositionMs)
         assertEquals("http://nas/stream/42", start.streamUrl)
@@ -236,6 +238,22 @@ class VideoPlayerViewModelTest {
     }
 
     @Test
+    fun `current video id reflects the opened video and changes after going to next`() = runTest {
+        givenStartReturns(sessionAt(currentVideoId = 42))
+        coEvery { repository.nextVideo() } returns AppResult.Success(sessionAt(currentVideoId = 43))
+        coEvery { repository.streamUrl("43") } returns "http://nas/stream/43"
+        val viewModel = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
+        assertEquals(null, viewModel.currentVideoId.value)
+
+        viewModel.openVideo(videoId)
+        assertEquals("42", viewModel.currentVideoId.value)
+
+        viewModel.goToNext()
+        settle()
+        assertEquals("43", viewModel.currentVideoId.value)
+    }
+
+    @Test
     fun `backend returning the same video does not request a media change`() = runTest {
         givenStartReturns(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(41, 42)))
         coEvery { repository.nextVideo() } returns AppResult.Success(sessionAt(currentVideoId = 42, playlistVideoIds = listOf(41, 42)))
@@ -266,7 +284,7 @@ class VideoPlayerViewModelTest {
     @Test
     fun `opening with a playlist starts playback inside that playlist and uses its session for navigation`() = runTest {
         coEvery { repository.startPlayback(videoId, playlistId) } returns AppResult.Success(sessionAt(currentVideoId = 42))
-        val viewModel = VideoPlayerViewModel(repository)
+        val viewModel = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
 
         viewModel.openVideo(videoId, playlistId)
 
@@ -279,7 +297,7 @@ class VideoPlayerViewModelTest {
     fun `opening without a playlist starts playback without playlist id`() = runTest {
         givenStartSucceeds(currentTimeSeconds = 0.0)
 
-        VideoPlayerViewModel(repository).openVideo(videoId)
+        VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore())).openVideo(videoId)
 
         coVerify(exactly = 1) { repository.startPlayback(videoId, null) }
     }
@@ -289,7 +307,7 @@ class VideoPlayerViewModelTest {
         coEvery { repository.startPlayback(videoId, playlistId) } returns AppResult.Error("fora da playlist")
         givenStartSucceeds(currentTimeSeconds = 30.0)
 
-        val start = VideoPlayerViewModel(repository).openVideo(videoId, playlistId)
+        val start = VideoPlayerViewModel(repository, FileStarToggler(mockk(), FileStarStore())).openVideo(videoId, playlistId)
 
         coVerify(exactly = 1) { repository.startPlayback(videoId, playlistId) }
         coVerify(exactly = 1) { repository.startPlayback(videoId, null) }
