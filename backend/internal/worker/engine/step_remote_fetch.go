@@ -120,14 +120,14 @@ func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 			return fmt.Errorf("remote fetch: download exceeded the %s limit", downloadTimeout)
 		}
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("remote fetch: yt-dlp failed: %s", lastLine(msg))
+			return fmt.Errorf("remote fetch: yt-dlp failed: %s", withoutServerPaths(lastLine(msg), tmpDir, payload.OutputDir))
 		}
 		return fmt.Errorf("remote fetch: yt-dlp failed: %w", err)
 	}
 
 	moved, err := moveFetchedFiles(tmpDir, payload.OutputDir)
 	if err != nil {
-		return fmt.Errorf("remote fetch: move output: %w", err)
+		return fmt.Errorf("remote fetch: move output: %s", withoutServerPaths(err.Error(), tmpDir, payload.OutputDir))
 	}
 	if moved == 0 {
 		return fmt.Errorf("remote fetch: yt-dlp produced no output file")
@@ -306,6 +306,19 @@ func copyFileContent(sourcePath, destinationPath string) error {
 		return err
 	}
 	return destinationFile.Close()
+}
+
+// withoutServerPaths strips the given server directories from a message that
+// is stored on the job and shown to clients.
+func withoutServerPaths(message string, serverDirs ...string) string {
+	for _, serverDir := range serverDirs {
+		if serverDir == "" {
+			continue
+		}
+		message = strings.ReplaceAll(message, serverDir+string(filepath.Separator), "")
+		message = strings.ReplaceAll(message, serverDir, "")
+	}
+	return message
 }
 
 func lastLine(s string) string {

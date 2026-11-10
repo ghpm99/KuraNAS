@@ -437,3 +437,22 @@ func TestNotifyRemoteFetchOutcomeStaysSilentForACanceledDownload(t *testing.T) {
 		t.Fatalf("a canceled download must not notify, got %+v", notifier.raised)
 	}
 }
+
+func TestExecuteRemoteFetchStepKeepsServerPathsOutOfTheStoredError(t *testing.T) {
+	fetchStep, _ := remoteFetchStepRunning(t, fakeYtDlpReadsOutputDir+"echo \"ERROR: unable to write $output_dir/clip.mp3\" >&2\nexit 1\n")
+
+	err := executeRemoteFetchStep(nil, fetchStep)
+
+	if err == nil || !strings.Contains(err.Error(), "unable to write clip.mp3") {
+		t.Fatalf("expected the yt-dlp reason with a bare file name, got %v", err)
+	}
+	if strings.Contains(err.Error(), os.TempDir()) {
+		t.Fatalf("the stored error must not expose server directories: %v", err)
+	}
+}
+
+func TestWithoutServerPathsIgnoresEmptyDirs(t *testing.T) {
+	if cleaned := withoutServerPaths("failed at /data/media/clip.mp3", "", "/data/media"); cleaned != "failed at clip.mp3" {
+		t.Fatalf("unexpected message: %q", cleaned)
+	}
+}
