@@ -205,4 +205,13 @@ class VideoRepositoryTest {
         assertEquals(listOf("4"), page.items.map { it.id })
         assertTrue(page.hasNext)
     }
+
+    @Test
+    fun `getHomeCatalog decodes the sections sent by the server`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"sections":[{"key":"recent","items":[{"video":{"id":2,"name":"b.mp4"}}]}]}"""))
+
+        val catalog = (repository.getHomeCatalog() as AppResult.Success).data
+
+        assertEquals(listOf("2"), catalog.recentVideos.map { video -> video.id })
+    }
 }

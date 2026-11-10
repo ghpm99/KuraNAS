@@ -150,9 +150,9 @@ data class VideoHomeCatalogDto(
             .flatMap { section -> section.items }
             .distinctBy { item -> item.video.id }
 
-    private companion object {
-        const val RECENT_SECTION_KEY = "recent"
-        const val CONTINUE_SECTION_KEY = "continue"
+    companion object {
+        private const val RECENT_SECTION_KEY = "recent"
+        private const val CONTINUE_SECTION_KEY = "continue"
     }
 }
 
