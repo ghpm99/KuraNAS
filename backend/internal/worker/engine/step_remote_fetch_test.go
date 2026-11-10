@@ -282,3 +282,38 @@ func TestExecuteRemoteFetchStepFailsADownloadThatOutlivesItsTimeout(t *testing.T
 		t.Fatalf("a timed out download must leave nothing in the library, found %d entries", len(leftovers))
 	}
 }
+
+func TestMoveFetchedFilesKeepsWhatIsAlreadyInTheLibrary(t *testing.T) {
+	downloadDir := t.TempDir()
+	libraryDir := t.TempDir()
+	writeTextFile := func(path string, content string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	readTextFile := func(path string) string {
+		t.Helper()
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		return string(content)
+	}
+	writeTextFile(filepath.Join(libraryDir, "clip.mp4"), "first download")
+	writeTextFile(filepath.Join(libraryDir, "clip (2).mp4"), "second download")
+	writeTextFile(filepath.Join(downloadDir, "clip.mp4"), "third download")
+
+	movedCount, err := moveFetchedFiles(downloadDir, libraryDir)
+	if err != nil || movedCount != 1 {
+		t.Fatalf("expected one file moved, got count=%d err=%v", movedCount, err)
+	}
+
+	if readTextFile(filepath.Join(libraryDir, "clip.mp4")) != "first download" ||
+		readTextFile(filepath.Join(libraryDir, "clip (2).mp4")) != "second download" {
+		t.Fatal("files already in the library must keep their content")
+	}
+	if readTextFile(filepath.Join(libraryDir, "clip (3).mp4")) != "third download" {
+		t.Fatal("the new download must land under the next free name")
+	}
+}

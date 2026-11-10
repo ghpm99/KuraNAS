@@ -190,12 +190,29 @@ func moveFetchedFiles(srcDir, dstDir string) (int, error) {
 		if strings.HasPrefix(name, ".") || isTempArtifact(name) {
 			continue
 		}
-		if err := moveFile(filepath.Join(srcDir, name), filepath.Join(dstDir, name)); err != nil {
+		if err := moveFile(filepath.Join(srcDir, name), unoccupiedPath(dstDir, name)); err != nil {
 			return moved, err
 		}
 		moved++
 	}
 	return moved, nil
+}
+
+// unoccupiedPath returns where fileName can land inside dir without replacing
+// what is already there: the name itself, or the name numbered " (2)", " (3)"…
+func unoccupiedPath(dir string, fileName string) string {
+	candidatePath := filepath.Join(dir, fileName)
+	extension := filepath.Ext(fileName)
+	baseName := strings.TrimSuffix(fileName, extension)
+	for copyNumber := 2; isPathOccupied(candidatePath); copyNumber++ {
+		candidatePath = filepath.Join(dir, fmt.Sprintf("%s (%d)%s", baseName, copyNumber, extension))
+	}
+	return candidatePath
+}
+
+func isPathOccupied(path string) bool {
+	_, err := os.Lstat(path)
+	return err == nil
 }
 
 func isTempArtifact(name string) bool {
