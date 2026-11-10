@@ -94,6 +94,9 @@ func TestTrashHandlers_ListRestoreDeleteEmpty(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &conflictBody); err != nil || conflictBody["error"] == "" {
 		t.Fatalf("conflict must carry an error message, got %s", rec.Body.String())
 	}
+	if conflictBody["path"] != filepath.Join(root, "b.txt") {
+		t.Fatalf("conflict must name the occupied path, got %s", rec.Body.String())
+	}
 
 	// Permanently delete the second
 	rec = doTrashJSON(router, http.MethodDelete, "/trash/2", nil)

@@ -14,3 +14,17 @@ var (
 	// ErrInvalidRetention — retention must be a positive number of days.
 	ErrInvalidRetention = errors.New("invalid retention days")
 )
+
+// RestoreConflictError carries the path that blocks a restore, so the client
+// can tell the user what is in the way.
+type RestoreConflictError struct {
+	OccupiedPath string
+}
+
+func (conflict *RestoreConflictError) Error() string {
+	return ErrRestoreConflict.Error() + ": " + conflict.OccupiedPath
+}
+
+func (conflict *RestoreConflictError) Unwrap() error {
+	return ErrRestoreConflict
+}

@@ -51,7 +51,7 @@ func (handler *Handler) respondServiceError(c *gin.Context, err error) {
 	case errors.Is(err, ErrItemNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TRASH_ITEM_NOT_FOUND")})
 	case errors.Is(err, ErrRestoreConflict):
-		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("TRASH_RESTORE_CONFLICT")})
+		c.JSON(http.StatusConflict, restoreConflictBody(err))
 	case errors.Is(err, ErrItemContentMissing):
 		c.JSON(http.StatusGone, gin.H{"error": i18n.GetMessage("TRASH_ITEM_CONTENT_MISSING")})
 	case errors.Is(err, ErrInvalidRetention):
@@ -59,6 +59,15 @@ func (handler *Handler) respondServiceError(c *gin.Context, err error) {
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TRASH_OPERATION_FAILED")})
 	}
+}
+
+func restoreConflictBody(err error) gin.H {
+	body := gin.H{"error": i18n.GetMessage("TRASH_RESTORE_CONFLICT")}
+	var conflict *RestoreConflictError
+	if errors.As(err, &conflict) {
+		body["path"] = conflict.OccupiedPath
+	}
+	return body
 }
 
 func parseItemID(c *gin.Context) (int, bool) {

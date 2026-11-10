@@ -197,7 +197,7 @@ func (s *Service) RestoreItem(id int) (string, error) {
 		return "", ErrItemContentMissing
 	}
 	if _, statErr := os.Stat(item.OriginalPath); statErr == nil {
-		return "", ErrRestoreConflict
+		return "", &RestoreConflictError{OccupiedPath: item.OriginalPath}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(item.OriginalPath), 0755); err != nil {

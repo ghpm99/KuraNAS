@@ -2,6 +2,7 @@ package trash
 
 import (
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -296,8 +297,10 @@ func TestTrashService_RestoreItemConflictWhenPathOccupied(t *testing.T) {
 	// Same path is occupied again by a new file.
 	writeFile(t, filePath, "novo conteudo")
 
-	if _, err := s.RestoreItem(1); err != ErrRestoreConflict {
-		t.Fatalf("expected ErrRestoreConflict, got %v", err)
+	_, err := s.RestoreItem(1)
+	var conflict *RestoreConflictError
+	if !errors.As(err, &conflict) || !errors.Is(err, ErrRestoreConflict) || conflict.OccupiedPath != filePath {
+		t.Fatalf("expected a restore conflict on %q, got %v", filePath, err)
 	}
 
 	if items, _ := repo.GetAllItems(); len(items) != 1 {
