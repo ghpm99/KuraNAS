@@ -23,7 +23,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 ## Lacunas (uma alteração cada)
 
 ### Backend
-- [ ] 01. Cancelar o job interrompe o yt-dlp e descarta o parcial (teste com binário falso)
+- [x] 01. Cancelar o job interrompe o yt-dlp e descarta o parcial (teste com binário falso)
 - [ ] 02. Timeout do step `remote_fetch` (configurável, com padrão generoso)
 - [ ] 03. Mover para o destino nunca sobrescreve: nome livre com sufixo ` (2)`, ` (3)`…
 - [ ] 04. `scanner.Err()` tratado e parcial removido quando o fechamento da cópia falha

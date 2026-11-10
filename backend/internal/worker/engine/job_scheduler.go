@@ -554,6 +554,13 @@ func (s *JobScheduler) executeStep(step jobs.StepModel) error {
 		return err
 	}
 
+	if errors.Is(runErr, ErrStepCanceled) {
+		applog.Info("step canceled with its job",
+			"job_id", step.JobID, "step_id", step.ID, "type", step.Type, "duration_ms", durationMs)
+		_, err = s.updateStepExecution(step.ID, string(job.StepStatusCanceled), step.Progress, step.Attempts+1, nil, &ended, nil)
+		return err
+	}
+
 	// Timeout: don't fail the step. Return it to the queue (without consuming the
 	// retry budget) and bump timeout_count, then signal the job to go to the back
 	// of the line so the next file gets a turn — like stepping out of the picolé

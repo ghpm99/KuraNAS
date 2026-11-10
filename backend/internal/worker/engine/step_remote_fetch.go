@@ -21,6 +21,10 @@ import (
 // (e.g. "[download]  45.6% of 12.3MiB at ...").
 var downloadProgressRe = regexp.MustCompile(`(\d{1,3}(?:\.\d+)?)%`)
 
+// killedDownloadPipeGrace bounds how long a canceled download may keep its
+// output pipes open through a child process before they are closed by force.
+const killedDownloadPipeGrace = 5 * time.Second
+
 // tempArtifactExts are the in-flight suffixes yt-dlp/ffmpeg leave behind; they
 // must never be moved into the library as if they were finished media.
 var tempArtifactExts = []string{".part", ".ytdl", ".temp", ".tmp"}
@@ -30,7 +34,7 @@ var tempArtifactExts = []string{".part", ".ytdl", ".temp", ".tmp"}
 // them into a watched root is enough: the folder watcher picks them up and the
 // normal metadata/checksum/thumbnail/persist pipeline indexes them — so this
 // step owns only the download + placement, nothing about indexing.
-func executeRemoteFetchStep(context *WorkerContext, step jobs.StepModel) error {
+func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) error {
 	payload, err := decodeRemoteFetchPayload(step.Payload)
 	if err != nil {
 		return err
@@ -59,7 +63,11 @@ func executeRemoteFetchStep(context *WorkerContext, step jobs.StepModel) error {
 	}
 	args := buildYtDlpArgs(presetArgs, tmpDir, payload.URL)
 
-	cmd := exec.CommandContext(stdContext(), binary, args...)
+	downloadContext, stopWatchingJob := contextCanceledWithJob(workerContext, step.JobID)
+	defer stopWatchingJob()
+
+	cmd := exec.CommandContext(downloadContext, binary, args...)
+	cmd.WaitDelay = killedDownloadPipeGrace
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("remote fetch: stdout pipe: %w", err)
@@ -78,7 +86,7 @@ func executeRemoteFetchStep(context *WorkerContext, step jobs.StepModel) error {
 	for scanner.Scan() {
 		if pct, ok := parseDownloadProgress(scanner.Text()); ok {
 			if shouldReportProgress(pct, lastReported, lastReportAt) {
-				reportPullProgress(context, step, pct)
+				reportPullProgress(workerContext, step, pct)
 				lastReported = pct
 				lastReportAt = time.Now()
 			}
@@ -86,6 +94,9 @@ func executeRemoteFetchStep(context *WorkerContext, step jobs.StepModel) error {
 	}
 
 	if err := cmd.Wait(); err != nil {
+		if downloadContext.Err() != nil {
+			return ErrStepCanceled
+		}
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
 			return fmt.Errorf("remote fetch: yt-dlp failed: %s", lastLine(msg))
 		}

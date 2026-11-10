@@ -2,13 +2,17 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	ingestapi "nas-go/api/internal/api/v1/ingest"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	jobdomain "nas-go/api/internal/worker/job"
 )
 
 func TestExecuteRemoteFetchStepEarlyErrors(t *testing.T) {
@@ -158,5 +162,96 @@ func TestDecodeRemoteFetchPayload(t *testing.T) {
 	}
 	if _, err := decodeRemoteFetchPayload([]byte(`{bad`)); err == nil {
 		t.Fatal("expected error for malformed json")
+	}
+}
+
+func writeFakeYtDlp(t *testing.T, script string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake yt-dlp is a POSIX shell script")
+	}
+	binaryPath := filepath.Join(t.TempDir(), "fake-yt-dlp")
+	if err := os.WriteFile(binaryPath, []byte("#!/bin/sh\n"+script), 0o755); err != nil {
+		t.Fatalf("write fake yt-dlp: %v", err)
+	}
+	return binaryPath
+}
+
+func runningRemoteFetchJob(t *testing.T, repository *fakeJobsRepository, payload ingestapi.RemoteFetchStepPayload) jobs.StepModel {
+	t.Helper()
+	fetchJob, err := repository.CreateJob(nil, jobs.JobModel{Type: string(jobdomain.JobTypeRemoteFetch), Status: string(jobdomain.JobStatusRunning)})
+	if err != nil {
+		t.Fatalf("create job: %v", err)
+	}
+	rawPayload, _ := json.Marshal(payload)
+	fetchStep, err := repository.CreateStep(nil, jobs.StepModel{
+		JobID:       fetchJob.ID,
+		Type:        string(jobdomain.StepTypeRemoteFetch),
+		Status:      string(jobdomain.StepStatusRunning),
+		MaxAttempts: 1,
+		Payload:     rawPayload,
+	})
+	if err != nil {
+		t.Fatalf("create step: %v", err)
+	}
+	return fetchStep
+}
+
+func TestExecuteRemoteFetchStepStopsTheDownloadWhenTheJobIsCanceled(t *testing.T) {
+	originalPollInterval := jobCancellationPollInterval
+	jobCancellationPollInterval = 20 * time.Millisecond
+	t.Cleanup(func() { jobCancellationPollInterval = originalPollInterval })
+
+	outputDir := t.TempDir()
+	repository := newFakeJobsRepository()
+	fetchStep := runningRemoteFetchJob(t, repository, ingestapi.RemoteFetchStepPayload{
+		URL:       "https://x.test/v",
+		Preset:    "audio_mp3",
+		OutputDir: outputDir,
+		Binary:    writeFakeYtDlp(t, "echo '[download]  10.0% of 1MiB'\nexec sleep 60\n"),
+	})
+
+	stepOutcome := make(chan error, 1)
+	go func() {
+		stepOutcome <- executeRemoteFetchStep(&WorkerContext{JobsRepository: repository}, fetchStep)
+	}()
+
+	cancelRequested := true
+	if _, err := repository.UpdateJobExecution(nil, fetchStep.JobID, string(jobdomain.JobStatusCanceled), nil, nil, &cancelRequested, nil); err != nil {
+		t.Fatalf("cancel job: %v", err)
+	}
+
+	select {
+	case err := <-stepOutcome:
+		if !errors.Is(err, ErrStepCanceled) {
+			t.Fatalf("expected ErrStepCanceled, got %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the download kept running after the job was canceled")
+	}
+
+	if leftovers, _ := os.ReadDir(outputDir); len(leftovers) != 0 {
+		t.Fatalf("a canceled download must leave nothing in the library, found %d entries", len(leftovers))
+	}
+}
+
+func TestSchedulerRecordsACanceledStepAsCanceledNotFailed(t *testing.T) {
+	repository := newFakeJobsRepository()
+	fetchStep := runningRemoteFetchJob(t, repository, ingestapi.RemoteFetchStepPayload{URL: "https://x.test/v"})
+	fetchStep.Status = string(jobdomain.StepStatusQueued)
+	scheduler := &JobScheduler{
+		repository: repository,
+		executors: map[jobdomain.StepType]StepExecutor{
+			jobdomain.StepTypeRemoteFetch: func(jobs.StepModel) error { return ErrStepCanceled },
+		},
+	}
+
+	if err := scheduler.executeStep(fetchStep); err != nil {
+		t.Fatalf("a canceled step is not a scheduler error, got %v", err)
+	}
+
+	steps, _ := repository.GetStepsByJobID(fetchStep.JobID)
+	if steps[0].Status != string(jobdomain.StepStatusCanceled) || steps[0].LastError != "" {
+		t.Fatalf("expected a canceled step without error, got status=%s error=%q", steps[0].Status, steps[0].LastError)
 	}
 }
