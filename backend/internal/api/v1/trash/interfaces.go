@@ -16,6 +16,7 @@ type RepositoryInterface interface {
 	GetExpiredItems(cutoff time.Time) ([]TrashItemModel, error)
 	GetAllItems() ([]TrashItemModel, error)
 	DeleteItem(tx *sql.Tx, id int) error
+	CountOverlappingItems(originalPath string) (int, error)
 	GetRetentionDays() (int, bool, error)
 	SetRetentionDays(days int) error
 }
@@ -34,9 +35,11 @@ type ServiceInterface interface {
 
 // FilesIndexInterface is the slice of the files domain the trash needs: after
 // a restore, the soft-deleted home_file rows of the subtree must come back and
-// the destination directory gets rescanned. Declared here (not imported from
-// files) so the dependency stays one-directional at the package level.
+// the destination directory gets rescanned; after a purge, those rows are
+// dropped for good. Declared here (not imported from files) so the dependency
+// stays one-directional at the package level.
 type FilesIndexInterface interface {
 	RestoreSubtree(path string) error
+	PurgeDeletedSubtree(path string) error
 	ScanDirTask(path string)
 }

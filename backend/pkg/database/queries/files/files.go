@@ -58,6 +58,9 @@ var MarkDeletedSubtreeQuery string
 //go:embed restore_subtree.sql
 var RestoreSubtreeQuery string
 
+//go:embed delete_deleted_subtree.sql
+var DeleteDeletedSubtreeQuery string
+
 //go:embed delete_recent_file.sql
 var DeleteRecentFileQuery string
 

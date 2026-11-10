@@ -109,6 +109,20 @@ func (m *trashRepoMock) DeleteItem(tx *sql.Tx, id int) error {
 	return nil
 }
 
+func (m *trashRepoMock) CountOverlappingItems(originalPath string) (int, error) {
+	overlappingItems := 0
+	separator := string(filepath.Separator)
+	for _, item := range m.sortedItems() {
+		isSamePath := item.OriginalPath == originalPath
+		isInside := strings.HasPrefix(item.OriginalPath, originalPath+separator)
+		isAncestor := strings.HasPrefix(originalPath, item.OriginalPath+separator)
+		if isSamePath || isInside || isAncestor {
+			overlappingItems++
+		}
+	}
+	return overlappingItems, nil
+}
+
 func (m *trashRepoMock) GetRetentionDays() (int, bool, error) {
 	if m.retention <= 0 {
 		return 0, false, nil
@@ -123,8 +137,14 @@ func (m *trashRepoMock) SetRetentionDays(days int) error {
 
 type filesIndexMock struct {
 	restoredPaths []string
+	purgedPaths   []string
 	scannedDirs   []string
 	restoreErr    error
+}
+
+func (m *filesIndexMock) PurgeDeletedSubtree(path string) error {
+	m.purgedPaths = append(m.purgedPaths, path)
+	return nil
 }
 
 func (m *filesIndexMock) RestoreSubtree(path string) error {
@@ -586,5 +606,68 @@ func TestCopyThenRemoveMovesBytesAcrossDirs(t *testing.T) {
 	}
 	if data, err := os.ReadFile(destination); err != nil || string(data) != "payload" {
 		t.Fatalf("destination content = %q err=%v", data, err)
+	}
+}
+
+func trashTwoGenerationsOfTheSameFile(t *testing.T, s *Service, repo *trashRepoMock, root string) []TrashItemModel {
+	t.Helper()
+	filePath := filepath.Join(root, "a.txt")
+	for generation := 0; generation < 2; generation++ {
+		writeFile(t, filePath, "conteudo")
+		if err := s.MoveToTrash(filePath, 8); err != nil {
+			t.Fatalf("MoveToTrash generation %d: %v", generation, err)
+		}
+	}
+	items, _ := repo.GetAllItems()
+	return items
+}
+
+func TestTrashService_PurgingAnItemDropsItsIndexRows(t *testing.T) {
+	s, repo, filesIndex, root := newTrashServiceForTest(t)
+	filePath := filepath.Join(root, "a.txt")
+	writeFile(t, filePath, "conteudo")
+	if err := s.MoveToTrash(filePath, 8); err != nil {
+		t.Fatalf("MoveToTrash: %v", err)
+	}
+	items, _ := repo.GetAllItems()
+
+	if err := s.DeleteItemPermanently(items[0].ID); err != nil {
+		t.Fatalf("DeleteItemPermanently: %v", err)
+	}
+
+	if len(filesIndex.purgedPaths) != 1 || filesIndex.purgedPaths[0] != filePath {
+		t.Fatalf("expected the index rows of %q to be purged, got %v", filePath, filesIndex.purgedPaths)
+	}
+}
+
+func TestTrashService_PurgeKeepsIndexRowsWhileAnotherItemOverlaps(t *testing.T) {
+	s, repo, filesIndex, root := newTrashServiceForTest(t)
+	items := trashTwoGenerationsOfTheSameFile(t, s, repo, root)
+
+	if err := s.DeleteItemPermanently(items[0].ID); err != nil {
+		t.Fatalf("DeleteItemPermanently first generation: %v", err)
+	}
+	if len(filesIndex.purgedPaths) != 0 {
+		t.Fatalf("index rows must survive while the second generation is restorable, got %v", filesIndex.purgedPaths)
+	}
+
+	if err := s.DeleteItemPermanently(items[1].ID); err != nil {
+		t.Fatalf("DeleteItemPermanently second generation: %v", err)
+	}
+	if len(filesIndex.purgedPaths) != 1 {
+		t.Fatalf("index rows must be purged with the last generation, got %v", filesIndex.purgedPaths)
+	}
+}
+
+func TestTrashService_EmptyTrashDropsIndexRowsOfEveryItem(t *testing.T) {
+	s, repo, filesIndex, root := newTrashServiceForTest(t)
+	trashTwoGenerationsOfTheSameFile(t, s, repo, root)
+
+	if purged, err := s.EmptyTrash(); err != nil || purged != 2 {
+		t.Fatalf("EmptyTrash: purged=%d err=%v", purged, err)
+	}
+
+	if len(filesIndex.purgedPaths) != 1 {
+		t.Fatalf("expected one index purge after the last overlapping item, got %v", filesIndex.purgedPaths)
 	}
 }

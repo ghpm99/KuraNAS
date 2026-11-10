@@ -2,6 +2,7 @@ package trash
 
 import (
 	"database/sql"
+	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
@@ -217,5 +218,24 @@ func TestTrashRepository_RetentionDays(t *testing.T) {
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestTrashRepository_CountOverlappingItems(t *testing.T) {
+	repo, mock, db := newRepoWithMock(t)
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.CountOverlappingTrashItemsQuery)).
+		WithArgs("/data/docs", string(filepath.Separator)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+	mock.ExpectRollback()
+
+	overlappingItems, err := repo.CountOverlappingItems("/data/docs")
+	if err != nil || overlappingItems != 2 {
+		t.Fatalf("CountOverlappingItems: count=%d err=%v", overlappingItems, err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
 	}
 }

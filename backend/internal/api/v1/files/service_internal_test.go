@@ -212,6 +212,9 @@ func (m *filesRepoMock) RestoreSubtree(transaction *sql.Tx, path string) (int64,
 	}
 	return 0, nil
 }
+func (m *filesRepoMock) DeleteDeletedSubtree(transaction *sql.Tx, path string) (int64, error) {
+	return 0, nil
+}
 func (m *filesRepoMock) GetDirectoryContentCounts(parentPaths []string) (map[string]int, error) {
 	if m.getDirectoryContentCountsFn != nil {
 		return m.getDirectoryContentCountsFn(parentPaths)

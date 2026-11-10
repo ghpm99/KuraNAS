@@ -253,7 +253,32 @@ func (s *Service) DeleteItemPermanently(id int) error {
 		return err
 	}
 
-	return s.deleteRegistryRow(item.ID)
+	if err := s.deleteRegistryRow(item.ID); err != nil {
+		return err
+	}
+	s.purgeIndexRows(item)
+	return nil
+}
+
+// purgeIndexRows drops the soft-deleted home_file rows of a purged item. It
+// keeps them while another trash item overlaps the same subtree, because that
+// item can still be restored and needs those rows back. A failure is only
+// logged: the bytes are already gone and stale soft-deleted rows are harmless.
+func (s *Service) purgeIndexRows(item TrashItemModel) {
+	if s.FilesIndex == nil {
+		return
+	}
+	overlappingItems, err := s.Repository.CountOverlappingItems(item.OriginalPath)
+	if err != nil {
+		log.Printf("trash: could not check overlapping items of %q: %v", item.OriginalPath, err)
+		return
+	}
+	if overlappingItems > 0 {
+		return
+	}
+	if err := s.FilesIndex.PurgeDeletedSubtree(item.OriginalPath); err != nil {
+		log.Printf("trash: index purge for %q failed: %v", item.OriginalPath, err)
+	}
 }
 
 // purgeItems removes a batch from disk and registry, returning how many items
@@ -269,6 +294,7 @@ func (s *Service) purgeItems(items []TrashItemModel) int {
 			log.Printf("trash: purged %q but failed to drop registry row %d: %v", item.TrashPath, item.ID, err)
 			continue
 		}
+		s.purgeIndexRows(item)
 		purged++
 	}
 	return purged

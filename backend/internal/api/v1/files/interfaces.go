@@ -31,6 +31,7 @@ type RepositoryInterface interface {
 	UpdateDescendantPaths(transaction *sql.Tx, oldPath string, newPath string) (int64, error)
 	MarkDeletedSubtree(transaction *sql.Tx, path string, deletedAt time.Time) (int64, error)
 	RestoreSubtree(transaction *sql.Tx, path string) (int64, error)
+	DeleteDeletedSubtree(transaction *sql.Tx, path string) (int64, error)
 	GetDirectoryContentCounts(parentPaths []string) (map[string]int, error)
 	GetFolderStats(descendantPathPrefix string) (FolderStatsDto, error)
 	GetCountByType(fileType FileType) (int, error)
@@ -80,6 +81,7 @@ type ServiceInterface interface {
 	CheckFileExistsByPath(path string) bool
 	DeleteFile(file FileDto, bySystem bool) error
 	RestoreSubtree(path string) error
+	PurgeDeletedSubtree(path string) error
 	UploadFiles(targetFolderID int, files []*multipart.FileHeader) (UploadFilesResult, error)
 	UploadFilesWithOptions(targetFolderID int, files []*multipart.FileHeader, options UploadOptions) (UploadFilesResult, error)
 	CreateFolder(parentID *int, name string) (string, error)

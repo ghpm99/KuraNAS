@@ -218,6 +218,9 @@ var BackfillVideoPlaylistNameKeyQuery string
 //go:embed queries/0069_add_home_file_starred_at.sql
 var AddHomeFileStarredAtQuery string
 
+//go:embed queries/0070_cascade_file_dependents_on_file_delete.sql
+var CascadeFileDependentsOnFileDeleteQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -358,6 +361,15 @@ func fileMigrationList() {
 	addMigrationRequiring("0069_add_home_file_starred_at",
 		[]string{"0002_add_file_starred_column"},
 		defaultMigrationFunc(AddHomeFileStarredAtQuery))
+
+	addMigrationRequiring("0070_cascade_file_dependents_on_file_delete",
+		[]string{
+			"0003_create_recent_file_table",
+			"0008_create_image_metadata_table",
+			"0009_create_audio_metadata_table",
+			"0010_create_video_metadata_table",
+		},
+		defaultMigrationFunc(CascadeFileDependentsOnFileDeleteQuery))
 }
 
 func diaryMigrationList() {

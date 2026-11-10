@@ -3,6 +3,7 @@ package trash
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -146,6 +147,21 @@ func (r *Repository) DeleteItem(tx *sql.Tx, id int) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (r *Repository) CountOverlappingItems(originalPath string) (int, error) {
+	overlappingItems := 0
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(
+			queries.CountOverlappingTrashItemsQuery,
+			originalPath,
+			string(filepath.Separator),
+		).Scan(&overlappingItems)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("CountOverlappingItems: %w", err)
+	}
+	return overlappingItems, nil
 }
 
 func (r *Repository) GetRetentionDays() (int, bool, error) {

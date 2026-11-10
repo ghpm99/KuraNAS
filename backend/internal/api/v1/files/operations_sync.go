@@ -75,6 +75,20 @@ func (r *Repository) RestoreSubtree(transaction *sql.Tx, path string) (int64, er
 	return result.RowsAffected()
 }
 
+// DeleteDeletedSubtree hard-deletes the soft-deleted row at path and every
+// soft-deleted descendant row. Returns the number of removed rows.
+func (r *Repository) DeleteDeletedSubtree(transaction *sql.Tx, path string) (int64, error) {
+	result, err := transaction.Exec(
+		queries.DeleteDeletedSubtreeQuery,
+		path,
+		path+string(filepath.Separator),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("DeleteDeletedSubtree: %w", err)
+	}
+	return result.RowsAffected()
+}
+
 // logSyncFailure records a failed disk→database sync. The disk operation
 // already succeeded and stays authoritative; the pending ScanDirTask
 // reconciles the rows later, so the operation still reports success.
@@ -148,6 +162,15 @@ func (s *Service) syncDeletedRows(path string) error {
 func (s *Service) RestoreSubtree(path string) error {
 	return s.withTransaction(func(tx *sql.Tx) error {
 		_, err := s.Repository.RestoreSubtree(tx, path)
+		return err
+	})
+}
+
+// PurgeDeletedSubtree drops the soft-deleted home_file rows of a subtree whose
+// bytes were purged from the trash and can no longer be restored.
+func (s *Service) PurgeDeletedSubtree(path string) error {
+	return s.withTransaction(func(tx *sql.Tx) error {
+		_, err := s.Repository.DeleteDeletedSubtree(tx, path)
 		return err
 	})
 }

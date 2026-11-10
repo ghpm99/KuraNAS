@@ -20,6 +20,9 @@ var GetAllTrashItemsQuery string
 //go:embed delete_trash_item.sql
 var DeleteTrashItemQuery string
 
+//go:embed count_overlapping_trash_items.sql
+var CountOverlappingTrashItemsQuery string
+
 //go:embed get_retention_days.sql
 var GetRetentionDaysQuery string
 
