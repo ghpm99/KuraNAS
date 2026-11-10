@@ -100,6 +100,63 @@ Referência cruzada: `02/RN-04` é a regra 04 da spec 02.
 
 **Contrato HTTP:** só cresce. Campo, parâmetro e rota não são removidos nem renomeados, porque web, dois apps Android e o plugin consomem a mesma API.
 
+## Por onde começar
+
+O levantamento feito para escrever estas specs (leitura de código, 2026-11-10) encontrou os defeitos abaixo. Eles explicam "telas com scroll que ficam sem itens" e "coisas que funcionavam e não funcionam mais", e bloqueiam as necessidades N1 e N2. Ordem sugerida de correção:
+
+| # | Defeito | Spec |
+|---|---|---|
+| 1 | Arquivos, Favoritos, Recentes, busca na pasta e seletor de pasta nunca carregam a segunda página (o cliente lê `hasNext`, o servidor envia `has_next`) | [00 anexo A1–A3](00-padroes-transversais.md) |
+| 2 | Em oito telas, a falha de uma página seguinte ou da revalidação automática troca a lista inteira pela tela de erro | [00 anexo A4](00-padroes-transversais.md) |
+| 3 | O app Android não encontra o servidor (procura um nome de serviço diferente do anunciado) e a busca nunca termina | [24 §8](24-app-android.md) |
+| 4 | O app Android mostra só 15 itens por pasta | [24 §8](24-app-android.md) |
+| 5 | O app Android não envia arquivos para o servidor | [03 §9](03-transferencia-entre-dispositivos.md) |
+| 6 | Excluir uma captura promovida apaga o vídeo da biblioteca | [12 §10](12-capturas.md) |
+| 7 | Takeout sobrescreve arquivos de mesmo nome e descarta as datas das fotos | [13 §9](13-takeout.md) |
+| 8 | Opções de configuração sem efeito; "Reindexar" e "Ver duplicados" que não fazem o que dizem | [21 §9](21-indexacao.md), [16 §8](16-analytics.md), [23 §8](23-configuracoes-e-sistema.md) |
+
+Depois disso, o caminho é verificar cada spec P0 contra o sistema rodando, marcando os `CA` que passam e abrindo lacuna para os que falham.
+
+## Backlog → spec
+
+Cada item dos dois boards e a spec que o governa.
+
+**`docs/revisao-produto/`**
+
+| Item | Spec |
+|---|---|
+| 01 Arquivos | [02](02-arquivos.md), [03](03-transferencia-entre-dispositivos.md) |
+| 02 Shell e layout | [01](01-shell-e-navegacao.md) |
+| 03 Imagens | [04](04-imagens.md) |
+| 04 Busca global | [08](08-busca-global.md), [07](07-documentos.md) |
+| 05 Música | [05](05-musica.md) |
+| 06 Vídeos | [06](06-videos.md) |
+| 07 Favoritos | [09](09-favoritos.md) |
+| 08 Lixeira | [10](10-lixeira.md) |
+| 09 Downloads / ingestão por URL | [11](11-download-por-url.md) |
+| 10 Capturas (plugin) | [12](12-capturas.md) |
+| 11 Takeout | [13](13-takeout.md) |
+| 12 Analytics | [16](16-analytics.md) |
+| 13 Notificações e jobs | [15](15-notificacoes-e-jobs.md) |
+| 14 Diário de atividades | [17](17-diario-de-atividades.md) |
+| 15 Assistente | [18](18-assistente.md) |
+| 16 Configurações | [20](20-armazenamento.md), [21](21-indexacao.md), [22](22-acesso-pela-rede.md), [23](23-configuracoes-e-sistema.md) |
+| 17 E-mail | [19](19-email.md) |
+| 18 Home | [14](14-home.md) |
+
+**`docs/melhorias/`**
+
+| Task | Spec |
+|---|---|
+| 01 Indexação de diretórios · 02 Filtro `deleted_at` · 03 Debounce do watcher · 06 Watcher por eventos · 07 Pipeline legado · 08 Decompor query de arquivos | [21](21-indexacao.md) |
+| 04 Whitelist de IPs · 11 WebDAV | [22](22-acesso-pela-rede.md) |
+| 05 Operações atualizam o banco na hora | [02/RN-04](02-arquivos.md) |
+| 09 Lixeira | [10](10-lixeira.md) |
+| 10 Múltiplas raízes · 12 Backup · 13 Tiering | [20](20-armazenamento.md) |
+| 14 Contas de e-mail · 15 Sincronização · 16 Análise por IA | [19](19-email.md) |
+| 17 Enxugar app legado · 18 Kiosk | [25](25-app-legado-kiosk.md) |
+| 19 Captura inteligente de streaming | [12](12-capturas.md) |
+
 ## Decisões já tomadas (não reabrir)
 
 - Sem autenticação; acesso por whitelist de IPs. TLS fora de escopo enquanto o uso for rede interna.

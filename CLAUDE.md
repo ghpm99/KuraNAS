@@ -16,6 +16,15 @@ KuraNAS is a self-hosted NAS. It is a monorepo of five independent applications 
 
 Each app has its own build system and its own `CLAUDE.md` with stack-specific detail — read the one for the directory you're working in (`backend/CLAUDE.md`, `frontend/CLAUDE.md`, `android/CLAUDE.md`, `plugin/CLAUDE.md`, `mobile/CLAUDE.md`). The only thing tying the apps together is the root `Makefile` (backend + frontend) and the shared HTTP contract.
 
+## Especificação funcional — `docs/especificacao/`
+
+**O que o sistema deve fazer está em `docs/especificacao/`** — uma spec por feature (objetivo, escopo, regras de negócio `RN`, requisitos por tela `RF`, contrato, critérios de aceite `CA`, fora de escopo) e `00-padroes-transversais.md` para o que vale em toda tela (listas paginadas, estados, mutações, erros). A spec é normativa: se o código diverge, o código está errado; se a regra não existe, a spec é atualizada primeiro, em commit próprio.
+
+- Antes de implementar, leia a spec da feature e a `00`; a mudança cita os `RN`/`RF`/`CA` que satisfaz.
+- Um `CA` só é marcado depois de verificado **no sistema rodando** — teste verde com mock não é evidência (os mocks escritos à mão com o formato errado esconderam a quebra da paginação de arquivos).
+- Mudança em componente compartilhado reverifica as telas que o usam.
+- Os boards `docs/melhorias/` e `docs/revisao-produto/` são listas de trabalho; cada lacuna aponta para a regra da spec que ela satisfaz.
+
 ## Git workflow
 
 **All changes are committed directly to the `develop` branch.** Do not create extra branches unless explicitly asked. `develop` is the integration branch; `make release-main-ff` fast-forwards `main` from it.

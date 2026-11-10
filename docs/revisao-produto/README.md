@@ -4,6 +4,8 @@ Revisão funcionalidade por funcionalidade (iniciada em 2026-10-08) com foco em 
 
 **Este README é a fonte de verdade do andamento.**
 
+**O comportamento esperado de cada feature está em [`docs/especificacao/`](../especificacao/README.md).** Este board lista o trabalho; a spec diz o que o trabalho precisa atingir. Toda lacuna ou task nova cita a regra (`RN`/`RF`/`CA`) que satisfaz, e só é fechada com o critério verificado no sistema rodando.
+
 ## Protocolo
 
 1. Pegue a primeira funcionalidade `pendente` (ou retome a `em execução`).

@@ -4,6 +4,8 @@ Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11)
 
 **Este README é a fonte de verdade do andamento.** Um agente apontado para este arquivo deve conseguir continuar o trabalho de onde parou, mesmo após interrupção — o protocolo abaixo existe para isso.
 
+**O comportamento esperado de cada feature está em [`docs/especificacao/`](../especificacao/README.md).** Este board lista o trabalho; a spec diz o que o trabalho precisa atingir. Toda lacuna ou task nova cita a regra (`RN`/`RF`/`CA`) que satisfaz, e só é fechada com o critério verificado no sistema rodando.
+
 ## Protocolo de execução (para agentes)
 
 1. **Leia o board.** Se existe task `em execução`, **retome-a**: abra o arquivo da task, veja quais critérios de aceite já estão marcados (`[x]`), confira no `git log` o que já foi commitado para ela, e continue do primeiro critério desmarcado. Não recomece do zero o que os checkboxes dizem que está feito — mas verifique que o último commit compila (`make ci`) antes de confiar.
