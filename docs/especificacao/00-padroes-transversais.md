@@ -30,7 +30,7 @@ Vale para **toda** lista de itens vindos do servidor: arquivos, fotos, faixas, �
 - **RN-05** — Só há um pedido de próxima página em andamento por lista. Rolar rápido não dispara pedidos duplicados nem pula páginas.
 - **RN-06** — A lista termina quando o servidor diz que não há próxima página. No fim aparece o total ("N itens") em vez do indicador de carregamento. Página seguinte vazia com indicação de que não há mais é fim de lista, não erro.
 - **RN-07** — Um item nunca aparece duas vezes. Se uma página traz um item já exibido (porque algo foi inserido ou removido no servidor entre os pedidos), ele é ignorado pela identidade (`id`).
-- **RN-08** — Tamanho de página padrão: 50 itens em listas de linha, 60 em grades de miniaturas. O servidor impõe teto de 200; pedido acima do teto responde `400`.
+- **RN-08** — Tamanho de página padrão: 50 itens em listas de linha, 60 em grades de miniaturas. Todo cliente envia `page` e `page_size` explicitamente — nenhum depende do padrão do servidor. O servidor impõe teto de 500 e limita ao teto o pedido que passar dele.
 
 ### 4.2 Falha ao carregar
 
@@ -165,6 +165,29 @@ Aplicam-se a cada tela com lista. A verificação é feita no sistema rodando, c
 - [ ] **CA-15** — Em 360 px de largura a lista não tem rolagem horizontal e todas as ações são alcançáveis.
 - [ ] **CA-16** — Existe teste automatizado, por tela com lista, que alimenta o cliente com a **resposta real do handler** (não um objeto escrito à mão no teste) e verifica CA-02 e CA-04.
 
-## 12. Rastreabilidade
+## 12. Anexo A — situação em 2026-11-10
+
+Levantamento por leitura de código (não reproduzido em execução). Cada linha é uma violação das regras acima e explica o defeito relatado pelo dono.
+
+**Envelope real do servidor** (`backend/pkg/utils/dto.go`): `{"items": [], "pagination": {"page", "page_size", "has_next", "has_prev"}}` — igual ao de §10. Exceção: a galeria de imagens devolve um envelope plano com cursor (`{items, next_cursor, has_next, page, page_size}`).
+
+| # | Onde | O que acontece | Regra violada |
+|---|---|---|---|
+| A1 | Arquivos, Favoritos, Recentes (`features/files/providers/fileProvider`) | O cliente lê `pagination.hasNext`; o servidor envia `pagination.has_next`. O campo é sempre indefinido, então a segunda página **nunca é pedida**: cada pasta mostra no máximo 200 itens. Os testes passam porque o mock foi escrito com `hasNext`. | RN-02, RN-49, RN-53, CA-16 |
+| A2 | Busca na pasta (`features/files/search/useFileSearchResults`) | Mesma divergência: só os 100 primeiros resultados. | idem |
+| A3 | Seletor de pasta de mover/copiar (`components/folderPicker`) | Mesma divergência; além disso, erro na primeira página esvazia a lista sem estado de erro, e o filtro de pastas é feito no cliente. | RN-01, RN-10, RN-49 |
+| A4 | Arquivos, Favoritos, Recentes, busca na pasta, busca de documentos, Vídeos (filmes e pastas), Notificações, Diário | A tela testa "houve erro" antes de desenhar os itens. Quando uma página seguinte falha — ou quando a revalidação automática ao voltar o foco falha em qualquer página — **a lista inteira é trocada pela tela de erro**. É a causa mais provável de "na segunda requisição fica sem itens". | RN-09, RN-13, RN-14, RN-31 |
+| A5 | Capturas | Carrega só a primeira página (50) e ignora a paginação. | RN-02 |
+| A6 | Lixeira | Paginação por "anterior/próxima" com 15 itens, não scroll infinito. | RN-02, RN-03 |
+| A7 | Assistente (conversas), Analytics (listas) | Sem paginação. | RN-01 |
+| A8 | Jobs (`GET /jobs`) | Ordena do mais antigo para o mais novo e sem desempate por `id`. | RN-16, RN-17 |
+| A9 | Notificações, aba "Não lidas" | Marcar como lida refaz todas as páginas sobre uma lista que encolheu: pode repetir ou pular itens. | RN-07 |
+| A10 | Android — Arquivos | Pede a pasta sem `page`/`page_size`; o padrão do servidor é 15, então cada pasta mostra **15 itens** e não carrega mais. | RN-02, RN-08 |
+| A11 | Android — Notificações, Diário, Jobs | Só a primeira página. | RN-02 |
+| A12 | Home (web) | Erro e vazio mostram a mesma mensagem, sem "Tentar de novo". | RN-30 |
+
+Telas que já cumprem RN-09 (mantêm a lista quando a página seguinte falha): Imagens e Música. Servem de referência para corrigir as demais.
+
+## 13. Rastreabilidade
 
 Regras extraídas das lacunas recorrentes em `docs/revisao-produto/` (01.01, 02.13, 03.03, 05.09, 06.33, 08.16, entre outras) e do defeito relatado pelo dono em 2026-11-10: telas com scroll em que a segunda requisição deixa a lista sem itens.

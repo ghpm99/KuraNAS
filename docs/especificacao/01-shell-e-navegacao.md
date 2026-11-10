@@ -36,7 +36,7 @@ Menu lateral, barra inferior, cabeçalho (busca global, sino de notificações),
 
 ### Menu lateral (telas largas — a partir do breakpoint `tablet` do tema)
 
-- **RF-01** — Itens em dois grupos, nesta ordem. **Principal:** Home, Arquivos, Imagens, Música, Vídeos, Documentos, Favoritos, Lixeira. **Ferramentas:** Baixar de URL, Capturas, Takeout, Assistente, Analytics, Diário, Configurações, Sobre. O item da rota atual fica destacado. Toda tela que existe tem item no menu — nenhuma é alcançável só digitando o endereço.
+- **RF-01** — Itens em dois grupos, nesta ordem. **Principal:** Home, Arquivos, Imagens, Música, Vídeos, Documentos, Favoritos, Lixeira. **Ferramentas:** Baixar de URL, Capturas, Takeout, Tarefas, Assistente, E-mails, Analytics, Diário, Aplicativos, Configurações, Sobre. O item da rota atual fica destacado. Toda tela que existe tem item no menu — nenhuma é alcançável só digitando o endereço.
 - **RF-02** — Recolhível para modo só ícones, com rótulo em tooltip. O estado persiste no dispositivo.
 - **RF-03** — Quando os itens não cabem na altura, o próprio menu rola.
 - **RF-04** — Em `/files`, o menu mostra a árvore de pastas abaixo dos itens ([02/RF-09](02-arquivos.md)).
@@ -103,7 +103,7 @@ Menu lateral, barra inferior, cabeçalho (busca global, sino de notificações),
 ## 10. Decisões em aberto
 
 - **D-01** — Itens da barra inferior no celular: os quatro propostos em RF-05 ou outra seleção. *Provisório: RF-05.*
-- **D-02** — Ordem e agrupamento do menu (RF-01). Hoje o menu é uma lista única (Home, Arquivos, Favoritos, Imagens, Música, Vídeos, Assistente, Takeout, Capturas, Downloads, Lixeira, Analytics, Configurações, Sobre), sem Documentos e sem Diário. *Provisório: RF-01.*
+- **D-02** — Ordem e agrupamento do menu (RF-01). Hoje o menu é uma lista única (Home, Arquivos, Favoritos, Imagens, Música, Vídeos, Assistente, Takeout, Capturas, Downloads, Lixeira, Analytics, Configurações, Sobre), sem Documentos, Tarefas, E-mails e Diário; "Downloads" é a tela de aplicativos cliente e não existe tela de download por URL. *Provisório: RF-01.*
 
 ## 11. Rastreabilidade
 
