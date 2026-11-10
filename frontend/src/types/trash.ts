@@ -30,3 +30,19 @@ export type TrashListing = {
     order: TrashSortOrder;
     searchText: string;
 };
+
+export type TrashBatchFailure = {
+    id: number;
+    error: string;
+    path?: string;
+};
+
+export type TrashBatchRestoreOutcome = {
+    restored_ids?: number[];
+    failures?: TrashBatchFailure[];
+};
+
+export type TrashBatchDeleteOutcome = {
+    deleted_ids?: number[];
+    failures?: TrashBatchFailure[];
+};

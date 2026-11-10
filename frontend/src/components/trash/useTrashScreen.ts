@@ -2,7 +2,9 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { deleteTrashItem, emptyTrash, getTrashItems, restoreTrashItem } from '@/service/trash';
 import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
-import type { TrashPage, TrashSortKey, TrashSortOrder } from '@/types/trash';
+import { useItemSelection } from '@/shared/selection/useItemSelection';
+import type { TrashItem, TrashPage, TrashSortKey, TrashSortOrder } from '@/types/trash';
+import { useTrashBatchActions } from './useTrashBatchActions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
@@ -22,7 +24,35 @@ const extractBackendError = (error: unknown): string | undefined => {
     return undefined;
 };
 
-type PendingConfirmation = { kind: 'deleteForever'; itemId: number } | { kind: 'emptyTrash' };
+type PendingConfirmation =
+    | { kind: 'deleteForever'; itemId: number }
+    | { kind: 'deleteSelected' }
+    | { kind: 'emptyTrash' };
+
+type ConfirmationText = {
+    titleKey: string;
+    messageKey: string;
+    messageVariables?: Record<string, string>;
+};
+
+const readTrashItemId = (item: TrashItem) => item.id;
+
+const describeConfirmation = (
+    pendingConfirmation: PendingConfirmation | null,
+    selectedCount: number
+): ConfirmationText => {
+    if (pendingConfirmation?.kind === 'emptyTrash') {
+        return { titleKey: 'TRASH_EMPTY_BUTTON', messageKey: 'TRASH_EMPTY_CONFIRM' };
+    }
+    if (pendingConfirmation?.kind === 'deleteSelected') {
+        return {
+            titleKey: 'TRASH_DELETE_SELECTED_BUTTON',
+            messageKey: 'TRASH_DELETE_SELECTED_CONFIRM',
+            messageVariables: { count: String(selectedCount) },
+        };
+    }
+    return { titleKey: 'TRASH_DELETE_FOREVER_BUTTON', messageKey: 'TRASH_DELETE_CONFIRM' };
+};
 
 export const useTrashScreen = () => {
     const { t } = useI18n();
@@ -70,6 +100,26 @@ export const useTrashScreen = () => {
         void queryClient.invalidateQueries({ queryKey: [trashQueryKey] });
         void queryClient.invalidateQueries({ queryKey: ['files'] });
     }, [queryClient]);
+
+    const selection = useItemSelection<TrashItem>(
+        [page, sort.sortKey, sort.order, searchText].join('|'),
+        readTrashItemId
+    );
+    const { deselect: deselectItems, selectedItems } = selection;
+
+    const leaveTrashBehind = useCallback(
+        (departedItemIds: number[]) => {
+            const departedIds = new Set(departedItemIds);
+            deselectItems(selectedItems.filter((selectedItem) => departedIds.has(selectedItem.id)));
+            leavePageEmptiedBy(departedItemIds.length);
+            refreshTrashAndFilesTree();
+        },
+        [deselectItems, leavePageEmptiedBy, refreshTrashAndFilesTree, selectedItems]
+    );
+
+    const { restoreSelected, deleteSelectedForever, isBatchRunning } = useTrashBatchActions({
+        onItemsLeftTrash: leaveTrashBehind,
+    });
 
     const notifyActionError = useCallback(
         (error: unknown) => {
@@ -135,10 +185,13 @@ export const useTrashScreen = () => {
         if (confirmedAction?.kind === 'deleteForever') {
             await deleteForever(confirmedAction.itemId);
         }
+        if (confirmedAction?.kind === 'deleteSelected') {
+            await deleteSelectedForever(selectedItems);
+        }
         if (confirmedAction?.kind === 'emptyTrash') {
             await emptyWholeTrash();
         }
-    }, [deleteForever, emptyWholeTrash, pendingConfirmation]);
+    }, [deleteForever, deleteSelectedForever, emptyWholeTrash, pendingConfirmation, selectedItems]);
 
     return {
         t,
@@ -157,7 +210,18 @@ export const useTrashScreen = () => {
         searchInput,
         changeSearchInput,
         isMutating:
-            restoreMutation.isPending || deleteMutation.isPending || emptyMutation.isPending,
+            restoreMutation.isPending ||
+            deleteMutation.isPending ||
+            emptyMutation.isPending ||
+            isBatchRunning,
+        selectedCount: selection.selectedCount,
+        isItemSelected: selection.isSelected,
+        toggleItemSelection: selection.toggle,
+        selectWholePage: () => selection.selectAll(items),
+        clearSelection: selection.clear,
+        restoreSelectedItems: () => void restoreSelected(selectedItems),
+        requestDeleteSelected: () => setPendingConfirmation({ kind: 'deleteSelected' }),
+        confirmationText: describeConfirmation(pendingConfirmation, selection.selectedCount),
         handleRestore,
         pendingConfirmation,
         requestDeleteForever: (itemId: number) =>

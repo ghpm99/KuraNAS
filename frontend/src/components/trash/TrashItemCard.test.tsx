@@ -19,15 +19,18 @@ const deletedReport: TrashItem = {
 const renderCard = (item: TrashItem, isBusy = false) => {
     const onRestore = jest.fn();
     const onDeleteForever = jest.fn();
+    const onToggleSelection = jest.fn();
     render(
         <TrashItemCard
             item={item}
             isBusy={isBusy}
+            isSelected={false}
+            onToggleSelection={onToggleSelection}
             onRestore={onRestore}
             onDeleteForever={onDeleteForever}
         />
     );
-    return { onRestore, onDeleteForever };
+    return { onRestore, onDeleteForever, onToggleSelection };
 };
 
 describe('TrashItemCard', () => {
@@ -36,6 +39,8 @@ describe('TrashItemCard', () => {
             <TrashItemCard
                 item={{ id: 1 } as TrashItem}
                 isBusy={false}
+                isSelected={false}
+                onToggleSelection={jest.fn()}
                 onRestore={jest.fn()}
                 onDeleteForever={jest.fn()}
             />
@@ -90,5 +95,13 @@ describe('TrashItemCard', () => {
 
         expect(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ })).toBeDisabled();
         expect(screen.getByRole('button', { name: /TRASH_DELETE_FOREVER_BUTTON/ })).toBeDisabled();
+    });
+
+    it('toggles its own selection through the checkbox', () => {
+        const { onToggleSelection } = renderCard(deletedReport);
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' }));
+
+        expect(onToggleSelection).toHaveBeenCalledWith(deletedReport);
     });
 });

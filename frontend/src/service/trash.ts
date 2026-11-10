@@ -1,5 +1,12 @@
 import { apiBase } from '@/service';
-import type { TrashListing, TrashPage, TrashRetention, TrashSummary } from '@/types/trash';
+import type {
+    TrashBatchDeleteOutcome,
+    TrashBatchRestoreOutcome,
+    TrashListing,
+    TrashPage,
+    TrashRetention,
+    TrashSummary,
+} from '@/types/trash';
 
 export const getTrashItems = async (
     page: number,
@@ -30,6 +37,16 @@ export const restoreTrashItem = async (id: number): Promise<void> => {
 
 export const deleteTrashItem = async (id: number): Promise<void> => {
     await apiBase.delete(`/trash/${id}`);
+};
+
+export const restoreTrashItems = async (ids: number[]): Promise<TrashBatchRestoreOutcome> => {
+    const response = await apiBase.post<TrashBatchRestoreOutcome>('/trash/restore', { ids });
+    return response.data;
+};
+
+export const deleteTrashItems = async (ids: number[]): Promise<TrashBatchDeleteOutcome> => {
+    const response = await apiBase.post<TrashBatchDeleteOutcome>('/trash/delete', { ids });
+    return response.data;
 };
 
 export const emptyTrash = async (): Promise<void> => {

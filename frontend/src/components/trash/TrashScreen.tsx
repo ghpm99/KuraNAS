@@ -6,6 +6,7 @@ import TrashConfirmDialog from './TrashConfirmDialog';
 import TrashItemCard from './TrashItemCard';
 import TrashListingControls from './TrashListingControls';
 import TrashRetentionField from './TrashRetentionField';
+import TrashSelectionToolbar from './TrashSelectionToolbar';
 import TrashSummaryLine from './TrashSummaryLine';
 import styles from './TrashScreen.module.css';
 import { useTrashScreen } from './useTrashScreen';
@@ -34,8 +35,15 @@ const TrashScreen = () => {
         requestEmptyTrash,
         cancelPendingAction,
         confirmPendingAction,
+        confirmationText,
+        selectedCount,
+        isItemSelected,
+        toggleItemSelection,
+        selectWholePage,
+        clearSelection,
+        restoreSelectedItems,
+        requestDeleteSelected,
     } = useTrashScreen();
-    const isEmptyingTrash = pendingConfirmation?.kind === 'emptyTrash';
 
     return (
         <PageContainer>
@@ -83,11 +91,21 @@ const TrashScreen = () => {
 
             {!isLoading && !isError && items.length > 0 && (
                 <div className={styles.list}>
+                    <TrashSelectionToolbar
+                        selectedCount={selectedCount}
+                        isBusy={isMutating}
+                        onSelectAll={selectWholePage}
+                        onClearSelection={clearSelection}
+                        onRestoreSelected={restoreSelectedItems}
+                        onDeleteSelected={requestDeleteSelected}
+                    />
                     {items.map((item) => (
                         <TrashItemCard
                             key={item.id}
                             item={item}
                             isBusy={isMutating}
+                            isSelected={isItemSelected(item.id)}
+                            onToggleSelection={toggleItemSelection}
                             onRestore={(itemId) => void handleRestore(itemId)}
                             onDeleteForever={requestDeleteForever}
                         />
@@ -120,8 +138,8 @@ const TrashScreen = () => {
             )}
             <TrashConfirmDialog
                 isOpen={pendingConfirmation !== null}
-                title={t(isEmptyingTrash ? 'TRASH_EMPTY_BUTTON' : 'TRASH_DELETE_FOREVER_BUTTON')}
-                message={t(isEmptyingTrash ? 'TRASH_EMPTY_CONFIRM' : 'TRASH_DELETE_CONFIRM')}
+                title={t(confirmationText.titleKey)}
+                message={t(confirmationText.messageKey, confirmationText.messageVariables)}
                 onCancel={cancelPendingAction}
                 onConfirm={() => void confirmPendingAction()}
             />

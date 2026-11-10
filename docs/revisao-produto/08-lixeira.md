@@ -43,7 +43,7 @@ Escopo: `backend/internal/api/v1/trash/` (service, handler, purger), tabela `tra
 - [x] 20. Item com nome, ícone de pasta/arquivo, origem e "expira em N dias" (depende da 07)
 - [x] 21. Resumo no topo: total de itens e bytes (depende da 08)
 - [x] 22. Ordenação e busca pelo servidor (depende da 09)
-- [ ] 23. Seleção e ações em lote (depende da 10)
+- [x] 23. Seleção e ações em lote (depende da 10)
 - [ ] 24. Botões travam por item, não a lista inteira
 - [ ] 25. Data formatada no locale do app
 - [ ] 26. Após restaurar, ação "ver na pasta"

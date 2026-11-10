@@ -1,7 +1,7 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
 import type { TrashItem } from '@/types/trash';
-import { Button, Chip } from '@mui/material';
+import { Button, Checkbox, Chip } from '@mui/material';
 import { ArchiveRestore, File, Folder, Trash2 } from 'lucide-react';
 import styles from './TrashScreen.module.css';
 import { daysUntilExpiry, trashItemName, trashItemOriginFolder } from './trashItemPresentation';
@@ -9,6 +9,8 @@ import { daysUntilExpiry, trashItemName, trashItemOriginFolder } from './trashIt
 type TrashItemCardProps = {
     item: TrashItem;
     isBusy: boolean;
+    isSelected: boolean;
+    onToggleSelection: (item: TrashItem) => void;
     onRestore: (itemId: number) => void;
     onDeleteForever: (itemId: number) => void;
 };
@@ -26,18 +28,34 @@ const expiryLabel = (
     return t('TRASH_EXPIRES_IN_DAYS', { days: String(remainingDays) });
 };
 
-const TrashItemCard = ({ item, isBusy, onRestore, onDeleteForever }: TrashItemCardProps) => {
+const TrashItemCard = ({
+    item,
+    isBusy,
+    isSelected,
+    onToggleSelection,
+    onRestore,
+    onDeleteForever,
+}: TrashItemCardProps) => {
     const { t } = useI18n();
+    const itemName = trashItemName(item);
     const remainingDays = daysUntilExpiry(item.expires_at, new Date());
     const ItemKindIcon = item.is_directory ? Folder : File;
     const itemKindLabel = t(item.is_directory ? 'TRASH_KIND_FOLDER' : 'TRASH_KIND_FILE');
 
     return (
-        <article className={styles.item}>
+        <article className={isSelected ? `${styles.item} ${styles.itemSelected}` : styles.item}>
             <div className={styles.itemIdentity}>
+                <Checkbox
+                    size="small"
+                    checked={isSelected}
+                    onChange={() => onToggleSelection(item)}
+                    slotProps={{
+                        input: { 'aria-label': t('TRASH_SELECT_ITEM', { name: itemName }) },
+                    }}
+                />
                 <ItemKindIcon size={24} role="img" aria-label={itemKindLabel} />
                 <div className={styles.itemInfo}>
-                    <p className={styles.itemName}>{trashItemName(item)}</p>
+                    <p className={styles.itemName}>{itemName}</p>
                     <p className={styles.itemOrigin}>
                         {t('TRASH_ORIGIN_LABEL')}: {trashItemOriginFolder(item)}
                     </p>

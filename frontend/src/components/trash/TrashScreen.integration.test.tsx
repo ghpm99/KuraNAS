@@ -103,4 +103,78 @@ describe('TrashScreen (seam)', () => {
 			expect(mockedApi.put).toHaveBeenCalledWith('/trash/retention', { days: 7 })
 		);
 	});
+
+	const selectOnlyItem = async () => {
+		await screen.findByText('relatorio.pdf');
+		fireEvent.click(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' }));
+	};
+
+	it('restores the selection via POST /trash/restore', async () => {
+		mockedApi.post.mockResolvedValue({ data: { restored_ids: [1], failures: [] } });
+		renderScreen();
+		await selectOnlyItem();
+
+		fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_SELECTED_BUTTON/ }));
+
+		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/trash/restore', { ids: [1] }));
+		expect(await screen.findByText('TRASH_RESTORED_TOAST')).toBeInTheDocument();
+	});
+
+	it('permanently deletes the selection via POST /trash/delete after confirming', async () => {
+		mockedApi.post.mockResolvedValue({ data: { deleted_ids: [1], failures: [] } });
+		renderScreen();
+		await selectOnlyItem();
+
+		fireEvent.click(screen.getByRole('button', { name: /TRASH_DELETE_SELECTED_BUTTON/ }));
+		expect(mockedApi.post).not.toHaveBeenCalled();
+		expect(screen.getByText('TRASH_DELETE_SELECTED_CONFIRM')).toBeInTheDocument();
+		confirmInDialog(/TRASH_DELETE_SELECTED_BUTTON/);
+
+		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/trash/delete', { ids: [1] }));
+	});
+
+	it('shows the server reason and keeps the item selected when the batch leaves it behind', async () => {
+		mockedApi.post.mockResolvedValue({
+			data: { restored_ids: [], failures: [{ id: 1, error: 'local ocupado' }] },
+		});
+		renderScreen();
+		await selectOnlyItem();
+
+		fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_SELECTED_BUTTON/ }));
+
+		expect(await screen.findByText('local ocupado')).toBeInTheDocument();
+		expect(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' })).toBeChecked();
+	});
+
+	it('falls back to the trash action error when the batch request itself fails', async () => {
+		mockedApi.post.mockRejectedValue(new Error('network down'));
+		renderScreen();
+		await selectOnlyItem();
+
+		fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_SELECTED_BUTTON/ }));
+
+		expect(await screen.findByText('TRASH_ACTION_ERROR')).toBeInTheDocument();
+	});
+
+	it('survives a batch answer without the result lists', async () => {
+		mockedApi.post.mockResolvedValue({ data: {} });
+		renderScreen();
+		await selectOnlyItem();
+
+		fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_SELECTED_BUTTON/ }));
+
+		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/trash/restore', { ids: [1] }));
+		expect(screen.getByText('relatorio.pdf')).toBeInTheDocument();
+	});
+
+	it('selects the whole page and clears the selection', async () => {
+		renderScreen();
+		await screen.findByText('relatorio.pdf');
+
+		fireEvent.click(screen.getByRole('button', { name: 'TRASH_SELECT_ALL' }));
+		expect(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' })).toBeChecked();
+
+		fireEvent.click(screen.getByRole('button', { name: 'TRASH_CLEAR_SELECTION' }));
+		expect(screen.getByRole('checkbox', { name: 'TRASH_SELECT_ITEM' })).not.toBeChecked();
+	});
 });

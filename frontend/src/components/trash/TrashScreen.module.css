@@ -114,3 +114,19 @@
 .sortSelect {
     min-width: 140px;
 }
+
+.selectionToolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.selectionCount {
+    font-weight: 600;
+}
+
+.itemSelected {
+    border-color: rgba(var(--app-color-ink-rgb), 0.35);
+    background: rgba(var(--app-color-ink-rgb), 0.07);
+}

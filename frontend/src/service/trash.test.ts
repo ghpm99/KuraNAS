@@ -10,11 +10,13 @@ jest.mock('./index', () => ({
 import { apiBase } from './index';
 import {
     deleteTrashItem,
+    deleteTrashItems,
     emptyTrash,
     getTrashItems,
     getTrashRetention,
     getTrashSummary,
     restoreTrashItem,
+    restoreTrashItems,
     updateTrashRetention,
 } from './trash';
 import type { TrashPage } from '@/types/trash';
@@ -103,5 +105,25 @@ describe('service/trash', () => {
 
         expect(mockedApi.get).toHaveBeenCalledWith('/trash/summary');
         expect(summary).toEqual({ items: 3, size_bytes: 2048 });
+    });
+
+    it('restores several items in one request', async () => {
+        const restoreOutcome = { restored_ids: [1], failures: [{ id: 2, error: 'ocupado' }] };
+        mockedApi.post.mockResolvedValue({ data: restoreOutcome });
+
+        const outcome = await restoreTrashItems([1, 2]);
+
+        expect(mockedApi.post).toHaveBeenCalledWith('/trash/restore', { ids: [1, 2] });
+        expect(outcome).toEqual(restoreOutcome);
+    });
+
+    it('permanently deletes several items in one request', async () => {
+        const deleteOutcome = { deleted_ids: [1, 2], failures: [] };
+        mockedApi.post.mockResolvedValue({ data: deleteOutcome });
+
+        const outcome = await deleteTrashItems([1, 2]);
+
+        expect(mockedApi.post).toHaveBeenCalledWith('/trash/delete', { ids: [1, 2] });
+        expect(outcome).toEqual(deleteOutcome);
     });
 });
