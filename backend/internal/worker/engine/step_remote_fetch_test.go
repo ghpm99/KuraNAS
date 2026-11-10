@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -253,5 +254,31 @@ func TestSchedulerRecordsACanceledStepAsCanceledNotFailed(t *testing.T) {
 	steps, _ := repository.GetStepsByJobID(fetchStep.JobID)
 	if steps[0].Status != string(jobdomain.StepStatusCanceled) || steps[0].LastError != "" {
 		t.Fatalf("expected a canceled step without error, got status=%s error=%q", steps[0].Status, steps[0].LastError)
+	}
+}
+
+func TestExecuteRemoteFetchStepFailsADownloadThatOutlivesItsTimeout(t *testing.T) {
+	originalTimeout := remoteFetchTimeout
+	remoteFetchTimeout = func() time.Duration { return 50 * time.Millisecond }
+	t.Cleanup(func() { remoteFetchTimeout = originalTimeout })
+
+	outputDir := t.TempDir()
+	rawPayload, _ := json.Marshal(ingestapi.RemoteFetchStepPayload{
+		URL:       "https://x.test/v",
+		Preset:    "audio_mp3",
+		OutputDir: outputDir,
+		Binary:    writeFakeYtDlp(t, "exec sleep 60\n"),
+	})
+
+	err := executeRemoteFetchStep(nil, jobs.StepModel{Payload: rawPayload})
+
+	if err == nil || !strings.Contains(err.Error(), "exceeded") {
+		t.Fatalf("expected a timeout failure, got %v", err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, ErrStepCanceled) {
+		t.Fatalf("a download timeout must fail the step, not requeue or cancel it: %v", err)
+	}
+	if leftovers, _ := os.ReadDir(outputDir); len(leftovers) != 0 {
+		t.Fatalf("a timed out download must leave nothing in the library, found %d entries", len(leftovers))
 	}
 }

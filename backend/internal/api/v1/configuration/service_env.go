@@ -67,6 +67,7 @@ var envCatalog = []envField{
 	{Key: "ENV", Group: envGroupGeneral, Kind: envKindString},
 	{Key: "YTDLP_PATH", Group: envGroupGeneral, Kind: envKindString},
 	{Key: "YTDLP_CHECK_HOURS", Group: envGroupGeneral, Kind: envKindInt, Default: "24"},
+	{Key: "INGEST_FETCH_TIMEOUT_MINUTES", Group: envGroupGeneral, Kind: envKindInt, Default: "360"},
 	{Key: "LOG_LEVEL", Group: envGroupGeneral, Kind: envKindString},
 	{Key: "LOG_MAX_SIZE_MB", Group: envGroupGeneral, Kind: envKindInt, Default: "50"},
 	{Key: "WATCHER_RECONCILE_HOURS", Group: envGroupGeneral, Kind: envKindInt, Default: "24"},

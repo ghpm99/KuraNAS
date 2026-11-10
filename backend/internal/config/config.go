@@ -40,6 +40,7 @@ type AppConfigStruct struct {
 	EmailMaxMessagesPerAccount int
 	YtDlpPath                  string
 	YtDlpCheckHours            int
+	IngestFetchTimeoutMinutes  int
 }
 
 var AppConfig AppConfigStruct
@@ -78,6 +79,7 @@ func InitializeConfig() {
 		EmailMaxMessagesPerAccount: parseEnvInt("EMAIL_MAX_MESSAGES_PER_ACCOUNT", 100),
 		YtDlpPath:                  os.Getenv("YTDLP_PATH"),
 		YtDlpCheckHours:            parseEnvInt("YTDLP_CHECK_HOURS", 24),
+		IngestFetchTimeoutMinutes:  parseEnvInt("INGEST_FETCH_TIMEOUT_MINUTES", DefaultIngestFetchTimeoutMinutes),
 	}
 }
 
@@ -92,6 +94,20 @@ func StepTimeout() time.Duration {
 		timeout = 120 * time.Second
 	}
 	return timeout
+}
+
+// DefaultIngestFetchTimeoutMinutes is how long one URL download may run when
+// INGEST_FETCH_TIMEOUT_MINUTES is unset or not positive.
+const DefaultIngestFetchTimeoutMinutes = 360
+
+// IngestFetchTimeout is the ceiling for a single URL download, derived from
+// INGEST_FETCH_TIMEOUT_MINUTES, so a stalled download frees its worker slot.
+func IngestFetchTimeout() time.Duration {
+	timeoutMinutes := AppConfig.IngestFetchTimeoutMinutes
+	if timeoutMinutes <= 0 {
+		timeoutMinutes = DefaultIngestFetchTimeoutMinutes
+	}
+	return time.Duration(timeoutMinutes) * time.Minute
 }
 
 func parseEnvInt(key string, fallback int) int {

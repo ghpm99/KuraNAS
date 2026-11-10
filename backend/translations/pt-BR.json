@@ -461,6 +461,7 @@
 	"ENV_FIELD_ENV": "Ambiente (ENV)",
 	"ENV_FIELD_YTDLP_PATH": "Caminho do yt-dlp",
 	"ENV_FIELD_YTDLP_CHECK_HOURS": "Intervalo de checagem do yt-dlp (h)",
+	"ENV_FIELD_INGEST_FETCH_TIMEOUT_MINUTES": "Tempo máximo de um download por URL (min)",
 	"ENV_FIELD_LOG_LEVEL": "Nível de log",
 	"ENV_FIELD_LOG_MAX_SIZE_MB": "Tamanho máximo do log (MB)",
 	"ENV_FIELD_WATCHER_RECONCILE_HOURS": "Reconciliação do watcher (h)",

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,11 +16,15 @@ import (
 
 	ingestapi "nas-go/api/internal/api/v1/ingest"
 	jobs "nas-go/api/internal/api/v1/jobs"
+	"nas-go/api/internal/config"
 )
 
 // downloadProgressRe extracts the percentage from a yt-dlp `[download]` line
 // (e.g. "[download]  45.6% of 12.3MiB at ...").
 var downloadProgressRe = regexp.MustCompile(`(\d{1,3}(?:\.\d+)?)%`)
+
+// remoteFetchTimeout tells how long one download may run before it is killed.
+var remoteFetchTimeout = config.IngestFetchTimeout
 
 // killedDownloadPipeGrace bounds how long a canceled download may keep its
 // output pipes open through a child process before they are closed by force.
@@ -63,8 +68,11 @@ func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) e
 	}
 	args := buildYtDlpArgs(presetArgs, tmpDir, payload.URL)
 
-	downloadContext, stopWatchingJob := contextCanceledWithJob(workerContext, step.JobID)
+	jobContext, stopWatchingJob := contextCanceledWithJob(workerContext, step.JobID)
 	defer stopWatchingJob()
+	downloadTimeout := remoteFetchTimeout()
+	downloadContext, releaseDownloadTimer := context.WithTimeout(jobContext, downloadTimeout)
+	defer releaseDownloadTimer()
 
 	cmd := exec.CommandContext(downloadContext, binary, args...)
 	cmd.WaitDelay = killedDownloadPipeGrace
@@ -94,8 +102,11 @@ func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) e
 	}
 
 	if err := cmd.Wait(); err != nil {
-		if downloadContext.Err() != nil {
+		if jobContext.Err() != nil {
 			return ErrStepCanceled
+		}
+		if downloadContext.Err() != nil {
+			return fmt.Errorf("remote fetch: download exceeded the %s limit", downloadTimeout)
 		}
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
 			return fmt.Errorf("remote fetch: yt-dlp failed: %s", lastLine(msg))
