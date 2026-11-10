@@ -4,6 +4,7 @@ import type {
     TrashBatchRestoreOutcome,
     TrashListing,
     TrashPage,
+    TrashRestoreResult,
     TrashRetention,
     TrashSummary,
 } from '@/types/trash';
@@ -31,8 +32,9 @@ export const getTrashSummary = async (): Promise<TrashSummary> => {
     return response.data;
 };
 
-export const restoreTrashItem = async (id: number): Promise<void> => {
-    await apiBase.post(`/trash/${id}/restore`);
+export const restoreTrashItem = async (id: number): Promise<TrashRestoreResult> => {
+    const response = await apiBase.post<TrashRestoreResult>(`/trash/${id}/restore`);
+    return response?.data ?? {};
 };
 
 export const deleteTrashItem = async (id: number): Promise<void> => {

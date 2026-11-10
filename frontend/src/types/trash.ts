@@ -46,3 +46,7 @@ export type TrashBatchDeleteOutcome = {
     deleted_ids?: number[];
     failures?: TrashBatchFailure[];
 };
+
+export type TrashRestoreResult = {
+    path?: string;
+};

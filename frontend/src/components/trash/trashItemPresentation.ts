@@ -13,17 +13,16 @@ export const trashItemName = (item: TrashItem): string => {
     return pathSegments[pathSegments.length - 1] ?? '';
 };
 
-export const trashItemOriginFolder = (item: TrashItem): string => {
-    const originalPath = item.original_path ?? '';
-    const lastSeparatorIndex = Math.max(
-        originalPath.lastIndexOf('/'),
-        originalPath.lastIndexOf('\\')
-    );
+export const parentFolderOf = (path: string): string => {
+    const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
     if (lastSeparatorIndex <= 0) {
         return '/';
     }
-    return originalPath.slice(0, lastSeparatorIndex);
+    return path.slice(0, lastSeparatorIndex);
 };
+
+export const trashItemOriginFolder = (item: TrashItem): string =>
+    parentFolderOf(item.original_path ?? '');
 
 export const daysUntilExpiry = (
     expiresAt: string | undefined,

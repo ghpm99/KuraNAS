@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import TrashScreen from './TrashScreen';
 import {
     deleteTrashItem,
@@ -42,6 +42,10 @@ const onePage = (hasNext = false): TrashPage => ({
     pagination: { page: 1, page_size: 15, has_next: hasNext, has_prev: false },
 });
 
+const CurrentLocationProbe = () => (
+    <output aria-label="current-location">{useLocation().pathname}</output>
+);
+
 const renderScreen = () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
@@ -49,6 +53,7 @@ const renderScreen = () => {
             <SnackbarProvider>
                 <MemoryRouter>
                     <TrashScreen />
+                    <CurrentLocationProbe />
                 </MemoryRouter>
             </SnackbarProvider>
         </QueryClientProvider>
@@ -287,5 +292,43 @@ describe('TrashScreen', () => {
         fireEvent.click(beachRestoreButton as HTMLElement);
         await waitFor(() => expect(beachRestoreButton).toBeDisabled());
         expect(mockedRestore.mock.calls.map(([itemId]) => itemId)).toEqual([1, 2]);
+    });
+
+    it('offers to open the folder of the restored item', async () => {
+        mockedGetTrashItems.mockResolvedValue(onePage());
+        mockedRestore.mockResolvedValue({ path: '/data/docs/relatorio.pdf' });
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
+        fireEvent.click(await screen.findByRole('button', { name: 'TRASH_VIEW_IN_FOLDER' }));
+
+        expect(screen.getByLabelText('current-location')).toHaveTextContent('/files/data/docs');
+    });
+
+    it('opens the explorer root for an item restored to the top level', async () => {
+        mockedGetTrashItems.mockResolvedValue(onePage());
+        mockedRestore.mockResolvedValue({ path: '/relatorio.pdf' });
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
+        fireEvent.click(await screen.findByRole('button', { name: 'TRASH_VIEW_IN_FOLDER' }));
+
+        expect(screen.getByLabelText('current-location')).toHaveTextContent(/^\/files$/);
+    });
+
+    it('restores without the folder shortcut when the server does not tell the path', async () => {
+        mockedGetTrashItems.mockResolvedValue(onePage());
+        mockedRestore.mockResolvedValue({});
+        renderScreen();
+        await waitFor(() => expect(screen.getByText('relatorio.pdf')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: /TRASH_RESTORE_BUTTON/ }));
+
+        expect(await screen.findByText('TRASH_RESTORED_TOAST')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'TRASH_VIEW_IN_FOLDER' })
+        ).not.toBeInTheDocument();
     });
 });

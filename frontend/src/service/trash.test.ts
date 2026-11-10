@@ -66,10 +66,16 @@ describe('service/trash', () => {
         });
     });
 
-    it('restores an item by id', async () => {
-        mockedApi.post.mockResolvedValue({ data: {} });
-        await restoreTrashItem(7);
+    it('restores an item by id and tells where it went back to', async () => {
+        mockedApi.post.mockResolvedValue({ data: { path: '/data/docs/a.txt' } });
+        const restoreResult = await restoreTrashItem(7);
         expect(mockedApi.post).toHaveBeenCalledWith('/trash/7/restore');
+        expect(restoreResult).toEqual({ path: '/data/docs/a.txt' });
+    });
+
+    it('tolerates a restore answer without a body', async () => {
+        mockedApi.post.mockResolvedValue({ data: undefined });
+        expect(await restoreTrashItem(7)).toEqual({});
     });
 
     it('permanently deletes one item', async () => {

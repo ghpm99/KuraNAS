@@ -1,5 +1,10 @@
 import type { TrashItem } from '@/types/trash';
-import { daysUntilExpiry, trashItemName, trashItemOriginFolder } from './trashItemPresentation';
+import {
+    daysUntilExpiry,
+    parentFolderOf,
+    trashItemName,
+    trashItemOriginFolder,
+} from './trashItemPresentation';
 
 const trashItemAt = (originalPath: string, name?: string): TrashItem => ({
     id: 1,
@@ -35,6 +40,14 @@ describe('trashItemOriginFolder', () => {
     it('returns the root for top-level items and missing paths', () => {
         expect(trashItemOriginFolder(trashItemAt('/a.pdf'))).toBe('/');
         expect(trashItemOriginFolder({ id: 1 } as TrashItem)).toBe('/');
+    });
+});
+
+describe('parentFolderOf', () => {
+    it('drops the last segment of the path', () => {
+        expect(parentFolderOf('/data/docs/a.pdf')).toBe('/data/docs');
+        expect(parentFolderOf('/a.pdf')).toBe('/');
+        expect(parentFolderOf('')).toBe('/');
     });
 });
 

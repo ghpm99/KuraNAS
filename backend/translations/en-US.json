@@ -1443,6 +1443,7 @@
 	"TRASH_DELETE_CONFIRM": "Permanently delete this item? This cannot be undone.",
 	"TRASH_EMPTY_CONFIRM": "Permanently delete every item in the trash? This cannot be undone.",
 	"TRASH_RESTORED_TOAST": "Item restored",
+	"TRASH_VIEW_IN_FOLDER": "View in folder",
 	"TRASH_DELETED_TOAST": "Item permanently deleted",
 	"TRASH_EMPTIED_TOAST": "Trash emptied",
 	"TRASH_DELETED_AT_LABEL": "Deleted at",

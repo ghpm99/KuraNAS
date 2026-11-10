@@ -3,11 +3,21 @@ import { deleteTrashItem, emptyTrash, getTrashItems, restoreTrashItem } from '@/
 import { trashQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
 import { useItemSelection } from '@/shared/selection/useItemSelection';
-import type { TrashItem, TrashPage, TrashSortKey, TrashSortOrder } from '@/types/trash';
+import type {
+    TrashItem,
+    TrashPage,
+    TrashRestoreResult,
+    TrashSortKey,
+    TrashSortOrder,
+} from '@/types/trash';
 import { useTrashBatchActions } from './useTrashBatchActions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import { useCallback, useState } from 'react';
+import { createElement, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { buildFilesUrl } from '@/app/routes';
+import TrashRestoredToastAction from './TrashRestoredToastAction';
+import { parentFolderOf } from './trashItemPresentation';
 
 const PAGE_SIZE = 15;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -35,6 +45,11 @@ type ConfirmationText = {
     messageVariables?: Record<string, string>;
 };
 
+const explorerFolderOf = (restoredPath: string): string => {
+    const restoredFolder = parentFolderOf(restoredPath);
+    return restoredFolder === '/' ? '' : restoredFolder;
+};
+
 const readTrashItemId = (item: TrashItem) => item.id;
 
 const describeConfirmation = (
@@ -58,6 +73,7 @@ export const useTrashScreen = () => {
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [page, setPage] = useState(1);
     const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(
         null
@@ -141,15 +157,14 @@ export const useTrashScreen = () => {
     const [busyItemIds, setBusyItemIds] = useState<ReadonlySet<number>>(new Set());
 
     const runItemAction = useCallback(
-        async (
+        async <TActionResult>(
             itemId: number,
-            sendItemAction: (itemId: number) => Promise<unknown>,
-            successToastKey: string
+            sendItemAction: (itemId: number) => Promise<TActionResult>,
+            announceSuccess: (actionResult: TActionResult) => void
         ) => {
             setBusyItemIds((currentBusyIds) => new Set(currentBusyIds).add(itemId));
             try {
-                await sendItemAction(itemId);
-                enqueueSnackbar(t(successToastKey), { variant: 'success' });
+                announceSuccess(await sendItemAction(itemId));
             } catch (error) {
                 notifyActionError(error);
             } finally {
@@ -160,20 +175,42 @@ export const useTrashScreen = () => {
                 });
             }
         },
-        [enqueueSnackbar, notifyActionError, t]
+        [notifyActionError]
     );
 
     const { mutateAsync: sendRestore } = restoreMutation;
     const { mutateAsync: sendDeleteForever } = deleteMutation;
 
+    const announceRestore = useCallback(
+        (restoreResult: TrashRestoreResult | undefined) => {
+            const restoredPath = restoreResult?.path;
+            if (!restoredPath) {
+                enqueueSnackbar(t('TRASH_RESTORED_TOAST'), { variant: 'success' });
+                return;
+            }
+            const restoredFolderUrl = buildFilesUrl(explorerFolderOf(restoredPath));
+            enqueueSnackbar(t('TRASH_RESTORED_TOAST'), {
+                variant: 'success',
+                action: () =>
+                    createElement(TrashRestoredToastAction, {
+                        onViewInFolder: () => navigate(restoredFolderUrl),
+                    }),
+            });
+        },
+        [enqueueSnackbar, navigate, t]
+    );
+
     const handleRestore = useCallback(
-        (itemId: number) => runItemAction(itemId, sendRestore, 'TRASH_RESTORED_TOAST'),
-        [runItemAction, sendRestore]
+        (itemId: number) => runItemAction(itemId, sendRestore, announceRestore),
+        [announceRestore, runItemAction, sendRestore]
     );
 
     const deleteForever = useCallback(
-        (itemId: number) => runItemAction(itemId, sendDeleteForever, 'TRASH_DELETED_TOAST'),
-        [runItemAction, sendDeleteForever]
+        (itemId: number) =>
+            runItemAction(itemId, sendDeleteForever, () =>
+                enqueueSnackbar(t('TRASH_DELETED_TOAST'), { variant: 'success' })
+            ),
+        [enqueueSnackbar, runItemAction, sendDeleteForever, t]
     );
 
     const emptyWholeTrash = useCallback(async () => {
