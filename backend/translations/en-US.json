@@ -1980,5 +1980,19 @@
 	"VIDEO_CATALOG_SECTION_SERIES": "Series",
 	"VIDEO_CATALOG_SECTION_MOVIES": "Movies",
 	"VIDEO_CATALOG_SECTION_PERSONAL": "Personal videos",
-	"VIDEO_CATALOG_SECTION_RECENT": "Recently added"
+	"VIDEO_CATALOG_SECTION_RECENT": "Recently added",
+	"ERROR_VACUUM_NOT_CONFIGURED": "Robot vacuum not configured: set the device id and the local key in Settings.",
+	"ERROR_VACUUM_UNREACHABLE": "Could not talk to the robot vacuum. Check that it is powered on and on the same network as the server.",
+	"ERROR_VACUUM_LOCAL_KEY_REJECTED": "The robot vacuum rejected the local key. Check the key: it changes every time the robot is paired again.",
+	"ERROR_VACUUM_DISCOVERY_NOT_FOUND": "No device accepted the given device id and key. Check that the robot is powered on, that it is on the same network as the server and that the key did not change after a new pairing.",
+	"ERROR_VACUUM_INVALID_COMMAND": "Unknown robot vacuum command.",
+	"ERROR_VACUUM_INVALID_DIRECTION": "Unknown direction for the robot vacuum remote control.",
+	"ERROR_VACUUM_INVALID_PART": "Unknown wear part.",
+	"ERROR_VACUUM_INVALID_PREFERENCE": "Invalid robot vacuum setting value.",
+	"ERROR_VACUUM_INVALID_ADDRESS": "Invalid address: provide an IP or host name, with an optional port.",
+	"ERROR_VACUUM_INVALID_DEVICE_ID": "Invalid device id: it cannot be empty.",
+	"ERROR_VACUUM_INVALID_LOCAL_KEY": "Invalid local key: it must have exactly 16 characters.",
+	"ERROR_VACUUM_LOCAL_KEY_REQUIRED": "Provide the robot vacuum local key.",
+	"ERROR_VACUUM_INVALID_REQUEST": "Invalid robot vacuum request.",
+	"ERROR_VACUUM_FAILED": "Failed to process the robot vacuum request."
 }

@@ -54,6 +54,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterBackupRoutes(routesV1, context)
 	RegisterTieringRoutes(routesV1, context)
 	RegisterAutoShutdownRoutes(routesV1, context)
+	RegisterVacuumRoutes(routesV1, context)
 	RegisterStorageRootsRoutes(routesV1, context)
 	RegisterEmailRoutes(routesV1, context)
 	registerReactRoutes(router)
@@ -172,6 +173,27 @@ func RegisterAutoShutdownRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.GET("/settings", context.AutoShutdown.Handler.GetSettingsHandler)
 	group.PUT("/settings", context.AutoShutdown.Handler.UpdateSettingsHandler)
 	group.GET("/suggested-time", context.AutoShutdown.Handler.GetSuggestedTimeHandler)
+}
+
+func RegisterVacuumRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Vacuum == nil || context.Vacuum.Handler == nil {
+		return
+	}
+
+	handler := context.Vacuum.Handler
+	group := router.Group("/vacuum")
+	group.GET("/settings", handler.GetSettingsHandler)
+	group.PUT("/settings", handler.UpdateSettingsHandler)
+	group.POST("/connection-test", handler.TestConnectionHandler)
+	group.POST("/discovery", handler.DiscoverHandler)
+	group.GET("/status", handler.GetStatusHandler)
+	group.POST("/commands", handler.SendCommandHandler)
+	group.POST("/remote-control", handler.SendRemoteControlHandler)
+	group.GET("/preferences", handler.GetPreferencesHandler)
+	group.PATCH("/preferences", handler.UpdatePreferencesHandler)
+	group.GET("/consumables", handler.GetConsumablesHandler)
+	group.POST("/consumables/:part/reset", handler.ResetConsumableHandler)
+	group.GET("/totals", handler.GetTotalsHandler)
 }
 
 // registerAccessControlMiddleware installs the IP whitelist in front of every

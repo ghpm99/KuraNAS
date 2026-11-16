@@ -1980,5 +1980,19 @@
 	"VIDEO_CATALOG_SECTION_SERIES": "Séries",
 	"VIDEO_CATALOG_SECTION_MOVIES": "Filmes",
 	"VIDEO_CATALOG_SECTION_PERSONAL": "Vídeos pessoais",
-	"VIDEO_CATALOG_SECTION_RECENT": "Adicionados recentemente"
+	"VIDEO_CATALOG_SECTION_RECENT": "Adicionados recentemente",
+	"ERROR_VACUUM_NOT_CONFIGURED": "Robô aspirador não configurado: informe o identificador do dispositivo e a chave local nas Configurações.",
+	"ERROR_VACUUM_UNREACHABLE": "Não foi possível falar com o robô aspirador. Confira se ele está ligado e na mesma rede do servidor.",
+	"ERROR_VACUUM_LOCAL_KEY_REJECTED": "O robô aspirador recusou a chave local. Confira a chave: ela muda sempre que o robô é pareado de novo.",
+	"ERROR_VACUUM_DISCOVERY_NOT_FOUND": "Nenhum aparelho aceitou o identificador e a chave informados. Verifique se o robô está ligado, se está na mesma rede do servidor e se a chave não mudou por um novo pareamento.",
+	"ERROR_VACUUM_INVALID_COMMAND": "Comando desconhecido para o robô aspirador.",
+	"ERROR_VACUUM_INVALID_DIRECTION": "Direção desconhecida para o controle manual do robô aspirador.",
+	"ERROR_VACUUM_INVALID_PART": "Peça de desgaste desconhecida.",
+	"ERROR_VACUUM_INVALID_PREFERENCE": "Valor de ajuste inválido para o robô aspirador.",
+	"ERROR_VACUUM_INVALID_ADDRESS": "Endereço inválido: informe um IP ou nome de host, com porta opcional.",
+	"ERROR_VACUUM_INVALID_DEVICE_ID": "Identificador do dispositivo inválido: não pode ficar vazio.",
+	"ERROR_VACUUM_INVALID_LOCAL_KEY": "Chave local inválida: ela deve ter exatamente 16 caracteres.",
+	"ERROR_VACUUM_LOCAL_KEY_REQUIRED": "Informe a chave local do robô aspirador.",
+	"ERROR_VACUUM_INVALID_REQUEST": "Requisição inválida para o robô aspirador.",
+	"ERROR_VACUUM_FAILED": "Falha ao processar a requisição do robô aspirador."
 }

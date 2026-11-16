@@ -35,6 +35,7 @@ import (
 	"nas-go/api/internal/api/v1/tiering"
 	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/internal/api/v1/updater"
+	"nas-go/api/internal/api/v1/vacuum"
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/internal/config"
@@ -46,8 +47,11 @@ import (
 	"nas-go/api/pkg/crypto"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/tuya"
 	"nas-go/api/pkg/utils"
 )
+
+const vacuumDeviceTimeout = 3 * time.Second
 
 var tasks = make(chan utils.Task, 100)
 
@@ -81,6 +85,7 @@ type AppContext struct {
 	Backup        *BackupContext
 	Tiering       *TieringContext
 	AutoShutdown  *AutoShutdownContext
+	Vacuum        *VacuumContext
 	Distribution  *DistributionContext
 	Ingest        *IngestContext
 	UpdateHandler *updater.Handler
@@ -115,6 +120,12 @@ type AutoShutdownContext struct {
 	Handler    *autoshutdown.Handler
 	Service    autoshutdown.ServiceInterface
 	Repository autoshutdown.RepositoryInterface
+}
+
+type VacuumContext struct {
+	Handler    *vacuum.Handler
+	Service    vacuum.ServiceInterface
+	Repository vacuum.RepositoryInterface
 }
 
 type StorageRootsContext struct {
@@ -315,6 +326,7 @@ func NewContext(db *sql.DB) *AppContext {
 	backupContext := newBackupContext(dbContext)
 	tieringContext := newTieringContext(dbContext)
 	autoShutdownContext := newAutoShutdownContext(dbContext)
+	vacuumContext := newVacuumContext(dbContext)
 	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
@@ -354,6 +366,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Backup:        backupContext,
 		Tiering:       tieringContext,
 		AutoShutdown:  autoShutdownContext,
+		Vacuum:        vacuumContext,
 		Distribution:  distributionContext,
 		Ingest:        ingestContext,
 		UpdateHandler: updateHandler,
@@ -690,6 +703,19 @@ func newAutoShutdownContext(dbContext *database.DbContext) *AutoShutdownContext 
 	handler := autoshutdown.NewHandler(service)
 
 	return &AutoShutdownContext{
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
+	}
+}
+
+func newVacuumContext(dbContext *database.DbContext) *VacuumContext {
+	repository := vacuum.NewRepository(dbContext)
+	deviceClient := tuya.NewClient(vacuumDeviceTimeout)
+	service := vacuum.NewService(repository, deviceClient, tuya.LocalNetworkCandidates)
+	handler := vacuum.NewHandler(service)
+
+	return &VacuumContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
