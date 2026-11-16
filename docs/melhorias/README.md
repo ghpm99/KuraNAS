@@ -44,6 +44,15 @@ Regras invariantes:
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | ✅ concluída (2026-06-12) | retenção ≠ espelho; segunda cópia (HD externo) documentada no README, fica com o SO |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | ✅ concluída (2026-06-13) | path lógico × físico; job tier_migration + operações tiered + UI; `make ci` verde |
 | 19 | [Captura inteligente de streaming](19-captura-inteligente-de-streaming.md) | feature | P3 | — | 🚫 bloqueada | código pronto, `npm test` (plugin) + `make ci-backend` verdes. Falta validação do dono no navegador real: (1) confirmar que `tabCapture` na cobaia (Crunchyroll) **não** entrega frame preto — se entregar, a peça de captura migra para nível de SO (analog hole continua, ver Riscos); (2) verificar in-loco arma-em-fullscreen / finaliza-no-fim / autoplay→arquivo-novo / retomada→arquivo-único. Máquina de estados + idempotência por `episode_key` + adapter Crunchyroll já cobertos por testes; **sem decrypt de DRM** |
+| 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | pendente | spec 05 |
+| 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | pendente | spec 05 |
+| 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | pendente | spec 06 |
+| 43 | [Vídeos: faixa de áudio](43-videos-faixa-de-audio.md) | feature | P1 | — | pendente | spec 06 |
+| 44 | [Documentos: biblioteca no backend](44-documentos-biblioteca-backend.md) | feature | P0 | — | pendente | spec 07 |
+| 45 | [Documentos: tela na web](45-documentos-tela-web.md) | feature | P0 | 44, 20, 21 | pendente | spec 07 |
+| 46 | [Documentos: tela no Android](46-documentos-android.md) | feature | P1 | 44, 36, 39 | pendente | spec 07 |
+
+**Tasks 20 a 39 ainda não têm arquivo** (numeração reservada em 2026-11-16; os fatos de código já foram levantados e os contratos estão nas specs). Devem ser escritas antes de qualquer execução e rodam **antes** das 40–46 e do item 09 de `docs/revisao-produto/`: 20 paginação web lê `has_next` (00 anexo A1–A3) · 21 falha de página seguinte não troca a lista (A4) · 22 descoberta do servidor no Android (24) · 23 explorer Android paginado (24) · 24 Android envia arquivos (03) · 25 excluir captura promovida não apaga o vídeo (12/RN-11) · 26 Takeout sem sobrescrita e com estrutura (13/RN-05, RN-06) · 27 Takeout aplica datas (13/RN-07) · 28 Takeout extrai em fluxo (13/RN-09) · 29 preferências de indexação com efeito (21/RN-14) · 30 reindexar por escopo (21/RN-15) · 31 links do Analytics (16/RN-06) · 32 atualização confere checksum (23/RN-15) · 33 cancelar desligamento (23/RN-11) · 34 envio em partes, backend (03 §7) · 35 envio em partes, web · 36 download em fluxo no Android · 37 transferências em segundo plano no Android · 38 envio automático da câmera · 39 navegação do Android (24/RF-03).
 
 Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
 
