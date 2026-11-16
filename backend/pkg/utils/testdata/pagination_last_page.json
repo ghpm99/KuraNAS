@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "alpha"
+    }
+  ],
+  "pagination": {
+    "page": 2,
+    "page_size": 2,
+    "has_next": false,
+    "has_prev": true
+  }
+}
