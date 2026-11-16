@@ -76,7 +76,7 @@ Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadast
 
 ### Desgaste e totais
 
-- **RN-19** — Para cada peça de desgaste que o robô informa, a tela mostra a vida útil e permite zerar o contador depois da troca. Zerar pede confirmação ([00/RN-37](00-padroes-transversais.md)), dizendo que não é reversível.
+- **RN-19** — Para cada peça de desgaste que o robô informa, a tela mostra o tempo de uso desde a última troca e a vida útil prevista, em horas, e permite zerar o contador depois da troca. Zerar pede confirmação ([00/RN-37](00-padroes-transversais.md)), dizendo que não é reversível.
 - **RN-20** — Totais acumulados: tempo total de limpeza, área total e número de limpezas.
 
 ## 7. Requisitos por tela
@@ -154,7 +154,7 @@ Todas as rotas são a criar. Tempos em segundos, áreas em m².
 - **D-01** — Mapa, cômodos e zonas. O robô troca esses dados em formato binário proprietário e o mapa trafega pela nuvem do fabricante. *Provisório: fora de escopo.*
 - **D-02** — Agendar limpezas pelo KuraNAS. *Provisório: fora de escopo.*
 - **D-03** — Descrição das falhas. O robô informa a falha como um número de 1 a 30, sem texto. *Provisório: a tela mostra "Falha N"; a descrição entra quando os códigos forem conferidos com o manual.*
-- **D-04** — Sentido do contador de desgaste (tempo já usado ou tempo restante). Na leitura de 2026-11-16 a escova principal informava 803013 de 1080000 segundos; só observar o valor antes e depois de uma limpeza decide. *Provisório: a tela mostra o valor e o máximo em horas, sem dizer "restante" nem "usado", até a conferência.*
+- **D-04** — *Decidida em 2026-11-16.* O contador de desgaste é tempo de uso, não tempo restante: depois de uma limpeza de 1792 segundos a escova principal foi de 803013 para 804805, o mesmo avanço do tempo total de limpeza. `seconds` é o uso e `max_seconds` a vida útil prevista (RN-19).
 - **D-05** — Peças que o robô não informa. Na mesma leitura só a escova principal veio; filtro e escova lateral não. *Provisório: RN-17 — a peça não aparece.*
 
 ## 12. Anexo — pontos de dados do robô
