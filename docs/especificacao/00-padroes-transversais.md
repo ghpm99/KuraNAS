@@ -104,7 +104,7 @@ Criar, renomear, mover, copiar, excluir, restaurar, favoritar, enviar, adicionar
 
 ## 7. Erros
 
-- **RN-40** — O servidor responde erros como `{"error": "<mensagem traduzida>"}` com status HTTP coerente: `400` entrada inválida, `404` não existe, `409` conflito, `413` grande demais, `500` falha interna. Nenhuma resposta de erro traz erro cru da linguagem, caminho interno do servidor ou stack trace.
+- **RN-40** — O servidor responde erros como `{"error": "<mensagem traduzida>"}` com status HTTP coerente: `400` entrada inválida, `403` dispositivo fora da whitelist, `404` não existe, `409` conflito, `413` grande demais, `507` sem espaço no destino, `500` falha interna. Nenhuma resposta de erro traz erro cru da linguagem, caminho interno do servidor ou stack trace.
 - **RN-41** — O cliente mostra a mensagem do servidor como chegou. Quando não há resposta (rede), mostra a mensagem própria de falha de conexão.
 - **RN-42** — Todo erro do servidor é registrado em arquivo de log com método, rota, status, o erro original e o stack trace.
 

@@ -126,7 +126,20 @@ Seções com spec própria — a tela de Configurações só as hospeda: Armazen
 | GET | `/downloads` · `/downloads/:id` | aplicativos |
 | GET, PUT | `/configuration/env` · POST `/env/test-db` · `/env/test-path` | assistente de configuração |
 
-**A criar** (não existe hoje): cancelar o desligamento em curso; situação das dependências externas.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/auto-shutdown/status` | situação do desligamento (RF-07) |
+| POST | `/auto-shutdown/cancel` | "Cancelar desta vez" (RN-11) |
+| GET | `/configuration/dependencies` | situação das dependências externas (RF-10) |
+
+- **`/auto-shutdown/status`**: `{"state": "idle", "shutdown_at": null, "seconds_remaining": null, "postponed_reason": ""}`. `state` é `idle`, `warning` (período de aviso em contagem) ou `postponed` (adiado por atividade — RN-12; `postponed_reason` traz o motivo traduzido). Os clientes consultam a cada 30 s e, em `warning`, a cada 5 s.
+- **`/auto-shutdown/cancel`**: sem corpo. `200` com o status novo (`idle`); `409` fora do período de aviso. Cancela só a execução de hoje; a de amanhã continua programada.
+- Para o cancelamento ser possível, **o período de aviso é contado pelo servidor**: o comando de desligar do sistema operacional só é emitido quando a contagem termina sem cancelamento (hoje é emitido no início, com o atraso embutido).
+- **`/configuration/dependencies`**: lista com um item por dependência — `{"name": "ffmpeg", "installed": true, "version": "7.1", "enables": "..."}`; `name` em `ffmpeg`, `ytdlp`, `ollama`; `enables` é o texto traduzido do que ela habilita.
+- **Integridade da atualização (RN-15)**: o release publica, ao lado do pacote, um arquivo `SHA256SUMS`; `POST /update/apply` baixa os dois, confere o SHA-256 do pacote e só então aplica. Sem `SHA256SUMS` no release, ou com valor diferente, responde `409` com mensagem própria e descarta o pacote.
+- **`/configuration/about`** ganha `startup_time` (data ISO), ao lado do `statup_time` que continua existindo.
 
 ## 8. Situação em 2026-11-10
 

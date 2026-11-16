@@ -94,7 +94,12 @@ Conexão com o servidor (descoberta, endereço manual, troca, reconexão), naveg
 
 ## 7. Contrato
 
-O app usa a mesma API da web (`/api/v1`). Descoberta: anúncio do servidor na rede local (mDNS, serviço `_kuranas._tcp`) e resposta a consulta por broadcast UDP (porta 19520). Confirmação do servidor: `GET /health`.
+O app usa a mesma API da web (`/api/v1`). O servidor se anuncia de duas formas, e o app usa as duas ao mesmo tempo (RN-01):
+
+- **mDNS**: serviço `_kuranas._tcp`, na porta HTTP do servidor (8000).
+- **UDP**: o app envia o texto `KURANAS_DISCOVER` por broadcast (`255.255.255.255`) para a porta 19520; o servidor responde ao remetente com `{"service": "kuranas", "port": 8000, "api": "/api/v1"}`. O endereço do servidor é o IP de origem da resposta mais `port`. Respostas com `service` diferente de `kuranas` são ignoradas.
+
+**Confirmação do servidor (RN-03)**: `GET /api/v1/health` deve responder `200` com `{"status": "ok", "service": "kuranas"}` em até 3 s. Sem resposta → "sem resposta"; resposta que não é esse JSON → "não é KuraNAS"; `403` → "acesso não liberado para este dispositivo". Endereço digitado sem esquema ganha `http://`; sem porta, ganha `:8000`.
 
 Toda mudança de rota ou de formato no backend confere este consumidor (`android/app/src/main/java/com/kuranas/android/feature/*/data`).
 

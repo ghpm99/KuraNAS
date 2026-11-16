@@ -58,7 +58,20 @@ Envio do zip em partes com retomada, importação em segundo plano (fotos e víd
 | POST | `/takeout/upload/complete` | conclui e inicia a importação → `job_id` |
 | GET | `/jobs/:id` · `/jobs?type=takeout_import` | andamento e histórico |
 
-**A criar** (não existe hoje): retomar sessão de envio interrompida; resumo da importação no resultado do job.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/takeout/upload/:upload_id` | quanto já foi recebido → `{"upload_id", "size", "received_size"}` |
+| DELETE | `/takeout/upload/:upload_id` | cancela o envio e apaga o que foi recebido (RF-02) → `204` |
+| GET | `/takeout/imports` | histórico de importações, paginado, mais recente primeiro (RF-05) |
+| GET | `/takeout/imports/:id` | uma importação, com o resumo (RF-03) |
+
+- **Retomada**: `POST /takeout/upload/init` com o mesmo `file_name` e `size` de uma sessão aberta devolve o mesmo `upload_id`, mais `received_size` e `resumed: true`. Sem `size` no pedido → `400`. Espaço livre menor que `size` → `507`.
+- **Item de `/takeout/imports`**: `id`, `job_id`, `file_name`, `size`, `state` (`queued`, `running`, `completed`, `failed`), `total_entries`, `processed_entries`, `imported`, `already_existing`, `ignored`, `failed_entries`, `error` (traduzido, vazio fora de `failed`), `created_at`, `ended_at`. Vale `imported + already_existing + ignored + failed_entries = total_entries` ao terminar (CA-09).
+- `POST /takeout/upload/complete` passa a devolver também `import_id`.
+- **"Tentar de novo" (RF-04)**: como o zip é apagado ao terminar (RN-10), repetir é enviar o arquivo de novo; arquivos já importados são pulados (RN-06).
+- Os destinos de "Ver fotos importadas" e "Ver vídeos importados" são as pastas `takeout/` das bibliotecas de imagens e de vídeos, abertas na galeria e no catálogo com o filtro de pasta.
 
 ## 8. Estados e erros
 

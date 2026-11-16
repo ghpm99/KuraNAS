@@ -105,7 +105,27 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 | GET | `/files/blob/:id` | conteúdo para visualização |
 | GET | `/ingest/targets` ou `/storage-roots` | destinos possíveis |
 
-**A criar** (não existe hoje para arquivos comuns): envio em partes com retomada (`init` / `chunk` / `complete`, nos moldes do que já existe em `/captures/upload/*` e `/takeout/upload/*`), consulta "este conteúdo já existe?" por checksum (RN-05) e parâmetro de política de conflito.
+**Já existe em `POST /files/upload`** (multipart, vários arquivos por requisição): parte `files`; campos `target_folder_id` (vazio ou 0 = raiz principal), `on_conflict` (`fail` — padrão —, `skip`, `replace`, `rename`) e `relative_paths` (lista paralela a `files`, para recriar subpastas). Resposta `202`: `{"message", "uploaded": [...], "job_id", "files": [{"name", "path", "status", "error"}]}`, com `status` em `uploaded`, `skipped`, `replaced`, `renamed`, `failed`. Continua valendo para arquivos de até 64 MB.
+
+**A criar** — envio em partes com retomada, para arquivos acima de 64 MB e para todo envio do Android em segundo plano. Segue o desenho de `/captures/upload/*`:
+
+| Método | Rota | Uso |
+|---|---|---|
+| POST | `/files/upload/init` | abre ou retoma uma sessão de envio |
+| POST | `/files/upload/chunk` | envia uma parte |
+| GET | `/files/upload/:upload_id` | quanto já foi recebido (para retomar após reinício do cliente) |
+| POST | `/files/upload/complete` | conclui e publica o arquivo no destino |
+| DELETE | `/files/upload/:upload_id` | cancela e apaga o que foi recebido → `204` |
+
+- **`init`** — corpo JSON: `file_name` e `size` (obrigatórios), `target_folder_id`, `relative_path` (subpastas a recriar, opcional), `checksum` (SHA-256 em hexadecimal, opcional), `modified_at` (data ISO da última modificação do original, opcional), `on_conflict` (mesmos valores de `/files/upload`). Resposta `201`: `{"upload_id", "chunk_size", "received_size", "resumed", "already_exists"}`.
+  - Sessão aberta com os mesmos `target_folder_id`, `relative_path`, `file_name` e `size` é retomada: `resumed: true` e `received_size` com o ponto de continuação.
+  - Com `checksum` informado e arquivo de mesmo conteúdo já no destino: `already_exists: true`, sem `upload_id` — nada é enviado (RN-05).
+  - Erros: nome já existe e `on_conflict=fail` → `409`; espaço livre menor que `size` → `507` (RN-07); nome inválido ou destino fora de raiz habilitada → `400`.
+- **`chunk`** — multipart: `chunk` (arquivo), `upload_id`, `offset`. `chunk_size` é 2 MiB. Resposta `200`: `{"received_size"}`. `offset` diferente do já recebido → `409` com `{"error", "received_size"}`, para o cliente se realinhar. Sessão inexistente ou expirada → `404`.
+- **`complete`** — corpo `{"upload_id"}`. Resposta `201`: `{"file": {"name", "path", "status"}, "job_id"}`, com `status` em `uploaded`, `replaced`, `renamed`. Tamanho recebido diferente do declarado, ou `checksum` informado que não confere → `400`, e a sessão é descartada.
+- As partes ficam em área própria, fora das raízes indexadas; o arquivo só aparece no destino no `complete`, por renomeação (ou cópia para nome provisório `.part` seguida de renomeação, entre volumes) — RN-02. `modified_at` é aplicado ao arquivo publicado (RN-10).
+- Sessão sem nenhuma parte nova por 24 h expira e é apagada.
+- `GET /files/upload/:upload_id` → `{"upload_id", "size", "received_size"}`.
 
 ## 8. Estados e erros
 

@@ -104,7 +104,25 @@ Detecção de mudanças no disco, varredura de reconciliação, reindexação ma
 | GET | `/analytics/health` · `/analytics/processing` | situação |
 | GET | `/jobs` | andamento |
 
-**A criar** (não existe hoje): reindexar uma pasta ou uma raiz específica, devolvendo o job; preferências com efeito real.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| POST | `/indexing/reindex` | reindexa tudo, uma raiz ou uma pasta, devolvendo o job (RN-15) |
+
+- **`POST /indexing/reindex`** — corpo JSON: `{"scope": "all"}`, `{"scope": "root", "root_id": 2}` ou `{"scope": "folder", "folder_id": 345}` (a pasta e suas subpastas). Resposta `202`: `{"job_id"}`. `400` para `scope` inválido ou identificador ausente; `404` para raiz ou pasta inexistente; `409` com o `job_id` em andamento quando já há reindexação do mesmo escopo.
+- `POST /files/update` continua existindo e equivale a `scope: all` (compatibilidade); passa a responder `{"job_id"}` no corpo.
+- **Preferências de indexação** em `/configuration/settings` (RN-14) — cada chave e o efeito que deve ter:
+
+| Chave | Efeito |
+|---|---|
+| `extract_metadata` (existe, hoje sem efeito) | desligada, a etapa de metadados do tipo não roda para arquivos novos ou alterados |
+| `generate_previews` (existe, hoje sem efeito) | desligada, a etapa de miniatura/prévia não roda para arquivos novos ou alterados |
+| `scan_interval_hours` (nova; 1 a 168, padrão 24) | intervalo da varredura periódica de RN-03 |
+| `index_document_text` (nova; padrão ligada) | desligada, a etapa de texto de documento não roda |
+| `scan_on_startup` (existe, hoje sem efeito) | **sai da tela**: a varredura ao iniciar é obrigatória (RN-03). A chave continua aceita e devolvida, sem efeito, por compatibilidade |
+
+  Religar uma etapa não reprocessa o passado sozinho: o que ficou sem processar entra pela reindexação. A marcação por IA é ligada e desligada em Configurações → IA ([18/RF-11](18-assistente.md)).
 
 ## 9. Situação em 2026-11-10
 
