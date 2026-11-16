@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -261,4 +263,60 @@ func TestCheckAndNotify(t *testing.T) {
 			t.Fatalf("expected no-op: ok=%v err=%v", ok, err)
 		}
 	})
+}
+
+func TestUpdateRefusesToRunTwiceAtOnce(t *testing.T) {
+	releaseRequested := make(chan struct{})
+	letFirstUpdateFinish := make(chan struct{})
+	updater := &YtDlpService{
+		assetName: "yt-dlp_linux",
+		fetchRelease: func() (ghRelease, error) {
+			close(releaseRequested)
+			<-letFirstUpdateFinish
+			return ghRelease{}, errors.New("stopped by the test")
+		},
+	}
+	firstUpdateOutcome := make(chan error, 1)
+	go func() { firstUpdateOutcome <- updater.Update() }()
+	<-releaseRequested
+
+	if err := updater.Update(); !errors.Is(err, ErrYtDlpUpdateInProgress) {
+		t.Fatalf("expected ErrYtDlpUpdateInProgress, got %v", err)
+	}
+
+	close(letFirstUpdateFinish)
+	if err := <-firstUpdateOutcome; errors.Is(err, ErrYtDlpUpdateInProgress) || err == nil {
+		t.Fatalf("the first update must run to its own outcome, got %v", err)
+	}
+}
+
+func TestHttpDownloadFileRefusesABodyBeyondTheLimit(t *testing.T) {
+	originalLimit := maxYtDlpBinaryBytes
+	maxYtDlpBinaryBytes = 1024
+	t.Cleanup(func() { maxYtDlpBinaryBytes = originalLimit })
+	oversizedServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write(make([]byte, 4096))
+	}))
+	defer oversizedServer.Close()
+
+	err := httpDownloadFile(oversizedServer.URL, filepath.Join(t.TempDir(), "yt-dlp"))
+
+	if err == nil || !strings.Contains(err.Error(), "limit") {
+		t.Fatalf("expected the size limit to abort the download, got %v", err)
+	}
+}
+
+func TestHttpDownloadFileAcceptsABodyWithinTheLimit(t *testing.T) {
+	releaseServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte("binary"))
+	}))
+	defer releaseServer.Close()
+	downloadedPath := filepath.Join(t.TempDir(), "yt-dlp")
+
+	if err := httpDownloadFile(releaseServer.URL, downloadedPath); err != nil {
+		t.Fatalf("httpDownloadFile: %v", err)
+	}
+	if downloaded, _ := os.ReadFile(downloadedPath); string(downloaded) != "binary" {
+		t.Fatalf("downloaded content wrong: %q", downloaded)
+	}
 }

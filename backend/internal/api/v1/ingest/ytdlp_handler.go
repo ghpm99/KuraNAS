@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"errors"
 	"net/http"
 
 	"nas-go/api/pkg/applog"
@@ -25,7 +26,12 @@ func (h *YtDlpHandler) GetStatusHandler(c *gin.Context) {
 // UpdateHandler applies a verified yt-dlp update. It is the human-triggered side
 // of the lifecycle: nothing here runs on a timer.
 func (h *YtDlpHandler) UpdateHandler(c *gin.Context) {
-	if err := h.service.Update(); err != nil {
+	err := h.service.Update()
+	if errors.Is(err, ErrYtDlpUpdateInProgress) {
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_YTDLP_UPDATE_IN_PROGRESS")})
+		return
+	}
+	if err != nil {
 		applog.Error("ytdlp: update failed", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_YTDLP_UPDATE")})
 		return

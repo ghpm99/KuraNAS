@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	notifications "nas-go/api/internal/api/v1/notifications"
@@ -29,6 +30,11 @@ var (
 	ytDlpReleaseURL     = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
 	ytDlpAPIClient      = &http.Client{Timeout: 30 * time.Second}
 	ytDlpDownloadClient = &http.Client{Timeout: 10 * time.Minute}
+)
+
+var (
+	maxYtDlpBinaryBytes       int64 = 256 << 20
+	maxYtDlpChecksumListBytes int64 = 1 << 20
 )
 
 // ghAsset / ghRelease are the slices of the GitHub releases API we consume.
@@ -63,6 +69,8 @@ type YtDlpService struct {
 	fetchRelease func() (ghRelease, error)
 	download     func(url, dest string) error
 	fetchText    func(url string) (string, error)
+
+	updateInProgress sync.Mutex
 }
 
 func NewYtDlpService() *YtDlpService {
@@ -113,6 +121,11 @@ func (s *YtDlpService) Status() YtDlpStatusDto {
 // published SHA2-256SUMS, and only then atomically swaps it into place (keeping
 // the previous binary as .bak). A checksum mismatch aborts before any swap.
 func (s *YtDlpService) Update() error {
+	if !s.updateInProgress.TryLock() {
+		return ErrYtDlpUpdateInProgress
+	}
+	defer s.updateInProgress.Unlock()
+
 	release, err := s.fetchRelease()
 	if err != nil {
 		return fmt.Errorf("ytdlp update: fetch release: %w", err)
@@ -352,8 +365,14 @@ func httpDownloadFile(url, dest string) error {
 		return err
 	}
 	defer out.Close()
-	_, err = io.Copy(out, resp.Body)
-	return err
+	writtenBytes, err := io.Copy(out, io.LimitReader(resp.Body, maxYtDlpBinaryBytes+1))
+	if err != nil {
+		return err
+	}
+	if writtenBytes > maxYtDlpBinaryBytes {
+		return fmt.Errorf("download exceeds the %d byte limit", maxYtDlpBinaryBytes)
+	}
+	return nil
 }
 
 func httpGetText(url string) (string, error) {
@@ -365,7 +384,7 @@ func httpGetText(url string) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("fetch returned status %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxYtDlpChecksumListBytes))
 	if err != nil {
 		return "", err
 	}

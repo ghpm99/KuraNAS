@@ -41,6 +41,13 @@ func TestYtDlpUpdateHandler(t *testing.T) {
 			t.Fatalf("expected 200, got %d", rec.Code)
 		}
 	})
+	t.Run("already updating", func(t *testing.T) {
+		router := newYtDlpRouter(&fakeYtDlpService{updateErr: ErrYtDlpUpdateInProgress})
+		rec := doRequest(router, http.MethodPost, "/ingest/ytdlp/update", "")
+		if rec.Code != http.StatusConflict {
+			t.Fatalf("expected 409, got %d", rec.Code)
+		}
+	})
 	t.Run("failure", func(t *testing.T) {
 		router := newYtDlpRouter(&fakeYtDlpService{updateErr: errString("boom")})
 		rec := doRequest(router, http.MethodPost, "/ingest/ytdlp/update", "")

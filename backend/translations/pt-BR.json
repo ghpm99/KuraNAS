@@ -1656,6 +1656,7 @@
 	"DOWNLOAD_PRESET_VIDEO_1080": "Vídeo (até 1080p, MP4)",
 	"DOWNLOAD_PRESET_VIDEO_BEST": "Vídeo (melhor qualidade, MP4)",
 	"ERROR_YTDLP_UPDATE": "Não foi possível atualizar o yt-dlp",
+	"ERROR_YTDLP_UPDATE_IN_PROGRESS": "Já existe uma atualização do yt-dlp em andamento",
 	"YTDLP_UPDATE_APPLIED": "yt-dlp atualizado com sucesso",
 	"YTDLP_UPDATE_NOTIF_TITLE": "Atualização do yt-dlp disponível",
 	"YTDLP_UPDATE_NOTIF_MESSAGE": "Versão %s do yt-dlp disponível (instalada: %s). Atualize em Configurações.",
