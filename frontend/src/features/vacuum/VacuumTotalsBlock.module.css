@@ -1,0 +1,22 @@
+.totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.total {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.totalLabel {
+    color: var(--app-color-text-secondary);
+}
+
+.totalAmount {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}

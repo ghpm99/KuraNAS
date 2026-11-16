@@ -1,0 +1,39 @@
+.hint {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.pad {
+    display: grid;
+    grid-template-columns: repeat(3, 64px);
+    grid-template-areas:
+        '. forward .'
+        'left . right'
+        '. backward .';
+    justify-content: center;
+    gap: 8px;
+}
+
+.direction {
+    min-width: 44px;
+    min-height: 44px;
+    height: 64px;
+    touch-action: none;
+    user-select: none;
+}
+
+.forward {
+    grid-area: forward;
+}
+
+.backward {
+    grid-area: backward;
+}
+
+.left {
+    grid-area: left;
+}
+
+.right {
+    grid-area: right;
+}

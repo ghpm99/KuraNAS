@@ -1,0 +1,23 @@
+.preference {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.label {
+    font-weight: 600;
+}
+
+.options {
+    flex-wrap: wrap;
+}
+
+.option {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.unlistedValue {
+    color: var(--app-color-text-secondary);
+}

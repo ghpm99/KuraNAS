@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import {
     BookImage,
+    Bot,
     DownloadCloud,
     Film,
     House,
@@ -106,6 +107,12 @@ export const navigationItems: NavigationItem[] = [
         icon: analyticsIcon,
         labelKey: 'ANALYTICS',
         descriptionKey: 'ANALYTICS_SECTION_OVERVIEW_DESCRIPTION',
+    },
+    {
+        href: appRoutes.vacuum,
+        icon: <Bot size={20} />,
+        labelKey: 'NAV_VACUUM',
+        descriptionKey: 'VACUUM_PAGE_DESCRIPTION',
     },
     {
         href: appRoutes.settings,

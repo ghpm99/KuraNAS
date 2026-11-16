@@ -1,0 +1,15 @@
+.preference {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.label {
+    font-weight: 600;
+}
+
+.slider {
+    margin: 0 12px;
+    width: auto;
+}

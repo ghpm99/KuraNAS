@@ -1,0 +1,40 @@
+.parts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.part {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+
+.partDescription {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.partName {
+    font-weight: 600;
+}
+
+.partLife {
+    color: var(--app-color-text-secondary);
+}
+
+.reset {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.empty {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}

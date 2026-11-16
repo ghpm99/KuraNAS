@@ -29,6 +29,7 @@ describe('search/quickActionDestinations', () => {
             appRoutes.captures,
             appRoutes.assistant,
             appRoutes.takeout,
+            appRoutes.vacuum,
             appRoutes.settings,
             appRoutes.about,
         ].forEach((route) => expect(destinationRoutes).toContain(route));

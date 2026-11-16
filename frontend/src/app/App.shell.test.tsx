@@ -5,6 +5,7 @@ import { navigationItems } from '@/components/layout/navigationItems';
 
 jest.mock('@/pages/home', () => () => <div>HomePagePlaceholder</div>);
 jest.mock('@/pages/files', () => () => <div>FilesPagePlaceholder</div>);
+jest.mock('@/pages/vacuum', () => () => <div>VacuumPagePlaceholder</div>);
 jest.mock('@/pages/settings', () => () => {
     throw new Error('settings-exploded');
 });
@@ -26,6 +27,7 @@ describe('App shell with real providers', () => {
     it.each([
         ['/home', 'HomePagePlaceholder'],
         ['/files', 'FilesPagePlaceholder'],
+        ['/vacuum', 'VacuumPagePlaceholder'],
     ])('renders sidebar navigation and page placeholder at %s', async (pathname, placeholder) => {
         renderAppAt(pathname);
 
