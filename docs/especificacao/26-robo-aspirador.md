@@ -16,14 +16,15 @@ Comandar o robô aspirador da casa e ver o que ele está fazendo a partir do Kur
 
 ## 3. Escopo
 
-Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadastro da conexão, estado atual, comandos de limpeza, controle manual, ajustes de limpeza, base de esvaziamento, desgaste de peças e totais acumulados.
+Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadastro da conexão, busca do robô na rede, estado atual, comandos de limpeza, controle manual, ajustes de limpeza, base de esvaziamento, desgaste de peças e totais acumulados.
 
 ## 4. Fora de escopo
 
 - Mapa da casa, limpeza por cômodo, limpeza por zona, "limpar aqui" e zonas proibidas. *(ver D-01)*
 - Agendamento de limpezas. *(ver D-02)*
 - Mais de um robô e outros modelos ou fabricantes.
-- Descoberta automática do robô na rede e obtenção automática da chave local.
+- Obtenção automática do identificador e da chave local: o dono os informa.
+- Busca fora das redes locais em que o servidor está, ou em redes maiores que 254 endereços.
 - Pacotes de voz, redefinição do mapa e atualização de firmware.
 - Qualquer comunicação com a nuvem da Tuya: tudo é feito pela rede local.
 - App Android e kiosk.
@@ -38,7 +39,7 @@ Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadast
 
 ### Conexão
 
-- **RN-01** — O robô é identificado por endereço na rede local, identificador do dispositivo e chave local. Os três são informados pelo dono em Configurações.
+- **RN-01** — O robô é identificado pelo identificador do dispositivo e pela chave local, informados pelo dono em Configurações. O endereço na rede é encontrado pelo servidor (RN-21) ou informado à mão.
 - **RN-02** — A chave local é só de escrita: é gravada no servidor e nunca é devolvida por nenhuma resposta da API, nem escrita em log. A API informa apenas se há uma chave gravada.
 - **RN-03** — O servidor fala com o robô somente pela rede local. Nenhuma função desta spec depende de internet.
 - **RN-04** — Sem robô configurado, a tela do robô explica o que falta e leva às Configurações; nenhum comando é oferecido.
@@ -66,6 +67,13 @@ Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadast
 - **RN-17** — Um ajuste só é mostrado se o robô o informa; ajuste que o robô não informa não aparece como desligado nem com valor inventado.
 - **RN-18** — Alterar um ajuste envia somente aquele ajuste ao robô e o valor exibido passa a ser o que o robô confirmar.
 
+### Busca na rede
+
+- **RN-21** — "Procurar robô" faz o servidor percorrer os endereços das redes locais em que ele próprio está, procurando aparelhos que atendem na porta do protocolo, e reconhece o robô como o aparelho que aceita o identificador e a chave gravados. O endereço encontrado é gravado.
+- **RN-22** — A busca só percorre redes privadas das interfaces do servidor, até 254 endereços por rede, e termina em até 5 segundos. É a exceção a [00/RN-39](00-padroes-transversais.md): a tela espera a resposta, com indicador no botão.
+- **RN-23** — Quando o robô deixa de responder no endereço gravado, o servidor procura de novo sozinho, no máximo uma vez por minuto, e passa a usar o endereço novo. O dono não precisa fixar o endereço do robô no roteador.
+- **RN-24** — Busca sem resultado diz que nenhum aparelho aceitou o identificador e a chave, e lembra as três causas: robô desligado, robô em outra rede, chave trocada por novo pareamento.
+
 ### Desgaste e totais
 
 - **RN-19** — Para cada peça de desgaste que o robô informa, a tela mostra a vida útil e permite zerar o contador depois da troca. Zerar pede confirmação ([00/RN-37](00-padroes-transversais.md)), dizendo que não é reversível.
@@ -86,8 +94,8 @@ Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadast
 
 ### Configurações → Robô aspirador
 
-- **RF-09** — Campos: endereço na rede, identificador do dispositivo e chave local. O campo da chave nunca mostra a chave gravada; indica apenas que existe uma, e deixá-lo vazio ao salvar mantém a atual.
-- **RF-10** — "Testar conexão" usa os valores gravados e responde com sucesso ou com a falha específica (RN-05).
+- **RF-09** — Campos: identificador do dispositivo, chave local e endereço na rede (opcional). O campo da chave nunca mostra a chave gravada; indica apenas que existe uma, e deixá-lo vazio ao salvar mantém a atual.
+- **RF-10** — "Procurar robô" (RN-21) preenche o endereço com o que foi encontrado. "Testar conexão" usa os valores gravados e responde com sucesso ou com a falha específica (RN-05).
 - **RF-11** — Texto explicando onde o dono encontra o identificador e a chave local, e que a chave muda quando o robô é pareado de novo.
 
 ## 8. Contrato HTTP
@@ -97,8 +105,9 @@ Todas as rotas são a criar. Tempos em segundos, áreas em m².
 | Método | Rota | Uso |
 |---|---|---|
 | GET | `/vacuum/settings` | `{"address", "device_id", "has_local_key"}` |
-| PUT | `/vacuum/settings` | corpo `{"address", "device_id", "local_key"}`; `local_key` ausente ou vazio mantém a gravada. `200` com o mesmo formato do GET |
+| PUT | `/vacuum/settings` | corpo `{"address", "device_id", "local_key"}`; `local_key` ausente ou vazio mantém a gravada; `address` pode ser vazio. `200` com o mesmo formato do GET |
 | POST | `/vacuum/connection-test` | sem corpo. `204` quando o robô respondeu |
+| POST | `/vacuum/discovery` | sem corpo. `200` com `{"address"}`, já gravado; `404` quando nenhum aparelho aceitou o identificador e a chave |
 | GET | `/vacuum/status` | `{"state", "battery_percent", "cleaning_seconds", "cleaning_area", "fault_codes", "read_at"}` |
 | POST | `/vacuum/commands` | corpo `{"command"}` com `start`, `pause`, `resume`, `stop`, `dock` ou `locate`. `204` |
 | POST | `/vacuum/remote-control` | corpo `{"direction"}` com `forward`, `backward`, `left`, `right` ou `stop`. `204` |
@@ -114,8 +123,9 @@ Todas as rotas são a criar. Tempos em segundos, áreas em m².
 
 | Situação | Status | O que o usuário vê |
 |---|---|---|
-| Robô não configurado | `409` | o que falta e link para Configurações (RN-04) |
-| Robô inalcançável ou sem resposta em 5 s | `502` | "não foi possível falar com o robô", com "Tentar de novo" |
+| Robô não configurado (falta identificador ou chave) | `409` | o que falta e link para Configurações (RN-04) |
+| Busca sem resultado | `404` | mensagem de RN-24 |
+| Robô inalcançável ou sem resposta em 5 s, mesmo depois da nova busca (RN-23) | `502` | "não foi possível falar com o robô", com "Tentar de novo" |
 | Chave local recusada pelo robô | `502` | mensagem dizendo para conferir a chave, lembrando que ela muda ao parear de novo |
 | Comando, direção, peça ou valor de ajuste desconhecido | `400` | mensagem do servidor |
 | Endereço, identificador ou chave em formato inválido ao salvar | `400` | mensagem no campo |
@@ -135,6 +145,9 @@ Todas as rotas são a criar. Tempos em segundos, áreas em m².
 - [ ] **CA-11** — Zerar o contador de uma peça pede confirmação e o valor mostrado muda para o que o robô informa depois.
 - [ ] **CA-12** — Com o cabo de internet do roteador desconectado, estado e comandos continuam funcionando.
 - [ ] **CA-13** — A tela é utilizável no navegador do celular, sem rolagem horizontal.
+- [ ] **CA-14** — Com só identificador e chave gravados, "Procurar robô" encontra o endereço e "Testar conexão" passa a responder sucesso.
+- [ ] **CA-15** — Trocar o endereço do robô no roteador com a tela aberta: em até dois minutos a tela volta a atualizar sozinha, sem ninguém mexer nas Configurações.
+- [ ] **CA-16** — Com a chave errada, "Procurar robô" não grava endereço nenhum e mostra a mensagem de busca sem resultado.
 
 ## 11. Decisões em aberto
 
