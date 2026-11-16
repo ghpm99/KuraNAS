@@ -104,16 +104,18 @@ Referência cruzada: `02/RN-04` é a regra 04 da spec 02.
 
 O levantamento feito para escrever estas specs (leitura de código, 2026-11-10) encontrou os defeitos abaixo. Eles explicam "telas com scroll que ficam sem itens" e "coisas que funcionavam e não funcionam mais", e bloqueiam as necessidades N1 e N2. Ordem sugerida de correção:
 
-| # | Defeito | Spec |
-|---|---|---|
-| 1 | Arquivos, Favoritos, Recentes, busca na pasta e seletor de pasta nunca carregam a segunda página (o cliente lê `hasNext`, o servidor envia `has_next`) | [00 anexo A1–A3](00-padroes-transversais.md) |
-| 2 | Em oito telas, a falha de uma página seguinte ou da revalidação automática troca a lista inteira pela tela de erro | [00 anexo A4](00-padroes-transversais.md) |
-| 3 | O app Android não encontra o servidor (procura um nome de serviço diferente do anunciado) e a busca nunca termina | [24 §8](24-app-android.md) |
-| 4 | O app Android mostra só 15 itens por pasta | [24 §8](24-app-android.md) |
-| 5 | O app Android não envia arquivos para o servidor | [03 §9](03-transferencia-entre-dispositivos.md) |
-| 6 | Excluir uma captura promovida apaga o vídeo da biblioteca | [12 §10](12-capturas.md) |
-| 7 | Takeout sobrescreve arquivos de mesmo nome e descarta as datas das fotos | [13 §9](13-takeout.md) |
-| 8 | Opções de configuração sem efeito; "Reindexar" e "Ver duplicados" que não fazem o que dizem | [21 §9](21-indexacao.md), [16 §8](16-analytics.md), [23 §8](23-configuracoes-e-sistema.md) |
+| # | Defeito | Spec | Task em `docs/melhorias/` |
+|---|---|---|---|
+| 1 | Arquivos, Favoritos, Recentes, busca na pasta e seletor de pasta nunca carregam a segunda página (o cliente lê `hasNext`, o servidor envia `has_next`) | [00 anexo A1–A3](00-padroes-transversais.md) | 20 |
+| 2 | Em oito telas, a falha de uma página seguinte ou da revalidação automática troca a lista inteira pela tela de erro | [00 anexo A4](00-padroes-transversais.md) | 21 |
+| 3 | O app Android não encontra o servidor (procura um nome de serviço diferente do anunciado) e a busca nunca termina | [24 §8](24-app-android.md) | 22 |
+| 4 | O app Android mostra só 15 itens por pasta | [24 §8](24-app-android.md) | 23 |
+| 5 | O app Android não envia arquivos para o servidor | [03 §9](03-transferencia-entre-dispositivos.md) | 24, 37, 38 |
+| 6 | Excluir uma captura promovida apaga o vídeo da biblioteca | [12 §10](12-capturas.md) | 25 |
+| 7 | Takeout sobrescreve arquivos de mesmo nome e descarta as datas das fotos | [13 §9](13-takeout.md) | 26, 27, 28 |
+| 8 | Opções de configuração sem efeito; "Reindexar" e "Ver duplicados" que não fazem o que dizem | [21 §9](21-indexacao.md), [16 §8](16-analytics.md), [23 §8](23-configuracoes-e-sistema.md) | 29, 30, 31, 32, 33 |
+
+Os oito foram conferidos no código em 2026-11-16; cada task traz os arquivos e as linhas. Em seguida vêm as tasks 34 a 46, que entregam o que as specs P0 pedem e ainda não existia em nenhum board (envio em partes, download e envio pelo Android, edição de metadados e playlist por regra na música, tela de série, biblioteca de documentos).
 
 Depois disso, o caminho é verificar cada spec P0 contra o sistema rodando, marcando os `CA` que passam e abrindo lacuna para os que falham.
 
@@ -156,6 +158,17 @@ Cada item dos dois boards e a spec que o governa.
 | 14 Contas de e-mail · 15 Sincronização · 16 Análise por IA | [19](19-email.md) |
 | 17 Enxugar app legado · 18 Kiosk | [25](25-app-legado-kiosk.md) |
 | 19 Captura inteligente de streaming | [12](12-capturas.md) |
+| 20 Paginação web · 21 Falha de página não esvazia a lista | [00](00-padroes-transversais.md) |
+| 22 Descoberta · 23 Explorer paginado · 39 Navegação | [24](24-app-android.md) |
+| 24 Android envia · 34 e 35 Envio em partes · 36 Download em fluxo · 37 Segundo plano · 38 Envio automático | [03](03-transferencia-entre-dispositivos.md) |
+| 25 Excluir captura | [12](12-capturas.md) |
+| 26, 27, 28 Takeout | [13](13-takeout.md) |
+| 29 Preferências de indexação · 30 Reindexar por escopo | [21](21-indexacao.md) |
+| 31 Links do Analytics | [16](16-analytics.md) |
+| 32 Checksum da atualização · 33 Cancelar desligamento | [23](23-configuracoes-e-sistema.md) |
+| 40 Metadados · 41 Playlist por regra | [05](05-musica.md) |
+| 42 Tela da série · 43 Faixa de áudio | [06](06-videos.md) |
+| 44, 45, 46 Documentos | [07](07-documentos.md) |
 
 ## Decisões já tomadas (não reabrir)
 

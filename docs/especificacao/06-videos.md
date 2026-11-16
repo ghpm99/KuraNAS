@@ -193,4 +193,4 @@ Além dos CA de [00](00-padroes-transversais.md) em cada seção, em Todos os v�
 
 ## 12. Rastreabilidade
 
-`docs/revisao-produto/06-videos.md` (85 lacunas). Requisitos sem item no backlog: tela de série com temporadas (RF-07, RF-08), correção manual de classificação e numeração, faixa de áudio (RN-20), regra de ausência de anúncio (RN-09).
+`docs/revisao-produto/06-videos.md` (85 lacunas). `docs/melhorias/`: 42 (tela de série, correção de classificação e numeração) e 43 (faixa de áudio). A regra de ausência de anúncio (RN-09) não tem tarefa: é verificada por `CA-20`.

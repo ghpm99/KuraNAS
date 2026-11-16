@@ -148,4 +148,4 @@ Duas das necessidades centrais do dono — enviar foto do celular (N1) e baixar 
 
 ## 11. Rastreabilidade
 
-Lacunas de Android em `docs/revisao-produto/` 03 (05), 05 (21.x), 06 (64–68.x), 07 (21–23.x), 08 (29–30), 09 (23). Sem item no backlog: descoberta do servidor (RN-01 a RN-05), envio pelo Android, paginação do explorer, navegação.
+Lacunas de Android em `docs/revisao-produto/` 03 (05), 05 (21.x), 06 (64–68.x), 07 (21–23.x), 08 (29–30), 09 (23). `docs/melhorias/`: 22 (descoberta do servidor), 23 (paginação do explorer), 24, 36, 37 e 38 (enviar e baixar), 39 (navegação), 46 (documentos).

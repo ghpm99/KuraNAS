@@ -1,0 +1,36 @@
+# 30 — "Reindexar" faz o que o rótulo diz
+
+**Tipo:** bug · **Prioridade:** P1 · **Spec:** [21](../especificacao/21-indexacao.md) `RN-15`, `RF-02`, `RF-07`, §8, `CA-11`; [16](../especificacao/16-analytics.md) `RN-07`, `RF-11`, `CA-09`
+
+## Contexto
+
+- **"Reescanear pasta"** (barra de ações de Arquivos, `frontend/src/components/actionBar/actionBar.tsx:105-110`) chama `POST /files/update` com `data=manual-rescan` (`service/files.ts:218-226`) e recarrega a lista em seguida (`fileProvider/index.tsx:297-300`). O handler (`backend/internal/api/v1/files/listing.go:133-155`) ignora o valor e empilha uma varredura de **todas as raízes** (`backend/internal/worker/engine/worker.go:398-415`), responde `200` sem corpo — sem `job_id` — e a tela recarrega antes de o trabalho terminar.
+- **"Reindexar" do Analytics** (`components/analytics/AnalyticsOverviewScreen.tsx:60-62`) só refaz as consultas da própria tela (`analyticsProvider/index.tsx:129-131`). Não inicia indexação nenhuma.
+- Configurações não tem botão de reindexar.
+
+## Objetivo
+
+Reindexar uma pasta, uma raiz ou tudo inicia um job daquele escopo, mostra o andamento e atualiza a tela quando termina.
+
+## O que fazer
+
+1. **`POST /indexing/reindex`** (contrato de 21 §8): `scope` `all` | `root` | `folder`; `202` com `job_id`; `400`, `404` e `409` conforme o contrato. O job de pasta varre só a pasta e suas subpastas.
+2. **`POST /files/update`** passa a responder `{"job_id"}` e continua equivalendo a `scope: all`.
+3. **Arquivos — "Reindexar esta pasta"** (`RF-07`): o botão chama o endpoint novo com a pasta aberta, mostra o progresso do job e recarrega a listagem **quando o job conclui**. Na raiz do explorer, o escopo é a raiz aberta. O rótulo `FILES_RESCAN_FOLDER` vira "Reindexar esta pasta".
+4. **Analytics — "Reindexar"** (`16/RF-11`): chama `scope: all`, mostra o job iniciado com link para Tarefas; o botão que só recarrega os números chama-se "Atualizar" (`16/RN-07`).
+5. **Configurações → Indexação** (`RF-02`): "Reindexar tudo" e reindexar por raiz, com confirmação e progresso.
+
+## Critérios de aceite
+
+- [ ] Teste de handler: os três escopos devolvem `job_id`; escopo inválido `400`; pasta inexistente `404`; segundo pedido do mesmo escopo em andamento `409`.
+- [ ] Teste do worker: o job de pasta não visita arquivos fora dela.
+- [ ] `21/CA-11` — no sistema rodando: "Reindexar esta pasta" reindexa só aquela pasta, mostra progresso e a listagem se atualiza ao concluir.
+- [ ] `16/CA-09` — "Reindexar" no Analytics inicia um job visível em `GET /jobs`.
+- [ ] `21/CA-08` — reindexar não remove estrelas, playlists, álbuns, progresso nem metadados corrigidos.
+- [ ] Seam test de cada chamada nova no frontend; consumidores de `POST /files/update` conferidos (web; Android e plugin não usam).
+- [ ] `make ci` verde.
+
+## Fora de escopo
+
+- Tela de Tarefas na web (item 13 do board de revisão). Até ela existir, o link de "ver tarefa" leva ao sino, que já lista jobs em andamento.
+- Reprocessar falhas de processamento (`16/RF-10`).

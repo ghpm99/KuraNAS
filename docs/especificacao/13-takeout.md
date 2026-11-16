@@ -111,4 +111,4 @@ Envio do zip em partes com retomada, importação em segundo plano (fotos e víd
 
 ## 12. Rastreabilidade
 
-`docs/revisao-produto` item 11 (pendente). Sem task em `docs/melhorias/`.
+`docs/revisao-produto` item 11 (pendente). `docs/melhorias/` tasks 26 (estrutura e sem sobrescrita), 27 (datas) e 28 (extração em fluxo).

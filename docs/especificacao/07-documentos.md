@@ -125,4 +125,4 @@ Além dos CA de [00](00-padroes-transversais.md) na lista e nos resultados de bu
 
 ## 12. Rastreabilidade
 
-`docs/revisao-produto/04-busca-global.md` lacuna 13 (conteúdo de documentos). A biblioteca de documentos como tela própria não tem item no backlog: é requisito novo, derivado da necessidade N4.
+`docs/revisao-produto/04-busca-global.md` lacuna 13 (conteúdo de documentos). A biblioteca de documentos é requisito novo, derivado da necessidade N4: `docs/melhorias/` tasks 44 (backend), 45 (web) e 46 (Android).

@@ -15,6 +15,10 @@ Backlog de melhorias levantado na análise de maturidade do sistema (2026-06-11)
 5. **Ao concluir**: todos os checkboxes marcados + `make ci` verde → status `✅ concluída (data)` na tabela + commit (`docs(melhorias): conclui task NN`).
 6. **Se travar** (decisão pendente do dono, dependência externa): status `🚫 bloqueada` com o motivo na coluna Notas, commite, e passe para a próxima `pendente` elegível.
 
+**Ordem entre os dois boards** (decidida em 2026-11-16): as tasks `pendente` deste board, de cima para baixo, vêm antes de qualquer item de [`docs/revisao-produto/`](../revisao-produto/README.md). As tasks 20 a 33 corrigem defeitos que quebram o uso básico; as 34 a 46 entregam o que falta das necessidades N1–N7. O item 09 do board de revisão (download por URL, P2), que estava em execução, fica parado até a task 39 terminar — as mudanças já iniciadas da lacuna 10 podem ser concluídas e commitadas antes de começar a 20, para não deixar trabalho pela metade.
+
+**Antes de escrever código de uma task**, confira no código os arquivos e linhas citados no Contexto dela (foram levantados por leitura em 2026-11-16 e o código pode ter andado). Se algo divergir, corrija o arquivo da task primeiro, em commit próprio.
+
 Regras invariantes:
 
 - **Uma task `em execução` por vez.** Não pular a ordem sem registrar o motivo em Notas.
@@ -44,6 +48,26 @@ Regras invariantes:
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | ✅ concluída (2026-06-12) | retenção ≠ espelho; segunda cópia (HD externo) documentada no README, fica com o SO |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | ✅ concluída (2026-06-13) | path lógico × físico; job tier_migration + operações tiered + UI; `make ci` verde |
 | 19 | [Captura inteligente de streaming](19-captura-inteligente-de-streaming.md) | feature | P3 | — | 🚫 bloqueada | código pronto, `npm test` (plugin) + `make ci-backend` verdes. Falta validação do dono no navegador real: (1) confirmar que `tabCapture` na cobaia (Crunchyroll) **não** entrega frame preto — se entregar, a peça de captura migra para nível de SO (analog hole continua, ver Riscos); (2) verificar in-loco arma-em-fullscreen / finaliza-no-fim / autoplay→arquivo-novo / retomada→arquivo-único. Máquina de estados + idempotência por `episode_key` + adapter Crunchyroll já cobertos por testes; **sem decrypt de DRM** |
+| 20 | [Web: segunda página das listagens de arquivos](20-paginacao-web-le-has-next.md) | bug crítico | P0 | — | pendente | spec 00 anexo A1–A3 |
+| 21 | [Web: falha ao carregar mais não esvazia a lista](21-falha-de-pagina-nao-esvazia-a-lista.md) | bug crítico | P0 | 20 | pendente | spec 00 anexo A4 |
+| 22 | [Android: encontrar o servidor](22-android-descoberta-do-servidor.md) | bug crítico | P0 | — | pendente | spec 24 |
+| 23 | [Android: explorer paginado](23-android-explorer-paginado.md) | bug crítico | P0 | — | pendente | spec 24, 00 anexo A10 |
+| 24 | [Android: enviar arquivos e Compartilhar](24-android-enviar-arquivos.md) | feature | P0 | 22, 23 | pendente | spec 03 |
+| 25 | [Capturas: excluir não apaga o vídeo](25-excluir-captura-nao-apaga-video.md) | bug crítico | P0 | — | pendente | spec 12/RN-11 |
+| 26 | [Takeout: estrutura e sem sobrescrita](26-takeout-sem-sobrescrita.md) | bug crítico | P0 | — | pendente | spec 13 |
+| 27 | [Takeout: aplicar datas](27-takeout-aplica-datas.md) | bug | P0 | 26 | pendente | spec 13/RN-07 |
+| 28 | [Takeout: extração em fluxo](28-takeout-extracao-em-fluxo.md) | bug | P1 | 26 | pendente | spec 13/RN-09 |
+| 29 | [Indexação: preferências com efeito](29-preferencias-de-indexacao-com-efeito.md) | bug | P1 | — | pendente | spec 21/RN-14 |
+| 30 | [Reindexar por escopo](30-reindexar-por-escopo.md) | bug | P1 | — | pendente | spec 21/RN-15, 16/RN-07 |
+| 31 | [Analytics: links levam à lista certa](31-analytics-links-levam-a-lista-certa.md) | bug | P2 | 20, 21 | pendente | spec 16/RN-06 |
+| 32 | [Atualização confere checksum](32-atualizacao-confere-checksum.md) | segurança | P1 | — | pendente | spec 23/RN-15 |
+| 33 | [Desligamento: aviso e cancelar](33-cancelar-desligamento.md) | bug | P1 | — | pendente | spec 23/RN-11 |
+| 34 | [Envio em partes: backend](34-envio-em-partes-backend.md) | feature | P0 | — | pendente | spec 03 §7 |
+| 35 | [Envio em partes: web](35-envio-em-partes-web.md) | feature | P0 | 34 | pendente | spec 03 |
+| 36 | [Android: download em fluxo](36-android-download-em-fluxo.md) | bug | P0 | 22 | pendente | spec 03 |
+| 37 | [Android: transferências em segundo plano](37-android-transferencias-em-segundo-plano.md) | feature | P0 | 24, 34, 36 | pendente | spec 03 |
+| 38 | [Android: envio automático da câmera](38-android-envio-automatico-da-camera.md) | feature | P0 | 37 | pendente | spec 03 |
+| 39 | [Android: navegação](39-android-navegacao.md) | bug | P1 | 22 | pendente | spec 24 |
 | 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | pendente | spec 05 |
 | 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | pendente | spec 05 |
 | 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | pendente | spec 06 |
@@ -51,8 +75,6 @@ Regras invariantes:
 | 44 | [Documentos: biblioteca no backend](44-documentos-biblioteca-backend.md) | feature | P0 | — | pendente | spec 07 |
 | 45 | [Documentos: tela na web](45-documentos-tela-web.md) | feature | P0 | 44, 20, 21 | pendente | spec 07 |
 | 46 | [Documentos: tela no Android](46-documentos-android.md) | feature | P1 | 44, 36, 39 | pendente | spec 07 |
-
-**Tasks 20 a 39 ainda não têm arquivo** (numeração reservada em 2026-11-16; os fatos de código já foram levantados e os contratos estão nas specs). Devem ser escritas antes de qualquer execução e rodam **antes** das 40–46 e do item 09 de `docs/revisao-produto/`: 20 paginação web lê `has_next` (00 anexo A1–A3) · 21 falha de página seguinte não troca a lista (A4) · 22 descoberta do servidor no Android (24) · 23 explorer Android paginado (24) · 24 Android envia arquivos (03) · 25 excluir captura promovida não apaga o vídeo (12/RN-11) · 26 Takeout sem sobrescrita e com estrutura (13/RN-05, RN-06) · 27 Takeout aplica datas (13/RN-07) · 28 Takeout extrai em fluxo (13/RN-09) · 29 preferências de indexação com efeito (21/RN-14) · 30 reindexar por escopo (21/RN-15) · 31 links do Analytics (16/RN-06) · 32 atualização confere checksum (23/RN-15) · 33 cancelar desligamento (23/RN-11) · 34 envio em partes, backend (03 §7) · 35 envio em partes, web · 36 download em fluxo no Android · 37 transferências em segundo plano no Android · 38 envio automático da câmera · 39 navegação do Android (24/RF-03).
 
 Status possíveis: `pendente` · `em execução` · `✅ concluída (AAAA-MM-DD)` · `🚫 bloqueada`.
 

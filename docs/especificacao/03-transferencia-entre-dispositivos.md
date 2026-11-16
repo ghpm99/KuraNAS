@@ -105,7 +105,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 | GET | `/files/blob/:id` | conteúdo para visualização |
 | GET | `/ingest/targets` ou `/storage-roots` | destinos possíveis |
 
-**Já existe em `POST /files/upload`** (multipart, vários arquivos por requisição): parte `files`; campos `target_folder_id` (vazio ou 0 = raiz principal), `on_conflict` (`fail` — padrão —, `skip`, `replace`, `rename`) e `relative_paths` (lista paralela a `files`, para recriar subpastas). Resposta `202`: `{"message", "uploaded": [...], "job_id", "files": [{"name", "path", "status", "error"}]}`, com `status` em `uploaded`, `skipped`, `replaced`, `renamed`, `failed`. Continua valendo para arquivos de até 64 MB.
+**Já existe em `POST /files/upload`** (multipart, vários arquivos por requisição): parte `files`; campos `target_folder_id` (vazio ou 0 = raiz principal), `on_conflict` (`fail` — padrão —, `skip`, `replace`, `rename`) e `relative_paths` (lista paralela a `files`, para recriar subpastas). Resposta `202`: `{"message", "uploaded": [...], "job_id", "files": [{"name", "path", "status", "error"}]}`, com `status` em `uploaded`, `skipped`, `replaced`, `renamed`, `failed`. O servidor não impõe limite de tamanho nesta rota e ela não muda; depois que o envio em partes existir, os clientes a usam só para arquivos de até 64 MB.
 
 **A criar** — envio em partes com retomada, para arquivos acima de 64 MB e para todo envio do Android em segundo plano. Segue o desenho de `/captures/upload/*`:
 
@@ -175,4 +175,4 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 
 ## 12. Rastreabilidade
 
-`docs/revisao-produto/01-arquivos.md` lacunas 09 (download) e 11 (upload web). Sem item no backlog: envio em partes com retomada, envio pelo Android (RF-11 a RF-16), download no Android (RF-17, RF-18).
+`docs/revisao-produto/01-arquivos.md` lacunas 09 (download) e 11 (upload web). `docs/melhorias/`: 34 e 35 (envio em partes), 24 (enviar e Compartilhar no Android), 36 (download no Android), 37 (segundo plano e tela de transferências), 38 (envio automático da câmera).

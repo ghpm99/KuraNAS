@@ -214,4 +214,4 @@ Além dos CA de [00](00-padroes-transversais.md) em Faixas, Artistas, Álbuns, G
 
 ## 12. Rastreabilidade
 
-`docs/revisao-produto/05-musica.md` (21 lacunas). Requisitos sem item no backlog: edição de metadados (RF-14 a RF-16), playlist por regra (RF-11), regra de "só toca o que foi escolhido" (RN-08).
+`docs/revisao-produto/05-musica.md` (21 lacunas). `docs/melhorias/`: 40 (edição de metadados, RF-14 a RF-16) e 41 (playlist por regra, RF-11). A regra "só toca o que foi escolhido" (RN-08) não tem tarefa: é verificada por `CA-04` a `CA-06`; falha vira lacuna.

@@ -6,6 +6,8 @@ Revisão funcionalidade por funcionalidade (iniciada em 2026-10-08) com foco em 
 
 **O comportamento esperado de cada feature está em [`docs/especificacao/`](../especificacao/README.md).** Este board lista o trabalho; a spec diz o que o trabalho precisa atingir. Toda lacuna ou task nova cita a regra (`RN`/`RF`/`CA`) que satisfaz, e só é fechada com o critério verificado no sistema rodando.
 
+**Ordem entre os boards** (2026-11-16): as tasks pendentes de [`docs/melhorias/`](../melhorias/README.md) (20 a 46) vêm antes dos itens deste board. O item 09 retoma depois delas.
+
 ## Protocolo
 
 1. Pegue a primeira funcionalidade `pendente` (ou retome a `em execução`).
@@ -28,7 +30,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 06 | [Vídeos](06-videos.md) | ✅ concluída (2026-10-15) | 85 lacunas (sub-itens em commits próprios); 58.1 🚫 aguarda decisão de autoplay; `make ci` verde |
 | 07 | [Favoritos](07-favoritos.md) | ✅ concluída (2026-11-10) | 31 lacunas (sub-itens em commits próprios); 24–26 🚫 aguardam decisão do dono; `make ci` verde |
 | 08 | [Lixeira](08-lixeira.md) | ✅ concluída (2026-11-10) | 30 lacunas (web, backend e Android); 31–36 🚫 aguardam decisão do dono; Android validado só por build e testes unitários; `make ci` verde |
-| 09 | [Downloads / ingestão por URL](09-ingestao-por-url.md) | em execução | |
+| 09 | [Downloads / ingestão por URL](09-ingestao-por-url.md) | em execução | parado atrás das tasks 20–46 de `docs/melhorias/`; lacunas 01–09 resolvidas, ordem das demais no fim do arquivo |
 | 10 | Capturas (plugin) | pendente | |
 | 11 | Takeout | pendente | |
 | 12 | Analytics | pendente | |
