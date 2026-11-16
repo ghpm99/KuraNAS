@@ -55,7 +55,7 @@ Um robô, modelo KaBuM! Smart 900 (plataforma Tuya, protocolo local 3.3): cadast
 ### Comandos
 
 - **RN-10** — Comandos: iniciar limpeza da casa inteira, pausar, continuar, parar, voltar para a base e localizar (o robô apita).
-- **RN-11** — Só são oferecidos os comandos que fazem sentido no estado atual: "Pausar" enquanto limpa, "Continuar" enquanto pausado, "Iniciar" quando parado ou na base, "Voltar para a base" quando fora dela. "Localizar" está sempre disponível.
+- **RN-11** — Só são oferecidos os comandos que fazem sentido no estado atual: "Iniciar" em `idle`, `charging`, `charged` e `sleeping`; "Pausar" em `cleaning`; "Continuar" em `paused`; "Parar" em `cleaning`, `paused` e `returning`; "Voltar para a base" em qualquer estado, menos `charging`, `charged`, `returning` e `emptying`; "Localizar" sempre. Em `unknown` todos são oferecidos.
 - **RN-12** — Todo comando segue [00 §6](00-padroes-transversais.md): o botão fica desabilitado até o robô responder, clique duplo não envia duas vezes, e a falha mostra a mensagem do servidor.
 - **RN-13** — Controle manual: frente, ré, esquerda, direita e parar. O robô anda enquanto o botão está pressionado e para ao soltar; sair da tela ou perder o foco da aba também manda parar.
 
