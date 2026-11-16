@@ -36,7 +36,7 @@ Menu lateral, barra inferior, cabeçalho (busca global, sino de notificações),
 
 ### Menu lateral (telas largas — a partir do breakpoint `tablet` do tema)
 
-- **RF-01** — Itens em dois grupos, nesta ordem. **Principal:** Home, Arquivos, Imagens, Música, Vídeos, Documentos, Favoritos, Lixeira. **Ferramentas:** Baixar de URL, Capturas, Takeout, Tarefas, Assistente, E-mails, Analytics, Diário, Aplicativos, Configurações, Sobre. O item da rota atual fica destacado. Toda tela que existe tem item no menu — nenhuma é alcançável só digitando o endereço.
+- **RF-01** — Itens em dois grupos, nesta ordem. **Principal:** Home, Arquivos, Imagens, Música, Vídeos, Documentos, Favoritos, Lixeira. **Ferramentas:** Baixar de URL, Capturas, Takeout, Tarefas, Assistente, E-mails, Analytics, Diário, Robô aspirador, Aplicativos, Configurações, Sobre. O item da rota atual fica destacado. Toda tela que existe tem item no menu — nenhuma é alcançável só digitando o endereço.
 - **RF-02** — Recolhível para modo só ícones, com rótulo em tooltip. O estado persiste no dispositivo.
 - **RF-03** — Quando os itens não cabem na altura, o próprio menu rola.
 - **RF-04** — Em `/files`, o menu mostra a árvore de pastas abaixo dos itens ([02/RF-09](02-arquivos.md)).

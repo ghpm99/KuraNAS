@@ -64,6 +64,7 @@ Prioridade: **P0** = necessidade direta do dono (N1–N7); **P1** = sustenta as 
 | 23 | [Configurações e sistema](23-configuracoes-e-sistema.md) — aparência, idioma, IA, atualização, desligamento, assistente de configuração | P2 | web |
 | 24 | [App Android](24-app-android.md) — conexão, navegação, paridade | P0 | Android |
 | 25 | [App legado (kiosk)](25-app-legado-kiosk.md) | P2 | mobile |
+| 26 | [Robô aspirador](26-robo-aspirador.md) — estado, comandos e ajustes pela rede local | P2 | web |
 
 ## Como ler uma spec
 
