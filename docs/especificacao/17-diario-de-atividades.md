@@ -62,7 +62,18 @@ Registrar atividade, encerrar, repetir, editar, excluir, lista por dia, resumo d
 | POST | `/diary/copy` | repetir |
 | PUT | `/diary/:id` | editar |
 
-**A criar** (não existe hoje): encerrar sem iniciar outra; excluir; edição em JSON com todos os campos; resumo por data; filtro da lista por data.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| POST | `/diary/stop` | encerra a atividade em andamento (RN-03) |
+| DELETE | `/diary/:id` | exclui (RN-06) → `204` |
+
+- **`POST /diary/stop`**: sem corpo. `200` com a atividade encerrada; `409` quando não há atividade em andamento.
+- **`PUT /diary/:id`** passa a aceitar JSON com `name`, `description`, `start_time` e `ended_at` (data ISO ou `null` para "em andamento"), além do formulário só com `name` que já aceita. `400` quando o fim é anterior ao início ou o nome passa de 200 caracteres; `409` quando o intervalo sobrepõe outra atividade, com a atividade em conflito na mensagem (RN-05).
+- **Item de atividade** ganha `ended_at` (data ISO ou `null`). O campo `end_time`, que hoje sai como `{"Value", "HasValue"}`, continua igual por compatibilidade; clientes novos leem só `ended_at`.
+- **`GET /diary/summary`** aceita `date=AAAA-MM-DD` (padrão: hoje, no fuso do servidor) e considera o dia inteiro, sem limite de quantidade (RN-07). A resposta ganha `activities`: `[{"name", "duration_seconds", "occurrences"}]`, um item por nome.
+- **`GET /diary/`** aceita `date_from` e `date_to` (`AAAA-MM-DD`, inclusivos) além de `page` e `page_size`.
 
 ## 8. Situação em 2026-11-10
 

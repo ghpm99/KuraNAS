@@ -76,7 +76,18 @@ Conversa com resposta em fluxo, histórico de conversas, consulta à biblioteca 
 | GET | `/ai/ollama/status` · `/models` | serviço e modelos locais |
 | POST | `/ai/ollama/models/pull` · DELETE `/ai/ollama/models/:name` | instalar, remover modelo |
 
-**A criar** (não existe hoje): paginação de conversas e de mensagens; renomear conversa; testar provedor; validação dos campos do provedor.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| PUT | `/assistant/conversations/:id` | renomear conversa (RN-09) — corpo `{"title": "..."}`, 1 a 120 caracteres |
+| POST | `/ai/providers/:name/test` | testar um provedor (RF-10) |
+
+- **Paginação**: `/assistant/conversations` e `/assistant/conversations/:id/messages` hoje devolvem um array puro. Com `page` na consulta passam a responder no envelope de [00 §10](00-padroes-transversais.md) (`page_size` padrão 50); sem `page`, continuam devolvendo o array (compatibilidade). Conversas: `updated_at` decrescente, desempate por `id`. Mensagens: da mais recente para a mais antiga (a tela carrega as antigas ao rolar para cima).
+- **`POST /ai/providers/:name/test`**: sem corpo. Sempre `200`: `{"ok": true, "latency_ms": 840, "model": "...", "error": ""}`; em falha, `ok` é `false` e `error` traz o motivo traduzido (indisponível, tempo esgotado, modelo não instalado, chave não configurada). Tempo máximo de 30 s.
+- **Validação em `PUT /ai/providers/:name`** (RN-12): `400` com mensagem por campo quando o provedor está habilitado e `model` está vazio; quando o endereço não é `http`/`https`; quando `priority` está fora de 0–100; quando limite numérico é negativo.
+- **Pergunta que falha (RN-06)**: a mensagem do dono ganha `status` (`ok`, `failed`); `POST /assistant/chat` e `/chat/stream` aceitam `retry_message_id` para gerar de novo a resposta de uma pergunta `failed` sem duplicá-la.
+- **Erros (RN-07)**: cada falha tem chave de tradução própria — IA indisponível (`503`), tempo esgotado (`504`), modelo não instalado (`409`), conversa inexistente (`404`).
 
 ## 8. Situação em 2026-11-10
 

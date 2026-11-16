@@ -45,7 +45,7 @@ Uso de armazenamento (total, por tipo, por extensão, por pasta, ao longo do tem
 - **RF-04** — Uso por tipo (imagens, músicas, vídeos, documentos, outros): quantidade e espaço.
 - **RF-05** — Extensões que mais ocupam.
 - **RF-06** — Pastas que mais ocupam e pastas que mais cresceram no período; cada linha abre a pasta em Arquivos.
-- **RF-07** — Maiores arquivos, com "ver todos" (lista paginada ordenada por tamanho).
+- **RF-07** — Maiores arquivos (os 10 primeiros), com "ver todos", que abre `/analytics/largest`: lista paginada de todos os arquivos, do maior para o menor, com nome, pasta, tamanho e tipo; cada linha abre o arquivo.
 - **RF-08** — Duplicados: quantidade de grupos, de arquivos e espaço recuperável; "ver todos" abre a lista paginada de grupos.
 
 ### Duplicados (`/analytics/duplicates`)
@@ -74,7 +74,19 @@ Um endpoint por informação (regra do projeto — não existe endpoint agregado
 | GET | `/analytics/ai-usage` | uso de IA |
 | GET | `/files/top-files-by-size` | maiores arquivos |
 
-**A criar** (não existe hoje): paginação nos grupos de duplicados e nos maiores arquivos; espaço da lixeira; reprocessar falhas.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/analytics/trash` | espaço da lixeira (RF-02) → `{"item_count": 31, "size_bytes": 5368709120}` |
+| GET | `/analytics/processing/failures` | falhas de processamento, paginadas (RF-10) |
+| POST | `/analytics/processing/retry-failed` | reprocessar as falhas (RF-10) → `202` com `job_id` |
+
+- **`/analytics/duplicates/groups`** e **`/files/top-files-by-size`** passam a aceitar `page` e `page_size` e a responder no envelope de [00 §10](00-padroes-transversais.md) quando `page` é enviado; sem `page`, respondem como hoje (compatibilidade). `/analytics/duplicates/groups` aceita ainda `type` (`image`, `audio`, `video`, `document`, `other`) e ordena por espaço recuperável decrescente, com desempate pelo checksum.
+- **Item de `/analytics/processing/failures`**: `file_id`, `name`, `stage` (`checksum`, `metadata`, `thumbnail`, `document_text`, `ai`), `error` (traduzido), `failed_at`. Filtro `stage`.
+- **`/analytics/processing/retry-failed`**: corpo opcional `{"stage": "thumbnail"}`; sem corpo, todas as etapas. Sem nenhuma falha → `200` com `{"job_id": null}`.
+- **"Reindexar" (RF-11)** usa `POST /indexing/reindex` ([21 §8](21-indexacao.md)).
+- **Links de RN-06**: maiores arquivos → `/analytics/largest` (tela desta spec, RF-07: lista paginada de `/files/top-files-by-size`); recentes → a tela Recentes de [02/RF-22](02-arquivos.md); pasta → a pasta em Arquivos ([02/RF-01](02-arquivos.md)); duplicados → `/analytics/duplicates` (RF-09); falhas → `/analytics/library` (RF-10), no bloco de falhas.
 
 ## 8. Situação em 2026-11-10
 

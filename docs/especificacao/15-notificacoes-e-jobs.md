@@ -94,7 +94,32 @@ Notificações dentro do aplicativo (sino, tela, tipos, lidas/não lidas, destin
 | GET | `/jobs/:id` · `/jobs/:id/steps` | detalhe, passos |
 | POST | `/jobs/:id/cancel` | cancelar |
 
-**A criar** (não existe hoje): excluir notificação e limpar lidas; marcar como não lida; destino explícito na notificação (tipo e identificador do alvo); ordenação de jobs por mais recente; repetir job.
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| DELETE | `/notifications/:id` | excluir uma notificação (RN-07) → `204` |
+| DELETE | `/notifications/read` | limpar as lidas → `{"deleted": 14}` |
+| PUT | `/notifications/:id/unread` | marcar como não lida (RF-05) |
+| POST | `/jobs/:id/retry` | repetir um job que falhou (RN-13) → `201` com o job novo |
+
+- **Destino da notificação (RN-04)**: o item de notificação ganha `target_type` e `target_id` (ambos `null` quando não há destino). O cliente navega só por esses campos — nunca por texto do título, da mensagem ou de `metadata`.
+
+| `target_type` | `target_id` | Leva a |
+|---|---|---|
+| `file` | id do arquivo | o item no visualizador da sua biblioteca |
+| `job` | id do job | detalhe da tarefa |
+| `capture` | id da captura | a captura na tela de Capturas |
+| `ingest_download` | id do pedido | o pedido em "Baixar de URL" |
+| `takeout_import` | id da importação | a importação na tela de Takeout |
+| `email_account` | id da conta | Configurações → E-mail |
+| `email_message` | id da mensagem | a mensagem em E-mails |
+| `screen` | `backup`, `tiering`, `indexing`, `trash`, `update`, `auto_shutdown`, `ytdlp` | a seção correspondente de Configurações |
+
+  `target_type` desconhecido pelo cliente é tratado como sem destino (a notificação só é marcada como lida).
+- **`GET /jobs`**: a ordem padrão passa a ser a de RN-14 — em andamento (`running`, depois `queued`) primeiro; os demais por `created_at` decrescente; desempate por `id` decrescente. Aceita `sort=created_at` com `order=asc|desc` para ordem cronológica pura.
+- **Item de job** ganha: `type_label` (nome traduzido do tipo — RN-11), `target_label` (descrição do alvo: nome do arquivo, da raiz ou o endereço — RF-08; vazio quando não há) e `retryable` (`true` quando o job falhou e o tipo é repetível).
+- **`POST /jobs/:id/retry`**: `409` quando o job não está `failed` ou o tipo não é repetível; `404` quando não existe. Repetíveis: indexação, metadados, miniaturas, texto de documento, marcação por IA, backup, migração de tier, promoção de captura. Download por URL e Takeout têm repetição própria ([11 §7](11-download-por-url.md), [13 §7](13-takeout.md)) e respondem `409` aqui.
 
 ## 9. Situação em 2026-11-10
 

@@ -143,7 +143,35 @@ Todas as listas abaixo seguem [00](00-padroes-transversais.md): paginadas, scrol
 | PUT | `/music/playlists/:id/tracks/reorder` | reordenar |
 | GET, PUT | `/music/player-state` · `/music/player-state/queue` | estado por dispositivo |
 
-**A criar** (não existem hoje): edição de metadados de faixa (unitária e em lote), renomear/mesclar gênero, playlist por regra.
+**A criar** (não existem hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| PUT | `/music/tracks/:file_id/metadata` | corrige os metadados de uma faixa (RN-03, RF-14) |
+| PUT | `/music/tracks/metadata` | corrige em lote (RF-15) |
+| PUT | `/music/library/genres/:key` | renomeia ou mescla um gênero (RF-16) |
+| POST | `/music/playlists/rules/preview` | conta as faixas que uma regra seleciona (RF-11) |
+
+- **Corpo de `PUT /music/tracks/:file_id/metadata`**: qualquer subconjunto de `title`, `artist`, `album`, `album_artist`, `genres` (array de textos), `year`, `disc_number`, `track_number`. Campo ausente não muda; texto vazio ou `null` volta o campo ao valor da tag do arquivo. Resposta `200` com a faixa no mesmo formato de `/music/library/tracks/:file_id`. `400` para ano fora de 1000–9999, número de disco/faixa menor que 1 ou texto acima de 255 caracteres; `404` para faixa inexistente.
+- **Corpo de `PUT /music/tracks/metadata`**: `fields` (os mesmos campos acima) e exatamente um seletor — `file_ids` (até 500), `album_key` ou `folder_key` (inclui subpastas). Com `?dry_run=true` nada é gravado. Resposta `200`: `{"matched": 30, "updated": 30, "failed": [{"file_id": 7, "error": "..."}]}` (em `dry_run`, `updated` é 0). Nenhum ou mais de um seletor → `400`.
+- **Corpo de `PUT /music/library/genres/:key`**: `{"name": "Rock"}`. Se o nome novo (ignorando maiúsculas, acentos e espaços — RN-04) é um gênero existente, as faixas são mescladas nele. Resposta `200`: `{"key": "...", "name": "Rock", "track_count": 412, "merged": true}`.
+- **Playlist por regra**: `POST /music/playlists` e `PUT /music/playlists/:id` passam a aceitar `rules`; o item de playlist ganha `kind` (`manual`, `rule`, `system`) e `rules` (`null` nas demais). Formato:
+
+```json
+{
+  "match": "any",
+  "genres": ["Rock", "Metal"],
+  "artists": [],
+  "albums": [],
+  "folders": [],
+  "year_from": null,
+  "year_to": null,
+  "favorites_only": false
+}
+```
+
+  `match` é `any` (basta um critério) ou `all`. Regra sem nenhum critério → `400`. `POST /music/playlists/rules/preview` recebe o mesmo objeto e responde `{"track_count": 412}`.
+- Em playlist `rule`: `POST /music/playlists/:id/tracks` e `PUT …/tracks/reorder` respondem `409`; `DELETE …/tracks/:fileId` registra a exclusão explícita (RN-20) e a faixa deixa de aparecer no resultado.
 
 ## 9. Estados e erros
 

@@ -137,7 +137,18 @@ Todas as listas seguem [00](00-padroes-transversais.md).
 | POST, DELETE | `/video/playlists/:id/videos[/:videoId]` | itens |
 | GET | `/video/playlists/by-video/:file_id` · `/hidden` · `/unassigned` | consultas |
 
-**A criar** (não existem hoje): corrigir classificação e número de temporada/episódio de um vídeo; marcar temporada/série como assistida; escolha de faixa de áudio.
+**A criar** (não existem hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| PUT | `/video/library/files/:file_id/classification` | corrige a classificação (RF-08) |
+| PUT | `/video/library/files/:file_id/episode` | corrige temporada e episódio (RF-08) |
+| PUT | `/video/playlists/:id/watched` | marca série ou temporada como assistida (RN-13) |
+
+- **Classificação**: corpo `{"classification": "series"}`, valores `series`, `movie`, `personal`, `clip`, `other`; `null` desfaz a correção e volta à classificação automática. `400` para valor fora da lista.
+- **Episódio**: corpo `{"season": 2, "episode": 3}`; `season` ≥ 0 (0 = especiais), `episode` ≥ 1; ambos `null` desfazem a correção. A correção prevalece sobre o nome do arquivo e não é desfeita por reindexação ([21/RN-09](21-indexacao.md)).
+- **Assistida em lote**: `:id` é a playlist automática da série. Corpo `{"watched": true}` vale para a série inteira; `{"watched": true, "season": 1}` só para a temporada. Resposta `200`: `{"updated": 12}`. Playlist do dono (não automática) → `409`.
+- **Faixa de áudio (RN-20)**: `/files/video/stream/:file_id/remux` e `/transcode` passam a aceitar `audio_stream_index` (índice de uma faixa listada em `/files/video/metadata/:file_id`); índice inexistente → `400`. Sem o parâmetro, vale a faixa padrão do arquivo. O original (`/files/video-stream/:id`) não troca de faixa: escolher outra faixa passa a reprodução para remux/transcode.
 
 ## 9. Estados e erros
 

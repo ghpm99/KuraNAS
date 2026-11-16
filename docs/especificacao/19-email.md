@@ -86,7 +86,7 @@ Também fora de escopo:
 | GET | `/email/messages/:id/summary` | resumo |
 | GET, PUT | `/email/settings/provider` | provedor de IA |
 
-**A criar** (não existe hoje): filtros na lista de mensagens.
+**A criar** (não existe hoje): filtros em `GET /email/messages` (RF-06) — `account_id`; `verdict` (os valores que o campo `verdict` do item já usa); `importance` (idem); `pending_only=true` (só as ainda não analisadas). Combináveis; valor inválido → `400`. A ordenação continua `received_at` decrescente, com desempate por `id`.
 
 ## 8. Situação em 2026-11-10
 

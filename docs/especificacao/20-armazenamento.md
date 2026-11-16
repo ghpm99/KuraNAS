@@ -100,7 +100,7 @@ Toda alteração segue [00 §6](00-padroes-transversais.md): confirmação de su
 | GET, PUT | `/backup/settings` | configuração do backup |
 | GET | `/backup/status` · `/backup/pending` | situação, pendentes |
 
-**A criar** (não existe hoje): "Executar agora" do backup.
+**A criar** (não existe hoje): `POST /backup/run` — "Executar agora" (RF-08). Sem corpo. `202` com `{"job_id": 123}`; `409` quando o backup está desligado ou já há uma execução em andamento (a mensagem diz qual dos dois).
 
 ## 9. Estados e erros
 
