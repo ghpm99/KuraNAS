@@ -22,6 +22,10 @@ func validateDevice(device Device) error {
 	if device.Address == "" {
 		return fmt.Errorf("%w: empty address", ErrInvalidDevice)
 	}
+	return validateCredentials(device)
+}
+
+func validateCredentials(device Device) error {
 	if device.DeviceID == "" {
 		return fmt.Errorf("%w: empty device id", ErrInvalidDevice)
 	}

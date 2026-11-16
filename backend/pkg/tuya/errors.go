@@ -12,6 +12,9 @@ var (
 	// ErrInvalidDevice means the device description cannot be used to open a conversation.
 	ErrInvalidDevice = errors.New("tuya: invalid device")
 
+	// ErrDeviceNotFound means no probed address accepted the device id and local key.
+	ErrDeviceNotFound = errors.New("tuya: device not found on the local network")
+
 	errInvalidFrame      = errors.New("tuya: invalid frame")
 	errInvalidCiphertext = errors.New("tuya: invalid ciphertext")
 	errInvalidPadding    = errors.New("tuya: invalid padding")
