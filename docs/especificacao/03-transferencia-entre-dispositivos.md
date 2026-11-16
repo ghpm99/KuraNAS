@@ -32,11 +32,11 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 
 - **RN-01** — O destino de todo envio é uma pasta dentro de uma raiz habilitada. Na web, por padrão, a pasta que está aberta.
 - **RN-02** — Um arquivo enviado só aparece no destino quando está completo e íntegro. Envio interrompido não deixa arquivo parcial visível.
-- **RN-03** — Arquivo enviado aparece na listagem da pasta e na biblioteca do seu tipo (galeria, música, vídeos, documentos) sem ação manual, em até 1 minuto, com miniatura e metadados logo em seguida.
+- **RN-03** — Arquivo enviado aparece na listagem da pasta e na biblioteca do seu tipo (galeria, música, vídeos, documentos) sem ação manual, em até 1 minuto, e com miniatura e metadados em até 5 minutos quando a fila de processamento está vazia.
 - **RN-04** — Envio nunca sobrescreve em silêncio. Quando o nome já existe no destino, vale a política escolhida: manter os dois (sufixo ` (2)`), substituir, ou pular. Padrão: perguntar na web; manter os dois nos envios automáticos.
 - **RN-05** — Arquivo idêntico (mesmo conteúdo, conferido por checksum) já presente no destino é pulado e contado como "já existia".
 - **RN-06** — Não há limite de tamanho imposto pelo sistema; o limite é o espaço livre. Arquivos grandes são enviados em partes e o envio **retoma** de onde parou após queda de conexão ou reinício do aplicativo.
-- **RN-07** — Falta de espaço no destino é detectada e informada antes de começar, quando o tamanho é conhecido.
+- **RN-07** — Todo envio declara o tamanho do arquivo antes do primeiro byte; quando o espaço livre do destino é menor, o envio é recusado ali, com mensagem.
 - **RN-08** — Em um lote, a falha de um arquivo não cancela os outros. Ao fim, o resumo diz quantos foram, quantos já existiam, quantos falharam e por quê, com "Tentar de novo" para os que falharam.
 - **RN-09** — Envio de pasta preserva a estrutura de subpastas.
 - **RN-10** — As datas originais do arquivo (modificação e, em fotos, a data em que foi tirada) são preservadas.
@@ -76,7 +76,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 ### Baixar (web)
 
 - **RF-09** — "Baixar" no menu do item, no visualizador, no painel de detalhes e na barra de lote. O download é gerenciado pelo navegador.
-- **RF-10** — Antes de gerar um zip grande, a tela informa quantidade e tamanho total.
+- **RF-10** — Antes de gerar um zip com mais de 1 GB ou mais de 1 000 arquivos, a tela informa quantidade e tamanho total e pede confirmação.
 
 ### Enviar (Android)
 
@@ -112,7 +112,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 | Situação | O que o usuário vê |
 |---|---|
 | Conexão caiu durante o envio | item "aguardando conexão"; retoma sozinho |
-| Sem espaço no servidor | falha com motivo, antes de enviar quando possível |
+| Sem espaço no servidor | falha com motivo, antes de enviar o primeiro byte (o cliente sempre informa o tamanho — RN-07) |
 | Nome já existe | diálogo de conflito (web) / mantém os dois (automático) |
 | Dispositivo fora da whitelist | mensagem de acesso não liberado |
 | Servidor não encontrado (Android fora de casa) | pendente; nada é perdido |

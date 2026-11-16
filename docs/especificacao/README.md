@@ -45,15 +45,15 @@ Prioridade: **P0** = necessidade direta do dono (N1–N7); **P1** = sustenta as 
 | 04 | [Imagens](04-imagens.md) | P0 | web, Android |
 | 05 | [Música](05-musica.md) | P0 | web, Android |
 | 06 | [Vídeos](06-videos.md) | P0 | web, Android |
-| 07 | [Documentos](07-documentos.md) | P0 | web |
+| 07 | [Documentos](07-documentos.md) | P0 | web, Android |
 | 08 | [Busca global](08-busca-global.md) | P0 | web, Android |
 | 09 | [Favoritos](09-favoritos.md) | P1 | web, Android |
 | 10 | [Lixeira](10-lixeira.md) | P1 | web, Android |
-| 11 | [Download por URL](11-download-por-url.md) | P2 | web, plugin |
+| 11 | [Download por URL](11-download-por-url.md) | P2 | web, plugin, Android |
 | 12 | [Capturas](12-capturas.md) | P2 | web, plugin |
 | 13 | [Takeout](13-takeout.md) | P2 | web |
 | 14 | [Home](14-home.md) | P1 | web, Android |
-| 15 | [Notificações e jobs](15-notificacoes-e-jobs.md) | P1 | web, Android |
+| 15 | [Notificações e jobs](15-notificacoes-e-jobs.md) | P1 | web, Android, kiosk |
 | 16 | [Analytics](16-analytics.md) | P2 | web |
 | 17 | [Diário de atividades](17-diario-de-atividades.md) | P2 | web, Android |
 | 18 | [Assistente](18-assistente.md) | P2 | web |

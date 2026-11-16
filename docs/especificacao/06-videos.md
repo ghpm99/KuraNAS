@@ -43,7 +43,7 @@ Catálogo (continuar assistindo, séries, filmes, pessoais, clipes, pastas), org
 - **RN-01** — É vídeo todo arquivo com extensão de vídeo reconhecida: MP4, M4V, MKV, AVI, MOV, WebM, WMV, FLV, MPG/MPEG, M2TS, 3GP, VOB, OGV. Todo vídeo indexado aparece em "Todos os vídeos" e em "Pastas", qualquer que seja a classificação.
 - **RN-02** — Episódios de uma série são ordenados por temporada e número (ordem natural: episódio 2 antes do 10). Números que fazem parte de resolução, ano ou codec (`1080p`, `2019`, `x264`) não são confundidos com número de episódio.
 - **RN-03** — Séries, filmes e demais listas do catálogo são ordenadas por nome; "Adicionados recentemente" e "Todos os vídeos" por data de adição, mais recente primeiro.
-- **RN-04** — Pôster: imagem `poster`/`folder`/`cover` na pasta; senão, um quadro do vídeo. Miniaturas são de um quadro a ~10 % da duração, nunca tela preta.
+- **RN-04** — Pôster: imagem `poster`/`folder`/`cover` na pasta; senão, um quadro do vídeo. Miniaturas são de um quadro a 10 % da duração, nunca tela preta.
 - **RN-05** — Nomes de seções e de playlists automáticas são traduzidos; nada chega em português fixo do servidor.
 
 ### Reprodução

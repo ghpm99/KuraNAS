@@ -43,7 +43,7 @@ Exclusão recuperável, tela da Lixeira (listar, buscar, ordenar, restaurar, exc
 ### Diálogo de exclusão (em qualquer tela)
 
 - **RF-01** — Diz o que será excluído (nome ou quantidade), que vai para a Lixeira e por quantos dias fica. Oferece a opção "excluir definitivamente", desmarcada.
-- **RF-02** — Depois de excluir, um aviso confirma e oferece "Desfazer" por alguns segundos, que restaura o item.
+- **RF-02** — Depois de excluir, um aviso confirma e oferece "Desfazer" por 10 s, que restaura o item.
 
 ### Lixeira (`/trash`)
 

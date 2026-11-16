@@ -67,7 +67,7 @@ Toda mudança nesses formatos confere este consumidor.
 - [ ] **CA-06** — Um e-mail suspeito aparece destacado e sem resumo.
 - [ ] **CA-07** — Com o e-mail desligado no servidor, o painel de e-mails diz "não configurado".
 - [ ] **CA-08** — A tela não apaga e as barras do sistema não ficam visíveis.
-- [ ] **CA-09** — Após 7 dias ligado continuamente, o app continua fluido.
+- [ ] **CA-09** — Após 7 dias ligado continuamente, o relógio continua mudando a cada minuto e os painéis continuam atualizando nos intervalos de RN-03.
 
 ## 10. Decisões em aberto
 

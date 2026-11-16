@@ -111,7 +111,7 @@ Notificações dentro do aplicativo (sino, tela, tipos, lidas/não lidas, destin
 Além dos CA de [00](00-padroes-transversais.md) nas duas listas:
 
 - [ ] **CA-01** — Um download por URL concluído gera notificação; o clique abre o arquivo.
-- [ ] **CA-02** — Um backup que falha gera notificação de erro com motivo compreensível; o clique abre a tela de backup.
+- [ ] **CA-02** — Um backup que falha gera notificação de erro com motivo traduzido, sem erro interno; o clique abre a tela de backup.
 - [ ] **CA-03** — Dez arquivos importados em sequência por pasta monitorada geram um aviso agrupado com a contagem, não dez.
 - [ ] **CA-04** — O contador do sino aumenta em até 30 s após um evento e zera após "Marcar todas como lidas".
 - [ ] **CA-05** — Na aba "Não lidas" com três páginas, marcar itens como lidos não gera duplicados nem esconde itens não lidos.

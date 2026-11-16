@@ -71,7 +71,7 @@ Vale para **toda** lista de itens vindos do servidor: arquivos, fotos, faixas, �
 
 ### 4.8 Desempenho
 
-- **RN-28** — A primeira página aparece em até 1 s na rede local para bibliotecas de até 100 mil itens. Rolar uma lista com 5 mil itens carregados continua fluido.
+- **RN-28** — A primeira página aparece em até 1 s na rede local para bibliotecas de até 100 mil itens. Listas longas são virtualizadas: com 5 mil itens carregados, só os itens próximos da área visível existem na página (no máximo 300 elementos de item montados), e rolar não trava a interface por mais de 100 ms.
 - **RN-29** — Miniaturas são carregadas sob demanda, só as próximas da área visível, com tamanho reservado para a lista não pular enquanto carregam.
 
 ## 5. Estados de tela
@@ -100,13 +100,13 @@ Criar, renomear, mover, copiar, excluir, restaurar, favoritar, enviar, adicionar
 - **RN-36** — Atualização otimista só em mutações reversíveis e baratas (favoritar, marcar como lida, reordenar). Se o servidor recusar, a tela volta ao estado anterior e mostra o erro.
 - **RN-37** — Ação destrutiva pede confirmação em diálogo da aplicação, dizendo o que será afetado e se é reversível. Excluir é reversível (lixeira) por padrão.
 - **RN-38** — Clicar duas vezes não executa a mutação duas vezes.
-- **RN-39** — Operação demorada (mais de ~2 s) vira job em segundo plano com progresso ([15](15-notificacoes-e-jobs.md)); a tela não fica bloqueada esperando.
+- **RN-39** — Operação demorada (mais de 2 s) vira job em segundo plano com progresso ([15](15-notificacoes-e-jobs.md)); a tela não fica bloqueada esperando.
 
 ## 7. Erros
 
 - **RN-40** — O servidor responde erros como `{"error": "<mensagem traduzida>"}` com status HTTP coerente: `400` entrada inválida, `404` não existe, `409` conflito, `413` grande demais, `500` falha interna. Nenhuma resposta de erro traz erro cru da linguagem, caminho interno do servidor ou stack trace.
 - **RN-41** — O cliente mostra a mensagem do servidor como chegou. Quando não há resposta (rede), mostra a mensagem própria de falha de conexão.
-- **RN-42** — Todo erro do servidor é registrado em arquivo de log com contexto suficiente para diagnóstico.
+- **RN-42** — Todo erro do servidor é registrado em arquivo de log com método, rota, status, o erro original e o stack trace.
 
 ## 8. Textos, datas e números
 

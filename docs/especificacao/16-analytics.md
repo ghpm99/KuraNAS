@@ -33,7 +33,7 @@ Uso de armazenamento (total, por tipo, por extensão, por pasta, ao longo do tem
 - **RN-05** — Duplicados são arquivos de conteúdo idêntico (mesmo checksum). Um grupo mostra todas as cópias com caminho; o espaço recuperável é o tamanho das cópias além da primeira.
 - **RN-06** — Todo número que representa uma lista é um link para essa lista, já filtrada: "maiores arquivos" abre os arquivos ordenados por tamanho; uma pasta abre a pasta; um grupo de duplicados abre as cópias; "falhas" abre os itens que falharam.
 - **RN-07** — Toda ação tem o efeito que o rótulo diz. "Atualizar" recarrega os números; "Reindexar" inicia a indexação e mostra o job ([21](21-indexacao.md)).
-- **RN-08** — Os números podem ter até alguns minutos de atraso; a tela mostra quando foram calculados.
+- **RN-08** — Os números podem ter até 5 minutos de atraso; a tela mostra quando foram calculados.
 
 ## 6. Requisitos por tela
 

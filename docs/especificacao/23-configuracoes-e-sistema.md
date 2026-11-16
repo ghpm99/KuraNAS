@@ -54,13 +54,13 @@ Seções com spec própria — a tela de Configurações só as hospeda: Armazen
 - **RN-10** — Desligado por padrão. Ligado, desliga **o computador servidor** no horário configurado.
 - **RN-11** — Antes de desligar há um período de aviso (padrão 60 s), com notificação visível em todos os clientes abertos e a ação "Cancelar desta vez".
 - **RN-12** — Não desliga enquanto há atividade que não pode ser interrompida: envio em andamento, backup, migração de tier, reprodução ativa em algum dispositivo. Nesse caso adia e avisa.
-- **RN-13** — "Sugerir horário" propõe um horário com base nos desligamentos anteriores, quando há histórico suficiente.
+- **RN-13** — "Sugerir horário" propõe um horário com base nos desligamentos anteriores, quando há ao menos 3 registrados; com menos, a tela diz que ainda não há histórico.
 
 ### Atualização
 
 - **RN-14** — O sistema verifica se há versão nova e avisa por notificação. Atualizar é sempre ação explícita do dono.
 - **RN-15** — O pacote baixado é conferido por integridade (checksum) antes de ser aplicado; pacote que não confere é descartado e a versão atual continua.
-- **RN-16** — A tela avisa, antes de confirmar, que o servidor ficará indisponível por instantes e que as reproduções serão interrompidas. Depois de reiniciar, os clientes reconectam sozinhos ([01/RF-12](01-shell-e-navegacao.md)) e mostram a nova versão.
+- **RN-16** — A tela avisa, antes de confirmar, que o servidor ficará indisponível por até 1 minuto e que as reproduções serão interrompidas. Depois de reiniciar, os clientes reconectam sozinhos ([01/RF-12](01-shell-e-navegacao.md)) e mostram a nova versão.
 - **RN-17** — Atualização que falha deixa a versão anterior funcionando e informa o motivo.
 
 ### Assistente de configuração do servidor

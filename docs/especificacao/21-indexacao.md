@@ -66,7 +66,7 @@ Detecção de mudanças no disco, varredura de reconciliação, reindexação ma
 ### Pastas monitoradas
 
 - **RN-18** — Uma pasta monitorada deve existir, ficar fora de todas as raízes e não repetir nem conter outra.
-- **RN-19** — Arquivo que aparece nela é **movido** para a biblioteca do seu tipo quando está completo (não é mais alterado há alguns segundos). Tipo não reconhecido fica onde está.
+- **RN-19** — Arquivo que aparece nela é **movido** para a biblioteca do seu tipo quando está completo (tamanho e data de modificação inalterados há 10 s). Tipo não reconhecido fica onde está.
 - **RN-20** — Nada é sobrescrito: nome já existente no destino recebe sufixo.
 - **RN-21** — A estrutura de subpastas da pasta monitorada é preservada no destino.
 - **RN-22** — Importações geram notificação agrupada ([15/RN-05](15-notificacoes-e-jobs.md)).
@@ -116,7 +116,7 @@ Detecção de mudanças no disco, varredura de reconciliação, reindexação ma
 
 ## 10. Critérios de aceite
 
-- [ ] **CA-01** — Copiar um arquivo para uma raiz pelo sistema operacional o faz aparecer em Arquivos em até 10 s e na biblioteca do tipo logo depois, com miniatura.
+- [ ] **CA-01** — Copiar um arquivo para uma raiz pelo sistema operacional o faz aparecer em Arquivos em até 10 s e na biblioteca do tipo, com miniatura, em até 1 minuto.
 - [ ] **CA-02** — Apagar um arquivo pelo sistema operacional o tira de todas as telas em até 10 s.
 - [ ] **CA-03** — Criar uma pasta nova com arquivos dentro, pelo sistema operacional: pasta e arquivos aparecem.
 - [ ] **CA-04** — Copiar 5 000 arquivos de uma vez: todos são indexados; o total confere com o disco.
@@ -125,7 +125,7 @@ Detecção de mudanças no disco, varredura de reconciliação, reindexação ma
 - [ ] **CA-07** — Desconectar e reconectar o volume de uma raiz não remove itens do índice nem os manda para a lixeira.
 - [ ] **CA-08** — Reindexar não remove estrelas, playlists, álbuns, progresso de vídeo nem metadados corrigidos.
 - [ ] **CA-09** — Um arquivo corrompido aparece em Arquivos; a falha de metadados fica registrada com motivo e não trava a fila.
-- [ ] **CA-10** — Durante a indexação de uma biblioteca grande, tocar música e assistir vídeo continuam sem engasgos.
+- [ ] **CA-10** — Durante a indexação de uma biblioteca grande, tocar música e assistir vídeo continuam sem nenhuma pausa para carregar em 10 minutos de reprodução.
 - [ ] **CA-11** — "Reindexar esta pasta" reindexa só aquela pasta, mostra progresso e a listagem se atualiza ao concluir.
 - [ ] **CA-12** — Desligar "gerar miniaturas" faz arquivos novos não terem miniatura gerada; religar volta a gerar.
 - [ ] **CA-13** — Um arquivo colocado em uma pasta monitorada é movido para a biblioteca do tipo e aparece no sistema; um arquivo de mesmo nome já existente não é sobrescrito.

@@ -38,7 +38,7 @@ Biblioteca de documentos (lista, filtros, ordenação), busca por nome e por con
 - **RN-01** — São documentos: PDF; DOC/DOCX/ODT/RTF; XLS/XLSX/ODS/CSV; PPT/PPTX/ODP; TXT/MD; EPUB. Todo documento indexado em qualquer raiz aparece na biblioteca, esteja ou não na pasta de documentos.
 - **RN-02** — Arquivos de código-fonte, logs e arquivos de configuração não são documentos (aparecem em Arquivos e na busca global).
 - **RN-03** — Ordenação padrão: **data de modificação, mais recente primeiro**.
-- **RN-04** — O texto é extraído de PDF com texto, DOCX, ODT, TXT, MD e CSV, em segundo plano, sem atrasar a entrada do documento na biblioteca. Há limite de tamanho por documento; acima dele, indexa-se o início e o documento fica marcado como "indexado em parte".
+- **RN-04** — O texto é extraído de PDF com texto, DOCX, ODT, TXT, MD e CSV, em segundo plano, sem atrasar a entrada do documento na biblioteca. Limites: arquivo de até 50 MB e os primeiros 2 MB de texto extraído. Texto além de 2 MB não é indexado e o documento fica marcado como "indexado em parte"; arquivo acima de 50 MB fica como "só nome".
 - **RN-05** — Documento digitalizado tem o texto reconhecido (OCR) quando o recurso de IA está ligado ([23](23-configuracoes-e-sistema.md)); sem ele, é encontrado só pelo nome, e a tela informa isso. *(ver D-01)*
 - **RN-06** — A busca procura no nome e no texto, ignora maiúsculas e acentos, exige todas as palavras e ordena por relevância (nome antes de conteúdo).
 - **RN-07** — Cada documento mostra a situação da indexação do texto: indexado, indexado em parte, só nome (sem texto extraível), na fila, falhou.
@@ -97,7 +97,7 @@ Além dos CA de [00](00-padroes-transversais.md) na lista e nos resultados de bu
 - [ ] **CA-05** — Abrir um resultado encontrado na página 7 de um PDF abre o leitor na página 7.
 - [ ] **CA-06** — Selecionar a pasta "Casa" mostra só os documentos dela e de suas subpastas.
 - [ ] **CA-07** — Filtrar por "PDF" e por "este ano" mostra só o que atende aos dois.
-- [ ] **CA-08** — Um PDF de 300 páginas abre e permite ir para qualquer página sem travar.
+- [ ] **CA-08** — Um PDF de 300 páginas abre em até 5 s e "ir para página" mostra qualquer página em até 2 s.
 - [ ] **CA-09** — Um PDF digitalizado mostra a situação "só nome" com a IA desligada; com ela ligada, é encontrado pelo texto depois de processado.
 - [ ] **CA-10** — Mover um documento de pasta não perde o texto indexado: continua sendo encontrado pelo conteúdo.
 - [ ] **CA-11** — Um arquivo `.go` ou `.log` não aparece em Documentos.

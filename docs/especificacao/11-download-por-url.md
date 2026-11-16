@@ -34,7 +34,7 @@ Pedir um download (URL, destino, formato), acompanhar o andamento, cancelar, rep
 - **RN-06** — O arquivo só aparece no destino quando está completo; arquivo parcial nunca é visto pela biblioteca.
 - **RN-07** — O download nunca sobrescreve: se o nome já existe no destino, recebe sufixo ` (2)`, ` (3)`…
 - **RN-08** — Cancelar interrompe o download em andamento e descarta o que foi baixado.
-- **RN-09** — Um download parado por mais tempo que o limite configurado falha sozinho e libera a vez.
+- **RN-09** — Um download que dura mais que o limite (`INGEST_FETCH_TIMEOUT_MINUTES`, padrão 360 minutos) é interrompido, falha com motivo próprio e libera a vez.
 - **RN-10** — Conclusão e falha geram notificação. A mensagem de falha é traduzida e não contém caminho interno do servidor.
 - **RN-11** — O arquivo baixado entra na biblioteca pela indexação normal ([21](21-indexacao.md)), no tipo correspondente.
 - **RN-12** — Sem a ferramenta de download instalada, a tela informa e aponta para Configurações; pedidos são recusados com mensagem clara.
@@ -94,7 +94,7 @@ Além dos CA de [00](00-padroes-transversais.md) no histórico:
 - [ ] **CA-03** — Cancelar interrompe o download; nenhum arquivo aparece no destino.
 - [ ] **CA-04** — Baixar duas vezes o mesmo endereço para o mesmo destino resulta em dois arquivos, o segundo com ` (2)`.
 - [ ] **CA-05** — Um endereço inválido é recusado no formulário, com mensagem.
-- [ ] **CA-06** — Um endereço de site sem suporte termina em falha com motivo legível, sem caminho do servidor, e gera notificação.
+- [ ] **CA-06** — Um endereço de site sem suporte termina em falha com motivo traduzido, sem caminho do servidor, e gera notificação.
 - [ ] **CA-07** — A conclusão gera notificação que leva ao arquivo.
 - [ ] **CA-08** — "Tentar de novo" em um item falho cria um novo pedido com os mesmos dados.
 - [ ] **CA-09** — Durante o download, a pasta de destino não mostra arquivo parcial.

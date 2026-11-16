@@ -78,7 +78,7 @@ Upload e download estão em [03](03-transferencia-entre-dispositivos.md); favori
 | Vídeo | player de vídeo ([06](06-videos.md)) |
 | Áudio | toca no player de música ([05](05-musica.md)) |
 | PDF | leitor embutido |
-| Texto, Markdown, código, log | texto com quebra de linha; arquivos grandes mostram o início e avisam |
+| Texto, Markdown, código, log | texto com quebra de linha; acima de 512 KB mostra os primeiros 512 KB e avisa que está truncado |
 | Outros | cartão com ícone, nome, tamanho e "Baixar" |
 
 - **RF-11** — O visualizador tem: nome, anterior/próximo dentro da mesma pasta (na ordenação atual), Baixar, Favoritar, Detalhes, Excluir, Fechar (volta à pasta na posição em que estava).
@@ -96,7 +96,7 @@ Upload e download estão em [03](03-transferencia-entre-dispositivos.md); favori
 - **RF-17** — **Renomear**: campo preenchido com o nome atual, com apenas o nome (sem a extensão) selecionado. Mudar a extensão pede confirmação.
 - **RF-18** — **Mover / Copiar**: seletor de pasta em árvore, paginado, com "Nova pasta" dentro do seletor; não permite escolher destino inválido (RN-08).
 - **RF-19** — **Excluir**: informa quantos itens vão para a lixeira e oferece a opção "excluir definitivamente".
-- **RF-20** — Operação em muitos itens ou em item grande mostra progresso e pode continuar em segundo plano ([00/RN-39](00-padroes-transversais.md)).
+- **RF-20** — Operação que passa de 2 s (lote grande, pasta grande, cópia entre raízes) mostra progresso e pode continuar em segundo plano ([00/RN-39](00-padroes-transversais.md)).
 
 ### Busca na pasta
 

@@ -66,7 +66,7 @@ Envio do zip em partes com retomada, importação em segundo plano (fotos e víd
 |---|---|
 | Arquivo não é `.zip` | recusa imediata |
 | Zip corrompido | falha com mensagem específica |
-| Sem espaço (temporário ou destino) | falha com motivo, antes de começar quando possível |
+| Sem espaço (temporário ou destino) | o `init` recusa quando o espaço livre é menor que o tamanho declarado; faltando espaço durante a importação, o job falha com motivo |
 | Biblioteca de imagens/vídeos não configurada | falha com atalho para Configurações |
 | Conexão caiu no envio | retoma |
 
@@ -86,7 +86,7 @@ Envio do zip em partes com retomada, importação em segundo plano (fotos e víd
 - [ ] **CA-05** — Derrubar a conexão durante o envio e religar: o envio continua.
 - [ ] **CA-06** — Fechar a tela durante a importação e voltar mostra o andamento atual.
 - [ ] **CA-07** — Um zip com um vídeo de 3 GB dentro é importado sem o servidor ficar sem memória.
-- [ ] **CA-08** — Um arquivo que não é zip é recusado; um zip corrompido falha com mensagem compreensível.
+- [ ] **CA-08** — Um arquivo que não é zip é recusado; um zip corrompido falha com mensagem traduzida que diz que o arquivo está corrompido, sem erro interno.
 - [ ] **CA-09** — O resumo final confere com o conteúdo do zip (importados + já existentes + ignorados + erros = total de entradas).
 - [ ] **CA-10** — Depois de concluir, o zip e os temporários não ocupam espaço no servidor.
 - [ ] **CA-11** — A notificação de conclusão leva às fotos importadas.
