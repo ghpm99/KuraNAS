@@ -23,6 +23,7 @@ import EmailSettingsSection from './EmailSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
 import TieringSettingsSection from './TieringSettingsSection';
+import VacuumSettingsSection from './VacuumSettingsSection';
 import YtDlpSettingsSection from './YtDlpSettingsSection';
 import SettingsSectionAnchor from './SettingsSectionAnchor';
 import useSettingsScreen from './useSettingsScreen';
@@ -112,6 +113,10 @@ const SettingsScreen = () => {
 
                 <SettingsSectionAnchor sectionId="email">
                     <EmailSettingsSection className={styles.panel} />
+                </SettingsSectionAnchor>
+
+                <SettingsSectionAnchor sectionId="vacuum">
+                    <VacuumSettingsSection className={styles.panel} />
                 </SettingsSectionAnchor>
 
                 <SettingsSectionAnchor sectionId="indexing">

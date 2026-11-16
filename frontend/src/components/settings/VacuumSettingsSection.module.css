@@ -1,0 +1,55 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-4);
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.description {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+}
+
+.help {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-2);
+}
+
+.helpText {
+    margin: 0;
+}
+
+.connectionRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-3);
+}
+
+.connectionHint {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}

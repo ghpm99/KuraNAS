@@ -23,6 +23,16 @@ export type VacuumSettings = {
     has_local_key: boolean;
 };
 
+export type VacuumSettingsChanges = {
+    address: string;
+    device_id: string;
+    local_key: string;
+};
+
+export type VacuumDiscovery = {
+    address: string;
+};
+
 export type VacuumStatus = {
     state: string;
     battery_percent: number;

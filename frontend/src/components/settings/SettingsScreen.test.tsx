@@ -56,6 +56,10 @@ jest.mock('./AutoShutdownSettingsSection', () => ({
 	__esModule: true,
 	default: () => <div>Auto Shutdown Section</div>,
 }));
+jest.mock('./VacuumSettingsSection', () => ({
+	__esModule: true,
+	default: () => <div>Vacuum Section</div>,
+}));
 jest.mock('./YtDlpSettingsSection', () => ({
 	__esModule: true,
 	default: () => <div>yt-dlp Section</div>,

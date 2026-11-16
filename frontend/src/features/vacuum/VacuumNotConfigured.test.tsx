@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
+import { getSettingsSectionRoute } from '@/components/settings/settingsSections';
 import VacuumNotConfigured from './VacuumNotConfigured';
 
 const renderNotice = (props: Parameters<typeof VacuumNotConfigured>[0]) =>
@@ -11,13 +11,13 @@ const renderNotice = (props: Parameters<typeof VacuumNotConfigured>[0]) =>
     );
 
 describe('VacuumNotConfigured', () => {
-    it('renders without any provider or service and links to the settings', () => {
+    it('renders without any provider or service and links straight to the vacuum settings section', () => {
         renderNotice({ isDeviceIdMissing: false, isLocalKeyMissing: false });
 
         expect(screen.getByText('VACUUM_NOT_CONFIGURED_DESCRIPTION')).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'VACUUM_NOT_CONFIGURED_ACTION' })).toHaveAttribute(
             'href',
-            appRoutes.settings
+            getSettingsSectionRoute('vacuum')
         );
         expect(screen.queryByText('VACUUM_NOT_CONFIGURED_DEVICE_ID')).not.toBeInTheDocument();
         expect(screen.queryByText('VACUUM_NOT_CONFIGURED_LOCAL_KEY')).not.toBeInTheDocument();

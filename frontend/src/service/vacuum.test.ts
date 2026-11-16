@@ -3,6 +3,7 @@ jest.mock('./index', () => ({
         get: jest.fn(),
         post: jest.fn(),
         patch: jest.fn(),
+        put: jest.fn(),
     },
 }));
 
@@ -16,13 +17,17 @@ import {
     resetVacuumConsumable,
     sendVacuumCommand,
     sendVacuumRemoteControl,
+    discoverVacuumDevice,
+    testVacuumConnection,
     updateVacuumPreferences,
+    updateVacuumSettings,
 } from './vacuum';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
     post: jest.Mock;
     patch: jest.Mock;
+    put: jest.Mock;
 };
 
 describe('service/vacuum', () => {
@@ -130,6 +135,39 @@ describe('service/vacuum', () => {
 
             expect(mockedApi.post).toHaveBeenCalledTimes(1);
             expect(mockedApi.post).toHaveBeenCalledWith('/vacuum/consumables/main_brush/reset');
+        });
+    });
+
+    describe('connection setup', () => {
+        it('saves the settings with a PUT carrying the exact body', async () => {
+            const confirmed = { address: '192.168.18.95', device_id: 'abc', has_local_key: true };
+            mockedApi.put.mockResolvedValue({ data: confirmed });
+
+            await expect(
+                updateVacuumSettings({ address: '192.168.18.95', device_id: 'abc', local_key: '' })
+            ).resolves.toEqual(confirmed);
+            expect(mockedApi.put).toHaveBeenCalledTimes(1);
+            expect(mockedApi.put).toHaveBeenCalledWith('/vacuum/settings', {
+                address: '192.168.18.95',
+                device_id: 'abc',
+                local_key: '',
+            });
+        });
+
+        it('tests the connection with a bodyless POST', async () => {
+            mockedApi.post.mockResolvedValue({ status: 204 });
+
+            await expect(testVacuumConnection()).resolves.toBeUndefined();
+            expect(mockedApi.post).toHaveBeenCalledTimes(1);
+            expect(mockedApi.post).toHaveBeenCalledWith('/vacuum/connection-test');
+        });
+
+        it('discovers the robot with a bodyless POST and returns the address', async () => {
+            mockedApi.post.mockResolvedValue({ data: { address: '192.168.18.95' } });
+
+            await expect(discoverVacuumDevice()).resolves.toEqual({ address: '192.168.18.95' });
+            expect(mockedApi.post).toHaveBeenCalledTimes(1);
+            expect(mockedApi.post).toHaveBeenCalledWith('/vacuum/discovery');
         });
     });
 });

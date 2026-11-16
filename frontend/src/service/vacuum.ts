@@ -4,15 +4,33 @@ import type {
     VacuumConsumablePart,
     VacuumConsumables,
     VacuumDirection,
+    VacuumDiscovery,
     VacuumPreferences,
     VacuumPreferencesPatch,
     VacuumSettings,
+    VacuumSettingsChanges,
     VacuumStatus,
     VacuumTotals,
 } from '@/types/vacuum';
 
 export const getVacuumSettings = async (): Promise<VacuumSettings> => {
     const response = await apiBase.get<VacuumSettings>('/vacuum/settings');
+    return response.data;
+};
+
+export const updateVacuumSettings = async (
+    changes: VacuumSettingsChanges
+): Promise<VacuumSettings> => {
+    const response = await apiBase.put<VacuumSettings>('/vacuum/settings', changes);
+    return response.data;
+};
+
+export const testVacuumConnection = async (): Promise<void> => {
+    await apiBase.post('/vacuum/connection-test');
+};
+
+export const discoverVacuumDevice = async (): Promise<VacuumDiscovery> => {
+    const response = await apiBase.post<VacuumDiscovery>('/vacuum/discovery');
     return response.data;
 };
 

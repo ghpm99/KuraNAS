@@ -1,6 +1,6 @@
 import { Alert, Button } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { appRoutes } from '@/app/routes';
+import { getSettingsSectionRoute } from '@/components/settings/settingsSections';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import styles from './VacuumNotConfigured.module.css';
 
@@ -29,7 +29,7 @@ const VacuumNotConfigured = ({
                 className={styles.settingsLink}
                 variant="contained"
                 component={RouterLink}
-                to={appRoutes.settings}
+                to={getSettingsSectionRoute('vacuum')}
             >
                 {t('VACUUM_NOT_CONFIGURED_ACTION')}
             </Button>

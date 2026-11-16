@@ -53,6 +53,11 @@ export const settingsSections = [
         descriptionKey: 'SETTINGS_EMAIL_HELP',
     },
     {
+        id: 'vacuum',
+        labelKey: 'VACUUM_SETTINGS_TITLE',
+        descriptionKey: 'VACUUM_SETTINGS_DESCRIPTION',
+    },
+    {
         id: 'indexing',
         labelKey: 'SETTINGS_SECTION_INDEXING',
         descriptionKey: 'SETTINGS_SECTION_INDEXING_DESCRIPTION',
