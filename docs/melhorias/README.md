@@ -48,7 +48,7 @@ Regras invariantes:
 | 12 | [Backup orquestrado](12-backup-orquestrado.md) | feature | P3 | 10 | ✅ concluída (2026-06-12) | retenção ≠ espelho; segunda cópia (HD externo) documentada no README, fica com o SO |
 | 13 | [Tiering quente/frio](13-tiering-quente-frio.md) | feature | P3 | 01, 05, 10 | ✅ concluída (2026-06-13) | path lógico × físico; job tier_migration + operações tiered + UI; `make ci` verde |
 | 19 | [Captura inteligente de streaming](19-captura-inteligente-de-streaming.md) | feature | P3 | — | 🚫 bloqueada | código pronto, `npm test` (plugin) + `make ci-backend` verdes. Falta validação do dono no navegador real: (1) confirmar que `tabCapture` na cobaia (Crunchyroll) **não** entrega frame preto — se entregar, a peça de captura migra para nível de SO (analog hole continua, ver Riscos); (2) verificar in-loco arma-em-fullscreen / finaliza-no-fim / autoplay→arquivo-novo / retomada→arquivo-único. Máquina de estados + idempotência por `episode_key` + adapter Crunchyroll já cobertos por testes; **sem decrypt de DRM** |
-| 20 | [Web: segunda página das listagens de arquivos](20-paginacao-web-le-has-next.md) | bug crítico | P0 | — | pendente | spec 00 anexo A1–A3 |
+| 20 | [Web: segunda página das listagens de arquivos](20-paginacao-web-le-has-next.md) | bug crítico | P0 | — | em execução | spec 00 anexo A1–A3 |
 | 21 | [Web: falha ao carregar mais não esvazia a lista](21-falha-de-pagina-nao-esvazia-a-lista.md) | bug crítico | P0 | 20 | pendente | spec 00 anexo A4 |
 | 22 | [Android: encontrar o servidor](22-android-descoberta-do-servidor.md) | bug crítico | P0 | — | pendente | spec 24 |
 | 23 | [Android: explorer paginado](23-android-explorer-paginado.md) | bug crítico | P0 | — | pendente | spec 24, 00 anexo A10 |
