@@ -117,7 +117,7 @@ Todas as rotas são a criar. Tempos em segundos, áreas em m².
 | POST | `/vacuum/consumables/:part/reset` | `204` |
 | GET | `/vacuum/totals` | `{"cleaning_seconds", "cleaning_area", "cleaning_count"}` |
 
-`state` é um de: `idle`, `cleaning`, `paused`, `returning`, `charging`, `charged`, `emptying`, `sleeping`, `remote_control`, `fault`.
+`state` é um de: `idle`, `cleaning`, `paused`, `returning`, `charging`, `charged`, `emptying`, `sleeping`, `remote_control`, `fault`. Estado que o robô informa e não está na correspondência do anexo vem como `unknown` e a tela o mostra como "estado desconhecido", sem supor que o robô está parado.
 
 ## 9. Estados e erros
 
