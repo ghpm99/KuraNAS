@@ -38,7 +38,11 @@ Pedir um download (URL, destino, formato), acompanhar o andamento, cancelar, rep
 - **RN-10** — Conclusão e falha geram notificação. A mensagem de falha é traduzida e não contém caminho interno do servidor.
 - **RN-11** — O arquivo baixado entra na biblioteca pela indexação normal ([21](21-indexacao.md)), no tipo correspondente.
 - **RN-12** — Sem a ferramenta de download instalada, a tela informa e aponta para Configurações; pedidos são recusados com mensagem clara.
-- **RN-13** — Só uma atualização da ferramenta roda por vez; o binário novo é conferido por checksum antes de substituir o atual, que fica como reserva.
+- **RN-13** — Só uma atualização da ferramenta roda por vez (a segunda responde `409`); o binário novo é limitado a 256 MB e conferido por checksum antes de substituir o atual, que fica como reserva.
+- **RN-14** — Cada pedido fica registrado com: endereço, título (quando a ferramenta o descobre), destino (raiz e subpasta), formato, estado, andamento, arquivo resultante e motivo da falha. O registro é o que alimenta "Em andamento" e "Histórico" e não depende de o job ainda existir.
+- **RN-15** — Estados de um pedido: `queued` (na fila) → `running` (baixando) → `completed` | `failed` | `canceled`. Pedido que estava `queued` ou `running` quando o servidor reiniciou vira `failed`, com motivo próprio, e não recomeça sozinho. *(ver D-05)*
+- **RN-16** — Nenhuma resposta desta feature expõe caminho absoluto do servidor: o destino é sempre raiz (`id` e nome) mais subpasta relativa.
+- **RN-17** — "Tentar de novo" cria um pedido novo com o mesmo endereço, destino e formato; o pedido original fica no histórico como está.
 
 ## 6. Requisitos por tela
 
@@ -47,8 +51,8 @@ Pedir um download (URL, destino, formato), acompanhar o andamento, cancelar, rep
 - **RF-01** — Formulário: endereço (com colar), destino (raiz e subpasta, com seletor de pasta), formato. O último destino e formato usados vêm preenchidos.
 - **RF-02** — Validação no campo antes de enviar; erro do servidor aparece no formulário.
 - **RF-03** — Ao enviar, o pedido entra na lista "Em andamento" e o formulário fica pronto para o próximo.
-- **RF-04** — **Em andamento**: título (quando conhecido) ou endereço, destino, formato, barra de progresso com porcentagem, velocidade e tempo restante, e "Cancelar". Atualiza sozinha.
-- **RF-05** — **Histórico**: lista paginada, mais recente primeiro, com estado (concluído, falhou, cancelado), data e destino. Concluído tem "Abrir" (leva ao arquivo); falhou mostra o motivo e "Tentar de novo".
+- **RF-04** — **Em andamento** (`state=active`): título (quando conhecido) ou endereço, destino, formato, barra de progresso com porcentagem, velocidade e tempo restante, e "Cancelar". Atualiza sozinha a cada 2 s enquanto houver item em andamento; sem item, não consulta.
+- **RF-05** — **Histórico** (`state=finished`): lista paginada, mais recente primeiro, com estado (concluído, falhou, cancelado), data e destino. Concluído tem "Abrir" (leva ao arquivo, habilitado quando `file_id` existe) e "Ver na pasta" (abre a pasta de destino em Arquivos); falhou e cancelado mostram o motivo e "Tentar de novo".
 
 ### Configurações → ferramenta de download
 
@@ -72,6 +76,42 @@ Pedir um download (URL, destino, formato), acompanhar o andamento, cancelar, rep
 | GET | `/ingest/ytdlp/status` | situação da ferramenta |
 | POST | `/ingest/ytdlp/update` | atualizar a ferramenta |
 | GET | `/jobs` · `/jobs/:id` · POST `/jobs/:id/cancel` | andamento, histórico, cancelar |
+
+**A criar** (não existe hoje):
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/ingest/downloads` | pedidos registrados (RN-14), paginados no envelope de [00 §10](00-padroes-transversais.md), mais recente primeiro. Filtro `state=active` (`queued`, `running`) ou `state=finished` (os demais); valor inválido → `400` |
+| POST | `/ingest/downloads/:id/retry` | repete um pedido `failed` ou `canceled` (RN-17) → `201` com o novo item; pedido em outro estado → `409` |
+
+Item de `/ingest/downloads`:
+
+```json
+{
+  "id": 12,
+  "job_id": 345,
+  "url": "https://exemplo.com/video",
+  "title": null,
+  "preset": "video_1080",
+  "target_root_id": 2,
+  "target_root_name": "Vídeos",
+  "subfolder": "Shows",
+  "state": "running",
+  "progress": 42,
+  "speed_bytes_per_second": 1048576,
+  "eta_seconds": 95,
+  "file_id": null,
+  "error": "",
+  "created_at": "2026-11-16T20:15:00-03:00",
+  "ended_at": null
+}
+```
+
+- `title`, `speed_bytes_per_second`, `eta_seconds`, `file_id` e `ended_at` são `null` enquanto desconhecidos; `speed_bytes_per_second` e `eta_seconds` só têm valor em `running`.
+- `file_id` é o item da biblioteca correspondente ao arquivo baixado; fica `null` até a indexação registrá-lo (RN-11). Com mais de um arquivo gerado, é o primeiro.
+- `error` é a mensagem traduzida do motivo (RN-10), vazia fora de `failed`.
+- `POST /ingest/fetch` passa a devolver também `download_id` (o `id` acima), além do `job_id` que já devolve.
+- Cancelar continua sendo `POST /jobs/:id/cancel` com o `job_id` do item.
 
 `/downloads` pertence à distribuição dos aplicativos cliente ([23](23-configuracoes-e-sistema.md)), não a esta feature.
 
@@ -114,4 +154,4 @@ Correspondem às lacunas 24–28 do board.
 
 ## 11. Rastreabilidade
 
-`docs/revisao-produto/09-ingestao-por-url.md` (em execução: lacunas 01–09 resolvidas, 10–23 pendentes, 24–28 aguardam decisão); decisão "Ingestão de mídia" em `docs/melhorias/README.md`.
+`docs/revisao-produto/09-ingestao-por-url.md` (em execução; cada lacuna cita a regra desta spec que satisfaz; 24–28 aguardam decisão); decisão "Ingestão de mídia" em `docs/melhorias/README.md`.
